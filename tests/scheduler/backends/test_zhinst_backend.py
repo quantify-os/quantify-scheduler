@@ -934,6 +934,7 @@ def test_compile_backend_with_undefined_local_oscillator(
     zhinst_hardware_cfg = json.loads(hardware_cfg_str)
     quantum_device = mock_setup_basic_transmon["quantum_device"]
     quantum_device.hardware_config(zhinst_hardware_cfg)
+
     config = quantum_device.generate_compilation_config()
     compiler = SerialCompiler(name="compiler")
     # Act
@@ -994,6 +995,7 @@ def test_compile_backend_with_duplicate_local_oscillator(
     """
     zhinst_hardware_cfg = json.loads(hardware_cfg_str)
     quantum_device = mock_setup_basic_transmon["quantum_device"]
+
     quantum_device.hardware_config(zhinst_hardware_cfg)
     config = quantum_device.generate_compilation_config()
     # Act
@@ -1207,7 +1209,8 @@ def test_too_long_acquisition_raises_readable_exception(
     assert "4320 samples" in str(exc_info.value)
 
 
-def test_qcompile_empty_device(load_example_zhinst_hardware_config):
+@pytest.mark.filterwarnings("ignore::FutureWarning")
+def test_deprecated_qcompile_empty_device(load_example_zhinst_hardware_config):
     """
     Test if compilation works for a pulse only schedule on a freshly initialized
     quantum device object to which only a hardware config has been provided.
@@ -1230,6 +1233,7 @@ def test_qcompile_empty_device(load_example_zhinst_hardware_config):
     quantum_device.close()  # need to clean up nicely after the test
 
 
+@pytest.mark.filterwarnings("ignore::FutureWarning")
 @pytest.mark.parametrize(
     "schedule",
     [
@@ -1241,7 +1245,7 @@ def test_qcompile_empty_device(load_example_zhinst_hardware_config):
         hybrid_schedule_rabi(),
     ],
 )
-def test_compiles_standard_schedules(
+def test_deprecated_qcompiles_standard_schedules(
     schedule: Schedule,
     load_example_transmon_config,
     load_example_zhinst_hardware_config,
@@ -1249,6 +1253,7 @@ def test_compiles_standard_schedules(
     """
     Test if a set of standard schedules compile correctly on this backend.
     """
+
     comp_sched = qcompile(
         schedule=schedule,
         device_cfg=load_example_transmon_config,

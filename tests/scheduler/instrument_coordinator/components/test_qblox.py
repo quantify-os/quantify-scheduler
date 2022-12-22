@@ -376,7 +376,6 @@ def test_initialize_cluster_component(make_cluster_component):
 def test_prepare_qcm_qrm(
     mocker,
     schedule_with_measurement,
-    load_example_transmon_config,
     load_example_qblox_hardware_config,
     make_qcm_component,
     make_qrm_component,
@@ -418,9 +417,11 @@ def test_prepare_qcm_qrm(
     qrm2.force_set_parameters(force_set_parameters)
 
     mock_setup_basic_transmon_with_standard_params["q0"].clock_freqs.readout(7.5e9)
+
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
     config = quantum_device.generate_compilation_config()
+
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(schedule_with_measurement, config=config)
     prog = compiled_schedule["compiled_instructions"]
@@ -508,10 +509,13 @@ def test_prepare_cluster_rf(
     q5.measure.acq_delay(100e-9)
 
     sched = make_basic_schedule("q5")
+
     hardware_cfg = load_example_qblox_hardware_config
     quantum_device = mock_setup_basic_transmon["quantum_device"]
+
     quantum_device.hardware_config(hardware_cfg)
     config = quantum_device.generate_compilation_config()
+
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(sched, config=config)
     compiled_schedule_before_prepare = deepcopy(compiled_schedule)
@@ -568,6 +572,7 @@ def test_prepare_rf(
     hardware_cfg = load_example_qblox_hardware_config
     quantum_device = mock_setup["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
+
     config = quantum_device.generate_compilation_config()
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(schedule_with_measurement_q2, config=config)
@@ -695,7 +700,6 @@ def test_retrieve_acquisition_qcm(close_all_instruments, make_qcm_component):
 
 def test_retrieve_acquisition_qrm(
     schedule_with_measurement,
-    # load_example_transmon_config,
     load_example_qblox_hardware_config,
     make_qrm_component,
     mock_setup_basic_transmon_with_standard_params,
@@ -706,9 +710,11 @@ def test_retrieve_acquisition_qrm(
     # Act
     mock_setup_basic_transmon_with_standard_params["q0"].clock_freqs.readout(7.5e9)
     hardware_cfg = load_example_qblox_hardware_config
+
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
     config = quantum_device.generate_compilation_config()
+
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(schedule_with_measurement, config=config)
     prog = compiled_schedule["compiled_instructions"]
@@ -764,13 +770,16 @@ def test_retrieve_acquisition_cluster(
     load_example_qblox_hardware_config,
 ):
     mock_setup = mock_setup_basic_transmon_with_standard_params
-    q4 = mock_setup["q4"]
+
     mock_setup["quantum_device"].hardware_config(load_example_qblox_hardware_config)
+
+    q4 = mock_setup["q4"]
     q4.clock_freqs.f01.set(5040000000)
     q4.rxy.amp180(0.2)
     q4.clock_freqs.f12(5.41e9)
     q4.clock_freqs.readout(6950000000)
     q4.measure.acq_delay(1.2e-07)
+
     compilation_config = mock_setup["quantum_device"].generate_compilation_config()
 
     # Arrange
@@ -795,7 +804,6 @@ def test_retrieve_acquisition_cluster(
 
 def test_start_qcm_qrm(
     schedule_with_measurement,
-    load_example_transmon_config,
     load_example_qblox_hardware_config,
     mock_setup_basic_transmon_with_standard_params,
     make_qcm_component,
@@ -807,9 +815,11 @@ def test_start_qcm_qrm(
 
     mock_setup_basic_transmon_with_standard_params["q0"].clock_freqs.readout(7.5e9)
     hardware_cfg = load_example_qblox_hardware_config
+
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
     config = quantum_device.generate_compilation_config()
+
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(schedule_with_measurement, config=config)
     prog = compiled_schedule["compiled_instructions"]
