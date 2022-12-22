@@ -8,11 +8,7 @@ import numpy as np
 import pytest
 
 from quantify_scheduler import Operation, Schedule
-from quantify_scheduler.compilation import (
-    determine_absolute_timing,
-    device_compile,
-    validate_config,
-)
+from quantify_scheduler.compilation import determine_absolute_timing
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.gate_library import CNOT, CZ, Measure, Reset, Rxy
@@ -102,29 +98,32 @@ def test_missing_ref_op():
         sched.add(operation=CNOT(qC=q0, qT=q1), ref_op=ref_label_1)
 
 
-def test_compile_transmon_program(
-    load_example_transmon_config, mock_setup_basic_transmon
-):
+def test_compile_transmon_program(mock_setup_basic_transmon):
     sched = Schedule("Test schedule")
 
     # define the resources
     # q0, q1 = Qubits(n=2) # assumes all to all connectivity
     q0, q2 = ("q0", "q2")
+
     sched.add(Reset(q0, q2))
     sched.add(Rxy(90, 0, qubit=q0))
     sched.add(operation=CZ(qC=q0, qT=q2))
     sched.add(Rxy(theta=90, phi=0, qubit=q0))
     sched.add(Measure(q0, q2), label="M0")
+
     compiler = SerialCompiler(name="compiler")
     compiler.compile(
         sched, mock_setup_basic_transmon["quantum_device"].generate_compilation_config()
     )
 
 
-def test_missing_edge(load_example_transmon_config, mock_setup_basic_transmon):
+def test_missing_edge(mock_setup_basic_transmon):
+
     sched = Schedule("Bad edge")
+
     quantum_device = mock_setup_basic_transmon["quantum_device"]
     quantum_device.remove_edge("q0_q2")
+
     q0, q2 = ("q0", "q2")
     sched.add(operation=CZ(qC=q0, qT=q2))
     with pytest.raises(
