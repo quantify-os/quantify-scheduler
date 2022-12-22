@@ -30,15 +30,6 @@ from quantify_scheduler.device_under_test.transmon_element import (
 )
 
 
-# --------- Test fixtures ---------
-@pytest.fixture
-def device_DRAG_pulse():
-    q0 = BasicTransmonElement("q0")
-    device_cfg = q0.generate_device_config()
-    yield q0, device_cfg
-    q0.close()
-
-
 # --------- Test classes and member methods ---------
 def test_operation_duration_single_pulse() -> None:
     dgp = DRAGPulse(
