@@ -326,11 +326,12 @@ def generate_waveform_dict(waveforms_complex: Dict[str, np.ndarray]) -> Dict[str
 
     Returns
     -------
-    :
+    dict[str, dict]
         A dictionary with as key the unique name for that waveform, as value another
         dictionary containing the real-valued data (list) as well as a unique index.
         Note that the index of the Q waveform is always the index of the I waveform
         +1.
+
 
     .. admonition:: Examples
 
@@ -406,7 +407,7 @@ def is_multiple_of_grid_time(
     return time_ns % grid_time_ns == 0
 
 
-def get_nco_phase_arguments(phase_deg: float) -> Tuple[int, int, int]:
+def get_nco_phase_arguments(phase_deg: float) -> int:
     """
     Converts a phase in degrees to the int arguments the NCO phase instructions expect.
     We take `phase_deg` modulo 360 to account for negative phase and phase larger than
@@ -420,19 +421,10 @@ def get_nco_phase_arguments(phase_deg: float) -> Tuple[int, int, int]:
     Returns
     -------
     :
-        The three ints corresponding to the phase arguments (coarse, fine, ultra-fine).
+        The int corresponding to the phase argument.
     """
     phase_deg %= 360
-
-    phase_coarse = int(phase_deg // constants.NCO_PHASE_DEG_STEP_COARSE)
-
-    remaining_phase = phase_deg % constants.NCO_PHASE_DEG_STEP_COARSE
-    phase_fine = int(remaining_phase // constants.NCO_PHASE_DEG_STEP_FINE)
-
-    remaining_phase = remaining_phase % constants.NCO_PHASE_DEG_STEP_FINE
-    phase_ultra_fine = int(remaining_phase // constants.NCO_PHASE_DEG_STEP_U_FINE)
-
-    return phase_coarse, phase_fine, phase_ultra_fine
+    return round(phase_deg * constants.NCO_PHASE_STEPS_PER_DEG)
 
 
 def generate_port_clock_to_device_map(

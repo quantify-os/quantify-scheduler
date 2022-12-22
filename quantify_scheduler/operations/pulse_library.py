@@ -1,6 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-"""Standard pulses for use with the quantify_scheduler."""
+"""Standard pulse-level operations for use with the quantify_scheduler."""
 # pylint: disable= too-many-arguments, too-many-ancestors
 from __future__ import annotations
 
@@ -27,14 +27,20 @@ class ShiftClockPhase(Operation):
 
         Parameters
         ----------
-        phase
+        phase_shift
             The phase shift in degrees.
         clock
             The clock of which to shift the phase.
+        t0
+            Time in seconds when to execute the command relative
+            to the start time of the Operation in the Schedule.
         data
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
         if data is None:
             super().__init__(name="ShiftClockPhase")
@@ -60,7 +66,7 @@ class ShiftClockPhase(Operation):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -81,9 +87,12 @@ class ResetClockPhase(Operation):
         clock
             The clock of which to reset the phase.
         data
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
         if data is None:
             super().__init__(name="ResetClockPhase")
@@ -109,7 +118,7 @@ class ResetClockPhase(Operation):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -135,9 +144,12 @@ class IdlePulse(Operation):
         duration
             The duration of idle time in seconds.
         data
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
         if data is None:
             super().__init__(name="Idle")
@@ -162,7 +174,7 @@ class IdlePulse(Operation):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -218,9 +230,12 @@ class RampPulse(Operation):
             to the start time
             of the Operation in the Schedule.
         data
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
         if data is None:
             super().__init__(name="RampPulse")
@@ -247,7 +262,7 @@ class RampPulse(Operation):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -294,9 +309,12 @@ class StaircasePulse(Operation):  # pylint: disable=too-many-ancestors
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule.
         data
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
         if data is None:
             super().__init__(name="StaircasePulse")
@@ -325,7 +343,7 @@ class StaircasePulse(Operation):  # pylint: disable=too-many-ancestors
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -403,7 +421,7 @@ class SquarePulse(Operation):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -458,9 +476,12 @@ class SuddenNetZeroPulse(Operation):
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule.
         data
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
         duration = t_pulse + t_phi + t_integral_correction
 
@@ -494,7 +515,7 @@ class SuddenNetZeroPulse(Operation):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -585,9 +606,12 @@ class SoftSquarePulse(Operation):
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule.
         data
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
         if data is None:
             super().__init__(name="SoftSquarePulse")
@@ -613,7 +637,7 @@ class SoftSquarePulse(Operation):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -685,7 +709,7 @@ class ChirpPulse(Operation):  # pylint: disable=too-many-ancestors
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -739,9 +763,12 @@ class DRAGPulse(Operation):
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule.
         data
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
 
         if data is None:
@@ -771,7 +798,7 @@ class DRAGPulse(Operation):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -827,9 +854,12 @@ def create_dc_compensation_pulse(
         Time in seconds when to start the pulses relative to the start time
         of the Operation in the Schedule.
     data
-        The operation's dictionary, by default None
+        The operation's dictionary, by default None\n
         Note: if the data parameter is not None all other parameters are
-        overwritten using the contents of data.
+        overwritten using the contents of data.\n
+        Deprecated: support for the data argument will be dropped in
+        quantify-scheduler >= 0.13.0. Please consider updating the data
+        dictionary after initialization.
 
     Returns
     -------
@@ -878,7 +908,7 @@ def create_dc_compensation_pulse(
             "quantify-scheduler >= 0.13.0.\n"
             "Please consider updating the data "
             "dictionary after initialization.",
-            DeprecationWarning,
+            FutureWarning,
         )
 
     return SquarePulse(
@@ -948,7 +978,7 @@ class WindowOperation(Operation):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -1002,9 +1032,12 @@ class NumericalPulse(Operation):
             Specifies the type of interpolation used. This is passed as the "kind"
             argument to `scipy.interpolate.interp1d`.
         data
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
 
         def make_list_from_array(
@@ -1044,7 +1077,7 @@ class NumericalPulse(Operation):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -1094,28 +1127,42 @@ class SkewedHermitePulse(Operation):
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule. By default 0.
         data
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
 
         if data is None:
-            data = {
-                "name": "hermite",
-                "pulse_info": [
-                    {
-                        "wf_func": "quantify_scheduler.waveforms.skewed_hermite",
-                        "duration": duration,
-                        "amplitude": amplitude,
-                        "skewness": skewness,
-                        "phase": phase,
-                        "clock": clock,
-                        "port": port,
-                        "t0": t0,
-                    }
-                ],
-            }
-        super().__init__(name=data["name"], data=data)
+            super().__init__(name="hermite")
+            self.data.update(
+                {
+                    "pulse_info": [
+                        {
+                            "wf_func": "quantify_scheduler.waveforms.skewed_hermite",
+                            "duration": duration,
+                            "amplitude": amplitude,
+                            "skewness": skewness,
+                            "phase": phase,
+                            "clock": clock,
+                            "port": port,
+                            "t0": t0,
+                        }
+                    ],
+                }
+            )
+            self._update()
+        else:
+            warnings.warn(
+                "Support for the data argument will be dropped in"
+                "quantify-scheduler >= 0.13.0.\n"
+                "Please consider updating the data "
+                "dictionary after initialization.",
+                DeprecationWarning,
+            )
+            super().__init__(name=data["name"], data=data)
 
     def __str__(self) -> str:
         pulse_info = self.data["pulse_info"][0]

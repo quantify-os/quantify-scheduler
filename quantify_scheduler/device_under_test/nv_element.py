@@ -17,7 +17,12 @@ from quantify_scheduler.backends.circuit_to_device import (
     DeviceCompilationConfig,
     OperationCompilationConfig,
 )
-from quantify_scheduler.helpers.validators import Numbers
+from quantify_scheduler.helpers.validators import (
+    _Durations,
+    _Amplitudes,
+    _NonNegativeFrequencies,
+    _Delays,
+)
 from quantify_scheduler.device_under_test.device_element import DeviceElement
 
 
@@ -36,6 +41,7 @@ class Ports(InstrumentModule):
             instrument=self,
             initial_cache_value=f"{parent.name}:mw",
             set_cmd=False,
+            vals=validators.Strings(),
         )
         """Name of the element's microwave port."""
 
@@ -45,6 +51,7 @@ class Ports(InstrumentModule):
             instrument=self,
             initial_cache_value=f"{parent.name}:optical_control",
             set_cmd=False,
+            vals=validators.Strings(),
         )
         """Port to control the device element with optical pulses."""
 
@@ -54,6 +61,7 @@ class Ports(InstrumentModule):
             instrument=self,
             initial_cache_value=f"{parent.name}:optical_readout",
             set_cmd=False,
+            vals=validators.Strings(),
         )
         """Port to readout photons from the device element."""
 
@@ -73,7 +81,7 @@ class ClockFrequencies(InstrumentModule):
             unit="Hz",
             instrument=self,
             initial_value=float("nan"),
-            vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
+            vals=_NonNegativeFrequencies(),
         )
         """Microwave frequency to resonantly drive the electron spin state of a
         negatively charged diamond NV center from the 0-state to 1-state
@@ -86,7 +94,7 @@ class ClockFrequencies(InstrumentModule):
             unit="Hz",
             instrument=self,
             initial_value=float("nan"),
-            vals=Numbers(min_value=1e9, max_value=1e10, allow_nan=True),
+            vals=_NonNegativeFrequencies(),
         )
         """Parameter that is swept for a spectroscopy measurement. It does not track
         properties of the device element."""
@@ -97,7 +105,7 @@ class ClockFrequencies(InstrumentModule):
             unit="Hz",
             instrument=self,
             initial_value=float("nan"),
-            vals=Numbers(min_value=100e12, max_value=1e15, allow_nan=True),
+            vals=_NonNegativeFrequencies(),
         )
         """Transition frequency from the m_s=0 state to the E_x,y state"""
 
@@ -107,7 +115,7 @@ class ClockFrequencies(InstrumentModule):
             unit="Hz",
             instrument=self,
             initial_value=float("nan"),
-            vals=Numbers(min_value=100e12, max_value=1e15, allow_nan=True),
+            vals=_NonNegativeFrequencies(),
         )
         """Transition frequency from the m_s=+-1 state to any of the A_1, A_2, or
         E_1,2 states"""
@@ -118,7 +126,7 @@ class ClockFrequencies(InstrumentModule):
             unit="Hz",
             instrument=self,
             initial_value=float("nan"),
-            vals=Numbers(min_value=100e12, max_value=1e15, allow_nan=True),
+            vals=_NonNegativeFrequencies(),
         )
         """Frequency of the green ionization laser for manipulation of the NVs charge state."""
 
@@ -141,6 +149,7 @@ class SpectroscopyOperationHermiteMW(InstrumentModule):
             instrument=self,
             initial_value=float("nan"),
             unit="W",
+            vals=_Amplitudes(),
         )
         """Amplitude of spectroscopy pulse"""
 
@@ -150,7 +159,7 @@ class SpectroscopyOperationHermiteMW(InstrumentModule):
             instrument=self,
             initial_value=15e-6,
             unit="s",
-            vals=validators.Numbers(min_value=0, max_value=100e-6),
+            vals=_Durations(),
         )
         """Duration of the MW pulse."""
 
@@ -167,9 +176,9 @@ class ResetSpinpump(InstrumentModule):
         self.amplitude = ManualParameter(
             name="amplitude",
             instrument=self,
-            initial_value=0.5,
+            initial_value=float("nan"),
             unit="V",
-            vals=validators.Numbers(min_value=0, max_value=2.5),
+            vals=_Amplitudes(),
         )
         """Amplitude of reset pulse"""
 
@@ -178,7 +187,7 @@ class ResetSpinpump(InstrumentModule):
             instrument=self,
             initial_value=50e-6,
             unit="s",
-            vals=validators.Numbers(min_value=10e-6, max_value=100e-6),
+            vals=_Durations(),
         )
         """Duration of reset pulse"""
 
@@ -196,9 +205,9 @@ class Measure(InstrumentModule):
         self.pulse_amplitude = ManualParameter(
             name="pulse_amplitude",
             instrument=self,
-            initial_value=0.5,
+            initial_value=float("nan"),
             unit="V",
-            vals=validators.Numbers(min_value=0, max_value=1),
+            vals=_Amplitudes(),
         )
         """Amplitude of readout pulse"""
 
@@ -207,7 +216,7 @@ class Measure(InstrumentModule):
             instrument=self,
             initial_value=20e-6,
             unit="s",
-            vals=validators.Numbers(min_value=10e-9, max_value=1),
+            vals=_Durations(),
         )
         """Readout pulse duration"""
 
@@ -216,7 +225,7 @@ class Measure(InstrumentModule):
             instrument=self,
             initial_value=50e-6,
             unit="s",
-            vals=validators.Numbers(min_value=10e-9, max_value=1),
+            vals=_Durations(),
         )
         """
         Duration of the acquisition.
@@ -227,7 +236,7 @@ class Measure(InstrumentModule):
             instrument=self,
             initial_value=0,
             unit="s",
-            vals=validators.Numbers(min_value=-1, max_value=1),
+            vals=_Delays(),
         )
         """
         Delay between the start of the readout pulse and the start of the acquisition.
@@ -257,9 +266,9 @@ class ChargeReset(InstrumentModule):
         self.amplitude = ManualParameter(
             name="amplitude",
             instrument=self,
-            initial_value=0.1,
+            initial_value=float("nan"),
             unit="V",
-            vals=validators.Numbers(min_value=0, max_value=1),
+            vals=_Amplitudes(),
         )
         """Amplitude of charge reset pulse."""
 
@@ -268,9 +277,88 @@ class ChargeReset(InstrumentModule):
             instrument=self,
             initial_value=20e-6,
             unit="s",
-            vals=validators.Numbers(min_value=0, max_value=1),
+            vals=_Durations(),
         )
         """Duration of the charge reset pulse."""
+
+
+class CRCount(InstrumentModule):
+    """
+    Submodule containing parameters to run the ionization laser and the spin pump laser
+    with a photon count to perform a charge and resonance count.
+    """
+
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+        super().__init__(parent=parent, name=name)
+
+        self.readout_pulse_amplitude = ManualParameter(
+            name="readout_pulse_amplitude",
+            instrument=self,
+            initial_value=float("nan"),
+            unit="V",
+            vals=_Amplitudes(),
+        )
+        """Amplitude of readout pulse"""
+
+        self.spinpump_pulse_amplitude = ManualParameter(
+            name="spinpump_pulse_amplitude",
+            instrument=self,
+            initial_value=float("nan"),
+            unit="V",
+            vals=_Amplitudes(),
+        )
+        """Amplitude of spin-pump pulse"""
+
+        self.readout_pulse_duration = ManualParameter(
+            name="readout_pulse_duration",
+            instrument=self,
+            initial_value=20e-6,
+            unit="s",
+            vals=_Durations(),
+        )
+        """Readout pulse duration"""
+
+        self.spinpump_pulse_duration = ManualParameter(
+            name="spinpump_pulse_duration",
+            instrument=self,
+            initial_value=20e-6,
+            unit="s",
+            vals=_Durations(),
+        )
+        """Readout pulse duration"""
+
+        self.acq_duration = ManualParameter(
+            name="acq_duration",
+            instrument=self,
+            initial_value=50e-6,
+            unit="s",
+            vals=_Durations(),
+        )
+        """
+        Duration of the acquisition.
+        """
+
+        self.acq_delay = ManualParameter(
+            name="acq_delay",
+            instrument=self,
+            initial_value=0,
+            unit="s",
+            vals=_Delays(),
+        )
+        """
+        Delay between the start of the readout pulse and the start of the acquisition.
+        """
+
+        self.acq_channel = ManualParameter(
+            name="acq_channel",
+            instrument=self,
+            initial_value=0,
+            unit="#",
+            vals=validators.Ints(min_value=0),
+        )
+        """
+        Acquisition channel of this device element.
+        """
 
 
 class BasicElectronicNVElement(DeviceElement):
@@ -305,6 +393,9 @@ class BasicElectronicNVElement(DeviceElement):
         self.add_submodule("measure", Measure(self, "measure"))
         self.measure: Measure
         """Submodule :class:`~.Measure`."""
+        self.add_submodule("cr_count", CRCount(self, "cr_count"))
+        self.cr_count: CRCount
+        """Submodule :class:`~.CRCount`."""
 
     def _generate_config(self) -> Dict[str, Dict[str, OperationCompilationConfig]]:
         """
@@ -349,13 +440,43 @@ class BasicElectronicNVElement(DeviceElement):
                     factory_func="quantify_scheduler.operations."
                     + "measurement_factories.optical_measurement",
                     factory_kwargs={
-                        "pulse_amplitude": self.measure.pulse_amplitude(),
-                        "pulse_duration": self.measure.pulse_duration(),
-                        "pulse_port": self.ports.optical_control(),
-                        "pulse_clock": f"{self.name}.ge0",
+                        "pulse_amplitudes": [self.measure.pulse_amplitude()],
+                        "pulse_durations": [self.measure.pulse_duration()],
+                        "pulse_ports": [self.ports.optical_control()],
+                        "pulse_clocks": [f"{self.name}.ge0"],
                         "acq_duration": self.measure.acq_duration(),
                         "acq_delay": self.measure.acq_delay(),
                         "acq_channel": self.measure.acq_channel(),
+                        "acq_port": self.ports.optical_readout(),
+                        "acq_clock": f"{self.name}.ge0",
+                        "pulse_type": "SquarePulse",
+                        "acq_protocol_default": "TriggerCount",
+                    },
+                    gate_info_factory_kwargs=["acq_index", "bin_mode", "acq_protocol"],
+                ),
+                "cr_count": OperationCompilationConfig(
+                    factory_func="quantify_scheduler.operations."
+                    + "measurement_factories.optical_measurement",
+                    factory_kwargs={
+                        "pulse_amplitudes": [
+                            self.cr_count.readout_pulse_amplitude(),
+                            self.cr_count.spinpump_pulse_amplitude(),
+                        ],
+                        "pulse_durations": [
+                            self.cr_count.readout_pulse_duration(),
+                            self.cr_count.spinpump_pulse_duration(),
+                        ],
+                        "pulse_ports": [
+                            self.ports.optical_control(),
+                            self.ports.optical_control(),
+                        ],
+                        "pulse_clocks": [
+                            f"{self.name}.ge0",
+                            f"{self.name}.ge1",
+                        ],
+                        "acq_duration": self.cr_count.acq_duration(),
+                        "acq_delay": self.cr_count.acq_delay(),
+                        "acq_channel": self.cr_count.acq_channel(),
                         "acq_port": self.ports.optical_readout(),
                         "acq_clock": f"{self.name}.ge0",
                         "pulse_type": "SquarePulse",

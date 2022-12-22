@@ -182,7 +182,6 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             The Schedule object.
         """
         schedule_data = json_utils.ScheduleJSONDecoder().decode(data)
-        name = schedule_data["name"]
         sched = Schedule.__new__(Schedule)
         sched.__setstate__(schedule_data)
 
@@ -623,7 +622,7 @@ class Schedulable(JSONSchemaValMixin, UserDict):
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             self.data = data
             return

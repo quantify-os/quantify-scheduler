@@ -4,34 +4,65 @@
 
 ### Breaking changes
 
+### Merged branches and closed issues
+- Acquisition - Data obtained with TriggerCount acquisition is formatted correctly (!530).
+- NV centers - Dark ESR schedule combining all prior operations (!527)
+- NV centers - `BasicElectronicNVElement` parameters accept physics-motivated values (!551)
+- Documentation - Sphinx build now compatible with qcodes==0.36.0 (!552)
+
+## 0.10.1 (2022-12-20)
+
+For help in migrating from deprecated methods, see [Quantify Deprecated Code Suggestions](examples/deprecated.md).
 
 ### Merged branches and closed issues
+
+- Compilation - Reinstate `add_pulse_information_transmon` device compilation backend (removed in !526) (!557)
+- Qblox backend - Drop no key `"distortion_corrections"` supplied log message level to debug (!560)
+
+## 0.10.0 (2022-12-15)
+
+### Breaking changes
+
+- Deprecation - `add_pulse_information_transmon` is removed and `device_config` must now be of type `DeviceCompilationConfig` (!526)
+- Qblox backend - Strictly requires v0.8.x of the `qblox-instruments` package (!512)
+- Qblox backend, Operations - The phase of the measurement clock is set to zero at the start of each measurement by default (!434, #296)
+- Qblox backend - `QRMAcquisitionManager` now truncates returned acquisitions to actual lengths (!478)
+- Qblox backend - `mix_lo` flag now specifies if IQ mixing should be applied to LO (!482)
+- Operations - ShiftClockPhase now uses `phase_shift` as keyword instead of `phase` (!434)
+
+### Merged branches and closed issues
+- Deprecation - Removed dependencies on deprecated code from tests and production code (!526)
+- Deprecation - Replaced `DeprecationWarning`s with `FutureWarning`s so they are shown to end-users by default (!536, counterpart to quantify-core!411)
+- Visualization - Show clock name in plotly pulse diagram (!547)
 - Documentation - Instrument naming requirements in qblox hardware config (!531)
-- Tests - Refactored tests to remove duplicated temp_dir setup, and only use `tmp_test_data_dir` fixture (#370,  !525)
-- Tests - Update tests to use `mock_setup_basic_transmon_with_standard_params` where needed (#369, !522)
-- Improve parameter documentation for DeviceElements (!493)
+- Documentation - Make class `__init__` docstring visible on Sphinx (!541, #314)
+- Documentation - Improve parameter documentation for DeviceElements (!493)
+- Documentation - Building sphinx documentation will now raise an error if one of the code cells fails to run (!514)
+- Gate Library - Added Deprecation Warning for `acq_channel` Keyword in Measure (!491)
+- Git - Changed git merge strategy to "union" for CHANGELOG.md and AUTHORS.md to reduce amount of merge conflicts (!495)
+- Instrument Coordinator - Check if a parameter cache is valid before lazy setting (!505, #351)
+- Instrument Coordinator - Changed argument of `GenericInstrumentCoordinatorComponent` from `name` to `instrument_reference`. (!497)
 - NV centers - First operation `SpectroscopyOperation` with compilation for Qblox hardware (!471)
 - NV centers - `Reset` operation with compilation for Qblox hardware (!485)
 - NV centers - `Measure` operation using TriggerCount acquisition; only device compilation so far (!490)
-- NV Centers - `ChargeReset` operation only device compilation so far (!496)
-- QBlox backend, Operations - The phase of the measurement clock is set to zero at the start of each measurement by default (!434, #296)
-- Operations - ShiftClockPhase now uses `phase_shift` as keyword instead of `phase` (!434)
+- NV centers - `ChargeReset` operation only device compilation so far (!496)
+- NV centers - `CRCount` operation using TriggerCount acquisition; only device compilation so far (!502)
 - Qblox backend - Introduce `"sequence_to_file"` param in qblox hardware config to allow skipping writing sequence json files to disk (#108, !438)
-- Gate Library - Added Deprecation Warning for `acq_channel` Keyword in Measure (!491)
-- QBlox backend - QRMAcquisitionManager now truncates returned acquisitions to actual lengths (!478)
-- QBlox backend - mix_lo flag now specifies if IQ mixing should be applied to LO (!482)
-- Git - Changed git merge strategy to "union" for CHANGELOG.md and AUTHORS.md to reduce amount of merge conflicts (!495)
+- Qblox backend - Minor adjustments to `NcoPhaseShiftStrategy` to make compilation of `ShiftClockPhase` compatible with qblox-instruments==0.8.0 (!481)
 - Qblox backend - `QbloxInstrumentCoordinatorComponentBase` accepts both `InstrumentModule` and `InstrumentChannel` as instrument reference to cluster module (!508)
-- Validation - Replaced most of the asserts with raising proper exceptions so that they are raised in production environment too (#342, !499)
-- Documentation - Building sphinx documentation will now raise an error if one of the code cells fails to run (!514)
-- Updated pulse_diagram_matplotlib to be compatible with future quantify-core release (!517)
-- Instrument Coordinator - Check if a parameter cache is valid before lazy setting (!505, #351)
 - Qblox backend - Explicit error message when trying to do acquisitions on a QCM (!519)
-- Acquisitions - Refactor tests: Move to `mock_setup_basic_transmon_with_standard_params` and replace `qcompile` by `SerialCompiler` (!516)
 - Qblox backend - Renamed `output_mode` to `io_mode` in `get_operation_strategy` (!497)
 - Instrument Coordinator - Changed argument of `GenericInstrumentCoordinatorComponent` from `name` to `instrument_reference`. (!497)
 - Deprecation - Removed dependencies on deprecated code from tests and production code (!526)
 - Compilation - Can optionally provide a `QuantumDevice` to `QuantifyCompiler`. This will be used as default `CompilationConfig` in `QuantifyCompiler.compile()` (!535)
+- Deprecation - Replaced `DeprecationWarning`s with `FutureWarning`s so they are shown to end-users by default (!536, counterpart to quantify-core!411)
+- Documentation - Make class `__init__` docstring visible on Sphinx (!541, #314)
+- Deprecation - Remove code and test dependencies on deprecated `data` keyword in `Operations` (!545, #381)
+- Tests - Refactored tests to remove duplicated `temp_dir` setup, and only use `tmp_test_data_dir` fixture (#370,  !525)
+- Tests - Update tests to use `mock_setup_basic_transmon_with_standard_params` where needed (#369, !522)
+- Tests - Tests refactoring, move to `mock_setup_basic_transmon_with_standard_params` and replace `qcompile` by `SerialCompiler` (!516)
+- Updated pulse_diagram_matplotlib to be compatible with future quantify-core release (!517) 
+- Validation - Replaced most of the asserts with raising proper exceptions so that they are raised in production environment too (#342, !499)
 
 ## 0.9.0 (2022-10-06)
 
@@ -70,7 +101,6 @@
 - Structure - Pydantic-based model is now used to validate latency corrections. (!467, #333)
 - Zhinst backend - Raise a more understandable exception when compiling an acquisition with larger than allowed duration (!407).
 
-
 ## 0.8.0 Support for two qubit operations and basic CZ-gate implementation (2022-08-10)
 
 ### Breaking changes
@@ -94,7 +124,7 @@
 - Docs - Fix jsonschemas not rendered on read-the-docs (!448)
 - Docs - Clarify port and clock concepts (!431)
 - Docs - New scheduler tutorials: Schedules and Pulses; Compiling to Hardware; Operations and Qubits (!336, !439)
-- Gettables - Added `generate_diagnostic_report` method to save the internal state of `ScheduleGettable` to a zip-file. (!408)
+- Gettables - Added `generate_diagnostics_report` method to save the internal state of `ScheduleGettable` to a zip-file. (!408)
 - Helpers - Moved `MockLocalOscillator` definition from tests to `helpers.mock_instruments.MockLocalOscillator` (!392, !336).
 - JSON utilities - Add JSON serialization/deserialization methods based on `__getstate__`/`__setstate__` (!444)
 - Operations - Added a `symmetric` key in the `gate_info` to flag symmetric operations. (!389)

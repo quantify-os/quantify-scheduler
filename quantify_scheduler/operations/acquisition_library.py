@@ -70,9 +70,12 @@ class Trace(AcquisitionOperation):  # pylint: disable=too-many-ancestors
         t0 :
             The acquisition start time in seconds, by default 0
         data :
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
         if data is None:
             if not isinstance(duration, float):
@@ -107,7 +110,7 @@ class Trace(AcquisitionOperation):  # pylint: disable=too-many-ancestors
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
 
@@ -189,9 +192,12 @@ class WeightedIntegratedComplex(
         t0 :
             The acquisition start time in seconds, by default 0
         data :
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
 
         Raises
         ------
@@ -236,7 +242,7 @@ class WeightedIntegratedComplex(
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             if "acq_return_type" not in data["acquisition_info"][0]:
                 data["acquisition_info"][0]["acq_return_type"] = complex
@@ -304,9 +310,12 @@ class SSBIntegrationComplex(AcquisitionOperation):  # pylint: disable=too-many-a
         t0 :
             The acquisition start time in seconds, by default 0
         data :
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
         waveform_i = {
             "port": port,
@@ -363,7 +372,7 @@ class SSBIntegrationComplex(AcquisitionOperation):  # pylint: disable=too-many-a
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
             if "acq_return_type" not in data["acquisition_info"][0]:
                 data["acquisition_info"][0]["acq_return_type"] = complex
@@ -452,9 +461,12 @@ class NumericalWeightedIntegrationComplex(
         t0 :
             The acquisition start time in seconds, by default 0
         data :
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
         if not isinstance(weights_a, np.ndarray):
             weights_a = np.array(weights_a)
@@ -482,7 +494,7 @@ class NumericalWeightedIntegrationComplex(
                 "quantify-scheduler >= 0.13.0.\n"
                 "Please consider updating the data "
                 "dictionary after initialization.",
-                DeprecationWarning,
+                FutureWarning,
             )
         super().__init__(
             waveforms_a,
@@ -578,24 +590,26 @@ class TriggerCount(AcquisitionOperation):  # pylint: disable=too-many-ancestors
             The acquisition start time in seconds, by default 0
         """
 
-        data = {
-            "name": "TriggerCount",
-            "acquisition_info": [
-                {
-                    "waveforms": [],
-                    "t0": t0,
-                    "clock": clock,
-                    "port": port,
-                    "duration": duration,
-                    "acq_channel": acq_channel,
-                    "acq_index": acq_index,
-                    "bin_mode": bin_mode,
-                    "acq_return_type": int,
-                    "protocol": "trigger_count",
-                }
-            ],
-        }
-        super().__init__(name=data["name"], data=data)
+        super().__init__(name="TriggerCount")
+        self.data.update(
+            {
+                "name": "TriggerCount",
+                "acquisition_info": [
+                    {
+                        "waveforms": [],
+                        "t0": t0,
+                        "clock": clock,
+                        "port": port,
+                        "duration": duration,
+                        "acq_channel": acq_channel,
+                        "acq_index": acq_index,
+                        "bin_mode": bin_mode,
+                        "acq_return_type": int,
+                        "protocol": "trigger_count",
+                    }
+                ],
+            }
+        )
         self._update()
 
     def __str__(self) -> str:

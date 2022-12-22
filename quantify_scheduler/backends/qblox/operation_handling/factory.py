@@ -75,17 +75,18 @@ def _get_pulse_strategy(
     if operation_info.data["port"] is None:
         if "phase_shift" in operation_info.data:
             return virtual.NcoPhaseShiftStrategy(operation_info)
-        if "reset_clock_phase" in operation_info.data:
+        elif "reset_clock_phase" in operation_info.data:
             return virtual.NcoResetClockPhaseStrategy(operation_info)
-        return virtual.IdleStrategy(operation_info)
+        else:
+            return virtual.IdleStrategy(operation_info)
 
-    if instruction_generated_pulses_enabled:
+    elif instruction_generated_pulses_enabled:
         wf_func = operation_info.data["wf_func"]
 
         if wf_func == "quantify_scheduler.waveforms.square":
             return pulses.StitchedSquarePulseStrategy(operation_info, io_mode)
 
-        if wf_func == "quantify_scheduler.waveforms.staircase":
+        elif wf_func == "quantify_scheduler.waveforms.staircase":
             return pulses.StaircasePulseStrategy(operation_info, io_mode)
 
     return pulses.GenericPulseStrategy(operation_info, io_mode)
