@@ -153,6 +153,7 @@ def test_compilation_measure_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
 
     quantum_device = mock_setup_basic_nv_qblox_hardware["quantum_device"]
     quantum_device.get_element("qe0").measure.acq_delay(1e-8)
+
     dev_cfg = quantum_device.generate_device_config()
     schedule_device = device_compile(schedule, dev_cfg)
 
@@ -247,8 +248,6 @@ def test_compilation_cr_count_qblox_hardware(mock_setup_basic_nv):
     schedule_device = compiler.compile(
         schedule=schedule, config=quantum_device.generate_compilation_config()
     )
-    # dev_cfg = quantum_device.generate_device_config()
-    # schedule_device = device_compile(schedule, dev_cfg)
 
     # The gate_info and acquisition_info remains unchanged, but the pulse info has been
     # added
