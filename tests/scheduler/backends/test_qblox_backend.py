@@ -877,7 +877,8 @@ def test_compile_cluster(
     )
 
 
-def test_qcompile_no_device_cfg(load_example_qblox_hardware_config):
+@pytest.mark.filterwarnings("ignore::FutureWarning")
+def test_deprecated_qcompile_no_device_cfg(load_example_qblox_hardware_config):
 
     sched = Schedule("One pulse schedule")
     sched.add_resources([ClockResource("q0.01", 3.1e9)])
