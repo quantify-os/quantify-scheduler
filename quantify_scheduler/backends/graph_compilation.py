@@ -209,6 +209,7 @@ class QuantifyCompiler(CompilationNode):
 
         self._input_node = None
         self._ouput_node = None
+
         self.quantum_device = quantum_device
 
     def compile(

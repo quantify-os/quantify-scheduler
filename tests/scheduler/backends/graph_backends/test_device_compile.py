@@ -61,7 +61,7 @@ def test_compile_in_setting_quantum_device(basic_schedule, mock_setup_basic_tran
     Test that compilation works in setting a default quantum device
     """
 
-    # Test not supplying config or setting quantum_device fails
+    # Test not setting a default quantum device and also not supplying config fails
     backend = SerialCompiler("test_None")
     with pytest.raises(RuntimeError):
         backend.compile(schedule=basic_schedule)
