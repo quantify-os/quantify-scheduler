@@ -164,18 +164,12 @@ class TestAcquisitionStrategyPartial:
             strategy.insert_qasm(empty_qasm_program_qrm)
 
         # assert
-        if bin_mode == BinMode.APPEND:
-            assert (
-                exc.value.args[0]
-                == "Attempting to add acquisition with append binmode. "
-                "bin_idx_register cannot be None."
-            )
-        else:
-            assert (
-                exc.value.args[0]
-                == "Attempting to add acquisition with average binmode. "
-                "bin_idx_register must be None."
-            )
+        assert (
+            exc.value.args[0] == f"Attempting to add acquisition with "
+            f"{'append' if bin_mode == BinMode.APPEND else 'average'} binmode. "
+            f"bin_idx_register {'cannot' if bin_mode == BinMode.APPEND else 'must'} "
+            f"be None."
+        )
 
 
 class TestSquareAcquisitionStrategy:

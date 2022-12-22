@@ -50,7 +50,7 @@ For help in migrating from deprecated methods, see [Quantify Deprecated Code Sug
 - Instrument Coordinator - Changed argument of `GenericInstrumentCoordinatorComponent` from `name` to `instrument_reference`. (!497)
 - Deprecation - Removed dependencies on deprecated code from tests and production code (!526)
 - Deprecation - Replaced `DeprecationWarning`s with `FutureWarning`s so they are shown to end-users by default (!536, counterpart to quantify-core!411)
-- Qblox backend - Added `TriggerCountAcquisitionStrategy` to acquisitions, including tests and Q1ASM command. (!540)
+- Qblox backend - Added `TriggerCountAcquisitionStrategy` to acquisitions, generating the Q1ASM commands. (!540)
 - Documentation - Make class `__init__` docstring visible on Sphinx (!541, #314)
 - Deprecation - Remove code and test dependencies on deprecated `data` keyword in `Operations` (!545, #381)
 - Tests - Refactored tests to remove duplicated `temp_dir` setup, and only use `tmp_test_data_dir` fixture (#370,  !525)
