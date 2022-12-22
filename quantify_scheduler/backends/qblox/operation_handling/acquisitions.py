@@ -128,6 +128,13 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
         qasm_program
             The QASMProgram to add the assembly instructions to.
         """
+
+        if self.bin_idx_register is None:
+            raise ValueError(
+                "Attempting to add acquisition with append binmode. "
+                "bin_idx_register cannot be None."
+            )
+
         acq_bin_idx_reg = self.bin_idx_register
 
         qasm_program.emit(q1asm_instructions.NEW_LINE)
@@ -262,6 +269,12 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
             The QASMProgram to add the assembly instructions to.
         """
 
+        if self.bin_idx_register is None:
+            raise ValueError(
+                "Attempting to add acquisition with append binmode. "
+                "bin_idx_register cannot be None."
+            )
+
         acq_bin_idx_reg = self.bin_idx_register
 
         with qasm_program.temp_registers(2) as (acq_idx0_reg, acq_idx1_reg):
@@ -352,6 +365,12 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
         qasm_program
             The QASMProgram to add the assembly instructions to.
         """
+
+        if self.bin_idx_register is None:
+            raise ValueError(
+                "Attempting to add acquisition with append binmode. "
+                "bin_idx_register cannot be None."
+            )
 
         acq_bin_idx_reg = self.bin_idx_register
 
