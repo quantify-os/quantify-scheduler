@@ -877,24 +877,8 @@ def test_compile_cluster(
     )
 
 
-def test_compile_no_device_cfg(
-    mock_setup_basic_transmon, load_example_qblox_hardware_config
-):
-
-    sched = Schedule("One pulse schedule")
-    sched.add_resources([ClockResource("q0.01", 3.1e9)])
-    sched.add(SquarePulse(amp=1 / 4, duration=12e-9, port="q0:mw", clock="q0.01"))
-    quantum_device = QuantumDevice(name="Empty Device")
-    quantum_device.hardware_config(load_example_qblox_hardware_config)
-    compiler = SerialCompiler(name="compiler")
-    compiled_schedule = compiler.compile(
-        sched, config=quantum_device.generate_compilation_config()
-    )
-    wf_and_prog = compiled_schedule.compiled_instructions["qcm0"]["seq0"]["sequence"]
-    assert "play" in wf_and_prog["program"]
-
-
 def test_qcompile_no_device_cfg(load_example_qblox_hardware_config):
+    
     sched = Schedule("One pulse schedule")
     sched.add_resources([ClockResource("q0.01", 3.1e9)])
     sched.add(SquarePulse(amp=1 / 4, duration=12e-9, port="q0:mw", clock="q0.01"))
