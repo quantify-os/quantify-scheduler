@@ -9,6 +9,7 @@
 - NV centers - Dark ESR schedule combining all prior operations (!527)
 - NV centers - `BasicElectronicNVElement` parameters accept physics-motivated values (!551)
 - Documentation - Sphinx build now compatible with qcodes==0.36.0 (!552)
+- Compilation - Can optionally provide a `QuantumDevice` to `QuantifyCompiler`. This will be used as default `CompilationConfig` in `QuantifyCompiler.compile()` (!535)
 
 ## 0.10.1 (2022-12-20)
 
