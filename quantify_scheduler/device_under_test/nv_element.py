@@ -167,7 +167,7 @@ class SpectroscopyOperationHermiteMW(InstrumentModule):
 class ResetSpinpump(InstrumentModule):
     r"""
     Submodule containing parameters to run the spinpump laser with a square pulse
-    to reset the NV to the $|0\rangle$ state.
+    to reset the NV to the :math:`|0\rangle` state.
     """
 
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
@@ -195,8 +195,8 @@ class ResetSpinpump(InstrumentModule):
 class Measure(InstrumentModule):
     r"""Submodule containing parameters to read out the spin state of the NV center.
 
-    Excitation with a readout laser from the $|0\rangle$ to an excited state.
-    Acquisition of photons when decaying back into the $|0\rangle$ state.
+    Excitation with a readout laser from the :math:`|0\rangle` to an excited state.
+    Acquisition of photons when decaying back into the :math:`|0\rangle` state.
     """
 
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
