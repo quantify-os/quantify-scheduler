@@ -878,7 +878,7 @@ def test_compile_cluster(
 
 
 def test_qcompile_no_device_cfg(load_example_qblox_hardware_config):
-    
+
     sched = Schedule("One pulse schedule")
     sched.add_resources([ClockResource("q0.01", 3.1e9)])
     sched.add(SquarePulse(amp=1 / 4, duration=12e-9, port="q0:mw", clock="q0.01"))
@@ -1022,6 +1022,7 @@ def test_compile_simple_with_acq(
     qcm0.arm_sequencer(0)
     uploaded_waveforms = qcm0.get_waveforms(0)
     assert uploaded_waveforms is not None
+
 
 @pytest.mark.filterwarnings("ignore::FutureWarning")
 def test_deprecated_qcompile_simple_with_acq(
