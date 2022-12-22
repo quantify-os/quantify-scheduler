@@ -11,8 +11,20 @@ from quantify_scheduler.backends.graph_compilation import (
     SimpleNodeConfig,
     SerialCompilationConfig,
 )
+from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.importers import import_python_object_from_string
 from quantify_scheduler.json_utils import load_json_schema, validate_json
+from quantify_scheduler.operations.acquisition_library import (
+    SSBIntegrationComplex,
+    Trace,
+)
+from quantify_scheduler.operations.pulse_library import (
+    DRAGPulse,
+    IdlePulse,
+    SoftSquarePulse,
+    SquarePulse,
+)
+from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 
 logger = logging.getLogger(__name__)
@@ -125,6 +137,257 @@ def _find_edge(device_cfg, parent_element_name, child_element_name, op_name):
     return edge_cfg
 
 
+@deprecated(
+    "0.9.0",
+    "Please specify a `DeviceCompilationConfig` for "
+    "`backends.circuits_to_device.compile_circuit_to_device` instead. "
+    "See `DeviceCompilationConfig.parse_obj(example_transmon_cfg)`, "
+    "`example_transmon_cfg` is defined in "
+    "`quantify_scheduler/schemas/examples/circuit_to_device_example_cfgs.py`.",
+)
+def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Schedule:
+    # pylint: disable=line-too-long
+    """
+    Adds pulse information specified in the device config to the schedule.
+
+    Parameters
+    ------------
+    schedule
+        The schedule for which to add pulse information.
+
+    device_cfg
+        A dictionary specifying the required pulse information.
+
+
+    Returns
+    ----------
+    :
+        a new schedule object where the pulse information has been added.
+
+
+    .. rubric:: Supported operations
+
+
+    The following gate type operations are supported by this compilation step.
+
+    - :class:`~quantify_scheduler.operations.gate_library.Rxy`
+    - :class:`~quantify_scheduler.operations.gate_library.Reset`
+    - :class:`~quantify_scheduler.operations.gate_library.Measure`
+    - :class:`~quantify_scheduler.operations.gate_library.CZ`
+
+
+    .. rubric:: Configuration specification
+
+    .. jsonschema:: https://gitlab.com/quantify-os/quantify-scheduler/-/raw/main/quantify_scheduler/schemas/transmon_cfg.json
+
+    """
+    # pylint: enable=line-too-long
+
+    validate_config(device_cfg, scheme_fn="transmon_cfg.json")
+
+    for op in schedule.operations.values():
+        if op.valid_pulse:
+            for p in op["pulse_info"]:
+                if "clock" in p:
+                    if p["clock"] not in schedule.resources:
+                        raise ValueError(
+                            "Operation '{}' contains an unknown clock '{}'; ensure "
+                            "this resource has been added to the schedule.".format(
+                                str(op), p["clock"]
+                            )
+                        )
+            continue
+
+        if op.valid_acquisition:
+            continue
+
+        op_type = op["gate_info"]["operation_type"]
+        if op_type == "measure":
+            qubits = op["gate_info"]["qubits"]
+            for idx, qubit in enumerate(qubits):
+                q_cfg = device_cfg["qubits"][qubit]
+
+                if len(qubits) != 1:
+                    acq_channel = op["gate_info"]["acq_channel"][idx]
+                    acq_index = op["gate_info"]["acq_index"][idx]
+                else:
+                    acq_channel = op["gate_info"]["acq_channel"]
+                    acq_index = op["gate_info"]["acq_index"]
+
+                # If the user specifies bin-mode use that otherwise use a default
+                # better would be to get it from the config file in the "or"
+                bin_mode = op["gate_info"]["bin_mode"] or BinMode.AVERAGE
+                acq_protocol = (
+                    op["gate_info"]["acq_protocol"] or q_cfg["params"]["acquisition"]
+                )
+
+                if acq_protocol == "SSBIntegrationComplex":
+                    # readout pulse
+                    op.add_pulse(
+                        SquarePulse(
+                            amp=q_cfg["params"]["ro_pulse_amp"],
+                            duration=q_cfg["params"]["ro_pulse_duration"],
+                            port=q_cfg["resources"]["port_ro"],
+                            clock=q_cfg["resources"]["clock_ro"],
+                        )
+                    )
+                    op.add_acquisition(
+                        SSBIntegrationComplex(
+                            duration=q_cfg["params"]["ro_acq_integration_time"],
+                            t0=q_cfg["params"]["ro_acq_delay"],
+                            acq_channel=acq_channel,
+                            acq_index=acq_index,
+                            port=q_cfg["resources"]["port_ro"],
+                            clock=q_cfg["resources"]["clock_ro"],
+                            bin_mode=bin_mode,
+                        )
+                    )
+
+                    if q_cfg["resources"]["clock_ro"] not in schedule.resources.keys():
+                        schedule.add_resources(
+                            [
+                                ClockResource(
+                                    q_cfg["resources"]["clock_ro"],
+                                    freq=q_cfg["params"]["ro_freq"],
+                                )
+                            ]
+                        )
+                elif acq_protocol == "Trace":
+                    # readout pulse
+                    op.add_pulse(
+                        SquarePulse(
+                            amp=q_cfg["params"]["ro_pulse_amp"],
+                            duration=q_cfg["params"]["ro_pulse_duration"],
+                            port=q_cfg["resources"]["port_ro"],
+                            clock=q_cfg["resources"]["clock_ro"],
+                        )
+                    )
+                    # pylint: disable=fixme
+                    op.add_acquisition(  # TODO protocol hardcoded
+                        Trace(
+                            clock=q_cfg["resources"]["clock_ro"],
+                            duration=q_cfg["params"]["ro_acq_integration_time"],
+                            t0=q_cfg["params"]["ro_acq_delay"],
+                            acq_channel=acq_channel,
+                            acq_index=acq_index,
+                            port=q_cfg["resources"]["port_ro"],
+                        )
+                    )
+
+                    if q_cfg["resources"]["clock_ro"] not in schedule.resources.keys():
+                        schedule.add_resources(
+                            [
+                                ClockResource(
+                                    q_cfg["resources"]["clock_ro"],
+                                    freq=q_cfg["params"]["ro_freq"],
+                                )
+                            ]
+                        )
+                else:
+                    raise ValueError(
+                        f'Acquisition protocol "{acq_protocol}" is not supported.'
+                    )
+
+        elif op_type == "Rxy":
+            qubit = op["gate_info"]["qubits"][0]
+            # read info from config
+            q_cfg = device_cfg["qubits"][qubit]
+
+            # G_amp is the gaussian amplitude introduced in
+            # https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.103.110501
+            # 180 refers to the normalization, theta is in degrees, and
+            # mw_amp180 is the amplitude necessary to get the
+            # maximum 180 degree theta (experimentally)
+            G_amp = q_cfg["params"]["mw_amp180"] * op["gate_info"]["theta"] / 180
+            D_amp = G_amp * q_cfg["params"]["mw_motzoi"]
+
+            pulse = DRAGPulse(
+                G_amp=G_amp,
+                D_amp=D_amp,
+                phase=op["gate_info"]["phi"],
+                port=q_cfg["resources"]["port_mw"],
+                duration=q_cfg["params"]["mw_duration"],
+                clock=q_cfg["resources"]["clock_01"],
+            )
+            op.add_pulse(pulse)
+
+            # add clock to resources
+            if q_cfg["resources"]["clock_01"] not in schedule.resources.keys():
+                schedule.add_resources(
+                    [
+                        ClockResource(
+                            q_cfg["resources"]["clock_01"],
+                            freq=q_cfg["params"]["mw_freq"],
+                        )
+                    ]
+                )
+
+        elif op_type == "CNOT":
+            # These methods don't raise exceptions as they will be implemented shortly
+            logger.warning("Not Implemented yet")
+            logger.warning(
+                'Operation type "{}" not supported by backend'.format(
+                    op["gate_info"]["operation_type"]
+                )
+            )
+
+        elif op_type == "CZ":
+            # pylint: disable=fixme
+            # todo mock implementation, needs a proper version before release
+            q0 = op["gate_info"]["qubits"][0]
+            q1 = op["gate_info"]["qubits"][1]
+
+            # this reflective edge is a unique property of the CZ gate
+            try:
+                edge_cfg = _find_edge(device_cfg, q0, q1, "CZ")
+            except ValueError:
+                try:
+                    edge_cfg = _find_edge(device_cfg, q1, q0, "CZ")
+                except ValueError as e:
+                    raise e
+
+            amp = edge_cfg["params"]["flux_amp_control"]
+
+            # pylint: disable=fixme
+            # FIXME: placeholder. currently puts a soft square pulse on the designated
+            # port of both qubits
+            pulse = SoftSquarePulse(
+                amp=amp,
+                duration=edge_cfg["params"]["flux_duration"],
+                port=edge_cfg["resource_map"][q0],
+                clock=BasebandClockResource.IDENTITY,
+            )
+            op.add_pulse(pulse)
+
+            pulse = SoftSquarePulse(
+                amp=amp,
+                duration=edge_cfg["params"]["flux_duration"],
+                port=edge_cfg["resource_map"][q1],
+                clock=BasebandClockResource.IDENTITY,
+            )
+
+            op.add_pulse(pulse)
+
+        elif op_type == "reset":
+            # Initialization through relaxation
+            qubits = op["gate_info"]["qubits"]
+            init_times = []
+            for qubit in qubits:
+                init_times.append(
+                    device_cfg["qubits"][qubit]["params"]["init_duration"]
+                )
+            op.add_pulse(IdlePulse(max(init_times)))
+
+        else:
+            raise NotImplementedError(
+                'Operation type "{}" not supported by backend'.format(
+                    op["gate_info"]["operation_type"]
+                )
+            )
+
+    return schedule
+
+
 def validate_config(config: dict, scheme_fn: str) -> bool:
     """
     Validate a configuration using a schema.
@@ -193,8 +456,7 @@ def qcompile(
 
         compilation_passes = []
 
-        # this is to support compiling when no device config is supplied
-        if device_config is not None:
+        if isinstance(device_config, DeviceCompilationConfig):
             compilation_passes.append(
                 SimpleNodeConfig(
                     name="circuit_to_device",
@@ -202,6 +464,18 @@ def qcompile(
                     compilation_options=device_config,
                 )
             )
+        elif isinstance(device_config, dict):
+            # this is a deprecated config format. only legacy support here.
+            compilation_passes.append(
+                SimpleNodeConfig(
+                    name="add_pulse_information_transmon",
+                    compilation_func=device_config["backend"],
+                    compilation_options=device_config,
+                )
+            )
+        else:
+            # this is to support compiling when no device config is supplied
+            pass
 
         compilation_passes.append(
             SimpleNodeConfig(
@@ -268,7 +542,9 @@ def qcompile(
     "Use the `QuantifyCompiler.compile` method instead. "
     "See the user guide section on compilers for details.",
 )
-def device_compile(schedule: Schedule, device_cfg: DeviceCompilationConfig) -> Schedule:
+def device_compile(
+    schedule: Schedule, device_cfg: Union[DeviceCompilationConfig, dict]
+) -> Schedule:
     """
     Add pulse information to operations based on device config file.
 
@@ -286,7 +562,10 @@ def device_compile(schedule: Schedule, device_cfg: DeviceCompilationConfig) -> S
         The updated schedule.
     """
 
-    device_compilation_bck = import_python_object_from_string(device_cfg.backend)
+    try:
+        device_compilation_bck = import_python_object_from_string(device_cfg.backend)
+    except AttributeError:  # legacy support for add_pulse_information_transmon
+        device_compilation_bck = import_python_object_from_string(device_cfg["backend"])
 
     schedule = device_compilation_bck(schedule=schedule, device_cfg=device_cfg)
     schedule = determine_absolute_timing(schedule=schedule, time_unit="physical")

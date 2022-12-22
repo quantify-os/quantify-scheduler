@@ -9,6 +9,7 @@ import pytest
 
 from quantify_scheduler import Operation, Schedule
 from quantify_scheduler.compilation import (
+    add_pulse_information_transmon,
     determine_absolute_timing,
     device_compile,
     qcompile,
@@ -18,6 +19,7 @@ from quantify_scheduler.operations.gate_library import CNOT, CZ, Measure, Reset,
 from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import BasebandClockResource, ClockResource, Resource
 from quantify_scheduler.backends.circuit_to_device import ConfigKeyError
+from quantify_scheduler.schemas.examples import utils
 
 
 def test_determine_absolute_timing_ideal_clock():
@@ -113,6 +115,26 @@ def test_compile_transmon_program(load_example_transmon_config):
     sched.add(Rxy(theta=90, phi=0, qubit=q0))
     sched.add(Measure(q0, q1), label="M0")
     sched = qcompile(sched, device_cfg=load_example_transmon_config)
+
+
+@pytest.mark.filterwarnings("ignore::FutureWarning")
+@pytest.mark.parametrize(
+    "compile_func", [add_pulse_information_transmon, device_compile, qcompile]
+)
+def test_deprecated_add_pulse_information_transmon(compile_func):
+    sched = Schedule("Test schedule")
+
+    q0, q1 = ("q0", "q1")
+    sched.add(Reset(q0, q1))
+    sched.add(Rxy(90, 0, qubit=q0))
+    sched.add(operation=CZ(qC=q0, qT=q1))
+    sched.add(Rxy(theta=90, phi=0, qubit=q0))
+    sched.add(Measure(q0, q1), label="M0")
+
+    compile_func(
+        sched,
+        device_cfg=utils.load_json_example_scheme("transmon_test_config.json"),
+    )
 
 
 def test_missing_edge(load_example_transmon_config):

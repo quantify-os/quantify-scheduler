@@ -13,6 +13,20 @@ For help in migrating from deprecated methods, see [Quantify Deprecated Code Sug
 - Compilation - Reinstate `add_pulse_information_transmon` device compilation backend (removed in !526) (!557)
 - Qblox backend - Drop no key `"distortion_corrections"` supplied log message level to debug (!560)
 
+### Merged branches and closed issues
+- Acquisition - Data obtained with TriggerCount acquisition is formatted correctly (!530).
+- NV centers - Dark ESR schedule combining all prior operations (!527)
+- NV centers - `BasicElectronicNVElement` parameters accept physics-motivated values (!551)
+
+## 0.10.1 (2022-12-20)
+
+For help in migrating from deprecated methods, see [Quantify Deprecated Code Suggestions](examples/deprecated.md).
+
+### Merged branches and closed issues
+
+- Compilation - Reinstate `add_pulse_information_transmon` device compilation backend (removed in !526) (!557)
+- Qblox backend - Drop no key `"distortion_corrections"` supplied log message level to debug (!560)
+
 ## 0.10.0 (2022-12-15)
 
 ### Breaking changes
@@ -27,6 +41,7 @@ For help in migrating from deprecated methods, see [Quantify Deprecated Code Sug
 ### Merged branches and closed issues
 - Deprecation - Removed dependencies on deprecated code from tests and production code (!526)
 - Deprecation - Replaced `DeprecationWarning`s with `FutureWarning`s so they are shown to end-users by default (!536, counterpart to quantify-core!411)
+- Visualization - Show clock name in plotly pulse diagram (!547)
 - Documentation - Instrument naming requirements in qblox hardware config (!531)
 - Documentation - Make class `__init__` docstring visible on Sphinx (!541, #314)
 - Documentation - Improve parameter documentation for DeviceElements (!493)
