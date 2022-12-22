@@ -1,22 +1,14 @@
+# Changelog
+
+## Unreleased
+
+### Breaking changes
+
 ### Merged branches and closed issues
 - Acquisition - Data obtained with TriggerCount acquisition is formatted correctly (!530).
 - NV centers - Dark ESR schedule combining all prior operations (!527)
 - NV centers - `BasicElectronicNVElement` parameters accept physics-motivated values (!551)
 - Documentation - Sphinx build now compatible with qcodes==0.36.0 (!552)
-
-## 0.10.1 (2022-12-20)
-
-For help in migrating from deprecated methods, see [Quantify Deprecated Code Suggestions](examples/deprecated.md).
-
-### Merged branches and closed issues
-
-- Compilation - Reinstate `add_pulse_information_transmon` device compilation backend (removed in !526) (!557)
-- Qblox backend - Drop no key `"distortion_corrections"` supplied log message level to debug (!560)
-
-### Merged branches and closed issues
-- Acquisition - Data obtained with TriggerCount acquisition is formatted correctly (!530).
-- NV centers - Dark ESR schedule combining all prior operations (!527)
-- NV centers - `BasicElectronicNVElement` parameters accept physics-motivated values (!551)
 
 ## 0.10.1 (2022-12-20)
 
