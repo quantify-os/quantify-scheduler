@@ -268,6 +268,7 @@ class ScheduleGettable:
 
         Returns
         -------
+        :
             Dictionary with reformatted data. Keys correspond to the acquisition
             channel. Values are 1d numpy arrays with trigger counts.
 
