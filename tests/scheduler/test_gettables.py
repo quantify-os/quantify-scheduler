@@ -503,7 +503,7 @@ def test_formatting_trigger_count(mock_setup_basic_nv):
     acquired_data = {
         AcquisitionIndexing(acq_channel=0, acq_index=i): (
             return_data[i],
-            np.asarray([0]),
+            [1],
         )
         for i in range(3)
     }
@@ -536,3 +536,37 @@ def test_formatting_trigger_count(mock_setup_basic_nv):
     assert len(data[0]) == 3
     for count in data[0]:
         assert isinstance(count, np.uint64)
+
+
+def test_incompatible_acquisition_protocols(mock_setup_basic_nv):
+    nv_center = mock_setup_basic_nv["quantum_device"]
+    sched_kwargs = {
+        "qubit": "qe0",
+    }
+    dark_esr_gettable = ScheduleGettable(
+        quantum_device=nv_center,
+        schedule_function=nv_dark_esr_sched,
+        schedule_kwargs=sched_kwargs,
+        batched=True,
+        data_labels=["Trigger Count"],
+    )
+    dark_esr_gettable.unit = [""]
+
+    acq_metadata = AcquisitionMetadata(
+        acq_protocol="trigger_count",
+        bin_mode=BinMode.AVERAGE,
+        acq_return_type=int,
+        acq_indices={i: [0] for i in range(3)},
+    )
+
+    # data returned by the instrument coordinator
+    return_data = np.asarray([101, 35, 2])
+    acquired_data = {
+        AcquisitionIndexing(acq_channel=0, acq_index=i): (
+            return_data[i],
+            [1],
+        )
+        for i in range(3)
+    }
+    with pytest.raises(NotImplementedError):
+        dark_esr_gettable.process_acquired_data(acquired_data, acq_metadata, 10)
