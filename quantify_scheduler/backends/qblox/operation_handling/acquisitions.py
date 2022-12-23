@@ -66,7 +66,7 @@ class AcquisitionStrategyPartial(IOperationStrategy):
             if self.bin_idx_register is not None:
                 raise ValueError(
                     "Attempting to add acquisition with average binmode. "
-                    "bin_idx_register cannot be None."
+                    "bin_idx_register must be None."
                 )
             self.acquire_average(qasm_program)
         elif self.bin_mode == BinMode.APPEND:
@@ -128,15 +128,17 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
         qasm_program
             The QASMProgram to add the assembly instructions to.
         """
-        acq_bin_idx_reg = self.bin_idx_register
-
-        qasm_program.emit(q1asm_instructions.NEW_LINE)
 
         if self.bin_idx_register is None:
             raise ValueError(
                 "Attempting to add acquisition with append binmode. "
                 "bin_idx_register cannot be None."
             )
+
+        acq_bin_idx_reg = self.bin_idx_register
+
+        qasm_program.emit(q1asm_instructions.NEW_LINE)
+
         self._acquire_square(qasm_program, acq_bin_idx_reg)
 
         qasm_program.emit(
@@ -266,6 +268,13 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
         qasm_program
             The QASMProgram to add the assembly instructions to.
         """
+
+        if self.bin_idx_register is None:
+            raise ValueError(
+                "Attempting to add acquisition with append binmode. "
+                "bin_idx_register cannot be None."
+            )
+
         acq_bin_idx_reg = self.bin_idx_register
 
         with qasm_program.temp_registers(2) as (acq_idx0_reg, acq_idx1_reg):
@@ -295,3 +304,107 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
             )
             qasm_program.emit(q1asm_instructions.NEW_LINE)
             qasm_program.elapsed_time += constants.GRID_TIME
+
+
+class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
+    """
+    Performs a trigger count acquisition.
+    """
+
+    def generate_data(self, wf_dict: Dict[str, Any]) -> None:
+        """Returns None as no waveform is needed."""
+        return None
+
+    def acquire_average(self, qasm_program: QASMProgram):
+        """
+        Add the assembly instructions for the Q1 sequence processor that corresponds to
+        this acquisition, assuming averaging is used.
+
+        Parameters
+        ----------
+        qasm_program
+            The QASMProgram to add the assembly instructions to.
+        """
+
+        bin_idx = self.operation_info.data["acq_index"]
+
+        qasm_program.emit(
+            q1asm_instructions.ACQUIRE_TTL,
+            self.acq_channel,
+            bin_idx,
+            1,  # enable ttl acquisition
+            constants.GRID_TIME,
+            comment=f"Enable TTL acquisition of acq_channel:{self.acq_channel}, "
+            f"bin_mode:{BinMode.AVERAGE}",
+        )
+        qasm_program.elapsed_time += constants.GRID_TIME
+
+        qasm_program.auto_wait(
+            wait_time=(
+                helpers.to_grid_time(self.operation_info.duration) - constants.GRID_TIME
+            )
+        )
+
+        qasm_program.emit(
+            q1asm_instructions.ACQUIRE_TTL,
+            self.acq_channel,
+            bin_idx,
+            0,  # disable ttl acquisition
+            constants.GRID_TIME,
+            comment=f"Disable TTL acquisition of acq_channel:{self.acq_channel}, "
+            f"bin_mode:{BinMode.AVERAGE}",
+        )
+
+    def acquire_append(self, qasm_program: QASMProgram):
+        """
+        Add the assembly instructions for the Q1 sequence processor that corresponds to
+        this acquisition, assuming append is used.
+
+        Parameters
+        ----------
+        qasm_program
+            The QASMProgram to add the assembly instructions to.
+        """
+
+        if self.bin_idx_register is None:
+            raise ValueError(
+                "Attempting to add acquisition with append binmode. "
+                "bin_idx_register cannot be None."
+            )
+
+        acq_bin_idx_reg = self.bin_idx_register
+
+        qasm_program.emit(
+            q1asm_instructions.ACQUIRE_TTL,
+            self.acq_channel,
+            acq_bin_idx_reg,
+            1,  # enable ttl acquisition
+            constants.GRID_TIME,
+            comment=f"Enable TTL acquisition of acq_channel:{self.acq_channel}, "
+            f"store in bin:{acq_bin_idx_reg}",
+        )
+        qasm_program.elapsed_time += constants.GRID_TIME
+
+        qasm_program.auto_wait(
+            wait_time=(
+                helpers.to_grid_time(self.operation_info.duration) - constants.GRID_TIME
+            )
+        )
+
+        qasm_program.emit(
+            q1asm_instructions.ACQUIRE_TTL,
+            self.acq_channel,
+            acq_bin_idx_reg,
+            0,  # disable ttl acquisition
+            constants.GRID_TIME,
+            comment=f"Disable TTL acquisition of acq_channel:{self.acq_channel}, "
+            f"store in bin:{acq_bin_idx_reg}",
+        )
+
+        qasm_program.emit(
+            q1asm_instructions.ADD,
+            acq_bin_idx_reg,
+            1,  # increment
+            acq_bin_idx_reg,
+            comment=f"Increment bin_idx for ch{self.acq_channel} by 1",
+        )

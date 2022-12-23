@@ -91,7 +91,7 @@ class QuantumDevice(Instrument):
             initial_value=None,
         )
 
-    def generate_compilation_config(self) -> CompilationConfig:
+    def generate_compilation_config(self) -> SerialCompilationConfig:
         """
         Generates a compilation config for use with a
         :class:`~.graph_compilation.QuantifyCompiler`.
