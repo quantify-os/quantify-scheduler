@@ -13,20 +13,17 @@ import json
 import logging
 import os
 import re
-
 from typing import Dict, Generator
 
 import numpy as np
-
 import pytest
 from pydantic import ValidationError
-from qblox_instruments import Pulsar, PulsarType
 
+from qblox_instruments import Pulsar, PulsarType
 
 import quantify_scheduler
 from quantify_scheduler import Schedule
-from quantify_scheduler.compilation import qcompile
-from quantify_scheduler.backends.qblox_backend import hardware_compile
+
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.qblox import (
     compiler_container,
@@ -34,6 +31,7 @@ from quantify_scheduler.backends.qblox import (
     q1asm_instructions,
     register_manager,
 )
+from quantify_scheduler.backends.qblox_backend import hardware_compile
 from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
 from quantify_scheduler.backends.qblox.helpers import (
     assign_pulse_and_acq_info_to_devices,
@@ -45,7 +43,6 @@ from quantify_scheduler.backends.qblox.helpers import (
     generate_waveform_data,
     to_grid_time,
 )
-
 from quantify_scheduler.backends.qblox.instrument_compilers import (
     QcmModule,
     QcmRfModule,
@@ -60,6 +57,7 @@ from quantify_scheduler.backends.types.qblox import (
 from quantify_scheduler.compilation import (
     determine_absolute_timing,
     device_compile,
+    qcompile,
 )
 
 from quantify_scheduler.operations.acquisition_library import Trace
@@ -79,7 +77,6 @@ from quantify_scheduler.schedules.timedomain_schedules import (
     allxy_sched,
     readout_calibration_sched,
 )
-
 
 from tests.fixtures.mock_setup import close_instruments
 
