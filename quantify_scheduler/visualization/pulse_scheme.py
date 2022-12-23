@@ -8,7 +8,6 @@ using matplotlib.
 from __future__ import annotations
 
 import logging
-import warnings
 from typing import List, Optional, Tuple, Union
 
 import matplotlib.patches

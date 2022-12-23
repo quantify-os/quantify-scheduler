@@ -16,7 +16,6 @@ from quantify_scheduler.operations.pulse_library import (
     IdlePulse,
     NumericalPulse,
     RampPulse,
-    SetClockFrequency,
     ShiftClockPhase,
     SkewedHermitePulse,
     SoftSquarePulse,
@@ -125,7 +124,6 @@ def test_operation_duration_composite_pulse() -> None:
     [
         IdlePulse(duration=50e-9),
         ShiftClockPhase(clock="q0.01", phase_shift=180.0),
-        SetClockFrequency(clock="q0.01", clock_frequency=1e6),
         SquarePulse(amp=0.5, duration=300e-9, port="p.01", clock="cl0.baseband"),
         SoftSquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0),
         RampPulse(1.0, 16e-9, "q0:mw"),
@@ -206,7 +204,6 @@ def test_decompose_long_square_pulse() -> None:
     [
         IdlePulse(16e-9),
         ShiftClockPhase(clock="q0.01", phase_shift=180.0),
-        SetClockFrequency(clock="q0.01", clock_frequency=1e6),
         SquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0, 0),
         SoftSquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0),
         RampPulse(1.0, 16e-9, "q0:mw"),
@@ -238,7 +235,6 @@ def test__repr__(operation: Operation) -> None:
     [
         IdlePulse(16e-9),
         ShiftClockPhase(clock="q0.01", phase_shift=180.0),
-        SetClockFrequency(clock="q0.01", clock_frequency=1e6),
         SquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0, 0),
         SoftSquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0),
         RampPulse(1.0, 16e-9, "q0:mw"),
@@ -266,7 +262,6 @@ def test__str__(operation: Operation) -> None:
         IdlePulse(16e-9),
         SquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0, 0),
         ShiftClockPhase(clock="q0.01", phase_shift=180.0),
-        SetClockFrequency(clock="q0.01", clock_frequency=1e6),
         SoftSquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0),
         RampPulse(1.0, 16e-9, "q0:mw"),
         NumericalPulse(
@@ -299,7 +294,6 @@ def test_deserialize(operation: Operation) -> None:
     [
         IdlePulse(16e-9),
         ShiftClockPhase(clock="q0.01", phase_shift=180.0),
-        SetClockFrequency(clock="q0.01", clock_frequency=1e6),
         SquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0, 0),
         SoftSquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0),
         RampPulse(1.0, 16e-9, "q0:mw"),

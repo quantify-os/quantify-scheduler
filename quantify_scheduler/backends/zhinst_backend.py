@@ -8,7 +8,7 @@ import logging
 import re
 from dataclasses import dataclass
 from functools import partial
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union, cast
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd

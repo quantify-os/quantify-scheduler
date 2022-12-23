@@ -215,7 +215,7 @@ def test_overwrite_gain(
     # Generate compiled schedule
     compiler = SerialCompiler(name="compiler")
     with pytest.raises(ValueError) as exc:
-        compiled_sched_mix_lo_true = compiler.compile(
+        compiler.compile(
             schedule=schedule, config=quantum_device.generate_compilation_config()
         )
 

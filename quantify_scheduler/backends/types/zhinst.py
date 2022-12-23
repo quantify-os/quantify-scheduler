@@ -5,7 +5,6 @@ from dataclasses import dataclass, field
 from enum import Enum, unique
 from typing import List, Optional, Union
 
-import numpy as np
 from dataclasses_json import DataClassJsonMixin
 
 from quantify_scheduler import enums

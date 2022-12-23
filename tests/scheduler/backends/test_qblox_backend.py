@@ -45,13 +45,9 @@ from quantify_scheduler.backends.qblox.helpers import (
     to_grid_time,
 )
 
-# from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
-
 from quantify_scheduler.backends.qblox.instrument_compilers import (
     QcmModule,
     QcmRfModule,
-    QrmModule,
-    QrmRfModule,
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.types import qblox as types
@@ -72,7 +68,6 @@ from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     IdlePulse,
     RampPulse,
-    SetClockFrequency,
     ShiftClockPhase,
     SquarePulse,
 )
@@ -942,10 +937,6 @@ def test_compile_measure(
         (IdlePulse(duration=64e-9), "wait       64"),
         (Reset("q1"), "wait       65532"),
         (ShiftClockPhase(clock="q1.01", phase_shift=180.0), "set_ph_delta  500000000"),
-        (
-            SetClockFrequency(clock="q1.01", clock_frequency=76531.4),
-            "set_freq   306126",
-        ),
     ],
 )
 def test_compile_clock_operations(

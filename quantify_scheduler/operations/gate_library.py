@@ -43,9 +43,12 @@ class Rxy(Operation):
         qubit
             the target qubit
         data
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
         if not isinstance(theta, float):
             theta = float(theta)
@@ -133,9 +136,12 @@ class X(Rxy):
         qubit
             the target qubit
         data
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
         if data is not None:
             warnings.warn(
@@ -178,9 +184,12 @@ class X90(Rxy):
         qubit
             The target qubit.
         data
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
         if data is not None:
             warnings.warn(
@@ -227,9 +236,12 @@ class Y(Rxy):
         qubit
             The target qubit.
         data
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
         if data is not None:
             warnings.warn(
@@ -276,9 +288,12 @@ class Y90(Rxy):
         qubit
             The target qubit.
         data
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
         if data is not None:
             warnings.warn(
@@ -339,9 +354,12 @@ class CNOT(Operation):
         qT
             The target qubit
         data
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
         if data is None:
             plot_func = "quantify_scheduler.visualization.circuit_diagram.cnot"
@@ -412,9 +430,12 @@ class CZ(Operation):
         qT
             The target qubit
         data
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
         if data is None:
             plot_func = "quantify_scheduler.visualization.circuit_diagram.cz"
@@ -490,9 +511,12 @@ class Reset(Operation):
             The qubit(s) to reset. NB one or more qubits can be specified, e.g.,
             :code:`Reset("q0")`, :code:`Reset("q0", "q1", "q2")`, etc..
         data
-            The operation's dictionary, by default :code:`None`.
-            Note: if the data parameter is not :code:`None` all other parameters are
-            overwritten using the contents of data.
+            The operation's dictionary, by default None\n
+            Note: if the data parameter is not None all other parameters are
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
         if data is None:
             super().__init__(f"Reset {', '.join(qubits)}")
@@ -575,9 +599,12 @@ class Measure(Operation):
             the binning mode used for Measurements in the quantum-circuit to
             quantum-device compilation step.
         data
-            The operation's dictionary, by default None
+            The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.
+            overwritten using the contents of data.\n
+            Deprecated: support for the data argument will be dropped in
+            quantify-scheduler >= 0.13.0. Please consider updating the data
+            dictionary after initialization.
         """
 
         # this if else statement a workaround to support multiplexed measurements (#262)
@@ -646,12 +673,11 @@ class Measure(Operation):
     def __str__(self) -> str:
         gate_info = self.data["gate_info"]
         qubits = map(lambda x: f"'{x}'", gate_info["qubits"])
-        acq_channel = gate_info["acq_channel"]
         acq_index = gate_info["acq_index"]
         acq_protocol = gate_info["acq_protocol"]
         bin_mode = gate_info["bin_mode"]
         return (
             f'{self.__class__.__name__}({",".join(qubits)}, '
-            f"acq_channel={acq_channel}, acq_index={acq_index}, "
-            f'acq_protocol="{acq_protocol}", bin_mode={str(bin_mode)})'
+            f'acq_index={acq_index}, acq_protocol="{acq_protocol}", '
+            f"bin_mode={str(bin_mode)})"
         )

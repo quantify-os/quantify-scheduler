@@ -326,11 +326,12 @@ def generate_waveform_dict(waveforms_complex: Dict[str, np.ndarray]) -> Dict[str
 
     Returns
     -------
-    :
+    dict[str, dict]
         A dictionary with as key the unique name for that waveform, as value another
         dictionary containing the real-valued data (list) as well as a unique index.
         Note that the index of the Q waveform is always the index of the I waveform
         +1.
+
 
     .. admonition:: Examples
 
@@ -424,45 +425,6 @@ def get_nco_phase_arguments(phase_deg: float) -> int:
     """
     phase_deg %= 360
     return round(phase_deg * constants.NCO_PHASE_STEPS_PER_DEG)
-
-
-def get_nco_set_frequency_arguments(frequency_hz: float) -> int:
-    """
-    Converts a frequency in Hz to the int argument the NCO set_freq instruction expects.
-
-    Parameters
-    ----------
-    frequency_hz
-        The frequency in Hz.
-
-    Returns
-    -------
-    :
-        The frequency expressed in steps for the NCO set_freq instruction.
-
-    Raises
-    ------
-    ValueError
-        If the frequency_hz is out of range.
-    """
-
-    frequency_steps = round(frequency_hz * constants.NCO_FREQ_STEPS_PER_HZ)
-
-    if (
-        frequency_steps < -constants.NCO_FREQ_LIMIT_STEPS
-        or frequency_steps > constants.NCO_FREQ_LIMIT_STEPS
-    ):
-        min_max_frequency_in_hz = (
-            constants.NCO_FREQ_LIMIT_STEPS / constants.NCO_FREQ_STEPS_PER_HZ
-        )
-        raise ValueError(
-            f"Attempting to set NCO frequency. "
-            f"The frequency must be between and including "
-            f"-{min_max_frequency_in_hz} Hz and {min_max_frequency_in_hz} Hz. "
-            f"Got {frequency_hz} Hz."
-        )
-
-    return frequency_steps
 
 
 def generate_port_clock_to_device_map(
