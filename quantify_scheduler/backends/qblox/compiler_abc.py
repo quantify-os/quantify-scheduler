@@ -1298,6 +1298,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 in1_gain = io_mapping.get("input_gain_Q", None)
 
             elif io_name[:4] == "real":
+                # The next code block is for backwards compatibility.
                 in_gain = io_mapping.get("input_gain", None)
                 if in_gain is None:
                     in0_gain = io_mapping.get("input_gain0", None)

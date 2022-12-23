@@ -20,6 +20,11 @@ import pytest
 from quantify_scheduler import Schedule, CompiledSchedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.operations.pulse_library import SquarePulse
+from quantify_scheduler.resources import ClockResource
+from tests.scheduler.instrument_coordinator.components.test_qblox import (  # pylint: disable=unused-import
+    make_cluster_component,
+)
 
 from .standard_schedules import (
     single_qubit_schedule_circuit_level,
@@ -166,3 +171,58 @@ def test_compile_sequence_to_file(
         assert seq_fn is None
 
     quantum_device.close()
+
+
+def test_overwrite_gain(
+    mock_setup_basic_transmon_with_standard_params, make_cluster_component
+):
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module1": {
+                "instrument_type": "QCM",
+                "real_output_0": {
+                    "input_gain": 5,
+                    "portclock_configs": [
+                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6},
+                    ],
+                },
+                "real_output_1": {
+                    "input_gain": 10,
+                    "portclock_configs": [
+                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6},
+                    ],
+                },
+            },
+        },
+    }
+
+    # Setup objects needed for experiment
+    mock_setup = mock_setup_basic_transmon_with_standard_params
+    ic_cluster0 = make_cluster_component("cluster0")
+    instr_coordinator = mock_setup["instrument_coordinator"]
+    instr_coordinator.add_component(ic_cluster0)
+    quantum_device = mock_setup["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+
+    # Define experiment schedule
+    schedule = Schedule("test overwrite gain")
+    schedule.add(SquarePulse(amp=0.5, duration=1e-6, port="q0:res", clock="q0.ro"))
+    schedule.add_resource(ClockResource(name="q0.ro", freq=50e6))
+
+    # Generate compiled schedule
+    compiler = SerialCompiler(name="compiler")
+    with pytest.raises(ValueError) as exc:
+        compiled_sched_mix_lo_true = compiler.compile(
+            schedule=schedule, config=quantum_device.generate_compilation_config()
+        )
+
+    # assert exception was raised with correct message.
+    assert (
+        exc.value.args[0]
+        == "Overwriting gain of real_output_1 of module cluster0_module1 to in0_gain: 10 ."
+        "\nIt was previously set to in0_gain: 5"
+    )
+    instr_coordinator.remove_component("ic_cluster0")

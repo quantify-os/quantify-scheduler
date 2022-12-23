@@ -36,6 +36,7 @@
 - Instrument Coordinator - Changed argument of `GenericInstrumentCoordinatorComponent` from `name` to `instrument_reference`. (!497)
 - Deprecation - Removed dependencies on deprecated code from tests and production code (!526)
 - Deprecation - Replaced `DeprecationWarning`s with `FutureWarning`s so they are shown to end-users by default (!536, counterpart to quantify-core!411)
+- Qblox Backend - added method for gain configuration, overriding gain now raises ValueError (!533)
 
 ## 0.9.0 (2022-10-06)
 
