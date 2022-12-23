@@ -1285,7 +1285,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         """
         Configures input gain of module settings.
         Loops through all valid ios and checks for gain values in hw config.
-        Throws a ValueError if a gain value gets overriden.
+        Throws a ValueError if a gain value gets modified.
         """
         in0_gain, in1_gain = None, None
         for io_name in self.static_hw_properties.valid_ios:
@@ -1293,11 +1293,11 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             if io_mapping is None:
                 continue
 
-            if io_name[:7] == "complex":
+            if io_name.startswith("complex"):
                 in0_gain = io_mapping.get("input_gain_I", None)
                 in1_gain = io_mapping.get("input_gain_Q", None)
 
-            elif io_name[:4] == "real":
+            elif io_name.startswith("real"):
                 # The next code block is for backwards compatibility.
                 in_gain = io_mapping.get("input_gain", None)
                 if in_gain is None:
@@ -1318,6 +1318,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                         f"Overwriting gain of {io_name} of module {self.name} to in0_gain: {in0_gain} .\n"
                         f"It was previously set to in0_gain: {self._settings.in0_gain}"
                     )
+
             if in1_gain is not None:
                 if (
                     self._settings.in1_gain is None

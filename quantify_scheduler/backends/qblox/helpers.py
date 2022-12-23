@@ -686,8 +686,8 @@ def calc_from_units_volt(
     elif voltage_range.units != "V":
         raise RuntimeError(
             f"Parameter {param_name} of {name} specifies "
-            f"the units {voltage_range.units}, but this is not "
-            f"supported by the Qblox backend."
+            f"the units {voltage_range.units}, but the Qblox "
+            f"backend only supports mV and V."
         )
 
     calculated_offset = offset_in_config * conversion_factor

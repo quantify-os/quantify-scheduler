@@ -201,9 +201,6 @@ def test_overwrite_gain(
 
     # Setup objects needed for experiment
     mock_setup = mock_setup_basic_transmon_with_standard_params
-    ic_cluster0 = make_cluster_component("cluster0")
-    instr_coordinator = mock_setup["instrument_coordinator"]
-    instr_coordinator.add_component(ic_cluster0)
     quantum_device = mock_setup["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
 
@@ -213,11 +210,9 @@ def test_overwrite_gain(
     schedule.add_resource(ClockResource(name="q0.ro", freq=50e6))
 
     # Generate compiled schedule
-    compiler = SerialCompiler(name="compiler")
+    compiler = SerialCompiler(name="compiler", quantum_device=quantum_device)
     with pytest.raises(ValueError) as exc:
-        compiler.compile(
-            schedule=schedule, config=quantum_device.generate_compilation_config()
-        )
+        compiler.compile(schedule=schedule)
 
     # assert exception was raised with correct message.
     assert (
@@ -225,4 +220,3 @@ def test_overwrite_gain(
         == "Overwriting gain of real_output_1 of module cluster0_module1 to in0_gain: 10 ."
         "\nIt was previously set to in0_gain: 5"
     )
-    instr_coordinator.remove_component("ic_cluster0")
