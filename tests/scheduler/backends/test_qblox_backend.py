@@ -22,7 +22,7 @@ from pydantic import ValidationError
 from qblox_instruments import Pulsar, PulsarType
 
 import quantify_scheduler
-from quantify_scheduler import CompiledSchedule, Schedule
+from quantify_scheduler import Schedule
 
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.qblox import (

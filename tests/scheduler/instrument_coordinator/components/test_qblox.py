@@ -13,8 +13,6 @@ import logging
 from copy import deepcopy
 from operator import countOf
 from typing import List, Optional
-from quantify_scheduler.backends import SerialCompiler
-
 
 import numpy as np
 import pytest
@@ -31,6 +29,7 @@ from qblox_instruments import (
 from qcodes.instrument import Instrument, InstrumentChannel, InstrumentModule
 
 # pylint: disable=no-name-in-module
+from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.instrument_coordinator.components import qblox
 
@@ -376,12 +375,12 @@ def test_initialize_cluster_component(make_cluster_component):
 def test_prepare_qcm_qrm(
     mocker,
     schedule_with_measurement,
+    mock_setup_basic_transmon_with_standard_params,
     load_example_qblox_hardware_config,
     make_qcm_component,
     make_qrm_component,
     set_reference_source,
     force_set_parameters,
-    mock_setup_basic_transmon_with_standard_params,
 ):
     # Arrange
     qcm0: qblox.PulsarQCMComponent = make_qcm_component("qcm0", "1234")
@@ -416,14 +415,14 @@ def test_prepare_qcm_qrm(
     qrm0.force_set_parameters(force_set_parameters)
     qrm2.force_set_parameters(force_set_parameters)
 
-    mock_setup_basic_transmon_with_standard_params["q0"].clock_freqs.readout(7.5e9)
-
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
-    config = quantum_device.generate_compilation_config()
+    quantum_device.get_element("q0").clock_freqs.readout(7.5e9)
 
     compiler = SerialCompiler(name="compiler")
-    compiled_schedule = compiler.compile(schedule_with_measurement, config=config)
+    compiled_schedule = compiler.compile(
+        schedule_with_measurement, config=quantum_device.generate_compilation_config()
+    )
     prog = compiled_schedule["compiled_instructions"]
 
     qcm0.prepare(prog[qcm0.instrument.name])
@@ -512,12 +511,13 @@ def test_prepare_cluster_rf(
 
     hardware_cfg = load_example_qblox_hardware_config
     quantum_device = mock_setup_basic_transmon["quantum_device"]
-
     quantum_device.hardware_config(hardware_cfg)
-    config = quantum_device.generate_compilation_config()
 
     compiler = SerialCompiler(name="compiler")
-    compiled_schedule = compiler.compile(sched, config=config)
+    compiled_schedule = compiler.compile(
+        sched,
+        config=quantum_device.generate_compilation_config(),
+    )
     compiled_schedule_before_prepare = deepcopy(compiled_schedule)
 
     prog = compiled_schedule["compiled_instructions"]
@@ -554,7 +554,6 @@ def test_prepare_cluster_rf(
 
 
 def test_prepare_rf(
-    close_all_instruments,
     mock_setup_basic_transmon_with_standard_params,
     schedule_with_measurement_q2,
     load_example_qblox_hardware_config,
@@ -569,17 +568,17 @@ def test_prepare_rf(
     mock_setup["q2"].clock_freqs.readout(7.5e9)
     mock_setup["q2"].clock_freqs.f01(6.03e9)
 
-    hardware_cfg = load_example_qblox_hardware_config
     quantum_device = mock_setup["quantum_device"]
-    quantum_device.hardware_config(hardware_cfg)
+    quantum_device.hardware_config(load_example_qblox_hardware_config)
 
-    config = quantum_device.generate_compilation_config()
     compiler = SerialCompiler(name="compiler")
-    compiled_schedule = compiler.compile(schedule_with_measurement_q2, config=config)
+    compiled_schedule = compiler.compile(
+        schedule_with_measurement_q2,
+        config=quantum_device.generate_compilation_config(),
+    )
+
     # Act
-
     prog = compiled_schedule["compiled_instructions"]
-
     qcm.prepare(prog["qcm_rf0"])
     qrm.prepare(prog["qrm_rf0"])
 
@@ -708,15 +707,14 @@ def test_retrieve_acquisition_qrm(
     qrm: qblox.PulsarQRMComponent = make_qrm_component("qrm0", "1234")
 
     # Act
-    mock_setup_basic_transmon_with_standard_params["q0"].clock_freqs.readout(7.5e9)
-    hardware_cfg = load_example_qblox_hardware_config
-
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    quantum_device.hardware_config(hardware_cfg)
-    config = quantum_device.generate_compilation_config()
+    quantum_device.hardware_config(load_example_qblox_hardware_config)
+    quantum_device.get_element("q0").clock_freqs.readout(7.5e9)
 
     compiler = SerialCompiler(name="compiler")
-    compiled_schedule = compiler.compile(schedule_with_measurement, config=config)
+    compiled_schedule = compiler.compile(
+        schedule_with_measurement, config=quantum_device.generate_compilation_config()
+    )
     prog = compiled_schedule["compiled_instructions"]
     prog = dict(prog)
 
@@ -746,11 +744,11 @@ def test_retrieve_acquisition_qrm_rf(
     mock_setup = mock_setup_basic_transmon_with_standard_params
     mock_setup["quantum_device"].hardware_config(load_example_qblox_hardware_config)
     mock_setup["q2"].clock_freqs.readout(7.3e9)
-    compilation_config = mock_setup["quantum_device"].generate_compilation_config()
 
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
-        schedule=schedule_with_measurement_q2, config=compilation_config
+        schedule=schedule_with_measurement_q2,
+        config=mock_setup["quantum_device"].generate_compilation_config(),
     )
     prog = compiled_schedule["compiled_instructions"]
     prog = dict(prog)
@@ -769,8 +767,8 @@ def test_retrieve_acquisition_cluster(
     make_cluster_component,
     load_example_qblox_hardware_config,
 ):
+    # Arrange
     mock_setup = mock_setup_basic_transmon_with_standard_params
-
     mock_setup["quantum_device"].hardware_config(load_example_qblox_hardware_config)
 
     q4 = mock_setup["q4"]
@@ -780,21 +778,17 @@ def test_retrieve_acquisition_cluster(
     q4.clock_freqs.readout(6950000000)
     q4.measure.acq_delay(1.2e-07)
 
-    compilation_config = mock_setup["quantum_device"].generate_compilation_config()
-
-    # Arrange
     cluster_name = "cluster0"
     cluster: qblox.ClusterComponent = make_cluster_component(cluster_name)
 
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
-        schedule=make_schedule_with_measurement("q4"), config=compilation_config
+        schedule=make_schedule_with_measurement("q4"),
+        config=mock_setup["quantum_device"].generate_compilation_config(),
     )
 
-    prog = compiled_schedule["compiled_instructions"]
-    prog = dict(prog)
-
-    cluster.prepare(prog[cluster_name])
+    # Act
+    cluster.prepare(compiled_schedule["compiled_instructions"][cluster_name])
     cluster.start()
     acq = cluster.retrieve_acquisition()
 
@@ -813,15 +807,14 @@ def test_start_qcm_qrm(
     qcm: qblox.PulsarQCMComponent = make_qcm_component("qcm0", "1234")
     qrm: qblox.PulsarQRMComponent = make_qrm_component("qrm0", "1234")
 
-    mock_setup_basic_transmon_with_standard_params["q0"].clock_freqs.readout(7.5e9)
-    hardware_cfg = load_example_qblox_hardware_config
-
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    quantum_device.hardware_config(hardware_cfg)
-    config = quantum_device.generate_compilation_config()
+    quantum_device.hardware_config(load_example_qblox_hardware_config)
+    quantum_device.get_element("q0").clock_freqs.readout(7.5e9)
 
     compiler = SerialCompiler(name="compiler")
-    compiled_schedule = compiler.compile(schedule_with_measurement, config=config)
+    compiled_schedule = compiler.compile(
+        schedule_with_measurement, config=quantum_device.generate_compilation_config()
+    )
     prog = compiled_schedule["compiled_instructions"]
 
     qcm.prepare(prog["qcm0"])
