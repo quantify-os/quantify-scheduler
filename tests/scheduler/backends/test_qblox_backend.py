@@ -712,7 +712,6 @@ def test_construct_sequencers(
     sched = compiler.compile(
         schedule=sched, config=compile_config_basic_transmon_qblox_hardware
     )
-
     assign_pulse_and_acq_info_to_devices(
         schedule=sched,
         hardware_cfg=load_example_qblox_hardware_config,
@@ -875,11 +874,12 @@ def test_compile_cluster(
 
 @pytest.mark.filterwarnings("ignore::FutureWarning")
 def test_deprecated_qcompile_no_device_cfg(load_example_qblox_hardware_config):
-
     sched = Schedule("One pulse schedule")
     sched.add_resources([ClockResource("q0.01", 3.1e9)])
     sched.add(SquarePulse(amp=1 / 4, duration=12e-9, port="q0:mw", clock="q0.01"))
+
     compiled_schedule = qcompile(sched, hardware_cfg=load_example_qblox_hardware_config)
+
     wf_and_prog = compiled_schedule.compiled_instructions["qcm0"]["seq0"]["sequence"]
     assert "play" in wf_and_prog["program"]
 
@@ -904,6 +904,7 @@ def test_compile_identical_pulses(
     identical_pulses_schedule, compile_config_basic_transmon_qblox_hardware
 ):
     """Tests if compilation with only pulses finishes without exceptions"""
+
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
         identical_pulses_schedule, config=compile_config_basic_transmon_qblox_hardware
@@ -915,7 +916,6 @@ def test_compile_identical_pulses(
 def test_compile_measure(
     duplicate_measure_schedule, compile_config_basic_transmon_qblox_hardware
 ):
-
     compiler = SerialCompiler(name="compiler")
     full_program = compiler.compile(
         duplicate_measure_schedule, config=compile_config_basic_transmon_qblox_hardware
@@ -1017,6 +1017,7 @@ def test_compile_simple_with_acq(
     qcm0 = dummy_pulsars["qcm0"]
     qcm0.sequencer0.sequence(qcm0_seq0_json)
     qcm0.arm_sequencer(0)
+
     uploaded_waveforms = qcm0.get_waveforms(0)
     assert uploaded_waveforms is not None
 
