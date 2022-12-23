@@ -22,7 +22,7 @@ from pydantic import ValidationError
 from qblox_instruments import Pulsar, PulsarType
 
 import quantify_scheduler
-from quantify_scheduler import Schedule
+from quantify_scheduler import CompiledSchedule, Schedule
 
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.qblox import (
@@ -1005,13 +1005,11 @@ def test_compile_simple_with_acq(
     mixed_schedule_with_acquisition,
     compile_config_basic_transmon_qblox_hardware,
 ):
-
     compiler = SerialCompiler(name="compiler")
     full_program = compiler.compile(
         mixed_schedule_with_acquisition,
         config=compile_config_basic_transmon_qblox_hardware,
     )
-
     qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["sequence"]
 
     qcm0 = dummy_pulsars["qcm0"]
@@ -1029,18 +1027,17 @@ def test_deprecated_qcompile_simple_with_acq(
     load_example_transmon_config,
     load_example_qblox_hardware_config,
 ):
-
     full_program = qcompile(
         schedule=mixed_schedule_with_acquisition,
         device_cfg=load_example_transmon_config,
         hardware_cfg=load_example_qblox_hardware_config,
     )
-
     qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["sequence"]
 
     qcm0 = dummy_pulsars["qcm0"]
     qcm0.sequencer0.sequence(qcm0_seq0_json)
     qcm0.arm_sequencer(0)
+
     uploaded_waveforms = qcm0.get_waveforms(0)
     assert uploaded_waveforms is not None
 
@@ -1054,8 +1051,6 @@ def test_compile_acq_measurement_with_clock_phase_reset(
     load_example_qblox_hardware_config,
     reset_clock_phase,
 ):
-    mock_setup = mock_setup_basic_transmon_with_standard_params
-    mock_setup["quantum_device"].hardware_config(load_example_qblox_hardware_config)
     schedule = Schedule("Test schedule")
 
     q0, q1 = "q0", "q1"
@@ -1072,11 +1067,14 @@ def test_compile_acq_measurement_with_clock_phase_reset(
             label=f"Measurement {q0}{i}",
         )
 
+    mock_setup = mock_setup_basic_transmon_with_standard_params
     mock_setup["q0"].measure.reset_clock_phase(reset_clock_phase)
+    mock_setup["quantum_device"].hardware_config(load_example_qblox_hardware_config)
 
-    config = mock_setup["quantum_device"].generate_compilation_config()
     compiler = SerialCompiler(name="compiler")
-    compiled_schedule = compiler.compile(schedule, config=config)
+    compiled_schedule = compiler.compile(
+        schedule, config=mock_setup["quantum_device"].generate_compilation_config()
+    )
 
     qrm0_seq0_json = compiled_schedule.compiled_instructions["qrm0"]["seq0"]["seq_fn"]
     with open(qrm0_seq0_json) as file:
@@ -1089,6 +1087,24 @@ def test_compile_acq_measurement_with_clock_phase_reset(
     )
 
 
+def test_acquisitions_back_to_back(
+    mixed_schedule_with_acquisition,
+    compile_config_basic_transmon_qblox_hardware,
+):
+    # Tests both device_compile and hardware_compile, keep for coverage
+    sched = copy.deepcopy(mixed_schedule_with_acquisition)
+    meas_op = sched.add(Measure("q0"))
+    # add another one too quickly
+    sched.add(Measure("q0"), ref_op=meas_op, rel_time=0.5e-6)
+
+    with pytest.raises(ValueError):
+        compiler = SerialCompiler(name="compiler")
+        _ = compiler.compile(
+            sched,
+            config=compile_config_basic_transmon_qblox_hardware,
+        )
+
+
 @pytest.mark.filterwarnings("ignore::FutureWarning")
 def test_deprecated_acquisitions_back_to_back(
     mixed_schedule_with_acquisition,
@@ -1096,7 +1112,6 @@ def test_deprecated_acquisitions_back_to_back(
     load_example_qblox_hardware_config,
 ):
     # Tests both device_compile and hardware_compile, keep for coverage
-
     sched = copy.deepcopy(mixed_schedule_with_acquisition)
     meas_op = sched.add(Measure("q0"))
     # add another one too quickly
@@ -1324,12 +1339,15 @@ def test_assign_pulse_and_acq_info_to_devices(
     reset_clock_phase,
 ):
     sched = mixed_schedule_with_acquisition
-
     mock_setup_basic_transmon["q0"].measure.reset_clock_phase(reset_clock_phase)
-    config = mock_setup_basic_transmon["quantum_device"].generate_compilation_config()
 
     compiler = SerialCompiler(name="compiler")
-    sched_with_pulse_info = compiler.compile(schedule=sched, config=config)
+    sched_with_pulse_info = compiler.compile(
+        schedule=sched,
+        config=mock_setup_basic_transmon[
+            "quantum_device"
+        ].generate_compilation_config(),
+    )
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         sched_with_pulse_info, load_example_qblox_hardware_config
     )
@@ -1338,6 +1356,7 @@ def test_assign_pulse_and_acq_info_to_devices(
         container.instrument_compilers,
         load_example_qblox_hardware_config,
     )
+
     qrm = container.instrument_compilers["qrm0"]
     expected_num_of_pulses = 1 if reset_clock_phase is False else 2
     actual_num_of_pulses = len(qrm._pulses[list(qrm._portclocks_with_data)[0]])
@@ -1443,7 +1462,6 @@ def test_container_prepare_no_lo(
     load_example_qblox_hardware_config,
     compile_config_basic_transmon_qblox_hardware,
 ):
-
     compiler = SerialCompiler(name="compiler")
     sched = compiler.compile(
         schedule=pulse_only_schedule_no_lo,
@@ -1554,18 +1572,15 @@ def test_assign_frequencies_baseband(
     mock_setup_basic_transmon_with_standard_params,
     load_example_qblox_hardware_config,
 ):
-    mock_setup_basic_transmon = mock_setup_basic_transmon_with_standard_params
-
     sched = Schedule("two_gate_experiment")
     sched.add(X("q0"))
     sched.add(X("q1"))
 
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     hardware_cfg = load_example_qblox_hardware_config
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
-
-    device_cfg = quantum_device.generate_device_config()
     quantum_device.hardware_config(hardware_cfg)
 
+    device_cfg = quantum_device.generate_device_config()
     q0_clock_freq = device_cfg.clocks["q0.01"]
     q1_clock_freq = device_cfg.clocks["q1.01"]
 
@@ -1693,7 +1708,6 @@ def test_assign_frequencies_baseband_downconverter(
 def test_assign_frequencies_rf(
     mock_setup_basic_transmon, load_example_qblox_hardware_config
 ):
-
     sched = Schedule("two_gate_experiment")
     sched.add(X("q2"))
     sched.add(X("q3"))
@@ -1724,7 +1738,6 @@ def test_assign_frequencies_rf(
     q3.rxy.amp180(0.215)
 
     device_cfg = quantum_device.generate_device_config()
-
     q2_clock_freq = device_cfg.clocks["q2.01"]
     q3_clock_freq = device_cfg.clocks["q3.01"]
 
@@ -1732,8 +1745,6 @@ def test_assign_frequencies_rf(
     if1 = q3_clock_freq - lo1
 
     quantum_device.hardware_config(hardware_cfg)
-    device_cfg = quantum_device.generate_device_config()
-
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
         sched, quantum_device.generate_compilation_config()
@@ -1755,12 +1766,11 @@ def test_assign_frequencies_rf_downconverter(
     mock_setup_basic_transmon,
     load_example_qblox_hardware_config,
 ):
-
     sched = Schedule("two_gate_experiment")
     sched.add(X("q2"))
     sched.add(X("q3"))
 
-    hardware_cfg = load_example_qblox_hardware_config.copy()
+    hardware_cfg = load_example_qblox_hardware_config
     hardware_cfg["qcm_rf0"]["complex_output_0"][
         "downconverter_freq"
     ] = downconverter_freq_0
@@ -1797,15 +1807,13 @@ def test_assign_frequencies_rf_downconverter(
     q3.rxy.amp180(0.215)
 
     quantum_device.hardware_config(hardware_cfg)
-    device_cfg = quantum_device.generate_device_config()
-
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
-        sched, quantum_device.generate_compilation_config()
+        sched, config=quantum_device.generate_compilation_config()
     )
-    compiled_instructions = compiled_schedule["compiled_instructions"]
-    qcm_program = compiled_instructions["qcm_rf0"]
+    qcm_program = compiled_schedule["compiled_instructions"]["qcm_rf0"]
 
+    device_cfg = quantum_device.generate_device_config()
     q2_clock_freq = device_cfg.clocks["q2.01"]
     q3_clock_freq = device_cfg.clocks["q3.01"]
 
@@ -1839,7 +1847,6 @@ def test_assign_frequencies_rf_downconverter(
 
 
 def test_markers(mock_setup_basic_transmon, load_example_qblox_hardware_config):
-
     # Test for baseband
     sched = Schedule("gate_experiment")
     sched.add(X("q0"))
@@ -2073,8 +2080,7 @@ def test_acq_declaration_dict_bin_avg_mode(
 
 def test_convert_hw_config_to_portclock_configs_spec(
     make_basic_multi_qubit_schedule,
-    compile_config_basic_transmon_qblox_hardware,
-    mock_setup_basic_transmon,
+    mock_setup_basic_transmon_with_standard_params,
 ):
     old_config = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
@@ -2178,21 +2184,16 @@ def test_convert_hw_config_to_portclock_configs_spec(
     migrated_config = convert_hw_config_to_portclock_configs_spec(old_config)
     assert migrated_config == expected_config
 
-    # Test that hardware_compile is converting automatically
-
+    # Test that qblox_backend.hardware_compile is converting automatically
     sched = make_basic_multi_qubit_schedule(["q0", "q1"])
-
-    compiler = SerialCompiler(name="compiler")
-    sched = compiler.compile(
-        schedule=sched, config=compile_config_basic_transmon_qblox_hardware
-    )
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     quantum_device.hardware_config(old_config)
 
     with pytest.warns(
         FutureWarning,
         match=r"hardware config adheres to a specification that is deprecated",
     ):
+        compiler = SerialCompiler(name="compiler")
         compiler.compile(
             schedule=sched, config=quantum_device.generate_compilation_config()
         )
@@ -2240,7 +2241,7 @@ def test_apply_latency_corrections_valid(
 
     mock_setup = mock_setup_basic_transmon_with_standard_params
     hardware_cfg = hardware_cfg_latency_corrections
-    mock_setup["quantum_device"].hardware_config(hardware_cfg)
+    mock_setup["quantum_device"].hardware_config(hardware_cfg_latency_corrections)
 
     sched = Schedule("Single Gate Experiment on Two Qubits")
     sched.add(X("q0"))

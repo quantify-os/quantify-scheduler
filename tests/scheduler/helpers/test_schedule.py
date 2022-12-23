@@ -10,6 +10,7 @@ import numpy as np
 from pytest import approx
 
 from quantify_scheduler import Schedule
+from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
@@ -23,7 +24,6 @@ from quantify_scheduler.helpers.schedule import (
     get_total_duration,
 )
 from quantify_scheduler.helpers.collections import make_hash
-from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.operations.gate_library import X90, Measure, Reset
 from quantify_scheduler.schedules import spectroscopy_schedules
 
@@ -110,11 +110,12 @@ def test_get_acq_info_by_uuid(
     schedule_with_measurement: Schedule,
     device_compile_config_basic_transmon,
 ):
-
+    # Arrange
     compiler = SerialCompiler(name="compiler")
     schedule = compiler.compile(
         schedule=schedule_with_measurement, config=device_compile_config_basic_transmon
     )
+
     operation_repr = list(schedule.schedulables.values())[-1]["operation_repr"]
     operation = schedule.operations[operation_repr]
     acq_info_0 = operation["acquisition_info"][0]
@@ -229,9 +230,7 @@ def test_get_port_timeline_empty(empty_schedule: Schedule):
     assert len(port_timeline_dict) == 0
 
 
-def test_get_port_timeline_are_unique(
-    device_compile_config_basic_transmon,
-):
+def test_get_port_timeline_are_unique(device_compile_config_basic_transmon):
     # Arrange
     schedule = Schedule("my-schedule")
     schedule.add(Reset("q0", "q1"))
@@ -461,22 +460,19 @@ def test_get_operation_end(empty_schedule: Schedule, create_schedule_with_pulse_
     assert end1_x90 == approx(ro_acquisition_delay + ro_integration_time + mw_duration)
 
 
-def test_schedule_timing_table(
-    mock_setup_basic_transmon,
-):
-    q0 = mock_setup_basic_transmon["q0"]
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
+def test_schedule_timing_table(mock_setup_basic_transmon):
     schedule = Schedule("test_schedule_timing_table")
     schedule.add(Reset("q0"))
     schedule.add(X90("q0"))
     schedule.add(Measure("q0"))
+
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
     compiler = SerialCompiler(name="compiler")
     schedule = compiler.compile(
         schedule=schedule, config=quantum_device.generate_compilation_config()
     )
 
     q0 = mock_setup_basic_transmon["q0"]
-
     X90_duration = q0.rxy.duration()
     measure_acq_delay = q0.measure.acq_delay()
     reset_duration = q0.reset.duration()

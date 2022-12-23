@@ -16,20 +16,20 @@ import numpy as np
 import pytest
 from pydantic import ValidationError
 
-from quantify_scheduler import Schedule, enums, CompiledSchedule
-from quantify_scheduler.backends import zhinst_backend, SerialCompiler
+from quantify_scheduler import CompiledSchedule, Schedule, enums
+from quantify_scheduler.backends import SerialCompiler, zhinst_backend
 from quantify_scheduler.backends.types import common, zhinst
 from quantify_scheduler.backends.zhinst import settings
-from quantify_scheduler.helpers import waveforms as waveform_helpers
-from quantify_scheduler.operations.gate_library import X90, Measure, Reset
-from quantify_scheduler.schedules import spectroscopy_schedules, trace_schedules
-from quantify_scheduler.schedules.verification import acquisition_staircase_sched
-from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
-from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.helpers import waveforms as waveform_helpers
+from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
+from quantify_scheduler.operations.gate_library import X90, Measure, Reset
+from quantify_scheduler.resources import ClockResource
+from quantify_scheduler.schedules import spectroscopy_schedules, trace_schedules
+from quantify_scheduler.schedules.verification import acquisition_staircase_sched
 
-from .graph_backends.standard_schedules import (
+from tests.scheduler.backends.graph_backends.standard_schedules import (
     single_qubit_schedule_circuit_level,
     pulse_only_schedule,
     parametrized_operation_schedule,
@@ -935,13 +935,12 @@ def test_compile_backend_with_undefined_local_oscillator(
     quantum_device = mock_setup_basic_transmon["quantum_device"]
     quantum_device.hardware_config(zhinst_hardware_cfg)
 
-    config = quantum_device.generate_compilation_config()
-    compiler = SerialCompiler(name="compiler")
     # Act
+    compiler = SerialCompiler(name="compiler")
     with pytest.raises(
         KeyError, match='Missing configuration for LocalOscillator "lo_unknown"'
     ):
-        compiler.compile(schedule, config=config)
+        compiler.compile(schedule, config=quantum_device.generate_compilation_config())
 
 
 def test_compile_backend_with_duplicate_local_oscillator(
@@ -995,13 +994,12 @@ def test_compile_backend_with_duplicate_local_oscillator(
     """
     zhinst_hardware_cfg = json.loads(hardware_cfg_str)
     quantum_device = mock_setup_basic_transmon["quantum_device"]
-
     quantum_device.hardware_config(zhinst_hardware_cfg)
-    config = quantum_device.generate_compilation_config()
+
     # Act
     compiler = SerialCompiler(name="compiler")
     with pytest.raises(RuntimeError) as execinfo:
-        compiler.compile(schedule, config=config)
+        compiler.compile(schedule, config=quantum_device.generate_compilation_config())
 
     # Assert
     assert (
@@ -1112,6 +1110,7 @@ def test_acquisition_staircase_right_acq_channel(
     comp_sched = compiler.compile(
         schedule, config=compile_config_basic_transmon_zhinst_hardware
     )
+
     # Assert
     uhfqa_setts = comp_sched.compiled_instructions["ic_uhfqa0"]
     assert uhfqa_setts.acq_config.n_acquisitions == 20
@@ -1195,8 +1194,9 @@ def test_too_long_acquisition_raises_readable_exception(
             acq_channel=0,
         ),
     )
-    compiler = SerialCompiler(name="compiler")
+
     # Act
+    compiler = SerialCompiler(name="compiler")
     with pytest.raises(ValueError) as exc_info:
         _ = compiler.compile(
             sched, config=compile_config_basic_transmon_zhinst_hardware

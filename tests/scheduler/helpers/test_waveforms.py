@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import inspect
-from typing import Callable, List
+from typing import List
 from unittest.case import TestCase
 
 import numpy as np
@@ -12,9 +12,8 @@ import pytest
 from pytest_mock.plugin import MockerFixture
 
 from quantify_scheduler import Schedule
-from quantify_scheduler.helpers.schedule import get_pulse_uuid
-from quantify_scheduler.compilation import device_compile
 from quantify_scheduler.backends import SerialCompiler
+from quantify_scheduler.helpers.schedule import get_pulse_uuid
 from quantify_scheduler.helpers.waveforms import (
     apply_mixer_skewness_corrections,
     area_pulse,
@@ -112,6 +111,7 @@ def test_get_waveform_by_pulseid_are_unique(
     schedule = Schedule("my-schedule")
     schedule.add(X90("q0"))
     schedule.add(X90("q0"))
+
     compiler = SerialCompiler(name="compiler")
     schedule = compiler.compile(
         schedule=schedule, config=device_compile_config_basic_transmon
