@@ -11,13 +11,8 @@ import pandas as pd
 import pytest
 
 from quantify_scheduler import enums, json_utils, Operation
-from quantify_scheduler.json_utils import ScheduleJSONDecoder
-from quantify_scheduler.schedules.schedule import (
-    AcquisitionMetadata,
-    CompiledSchedule,
-    Schedule,
-)
 from quantify_scheduler.backends import SerialCompiler
+from quantify_scheduler.json_utils import ScheduleJSONDecoder
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.gate_library import (
     CNOT,
@@ -33,6 +28,11 @@ from quantify_scheduler.operations.gate_library import (
 from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.schedules import timedomain_schedules
+from quantify_scheduler.schedules.schedule import (
+    AcquisitionMetadata,
+    CompiledSchedule,
+    Schedule,
+)
 from quantify_scheduler.schedules.spectroscopy_schedules import heterodyne_spec_sched
 
 
@@ -80,7 +80,6 @@ def test_schedule_bell():
     assert len(sched.data["schedulables"]) == 0
 
     # define the resources
-    # q0, q1 = Qubits(n=2) # assumes all to all connectivity
     q0, q1 = ("q0", "q1")
 
     # Define the operations, these will be added to the circuit
@@ -93,7 +92,7 @@ def test_schedule_bell():
         sched.add(x90_q0)
         sched.add(operation=CNOT(qC=q0, qT=q1))
         sched.add(Rxy(theta=theta, phi=0, qubit=q0))
-        sched.add(Measure(q0, q1), label="M {:.2f} deg".format(theta))
+        sched.add(Measure(q0, q1), label=f"M {theta:.2f} deg")
 
     assert len(sched.operations) == 24 - 1  # angle theta == 360 will evaluate to 0
     assert len(sched.schedulables) == 105
@@ -297,10 +296,9 @@ def test_t1_sched_pulse_diagram(t1_schedule, device_compile_config_basic_transmo
     """
     Tests that the test schedule can be visualized
     """
-    config = device_compile_config_basic_transmon
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
-        schedule=t1_schedule, config=config  # pylint: disable=no-member
+        schedule=t1_schedule, config=device_compile_config_basic_transmon
     )
     # will only test that a figure is created and runs without errors
     _ = compiled_schedule.plot_pulse_diagram()
@@ -308,41 +306,37 @@ def test_t1_sched_pulse_diagram(t1_schedule, device_compile_config_basic_transmo
 
 @pytest.mark.parametrize("reset_clock_phase", (True, False))
 def test_sched_timing_table(
-    reset_clock_phase,
-    mock_setup_basic_transmon_with_standard_params,
+    mock_setup_basic_transmon_with_standard_params, reset_clock_phase
 ):
-
     schedule = Schedule(name="test_sched", repetitions=10)
     qubit = "q0"
     times = [0, 10e-6, 30e-6]
     for i, tau in enumerate(times):
-        schedule.add(Reset(qubit), label=f"Reset {i}")  # 200e-6
-        schedule.add(X(qubit), label=f"pi {i}")  # 0
-        # wait tau
+        schedule.add(Reset(qubit), label=f"Reset {i}")
+        schedule.add(X(qubit), label=f"pi {i}")
         schedule.add(
             Measure(qubit),
             ref_pt="start",
             rel_time=tau,
             label=f"Measurement {i}",
-        )  # 0.1e-6
+        )
 
     with pytest.raises(ValueError):
         _ = schedule.timing_table
+
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     q0 = mock_setup_basic_transmon_with_standard_params["q0"]
     q0.measure.reset_clock_phase(reset_clock_phase)
     q0.measure.acq_delay(120e-9)
     q0.reset.duration(200e-6)
 
-    compilation_config = quantum_device.generate_compilation_config()
     compiler = SerialCompiler(name="compiler")
-    comp_sched = compiler.compile(schedule=schedule, config=compilation_config)
+    compiled_schedule = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
 
-    # will only test that a figure is created and runs without errors
-    timing_table = comp_sched.timing_table
-    timing_table = timing_table.data
-
-    assert set(timing_table.keys()) == {
+    timing_table_data = compiled_schedule.timing_table.data
+    assert set(timing_table_data.keys()) == {
         "abs_time",
         "clock",
         "duration",
@@ -352,9 +346,7 @@ def test_sched_timing_table(
         "operation",
         "wf_idx",
     }
-
-    expected_len_timing_table_data = 15 if reset_clock_phase else 12
-    assert len(timing_table) == expected_len_timing_table_data
+    assert len(timing_table_data) == 15 if reset_clock_phase else 12
 
     if reset_clock_phase:
         desired_timing = np.array(
@@ -376,7 +368,6 @@ def test_sched_timing_table(
                 640e-6 + 2360e-9,
             ]
         )
-
     else:
         desired_timing = np.array(
             [
@@ -394,9 +385,8 @@ def test_sched_timing_table(
                 640e-6 + 2360e-9,
             ]
         )
-
     np.testing.assert_almost_equal(
-        actual=np.array(timing_table["abs_time"]),
+        actual=np.array(timing_table_data["abs_time"]),
         desired=desired_timing,
         decimal=10,
     )
@@ -405,13 +395,10 @@ def test_sched_timing_table(
 def test_sched_hardware_timing_table(
     t1_schedule, compile_config_basic_transmon_zhinst_hardware
 ):
-
-    config = compile_config_basic_transmon_zhinst_hardware
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
-        schedule=t1_schedule, config=config  # pylint: disable=no-member
+        schedule=t1_schedule, config=compile_config_basic_transmon_zhinst_hardware
     )
-    hardware_timing_table = compiled_schedule.hardware_timing_table
 
     hardware_timing_table = compiled_schedule.hardware_timing_table
     columns_of_hw_timing_table = hardware_timing_table.columns
@@ -426,22 +413,22 @@ def test_sched_hardware_timing_table(
 def test_sched_hardware_waveform_dict(
     t1_schedule, compile_config_basic_transmon_zhinst_hardware
 ):
-    config = compile_config_basic_transmon_zhinst_hardware
     compiler = SerialCompiler(name="compiler")
-    compiled_schedule = compiler.compile(schedule=t1_schedule, config=config)
-    hardware_timing_table = compiled_schedule.hardware_timing_table
+    compiled_schedule = compiler.compile(
+        schedule=t1_schedule, config=compile_config_basic_transmon_zhinst_hardware
+    )
 
-    # filter out operations that are not waveforms such as Reset and ClockPhaseReset,
-    # that have port = None.
+    # Filter out operations that are not waveforms such as Reset and ClockPhaseReset,
+    # that have port = None
     mask = compiled_schedule.hardware_timing_table.data.port.apply(
         lambda port: port is not None
     )
-    hardware_timing_table = hardware_timing_table.data[mask]
-    hardware_waveform_dict = compiled_schedule.hardware_waveform_dict
+    hardware_timing_table = compiled_schedule.hardware_timing_table.data[mask]
 
-    waveform_ids = hardware_timing_table.waveform_id
-    for waveform_id in waveform_ids:
-        assert isinstance(hardware_waveform_dict.get(waveform_id), np.ndarray)
+    for waveform_id in hardware_timing_table.waveform_id:
+        assert isinstance(
+            compiled_schedule.hardware_waveform_dict.get(waveform_id), np.ndarray
+        )
 
 
 def test_acquisition_metadata():

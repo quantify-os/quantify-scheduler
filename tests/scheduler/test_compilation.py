@@ -8,18 +8,18 @@ import numpy as np
 import pytest
 
 from quantify_scheduler import Operation, Schedule
+from quantify_scheduler.backends import SerialCompiler
+from quantify_scheduler.backends.circuit_to_device import ConfigKeyError
 from quantify_scheduler.compilation import (
-    determine_absolute_timing,
     add_pulse_information_transmon,
+    determine_absolute_timing,
     device_compile,
     qcompile,
 )
-from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.gate_library import CNOT, CZ, Measure, Reset, Rxy
 from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import BasebandClockResource, ClockResource, Resource
-from quantify_scheduler.backends.circuit_to_device import ConfigKeyError
 from quantify_scheduler.schemas.examples import utils
 
 
@@ -107,8 +107,7 @@ def test_missing_ref_op():
 def test_compile_transmon_program(mock_setup_basic_transmon):
     sched = Schedule("Test schedule")
 
-    # define the resources
-    # q0, q1 = Qubits(n=2) # assumes all to all connectivity
+    # Define the resources
     q0, q2 = ("q0", "q2")
 
     sched.add(Reset(q0, q2))
@@ -133,26 +132,6 @@ def test_deprecated_add_pulse_information_transmon(compile_func):
     q0, q1 = ("q0", "q1")
     sched.add(Reset(q0, q1))
     sched.add(Rxy(90, 0, qubit=q0))
-    sched.add(operation=CZ(qC=q0, qT=q2))
-    sched.add(Rxy(theta=90, phi=0, qubit=q0))
-    sched.add(Measure(q0, q1), label="M0")
-
-    compile_func(
-        sched,
-        device_cfg=utils.load_json_example_scheme("transmon_test_config.json"),
-    )
-
-
-@pytest.mark.filterwarnings("ignore::FutureWarning")
-@pytest.mark.parametrize(
-    "compile_func", [add_pulse_information_transmon, device_compile, qcompile]
-)
-def test_deprecated_add_pulse_information_transmon(compile_func):
-    sched = Schedule("Test schedule")
-
-    q0, q1 = ("q0", "q1")
-    sched.add(Reset(q0, q1))
-    sched.add(Rxy(90, 0, qubit=q0))
     sched.add(operation=CZ(qC=q0, qT=q1))
     sched.add(Rxy(theta=90, phi=0, qubit=q0))
     sched.add(Measure(q0, q1), label="M0")
@@ -164,8 +143,7 @@ def test_deprecated_add_pulse_information_transmon(compile_func):
 
 
 def test_missing_edge(mock_setup_basic_transmon):
-
-    sched = Schedule("Bad edge")
+    sched = Schedule("Missing edge")
 
     quantum_device = mock_setup_basic_transmon["quantum_device"]
     quantum_device.remove_edge("q0_q2")
@@ -174,7 +152,7 @@ def test_missing_edge(mock_setup_basic_transmon):
     sched.add(operation=CZ(qC=q0, qT=q2))
     with pytest.raises(
         ConfigKeyError,
-        match=('edge "q0_q2" is not present in the configuration file'),
+        match='edge "q0_q2" is not present in the configuration file',
     ):
         compiler = SerialCompiler(name="compiler")
         compiler.compile(
@@ -204,7 +182,7 @@ def test_bad_gate(device_compile_config_basic_transmon):
                     "operation_type": "bad",
                 }
             }
-            super().__init__("bad ({})".format(q))
+            super().__init__(f"bad ({q})")
             self.data.update(data)
 
     sched = Schedule("Bell experiment")
@@ -217,7 +195,7 @@ def test_bad_gate(device_compile_config_basic_transmon):
         compiler = SerialCompiler(name="compiler")
         compiler.compile(
             sched,
-            config=device_compile_config_basic_transmon,  # pylint: disable=no-member
+            config=device_compile_config_basic_transmon,
         )
 
 
@@ -228,22 +206,22 @@ def test_pulse_and_clock(device_compile_config_basic_transmon):
     op_hash = next(
         op for op in sched.schedulables.values() if op["label"] == str(op_label)
     )["operation_repr"]
+
     compiler = SerialCompiler(name="compiler")
     with pytest.raises(ValueError) as execinfo:
         compiler.compile(
             sched,
-            config=device_compile_config_basic_transmon,  # pylint: disable=no-member
+            config=device_compile_config_basic_transmon,
         )
-
     assert str(execinfo.value) == (
-        "Operation '{}' contains an unknown clock '{}'; ensure this resource has "
-        "been added to the schedule.".format(op_hash, mystery_clock)
+        f"Operation '{op_hash}' contains an unknown clock '{mystery_clock}'; "
+        f"ensure this resource has been added to the schedule."
     )
 
     sched.add_resources([ClockResource(mystery_clock, 6e9)])
     compiler.compile(
         sched,
-        config=device_compile_config_basic_transmon,  # pylint: disable=no-member
+        config=device_compile_config_basic_transmon,
     )
 
 
@@ -260,9 +238,9 @@ def test_resource_resolution(device_compile_config_basic_transmon):
 
     sched.add_resources([qcm0_s0, qrm0_s0])
     compiler = SerialCompiler(name="compiler")
-    sched = compiler.compile(
+    _ = compiler.compile(
         sched,
-        config=device_compile_config_basic_transmon,  # pylint: disable=no-member
+        config=device_compile_config_basic_transmon,
     )
 
 
@@ -277,20 +255,19 @@ def test_schedule_modified(device_compile_config_basic_transmon):
     sched.add(Measure(q0, q1), label="M0")
 
     copy_of_sched = deepcopy(sched)
-    # to verify equality of schedule object worksW
+    # to verify equality of schedule object works
     assert copy_of_sched == sched
 
     compiler = SerialCompiler(name="compiler")
     _ = compiler.compile(
         sched,
-        config=device_compile_config_basic_transmon,  # pylint: disable=no-member
+        config=device_compile_config_basic_transmon,
     )
     # Fails if schedule is modified
     assert copy_of_sched == sched
 
 
 def test_measurement_specification_of_binmode(device_compile_config_basic_transmon):
-
     qubit = "q0"
 
     ####################################################################################
@@ -306,7 +283,7 @@ def test_measurement_specification_of_binmode(device_compile_config_basic_transm
     compiler = SerialCompiler(name="compiler")
     comp_sched = compiler.compile(
         schedule=schedule,
-        config=device_compile_config_basic_transmon,  # pylint: disable=no-member
+        config=device_compile_config_basic_transmon,
     )
 
     for key, value in comp_sched.data["operation_dict"].items():
@@ -325,7 +302,7 @@ def test_measurement_specification_of_binmode(device_compile_config_basic_transm
 
     comp_sched = compiler.compile(
         schedule=schedule,
-        config=device_compile_config_basic_transmon,  # pylint: disable=no-member
+        config=device_compile_config_basic_transmon,
     )
 
     for key, value in comp_sched.data["operation_dict"].items():
@@ -342,7 +319,7 @@ def test_measurement_specification_of_binmode(device_compile_config_basic_transm
 
     comp_sched = compiler.compile(
         schedule=schedule,
-        config=device_compile_config_basic_transmon,  # pylint: disable=no-member
+        config=device_compile_config_basic_transmon,
     )
 
     for key, value in comp_sched.data["operation_dict"].items():

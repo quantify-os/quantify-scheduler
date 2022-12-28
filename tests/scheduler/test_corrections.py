@@ -9,9 +9,9 @@
 import numpy as np
 import pytest
 
+from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.corrections import distortion_correct_pulse
 from quantify_scheduler.backends.qblox import constants as qblox_constants
-from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.operations.pulse_library import NumericalPulse, SquarePulse
 
 from tests.scheduler.backends.test_qblox_backend import (  # pylint: disable=unused-import

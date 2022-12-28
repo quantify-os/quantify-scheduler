@@ -12,6 +12,7 @@
 - Compilation - Can optionally provide a `QuantumDevice` to `QuantifyCompiler`. This will be used as default `CompilationConfig` in `QuantifyCompiler.compile()` (!535)
 - NV centers - Avoid python warning when parsing docstring in nv_element (!562)
 - QuantumDevice - `BasicTransmonElement` can now be serialized to json string and deserialized via ``__getstate__/__init__`` (!510)
+- Deprecation - Refactored tests to remove deprecated `qcompile`, refactored to `SerialCompiler` (!529, #368)
 
 ## 0.10.1 (2022-12-20)
 
@@ -34,7 +35,6 @@ For help in migrating from deprecated methods, see [Quantify Deprecated Code Sug
 - Operations - ShiftClockPhase now uses `phase_shift` as keyword instead of `phase` (!434)
 
 ### Merged branches and closed issues
-- Tests - Refactored tests to remove deprecated compiler, refactored to SerialCompiler (#368,  !731)
 - Deprecation - Removed dependencies on deprecated code from tests and production code (!526)
 - Deprecation - Replaced `DeprecationWarning`s with `FutureWarning`s so they are shown to end-users by default (!536, counterpart to quantify-core!411)
 - Visualization - Show clock name in plotly pulse diagram (!547)

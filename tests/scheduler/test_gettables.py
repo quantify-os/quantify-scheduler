@@ -7,7 +7,6 @@
 
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-
 from typing import Any, Dict, Tuple
 from unittest import TestCase
 from unittest.mock import Mock
@@ -20,7 +19,6 @@ import numpy as np
 import pytest
 from qcodes.instrument.parameter import ManualParameter
 
-from quantify_scheduler.schemas.examples import utils
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.gettables import ScheduleGettable
@@ -28,7 +26,6 @@ from quantify_scheduler.gettables_profiled import ProfiledScheduleGettable
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
 )
-
 from quantify_scheduler.instrument_coordinator.components.qblox import (
     AcquisitionIndexing,
 )
@@ -44,8 +41,6 @@ from quantify_scheduler.schedules.timedomain_schedules import (
     t1_sched,
 )
 from quantify_scheduler.schedules.trace_schedules import trace_schedule
-
-QBLOX_HARDWARE_MAPPING = utils.load_json_example_scheme("qblox_test_mapping.json")
 
 
 @pytest.mark.parametrize("num_channels, real_imag", [(1, True), (2, False), (10, True)])
@@ -142,11 +137,7 @@ def test_ScheduleGettableSingleChannel_iterative_heterodyne_spec(
     np.testing.assert_array_equal(dset.y1, np.angle(exp_data, deg=True))
 
 
-# test a batched case
-def test_ScheduleGettableSingleChannel_batched_allxy(
-    mock_setup_basic_transmon_with_standard_params, mocker
-):
-    mock_setup_basic_transmon = mock_setup_basic_transmon_with_standard_params
+def test_ScheduleGettableSingleChannel_batched_allxy(mock_setup_basic_transmon, mocker):
     meas_ctrl = mock_setup_basic_transmon["meas_ctrl"]
     quantum_device = mock_setup_basic_transmon["quantum_device"]
 
@@ -162,10 +153,11 @@ def test_ScheduleGettableSingleChannel_batched_allxy(
     indices = np.repeat(np.arange(21), 2)
     # Prepare the mock data the ideal AllXY data
     sched = allxy_sched("q0", element_select_idx=indices, repetitions=256)
+
     compiler = SerialCompiler(name="compiler")
     comp_allxy_sched = compiler.compile(
         schedule=sched,
-        config=quantum_device.generate_compilation_config(),  # pylint: disable=no-member
+        config=quantum_device.generate_compilation_config(),
     )
 
     data = np.concatenate(
@@ -210,9 +202,8 @@ def test_ScheduleGettableSingleChannel_batched_allxy(
 
 # test a batched case
 def test_ScheduleGettableSingleChannel_append_readout_cal(
-    mock_setup_basic_transmon_with_standard_params, mocker
+    mock_setup_basic_transmon, mocker
 ):
-    mock_setup_basic_transmon = mock_setup_basic_transmon_with_standard_params
     meas_ctrl = mock_setup_basic_transmon["meas_ctrl"]
     quantum_device = mock_setup_basic_transmon["quantum_device"]
 
@@ -239,7 +230,7 @@ def test_ScheduleGettableSingleChannel_append_readout_cal(
     compiler = SerialCompiler(name="compiler")
     comp_ssro_sched = compiler.compile(
         schedule=ssro_sched,
-        config=quantum_device.generate_compilation_config(),  # pylint: disable=no-member
+        config=quantum_device.generate_compilation_config(),
     )
 
     data = np.tile(np.arange(2), repetitions) * np.exp(1j)
@@ -279,9 +270,8 @@ def test_ScheduleGettableSingleChannel_append_readout_cal(
 
 
 def test_ScheduleGettableSingleChannel_trace_acquisition(
-    mock_setup_basic_transmon_with_standard_params, mocker
+    mock_setup_basic_transmon, mocker
 ):
-    mock_setup_basic_transmon = mock_setup_basic_transmon_with_standard_params
     meas_ctrl = mock_setup_basic_transmon["meas_ctrl"]
     quantum_device = mock_setup_basic_transmon["quantum_device"]
     # q0 is a  device element from the test setup has all the right params
@@ -399,8 +389,6 @@ def test_ScheduleGettable_generate_diagnostic(mock_setup_basic_transmon, mocker)
 
     assert gettable._compiled_schedule == compiled_sched
 
-    assert gettable._compiled_schedule == compiled_sched
-
 
 # this is probably useful somewhere, it illustrates the reshaping in the
 # instrument coordinator
@@ -408,13 +396,13 @@ def _reshape_array_into_acq_return_type(
     data: np.ndarray, acq_metadata: AcquisitionMetadata
 ) -> Dict[Tuple[int, int], Any]:
     """
-    Takes one ore more complex valued arrays and reshapes the data into a dictionary
+    Takes one or more complex valued arrays and reshapes the data into a dictionary
     with AcquisitionIndexing
     """
 
     # Temporary. Will probably be replaced by an xarray object
     # See quantify-core#187, quantify-core#233, quantify-scheduler#36
-    acquisitions = dict()
+    acquisitions = {}
 
     # if len is 1, we have only 1 channel in the retrieved data
     if len(np.shape(data)) == 0:

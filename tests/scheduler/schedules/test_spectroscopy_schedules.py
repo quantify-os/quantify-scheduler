@@ -163,7 +163,7 @@ class TestNVDarkESRSched:
         # assert that files properly compile
         quantum_device: QuantumDevice = mock_setup_basic_nv["quantum_device"]
         qcompile(
-            self.uncomp_sched,  # pylint: disable=no-member
+            self.uncomp_sched,
             quantum_device.generate_device_config(),
             quantum_device.generate_hardware_config(),
         )
