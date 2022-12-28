@@ -2,8 +2,7 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
-
-from quantify_scheduler.compilation import qcompile
+from quantify_scheduler.backends import SerialCompiler
 
 
 class _CompilesAllBackends:
@@ -14,20 +13,16 @@ class _CompilesAllBackends:
     """
 
     def test_compiles_qblox_backend(
-        self, load_example_transmon_config, load_example_qblox_hardware_config
+        self, compile_config_basic_transmon_qblox_hardware
     ) -> None:
         # assert that files properly compile
-        qcompile(
-            self.uncomp_sched,  # pylint: disable=no-member
-            load_example_transmon_config,
-            load_example_qblox_hardware_config,
-        )
+        compilation_config = compile_config_basic_transmon_qblox_hardware
+        compiler = SerialCompiler(name="compiler")
+        compiler.compile(schedule=self.uncomp_sched, config=compilation_config)
 
     def test_compiles_zi_backend(
-        self, load_example_transmon_config, load_example_zhinst_hardware_config
+        self, compile_config_basic_transmon_zhinst_hardware
     ) -> None:
-        qcompile(
-            self.uncomp_sched,  # pylint: disable=no-member
-            load_example_transmon_config,
-            load_example_zhinst_hardware_config,
-        )
+        compilation_config = compile_config_basic_transmon_zhinst_hardware
+        compiler = SerialCompiler(name="compiler")
+        compiler.compile(schedule=self.uncomp_sched, config=compilation_config)
