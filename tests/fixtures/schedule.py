@@ -152,7 +152,6 @@ def compiled_two_qubit_t1_schedule(mock_setup_basic_transmon_with_standard_param
     mock_setup = mock_setup_basic_transmon_with_standard_params
     mock_setup["q0"].measure.acq_channel(0)
     mock_setup["q1"].measure.acq_channel(1)
-    config = mock_setup["quantum_device"].generate_compilation_config()
 
     q0, q1 = ("q0", "q1")
     repetitions = 1024
@@ -178,5 +177,7 @@ def compiled_two_qubit_t1_schedule(mock_setup_basic_transmon_with_standard_param
         )
 
     compiler = SerialCompiler(name="compiler")
-    comp_t1_sched = compiler.compile(schedule, config=config)
+    comp_t1_sched = compiler.compile(
+        schedule, config=mock_setup["quantum_device"].generate_compilation_config()
+    )
     return comp_t1_sched

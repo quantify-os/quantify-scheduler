@@ -1434,9 +1434,9 @@ def test_determine_scope_mode_acquisition_sequencer(
 def test_container_prepare_baseband(
     baseband_square_pulse_schedule,
     hardware_cfg_baseband,
-    mock_setup_basic_transmon_with_standard_params,
+    mock_setup_basic_transmon,
 ):
-    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
     quantum_device.hardware_config(hardware_cfg_baseband)
     compiler = SerialCompiler(name="compiler")
     sched = compiler.compile(
