@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Breaking changes
+- Qblox ICCs - Replace `"acq_mapping"` by `"trace_acq_channel"` in the compiled schedule (!515)
 
 ### Merged branches and closed issues
 - Acquisition - Data obtained with TriggerCount acquisition is formatted correctly (!530).

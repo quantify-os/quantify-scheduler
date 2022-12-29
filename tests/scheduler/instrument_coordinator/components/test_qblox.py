@@ -950,65 +950,6 @@ def test_store_scope_acquisition(make_qrm_component):
     qrm.instrument.store_scope_acquisition.assert_called_once()
 
 
-def test_get_scope_channel_and_index(make_qrm_component):
-    acq_mapping = {
-        qblox.AcquisitionIndexing(acq_index=0, acq_channel=0): ("seq0", "trace"),
-    }
-    qrm: qblox.PulsarQRMComponent = make_qrm_component("qrm0", "1234")
-    acq_manager = qblox._QRMAcquisitionManager(
-        qrm, qrm._hardware_properties.number_of_sequencers, acq_mapping, None
-    )
-    result = acq_manager._get_scope_channel_and_index()
-    assert result == (0, 0)
-
-
-def test_get_scope_channel_and_index_exception(make_qrm_component):
-    acq_mapping = {
-        qblox.AcquisitionIndexing(acq_index=0, acq_channel=0): ("seq0", "trace"),
-        qblox.AcquisitionIndexing(acq_index=1, acq_channel=0): ("seq0", "trace"),
-    }
-    qrm: qblox.PulsarQRMComponent = make_qrm_component("qrm0", "1234")
-    acq_manager = qblox._QRMAcquisitionManager(
-        qrm, qrm._hardware_properties.number_of_sequencers, acq_mapping, None
-    )
-    with pytest.raises(RuntimeError) as execinfo:
-        acq_manager._get_scope_channel_and_index()
-
-    assert (
-        execinfo.value.args[0]
-        == "A scope mode acquisition is defined for both acq_channel 0 with "
-        "acq_index 0 as well as acq_channel 0 with acq_index 1. Only a single "
-        "trace acquisition is allowed per QRM."
-    )
-
-
-def test_get_protocol(make_qrm_component):
-    answer = "trace"
-    acq_mapping = {
-        qblox.AcquisitionIndexing(acq_index=0, acq_channel=0): ("seq0", answer),
-    }
-    qrm: qblox.PulsarQRMComponent = make_qrm_component("qrm0", "1234")
-    acq_manager = qblox._QRMAcquisitionManager(
-        qrm, qrm._hardware_properties.number_of_sequencers, acq_mapping, None
-    )
-    assert acq_manager._get_protocol(0, 0) == answer
-
-
-def test_get_sequencer_index(make_qrm_component):
-    answer = 0
-    acq_mapping = {
-        qblox.AcquisitionIndexing(acq_index=0, acq_channel=0): (
-            f"seq{answer}",
-            "trace",
-        ),
-    }
-    qrm: qblox.PulsarQRMComponent = make_qrm_component("qrm0", "1234")
-    acq_manager = qblox._QRMAcquisitionManager(
-        qrm, qrm._hardware_properties.number_of_sequencers, acq_mapping, None
-    )
-    assert acq_manager._get_sequencer_index(0, 0) == answer
-
-
 def test_instrument_module():
     """InstrumentModule is treated like InstrumentChannel and added as
     self._instrument_module
