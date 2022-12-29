@@ -18,12 +18,10 @@ from typing import Dict, Generator
 import numpy as np
 import pytest
 from pydantic import ValidationError
-
 from qblox_instruments import Pulsar, PulsarType
 
 import quantify_scheduler
 from quantify_scheduler import Schedule
-
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.qblox import (
     compiler_container,
@@ -31,14 +29,13 @@ from quantify_scheduler.backends.qblox import (
     q1asm_instructions,
     register_manager,
 )
-from quantify_scheduler.backends.qblox_backend import hardware_compile
 from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
 from quantify_scheduler.backends.qblox.helpers import (
     assign_pulse_and_acq_info_to_devices,
     convert_hw_config_to_portclock_configs_spec,
-    generate_port_clock_to_device_map,
     find_all_port_clock_combinations,
     find_inner_dicts_containing_key,
+    generate_port_clock_to_device_map,
     generate_uuid_from_wf_data,
     generate_waveform_data,
     to_grid_time,
@@ -48,20 +45,20 @@ from quantify_scheduler.backends.qblox.instrument_compilers import (
     QcmRfModule,
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
+from quantify_scheduler.backends.qblox_backend import hardware_compile
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.backends.types.qblox import (
     BasebandModuleSettings,
     MarkerConfiguration,
 )
-
 from quantify_scheduler.compilation import (
     determine_absolute_timing,
     device_compile,
     qcompile,
 )
-
 from quantify_scheduler.operations.acquisition_library import Trace
 from quantify_scheduler.operations.gate_library import Measure, Reset, X
+from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     IdlePulse,
@@ -69,10 +66,7 @@ from quantify_scheduler.operations.pulse_library import (
     ShiftClockPhase,
     SquarePulse,
 )
-from quantify_scheduler.operations.operation import Operation
-
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
-
 from quantify_scheduler.schedules.timedomain_schedules import (
     allxy_sched,
     readout_calibration_sched,
@@ -1399,6 +1393,24 @@ def test_container_prepare(
         container.instrument_compilers["qcm0"].sequencers["seq0"].frequency is not None
     )
     assert container.instrument_compilers["lo0"].frequency is not None
+
+
+def test_multiple_trace_acquisition_error(compile_config_basic_transmon_qblox_hardware):
+    sched = Schedule("test_multiple_trace_acquisition_error")
+    sched.add(Trace(duration=100e-9, port="q0:res", clock="q0.multiplex"))
+    sched.add(Trace(duration=100e-9, port="q0:res", clock="q0.ro"))
+
+    with pytest.raises(ValueError) as exception:
+        compiler = SerialCompiler(name="compiler")
+        _ = compiler.compile(
+            schedule=sched, config=compile_config_basic_transmon_qblox_hardware
+        )
+    assert (
+        'Both sequencer "0" and "1" of "qrm0" need to perform scope mode acquisitions. '
+        "Only one sequencer per device can trigger raw trace capture.\n\n"
+        "Please ensure that only one port and clock combination "
+        "has to perform raw trace acquisition per instrument." == str(exception.value)
+    )
 
 
 def test_determine_scope_mode_acquisition_sequencer(
