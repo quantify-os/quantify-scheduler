@@ -7,7 +7,6 @@
 
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-
 from typing import Any, Dict, Tuple
 from unittest import TestCase
 from unittest.mock import Mock
@@ -21,14 +20,12 @@ import pytest
 from qcodes.instrument.parameter import ManualParameter
 
 from quantify_scheduler.backends import SerialCompiler
-from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.gettables_profiled import ProfiledScheduleGettable
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
 )
-
 from quantify_scheduler.instrument_coordinator.components.qblox import (
     AcquisitionIndexing,
 )
@@ -140,7 +137,6 @@ def test_ScheduleGettableSingleChannel_iterative_heterodyne_spec(
     np.testing.assert_array_equal(dset.y1, np.angle(exp_data, deg=True))
 
 
-# test a batched case
 def test_ScheduleGettableSingleChannel_batched_allxy(mock_setup_basic_transmon, mocker):
     meas_ctrl = mock_setup_basic_transmon["meas_ctrl"]
     quantum_device = mock_setup_basic_transmon["quantum_device"]
@@ -157,7 +153,13 @@ def test_ScheduleGettableSingleChannel_batched_allxy(mock_setup_basic_transmon, 
     indices = np.repeat(np.arange(21), 2)
     # Prepare the mock data the ideal AllXY data
     sched = allxy_sched("q0", element_select_idx=indices, repetitions=256)
-    comp_allxy_sched = qcompile(sched, quantum_device.generate_device_config())
+
+    compiler = SerialCompiler(name="compiler")
+    comp_allxy_sched = compiler.compile(
+        schedule=sched,
+        config=quantum_device.generate_compilation_config(),
+    )
+
     data = np.concatenate(
         (
             0 * np.ones(5 * 2),
@@ -224,7 +226,12 @@ def test_ScheduleGettableSingleChannel_append_readout_cal(
 
     # Prepare the mock data the ideal SSRO data
     ssro_sched = readout_calibration_sched("q0", [0, 1], repetitions=repetitions)
-    comp_ssro_sched = qcompile(ssro_sched, quantum_device.generate_device_config())
+
+    compiler = SerialCompiler(name="compiler")
+    comp_ssro_sched = compiler.compile(
+        schedule=ssro_sched,
+        config=quantum_device.generate_compilation_config(),
+    )
 
     data = np.tile(np.arange(2), repetitions) * np.exp(1j)
 
@@ -389,13 +396,13 @@ def _reshape_array_into_acq_return_type(
     data: np.ndarray, acq_metadata: AcquisitionMetadata
 ) -> Dict[Tuple[int, int], Any]:
     """
-    Takes one ore more complex valued arrays and reshapes the data into a dictionary
+    Takes one or more complex valued arrays and reshapes the data into a dictionary
     with AcquisitionIndexing
     """
 
     # Temporary. Will probably be replaced by an xarray object
     # See quantify-core#187, quantify-core#233, quantify-scheduler#36
-    acquisitions = dict()
+    acquisitions = {}
 
     # if len is 1, we have only 1 channel in the retrieved data
     if len(np.shape(data)) == 0:

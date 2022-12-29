@@ -13,12 +13,11 @@ import pytest
 from zhinst.qcodes import base
 
 from quantify_scheduler import waveforms
+from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.types import zhinst as zi_types
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 from quantify_scheduler.backends.zhinst import settings
-from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.schedules.verification import awg_staircase_sched
-from quantify_scheduler.schemas.examples.utils import load_json_example_scheme
 
 
 def make_ufhqa(mocker) -> base.ZIBaseInstrument:
@@ -29,8 +28,9 @@ def make_ufhqa(mocker) -> base.ZIBaseInstrument:
     return instrument
 
 
-def test_zi_settings_equality(load_example_transmon_config):
-    # Arrange
+def test_zi_settings_equality(
+    mock_setup_basic_transmon, load_example_zhinst_hardware_config
+):
 
     sched_kwargs = {
         "pulse_amps": np.linspace(0, 0.5, 11),
@@ -46,15 +46,21 @@ def test_zi_settings_equality(load_example_transmon_config):
         "repetitions": 10,
     }
     sched = awg_staircase_sched(**sched_kwargs)
-    device_cfg = load_example_transmon_config
-    hw_cfg = load_json_example_scheme("zhinst_test_mapping.json")
+    hw_cfg = load_example_zhinst_hardware_config
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+
+    compiler = SerialCompiler(name="compiler")
 
     hw_cfg["devices"][1]["channel_0"]["modulation"]["interm_freq"] = 10e6
-    comp_sched_a = qcompile(sched, device_cfg=device_cfg, hardware_cfg=hw_cfg)
+    quantum_device.hardware_config(hw_cfg)
+    config = quantum_device.generate_compilation_config()
+    comp_sched_a = compiler.compile(sched, config=config)
 
     hw_cfg["devices"][1]["channel_0"]["modulation"]["interm_freq"] = -100e6
-    comp_sched_b = qcompile(sched, device_cfg=device_cfg, hardware_cfg=hw_cfg)
-    comp_sched_c = qcompile(sched, device_cfg=device_cfg, hardware_cfg=hw_cfg)
+    quantum_device.hardware_config(hw_cfg)
+    config = quantum_device.generate_compilation_config()
+    comp_sched_b = compiler.compile(sched, config=config)
+    comp_sched_c = compiler.compile(sched, config=config)
 
     # Act
     sett_a = comp_sched_a.compiled_instructions["ic_uhfqa0"].settings_builder.build()

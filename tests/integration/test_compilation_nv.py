@@ -1,10 +1,11 @@
 import pytest
 
 from quantify_scheduler import Schedule
+from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.compilation import device_compile, hardware_compile
-from quantify_scheduler.operations.shared_native_library import SpectroscopyOperation
 from quantify_scheduler.operations.gate_library import Measure, Reset
 from quantify_scheduler.operations.nv_native_library import ChargeReset, CRCount
+from quantify_scheduler.operations.shared_native_library import SpectroscopyOperation
 from quantify_scheduler.schedules.schedule import CompiledSchedule
 
 
@@ -152,6 +153,7 @@ def test_compilation_measure_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
 
     quantum_device = mock_setup_basic_nv_qblox_hardware["quantum_device"]
     quantum_device.get_element("qe0").measure.acq_delay(1e-8)
+
     dev_cfg = quantum_device.generate_device_config()
     schedule_device = device_compile(schedule, dev_cfg)
 
@@ -223,7 +225,7 @@ def test_compilation_charge_reset_qblox_hardware(mock_setup_basic_nv_qblox_hardw
     assert schedule_hardware.timing_table.data.loc[0, "is_acquisition"] is False
 
 
-def test_compilation_cr_count_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
+def test_compilation_cr_count_qblox_hardware(mock_setup_basic_nv):
     """cr_count can be compiled to the device layer and to qblox
     instructions.
 
@@ -239,10 +241,13 @@ def test_compilation_cr_count_qblox_hardware(mock_setup_basic_nv_qblox_hardware)
     # We can plot the circuit diagram
     schedule.plot_circuit_diagram()
 
-    quantum_device = mock_setup_basic_nv_qblox_hardware["quantum_device"]
+    quantum_device = mock_setup_basic_nv["quantum_device"]
     quantum_device.get_element("qe0").cr_count.acq_delay(1e-8)
-    dev_cfg = quantum_device.generate_device_config()
-    schedule_device = device_compile(schedule, dev_cfg)
+
+    compiler = SerialCompiler(name="compiler")
+    schedule_device = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
 
     # The gate_info and acquisition_info remains unchanged, but the pulse info has been
     # added

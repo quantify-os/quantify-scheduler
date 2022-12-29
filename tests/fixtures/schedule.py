@@ -13,18 +13,17 @@ from typing import Any, Callable, Generator, Dict, List, Optional
 
 import numpy as np
 import pytest
-from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import (
-    example_transmon_cfg,
-)
-from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
+
 from quantify_scheduler import Schedule
-from quantify_scheduler.compilation import (
-    device_compile,
-    qcompile,
-)
+from quantify_scheduler.backends import SerialCompiler
+from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
+from quantify_scheduler.compilation import device_compile
 from quantify_scheduler.operations.gate_library import CZ, Measure, Reset, X, X90
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schemas.examples import utils
+from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import (
+    example_transmon_cfg,
+)
 
 
 QBLOX_HARDWARE_MAPPING = utils.load_json_example_scheme("qblox_test_mapping.json")
@@ -146,18 +145,19 @@ def schedule_with_pulse_info(create_schedule_with_pulse_info) -> Schedule:
 
 
 @pytest.fixture
-def compiled_two_qubit_t1_schedule(load_example_transmon_config):
+def compiled_two_qubit_t1_schedule(mock_setup_basic_transmon_with_standard_params):
     """
     a schedule performing T1 on two-qubits simultaneously
     """
-    device_config = load_example_transmon_config
+    mock_setup = mock_setup_basic_transmon_with_standard_params
+    mock_setup["q0"].measure.acq_channel(0)
+    mock_setup["q1"].measure.acq_channel(1)
 
     q0, q1 = ("q0", "q1")
     repetitions = 1024
     schedule = Schedule("Multi-qubit T1", repetitions)
 
     times = np.arange(0, 60e-6, 3e-6)
-
     for i, tau in enumerate(times):
         schedule.add(Reset(q0, q1), label=f"Reset {i}")
         schedule.add(X(q0), label=f"pi {i} {q0}")
@@ -176,5 +176,8 @@ def compiled_two_qubit_t1_schedule(load_example_transmon_config):
             label=f"Measurement {q1}{i}",
         )
 
-    comp_t1_sched = qcompile(schedule, device_config)
+    compiler = SerialCompiler(name="compiler")
+    comp_t1_sched = compiler.compile(
+        schedule, config=mock_setup["quantum_device"].generate_compilation_config()
+    )
     return comp_t1_sched
