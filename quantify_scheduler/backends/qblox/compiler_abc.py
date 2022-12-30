@@ -568,11 +568,6 @@ class Sequencer:
         ----------
         acquisitions:
             List of the acquisitions assigned to this sequencer.
-
-        Returns
-        ----------
-        -
-
         """
 
         acquisition_infos: List[OpInfo] = list(

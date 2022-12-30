@@ -14,6 +14,7 @@
 - NV centers - Avoid python warning when parsing docstring in nv_element (!562)
 - QuantumDevice - `BasicTransmonElement` can now be serialized to json string and deserialized via ``__getstate__/__init__`` (!510)
 - Deprecation - Refactored tests to remove deprecated `qcompile`, refactored to `SerialCompiler` (!529, #368)
+- QBLOX Backend - NV center compilation added. (!567)
 
 ## 0.10.1 (2022-12-20)
 
