@@ -1381,8 +1381,8 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             if has_scope:
                 if scope_acq_seq is not None:
                     raise ValueError(
-                        f"Both sequencer {seq.name} and {scope_acq_seq} of "
-                        f"{self.name} are required to perform scope mode "
+                        f'Both sequencer "{scope_acq_seq}" and "{seq.index}" of '
+                        f'"{self.name}" need to perform scope mode '
                         "acquisitions. Only one sequencer per device can "
                         "trigger raw trace capture.\n\nPlease ensure that "
                         "only one port and clock combination has to "
@@ -1435,7 +1435,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         self._settings.hardware_averages = repetitions
         program["settings"] = self._settings.to_dict()
         if self.supports_acquisition:
-            # Add both acquisition metadata (a summary) and acq_mapping
+            # Add both acquisition metadata (a summary) and trace_acq_channel
             program["acq_metadata"] = {}
 
             for sequencer in self.sequencers.values():
@@ -1446,41 +1446,55 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 )
                 program["acq_metadata"][sequencer.name] = acq_metadata
 
-            acq_mapping = self._get_acquisition_mapping()
-            if acq_mapping is not None:
-                program["acq_mapping"] = acq_mapping
+            if (trace_acq_channel := self._get_trace_acq_channel()) is not None:
+                program["trace_acq_channel"] = trace_acq_channel
         return program
 
-    def _get_acquisition_mapping(self) -> Optional[dict]:
+    def _get_trace_acq_channel(self) -> Optional[int]:
         """
-        Generates a mapping of acq_channel, acq_index to sequencer name, protocol.
+        Returns the acquisition channel set by the user on the only trace operation in
+        the module.
+        If there is no trace operation in the schedule, it returns None.
+        If there are more than one, it raises an exception, this is not a valid
+        schedule.
 
         Returns
         -------
         :
-            A dictionary containing tuple(acq_channel, acq_index) as keys and
-            tuple(sequencer name, protocol) as value.
+            If there is a trace operation, returns the channel for the trace operation.
+            If there is no trace operation in the schedule, it returns `None`.
+
+        Raises
+        ------
+        ValueError
+            There is more than one trace acquisition operation.
         """
 
-        def extract_mapping_item(acquisition: OpInfo) -> Tuple[Tuple[int, int], str]:
-            return (
-                (
-                    acquisition.data["acq_channel"],
-                    acquisition.data["acq_index"],
-                ),
-                acquisition.data["protocol"],
-            )
+        def _is_trace_acquisition(acquisition):
+            return acquisition.operation_info.data["protocol"] == "trace"
 
-        acq_mapping = {}
+        def _extract_channel(acquisition):
+            return acquisition.operation_info.data["acq_channel"]
+
+        trace_acq_channels = []
         for sequencer in self.sequencers.values():
-            mapping_items = map(
-                extract_mapping_item,
-                [acq.operation_info for acq in sequencer.acquisitions],
-            )
-            for item in mapping_items:
-                acq_mapping[item[0]] = (sequencer.name, item[1])
+            for acquisition in sequencer.acquisitions:
+                if _is_trace_acquisition(acquisition):
+                    trace_acq_channels.append(_extract_channel(acquisition))
 
-        return acq_mapping if len(acq_mapping) > 0 else None
+        if len(trace_acq_channels) == 0:
+            return None
+
+        elif len(trace_acq_channels) > 1:
+            raise ValueError(
+                f"Invalid schedule. "
+                f"Only one trace acquisition is permitted per hardware component. "
+                f"The following channels are attempting to use trace acquisition: "
+                f"{trace_acq_channels}"
+            )
+
+        else:
+            return trace_acq_channels[0]
 
 
 class QbloxBasebandModule(QbloxBaseModule):

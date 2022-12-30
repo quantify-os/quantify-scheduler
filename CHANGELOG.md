@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Breaking changes
+- Qblox ICCs - Replace `"acq_mapping"` by `"trace_acq_channel"` in the compiled schedule (!515)
 
 ### Merged branches and closed issues
 - Acquisition - Data obtained with TriggerCount acquisition is formatted correctly (!530).
@@ -14,6 +15,7 @@
 - NV centers - Avoid python warning when parsing docstring in nv_element (!562)
 - QuantumDevice - `BasicTransmonElement` can now be serialized to json string and deserialized via ``__getstate__/__init__`` (!510)
 - Qblox Backend - added method for gain configuration, overriding gain now raises ValueError (!533)
+- Deprecation - Refactored tests to remove deprecated `qcompile`, refactored to `SerialCompiler` (!529, #368)
 
 ## 0.10.1 (2022-12-20)
 

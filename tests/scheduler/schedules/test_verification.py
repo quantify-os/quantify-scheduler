@@ -6,7 +6,7 @@
 import numpy as np
 import pytest
 from numpy.testing import assert_array_equal
-from quantify_scheduler.compilation import qcompile
+from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.schedules.verification import (
     acquisition_staircase_sched,
     awg_staircase_sched,
@@ -32,13 +32,11 @@ def gen_acquisition_staircase_sched():
 
 
 def test_acquisition_staircase_reps(gen_acquisition_staircase_sched):
-
     sched, sched_kwargs = gen_acquisition_staircase_sched
     assert sched.repetitions == sched_kwargs["repetitions"]
 
 
 def test_acquisition_staircase_ops(gen_acquisition_staircase_sched):
-
     sched, sched_kwargs = gen_acquisition_staircase_sched
     # total number of operations
     assert len(sched.schedulables) == 3 * len(sched_kwargs["readout_pulse_amps"])
@@ -47,7 +45,6 @@ def test_acquisition_staircase_ops(gen_acquisition_staircase_sched):
 
 
 def test_acquisition_staircase_amps(gen_acquisition_staircase_sched):
-
     sched, sched_kwargs = gen_acquisition_staircase_sched
     amps = []
     for operation_name, operation in sched.operations.items():
@@ -59,43 +56,37 @@ def test_acquisition_staircase_amps(gen_acquisition_staircase_sched):
 
 
 def test_acq_staircase_comp_transmon(
-    gen_acquisition_staircase_sched, load_example_transmon_config
+    gen_acquisition_staircase_sched, device_compile_config_basic_transmon
 ):
-    device_cfg = load_example_transmon_config
-    _ = qcompile(gen_acquisition_staircase_sched[0], device_cfg=device_cfg)
+    compiler = SerialCompiler(name="compiler")
+    _ = compiler.compile(
+        schedule=gen_acquisition_staircase_sched[0],
+        config=device_compile_config_basic_transmon,
+    )
 
 
 def test_acq_staircase_comp_qblox(
-    gen_acquisition_staircase_sched,
-    load_example_transmon_config,
-    load_example_qblox_hardware_config,
+    gen_acquisition_staircase_sched, compile_config_basic_transmon_qblox_hardware
 ):
-    device_cfg = load_example_transmon_config
-    hw_cfg = load_example_qblox_hardware_config
-    _ = qcompile(
-        gen_acquisition_staircase_sched[0],
-        device_cfg=device_cfg,
-        hardware_cfg=hw_cfg,
+    compiler = SerialCompiler(name="compiler")
+    _ = compiler.compile(
+        schedule=gen_acquisition_staircase_sched[0],
+        config=compile_config_basic_transmon_qblox_hardware,
     )
 
 
 def test_acq_staircase_comp_zhinst(
-    gen_acquisition_staircase_sched,
-    load_example_transmon_config,
-    load_example_zhinst_hardware_config,
+    gen_acquisition_staircase_sched, compile_config_basic_transmon_zhinst_hardware
 ):
-    device_cfg = load_example_transmon_config
-    hw_cfg = load_example_zhinst_hardware_config
-    _ = qcompile(
-        gen_acquisition_staircase_sched[0],
-        device_cfg=device_cfg,
-        hardware_cfg=hw_cfg,
+    compiler = SerialCompiler(name="compiler")
+    _ = compiler.compile(
+        schedule=gen_acquisition_staircase_sched[0],
+        config=compile_config_basic_transmon_zhinst_hardware,
     )
 
 
 @pytest.fixture(scope="module", autouse=False)
 def gen_awg_staircase_sched():
-
     sched_kwargs = {
         "pulse_amps": np.linspace(0, 0.5, 11),
         "pulse_duration": 1e-6,
@@ -132,33 +123,32 @@ def test_awg_staircase_sched(gen_awg_staircase_sched):
 
 
 def test_awg_staircase_comp_transmon(
-    gen_awg_staircase_sched,
-    load_example_transmon_config,
+    gen_awg_staircase_sched, device_compile_config_basic_transmon
 ):
-    device_cfg = load_example_transmon_config
-    _ = qcompile(gen_awg_staircase_sched[0], device_cfg=device_cfg)
+    compiler = SerialCompiler(name="compiler")
+    _ = compiler.compile(
+        schedule=gen_awg_staircase_sched[0], config=device_compile_config_basic_transmon
+    )
 
 
 def test_awg_staircase_comp_qblox(
-    gen_awg_staircase_sched,
-    load_example_transmon_config,
-    load_example_qblox_hardware_config,
+    gen_awg_staircase_sched, compile_config_basic_transmon_qblox_hardware
 ):
-
-    device_cfg = load_example_transmon_config
-    hw_cfg = load_example_qblox_hardware_config
-    _ = qcompile(gen_awg_staircase_sched[0], device_cfg=device_cfg, hardware_cfg=hw_cfg)
+    compiler = SerialCompiler(name="compiler")
+    _ = compiler.compile(
+        schedule=gen_awg_staircase_sched[0],
+        config=compile_config_basic_transmon_qblox_hardware,
+    )
 
 
 def test_awg_staircase_comp_zhinst(
-    gen_awg_staircase_sched,
-    load_example_transmon_config,
-    load_example_zhinst_hardware_config,
+    gen_awg_staircase_sched, compile_config_basic_transmon_zhinst_hardware
 ):
-
-    device_cfg = load_example_transmon_config
-    hw_cfg = load_example_zhinst_hardware_config
-    _ = qcompile(gen_awg_staircase_sched[0], device_cfg=device_cfg, hardware_cfg=hw_cfg)
+    compiler = SerialCompiler(name="compiler")
+    _ = compiler.compile(
+        schedule=gen_awg_staircase_sched[0],
+        config=compile_config_basic_transmon_zhinst_hardware,
+    )
 
 
 @pytest.fixture(scope="module", autouse=False)
@@ -182,19 +172,20 @@ def gen_multiplexing_staircase_sched():
 
 
 def test_multiplex_staircase_comp_transmon(
-    gen_multiplexing_staircase_sched, load_example_transmon_config
+    gen_multiplexing_staircase_sched, device_compile_config_basic_transmon
 ):
-    device_cfg = load_example_transmon_config
-    _ = qcompile(gen_multiplexing_staircase_sched[0], device_cfg=device_cfg)
+    compiler = SerialCompiler(name="compiler")
+    _ = compiler.compile(
+        schedule=gen_multiplexing_staircase_sched[0],
+        config=device_compile_config_basic_transmon,
+    )
 
 
 def test_multiplex_staircase_comp_qblox(
-    gen_multiplexing_staircase_sched,
-    load_example_transmon_config,
-    load_example_qblox_hardware_config,
+    gen_multiplexing_staircase_sched, compile_config_basic_transmon_qblox_hardware
 ):
-    device_cfg = load_example_transmon_config
-    hw_cfg = load_example_qblox_hardware_config
-    _ = qcompile(
-        gen_multiplexing_staircase_sched[0], device_cfg=device_cfg, hardware_cfg=hw_cfg
+    compiler = SerialCompiler(name="compiler")
+    _ = compiler.compile(
+        schedule=gen_multiplexing_staircase_sched[0],
+        config=compile_config_basic_transmon_qblox_hardware,
     )

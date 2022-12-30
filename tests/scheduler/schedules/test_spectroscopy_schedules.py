@@ -2,10 +2,7 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
-import tempfile
-
-from quantify_core.data.handling import set_datadir
-
+from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.compilation import (
     determine_absolute_timing,
     qcompile,
@@ -17,14 +14,10 @@ from quantify_scheduler.schedules import spectroscopy_schedules as sps
 
 from .compiles_all_backends import _CompilesAllBackends
 
-# TODO to be replaced with fixture in tests/fixtures/schedule from !49 # pylint: disable=fixme
-tmp_dir = tempfile.TemporaryDirectory()
-
 
 class TestHeterodyneSpecSchedule(_CompilesAllBackends):
     @classmethod
     def setup_class(cls):
-        set_datadir(tmp_dir.name)
         cls.sched_kwargs = {
             "pulse_amp": 0.15,
             "pulse_duration": 1e-6,
@@ -56,15 +49,17 @@ class TestHeterodyneSpecSchedule(_CompilesAllBackends):
             assert schedulable["label"] == labels[i]
             assert schedulable["abs_time"] == abs_times[i]
 
-    def test_compiles_device_cfg_only(self, load_example_transmon_config):
+    def test_compiles_device_cfg_only(self, device_compile_config_basic_transmon):
         # assert that files properly compile
-        qcompile(self.uncomp_sched, load_example_transmon_config)
+        compiler = SerialCompiler(name="compiler")
+        compiler.compile(
+            schedule=self.uncomp_sched, config=device_compile_config_basic_transmon
+        )
 
 
 class TestPulsedSpecSchedule(_CompilesAllBackends):
     @classmethod
     def setup_class(cls):
-        set_datadir(tmp_dir.name)
         cls.sched_kwargs = {
             "spec_pulse_amp": 0.5,
             "spec_pulse_duration": 1e-6,
@@ -106,15 +101,17 @@ class TestPulsedSpecSchedule(_CompilesAllBackends):
             assert schedulable["label"] == labels[i]
             assert schedulable["abs_time"] == abs_times[i]
 
-    def test_compiles_device_cfg_only(self, load_example_transmon_config):
+    def test_compiles_device_cfg_only(self, device_compile_config_basic_transmon):
         # assert that files properly compile
-        qcompile(self.uncomp_sched, load_example_transmon_config)
+        compiler = SerialCompiler(name="compiler")
+        compiler.compile(
+            schedule=self.uncomp_sched, config=device_compile_config_basic_transmon
+        )
 
 
 class TestNVDarkESRSched:
     @classmethod
     def setup_class(cls):
-        set_datadir(tmp_dir.name)
         cls.sched_kwargs = {
             "qubit": "qe0",
             "repetitions": 10,
@@ -166,7 +163,7 @@ class TestNVDarkESRSched:
         # assert that files properly compile
         quantum_device: QuantumDevice = mock_setup_basic_nv["quantum_device"]
         qcompile(
-            self.uncomp_sched,  # pylint: disable=no-member
+            self.uncomp_sched,
             quantum_device.generate_device_config(),
             quantum_device.generate_hardware_config(),
         )
