@@ -29,8 +29,7 @@ from qblox_instruments import (
 from qcodes.instrument import Instrument, InstrumentChannel, InstrumentModule
 
 # pylint: disable=no-name-in-module
-
-from quantify_scheduler.compilation import qcompile
+from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.instrument_coordinator.components import qblox
 
@@ -376,7 +375,7 @@ def test_initialize_cluster_component(make_cluster_component):
 def test_prepare_qcm_qrm(
     mocker,
     schedule_with_measurement,
-    load_example_transmon_config,
+    mock_setup_basic_transmon_with_standard_params,
     load_example_qblox_hardware_config,
     make_qcm_component,
     make_qrm_component,
@@ -416,10 +415,13 @@ def test_prepare_qcm_qrm(
     qrm0.force_set_parameters(force_set_parameters)
     qrm2.force_set_parameters(force_set_parameters)
 
-    compiled_schedule = qcompile(
-        schedule_with_measurement,
-        load_example_transmon_config,
-        hardware_cfg,
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+    quantum_device.get_element("q0").clock_freqs.readout(7.5e9)
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        schedule_with_measurement, config=quantum_device.generate_compilation_config()
     )
     prog = compiled_schedule["compiled_instructions"]
 
@@ -506,9 +508,15 @@ def test_prepare_cluster_rf(
     q5.measure.acq_delay(100e-9)
 
     sched = make_basic_schedule("q5")
+
     hardware_cfg = load_example_qblox_hardware_config
-    compiled_schedule = qcompile(
-        sched, quantum_device.generate_device_config(), hardware_cfg
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        sched,
+        config=quantum_device.generate_compilation_config(),
     )
     compiled_schedule_before_prepare = deepcopy(compiled_schedule)
 
@@ -546,7 +554,6 @@ def test_prepare_cluster_rf(
 
 
 def test_prepare_rf(
-    close_all_instruments,
     mock_setup_basic_transmon_with_standard_params,
     schedule_with_measurement_q2,
     load_example_qblox_hardware_config,
@@ -561,15 +568,17 @@ def test_prepare_rf(
     mock_setup["q2"].clock_freqs.readout(7.5e9)
     mock_setup["q2"].clock_freqs.f01(6.03e9)
 
-    device_config = mock_setup["quantum_device"].generate_device_config()
-    # Act
-    compiled_schedule = qcompile(
-        schedule_with_measurement_q2,
-        device_config,
-        load_example_qblox_hardware_config,
-    )
-    prog = compiled_schedule["compiled_instructions"]
+    quantum_device = mock_setup["quantum_device"]
+    quantum_device.hardware_config(load_example_qblox_hardware_config)
 
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        schedule_with_measurement_q2,
+        config=quantum_device.generate_compilation_config(),
+    )
+
+    # Act
+    prog = compiled_schedule["compiled_instructions"]
     qcm.prepare(prog["qcm_rf0"])
     qrm.prepare(prog["qrm_rf0"])
 
@@ -690,18 +699,21 @@ def test_retrieve_acquisition_qcm(close_all_instruments, make_qcm_component):
 
 def test_retrieve_acquisition_qrm(
     schedule_with_measurement,
-    load_example_transmon_config,
     load_example_qblox_hardware_config,
     make_qrm_component,
+    mock_setup_basic_transmon_with_standard_params,
 ):
     # Arrange
     qrm: qblox.PulsarQRMComponent = make_qrm_component("qrm0", "1234")
 
     # Act
-    compiled_schedule = qcompile(
-        schedule_with_measurement,
-        load_example_transmon_config,
-        load_example_qblox_hardware_config,
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.hardware_config(load_example_qblox_hardware_config)
+    quantum_device.get_element("q0").clock_freqs.readout(7.5e9)
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        schedule_with_measurement, config=quantum_device.generate_compilation_config()
     )
     prog = compiled_schedule["compiled_instructions"]
     prog = dict(prog)
@@ -723,21 +735,20 @@ def test_retrieve_acquisition_qcm_rf(close_all_instruments, make_qcm_rf):
 def test_retrieve_acquisition_qrm_rf(
     mock_setup_basic_transmon_with_standard_params,
     schedule_with_measurement_q2,
-    load_example_qblox_hardware_config,
     make_qrm_rf,
+    load_example_qblox_hardware_config,
 ):
     # Arrange
     qrm_rf: qblox.QRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
 
     mock_setup = mock_setup_basic_transmon_with_standard_params
+    mock_setup["quantum_device"].hardware_config(load_example_qblox_hardware_config)
     mock_setup["q2"].clock_freqs.readout(7.3e9)
-    device_config = mock_setup["quantum_device"].generate_device_config()
 
-    # Act
-    compiled_schedule = qcompile(
-        schedule_with_measurement_q2,
-        device_config,
-        load_example_qblox_hardware_config,
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        schedule=schedule_with_measurement_q2,
+        config=mock_setup["quantum_device"].generate_compilation_config(),
     )
     prog = compiled_schedule["compiled_instructions"]
     prog = dict(prog)
@@ -752,33 +763,32 @@ def test_retrieve_acquisition_qrm_rf(
 
 def test_retrieve_acquisition_cluster(
     make_schedule_with_measurement,
-    mock_setup_basic_transmon,
-    load_example_qblox_hardware_config,
+    mock_setup_basic_transmon_with_standard_params,
     make_cluster_component,
+    load_example_qblox_hardware_config,
 ):
-    q4 = mock_setup_basic_transmon["q4"]
+    # Arrange
+    mock_setup = mock_setup_basic_transmon_with_standard_params
+    mock_setup["quantum_device"].hardware_config(load_example_qblox_hardware_config)
+
+    q4 = mock_setup["q4"]
     q4.clock_freqs.f01.set(5040000000)
     q4.rxy.amp180(0.2)
     q4.clock_freqs.f12(5.41e9)
     q4.clock_freqs.readout(6950000000)
     q4.measure.acq_delay(1.2e-07)
 
-    device_cfg = mock_setup_basic_transmon["quantum_device"].generate_device_config()
-
-    # Arrange
     cluster_name = "cluster0"
     cluster: qblox.ClusterComponent = make_cluster_component(cluster_name)
 
-    # Act
-    compiled_schedule = qcompile(
-        make_schedule_with_measurement("q4"),
-        device_cfg,
-        load_example_qblox_hardware_config,
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        schedule=make_schedule_with_measurement("q4"),
+        config=mock_setup["quantum_device"].generate_compilation_config(),
     )
-    prog = compiled_schedule["compiled_instructions"]
-    prog = dict(prog)
 
-    cluster.prepare(prog[cluster_name])
+    # Act
+    cluster.prepare(compiled_schedule["compiled_instructions"][cluster_name])
     cluster.start()
     acq = cluster.retrieve_acquisition()
 
@@ -788,8 +798,8 @@ def test_retrieve_acquisition_cluster(
 
 def test_start_qcm_qrm(
     schedule_with_measurement,
-    load_example_transmon_config,
     load_example_qblox_hardware_config,
+    mock_setup_basic_transmon_with_standard_params,
     make_qcm_component,
     make_qrm_component,
 ):
@@ -797,10 +807,13 @@ def test_start_qcm_qrm(
     qcm: qblox.PulsarQCMComponent = make_qcm_component("qcm0", "1234")
     qrm: qblox.PulsarQRMComponent = make_qrm_component("qrm0", "1234")
 
-    compiled_schedule = qcompile(
-        schedule_with_measurement,
-        load_example_transmon_config,
-        load_example_qblox_hardware_config,
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.hardware_config(load_example_qblox_hardware_config)
+    quantum_device.get_element("q0").clock_freqs.readout(7.5e9)
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        schedule_with_measurement, config=quantum_device.generate_compilation_config()
     )
     prog = compiled_schedule["compiled_instructions"]
 
@@ -827,15 +840,14 @@ def test_start_qcm_qrm_rf(
     qrm_rf: qblox.QRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
 
     mock_setup = mock_setup_basic_transmon_with_standard_params
+    mock_setup["quantum_device"].hardware_config(load_example_qblox_hardware_config)
     mock_setup["q2"].clock_freqs.readout(7.3e9)
     mock_setup["q2"].clock_freqs.f01(6.03e9)
+    compilation_config = mock_setup["quantum_device"].generate_compilation_config()
 
-    device_config = mock_setup["quantum_device"].generate_device_config()
-
-    compiled_schedule = qcompile(
-        schedule_with_measurement_q2,
-        device_config,
-        load_example_qblox_hardware_config,
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        schedule=schedule_with_measurement_q2, config=compilation_config
     )
     prog = compiled_schedule["compiled_instructions"]
 
@@ -936,65 +948,6 @@ def test_store_scope_acquisition(make_qrm_component):
 
     # Assert
     qrm.instrument.store_scope_acquisition.assert_called_once()
-
-
-def test_get_scope_channel_and_index(make_qrm_component):
-    acq_mapping = {
-        qblox.AcquisitionIndexing(acq_index=0, acq_channel=0): ("seq0", "trace"),
-    }
-    qrm: qblox.PulsarQRMComponent = make_qrm_component("qrm0", "1234")
-    acq_manager = qblox._QRMAcquisitionManager(
-        qrm, qrm._hardware_properties.number_of_sequencers, acq_mapping, None
-    )
-    result = acq_manager._get_scope_channel_and_index()
-    assert result == (0, 0)
-
-
-def test_get_scope_channel_and_index_exception(make_qrm_component):
-    acq_mapping = {
-        qblox.AcquisitionIndexing(acq_index=0, acq_channel=0): ("seq0", "trace"),
-        qblox.AcquisitionIndexing(acq_index=1, acq_channel=0): ("seq0", "trace"),
-    }
-    qrm: qblox.PulsarQRMComponent = make_qrm_component("qrm0", "1234")
-    acq_manager = qblox._QRMAcquisitionManager(
-        qrm, qrm._hardware_properties.number_of_sequencers, acq_mapping, None
-    )
-    with pytest.raises(RuntimeError) as execinfo:
-        acq_manager._get_scope_channel_and_index()
-
-    assert (
-        execinfo.value.args[0]
-        == "A scope mode acquisition is defined for both acq_channel 0 with "
-        "acq_index 0 as well as acq_channel 0 with acq_index 1. Only a single "
-        "trace acquisition is allowed per QRM."
-    )
-
-
-def test_get_protocol(make_qrm_component):
-    answer = "trace"
-    acq_mapping = {
-        qblox.AcquisitionIndexing(acq_index=0, acq_channel=0): ("seq0", answer),
-    }
-    qrm: qblox.PulsarQRMComponent = make_qrm_component("qrm0", "1234")
-    acq_manager = qblox._QRMAcquisitionManager(
-        qrm, qrm._hardware_properties.number_of_sequencers, acq_mapping, None
-    )
-    assert acq_manager._get_protocol(0, 0) == answer
-
-
-def test_get_sequencer_index(make_qrm_component):
-    answer = 0
-    acq_mapping = {
-        qblox.AcquisitionIndexing(acq_index=0, acq_channel=0): (
-            f"seq{answer}",
-            "trace",
-        ),
-    }
-    qrm: qblox.PulsarQRMComponent = make_qrm_component("qrm0", "1234")
-    acq_manager = qblox._QRMAcquisitionManager(
-        qrm, qrm._hardware_properties.number_of_sequencers, acq_mapping, None
-    )
-    assert acq_manager._get_sequencer_index(0, 0) == answer
 
 
 def test_instrument_module():

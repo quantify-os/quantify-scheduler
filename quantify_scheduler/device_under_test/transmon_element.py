@@ -1,6 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-from typing import Dict, Any
+from typing import Any, Dict
 
 from qcodes.instrument import InstrumentChannel
 from qcodes.instrument.base import InstrumentBase
@@ -30,7 +30,7 @@ class Ports(InstrumentChannel):
         self.microwave = Parameter(
             "microwave",
             instrument=self,
-            initial_cache_value=f"{parent.name}:mw",
+            initial_cache_value=kwargs.get("microwave", f"{parent.name}:mw"),
             set_cmd=False,
         )
         """Name of the element's microwave port."""
@@ -38,7 +38,7 @@ class Ports(InstrumentChannel):
         self.flux = Parameter(
             "flux",
             instrument=self,
-            initial_cache_value=f"{parent.name}:fl",
+            initial_cache_value=kwargs.get("flux", f"{parent.name}:fl"),
             set_cmd=False,
         )
         """Name of the element's flux port."""
@@ -46,7 +46,7 @@ class Ports(InstrumentChannel):
         self.readout = Parameter(
             "readout",
             instrument=self,
-            initial_cache_value=f"{parent.name}:res",
+            initial_cache_value=kwargs.get("readout", f"{parent.name}:res"),
             set_cmd=False,
         )
         """Name of the element's readout port."""
@@ -65,7 +65,7 @@ class ClocksFrequencies(InstrumentChannel):
             instrument=self,
             label="Qubit frequency",
             unit="Hz",
-            initial_value=float("nan"),
+            initial_value=kwargs.get("f01", float("nan")),
             vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
         """Frequency of the 01 clock"""
@@ -75,7 +75,7 @@ class ClocksFrequencies(InstrumentChannel):
             instrument=self,
             label="Frequency of the |1>-|2> transition",
             unit="Hz",
-            initial_value=float("nan"),
+            initial_value=kwargs.get("f12", float("nan")),
             vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
         """Frequency of the 12 clock"""
@@ -85,7 +85,7 @@ class ClocksFrequencies(InstrumentChannel):
             instrument=self,
             label="Readout frequency",
             unit="Hz",
-            initial_value=float("nan"),
+            initial_value=kwargs.get("readout", float("nan")),
             vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
         """Frequency of the ro clock. """
@@ -102,7 +102,7 @@ class IdlingReset(InstrumentChannel):
         self.duration = ManualParameter(
             "duration",
             instrument=self,
-            initial_value=200e-6,
+            initial_value=kwargs.get("duration", 200e-6),
             unit="s",
             vals=validators.Numbers(min_value=0, max_value=1),
         )
@@ -121,7 +121,7 @@ class RxyDRAG(InstrumentChannel):
             "amp180",
             instrument=self,
             label=r"$\pi-pulse amplitude$",
-            initial_value=float("nan"),
+            initial_value=kwargs.get("amp180", float("nan")),
             unit="V",
             vals=Numbers(min_value=-10, max_value=10, allow_nan=True),
         )
@@ -130,7 +130,7 @@ class RxyDRAG(InstrumentChannel):
         self.motzoi = ManualParameter(
             "motzoi",
             instrument=self,
-            initial_value=0,
+            initial_value=kwargs.get("motzoi", 0),
             unit="",
             vals=validators.Numbers(min_value=-1, max_value=1),
         )
@@ -140,7 +140,7 @@ class RxyDRAG(InstrumentChannel):
         self.duration = ManualParameter(
             "duration",
             instrument=self,
-            initial_value=20e-9,
+            initial_value=kwargs.get("duration", 20e-9),
             unit="s",
             vals=validators.Numbers(min_value=0, max_value=1),
         )
@@ -160,7 +160,7 @@ class DispersiveMeasurement(InstrumentChannel):
         self.pulse_type = ManualParameter(
             "pulse_type",
             instrument=self,
-            initial_value="SquarePulse",
+            initial_value=kwargs.get("pulse_type", "SquarePulse"),
             vals=pulse_types,
         )
         """Envelope function that defines the shape of the readout pulse prior to
@@ -169,7 +169,7 @@ class DispersiveMeasurement(InstrumentChannel):
         self.pulse_amp = ManualParameter(
             "pulse_amp",
             instrument=self,
-            initial_value=0.25,
+            initial_value=kwargs.get("pulse_amp", 0.25),
             unit="V",
             vals=validators.Numbers(min_value=0, max_value=2),
         )
@@ -178,7 +178,7 @@ class DispersiveMeasurement(InstrumentChannel):
         self.pulse_duration = ManualParameter(
             "pulse_duration",
             instrument=self,
-            initial_value=300e-9,
+            initial_value=kwargs.get("pulse_duration", 300e-9),
             unit="s",
             vals=validators.Numbers(min_value=0, max_value=1),
         )
@@ -187,7 +187,7 @@ class DispersiveMeasurement(InstrumentChannel):
         self.acq_channel = ManualParameter(
             "acq_channel",
             instrument=self,
-            initial_value=0,
+            initial_value=kwargs.get("acq_channel", 0),
             unit="#",
             vals=validators.Ints(min_value=0),
         )
@@ -196,7 +196,7 @@ class DispersiveMeasurement(InstrumentChannel):
         self.acq_delay = ManualParameter(
             "acq_delay",
             instrument=self,
-            initial_value=0,  # float("nan"),
+            initial_value=kwargs.get("acq_delay", 0),  # float("nan"),
             unit="s",
             # in principle the values should be a few 100 ns but the validator is here
             # only to protect against silly typos that lead to out of memory errors.
@@ -210,7 +210,7 @@ class DispersiveMeasurement(InstrumentChannel):
         self.integration_time = ManualParameter(
             "integration_time",
             instrument=self,
-            initial_value=1e-6,
+            initial_value=kwargs.get("integration_time", 1e-6),
             unit="s",
             # in principle the values should be a few us but the validator is here
             # only to protect against silly typos that lead to out of memory errors.
@@ -221,7 +221,7 @@ class DispersiveMeasurement(InstrumentChannel):
         self.reset_clock_phase = ManualParameter(
             "reset_clock_phase",
             instrument=self,
-            initial_value=True,
+            initial_value=kwargs.get("reset_clock_phase", True),
             vals=validators.Bool(),
         )
         """The phase of the measurement clock will be reset by the
@@ -232,7 +232,7 @@ class DispersiveMeasurement(InstrumentChannel):
         self.acq_weight_type = ManualParameter(
             "acq_weight_type",
             instrument=self,
-            initial_value="SSB",
+            initial_value=kwargs.get("acq_weight_type", "SSB"),
             vals=ro_acq_weight_type_validator,
         )
 
@@ -244,23 +244,69 @@ class BasicTransmonElement(DeviceElement):
     """
 
     def __init__(self, name: str, **kwargs):
+        """
+        Parameters
+        ----------
+        name
+            The name of the transmon element.
+        kwargs
+            Can be used to pass submodule initialization data by using submodule name
+            as keyword and as argument a dictionary containing the submodule parameter
+            names and their value.
+        """
+        submodules_to_add = {
+            "reset": IdlingReset,
+            "rxy": RxyDRAG,
+            "measure": DispersiveMeasurement,
+            "ports": Ports,
+            "clock_freqs": ClocksFrequencies,
+        }
+        submodule_data = {
+            sub_name: kwargs.pop(sub_name, {}) for sub_name in submodules_to_add.keys()
+        }
         super().__init__(name, **kwargs)
 
-        self.add_submodule("reset", IdlingReset(self, "reset"))
+        for sub_name, sub_class in submodules_to_add.items():
+            self.add_submodule(
+                sub_name,
+                sub_class(
+                    parent=self, name=sub_name, **submodule_data.get(sub_name, {})
+                ),
+            )
+
         self.reset: IdlingReset
         """Submodule :class:`~.IdlingReset`."""
-        self.add_submodule("rxy", RxyDRAG(self, "rxy"))
         self.rxy: RxyDRAG
         """Submodule :class:`~.RxyDRAG`."""
-        self.add_submodule("measure", DispersiveMeasurement(self, "measure"))
         self.measure: DispersiveMeasurement
         """Submodule :class:`~.DispersiveMeasurement`."""
-        self.add_submodule("ports", Ports(self, "ports"))
         self.ports: Ports
         """Submodule :class:`~.Ports`."""
-        self.add_submodule("clock_freqs", ClocksFrequencies(self, "clock_freqs"))
         self.clock_freqs: ClocksFrequencies
         """Submodule :class:`~.ClocksFrequencies`."""
+
+    def __getstate__(self):
+        """
+        Serializes `BasicTransmonElement` by obtaining relevant information from
+        :func:`~Instrument.snapshot()`. The relevant information consists of the name
+        of the transmon element and a dictionary for each submodule containing its
+        parameter names and corresponding values.
+        """
+        snapshot = self.snapshot()
+
+        data = {"name": snapshot["name"]}
+        for submodule_name, submodule_data in snapshot["submodules"].items():
+            parameter_dict = {}
+            for parameter_name, parameter_data in submodule_data["parameters"].items():
+                parameter_dict[parameter_name] = parameter_data["value"]
+            data[submodule_name] = parameter_dict
+
+        state = {
+            "deserialization_type": self.__class__.__name__,
+            "mode": "__init__",
+            "data": data,
+        }
+        return state
 
     def _generate_config(self) -> Dict[str, Dict[str, OperationCompilationConfig]]:
         """

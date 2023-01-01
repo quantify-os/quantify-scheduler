@@ -13,6 +13,8 @@ from typing import Any, Callable, Dict, List, Type, Union
 import fastjsonschema
 import numpy as np
 
+from qcodes import Instrument
+
 from quantify_scheduler.helpers import inspect as inspect_helpers
 from quantify_scheduler import enums
 
@@ -134,15 +136,15 @@ class ScheduleJSONDecoder(json.JSONDecoder):
         modules : List[ModuleType], *optional*
             A list of custom modules containing serializable classes, by default []
         """
-        extended_modules: List[ModuleType] = kwargs.pop("modules", list())
+        extended_modules: List[ModuleType] = kwargs.pop("modules", [])
         invalid_modules = list(
             filter(lambda o: not isinstance(o, ModuleType), extended_modules)
         )
         if invalid_modules:
             raise ValueError(
                 f"Attempting to create a Schedule decoder class ScheduleJSONDecoder. "
-                f"The following modules provided are not an instance of the ModuleType: "
-                f"{invalid_modules} ."
+                f"The following modules provided are not an instance of the ModuleType:"
+                f" {invalid_modules} ."
             )
 
         super().__init__(
@@ -159,23 +161,25 @@ class ScheduleJSONDecoder(json.JSONDecoder):
             AcquisitionMetadata,
             Schedulable,
         )
-        from quantify_scheduler.operations import (  # pylint: disable=import-outside-toplevel
-            operation,
+        from quantify_scheduler.operations import (
             acquisition_library,
             gate_library,
+            operation,
+            nv_native_library,
             pulse_library,
             shared_native_library,
-            nv_native_library,
         )
+        from quantify_scheduler.device_under_test import transmon_element
 
         self._modules: List[ModuleType] = [
             enums,
             operation,
+            transmon_element,
+            acquisition_library,
             gate_library,
             pulse_library,
-            acquisition_library,
-            shared_native_library,
             nv_native_library,
+            shared_native_library,
             resources,
         ] + extended_modules
         self.classes = inspect_helpers.get_classes(*self._modules)
@@ -197,7 +201,9 @@ class ScheduleJSONDecoder(json.JSONDecoder):
             }
         )
 
-    def decode_dict(self, obj: Dict[str, Any]) -> Dict[str, Any]:
+    def decode_dict(
+        self, obj: Dict[str, Any]
+    ) -> Union[Dict[str, Any], np.ndarray, type]:
         """
         Returns the deserialized JSON dictionary.
 
@@ -216,15 +222,21 @@ class ScheduleJSONDecoder(json.JSONDecoder):
         # `__setstate__`.
         if "deserialization_type" in obj:
             class_type: Type = self.classes[obj["deserialization_type"]]
+
             if "mode" in obj and obj["mode"] == "__init__":
                 if class_type == np.ndarray:
                     return np.array(obj["data"])
+                if issubclass(class_type, Instrument):
+                    return class_type(**obj["data"])
                 return class_type(obj["data"])
+
             if "mode" in obj and obj["mode"] == "type":
                 return class_type
+
             new_obj = class_type.__new__(class_type)
             new_obj.__setstate__(obj)
             return new_obj
+
         return obj
 
     def custom_object_hook(self, obj: object) -> object:

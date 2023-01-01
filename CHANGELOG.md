@@ -1,5 +1,30 @@
 # Changelog
 
+## Unreleased
+
+### Breaking changes
+- Qblox ICCs - Replace `"acq_mapping"` by `"trace_acq_channel"` in the compiled schedule (!515)
+
+### Merged branches and closed issues
+- Acquisition - Data obtained with TriggerCount acquisition is formatted correctly (!530).
+- Acquisition - Follow-up for !530: Fix wrong assumption in input format (!564).
+- NV centers - Dark ESR schedule combining all prior operations (!527)
+- NV centers - `BasicElectronicNVElement` parameters accept physics-motivated values (!551)
+- Documentation - Sphinx build now compatible with qcodes==0.36.0 (!552)
+- Compilation - Can optionally provide a `QuantumDevice` to `QuantifyCompiler`. This will be used as default `CompilationConfig` in `QuantifyCompiler.compile()` (!535)
+- NV centers - Avoid python warning when parsing docstring in nv_element (!562)
+- QuantumDevice - `BasicTransmonElement` can now be serialized to json string and deserialized via ``__getstate__/__init__`` (!510)
+- Deprecation - Refactored tests to remove deprecated `qcompile`, refactored to `SerialCompiler` (!529, #368)
+
+## 0.10.1 (2022-12-20)
+
+For help in migrating from deprecated methods, see [Quantify Deprecated Code Suggestions](examples/deprecated.md).
+
+### Merged branches and closed issues
+
+- Compilation - Reinstate `add_pulse_information_transmon` device compilation backend (removed in !526) (!557)
+- Qblox backend - Drop no key `"distortion_corrections"` supplied log message level to debug (!560)
+
 ## 0.10.0 (2022-12-15)
 
 ### Breaking changes
@@ -14,6 +39,7 @@
 ### Merged branches and closed issues
 - Deprecation - Removed dependencies on deprecated code from tests and production code (!526)
 - Deprecation - Replaced `DeprecationWarning`s with `FutureWarning`s so they are shown to end-users by default (!536, counterpart to quantify-core!411)
+- Visualization - Show clock name in plotly pulse diagram (!547)
 - Documentation - Instrument naming requirements in qblox hardware config (!531)
 - Documentation - Make class `__init__` docstring visible on Sphinx (!541, #314)
 - Documentation - Improve parameter documentation for DeviceElements (!493)
@@ -35,6 +61,7 @@
 - Instrument Coordinator - Changed argument of `GenericInstrumentCoordinatorComponent` from `name` to `instrument_reference`. (!497)
 - Deprecation - Removed dependencies on deprecated code from tests and production code (!526)
 - Deprecation - Replaced `DeprecationWarning`s with `FutureWarning`s so they are shown to end-users by default (!536, counterpart to quantify-core!411)
+- Qblox backend - Added `TriggerCountAcquisitionStrategy` to acquisitions, generating the Q1ASM commands. (!540)
 - Documentation - Make class `__init__` docstring visible on Sphinx (!541, #314)
 - Deprecation - Remove code and test dependencies on deprecated `data` keyword in `Operations` (!545, #381)
 - Tests - Refactored tests to remove duplicated `temp_dir` setup, and only use `tmp_test_data_dir` fixture (#370,  !525)

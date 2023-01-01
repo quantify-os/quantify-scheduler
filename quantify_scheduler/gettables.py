@@ -105,14 +105,6 @@ class ScheduleGettable:
             False, then only initialize the first invocation of `get`.
         """
         self._data_labels_specified = data_labels is not None
-        if data_labels and len(data_labels) != 2 * num_channels:
-            raise ValueError(
-                f"Specified {num_channels} acquisition channels for "
-                f"{self.__class__.__name__}, but {len(data_labels)} data labels were "
-                f"specified. Please give precisely {2 * num_channels} labels, "
-                f"corresponding to "
-                f"num_channels*{'I and Q' if real_imag else 'magnitude and phase'}."
-            )
 
         self.always_initialize = always_initialize
         self.is_initialized = False
@@ -235,6 +227,72 @@ class ScheduleGettable:
         )
         return result
 
+    def _reshape_data(self, acq_metadata, vals):
+
+        if acq_metadata.acq_protocol == "trigger_count":
+            return [vals.real.astype(np.uint64)]
+
+        if (
+            acq_metadata.acq_protocol == "trace"
+            or acq_metadata.acq_protocol == "ssb_integration_complex"
+            or acq_metadata.acq_protocol == "weighted_integrated_complex"
+        ):
+            ret_val = []
+            if self.real_imag:
+                ret_val.append(vals.real)
+                ret_val.append(vals.imag)
+                return ret_val
+            else:
+                ret_val.append(np.abs(vals))
+                ret_val.append(np.angle(vals, deg=True))
+                return ret_val
+
+        raise NotImplementedError(
+            f"Acquisition protocol {acq_metadata.acq_protocol} with bin"
+            f" mode {acq_metadata.bin_mode} is not supported."
+        )
+
+    def _process_acquired_data_trigger_count(
+        self, acquired_data, acq_metadata: AcquisitionMetadata, repetitions: int
+    ) -> Dict[int, np.ndarray]:
+        """Reformat acquired data in a dictionary. Used by process_acquired_data.
+
+        Parameters
+        ----------
+        acquired_data
+            Acquired data as returned by instrument coordinator
+        acq_metadata
+            Acquisition metadata from schedule
+        repetitions
+            Number of repetitions of the schedule
+
+        Returns
+        -------
+        :
+            Dictionary with reformatted data. Keys correspond to the acquisition
+            channel. Values are 1d numpy arrays with trigger counts.
+
+        Raises
+        ------
+        NotImplementedError
+            If acquisition protocol other than BinMode.APPEND is used.
+        """
+        dataset = {}
+        if acq_metadata.bin_mode == BinMode.APPEND:
+            for acq_channel, acq_indices in acq_metadata.acq_indices.items():
+                dataset[acq_channel] = np.zeros(
+                    len(acq_indices) * repetitions, dtype=int
+                )
+                acq_stride = len(acq_indices)
+                for acq_idx in acq_indices:
+                    vals = acquired_data[(acq_channel, acq_idx)]
+                    dataset[acq_channel][acq_idx::acq_stride] = vals[0]
+            return dataset
+        raise NotImplementedError(
+            f"Acquisition protocol {acq_metadata.acq_protocol} with bin"
+            f" mode {acq_metadata.bin_mode} is not supported."
+        )
+
     def process_acquired_data(
         self, acquired_data, acq_metadata: AcquisitionMetadata, repetitions: int
     ) -> Union[Tuple[float, ...], Tuple[np.ndarray, ...]]:
@@ -248,8 +306,12 @@ class ScheduleGettable:
 
         # retrieve the acquisition results
         # FIXME: acq_metadata should be an attribute of the schedule, see also #192
+        if acq_metadata.acq_protocol == "trigger_count":
+            dataset = self._process_acquired_data_trigger_count(
+                acquired_data, acq_metadata, repetitions
+            )
 
-        if (
+        elif (
             acq_metadata.bin_mode == BinMode.AVERAGE
             and acq_metadata.acq_protocol == "trace"
         ):
@@ -305,12 +367,8 @@ class ScheduleGettable:
                         f"Got {len(vals)} values for acquisition channel '{acq_channel}' instead."
                     )
 
-            if self.real_imag:
-                return_data.append(vals.real)
-                return_data.append(vals.imag)
-            else:
-                return_data.append(np.abs(vals))
-                return_data.append(np.angle(vals, deg=True))
+            return_data.extend(self._reshape_data(acq_metadata, vals))
+
         logger.debug(f"Returning {len(return_data)} values.")
         return tuple(return_data)
 

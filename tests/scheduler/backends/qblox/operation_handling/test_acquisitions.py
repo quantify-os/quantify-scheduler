@@ -151,6 +151,26 @@ class TestAcquisitionStrategyPartial:
             "'acq_channel': 0, 'acq_index': 0, 'duration': 1e-06}."
         )
 
+    @pytest.mark.parametrize("bin_mode", [BinMode.AVERAGE, BinMode.APPEND])
+    def test_bin_index_register_invalid(self, empty_qasm_program_qrm, bin_mode):
+        # arrange
+        data = {"bin_mode": bin_mode, "acq_channel": 0, "acq_index": 0}
+        op_info = types.OpInfo(name="", data=data, timing=0)
+        strategy = MockAcquisition(op_info)
+        strategy.bin_idx_register = None if bin_mode == BinMode.APPEND else "R0"
+
+        # act
+        with pytest.raises(ValueError) as exc:
+            strategy.insert_qasm(empty_qasm_program_qrm)
+
+        # assert
+        assert (
+            exc.value.args[0] == f"Attempting to add acquisition with "
+            f"{'append' if bin_mode == BinMode.APPEND else 'average'} binmode. "
+            f"bin_idx_register {'cannot' if bin_mode == BinMode.APPEND else 'must'} "
+            f"be None."
+        )
+
 
 class TestSquareAcquisitionStrategy:
     @pytest.mark.parametrize("bin_mode", [BinMode.AVERAGE, BinMode.APPEND])
@@ -349,6 +369,129 @@ class TestWeightedAcquisitionStrategy:
             ],
             ["", "", "", ""],
         ]
+
+
+class TestTriggerCountStrategy:
+    @pytest.mark.parametrize("bin_mode", [BinMode.AVERAGE, BinMode.APPEND])
+    def test_constructor(self, bin_mode):
+        data = {"bin_mode": bin_mode, "acq_channel": 0, "acq_index": 0}
+        acquisitions.TriggerCountAcquisitionStrategy(
+            types.OpInfo(name="", data=data, timing=0)
+        )
+
+    def test_generate_data(self):
+        # arrange
+        data = {"bin_mode": BinMode.AVERAGE, "acq_channel": 0, "acq_index": 0}
+        strategy = acquisitions.TriggerCountAcquisitionStrategy(
+            types.OpInfo(name="", data=data, timing=0)
+        )
+        wf_dict = {}
+
+        # act
+        strategy.generate_data(wf_dict)
+
+        # assert
+        assert len(wf_dict) == 0
+
+    def test_acquire_average(self, empty_qasm_program_qrm):
+        # arrange
+        qasm = empty_qasm_program_qrm
+        data = {
+            "bin_mode": BinMode.AVERAGE,
+            "acq_channel": 0,
+            "acq_index": 0,
+            "duration": 100e-6,
+        }
+        strategy = acquisitions.TriggerCountAcquisitionStrategy(
+            types.OpInfo(name="", data=data, timing=0)
+        )
+        strategy.generate_data({})
+
+        # act
+        strategy.acquire_average(qasm)
+
+        # assert
+        assert qasm.instructions == [
+            [
+                "",
+                "acquire_ttl",
+                "0,0,1,4",
+                "# Enable TTL acquisition of acq_channel:0, bin_mode:average",
+            ],
+            ["", "wait", "65532", "# auto generated wait (99996 ns)"],
+            ["", "wait", "34464", "# auto generated wait (99996 ns)"],
+            [
+                "",
+                "acquire_ttl",
+                "0,0,0,4",
+                "# Disable TTL acquisition of acq_channel:0, bin_mode:average",
+            ],
+        ]
+
+    def test_acquire_append(self, empty_qasm_program_qrm):
+        # arrange
+        qasm = empty_qasm_program_qrm
+        data = {
+            "bin_mode": BinMode.APPEND,
+            "acq_channel": 0,
+            "acq_index": 5,
+            "duration": 100e-6,
+        }
+        strategy = acquisitions.TriggerCountAcquisitionStrategy(
+            types.OpInfo(name="", data=data, timing=0)
+        )
+        strategy.bin_idx_register = qasm.register_manager.allocate_register()
+        strategy.generate_data({})
+
+        # act
+        strategy.acquire_append(qasm)
+
+        # assert
+        assert qasm.instructions == [
+            [
+                "",
+                "acquire_ttl",
+                "0,R0,1,4",
+                "# Enable TTL acquisition of acq_channel:0, store in bin:R0",
+            ],
+            ["", "wait", "65532", "# auto generated wait (99996 ns)"],
+            ["", "wait", "34464", "# auto generated wait (99996 ns)"],
+            [
+                "",
+                "acquire_ttl",
+                "0,R0,0,4",
+                "# Disable TTL acquisition of acq_channel:0, store in bin:R0",
+            ],
+            ["", "add", "R0,1,R0", "# Increment bin_idx for ch0 by 1"],
+        ]
+
+
+@pytest.mark.parametrize(
+    "acquisition_strategy",
+    [
+        acquisitions.SquareAcquisitionStrategy,
+        acquisitions.WeightedAcquisitionStrategy,
+        acquisitions.TriggerCountAcquisitionStrategy,
+    ],
+)
+def test_acquire_append_invalid_bin_idx(acquisition_strategy, empty_qasm_program_qrm):
+    # arrange
+    data = {
+        "bin_mode": BinMode.APPEND,
+        "acq_channel": 0,
+        "acq_index": 5,
+        "duration": 100e-6,
+    }
+    strategy = acquisition_strategy(types.OpInfo(name="", data=data, timing=0))
+
+    # act
+    with pytest.raises(ValueError) as exc:
+        strategy.insert_qasm(empty_qasm_program_qrm)
+
+    assert (
+        exc.value.args[0] == "Attempting to add acquisition with append binmode. "
+        "bin_idx_register cannot be None."
+    )
 
 
 def test_trace_acquisition_measurement_control(
