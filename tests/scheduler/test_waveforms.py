@@ -5,7 +5,6 @@
 import numpy as np
 import numpy.testing as npt
 import pytest
-from pytest import approx
 
 from quantify_scheduler.waveforms import (
     drag,
@@ -117,7 +116,7 @@ def test_sudden_net_zero() -> None:
         t_integral_correction=10e-9,
     )
 
-    assert np.sum(waveform) == approx(0, abs=1e-12)
+    assert np.sum(waveform) == pytest.approx(0, abs=1e-12)
     assert np.max(waveform) == amp_A
     assert np.min(waveform) == -1 * amp_A * net_zero_A_scale
 
