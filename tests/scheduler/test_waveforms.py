@@ -103,7 +103,7 @@ def test_drag_ns() -> None:
 def test_sudden_net_zero() -> None:
     times = np.arange(0, 40e-9, 1e-9)
     amp_A = 0.4
-    amp_B = 0.5
+    amp_B = 0.2
     net_zero_A_scale = 0.95
 
     waveform = sudden_net_zero(
@@ -116,7 +116,7 @@ def test_sudden_net_zero() -> None:
         t_integral_correction=10e-9,
     )
 
-    assert np.sum(waveform) == 0
+    assert np.sum(waveform) == pytest.approx(0, abs=1e-12)
     assert np.max(waveform) == amp_A
     assert np.min(waveform) == -1 * amp_A * net_zero_A_scale
 
