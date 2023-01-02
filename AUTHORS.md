@@ -28,3 +28,4 @@
 - Thomas Reynders \<<mailto:thomas@orangeqs.com>>
 - Viacheslav Ostroukh \<<mailto:viacheslav@orangeqs.com>>
 - Victor Negirneac \<<mailto:vnegirneac@qblox.com>>
+- Zhihao Wu \<<mailto:zhihaowu@quanta.org.cn>>
