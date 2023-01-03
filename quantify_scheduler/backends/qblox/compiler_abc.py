@@ -24,6 +24,7 @@ from quantify_scheduler.backends.qblox import (
     q1asm_instructions,
     register_manager,
 )
+from quantify_scheduler.backends.qblox.helpers import determine_clock_lo_interm_freqs
 from quantify_scheduler.backends.qblox.operation_handling.acquisitions import (
     AcquisitionStrategyPartial,
 )
@@ -288,7 +289,7 @@ class Sequencer:
         seq_settings: Dict[str, Any],
         latency_corrections: Dict[str, float],
         lo_name: Optional[str] = None,
-        downconverter_freq: float = 0,
+        downconverter_freq: Optional[float] = None,
         mix_lo: bool = True,
     ):
         """
@@ -1098,7 +1099,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 )
 
             lo_name = io_cfg.get("lo_name", None)
-            downconverter_freq = io_cfg.get("downconverter_freq", 0)
+            downconverter_freq = io_cfg.get("downconverter_freq", None)
             mix_lo = io_cfg.get("mix_lo", True)
 
             portclock_configs: List[Dict[str, Any]] = io_cfg.get(
@@ -1226,40 +1227,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         An abstract method that should be overridden. Meant to assign
         attenuation settings from the hardware configuration if there is any.
         """
-
-    @staticmethod
-    def downconvert_clock(downconverter_freq: float, clock_freq: float):
-        """
-        Downconverts clock frequency.
-
-        Parameters
-        ----------
-        downconverter_freq
-            Frequency of the downconverter.
-        clock_freq
-            clock frequency that is being downconverted.
-
-        Raises
-        ------
-        ValueError
-            When downconverter frequency is negative.
-        ValueError
-            When downconverter frequency is less than the clock frequency.
-        """
-
-        if downconverter_freq == 0:
-            return clock_freq
-
-        if downconverter_freq < 0:
-            raise ValueError("Downconverter frequency must be positive.")
-
-        if downconverter_freq < clock_freq:
-            raise ValueError(
-                "Downconverter frequency specified for this port and clock combination"
-                "must be greater than its clock frequency."
-            )
-
-        return downconverter_freq - clock_freq
 
     def prepare(self) -> None:
         """
@@ -1530,10 +1497,9 @@ class QbloxBasebandModule(QbloxBaseModule):
         Assigns frequencies for baseband modules.
         """
         # ensure to select the top level parent object of the sequencer (pulsar or cluster)
-        if self.is_pulsar:
-            parent = self.parent
-        else:
-            parent = self.parent.parent
+        parent = (
+            self.parent if self.is_pulsar else self.parent.parent
+        )
 
         if sequencer.associated_ext_lo is None:
             if sequencer.frequency == 0:
@@ -1541,14 +1507,13 @@ class QbloxBasebandModule(QbloxBaseModule):
                 sequencer.settings.nco_en = False
             else:
                 # set the nco frequency to the clock frequency, and enable the nco.
-                clock_freq = parent.resources[sequencer.clock]["freq"]
-                sequencer.frequency = clock_freq
+                sequencer.frequency = parent.resources[sequencer.clock]["freq"]
                 sequencer.settings.nco_en = True
         else:
-            self.assign_frequency_with_ext_lo(sequencer, parent)
+            self._assign_frequency_with_ext_lo(sequencer, parent)
 
     @staticmethod
-    def assign_frequency_with_ext_lo(sequencer: Sequencer, container):
+    def _assign_frequency_with_ext_lo(sequencer: Sequencer, container):
         r"""
         Meant to assign an IF frequency
         to each sequencer, or an LO frequency to each output (if applicable).
@@ -1576,24 +1541,19 @@ class QbloxBasebandModule(QbloxBaseModule):
         if sequencer.clock not in container.resources:
             return
 
-        clock_freq = container.resources[sequencer.clock]["freq"]
-        lo_compiler = container.instrument_compilers.get(
+        compiler_lo = container.instrument_compilers.get(
             sequencer.associated_ext_lo, None
         )
 
-        if not sequencer.mix_lo:
-            lo_compiler.frequency = clock_freq
-            sequencer.settings.nco_en = sequencer.frequency != 0
-            return
-
-        if_freq = sequencer.frequency
-        lo_freq = lo_compiler.frequency
-
-        clock_freq = QbloxBaseModule.downconvert_clock(
-            sequencer.downconverter_freq, clock_freq
+        freqs = determine_clock_lo_interm_freqs(
+            clock_freq=container.resources[sequencer.clock]["freq"],
+            lo_freq=compiler_lo.frequency,
+            interm_freq=sequencer.frequency,
+            downconverter_freq=sequencer.downconverter_freq,
+            mix_lo=sequencer.mix_lo,
         )
 
-        if lo_freq is None and if_freq is None:
+        if freqs.LO is None and freqs.IF is None:
             raise ValueError(
                 f"Frequency settings underconstraint for sequencer {sequencer.name} "
                 f"with port {sequencer.port} and clock {sequencer.clock}. When using "
@@ -1601,15 +1561,12 @@ class QbloxBasebandModule(QbloxBaseModule):
                 f'"lo_freq" or an "interm_freq". Neither was given.'
             )
 
-        if if_freq is not None:
-            lo_compiler.frequency = clock_freq - if_freq
+        if freqs.LO is not None:
+            compiler_lo.frequency = freqs.LO
 
-        if lo_freq is not None:
-            if_freq = clock_freq - lo_freq
-            sequencer.frequency = if_freq
-
-        if if_freq != 0 and if_freq is not None:
-            sequencer.settings.nco_en = True
+        if freqs.IF is not None:
+            sequencer.frequency = freqs.IF
+            sequencer.settings.nco_en = freqs.IF != 0
 
     def assign_attenuation(self):
         """
@@ -1654,8 +1611,6 @@ class QbloxRFModule(QbloxBaseModule):
         if sequencer.clock not in resources:
             return
 
-        clock_freq = resources[sequencer.clock]["freq"]
-
         # Now we have to identify the LO the sequencer is outputting to
         # We can do this by first checking the Sequencer-Output correspondence
         # And then use the fact that LOX is connected to OutputX
@@ -1667,15 +1622,23 @@ class QbloxRFModule(QbloxBaseModule):
                 # since 1 and 3 are part of the same
                 # complex outputs.
                 continue
+
             complex_output = 0 if real_output == 0 else 1
-            if_freq = sequencer.frequency
             lo_freq = (
                 self._settings.lo0_freq
                 if (complex_output == 0)
                 else self._settings.lo1_freq
             )
 
-            if lo_freq is None and if_freq is None:
+            freqs = determine_clock_lo_interm_freqs(
+                clock_freq=resources[sequencer.clock]["freq"],
+                lo_freq=lo_freq,
+                interm_freq=sequencer.frequency,
+                downconverter_freq=sequencer.downconverter_freq,
+                mix_lo=sequencer.mix_lo,
+            )
+
+            if freqs.LO is None and freqs.IF is None:
                 raise ValueError(
                     f"Frequency settings underconstraint for sequencer {sequencer.name}"
                     f" with port {sequencer.port} and clock {sequencer.clock}. It is "
@@ -1683,25 +1646,20 @@ class QbloxRFModule(QbloxBaseModule):
                     f"Neither was given."
                 )
 
-            clock_freq = QbloxBaseModule.downconvert_clock(
-                sequencer.downconverter_freq, clock_freq
-            )
-
-            if if_freq is not None:
-                new_lo_freq = clock_freq - if_freq
-                if lo_freq is not None and new_lo_freq != lo_freq:
+            if freqs.LO is not None:
+                if lo_freq is not None and freqs.LO != lo_freq:
                     raise ValueError(
                         f"Attempting to set 'lo{complex_output}_freq' to frequency "
-                        f"{new_lo_freq}, while it has previously already been set to "
+                        f"{freqs.LO}, while it has previously already been set to "
                         f"{lo_freq}!"
                     )
                 if complex_output == 0:
-                    self._settings.lo0_freq = new_lo_freq
+                    self._settings.lo0_freq = freqs.LO
                 elif complex_output == 1:
-                    self._settings.lo1_freq = new_lo_freq
+                    self._settings.lo1_freq = freqs.LO
 
-            if lo_freq is not None:
-                sequencer.frequency = clock_freq - lo_freq
+            if freqs.IF is not None:
+                sequencer.frequency = freqs.IF
 
     def assign_attenuation(self):
         """

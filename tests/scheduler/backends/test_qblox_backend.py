@@ -1628,7 +1628,7 @@ def test_assign_frequencies_baseband(
 
 
 @pytest.mark.parametrize(
-    "downconverter_freq_0, downconverter_freq_1", [(0, 0), (9e9, 9e9)]
+    "downconverter_freq_0, downconverter_freq_1", [(None, None), (9e9, 9e9)]
 )
 def test_assign_frequencies_baseband_downconverter(
     downconverter_freq_0,
@@ -1690,7 +1690,7 @@ def test_assign_frequencies_baseband_downconverter(
     generic_ic_program = compiled_instructions[constants.GENERIC_IC_COMPONENT_NAME]
     qcm_program = compiled_instructions["qcm0"]
 
-    if downconverter_freq_0 == 0:
+    if downconverter_freq_0 is None:
         expected_lo0 = q0_clock_freq - if0
         actual_lo0 = generic_ic_program[f"{io0_lo_name}.frequency"]
 
@@ -1770,7 +1770,7 @@ def test_assign_frequencies_rf(
 
 
 @pytest.mark.parametrize(
-    "downconverter_freq_0, downconverter_freq_1", [(0, 0), (8.2e9, 8.2e9)]
+    "downconverter_freq_0, downconverter_freq_1", [(None, None), (8.2e9, 8.2e9)]
 )
 def test_assign_frequencies_rf_downconverter(
     downconverter_freq_0,
@@ -1835,7 +1835,7 @@ def test_assign_frequencies_rf_downconverter(
 
     expected_lo1 = lo1
 
-    if downconverter_freq_0 == 0:
+    if downconverter_freq_0 is None:
         expected_lo0 = q2_clock_freq - if0
         expected_if1 = q3_clock_freq - lo1
         status = "without"

@@ -1,9 +1,10 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Helper functions for Qblox backend."""
+import dataclasses
 import re
 from copy import deepcopy
-from collections import UserDict
+from collections import UserDict, namedtuple
 from typing import Any, Dict, Iterable, List, Literal, Optional, Tuple, Union
 
 import numpy as np
@@ -425,6 +426,46 @@ def get_nco_phase_arguments(phase_deg: float) -> int:
     """
     phase_deg %= 360
     return round(phase_deg * constants.NCO_PHASE_STEPS_PER_DEG)
+
+
+@dataclasses.dataclass
+class _Freqs:
+    clock: Optional[float]
+    LO: Optional[float]
+    IF: Optional[float]
+
+
+def determine_clock_lo_interm_freqs(
+    clock_freq, lo_freq, interm_freq, downconverter_freq=None, mix_lo=True
+):
+    def _downconvert_clock(downconverter_freq: float, clock_freq: float) -> float:
+        if downconverter_freq < 0:
+            raise ValueError("Downconverter frequency must be positive.")
+
+        if downconverter_freq < clock_freq:
+            raise ValueError(
+                "Downconverter frequency must be greater than clock frequency."
+            )
+
+        return downconverter_freq - clock_freq
+
+    freqs = _Freqs(clock=clock_freq, LO=None, IF=None)
+    if clock_freq is not None and downconverter_freq is not None:
+        freqs.clock = _downconvert_clock(
+            downconverter_freq=downconverter_freq,
+            clock_freq=clock_freq,
+        )
+
+    if not mix_lo:
+        freqs.LO = freqs.clock
+    else:
+        if interm_freq is not None:
+            freqs.LO = freqs.clock - interm_freq
+
+        if lo_freq is not None:
+            freqs.IF = freqs.clock - lo_freq
+
+    return freqs
 
 
 def generate_port_clock_to_device_map(
