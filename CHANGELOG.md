@@ -11,6 +11,7 @@
 - NV centers - Dark ESR schedule combining all prior operations (!527)
 - NV centers - `BasicElectronicNVElement` parameters accept physics-motivated values (!551)
 - Documentation - Sphinx build now compatible with qcodes==0.36.0 (!552)
+- QBlox backend - Provide sequencer setting to reset AWG offset and AWG gain to a known value (default 0 for offset and 1 for gain) before starting experiment (#377, !544)
 - Compilation - Can optionally provide a `QuantumDevice` to `QuantifyCompiler`. This will be used as default `CompilationConfig` in `QuantifyCompiler.compile()` (!535)
 - NV centers - Avoid python warning when parsing docstring in nv_element (!562)
 - QuantumDevice - `BasicTransmonElement` can now be serialized to json string and deserialized via ``__getstate__/__init__`` (!510)
@@ -37,6 +38,7 @@ For help in migrating from deprecated methods, see [Quantify Deprecated Code Sug
 - Operations - ShiftClockPhase now uses `phase_shift` as keyword instead of `phase` (!434)
 
 ### Merged branches and closed issues
+
 - Deprecation - Removed dependencies on deprecated code from tests and production code (!526)
 - Deprecation - Replaced `DeprecationWarning`s with `FutureWarning`s so they are shown to end-users by default (!536, counterpart to quantify-core!411)
 - Visualization - Show clock name in plotly pulse diagram (!547)

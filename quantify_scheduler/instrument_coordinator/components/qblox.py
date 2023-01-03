@@ -315,6 +315,28 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
 
         self._set_parameter(
             self.instrument[f"sequencer{seq_idx}"],
+            "offset_awg_path0",
+            settings.init_offset_awg_path_0,
+        )
+        self._set_parameter(
+            self.instrument[f"sequencer{seq_idx}"],
+            "offset_awg_path1",
+            settings.init_offset_awg_path_1,
+        )
+
+        self._set_parameter(
+            self.instrument[f"sequencer{seq_idx}"],
+            "gain_awg_path0",
+            settings.init_gain_awg_path_0,
+        )
+        self._set_parameter(
+            self.instrument[f"sequencer{seq_idx}"],
+            "gain_awg_path1",
+            settings.init_gain_awg_path_1,
+        )
+
+        self._set_parameter(
+            self.instrument[f"sequencer{seq_idx}"],
             "mixer_corr_phase_offset_degree",
             settings.mixer_corr_phase_offset_degree,
         )
