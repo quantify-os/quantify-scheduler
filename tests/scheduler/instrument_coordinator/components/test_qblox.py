@@ -10,6 +10,7 @@
 # Licensed according to the LICENCE file on the main branch
 """Tests for Qblox instrument coordinator components."""
 import logging
+from collections import defaultdict
 from copy import deepcopy
 from operator import countOf
 from typing import List, Optional
@@ -366,6 +367,197 @@ def test_initialize_pulsar_qrm_rf_component(make_qrm_rf):
 
 def test_initialize_cluster_component(make_cluster_component):
     make_cluster_component("cluster0")
+
+
+def test_reset_awg_offset_and_gain(
+    schedule_with_measurement,
+    load_example_qblox_hardware_config,
+    make_qcm_component,
+    make_qrm_component,
+    mock_setup_basic_transmon_with_standard_params,
+):
+    # Arrange
+    qcm0: qblox.PulsarQCMComponent = make_qcm_component("qcm0", "1234")
+    qrm2: qblox.PulsarQRMComponent = make_qrm_component("qrm2", "1234")
+
+    hardware_cfg = deepcopy(load_example_qblox_hardware_config)
+
+    # Set some AWG offsets and gains directly (not through hardware settings).
+    # These should be reset when `prepare` is called.
+    for path in (0, 1):
+        qcm0.instrument["sequencer0"].set(f"offset_awg_path{path}", 0.1234)
+        qcm0.instrument["sequencer0"].set(f"gain_awg_path{path}", 0.4321)
+
+    for seq in (0, 1):
+        for path in (0, 1):
+            qrm2.instrument[f"sequencer{seq}"].set(f"offset_awg_path{path}", 0.6789)
+            qrm2.instrument[f"sequencer{seq}"].set(f"gain_awg_path{path}", 0.9876)
+
+    # Act
+    hardware_cfg["qcm0"]["complex_output_0"]["portclock_configs"][0][
+        "init_offset_awg_path_0"
+    ] = 0.25
+    hardware_cfg["qcm0"]["complex_output_0"]["portclock_configs"][0][
+        "init_offset_awg_path_1"
+    ] = 0.33
+    hardware_cfg["qrm2"]["real_output_0"]["portclock_configs"][0][
+        "init_gain_awg_path_0"
+    ] = 0.5
+    hardware_cfg["qrm2"]["real_output_1"]["portclock_configs"][0][
+        "init_gain_awg_path_1"
+    ] = -0.5
+
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+    config = quantum_device.generate_compilation_config()
+    compiled_schedule = SerialCompiler(name="compiler").compile(
+        schedule=schedule_with_measurement, config=config
+    )
+    prog = compiled_schedule["compiled_instructions"]
+
+    qcm0.prepare(prog[qcm0.instrument.name])
+    qrm2.prepare(prog[qrm2.instrument.name])
+
+    # Assert
+    qcm0_offset = defaultdict(lambda: 0.0)
+    qcm0_gain = defaultdict(lambda: 1.0)
+    qcm0_offset[0] = 0.25
+    qcm0_offset[1] = 0.33
+    for path in (0, 1):
+        assert qcm0.instrument["sequencer0"].parameters[
+            f"offset_awg_path{path}"
+        ].get() == pytest.approx(qcm0_offset[path])
+        assert qcm0.instrument["sequencer0"].parameters[
+            f"gain_awg_path{path}"
+        ].get() == pytest.approx(qcm0_gain[path])
+
+    qrm2_offset = defaultdict(lambda: 0.0)
+    qrm2_gain = defaultdict(lambda: 1.0)
+    qrm2_gain["seq0_path0"] = 0.5
+    qrm2_gain["seq1_path1"] = -0.5
+    for seq in (0, 1):
+        for path in (0, 1):
+            assert qrm2.instrument[f"sequencer{seq}"].parameters[
+                f"offset_awg_path{path}"
+            ].get() == pytest.approx(qrm2_offset[f"seq{seq}_path{path}"])
+            assert qrm2.instrument[f"sequencer{seq}"].parameters[
+                f"gain_awg_path{path}"
+            ].get() == pytest.approx(qrm2_gain[f"seq{seq}_path{path}"])
+
+
+def test_init_awg_offset_and_gain(
+    mocker,
+    schedule_with_measurement,
+    load_example_qblox_hardware_config,
+    make_qcm_component,
+    make_qrm_component,
+    mock_setup_basic_transmon_with_standard_params,
+):
+    # Arrange
+    qcm0: qblox.PulsarQCMComponent = make_qcm_component("qcm0", "1234")
+    qrm2: qblox.PulsarQRMComponent = make_qrm_component("qrm2", "1234")
+
+    for dev in (qcm0, qrm2):
+        for seq in range(qcm0._hardware_properties.number_of_sequencers):
+            mocker.patch.object(
+                dev.instrument[f"sequencer{seq}"].parameters["offset_awg_path0"], "set"
+            )
+            mocker.patch.object(
+                dev.instrument[f"sequencer{seq}"].parameters["offset_awg_path1"], "set"
+            )
+            mocker.patch.object(
+                dev.instrument[f"sequencer{seq}"].parameters["gain_awg_path0"], "set"
+            )
+            mocker.patch.object(
+                dev.instrument[f"sequencer{seq}"].parameters["gain_awg_path1"], "set"
+            )
+
+    hardware_cfg = deepcopy(load_example_qblox_hardware_config)
+
+    # Act
+    hardware_cfg["qcm0"]["complex_output_0"]["portclock_configs"][0][
+        "init_offset_awg_path_0"
+    ] = 0.25
+    hardware_cfg["qcm0"]["complex_output_0"]["portclock_configs"][0][
+        "init_offset_awg_path_1"
+    ] = 0.33
+    hardware_cfg["qrm2"]["real_output_0"]["portclock_configs"][0][
+        "init_gain_awg_path_0"
+    ] = 0.5
+    hardware_cfg["qrm2"]["real_output_1"]["portclock_configs"][0][
+        "init_gain_awg_path_1"
+    ] = -0.5
+
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+    config = quantum_device.generate_compilation_config()
+    compiled_schedule = SerialCompiler(name="compiler").compile(
+        schedule=schedule_with_measurement, config=config
+    )
+    prog = compiled_schedule["compiled_instructions"]
+
+    qcm0.prepare(prog[qcm0.instrument.name])
+    qrm2.prepare(prog[qrm2.instrument.name])
+
+    # Assert
+    qcm0_offset = defaultdict(lambda: 0.0)
+    qcm0_gain = defaultdict(lambda: 1.0)
+    qcm0_offset[0] = 0.25
+    qcm0_offset[1] = 0.33
+    for path in (0, 1):
+        qcm0.instrument["sequencer0"].parameters[
+            f"offset_awg_path{path}"
+        ].set.assert_called_once_with(qcm0_offset[path])
+        qcm0.instrument["sequencer0"].parameters[
+            f"gain_awg_path{path}"
+        ].set.assert_called_once_with(qcm0_gain[path])
+
+    qrm2_offset = defaultdict(lambda: 0.0)
+    qrm2_gain = defaultdict(lambda: 1.0)
+    qrm2_gain["seq0_path0"] = 0.5
+    qrm2_gain["seq1_path1"] = -0.5
+    for seq in (0, 1):
+        for path in (0, 1):
+            qrm2.instrument[f"sequencer{seq}"].parameters[
+                f"offset_awg_path{path}"
+            ].set.assert_called_once_with(qrm2_offset[f"seq{seq}_path{path}"])
+            qrm2.instrument[f"sequencer{seq}"].parameters[
+                f"gain_awg_path{path}"
+            ].set.assert_called_once_with(qrm2_gain[f"seq{seq}_path{path}"])
+
+
+def test_invalid_init_awg_offset_and_gain(
+    mocker,
+    schedule_with_measurement,
+    load_example_qblox_hardware_config,
+    make_qcm_component,
+    mock_setup_basic_transmon_with_standard_params,
+):
+    # Arrange
+    qcm0: qblox.PulsarQCMComponent = make_qcm_component("qcm0", "1234")
+
+    for seq in range(qcm0._hardware_properties.number_of_sequencers):
+        mocker.patch.object(
+            qcm0.instrument[f"sequencer{seq}"].parameters["offset_awg_path0"], "set"
+        )
+        mocker.patch.object(
+            qcm0.instrument[f"sequencer{seq}"].parameters["offset_awg_path1"], "set"
+        )
+
+    hardware_cfg = deepcopy(load_example_qblox_hardware_config)
+
+    # Act
+    hardware_cfg["qcm0"]["complex_output_0"]["portclock_configs"][0][
+        "init_offset_awg_path_0"
+    ] = 1.25
+
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+    config = quantum_device.generate_compilation_config()
+    with pytest.raises(ValueError):
+        _ = SerialCompiler(name="compiler").compile(
+            schedule=schedule_with_measurement, config=config
+        )
 
 
 @pytest.mark.parametrize(
@@ -948,65 +1140,6 @@ def test_store_scope_acquisition(make_qrm_component):
 
     # Assert
     qrm.instrument.store_scope_acquisition.assert_called_once()
-
-
-def test_get_scope_channel_and_index(make_qrm_component):
-    acq_mapping = {
-        qblox.AcquisitionIndexing(acq_index=0, acq_channel=0): ("seq0", "trace"),
-    }
-    qrm: qblox.PulsarQRMComponent = make_qrm_component("qrm0", "1234")
-    acq_manager = qblox._QRMAcquisitionManager(
-        qrm, qrm._hardware_properties.number_of_sequencers, acq_mapping, None
-    )
-    result = acq_manager._get_scope_channel_and_index()
-    assert result == (0, 0)
-
-
-def test_get_scope_channel_and_index_exception(make_qrm_component):
-    acq_mapping = {
-        qblox.AcquisitionIndexing(acq_index=0, acq_channel=0): ("seq0", "trace"),
-        qblox.AcquisitionIndexing(acq_index=1, acq_channel=0): ("seq0", "trace"),
-    }
-    qrm: qblox.PulsarQRMComponent = make_qrm_component("qrm0", "1234")
-    acq_manager = qblox._QRMAcquisitionManager(
-        qrm, qrm._hardware_properties.number_of_sequencers, acq_mapping, None
-    )
-    with pytest.raises(RuntimeError) as execinfo:
-        acq_manager._get_scope_channel_and_index()
-
-    assert (
-        execinfo.value.args[0]
-        == "A scope mode acquisition is defined for both acq_channel 0 with "
-        "acq_index 0 as well as acq_channel 0 with acq_index 1. Only a single "
-        "trace acquisition is allowed per QRM."
-    )
-
-
-def test_get_protocol(make_qrm_component):
-    answer = "trace"
-    acq_mapping = {
-        qblox.AcquisitionIndexing(acq_index=0, acq_channel=0): ("seq0", answer),
-    }
-    qrm: qblox.PulsarQRMComponent = make_qrm_component("qrm0", "1234")
-    acq_manager = qblox._QRMAcquisitionManager(
-        qrm, qrm._hardware_properties.number_of_sequencers, acq_mapping, None
-    )
-    assert acq_manager._get_protocol(0, 0) == answer
-
-
-def test_get_sequencer_index(make_qrm_component):
-    answer = 0
-    acq_mapping = {
-        qblox.AcquisitionIndexing(acq_index=0, acq_channel=0): (
-            f"seq{answer}",
-            "trace",
-        ),
-    }
-    qrm: qblox.PulsarQRMComponent = make_qrm_component("qrm0", "1234")
-    acq_manager = qblox._QRMAcquisitionManager(
-        qrm, qrm._hardware_properties.number_of_sequencers, acq_mapping, None
-    )
-    assert acq_manager._get_sequencer_index(0, 0) == answer
 
 
 def test_instrument_module():
