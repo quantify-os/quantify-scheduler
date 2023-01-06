@@ -1117,7 +1117,9 @@ def test_get_integration_data(make_qrm_component, mock_acquisition_data):
         qrm, qrm._hardware_properties.number_of_sequencers, dict(), None
     )
     acq_manager.acq_duration[0] = 10
-    data = acq_manager._get_integration_data(mock_acquisition_data, acq_channel=0)
+    data = acq_manager._get_integration_data(
+        mock_acquisition_data, acq_metadata=None, acq_channel=0
+    )
     np.testing.assert_array_equal(data[0], np.array([0.0] * 10))
     np.testing.assert_array_equal(data[1], np.array([0.0] * 10))
 
