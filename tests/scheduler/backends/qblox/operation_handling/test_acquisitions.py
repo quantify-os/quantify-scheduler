@@ -37,9 +37,11 @@ from quantify_scheduler.instrument_coordinator.components.generic import (
 from quantify_scheduler.instrument_coordinator.components.qblox import (
     QbloxInstrumentCoordinatorComponentBase,
     AcquisitionIndexing,
+    _QRMAcquisitionManager,
 )
 from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import ClockResource
+from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 from quantify_scheduler.schedules.trace_schedules import trace_schedule_circuit_layer
 
 from tests.fixtures.mock_setup import close_instruments
@@ -559,6 +561,88 @@ def test_trace_acquisition_measurement_control(
     assert dataset.sizes == {"dim_0": acq_duration * sampling_rate}
 
     instr_coordinator.remove_component(ic_cluster0.name)
+
+
+def test_TriggerCount_acquisition(
+    mock_setup_basic_nv, make_cluster_component
+):  # pylint: disable=too-many-locals
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module3": {
+                "instrument_type": "QRM",
+                "real_input_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "qe0:optical_readout",
+                            "clock": "qe0.ge0",
+                            "interm_freq": 50e6,
+                        },
+                    ],
+                },
+                "real_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "qe0:optical_control",
+                            "clock": "qe0.ge0",
+                            "interm_freq": 0,
+                        }
+                    ],
+                },
+            },
+        },
+    }
+
+    # Setup objects needed for experiment
+    mock_setup = mock_setup_basic_nv
+    ic_cluster0 = make_cluster_component("cluster0")
+    instr_coordinator = mock_setup["instrument_coordinator"]
+    instr_coordinator.add_component(ic_cluster0)
+
+    quantum_device = mock_setup["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+
+    # Define experiment schedule
+    schedule = Schedule("test multiple measurements")
+    meas0 = Measure("qe0", acq_protocol="TriggerCount")
+    schedule.add(meas0)
+    readout_clock0 = ClockResource(name="qe0.ge0", freq=50e6)
+    schedule.add_resource(readout_clock0)
+
+    # Generate compiled schedule
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    # Upload schedule and run experiment
+    instr_coordinator.prepare(compiled_sched)
+    instr_coordinator.start()
+    data = instr_coordinator.retrieve_acquisition()
+    instr_coordinator.stop()
+
+    # Assert intended behaviour
+    assert len(data) == 1
+    assert data[AcquisitionIndexing(acq_channel=0, acq_index=0)][0][0] == 0
+    assert data[AcquisitionIndexing(acq_channel=0, acq_index=0)][1][0] == 1
+
+    instr_coordinator.remove_component("ic_cluster0")
+
+
+def test_triggerCount_append(make_qrm_component):
+    qrm = make_qrm_component("qrm0")
+    acq_metadata = AcquisitionMetadata("test", BinMode.AVERAGE, int, {})
+    acq = {
+        "0": {
+            "index": 0,
+            "acquisition": {"bins": {"avg_cnt": (100, 100, 75, 50, 25, 25, 5)}},
+        }
+    }
+    acq_man = _QRMAcquisitionManager(qrm, 0, acq, acq_metadata)
+    data = acq_man._get_trigger_count_data(acq, acq_metadata, 0)
+    assert data == ([2, 3, 4, 6], [25, 25, 25, 20])
 
 
 def test_multiple_measurements(

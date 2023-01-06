@@ -62,6 +62,9 @@ def _get_acquisition_strategy(
     if protocol == "weighted_integrated_complex":
         return acquisitions.WeightedAcquisitionStrategy(operation_info)
 
+    if protocol == "trigger_count":
+        return acquisitions.TriggerCountAcquisitionStrategy(operation_info)
+
     raise ValueError(
         f'Unknown acquisition protocol "{protocol}" encountered in '
         f"Qblox backend when processing acquisition {repr(operation_info)}."

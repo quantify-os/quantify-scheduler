@@ -398,6 +398,12 @@ class SequencerSettings(DataClassJsonMixin):
     sequencer."""
     seq_fn: Optional[str] = None
     """Filename of JSON file containing a dump of the waveforms and program."""
+    ttl_acq_input_select: Optional[int] = None
+    """Selects the input used to compare against the threshold value in the TTL trigger acquisition path."""
+    ttl_acq_threshold: Optional[float] = None
+    """"Sets the threshold value with which to compare the input ADC values of the selected input path."""
+    ttl_acq_auto_bin_incr_en: Optional[bool] = None
+    """Selects if the bin index is automatically incremented when acquiring multiple triggers."""
 
     @classmethod
     def initialize_from_config_dict(
@@ -459,6 +465,7 @@ class SequencerSettings(DataClassJsonMixin):
             constants.MIN_MIXER_PHASE_ERROR_DEG,
             constants.MAX_MIXER_PHASE_ERROR_DEG,
         )
+        ttl_acq_threshold = seq_settings.get("ttl_acq_threshold", None)
 
         init_offset_awg_path_0 = extract_and_verify_range(
             "init_offset_awg_path_0",
@@ -494,5 +501,6 @@ class SequencerSettings(DataClassJsonMixin):
             modulation_freq=modulation_freq,
             mixer_corr_gain_ratio=mixer_amp_ratio,
             mixer_corr_phase_offset_degree=mixer_phase_error,
+            ttl_acq_threshold=ttl_acq_threshold,
         )
         return settings
