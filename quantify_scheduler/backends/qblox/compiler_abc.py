@@ -560,14 +560,14 @@ class Sequencer:
         return wf_dict
 
     def _prepare_acq_settings(self, acquisitions: List[IOperationStrategy]):
-        """ "
+        """
         Sets sequencer settings that are specific to certain acquisitions.
-        For example for a TTL acquisition strategy
+        For example for a TTL acquisition strategy.
 
         Parameters
         ----------
-        acquisitions:
-            List of the acquisitions assigned to this sequencer.
+        acquisitions
+
         """
 
         acquisition_infos: List[OpInfo] = list(
@@ -577,15 +577,21 @@ class Sequencer:
             acquisition_infos
         )
         if acq_metadata.acq_protocol == "trigger_count":
-            self._settings.ttl_acq_auto_bin_incr_en = (acq_metadata.bin_mode == BinMode.AVERAGE)
+            self._settings.ttl_acq_auto_bin_incr_en = (
+                acq_metadata.bin_mode == BinMode.AVERAGE
+            )
             if self.connected_inputs is not None:
                 if len(self.connected_inputs) == 1:
                     self._settings.ttl_acq_input_select = self.connected_inputs[0]
                 else:
                     raise ValueError(
-                        f"Please make sure you use a single real input for this portclock combination. "
+                        f"Please make sure you use a single real input for this "
+                        f"portclock combination. "
                         f"Found: {len(self.connected_inputs)} connected. "
-                        "TTL acquisition does not support multiple inputs."
+                        f"TTL acquisition does not support multiple inputs."
+                        f"Problem occurred for port {self.port} with"
+                        f"clock {self.clock}, which corresponds to {self.name} of "
+                        f"{self.parent.name}."
                     )
 
     def _generate_acq_declaration_dict(
@@ -936,15 +942,14 @@ class Sequencer:
         weights_dict = None
         acq_declaration_dict = None
         if self.parent.supports_acquisition:
+            weights_dict = {}
+            acq_declaration_dict = {}
             if len(self.acquisitions) > 0:
                 self._prepare_acq_settings(self.acquisitions)
                 weights_dict = self._generate_weights_dict()
                 acq_declaration_dict = self._generate_acq_declaration_dict(
                     acquisitions=self.acquisitions, repetitions=repetitions
                 )
-            else:
-                weights_dict = {}
-                acq_declaration_dict = {}
 
         qasm_program = self.generate_qasm_program(
             self.parent.total_play_time,

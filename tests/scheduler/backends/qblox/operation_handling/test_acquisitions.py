@@ -18,7 +18,6 @@ from qcodes.instrument.parameter import ManualParameter
 from qblox_instruments import ClusterType, PulsarType
 
 from quantify_scheduler import waveforms, Schedule
-from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
 
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.backends import SerialCompiler
@@ -860,24 +859,18 @@ def test_multi_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_
     laser_red = MockLocalOscillator("laser_red")
     ic_laser_red = GenericInstrumentCoordinatorComponent(laser_red)
     ic_generic = GenericInstrumentCoordinatorComponent("generic")
+
     instr_coordinator = mock_setup_basic_nv["instrument_coordinator"]
     instr_coordinator.add_component(ic_cluster0)
     instr_coordinator.add_component(ic_laser_red)
     instr_coordinator.add_component(ic_generic)
 
     quantum_device = mock_setup_basic_nv["quantum_device"]
-    qe1 = BasicElectronicNVElement("qe1")
-    qe1.measure.pulse_amplitude.set(1e-3)
-
-    quantum_device.add_element(qe1)
     quantum_device.hardware_config(hardware_cfg)
 
     # Define experiment schedule
     schedule = Schedule("test NV measurement with real output and input")
-    schedule.add(
-        SquarePulse(amp=0.2, duration=1e-6, port="qe1:optical_control", clock="qe1.ge0")
-    )
-    schedule.add_resource(ClockResource(name="qe1.ge0", freq=70e6))
+    schedule.add(Measure("qe0", acq_protocol="TriggerCount", bin_mode=BinMode.APPEND))
     schedule.add(Measure("qe1", acq_protocol="TriggerCount", bin_mode=BinMode.AVERAGE))
 
     # Generate compiled schedule
@@ -889,12 +882,17 @@ def test_multi_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_
     # Assert intended behaviour
     seq_0 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq0"]
     seq_1 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq1"]
+    seq_2 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq2"]
+    seq_3 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq3"]
 
-    assert seq_0["connected_outputs"] == [1]
+    assert seq_0["connected_outputs"] == [0]
     assert seq_0["nco_en"] is True
-    assert seq_1["connected_inputs"] == [1]
-    assert seq_1["nco_en"] is False
-    assert seq_1["ttl_acq_auto_bin_incr_en"] is True
+    assert seq_1["connected_outputs"] == [1]
+    assert seq_1["nco_en"] is True
+    assert seq_2["connected_inputs"] == [0]
+    assert seq_2["ttl_acq_auto_bin_incr_en"] is False
+    assert seq_3["connected_inputs"] == [1]
+    assert seq_3["ttl_acq_auto_bin_incr_en"] is True
 
     instr_coordinator.remove_component("ic_cluster0")
 

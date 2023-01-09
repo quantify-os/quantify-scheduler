@@ -84,7 +84,7 @@ TEST_OP_INFO_MAPPING = {
         },
         timing=0,
     ),
-    "triggercount": OpInfo(
+    "trigger_count": OpInfo(
         name="",
         data={
             "protocol": "trigger_count",
@@ -109,7 +109,7 @@ TEST_OP_INFO_MAPPING = {
         (TEST_OP_INFO_MAPPING["weighted"], acquisitions.WeightedAcquisitionStrategy),
         (TEST_OP_INFO_MAPPING["trace"], acquisitions.SquareAcquisitionStrategy),
         (
-            TEST_OP_INFO_MAPPING["triggercount"],
+            TEST_OP_INFO_MAPPING["trigger_count"],
             acquisitions.TriggerCountAcquisitionStrategy,
         ),
     ],
