@@ -371,7 +371,19 @@ class SequencerSettings(DataClassJsonMixin):
     """Specifies which physical outputs this sequencer produces waveform data for."""
     connected_inputs: Optional[Union[Tuple[int], Tuple[int, int]]]
     """Specifies which physical inputs this sequencer collects data for."""
-    modulation_freq: float = None
+    init_offset_awg_path_0: float = 0.0
+    """Specifies what value the sequencer offset for AWG path 0 will be reset to
+    before the start of the experiment."""
+    init_offset_awg_path_1: float = 0.0
+    """Specifies what value the sequencer offset for AWG path 1 will be reset to
+    before the start of the experiment."""
+    init_gain_awg_path_0: float = 1.0
+    """Specifies what value the sequencer gain for AWG path 0 will be reset to
+    before the start of the experiment."""
+    init_gain_awg_path_1: float = 1.0
+    """Specifies what value the sequencer gain for AWG path 0 will be reset to
+    before the start of the experiment."""
+    modulation_freq: Optional[float] = None
     """Specifies the frequency of the modulation."""
     mixer_corr_phase_offset_degree: float = 0.0
     """The phase shift to apply between the I and Q channels, to correct for quadrature
@@ -386,6 +398,12 @@ class SequencerSettings(DataClassJsonMixin):
     sequencer."""
     seq_fn: Optional[str] = None
     """Filename of JSON file containing a dump of the waveforms and program."""
+    ttl_acq_input_select: Optional[int] = None
+    """Selects the input used to compare against the threshold value in the TTL trigger acquisition path."""
+    ttl_acq_threshold: Optional[float] = None
+    """"Sets the threshold value with which to compare the input ADC values of the selected input path."""
+    ttl_acq_auto_bin_incr_en: Optional[bool] = None
+    """Selects if the bin index is automatically incremented when acquiring multiple triggers."""
 
     @classmethod
     def initialize_from_config_dict(
@@ -447,6 +465,28 @@ class SequencerSettings(DataClassJsonMixin):
             constants.MIN_MIXER_PHASE_ERROR_DEG,
             constants.MAX_MIXER_PHASE_ERROR_DEG,
         )
+        ttl_acq_threshold = seq_settings.get("ttl_acq_threshold", None)
+
+        init_offset_awg_path_0 = extract_and_verify_range(
+            "init_offset_awg_path_0",
+            seq_settings,
+            cls.init_offset_awg_path_0,
+            -1.0,
+            1.0,
+        )
+        init_offset_awg_path_1 = extract_and_verify_range(
+            "init_offset_awg_path_1",
+            seq_settings,
+            cls.init_offset_awg_path_1,
+            -1.0,
+            1.0,
+        )
+        init_gain_awg_path_0 = extract_and_verify_range(
+            "init_gain_awg_path_0", seq_settings, cls.init_gain_awg_path_0, -1.0, 1.0
+        )
+        init_gain_awg_path_1 = extract_and_verify_range(
+            "init_gain_awg_path_1", seq_settings, cls.init_gain_awg_path_1, -1.0, 1.0
+        )
 
         settings = cls(
             nco_en=nco_en,
@@ -454,8 +494,13 @@ class SequencerSettings(DataClassJsonMixin):
             mix_lo=True,
             connected_outputs=connected_outputs,
             connected_inputs=connected_inputs,
+            init_offset_awg_path_0=init_offset_awg_path_0,
+            init_offset_awg_path_1=init_offset_awg_path_1,
+            init_gain_awg_path_0=init_gain_awg_path_0,
+            init_gain_awg_path_1=init_gain_awg_path_1,
             modulation_freq=modulation_freq,
             mixer_corr_gain_ratio=mixer_amp_ratio,
             mixer_corr_phase_offset_degree=mixer_phase_error,
+            ttl_acq_threshold=ttl_acq_threshold,
         )
         return settings

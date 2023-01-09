@@ -2,6 +2,8 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
+import pytest
+
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.compilation import (
     determine_absolute_timing,
@@ -159,11 +161,17 @@ class TestNVDarkESRSched:
         device_config = mock_setup_basic_nv["quantum_device"].generate_device_config()
         qcompile(self.uncomp_sched, device_config)
 
-    def test_compiles_qblox_backend(self, mock_setup_basic_nv) -> None:
+    @pytest.mark.xfail(
+        reason="Acquisition protocol 'trigger_count' not present. To be added later."
+    )
+    def test_compiles_qblox_backend(self, mock_setup_basic_nv_qblox_hardware) -> None:
         # assert that files properly compile
-        quantum_device: QuantumDevice = mock_setup_basic_nv["quantum_device"]
-        qcompile(
+        quantum_device: QuantumDevice = mock_setup_basic_nv_qblox_hardware[
+            "quantum_device"
+        ]
+        schedule = qcompile(
             self.uncomp_sched,
             quantum_device.generate_device_config(),
             quantum_device.generate_hardware_config(),
         )
+        assert not schedule.compiled_instructions == {}

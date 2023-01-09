@@ -1025,16 +1025,10 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         differences between the different modules.
         """
 
-    def _construct_sequencers(self) -> Dict[str, Sequencer]:
+    def _construct_sequencers(self):
         """
         Constructs `Sequencer` objects for each port and clock combination
         belonging to this device.
-
-        Returns
-        -------
-        :
-            A dictionary containing the sequencer objects, the keys correspond to the
-            names of the sequencers.
 
         Raises
         ------
@@ -1328,7 +1322,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                     self._settings.in1_gain = in1_gain
                 else:
                     raise ValueError(
-                        f"Overwriting gain of {io_name} of module {self.name}" 
+                        f"Overwriting gain of {io_name} of module {self.name}"
                         f"to in1_gain: {in1_gain}.\nIt was previously set to "
                         f"in1_gain: {self._settings.in1_gain}."
                     )
