@@ -6,6 +6,7 @@
 - Qblox ICCs - Replace `"acq_mapping"` by `"trace_acq_channel"` in the compiled schedule (!515)
 
 ### Merged branches and closed issues
+- NV centers - Test for spectroscopy schedule temporarily disabled (!571).
 - Acquisition - Data obtained with TriggerCount acquisition is formatted correctly (!530).
 - Acquisition - Follow-up for !530: Fix wrong assumption in input format (!564).
 - NV centers - Dark ESR schedule combining all prior operations (!527)

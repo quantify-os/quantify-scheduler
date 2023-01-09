@@ -23,7 +23,8 @@
         "cluster0_module2": {
             "instrument_type": "QCM",
             "real_output_0": {
-                "lo_name": "lo0",
+                "lo_name": "lo_spinpump_laser",
+                "mix_lo": false,
                 "portclock_configs": [
                     {
                         "port": "qe0:optical_control",
@@ -34,7 +35,8 @@
                 ]
             },
             "real_output_1": {
-                "lo_name": "lo0",
+                "lo_name": "lo_green_laser",
+                "mix_lo": false,
                 "portclock_configs": [
                     {
                         "port": "qe0:optical_control",
@@ -45,7 +47,8 @@
                 ]
             },
             "real_output_2": {
-                "lo_name": "lo0",
+                "lo_name": "lo_readout_laser",
+                "mix_lo": false,
                 "portclock_configs": [
                     {
                         "port": "qe0:optical_control",
@@ -70,7 +73,17 @@
             }
         }
     },
-    "lo0": {
+    "lo_readout_laser": {
+        "instrument_type": "LocalOscillator",
+        "frequency": null,
+        "power": 1
+    },
+    "lo_spinpump_laser": {
+        "instrument_type": "LocalOscillator",
+        "frequency": null,
+        "power": 1
+    },
+    "lo_green_laser": {
         "instrument_type": "LocalOscillator",
         "frequency": null,
         "power": 1
