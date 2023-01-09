@@ -743,7 +743,7 @@ class QRMRFComponent(QRMComponent):
             self._set_parameter(
                 self.instrument, "out0_offset_path1", settings.offset_ch0_path1
             )
-        # configure gain and attenuation
+        # configure attenuation
         if settings.out0_att is not None:
             self._set_parameter(self.instrument, "out0_att", settings.out0_att)
         if settings.in0_att is not None:

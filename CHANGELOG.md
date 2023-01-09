@@ -16,6 +16,7 @@
 - Compilation - Can optionally provide a `QuantumDevice` to `QuantifyCompiler`. This will be used as default `CompilationConfig` in `QuantifyCompiler.compile()` (!535)
 - NV centers - Avoid python warning when parsing docstring in nv_element (!562)
 - QuantumDevice - `BasicTransmonElement` can now be serialized to json string and deserialized via ``__getstate__/__init__`` (!510)
+- Qblox Backend - Added method for gain configuration, overriding gain now raises ValueError (!533)
 - Qblox backend - add TriggerCount to `QRMAcquisitionManager` (!556)
 - Deprecation - Refactored tests to remove deprecated `qcompile`, refactored to `SerialCompiler` (!529, #368)
 - Waveforms - Fix `sudden_net_zero` waveform generation function misunderstands `amp_B` (!549, #390)

@@ -24,6 +24,7 @@ from quantify_scheduler.backends.qblox import (
     q1asm_instructions,
     register_manager,
 )
+from quantify_scheduler.backends.qblox.helpers import calc_from_units_volt
 from quantify_scheduler.backends.qblox.operation_handling.acquisitions import (
     AcquisitionStrategyPartial,
 )
@@ -1024,16 +1025,10 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         differences between the different modules.
         """
 
-    def _construct_sequencers(self) -> Dict[str, Sequencer]:
+    def _construct_sequencers(self):
         """
         Constructs `Sequencer` objects for each port and clock combination
         belonging to this device.
-
-        Returns
-        -------
-        :
-            A dictionary containing the sequencer objects, the keys correspond to the
-            names of the sequencers.
 
         Raises
         ------
@@ -1154,7 +1149,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 f"{self.static_hw_properties.max_sequencers}!"
             )
 
-        return sequencers
+        self.sequencers = sequencers
 
     def distribute_data(self):
         """
@@ -1271,109 +1266,93 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         self._settings = self.settings_type.extract_settings_from_mapping(
             self.hw_mapping
         )
-        self._settings = self._configure_mixer_offsets_and_gains(
-            self._settings, self.hw_mapping
-        )
-        self.sequencers = self._construct_sequencers()
+        self._configure_input_gains()
+        self._configure_mixer_offsets()
+        self._construct_sequencers()
         self.distribute_data()
         self._determine_scope_mode_acquisition_sequencer()
         for seq in self.sequencers.values():
             self.assign_frequencies(seq)
         self.assign_attenuation()
 
-    def _configure_mixer_offsets_and_gains(
-        self, settings: BaseModuleSettings, hw_mapping: Dict[str, Any]
-    ) -> BaseModuleSettings:
+    def _configure_input_gains(self):
         """
-        We configure the mixer offsets, gains, attenuations
-        after initializing the settings such we can account for
-        the differences in the hardware. e.g. the V vs mV encountered here.
-
-        Parameters
-        ----------
-        settings
-            The settings dataclass to which to add the dc offsets and gains.
-        hw_mapping
-            The hardware configuration.
-
-        Returns
-        -------
-        :
-            The settings dataclass after adding the normalized offsets and gains.
-
-        Raises
-        ------
-        ValueError
-            An offset was used outside of the allowed range.
+        Configures input gain of module settings.
+        Loops through all valid ios and checks for gain values in hw config.
+        Throws a ValueError if a gain value gets modified.
         """
-
-        def calc_from_units_volt(
-            param_name: str, cfg: Dict[str, Any]
-        ) -> Optional[float]:
-
-            offset_in_config = cfg.get(param_name, None)  # Always in volts
-            if offset_in_config is None:
-                return None
-
-            conversion_factor = 1
-            voltage_range = self.static_hw_properties.mixer_dc_offset_range
-            if voltage_range.units == "mV":
-                conversion_factor = 1e3
-            elif voltage_range.units != "V":
-                raise RuntimeError(
-                    f"Parameter {param_name} of {self.name} specifies "
-                    f"the units {voltage_range.units}, but this is not "
-                    f"supported by the Qblox backend."
-                )
-
-            calculated_offset = offset_in_config * conversion_factor
-            if (
-                calculated_offset < voltage_range.min_val
-                or calculated_offset > voltage_range.max_val
-            ):
-                raise ValueError(
-                    f"Attempting to set {param_name} of {self.name} to "
-                    f"{offset_in_config} V. {param_name} has to be between "
-                    f"{voltage_range.min_val/ conversion_factor} and "
-                    f"{voltage_range.max_val/ conversion_factor} V!"
-                )
-
-            return calculated_offset
-
-        supported_outputs = ("complex_output_0", "complex_output_1")
-        for output_idx, output_label in enumerate(supported_outputs):
-            if output_label not in hw_mapping:
+        in0_gain, in1_gain = None, None
+        for io_name in self.static_hw_properties.valid_ios:
+            io_mapping = self.hw_mapping.get(io_name, None)
+            if io_mapping is None:
                 continue
 
-            output_cfg = hw_mapping[output_label]
+            if io_name.startswith("complex"):
+                in0_gain = io_mapping.get("input_gain_I", None)
+                in1_gain = io_mapping.get("input_gain_Q", None)
+
+            elif io_name.startswith("real"):
+                # The next code block is for backwards compatibility.
+                in_gain = io_mapping.get("input_gain", None)
+                if in_gain is None:
+                    in0_gain = io_mapping.get("input_gain0", None)
+                    in1_gain = io_mapping.get("input_gain1", None)
+                else:
+                    in0_gain = in_gain
+                    in1_gain = in_gain
+
+            if in0_gain is not None:
+                if (
+                    self._settings.in0_gain is None
+                    or in0_gain == self._settings.in0_gain
+                ):
+                    self._settings.in0_gain = in0_gain
+                else:
+                    raise ValueError(
+                        f"Overwriting gain of {io_name} of module {self.name} "
+                        f"to in0_gain: {in0_gain}.\nIt was previously set to "
+                        f"in0_gain: {self._settings.in0_gain}."
+                    )
+
+            if in1_gain is not None:
+                if (
+                    self._settings.in1_gain is None
+                    or in1_gain == self._settings.in1_gain
+                ):
+                    self._settings.in1_gain = in1_gain
+                else:
+                    raise ValueError(
+                        f"Overwriting gain of {io_name} of module {self.name}"
+                        f"to in1_gain: {in1_gain}.\nIt was previously set to "
+                        f"in1_gain: {self._settings.in1_gain}."
+                    )
+
+    def _configure_mixer_offsets(self):
+        """
+        Configures offset of input, uses calc_from_units_volt found in helper file.
+        Raises an exception if a value outside the accepted voltage range is given.
+        """
+        supported_outputs = ("complex_output_0", "complex_output_1")
+        for output_idx, output_label in enumerate(supported_outputs):
+            if output_label not in self.hw_mapping:
+                continue
+
+            output_cfg = self.hw_mapping[output_label]
+            voltage_range = self.static_hw_properties.mixer_dc_offset_range
             if output_idx == 0:
-                settings.offset_ch0_path0 = calc_from_units_volt(
-                    "dc_mixer_offset_I", output_cfg
+                self._settings.offset_ch0_path0 = calc_from_units_volt(
+                    voltage_range, self.name, "dc_mixer_offset_I", output_cfg
                 )
-                settings.offset_ch0_path1 = calc_from_units_volt(
-                    "dc_mixer_offset_Q", output_cfg
+                self._settings.offset_ch0_path1 = calc_from_units_volt(
+                    voltage_range, self.name, "dc_mixer_offset_Q", output_cfg
                 )
             else:
-                settings.offset_ch1_path0 = calc_from_units_volt(
-                    "dc_mixer_offset_I", output_cfg
+                self._settings.offset_ch1_path0 = calc_from_units_volt(
+                    voltage_range, self.name, "dc_mixer_offset_I", output_cfg
                 )
-                settings.offset_ch1_path1 = calc_from_units_volt(
-                    "dc_mixer_offset_Q", output_cfg
+                self._settings.offset_ch1_path1 = calc_from_units_volt(
+                    voltage_range, self.name, "dc_mixer_offset_Q", output_cfg
                 )
-
-        complex_output_0 = hw_mapping.get("complex_output_0", None)
-        if complex_output_0 is not None:
-            settings.in0_gain = complex_output_0.get("input_gain_I", None)
-            settings.in1_gain = complex_output_0.get("input_gain_Q", None)
-        else:
-            settings.in0_gain = hw_mapping.get("real_output_0", {}).get(
-                "input_gain", None
-            )
-            settings.in1_gain = hw_mapping.get("real_output_1", {}).get(
-                "input_gain", None
-            )
-
-        return settings
 
     def _determine_scope_mode_acquisition_sequencer(self) -> None:
         """

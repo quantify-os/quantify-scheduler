@@ -212,7 +212,7 @@
         "instrument_type": "Pulsar_QRM",
         "ref": "external",
         "real_output_0": {
-            "input_gain": 1,
+            "input_gain0": 1,
             "portclock_configs": [
                 {
                     "mixer_amp_ratio": 0.9997,
@@ -224,7 +224,7 @@
             ]
         },
         "real_output_1": {
-            "input_gain": 3,
+            "input_gain1": 3,
             "portclock_configs": [
                 {
                     "mixer_amp_ratio": 0.9997,

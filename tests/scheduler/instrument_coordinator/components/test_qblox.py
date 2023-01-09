@@ -657,8 +657,8 @@ def test_prepare_qcm_qrm(
         )
 
     for (qcodes_param, hw_config_param) in [
-        ("in0_gain", ["real_output_0", "input_gain"]),
-        ("in1_gain", ["real_output_1", "input_gain"]),
+        ("in0_gain", ["real_output_0", "input_gain0"]),
+        ("in1_gain", ["real_output_1", "input_gain1"]),
     ]:
         qrm2.instrument.parameters[qcodes_param].set.assert_any_call(
             hardware_cfg[qrm2.instrument.name][hw_config_param[0]][hw_config_param[1]]
