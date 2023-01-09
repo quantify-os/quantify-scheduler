@@ -22,9 +22,6 @@ from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import ClockResource
-from tests.scheduler.instrument_coordinator.components.test_qblox import (  # pylint: disable=unused-import
-    make_cluster_component,
-)
 
 from .standard_schedules import (
     single_qubit_schedule_circuit_level,
@@ -173,9 +170,7 @@ def test_compile_sequence_to_file(
     quantum_device.close()
 
 
-def test_overwrite_gain(
-    mock_setup_basic_transmon_with_standard_params, make_cluster_component
-):
+def test_overwrite_gain(mock_setup_basic_transmon_with_standard_params):
     hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "cluster0": {

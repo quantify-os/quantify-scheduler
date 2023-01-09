@@ -1315,8 +1315,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                     self._settings.in0_gain = in0_gain
                 else:
                     raise ValueError(
-                        f"Overwriting gain of {io_name} of module {self.name} to in0_gain: {in0_gain} .\n"
-                        f"It was previously set to in0_gain: {self._settings.in0_gain}"
+                        f"Overwriting gain of {io_name} of module {self.name} "
+                        f"to in0_gain: {in0_gain}.\nIt was previously set to "
+                        f"in0_gain: {self._settings.in0_gain}."
                     )
 
             if in1_gain is not None:
@@ -1327,8 +1328,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                     self._settings.in1_gain = in1_gain
                 else:
                     raise ValueError(
-                        f"Overwriting gain of {io_name} of module {self.name} to in1_gain: {in1_gain} .\n"
-                        f"It was previously set to in1_gain: {self._settings.in1_gain}"
+                        f"Overwriting gain of {io_name} of module {self.name}" 
+                        f"to in1_gain: {in1_gain}.\nIt was previously set to "
+                        f"in1_gain: {self._settings.in1_gain}."
                     )
 
     def _configure_mixer_offsets(self):
