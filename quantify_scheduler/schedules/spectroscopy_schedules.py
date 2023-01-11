@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from quantify_scheduler import Schedule
+from quantify_scheduler.schedules.schedule import Schedule
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.pulse_library import IdlePulse, SquarePulse
 from quantify_scheduler.operations.gate_library import Reset, Measure
