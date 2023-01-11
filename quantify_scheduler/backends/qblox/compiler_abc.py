@@ -1497,9 +1497,7 @@ class QbloxBasebandModule(QbloxBaseModule):
         Assigns frequencies for baseband modules.
         """
         # ensure to select the top level parent object of the sequencer (pulsar or cluster)
-        parent = (
-            self.parent if self.is_pulsar else self.parent.parent
-        )
+        parent = self.parent if self.is_pulsar else self.parent.parent
 
         if sequencer.associated_ext_lo is None:
             if sequencer.frequency == 0:
