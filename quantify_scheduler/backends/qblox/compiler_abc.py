@@ -4,6 +4,7 @@
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
+import dataclasses
 import json
 import logging
 from abc import ABC, ABCMeta, abstractmethod
@@ -12,7 +13,6 @@ from functools import partial
 from os import makedirs, path
 from typing import Any, Callable, Dict, List, Literal, Optional, Set, Tuple, Union
 
-import dataclasses
 from pathvalidate import sanitize_filename
 from qcodes.utils.helpers import NumpyJSONEncoder
 from quantify_core.data.handling import gen_tuid, get_datadir
@@ -24,8 +24,6 @@ from quantify_scheduler.backends.qblox import (
     q1asm_instructions,
     register_manager,
 )
-from quantify_scheduler.backends.qblox.helpers import calc_from_units_volt, determine_clock_lo_interm_freqs
-from quantify_scheduler.backends.qblox.helpers import calc_from_units_volt
 from quantify_scheduler.backends.qblox.operation_handling.acquisitions import (
     AcquisitionStrategyPartial,
 )
@@ -1216,6 +1214,76 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             :code:`None` values.
         """
 
+    def _set_lo_interm_freqs(
+        self,
+        freqs: helpers.Frequencies,
+        sequencer: Sequencer,
+        compiler_lo: Optional[QbloxBaseModule] = None,
+        lo_freq_setting_name: Optional[str] = None,
+    ):
+        """
+        Sets the LO/IF frequencies, for baseband and for RF modules.
+
+        For baseband + external LO, set compiler_lo
+        For RF ... , set lo_freq_setting_name
+
+        It is expected that either the IF or the LO frequency is supplied. Otherwise, an
+        error is thrown.
+
+        In case of RF, checks if the LO freq has already been set, throws an error
+
+        Parameters
+        ----------
+        freqs
+        sequencer
+        compiler_lo
+        lo_freq_setting_name
+
+        Returns
+        -------
+
+        Raises
+        ------
+        ValueError
+            Neither the LO nor the IF frequency has been set and thus contain
+            :code:`None` values.
+        """
+        underconstr = freqs.LO is None and freqs.IF is None
+        overconstr = False  # freqs.LO is not None and freqs.IF is not None, TODO FIXME
+
+        if underconstr or overconstr:
+            raise ValueError(
+                f"Frequency settings {'under' if underconstr else 'over'}constrained for "
+                f"sequencer {sequencer.name} with port {sequencer.port} and clock "
+                f"{sequencer.clock}. It is required to either supply an "
+                f'"lo_freq" or an "interm_freq" '
+                f"({'neither' if underconstr else 'both'} supplied)"
+                "{}.".format(
+                    ""
+                    if sequencer.associated_ext_lo is None
+                    else f" in using an external local oscillator "
+                    f"({sequencer.associated_ext_lo})"
+                )
+            )
+
+        if freqs.LO is not None:
+            if compiler_lo is not None:
+                compiler_lo.frequency = freqs.LO
+            elif lo_freq_setting_name is not None:
+                previous_lo_freq = getattr(self._settings, lo_freq_setting_name)
+
+                if previous_lo_freq is not None and freqs.LO != previous_lo_freq:
+                    raise ValueError(
+                        f"Attempting to set '{lo_freq_setting_name}' to frequency "
+                        f"'{freqs.LO}', while it has previously already been set to "
+                        f"'{previous_lo_freq}'!"
+                    )
+
+                setattr(self._settings, lo_freq_setting_name, freqs.LO)
+
+        if freqs.IF is not None:
+            sequencer.frequency = freqs.IF  # Setter also enables/disables nco
+
     @abstractmethod
     def assign_attenuation(self):
         """
@@ -1307,17 +1375,17 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             output_cfg = self.hw_mapping[output_label]
             voltage_range = self.static_hw_properties.mixer_dc_offset_range
             if output_idx == 0:
-                self._settings.offset_ch0_path0 = calc_from_units_volt(
+                self._settings.offset_ch0_path0 = helpers.calc_from_units_volt(
                     voltage_range, self.name, "dc_mixer_offset_I", output_cfg
                 )
-                self._settings.offset_ch0_path1 = calc_from_units_volt(
+                self._settings.offset_ch0_path1 = helpers.calc_from_units_volt(
                     voltage_range, self.name, "dc_mixer_offset_Q", output_cfg
                 )
             else:
-                self._settings.offset_ch1_path0 = calc_from_units_volt(
+                self._settings.offset_ch1_path0 = helpers.calc_from_units_volt(
                     voltage_range, self.name, "dc_mixer_offset_I", output_cfg
                 )
-                self._settings.offset_ch1_path1 = calc_from_units_volt(
+                self._settings.offset_ch1_path1 = helpers.calc_from_units_volt(
                     voltage_range, self.name, "dc_mixer_offset_Q", output_cfg
                 )
 
@@ -1473,77 +1541,43 @@ class QbloxBasebandModule(QbloxBaseModule):
 
     def assign_frequencies(self, sequencer: Sequencer):
         """
-        Assigns frequencies for baseband modules.
+        Assigns LO/IF frequencies for baseband modules, by downconverting the clock
+        frequency when applicable and then determining LO/IF frequencies.
+
+        In case of **no** external local oscillator, the NCO is given the same
+        frequency as the clock.
+
+        In case of **an** external local oscillator and `sequencer.mix_lo` is
+        ``False``, the LO is given the same frequency as the clock.
         """
-        # ensure to select the top level parent object of the sequencer (pulsar or cluster)
-        parent = self.parent if self.is_pulsar else self.parent.parent
-
-        if sequencer.associated_ext_lo is None:
-            if sequencer.frequency == 0:
-                # disable the numerically controlled oscillator (nco)
-                sequencer.settings.nco_en = False
-            else:
-                # set the nco frequency to the clock frequency, and enable the nco.
-                sequencer.frequency = parent.resources[sequencer.clock]["freq"]
-                sequencer.settings.nco_en = True
-        else:
-            self._assign_frequency_with_ext_lo(sequencer, parent)
-
-    @staticmethod
-    def _assign_frequency_with_ext_lo(sequencer: Sequencer, container):
-        r"""
-        Meant to assign an IF frequency
-        to each sequencer, or an LO frequency to each output (if applicable).
-        For each sequencer, the following relation is obeyed
-        (if mix_lo is set to True) :math:`f_{RF} = f_{LO} + f_{IF}`.
-
-        If mix_lo is True it is thus expected that either the IF and/or the
-        LO frequency has been set during instantiation.
-        Otherwise, an error is thrown. If the frequency is overconstraint
-        (i.e. multiple values are somehow specified) an error is thrown during
-        assignment.
-
-        If mix_lo is False (For example when the LO is used to drive an external
-        device) the relation :math:`f_{RF} = f_{LO}` is upheld.
-        In this case this function only serves to turn on the NCO, and the LO
-        is given the same frequency as the clock.
-
-        Raises
-        ------
-        ValueError
-            Neither the LO nor the IF frequency has been set and thus contain
-            :code:`None` values.
-        """
-
-        if sequencer.clock not in container.resources:
+        compiler_container = self.parent if self.is_pulsar else self.parent.parent
+        if sequencer.clock not in compiler_container.resources:
             return
 
-        compiler_lo = container.instrument_compilers.get(
-            sequencer.associated_ext_lo, None
-        )
+        clock_freq = compiler_container.resources[sequencer.clock]["freq"]
+        if sequencer.associated_ext_lo is None:
+            # Setting "interm_freq" to 0 in hardware config disables the NCO
+            if sequencer.frequency != 0:
+                # Set NCO frequency to the clock frequency, and enable NCO (via setter)
+                sequencer.frequency = clock_freq
+        else:
+            # In using external local oscillator, determine clock and LO/IF freqs,
+            # and then set LO/IF freqs, and enable NCO (via setter)
+            compiler_lo = compiler_container.instrument_compilers[
+                sequencer.associated_ext_lo
+            ]
 
-        freqs = determine_clock_lo_interm_freqs(
-            clock_freq=container.resources[sequencer.clock]["freq"],
-            lo_freq=compiler_lo.frequency,
-            interm_freq=sequencer.frequency,
-            downconverter_freq=sequencer.downconverter_freq,
-            mix_lo=sequencer.mix_lo,
-        )
-
-        if freqs.LO is None and freqs.IF is None:
-            raise ValueError(
-                f"Frequency settings underconstraint for sequencer {sequencer.name} "
-                f"with port {sequencer.port} and clock {sequencer.clock}. When using "
-                f"an external local oscillator it is required to either supply an "
-                f'"lo_freq" or an "interm_freq". Neither was given.'
+            freqs = helpers.determine_clock_lo_interm_freqs(
+                clock_freq=clock_freq,
+                lo_freq=compiler_lo.frequency,
+                interm_freq=sequencer.frequency,
+                downconverter_freq=sequencer.downconverter_freq,
+                mix_lo=sequencer.mix_lo,
             )
 
-        if freqs.LO is not None:
-            compiler_lo.frequency = freqs.LO
-
-        if freqs.IF is not None:
-            sequencer.frequency = freqs.IF
-            sequencer.settings.nco_en = freqs.IF != 0
+            self._set_lo_interm_freqs(
+                freqs=freqs, sequencer=sequencer, compiler_lo=compiler_lo
+            )
 
     def assign_attenuation(self):
         """
@@ -1564,28 +1598,13 @@ class QbloxRFModule(QbloxBaseModule):
         return PulsarRFSettings if self.is_pulsar else RFModuleSettings
 
     def assign_frequencies(self, sequencer: Sequencer):
-        r"""
-        Meant to assign an IF frequency
-        to each sequencer, or an LO frequency to each output (if applicable).
-        For each sequencer, the following relation is obeyed:
-        :math:`f_{RF} = f_{LO} + f_{IF}`.
-
-        In this step it is thus expected that either the IF and/or the LO frequency has
-        been set during instantiation. Otherwise an error is thrown. If the frequency
-        is overconstraint (i.e. multiple values are somehow specified) an error is
-        thrown during assignment.
-
-        Raises
-        ------
-        ValueError
-            Neither the LO nor the IF frequency has been set and thus contain
-            :code:`None` values.
         """
-        resources = (
-            self.parent.resources if self.is_pulsar else self.parent.parent.resources
-        )
+        Assigns LO/IF frequencies for RF modules, by downconverting the clock
+        frequency when applicable and then determining LO/IF frequencies.
+        """
 
-        if sequencer.clock not in resources:
+        compiler_container = self.parent if self.is_pulsar else self.parent.parent
+        if sequencer.clock not in compiler_container.resources:
             return
 
         # Now we have to identify the LO the sequencer is outputting to
@@ -1601,42 +1620,21 @@ class QbloxRFModule(QbloxBaseModule):
                 continue
 
             complex_output = 0 if real_output == 0 else 1
-            lo_freq = (
-                self._settings.lo0_freq
-                if (complex_output == 0)
-                else self._settings.lo1_freq
-            )
+            lo_freq_setting_name = f"lo{complex_output}_freq"
 
-            freqs = determine_clock_lo_interm_freqs(
-                clock_freq=resources[sequencer.clock]["freq"],
-                lo_freq=lo_freq,
+            freqs = helpers.determine_clock_lo_interm_freqs(
+                clock_freq=compiler_container.resources[sequencer.clock]["freq"],
+                lo_freq=getattr(self._settings, lo_freq_setting_name),
                 interm_freq=sequencer.frequency,
                 downconverter_freq=sequencer.downconverter_freq,
-                mix_lo=sequencer.mix_lo,
+                mix_lo=True,
             )
 
-            if freqs.LO is None and freqs.IF is None:
-                raise ValueError(
-                    f"Frequency settings underconstraint for sequencer {sequencer.name}"
-                    f" with port {sequencer.port} and clock {sequencer.clock}. It is "
-                    f'required to either supply an "lo_freq" or an "interm_freq". '
-                    f"Neither was given."
-                )
-
-            if freqs.LO is not None:
-                if lo_freq is not None and freqs.LO != lo_freq:
-                    raise ValueError(
-                        f"Attempting to set 'lo{complex_output}_freq' to frequency "
-                        f"{freqs.LO}, while it has previously already been set to "
-                        f"{lo_freq}!"
-                    )
-                if complex_output == 0:
-                    self._settings.lo0_freq = freqs.LO
-                elif complex_output == 1:
-                    self._settings.lo1_freq = freqs.LO
-
-            if freqs.IF is not None:
-                sequencer.frequency = freqs.IF
+            self._set_lo_interm_freqs(
+                freqs=freqs,
+                sequencer=sequencer,
+                lo_freq_setting_name=lo_freq_setting_name,
+            )
 
     def assign_attenuation(self):
         """

@@ -4,7 +4,7 @@
 import dataclasses
 import re
 from copy import deepcopy
-from collections import UserDict, namedtuple
+from collections import UserDict
 from typing import Any, Dict, Iterable, List, Literal, Optional, Tuple, Union
 
 import numpy as np
@@ -429,28 +429,57 @@ def get_nco_phase_arguments(phase_deg: float) -> int:
 
 
 @dataclasses.dataclass
-class _Freqs:
+class Frequencies:
     clock: Optional[float]
     LO: Optional[float]
     IF: Optional[float]
 
 
 def determine_clock_lo_interm_freqs(
-    clock_freq, lo_freq, interm_freq, downconverter_freq=None, mix_lo=True
+    clock_freq, lo_freq, interm_freq, downconverter_freq, mix_lo: bool
 ):
+    r"""
+    Downconvert clock frequency when applicable and determine LO and IF frequencies.
+
+    The following relation is obeyed, if `mix_lo` is True:
+    :math:`f_{RF} = f_{LO} + f_{IF}`.
+
+    If `mix_lo` is False, relation :math:`f_{RF} = f_{LO}` is upheld.
+
+    Parameters
+    ----------
+    clock_freq
+    lo_freq
+    interm_freq
+    downconverter_freq
+    mix_lo
+
+    Returns
+    -------
+
+    Raises
+    ------
+    ValueError
+        fgf
+    """
+
     def _downconvert_clock(downconverter_freq: float, clock_freq: float) -> float:
         if downconverter_freq < 0:
-            raise ValueError("Downconverter frequency must be positive.")
+            raise ValueError(
+                f"Downconverter frequency must be positive ({downconverter_freq=})."
+            )
 
         if downconverter_freq < clock_freq:
             raise ValueError(
-                "Downconverter frequency must be greater than clock frequency."
+                f"Downconverter frequency must be greater than clock frequency "
+                f"({downconverter_freq=}, {clock_freq=})."
             )
 
         return downconverter_freq - clock_freq
 
-    freqs = _Freqs(clock=clock_freq, LO=None, IF=None)
-    if clock_freq is not None and downconverter_freq is not None:
+    freqs = Frequencies(clock=clock_freq, LO=None, IF=None)
+
+    if downconverter_freq is not None:
         freqs.clock = _downconvert_clock(
             downconverter_freq=downconverter_freq,
             clock_freq=clock_freq,
