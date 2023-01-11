@@ -20,6 +20,7 @@
 - Qblox backend - add TriggerCount to `QRMAcquisitionManager` (!556)
 - Deprecation - Refactored tests to remove deprecated `qcompile`, refactored to `SerialCompiler` (!529, #368)
 - Waveforms - Fix `sudden_net_zero` waveform generation function misunderstands `amp_B` (!549, #390)
+- Schedule Functions - make experiment-related schedule functions available in `quantify_scheduler.schedules` (!572)
 
 ## 0.10.1 (2022-12-20)
 

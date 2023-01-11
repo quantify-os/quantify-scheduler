@@ -8,7 +8,7 @@ from typing import List, Union
 
 import numpy as np
 
-from quantify_scheduler import Schedule
+from quantify_scheduler.schedules.schedule import Schedule
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.gate_library import X90, Measure, Reset, Rxy, X
