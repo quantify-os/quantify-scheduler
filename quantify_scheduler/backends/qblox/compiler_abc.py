@@ -1567,13 +1567,19 @@ class QbloxBasebandModule(QbloxBaseModule):
                 sequencer.associated_ext_lo
             ]
 
-            freqs = helpers.determine_clock_lo_interm_freqs(
-                clock_freq=clock_freq,
-                lo_freq=compiler_lo.frequency,
-                interm_freq=sequencer.frequency,
-                downconverter_freq=sequencer.downconverter_freq,
-                mix_lo=sequencer.mix_lo,
-            )
+            try:
+                freqs = helpers.determine_clock_lo_interm_freqs(
+                    clock_freq=clock_freq,
+                    lo_freq=compiler_lo.frequency,
+                    interm_freq=sequencer.frequency,
+                    downconverter_freq=sequencer.downconverter_freq,
+                    mix_lo=sequencer.mix_lo,
+                )
+            except Exception as error:
+                raise error.__class__(
+                    f"{error} (for {sequencer.name} with port {sequencer.port} and "
+                    f"clock {sequencer.clock})."
+                )
 
             self._set_lo_interm_freqs(
                 freqs=freqs, sequencer=sequencer, compiler_lo=compiler_lo
@@ -1622,13 +1628,19 @@ class QbloxRFModule(QbloxBaseModule):
             complex_output = 0 if real_output == 0 else 1
             lo_freq_setting_name = f"lo{complex_output}_freq"
 
-            freqs = helpers.determine_clock_lo_interm_freqs(
-                clock_freq=compiler_container.resources[sequencer.clock]["freq"],
-                lo_freq=getattr(self._settings, lo_freq_setting_name),
-                interm_freq=sequencer.frequency,
-                downconverter_freq=sequencer.downconverter_freq,
-                mix_lo=True,
-            )
+            try:
+                freqs = helpers.determine_clock_lo_interm_freqs(
+                    clock_freq=compiler_container.resources[sequencer.clock]["freq"],
+                    lo_freq=getattr(self._settings, lo_freq_setting_name),
+                    interm_freq=sequencer.frequency,
+                    downconverter_freq=sequencer.downconverter_freq,
+                    mix_lo=True,
+                )
+            except Exception as error:
+                raise error.__class__(
+                    f"{error} (for {sequencer.name} with port {sequencer.port} and "
+                    f"clock {sequencer.clock})."
+                )
 
             self._set_lo_interm_freqs(
                 freqs=freqs,

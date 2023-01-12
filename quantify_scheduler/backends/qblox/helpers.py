@@ -464,15 +464,18 @@ def determine_clock_lo_interm_freqs(
     """
 
     def _downconvert_clock(downconverter_freq: float, clock_freq: float) -> float:
+        if downconverter_freq == 0:
+            return clock_freq
+
         if downconverter_freq < 0:
             raise ValueError(
-                f"Downconverter frequency must be positive ({downconverter_freq=})."
+                f"Downconverter frequency must be positive ({downconverter_freq=})"
             )
 
         if downconverter_freq < clock_freq:
             raise ValueError(
                 f"Downconverter frequency must be greater than clock frequency "
-                f"({downconverter_freq=}, {clock_freq=})."
+                f"({downconverter_freq=}, {clock_freq=})"
             )
 
         return downconverter_freq - clock_freq
