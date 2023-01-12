@@ -430,13 +430,17 @@ def get_nco_phase_arguments(phase_deg: float) -> int:
 
 @dataclasses.dataclass
 class Frequencies:
-    clock: Optional[float]
-    LO: Optional[float]
-    IF: Optional[float]
+    clock: Optional[float] = None
+    LO: Optional[float] = None
+    IF: Optional[float] = None
 
 
 def determine_clock_lo_interm_freqs(
-    clock_freq, lo_freq, interm_freq, downconverter_freq, mix_lo: bool
+    clock_freq: float,
+    lo_freq: Union[float, None],
+    interm_freq: Union[float, None],
+    downconverter_freq: Union[float, None],
+    mix_lo: bool,
 ):
     r"""
     Downconvert clock frequency when applicable and determine LO and IF frequencies.
@@ -480,7 +484,7 @@ def determine_clock_lo_interm_freqs(
 
         return downconverter_freq - clock_freq
 
-    freqs = Frequencies(clock=clock_freq, LO=None, IF=None)
+    freqs = Frequencies(clock=clock_freq)
 
     if downconverter_freq is not None:
         freqs.clock = _downconvert_clock(

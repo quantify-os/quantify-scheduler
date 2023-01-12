@@ -1269,7 +1269,8 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         if freqs.LO is not None:
             if compiler_lo is not None:
                 compiler_lo.frequency = freqs.LO
-            elif lo_freq_setting_name is not None:
+
+            if lo_freq_setting_name is not None:
                 previous_lo_freq = getattr(self._settings, lo_freq_setting_name)
 
                 if previous_lo_freq is not None and freqs.LO != previous_lo_freq:
