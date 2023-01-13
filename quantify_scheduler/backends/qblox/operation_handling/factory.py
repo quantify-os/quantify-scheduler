@@ -4,19 +4,24 @@
 
 from __future__ import annotations
 
-from quantify_scheduler.enums import BinMode
+from typing import Optional
 
-from quantify_scheduler.backends.types.qblox import OpInfo
+from quantify_scheduler.enums import BinMode
+from quantify_scheduler.backends.qblox import helpers
 from quantify_scheduler.backends.qblox.operation_handling import (
     base,
     pulses,
     acquisitions,
     virtual,
 )
+from quantify_scheduler.backends.types.qblox import OpInfo
 
 
 def get_operation_strategy(
-    operation_info: OpInfo, instruction_generated_pulses_enabled: bool, io_mode: str
+    operation_info: OpInfo,
+    instruction_generated_pulses_enabled: bool,
+    io_mode: str,
+    frequencies: Optional[helpers.Frequencies] = None,
 ) -> base.IOperationStrategy:
     """
     Determines and instantiates the correct strategy object.
@@ -31,6 +36,7 @@ def get_operation_strategy(
     io_mode
         Either "real", "imag" or complex depending on whether the signal affects only
         path0, path1 or both.
+    frequencies
 
     Returns
     -------
@@ -41,7 +47,10 @@ def get_operation_strategy(
         return _get_acquisition_strategy(operation_info)
 
     return _get_pulse_strategy(
-        operation_info, instruction_generated_pulses_enabled, io_mode
+        operation_info=operation_info,
+        instruction_generated_pulses_enabled=instruction_generated_pulses_enabled,
+        io_mode=io_mode,
+        frequencies=frequencies,
     )
 
 
@@ -72,7 +81,10 @@ def _get_acquisition_strategy(
 
 
 def _get_pulse_strategy(
-    operation_info: OpInfo, instruction_generated_pulses_enabled: bool, io_mode: str
+    operation_info: OpInfo,
+    instruction_generated_pulses_enabled: bool,
+    io_mode: str,
+    frequencies: Optional[helpers.Frequencies] = None,
 ) -> base.IOperationStrategy:
     """Handles the logic for determining the correct pulse type."""
     if operation_info.data["port"] is None:
@@ -81,7 +93,7 @@ def _get_pulse_strategy(
         elif "reset_clock_phase" in operation_info.data:
             return virtual.NcoResetClockPhaseStrategy(operation_info)
         elif "clock_frequency" in operation_info.data:
-            return virtual.NcoSetClockFrequencyStrategy(operation_info)
+            return virtual.NcoSetClockFrequencyStrategy(operation_info, frequencies)
         else:
             return virtual.IdleStrategy(operation_info)
 

@@ -480,7 +480,7 @@ def determine_clock_lo_interm_freqs(
     interm_freq: Union[float, None],
     downconverter_freq: Union[float, None],
     mix_lo: bool,
-):
+) -> Frequencies:
     r"""
     Downconvert clock frequency when applicable and determine LO and IF frequencies.
 
@@ -523,7 +523,7 @@ def determine_clock_lo_interm_freqs(
 
         return downconverter_freq - clock_freq
 
-    freqs = Frequencies(clock=clock_freq)
+    freqs = Frequencies(clock=clock_freq, LO=lo_freq, IF=interm_freq)
 
     if downconverter_freq is not None:
         freqs.clock = _downconvert_clock(
@@ -533,6 +533,7 @@ def determine_clock_lo_interm_freqs(
 
     if not mix_lo:
         freqs.LO = freqs.clock
+        freqs.IF = None
     else:
         if interm_freq is not None:
             freqs.LO = freqs.clock - interm_freq

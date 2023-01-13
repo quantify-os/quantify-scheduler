@@ -51,6 +51,30 @@ def test_invalid_get_nco_set_frequency(frequency: float):
         helpers.get_nco_set_frequency_arguments(frequency)
 
 
+def __get_frequencies(
+    clock_freq, lo_freq, interm_freq, downconverter_freq, mix_lo
+) -> helpers.Frequencies:
+    freqs = helpers.Frequencies()
+    if downconverter_freq is None or downconverter_freq == 0:
+        freqs.clock = clock_freq
+    else:
+        freqs.clock = downconverter_freq - clock_freq
+
+    freqs.LO = lo_freq
+    if mix_lo is False:
+        freqs.LO = freqs.clock
+    elif interm_freq is not None:
+        freqs.LO = freqs.clock - interm_freq
+
+    freqs.IF = interm_freq
+    if mix_lo is False:
+        freqs.IF = None
+    elif lo_freq is not None:
+        freqs.IF = freqs.clock - lo_freq
+
+    return freqs
+
+
 @pytest.mark.parametrize(
     "clock_freq, lo_freq, interm_freq, downconverter_freq, mix_lo, expected_freqs",
     [
@@ -60,27 +84,8 @@ def test_invalid_get_nco_set_frequency(frequency: float):
             interm_freq,
             downconverter_freq,
             mix_lo,
-            helpers.Frequencies(
-                clock=clock_freq
-                if downconverter_freq is None or downconverter_freq == 0
-                else downconverter_freq - clock_freq,
-                LO=clock_freq
-                if (
-                    mix_lo is False
-                    and (downconverter_freq is None or downconverter_freq == 0)
-                )
-                else downconverter_freq - clock_freq
-                if mix_lo is False
-                else None
-                if interm_freq is None
-                else clock_freq - interm_freq
-                if downconverter_freq is None or downconverter_freq == 0
-                else downconverter_freq - clock_freq - interm_freq,
-                IF=None
-                if mix_lo is False or lo_freq is None
-                else clock_freq - lo_freq
-                if downconverter_freq is None or downconverter_freq == 0
-                else downconverter_freq - clock_freq - lo_freq,
+            __get_frequencies(
+                clock_freq, lo_freq, interm_freq, downconverter_freq, mix_lo
             ),
         )
         for clock_freq in [100]

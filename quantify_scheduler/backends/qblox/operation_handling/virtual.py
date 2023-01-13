@@ -103,6 +103,20 @@ class NcoSetClockFrequencyStrategy(IdleStrategy):
     Currently implemented as `set_freq` and an `upd_param` of 8 ns,
     leading to a total duration of 8 ns before the next command can be issued."""
 
+    def __init__(self, operation_info: types.OpInfo, frequencies: helpers.Frequencies):
+        """
+        Constructor for the NcoSetClockFrequencyStrategy class.
+
+        Parameters
+        ----------
+        operation_info
+            The operation info that corresponds to this operation.
+        frequencies
+
+        """
+        super().__init__(operation_info)
+        self.frequencies = frequencies
+
     def insert_qasm(self, qasm_program: QASMProgram):
         """
         Inserts the instructions needed to set the NCO frequency.
@@ -112,12 +126,23 @@ class NcoSetClockFrequencyStrategy(IdleStrategy):
         qasm_program
             The QASMProgram to add the assembly instructions to.
         """
-        frequency = self.operation_info.data.get("clock_frequency")
-        frequency_args = helpers.get_nco_set_frequency_arguments(frequency)
+        if self.frequencies.IF is None:
+            # nco not enabled / mix_lo false
+            raise Exception
+
+        if self.frequencies.clock is None:
+            # seq.clock not in compiler_container.resources
+            raise Exception
+
+        # TODO: check if this is okay too in case of downconverter, i.e. is the new clock specified "undownconverted"
+        new_clock_freq = self.operation_info.data.get("clock_frequency")
+        self.frequencies.IF += new_clock_freq - self.frequencies.clock
+
+        frequency_args = helpers.get_nco_set_frequency_arguments(self.frequencies.IF)
         qasm_program.emit(
             q1asm_instructions.SET_FREQUENCY,
             frequency_args,
-            comment=f"set NCO frequency to {frequency:.2f} Hz",
+            comment=f"set NCO frequency to {self.frequencies.IF:.2f} Hz",
         )
         qasm_program.emit(
             q1asm_instructions.UPDATE_PARAMETERS,
