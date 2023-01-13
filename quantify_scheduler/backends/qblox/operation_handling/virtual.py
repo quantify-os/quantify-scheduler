@@ -95,3 +95,32 @@ class NcoResetClockPhaseStrategy(IdleStrategy):
                 "but reset_clock_phase not present in operation_info.data"
             )
         qasm_program.emit(q1asm_instructions.RESET_PHASE)
+
+
+class NcoSetClockFrequencyStrategy(IdleStrategy):
+    """Strategy for operation that does not produce any output, but rather sets
+    the frequency of the NCO.
+    Currently implemented as `set_freq` and an `upd_param` of 8 ns,
+    leading to a total duration of 8 ns before the next command can be issued."""
+
+    def insert_qasm(self, qasm_program: QASMProgram):
+        """
+        Inserts the instructions needed to set the NCO frequency.
+
+        Parameters
+        ----------
+        qasm_program
+            The QASMProgram to add the assembly instructions to.
+        """
+        frequency = self.operation_info.data.get("clock_frequency")
+        frequency_args = helpers.get_nco_set_frequency_arguments(frequency)
+        qasm_program.emit(
+            q1asm_instructions.SET_FREQUENCY,
+            frequency_args,
+            comment=f"set NCO frequency to {frequency:.2f} Hz",
+        )
+        qasm_program.emit(
+            q1asm_instructions.UPDATE_PARAMETERS,
+            8,
+            comment=f"updating to apply NCO frequency change",
+        )

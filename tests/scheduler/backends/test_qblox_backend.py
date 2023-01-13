@@ -65,6 +65,7 @@ from quantify_scheduler.operations.pulse_library import (
     IdlePulse,
     RampPulse,
     ShiftClockPhase,
+    SetClockFrequency,
     SquarePulse,
 )
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
@@ -926,6 +927,7 @@ def test_compile_measure(
         (IdlePulse(duration=64e-9), "wait       64"),
         (Reset("q1"), "wait       65532"),
         (ShiftClockPhase(clock="q1.01", phase_shift=180.0), "set_ph_delta  500000000"),
+        (SetClockFrequency(clock="q1.01", clock_frequency=76531.4), "set_freq   306126"),
     ],
 )
 def test_compile_clock_operations(
