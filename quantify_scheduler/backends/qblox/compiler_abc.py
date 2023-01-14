@@ -11,7 +11,18 @@ from abc import ABC, ABCMeta, abstractmethod
 from collections import defaultdict, deque
 from functools import partial
 from os import makedirs, path
-from typing import Any, Callable, Dict, List, Literal, Optional, Set, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+)
 
 from pathvalidate import sanitize_filename
 from qcodes.utils.helpers import NumpyJSONEncoder
@@ -47,6 +58,9 @@ from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
     _extract_acquisition_metadata_from_acquisitions,
 )
+
+if TYPE_CHECKING:
+    from quantify_scheduler.backends.qblox.instrument_compilers import LocalOscillator
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
@@ -1218,7 +1232,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         self,
         freqs: helpers.Frequencies,
         sequencer: Sequencer,
-        compiler_lo: Optional[QbloxBaseModule] = None,
+        compiler_lo: Optional[LocalOscillator] = None,
         lo_freq_setting_name: Optional[str] = None,
     ):
         """
@@ -1614,11 +1628,34 @@ class QbloxRFModule(QbloxBaseModule):
         if sequencer.clock not in compiler_container.resources:
             return
 
+        self._validate_io_mode(sequencer)
+        lo_freq_setting_name = f"lo{QbloxRFModule._determine_lo_idx(sequencer)}_freq"
+
+        try:
+            freqs = helpers.determine_clock_lo_interm_freqs(
+                clock_freq=compiler_container.resources[sequencer.clock]["freq"],
+                lo_freq=getattr(self._settings, lo_freq_setting_name),
+                interm_freq=sequencer.frequency,
+                downconverter_freq=sequencer.downconverter_freq,
+                mix_lo=True,
+            )
+        except Exception as error:
+            raise error.__class__(
+                f"{error} (for {sequencer.name} with port {sequencer.port} and "
+                f"clock {sequencer.clock})."
+            )
+
+        self._set_lo_interm_freqs(
+            freqs=freqs,
+            sequencer=sequencer,
+            lo_freq_setting_name=lo_freq_setting_name,
+        )
+
+    @staticmethod
+    def _determine_lo_idx(sequencer: Sequencer):
         # Now we have to identify the LO the sequencer is outputting to
         # We can do this by first checking the Sequencer-Output correspondence
         # And then use the fact that LOX is connected to OutputX
-
-        self._validate_io_mode(sequencer)
         for real_output in sequencer.connected_outputs:
             if real_output % 2 != 0:
                 # We will only use real output 0 and 2,
@@ -1627,27 +1664,7 @@ class QbloxRFModule(QbloxBaseModule):
                 continue
 
             complex_output = 0 if real_output == 0 else 1
-            lo_freq_setting_name = f"lo{complex_output}_freq"
-
-            try:
-                freqs = helpers.determine_clock_lo_interm_freqs(
-                    clock_freq=compiler_container.resources[sequencer.clock]["freq"],
-                    lo_freq=getattr(self._settings, lo_freq_setting_name),
-                    interm_freq=sequencer.frequency,
-                    downconverter_freq=sequencer.downconverter_freq,
-                    mix_lo=True,
-                )
-            except Exception as error:
-                raise error.__class__(
-                    f"{error} (for {sequencer.name} with port {sequencer.port} and "
-                    f"clock {sequencer.clock})."
-                )
-
-            self._set_lo_interm_freqs(
-                freqs=freqs,
-                sequencer=sequencer,
-                lo_freq_setting_name=lo_freq_setting_name,
-            )
+            return complex_output
 
     def assign_attenuation(self):
         """
