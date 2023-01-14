@@ -170,7 +170,10 @@ class TestNcoSetClockFrequencyStrategy:
                 ),
             )
             for clock_freq_prev in np.append(
-                np.geomspace(-1000e6, -1e-8, num=2), np.geomspace(1e-8, 1000e6, num=2)   # TODO: probably overkill, adding a lot of test cases
+                np.geomspace(-1000e6, -1e-8, num=2),
+                np.geomspace(
+                    1e-8, 1000e6, num=2
+                ),  # TODO: probably overkill, adding a lot of test cases
             )
             for clock_freq_new in [-2e9, 0, 600]
             for interm_freq in [-123, 50e6]
