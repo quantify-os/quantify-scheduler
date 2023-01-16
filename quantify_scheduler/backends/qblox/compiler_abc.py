@@ -16,6 +16,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Generator,
     List,
     Literal,
     Optional,
@@ -1629,42 +1630,54 @@ class QbloxRFModule(QbloxBaseModule):
             return
 
         self._validate_io_mode(sequencer)
-        lo_freq_setting_name = f"lo{QbloxRFModule._determine_lo_idx(sequencer)}_freq"
 
-        try:
-            freqs = helpers.determine_clock_lo_interm_freqs(
-                clock_freq=compiler_container.resources[sequencer.clock]["freq"],
-                lo_freq=getattr(self._settings, lo_freq_setting_name),
-                interm_freq=sequencer.frequency,
-                downconverter_freq=sequencer.downconverter_freq,
-                mix_lo=True,
-            )
-        except Exception as error:
-            raise error.__class__(
-                f"{error} (for {sequencer.name} with port {sequencer.port} and "
-                f"clock {sequencer.clock})."
-            )
+        for lo_idx in QbloxRFModule._get_connected_lo_indices(sequencer):
+            lo_freq_setting_name = f"lo{lo_idx}_freq"
 
-        self._set_lo_interm_freqs(
-            freqs=freqs,
-            sequencer=sequencer,
-            lo_freq_setting_name=lo_freq_setting_name,
-        )
+            try:
+                freqs = helpers.determine_clock_lo_interm_freqs(
+                    clock_freq=compiler_container.resources[sequencer.clock]["freq"],
+                    lo_freq=getattr(self._settings, lo_freq_setting_name),
+                    interm_freq=sequencer.frequency,
+                    downconverter_freq=sequencer.downconverter_freq,
+                    mix_lo=True,
+                )
+            except Exception as error:
+                raise error.__class__(
+                    f"{error} (for {sequencer.name} with port {sequencer.port} and "
+                    f"clock {sequencer.clock})."
+                )
+
+            self._set_lo_interm_freqs(
+                freqs=freqs,
+                sequencer=sequencer,
+                lo_freq_setting_name=lo_freq_setting_name,
+            )
 
     @staticmethod
-    def _determine_lo_idx(sequencer: Sequencer):
-        # Now we have to identify the LO the sequencer is outputting to
-        # We can do this by first checking the Sequencer-Output correspondence
-        # And then use the fact that LOX is connected to OutputX
-        for real_output in sequencer.connected_outputs:
-            if real_output % 2 != 0:
+    def _get_connected_lo_indices(sequencer: Sequencer) -> Generator[int]:
+        """
+        Identify the LO the sequencer is outputting to. We can do this by first checking
+        the Sequencer-Output correspondence, and then use the fact that LOX is connected
+        to OutputX.
+
+        Parameters
+        ----------
+        sequencer
+
+        Returns
+        -------
+
+        """
+        for sequencer_output in sequencer.connected_outputs:
+            if sequencer_output % 2 != 0:
                 # We will only use real output 0 and 2,
                 # since 1 and 3 are part of the same
                 # complex outputs.
                 continue
 
-            complex_output = 0 if real_output == 0 else 1
-            return complex_output
+            module_output = 0 if sequencer_output == 0 else 1
+            yield module_output
 
     def assign_attenuation(self):
         """
