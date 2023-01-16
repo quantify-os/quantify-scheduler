@@ -24,6 +24,8 @@ from quantify_scheduler.backends.qblox.operation_handling import virtual
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox.register_manager import RegisterManager
 
+from quantify_scheduler.operations.pulse_library import SetClockFrequency
+
 
 @pytest.fixture(name="empty_qasm_program_qcm")
 def fixture_empty_qasm_program():
@@ -138,52 +140,58 @@ class TestNcoPhaseShiftStrategy:
 
 class TestNcoSetClockFrequencyStrategy:
     def test_constructor(self):
-        op_info = types.OpInfo(name="", data={"clock_frequency": 1}, timing=0)
+        op_info = types.OpInfo(
+            name=SetClockFrequency.__class__.__name__,
+            data={"clock_frequency": 1, "clock_freq_old": 2, "interm_freq_old": 3},
+            timing=0,
+        )
         virtual.NcoSetClockFrequencyStrategy(
             operation_info=op_info,
-            frequencies=helpers.Frequencies(clock=2, IF=3),
         )
 
     def test_generate_data(self):
         # arrange
-        op_info = types.OpInfo(name="", data={"clock_frequency": 1}, timing=0)
+        op_info = types.OpInfo(
+            name=SetClockFrequency.__class__.__name__,
+            data={"clock_frequency": 1, "clock_freq_old": 2, "interm_freq_old": 3},
+            timing=0,
+        )
         strategy = virtual.NcoSetClockFrequencyStrategy(
             operation_info=op_info,
-            frequencies=helpers.Frequencies(clock=2, IF=3),
         )
 
         # act and assert
         _assert_none_data(strategy)
 
     @pytest.mark.parametrize(
-        "clock_freq_prev, clock_freq_new, interm_freq, expected_instruction",
+        "clock_freq_new, clock_freq_old, interm_freq_old, expected_instruction",
         [
             (
-                clock_freq_prev,
                 clock_freq_new,
-                interm_freq,
+                clock_freq_old,
+                interm_freq_old,
                 (
                     "set_freq",
-                    f"{round((interm_freq + clock_freq_new - clock_freq_prev)*4)}",
+                    f"{round((interm_freq_old + clock_freq_new - clock_freq_old)*4)}",
                     "upd_param",
                     "8",
                 ),
             )
-            for clock_freq_prev in np.append(
+            for clock_freq_new in [-2e9, 0, 600]
+            for clock_freq_old in np.append(
                 np.geomspace(-1000e6, -1e-8, num=2),
                 np.geomspace(
                     1e-8, 1000e6, num=2
                 ),  # TODO: probably overkill, adding a lot of test cases
             )
-            for clock_freq_new in [-2e9, 0, 600]
-            for interm_freq in [-123, 50e6]
+            for interm_freq_old in [-123, 50e6]
         ],
     )
     def test_generate_qasm_program(
         self,
-        clock_freq_prev: float,
         clock_freq_new: float,
-        interm_freq: float,
+        clock_freq_old: float,
+        interm_freq_old: float,
         expected_instruction: Tuple[str, str, str, str],
         empty_qasm_program_qcm: QASMProgram,
     ):
@@ -200,19 +208,24 @@ class TestNcoSetClockFrequencyStrategy:
         # arrange
         qasm = empty_qasm_program_qcm
         op_info = types.OpInfo(
-            name="", data={"clock_frequency": clock_freq_new}, timing=0
+            name=SetClockFrequency.__class__.__name__,
+            data={
+                "clock_frequency": clock_freq_new,
+                "clock_freq_old": clock_freq_old,
+                "interm_freq_old": interm_freq_old,
+            },
+            timing=0,
         )
 
         strategy = virtual.NcoSetClockFrequencyStrategy(
             operation_info=op_info,
-            frequencies=helpers.Frequencies(clock=clock_freq_prev, IF=interm_freq),
         )
 
         # act
         try:
             strategy.insert_qasm(qasm)
         except ValueError as error:
-            interm_freq_new = interm_freq + clock_freq_new - clock_freq_prev
+            interm_freq_new = interm_freq_old + clock_freq_new - clock_freq_old
             limit = 500e6
             if interm_freq_new < -limit or interm_freq_new > limit:
                 assert (

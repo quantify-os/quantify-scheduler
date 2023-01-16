@@ -149,22 +149,19 @@ class SetClockFrequency(Operation):
             Time in seconds when to execute the command relative
             to the start time of the Operation in the Schedule.
         """
-        super().__init__(name="SetClockFrequency")
-        self.data.update(
+        super().__init__(name=self.__class__.__name__)
+        self.data["pulse_info"] = [
             {
-                "name": "SetClockFrequency",
-                "pulse_info": [
-                    {
-                        "wf_func": None,
-                        "t0": t0,
-                        "clock": clock,
-                        "clock_frequency": clock_frequency,
-                        "port": None,
-                        "duration": 0,
-                    }
-                ],
+                "wf_func": None,
+                "t0": t0,
+                "clock": clock,
+                "clock_frequency": clock_frequency,
+                "clock_freq_old": None,
+                "interm_freq_old": None,
+                "port": None,
+                "duration": 0,
             }
-        )
+        ]
         self._update()
 
     def __str__(self) -> str:

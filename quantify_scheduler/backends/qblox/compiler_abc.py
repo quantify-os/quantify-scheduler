@@ -59,6 +59,7 @@ from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
     _extract_acquisition_metadata_from_acquisitions,
 )
+from quantify_scheduler.operations.pulse_library import SetClockFrequency
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.qblox.instrument_compilers import LocalOscillator
@@ -1185,15 +1186,23 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 if seq.portclock == portclock or (
                     portclock[0] is None and portclock[1] == seq.clock
                 ):
-                    frequencies = helpers.Frequencies(
-                        clock=compiler_container.resources.get(seq.clock, {}).get(
-                            "freq", None
-                        ),
-                        IF=seq.frequency,
+                    clock_freq = compiler_container.resources.get(seq.clock, {}).get(
+                        "freq", None
                     )
+                    for pulse_data in pulse_data_list:
+                        if pulse_data.name == SetClockFrequency.__class__.__name__:
+                            for pulse_info in pulse_data:
+                                if "clock_frequency" in pulse_info:
+                                    pulse_info.update(
+                                        {
+                                            "clock_freq_old": clock_freq,
+                                            "interm_freq_old": seq.frequency,
+                                        }
+                                    )
+                                    print(pulse_info)
+
                     op_info_to_op_strategy_func = partial(
                         get_operation_strategy,
-                        frequencies=frequencies,
                         instruction_generated_pulses_enabled=seq.instruction_generated_pulses_enabled,
                         io_mode=seq.io_mode,
                     )
