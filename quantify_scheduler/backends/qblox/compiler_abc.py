@@ -567,9 +567,7 @@ class Sequencer:
         Parameters
         ----------
         acquisitions
-
         """
-
         acquisition_infos: List[OpInfo] = list(
             map(lambda acq: acq.operation_info, acquisitions)
         )

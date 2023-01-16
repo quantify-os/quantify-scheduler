@@ -16,7 +16,7 @@
 - NV centers - Avoid python warning when parsing docstring in nv_element (!562)
 - QuantumDevice - `BasicTransmonElement` can now be serialized to json string and deserialized via ``__getstate__/__init__`` (!510)
 - Deprecation - Refactored tests to remove deprecated `qcompile`, refactored to `SerialCompiler` (!529, #368)
-- Qblox backend - Add NV center compilation step and prepare acquisition settings (!567)
+- Qblox backend - Add preparation of acquisition settings and accompanying datastructures for NV centers (!567)
 - Waveforms - Fix `sudden_net_zero` waveform generation function misunderstands `amp_B` (!549, #390)
 
 ## 0.10.1 (2022-12-20)
