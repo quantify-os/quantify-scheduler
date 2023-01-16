@@ -440,13 +440,13 @@ def determine_clock_lo_interm_freqs(
     lo_freq: Union[float, None],
     interm_freq: Union[float, None],
     downconverter_freq: Optional[float] = None,
-    mix_lo: Optional[bool] = True,
+    mix_lo: bool = True,
 ) -> Frequencies:
     r"""
     Determine LO and IF frequencies, after optionally applying downconverter_freq to
     clock.
 
-    Warning: Downconverter is custom Qblox hardware, do not use downconverter_freq
+    Warning: Using downconverter_freq requires custom Qblox hardware, do not use
     otherwise.
 
     The following relation is obeyed, if `mix_lo` is True:
