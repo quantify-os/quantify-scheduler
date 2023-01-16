@@ -31,6 +31,30 @@ def test_get_nco_phase_arguments(phase, expected_steps):
     assert helpers.get_nco_phase_arguments(phase) == expected_steps
 
 
+def __get_frequencies(
+    clock_freq, lo_freq, interm_freq, downconverter_freq, mix_lo
+) -> helpers.Frequencies:
+    freqs = helpers.Frequencies()
+    if downconverter_freq is None or downconverter_freq == 0:
+        freqs.clock = clock_freq
+    else:
+        freqs.clock = downconverter_freq - clock_freq
+
+    freqs.LO = lo_freq
+    if mix_lo is False:
+        freqs.LO = freqs.clock
+    elif interm_freq is not None:
+        freqs.LO = freqs.clock - interm_freq
+
+    freqs.IF = interm_freq
+    if mix_lo is False:
+        freqs.IF = None
+    elif lo_freq is not None:
+        freqs.IF = freqs.clock - lo_freq
+
+    return freqs
+
+
 @pytest.mark.parametrize(
     "frequency, expected_steps",
     [
