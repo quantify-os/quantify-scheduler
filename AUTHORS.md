@@ -21,6 +21,7 @@
 - Jules van Oven \<<mailto:jules@qblox.com>>
 - Kelvin Loh \<<mailto:kelvin@orangeqs.com>>
 - Luis Miguens Fernandez \<<mailto:lmiguens@qblox.com>>
+- Mafalda Jotta Garcia \<<mailto:mjotta@qblox.com>>
 - Michiel Dubbelman \<<mailto:michiel@orangeqs.com>>
 - Pieter Eendebak \<<mailto:pieter.eendebak@tno.nl>>
 - Robert Sokolewicz \<<mailto:rsokolewicz@qblox.com>>

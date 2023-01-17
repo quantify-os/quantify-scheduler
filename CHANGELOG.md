@@ -22,6 +22,7 @@
 - Qblox backend - Add preparation of acquisition settings and accompanying datastructures for NV centers (!567)
 - Waveforms - Fix `sudden_net_zero` waveform generation function misunderstands `amp_B` (!549, #390)
 - Schedule Functions - make experiment-related schedule functions available in `quantify_scheduler.schedules` (!572)
+- Tests - Removed unused `lo0` and added `ttl_acq_threshold` in `qblox_test_mapping_nv_centers.json` so that `TestNVDarkESRSched` suite passes (!579)
 
 ## 0.10.1 (2022-12-20)
 

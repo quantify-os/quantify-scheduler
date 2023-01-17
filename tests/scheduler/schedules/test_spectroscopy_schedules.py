@@ -2,13 +2,9 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
-import pytest
-
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.compilation import (
     determine_absolute_timing,
-    qcompile,
-    device_compile,
 )
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
@@ -140,8 +136,10 @@ class TestNVDarkESRSched:
         qe0.measure.acq_duration(2e-6)
 
         # Act
-        sched = device_compile(
-            self.uncomp_sched, quantum_device.generate_device_config()
+        compiler = SerialCompiler(name="compiler")
+        sched = compiler.compile(
+            schedule=self.uncomp_sched,
+            config=quantum_device.generate_compilation_config(),
         )
 
         # Assert
@@ -158,20 +156,21 @@ class TestNVDarkESRSched:
 
     def test_compiles_device_cfg_only(self, mock_setup_basic_nv):
         # assert that files properly compile
-        device_config = mock_setup_basic_nv["quantum_device"].generate_device_config()
-        qcompile(self.uncomp_sched, device_config)
+        compiler = SerialCompiler(name="compiler")
+        compiler.compile(
+            schedule=self.uncomp_sched,
+            config=mock_setup_basic_nv["quantum_device"].generate_compilation_config(),
+        )
 
-    @pytest.mark.xfail(
-        reason="Acquisition protocol 'trigger_count' not present. To be added later."
-    )
     def test_compiles_qblox_backend(self, mock_setup_basic_nv_qblox_hardware) -> None:
         # assert that files properly compile
         quantum_device: QuantumDevice = mock_setup_basic_nv_qblox_hardware[
             "quantum_device"
         ]
-        schedule = qcompile(
-            self.uncomp_sched,
-            quantum_device.generate_device_config(),
-            quantum_device.generate_hardware_config(),
+        compiler = SerialCompiler(name="compiler")
+
+        schedule = compiler.compile(
+            schedule=self.uncomp_sched,
+            config=quantum_device.generate_compilation_config(),
         )
         assert not schedule.compiled_instructions == {}
