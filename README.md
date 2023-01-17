@@ -1,6 +1,6 @@
 # quantify-scheduler
 
-[![Slack](https://img.shields.io/badge/slack-chat-green.svg)](https://join.slack.com/t/quantify-hq/shared_invite/zt-vao45946-f_NaRc4mvYQDQE_oYB8xSw)
+[![Slack](https://img.shields.io/badge/slack-chat-green.svg)](https://join.slack.com/t/quantify-hq/shared_invite/zt-1nd78r4e9-rbWdna53cW4DO_YbtMhVuA)
 [![Pipelines](https://gitlab.com/quantify-os/quantify-scheduler/badges/main/pipeline.svg)](https://gitlab.com/quantify-os/quantify-scheduler/pipelines/)
 [![PyPi](https://img.shields.io/pypi/v/quantify-scheduler.svg)](https://pypi.org/pypi/quantify-scheduler)
 [![Code Quality](https://app.codacy.com/project/badge/Grade/0c9cf5b6eb5f47ffbd2bb484d555c7e3)](https://www.codacy.com/gl/quantify-os/quantify-scheduler/dashboard?utm_source=gitlab.com&amp;utm_medium=referral&amp;utm_content=quantify-os/quantify-scheduler&amp;utm_campaign=Badge_Grade)
