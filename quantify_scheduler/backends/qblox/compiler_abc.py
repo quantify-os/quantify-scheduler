@@ -25,6 +25,7 @@ from typing import (
     Union,
 )
 
+import numpy as np
 from pathvalidate import sanitize_filename
 from qcodes.utils.helpers import NumpyJSONEncoder
 from quantify_core.data.handling import gen_tuid, get_datadir
@@ -1298,7 +1299,11 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             :code:`None` values.
         """
         underconstr = freqs.LO is None and freqs.IF is None
-        overconstr = False  # freqs.LO is not None and freqs.IF is not None, TODO FIXME
+        overconstr = (
+            freqs.LO is not None
+            and freqs.IF is not None
+            and not np.isclose(freqs.LO + freqs.IF, freqs.clock)
+        )
 
         if underconstr or overconstr:
             raise ValueError(
