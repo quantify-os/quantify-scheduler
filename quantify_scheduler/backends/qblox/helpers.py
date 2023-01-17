@@ -460,8 +460,8 @@ def get_nco_set_frequency_arguments(frequency_hz: float) -> int:
         raise ValueError(
             f"Attempting to set NCO frequency. "
             f"The frequency must be between and including "
-            f"-{min_max_frequency_in_hz} Hz and {min_max_frequency_in_hz} Hz. "
-            f"Got {frequency_hz} Hz."
+            f"-{min_max_frequency_in_hz:e} Hz and {min_max_frequency_in_hz:e} Hz. "
+            f"Got {frequency_hz:e} Hz."
         )
 
     return frequency_steps

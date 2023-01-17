@@ -17,7 +17,6 @@ import pytest
 
 from quantify_scheduler.backends.types import qblox as types
 
-from quantify_scheduler.backends.qblox import helpers
 from quantify_scheduler.backends.qblox.instrument_compilers import QcmModule
 from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
 from quantify_scheduler.backends.qblox.operation_handling import virtual
@@ -141,7 +140,7 @@ class TestNcoPhaseShiftStrategy:
 class TestNcoSetClockFrequencyStrategy:
     def test_constructor(self):
         op_info = types.OpInfo(
-            name=SetClockFrequency.__class__.__name__,
+            name=SetClockFrequency.__name__,
             data={"clock_frequency": 1, "clock_freq_old": 2, "interm_freq_old": 3},
             timing=0,
         )
@@ -152,7 +151,7 @@ class TestNcoSetClockFrequencyStrategy:
     def test_generate_data(self):
         # arrange
         op_info = types.OpInfo(
-            name=SetClockFrequency.__class__.__name__,
+            name=SetClockFrequency.__name__,
             data={"clock_frequency": 1, "clock_freq_old": 2, "interm_freq_old": 3},
             timing=0,
         )
@@ -208,7 +207,7 @@ class TestNcoSetClockFrequencyStrategy:
         # arrange
         qasm = empty_qasm_program_qcm
         op_info = types.OpInfo(
-            name=SetClockFrequency.__class__.__name__,
+            name=SetClockFrequency.__name__,
             data={
                 "clock_frequency": clock_freq_new,
                 "clock_freq_old": clock_freq_old,
@@ -231,8 +230,8 @@ class TestNcoSetClockFrequencyStrategy:
                 assert (
                     str(error) == f"Attempting to set NCO frequency. "
                     f"The frequency must be between and including "
-                    f"-{limit} Hz and {limit} Hz. "
-                    f"Got {interm_freq_new} Hz."
+                    f"-{limit:e} Hz and {limit:e} Hz. "
+                    f"Got {interm_freq_new:e} Hz."
                 )
                 return
             raise

@@ -4,10 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from quantify_scheduler.enums import BinMode
-from quantify_scheduler.backends.qblox import helpers
 from quantify_scheduler.backends.qblox.operation_handling import (
     base,
     pulses,

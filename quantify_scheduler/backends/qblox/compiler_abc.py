@@ -181,8 +181,8 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
             the top layer of hardware config.
         """
         super().__init__(parent, name, total_play_time, hw_mapping, latency_corrections)
-        self._pulses = defaultdict(list)
-        self._acquisitions = defaultdict(list)
+        self._pulses: Dict[Tuple[str, str], List[OpInfo]] = defaultdict(list)
+        self._acquisitions: Dict[Tuple[str, str], List[OpInfo]] = defaultdict(list)
 
     @property
     @abstractmethod
@@ -1181,6 +1181,8 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         compiler_container = self.parent if self.is_pulsar else self.parent.parent
 
+        portclock: Tuple[str, str]
+        pulse_data_list: List[OpInfo]
         for portclock, pulse_data_list in self._pulses.items():
             for seq in self.sequencers.values():
                 if seq.portclock == portclock or (
@@ -1189,17 +1191,17 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                     clock_freq = compiler_container.resources.get(seq.clock, {}).get(
                         "freq", None
                     )
+
+                    pulse_data: OpInfo
                     for pulse_data in pulse_data_list:
-                        if pulse_data.name == SetClockFrequency.__class__.__name__:
-                            for pulse_info in pulse_data:
-                                if "clock_frequency" in pulse_info:
-                                    pulse_info.update(
-                                        {
-                                            "clock_freq_old": clock_freq,
-                                            "interm_freq_old": seq.frequency,
-                                        }
-                                    )
-                                    print(pulse_info)
+                        if pulse_data.name == SetClockFrequency.__name__:
+                            if "clock_frequency" in pulse_data.data:
+                                pulse_data.data.update(
+                                    {
+                                        "clock_freq_old": clock_freq,
+                                        "interm_freq_old": seq.frequency,
+                                    }
+                                )
 
                     op_info_to_op_strategy_func = partial(
                         get_operation_strategy,
@@ -1216,19 +1218,20 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                     for pulse_strategy in strategies_for_pulses:
                         seq.pulses.append(pulse_strategy)
 
+        acq_data_list: List[OpInfo]
         for portclock, acq_data_list in self._acquisitions.items():
             for seq in self.sequencers.values():
                 if seq.portclock == portclock:
-                    partial_func = partial(
+                    op_info_to_op_strategy_func = partial(
                         get_operation_strategy,
                         instruction_generated_pulses_enabled=seq.instruction_generated_pulses_enabled,
                         io_mode=seq.io_mode,
                     )
-                    func_map = map(
-                        partial_func,
+                    strategies_for_acquisitions = map(
+                        op_info_to_op_strategy_func,
                         acq_data_list,
                     )
-                    seq.acquisitions = list(func_map)
+                    seq.acquisitions = list(strategies_for_acquisitions)
 
     @abstractmethod
     def assign_frequencies(self, sequencer: Sequencer):

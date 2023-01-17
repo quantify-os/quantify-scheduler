@@ -138,6 +138,7 @@ class NcoSetClockFrequencyStrategy(IdleStrategy):
             )  # TODO polish
         iterm_freq_new = interm_freq_old + clock_freq_new - clock_freq_old
 
+
         frequency_args = helpers.get_nco_set_frequency_arguments(iterm_freq_new)
         qasm_program.emit(
             q1asm_instructions.SET_FREQUENCY,

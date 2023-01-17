@@ -82,7 +82,7 @@ REGENERATE_REF_FILES: bool = False  # Set flag to true to regenerate the referen
 
 # --------- Test fixtures ---------
 @pytest.fixture
-def hardware_cfg_baseband():
+def hardware_cfg_baseband(add_lo1):
     yield {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "qcm0": {
@@ -102,10 +102,12 @@ def hardware_cfg_baseband():
                 ],
             },
             "complex_output_1": {
+                "lo_name": "lo1" if add_lo1 else None,
                 "portclock_configs": [{"port": "q1:mw", "clock": "q1.01"}],
             },
         },
         "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
+        "lo1": {"instrument_type": "LocalOscillator", "frequency": 4.8e9, "power": 1},
     }
 
 
@@ -922,14 +924,19 @@ def test_compile_measure(
 
 
 @pytest.mark.parametrize(
-    "operation, instruction_to_check",
+    "operation, instruction_to_check, add_lo1",
     [
-        (IdlePulse(duration=64e-9), "wait       64"),
-        (Reset("q1"), "wait       65532"),
-        (ShiftClockPhase(clock="q1.01", phase_shift=180.0), "set_ph_delta  500000000"),
+        (IdlePulse(duration=64e-9), f"{'wait':<9}  64", True),
+        (Reset("q1"), f"{'wait':<9}  65532", True),
         (
-            SetClockFrequency(clock="q1.01", clock_frequency=76531.4),
-            "set_freq   306126",
+            ShiftClockPhase(clock="q1.01", phase_shift=180.0),
+            f"{'set_ph_delta'}  500000000",
+            True,
+        ),
+        (
+            SetClockFrequency(clock="q1.01", clock_frequency=5.001e9),
+            f"{'set_freq':<9}  {round((2e8 + 5.001e9 - 5e9)*4)}",
+            True,
         ),
     ],
 )
@@ -938,8 +945,9 @@ def test_compile_clock_operations(
     hardware_cfg_baseband,
     operation: Operation,
     instruction_to_check: str,
+    add_lo1: bool,  # pylint: disable=unused-argument
 ):
-    sched = Schedule("shift_clock_phase_only")
+    sched = Schedule("compile_clock_operations")
     sched.add(operation)
     sched.add_resources(
         [ClockResource("q1.01", freq=5e9)]
@@ -966,9 +974,7 @@ def test_compile_cz_gate(
     hardware_cfg_two_qubit_gate,
     two_qubit_gate_schedule,
 ):
-
     mock_setup = mock_setup_basic_transmon_with_standard_params
-
     edge_q2_q3 = mock_setup["q2_q3"]
     edge_q2_q3.cz.q2_phase_correction(44)
     edge_q2_q3.cz.q3_phase_correction(63)
@@ -1449,10 +1455,12 @@ def test_determine_scope_mode_acquisition_sequencer(
     )
 
 
+@pytest.mark.parametrize("add_lo1", [False])
 def test_container_prepare_baseband(
+    mock_setup_basic_transmon,
     baseband_square_pulse_schedule,
     hardware_cfg_baseband,
-    mock_setup_basic_transmon,
+    add_lo1: bool,  # pylint: disable=unused-argument
 ):
     quantum_device = mock_setup_basic_transmon["quantum_device"]
     quantum_device.hardware_config(hardware_cfg_baseband)
