@@ -18,7 +18,6 @@ from qcodes.instrument.parameter import ManualParameter
 from qblox_instruments import ClusterType, PulsarType
 
 from quantify_scheduler import waveforms, Schedule
-from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
 
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.backends import SerialCompiler
@@ -916,7 +915,8 @@ def test_multi_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_
                             "port": "qe0:optical_readout",
                             "clock": "qe0.ge0",
                             "interm_freq": 0,
-                        },  # todo add TTL params
+                            "ttl_acq_threshold": 0.5,
+                        },
                     ],
                 },
                 "real_input_1": {
@@ -925,7 +925,8 @@ def test_multi_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_
                             "port": "qe1:optical_readout",
                             "clock": "qe1.ge0",
                             "interm_freq": 0,
-                        },  # todo add TTL params
+                            "ttl_acq_threshold": 0.5,
+                        },
                     ],
                 },
             },
@@ -942,24 +943,19 @@ def test_multi_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_
     laser_red = MockLocalOscillator("laser_red")
     ic_laser_red = GenericInstrumentCoordinatorComponent(laser_red)
     ic_generic = GenericInstrumentCoordinatorComponent("generic")
+
     instr_coordinator = mock_setup_basic_nv["instrument_coordinator"]
     instr_coordinator.add_component(ic_cluster0)
     instr_coordinator.add_component(ic_laser_red)
     instr_coordinator.add_component(ic_generic)
 
     quantum_device = mock_setup_basic_nv["quantum_device"]
-    qe1 = BasicElectronicNVElement("qe1")
-    quantum_device.add_element(qe1)
     quantum_device.hardware_config(hardware_cfg)
+
     # Define experiment schedule
     schedule = Schedule("test NV measurement with real output and input")
-    schedule.add(
-        Measure("qe0", acq_protocol="Trace")
-    )  # should be replaced by TriggerCount later.
-    # TODO uncomment when triggercount available.
-    # schedule.add(
-    #    Measure("qe1", acq_protocol="TriggerCount")
-    # )
+    schedule.add(Measure("qe0", acq_protocol="TriggerCount", bin_mode=BinMode.APPEND))
+    schedule.add(Measure("qe1", acq_protocol="TriggerCount", bin_mode=BinMode.AVERAGE))
 
     # Generate compiled schedule
     compiler = SerialCompiler(name="compiler")
@@ -968,25 +964,19 @@ def test_multi_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_
     )
 
     # Assert intended behaviour
-    assert compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq1"][
-        "connected_inputs"
-    ] == [0]
-    assert (
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq1"][
-            "nco_en"
-        ]
-        == False
-    )
-    # TODO uncomment when triggercount available
-    # assert compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq2"][
-    #    "connected_inputs"
-    # ] == [1]
-    # assert (
-    #    compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq2"][
-    #        "nco_en"
-    #    ]
-    #    == False
-    # )
+    seq_0 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq0"]
+    seq_1 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq1"]
+    seq_2 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq2"]
+    seq_3 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq3"]
+
+    assert seq_0["connected_outputs"] == [0]
+    assert seq_0["nco_en"] is True
+    assert seq_1["connected_outputs"] == [1]
+    assert seq_1["nco_en"] is True
+    assert seq_2["connected_inputs"] == [0]
+    assert seq_2["ttl_acq_auto_bin_incr_en"] is False
+    assert seq_3["connected_inputs"] == [1]
+    assert seq_3["ttl_acq_auto_bin_incr_en"] is True
 
     instr_coordinator.remove_component("ic_cluster0")
 

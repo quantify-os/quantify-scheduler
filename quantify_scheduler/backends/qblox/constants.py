@@ -52,3 +52,5 @@ GENERIC_IC_COMPONENT_NAME: str = "generic"
 """Default name for the generic instrument coordinator component."""
 MAX_SAMPLE_SIZE_ACQUISITIONS: int = 16384
 """Maximal amount of acquisition datapoints returned."""
+MAX_NUMBER_OF_BINS: int = 131072
+"""Number of bins available in the Qblox sequencers."""

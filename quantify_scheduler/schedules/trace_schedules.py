@@ -1,6 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-from quantify_scheduler import Schedule
+from quantify_scheduler.schedules.schedule import Schedule
 from quantify_scheduler.operations.acquisition_library import Trace
 from quantify_scheduler.operations.gate_library import Measure
 from quantify_scheduler.operations.pulse_library import IdlePulse, SquarePulse
