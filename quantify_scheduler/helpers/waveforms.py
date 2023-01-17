@@ -9,7 +9,8 @@ from typing import Any, Dict, List, Tuple
 
 import numpy as np
 
-from quantify_scheduler import Schedule, math, waveforms
+from quantify_scheduler import math, waveforms
+from quantify_scheduler.schedules.schedule import Schedule
 from quantify_scheduler.helpers import schedule as schedule_helpers
 from quantify_scheduler.helpers.importers import import_python_object_from_string
 

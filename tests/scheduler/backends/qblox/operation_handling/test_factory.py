@@ -84,6 +84,18 @@ TEST_OP_INFO_MAPPING = {
         },
         timing=0,
     ),
+    "trigger_count": OpInfo(
+        name="",
+        data={
+            "protocol": "trigger_count",
+            "acq_channel": 0,
+            "acq_index": 0,
+            "bin_mode": BinMode.AVERAGE,
+            "port": "some_port",
+            "clock": "some_clock",
+        },
+        timing=0,
+    ),
 }
 
 
@@ -96,6 +108,10 @@ TEST_OP_INFO_MAPPING = {
         (TEST_OP_INFO_MAPPING["ssb"], acquisitions.SquareAcquisitionStrategy),
         (TEST_OP_INFO_MAPPING["weighted"], acquisitions.WeightedAcquisitionStrategy),
         (TEST_OP_INFO_MAPPING["trace"], acquisitions.SquareAcquisitionStrategy),
+        (
+            TEST_OP_INFO_MAPPING["trigger_count"],
+            acquisitions.TriggerCountAcquisitionStrategy,
+        ),
     ],
 )
 def test_get_operation_strategy(
