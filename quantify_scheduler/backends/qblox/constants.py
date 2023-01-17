@@ -16,7 +16,7 @@ NCO_PHASE_STEPS_PER_DEG = 1e9 / 360
 """The number of steps per degree for nco phase instructions arguments."""
 NCO_FREQ_STEPS_PER_HZ = 4.0
 """The number of steps per Hz for the NCO set_freq instruction."""
-NCO_FREQ_LIMIT_STEPS = 2 * 10**9
+NCO_FREQ_LIMIT_STEPS = 2e9
 """The maximum and minimum frequency expressed in steps for the NCO set_freq instruction.
 For the minimum we multiply by -1."""
 
@@ -52,3 +52,5 @@ GENERIC_IC_COMPONENT_NAME: str = "generic"
 """Default name for the generic instrument coordinator component."""
 MAX_SAMPLE_SIZE_ACQUISITIONS: int = 16384
 """Maximal amount of acquisition datapoints returned."""
+MAX_NUMBER_OF_BINS: int = 131072
+"""Number of bins available in the Qblox sequencers."""

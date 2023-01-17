@@ -99,7 +99,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "Quantify-Scheduler"
-copyright = "2020-2022, Qblox & Orange Quantum Systems"
+copyright = "2020-2023, Qblox & Orange Quantum Systems"
 author = "The Quantify consortium"
 
 
@@ -234,6 +234,7 @@ texinfo_documents = [
 ]
 
 # -- Other Options -----------------------------------------------------
+# see https://sphinx-autoapi.readthedocs.io/en/latest/reference/config.html
 
 autoapi_type = "python"
 autoapi_generate_api_docs = True
@@ -246,12 +247,13 @@ autoapi_options = [
     "private-members",
     "show-inheritance",
     "show-module-summary",
-    "special-members",
     # Including `important-members` displays the description of class aliases in the
     # docs, however, it causes sphinx to raise multiple warnings about finding
     # multiple targets for cross-references.
     # "imported-members",
 ]
+# displays docstrings inside __init__
+autoapi_python_class_content = "both"
 
 # avoid duplicate label warning even when manual label has been used;
 suppress_warnings = [
@@ -312,6 +314,9 @@ if os.environ.get("GITLAB_CI", "false") == "true":
 import lmfit  # related to quantify-core#218 and quantify-core#221
 import marshmallow
 import qcodes
+
+# qcodes0.36.0 lazyloads h5py which causes build failures
+import h5py
 
 # Prevents a circular import warning
 import tenacity

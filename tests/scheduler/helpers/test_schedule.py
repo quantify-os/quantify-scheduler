@@ -10,6 +10,7 @@ import numpy as np
 from pytest import approx
 
 from quantify_scheduler import Schedule
+from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
@@ -20,11 +21,9 @@ from quantify_scheduler.helpers.schedule import (
     get_port_timeline,
     get_pulse_info_by_uuid,
     get_pulse_uuid,
-    get_schedule_time_offset,
     get_total_duration,
 )
 from quantify_scheduler.helpers.collections import make_hash
-from quantify_scheduler.compilation import device_compile
 from quantify_scheduler.operations.gate_library import X90, Measure, Reset
 from quantify_scheduler.schedules import spectroscopy_schedules
 
@@ -83,14 +82,16 @@ def test_get_info_by_uuid(
     assert pulseid_pulseinfo_dict[pulse_id] == pulse_info_0
 
 
-def test_get_info_by_uuid_are_unique(
-    load_example_transmon_config,
-):
+def test_get_info_by_uuid_are_unique(device_compile_config_basic_transmon):
     # Arrange
     schedule = Schedule("my-schedule")
     schedule.add(X90("q0"))
     schedule.add(X90("q0"))
-    schedule_with_pulse_info = device_compile(schedule, load_example_transmon_config)
+
+    compiler = SerialCompiler(name="compiler")
+    schedule_with_pulse_info = compiler.compile(
+        schedule=schedule, config=device_compile_config_basic_transmon
+    )
 
     operation_repr = list(schedule.schedulables.values())[0]["operation_repr"]
     pulse_info_0 = schedule_with_pulse_info.operations[operation_repr]["pulse_info"][0]
@@ -106,13 +107,14 @@ def test_get_info_by_uuid_are_unique(
 
 
 def test_get_acq_info_by_uuid(
-    create_schedule_with_pulse_info,
     schedule_with_measurement: Schedule,
-    load_example_transmon_config,
+    device_compile_config_basic_transmon,
 ):
     # Arrange
-    device_config = load_example_transmon_config
-    schedule = device_compile(schedule_with_measurement, device_config)
+    compiler = SerialCompiler(name="compiler")
+    schedule = compiler.compile(
+        schedule=schedule_with_measurement, config=device_compile_config_basic_transmon
+    )
 
     operation_repr = list(schedule.schedulables.values())[-1]["operation_repr"]
     operation = schedule.operations[operation_repr]
@@ -158,7 +160,7 @@ def test_get_port_timeline(
 
 
 def test_get_port_timeline_sorted(
-    load_example_transmon_config,
+    device_compile_config_basic_transmon,
 ):
     # Arrange
     ro_acquisition_delay = -16e-9
@@ -180,7 +182,10 @@ def test_get_port_timeline_sorted(
         init_duration=1e-5,
     )
 
-    schedule = device_compile(schedule, load_example_transmon_config)
+    compiler = SerialCompiler(name="compiler")
+    schedule = compiler.compile(
+        schedule=schedule, config=device_compile_config_basic_transmon
+    )
 
     reset_operation_id = list(schedule.schedulables.values())[0]["operation_repr"]
     reset_pulse_info = schedule.operations[reset_operation_id]["pulse_info"][0]
@@ -225,16 +230,17 @@ def test_get_port_timeline_empty(empty_schedule: Schedule):
     assert len(port_timeline_dict) == 0
 
 
-def test_get_port_timeline_are_unique(
-    load_example_transmon_config,
-):
+def test_get_port_timeline_are_unique(device_compile_config_basic_transmon):
     # Arrange
     schedule = Schedule("my-schedule")
     schedule.add(Reset("q0", "q1"))
     schedule.add(X90("q0"))
     schedule.add(X90("q1"))
 
-    schedule = device_compile(schedule, load_example_transmon_config)
+    compiler = SerialCompiler(name="compiler")
+    schedule = compiler.compile(
+        schedule=schedule, config=device_compile_config_basic_transmon
+    )
 
     reset_operation_id = list(schedule.schedulables.values())[0]["operation_repr"]
     reset_pulse_info_q0 = schedule.operations[reset_operation_id]["pulse_info"][0]
@@ -265,16 +271,17 @@ def test_get_port_timeline_are_unique(
     assert port_timeline_dict["q1:mw"][2] == [q1_pulse_id]
 
 
-def test_get_port_timeline_with_duplicate_op(
-    load_example_transmon_config,
-):
+def test_get_port_timeline_with_duplicate_op(device_compile_config_basic_transmon):
     # Arrange
     schedule = Schedule("my-schedule")
     X90_q0 = X90("q0")
     schedule.add(X90_q0)
     schedule.add(X90_q0)
 
-    schedule = device_compile(schedule, load_example_transmon_config)
+    compiler = SerialCompiler(name="compiler")
+    schedule = compiler.compile(
+        schedule=schedule, config=device_compile_config_basic_transmon
+    )
 
     X90_q0_operation_id = list(schedule.schedulables.values())[0]["operation_repr"]
     X90_q0_pulse_info = schedule.operations[X90_q0_operation_id]["pulse_info"][0]
@@ -453,22 +460,22 @@ def test_get_operation_end(empty_schedule: Schedule, create_schedule_with_pulse_
     assert end1_x90 == approx(ro_acquisition_delay + ro_integration_time + mw_duration)
 
 
-def test_schedule_timing_table(
-    load_example_transmon_config,
-    create_schedule_with_pulse_info,
-):
-    device_cfg = load_example_transmon_config
-
+def test_schedule_timing_table(mock_setup_basic_transmon):
     schedule = Schedule("test_schedule_timing_table")
     schedule.add(Reset("q0"))
     schedule.add(X90("q0"))
     schedule.add(Measure("q0"))
-    schedule = device_compile(schedule, device_cfg)
 
-    q0 = device_cfg.elements["q0"]
-    X90_duration = q0["Rxy"].factory_kwargs["duration"]
-    measure_acq_delay = q0["measure"].factory_kwargs["acq_delay"]
-    reset_duration = q0["reset"].factory_kwargs["duration"]
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    compiler = SerialCompiler(name="compiler")
+    schedule = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    q0 = mock_setup_basic_transmon["q0"]
+    X90_duration = q0.rxy.duration()
+    measure_acq_delay = q0.measure.acq_delay()
+    reset_duration = q0.reset.duration()
 
     expected_abs_timing = [
         0.0,
@@ -477,9 +484,7 @@ def test_schedule_timing_table(
         reset_duration + X90_duration,
         reset_duration + X90_duration + measure_acq_delay,
     ]
-
     actual_abs_timing = schedule.timing_table.data.abs_time
-
     assert all(expected_abs_timing == actual_abs_timing)
 
 

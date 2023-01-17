@@ -8,7 +8,6 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from quantify_scheduler.backends.types import zhinst
-from quantify_scheduler.helpers import schedule as schedule_helpers
 
 logger = logging.getLogger(__name__)
 

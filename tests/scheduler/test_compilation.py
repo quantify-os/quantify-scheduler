@@ -8,17 +8,19 @@ import numpy as np
 import pytest
 
 from quantify_scheduler import Operation, Schedule
+from quantify_scheduler.backends import SerialCompiler
+from quantify_scheduler.backends.circuit_to_device import ConfigKeyError
 from quantify_scheduler.compilation import (
+    add_pulse_information_transmon,
     determine_absolute_timing,
     device_compile,
     qcompile,
-    validate_config,
 )
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.gate_library import CNOT, CZ, Measure, Reset, Rxy
 from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import BasebandClockResource, ClockResource, Resource
-from quantify_scheduler.backends.circuit_to_device import ConfigKeyError
+from quantify_scheduler.schemas.examples import utils
 
 
 def test_determine_absolute_timing_ideal_clock():
@@ -102,32 +104,61 @@ def test_missing_ref_op():
         sched.add(operation=CNOT(qC=q0, qT=q1), ref_op=ref_label_1)
 
 
-def test_compile_transmon_program(load_example_transmon_config):
+def test_compile_transmon_program(mock_setup_basic_transmon):
     sched = Schedule("Test schedule")
 
-    # define the resources
-    # q0, q1 = Qubits(n=2) # assumes all to all connectivity
+    # Define the resources
+    q0, q2 = ("q0", "q2")
+
+    sched.add(Reset(q0, q2))
+    sched.add(Rxy(90, 0, qubit=q0))
+    sched.add(operation=CZ(qC=q0, qT=q2))
+    sched.add(Rxy(theta=90, phi=0, qubit=q0))
+    sched.add(Measure(q0, q2), label="M0")
+
+    compiler = SerialCompiler(name="compiler")
+    compiler.compile(
+        sched, mock_setup_basic_transmon["quantum_device"].generate_compilation_config()
+    )
+
+
+@pytest.mark.filterwarnings("ignore::FutureWarning")
+@pytest.mark.parametrize(
+    "compile_func", [add_pulse_information_transmon, device_compile, qcompile]
+)
+def test_deprecated_add_pulse_information_transmon(compile_func):
+    sched = Schedule("Test schedule")
+
     q0, q1 = ("q0", "q1")
     sched.add(Reset(q0, q1))
     sched.add(Rxy(90, 0, qubit=q0))
     sched.add(operation=CZ(qC=q0, qT=q1))
     sched.add(Rxy(theta=90, phi=0, qubit=q0))
     sched.add(Measure(q0, q1), label="M0")
-    sched = qcompile(sched, device_cfg=load_example_transmon_config)
+
+    compile_func(
+        sched,
+        device_cfg=utils.load_json_example_scheme("transmon_test_config.json"),
+    )
 
 
-def test_missing_edge(load_example_transmon_config):
-    sched = Schedule("Bad edge")
-    bad_cfg = load_example_transmon_config
-    bad_cfg.edges = {}
+def test_missing_edge(mock_setup_basic_transmon):
+    sched = Schedule("Missing edge")
 
-    q0, q1 = ("q0", "q1")
-    sched.add(operation=CZ(qC=q0, qT=q1))
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device.remove_edge("q0_q2")
+
+    q0, q2 = ("q0", "q2")
+    sched.add(operation=CZ(qC=q0, qT=q2))
     with pytest.raises(
         ConfigKeyError,
-        match=('edge "q0_q1" is not present in the configuration file'),
+        match='edge "q0_q2" is not present in the configuration file',
     ):
-        qcompile(sched, device_cfg=bad_cfg)
+        compiler = SerialCompiler(name="compiler")
+        compiler.compile(
+            sched,
+            quantum_device.generate_compilation_config(),
+        )
 
 
 def test_empty_sched():
@@ -136,7 +167,7 @@ def test_empty_sched():
         determine_absolute_timing(sched)
 
 
-def test_bad_gate(load_example_transmon_config):
+def test_bad_gate(device_compile_config_basic_transmon):
     class NotAGate(Operation):
         def __init__(self, q):
             plot_func = "quantify_scheduler.visualization.circuit_diagram.cnot"
@@ -151,7 +182,7 @@ def test_bad_gate(load_example_transmon_config):
                     "operation_type": "bad",
                 }
             }
-            super().__init__("bad ({})".format(q))
+            super().__init__(f"bad ({q})")
             self.data.update(data)
 
     sched = Schedule("Bell experiment")
@@ -161,29 +192,40 @@ def test_bad_gate(load_example_transmon_config):
         ConfigKeyError,
         match='\'operation "bad" is not present in the configuration file.*',
     ):
-        qcompile(sched, load_example_transmon_config)
+        compiler = SerialCompiler(name="compiler")
+        compiler.compile(
+            sched,
+            config=device_compile_config_basic_transmon,
+        )
 
 
-def test_pulse_and_clock(load_example_transmon_config):
+def test_pulse_and_clock(device_compile_config_basic_transmon):
     sched = Schedule("pulse_no_clock")
     mystery_clock = "BigBen"
     op_label = sched.add(SquarePulse(0.5, 20e-9, "q0:mw_ch", clock=mystery_clock))
     op_hash = next(
         op for op in sched.schedulables.values() if op["label"] == str(op_label)
     )["operation_repr"]
-    with pytest.raises(ValueError) as execinfo:
-        qcompile(sched, device_cfg=load_example_transmon_config)
 
+    compiler = SerialCompiler(name="compiler")
+    with pytest.raises(ValueError) as execinfo:
+        compiler.compile(
+            sched,
+            config=device_compile_config_basic_transmon,
+        )
     assert str(execinfo.value) == (
-        "Operation '{}' contains an unknown clock '{}'; ensure this resource has "
-        "been added to the schedule.".format(op_hash, mystery_clock)
+        f"Operation '{op_hash}' contains an unknown clock '{mystery_clock}'; "
+        f"ensure this resource has been added to the schedule."
     )
 
     sched.add_resources([ClockResource(mystery_clock, 6e9)])
-    qcompile(sched, device_cfg=load_example_transmon_config)
+    compiler.compile(
+        sched,
+        config=device_compile_config_basic_transmon,
+    )
 
 
-def test_resource_resolution(load_example_transmon_config):
+def test_resource_resolution(device_compile_config_basic_transmon):
     sched = Schedule("resource_resolution")
     qcm0_s0 = Resource("qcm0.s0")
     qcm0_s0["type"] = "qcm"
@@ -195,10 +237,14 @@ def test_resource_resolution(load_example_transmon_config):
     sched.add(SquarePulse(0.4, 20e-9, "q0:ro_ch", clock=BasebandClockResource.IDENTITY))
 
     sched.add_resources([qcm0_s0, qrm0_s0])
-    sched = qcompile(sched, load_example_transmon_config)
+    compiler = SerialCompiler(name="compiler")
+    _ = compiler.compile(
+        sched,
+        config=device_compile_config_basic_transmon,
+    )
 
 
-def test_schedule_modified(load_example_transmon_config):
+def test_schedule_modified(device_compile_config_basic_transmon):
     q0, q1 = ("q0", "q1")
 
     ref_label_1 = "my_label"
@@ -212,14 +258,16 @@ def test_schedule_modified(load_example_transmon_config):
     # to verify equality of schedule object works
     assert copy_of_sched == sched
 
-    _ = qcompile(sched, load_example_transmon_config)
-
+    compiler = SerialCompiler(name="compiler")
+    _ = compiler.compile(
+        sched,
+        config=device_compile_config_basic_transmon,
+    )
     # Fails if schedule is modified
     assert copy_of_sched == sched
 
 
-def test_measurement_specification_of_binmode(load_example_transmon_config):
-
+def test_measurement_specification_of_binmode(device_compile_config_basic_transmon):
     qubit = "q0"
 
     ####################################################################################
@@ -232,7 +280,11 @@ def test_measurement_specification_of_binmode(load_example_transmon_config):
         Measure(qubit, acq_index=0, bin_mode=BinMode.APPEND), label=f"Measurement {0}"
     )
 
-    comp_sched = qcompile(schedule, device_cfg=load_example_transmon_config)
+    compiler = SerialCompiler(name="compiler")
+    comp_sched = compiler.compile(
+        schedule=schedule,
+        config=device_compile_config_basic_transmon,
+    )
 
     for key, value in comp_sched.data["operation_dict"].items():
         if "Measure" in key:
@@ -248,7 +300,10 @@ def test_measurement_specification_of_binmode(load_example_transmon_config):
         Measure(qubit, acq_index=0, bin_mode=BinMode.AVERAGE), label=f"Measurement {0}"
     )
 
-    comp_sched = qcompile(schedule, device_cfg=load_example_transmon_config)
+    comp_sched = compiler.compile(
+        schedule=schedule,
+        config=device_compile_config_basic_transmon,
+    )
 
     for key, value in comp_sched.data["operation_dict"].items():
         if "Measure" in key:
@@ -262,32 +317,40 @@ def test_measurement_specification_of_binmode(load_example_transmon_config):
     schedule.add(Reset(qubit), label=f"Reset {0}")
     schedule.add(Measure(qubit, acq_index=0), label=f"Measurement {0}")
 
-    comp_sched = qcompile(schedule, device_cfg=load_example_transmon_config)
+    comp_sched = compiler.compile(
+        schedule=schedule,
+        config=device_compile_config_basic_transmon,
+    )
 
     for key, value in comp_sched.data["operation_dict"].items():
         if "Measure" in key:
             assert value.data["acquisition_info"][0]["bin_mode"] == BinMode.AVERAGE
 
 
-def test_compile_trace_acquisition(load_example_transmon_config):
+def test_compile_trace_acquisition(device_compile_config_basic_transmon):
     sched = Schedule("Test schedule")
     q0 = "q0"
     sched.add(Reset(q0))
     sched.add(Rxy(90, 0, qubit=q0))
     sched.add(Measure(q0, acq_protocol="Trace"), label="M0")
 
-    sched = device_compile(sched, device_cfg=load_example_transmon_config)
+    compiler = SerialCompiler(name="compile")
+    sched = compiler.compile(
+        schedule=sched, config=device_compile_config_basic_transmon
+    )
 
     measure_repr = list(sched.schedulables.values())[-1]["operation_repr"]
     assert sched.operations[measure_repr]["acquisition_info"][0]["protocol"] == "trace"
 
 
-def test_qcompile_no_device_cfg_determine_absolute_timing(mocker):
+def test_compile_no_device_cfg_determine_absolute_timing(
+    mocker, device_compile_config_basic_transmon
+):
     sched = Schedule("One pulse schedule")
     sched.add_resources([ClockResource("q0.01", 3.1e9)])
     sched.add(SquarePulse(amp=1 / 4, duration=12e-9, port="q0:mw", clock="q0.01"))
 
     mock = mocker.patch("quantify_scheduler.compilation.determine_absolute_timing")
-    qcompile(schedule=sched, device_cfg=None)
-
+    compiler = SerialCompiler(name="compile")
+    compiler.compile(schedule=sched, config=device_compile_config_basic_transmon)
     mock.assert_called()

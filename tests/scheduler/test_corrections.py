@@ -9,9 +9,9 @@
 import numpy as np
 import pytest
 
+from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.corrections import distortion_correct_pulse
 from quantify_scheduler.backends.qblox import constants as qblox_constants
-from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.operations.pulse_library import NumericalPulse, SquarePulse
 
 from tests.scheduler.backends.test_qblox_backend import (  # pylint: disable=unused-import
@@ -138,10 +138,12 @@ def test_apply_distortion_corrections(  # pylint: disable=unused-argument disabl
     backend,
     use_numpy_array,
 ):
-    compiled_sched = qcompile(
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg_distortion_corrections)
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
         schedule=two_qubit_gate_schedule,
-        device_cfg=mock_setup_basic_transmon["quantum_device"].generate_device_config(),
-        hardware_cfg=hardware_cfg_distortion_corrections,
+        config=quantum_device.generate_compilation_config(),
     )
 
     operations_pretty_repr = "".join(

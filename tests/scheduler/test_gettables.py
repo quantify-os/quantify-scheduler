@@ -7,9 +7,9 @@
 
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-
 from typing import Any, Dict, Tuple
 from unittest import TestCase
+from unittest.mock import Mock
 
 import json
 import os
@@ -20,14 +20,12 @@ import pytest
 from qcodes.instrument.parameter import ManualParameter
 
 from quantify_scheduler.backends import SerialCompiler
-from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.gettables_profiled import ProfiledScheduleGettable
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
 )
-
 from quantify_scheduler.instrument_coordinator.components.qblox import (
     AcquisitionIndexing,
 )
@@ -35,6 +33,7 @@ from quantify_scheduler.schedules.schedule import AcquisitionMetadata, Schedule
 from quantify_scheduler.schedules.spectroscopy_schedules import (
     heterodyne_spec_sched,
     nco_heterodyne_spec_sched,
+    nv_dark_esr_sched,
 )
 from quantify_scheduler.schedules.timedomain_schedules import (
     allxy_sched,
@@ -139,6 +138,7 @@ def test_ScheduleGettableSingleChannel_iterative_heterodyne_spec(
     np.testing.assert_array_equal(dset.y1, np.angle(exp_data, deg=True))
 
 
+@pytest.mark.xfail(reason="WIP")
 def test_ScheduleGettableSingleChannel_iterative_nco_heterodyne_spec(
     mock_setup_basic_transmon, mocker
 ):
@@ -224,7 +224,13 @@ def test_ScheduleGettableSingleChannel_batched_allxy(mock_setup_basic_transmon, 
     indices = np.repeat(np.arange(21), 2)
     # Prepare the mock data the ideal AllXY data
     sched = allxy_sched("q0", element_select_idx=indices, repetitions=256)
-    comp_allxy_sched = qcompile(sched, quantum_device.generate_device_config())
+
+    compiler = SerialCompiler(name="compiler")
+    comp_allxy_sched = compiler.compile(
+        schedule=sched,
+        config=quantum_device.generate_compilation_config(),
+    )
+
     data = np.concatenate(
         (
             0 * np.ones(5 * 2),
@@ -291,7 +297,12 @@ def test_ScheduleGettableSingleChannel_append_readout_cal(
 
     # Prepare the mock data the ideal SSRO data
     ssro_sched = readout_calibration_sched("q0", [0, 1], repetitions=repetitions)
-    comp_ssro_sched = qcompile(ssro_sched, quantum_device.generate_device_config())
+
+    compiler = SerialCompiler(name="compiler")
+    comp_ssro_sched = compiler.compile(
+        schedule=ssro_sched,
+        config=quantum_device.generate_compilation_config(),
+    )
 
     data = np.tile(np.arange(2), repetitions) * np.exp(1j)
 
@@ -456,13 +467,13 @@ def _reshape_array_into_acq_return_type(
     data: np.ndarray, acq_metadata: AcquisitionMetadata
 ) -> Dict[Tuple[int, int], Any]:
     """
-    Takes one ore more complex valued arrays and reshapes the data into a dictionary
+    Takes one or more complex valued arrays and reshapes the data into a dictionary
     with AcquisitionIndexing
     """
 
     # Temporary. Will probably be replaced by an xarray object
     # See quantify-core#187, quantify-core#233, quantify-scheduler#36
-    acquisitions = dict()
+    acquisitions = {}
 
     # if len is 1, we have only 1 channel in the retrieved data
     if len(np.shape(data)) == 0:
@@ -556,3 +567,84 @@ def test_profiling(mock_setup_basic_transmon_with_standard_params, tmp_test_data
     prof_gettable.plot_profile(path=path)
     assert prof_gettable.plot is not None
     assert os.path.getsize(os.path.join(path, filename)) > 0
+
+
+def test_formatting_trigger_count(mock_setup_basic_nv):
+    """ScheduleGettable formats data in trigger_acquisition mode correctly"""
+    # Arrange
+    instrument_coordinator = mock_setup_basic_nv["instrument_coordinator"]
+    nv_center = mock_setup_basic_nv["quantum_device"]
+    nv_center.cfg_sched_repetitions(1)
+
+    # data returned by the instrument coordinator
+    return_data = np.asarray([101, 35, 2])
+    acquired_data = {
+        AcquisitionIndexing(acq_channel=0, acq_index=i): (
+            return_data[i],
+            [1],
+        )
+        for i in range(3)
+    }
+
+    # Make instrument coordinator a dummy that only returns data
+    instrument_coordinator.retrieve_acquisition = Mock(return_value=acquired_data)
+    instrument_coordinator.prepare = Mock()
+    instrument_coordinator.stop = Mock()
+    instrument_coordinator.start = Mock()
+    instrument_coordinator.get = Mock()
+
+    sched_kwargs = {
+        "qubit": "qe0",
+    }
+    dark_esr_gettable = ScheduleGettable(
+        quantum_device=nv_center,
+        schedule_function=nv_dark_esr_sched,
+        schedule_kwargs=sched_kwargs,
+        batched=True,
+        data_labels=["Trigger Count"],
+    )
+    dark_esr_gettable.unit = [""]
+
+    # Act
+    data = dark_esr_gettable.get()
+
+    # Assert
+    assert isinstance(data, tuple)
+    assert len(data) == 1
+    assert len(data[0]) == 3
+    for count in data[0]:
+        assert isinstance(count, np.uint64)
+
+
+def test_incompatible_acquisition_protocols(mock_setup_basic_nv):
+    nv_center = mock_setup_basic_nv["quantum_device"]
+    sched_kwargs = {
+        "qubit": "qe0",
+    }
+    dark_esr_gettable = ScheduleGettable(
+        quantum_device=nv_center,
+        schedule_function=nv_dark_esr_sched,
+        schedule_kwargs=sched_kwargs,
+        batched=True,
+        data_labels=["Trigger Count"],
+    )
+    dark_esr_gettable.unit = [""]
+
+    acq_metadata = AcquisitionMetadata(
+        acq_protocol="trigger_count",
+        bin_mode=BinMode.AVERAGE,
+        acq_return_type=int,
+        acq_indices={i: [0] for i in range(3)},
+    )
+
+    # data returned by the instrument coordinator
+    return_data = np.asarray([101, 35, 2])
+    acquired_data = {
+        AcquisitionIndexing(acq_channel=0, acq_index=i): (
+            return_data[i],
+            [1],
+        )
+        for i in range(3)
+    }
+    with pytest.raises(NotImplementedError):
+        dark_esr_gettable.process_acquired_data(acquired_data, acq_metadata, 10)

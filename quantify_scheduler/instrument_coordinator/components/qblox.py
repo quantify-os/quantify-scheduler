@@ -25,6 +25,7 @@ from quantify_scheduler.backends.types.qblox import (
     RFModuleSettings,
     SequencerSettings,
 )
+from quantify_scheduler.enums import BinMode
 from quantify_scheduler.instrument_coordinator.components import base
 from quantify_scheduler.instrument_coordinator.utility import lazy_set
 from quantify_scheduler.schedules.schedule import AcquisitionMetadata
@@ -315,6 +316,28 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
 
         self._set_parameter(
             self.instrument[f"sequencer{seq_idx}"],
+            "offset_awg_path0",
+            settings.init_offset_awg_path_0,
+        )
+        self._set_parameter(
+            self.instrument[f"sequencer{seq_idx}"],
+            "offset_awg_path1",
+            settings.init_offset_awg_path_1,
+        )
+
+        self._set_parameter(
+            self.instrument[f"sequencer{seq_idx}"],
+            "gain_awg_path0",
+            settings.init_gain_awg_path_0,
+        )
+        self._set_parameter(
+            self.instrument[f"sequencer{seq_idx}"],
+            "gain_awg_path1",
+            settings.init_gain_awg_path_1,
+        )
+
+        self._set_parameter(
+            self.instrument[f"sequencer{seq_idx}"],
             "mixer_corr_phase_offset_degree",
             settings.mixer_corr_phase_offset_degree,
         )
@@ -495,9 +518,10 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
         :
             The acquired data.
         """
-        if self._acquisition_manager is None:  # No acquisition has been prepared.
+        if self._acquisition_manager:
+            return self._acquisition_manager.retrieve_acquisition()
+        else:
             return None
-        return self._acquisition_manager.retrieve_acquisition()
 
     def prepare(self, options: Dict[str, dict]) -> None:
         """
@@ -514,19 +538,19 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
             the value is the global settings dict or a sequencer-specific configuration.
         """
         program = copy.deepcopy(options)
+
+        trace_acq_channel = None
+        if "trace_acq_channel" in program:
+            trace_acq_channel = program.pop("trace_acq_channel")
         if "acq_metadata" in program:
             acq_metadata = program.pop("acq_metadata")
-        if "acq_mapping" in program:  # Resets everything to do with acquisition.
-
-            acq_mapping = program.pop("acq_mapping")
-            self._acquisition_manager = _QRMAcquisitionManager(
-                self,
-                number_of_sequencers=self._hardware_properties.number_of_sequencers,
-                acquisition_mapping=acq_mapping,
-                acquisition_metadata=acq_metadata,
-            )
-        else:
-            self._acquisition_manager = None
+            if len(acq_metadata) != 0:
+                self._acquisition_manager = _QRMAcquisitionManager(
+                    parent=self,
+                    number_of_sequencers=self._hardware_properties.number_of_sequencers,
+                    trace_acq_channel=trace_acq_channel,
+                    acquisition_metadata=acq_metadata,
+                )
 
         for seq_idx in range(self._hardware_properties.number_of_sequencers):
             self._set_parameter(
@@ -619,6 +643,24 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
         self._set_parameter(
             self.instrument[f"sequencer{seq_idx}"], "demod_en_acq", settings.nco_en
         )
+        if settings.ttl_acq_auto_bin_incr_en is not None:
+            self._set_parameter(
+                self.instrument[f"sequencer{seq_idx}"],
+                "ttl_acq_auto_bin_incr_en",
+                settings.ttl_acq_auto_bin_incr_en,
+            )
+        if settings.ttl_acq_threshold is not None:
+            self._set_parameter(
+                self.instrument[f"sequencer{seq_idx}"],
+                "ttl_acq_threshold",
+                settings.ttl_acq_threshold,
+            )
+        if settings.ttl_acq_input_select is not None:
+            self._set_parameter(
+                self.instrument[f"sequencer{seq_idx}"],
+                "ttl_acq_input_select",
+                settings.ttl_acq_input_select,
+            )
 
 
 class QCMRFComponent(QCMComponent):
@@ -701,7 +743,7 @@ class QRMRFComponent(QRMComponent):
             self._set_parameter(
                 self.instrument, "out0_offset_path1", settings.offset_ch0_path1
             )
-        # configure gain and attenuation
+        # configure attenuation
         if settings.out0_att is not None:
             self._set_parameter(self.instrument, "out0_att", settings.out0_att)
         if settings.in0_att is not None:
@@ -745,7 +787,7 @@ class _QRMAcquisitionManager:
         self,
         parent: QRMComponent,
         number_of_sequencers: int,
-        acquisition_mapping: Dict[Tuple[int, int], Tuple[str, str]],
+        trace_acq_channel: Optional[int],
         acquisition_metadata: AcquisitionMetadata,
     ):
         """
@@ -757,19 +799,15 @@ class _QRMAcquisitionManager:
             Reference to the parent QRM IC component.
         number_of_sequencers
             The number of sequencers capable of acquisitions.
-        acquisition_mapping
-            The acquisition mapping extracted from the schedule, this mapping links the
-            `acq_channel` and `acq_index` to the sequencer name and acquisition
-            protocol. The key is a tuple (`acq_channel`, `acq_index`), the values
-            (seq_name, protocol).
+        trace_acq_channel
+            The channel of the trace acquisition. If there is no trace acquisition,
+            it is `None`.
         acquisition_metadata
             Provides a summary of the used channels bins and acquisition protocols.
         """
         self.parent: QRMComponent = parent
         self.number_of_sequencers: int = number_of_sequencers
-        self.acquisition_mapping: Dict[
-            Tuple[int, int], Tuple[str, str]
-        ] = acquisition_mapping
+        self.trace_acq_channel: Optional[int] = trace_acq_channel
         self.acquisition_metadata: AcquisitionMetadata = acquisition_metadata
 
         self.scope_mode_sequencer: Optional[str] = None
@@ -783,21 +821,22 @@ class _QRMAcquisitionManager:
         """Returns the QRM driver from the parent IC component."""
         return self.parent.instrument
 
-    def retrieve_acquisition(self) -> Dict[AcquisitionIndexing, Any]:
+    def retrieve_acquisition(self) -> Optional[Dict[AcquisitionIndexing, Any]]:
         """
         Retrieves all the acquisition data in the correct format.
 
         Returns
         -------
         :
-            The acquisitions with the protocols specified in the `acq_mapping` as a
-            `dict` with the `(acq_channel, acq_index)` as keys.
+            The acquisitions in a `dict` with keys `(acq_channel, acq_index)`, as
+            specified for each operation by the user.
         """
 
         protocol_to_function_mapping = {
             "weighted_integrated_complex": self._get_integration_data,
             "ssb_integration_complex": self._get_integration_amplitude_data,
             "trace": self._get_scope_data,
+            "trigger_count": self._get_trigger_count_data,
             # NB thresholded protocol is still missing since there is nothing in
             # the acquisition library for it yet.
         }
@@ -812,16 +851,6 @@ class _QRMAcquisitionManager:
             acquisition_function: Callable = protocol_to_function_mapping[
                 acq_metadata.acq_protocol
             ]
-            if (
-                self.acq_duration[seq_idx] < 0
-                or self.acq_duration[seq_idx] > constants.MAX_SAMPLE_SIZE_ACQUISITIONS
-            ):
-                raise ValueError(
-                    "Attempting to retrieve sample of size "
-                    f"{self.acq_duration[seq_idx]} "
-                    f"(maximum allowed sample size: "
-                    f"{constants.MAX_SAMPLE_SIZE_ACQUISITIONS})"
-                )
             # retrieve the raw data from the qrm sequencer module
             acquisitions = self.instrument.get_acquisitions(seq_idx)
             for acq_channel, acq_indices in acq_metadata.acq_indices.items():
@@ -831,6 +860,7 @@ class _QRMAcquisitionManager:
                     acquisitions=acquisitions,
                     acq_channel=acq_channel,
                     acq_duration=self.acq_duration[seq_idx],
+                    acq_metadata=acq_metadata,
                 )
 
                 # the Qblox compilation backend verifies that the
@@ -849,7 +879,10 @@ class _QRMAcquisitionManager:
                         q_vals[acq_idx::acq_stride],
                     )
 
-        return formatted_acquisitions
+        if len(formatted_acquisitions) != 0:
+            return formatted_acquisitions
+        else:
+            return None
 
     def _store_scope_acquisition(self):
         sequencer_index = self.scope_mode_sequencer
@@ -863,50 +896,17 @@ class _QRMAcquisitionManager:
                 f"{sequencer_index}. A QRM has only "
                 f"{self.number_of_sequencers} sequencers."
             )
-        scope_ch_and_idx = self._get_scope_channel_and_index()
-        if scope_ch_and_idx is not None:
-            acq_channel, _ = scope_ch_and_idx
-            acq_name = self._channel_index_to_channel_name(acq_channel)
+
+        if self.trace_acq_channel is not None:
+            acq_name = self._channel_index_to_channel_name(self.trace_acq_channel)
             self.instrument.store_scope_acquisition(sequencer_index, acq_name)
 
-    def _get_protocol(self, acq_channel, acq_index) -> str:
-        """
-        Returns the acquisition protocol corresponding to acq_channel with
-        acq_index.
-        """
-        return self.acquisition_mapping[(acq_channel, acq_index)][1]
-
-    def _get_sequencer_index(self, acq_channel, acq_index) -> int:
-        """
-        Returns the seq idx corresponding to acq_channel with
-        acq_index.
-        """
-        seq_name = self.acquisition_mapping[(acq_channel, acq_index)][0]
-        return self.seq_name_to_idx_map[seq_name]
-
-    def _get_scope_channel_and_index(self) -> Optional[AcquisitionIndexing]:
-        """
-        Returns the first `(acq_channel, acq_index)` pair that uses `"trace"`
-        acquisition. Returns `None` if none of them do.
-        """
-        ch_and_idx: Optional[AcquisitionIndexing] = None
-        for key, value in self.acquisition_mapping.items():
-            if value[1] == "trace":
-                if ch_and_idx is not None:
-                    # Pylint seems to not care we explicitly check for None
-                    # pylint: disable=unpacking-non-sequence
-                    acq_channel, acq_index = ch_and_idx
-                    raise RuntimeError(
-                        f"A scope mode acquisition is defined for both acq_channel "
-                        f"{acq_channel} with acq_index {acq_index} as well as "
-                        f"acq_channel {key[0]} with acq_index {key[1]}. Only a single "
-                        f"trace acquisition is allowed per QRM."
-                    )
-                ch_and_idx = AcquisitionIndexing(acq_channel=key[0], acq_index=key[1])
-        return ch_and_idx
-
     def _get_scope_data(
-        self, acquisitions: dict, acq_duration: int, acq_channel: int = 0
+        self,
+        acquisitions: dict,
+        acq_metadata: AcquisitionMetadata,  # pylint: disable=unused-argument
+        acq_duration: int,
+        acq_channel: int = 0,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Retrieves the scope mode acquisition associated with an `acq_channel`.
@@ -927,6 +927,13 @@ class _QRMAcquisitionManager:
         scope_data_q
             The scope mode data for `path1`.
         """
+        if acq_duration < 0 or acq_duration > constants.MAX_SAMPLE_SIZE_ACQUISITIONS:
+            raise ValueError(
+                "Attempting to retrieve sample of size "
+                f"{acq_duration} "
+                f"(maximum allowed sample size: "
+                f"{constants.MAX_SAMPLE_SIZE_ACQUISITIONS})"
+            )
         acq_name = self._channel_index_to_channel_name(acq_channel)
         scope_data = acquisitions[acq_name]["acquisition"]["scope"]
         for path_label in ("path0", "path1"):
@@ -944,6 +951,7 @@ class _QRMAcquisitionManager:
     def _get_integration_data(
         self,
         acquisitions: dict,
+        acq_metadata: AcquisitionMetadata,
         acq_duration: int = constants.MAX_SAMPLE_SIZE_ACQUISITIONS,
         acq_channel: int = 0,
     ) -> Tuple[np.ndarray, np.ndarray]:
@@ -977,7 +985,11 @@ class _QRMAcquisitionManager:
         return i_data, q_data
 
     def _get_integration_amplitude_data(
-        self, acquisitions: dict, acq_duration: int, acq_channel: int = 0
+        self,
+        acquisitions: dict,
+        acq_metadata: AcquisitionMetadata,
+        acq_duration: int,
+        acq_channel: int = 0,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Gets the integration data but normalized to the integration time (number of
@@ -1007,7 +1019,9 @@ class _QRMAcquisitionManager:
                 " but it is `None`."
             )
         compensated_data_i, compensated_data_q = self._get_integration_data(
-            acquisitions=acquisitions, acq_channel=acq_channel
+            acquisitions=acquisitions,
+            acq_channel=acq_channel,
+            acq_metadata=acq_metadata,
         )
         compensated_data_i, compensated_data_q = (
             compensated_data_i / acq_duration,
@@ -1016,7 +1030,12 @@ class _QRMAcquisitionManager:
         return compensated_data_i, compensated_data_q
 
     def _get_threshold_data(
-        self, acquisitions: dict, acq_channel: int = 0, acq_index: int = 0
+        self,
+        acquisitions: dict,
+        acq_metadata: AcquisitionMetadata,
+        acq_duration: int,
+        acq_channel: int = 0,
+        acq_index: int = 0,
     ) -> float:
         """
         Retrieves the thresholded acquisition data associated with `acq_channel` and
@@ -1047,6 +1066,54 @@ class _QRMAcquisitionManager:
                 f"in acquisition data."
             )
         return data[acq_index]
+
+    def _get_trigger_count_data(
+        self,
+        acquisitions: dict,
+        acq_metadata: AcquisitionMetadata,
+        acq_duration: int,
+        acq_channel: int = 0,
+    ) -> tuple[list[int], list[int]] | list[int]:
+        """
+        Retrieves the trigger count acquisition data associated with `acq_channel`.
+
+        Parameters
+        ----------
+        acquisitions
+            The acquisitions dict as returned by the sequencer.
+        acq_channel
+            The acq_channel to get the thresholded acquisition data for.
+
+        Returns
+        -------
+        :
+        For BinMode.AVERAGE
+        count
+            A list of integers indicating the amount of triggers counted
+        occurence
+            A list of integers with the occurence of each trigger count.
+
+        for BinMode.APPEND
+        count
+            A list of integers indicating the amount of triggers counted
+        occurence
+            A list of 1's.
+        """
+        bin_data = self._get_bin_data(acquisitions, acq_channel)
+
+        if acq_metadata.bin_mode == BinMode.AVERAGE:
+            bin_count_diff = np.diff(bin_data["avg_cnt"])
+            res = {
+                count + 1: -v
+                for (count, v) in enumerate(bin_count_diff)
+                if not (np.isnan(v) or np.isclose(v, 0))
+            }
+            return list(res.keys()), list(res.values())
+
+        elif acq_metadata.bin_mode == BinMode.APPEND:
+            counts = list(bin_data["avg_cnt"])
+            counts = [0 if np.isnan(x) else x for x in counts]
+            return counts, [1] * len(counts)
 
     @staticmethod
     def _channel_index_to_channel_name(acq_channel: int) -> str:

@@ -9,6 +9,7 @@ import pytest
 
 import numpy as np
 from quantify_scheduler import Operation, Schedule
+from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.json_utils import ScheduleJSONDecoder, ScheduleJSONEncoder
 from quantify_scheduler.operations.gate_library import X90, X
 from quantify_scheduler.operations.pulse_library import (
@@ -25,19 +26,6 @@ from quantify_scheduler.operations.pulse_library import (
     decompose_long_square_pulse,
 )
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
-from quantify_scheduler.device_under_test.transmon_element import (
-    BasicTransmonElement,
-)
-from quantify_scheduler.compilation import qcompile
-
-
-# --------- Test fixtures ---------
-@pytest.fixture
-def device_DRAG_pulse():
-    q0 = BasicTransmonElement("q0")
-    device_cfg = q0.generate_device_config()
-    yield q0, device_cfg
-    q0.close()
 
 
 # --------- Test classes and member methods ---------
@@ -392,18 +380,22 @@ def test_dccompensation_pulse_both_params() -> None:
 
 
 # --------- Test pulse compilation ---------
-def test_dragpulse_motzoi(device_DRAG_pulse):
-    q0, device_cfg = device_DRAG_pulse
-    device_cfg.elements["q0"]["Rxy"].factory_kwargs["amp180"] = 0.2
-    device_cfg.elements["q0"]["Rxy"].factory_kwargs["motzoi"] = 0.02
+def test_dragpulse_motzoi(mock_setup_basic_transmon):
+    mock_setup_basic_transmon["q0"].rxy.amp180(0.2)
+    mock_setup_basic_transmon["q0"].rxy.motzoi(0.02)
 
     sched = Schedule("Test DRAG Pulse")
     sched.add(X("q0"))
 
-    compiled_sched = qcompile(sched, device_cfg)
-    for op, op_info in compiled_sched.operations.items():
-        D_amp = op_info.data["pulse_info"][0].get("D_amp")
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        sched, mock_setup_basic_transmon["quantum_device"].generate_compilation_config()
+    )
 
-    assert (
-        D_amp == device_cfg.elements["q0"]["Rxy"].factory_kwargs["motzoi"]
-    ), "The amplification of the derivative DRAG pulse is not equal to the motzoi parameter"
+    D_amp = (
+        list(compiled_sched.operations.values())[0].data["pulse_info"][0].get("D_amp")
+    )
+    assert D_amp == mock_setup_basic_transmon["q0"].rxy.motzoi(), (
+        "The amplification of the derivative DRAG pulse is not equal to the motzoi "
+        "parameter"
+    )

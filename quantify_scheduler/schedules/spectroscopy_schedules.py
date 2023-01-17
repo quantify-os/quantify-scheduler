@@ -9,13 +9,16 @@ from typing import Optional
 
 import numpy as np
 
-from quantify_scheduler import Schedule
+from quantify_scheduler.schedules.schedule import Schedule
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.pulse_library import (
     IdlePulse,
     SetClockFrequency,
     SquarePulse,
 )
+from quantify_scheduler.operations.gate_library import Reset, Measure
+from quantify_scheduler.operations.nv_native_library import ChargeReset, CRCount
+from quantify_scheduler.operations.shared_native_library import SpectroscopyOperation
 from quantify_scheduler.resources import ClockResource
 
 
@@ -269,4 +272,37 @@ def two_tone_spec_sched(
         label="acquisition",
     )
 
+    return sched
+
+
+def nv_dark_esr_sched(
+    qubit: str,
+    repetitions: int = 1,
+) -> Schedule:
+    """Generates a schedule for a dark ESR experiment on an NV-center.
+
+    The spectroscopy frequency is taken from the device element. Please use the clock
+    specified in the "spectroscopy_operation" entry of the device config.
+
+    This schedule can currently not be compiled with the Zurich Instruments backend.
+
+    Parameters
+    ----------
+    qubit
+        Name of the 'DeviceElement' representing the NV-center.
+    repetitions, optional
+        Number of schedule repetitions.
+
+    Returns
+    -------
+        Schedule with a single frequency
+    """
+    sched = Schedule("Dark ESR Schedule", repetitions=repetitions)
+
+    sched.add(ChargeReset(qubit), label="Charge reset")
+    sched.add(CRCount(qubit, acq_index=0), label="CRCount pre")
+    sched.add(Reset(qubit), label="Reset")
+    sched.add(SpectroscopyOperation(qubit), label="Spectroscopy")
+    sched.add(Measure(qubit, acq_index=1), label="Measure")
+    sched.add(CRCount(qubit, acq_index=2), label="CRCount post")
     return sched

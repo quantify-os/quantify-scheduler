@@ -182,7 +182,6 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             The Schedule object.
         """
         schedule_data = json_utils.ScheduleJSONDecoder().decode(data)
-        name = schedule_data["name"]
         sched = Schedule.__new__(Schedule)
         sched.__setstate__(schedule_data)
 

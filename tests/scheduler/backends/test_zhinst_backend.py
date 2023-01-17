@@ -15,22 +15,27 @@ from unittest.mock import ANY, call
 import numpy as np
 import pytest
 from pydantic import ValidationError
-from zhinst.qcodes import hdawg, mfli, uhfli, uhfqa
-from zhinst.toolkit.control import drivers
 
-from quantify_scheduler import Schedule, enums
-from quantify_scheduler.backends import zhinst_backend
+from quantify_scheduler import CompiledSchedule, Schedule, enums
+from quantify_scheduler.backends import SerialCompiler, zhinst_backend
 from quantify_scheduler.backends.types import common, zhinst
 from quantify_scheduler.backends.zhinst import settings
 from quantify_scheduler.compilation import qcompile
-from quantify_scheduler.helpers import schedule as schedule_helpers
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.helpers import waveforms as waveform_helpers
+from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.gate_library import X90, Measure, Reset
+from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules import spectroscopy_schedules, trace_schedules
 from quantify_scheduler.schedules.verification import acquisition_staircase_sched
-from quantify_scheduler.schemas.examples.utils import load_json_example_scheme
-from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
-from quantify_scheduler.resources import ClockResource
+
+from tests.scheduler.backends.graph_backends.standard_schedules import (
+    single_qubit_schedule_circuit_level,
+    pulse_only_schedule,
+    parametrized_operation_schedule,
+    hybrid_schedule_rabi,
+)
+
 
 ARRAY_DECIMAL_PRECISION = 16
 
@@ -424,8 +429,6 @@ def test__program_hdawg4_channelgrouping(
     hdawg_device = devices[0]
     hdawg_device.channelgrouping = channelgrouping
     hdawg_device.clock_rate = int(2.4e9)
-
-    settings_builder = settings.ZISettingsBuilder()
 
     mocker.patch.object(zhinst_backend, "_add_wave_nodes")
     with_sigouts = mocker.patch.object(settings.ZISettingsBuilder, "with_sigouts")
@@ -889,7 +892,7 @@ def test__add_wave_nodes_with_vector(
 
 
 def test_compile_backend_with_undefined_local_oscillator(
-    make_schedule, load_example_transmon_config
+    make_schedule, mock_setup_basic_transmon
 ):
     # Arrange
     q0 = "q0"
@@ -897,8 +900,6 @@ def test_compile_backend_with_undefined_local_oscillator(
     schedule.add(Reset(q0))
     schedule.add(X90(q0))
     # no measure to keep it simple
-
-    device_cfg = load_example_transmon_config
 
     hardware_cfg_str = """
     {
@@ -931,23 +932,25 @@ def test_compile_backend_with_undefined_local_oscillator(
     }
     """
     zhinst_hardware_cfg = json.loads(hardware_cfg_str)
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device.hardware_config(zhinst_hardware_cfg)
 
     # Act
+    compiler = SerialCompiler(name="compiler")
     with pytest.raises(
         KeyError, match='Missing configuration for LocalOscillator "lo_unknown"'
     ):
-        qcompile(schedule, device_cfg, zhinst_hardware_cfg)
+        compiler.compile(schedule, config=quantum_device.generate_compilation_config())
 
 
 def test_compile_backend_with_duplicate_local_oscillator(
-    make_schedule, load_example_transmon_config
+    make_schedule, mock_setup_basic_transmon
 ):
     # Arrange
     q0 = "q0"
     schedule = Schedule("test")
     schedule.add(Reset(q0))
     schedule.add(X90(q0))
-    device_cfg = load_example_transmon_config
 
     hardware_cfg_str = """
     {
@@ -990,10 +993,13 @@ def test_compile_backend_with_duplicate_local_oscillator(
     }
     """
     zhinst_hardware_cfg = json.loads(hardware_cfg_str)
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device.hardware_config(zhinst_hardware_cfg)
 
     # Act
+    compiler = SerialCompiler(name="compiler")
     with pytest.raises(RuntimeError) as execinfo:
-        qcompile(schedule, device_cfg, zhinst_hardware_cfg)
+        compiler.compile(schedule, config=quantum_device.generate_compilation_config())
 
     # Assert
     assert (
@@ -1002,8 +1008,9 @@ def test_compile_backend_with_duplicate_local_oscillator(
     )
 
 
-def test_acquisition_staircase_unique_acquisitions(load_example_transmon_config):
-
+def test_acquisition_staircase_unique_acquisitions(
+    compile_config_basic_transmon_zhinst_hardware,
+):
     schedule = acquisition_staircase_sched(
         np.linspace(0, 1, 20),
         readout_pulse_duration=1e-6,
@@ -1014,11 +1021,12 @@ def test_acquisition_staircase_unique_acquisitions(load_example_transmon_config)
         clock="q0.ro",
         repetitions=1024,
     )
-    device_cfg = load_example_transmon_config
-    hw_cfg = load_json_example_scheme("zhinst_test_mapping.json")
 
     # Act
-    comp_sched = qcompile(schedule, device_cfg=device_cfg, hardware_cfg=hw_cfg)
+    compiler = SerialCompiler(name="compiler")
+    comp_sched = compiler.compile(
+        schedule, config=compile_config_basic_transmon_zhinst_hardware
+    )
 
     # Assert
     uhfqa_setts = comp_sched.compiled_instructions["ic_uhfqa0"]
@@ -1080,7 +1088,9 @@ def test_acquisition_staircase_unique_acquisitions(load_example_transmon_config)
         )
 
 
-def test_acquisition_staircase_right_acq_channel(load_example_transmon_config):
+def test_acquisition_staircase_right_acq_channel(
+    compile_config_basic_transmon_zhinst_hardware,
+):
 
     acq_channel = 2
     schedule = acquisition_staircase_sched(
@@ -1094,11 +1104,12 @@ def test_acquisition_staircase_right_acq_channel(load_example_transmon_config):
         repetitions=1024,
         acq_channel=acq_channel,
     )
-    device_cfg = load_example_transmon_config
-    hw_cfg = load_json_example_scheme("zhinst_test_mapping.json")
 
     # Act
-    comp_sched = qcompile(schedule, device_cfg=device_cfg, hardware_cfg=hw_cfg)
+    compiler = SerialCompiler(name="compiler")
+    comp_sched = compiler.compile(
+        schedule, config=compile_config_basic_transmon_zhinst_hardware
+    )
 
     # Assert
     uhfqa_setts = comp_sched.compiled_instructions["ic_uhfqa0"]
@@ -1162,7 +1173,9 @@ def test_acquisition_staircase_right_acq_channel(load_example_transmon_config):
         )
 
 
-def test_too_long_acquisition_raises_readable_exception(load_example_transmon_config):
+def test_too_long_acquisition_raises_readable_exception(
+    compile_config_basic_transmon_zhinst_hardware,
+):
     sched = Schedule(name="Too long acquisition schedule", repetitions=1024)
 
     # these are kind of magic names that are known to exist in the default config.
@@ -1182,15 +1195,70 @@ def test_too_long_acquisition_raises_readable_exception(load_example_transmon_co
         ),
     )
 
-    device_cfg = load_example_transmon_config
-    hw_cfg = load_json_example_scheme("zhinst_test_mapping.json")
-
     # Act
+    compiler = SerialCompiler(name="compiler")
     with pytest.raises(ValueError) as exc_info:
-        _ = qcompile(sched, device_cfg=device_cfg, hardware_cfg=hw_cfg)
+        _ = compiler.compile(
+            sched, config=compile_config_basic_transmon_zhinst_hardware
+        )
 
     # assert that the name of the offending operation is in the exception message.
     assert "SSBIntegrationComplex(" in str(exc_info.value)
 
     # assert that the number of samples we are trying to set is in the exception message
     assert "4320 samples" in str(exc_info.value)
+
+
+@pytest.mark.filterwarnings("ignore::FutureWarning")
+def test_deprecated_qcompile_empty_device(load_example_zhinst_hardware_config):
+    """
+    Test if compilation works for a pulse only schedule on a freshly initialized
+    quantum device object to which only a hardware config has been provided.
+    """
+
+    sched = pulse_only_schedule()
+
+    quantum_device = QuantumDevice(name="empty_quantum_device")
+
+    comp_sched = qcompile(
+        schedule=sched, hardware_cfg=load_example_zhinst_hardware_config
+    )
+
+    # Assert that no exception was raised and output is the right type.
+    assert isinstance(comp_sched, CompiledSchedule)
+
+    # this will fail if no hardware_config was specified
+    assert len(comp_sched.compiled_instructions) > 0
+
+    quantum_device.close()  # need to clean up nicely after the test
+
+
+@pytest.mark.filterwarnings("ignore::FutureWarning")
+@pytest.mark.parametrize(
+    "schedule",
+    [
+        single_qubit_schedule_circuit_level(),
+        # two_qubit_t1_schedule(),
+        # two_qubit_schedule_with_edge(),
+        pulse_only_schedule(),
+        parametrized_operation_schedule(),
+        hybrid_schedule_rabi(),
+    ],
+)
+def test_deprecated_qcompiles_standard_schedules(
+    schedule: Schedule,
+    load_example_transmon_config,
+    load_example_zhinst_hardware_config,
+):
+    """
+    Test if a set of standard schedules compile correctly on this backend.
+    """
+
+    comp_sched = qcompile(
+        schedule=schedule,
+        device_cfg=load_example_transmon_config,
+        hardware_cfg=load_example_zhinst_hardware_config,
+    )
+
+    # Assert that no exception was raised and output is the right type.
+    assert isinstance(comp_sched, CompiledSchedule)

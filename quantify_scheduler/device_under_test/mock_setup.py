@@ -160,8 +160,10 @@ def set_up_basic_mock_nv_setup() -> Dict:
     )
 
     qe0 = BasicElectronicNVElement("qe0")
+    qe1 = BasicElectronicNVElement("qe1")
     quantum_device = QuantumDevice(name="quantum_device")
     quantum_device.add_element(qe0)
+    quantum_device.add_element(qe1)
     quantum_device.instr_measurement_control(meas_ctrl.name)
     quantum_device.instr_instrument_coordinator(instrument_coordinator.name)
 
@@ -173,6 +175,7 @@ def set_up_basic_mock_nv_setup() -> Dict:
         "meas_ctrl": meas_ctrl,
         "instrument_coordinator": instrument_coordinator,
         "qe0": qe0,
+        "qe1": qe1,
         "quantum_device": quantum_device,
     }
 
@@ -186,14 +189,34 @@ def set_standard_params_basic_nv(mock_nv_device: Dict[str, Any]) -> None:
     In normal use, unknown parameters are set as 'nan' values, forcing the user to
     set these. However for testing purposes it can be useful to set some semi-random
     values. The values here are chosen to reflect typical values as used in practical
-    experiments.
+    experiments. All amplitudes for pulses are set to 1e-3.
     """
 
     quantum_device = mock_nv_device["quantum_device"]
-    qe0 = quantum_device.get_element("qe0")
-    qe0.spectroscopy_operation.amplitude.set(0.1)
+    qe0: BasicElectronicNVElement = quantum_device.get_element("qe0")
     qe0.clock_freqs.f01.set(3.592e9)
     qe0.clock_freqs.spec.set(2.2e9)
-    qe0.clock_freqs.ionization.set(564e12)  # 532 nm
-    qe0.clock_freqs.ge0.set(470.4e12)  # 637 nm
-    qe0.clock_freqs.ge1.set(470.4e12 - 5e9)  # slightly detuned
+    qe0.clock_freqs.ionization.set(564e12)
+    qe0.clock_freqs.ge0.set(470.4e12)
+    qe0.clock_freqs.ge1.set(470.4e12 - 5e9)
+
+    qe0.charge_reset.amplitude(1e-3)
+    qe0.cr_count.readout_pulse_amplitude(1e-3)
+    qe0.cr_count.spinpump_pulse_amplitude(1e-3)
+    qe0.reset.amplitude(1e-3)
+    qe0.measure.pulse_amplitude(1e-3)
+    qe0.spectroscopy_operation.amplitude.set(1e-3)
+
+    qe1: BasicElectronicNVElement = quantum_device.get_element("qe1")
+    qe1.clock_freqs.f01.set(4.874e9)
+    qe1.clock_freqs.spec.set(1.4e9)
+    qe1.clock_freqs.ionization.set(420e12)
+    qe1.clock_freqs.ge0.set(470.4e12)
+    qe1.clock_freqs.ge1.set(470.4e12 - 5e9)
+
+    qe1.charge_reset.amplitude(1e-3)
+    qe1.cr_count.readout_pulse_amplitude(1e-3)
+    qe1.cr_count.spinpump_pulse_amplitude(1e-3)
+    qe1.reset.amplitude(1e-3)
+    qe1.measure.pulse_amplitude(1e-3)
+    qe1.spectroscopy_operation.amplitude.set(1e-3)

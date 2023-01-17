@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Helper functions for Qblox backend."""
+import dataclasses
 import re
 from copy import deepcopy
 from collections import UserDict
@@ -326,11 +327,12 @@ def generate_waveform_dict(waveforms_complex: Dict[str, np.ndarray]) -> Dict[str
 
     Returns
     -------
-    :
+    dict[str, dict]
         A dictionary with as key the unique name for that waveform, as value another
         dictionary containing the real-valued data (list) as well as a unique index.
         Note that the index of the Q waveform is always the index of the I waveform
         +1.
+
 
     .. admonition:: Examples
 
@@ -458,11 +460,92 @@ def get_nco_set_frequency_arguments(frequency_hz: float) -> int:
         raise ValueError(
             f"Attempting to set NCO frequency. "
             f"The frequency must be between and including "
-            f"-{min_max_frequency_in_hz} Hz and {min_max_frequency_in_hz} Hz. "
-            f"Got {frequency_hz} Hz."
+            f"-{min_max_frequency_in_hz:e} Hz and {min_max_frequency_in_hz:e} Hz. "
+            f"Got {frequency_hz:e} Hz."
         )
 
     return frequency_steps
+
+
+@dataclasses.dataclass
+class Frequencies:
+    clock: Optional[float] = None
+    LO: Optional[float] = None
+    IF: Optional[float] = None
+
+
+def determine_clock_lo_interm_freqs(
+    clock_freq: float,
+    lo_freq: Union[float, None],
+    interm_freq: Union[float, None],
+    downconverter_freq: Optional[float] = None,
+    mix_lo: bool = True,
+) -> Frequencies:
+    r"""
+    Determine LO and IF frequencies, after optionally applying downconverter_freq to
+    clock.
+
+    Warning: Using downconverter_freq requires custom Qblox hardware, do not use
+    otherwise.
+
+    The following relation is obeyed, if `mix_lo` is True:
+    :math:`f_{RF} = f_{LO} + f_{IF}`.
+
+    If `mix_lo` is False, relation :math:`f_{RF} = f_{LO}` is upheld.
+
+    Parameters
+    ----------
+    clock_freq
+    lo_freq
+    interm_freq
+    downconverter_freq
+    mix_lo
+
+    Returns
+    -------
+
+    Raises
+    ------
+    ValueError
+        fgf
+    """
+
+    def _downconvert_clock(downconverter_freq: float, clock_freq: float) -> float:
+        if downconverter_freq == 0:
+            return clock_freq
+
+        if downconverter_freq < 0:
+            raise ValueError(
+                f"Downconverter frequency must be positive ({downconverter_freq=})"
+            )
+
+        if downconverter_freq < clock_freq:
+            raise ValueError(
+                f"Downconverter frequency must be greater than clock frequency "
+                f"({downconverter_freq=}, {clock_freq=})"
+            )
+
+        return downconverter_freq - clock_freq
+
+    freqs = Frequencies(clock=clock_freq, LO=lo_freq, IF=interm_freq)
+
+    if downconverter_freq is not None:
+        freqs.clock = _downconvert_clock(
+            downconverter_freq=downconverter_freq,
+            clock_freq=clock_freq,
+        )
+
+    if not mix_lo:
+        freqs.LO = freqs.clock
+        freqs.IF = None
+    else:
+        if interm_freq is not None:
+            freqs.LO = freqs.clock - interm_freq
+
+        if lo_freq is not None:
+            freqs.IF = freqs.clock - lo_freq
+
+    return freqs
 
 
 def generate_port_clock_to_device_map(
@@ -683,3 +766,61 @@ def convert_hw_config_to_portclock_configs_spec(
     _update_hw_config(hw_config)
 
     return hw_config
+
+
+def calc_from_units_volt(
+    voltage_range, name: str, param_name: str, cfg: Dict[str, Any]
+) -> Optional[float]:
+    """
+    Helper method to calculate the offset from mV or V.
+    Then compares to given voltage range, and throws a ValueError if out of bounds.
+
+    Parameters
+    ----------
+    voltage_range
+        The range of the voltage levels of the device used.
+    name
+        The name of the device used.
+    param_name
+        The name of the current parameter the method is used for.
+    cfg
+        The hardware config of the device used.
+
+    Returns
+    -------
+        The normalized offsets.
+
+    Raises
+    ------
+    RuntimeError
+        When a unit range is given that is not supported, or a value is given that falls
+        outside the allowed range.
+
+    """
+    offset_in_config = cfg.get(param_name, None)  # Always in volts
+    if offset_in_config is None:
+        return None
+
+    conversion_factor = 1
+    if voltage_range.units == "mV":
+        conversion_factor = 1e3
+    elif voltage_range.units != "V":
+        raise RuntimeError(
+            f"Parameter {param_name} of {name} specifies "
+            f"the units {voltage_range.units}, but the Qblox "
+            f"backend only supports mV and V."
+        )
+
+    calculated_offset = offset_in_config * conversion_factor
+    if (
+        calculated_offset < voltage_range.min_val
+        or calculated_offset > voltage_range.max_val
+    ):
+        raise ValueError(
+            f"Attempting to set {param_name} of {name} to "
+            f"{offset_in_config} V. {param_name} has to be between "
+            f"{voltage_range.min_val / conversion_factor} and "
+            f"{voltage_range.max_val / conversion_factor} V!"
+        )
+
+    return calculated_offset

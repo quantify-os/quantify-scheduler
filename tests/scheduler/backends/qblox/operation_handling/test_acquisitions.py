@@ -18,7 +18,6 @@ from qcodes.instrument.parameter import ManualParameter
 from qblox_instruments import ClusterType, PulsarType
 
 from quantify_scheduler import waveforms, Schedule
-from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
 
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.backends import SerialCompiler
@@ -37,9 +36,11 @@ from quantify_scheduler.instrument_coordinator.components.generic import (
 from quantify_scheduler.instrument_coordinator.components.qblox import (
     QbloxInstrumentCoordinatorComponentBase,
     AcquisitionIndexing,
+    _QRMAcquisitionManager,
 )
 from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import ClockResource
+from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 from quantify_scheduler.schedules.trace_schedules import trace_schedule_circuit_layer
 
 from tests.fixtures.mock_setup import close_instruments
@@ -149,6 +150,26 @@ class TestAcquisitionStrategyPartial:
             "1000 ns between acquisitions.\n\nError caused by acquisition:\n"
             "Acquisition  (t=0 to 1e-06)\ndata={'bin_mode': 'nonsense', "
             "'acq_channel': 0, 'acq_index': 0, 'duration': 1e-06}."
+        )
+
+    @pytest.mark.parametrize("bin_mode", [BinMode.AVERAGE, BinMode.APPEND])
+    def test_bin_index_register_invalid(self, empty_qasm_program_qrm, bin_mode):
+        # arrange
+        data = {"bin_mode": bin_mode, "acq_channel": 0, "acq_index": 0}
+        op_info = types.OpInfo(name="", data=data, timing=0)
+        strategy = MockAcquisition(op_info)
+        strategy.bin_idx_register = None if bin_mode == BinMode.APPEND else "R0"
+
+        # act
+        with pytest.raises(ValueError) as exc:
+            strategy.insert_qasm(empty_qasm_program_qrm)
+
+        # assert
+        assert (
+            exc.value.args[0] == f"Attempting to add acquisition with "
+            f"{'append' if bin_mode == BinMode.APPEND else 'average'} binmode. "
+            f"bin_idx_register {'cannot' if bin_mode == BinMode.APPEND else 'must'} "
+            f"be None."
         )
 
 
@@ -351,6 +372,129 @@ class TestWeightedAcquisitionStrategy:
         ]
 
 
+class TestTriggerCountStrategy:
+    @pytest.mark.parametrize("bin_mode", [BinMode.AVERAGE, BinMode.APPEND])
+    def test_constructor(self, bin_mode):
+        data = {"bin_mode": bin_mode, "acq_channel": 0, "acq_index": 0}
+        acquisitions.TriggerCountAcquisitionStrategy(
+            types.OpInfo(name="", data=data, timing=0)
+        )
+
+    def test_generate_data(self):
+        # arrange
+        data = {"bin_mode": BinMode.AVERAGE, "acq_channel": 0, "acq_index": 0}
+        strategy = acquisitions.TriggerCountAcquisitionStrategy(
+            types.OpInfo(name="", data=data, timing=0)
+        )
+        wf_dict = {}
+
+        # act
+        strategy.generate_data(wf_dict)
+
+        # assert
+        assert len(wf_dict) == 0
+
+    def test_acquire_average(self, empty_qasm_program_qrm):
+        # arrange
+        qasm = empty_qasm_program_qrm
+        data = {
+            "bin_mode": BinMode.AVERAGE,
+            "acq_channel": 0,
+            "acq_index": 0,
+            "duration": 100e-6,
+        }
+        strategy = acquisitions.TriggerCountAcquisitionStrategy(
+            types.OpInfo(name="", data=data, timing=0)
+        )
+        strategy.generate_data({})
+
+        # act
+        strategy.acquire_average(qasm)
+
+        # assert
+        assert qasm.instructions == [
+            [
+                "",
+                "acquire_ttl",
+                "0,0,1,4",
+                "# Enable TTL acquisition of acq_channel:0, bin_mode:average",
+            ],
+            ["", "wait", "65532", "# auto generated wait (99996 ns)"],
+            ["", "wait", "34464", "# auto generated wait (99996 ns)"],
+            [
+                "",
+                "acquire_ttl",
+                "0,0,0,4",
+                "# Disable TTL acquisition of acq_channel:0, bin_mode:average",
+            ],
+        ]
+
+    def test_acquire_append(self, empty_qasm_program_qrm):
+        # arrange
+        qasm = empty_qasm_program_qrm
+        data = {
+            "bin_mode": BinMode.APPEND,
+            "acq_channel": 0,
+            "acq_index": 5,
+            "duration": 100e-6,
+        }
+        strategy = acquisitions.TriggerCountAcquisitionStrategy(
+            types.OpInfo(name="", data=data, timing=0)
+        )
+        strategy.bin_idx_register = qasm.register_manager.allocate_register()
+        strategy.generate_data({})
+
+        # act
+        strategy.acquire_append(qasm)
+
+        # assert
+        assert qasm.instructions == [
+            [
+                "",
+                "acquire_ttl",
+                "0,R0,1,4",
+                "# Enable TTL acquisition of acq_channel:0, store in bin:R0",
+            ],
+            ["", "wait", "65532", "# auto generated wait (99996 ns)"],
+            ["", "wait", "34464", "# auto generated wait (99996 ns)"],
+            [
+                "",
+                "acquire_ttl",
+                "0,R0,0,4",
+                "# Disable TTL acquisition of acq_channel:0, store in bin:R0",
+            ],
+            ["", "add", "R0,1,R0", "# Increment bin_idx for ch0 by 1"],
+        ]
+
+
+@pytest.mark.parametrize(
+    "acquisition_strategy",
+    [
+        acquisitions.SquareAcquisitionStrategy,
+        acquisitions.WeightedAcquisitionStrategy,
+        acquisitions.TriggerCountAcquisitionStrategy,
+    ],
+)
+def test_acquire_append_invalid_bin_idx(acquisition_strategy, empty_qasm_program_qrm):
+    # arrange
+    data = {
+        "bin_mode": BinMode.APPEND,
+        "acq_channel": 0,
+        "acq_index": 5,
+        "duration": 100e-6,
+    }
+    strategy = acquisition_strategy(types.OpInfo(name="", data=data, timing=0))
+
+    # act
+    with pytest.raises(ValueError) as exc:
+        strategy.insert_qasm(empty_qasm_program_qrm)
+
+    assert (
+        exc.value.args[0] == "Attempting to add acquisition with append binmode. "
+        "bin_idx_register cannot be None."
+    )
+
+
 def test_trace_acquisition_measurement_control(
     mock_setup_basic_transmon_with_standard_params, mocker, make_cluster_component
 ):
@@ -416,6 +560,88 @@ def test_trace_acquisition_measurement_control(
     assert dataset.sizes == {"dim_0": acq_duration * sampling_rate}
 
     instr_coordinator.remove_component(ic_cluster0.name)
+
+
+def test_TriggerCount_acquisition(
+    mock_setup_basic_nv, make_cluster_component
+):  # pylint: disable=too-many-locals
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module3": {
+                "instrument_type": "QRM",
+                "real_input_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "qe0:optical_readout",
+                            "clock": "qe0.ge0",
+                            "interm_freq": 50e6,
+                        },
+                    ],
+                },
+                "real_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "qe0:optical_control",
+                            "clock": "qe0.ge0",
+                            "interm_freq": 0,
+                        }
+                    ],
+                },
+            },
+        },
+    }
+
+    # Setup objects needed for experiment
+    mock_setup = mock_setup_basic_nv
+    ic_cluster0 = make_cluster_component("cluster0")
+    instr_coordinator = mock_setup["instrument_coordinator"]
+    instr_coordinator.add_component(ic_cluster0)
+
+    quantum_device = mock_setup["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+
+    # Define experiment schedule
+    schedule = Schedule("test multiple measurements")
+    meas0 = Measure("qe0", acq_protocol="TriggerCount")
+    schedule.add(meas0)
+    readout_clock0 = ClockResource(name="qe0.ge0", freq=50e6)
+    schedule.add_resource(readout_clock0)
+
+    # Generate compiled schedule
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    # Upload schedule and run experiment
+    instr_coordinator.prepare(compiled_sched)
+    instr_coordinator.start()
+    data = instr_coordinator.retrieve_acquisition()
+    instr_coordinator.stop()
+
+    # Assert intended behaviour
+    assert len(data) == 1
+    assert data[AcquisitionIndexing(acq_channel=0, acq_index=0)][0][0] == 0
+    assert data[AcquisitionIndexing(acq_channel=0, acq_index=0)][1][0] == 1
+
+    instr_coordinator.remove_component("ic_cluster0")
+
+
+def test_triggerCount_append(make_qrm_component):
+    qrm = make_qrm_component("qrm0")
+    acq_metadata = AcquisitionMetadata("test", BinMode.AVERAGE, int, {})
+    acq = {
+        "0": {
+            "index": 0,
+            "acquisition": {"bins": {"avg_cnt": (100, 100, 75, 50, 25, 25, 5)}},
+        }
+    }
+    acq_man = _QRMAcquisitionManager(qrm, 0, acq, acq_metadata)
+    data = acq_man._get_trigger_count_data(acq, acq_metadata, 0)
+    assert data == ([2, 3, 4, 6], [25, 25, 25, 20])
 
 
 def test_multiple_measurements(
@@ -689,7 +915,8 @@ def test_multi_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_
                             "port": "qe0:optical_readout",
                             "clock": "qe0.ge0",
                             "interm_freq": 0,
-                        },  # todo add TTL params
+                            "ttl_acq_threshold": 0.5,
+                        },
                     ],
                 },
                 "real_input_1": {
@@ -698,7 +925,8 @@ def test_multi_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_
                             "port": "qe1:optical_readout",
                             "clock": "qe1.ge0",
                             "interm_freq": 0,
-                        },  # todo add TTL params
+                            "ttl_acq_threshold": 0.5,
+                        },
                     ],
                 },
             },
@@ -715,24 +943,19 @@ def test_multi_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_
     laser_red = MockLocalOscillator("laser_red")
     ic_laser_red = GenericInstrumentCoordinatorComponent(laser_red)
     ic_generic = GenericInstrumentCoordinatorComponent("generic")
+
     instr_coordinator = mock_setup_basic_nv["instrument_coordinator"]
     instr_coordinator.add_component(ic_cluster0)
     instr_coordinator.add_component(ic_laser_red)
     instr_coordinator.add_component(ic_generic)
 
     quantum_device = mock_setup_basic_nv["quantum_device"]
-    qe1 = BasicElectronicNVElement("qe1")
-    quantum_device.add_element(qe1)
     quantum_device.hardware_config(hardware_cfg)
+
     # Define experiment schedule
     schedule = Schedule("test NV measurement with real output and input")
-    schedule.add(
-        Measure("qe0", acq_protocol="Trace")
-    )  # should be replaced by TriggerCount later.
-    # TODO uncomment when triggercount available.
-    # schedule.add(
-    #    Measure("qe1", acq_protocol="TriggerCount")
-    # )
+    schedule.add(Measure("qe0", acq_protocol="TriggerCount", bin_mode=BinMode.APPEND))
+    schedule.add(Measure("qe1", acq_protocol="TriggerCount", bin_mode=BinMode.AVERAGE))
 
     # Generate compiled schedule
     compiler = SerialCompiler(name="compiler")
@@ -741,25 +964,19 @@ def test_multi_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_
     )
 
     # Assert intended behaviour
-    assert compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq1"][
-        "connected_inputs"
-    ] == [0]
-    assert (
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq1"][
-            "nco_en"
-        ]
-        == False
-    )
-    # TODO uncomment when triggercount available
-    # assert compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq2"][
-    #    "connected_inputs"
-    # ] == [1]
-    # assert (
-    #    compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq2"][
-    #        "nco_en"
-    #    ]
-    #    == False
-    # )
+    seq_0 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq0"]
+    seq_1 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq1"]
+    seq_2 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq2"]
+    seq_3 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq3"]
+
+    assert seq_0["connected_outputs"] == [0]
+    assert seq_0["nco_en"] is True
+    assert seq_1["connected_outputs"] == [1]
+    assert seq_1["nco_en"] is True
+    assert seq_2["connected_inputs"] == [0]
+    assert seq_2["ttl_acq_auto_bin_incr_en"] is False
+    assert seq_3["connected_inputs"] == [1]
+    assert seq_3["ttl_acq_auto_bin_incr_en"] is True
 
     instr_coordinator.remove_component("ic_cluster0")
 

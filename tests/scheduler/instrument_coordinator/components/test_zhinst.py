@@ -15,7 +15,6 @@ import pytest
 from zhinst import qcodes
 
 from quantify_scheduler import enums
-from quantify_scheduler import Schedule
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 from quantify_scheduler.backends.zhinst import settings
 from quantify_scheduler.backends.zhinst_backend import (

@@ -9,7 +9,8 @@ from typing import Any, Dict, List, Tuple
 
 import numpy as np
 
-from quantify_scheduler import Schedule, math, waveforms
+from quantify_scheduler import math, waveforms
+from quantify_scheduler.schedules.schedule import Schedule
 from quantify_scheduler.helpers import schedule as schedule_helpers
 from quantify_scheduler.helpers.importers import import_python_object_from_string
 
@@ -120,8 +121,9 @@ def shift_waveform(
     to compensate for rounding errors that cause misalignment
     of the waveform in the clock time domain.
 
-    Note: when using this method be sure that the pulse starts
-    at a `round(start_in_sequencer_count)`.
+    .. Note::
+        when using this method be sure that the pulse starts
+        at a `round(start_in_sequencer_count)`.
 
     .. code-block::
 
@@ -133,7 +135,7 @@ def shift_waveform(
         #                 4.8 = 16e-9 / (8 / 2.4e9)
         start_in_sequencer_count = (t0 // (resolution / sampling_rate))
 
-        start_waveform_at_sequener_count(start_in_sequencer_count, waveform)
+        start_waveform_at_sequencer_count(start_in_sequencer_count, waveform)
 
     Parameters
     ----------
@@ -477,7 +479,7 @@ def area_pulses(pulses: List[Dict[str, Any]], sampling_rate: float) -> float:
     Parameters
     ----------
     pulses
-        List of dictinary with information of the pulses
+        List of dictionary with information of the pulses
     sampling_rate
         Sampling rate for the pulse
 
@@ -496,8 +498,8 @@ def area_pulse(pulse: Dict[str, Any], sampling_rate: float) -> float:
     """
     Calculates the area of a single pulse.
 
-    The sampled area is calculated, which means that the area calculatd is
-    based on the sampled waveform. This can differ slighly from the ideal area of
+    The sampled area is calculated, which means that the area calculated is
+    based on the sampled waveform. This can differ slightly from the ideal area of
     the parameterized pulse.
 
     The duration used for calculation is the duration of the pulse. This duration
