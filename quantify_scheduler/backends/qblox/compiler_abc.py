@@ -1330,8 +1330,8 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 if previous_lo_freq is not None and freqs.LO != previous_lo_freq:
                     raise ValueError(
                         f"Attempting to set '{lo_freq_setting_name}' to frequency "
-                        f"'{freqs.LO}', while it has previously already been set to "
-                        f"'{previous_lo_freq}'!"
+                        f"'{freqs.LO:e}', while it has previously already been set to "
+                        f"'{previous_lo_freq:e}'!"
                     )
 
                 setattr(self._settings, lo_freq_setting_name, freqs.LO)
