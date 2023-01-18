@@ -11,7 +11,7 @@
 import pytest
 from typing import Union
 
-from quantify_scheduler.backends.qblox import constants, helpers
+from quantify_scheduler.backends.qblox import helpers
 
 
 @pytest.mark.parametrize(
@@ -31,30 +31,6 @@ def test_get_nco_phase_arguments(phase, expected_steps):
     assert helpers.get_nco_phase_arguments(phase) == expected_steps
 
 
-def __get_frequencies(
-    clock_freq, lo_freq, interm_freq, downconverter_freq, mix_lo
-) -> helpers.Frequencies:
-    freqs = helpers.Frequencies()
-    if downconverter_freq is None or downconverter_freq == 0:
-        freqs.clock = clock_freq
-    else:
-        freqs.clock = downconverter_freq - clock_freq
-
-    freqs.LO = lo_freq
-    if mix_lo is False:
-        freqs.LO = freqs.clock
-    elif interm_freq is not None:
-        freqs.LO = freqs.clock - interm_freq
-
-    freqs.IF = interm_freq
-    if mix_lo is False:
-        freqs.IF = None
-    elif lo_freq is not None:
-        freqs.IF = freqs.clock - lo_freq
-
-    return freqs
-
-
 @pytest.mark.parametrize(
     "frequency, expected_steps",
     [
@@ -70,7 +46,7 @@ def test_get_nco_set_frequency_arguments(frequency: float, expected_steps: int):
 
 
 @pytest.mark.parametrize("frequency", [-500e6 - 1, 500e6 + 1])
-def test_invalid_get_nco_set_frequency(frequency: float):
+def test_invalid_get_nco_set_frequency_arguments(frequency: float):
     with pytest.raises(ValueError):
         helpers.get_nco_set_frequency_arguments(frequency)
 
@@ -101,9 +77,9 @@ def __get_frequencies(
 
 @pytest.mark.parametrize(
     "clock_freq, lo_freq, interm_freq, downconverter_freq, mix_lo, expected_freqs",
-    [
+    [  # General test cases with positive frequencies
         (
-            clock_freq,
+            clock_freq := 100,
             lo_freq,
             interm_freq,
             downconverter_freq,
@@ -112,11 +88,37 @@ def __get_frequencies(
                 clock_freq, lo_freq, interm_freq, downconverter_freq, mix_lo
             ),
         )
-        for clock_freq in [100]
         for lo_freq in [None, 20]
         for interm_freq in [None, 3]
         for downconverter_freq in [None, 0, 400]
         for mix_lo in [False, True]
+    ]
+    + [  # Test cases with negative frequencies
+        (
+            clock_freq,
+            lo_freq := -200,
+            interm_freq := -30,
+            downconverter_freq := 400,
+            mix_lo,
+            __get_frequencies(
+                clock_freq, lo_freq, interm_freq, downconverter_freq, mix_lo
+            ),
+        )
+        for clock_freq in [-100, 100]
+        for mix_lo in [False, True]
+    ]
+    + [  # Test cases for downconverter_freq
+        (
+            clock_freq := 100,
+            lo_freq := None,
+            interm_freq := None,
+            downconverter_freq,
+            mix_lo := True,
+            __get_frequencies(
+                clock_freq, lo_freq, interm_freq, downconverter_freq, mix_lo
+            ),
+        )
+        for downconverter_freq in [0, clock_freq - 1, -400]
     ],
 )
 def test_determine_clock_lo_interm_freqs(
@@ -127,13 +129,29 @@ def test_determine_clock_lo_interm_freqs(
     mix_lo: bool,
     expected_freqs: helpers.Frequencies,
 ):
-    assert (
-        helpers.determine_clock_lo_interm_freqs(
-            clock_freq=clock_freq,
-            lo_freq=lo_freq,
-            interm_freq=interm_freq,
-            downconverter_freq=downconverter_freq,
-            mix_lo=mix_lo,
+    try:
+        assert (
+            helpers.determine_clock_lo_interm_freqs(
+                clock_freq=clock_freq,
+                lo_freq=lo_freq,
+                interm_freq=interm_freq,
+                downconverter_freq=downconverter_freq,
+                mix_lo=mix_lo,
+            )
+            == expected_freqs
         )
-        == expected_freqs
-    )
+    except ValueError as error:
+        if downconverter_freq < 1:
+            assert (
+                str(error) == f"Downconverter frequency must be positive "
+                f"({downconverter_freq=:e})"
+            )
+            return
+        elif downconverter_freq < clock_freq:
+            assert (
+                str(error)
+                == "Downconverter frequency must be greater than clock frequency "
+                f"({downconverter_freq=:e}, {clock_freq=:e})"
+            )
+            return
+        raise

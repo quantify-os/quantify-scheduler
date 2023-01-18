@@ -1696,7 +1696,7 @@ def test_assign_frequencies_baseband_downconverter(
         if downconverter_freq0 < 1:
             assert (
                 str(error) == f"Downconverter frequency must be positive "
-                f"(downconverter_freq={downconverter_freq0}) "
+                f"(downconverter_freq={downconverter_freq0:e}) "
                 f"(for seq0 with port {portclock_config['port']} and "
                 f"clock {portclock_config['clock']})."
             )
@@ -1705,8 +1705,8 @@ def test_assign_frequencies_baseband_downconverter(
             assert (
                 str(error)
                 == "Downconverter frequency must be greater than clock frequency "
-                f"(downconverter_freq={downconverter_freq0}, "
-                f"clock_freq={q0_clock_freq}) "
+                f"(downconverter_freq={downconverter_freq0:e}, "
+                f"clock_freq={q0_clock_freq:e}) "
                 f"(for seq0 with port {portclock_config['port']} and "
                 f"clock {portclock_config['clock']})."
             )
@@ -1837,7 +1837,7 @@ def test_assign_frequencies_rf_downconverter(
         if downconverter_freq0 < 1:
             assert (
                 str(error) == f"Downconverter frequency must be positive "
-                f"(downconverter_freq={downconverter_freq0}) "
+                f"(downconverter_freq={downconverter_freq0:e}) "
                 f"(for seq0 with port {portclock_config['port']} and "
                 f"clock {portclock_config['clock']})."
             )
@@ -1846,8 +1846,8 @@ def test_assign_frequencies_rf_downconverter(
             assert (
                 str(error)
                 == "Downconverter frequency must be greater than clock frequency "
-                f"(downconverter_freq={downconverter_freq0}, "
-                f"clock_freq={qubit0_clock_freq}) "
+                f"(downconverter_freq={downconverter_freq0:e}, "
+                f"clock_freq={qubit0_clock_freq:e}) "
                 f"(for seq0 with port {portclock_config['port']} and "
                 f"clock {portclock_config['clock']})."
             )
