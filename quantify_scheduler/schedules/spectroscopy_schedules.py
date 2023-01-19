@@ -111,6 +111,8 @@ def nco_heterodyne_spec_sched(
 ) -> Schedule:
     """
 
+
+
     Parameters
     ----------
     pulse_amp
@@ -140,7 +142,7 @@ def nco_heterodyne_spec_sched(
     for acq_idx, freq in enumerate(frequencies):
         sched.add(
             SetClockFrequency(clock=clock, clock_frequency=freq),
-            label=f"set_clock_freq {acq_idx} ({freq} Hz)",
+            label=f"set_clock_freq {acq_idx} ({freq:e} Hz)",
         )
 
         spec_pulse = sched.add(
@@ -153,7 +155,6 @@ def nco_heterodyne_spec_sched(
             label=f"spec_pulse {acq_idx}",
         )
 
-        # acquisition_delay: "front" of the pulse should arrive before we start measuring (minimum 144ns ):  make sure that acq delay is longer than time of flight
         sched.add(
             SSBIntegrationComplex(
                 duration=integration_time,
