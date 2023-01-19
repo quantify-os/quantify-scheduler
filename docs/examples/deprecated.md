@@ -1,14 +1,7 @@
 ---
-jupytext:
-  text_representation:
-    extension: .md
-    format_name: myst
-    format_version: 0.13
-    jupytext_version: 1.14.1
+file_format: mystnb
 kernelspec:
-  display_name: Python 3 Quantify Env
-  language: python
-  name: qenv
+    name: python3
 ---
 
 # Quantify Deprecated Code Suggestions
@@ -184,6 +177,8 @@ compiled_schedule.timing_table
 1. `seqx` => `portclock_configs`  
 1. `latency_correction` => standalone/top-level `latency_corrections`
 1. `line_gain_db` removed
+
+
 
 ```{code-cell} ipython3
 depr_hardware_cfg = {
@@ -598,70 +593,6 @@ import pprint
 
 device_config_basic_transmon = basic.generate_device_config().dict()
 pprint.pprint(device_config_basic_transmon)
-```
-
-```{code-cell} ipython3
-from quantify_scheduler.backends.circuit_to_device import (
-    DeviceCompilationConfig,
-    OperationCompilationConfig,
-)
-
-
-def generate_device_config(self) -> DeviceCompilationConfig:
-    """
-    Generates a valid device config for the quantify-scheduler making use of the
-    :func:`~.circuit_to_device.compile_circuit_to_device` function.
-
-    This enables the settings of this qubit to be used in isolation.
-
-    .. note:
-
-        This config is only valid for single qubit experiments.
-    """
-
-    rxy12_config = {
-        "Rxy12": OperationCompilationConfig(
-            factory_func="quantify_scheduler.operations."
-            + "pulse_factories.rxy_drag_pulse",
-            factory_kwargs={
-                "amp180": self.rxy12.amp180(),
-                "motzoi": self.rxy12.motzoi(),
-                "port": self.ports.microwave(),
-                "clock": f"{self.name}.12",
-                "duration": self.rxy12.duration(),
-            },
-            gate_info_factory_kwargs=[
-                "theta",
-                "phi",
-            ],  # the keys from the gate info to pass to the factory function
-        ),
-    }
-
-    cfg_dict = {
-        "backend": "quantify_scheduler.backends"
-        ".circuit_to_device.compile_circuit_to_device",
-        "elements": self._generate_config(),
-        "clocks": {
-            f"{self.name}.01": self.clock_freqs.f01(),
-            f"{self.name}.12": self.clock_freqs.f12(),
-            f"{self.name}.ro": self.clock_freqs.readout(),
-        },
-        "edges": {},
-    }
-
-    cfg_dict["elements"][f"{self.name}"].update(rxy12_config)
-    dev_cfg = DeviceCompilationConfig.parse_obj(cfg_dict)
-
-    return dev_cfg
-
-
-BasicTransmonElement.generate_device_config = generate_device_config
-```
-
-```{code-cell} ipython3
-from quantify_scheduler.device_under_test.transmon_element import RxyDRAG
-
-basic.add_submodule("rxy12", RxyDRAG(parent=basic, name="rxy12"))
 ```
 
 ```{code-cell} ipython3

@@ -110,27 +110,32 @@ def nco_heterodyne_spec_sched(
     port_out: Optional[str] = None,
 ) -> Schedule:
     """
-
-
+    Generate a schedule for performing fast heterodyne spectroscopy using the NCO
 
     Parameters
     ----------
     pulse_amp
+        amplitude of the spectroscopy pulse in Volt.
     pulse_duration
+        duration of the spectroscopy pulse in seconds.
     frequencies
+        frequencies of the spectroscopy pulse and of the data acquisition in Hertz.
     acquisition_delay
+        start of the data acquisition with respect to the start of the spectroscopy
+        pulse in seconds.
     integration_time
+        integration time of the data acquisition in seconds.
     port
+        Location on the device where the acquisition is performed.
     clock
-    init_duration
+        reference clock used to track the spectroscopy frequency.
+    init_duration :
+        The relaxation time or dead time.
     repetitions
-    port_out
-
-    Returns
-    -------
-
+        The amount of times the Schedule will be repeated.
+    port_out:
+        Output port on the device where the pulse should be applied. If `None`, then use the same as `port`.
     """
-
     sched = Schedule("NCO heterodyne spectroscopy", repetitions)
     sched.add_resource(ClockResource(name=clock, freq=frequencies.flat[0]))
 
