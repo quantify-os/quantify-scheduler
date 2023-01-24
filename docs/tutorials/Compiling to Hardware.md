@@ -101,7 +101,7 @@ Now we are ready to proceed to the compilation stage. For each of the control st
 - A set of parameters that are used to properly configure each instrument for the execution of the schedule. These parameters typically don't change during the execution of the schedule.
 - A compiled program that contains instructions on what the instrument must do in order for the schedule to be executed.
 
-We perform the compilation via {func}`~quantify_scheduler.backends.graph_compilation.SerialCompiler.compile`.
+We perform the compilation via {func}`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler.compile`.
 
 We start by setting the directory where the compiled schedule files will be stored, via [set_datadir](https://quantify-quantify-core.readthedocs-hosted.com/en/latest/usage.html#data-directory).
 
