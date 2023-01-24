@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import logging
+import numpy as np
 from abc import ABC, ABCMeta, abstractmethod
 from collections import defaultdict, deque
 from functools import partial
@@ -1719,15 +1720,31 @@ class QbloxRFModule(QbloxBaseModule):
     def assign_attenuation(self):
         """
         Assigns attenuation settings from the hardware configuration.
+
+        Floats that are a multiple of 1 are converted to ints.
+        This is needed because the :class:`~quantify_core.measurement.control.grid_setpoints`
+        converts setpoints to floats when using an attenuation as settable.
         """
-        self._settings.in0_att = self.hw_mapping.get("complex_output_0", {}).get(
-            "input_att", None
+
+        def _convert_to_int(value, label: str) -> int:
+            if value is not None:
+                if not np.isclose(value % 1, 0):
+                    raise ValueError(
+                        f'Trying to set "{label}" to non-integer value {value}'
+                    )
+                return int(value)
+
+        self._settings.in0_att = _convert_to_int(
+            self.hw_mapping.get("complex_output_0", {}).get("input_att", None),
+            label="in0_att",
         )
-        self._settings.out0_att = self.hw_mapping.get("complex_output_0", {}).get(
-            "output_att", None
+        self._settings.out0_att = _convert_to_int(
+            self.hw_mapping.get("complex_output_0", {}).get("output_att", None),
+            label="out0_att",
         )
-        self._settings.out1_att = self.hw_mapping.get("complex_output_1", {}).get(
-            "output_att", None
+        self._settings.out1_att = _convert_to_int(
+            self.hw_mapping.get("complex_output_1", {}).get("output_att", None),
+            label="out1_att",
         )
 
     @classmethod
