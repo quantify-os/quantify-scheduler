@@ -892,7 +892,7 @@ def test__add_wave_nodes_with_vector(
 
 
 def test_compile_backend_with_undefined_local_oscillator(
-    make_schedule, mock_setup_basic_transmon
+    make_schedule, mock_setup_basic_transmon_with_standard_params
 ):
     # Arrange
     q0 = "q0"
@@ -932,7 +932,7 @@ def test_compile_backend_with_undefined_local_oscillator(
     }
     """
     zhinst_hardware_cfg = json.loads(hardware_cfg_str)
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     quantum_device.hardware_config(zhinst_hardware_cfg)
 
     # Act
@@ -944,7 +944,7 @@ def test_compile_backend_with_undefined_local_oscillator(
 
 
 def test_compile_backend_with_duplicate_local_oscillator(
-    make_schedule, mock_setup_basic_transmon
+    make_schedule, mock_setup_basic_transmon_with_standard_params
 ):
     # Arrange
     q0 = "q0"
@@ -993,7 +993,7 @@ def test_compile_backend_with_duplicate_local_oscillator(
     }
     """
     zhinst_hardware_cfg = json.loads(hardware_cfg_str)
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     quantum_device.hardware_config(zhinst_hardware_cfg)
 
     # Act
@@ -1014,7 +1014,7 @@ def test_acquisition_staircase_unique_acquisitions(
     schedule = acquisition_staircase_sched(
         np.linspace(0, 1, 20),
         readout_pulse_duration=1e-6,
-        readout_frequency=6e9,
+        readout_frequency=8e9,
         acquisition_delay=100e-9,
         integration_time=2e-6,
         port="q0:res",
@@ -1096,7 +1096,7 @@ def test_acquisition_staircase_right_acq_channel(
     schedule = acquisition_staircase_sched(
         np.linspace(0, 1, 20),
         readout_pulse_duration=1e-6,
-        readout_frequency=6e9,
+        readout_frequency=8e9,
         acquisition_delay=100e-9,
         integration_time=2e-6,
         port="q0:res",
@@ -1182,9 +1182,6 @@ def test_too_long_acquisition_raises_readable_exception(
     port = "q0:res"
     clock = "q0.ro"
 
-    # this should not be required.
-    sched.add_resource(ClockResource(name=clock, freq=5e9))
-
     sched.add(
         SSBIntegrationComplex(
             duration=2.4e-6,  # this is longer than the allowed 4096 samples.
@@ -1217,6 +1214,7 @@ def test_deprecated_qcompile_empty_device(load_example_zhinst_hardware_config):
     """
 
     sched = pulse_only_schedule()
+    sched.add_resource(ClockResource("q0.ro", freq=5e9))
 
     quantum_device = QuantumDevice(name="empty_quantum_device")
 
@@ -1245,7 +1243,7 @@ def test_deprecated_qcompile_empty_device(load_example_zhinst_hardware_config):
         hybrid_schedule_rabi(),
     ],
 )
-def test_deprecated_qcompiles_standard_schedules(
+def test_deprecated_qcompile_standard_schedules(
     schedule: Schedule,
     load_example_transmon_config,
     load_example_zhinst_hardware_config,

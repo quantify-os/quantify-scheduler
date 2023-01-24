@@ -119,15 +119,12 @@ from quantify_scheduler.resources import ClockResource
 
 def simple_trace_sched(
     repetitions: int,
-    pulse_amp: float = 0.2,
-    clock_freq: float = 1.8e9,  # Below 2e9 to be able to visualize on oscilliscope
+    pulse_amp: float = 0.2, 
 ) -> Schedule:
     sched = Schedule("Simple trace schedule", repetitions)
 
     port = "q0:res"
     clock = "q0.ro"
-
-    sched.add_resources([ClockResource(clock, clock_freq)])
 
     sched.add(Reset("q0"))
     sched.add(Measure("q0", acq_index=0, acq_protocol="Trace"))

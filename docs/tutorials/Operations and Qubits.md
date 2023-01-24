@@ -418,8 +418,9 @@ for duration in np.linspace(start=20e-9, stop=60e-9, num=6):
         )
 
         acq_idx += 1
-
-sched.add_resources([ClockResource("q0.01", 6.02e9)])  # Manually add the pulse clock
+        
+# Manually add the clocks
+sched.add_resources([ClockResource("q0.01", 6.02e9), ClockResource("q0.ro", 4.2e9), ClockResource("q1.01", 6.02e9), ClockResource("q1.ro", 4.2e9)])
 
 
 ```

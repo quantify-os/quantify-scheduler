@@ -131,14 +131,14 @@ def test_distortion_correct_pulse(
     ],
 )
 def test_apply_distortion_corrections(  # pylint: disable=unused-argument disable=too-many-arguments
-    mock_setup_basic_transmon,
+    mock_setup_basic_transmon_with_standard_params,
     hardware_cfg_distortion_corrections,
     filter_coefficients,
     two_qubit_gate_schedule,
     backend,
     use_numpy_array,
 ):
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     quantum_device.hardware_config(hardware_cfg_distortion_corrections)
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(

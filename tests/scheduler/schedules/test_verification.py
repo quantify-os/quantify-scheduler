@@ -19,7 +19,7 @@ def gen_acquisition_staircase_sched():
     sched_kwargs = {
         "readout_pulse_amps": np.linspace(0, 0.5, 11),
         "readout_pulse_duration": 1e-6,
-        "readout_frequency": 5e9,
+        "readout_frequency": 8e9,
         "acquisition_delay": 40e-9,  # delay of 0 gives an invalid timing error in qblox backend
         "integration_time": 2e-6,
         "port": "q0:res",
@@ -90,7 +90,7 @@ def gen_awg_staircase_sched():
     sched_kwargs = {
         "pulse_amps": np.linspace(0, 0.5, 11),
         "pulse_duration": 1e-6,
-        "readout_frequency": 5e9,
+        "readout_frequency": 8e9,
         "acquisition_delay": 0,
         "integration_time": 2e-6,
         "mw_port": "q0:mw",
@@ -123,11 +123,15 @@ def test_awg_staircase_sched(gen_awg_staircase_sched):
 
 
 def test_awg_staircase_comp_transmon(
-    gen_awg_staircase_sched, device_compile_config_basic_transmon
+    gen_awg_staircase_sched, mock_setup_basic_transmon
 ):
+
     compiler = SerialCompiler(name="compiler")
     _ = compiler.compile(
-        schedule=gen_awg_staircase_sched[0], config=device_compile_config_basic_transmon
+        schedule=gen_awg_staircase_sched[0],
+        config=mock_setup_basic_transmon[
+            "quantum_device"
+        ].generate_compilation_config(),
     )
 
 
@@ -142,7 +146,8 @@ def test_awg_staircase_comp_qblox(
 
 
 def test_awg_staircase_comp_zhinst(
-    gen_awg_staircase_sched, compile_config_basic_transmon_zhinst_hardware
+    gen_awg_staircase_sched,
+    compile_config_basic_transmon_zhinst_hardware,
 ):
     compiler = SerialCompiler(name="compiler")
     _ = compiler.compile(
@@ -161,7 +166,7 @@ def gen_multiplexing_staircase_sched():
         "ro_port": "q0:res",
         "ro_clock0": "q0.ro",
         "ro_clock1": "q0.multiplex",
-        "readout_frequency0": 5e9,
+        "readout_frequency0": 8e9,
         "readout_frequency1": 5.2e9,
         "init_duration": 10e-6,
         "repetitions": 10,

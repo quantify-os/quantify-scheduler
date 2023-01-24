@@ -464,6 +464,14 @@ def qcompile(
                     compilation_options=device_config,
                 )
             )
+            compilation_passes.append(
+                SimpleNodeConfig(
+                    name="set_pulse_and_acquisition_clock",
+                    compilation_func="quantify_scheduler.backends.circuit_to_device."
+                    + "set_pulse_and_acquisition_clock",
+                    compilation_options=device_config,
+                )
+            )
         elif isinstance(device_config, dict):
             # this is a deprecated config format. only legacy support here.
             compilation_passes.append(

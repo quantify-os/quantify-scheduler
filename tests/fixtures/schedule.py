@@ -19,7 +19,6 @@ from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler.compilation import device_compile
 from quantify_scheduler.operations.gate_library import CZ, Measure, Reset, X, X90
-from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schemas.examples import utils
 from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import (
     example_transmon_cfg,
@@ -132,9 +131,6 @@ def make_schedule_with_measurement() -> Callable[[str], Schedule]:
 @pytest.fixture
 def two_qubit_gate_schedule():
     sched = Schedule("two_qubit_gate_schedule")
-    sched.add_resources(
-        [ClockResource("q2.01", freq=5e6), ClockResource("q3.01", freq=5e7)]
-    )  # Clocks need to be manually added at this stage.
     sched.add(CZ(qC="q2", qT="q3"))
     return sched
 

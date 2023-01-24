@@ -32,7 +32,6 @@ from quantify_scheduler.operations.pulse_library import (
     IdlePulse,
     SquarePulse,
 )
-from quantify_scheduler.resources import ClockResource
 
 
 def single_qubit_schedule_circuit_level() -> Schedule:
@@ -119,9 +118,6 @@ def pulse_only_schedule() -> Schedule:
     port = "q0:res"
     clock = "q0.ro"
 
-    # manually specifying the clock should not be required in the future.
-    sched.add_resource(ClockResource(name=clock, freq=5e9))
-
     for acq_index in [0, 1, 2]:
         sched.add(IdlePulse(duration=200e-6))
         sched.add(
@@ -164,9 +160,6 @@ def hybrid_schedule_rabi() -> Schedule:
 
     port = "q0:mw"
     clock = "q0.01"
-
-    # manually specifying the clock should not be required in the future.
-    schedule.add_resource(ClockResource(name=clock, freq=6.4e9))
 
     for i, amp in enumerate(np.linspace(-1, 1, 11)):
         schedule.add(Reset("q0"), label=f"Reset {i}")

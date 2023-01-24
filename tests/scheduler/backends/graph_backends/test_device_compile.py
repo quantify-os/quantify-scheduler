@@ -56,7 +56,9 @@ def test_compiles_standard_schedules(
     assert isinstance(comp_sched, CompiledSchedule)
 
 
-def test_compile_in_setting_quantum_device(basic_schedule, mock_setup_basic_transmon):
+def test_compile_in_setting_quantum_device(
+    basic_schedule, mock_setup_basic_transmon_with_standard_params
+):
     """
     Test that compilation works in setting a default quantum device
     """
@@ -67,7 +69,7 @@ def test_compile_in_setting_quantum_device(basic_schedule, mock_setup_basic_tran
         backend.compile(schedule=basic_schedule)
 
     # Test setting a default quantum device and then not supplying config works
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     backend = SerialCompiler(
         "test_quantum_device",
         quantum_device=quantum_device,
@@ -76,11 +78,12 @@ def test_compile_in_setting_quantum_device(basic_schedule, mock_setup_basic_tran
     assert isinstance(compiled_sched, CompiledSchedule)
 
     # Test setting a default quantum device and then supplying different config works
-    close_instruments(mock_setup_basic_transmon)
+    close_instruments(mock_setup_basic_transmon_with_standard_params)
 
     quantum_device = QuantumDevice("different_quantum_device")
     q0 = BasicTransmonElement("q0")
     quantum_device.add_element(q0)
+    q0.clock_freqs.f01(6e9)
 
     compiled_sched = backend.compile(
         schedule=basic_schedule,
