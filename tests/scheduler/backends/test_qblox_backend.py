@@ -265,6 +265,29 @@ def hardware_cfg_latency_corrections_invalid():
 
 
 @pytest.fixture
+def hardware_cfg_qcm_rf():
+    return {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "instrument_type": "Cluster",
+            "ref": "internal",
+            "cluster0_module1": {
+                "instrument_type": "QCM_RF",
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "q1:mw",
+                            "clock": "q1.01",
+                            "interm_freq": 50e6,
+                        }
+                    ],
+                },
+            },
+        },
+    }
+
+
+@pytest.fixture
 def hardware_cfg_two_qubit_gate():
     return {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
@@ -1856,6 +1879,81 @@ def test_assign_frequencies_rf_downconverter(
         f"Modulation frequency of channel 1 {status} downconversion must be equal "
         f"to {expected_if1}, but it is equal to {actual_if1}"
     )
+
+
+@pytest.mark.parametrize("element_names", [["q5"]])
+def test_assign_attenuation(
+    mock_setup_basic_transmon_elements,
+    load_example_qblox_hardware_config,
+    element_names,
+):
+    """
+    Test function that checks if attenuation settings on a QRM-RF compile correctly.
+    Also checks if floats are correctly converted to ints (if they are close to ints).
+    """
+    sched = Schedule("readout_experiment")
+    sched.add(Measure(element_names[0]))
+
+    hardware_cfg = load_example_qblox_hardware_config
+    input_att = hardware_cfg["cluster0"]["cluster0_module4"]["complex_output_0"].get(
+        "input_att"
+    )
+    output_att = hardware_cfg["cluster0"]["cluster0_module4"]["complex_output_0"].get(
+        "output_att"
+    )
+
+    assert input_att is not None
+    assert output_att is not None
+
+    quantum_device = mock_setup_basic_transmon_elements["quantum_device"]
+    qubit = quantum_device.get_element(element_names[0])
+
+    qubit.clock_freqs.readout(5e9)
+    qubit.measure.pulse_amp(0.2)
+    qubit.measure.acq_delay(40e-9)
+
+    quantum_device.hardware_config(hardware_cfg)
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        schedule=sched, config=quantum_device.generate_compilation_config()
+    )
+    compiled_instructions = compiled_schedule["compiled_instructions"]
+    qrm_rf_program = compiled_instructions["cluster0"]["cluster0_module4"]
+
+    compiled_in0_att = qrm_rf_program["settings"]["in0_att"]
+    compiled_out0_att = qrm_rf_program["settings"]["out0_att"]
+
+    assert np.isclose(compiled_in0_att, input_att)
+    assert np.isclose(compiled_out0_att, output_att)
+
+    assert isinstance(compiled_in0_att, int)
+    assert isinstance(compiled_out0_att, int)
+
+
+def test_assign_attenuation_invalid_raises(
+    mock_setup_basic_transmon, hardware_cfg_qcm_rf
+):
+    """
+    Test that setting a float value (that is not close to an int) raises an error.
+    """
+    sched = Schedule("Single Gate Experiment")
+    sched.add(X("q1"))
+    sched.add_resource(ClockResource("q1.01", freq=5e9))
+
+    hardware_cfg = copy.deepcopy(hardware_cfg_qcm_rf)
+    hardware_cfg["cluster0"]["cluster0_module1"]["complex_output_0"][
+        "output_att"
+    ] = 10.3
+
+    mock_setup_basic_transmon["quantum_device"].hardware_config(hardware_cfg)
+    with pytest.raises(ValueError):
+        compiler = SerialCompiler(name="compiler")
+        _ = compiler.compile(
+            sched,
+            config=mock_setup_basic_transmon[
+                "quantum_device"
+            ].generate_compilation_config(),
+        )
 
 
 def test_markers(mock_setup_basic_transmon, load_example_qblox_hardware_config):
