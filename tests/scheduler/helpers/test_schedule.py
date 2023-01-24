@@ -460,19 +460,19 @@ def test_get_operation_end(empty_schedule: Schedule, create_schedule_with_pulse_
     assert end1_x90 == approx(ro_acquisition_delay + ro_integration_time + mw_duration)
 
 
-def test_schedule_timing_table(mock_setup_basic_transmon):
+def test_schedule_timing_table(mock_setup_basic_transmon_with_standard_params):
     schedule = Schedule("test_schedule_timing_table")
     schedule.add(Reset("q0"))
     schedule.add(X90("q0"))
     schedule.add(Measure("q0"))
 
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     compiler = SerialCompiler(name="compiler")
     schedule = compiler.compile(
         schedule=schedule, config=quantum_device.generate_compilation_config()
     )
 
-    q0 = mock_setup_basic_transmon["q0"]
+    q0 = mock_setup_basic_transmon_with_standard_params["q0"]
     X90_duration = q0.rxy.duration()
     measure_acq_delay = q0.measure.acq_delay()
     reset_duration = q0.reset.duration()

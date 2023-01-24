@@ -104,7 +104,7 @@ def test_missing_ref_op():
         sched.add(operation=CNOT(qC=q0, qT=q1), ref_op=ref_label_1)
 
 
-def test_compile_transmon_program(mock_setup_basic_transmon):
+def test_compile_transmon_program(mock_setup_basic_transmon_with_standard_params):
     sched = Schedule("Test schedule")
 
     # Define the resources
@@ -118,7 +118,10 @@ def test_compile_transmon_program(mock_setup_basic_transmon):
 
     compiler = SerialCompiler(name="compiler")
     compiler.compile(
-        sched, mock_setup_basic_transmon["quantum_device"].generate_compilation_config()
+        sched,
+        mock_setup_basic_transmon_with_standard_params[
+            "quantum_device"
+        ].generate_compilation_config(),
     )
 
 
@@ -215,10 +218,11 @@ def test_pulse_and_clock(device_compile_config_basic_transmon):
         )
     assert str(execinfo.value) == (
         f"Operation '{op_hash}' contains an unknown clock '{mystery_clock}'; "
-        f"ensure this resource has been added to the schedule."
+        f"ensure this resource has been added to the schedule "
+        f"or to the device config."
     )
 
-    sched.add_resources([ClockResource(mystery_clock, 6e9)])
+    sched.add_resource(ClockResource(mystery_clock, 6e9))
     compiler.compile(
         sched,
         config=device_compile_config_basic_transmon,
@@ -347,7 +351,6 @@ def test_compile_no_device_cfg_determine_absolute_timing(
     mocker, device_compile_config_basic_transmon
 ):
     sched = Schedule("One pulse schedule")
-    sched.add_resources([ClockResource("q0.01", 3.1e9)])
     sched.add(SquarePulse(amp=1 / 4, duration=12e-9, port="q0:mw", clock="q0.01"))
 
     mock = mocker.patch("quantify_scheduler.compilation.determine_absolute_timing")

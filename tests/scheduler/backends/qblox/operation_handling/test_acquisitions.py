@@ -607,6 +607,7 @@ def test_TriggerCount_acquisition(
     schedule = Schedule("test multiple measurements")
     meas0 = Measure("qe0", acq_protocol="TriggerCount")
     schedule.add(meas0)
+
     readout_clock0 = ClockResource(name="qe0.ge0", freq=50e6)
     schedule.add_resource(readout_clock0)
 
@@ -645,7 +646,7 @@ def test_triggerCount_append(make_qrm_component):
 
 
 def test_multiple_measurements(
-    mock_setup_basic_transmon_with_standard_params, make_cluster_component
+    mock_setup_basic_transmon, make_cluster_component
 ):  # pylint: disable=too-many-locals
     hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
@@ -669,7 +670,7 @@ def test_multiple_measurements(
     }
 
     # Setup objects needed for experiment
-    mock_setup = mock_setup_basic_transmon_with_standard_params
+    mock_setup = mock_setup_basic_transmon
     ic_cluster0 = make_cluster_component("cluster0")
     instr_coordinator = mock_setup["instrument_coordinator"]
     instr_coordinator.add_component(ic_cluster0)
@@ -679,6 +680,8 @@ def test_multiple_measurements(
 
     q0 = mock_setup["q0"]
     q1 = mock_setup["q1"]
+    q0.clock_freqs.readout(50e6)
+    q1.clock_freqs.readout(50e6)
 
     # Define experiment schedule
     schedule = Schedule("test multiple measurements")
@@ -686,10 +689,6 @@ def test_multiple_measurements(
     meas1 = Measure("q1", acq_protocol="Trace")
     schedule.add(meas0)
     schedule.add(meas1)
-    readout_clock0 = ClockResource(name="q0.ro", freq=50e6)
-    readout_clock1 = ClockResource(name="q1.ro", freq=50e6)
-    schedule.add_resource(readout_clock0)
-    schedule.add_resource(readout_clock1)
 
     # Change acq delay, duration and channel
     q0.measure.acq_delay(1e-6)
@@ -1146,7 +1145,6 @@ def test_mix_lo_flag(
     # Define experiment schedule
     schedule = Schedule("test mix_lo flag")
     schedule.add(SquarePulse(amp=0.2, duration=1e-6, port="q0:res", clock="q0.ro"))
-    schedule.add_resource(ClockResource(name="q0.ro", freq=70e6))
 
     # Generate compiled schedule where mix_lo is true
     compiler = SerialCompiler(name="compiler")
@@ -1160,14 +1158,14 @@ def test_mix_lo_flag(
         schedule=schedule, config=quantum_device.generate_compilation_config()
     )
 
-    # Assert LO freq got set to 20e6 if mix_lo is true.
+    # Assert LO freq got set if mix_lo is true.
     assert (
         compiled_sched_mix_lo_true.compiled_instructions["generic"]["lo0.frequency"]
-        == 20e6
+        == 7.95e9
     )
-    # Assert LO freq got set to 70e6 if mix_lo is false.
+    # Assert LO freq got set if mix_lo is false.
     assert (
         compiled_sched_mix_lo_false.compiled_instructions["generic"]["lo0.frequency"]
-        == 70e6
+        == 8e9
     )
     instr_coordinator.remove_component("ic_cluster0")
