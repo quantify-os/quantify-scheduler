@@ -45,14 +45,19 @@ class MyICC(base_component.InstrumentCoordinatorComponentBase):
         pass
 
 
+@pytest.fixture(scope="function", name="component_names")
+def fixture_component_names() -> int:
+    return [f"dev{i}" for i in range(3)]
+
+
 # creates a few dummy components avialable to be used in each test
 @pytest.fixture(scope="function", name="dummy_components")
 def fixture_dummy_components(
-    mocker, request
+    mocker, request, component_names
 ) -> base_component.InstrumentCoordinatorComponentBase:
 
     # Create a QCoDeS intrument for realistic emulation
-    instruments = [Instrument(f"dev{i}") for i in range(3)]
+    instruments = [Instrument(name) for name in component_names]
     components = []
 
     for instrument in instruments:
@@ -76,9 +81,15 @@ def fixture_dummy_components(
 
 
 @pytest.fixture(scope="function", name="instrument_coordinator")
-def fixture_instrument_coordinator(request) -> InstrumentCoordinator:
+def fixture_instrument_coordinator(request, component_names) -> InstrumentCoordinator:
     instrument_coordinator = InstrumentCoordinator(
         "ic_0000", add_default_generic_icc=False
+    )
+
+    # Mock compiled instructions to make sure data is acquired from components,
+    # because in these tests we do not create a compiled schedule.
+    instrument_coordinator._compiled_schedule = dict(
+        compiled_instructions={name: {} for name in component_names}
     )
 
     def cleanup_tmp():
@@ -92,9 +103,17 @@ def fixture_instrument_coordinator(request) -> InstrumentCoordinator:
 
 
 @pytest.fixture(scope="function", name="zi_instrument_coordinator")
-def fixture_zi_instrument_coordinator(request) -> ZIInstrumentCoordinator:
+def fixture_zi_instrument_coordinator(
+    request, component_names
+) -> ZIInstrumentCoordinator:
     zi_instrument_coordinator = ZIInstrumentCoordinator(
         "ic_zi_0000", add_default_generic_icc=False
+    )
+
+    # Mock compiled instructions to make sure data is acquired from components,
+    # because in these tests we do not create a compiled schedule.
+    zi_instrument_coordinator._compiled_schedule = dict(
+        compiled_instructions={name: {} for name in component_names}
     )
 
     def cleanup_tmp():
@@ -289,8 +308,10 @@ def test_retrieve_acquisition(
     # Arrange
     component1 = dummy_components.pop(0)
     component2 = dummy_components.pop(0)
+    component3 = dummy_components.pop(0)
     instrument_coordinator.add_component(component1)
     instrument_coordinator.add_component(component2)
+    instrument_coordinator.add_component(component3)
 
     component1.retrieve_acquisition.return_value = {(0, 0): [1, 2, 3, 4]}
     component2.retrieve_acquisition.return_value = None
@@ -301,6 +322,7 @@ def test_retrieve_acquisition(
     # Assert
     component1.retrieve_acquisition.assert_called()
     component2.retrieve_acquisition.assert_called()
+    component3.retrieve_acquisition.assert_called()
     assert {(0, 0): [1, 2, 3, 4]} == data
 
 
@@ -310,8 +332,10 @@ def test_reacquire_acquisition_successful(
     # Arrange
     component1 = dummy_components.pop(0)
     component2 = dummy_components.pop(0)
+    component3 = dummy_components.pop(0)
     zi_instrument_coordinator.add_component(component1)
     zi_instrument_coordinator.add_component(component2)
+    zi_instrument_coordinator.add_component(component3)
 
     component1.retrieve_acquisition.return_value = {(0, 0): [1, 2, 3, 4]}
     component2.retrieve_acquisition.return_value = None
@@ -335,8 +359,10 @@ def test_reacquire_acquisition_failed(
     # Arrange
     component1 = dummy_components.pop(0)
     component2 = dummy_components.pop(0)
+    component3 = dummy_components.pop(0)
     zi_instrument_coordinator.add_component(component1)
     zi_instrument_coordinator.add_component(component2)
+    zi_instrument_coordinator.add_component(component3)
 
     component1.retrieve_acquisition.return_value = {(0, 0): [1, 2, 3, 4]}
     component2.retrieve_acquisition.return_value = None
