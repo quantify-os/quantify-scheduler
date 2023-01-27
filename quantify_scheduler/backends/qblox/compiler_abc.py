@@ -1122,8 +1122,10 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 continue
             if io not in self.static_hw_properties.valid_ios:
                 raise ValueError(
-                    f"Invalid hardware config. '{io}' of {self.name} is not a "
-                    f"valid name of an input/output.\n\nSupported names:\n"
+                    f"Invalid hardware config: '{io}' of "
+                    f"{self.name} ({self.__class__.__name__}) "
+                    f"is not a valid name of an input/output."
+                    f"\n\nSupported names for {self.__class__.__name__}:\n"
                     f"{self.static_hw_properties.valid_ios}"
                 )
 
@@ -1179,7 +1181,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         if len(sequencers) > self.static_hw_properties.max_sequencers:
             raise ValueError(
                 "Number of simultaneously active port-clock combinations exceeds "
-                "number of sequencers."
+                "number of sequencers. "
                 f"Maximum allowed for {self.name} ({self.__class__.__name__}) is "
                 f"{self.static_hw_properties.max_sequencers}!"
             )
@@ -1330,8 +1332,8 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 # The next code block is for backwards compatibility.
                 in_gain = io_mapping.get("input_gain", None)
                 if in_gain is None:
-                    in0_gain = io_mapping.get("input_gain0", None)
-                    in1_gain = io_mapping.get("input_gain1", None)
+                    in0_gain = io_mapping.get("input_gain_0", None)
+                    in1_gain = io_mapping.get("input_gain_1", None)
                 else:
                     in0_gain = in_gain
                     in1_gain = in_gain
@@ -1668,13 +1670,15 @@ class QbloxRFModule(QbloxBaseModule):
         if sequencer.clock not in resources:
             return
 
+        if sequencer.connected_outputs is None:
+            return
+
         clock_freq = resources[sequencer.clock]["freq"]
 
         # Now we have to identify the LO the sequencer is outputting to
         # We can do this by first checking the Sequencer-Output correspondence
         # And then use the fact that LOX is connected to OutputX
 
-        self._validate_io_mode(sequencer)
         for real_output in sequencer.connected_outputs:
             if real_output % 2 != 0:
                 # We will only use real output 0 and 2,
@@ -1735,7 +1739,7 @@ class QbloxRFModule(QbloxBaseModule):
                 return int(value)
 
         self._settings.in0_att = _convert_to_int(
-            self.hw_mapping.get("complex_output_0", {}).get("input_att", None),
+            self.hw_mapping.get("complex_input_0", {}).get("input_att", None),
             label="in0_att",
         )
         self._settings.out0_att = _convert_to_int(
@@ -1746,11 +1750,3 @@ class QbloxRFModule(QbloxBaseModule):
             self.hw_mapping.get("complex_output_1", {}).get("output_att", None),
             label="out1_att",
         )
-
-    @classmethod
-    def _validate_io_mode(cls, sequencer: Sequencer):
-        if sequencer.io_mode != "complex":
-            raise ValueError(
-                f"Attempting to use {cls.__name__} in real "
-                f"mode, but this is not supported for Qblox RF modules."
-            )

@@ -766,66 +766,67 @@ def test_construct_sequencers_repeated_portclocks_error(
 
 
 @pytest.mark.parametrize(
-    "element_names", [[f"q{i}" for i in range(constants.NUMBER_OF_SEQUENCERS_QCM + 1)]]
+    "element_names, io",
+    [
+        (
+            [f"q{i}" for i in range(7)],
+            "complex_output_0",
+        ),
+        (["q0"], "real_output_0"),
+    ],
 )
-def test_construct_sequencers_excess_error(
+def test_construct_sequencers_exceeds_seq__invalid_io(
     mock_setup_basic_transmon_elements,
     make_basic_multi_qubit_schedule,
     element_names,
+    io,
 ):
     hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "qcm0": {
-            "instrument_type": "Pulsar_QCM_RF",
+        "cluster0": {
+            "instrument_type": "Cluster",
             "ref": "internal",
-            "complex_output_0": {
-                "portclock_configs": [
-                    {"port": f"q{i}:mw", "clock": f"q{i}.01", "interm_freq": 50e6}
-                    for i in range(len(element_names))
-                ]
+            "cluster0_module1": {
+                "instrument_type": "QCM_RF",
+                f"{io}": {
+                    "portclock_configs": [
+                        {
+                            "port": f"{qubit}:mw",
+                            "clock": f"{qubit}.01",
+                            "interm_freq": 50e6,
+                        }
+                        for qubit in element_names
+                    ]
+                },
             },
         },
     }
 
-    test_module = QcmRfModule(
-        parent=None,
-        name="tester",
-        total_play_time=1,
-        hw_mapping=hardware_cfg["qcm0"],
-    )
-
     sched = make_basic_multi_qubit_schedule(element_names)
-    sched.add_resources(
-        [
-            ClockResource("q0.01", 3.1e9),
-            ClockResource("q1.01", 3.0e9),
-            ClockResource("q2.01", 5.2e9),
-            ClockResource("q3.01", 5.0e9),
-            ClockResource("q4.01", 4.2e9),
-            ClockResource("q5.01", 3.1e9),
-            ClockResource("q6.01", 5.2e9),
-        ]
-    )
+    sched.add_resources([ClockResource(f"{qubit}.01", 5e9) for qubit in element_names])
+
+    quantum_device = mock_setup_basic_transmon_elements["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
 
     compiler = SerialCompiler(name="compiler")
-    sched = compiler.compile(
-        schedule=sched,
-        config=mock_setup_basic_transmon_elements[
-            "quantum_device"
-        ].generate_compilation_config(),
-    )
-    assign_pulse_and_acq_info_to_devices(
-        schedule=sched,
-        hardware_cfg=hardware_cfg,
-        device_compilers={"qcm0": test_module},
-    )
+    with pytest.raises(ValueError) as error:
+        sched = compiler.compile(
+            schedule=sched,
+            config=quantum_device.generate_compilation_config(),
+        )
 
-    with pytest.raises(ValueError) as exc:
-        test_module.sequencers = test_module._construct_sequencers()
+    name = "cluster0_module1"
+    module_type = QcmRfModule
+    valid_ios = [f"complex_output_{i}" for i in [0, 1]]
+
     assert (
-        "Number of simultaneously active port-clock combinations exceeds "
-        + "number of sequencers."
-        in str(exc.value)
+        str(error.value.args[0])
+        == f"Number of simultaneously active port-clock combinations exceeds number of "
+        f"sequencers. Maximum allowed for {name} ({module_type.__name__}) is {6}!"
+        or str(error.value.args[0])
+        == f"Invalid hardware config: '{io}' of {name} ({module_type.__name__}) is not a "
+        f"valid name of an input/output."
+        f"\n\nSupported names for {module_type.__name__}:\n{valid_ios}"
     )
 
 
@@ -1900,7 +1901,7 @@ def test_assign_attenuation(
     sched.add(Measure(element_names[0]))
 
     hardware_cfg = load_example_qblox_hardware_config
-    input_att = hardware_cfg["cluster0"]["cluster0_module4"]["complex_output_0"].get(
+    input_att = hardware_cfg["cluster0"]["cluster0_module4"]["complex_input_0"].get(
         "input_att"
     )
     output_att = hardware_cfg["cluster0"]["cluster0_module4"]["complex_output_0"].get(

@@ -4,6 +4,7 @@
 
 ### Breaking changes
 - Qblox ICCs - Replace `"acq_mapping"` by `"trace_acq_channel"` in the compiled schedule (!515)
+- Qblox backend - Replace `"input_gain<n>"` by `"input_gain_<n>"` and `"input_att"` is the property of `"complex_input"` (!585)
 
 ### Merged branches and closed issues
 - NV centers - Test for spectroscopy schedule temporarily disabled (!571).
