@@ -672,6 +672,7 @@ def test_multiple_measurements(
     # Setup objects needed for experiment
     mock_setup = mock_setup_basic_transmon
     ic_cluster0 = make_cluster_component("cluster0")
+
     instr_coordinator = mock_setup["instrument_coordinator"]
     instr_coordinator.add_component(ic_cluster0)
 
@@ -713,6 +714,95 @@ def test_multiple_measurements(
     assert len(data) == 2
     assert data[AcquisitionIndexing(acq_channel=1, acq_index=0)][0].size == 3000
     assert math.isnan(data[AcquisitionIndexing(acq_channel=0, acq_index=0)][0][0])
+
+    instr_coordinator.remove_component("ic_cluster0")
+
+
+@pytest.mark.parametrize(
+    "qubit_to_overwrite",
+    ["q1", "q2"],
+)
+def test_same_index_in_module_and_cluster_measurement_error(
+    mock_setup_basic_transmon_with_standard_params,
+    make_cluster_component,
+    qubit_to_overwrite,
+):  # pylint: disable=too-many-locals
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module3": {
+                "instrument_type": "QRM",
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6},
+                        {"port": "q1:res", "clock": "q1.ro", "interm_freq": 50e6},
+                    ],
+                },
+            },
+            "cluster0_module4": {
+                "instrument_type": "QRM_RF",
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {"port": "q2:res", "clock": "q2.ro", "interm_freq": 50e6},
+                    ],
+                },
+            },
+        },
+    }
+
+    # Setup objects needed for experiment
+    mock_setup = mock_setup_basic_transmon_with_standard_params
+    ic_cluster0 = make_cluster_component("cluster0")
+    instr_coordinator = mock_setup["instrument_coordinator"]
+    instr_coordinator.add_component(ic_cluster0)
+
+    quantum_device = mock_setup["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+
+    # Define experiment schedule
+    schedule = Schedule("test multiple measurements")
+    schedule.add(Measure("q0", acq_protocol="SSBIntegrationComplex", acq_index=0))
+    schedule.add(
+        Measure(qubit_to_overwrite, acq_protocol="SSBIntegrationComplex", acq_index=0)
+    )
+    schedule.add_resource(ClockResource(name="q0.ro", freq=50e6))
+    schedule.add_resource(ClockResource(name="q1.ro", freq=50e6))
+
+    # Change acq delay, duration and channel
+    q0 = mock_setup["q0"]
+    q0.measure.acq_delay(1e-6)
+    q0.measure.integration_time(5e-6)
+    q1 = mock_setup["q1"]
+    q1.measure.acq_delay(1e-6)
+    q1.measure.integration_time(5e-6)
+    q2 = mock_setup["q2"]
+    q2.measure.acq_delay(600e-9)
+    q2.clock_freqs.readout(7404000000.0)
+    q2.measure.integration_time(5e-6)
+
+    # Generate compiled schedule
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    # Upload schedule and run experiment
+    instr_coordinator.prepare(compiled_sched)
+    instr_coordinator.start()
+
+    with pytest.raises(RuntimeError) as exc:
+        instr_coordinator.retrieve_acquisition()
+
+    # assert
+    assert (
+        exc.value.args[0] == "Attempting to gather acquisitions. "
+        "Acquisition acq_channel=0, acq_idx=0 is already stored, "
+        "make sure for an acq_channel, acq_index corresponds to not more than one acquisition."
+    )
+
+    instr_coordinator.stop()
 
     instr_coordinator.remove_component("ic_cluster0")
 

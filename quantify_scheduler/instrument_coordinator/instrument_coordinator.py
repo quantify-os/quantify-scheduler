@@ -7,6 +7,7 @@ from typing import Any, Dict, Tuple
 
 import warnings
 
+import copy
 import numpy as np
 from qcodes.instrument import base as qcodes_base
 from qcodes.instrument import parameter
@@ -14,6 +15,9 @@ from qcodes.utils import validators
 
 from quantify_scheduler import CompiledSchedule
 from quantify_scheduler.instrument_coordinator.components import base, generic
+from quantify_scheduler.instrument_coordinator.utility import (
+    check_already_existing_acq_index,
+)
 
 
 class InstrumentCoordinator(qcodes_base.Instrument):
@@ -100,6 +104,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             self.add_component(
                 generic.GenericInstrumentCoordinatorComponent(generic.DEFAULT_NAME)
             )
+        self._compiled_schedule = {}
 
     @property
     def last_schedule(self) -> CompiledSchedule:
@@ -221,16 +226,17 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         TypeError
             If the schedule provided is not a valid :class:`.CompiledSchedule`.
         """
-        if not CompiledSchedule.is_valid(compiled_schedule):
+        self._compiled_schedule = copy.deepcopy(compiled_schedule)
+        if not CompiledSchedule.is_valid(self._compiled_schedule):
             raise TypeError(
-                f"{compiled_schedule} is not a valid {CompiledSchedule.__name__}"
+                f"{self._compiled_schedule} is not a valid {CompiledSchedule.__name__}"
             )
 
         # Adds a reference to the last prepared schedule this can be accessed through
         # the self.last_schedule property.
-        self._last_schedule = compiled_schedule
+        self._last_schedule = self._compiled_schedule
 
-        compiled_instructions = compiled_schedule["compiled_instructions"]
+        compiled_instructions = self._compiled_schedule["compiled_instructions"]
         # Compiled instructions are expected to follow the structure of a dict
         # with keys corresponding to instrument names (InstrumentCoordinatorComponent's)
         # and values containing instructions in the format specific to that type
@@ -294,11 +300,15 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         # Temporary. Will probably be replaced by an xarray object
         # See quantify-core#187, quantify-core#233, quantify-scheduler#36
         acquisitions: Dict[Tuple[int, int], Any] = {}
-        for instr_name in self.components():
-            instrument = self.find_instrument(instr_name)
-            acqs = instrument.retrieve_acquisition()
-            if acqs is not None:
-                acquisitions.update(acqs)
+        compiled_instructions = self._compiled_schedule.get("compiled_instructions", {})
+        for instrument_name in compiled_instructions:
+            component_acquisitions = self.get_component(
+                base.instrument_to_component_name(instrument_name)
+            ).retrieve_acquisition()
+            if component_acquisitions is not None:
+                for index in component_acquisitions:
+                    check_already_existing_acq_index(index, acquisitions)
+                acquisitions.update(component_acquisitions)
         return acquisitions
 
     def wait_done(self, timeout_sec: int = 10) -> None:
