@@ -1,10 +1,10 @@
 Recent interface changes
 ========================
 
-Unreleased: Gain and attenuation parameters
--------------------------------------------
+0.11.0: Gain and attenuation parameters
+---------------------------------------
 
-Ability added to set input/output gain/attenuation parameters through the hardware configuration for Qblox hardware.
+Ability to set input/output gain/attenuation parameters via the Qblox hardware configuration file.
 
 .. note::
    ``input_gain`` introduced in version 0.9.0 is now renamed to ``input_gain_<n>``.
