@@ -454,24 +454,24 @@ def test_profiling(mock_setup_basic_transmon_with_standard_params, tmp_test_data
         "frequency": qubit.clock_freqs.f01(),
         "qubit": "q0",
     }
-    prof_gettable = ProfiledScheduleGettable(
+    profiled_gettable = ProfiledScheduleGettable(
         quantum_device=quantum_device,
         schedule_function=rabi_sched,
         schedule_kwargs=schedule_kwargs,
     )
 
-    prof_gettable.initialize()
-    instr_coordinator = (
-        prof_gettable.quantum_device.instr_instrument_coordinator.get_instr()
+    profiled_gettable.initialize()
+    profiled_ic = (
+        profiled_gettable.quantum_device.instr_instrument_coordinator.get_instr()
     )
-    instr_coordinator.start()
-    instr_coordinator.wait_done()
-    instr_coordinator.retrieve_acquisition()
-    instr_coordinator.stop()
-    prof_gettable.close()
+    profiled_ic.start()
+    profiled_ic.wait_done()
+    profiled_ic.retrieve_acquisition()
+    profiled_ic.stop()
+    profiled_gettable.close()
 
     # Test if all steps have been measured and have a value > 0
-    log = prof_gettable.log_profile()
+    log = profiled_gettable.log_profile()
     TestCase().assertAlmostEqual(log["schedule"][0], 0.2062336)
     verif_keys = [
         "schedule",
@@ -490,7 +490,7 @@ def test_profiling(mock_setup_basic_transmon_with_standard_params, tmp_test_data
     obj = {"test": ["test"]}
     path = tmp_test_data_dir
     filename = "test"
-    prof_gettable.log_profile(
+    profiled_gettable.log_profile(
         obj=obj, path=path, filename=filename, indent=4, separators=(",", ": ")
     )
     assert os.path.getsize(os.path.join(path, filename)) > 0
@@ -498,8 +498,8 @@ def test_profiling(mock_setup_basic_transmon_with_standard_params, tmp_test_data
     # Test plot function
     path = tmp_test_data_dir
     filename = "average_runtimes.pdf"
-    prof_gettable.plot_profile(path=path)
-    assert prof_gettable.plot is not None
+    profiled_gettable.plot_profile(path=path)
+    assert profiled_gettable.plot is not None
     assert os.path.getsize(os.path.join(path, filename)) > 0
 
 
