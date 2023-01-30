@@ -22,7 +22,23 @@ with open("requirements_setup.txt") as setup_requirements_file:
 with open("requirements_dev.txt") as test_requirements_file:
     test_requirements = test_requirements_file.read().splitlines()
 
-version = "0.10.1"
+
+def get_version_and_cmdclass(pkg_path):
+    """Load version.py module without importing the whole package.
+
+    Template code from miniver
+    """
+    import os
+    from importlib.util import module_from_spec, spec_from_file_location
+
+    spec = spec_from_file_location("version", os.path.join(pkg_path, "_version.py"))
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.__version__, module.get_cmdclass(pkg_path)
+
+
+version, cmdclass = get_version_and_cmdclass(r"quantify_scheduler")
+
 
 setup(
     author="The Quantify consortium consisting of Qblox and Orange Quantum Systems",
@@ -54,5 +70,6 @@ setup(
     tests_require=test_requirements,
     url="https://gitlab.com/quantify-os/quantify-scheduler",
     version=version,
+    cmdclass=cmdclass,
     zip_safe=False,
 )

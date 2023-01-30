@@ -17,12 +17,10 @@
       - :class:`!quantify_scheduler.Resource`
 """
 
-__version__ = "0.10.1"
-
-
 from . import structure
+from ._version import __version__
 from .operations.operation import Operation
 from .resources import Resource
-from .schedules.schedule import CompiledSchedule, Schedule, Schedulable
+from .schedules.schedule import CompiledSchedule, Schedulable, Schedule
 
 __all__ = ["Schedule", "CompiledSchedule", "Operation", "Resource", "structure"]
