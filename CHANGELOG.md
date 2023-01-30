@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.11.0 (2023-02-03)
 
 ### Breaking changes
 - Qblox ICCs - Replace `"acq_mapping"` by `"trace_acq_channel"` in the compiled schedule (!515)
@@ -83,7 +83,7 @@ For help in migrating from deprecated methods, see [Quantify Deprecated Code Sug
 - Tests - Refactored tests to remove duplicated `temp_dir` setup, and only use `tmp_test_data_dir` fixture (#370,  !525)
 - Tests - Update tests to use `mock_setup_basic_transmon_with_standard_params` where needed (#369, !522)
 - Tests - Tests refactoring, move to `mock_setup_basic_transmon_with_standard_params` and replace `qcompile` by `SerialCompiler` (!516)
-- Updated pulse_diagram_matplotlib to be compatible with future quantify-core release (!517) 
+- Updated pulse_diagram_matplotlib to be compatible with future quantify-core release (!517)
 - Validation - Replaced most of the asserts with raising proper exceptions so that they are raised in production environment too (#342, !499)
 
 ## 0.9.0 (2022-10-06)
@@ -98,7 +98,7 @@ For help in migrating from deprecated methods, see [Quantify Deprecated Code Sug
     - `remove_component` -> `remove_element`
   - `ScheduleBase`
     - `plot_circuit_diagram_mpl` -> `plot_circuit_diagram`
-    - `plot_pulse_diagram_mpl` -> `plot_pulse_diagram`  
+    - `plot_pulse_diagram_mpl` -> `plot_pulse_diagram`
 - Compilation - Compilation is now a graph. (#305, !407)
 - Operations - Allow moving to `qcodes` >=0.34 (#300, !473)
     - Disallow `"_"` in `DeviceElement` names to comply with qcodes version 0.34
