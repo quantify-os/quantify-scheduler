@@ -2,38 +2,39 @@
 
 ## 0.11.0 (2023-02-03)
 
+For help in migrating from deprecated methods, see [Quantify Deprecated Code Suggestions](examples/deprecated.md).
+
 ### Breaking changes
+
 - Qblox ICCs - Replace `"acq_mapping"` by `"trace_acq_channel"` in the compiled schedule (!515)
 - Qblox backend - Replace `"input_gain<n>"` by `"input_gain_<n>"` and `"input_att"` is the property of `"complex_input"` (!585)
 
 ### Merged branches and closed issues
-- NV centers - Test for spectroscopy schedule temporarily disabled (!571).
+
 - Acquisition - Data obtained with TriggerCount acquisition is formatted correctly (!530).
-- Acquisition - Follow-up for !530: Fix wrong assumption in input format (!564).
+- Acquisition - Fix wrong assumption in input format (!564, follow-up for !530).
+- Acquisition - Raise an exception if user tries to use same acquisition index and channel for different operations, and only extract data from used modules (!573)
+- Compilation - Can optionally provide a `QuantumDevice` to `QuantifyCompiler`. This will be used as default `CompilationConfig` in `QuantifyCompiler.compile()` (!535)
+- Compilation - Fix clock not being added to schedule from quantum device layer via new graph node `set_pulse_and_acquisition_clock` that verifies and sets clock frequency (!538, #371)
+- Deprecation - Refactored tests to remove deprecated `qcompile`, refactored to `SerialCompiler` (!529, #368)
+- Documentation - Sphinx build now compatible with qcodes==0.36.0 (!552)
+- Documentation - Removed deprecated code from the Compiling to Hardware Tutorial (!582)
 - NV centers - Dark ESR schedule combining all prior operations (!527)
 - NV centers - `BasicElectronicNVElement` parameters accept physics-motivated values (!551)
-- Documentation - Sphinx build now compatible with qcodes==0.36.0 (!552)
-- QBlox backend - Provide sequencer setting to reset AWG offset and AWG gain to a known value (default 0 for offset and 1 for gain) before starting experiment (#377, !544)
-- Compilation - Can optionally provide a `QuantumDevice` to `QuantifyCompiler`. This will be used as default `CompilationConfig` in `QuantifyCompiler.compile()` (!535)
-- NV centers - Avoid python warning when parsing docstring in nv_element (!562)
+- NV centers - Avoid python warning when parsing docstring in `nv_element.py` (!562)
 - QuantumDevice - `BasicTransmonElement` can now be serialized to json string and deserialized via ``__getstate__/__init__`` (!510)
+- Qblox backend - Add preparation of acquisition settings and accompanying datastructures for NV centers (!567)
+- Qblox backend - Provide sequencer setting to reset AWG offset and AWG gain to a known value (default 0 for offset and 1 for gain) before starting experiment (!544, #377)
 - Qblox Backend - Added method for gain configuration, overriding gain now raises ValueError (!533)
 - Qblox backend - add TriggerCount to `QRMAcquisitionManager` (!556)
-- Deprecation - Refactored tests to remove deprecated `qcompile`, refactored to `SerialCompiler` (!529, #368)
-- Qblox backend - Add preparation of acquisition settings and accompanying datastructures for NV centers (!567)
-- Waveforms - Fix `sudden_net_zero` waveform generation function misunderstands `amp_B` (!549, #390)
-- Acquisition - Raise an exception if user tries to use same acquisition index and channel for different operations, and only extract data from used modules (!573)
-- Compilation - Fix clock not being added to schedule from quantum device layer via new graph node `set_pulse_and_acquisition_clock` that verifies and sets clock frequency (!538,#371)
-- Schedule Functions - make experiment-related schedule functions available in `quantify_scheduler.schedules` (!572)
-- Tests - Removed unused `lo0` and added `ttl_acq_threshold` in `qblox_test_mapping_nv_centers.json` so that `TestNVDarkESRSched` suite passes (!579)
-- Documentation - Removed deprecated code from the Compiling to Hardware Tutorial (!582)
 - Qblox backend - Typecast attenuations to `int`s before assigning them (!570)
 - Visualization - Make box separation in circuit_diagram_matplotlib always equal to one (!589)
 - Qblox backend - Remove `mix_lo` from `SequencerSettings` (!896)
+- Schedule Functions - Make experiment-related schedule functions available in `quantify_scheduler.schedules` (!572)
+- Tests - Removed unused `lo0` and added `ttl_acq_threshold` in `qblox_test_mapping_nv_centers.json` so that `TestNVDarkESRSched` suite passes (!579, follow-up to !571)
+- Waveforms - Fix `sudden_net_zero` waveform generation function misunderstands `amp_B` (!549, #390)
 
 ## 0.10.1 (2022-12-20)
-
-For help in migrating from deprecated methods, see [Quantify Deprecated Code Suggestions](examples/deprecated.md).
 
 ### Merged branches and closed issues
 
