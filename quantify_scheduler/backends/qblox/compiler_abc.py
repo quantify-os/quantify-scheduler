@@ -7,7 +7,6 @@ from __future__ import annotations
 import dataclasses
 import json
 import logging
-import numpy as np
 from abc import ABC, ABCMeta, abstractmethod
 from collections import defaultdict, deque
 from functools import partial
@@ -657,13 +656,13 @@ class Sequencer:
                     f" clock {self.clock}, which corresponds to {self.name} of "
                     f"{self.parent.name}."
                 )
-            if len(acq_indices) != max(acq_indices) + 1:
+            if len(acq_indices) < max(acq_indices) + 1:
                 raise ValueError(
                     f"Please make sure the used bins increment by 1 starting from "
                     f"0. Found: {max(acq_indices)} as the highest bin out of "
                     f"{len(acq_indices)} for channel {acq_channel}, indicating "
                     f"an acquisition_index was skipped. "
-                    f"Problem occurred for port {self.port} with clock {self.clock},"
+                    f"Problem occurred for port {self.port} with clock {self.clock}, "
                     f"which corresponds to {self.name} of {self.parent.name}."
                 )
 

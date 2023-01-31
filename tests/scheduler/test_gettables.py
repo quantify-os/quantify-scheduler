@@ -32,7 +32,6 @@ from quantify_scheduler.instrument_coordinator.components.qblox import (
 from quantify_scheduler.schedules.schedule import AcquisitionMetadata, Schedule
 from quantify_scheduler.schedules.spectroscopy_schedules import (
     heterodyne_spec_sched,
-    nco_heterodyne_spec_sched,
     nv_dark_esr_sched,
 )
 from quantify_scheduler.schedules.timedomain_schedules import (
@@ -42,9 +41,6 @@ from quantify_scheduler.schedules.timedomain_schedules import (
     t1_sched,
 )
 from quantify_scheduler.schedules.trace_schedules import trace_schedule
-from tests.scheduler.instrument_coordinator.components.test_qblox import (
-    make_cluster_component,
-)
 
 
 @pytest.mark.parametrize("num_channels, real_imag", [(1, True), (2, False), (10, True)])
@@ -139,94 +135,6 @@ def test_ScheduleGettableSingleChannel_iterative_heterodyne_spec(
     np.testing.assert_array_equal(dset.x0, freqs)
     np.testing.assert_array_equal(dset.y0, abs(exp_data))
     np.testing.assert_array_equal(dset.y1, np.angle(exp_data, deg=True))
-
-
-def test_nco_heterodyne_spec(
-    mock_setup_basic_transmon_with_standard_params, make_cluster_component, mocker
-):
-    hardware_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            "ref": "internal",
-            "instrument_type": "Cluster",
-            "cluster0_module4": {
-                "instrument_type": "QRM_RF",
-                "complex_output_0": {
-                    "lo_freq": 5e9,
-                    "portclock_configs": [
-                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": None},
-                    ],
-                },
-            },
-        },
-    }
-
-    ic_cluster0 = make_cluster_component("cluster0")
-    instr_coordinator = mock_setup_basic_transmon_with_standard_params[
-        "instrument_coordinator"
-    ]
-    instr_coordinator.add_component(ic_cluster0)
-
-    meas_ctrl = mock_setup_basic_transmon_with_standard_params["meas_ctrl"]
-    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    quantum_device.hardware_config(hardware_cfg)
-
-    qubit = quantum_device.get_element("q0")
-
-    # manual parameter for testing purposes
-    ro_freq = ManualParameter("ro_freq", unit="Hz")
-    ro_freq.batched = True
-
-    freqs = np.linspace(start=4.5e9, stop=5.5e9, num=11)
-
-    schedule_kwargs = {
-        "pulse_amp": qubit.measure.pulse_amp(),
-        "pulse_duration": qubit.measure.pulse_duration(),
-        "frequencies": freqs,
-        "acquisition_delay": qubit.measure.acq_delay(),
-        "integration_time": qubit.measure.integration_time(),
-        "port": qubit.ports.readout(),
-        "clock": qubit.name + ".ro",
-        "init_duration": qubit.reset.duration(),
-    }
-
-    # Prepare the mock data the spectroscopy schedule
-    num_channels = 1
-    num_indices = len(freqs)
-    mock_data = {
-        AcquisitionIndexing(i, j): (4815, 162342)
-        for i in range(num_channels)
-        for j in range(num_indices)
-    }
-
-    mocker.patch.object(
-        mock_setup_basic_transmon_with_standard_params["instrument_coordinator"],
-        "retrieve_acquisition",
-        return_value=mock_data,
-    )
-
-    # Configure the gettable
-    spec_gettable = ScheduleGettable(
-        quantum_device=quantum_device,
-        schedule_function=nco_heterodyne_spec_sched,
-        schedule_kwargs=schedule_kwargs,
-        real_imag=False,
-        batched=True,
-    )
-    assert spec_gettable.is_initialized is False
-
-    meas_ctrl.settables(ro_freq)
-    meas_ctrl.setpoints(freqs)
-    meas_ctrl.gettables(spec_gettable)
-    label = f"Heterodyne spectroscopy {qubit.name}"
-    dset = meas_ctrl.run(label)
-    assert spec_gettable.is_initialized is True
-
-    exp_data = np.asarray([162342] * len(freqs))
-    # Assert that the data is coming out correctly.
-    # np.testing.assert_array_equal(dset.x0, freqs)
-    # np.testing.assert_array_equal(dset.y0, abs(exp_data))
-    # np.testing.assert_array_equal(dset.y1, np.angle(exp_data, deg=True))
 
 
 # test a batched case

@@ -2,15 +2,25 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
+import numpy as np
+from qcodes.instrument.parameter import ManualParameter
+
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.compilation import (
     determine_absolute_timing,
 )
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
+from quantify_scheduler.enums import BinMode
+from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.schedules import spectroscopy_schedules as sps
+from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 
-from .compiles_all_backends import _CompilesAllBackends
+from tests.scheduler.instrument_coordinator.components.test_qblox import (
+    make_cluster_component,
+)
+from tests.scheduler.schedules.compiles_all_backends import _CompilesAllBackends
+from tests.scheduler.test_gettables import _reshape_array_into_acq_return_type
 
 
 class TestHeterodyneSpecSchedule(_CompilesAllBackends):
@@ -174,3 +184,92 @@ class TestNVDarkESRSched:
             config=quantum_device.generate_compilation_config(),
         )
         assert not schedule.compiled_instructions == {}
+
+
+def test_nco_heterodyne_spec_sched__qblox_backend(
+    mock_setup_basic_transmon_with_standard_params, make_cluster_component, mocker
+):
+    cluster_name = "cluster0"
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        f"{cluster_name}": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            f"{cluster_name}_module4": {
+                "instrument_type": "QRM_RF",
+                "complex_output_0": {
+                    "lo_freq": 5e9,
+                    "portclock_configs": [
+                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": None},
+                    ],
+                },
+            },
+        },
+    }
+
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+
+    ic_cluster0 = make_cluster_component(cluster_name)
+    ic = mock_setup_basic_transmon_with_standard_params["instrument_coordinator"]
+    ic.add_component(ic_cluster0)
+
+    # Manual parameter for testing purposes
+    ro_freq = ManualParameter("ro_freq", unit="Hz")
+    ro_freq.batched = True
+    ro_freqs = np.linspace(start=4.5e9, stop=5.5e9, num=11)
+
+    # Configure the gettable
+    qubit = quantum_device.get_element("q0")
+    schedule_kwargs = {
+        "pulse_amp": qubit.measure.pulse_amp(),
+        "pulse_duration": qubit.measure.pulse_duration(),
+        "frequencies": ro_freqs,
+        "acquisition_delay": qubit.measure.acq_delay(),
+        "integration_time": qubit.measure.integration_time(),
+        "port": qubit.ports.readout(),
+        "clock": qubit.name + ".ro",
+        "init_duration": qubit.reset.duration(),
+    }
+
+    quantum_device.cfg_sched_repetitions(5)
+
+    spec_gettable = ScheduleGettable(
+        quantum_device=quantum_device,
+        schedule_function=sps.nco_heterodyne_spec_sched,
+        schedule_kwargs=schedule_kwargs,
+        real_imag=False,
+        batched=ro_freq.batched,
+    )
+    assert spec_gettable.is_initialized is False
+
+    # Prepare the mock data the spectroscopy schedule
+    acq_metadata = AcquisitionMetadata(
+        acq_protocol="ssb_integration_complex",
+        bin_mode=BinMode.AVERAGE,
+        acq_return_type=complex,
+        acq_indices={0: [*range(len(ro_freqs))]},
+    )
+    data = 1 * np.exp(1j * np.deg2rad(45))
+    acq_indices_data = _reshape_array_into_acq_return_type(
+        data=data, acq_metadata=acq_metadata
+    )
+    mocker.patch.object(
+        ic,
+        "retrieve_acquisition",
+        return_value=acq_indices_data,
+    )
+
+    # Run the schedule
+    meas_ctrl = mock_setup_basic_transmon_with_standard_params["meas_ctrl"]
+    meas_ctrl.settables(ro_freq)
+    meas_ctrl.setpoints(ro_freqs)
+    meas_ctrl.gettables(spec_gettable)
+    dataset = meas_ctrl.run(name=f"NCO heterodyne spectroscopy {qubit.name}")
+    assert spec_gettable.is_initialized is True
+
+    # Assert that the data is coming out correctly
+    exp_data = np.ones(len(ro_freqs)) * data
+    np.testing.assert_array_equal(dataset.x0, ro_freqs)
+    np.testing.assert_array_equal(dataset.y0, abs(exp_data))
+    np.testing.assert_array_equal(dataset.y1, np.angle(exp_data, deg=True))

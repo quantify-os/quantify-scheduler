@@ -9,6 +9,7 @@ from typing import Optional
 
 import numpy as np
 
+from quantify_scheduler.enums import BinMode
 from quantify_scheduler.schedules.schedule import Schedule
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.pulse_library import (
@@ -55,11 +56,11 @@ def heterodyne_spec_sched(
         Location on the device where the acquisition is performed.
     clock
         reference clock used to track the spectroscopy frequency.
-    init_duration :
+    init_duration
         The relaxation time or dead time.
     repetitions
         The amount of times the Schedule will be repeated.
-    port_out:
+    port_out
         Output port on the device where the pulse should be applied. If `None`, then use the same as `port`.
     """
     sched = Schedule("Heterodyne spectroscopy", repetitions)
@@ -129,50 +130,52 @@ def nco_heterodyne_spec_sched(
         Location on the device where the acquisition is performed.
     clock
         reference clock used to track the spectroscopy frequency.
-    init_duration :
+    init_duration
         The relaxation time or dead time.
     repetitions
         The amount of times the Schedule will be repeated.
-    port_out:
+    port_out
         Output port on the device where the pulse should be applied. If `None`, then use the same as `port`.
     """
-    sched = Schedule("NCO heterodyne spectroscopy", repetitions)
+    sched = Schedule("NCO heterodyne spectroscopy")
     sched.add_resource(ClockResource(name=clock, freq=frequencies.flat[0]))
-
-    sched.add(IdlePulse(duration=init_duration), label="buffer")
 
     if port_out is None:
         port_out = port
 
     for acq_idx, freq in enumerate(frequencies):
+        sched.add(IdlePulse(duration=init_duration), label=f"buffer {acq_idx}")
+
         sched.add(
             SetClockFrequency(clock=clock, clock_frequency=freq),
-            label=f"set_clock_freq {acq_idx} ({freq:e} Hz)",
+            label=f"set_freq {acq_idx} ({clock} {freq:e} Hz)",
         )
 
-        spec_pulse = sched.add(
-            SquarePulse(
-                duration=pulse_duration,
-                amp=pulse_amp,
-                port=port_out,
-                clock=clock,
-            ),
-            label=f"spec_pulse {acq_idx}",
-        )
+        for rep in range(repetitions):
+            spec_pulse = sched.add(
+                SquarePulse(
+                    duration=pulse_duration,
+                    amp=pulse_amp,
+                    port=port_out,
+                    clock=clock,
+                ),
+                label=f"spec_pulse {acq_idx} ({rep}/{repetitions})",
+            )
 
-        sched.add(
-            SSBIntegrationComplex(
-                duration=integration_time,
-                port=port,
-                clock=clock,
-                acq_index=acq_idx,
-                acq_channel=0,
-            ),
-            ref_op=spec_pulse,
-            ref_pt="start",
-            rel_time=acquisition_delay,
-            label=f"acquisition {acq_idx}",
-        )
+            sched.add(
+                SSBIntegrationComplex(
+                    duration=integration_time,
+                    port=port,
+                    clock=clock,
+                    acq_channel=0,
+                    acq_index=acq_idx,
+                    bin_mode=BinMode.AVERAGE,
+                ),
+                ref_op=spec_pulse,
+                ref_pt="start",
+                rel_time=acquisition_delay,
+                label=f"acquisition {acq_idx} ({rep}/{repetitions})",
+            )
 
     return sched
 
@@ -229,12 +232,12 @@ def two_tone_spec_sched(
         pulse in seconds.
     ro_integration_time
         integration time of the data acquisition in seconds.
-    init_duration :
+    init_duration
         The relaxation time or dead time.
     repetitions
         The amount of times the Schedule will be repeated.
     """
-    sched = Schedule("Pulsed spectroscopy", repetitions)
+    sched = Schedule("Two-tone spectroscopy", repetitions)
     sched.add_resource(ClockResource(name=spec_pulse_clock, freq=spec_pulse_frequency))
     sched.add_resource(ClockResource(name=ro_pulse_clock, freq=ro_pulse_frequency))
 
@@ -333,12 +336,12 @@ def nco_two_tone_spec_sched(
         pulse in seconds.
     ro_integration_time
         integration time of the data acquisition in seconds.
-    init_duration :
+    init_duration
         The relaxation time or dead time.
     repetitions
         The amount of times the Schedule will be repeated.
     """
-    sched = Schedule("NCO pulsed spectroscopy", repetitions)
+    sched = Schedule("NCO two-tone spectroscopy")
     sched.add_resources(
         [
             ClockResource(name=spec_pulse_clock, freq=spec_pulse_frequencies.flat[0]),
@@ -346,48 +349,50 @@ def nco_two_tone_spec_sched(
         ]
     )
 
-    sched.add(IdlePulse(duration=init_duration), label="buffer")
-
     for acq_idx, spec_pulse_freq in enumerate(spec_pulse_frequencies):
+        sched.add(IdlePulse(duration=init_duration), label=f"buffer {acq_idx}")
+
         sched.add(
             SetClockFrequency(clock=spec_pulse_clock, clock_frequency=spec_pulse_freq),
-            label=f"set_clock_freq {acq_idx} ({spec_pulse_clock} {spec_pulse_freq:e} Hz)",
+            label=f"set_freq {acq_idx} ({spec_pulse_clock} {spec_pulse_freq:e} Hz)",
         )
 
-        sched.add(
-            SquarePulse(
-                duration=spec_pulse_duration,
-                amp=spec_pulse_amp,
-                port=spec_pulse_port,
-                clock=spec_pulse_clock,
-            ),
-            label=f"spec_pulse {acq_idx}",
-        )
+        for rep in range(repetitions):
+            sched.add(
+                SquarePulse(
+                    duration=spec_pulse_duration,
+                    amp=spec_pulse_amp,
+                    port=spec_pulse_port,
+                    clock=spec_pulse_clock,
+                ),
+                label=f"spec_pulse {acq_idx} ({rep}/{repetitions})",
+            )
 
-        ro_pulse = sched.add(
-            SquarePulse(
-                duration=ro_pulse_duration,
-                amp=ro_pulse_amp,
-                port=ro_pulse_port,
-                clock=ro_pulse_clock,
-            ),
-            label=f"readout_pulse {acq_idx}",
-            rel_time=ro_pulse_delay,
-        )
+            ro_pulse = sched.add(
+                SquarePulse(
+                    duration=ro_pulse_duration,
+                    amp=ro_pulse_amp,
+                    port=ro_pulse_port,
+                    clock=ro_pulse_clock,
+                ),
+                label=f"readout_pulse {acq_idx} ({rep}/{repetitions})",
+                rel_time=ro_pulse_delay,
+            )
 
-        sched.add(
-            SSBIntegrationComplex(
-                duration=ro_integration_time,
-                port=ro_pulse_port,
-                clock=ro_pulse_clock,
-                acq_index=0,
-                acq_channel=0,
-            ),
-            ref_op=ro_pulse,
-            ref_pt="start",
-            rel_time=ro_acquisition_delay,
-            label=f"acquisition {acq_idx}",
-        )
+            sched.add(
+                SSBIntegrationComplex(
+                    duration=ro_integration_time,
+                    port=ro_pulse_port,
+                    clock=ro_pulse_clock,
+                    acq_channel=0,
+                    acq_index=acq_idx,
+                    bin_mode=BinMode.AVERAGE,
+                ),
+                ref_op=ro_pulse,
+                ref_pt="start",
+                rel_time=ro_acquisition_delay,
+                label=f"acquisition {acq_idx} ({rep}/{repetitions})",
+            )
 
     return sched
 
