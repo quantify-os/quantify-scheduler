@@ -1596,8 +1596,7 @@ class QbloxBasebandModule(QbloxBaseModule):
 
     def assign_frequencies(self, sequencer: Sequencer):
         """
-        Assigns LO/IF frequencies for baseband modules, by downconverting the clock
-        frequency when applicable and then determining LO/IF frequencies.
+        Determines LO/IF frequencies and assigns them, for RF baseband modules.
 
         In case of **no** external local oscillator, the NCO is given the same
         frequency as the clock.
@@ -1659,11 +1658,7 @@ class QbloxRFModule(QbloxBaseModule):
         return PulsarRFSettings if self.is_pulsar else RFModuleSettings
 
     def assign_frequencies(self, sequencer: Sequencer):
-        """
-        Assigns LO/IF frequencies for RF modules, by downconverting the clock
-        frequency when applicable and then determining LO/IF frequencies.
-        """
-
+        """Determines LO/IF frequencies and assigns them for RF modules."""
         compiler_container = self.parent if self.is_pulsar else self.parent.parent
         if sequencer.clock not in compiler_container.resources:
             return
