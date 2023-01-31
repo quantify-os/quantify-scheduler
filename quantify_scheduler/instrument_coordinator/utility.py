@@ -87,3 +87,13 @@ def lazy_set(instrument: InstrumentBase, parameter_name: str, val: Any) -> None:
         logger.info(
             f"Lazy set skipped setting parameter {instrument.name}.{parameter_name}"
         )
+
+
+def check_already_existing_acq_index(index, acqs):
+    if index in acqs:
+        acq_channel, acq_idx = index
+        raise RuntimeError(
+            f"Attempting to gather acquisitions. "
+            f"Acquisition {acq_channel=}, {acq_idx=} is already stored, "
+            f"make sure for an acq_channel, acq_index corresponds to not more than one acquisition."
+        )

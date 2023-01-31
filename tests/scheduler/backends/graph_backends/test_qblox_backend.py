@@ -20,6 +20,7 @@ import pytest
 from quantify_scheduler import Schedule, CompiledSchedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.resources import ClockResource
 
 from .standard_schedules import (
     single_qubit_schedule_circuit_level,
@@ -74,7 +75,10 @@ def test_compile_empty_device(load_example_qblox_hardware_config):
 
     config = quantum_device.generate_compilation_config()
     backend = SerialCompiler(config.name)
-    compiled_sched = backend.compile(schedule=pulse_only_schedule(), config=config)
+
+    sched = pulse_only_schedule()
+    sched.add_resource(ClockResource("q0.ro", 6.2e9))
+    compiled_sched = backend.compile(schedule=sched, config=config)
 
     # Assert that no exception was raised and output is the right type
     assert isinstance(compiled_sched, CompiledSchedule)
@@ -144,7 +148,9 @@ def test_compile_sequence_to_file(
     backend = SerialCompiler(config.name)
 
     # Act
-    compiled_sched = backend.compile(schedule=pulse_only_schedule(), config=config)
+    sched = pulse_only_schedule()
+    sched.add_resource(ClockResource("q0.ro", 6.2e9))
+    compiled_sched = backend.compile(schedule=sched, config=config)
 
     # Assert
     compiled_data = compiled_sched.compiled_instructions

@@ -183,8 +183,7 @@ class QcmRfModule(compiler_abc.QbloxRFModule):
             },
         ),
         mixer_dc_offset_range=BoundedParameter(min_val=-50, max_val=50, units="mV"),
-        valid_ios=[f"complex_output_{i}" for i in [0, 1]]
-        + [f"real_output_{i}" for i in range(4)],
+        valid_ios=[f"complex_output_{i}" for i in [0, 1]],
     )
 
 
@@ -201,9 +200,7 @@ class QrmRfModule(compiler_abc.QbloxRFModule):
         marker_configuration=MarkerConfiguration(init=0b0011, start=0b1111, end=0b0000),
         mixer_dc_offset_range=BoundedParameter(min_val=-50, max_val=50, units="mV"),
         valid_ios=[f"complex_output_{i}" for i in [0]]
-        + [f"real_output_{i}" for i in range(2)]
-        + [f"complex_input_{i}" for i in [0]]
-        + [f"real_input_{i}" for i in range(2)],
+        + [f"complex_input_{i}" for i in [0]],
     )
 
 

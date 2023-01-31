@@ -27,7 +27,10 @@ from quantify_scheduler.backends.types.qblox import (
 )
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.instrument_coordinator.components import base
-from quantify_scheduler.instrument_coordinator.utility import lazy_set
+from quantify_scheduler.instrument_coordinator.utility import (
+    check_already_existing_acq_index,
+    lazy_set,
+)
 from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 
 logger = logging.getLogger(__name__)
@@ -370,8 +373,6 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         for seq_name in program:
             if seq_name in self._seq_name_to_idx_map:
                 seq_idx = self._seq_name_to_idx_map[seq_name]
-                if isinstance(self, QRMComponent):
-                    self.instrument.delete_acquisition_data(sequencer=seq_idx, all=True)
                 self.instrument.arm_sequencer(sequencer=seq_idx)
 
     @property
@@ -592,7 +593,13 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
                 seq_idx=seq_idx, settings=SequencerSettings.from_dict(seq_cfg)
             )
 
+        self._clear_sequencer_acquisition_data()
         self._arm_all_sequencers_in_program(program)
+
+    def _clear_sequencer_acquisition_data(self):
+        """Clear all acquisition data."""
+        for sequencer_id in range(self._hardware_properties.number_of_sequencers):
+            self.instrument.delete_acquisition_data(sequencer=sequencer_id, all=True)
 
     def _configure_global_settings(self, settings: BaseModuleSettings):
         """
@@ -872,9 +879,11 @@ class _QRMAcquisitionManager:
                     # N.B. the stride idx ensures that in append mode all data
                     # corresponding to the same acq_index appears in the
                     # same acq_ch, acq_idx part of the returned formatted acquisitions.
-                    formatted_acquisitions[
-                        AcquisitionIndexing(acq_channel=acq_channel, acq_index=acq_idx)
-                    ] = (
+                    index = AcquisitionIndexing(
+                        acq_channel=acq_channel, acq_index=acq_idx
+                    )
+                    check_already_existing_acq_index(index, formatted_acquisitions)
+                    formatted_acquisitions[index] = (
                         i_vals[acq_idx::acq_stride],
                         q_vals[acq_idx::acq_stride],
                     )
@@ -1156,6 +1165,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         """
         super().__init__(instrument, **kwargs)
         self._cluster_modules: Dict[str, ClusterModule] = {}
+        self._program = {}
 
         for instrument_module in instrument.modules:
             try:
@@ -1212,7 +1222,9 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         options
             The compiled instructions to configure the cluster to.
         """
-        for name, comp_options in options.items():
+        self._program = copy.deepcopy(options)
+
+        for name, comp_options in self._program.items():
             if name == "settings":
                 self._configure_cmm_settings(settings=comp_options)
             elif name in self._cluster_modules:
@@ -1233,9 +1245,14 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
             The acquired data or ``None`` if no acquisitions have been performed.
         """
         acquisitions: Dict[Tuple[int, int], Any] = {}
-        for comp in self._cluster_modules.values():
+        for comp_name, comp in self._cluster_modules.items():
+            if comp_name not in self._program:
+                continue
+
             comp_acq = comp.retrieve_acquisition()
             if comp_acq is not None:
+                for index, _value in comp_acq.items():
+                    check_already_existing_acq_index(index, acquisitions)
                 acquisitions.update(comp_acq)
 
         return acquisitions if len(acquisitions) > 0 else None
