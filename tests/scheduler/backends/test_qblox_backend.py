@@ -266,6 +266,29 @@ def hardware_cfg_latency_corrections_invalid():
 
 
 @pytest.fixture
+def hardware_cfg_qcm_rf():
+    return {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "instrument_type": "Cluster",
+            "ref": "internal",
+            "cluster0_module1": {
+                "instrument_type": "QCM_RF",
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "q1:mw",
+                            "clock": "q1.01",
+                            "interm_freq": 50e6,
+                        }
+                    ],
+                },
+            },
+        },
+    }
+
+
+@pytest.fixture
 def hardware_cfg_two_qubit_gate():
     return {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
@@ -317,8 +340,6 @@ def pulse_only_schedule():
         )
     )
     sched.add(RampPulse(t0=2e-3, amp=0.5, duration=28e-9, port="q0:mw", clock="q0.01"))
-    # Clocks need to be manually added at this stage.
-    sched.add_resources([ClockResource("q0.01", freq=5e9)])
     return sched
 
 
@@ -349,9 +370,6 @@ def cluster_only_schedule():
         )
     )
     sched.add(RampPulse(t0=2e-3, amp=0.5, duration=28e-9, port="q4:mw", clock="q4.01"))
-    # Clocks need to be manually added at this stage.
-    sched.add_resources([ClockResource("q4.01", freq=5e9)])
-    sched.add_resources([ClockResource("q5.01", freq=5e9)])
     return sched
 
 
@@ -386,8 +404,6 @@ def pulse_only_schedule_multiplexed():
         )
 
     sched.add(RampPulse(t0=2e-3, amp=0.5, duration=28e-9, port="q0:mw", clock="q0.01"))
-    # Clocks need to be manually added at this stage.
-    sched.add_resources([ClockResource("q0.01", freq=5e9)])
     return sched
 
 
@@ -405,8 +421,6 @@ def pulse_only_schedule_no_lo():
             t0=4e-9,
         )
     )
-    # Clocks need to be manually added at this stage.
-    sched.add_resources([ClockResource("q1.ro", freq=100e6)])
     return sched
 
 
@@ -436,8 +450,6 @@ def identical_pulses_schedule():
             t0=0,
         )
     )
-    # Clocks need to be manually added at this stage.
-    sched.add_resources([ClockResource("q0.01", freq=5e9)])
     return sched
 
 
@@ -462,8 +474,6 @@ def pulse_only_schedule_with_operation_timing():
         ref_pt="end",
         rel_time=1e-3,
     )
-    # Clocks need to be manually added at this stage.
-    sched.add_resources([ClockResource("q0.01", freq=5e9)])
     return sched
 
 
@@ -484,8 +494,6 @@ def mixed_schedule_with_acquisition():
     )
 
     sched.add(Measure("q0"))
-    # Clocks need to be manually added at this stage.
-    sched.add_resources([ClockResource("q0.01", freq=5e9)])
     return sched
 
 
@@ -495,8 +503,6 @@ def gate_only_schedule():
     sched.add(Reset("q0"))
     x_gate = sched.add(X("q0"))
     sched.add(Measure("q0"), ref_op=x_gate, rel_time=1e-6, ref_pt="end")
-    # Clocks need to be manually added at this stage.
-    sched.add_resources([ClockResource("q0.01", freq=5e9)])
     return sched
 
 
@@ -507,8 +513,6 @@ def duplicate_measure_schedule():
     x_gate = sched.add(X("q0"))
     sched.add(Measure("q0", acq_index=0), ref_op=x_gate, rel_time=1e-6, ref_pt="end")
     sched.add(Measure("q0", acq_index=1), ref_op=x_gate, rel_time=3e-6, ref_pt="end")
-    # Clocks need to be manually added at this stage.
-    sched.add_resources([ClockResource("q0.01", freq=5e9)])
     return sched
 
 
@@ -763,55 +767,67 @@ def test_construct_sequencers_repeated_portclocks_error(
 
 
 @pytest.mark.parametrize(
-    "element_names", [[f"q{i}" for i in range(constants.NUMBER_OF_SEQUENCERS_QCM + 1)]]
+    "element_names, io",
+    [
+        (
+            [f"q{i}" for i in range(7)],
+            "complex_output_0",
+        ),
+        (["q0"], "real_output_0"),
+    ],
 )
-def test_construct_sequencers_excess_error(
+def test_construct_sequencers_exceeds_seq__invalid_io(
     mock_setup_basic_transmon_elements,
     make_basic_multi_qubit_schedule,
     element_names,
+    io,
 ):
     hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "qcm0": {
-            "instrument_type": "Pulsar_QCM_RF",
+        "cluster0": {
+            "instrument_type": "Cluster",
             "ref": "internal",
-            "complex_output_0": {
-                "portclock_configs": [
-                    {"port": f"q{i}:mw", "clock": f"q{i}.01", "interm_freq": 50e6}
-                    for i in range(len(element_names))
-                ]
+            "cluster0_module1": {
+                "instrument_type": "QCM_RF",
+                f"{io}": {
+                    "portclock_configs": [
+                        {
+                            "port": f"{qubit}:mw",
+                            "clock": f"{qubit}.01",
+                            "interm_freq": 50e6,
+                        }
+                        for qubit in element_names
+                    ]
+                },
             },
         },
     }
 
-    test_module = QcmRfModule(
-        parent=None,
-        name="tester",
-        total_play_time=1,
-        hw_mapping=hardware_cfg["qcm0"],
-    )
-
     sched = make_basic_multi_qubit_schedule(element_names)
+    sched.add_resources([ClockResource(f"{qubit}.01", 5e9) for qubit in element_names])
+
+    quantum_device = mock_setup_basic_transmon_elements["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
 
     compiler = SerialCompiler(name="compiler")
-    sched = compiler.compile(
-        schedule=sched,
-        config=mock_setup_basic_transmon_elements[
-            "quantum_device"
-        ].generate_compilation_config(),
-    )
-    assign_pulse_and_acq_info_to_devices(
-        schedule=sched,
-        hardware_cfg=hardware_cfg,
-        device_compilers={"qcm0": test_module},
-    )
+    with pytest.raises(ValueError) as error:
+        sched = compiler.compile(
+            schedule=sched,
+            config=quantum_device.generate_compilation_config(),
+        )
 
-    with pytest.raises(ValueError) as exc:
-        test_module.sequencers = test_module._construct_sequencers()
+    name = "cluster0_module1"
+    module_type = QcmRfModule
+    valid_ios = [f"complex_output_{i}" for i in [0, 1]]
+
     assert (
-        "Number of simultaneously active port-clock combinations exceeds "
-        + "number of sequencers."
-        in str(exc.value)
+        str(error.value.args[0])
+        == f"Number of simultaneously active port-clock combinations exceeds number of "
+        f"sequencers. Maximum allowed for {name} ({module_type.__name__}) is {6}!"
+        or str(error.value.args[0])
+        == f"Invalid hardware config: '{io}' of {name} ({module_type.__name__}) is not a "
+        f"valid name of an input/output."
+        f"\n\nSupported names for {module_type.__name__}:\n{valid_ios}"
     )
 
 
@@ -861,16 +877,19 @@ def test_compile_simple(
 def test_compile_cluster(
     cluster_only_schedule, compile_config_basic_transmon_qblox_hardware
 ):
+    sched = cluster_only_schedule
+    sched.add_resource(ClockResource("q5.01", freq=5e9))
+
     compiler = SerialCompiler(name="compiler")
     compiler.compile(
-        cluster_only_schedule, config=compile_config_basic_transmon_qblox_hardware
+        schedule=sched, config=compile_config_basic_transmon_qblox_hardware
     )
 
 
 @pytest.mark.filterwarnings("ignore::FutureWarning")
 def test_deprecated_qcompile_no_device_cfg(load_example_qblox_hardware_config):
     sched = Schedule("One pulse schedule")
-    sched.add_resources([ClockResource("q0.01", 3.1e9)])
+    sched.add_resource(ClockResource("q0.01", 3.1e9))
     sched.add(SquarePulse(amp=1 / 4, duration=12e-9, port="q0:mw", clock="q0.01"))
 
     compiled_schedule = qcompile(sched, hardware_cfg=load_example_qblox_hardware_config)
@@ -882,15 +901,16 @@ def test_deprecated_qcompile_no_device_cfg(load_example_qblox_hardware_config):
 def test_compile_simple_multiplexing(
     pulse_only_schedule_multiplexed,
     hardware_cfg_multiplexing,
-    mock_setup_basic_transmon,
+    mock_setup_basic_transmon_with_standard_params,
 ):
     """Tests if compilation with only pulses finishes without exceptions"""
+    sched = pulse_only_schedule_multiplexed
 
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     quantum_device.hardware_config(hardware_cfg_multiplexing)
     compiler = SerialCompiler(name="compiler")
     compiler.compile(
-        schedule=pulse_only_schedule_multiplexed,
+        schedule=sched,
         config=quantum_device.generate_compilation_config(),
     )
 
@@ -929,18 +949,15 @@ def test_compile_measure(
     ],
 )
 def test_compile_clock_operations(
-    mock_setup_basic_transmon,
+    mock_setup_basic_transmon_with_standard_params,
     hardware_cfg_baseband,
     operation: Operation,
     instruction_to_check: str,
 ):
     sched = Schedule("shift_clock_phase_only")
     sched.add(operation)
-    sched.add_resources(
-        [ClockResource("q1.01", freq=5e9)]
-    )  # Clocks need to be manually added at this stage.
 
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     quantum_device.hardware_config(hardware_cfg_baseband)
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
@@ -1164,7 +1181,7 @@ def _func_for_hook_test(qasm: QASMProgram):
     )
 
 
-def test_qasm_hook(pulse_only_schedule, mock_setup_basic_transmon):
+def test_qasm_hook(pulse_only_schedule, mock_setup_basic_transmon_with_standard_params):
     hw_config = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "qrm0": {
@@ -1184,12 +1201,14 @@ def test_qasm_hook(pulse_only_schedule, mock_setup_basic_transmon):
     sched = pulse_only_schedule
 
     sched.repetitions = 11
-    mock_setup_basic_transmon["quantum_device"].hardware_config(hw_config)
+    mock_setup_basic_transmon_with_standard_params["quantum_device"].hardware_config(
+        hw_config
+    )
 
     compiler = SerialCompiler(name="compiler")
     full_program = compiler.compile(
         sched,
-        config=mock_setup_basic_transmon[
+        config=mock_setup_basic_transmon_with_standard_params[
             "quantum_device"
         ].generate_compilation_config(),
     )
@@ -1328,18 +1347,20 @@ def test_temp_register(amount, empty_qasm_program_qcm):
 # --------- Test compilation functions ---------
 @pytest.mark.parametrize("reset_clock_phase", [True, False])
 def test_assign_pulse_and_acq_info_to_devices(
-    mock_setup_basic_transmon,
+    mock_setup_basic_transmon_with_standard_params,
     mixed_schedule_with_acquisition,
     load_example_qblox_hardware_config,
     reset_clock_phase,
 ):
     sched = mixed_schedule_with_acquisition
-    mock_setup_basic_transmon["q0"].measure.reset_clock_phase(reset_clock_phase)
+    mock_setup_basic_transmon_with_standard_params["q0"].measure.reset_clock_phase(
+        reset_clock_phase
+    )
 
     compiler = SerialCompiler(name="compiler")
     sched_with_pulse_info = compiler.compile(
         schedule=sched,
-        config=mock_setup_basic_transmon[
+        config=mock_setup_basic_transmon_with_standard_params[
             "quantum_device"
         ].generate_compilation_config(),
     )
@@ -1401,6 +1422,8 @@ def test_multiple_trace_acquisition_error(compile_config_basic_transmon_qblox_ha
     sched.add(Trace(duration=100e-9, port="q0:res", clock="q0.multiplex"))
     sched.add(Trace(duration=100e-9, port="q0:res", clock="q0.ro"))
 
+    sched.add_resource(ClockResource("q0.multiplex", 3.2e9))
+
     with pytest.raises(ValueError) as exception:
         compiler = SerialCompiler(name="compiler")
         _ = compiler.compile(
@@ -1423,6 +1446,12 @@ def test_determine_scope_mode_acquisition_sequencer(
     sched.add(Measure("q0"))
     sched.add(Trace(duration=100e-9, port="q0:res", clock="q0.multiplex"))
     sched.add(Trace(duration=100e-9, port="q5:res", clock="q5.ro"))
+
+    # Clocks q0.multiplex and q5.ro need to be manually added
+    sched.add_resources(
+        [ClockResource("q0.multiplex", freq=5e9), ClockResource("q5.ro", freq=6e9)]
+    )
+
     hardware_cfg = load_example_qblox_hardware_config
     mock_setup["quantum_device"].hardware_config(hardware_cfg)
 
@@ -1488,7 +1517,7 @@ def test_container_prepare_no_lo(
     )
     container.prepare()
 
-    assert container.instrument_compilers["qrm1"].sequencers["seq0"].frequency == 100e6
+    assert container.instrument_compilers["qrm1"].sequencers["seq0"].frequency == 8.3e9
 
 
 def test_container_add_from_type(
@@ -1885,6 +1914,82 @@ def test_assign_frequencies_rf_downconverter(
     )
 
 
+@pytest.mark.parametrize("element_names", [["q5"]])
+def test_assign_attenuation(
+    mock_setup_basic_transmon_elements,
+    load_example_qblox_hardware_config,
+    element_names,
+):
+    """
+    Test function that checks if attenuation settings on a QRM-RF compile correctly.
+    Also checks if floats are correctly converted to ints (if they are close to ints).
+    """
+    sched = Schedule("readout_experiment")
+    sched.add(Measure(element_names[0]))
+
+    hardware_cfg = load_example_qblox_hardware_config
+    input_att = hardware_cfg["cluster0"]["cluster0_module4"]["complex_input_0"].get(
+        "input_att"
+    )
+    output_att = hardware_cfg["cluster0"]["cluster0_module4"]["complex_output_0"].get(
+        "output_att"
+    )
+
+    assert input_att is not None
+    assert output_att is not None
+
+    quantum_device = mock_setup_basic_transmon_elements["quantum_device"]
+    qubit = quantum_device.get_element(element_names[0])
+
+    qubit.clock_freqs.readout(5e9)
+    qubit.measure.pulse_amp(0.2)
+    qubit.measure.acq_delay(40e-9)
+
+    quantum_device.hardware_config(hardware_cfg)
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        schedule=sched, config=quantum_device.generate_compilation_config()
+    )
+    compiled_instructions = compiled_schedule["compiled_instructions"]
+    qrm_rf_program = compiled_instructions["cluster0"]["cluster0_module4"]
+
+    compiled_in0_att = qrm_rf_program["settings"]["in0_att"]
+    compiled_out0_att = qrm_rf_program["settings"]["out0_att"]
+
+    assert np.isclose(compiled_in0_att, input_att)
+    assert np.isclose(compiled_out0_att, output_att)
+
+    assert isinstance(compiled_in0_att, int)
+    assert isinstance(compiled_out0_att, int)
+
+
+def test_assign_attenuation_invalid_raises(
+    mock_setup_basic_transmon_with_standard_params, hardware_cfg_qcm_rf
+):
+    """
+    Test that setting a float value (that is not close to an int) raises an error.
+    """
+    sched = Schedule("Single Gate Experiment")
+    sched.add(X("q1"))
+
+    hardware_cfg = copy.deepcopy(hardware_cfg_qcm_rf)
+    hardware_cfg["cluster0"]["cluster0_module1"]["complex_output_0"][
+        "output_att"
+    ] = 10.3
+
+    mock_setup_basic_transmon_with_standard_params["quantum_device"].hardware_config(
+        hardware_cfg
+    )
+    with pytest.raises(ValueError):
+        compiler = SerialCompiler(name="compiler")
+        _ = compiler.compile(
+            sched,
+            config=mock_setup_basic_transmon_with_standard_params[
+                "quantum_device"
+            ].generate_compilation_config(),
+        )
+
+
 def test_markers(mock_setup_basic_transmon, load_example_qblox_hardware_config):
     # Test for baseband
     sched = Schedule("gate_experiment")
@@ -2253,8 +2358,9 @@ def test_apply_latency_corrections_invalid_raises(
         SquarePulse(port="q1:mw", clock="q1.01", amp=0.25, duration=12e-9),
         ref_pt="start",
     )
-    sched.add_resources([ClockResource("q0.01", freq=5e9)])
-    sched.add_resources([ClockResource("q1.01", freq=5e9)])
+    sched.add_resources(
+        [ClockResource("q0.01", freq=5e9), ClockResource("q1.01", freq=5e9)]
+    )
 
     hardware_cfg = copy.deepcopy(hardware_cfg_latency_corrections_invalid)
     hardware_cfg["latency_corrections"]["q1:mw-q1.01"] = None
@@ -2288,8 +2394,6 @@ def test_apply_latency_corrections_valid(
         SquarePulse(port="q1:mw", clock="q1.01", amp=0.25, duration=12e-9),
         ref_pt="start",
     )
-    sched.add_resources([ClockResource("q0.01", freq=5e9)])
-    sched.add_resources([ClockResource("q1.01", freq=5e9)])
 
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
@@ -2335,7 +2439,7 @@ def test_apply_latency_corrections_warning(
         SquarePulse(port="q1:mw", clock="q1.01", amp=0.25, duration=12e-9),
         ref_pt="start",
     )
-    sched.add_resources([ClockResource("q1.01", freq=5e9)])
+    sched.add_resource(ClockResource("q1.01", freq=5e9))
 
     warning = f"not a multiple of {constants.GRID_TIME}"
     with caplog.at_level(
@@ -2394,7 +2498,6 @@ def test_overwrite_gain(mock_setup_basic_transmon_with_standard_params):
     # Define experiment schedule
     schedule = Schedule("test overwrite gain")
     schedule.add(SquarePulse(amp=0.5, duration=1e-6, port="q0:res", clock="q0.ro"))
-    schedule.add_resource(ClockResource(name="q0.ro", freq=50e6))
 
     # Generate compiled schedule
     compiler = SerialCompiler(name="compiler", quantum_device=quantum_device)

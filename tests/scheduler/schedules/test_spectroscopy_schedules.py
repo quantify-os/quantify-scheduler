@@ -2,13 +2,9 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
-import pytest
-
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.compilation import (
     determine_absolute_timing,
-    qcompile,
-    device_compile,
 )
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
@@ -25,7 +21,7 @@ class TestHeterodyneSpecSchedule(_CompilesAllBackends):
             "pulse_duration": 1e-6,
             "port": "q0:res",
             "clock": "q0.ro",
-            "frequency": 4.48e9,
+            "frequency": 7.04e9,
             "integration_time": 1e-6,
             "acquisition_delay": 220e-9,
             "init_duration": 18e-6,
@@ -67,13 +63,13 @@ class TestPulsedSpecSchedule(_CompilesAllBackends):
             "spec_pulse_duration": 1e-6,
             "spec_pulse_port": "q0:mw",
             "spec_pulse_clock": "q0.01",
-            "spec_pulse_frequency": 5.4e9,
+            "spec_pulse_frequency": 6.02e9,
             "ro_pulse_amp": 0.15,
             "ro_pulse_duration": 1e-6,
             "ro_pulse_delay": 1e-6,
             "ro_pulse_port": "q0:res",
             "ro_pulse_clock": "q0.ro",
-            "ro_pulse_frequency": 4.48e9,
+            "ro_pulse_frequency": 7.04e9,
             "ro_integration_time": 1e-6,
             "ro_acquisition_delay": 220e-9,
             "init_duration": 18e-6,
@@ -140,8 +136,10 @@ class TestNVDarkESRSched:
         qe0.measure.acq_duration(2e-6)
 
         # Act
-        sched = device_compile(
-            self.uncomp_sched, quantum_device.generate_device_config()
+        compiler = SerialCompiler(name="compiler")
+        sched = compiler.compile(
+            schedule=self.uncomp_sched,
+            config=quantum_device.generate_compilation_config(),
         )
 
         # Assert
@@ -158,20 +156,21 @@ class TestNVDarkESRSched:
 
     def test_compiles_device_cfg_only(self, mock_setup_basic_nv):
         # assert that files properly compile
-        device_config = mock_setup_basic_nv["quantum_device"].generate_device_config()
-        qcompile(self.uncomp_sched, device_config)
+        compiler = SerialCompiler(name="compiler")
+        compiler.compile(
+            schedule=self.uncomp_sched,
+            config=mock_setup_basic_nv["quantum_device"].generate_compilation_config(),
+        )
 
-    @pytest.mark.xfail(
-        reason="Acquisition protocol 'trigger_count' not present. To be added later."
-    )
     def test_compiles_qblox_backend(self, mock_setup_basic_nv_qblox_hardware) -> None:
         # assert that files properly compile
         quantum_device: QuantumDevice = mock_setup_basic_nv_qblox_hardware[
             "quantum_device"
         ]
-        schedule = qcompile(
-            self.uncomp_sched,
-            quantum_device.generate_device_config(),
-            quantum_device.generate_hardware_config(),
+        compiler = SerialCompiler(name="compiler")
+
+        schedule = compiler.compile(
+            schedule=self.uncomp_sched,
+            config=quantum_device.generate_compilation_config(),
         )
         assert not schedule.compiled_instructions == {}

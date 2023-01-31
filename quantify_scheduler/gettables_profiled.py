@@ -1,15 +1,17 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 r"""
-Module containing ProfiledScheduleGettable, a subclass of ScheduleGettable
-used for profiling.
+This module represents the Q-Profile quantum control electronics profiler.
 
-.. warning::
+Profiling of the control electronics is enabled by using the
+:class:`ProfiledScheduleGettable` in place of
+:class:`~.ScheduleGettable`.
 
-    The ProfiledScheduleGettable is currently only tested to support Qblox hardware.
+.. note::
+
+    The :class:`ProfiledScheduleGettable` is currently only tested to support Qblox hardware.
 """
 import json
-import logging
 import os
 import time
 
@@ -21,11 +23,17 @@ from qcodes import Instrument
 from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 
-logger = logging.getLogger(__name__)
-
 
 def profiler(func):
-    """Decorator that reports the execution time."""
+    """
+    Decorator that reports the execution time of the decorated function
+    and stores this in ``ProfiledInstrumentCoordinator.profile``.
+
+    Parameters
+    ----------
+    func: function
+        Target function to be profiled.
+    """
 
     def wrap(self, *args, **kwargs):
         start = time.time()
@@ -41,10 +49,42 @@ def profiler(func):
 
 class ProfiledInstrumentCoordinator(InstrumentCoordinator):
     """
-    This subclass implements a profiling tool to log timing results.
+    Subclass of :class:`~.InstrumentCoordinator` that implements a profiling tool to log
+    timing results. Time results are stored in ``ProfiledInstrumentCoordinator.profile``.
+
+    :class:`ProfiledInstrumentCoordinator` is set up to be used when using
+    :class:`ProfiledScheduleGettable`, code example:
+
+    .. code-block:: python
+
+        ic = InstrumentCoordinator(name="instrument_coordinator")
+
+        quantum_device = QuantumDevice(name="quantum_device")
+        quantum_device.instr_instrument_coordinator(ic.name)
+
+        profiled_gettable = ProfiledScheduleGettable(
+            quantum_device=quantum_device,
+            schedule_function=...,
+            schedule_kwargs=...,
+        )
+
+        profiled_gettable.initialize()
+        profiled_ic = (
+            profiled_gettable.quantum_device.instr_instrument_coordinator.get_instr()
+        )
+
     """
 
     def __init__(self, name: str, parent_ic: InstrumentCoordinator):
+        """
+
+        Parameters
+        ----------
+        name: str
+            Name of :class:`ProfiledInstrumentCoordinator` instance.
+        parent_ic: InstrumentCoordinator
+            Original :class:`~.InstrumentCoordinator`.
+        """
         self.profile = {"schedule": []}
         super().__init__(name, add_default_generic_icc=False)
         self.parent_ic = parent_ic
@@ -84,17 +124,19 @@ class ProfiledInstrumentCoordinator(InstrumentCoordinator):
 
 class ProfiledScheduleGettable(ScheduleGettable):
     """
-    Subclass to overwite the initialize method, in order to include
-    compilation in the profiling.
+    To be used in place of :class:`~.ScheduleGettable` to enable profiling of the
+    compilation. Logged execution times can be read from ``self.profile``, and plotted
+    via :func:`plot_profile`.
     """
 
     def __init__(self, *args, **kwargs):
+        """"""  # Intentionally left blank
         super().__init__(*args, **kwargs)
 
         self.profile = {}
         self.plot = None
 
-        # overwrite linked IC to a profiled IC
+        # Overwrite linked IC to a profiled IC
         self.instr_coordinator = (
             self.quantum_device.instr_instrument_coordinator.get_instr()
         )
@@ -117,7 +159,7 @@ class ProfiledScheduleGettable(ScheduleGettable):
         prof_ic = Instrument.find_instrument("profiled_ic")
         Instrument.close(prof_ic)
 
-    def log_profile(  # pylint: disable=too-many-arguments
+    def log_profile(
         self,
         obj=None,
         path="profiling_logs",

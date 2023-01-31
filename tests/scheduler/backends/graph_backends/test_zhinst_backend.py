@@ -13,6 +13,7 @@ import pytest
 from quantify_scheduler import Schedule, CompiledSchedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.resources import ClockResource
 
 from .standard_schedules import (
     single_qubit_schedule_circuit_level,
@@ -123,6 +124,9 @@ def test_compile_empty_device():
     """
 
     sched = pulse_only_schedule()
+
+    # since the device config is empty, the clock needs to be manually added
+    sched.add_resource(ClockResource(name="q0.ro", freq=6.4e9))
 
     quantum_device = QuantumDevice(name="empty_quantum_device")
     quantum_device.hardware_config(ZHINST_HARDWARE_MAPPING)

@@ -7,6 +7,7 @@ from __future__ import annotations
 import dataclasses
 import json
 import logging
+import numpy as np
 from abc import ABC, ABCMeta, abstractmethod
 from collections import defaultdict, deque
 from functools import partial
@@ -1136,8 +1137,10 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 continue
             if io not in self.static_hw_properties.valid_ios:
                 raise ValueError(
-                    f"Invalid hardware config. '{io}' of {self.name} is not a "
-                    f"valid name of an input/output.\n\nSupported names:\n"
+                    f"Invalid hardware config: '{io}' of "
+                    f"{self.name} ({self.__class__.__name__}) "
+                    f"is not a valid name of an input/output."
+                    f"\n\nSupported names for {self.__class__.__name__}:\n"
                     f"{self.static_hw_properties.valid_ios}"
                 )
 
@@ -1193,7 +1196,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         if len(sequencers) > self.static_hw_properties.max_sequencers:
             raise ValueError(
                 "Number of simultaneously active port-clock combinations exceeds "
-                "number of sequencers."
+                "number of sequencers. "
                 f"Maximum allowed for {self.name} ({self.__class__.__name__}) is "
                 f"{self.static_hw_properties.max_sequencers}!"
             )
@@ -1385,8 +1388,8 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 # The next code block is for backwards compatibility.
                 in_gain = io_mapping.get("input_gain", None)
                 if in_gain is None:
-                    in0_gain = io_mapping.get("input_gain0", None)
-                    in1_gain = io_mapping.get("input_gain1", None)
+                    in0_gain = io_mapping.get("input_gain_0", None)
+                    in1_gain = io_mapping.get("input_gain_1", None)
                 else:
                     in0_gain = in_gain
                     in1_gain = in_gain
@@ -1658,12 +1661,15 @@ class QbloxRFModule(QbloxBaseModule):
         return PulsarRFSettings if self.is_pulsar else RFModuleSettings
 
     def assign_frequencies(self, sequencer: Sequencer):
-        """Determines LO/IF frequencies and assigns them for RF modules."""
+        """
+        Determines LO/IF frequencies and assigns them for RF modules.
+        """
         compiler_container = self.parent if self.is_pulsar else self.parent.parent
-        if sequencer.clock not in compiler_container.resources:
+        if (
+            sequencer.connected_outputs is None
+            or sequencer.clock not in compiler_container.resources
+        ):
             return
-
-        self._validate_io_mode(sequencer)
 
         for lo_idx in QbloxRFModule._get_connected_lo_indices(sequencer):
             lo_freq_setting_name = f"lo{lo_idx}_freq"
@@ -1716,21 +1722,29 @@ class QbloxRFModule(QbloxBaseModule):
     def assign_attenuation(self):
         """
         Assigns attenuation settings from the hardware configuration.
-        """
-        self._settings.in0_att = self.hw_mapping.get("complex_output_0", {}).get(
-            "input_att", None
-        )
-        self._settings.out0_att = self.hw_mapping.get("complex_output_0", {}).get(
-            "output_att", None
-        )
-        self._settings.out1_att = self.hw_mapping.get("complex_output_1", {}).get(
-            "output_att", None
-        )
 
-    @classmethod
-    def _validate_io_mode(cls, sequencer: Sequencer):
-        if sequencer.io_mode != "complex":
-            raise ValueError(
-                f"Attempting to use {cls.__name__} in real "
-                f"mode, but this is not supported for Qblox RF modules."
-            )
+        Floats that are a multiple of 1 are converted to ints.
+        This is needed because the :class:`~quantify_core.measurement.control.grid_setpoints`
+        converts setpoints to floats when using an attenuation as settable.
+        """
+
+        def _convert_to_int(value, label: str) -> int:
+            if value is not None:
+                if not np.isclose(value % 1, 0):
+                    raise ValueError(
+                        f'Trying to set "{label}" to non-integer value {value}'
+                    )
+                return int(value)
+
+        self._settings.in0_att = _convert_to_int(
+            self.hw_mapping.get("complex_input_0", {}).get("input_att", None),
+            label="in0_att",
+        )
+        self._settings.out0_att = _convert_to_int(
+            self.hw_mapping.get("complex_output_0", {}).get("output_att", None),
+            label="out0_att",
+        )
+        self._settings.out1_att = _convert_to_int(
+            self.hw_mapping.get("complex_output_1", {}).get("output_att", None),
+            label="out1_att",
+        )

@@ -137,9 +137,12 @@ def test_ScheduleGettableSingleChannel_iterative_heterodyne_spec(
     np.testing.assert_array_equal(dset.y1, np.angle(exp_data, deg=True))
 
 
-def test_ScheduleGettableSingleChannel_batched_allxy(mock_setup_basic_transmon, mocker):
-    meas_ctrl = mock_setup_basic_transmon["meas_ctrl"]
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
+# test a batched case
+def test_ScheduleGettableSingleChannel_batched_allxy(
+    mock_setup_basic_transmon_with_standard_params, mocker
+):
+    meas_ctrl = mock_setup_basic_transmon_with_standard_params["meas_ctrl"]
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
 
     qubit = quantum_device.get_element("q0")
 
@@ -173,7 +176,7 @@ def test_ScheduleGettableSingleChannel_batched_allxy(mock_setup_basic_transmon, 
     )
 
     mocker.patch.object(
-        mock_setup_basic_transmon["instrument_coordinator"],
+        mock_setup_basic_transmon_with_standard_params["instrument_coordinator"],
         "retrieve_acquisition",
         return_value=acq_indices_data,
     )
@@ -202,10 +205,10 @@ def test_ScheduleGettableSingleChannel_batched_allxy(mock_setup_basic_transmon, 
 
 # test a batched case
 def test_ScheduleGettableSingleChannel_append_readout_cal(
-    mock_setup_basic_transmon, mocker
+    mock_setup_basic_transmon_with_standard_params, mocker
 ):
-    meas_ctrl = mock_setup_basic_transmon["meas_ctrl"]
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    meas_ctrl = mock_setup_basic_transmon_with_standard_params["meas_ctrl"]
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
 
     repetitions = 256
     qubit = quantum_device.get_element("q0")
@@ -240,7 +243,7 @@ def test_ScheduleGettableSingleChannel_append_readout_cal(
     )
 
     mocker.patch.object(
-        mock_setup_basic_transmon["instrument_coordinator"],
+        mock_setup_basic_transmon_with_standard_params["instrument_coordinator"],
         "retrieve_acquisition",
         return_value=acq_indices_data,
     )
@@ -270,10 +273,10 @@ def test_ScheduleGettableSingleChannel_append_readout_cal(
 
 
 def test_ScheduleGettableSingleChannel_trace_acquisition(
-    mock_setup_basic_transmon, mocker
+    mock_setup_basic_transmon_with_standard_params, mocker
 ):
-    meas_ctrl = mock_setup_basic_transmon["meas_ctrl"]
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    meas_ctrl = mock_setup_basic_transmon_with_standard_params["meas_ctrl"]
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     # q0 is a  device element from the test setup has all the right params
     device_element = quantum_device.get_element("q0")
 
@@ -310,7 +313,7 @@ def test_ScheduleGettableSingleChannel_trace_acquisition(
     }
 
     mocker.patch.object(
-        mock_setup_basic_transmon["instrument_coordinator"],
+        mock_setup_basic_transmon_with_standard_params["instrument_coordinator"],
         "retrieve_acquisition",
         return_value=exp_data,
     )
@@ -328,9 +331,11 @@ def test_ScheduleGettableSingleChannel_trace_acquisition(
     np.testing.assert_array_equal(dset.y1, exp_trace.imag)
 
 
-def test_ScheduleGettable_generate_diagnostic(mock_setup_basic_transmon, mocker):
+def test_ScheduleGettable_generate_diagnostic(
+    mock_setup_basic_transmon_with_standard_params, mocker
+):
     schedule_kwargs = {"times": np.linspace(1e-6, 50e-6, 50), "qubit": "q0"}
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
 
     # Prepare the mock data the t1 schedule
     acq_metadata = AcquisitionMetadata(
@@ -345,7 +350,7 @@ def test_ScheduleGettable_generate_diagnostic(mock_setup_basic_transmon, mocker)
     acq_indices_data = _reshape_array_into_acq_return_type(data, acq_metadata)
 
     mocker.patch.object(
-        mock_setup_basic_transmon["instrument_coordinator"],
+        mock_setup_basic_transmon_with_standard_params["instrument_coordinator"],
         "retrieve_acquisition",
         return_value=acq_indices_data,
     )
@@ -446,27 +451,27 @@ def test_profiling(mock_setup_basic_transmon_with_standard_params, tmp_test_data
     schedule_kwargs = {
         "pulse_amp": qubit.measure.pulse_amp(),
         "pulse_duration": qubit.measure.pulse_duration(),
-        "frequency": qubit.clock_freqs.readout(),
+        "frequency": qubit.clock_freqs.f01(),
         "qubit": "q0",
     }
-    prof_gettable = ProfiledScheduleGettable(
+    profiled_gettable = ProfiledScheduleGettable(
         quantum_device=quantum_device,
         schedule_function=rabi_sched,
         schedule_kwargs=schedule_kwargs,
     )
 
-    prof_gettable.initialize()
-    instr_coordinator = (
-        prof_gettable.quantum_device.instr_instrument_coordinator.get_instr()
+    profiled_gettable.initialize()
+    profiled_ic = (
+        profiled_gettable.quantum_device.instr_instrument_coordinator.get_instr()
     )
-    instr_coordinator.start()
-    instr_coordinator.wait_done()
-    instr_coordinator.retrieve_acquisition()
-    instr_coordinator.stop()
-    prof_gettable.close()
+    profiled_ic.start()
+    profiled_ic.wait_done()
+    profiled_ic.retrieve_acquisition()
+    profiled_ic.stop()
+    profiled_gettable.close()
 
     # Test if all steps have been measured and have a value > 0
-    log = prof_gettable.log_profile()
+    log = profiled_gettable.log_profile()
     TestCase().assertAlmostEqual(log["schedule"][0], 0.2062336)
     verif_keys = [
         "schedule",
@@ -485,7 +490,7 @@ def test_profiling(mock_setup_basic_transmon_with_standard_params, tmp_test_data
     obj = {"test": ["test"]}
     path = tmp_test_data_dir
     filename = "test"
-    prof_gettable.log_profile(
+    profiled_gettable.log_profile(
         obj=obj, path=path, filename=filename, indent=4, separators=(",", ": ")
     )
     assert os.path.getsize(os.path.join(path, filename)) > 0
@@ -493,8 +498,8 @@ def test_profiling(mock_setup_basic_transmon_with_standard_params, tmp_test_data
     # Test plot function
     path = tmp_test_data_dir
     filename = "average_runtimes.pdf"
-    prof_gettable.plot_profile(path=path)
-    assert prof_gettable.plot is not None
+    profiled_gettable.plot_profile(path=path)
+    assert profiled_gettable.plot is not None
     assert os.path.getsize(os.path.join(path, filename)) > 0
 
 

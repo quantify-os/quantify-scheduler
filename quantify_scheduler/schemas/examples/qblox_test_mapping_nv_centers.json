@@ -62,12 +62,12 @@
         "cluster0_module4": {
             "instrument_type": "QRM",
             "real_output_0": {
-                "lo_name": "lo0",
                 "portclock_configs": [
                     {
                         "port": "qe0:optical_readout",
                         "clock": "qe0.ge0",
-                        "interm_freq": 0
+                        "interm_freq": 0,
+                        "ttl_acq_threshold": 0.7
                     }
                 ]
             }
