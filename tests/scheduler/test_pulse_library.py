@@ -380,22 +380,25 @@ def test_dccompensation_pulse_both_params() -> None:
 
 
 # --------- Test pulse compilation ---------
-def test_dragpulse_motzoi(mock_setup_basic_transmon):
-    mock_setup_basic_transmon["q0"].rxy.amp180(0.2)
-    mock_setup_basic_transmon["q0"].rxy.motzoi(0.02)
+def test_dragpulse_motzoi(mock_setup_basic_transmon_with_standard_params):
+    mock_setup_basic_transmon_with_standard_params["q0"].rxy.amp180(0.2)
+    mock_setup_basic_transmon_with_standard_params["q0"].rxy.motzoi(0.02)
 
     sched = Schedule("Test DRAG Pulse")
     sched.add(X("q0"))
 
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
-        sched, mock_setup_basic_transmon["quantum_device"].generate_compilation_config()
+        sched,
+        mock_setup_basic_transmon_with_standard_params[
+            "quantum_device"
+        ].generate_compilation_config(),
     )
 
     D_amp = (
         list(compiled_sched.operations.values())[0].data["pulse_info"][0].get("D_amp")
     )
-    assert D_amp == mock_setup_basic_transmon["q0"].rxy.motzoi(), (
+    assert D_amp == mock_setup_basic_transmon_with_standard_params["q0"].rxy.motzoi(), (
         "The amplification of the derivative DRAG pulse is not equal to the motzoi "
         "parameter"
     )

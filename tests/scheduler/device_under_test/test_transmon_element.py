@@ -116,6 +116,7 @@ def test_basic_transmon_deserialization(q0: BasicTransmonElement, dev: QuantumDe
 
     q0.measure.acq_channel(0)
     q0.measure.pulse_amp(0.05)
+    q0.clock_freqs.readout(3e9)
     dev.add_element(q0)
 
     sched = Schedule("test_basic_transmon_deserialization")

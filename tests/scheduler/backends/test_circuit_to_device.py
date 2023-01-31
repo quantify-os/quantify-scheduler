@@ -8,8 +8,10 @@ import pytest
 from quantify_scheduler import Operation
 
 from quantify_scheduler import Schedule
+from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.circuit_to_device import (
     compile_circuit_to_device,
+    set_pulse_and_acquisition_clock,
     ConfigKeyError,
     DeviceCompilationConfig,
     OperationCompilationConfig,
@@ -175,8 +177,135 @@ def test_only_add_clocks_used(operations: List[Operation], clocks_used: List[str
     for operation in operations:
         sched.add(operation)
     dev_sched = compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
+    checked_dev_sched = set_pulse_and_acquisition_clock(
+        dev_sched, device_cfg=example_transmon_cfg
+    )
 
-    assert set(dev_sched.resources.keys()) == set(clocks_used)
+    assert set(checked_dev_sched.resources.keys()) == set(clocks_used)
+
+
+def test_set_gate_clock_raises(mock_setup_basic_transmon_with_standard_params):
+    sched = Schedule("Test schedule")
+    operation = X("q0")
+    sched.add(operation)
+
+    device_cfg = mock_setup_basic_transmon_with_standard_params[
+        "quantum_device"
+    ].generate_device_config()
+
+    with pytest.raises(RuntimeError) as error:
+        _ = set_pulse_and_acquisition_clock(sched, device_cfg=device_cfg)
+
+    assert (
+        error.value.args[0]
+        == f"Operation '{operation}' is a gate-level operation and must be "
+        f"compiled from circuit to device; ensure compilation "
+        f"is made in the correct order."
+    )
+
+
+def test_multiply_defined_clock_freq_raises(
+    mock_setup_basic_transmon_with_standard_params,
+):
+    clock = "q0.01"
+    clock_freq_schedule = 5e9
+
+    device_cfg = mock_setup_basic_transmon_with_standard_params[
+        "quantum_device"
+    ].generate_device_config()
+    clock_freq_device_cfg = device_cfg.clocks[clock]
+
+    sched = Schedule("Test schedule")
+    sched.add_resource(ClockResource(name="q0.01", freq=clock_freq_schedule))
+    operation = X("q0")
+    sched.add(operation)
+    dev_sched = compile_circuit_to_device(schedule=sched, device_cfg=device_cfg)
+
+    with pytest.warns(RuntimeWarning) as warning:
+        compiled_sched = set_pulse_and_acquisition_clock(
+            schedule=dev_sched, device_cfg=device_cfg
+        )
+    assert (
+        warning[0].message.args[0]
+        == f"Clock '{clock}' has conflicting frequency definitions: "
+        f"{clock_freq_schedule} Hz in the schedule and "
+        f"{clock_freq_device_cfg} Hz in the device config. "
+        f"The clock is set to '{clock_freq_schedule}'. "
+        f"Ensure the schedule clock resource matches the "
+        f"device config clock frequency or set the "
+        f"clock frequency in the device config to np.NaN "
+        f"to omit this warning."
+    )
+    assert clock_freq_schedule != clock_freq_device_cfg
+    assert compiled_sched.resources[clock]["freq"] == clock_freq_schedule
+
+
+def test_set_device_cfg_clock(
+    mock_setup_basic_transmon_with_standard_params,
+):
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    q0 = quantum_device.get_element("q0")
+    clock = "q0.01"
+
+    sched = Schedule("Test schedule")
+    sched.add(X("q0"))
+
+    compiler = SerialCompiler("test")
+    compiled_sched = compiler.compile(
+        schedule=sched, config=quantum_device.generate_compilation_config()
+    )
+    assert compiled_sched.resources[clock]["freq"] == q0.clock_freqs.f01()
+
+
+def test_clock_not_defined_raises():
+    simple_config = DeviceCompilationConfig(
+        backend="quantify_scheduler.backends.circuit_to_device"
+        + ".compile_circuit_to_device",
+        clocks={
+            "q0.01": 6020000000.0,
+        },
+        elements={
+            "q0": {
+                "measure": {
+                    "factory_func": "quantify_scheduler.operations."
+                    + "measurement_factories.dispersive_measurement",
+                    "gate_info_factory_kwargs": [
+                        "acq_index",
+                        "bin_mode",
+                        "acq_protocol",
+                    ],
+                    "factory_kwargs": {
+                        "port": "q0:res",
+                        "clock": "q0.ro",
+                        "pulse_type": "SquarePulse",
+                        "pulse_amp": 0.25,
+                        "pulse_duration": 1.6e-07,
+                        "acq_delay": 1.2e-07,
+                        "acq_duration": 3e-07,
+                        "acq_channel": 0,
+                    },
+                },
+            },
+            "q1": {},
+            "q2": {},
+        },
+        edges={},
+    )
+
+    clock = "q0.ro"
+    sched = Schedule("Test schedule")
+    operation = Measure("q0", acq_protocol="Trace")
+    sched.add(operation)
+    dev_sched = compile_circuit_to_device(sched, device_cfg=simple_config)
+    with pytest.raises(ValueError) as error:
+        _ = set_pulse_and_acquisition_clock(dev_sched, device_cfg=simple_config)
+
+    assert (
+        error.value.args[0]
+        == f"Operation '{operation}' contains an unknown clock '{clock}'; "
+        f"ensure this resource has been added to the schedule "
+        f"or to the device config."
+    )
 
 
 def test_reset_operations_compile():
@@ -215,13 +344,6 @@ def test_operation_not_in_config_raises():
     sched.add(CNOT("q0", "q1"))
     with pytest.raises(ConfigKeyError):
         _ = compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
-
-
-def test_compile_schedule_with_manually_added_clock():
-    sched = Schedule("Test schedule")
-    sched.add_resources([ClockResource(name="q0.01", freq=5e9)])
-    sched.add(X("q0"))
-    _ = compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
 
 
 def test_compile_schedule_with_trace_acq_protocol():
@@ -306,7 +428,6 @@ def test_compile_schedule_with_invalid_pulse_type_raises():
 
 
 def test_operation_not_in_config_raises_custom():
-
     simple_config = DeviceCompilationConfig(
         backend="quantify_scheduler.backends.circuit_to_device"
         + ".compile_circuit_to_device",
@@ -337,7 +458,6 @@ def test_operation_not_in_config_raises_custom():
 
 
 def test_config_with_callables():
-
     simple_config = DeviceCompilationConfig(
         backend="quantify_scheduler.backends.circuit_to_device"
         + ".compile_circuit_to_device",

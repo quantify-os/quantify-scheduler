@@ -4,6 +4,7 @@
 
 ### Breaking changes
 - Qblox ICCs - Replace `"acq_mapping"` by `"trace_acq_channel"` in the compiled schedule (!515)
+- Qblox backend - Replace `"input_gain<n>"` by `"input_gain_<n>"` and `"input_att"` is the property of `"complex_input"` (!585)
 
 ### Merged branches and closed issues
 - NV centers - Test for spectroscopy schedule temporarily disabled (!571).
@@ -22,7 +23,13 @@
 - Qblox backend - Add preparation of acquisition settings and accompanying datastructures for NV centers (!567)
 - Waveforms - Fix `sudden_net_zero` waveform generation function misunderstands `amp_B` (!549, #390)
 - Qblox backend - Introduce `SetClockFrequency` operation, made possible by qblox-instruments==0.8 (!575, follow-up to !539 and !543)
+- Acquisition - Raise an exception if user tries to use same acquisition index and channel for different operations, and only extract data from used modules (!573)
+- Compilation - Fix clock not being added to schedule from quantum device layer via new graph node `set_pulse_and_acquisition_clock` that verifies and sets clock frequency (!538,#371)
 - Schedule Functions - make experiment-related schedule functions available in `quantify_scheduler.schedules` (!572)
+- Tests - Removed unused `lo0` and added `ttl_acq_threshold` in `qblox_test_mapping_nv_centers.json` so that `TestNVDarkESRSched` suite passes (!579)
+- Documentation - Removed deprecated code from the Compiling to Hardware Tutorial (!582)
+- Qblox backend - Typecast attenuations to `int`s before assigning them (!570)
+- Qblox backend - Remove `mix_lo` from `SequencerSettings` (!896)
 
 ## 0.10.1 (2022-12-20)
 

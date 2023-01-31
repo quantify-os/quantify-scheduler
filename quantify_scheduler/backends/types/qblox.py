@@ -363,8 +363,6 @@ class SequencerSettings(DataClassJsonMixin):
 
     nco_en: bool
     """Specifies whether the NCO will be used or not."""
-    mix_lo: bool
-    """Specifies whether IQ mixing will be used or not."""
     sync_en: bool
     """Enables party-line synchronization."""
     connected_outputs: Optional[Union[Tuple[int], Tuple[int, int]]]
@@ -491,7 +489,6 @@ class SequencerSettings(DataClassJsonMixin):
         settings = cls(
             nco_en=nco_en,
             sync_en=True,
-            mix_lo=True,
             connected_outputs=connected_outputs,
             connected_inputs=connected_inputs,
             init_offset_awg_path_0=init_offset_awg_path_0,

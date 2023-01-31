@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import inspect
-from abc import ABC
 from functools import partial
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Protocol, Tuple
 
 import numpy as np
 
@@ -13,13 +12,6 @@ from quantify_scheduler import math, waveforms
 from quantify_scheduler.schedules.schedule import Schedule
 from quantify_scheduler.helpers import schedule as schedule_helpers
 from quantify_scheduler.helpers.importers import import_python_object_from_string
-
-try:
-    from typing import Protocol as _Protocol
-except ImportError:
-    Protocol = ABC
-else:
-    Protocol = _Protocol
 
 
 # pylint: disable=too-few-public-methods

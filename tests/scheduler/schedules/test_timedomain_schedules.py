@@ -15,11 +15,13 @@ from .compiles_all_backends import _CompilesAllBackends
 class TestRabiPulse(_CompilesAllBackends):
     @classmethod
     def setup_class(cls):
+        # Clock frequency should match the one defined in the device_cfg
+        # to avoid conflicts
         cls.sched_kwargs = {
             "init_duration": 200e-6,
             "mw_G_amp": 0.5,
             "mw_D_amp": 0,
-            "mw_frequency": 5.4e9,
+            "mw_frequency": 6.02e9,
             "mw_clock": "q0.01",
             "mw_port": "q0:mw",
             "mw_pulse_duration": 20e-9,
@@ -28,7 +30,7 @@ class TestRabiPulse(_CompilesAllBackends):
             "ro_pulse_delay": 200e-9,
             "ro_pulse_port": "q0:res",
             "ro_pulse_clock": "q0.ro",
-            "ro_pulse_frequency": 8e9,
+            "ro_pulse_frequency": 7.04e9,
             "ro_integration_time": 400e-9,
             "ro_acquisition_delay": 120e-9,
             "repetitions": 10,
@@ -70,10 +72,12 @@ class TestRabiPulse(_CompilesAllBackends):
 class TestRabiSched(_CompilesAllBackends):
     @classmethod
     def setup_class(cls):
+        # Clock frequency should match the one defined in the device_cfg
+        # to avoid conflicts
         cls.sched_kwargs = {
             "pulse_amp": 0.2,
             "pulse_duration": 20e-9,
-            "frequency": 5.442e9,
+            "frequency": 6.02e9,
             "qubit": "q0",
             "port": None,
             "clock": None,
@@ -108,13 +112,13 @@ class TestRabiSched(_CompilesAllBackends):
         assert rabi_pulse["G_amp"] == 0.2
         assert rabi_pulse["D_amp"] == 0
         assert rabi_pulse["duration"] == 20e-9
-        assert self.uncomp_sched.resources["q0.01"]["freq"] == 5.442e9
+        assert self.uncomp_sched.resources["q0.01"]["freq"] == 6.02e9
 
     def test_batched_variant_single_val(self, device_compile_config_basic_transmon):
         sched = ts.rabi_sched(
             pulse_amp=[0.5],
             pulse_duration=20e-9,
-            frequency=5.442e9,
+            frequency=6.02e9,
             qubit="q0",
             port=None,
             clock=None,
@@ -138,10 +142,12 @@ class TestRabiSched(_CompilesAllBackends):
 
     def test_batched_variant_amps(self, device_compile_config_basic_transmon):
         amps = np.linspace(-0.5, 0.5, 5)
+        # Clock frequency should match the one defined in the device_cfg
+        # to avoid conflicts
         sched = ts.rabi_sched(
             pulse_amp=amps,
             pulse_duration=20e-9,
-            frequency=5.442e9,
+            frequency=6.02e9,
             qubit="q0",
             port=None,
             clock=None,
@@ -170,10 +176,12 @@ class TestRabiSched(_CompilesAllBackends):
 
     def test_batched_variant_durations(self, device_compile_config_basic_transmon):
         durations = np.linspace(3e-9, 30e-9, 6)
+        # Clock frequency should match the one defined in the device_cfg
+        # to avoid conflicts
         sched = ts.rabi_sched(
             pulse_amp=0.5,
             pulse_duration=durations,
-            frequency=5.442e9,
+            frequency=6.02e9,
             qubit="q0",
             port=None,
             clock=None,
@@ -197,7 +205,7 @@ class TestRabiSched(_CompilesAllBackends):
             _ = ts.rabi_sched(
                 pulse_amp=np.linspace(-0.3, 0.5, 3),
                 pulse_duration=np.linspace(5e-9, 19e-9, 8),
-                frequency=5.442e9,
+                frequency=6.02e9,
                 qubit="q0",
                 port=None,
                 clock=None,
