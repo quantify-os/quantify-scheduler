@@ -37,3 +37,6 @@ rich[jupyter]
 jupytext
 
 prospector[with_mypy]
+
+# To ensure that the correct version of Setuptools is set up in ReadTheDocs
+setuptools>=66.1
