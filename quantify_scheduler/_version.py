@@ -57,6 +57,36 @@ def pep440_format(version_info):
     return "".join(version_parts)
 
 
+def get_git_dir(py_package_root=package_root):
+    """Return path of .git directory from the root directory of the python package
+    (``py_package_root``). Assumes that the .git directory is in the parent of
+    ``py_package_root``. By default, uses ``package_root`` variable from outer scope.
+    """
+    if "/" in package_root:
+        # Unix
+        parent_dir = "/".join(py_package_root.split("/")[:-1])
+        return f"{parent_dir}/.git"
+    elif "\\" in package_root:
+        # Windows
+        parent_dir = "\\".join(py_package_root.split("\\")[:-1])
+        return f"{parent_dir}\\.git"
+    else:
+        # Unknown. Just return .git as best guess.
+        return ".git"
+
+
+def get_git_command(git_dir=None):
+    """Return git command as a list including --git-dir specifier.
+
+    If ``git_dir`` is not specified, use ``get_git_dir`` without arguments.
+
+    Use with subprocess like subprocess.Popen([*get_git_command(), "pull"], ...).
+    """
+    if git_dir is not None:
+        return ["git", "--git-dir", f"{git_dir}"]
+    return ["git", "--git-dir", f"{get_git_dir(package_root)}"]
+
+
 def get_version_from_git():
     import subprocess
 
@@ -66,7 +96,7 @@ def get_version_from_git():
     for opts in [["--first-parent"], []]:
         try:
             p = subprocess.Popen(
-                ["git", "describe", "--long", "--always"] + opts,
+                [*get_git_command(), "describe", "--long", "--always"] + opts,
                 cwd=package_root,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -101,7 +131,7 @@ def get_version_from_git():
         labels.append(git)
 
     try:
-        p = subprocess.Popen(["git", "diff", "--quiet"], cwd=package_root)
+        p = subprocess.Popen([*get_git_command(), "diff", "--quiet"], cwd=package_root)
     except OSError:
         labels.append("confused")  # This should never happen.
     else:

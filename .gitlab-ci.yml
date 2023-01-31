@@ -7,6 +7,7 @@ workflow:
 
 variables:
   COV_MODULE: quantify_scheduler
+  GIT_DEPTH: 0 # Get all commits so that miniver always knows the latest tag.
 
 include:
   - project: "quantify-os/ci"
