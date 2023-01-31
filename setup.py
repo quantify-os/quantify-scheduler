@@ -16,9 +16,6 @@ with open("CHANGELOG.md") as history_file:
 with open("requirements.txt") as installation_requirements_file:
     requirements = installation_requirements_file.read().splitlines()
 
-with open("requirements_setup.txt") as setup_requirements_file:
-    setup_requirements = setup_requirements_file.read().splitlines()
-
 with open("requirements_dev.txt") as test_requirements_file:
     test_requirements = test_requirements_file.read().splitlines()
 
@@ -65,7 +62,6 @@ setup(
     name="quantify-scheduler",
     packages=find_packages(include=["quantify_scheduler", "quantify_scheduler.*"]),
     package_data={"": ["*.json"]},  # ensures JSON schema are included
-    setup_requires=setup_requirements,
     test_suite="tests",
     tests_require=test_requirements,
     url="https://gitlab.com/quantify-os/quantify-scheduler",
