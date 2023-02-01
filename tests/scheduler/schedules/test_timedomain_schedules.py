@@ -11,6 +11,7 @@ from quantify_scheduler.schedules import timedomain_schedules as ts
 
 from .compiles_all_backends import _CompilesAllBackends
 
+
 # FIXME classmethods cannot use fixtures, these test are mixing testing style # pylint: disable=fixme
 class TestRabiPulse(_CompilesAllBackends):
     @classmethod

@@ -6,6 +6,7 @@ from quantify_scheduler.operations.gate_library import Measure
 from quantify_scheduler.operations.pulse_library import IdlePulse, SquarePulse
 from quantify_scheduler.resources import ClockResource
 
+
 # pylint: disable=too-many-arguments
 def trace_schedule(
     pulse_amp: float,

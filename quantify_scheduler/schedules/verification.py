@@ -81,7 +81,6 @@ def acquisition_staircase_sched(
     readout_pulse_amps = readout_pulse_amps.reshape(readout_pulse_amps.shape or (1,))
 
     for acq_index, readout_pulse_amp in enumerate(readout_pulse_amps):
-
         sched.add(IdlePulse(duration=init_duration))
 
         pulse = sched.add(
@@ -183,7 +182,6 @@ def awg_staircase_sched(
     pulse_amps = pulse_amps.reshape(pulse_amps.shape or (1,))
 
     for acq_index, pulse_amp in enumerate(pulse_amps):
-
         sched.add(IdlePulse(duration=init_duration))
 
         pulse = sched.add(
