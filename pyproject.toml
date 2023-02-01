@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=66.1", "setuptools_scm[toml]>=7.0"]
+requires = ["setuptools>=66.1"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -64,6 +64,40 @@ dependencies = [
 
     # We are using rich in our tutorials
     "rich[jupyter]",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-mock",
+]
+docs = [
+    "jupyter_sphinx>=0.4.0",
+    "jupytext",
+    "myst-nb",
+    "rich[jupyter]",
+    "scanpydoc",
+    "sphinx-autoapi",
+    "sphinx-autobuild",
+    "sphinx-autodoc-typehints", # required by either sphinx.ext.autodoc or sphinx.ext.napoleon
+    "sphinx-jsonschema",
+    "sphinx-rtd-theme",
+    "sphinx-togglebutton",
+    "sphinx>=5.1.1",
+    "sphinxcontrib-bibtex",
+]
+dev = [
+    "black",
+    "coverage",
+    "isort>=5.10.0", # sort python imports
+    "pre-commit",
+    "pre-commit-hooks", # common hooks for git repos
+    "prospector",
+    "pylint",
+    # Pytest-cov is used to generage test coverage reports, which is rather a development than testing requirement
+    "pytest-cov",
+    "pytest-xdist", # run parallel tests
+    "quantify-scheduler[docs,test]",
 ]
 
 [project.urls]

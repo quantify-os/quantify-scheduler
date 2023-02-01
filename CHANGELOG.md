@@ -6,6 +6,7 @@ For help in migrating from deprecated methods, see [Quantify Deprecated Code Sug
 
 ### Breaking changes
 
+- Installation - Instead of `requirements.txt` and `requirements_dev.txt` `quantify-scheduler` uses optional requirements. Use `pip install "quantify-scheduler[dev]"` to install all of them. (!592)
 - Qblox ICCs - Replace `"acq_mapping"` by `"trace_acq_channel"` in the compiled schedule (!515)
 - Qblox backend - Replace `"input_gain<n>"` by `"input_gain_<n>"` and `"input_att"` is the property of `"complex_input"` (!585)
 
@@ -19,6 +20,7 @@ For help in migrating from deprecated methods, see [Quantify Deprecated Code Sug
 - Deprecation - Refactored tests to remove deprecated `qcompile`, refactored to `SerialCompiler` (!529, #368)
 - Documentation - Sphinx build now compatible with qcodes==0.36.0 (!552)
 - Documentation - Removed deprecated code from the Compiling to Hardware Tutorial (!582)
+- Installation - Refactor of setup configuration (!592)
 - NV centers - Dark ESR schedule combining all prior operations (!527)
 - NV centers - `BasicElectronicNVElement` parameters accept physics-motivated values (!551)
 - NV centers - Avoid python warning when parsing docstring in `nv_element.py` (!562)

@@ -33,13 +33,13 @@ Once you have a copy of the source, you can install it with:
 $ python -m pip install --upgrade .
 ```
 
-In order to develop the code locally, the package can be installed in the "editable mode" with the `-e` flag:
+## Setting up for local development
+
+In order to develop the code locally, the package can be installed in the "editable mode" with the `-e` flag. `[dev]` optional requirement set will pull all (necessary and recommended) development requirements:
 
 ```console
-$ python -m pip install --upgrade -e .
+$ python -m pip install -e ".[dev]"
 ```
-
-## Setting up for local development
 
 Contributions are very welcome! To setup a an environment for local development see the instructions in the {doc}`installation guide of quantify-core <quantify-core:installation>`. You only need to replace {code}`quantify-core` with {code}`quantify-scheduler` in the provided commands.
 
