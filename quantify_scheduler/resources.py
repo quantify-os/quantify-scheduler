@@ -19,6 +19,7 @@ class Resource(UserDict):
     .. jsonschema:: https://gitlab.com/quantify-os/quantify-scheduler/-/raw/main/quantify_scheduler/schemas/resource.json
 
     """
+
     # pylint: enable=line-too-long
     def __init__(self, name: str, data: Optional[dict] = None) -> None:
         """

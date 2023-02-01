@@ -7,7 +7,6 @@ from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 
 
 def test_QuantumDevice_generate_device_config(mock_setup_basic_transmon: dict) -> None:
-
     quantum_device = mock_setup_basic_transmon["quantum_device"]
 
     # N.B. the validation of the generated config is happening inside the
@@ -23,7 +22,6 @@ def test_QuantumDevice_generate_device_config(mock_setup_basic_transmon: dict) -
 def test_QuantumDevice_generate_hardware_config(
     mock_setup_basic_transmon: dict,
 ) -> None:
-
     quantum_device = mock_setup_basic_transmon["quantum_device"]
 
     mock_hardware_cfg = {
@@ -83,13 +81,11 @@ def test_mc() -> QuantumDevice:
 
 
 def test_adding_non_element_raises(dev, test_mc):
-
     with pytest.raises(TypeError):
         dev.add_element(test_mc)
 
 
 def test_invalid_device_element_name():
-
     invalid_name = "q_0"
     with pytest.raises(ValueError):
         DeviceElement(invalid_name)

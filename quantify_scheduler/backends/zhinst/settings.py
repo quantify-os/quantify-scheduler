@@ -112,7 +112,7 @@ class ZISettings:
         for setting in self._daq_settings:
             settings_dict = {**settings_dict, **setting.as_dict()}
 
-        for (awg_index, setting) in self._awg_settings.items():
+        for awg_index, setting in self._awg_settings.items():
             # need to explicitly initialize an empty dict as different awgs can set a
             # setting related to the same node and we do not want to overwrite the key.
             if setting.node not in settings_dict:
@@ -123,7 +123,7 @@ class ZISettings:
 
     def apply(self, instrument: base.ZIBaseInstrument) -> None:
         """Apply all settings to the instrument."""
-        for (_, setting) in self._awg_settings.items():
+        for _, setting in self._awg_settings.items():
             setting.apply(instrument)
 
         def sort_by_fn(setting: ZISetting):
@@ -213,7 +213,7 @@ class ZISettings:
 
             collection = {**collection, **setting.as_dict()}
 
-        for (awg_index, setting) in _tmp_awg_list.items():
+        for awg_index, setting in _tmp_awg_list.items():
             if setting.node == "compiler/sourcestring":
                 if "compiler/sourcestring" not in collection:
                     collection["compiler/sourcestring"] = dict()
@@ -387,7 +387,7 @@ class ZISettingsBuilder:
         -------
         :
         """
-        for (node, value) in defaults:
+        for node, value in defaults:
             self._set_daq(ZISetting(node, value, zi_helpers.set_value))
         return self
 

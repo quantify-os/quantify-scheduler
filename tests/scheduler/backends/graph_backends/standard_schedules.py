@@ -53,7 +53,6 @@ def single_qubit_schedule_circuit_level() -> Schedule:
 
 
 def two_qubit_t1_schedule() -> Schedule:
-
     q0, q1 = ("q0", "q1")
     repetitions = 1024
     sched = Schedule("two_qubit_t1_schedule", repetitions)
@@ -81,7 +80,6 @@ def two_qubit_t1_schedule() -> Schedule:
 
 
 def two_qubit_schedule_with_edge() -> Schedule:
-
     q0, q2 = ("q0", "q2")
     repetitions = 1024
     sched = Schedule("two_qubit_schedule_with_edge", repetitions)
@@ -110,7 +108,6 @@ def two_qubit_schedule_with_edge() -> Schedule:
 
 
 def pulse_only_schedule() -> Schedule:
-
     sched = Schedule(name="pulse_only_schedule", repetitions=1024)
 
     # these are kind of magic names that are known to exist in the default hardware
@@ -142,7 +139,6 @@ def pulse_only_schedule() -> Schedule:
 
 
 def parametrized_operation_schedule() -> Schedule:
-
     sched = Schedule("parametrized_operation_schedule")
 
     qubit = "q0"
@@ -155,7 +151,6 @@ def parametrized_operation_schedule() -> Schedule:
 
 
 def hybrid_schedule_rabi() -> Schedule:
-
     schedule = Schedule("hybrid_schedule_rabi", 8192)
 
     port = "q0:mw"
