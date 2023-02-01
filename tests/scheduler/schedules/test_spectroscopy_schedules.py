@@ -16,8 +16,8 @@ from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.schedules import spectroscopy_schedules as sps
 from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 
-from tests.scheduler.instrument_coordinator.components.test_qblox import (
-    make_cluster_component,  # pylint: disable=unused-import
+from tests.scheduler.instrument_coordinator.components.test_qblox import (  # pylint: disable=unused-import
+    make_cluster_component,
 )
 from tests.scheduler.schedules.compiles_all_backends import _CompilesAllBackends
 from tests.scheduler.test_gettables import _reshape_array_into_acq_return_type
