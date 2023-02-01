@@ -43,7 +43,10 @@ dependencies = [
     "networkx",
     "numpy",
     "orjson",
+    # FIXME: replace "pandas, jinja2" with "pandas[output_formatting]"
+    # when pandas>1.5.3 is released and used.
     "pandas",
+    "jinja2",
     "pathvalidate",
     "plotly",
     "pydantic",
