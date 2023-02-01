@@ -31,7 +31,6 @@ def make_ufhqa(mocker) -> base.ZIBaseInstrument:
 def test_zi_settings_equality(
     mock_setup_basic_transmon, load_example_zhinst_hardware_config
 ):
-
     sched_kwargs = {
         "pulse_amps": np.linspace(0, 0.5, 11),
         "pulse_duration": 1e-6,

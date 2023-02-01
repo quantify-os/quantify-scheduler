@@ -69,6 +69,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
     .. jsonschema:: https://gitlab.com/quantify-os/quantify-scheduler/-/raw/main/quantify_scheduler/schemas/schedule.json
 
     """
+
     # pylint: enable=line-too-long
     @property
     def name(self) -> str:
@@ -724,7 +725,6 @@ class CompiledSchedule(ScheduleBase):
     schema_filename = "schedule.json"
 
     def __init__(self, schedule: Schedule) -> None:
-
         # validate the input data to ensure it is valid schedule data
         super().__init__()
 
