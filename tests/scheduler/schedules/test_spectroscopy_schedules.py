@@ -67,6 +67,7 @@ class TestHeterodyneSpecSchedule(_CompilesAllBackends):
 
 
 class TestHeterodyneSpecScheduleBatched(TestHeterodyneSpecSchedule):
+    @classmethod
     def setup_class(cls):
         cls.sched_kwargs = {
             "pulse_amp": 0.15,
@@ -117,6 +118,7 @@ class TestHeterodyneSpecScheduleBatched(TestHeterodyneSpecSchedule):
         _CompilesAllBackends.test_compiles_zi_backend(
             self, compile_config_basic_transmon_zhinst_hardware
         )
+
 
 def test_nco_heterodyne_spec_sched__qblox_backend(
     mock_setup_basic_transmon_with_standard_params, make_cluster_component, mocker
@@ -257,6 +259,7 @@ class TestTwoToneSpecSchedule(_CompilesAllBackends):
 
 
 class TestTwoToneSpecScheduleBatched(TestTwoToneSpecSchedule):
+    @classmethod
     def setup_class(cls):
         cls.sched_kwargs = {
             "spec_pulse_amp": 0.5,

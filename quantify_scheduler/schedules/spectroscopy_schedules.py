@@ -112,67 +112,67 @@ def heterodyne_spec_sched_batched(
     port_out: Optional[str] = None,
 ) -> Schedule:
     """
-    Generate a batched schedule for performing fast heterodyne spectroscopy using the
-    SetClockFrequency operation.
+     Generate a batched schedule for performing fast heterodyne spectroscopy using the
+     SetClockFrequency operation.
 
-    Per frequency for the spectroscopy pulse, we reset the qubit, update the clock to
-    that frequency, and then measure `repetitions` times, averaging the result per
-    frequency.
+     Per frequency for the spectroscopy pulse, we reset the qubit, update the clock to
+     that frequency, and then measure `repetitions` times, averaging the result per
+     frequency.
 
-    Example usage of the batched schedule:
+     Example usage of the batched schedule:
 
-   .. code-block:: python
+    .. code-block:: python
 
-        # Manual parameter for batched schedule
-        ro_freq = ManualParameter("ro_freq", unit="Hz")
-        ro_freq.batched = True
-        ro_freqs = np.linspace(start=4.5e9, stop=5.5e9, num=11)
-        quantum_device.cfg_sched_repetitions(5)
+         # Manual parameter for batched schedule
+         ro_freq = ManualParameter("ro_freq", unit="Hz")
+         ro_freq.batched = True
+         ro_freqs = np.linspace(start=4.5e9, stop=5.5e9, num=11)
+         quantum_device.cfg_sched_repetitions(5)
 
-        # Configure the gettable
-        qubit = quantum_device.get_element("q0")
-        schedule_kwargs = {
-            "pulse_amp": qubit.measure.pulse_amp(),
-            "pulse_duration": qubit.measure.pulse_duration(),
-            "frequencies": ro_freqs,
-            "acquisition_delay": qubit.measure.acq_delay(),
-            "integration_time": qubit.measure.integration_time(),
-            "port": qubit.ports.readout(),
-            "clock": qubit.name + ".ro",
-            "init_duration": qubit.reset.duration(),
-        }
-        spec_gettable = ScheduleGettable(
-            quantum_device=quantum_device,
-            schedule_function=heterodyne_spec_sched_batched,
-            schedule_kwargs=schedule_kwargs,
-            real_imag=False,
-            batched=True,
-        )
+         # Configure the gettable
+         qubit = quantum_device.get_element("q0")
+         schedule_kwargs = {
+             "pulse_amp": qubit.measure.pulse_amp(),
+             "pulse_duration": qubit.measure.pulse_duration(),
+             "frequencies": ro_freqs,
+             "acquisition_delay": qubit.measure.acq_delay(),
+             "integration_time": qubit.measure.integration_time(),
+             "port": qubit.ports.readout(),
+             "clock": qubit.name + ".ro",
+             "init_duration": qubit.reset.duration(),
+         }
+         spec_gettable = ScheduleGettable(
+             quantum_device=quantum_device,
+             schedule_function=heterodyne_spec_sched_batched,
+             schedule_kwargs=schedule_kwargs,
+             real_imag=False,
+             batched=True,
+         )
 
-    Parameters
-    ----------
-    pulse_amp
-        Amplitude of the spectroscopy pulse in Volt.
-    pulse_duration
-        Duration of the spectroscopy pulse in seconds.
-    frequencies
-        Sample frequencies for the spectroscopy pulse in Hertz.
-    acquisition_delay
-        Start of the data acquisition with respect to the start of the spectroscopy
-        pulse in seconds.
-    integration_time
-        Integration time of the data acquisition in seconds.
-    port
-        Location on the device where the acquisition is performed.
-    clock
-        Reference clock used to track the spectroscopy frequency.
-    init_duration
-        The relaxation time or dead time.
-    repetitions
-        The amount of times the Schedule will be repeated.
-    port_out
-        Output port on the device where the pulse should be applied. If `None`, then use
-        the same as `port`.
+     Parameters
+     ----------
+     pulse_amp
+         Amplitude of the spectroscopy pulse in Volt.
+     pulse_duration
+         Duration of the spectroscopy pulse in seconds.
+     frequencies
+         Sample frequencies for the spectroscopy pulse in Hertz.
+     acquisition_delay
+         Start of the data acquisition with respect to the start of the spectroscopy
+         pulse in seconds.
+     integration_time
+         Integration time of the data acquisition in seconds.
+     port
+         Location on the device where the acquisition is performed.
+     clock
+         Reference clock used to track the spectroscopy frequency.
+     init_duration
+         The relaxation time or dead time.
+     repetitions
+         The amount of times the Schedule will be repeated.
+     port_out
+         Output port on the device where the pulse should be applied. If `None`, then use
+         the same as `port`.
     """
     sched = Schedule("Fast heterodyne spectroscopy (batched)")
     sched.add_resource(ClockResource(name=clock, freq=frequencies.flat[0]))
@@ -184,7 +184,7 @@ def heterodyne_spec_sched_batched(
         sched.add(IdlePulse(duration=init_duration), label=f"buffer {acq_idx}")
 
         sched.add(
-            SetClockFrequency(clock=clock, clock_frequency=freq),
+            SetClockFrequency(clock=clock, clock_freq_new=freq),
             label=f"set_freq {acq_idx} ({clock} {freq:e} Hz)",
         )
 
@@ -341,83 +341,83 @@ def two_tone_spec_sched_batched(
     repetitions: int = 1,
 ) -> Schedule:
     """
-    Generate a batched schedule for performing fast two-tone spectroscopy using the
-    SetClockFrequency operation.
+     Generate a batched schedule for performing fast two-tone spectroscopy using the
+     SetClockFrequency operation.
 
-    Per frequency for the spectroscopy pulse, we reset the qubit, update the frequency
-    of the spec_pulse_clock, and then measure `repetitions` times, averaging the result
-    per frequency.
+     Per frequency for the spectroscopy pulse, we reset the qubit, update the frequency
+     of the spec_pulse_clock, and then measure `repetitions` times, averaging the result
+     per frequency.
 
-    Example usage of the batched schedule:
+     Example usage of the batched schedule:
 
-   .. code-block:: python
+    .. code-block:: python
 
-        # Manual parameter for batched schedule
-        spec_freq = ManualParameter("spec_freq", unit="Hz")
-        spec_freq.batched = True
-        spec_freqs = np.linspace(start=4.5e9, stop=5.5e9, num=11)
-        quantum_device.cfg_sched_repetitions(5)
+         # Manual parameter for batched schedule
+         spec_freq = ManualParameter("spec_freq", unit="Hz")
+         spec_freq.batched = True
+         spec_freqs = np.linspace(start=4.5e9, stop=5.5e9, num=11)
+         quantum_device.cfg_sched_repetitions(5)
 
-        # Configure the gettable
-        qubit = quantum_device.get_element("q0")
-        schedule_kwargs = {
-            "spec_pulse_amp": 0.5,
-            "spec_pulse_duration": 8e-6,
-            "spec_pulse_port": qubit.ports.microwave(),
-            "spec_pulse_clock": qubit.name + ".01",
-            "spec_pulse_frequencies": spec_freqs,
-            "ro_pulse_amp": qubit.measure.pulse_amp(),
-            "ro_pulse_duration": qubit.measure.pulse_duration(),
-            "ro_pulse_delay": 300e-9,
-            "ro_pulse_port": qubit.ports.readout(),
-            "ro_pulse_clock": qubit.name + ".ro",
-            "ro_pulse_frequency": 7.04e9,
-            "ro_acquisition_delay": qubit.measure.acq_delay(),
-            "ro_integration_time": qubit.measure.integration_time(),
-            "init_duration": qubit.reset.duration(),
-        }
-        spec_gettable = ScheduleGettable(
-            quantum_device=quantum_device,
-            schedule_function=two_tone_spec_sched_batched,
-            schedule_kwargs=schedule_kwargs,
-            real_imag=False,
-            batched=True,
-        )
+         # Configure the gettable
+         qubit = quantum_device.get_element("q0")
+         schedule_kwargs = {
+             "spec_pulse_amp": 0.5,
+             "spec_pulse_duration": 8e-6,
+             "spec_pulse_port": qubit.ports.microwave(),
+             "spec_pulse_clock": qubit.name + ".01",
+             "spec_pulse_frequencies": spec_freqs,
+             "ro_pulse_amp": qubit.measure.pulse_amp(),
+             "ro_pulse_duration": qubit.measure.pulse_duration(),
+             "ro_pulse_delay": 300e-9,
+             "ro_pulse_port": qubit.ports.readout(),
+             "ro_pulse_clock": qubit.name + ".ro",
+             "ro_pulse_frequency": 7.04e9,
+             "ro_acquisition_delay": qubit.measure.acq_delay(),
+             "ro_integration_time": qubit.measure.integration_time(),
+             "init_duration": qubit.reset.duration(),
+         }
+         spec_gettable = ScheduleGettable(
+             quantum_device=quantum_device,
+             schedule_function=two_tone_spec_sched_batched,
+             schedule_kwargs=schedule_kwargs,
+             real_imag=False,
+             batched=True,
+         )
 
-    Parameters
-    ----------
-    spec_pulse_amp
-        Amplitude of the spectroscopy pulse in Volt.
-    spec_pulse_duration
-        Duration of the spectroscopy pulse in seconds.
-    spec_pulse_port
-        Location on the device where the spectroscopy pulse should be applied.
-    spec_pulse_clock
-        Reference clock used to track the spectroscopy frequency.
-    spec_pulse_frequencies
-        Sample frequencies for the spectroscopy pulse in Hertz.
-    ro_pulse_amp
-        Amplitude of the readout (spectroscopy) pulse in Volt.
-    ro_pulse_duration
-        Duration of the readout (spectroscopy) pulse in seconds.
-    ro_pulse_delay
-        Time between the end of the spectroscopy pulse and the start of the readout
-        (spectroscopy) pulse.
-    ro_pulse_port
-        Location on the device where the readout (spectroscopy) pulse should be applied.
-    ro_pulse_clock
-        Reference clock used to track the readout (spectroscopy) frequency.
-    ro_pulse_frequency
-        Frequency of the readout (spectroscopy) pulse in Hertz.
-    ro_acquisition_delay
-        Start of the data acquisition with respect to the start of the readout pulse in
-        seconds.
-    ro_integration_time
-        Integration time of the data acquisition in seconds.
-    init_duration
-        The relaxation time or dead time.
-    repetitions
-        The amount of times the Schedule will be repeated.
+     Parameters
+     ----------
+     spec_pulse_amp
+         Amplitude of the spectroscopy pulse in Volt.
+     spec_pulse_duration
+         Duration of the spectroscopy pulse in seconds.
+     spec_pulse_port
+         Location on the device where the spectroscopy pulse should be applied.
+     spec_pulse_clock
+         Reference clock used to track the spectroscopy frequency.
+     spec_pulse_frequencies
+         Sample frequencies for the spectroscopy pulse in Hertz.
+     ro_pulse_amp
+         Amplitude of the readout (spectroscopy) pulse in Volt.
+     ro_pulse_duration
+         Duration of the readout (spectroscopy) pulse in seconds.
+     ro_pulse_delay
+         Time between the end of the spectroscopy pulse and the start of the readout
+         (spectroscopy) pulse.
+     ro_pulse_port
+         Location on the device where the readout (spectroscopy) pulse should be applied.
+     ro_pulse_clock
+         Reference clock used to track the readout (spectroscopy) frequency.
+     ro_pulse_frequency
+         Frequency of the readout (spectroscopy) pulse in Hertz.
+     ro_acquisition_delay
+         Start of the data acquisition with respect to the start of the readout pulse in
+         seconds.
+     ro_integration_time
+         Integration time of the data acquisition in seconds.
+     init_duration
+         The relaxation time or dead time.
+     repetitions
+         The amount of times the Schedule will be repeated.
     """
     sched = Schedule("Fast two-tone spectroscopy (batched)")
     sched.add_resources(
@@ -431,7 +431,7 @@ def two_tone_spec_sched_batched(
         sched.add(IdlePulse(duration=init_duration), label=f"buffer {acq_idx}")
 
         sched.add(
-            SetClockFrequency(clock=spec_pulse_clock, clock_frequency=spec_pulse_freq),
+            SetClockFrequency(clock=spec_pulse_clock, clock_freq_new=spec_pulse_freq),
             label=f"set_freq {acq_idx} ({spec_pulse_clock} {spec_pulse_freq:e} Hz)",
         )
 
