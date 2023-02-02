@@ -1232,13 +1232,12 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                     pulse_data: OpInfo
                     for pulse_data in pulse_data_list:
                         if pulse_data.name == SetClockFrequency.__name__:
-                            if "clock_frequency" in pulse_data.data:
-                                pulse_data.data.update(
-                                    {
-                                        "clock_freq_old": clock_freq,
-                                        "interm_freq_old": seq.frequency,
-                                    }
-                                )
+                            pulse_data.data.update(
+                                {
+                                    "clock_freq_old": clock_freq,
+                                    "interm_freq_old": seq.frequency,
+                                }
+                            )
 
                     op_info_to_op_strategy_func = partial(
                         get_operation_strategy,
@@ -1380,13 +1379,10 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         self._configure_input_gains()
         self._configure_mixer_offsets()
         self._construct_sequencers()
-
         for seq in self.sequencers.values():
             self.assign_frequencies(seq)
-
         self.distribute_data()
         self._determine_scope_mode_acquisition_sequencer()
-
         self.assign_attenuation()
 
     def _configure_input_gains(self):
