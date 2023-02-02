@@ -165,7 +165,7 @@ def test_decompose_long_square_pulse() -> None:
         [
             ShiftClockPhase(clock=clock, phase_shift=180.0),
             ResetClockPhase(clock=clock),
-            SetClockFrequency(clock=clock, clock_frequency=1e6),
+            SetClockFrequency(clock=clock, clock_freq_new=1e6),
             IdlePulse(duration=duration),
             RampPulse(amp=1.0, duration=duration, port=port),
             StaircasePulse(

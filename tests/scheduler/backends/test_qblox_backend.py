@@ -14,7 +14,7 @@ import json
 import logging
 import os
 import re
-from typing import Dict, Generator
+from typing import Dict, Generator, Optional
 
 import numpy as np
 import pytest
@@ -944,27 +944,36 @@ def test_compile_measure(
 
 
 @pytest.mark.parametrize(
-    "operation, instruction_to_check, add_lo1",
+    "operation, instruction_to_check, clock_freq_old, add_lo1",
     [
-        (IdlePulse(duration=64e-9), f"{'wait':<9}  64", True),
-        (Reset("q1"), f"{'wait':<9}  65532", True),
-        (
-            ShiftClockPhase(clock="q1.01", phase_shift=180.0),
-            f"{'set_ph_delta'}  500000000",
-            True,
-        ),
-        (
-            SetClockFrequency(clock="q1.01", clock_frequency=5.001e9),
-            f"{'set_freq':<9}  {round((2e8 + 5.001e9 - 5e9)*4)}",
-            True,
-        ),
-    ],
+        [
+            (IdlePulse(duration=64e-9), f"{'wait':<9}  64", None, add_lo1),
+            (Reset("q1"), f"{'wait':<9}  65532", None, add_lo1),
+            (
+                ShiftClockPhase(clock=clock, phase_shift=180.0),
+                f"{'set_ph_delta'}  500000000",
+                None,
+                add_lo1,
+            ),
+            (
+                SetClockFrequency(clock=clock, clock_freq_new=clock_freq_new),
+                f"{'set_freq':<9}  {round((2e8 + clock_freq_new - clock_freq_old)*4)}",
+                clock_freq_old,
+                add_lo1,
+            ),
+        ]
+        for clock in ["q1.01"]
+        for clock_freq_old in [5e9]
+        for clock_freq_new in [5.001e9]
+        for add_lo1 in [True]
+    ][0],
 )
 def test_compile_clock_operations(
     mock_setup_basic_transmon_with_standard_params,
     hardware_cfg_baseband,
     operation: Operation,
     instruction_to_check: str,
+    clock_freq_old: Optional[float],
     add_lo1: bool,  # pylint: disable=unused-argument
 ):
     sched = Schedule("compile_clock_operations")
@@ -977,6 +986,30 @@ def test_compile_clock_operations(
         schedule=sched,
         config=quantum_device.generate_compilation_config(),
     )
+
+    if operation.__class__ is SetClockFrequency:
+        clock_name = operation.data["pulse_info"][0]["clock"]
+        qubit_name, clock_short_name = clock_name.split(".")
+        qubit = quantum_device.get_element(qubit_name)
+        qubit.clock_freqs[f"f{clock_short_name}"](np.nan)
+
+        with pytest.raises(ValueError) as error:
+            _ = compiler.compile(
+                schedule=sched,
+                config=quantum_device.generate_compilation_config(),
+            )
+        assert (
+            error.value.args[0]
+            == f"Operation '{operation}' contains clock '{clock_name}' with an "
+            f"undefined (initial) frequency; ensure this resource has been "
+            f"added to the schedule or to the device config."
+        )
+
+        sched.add_resource(ClockResource(clock_name, clock_freq_old))
+        _ = compiler.compile(
+            schedule=sched,
+            config=quantum_device.generate_compilation_config(),
+        )
 
     program_lines = compiled_sched.compiled_instructions["qcm0"]["seq0"]["sequence"][
         "program"

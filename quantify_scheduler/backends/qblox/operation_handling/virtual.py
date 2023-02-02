@@ -2,15 +2,15 @@
 # Licensed according to the LICENCE file on the main branch
 """Classes for handling operations that are neither pulses nor acquisitions."""
 
-from __future__ import annotations
-
 from typing import Dict, Any
+
+import numpy as np
 
 from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
 
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
-from quantify_scheduler.backends.qblox import helpers, q1asm_instructions
+from quantify_scheduler.backends.qblox import constants, helpers, q1asm_instructions
 
 
 class IdleStrategy(IOperationStrategy):
@@ -98,10 +98,11 @@ class NcoResetClockPhaseStrategy(IdleStrategy):
 
 
 class NcoSetClockFrequencyStrategy(IdleStrategy):
-    """Strategy for operation that does not produce any output, but rather sets
-    the frequency of the NCO.
-    Currently implemented as `set_freq` and an `upd_param` of 8 ns,
-    leading to a total duration of 8 ns before the next command can be issued."""
+    """
+    Strategy for operation that does not produce any output, but rather sets
+    the frequency of the NCO. Implemented as `set_freq` and an `upd_param` of 8 ns,
+    leading to a total duration of 8 ns before the next command can be issued.
+    """
 
     def __init__(self, operation_info: types.OpInfo):
         """
@@ -123,19 +124,24 @@ class NcoSetClockFrequencyStrategy(IdleStrategy):
         qasm_program
             The QASMProgram to add the assembly instructions to.
         """
-        clock_freq_new = self.operation_info.data.get("clock_frequency")
+        clock_freq_new = self.operation_info.data.get("clock_freq_new")
         clock_freq_old = self.operation_info.data.get("clock_freq_old")
         interm_freq_old = self.operation_info.data.get("interm_freq_old")
 
-        if clock_freq_old is None:
+        if clock_freq_old is None or np.isnan(clock_freq_old):
             raise RuntimeError(
-                f"{clock_freq_old=}: clock {self.operation_info.data.get('clock')} not "
-                f"in compiler_container.resources"
-            )  # TODO polish
+                f"Clock '{self.operation_info.data.get('clock')}' has an undefined "
+                f"initial frequency ({clock_freq_old=}); "
+                f"ensure this resource has been added to the schedule or to the device "
+                f"config."
+            )
         if interm_freq_old is None:
             raise RuntimeError(
-                f"{interm_freq_old=}: nco not enabled / mix_lo false"
-            )  # TODO polish
+                f"Clock '{self.operation_info.data.get('clock')}' has an undefined "
+                f"intermodulation frequency ({interm_freq_old=}) associated to it; make "
+                f"sure an 'interm_freq' is supplied or that 'mix_lo' is set to true in "
+                f"the hardware config."
+            )
         iterm_freq_new = interm_freq_old + clock_freq_new - clock_freq_old
 
         frequency_args = helpers.get_nco_set_frequency_arguments(iterm_freq_new)
@@ -146,6 +152,6 @@ class NcoSetClockFrequencyStrategy(IdleStrategy):
         )
         qasm_program.emit(
             q1asm_instructions.UPDATE_PARAMETERS,
-            8,
-            comment=f"updating to apply NCO frequency change",
+            constants.NCO_SET_FREQ_WAIT,
+            comment=f"update to apply nco frequency change",
         )

@@ -149,10 +149,20 @@ class TestNcoPhaseShiftStrategy:
 
 
 class TestNcoSetClockFrequencyStrategy:
+    def test_docstring(self):
+        assert (
+            f"`upd_param` of {constants.NCO_SET_FREQ_WAIT} ns"
+            in virtual.NcoSetClockFrequencyStrategy.__doc__
+        )
+        assert (
+            f"total duration of {constants.NCO_SET_FREQ_WAIT} ns"
+            in virtual.NcoSetClockFrequencyStrategy.__doc__
+        )
+
     def test_constructor(self):
         op_info = types.OpInfo(
             name=SetClockFrequency.__name__,
-            data={"clock_frequency": 1, "clock_freq_old": 2, "interm_freq_old": 3},
+            data={"clock_freq_new": 1, "clock_freq_old": 2, "interm_freq_old": 3},
             timing=0,
         )
         virtual.NcoSetClockFrequencyStrategy(
@@ -163,7 +173,7 @@ class TestNcoSetClockFrequencyStrategy:
         # arrange
         op_info = types.OpInfo(
             name=SetClockFrequency.__name__,
-            data={"clock_frequency": 1, "clock_freq_old": 2, "interm_freq_old": 3},
+            data={"clock_freq_new": 1, "clock_freq_old": 2, "interm_freq_old": 3},
             timing=0,
         )
         strategy = virtual.NcoSetClockFrequencyStrategy(
@@ -188,12 +198,7 @@ class TestNcoSetClockFrequencyStrategy:
                 ),
             )
             for clock_freq_new in [-2e9, 0, 600]
-            for clock_freq_old in np.append(
-                np.geomspace(-1000e6, -1e-8, num=2),
-                np.geomspace(
-                    1e-8, 1000e6, num=2
-                ),  # TODO: probably overkill, adding a lot of test cases
-            )
+            for clock_freq_old in [-1000e6, 500]
             for interm_freq_old in [-123, 50e6]
         ],
     )
@@ -220,7 +225,7 @@ class TestNcoSetClockFrequencyStrategy:
         op_info = types.OpInfo(
             name=SetClockFrequency.__name__,
             data={
-                "clock_frequency": clock_freq_new,
+                "clock_freq_new": clock_freq_new,
                 "clock_freq_old": clock_freq_old,
                 "interm_freq_old": interm_freq_old,
             },

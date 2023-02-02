@@ -130,7 +130,7 @@ class ResetClockPhase(Operation):
 
 class SetClockFrequency(Operation):
     """
-    An operation that sets the frequency of a clock. This is a low-level operation
+    Operation that sets updates the frequency of a clock. This is a low-level operation
     and therefore depends on the backend.
 
     Currently only implemented for Qblox backend, refer to
@@ -141,22 +141,23 @@ class SetClockFrequency(Operation):
     def __init__(
         self,
         clock: str,
-        clock_frequency: float,
+        clock_freq_new: float,
         t0: float = 0,
         duration: float = qblox_constants.NCO_SET_FREQ_WAIT * 1e-9,
     ):
         """
-        Create a new instance of SetClockFrequency.
 
         Parameters
         ----------
         clock
-            The clock of which to frequency is set.
-        clock_frequency
-            The frequency in Hz.
+            The clock for which a new frequency is to be set.
+        clock_freq_new
+            The new frequency in Hz.
         t0
-            Time in seconds when to execute the command relative
-            to the start time of the Operation in the Schedule.
+            Time in seconds when to execute the command relative to the start time of
+            the Operation in the Schedule.
+        duration
+            The duration of the operation in seconds.
         """
         super().__init__(name=self.__class__.__name__)
         self.data["pulse_info"] = [
@@ -164,7 +165,7 @@ class SetClockFrequency(Operation):
                 "wf_func": None,
                 "t0": t0,
                 "clock": clock,
-                "clock_frequency": clock_frequency,
+                "clock_freq_new": clock_freq_new,
                 "clock_freq_old": None,
                 "interm_freq_old": None,
                 "port": None,
