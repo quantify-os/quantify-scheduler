@@ -13,12 +13,14 @@ IMMEDIATE_SZ_OFFSET = pow(2, 16) - 1
 REGISTER_SIZE = pow(2, 32) - 1
 """Size of registers in Q1ASM programs."""
 NCO_PHASE_STEPS_PER_DEG = 1e9 / 360
-"""The number of steps per degree for nco phase instructions arguments."""
+"""The number of steps per degree for NCO phase instructions arguments."""
 NCO_FREQ_STEPS_PER_HZ = 4.0
 """The number of steps per Hz for the NCO set_freq instruction."""
 NCO_FREQ_LIMIT_STEPS = 2e9
 """The maximum and minimum frequency expressed in steps for the NCO set_freq instruction.
 For the minimum we multiply by -1."""
+NCO_SET_FREQ_WAIT = 8  # ns
+"""Wait that is issued after NCO set_freq instruction, included via upd_param."""
 
 GRID_TIME = 4  # ns
 """
@@ -26,14 +28,12 @@ Clock period of the sequencers. All time intervals used must be multiples of thi
 """
 MIN_TIME_BETWEEN_ACQUISITIONS = 1000  # ns
 """Minimum time between two acquisitions to prevent FIFO errors."""
+MAX_SAMPLE_SIZE_ACQUISITIONS: int = 16384
+"""Maximal amount of acquisition datapoints returned."""
 SAMPLING_RATE = 1_000_000_000  # 1GS/s
 """Sampling rate of the Qblox control/readout instruments."""
 PULSE_STITCHING_DURATION = 1e-6
 """Duration of the individual pulses when pulse stitching is used."""
-NUMBER_OF_SEQUENCERS_QCM = 6
-"""Number of sequencers supported by a QCM in the latest firmware."""
-NUMBER_OF_SEQUENCERS_QRM = 6
-"""Number of sequencers supported by a QRM in the latest firmware."""
 MIN_MIXER_PHASE_ERROR_DEG = -45
 """Lowest phase shift that can be configured in the instruments for mixer corrections.
 """
@@ -46,11 +46,13 @@ as Q/I."""
 MAX_MIXER_AMP_RATIO = 2.0
 """Highest value the amplitude correction can be set to. N.B. This correction is defined
 as Q/I."""
+NUMBER_OF_SEQUENCERS_QCM = 6
+"""Number of sequencers supported by a QCM in the latest firmware."""
+NUMBER_OF_SEQUENCERS_QRM = 6
+"""Number of sequencers supported by a QRM in the latest firmware."""
 NUMBER_OF_REGISTERS: int = 64
 """Number of registers available in the Qblox sequencers."""
-GENERIC_IC_COMPONENT_NAME: str = "generic"
-"""Default name for the generic instrument coordinator component."""
-MAX_SAMPLE_SIZE_ACQUISITIONS: int = 16384
-"""Maximal amount of acquisition datapoints returned."""
 MAX_NUMBER_OF_BINS: int = 131072
 """Number of bins available in the Qblox sequencers."""
+GENERIC_IC_COMPONENT_NAME: str = "generic"
+"""Default name for the generic instrument coordinator component."""
