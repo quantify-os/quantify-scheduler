@@ -19,7 +19,7 @@ NCO_FREQ_STEPS_PER_HZ = 4.0
 NCO_FREQ_LIMIT_STEPS = 2e9
 """The maximum and minimum frequency expressed in steps for the NCO set_freq instruction.
 For the minimum we multiply by -1."""
-NCO_SET_FREQ_WAIT = 8   # ns
+NCO_SET_FREQ_WAIT = 8  # ns
 """Wait that is issued after NCO set_freq instruction, included via upd_param."""
 
 GRID_TIME = 4  # ns

@@ -13,6 +13,7 @@ from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.json_utils import ScheduleJSONDecoder, ScheduleJSONEncoder
 from quantify_scheduler.operations.gate_library import X90, X
 from quantify_scheduler.operations.pulse_library import (
+    ChirpPulse,
     DRAGPulse,
     IdlePulse,
     NumericalPulse,
@@ -23,11 +24,10 @@ from quantify_scheduler.operations.pulse_library import (
     SkewedHermitePulse,
     SoftSquarePulse,
     SquarePulse,
-    create_dc_compensation_pulse,
-    decompose_long_square_pulse,
     StaircasePulse,
     SuddenNetZeroPulse,
-    ChirpPulse,
+    create_dc_compensation_pulse,
+    decompose_long_square_pulse,
 )
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 
@@ -110,7 +110,6 @@ def test_operation_duration_composite_pulse() -> None:
     dgp1.add_pulse(dgp3)
     assert dgp3.duration == pytest.approx(15.4e-9)
     assert dgp1.duration == pytest.approx(15.4e-9)
-
 
 
 def test_decompose_long_square_pulse() -> None:
