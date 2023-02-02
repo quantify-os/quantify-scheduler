@@ -42,26 +42,27 @@ def heterodyne_spec_sched(
     Parameters
     ----------
     pulse_amp
-        amplitude of the spectroscopy pulse in Volt.
+        Amplitude of the spectroscopy pulse in Volt.
     pulse_duration
-        duration of the spectroscopy pulse in seconds.
+        Duration of the spectroscopy pulse in seconds.
     frequency
-        frequency of the spectroscopy pulse and of the data acquisition in Hertz.
+        Frequency of the spectroscopy pulse in Hertz.
     acquisition_delay
-        start of the data acquisition with respect to the start of the spectroscopy
+        Start of the data acquisition with respect to the start of the spectroscopy
         pulse in seconds.
     integration_time
-        integration time of the data acquisition in seconds.
+        Integration time of the data acquisition in seconds.
     port
         Location on the device where the acquisition is performed.
     clock
-        reference clock used to track the spectroscopy frequency.
+        Reference clock used to track the spectroscopy frequency.
     init_duration
         The relaxation time or dead time.
     repetitions
         The amount of times the Schedule will be repeated.
     port_out
-        Output port on the device where the pulse should be applied. If `None`, then use the same as `port`.
+        Output port on the device where the pulse should be applied. If `None`, then use
+        the same as `port`.
     """
     sched = Schedule("Heterodyne spectroscopy", repetitions)
     sched.add_resource(ClockResource(name=clock, freq=frequency))
@@ -98,7 +99,7 @@ def heterodyne_spec_sched(
     return sched
 
 
-def nco_heterodyne_spec_sched(
+def heterodyne_spec_sched_batched(
     pulse_amp: float,
     pulse_duration: float,
     frequencies: np.ndarray,
@@ -111,33 +112,69 @@ def nco_heterodyne_spec_sched(
     port_out: Optional[str] = None,
 ) -> Schedule:
     """
-    Generate a **batched** schedule for performing fast heterodyne spectroscopy using the NCO.
+    Generate a batched schedule for performing fast heterodyne spectroscopy using the
+    SetClockFrequency operation.
+
+    Per frequency for the spectroscopy pulse, we reset the qubit, update the clock to
+    that frequency, and then measure `repetitions` times, averaging the result per
+    frequency.
+
+    Example usage of the batched schedule:
+
+   .. code-block:: python
+
+        # Manual parameter for batched schedule
+        ro_freq = ManualParameter("ro_freq", unit="Hz")
+        ro_freq.batched = True
+        ro_freqs = np.linspace(start=4.5e9, stop=5.5e9, num=11)
+        quantum_device.cfg_sched_repetitions(5)
+
+        # Configure the gettable
+        qubit = quantum_device.get_element("q0")
+        schedule_kwargs = {
+            "pulse_amp": qubit.measure.pulse_amp(),
+            "pulse_duration": qubit.measure.pulse_duration(),
+            "frequencies": ro_freqs,
+            "acquisition_delay": qubit.measure.acq_delay(),
+            "integration_time": qubit.measure.integration_time(),
+            "port": qubit.ports.readout(),
+            "clock": qubit.name + ".ro",
+            "init_duration": qubit.reset.duration(),
+        }
+        spec_gettable = ScheduleGettable(
+            quantum_device=quantum_device,
+            schedule_function=heterodyne_spec_sched_batched,
+            schedule_kwargs=schedule_kwargs,
+            real_imag=False,
+            batched=True,
+        )
 
     Parameters
     ----------
     pulse_amp
-        amplitude of the spectroscopy pulse in Volt.
+        Amplitude of the spectroscopy pulse in Volt.
     pulse_duration
-        duration of the spectroscopy pulse in seconds.
+        Duration of the spectroscopy pulse in seconds.
     frequencies
-        frequencies of the spectroscopy pulse and of the data acquisition in Hertz.
+        Sample frequencies for the spectroscopy pulse in Hertz.
     acquisition_delay
-        start of the data acquisition with respect to the start of the spectroscopy
+        Start of the data acquisition with respect to the start of the spectroscopy
         pulse in seconds.
     integration_time
-        integration time of the data acquisition in seconds.
+        Integration time of the data acquisition in seconds.
     port
         Location on the device where the acquisition is performed.
     clock
-        reference clock used to track the spectroscopy frequency.
+        Reference clock used to track the spectroscopy frequency.
     init_duration
         The relaxation time or dead time.
     repetitions
         The amount of times the Schedule will be repeated.
     port_out
-        Output port on the device where the pulse should be applied. If `None`, then use the same as `port`.
+        Output port on the device where the pulse should be applied. If `None`, then use
+        the same as `port`.
     """
-    sched = Schedule("NCO heterodyne spectroscopy")
+    sched = Schedule("Fast heterodyne spectroscopy (batched)")
     sched.add_resource(ClockResource(name=clock, freq=frequencies.flat[0]))
 
     if port_out is None:
@@ -167,8 +204,8 @@ def nco_heterodyne_spec_sched(
                     duration=integration_time,
                     port=port,
                     clock=clock,
-                    acq_channel=0,
                     acq_index=acq_idx,
+                    acq_channel=0,
                     bin_mode=BinMode.AVERAGE,
                 ),
                 ref_op=spec_pulse,
@@ -185,9 +222,9 @@ def nco_heterodyne_spec_sched(
 def two_tone_spec_sched(
     spec_pulse_amp: float,
     spec_pulse_duration: float,
-    spec_pulse_frequency: float,
     spec_pulse_port: str,
     spec_pulse_clock: str,
+    spec_pulse_frequency: float,
     ro_pulse_amp: float,
     ro_pulse_duration: float,
     ro_pulse_delay: float,
@@ -205,33 +242,33 @@ def two_tone_spec_sched(
     Parameters
     ----------
     spec_pulse_amp
-        amplitude of the spectroscopy pulse in Volt.
+        Amplitude of the spectroscopy pulse in Volt.
     spec_pulse_duration
-        duration of the spectroscopy pulse in seconds.
-    spec_pulse_frequency
-        frequency of the spectroscopy pulse in Hertz.
+        Duration of the spectroscopy pulse in seconds.
     spec_pulse_port
-        location on the device where the spectroscopy pulse should be applied.
+        Location on the device where the spectroscopy pulse should be applied.
     spec_pulse_clock
-        reference clock used to track the spectroscopy frequency.
+        Reference clock used to track the spectroscopy frequency.
+    spec_pulse_frequency
+        Frequency of the spectroscopy pulse in Hertz.
     ro_pulse_amp
-        amplitude of the readout (spectroscopy) pulse in Volt.
+        Amplitude of the readout (spectroscopy) pulse in Volt.
     ro_pulse_duration
-        duration of the readout (spectroscopy) pulse in seconds.
+        Duration of the readout (spectroscopy) pulse in seconds.
     ro_pulse_delay
-        time between the end of the spectroscopy pulse and the start of the readout
+        Time between the end of the spectroscopy pulse and the start of the readout
         (spectroscopy) pulse.
     ro_pulse_port
-        location on the device where the readout (spectroscopy) pulse should be applied.
+        Location on the device where the readout (spectroscopy) pulse should be applied.
     ro_pulse_clock
-        reference clock used to track the readout (spectroscopy) frequency.
+        Reference clock used to track the readout (spectroscopy) frequency.
     ro_pulse_frequency
-        frequency of the spectroscopy pulse and of the data acquisition in Hertz.
+        Frequency of the readout (spectroscopy) pulse in Hertz.
     ro_acquisition_delay
-        start of the data acquisition with respect to the start of the spectroscopy
-        pulse in seconds.
+        Start of the data acquisition with respect to the start of the readout pulse in
+        seconds.
     ro_integration_time
-        integration time of the data acquisition in seconds.
+        Integration time of the data acquisition in seconds.
     init_duration
         The relaxation time or dead time.
     repetitions
@@ -286,12 +323,12 @@ def two_tone_spec_sched(
 
 # pylint: disable=too-many-arguments
 # pylint: disable=too-many-locals
-def nco_two_tone_spec_sched(
+def two_tone_spec_sched_batched(
     spec_pulse_amp: float,
     spec_pulse_duration: float,
-    spec_pulse_frequencies: np.ndarray,
     spec_pulse_port: str,
     spec_pulse_clock: str,
+    spec_pulse_frequencies: np.ndarray,
     ro_pulse_amp: float,
     ro_pulse_duration: float,
     ro_pulse_delay: float,
@@ -304,44 +341,85 @@ def nco_two_tone_spec_sched(
     repetitions: int = 1,
 ) -> Schedule:
     """
-    Generate a **batched** schedule for performing two-tone spectroscopy using NCO.
+    Generate a batched schedule for performing fast two-tone spectroscopy using the
+    SetClockFrequency operation.
+
+    Per frequency for the spectroscopy pulse, we reset the qubit, update the frequency
+    of the spec_pulse_clock, and then measure `repetitions` times, averaging the result
+    per frequency.
+
+    Example usage of the batched schedule:
+
+   .. code-block:: python
+
+        # Manual parameter for batched schedule
+        spec_freq = ManualParameter("spec_freq", unit="Hz")
+        spec_freq.batched = True
+        spec_freqs = np.linspace(start=4.5e9, stop=5.5e9, num=11)
+        quantum_device.cfg_sched_repetitions(5)
+
+        # Configure the gettable
+        qubit = quantum_device.get_element("q0")
+        schedule_kwargs = {
+            "spec_pulse_amp": 0.5,
+            "spec_pulse_duration": 8e-6,
+            "spec_pulse_port": qubit.ports.microwave(),
+            "spec_pulse_clock": qubit.name + ".01",
+            "spec_pulse_frequencies": spec_freqs,
+            "ro_pulse_amp": qubit.measure.pulse_amp(),
+            "ro_pulse_duration": qubit.measure.pulse_duration(),
+            "ro_pulse_delay": 300e-9,
+            "ro_pulse_port": qubit.ports.readout(),
+            "ro_pulse_clock": qubit.name + ".ro",
+            "ro_pulse_frequency": 7.04e9,
+            "ro_acquisition_delay": qubit.measure.acq_delay(),
+            "ro_integration_time": qubit.measure.integration_time(),
+            "init_duration": qubit.reset.duration(),
+        }
+        spec_gettable = ScheduleGettable(
+            quantum_device=quantum_device,
+            schedule_function=two_tone_spec_sched_batched,
+            schedule_kwargs=schedule_kwargs,
+            real_imag=False,
+            batched=True,
+        )
 
     Parameters
     ----------
     spec_pulse_amp
-        amplitude of the spectroscopy pulse in Volt.
+        Amplitude of the spectroscopy pulse in Volt.
     spec_pulse_duration
-        duration of the spectroscopy pulse in seconds.
-    spec_pulse_frequencies
-        frequencies of the spectroscopy pulse in Hertz.
+        Duration of the spectroscopy pulse in seconds.
     spec_pulse_port
-        location on the device where the spectroscopy pulse should be applied.
+        Location on the device where the spectroscopy pulse should be applied.
     spec_pulse_clock
-        reference clock used to track the spectroscopy frequency.
+        Reference clock used to track the spectroscopy frequency.
+    spec_pulse_frequencies
+        Sample frequencies for the spectroscopy pulse in Hertz.
     ro_pulse_amp
-        amplitude of the readout (spectroscopy) pulse in Volt.
+        Amplitude of the readout (spectroscopy) pulse in Volt.
     ro_pulse_duration
-        duration of the readout (spectroscopy) pulse in seconds.
+        Duration of the readout (spectroscopy) pulse in seconds.
     ro_pulse_delay
-        time between the end of the spectroscopy pulse and the start of the readout
+        Time between the end of the spectroscopy pulse and the start of the readout
         (spectroscopy) pulse.
     ro_pulse_port
-        location on the device where the readout (spectroscopy) pulse should be applied.
+        Location on the device where the readout (spectroscopy) pulse should be applied.
     ro_pulse_clock
-        reference clock used to track the readout (spectroscopy) frequency.
+        Reference clock used to track the readout (spectroscopy) frequency.
     ro_pulse_frequency
-        frequency of the spectroscopy pulse and of the data acquisition in Hertz.
+        Frequency of the readout (spectroscopy) pulse in Hertz.
     ro_acquisition_delay
-        start of the data acquisition with respect to the start of the spectroscopy
-        pulse in seconds.
+        Start of the data acquisition with respect to the start of the readout pulse in
+        seconds.
     ro_integration_time
-        integration time of the data acquisition in seconds.
+        Integration time of the data acquisition in seconds.
     init_duration
         The relaxation time or dead time.
     repetitions
         The amount of times the Schedule will be repeated.
     """
-    sched = Schedule("NCO two-tone spectroscopy")
+    sched = Schedule("Fast two-tone spectroscopy (batched)")
     sched.add_resources(
         [
             ClockResource(name=spec_pulse_clock, freq=spec_pulse_frequencies.flat[0]),
@@ -358,7 +436,7 @@ def nco_two_tone_spec_sched(
         )
 
         for rep in range(repetitions):
-            sched.add(
+            spec_pulse = sched.add(
                 SquarePulse(
                     duration=spec_pulse_duration,
                     amp=spec_pulse_amp,
@@ -375,8 +453,10 @@ def nco_two_tone_spec_sched(
                     port=ro_pulse_port,
                     clock=ro_pulse_clock,
                 ),
-                label=f"readout_pulse {acq_idx} ({rep}/{repetitions})",
+                ref_op=spec_pulse,
+                ref_pt="end",
                 rel_time=ro_pulse_delay,
+                label=f"readout_pulse {acq_idx} ({rep}/{repetitions})",
             )
 
             sched.add(
@@ -384,8 +464,8 @@ def nco_two_tone_spec_sched(
                     duration=ro_integration_time,
                     port=ro_pulse_port,
                     clock=ro_pulse_clock,
-                    acq_channel=0,
                     acq_index=acq_idx,
+                    acq_channel=0,
                     bin_mode=BinMode.AVERAGE,
                 ),
                 ref_op=ro_pulse,

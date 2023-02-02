@@ -12,6 +12,7 @@ from numpy.typing import NDArray
 from qcodes import validators
 
 from quantify_scheduler import Operation
+from quantify_scheduler.backends.qblox import constants as qblox_constants
 from quantify_scheduler.helpers.waveforms import area_pulses
 from quantify_scheduler.resources import BasebandClockResource
 
@@ -130,12 +131,20 @@ class ResetClockPhase(Operation):
 class SetClockFrequency(Operation):
     """
     An operation that sets the frequency of a clock. This is a low-level operation
-    and therefore depends on the backend. Refer to
+    and therefore depends on the backend.
+
+    Currently only implemented for Qblox backend, refer to
     :class:`~quantify_scheduler.backends.qblox.operation_handling.virtual.NcoSetClockFrequencyStrategy`
     for more details.
     """
 
-    def __init__(self, clock: str, clock_frequency: float, t0: float = 0):
+    def __init__(
+        self,
+        clock: str,
+        clock_frequency: float,
+        t0: float = 0,
+        duration: float = qblox_constants.NCO_SET_FREQ_WAIT * 1e-9,
+    ):
         """
         Create a new instance of SetClockFrequency.
 
@@ -159,7 +168,7 @@ class SetClockFrequency(Operation):
                 "clock_freq_old": None,
                 "interm_freq_old": None,
                 "port": None,
-                "duration": 0,
+                "duration": duration,
             }
         ]
         self._update()

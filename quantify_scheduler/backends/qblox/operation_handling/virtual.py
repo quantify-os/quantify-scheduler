@@ -10,7 +10,7 @@ from quantify_scheduler.backends.qblox.operation_handling.base import IOperation
 
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
-from quantify_scheduler.backends.qblox import helpers, q1asm_instructions
+from quantify_scheduler.backends.qblox import constants, helpers, q1asm_instructions
 
 
 class IdleStrategy(IOperationStrategy):
@@ -98,10 +98,11 @@ class NcoResetClockPhaseStrategy(IdleStrategy):
 
 
 class NcoSetClockFrequencyStrategy(IdleStrategy):
-    """Strategy for operation that does not produce any output, but rather sets
-    the frequency of the NCO.
-    Currently implemented as `set_freq` and an `upd_param` of 8 ns,
-    leading to a total duration of 8 ns before the next command can be issued."""
+    """
+    Strategy for operation that does not produce any output, but rather sets
+    the frequency of the NCO. Implemented as `set_freq` and an `upd_param` of 8 ns,
+    leading to a total duration of 8 ns before the next command can be issued.
+    """
 
     def __init__(self, operation_info: types.OpInfo):
         """
@@ -142,10 +143,10 @@ class NcoSetClockFrequencyStrategy(IdleStrategy):
         qasm_program.emit(
             q1asm_instructions.SET_FREQUENCY,
             frequency_args,
-            comment=f"set NCO frequency to {iterm_freq_new:.2f} Hz",
+            comment=f"set nco frequency to {iterm_freq_new:.2f} Hz",
         )
         qasm_program.emit(
             q1asm_instructions.UPDATE_PARAMETERS,
-            8,
-            comment=f"updating to apply NCO frequency change",
+            constants.NCO_SET_FREQ_WAIT,
+            comment=f"update to apply nco frequency change",
         )

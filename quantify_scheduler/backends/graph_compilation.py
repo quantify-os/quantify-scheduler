@@ -7,7 +7,10 @@ import matplotlib.pyplot as plt
 import networkx as nx
 from matplotlib.axes import Axes
 
-from quantify_scheduler import CompiledSchedule, Schedule
+from quantify_scheduler.schedules.schedule import (
+    CompiledSchedule,
+    Schedule,
+)  # Using full import path to prevent circular import
 from quantify_scheduler.helpers.importers import import_python_object_from_string
 from quantify_scheduler.structure.model import DataStructure
 

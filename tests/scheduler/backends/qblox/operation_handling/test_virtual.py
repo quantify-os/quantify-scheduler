@@ -17,6 +17,7 @@ import pytest
 
 from quantify_scheduler.backends.types import qblox as types
 
+from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.qblox.instrument_compilers import QcmModule
 from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
 from quantify_scheduler.backends.qblox.operation_handling import virtual
@@ -138,6 +139,16 @@ class TestNcoPhaseShiftStrategy:
 
 
 class TestNcoSetClockFrequencyStrategy:
+    def test_docstring(self):
+        assert (
+            f"`upd_param` of {constants.NCO_SET_FREQ_WAIT} ns"
+            in virtual.NcoSetClockFrequencyStrategy.__doc__
+        )
+        assert (
+            f"total duration of {constants.NCO_SET_FREQ_WAIT} ns"
+            in virtual.NcoSetClockFrequencyStrategy.__doc__
+        )
+
     def test_constructor(self):
         op_info = types.OpInfo(
             name=SetClockFrequency.__name__,

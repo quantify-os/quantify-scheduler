@@ -17,6 +17,7 @@ from quantify_scheduler.operations.pulse_library import (
     IdlePulse,
     NumericalPulse,
     RampPulse,
+    ResetClockPhase,
     SetClockFrequency,
     ShiftClockPhase,
     SkewedHermitePulse,
@@ -24,6 +25,9 @@ from quantify_scheduler.operations.pulse_library import (
     SquarePulse,
     create_dc_compensation_pulse,
     decompose_long_square_pulse,
+    StaircasePulse,
+    SuddenNetZeroPulse,
+    ChirpPulse,
 )
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 
@@ -108,39 +112,6 @@ def test_operation_duration_composite_pulse() -> None:
     assert dgp1.duration == pytest.approx(15.4e-9)
 
 
-@pytest.mark.parametrize(
-    "operation",
-    [
-        IdlePulse(duration=50e-9),
-        ShiftClockPhase(clock="q0.01", phase_shift=180.0),
-        SetClockFrequency(clock="q0.01", clock_frequency=1e6),
-        SquarePulse(amp=0.5, duration=300e-9, port="p.01", clock="cl0.baseband"),
-        SoftSquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0),
-        RampPulse(1.0, 16e-9, "q0:mw"),
-        NumericalPulse(
-            np.linspace(0, 1, 1000), np.linspace(0, 20e-6, 1000), "q0:mw", "q0.01"
-        ),
-        DRAGPulse(
-            G_amp=0.8,
-            D_amp=-0.3,
-            phase=24.3,
-            duration=20e-9,
-            clock="cl:01",
-            port="p.01",
-        ),
-        SkewedHermitePulse(
-            duration=2e-6,
-            amplitude=0.05,
-            skewness=-0.2,
-            phase=90.0,
-            port="qe0.mw",
-            clock="qe0.spec",
-        ),
-    ],
-)
-def test_pulse_is_valid(operation: Operation) -> None:
-    assert Operation.is_valid(operation)
-
 
 def test_decompose_long_square_pulse() -> None:
     # Non matching durations ("extra" pulse needed to get the necessary duration)
@@ -192,136 +163,125 @@ def test_decompose_long_square_pulse() -> None:
 @pytest.mark.parametrize(
     "operation",
     [
-        IdlePulse(16e-9),
-        ShiftClockPhase(clock="q0.01", phase_shift=180.0),
-        SetClockFrequency(clock="q0.01", clock_frequency=1e6),
-        SquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0, 0),
-        SoftSquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0),
-        RampPulse(1.0, 16e-9, "q0:mw"),
-        NumericalPulse(
-            np.linspace(0, 1, 1000), np.linspace(0, 20e-6, 1000), "q0:mw", "q0.01"
-        ),
-        DRAGPulse(0.8, 0.83, 1.0, "q0:mw", 16e-9, "q0.01", 0),
-        SkewedHermitePulse(
-            duration=2e-6,
-            amplitude=0.05,
-            skewness=-0.2,
-            phase=90.0,
-            port="qe0.mw",
-            clock="qe0.spec",
-        ),
-    ],
+        [
+            ShiftClockPhase(clock=clock, phase_shift=180.0),
+            ResetClockPhase(clock=clock),
+            SetClockFrequency(clock=clock, clock_frequency=1e6),
+            IdlePulse(duration=duration),
+            RampPulse(amp=1.0, duration=duration, port=port),
+            StaircasePulse(
+                start_amp=0, final_amp=1, num_steps=5, duration=duration, port=port
+            ),
+            SquarePulse(amp=1.0, duration=duration, port=port, clock=clock),
+            SuddenNetZeroPulse(
+                amp_A=0.4,
+                amp_B=0.2,
+                net_zero_A_scale=0.95,
+                t_pulse=20e-9,
+                t_phi=2e-9,
+                t_integral_correction=10e-9,
+                port=port,
+            ),
+            SoftSquarePulse(amp=1.0, duration=duration, port=port, clock=clock),
+            ChirpPulse(
+                amp=1.0,
+                start_freq=1e6,
+                end_freq=2e6,
+                duration=duration,
+                port=port,
+                clock=clock,
+            ),
+            DRAGPulse(
+                G_amp=0.8,
+                D_amp=0.83,
+                phase=1.0,
+                duration=duration,
+                port=port,
+                clock=clock,
+            ),
+            NumericalPulse(
+                samples=np.linspace(0, 1, 1000),
+                t_samples=np.linspace(0, 20e-6, 1000),
+                port=port,
+                clock=clock,
+            ),
+            SkewedHermitePulse(
+                amplitude=0.05,
+                skewness=-0.2,
+                phase=90.0,
+                duration=duration,
+                port="qe0.mw",
+                clock="qe0.spec",
+            ),
+        ]
+        for clock in ["q0.01"]
+        for port in ["q0:mw"]
+        for duration in [16e-9]
+    ][0],
 )
-def test__repr__(operation: Operation) -> None:
-    # Arrange
-    operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
+class TestPulseLevelOperation:
+    def test__repr__(self, operation: Operation) -> None:
+        # Arrange
+        operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
 
-    # Act
-    obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
-    assert obj == operation
+        # Act
+        obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
+        assert obj == operation
 
+    def test__str__(self, operation: Operation) -> None:
+        assert isinstance(eval(str(operation)), type(operation))
 
-@pytest.mark.parametrize(
-    "operation",
-    [
-        IdlePulse(16e-9),
-        ShiftClockPhase(clock="q0.01", phase_shift=180.0),
-        SetClockFrequency(clock="q0.01", clock_frequency=1e6),
-        SquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0, 0),
-        SoftSquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0),
-        RampPulse(1.0, 16e-9, "q0:mw"),
-        NumericalPulse(
-            np.linspace(0, 1, 1000), np.linspace(0, 20e-6, 1000), "q0:mw", "q0.01"
-        ),
-        DRAGPulse(0.8, 0.83, 1.0, "q0:mw", 16e-9, "q0.01", 0),
-        SkewedHermitePulse(
-            duration=2e-6,
-            amplitude=0.05,
-            skewness=-0.2,
-            phase=90.0,
-            port="qe0.mw",
-            clock="qe0.spec",
-        ),
-    ],
-)
-def test__str__(operation: Operation) -> None:
-    assert isinstance(eval(str(operation)), type(operation))
+    def test_is_valid(self, operation: Operation) -> None:
+        assert Operation.is_valid(operation)
 
+    def test_duration(self, operation: Operation) -> None:
+        pulse_info = operation.data["pulse_info"][0]
+        if operation.__class__ in [ShiftClockPhase, ResetClockPhase]:
+            assert operation.duration == 0, operation
+        elif operation.__class__ is SetClockFrequency:
+            assert operation.duration == 8e-9, operation
+        elif operation.__class__ is SuddenNetZeroPulse:
+            assert (
+                operation.duration
+                == pulse_info["t_pulse"]
+                + pulse_info["t_phi"]
+                + pulse_info["t_integral_correction"]
+            )
+        elif operation.__class__ is NumericalPulse:
+            assert (
+                operation.duration
+                == pulse_info["t_samples"][-1] - pulse_info["t_samples"][0]
+            )
+        else:
+            assert operation.duration == 16e-9, operation
 
-@pytest.mark.parametrize(
-    "operation",
-    [
-        IdlePulse(16e-9),
-        SquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0, 0),
-        ShiftClockPhase(clock="q0.01", phase_shift=180.0),
-        SetClockFrequency(clock="q0.01", clock_frequency=1e6),
-        SoftSquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0),
-        RampPulse(1.0, 16e-9, "q0:mw"),
-        NumericalPulse(
-            np.linspace(0, 1, 1000), np.linspace(0, 20e-6, 1000), "q0:mw", "q0.01"
-        ),
-        DRAGPulse(0.8, 0.83, 1.0, "q0:mw", 16e-9, "q0.01", 0),
-        SkewedHermitePulse(
-            duration=2e-6,
-            amplitude=0.05,
-            skewness=-0.2,
-            phase=90.0,
-            port="qe0.mw",
-            clock="qe0.spec",
-        ),
-    ],
-)
-def test_deserialize(operation: Operation) -> None:
-    # Arrange
-    operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
+    def test_deserialize(self, operation: Operation) -> None:
+        # Arrange
+        operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
 
-    # Act
-    obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
+        # Act
+        obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
 
-    # Assert
-    TestCase().assertDictEqual(obj.data, operation.data)
+        # Assert
+        TestCase().assertDictEqual(obj.data, operation.data)
+
+    def test__repr__modify_not_equal(self, operation: Operation) -> None:
+        # Arrange
+        # Arrange
+        operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
+
+        # Act
+        obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
+        assert obj == operation
+
+        # Act
+        obj.data["pulse_info"][0]["foo"] = "bar"
+
+        # Assert
+        assert obj != operation
 
 
-@pytest.mark.parametrize(
-    "operation",
-    [
-        IdlePulse(16e-9),
-        ShiftClockPhase(clock="q0.01", phase_shift=180.0),
-        SetClockFrequency(clock="q0.01", clock_frequency=1e6),
-        SquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0, 0),
-        SoftSquarePulse(1.0, 16e-9, "q0:mw", "q0.01", 0),
-        RampPulse(1.0, 16e-9, "q0:mw"),
-        NumericalPulse(
-            np.linspace(0, 1, 1000), np.linspace(0, 20e-6, 1000), "q0:mw", "q0.01"
-        ),
-        DRAGPulse(0.8, 0.83, 1.0, "q0:mw", 16e-9, "q0.01", 0),
-        SkewedHermitePulse(
-            duration=2e-6,
-            amplitude=0.05,
-            skewness=-0.2,
-            phase=90.0,
-            port="qe0.mw",
-            clock="qe0.spec",
-        ),
-    ],
-)
-def test__repr__modify_not_equal(operation: Operation) -> None:
-    # Arrange
-    # Arrange
-    operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
-
-    # Act
-    obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
-    assert obj == operation
-
-    # Act
-    obj.data["pulse_info"][0]["foo"] = "bar"
-
-    # Assert
-    assert obj != operation
-
-
-def test_dccompensation_pulse_amp() -> None:
+def test_dc_compensation_pulse_amp() -> None:
     pulse0 = SquarePulse(
         amp=1, duration=1e-8, port="LP", clock=BasebandClockResource.IDENTITY
     )
@@ -338,16 +298,16 @@ def test_dccompensation_pulse_amp() -> None:
     TestCase().assertAlmostEqual(pulse2.data["pulse_info"][0]["amp"], -1.5)
 
 
-def test_dccompensation_pulse_modulated() -> None:
+def test_dc_compensation_pulse_modulated() -> None:
     clock = ClockResource("clock", 1.0)
-    pulse0 = SquarePulse(amp=1, duration=1e-8, port="LP", clock=clock)
+    pulse0 = SquarePulse(amp=1, duration=1e-8, port="LP", clock=clock.name)
     pulse = create_dc_compensation_pulse(
         amp=1, pulses=[pulse0], port="LP", sampling_rate=int(1e9)
     )
     assert pulse.data["pulse_info"][0]["duration"] == 0.0
 
 
-def test_dccompensation_pulse_duration() -> None:
+def test_dc_compensation_pulse_duration() -> None:
     pulse0 = SquarePulse(
         amp=1, duration=1e-8, port="LP", clock=BasebandClockResource.IDENTITY
     )
@@ -365,7 +325,7 @@ def test_dccompensation_pulse_duration() -> None:
     TestCase().assertAlmostEqual(pulse2.data["pulse_info"][0]["amp"], -1.0)
 
 
-def test_dccompensation_pulse_both_params() -> None:
+def test_dc_compensation_pulse_both_params() -> None:
     with pytest.raises(ValueError):
         pulse0 = SquarePulse(
             amp=1, duration=1e-8, port="LP", clock=BasebandClockResource.IDENTITY
