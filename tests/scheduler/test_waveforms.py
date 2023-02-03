@@ -250,6 +250,6 @@ def test_hermite_duration_scaling(hermite_kwargs):
             t=scaling * t,
             duration=scaling * dur,
             skewness=scaling * skewness,
-            **hermite_kwargs
+            **hermite_kwargs,
         )
     )

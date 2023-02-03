@@ -1,0 +1,122 @@
+[build-system]
+requires = ["setuptools>=66.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quantify-scheduler"
+description="""\
+    Quantify-scheduler is a Python package for writing quantum programs featuring \
+    a hybrid gate-pulse control model with explicit timing control.\
+"""
+maintainers = [
+    {name = "Edgar Reehuis", email = "ereehuis@qblox.com"},
+    {name = "Robert Sokolewicz", email = "rsokolewicz@qblox.com"},
+    {name = "Tobias Bonsen", email = "tobias@orangeqs.com"},
+    {name = "Viacheslav Ostroukh", email = "viacheslav@orangeqs.com"},
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    # Python 3.10 is not supported because we are locked to old zhinst version
+    #"Programming Language :: Python :: 3.10",
+    "Topic :: Scientific/Engineering",
+]
+keywords = [
+    "quantum",
+    "quantify",
+]
+license = { text = "BSD-3-Clause" }
+dynamic = ["version", "readme"]
+# Python 3.10 is not supported because we are locked to old zhinst version
+requires-python = ">=3.8, <3.10"
+dependencies = [
+    "columnar",
+    "dataclasses-json",
+    "fastjsonschema",
+    "matplotlib",
+    "networkx",
+    "numpy",
+    "orjson",
+    # FIXME: replace "pandas, jinja2" with "pandas[output_formatting]"
+    # when pandas>1.5.3 is released and used.
+    "pandas",
+    "jinja2",
+    "pathvalidate",
+    "plotly",
+    "pydantic",
+    "pyqtgraph==0.12.4", # 0.13 causes test to fail. Fixed in core, remove with next quantify-core release
+    "qblox-instruments==0.8", # Prevent upgrade upon minor release while allowing for installing patch releases
+    "quantify_core>=0.6.5", # For deprecation hints shown to end-users by default
+    "qcodes>=0.32.0", # 0.32.0: introduces InstrumentModule
+    "scipy",
+    "xxhash",
+
+    # zhinst versions pinned, see #187
+    "zhinst==21.8.20515",
+    "zhinst-qcodes==0.1.4",
+    "zhinst-toolkit==0.1.5",
+
+    # We are using rich in our tutorials
+    "rich[jupyter]",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-mock",
+]
+docs = [
+    "jupyter_sphinx>=0.4.0",
+    "jupytext",
+    "myst-nb",
+    "rich[jupyter]",
+    "scanpydoc",
+    "sphinx-autoapi",
+    "sphinx-autobuild",
+    "sphinx-autodoc-typehints", # required by either sphinx.ext.autodoc or sphinx.ext.napoleon
+    "sphinx-jsonschema",
+    "sphinx-rtd-theme",
+    "sphinx-togglebutton",
+    "sphinx>=5.1.1",
+    "sphinxcontrib-bibtex",
+]
+dev = [
+    "black",
+    "coverage",
+    "isort>=5.10.0", # sort python imports
+    "pre-commit",
+    "pre-commit-hooks", # common hooks for git repos
+    "prospector",
+    "pylint",
+    # Pytest-cov is used to generage test coverage reports, which is rather a development than testing requirement
+    "pytest-cov",
+    "pytest-xdist", # run parallel tests
+    "quantify-scheduler[docs,test]",
+]
+
+[project.urls]
+"Documentation" = "https://quantify-quantify-scheduler.readthedocs-hosted.com"
+"Source" = "https://gitlab.com/quantify-os/quantify-scheduler"
+"Issue tracker" = "https://gitlab.com/quantify-os/quantify-scheduler/-/issues"
+"Changelog" = "https://gitlab.com/quantify-os/quantify-scheduler/-/blob/main/CHANGELOG.md"
+"Slack" = "https://join.slack.com/t/quantify-hq/shared_invite/zt-1nd78r4e9-rbWdna53cW4DO_YbtMhVuA"
+"Authors" = "https://gitlab.com/quantify-os/quantify-scheduler/-/blob/main/AUTHORS.md"
+
+[tool.setuptools]
+include-package-data = true
+zip-safe = false
+
+[tool.setuptools.packages.find]
+include = ["quantify_scheduler", "quantify_scheduler.*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.json"]
+
+[tool.setuptools.dynamic]
+readme = { file = ["README.md"], content-type = "text/markdown" }
