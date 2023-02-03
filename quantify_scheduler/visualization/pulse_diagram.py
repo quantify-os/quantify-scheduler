@@ -398,7 +398,6 @@ def sample_schedule(
         logger.debug(f"{pls_idx}: {operation}")
 
         for pulse_info in operation["pulse_info"]:
-
             if not validate_operation_data(
                 pulse_info, port_map, schedulable, operation
             ):
@@ -522,7 +521,6 @@ def get_window_operations(
         operation = schedule.operations[schedulable["operation_repr"]]
         if isinstance(operation, pl.WindowOperation):
             for pulse_info in operation["pulse_info"]:
-
                 t0 = schedulable["abs_time"] + pulse_info["t0"]
                 t1 = t0 + pulse_info["duration"]
 

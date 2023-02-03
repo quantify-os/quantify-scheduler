@@ -453,7 +453,6 @@ def qcompile(
     """
 
     def _construct_compilation_config_from_dev_hw_cfg(device_config, hardware_config):
-
         compilation_passes = []
 
         if isinstance(device_config, DeviceCompilationConfig):

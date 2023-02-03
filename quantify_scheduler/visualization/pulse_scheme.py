@@ -198,7 +198,7 @@ def fluxPulse(
         * (np.exp((x - (pos + width - 5.5 * s)) / s) + 1)
     )
 
-    ax.fill_between(x, y + y_offs, color=color, alpha=0.3)
+    ax.fill_between(x, y + y_offs, y_offs, color=color, alpha=0.3)
     ax.plot(x, y + y_offs, color=color, **plot_kws)
 
     if label is not None:
@@ -259,7 +259,9 @@ def ramZPulse(
     )
     yLeft = y[: len(xLeft)]
 
-    ax.fill_between(xLeft, yLeft + y_offs, alpha=0.3, color=color, linewidth=0.0)
+    ax.fill_between(
+        xLeft, yLeft + y_offs, y_offs, alpha=0.3, color=color, linewidth=0.0
+    )
     ax.plot(xFull, y + y_offs, color=color)
 
     return pos + width
