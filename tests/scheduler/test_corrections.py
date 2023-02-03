@@ -18,6 +18,7 @@ from tests.scheduler.backends.test_qblox_backend import (  # pylint: disable=unu
     hardware_cfg_two_qubit_gate as qblox_hardware_cfg_two_qubit_gate,
 )
 
+
 # --------- Test fixtures ---------
 @pytest.fixture
 def hardware_cfg_distortion_corrections(

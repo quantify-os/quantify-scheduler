@@ -29,7 +29,6 @@ from quantify_scheduler.schedules import spectroscopy_schedules
 
 
 def test_make_hash() -> None:
-
     my_test_dict = {"a": 5, "nested_dict": {"a": 2, "c": 4, "B": "str"}, "b": 24}
 
     same_test_dict_diff_order = {

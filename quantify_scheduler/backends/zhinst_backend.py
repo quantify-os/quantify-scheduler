@@ -162,7 +162,6 @@ def _extract_latencies(hardware_cfg: Dict[str, Any]) -> Dict[str, float]:
     latency_dict = {}
 
     if raw_latency_dict:
-
         for port_clock in port_clock_dict:
             latency_dict[port_clock] = raw_latency_dict.get(port_clock, 0)
 
@@ -384,7 +383,6 @@ def _apply_measurement_fixpoint_correction(
     # the pulse of the measurement is applied after triggering the acquisition.
     # this should be included explicitly in the indices to slice (acquisitions.index)
     for idx, sample_start in zip(acquisitions.index, acquisitions.sample_start):
-
         effective_start_sample = round(sample_start + cumulative_sample_corrections)
         time_corr, sample_corr = _determine_measurement_fixpoint_correction(
             measurement_start_sample=effective_start_sample,
@@ -442,7 +440,6 @@ def _add_waveform_ids(timing_table: pd.DataFrame) -> pd.DataFrame:
     def _determine_waveform_id(
         waveform_op_id: str, sample_start: float, phase: float = 0
     ):
-
         # acq_index is not part of the waveform this is filtered out from the
         # waveform_id as it doesn't affect the waveform itself.
         waveform_op_id = re.sub(r"acq_index=\(.*\)", "acq_index=(*)", waveform_op_id)
@@ -541,7 +538,6 @@ def _validate_schedule(schedule: Schedule) -> None:
         raise ValueError(f"Undefined schedulables for schedule '{schedule.name}'!")
 
     for schedulable in schedule.schedulables.values():
-
         if "abs_time" not in schedulable.keys():
             raise ValueError(
                 "Absolute timing has not been determined "
@@ -726,7 +722,6 @@ class ZIDeviceConfig:
 def compile_backend(
     schedule: Schedule, hardware_cfg: Dict[str, Any]
 ) -> CompiledSchedule:
-
     """
     Compiles backend for Zurich Instruments hardware according
     to the CompiledSchedule and hardware configuration.
@@ -845,7 +840,6 @@ def compile_backend(
     device_configs: Dict[str, Union[ZIDeviceConfig, float]] = dict()
 
     for device in devices:
-
         if device.device_type == zhinst.DeviceType.HDAWG:
             builder = _compile_for_hdawg(
                 device=device,
@@ -988,7 +982,6 @@ def _add_wave_nodes(
     numerical_wf_dict: Dict[str, np.ndarray],
     settings_builder: zi_settings.ZISettingsBuilder,
 ) -> zi_settings.ZISettingsBuilder:
-
     for wf_id, wf_index in wf_id_mapping.items():
         if wf_id not in numerical_wf_dict:
             # this is to catch an edge-case where certain acquisitions do not set
@@ -1090,7 +1083,6 @@ def _compile_for_hdawg(
     # Add seqc instructions and waveform table
     ############################################
     for awg_index, output in enabled_outputs.items():
-
         # select only the instructions relevant for the output channel.
         output_timing_table = timing_table[
             timing_table["hardware_channel"] == f"{device.name}.awg{awg_index}"
@@ -1226,7 +1218,6 @@ def _assemble_hdawg_sequence(
 
     # this is where a longer wait statement is added to allow for latency corrections.
     for instruction in instructions:
-
         assert isinstance(instruction, zhinst.Wave)
 
         clock_cycles_to_wait = instruction.clock_cycle_start - current_clock
@@ -1486,7 +1477,6 @@ def _compile_for_uhfqa(
                 resolvers.monitor_acquisition_resolver, monitor_nodes=monitor_nodes
             )
         else:
-
             # The waveform is slightly larger then the integration_length
             # because of the waveform granularity. This is irrelevant
             # due to the waveform being appended with zeros. Therefore
@@ -1728,7 +1718,6 @@ def construct_waveform_table(
             )
 
             if len(corr_wf) > 4096:
-
                 raise ValueError(
                     f"Attempting to set an integration weight of {len(corr_wf)} samples"
                     " (>4096) corresponding to an integration time of "
