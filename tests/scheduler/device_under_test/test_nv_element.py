@@ -4,9 +4,7 @@ from qcodes import Instrument
 from qcodes.instrument.channel import InstrumentModule
 from qcodes.instrument.parameter import Parameter
 
-from quantify_scheduler.backends.circuit_to_device import (
-    DeviceCompilationConfig,
-)
+from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler.device_under_test.mock_setup import (
     set_up_basic_mock_nv_setup,
     set_standard_params_basic_nv,

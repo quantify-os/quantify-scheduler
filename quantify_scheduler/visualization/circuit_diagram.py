@@ -53,11 +53,18 @@ def pulse_baseband(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw
     qubit_idxs
     text
     """
+    cartoon_width = 0.6
     for qubit_idx in qubit_idxs:
         ps.fluxPulse(
-            ax, pos=time, y_offs=qubit_idx, width=0.4, s=0.0025, amp=0.33, **kw
+            ax,
+            pos=time - cartoon_width / 2,
+            y_offs=qubit_idx,
+            width=cartoon_width,
+            s=0.0025,
+            amp=0.33,
+            **kw,
         )
-        ax.text(time + 0.2, qubit_idx + 0.45, text, ha="center", va="center", zorder=6)
+        ax.text(time, qubit_idx + 0.45, text, ha="center", va="center", zorder=6)
 
 
 def pulse_modulated(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
@@ -72,9 +79,17 @@ def pulse_modulated(ax: Axes, time: float, qubit_idxs: List[int], text: str, **k
     qubit_idxs
     text
     """
+    cartoon_width = 0.6
     for qubit_idx in qubit_idxs:
-        ps.mwPulse(ax, pos=time, y_offs=qubit_idx, width=0.4, amp=0.33, **kw)
-        ax.text(time + 0.2, qubit_idx + 0.45, text, ha="center", va="center", zorder=6)
+        ps.mwPulse(
+            ax,
+            pos=time - cartoon_width / 2,
+            y_offs=qubit_idx,
+            width=cartoon_width,
+            amp=0.33,
+            **kw,
+        )
+        ax.text(time, qubit_idx + 0.45, text, ha="center", va="center", zorder=6)
 
 
 # pylint: disable=unused-argument
@@ -227,6 +242,7 @@ def circuit_diagram_matplotlib(
 ) -> Tuple[Figure, Union[Axes, List[Axes]]]:
     """
     Creates a circuit diagram visualization of a schedule using matplotlib.
+    Each gate, pulse, measurement, and operation are plotted in the order of execution, but the exact timing is not visible here.
 
     Parameters
     ----------
@@ -243,6 +259,48 @@ def circuit_diagram_matplotlib(
         matplotlib figure object.
     ax
         matplotlib axis object.
+
+
+    .. admonition:: Example
+        :class: tip
+
+        .. jupyter-execute::
+
+            from quantify_scheduler import Schedule
+            from quantify_scheduler.operations.gate_library import Reset, X90, CZ, Rxy, Measure
+            from quantify_scheduler.visualization.circuit_diagram import circuit_diagram_matplotlib
+
+            sched = Schedule(f"Bell experiment on q0-q1")
+
+            sched.add(Reset("q0", "q1"))
+            sched.add(X90("q0"))
+            sched.add(X90("q1"), ref_pt="start", rel_time=0)
+            sched.add(CZ(qC="q0", qT="q1"))
+            sched.add(Rxy(theta=45, phi=0, qubit="q0") )
+            sched.add(Measure("q0", acq_index=0))
+            sched.add(Measure("q1", acq_index=0), ref_pt="start")
+
+            circuit_diagram_matplotlib(sched);
+
+    .. note::
+
+        Gates that are started simultaneously on the same qubit will overlap.
+
+        .. jupyter-execute::
+
+            from quantify_scheduler import Schedule
+            from quantify_scheduler.operations.gate_library import X90, Measure
+
+            sched = Schedule(f"overlapping gates")
+
+            sched.add(X90("q0"))
+            sched.add(Measure("q0"), ref_pt="start", rel_time=0)
+            sched.plot_circuit_diagram();
+
+    .. note::
+
+        If the pulse's port address was not found then the pulse will be plotted on the 'other' timeline.
+
     """
     # to prevent the original input schedule from being modified.
     schedule = deepcopy(schedule)
@@ -263,8 +321,6 @@ def circuit_diagram_matplotlib(
         qubit_map[qubit] = index
 
     # Validate pulses
-    # If the pulse's port address was not found then the pulse
-    # will be plotted on the 'other' timeline.
     # Note: needs to be done before creating figure and axhline
     # in order to avoid unnecessary redraws.
     for schedulable in schedule.schedulables.values():
@@ -303,12 +359,16 @@ def circuit_diagram_matplotlib(
     ax.set_yticks(list(qubit_map.values()))
     ax.set_yticklabels(qubit_map.keys())
 
-    total_duration = 0
-    for schedulable in schedule.schedulables.values():
+    t0, tf, time = 0, 0, 0
+
+    for schedulable in sorted(
+        schedule.schedulables.values(), key=lambda sch: sch["abs_time"]
+    ):
         operation = schedule.operations[schedulable["operation_repr"]]
 
-        time = schedulable["abs_time"]
-        total_duration = total_duration if total_duration > time else time
+        tf = schedulable["abs_time"]
+        time += 1 if tf != t0 else 0
+        t0 = tf
 
         if operation.valid_gate:
             plot_func = import_python_object_from_string(
@@ -354,6 +414,6 @@ def circuit_diagram_matplotlib(
         else:
             raise ValueError("Unknown operation")
 
-    ax.set_xlim(-1, total_duration + 1)
+    ax.set_xlim(-1, time + 1)
 
     return fig, ax

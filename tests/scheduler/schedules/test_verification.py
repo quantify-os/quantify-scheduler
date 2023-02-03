@@ -125,7 +125,6 @@ def test_awg_staircase_sched(gen_awg_staircase_sched):
 def test_awg_staircase_comp_transmon(
     gen_awg_staircase_sched, mock_setup_basic_transmon
 ):
-
     compiler = SerialCompiler(name="compiler")
     _ = compiler.compile(
         schedule=gen_awg_staircase_sched[0],

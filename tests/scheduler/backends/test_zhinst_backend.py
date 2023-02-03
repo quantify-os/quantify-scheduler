@@ -49,7 +49,6 @@ def zhinst_hw_config_invalid_latencies(load_example_zhinst_hardware_config):
 
 
 def test__determine_measurement_fixpoint_correction():
-
     for i in range(16):
         (
             time_corr,
@@ -205,7 +204,6 @@ def test_compile_hardware_hdawg4_successfully(
     create_schedule_with_pulse_info,
     load_example_zhinst_hardware_config: Dict[str, Any],
 ) -> None:
-
     hdawg_hardware_cfg = load_example_zhinst_hardware_config
     # Arrange
     (q0, q1) = ("q0", "q1")
@@ -419,7 +417,6 @@ def test__program_hdawg4_channelgrouping(
     channelgrouping: int,
     enabled_channels: List[int],
 ):
-
     test_config_dict = create_typical_timing_table()
     schedule = test_config_dict["schedule"]
     timing_table = test_config_dict["timing_table"]
@@ -610,7 +607,6 @@ def test__get_instruction_list(create_typical_timing_table):
     }
 
     for hardware_channel in expected_instructions_list:
-
         # select only the instructions relevant for the output channel.
         output_timing_table = timing_table[
             timing_table["hardware_channel"] == hardware_channel
@@ -1091,7 +1087,6 @@ def test_acquisition_staircase_unique_acquisitions(
 def test_acquisition_staircase_right_acq_channel(
     compile_config_basic_transmon_zhinst_hardware,
 ):
-
     acq_channel = 2
     schedule = acquisition_staircase_sched(
         np.linspace(0, 1, 20),

@@ -839,7 +839,6 @@ def test_portclocks(
     load_example_qblox_hardware_config,
     compile_config_basic_transmon_qblox_hardware,
 ):
-
     sched = make_basic_multi_qubit_schedule(["q3", "q4"])
 
     compiler = SerialCompiler(name="compiler")
@@ -1193,7 +1192,6 @@ def test_compile_with_rel_time(
     pulse_only_schedule_with_operation_timing,
     compile_config_basic_transmon_qblox_hardware,
 ):
-
     compiler = SerialCompiler(name="compiler")
     full_program = compiler.compile(
         pulse_only_schedule_with_operation_timing,
@@ -1209,7 +1207,6 @@ def test_compile_with_repetitions(
     mixed_schedule_with_acquisition,
     compile_config_basic_transmon_qblox_hardware,
 ):
-
     mixed_schedule_with_acquisition.repetitions = 10
 
     compiler = SerialCompiler(name="compiler")
@@ -1293,7 +1290,6 @@ def test_real_mode_pulses(
     mock_setup_basic_transmon,
     instruction_generated_pulses_enabled,  # pylint: disable=unused-argument
 ):
-
     real_square_pulse_schedule.repetitions = 10
     mock_setup_basic_transmon["quantum_device"].hardware_config(hardware_cfg_real_mode)
     compiler = SerialCompiler(name="compiler")
@@ -1493,7 +1489,6 @@ def test_multiple_trace_acquisition_error(compile_config_basic_transmon_qblox_ha
 def test_determine_scope_mode_acquisition_sequencer(
     mock_setup_basic_transmon_with_standard_params, load_example_qblox_hardware_config
 ):
-
     mock_setup = mock_setup_basic_transmon_with_standard_params
     sched = Schedule("determine_scope_mode_acquisition_sequencer")
     sched.add(Measure("q0"))
@@ -2199,7 +2194,6 @@ def test_acq_protocol_average_mode_valid_assembly_allxy(
     dummy_pulsars,
     compile_config_basic_transmon_qblox_hardware,
 ):
-
     repetitions = 256
     sched = allxy_sched("q0", element_select_idx=np.arange(21), repetitions=repetitions)
     compiler = SerialCompiler(name="compiler")
@@ -2238,7 +2232,6 @@ def test_acq_protocol_average_mode_valid_assembly_allxy(
 
 
 def test_acq_declaration_dict_append_mode(compile_config_basic_transmon_qblox_hardware):
-
     repetitions = 256
 
     ssro_sched = readout_calibration_sched("q0", [0, 1], repetitions=repetitions)
@@ -2260,7 +2253,6 @@ def test_acq_declaration_dict_append_mode(compile_config_basic_transmon_qblox_ha
 def test_acq_declaration_dict_bin_avg_mode(
     compile_config_basic_transmon_qblox_hardware,
 ):
-
     allxy = allxy_sched("q0")
     compiler = SerialCompiler(name="compiler")
     compiled_allxy_sched = compiler.compile(
