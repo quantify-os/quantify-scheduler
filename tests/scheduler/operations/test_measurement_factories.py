@@ -3,9 +3,7 @@ import pytest
 
 import numpy as np
 
-from quantify_scheduler.operations.measurement_factories import (
-    optical_measurement,
-)
+from quantify_scheduler.operations.measurement_factories import optical_measurement
 
 # pylint: disable=redefined-outer-name
 

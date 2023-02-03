@@ -18,7 +18,6 @@ from quantify_scheduler.visualization.pulse_diagram import (
 
 
 def test_pulse_diagram_matplotlib() -> None:
-
     schedule = Schedule("test")
     schedule.add(SquarePulse(amp=0.2, duration=4e-6, port="SDP"))
     schedule.add(SquarePulse(amp=0.3, duration=6e-6, port="SDP"))

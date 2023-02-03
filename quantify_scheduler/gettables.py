@@ -38,6 +38,7 @@ from quantify_scheduler.helpers.schedule import (
 
 logger = logging.getLogger(__name__)
 
+
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=too-few-public-methods
 class ScheduleGettable:
@@ -228,7 +229,6 @@ class ScheduleGettable:
         return result
 
     def _reshape_data(self, acq_metadata, vals):
-
         if acq_metadata.acq_protocol == "trigger_count":
             return [vals.real.astype(np.uint64)]
 
@@ -323,7 +323,6 @@ class ScheduleGettable:
                     dataset[acq_channel] = val[0] + 1j * val[1]
 
         elif acq_metadata.bin_mode == BinMode.AVERAGE:
-
             dataset = {}
             for acq_channel, acq_indices in acq_metadata.acq_indices.items():
                 dataset[acq_channel] = np.zeros(len(acq_indices), dtype=complex)

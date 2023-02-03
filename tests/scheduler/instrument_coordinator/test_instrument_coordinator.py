@@ -55,7 +55,6 @@ def fixture_component_names() -> int:
 def fixture_dummy_components(
     mocker, request, component_names
 ) -> base_component.InstrumentCoordinatorComponentBase:
-
     # Create a QCoDeS intrument for realistic emulation
     instruments = [Instrument(name) for name in component_names]
     components = []
@@ -127,7 +126,6 @@ def fixture_zi_instrument_coordinator(
 
 
 def test_constructor(close_all_instruments, instrument_coordinator):
-
     # Assert
     assert len(instrument_coordinator.components()) == 0
 
@@ -181,7 +179,6 @@ def test_get_component(close_all_instruments, instrument_coordinator, dummy_comp
 
 
 def test_get_component_failed(close_all_instruments, instrument_coordinator):
-
     # Act
     with pytest.raises(KeyError) as execinfo:
         instrument_coordinator.get_component("ic_dev1234")

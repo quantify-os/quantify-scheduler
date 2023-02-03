@@ -12,9 +12,7 @@ import numpy as np
 
 from quantify_scheduler.enums import BinMode
 
-from quantify_scheduler.backends.qblox.operation_handling.base import (
-    IOperationStrategy,
-)
+from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox import helpers, constants, q1asm_instructions

@@ -331,7 +331,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
 
 def _convert_acquisition_data_format(raw_results):
     acquisition_dict = {}
-    for (channel, i) in raw_results.keys():
+    for channel, i in raw_results.keys():
         if channel not in acquisition_dict.keys():
             acquisition_dict[channel] = []
         acquisition_dict[channel].append(raw_results.get((channel, i)))
