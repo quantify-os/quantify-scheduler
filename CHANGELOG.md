@@ -1,5 +1,7 @@
 # Changelog
 
+## Unreleased
+
 ## 0.11.0 (2023-02-03)
 
 For help in migrating from deprecated methods, see [Quantify Deprecated Code Suggestions](examples/deprecated.md).
