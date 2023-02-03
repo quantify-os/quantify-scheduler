@@ -332,7 +332,6 @@ def test_get_readout_channel_bitmask(readout_channels_count: int, expected: str)
     ],
 )
 def test_get_sampling_rates(base_sampling_rate: float, expected: Dict[int, int]):
-
     # Act
     values = zi_helpers.get_sampling_rates(base_sampling_rate)
 

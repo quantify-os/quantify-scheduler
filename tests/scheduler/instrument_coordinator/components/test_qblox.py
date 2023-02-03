@@ -46,7 +46,6 @@ def make_cluster_component(mocker):
         sequencer_status: SequencerStatus = SequencerStatus.ARMED,
         sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
     ) -> qblox.ClusterComponent:
-
         close_instruments([f"ic_{name}", name])
         cluster = Cluster(
             name=name,
@@ -110,7 +109,6 @@ def make_qcm_component(mocker):
         sequencer_status: SequencerStatus = SequencerStatus.ARMED,
         sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
     ) -> qblox.PulsarQCMComponent:
-
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.start_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.stop_sequencer")
@@ -153,7 +151,6 @@ def make_qrm_component(mocker):
         sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
         patch_acquisitions: bool = False,
     ) -> qblox.PulsarQRMComponent:
-
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.start_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.stop_sequencer")
@@ -251,7 +248,6 @@ def make_qcm_rf(mocker):
         sequencer_status: SequencerStatus = SequencerStatus.ARMED,
         sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
     ) -> qblox.QCMRFComponent:
-
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.start_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.stop_sequencer")
@@ -290,7 +286,6 @@ def make_qrm_rf(mocker):
         sequencer_status: SequencerStatus = SequencerStatus.ARMED,
         sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
     ) -> qblox.QRMRFComponent:
-
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.start_sequencer")
         mocker.patch("qblox_instruments.native.pulsar.Pulsar.stop_sequencer")
@@ -636,7 +631,7 @@ def test_prepare_qcm_qrm(
             qrm0.instrument._set_reference_source.assert_not_called()
             qrm2.instrument._set_reference_source.assert_not_called()
 
-    for (qcodes_param, hw_config_param) in [
+    for qcodes_param, hw_config_param in [
         ("out0_offset", ["complex_output_0", "dc_mixer_offset_I"]),
         ("out1_offset", ["complex_output_0", "dc_mixer_offset_Q"]),
         ("out2_offset", ["complex_output_1", "dc_mixer_offset_I"]),
@@ -646,7 +641,7 @@ def test_prepare_qcm_qrm(
             hardware_cfg[qcm0.instrument.name][hw_config_param[0]][hw_config_param[1]]
         )
 
-    for (qcodes_param, hw_config_param) in [
+    for qcodes_param, hw_config_param in [
         ("out0_offset", ["complex_output_0", "dc_mixer_offset_I"]),
         ("out1_offset", ["complex_output_0", "dc_mixer_offset_Q"]),
         ("in0_gain", ["complex_output_0", "input_gain_I"]),
@@ -656,7 +651,7 @@ def test_prepare_qcm_qrm(
             hardware_cfg[qrm0.instrument.name][hw_config_param[0]][hw_config_param[1]]
         )
 
-    for (qcodes_param, hw_config_param) in [
+    for qcodes_param, hw_config_param in [
         ("in0_gain", ["real_output_0", "input_gain_0"]),
         ("in1_gain", ["real_output_1", "input_gain_1"]),
     ]:
@@ -724,7 +719,7 @@ def test_prepare_cluster_rf(
     # Assert it's only set in initialization
     ic_cluster.instrument.reference_source.assert_called_once()
 
-    for (qcodes_param, hw_config_param) in [
+    for qcodes_param, hw_config_param in [
         ("out0_att", ["complex_output_0", "output_att"]),
         ("out1_att", ["complex_output_1", "output_att"]),
     ]:
@@ -734,7 +729,7 @@ def test_prepare_cluster_rf(
             ]
         )
 
-    for (qcodes_param, hw_config_param) in [
+    for qcodes_param, hw_config_param in [
         ("out0_att", ["complex_output_0", "output_att"]),
         ("in0_att", ["complex_input_0", "input_att"]),
     ]:

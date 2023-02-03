@@ -3,9 +3,7 @@
 # pylint: disable=missing-function-docstring
 
 from quantify_scheduler.backends import SerialCompiler
-from quantify_scheduler.compilation import (
-    determine_absolute_timing,
-)
+from quantify_scheduler.compilation import determine_absolute_timing
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
 from quantify_scheduler.schedules import spectroscopy_schedules as sps

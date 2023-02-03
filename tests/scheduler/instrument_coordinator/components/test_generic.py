@@ -15,7 +15,6 @@ from quantify_scheduler.helpers.mock_instruments import MockLocalOscillator
 
 @pytest.fixture
 def make_generic_qcodes_instruments(request):
-
     lo_mw_q0 = MockLocalOscillator(name="lo_mw_q0")
     lo_ro_q0 = MockLocalOscillator(name="lo_ro_q0")
     lo_spec_q0 = MockLocalOscillator(name="lo_spec_q0")
