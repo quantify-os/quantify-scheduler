@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Breaking changes
+
+### Merged branches and closed issues
+
 ## 0.11.0 (2023-02-03)
 
 For help in migrating from deprecated methods, see [Quantify Deprecated Code Suggestions](examples/deprecated.md).
@@ -22,24 +26,12 @@ For help in migrating from deprecated methods, see [Quantify Deprecated Code Sug
 - Deprecation - Refactored tests to remove deprecated `qcompile`, refactored to `SerialCompiler` (!529, #368)
 - Documentation - Sphinx build now compatible with qcodes==0.36.0 (!552)
 - Documentation - Removed deprecated code from the Compiling to Hardware Tutorial (!582)
-- Installation - Refactor of setup configuration (!592)
-- NV centers - Dark ESR schedule combining all prior operations (!527)
-- NV centers - `BasicElectronicNVElement` parameters accept physics-motivated values (!551)
-- Acquisition - Data obtained with TriggerCount acquisition is formatted correctly (!530).
-- Acquisition - Fix wrong assumption in input format (!564, follow-up for !530).
-- Acquisition - Raise an exception if user tries to use same acquisition index and channel for different operations, and only extract data from used modules (!573)
-- Compilation - Can optionally provide a `QuantumDevice` to `QuantifyCompiler`. This will be used as default `CompilationConfig` in `QuantifyCompiler.compile()` (!535)
-- Compilation - Fix clock not being added to schedule from quantum device layer via new graph node `set_pulse_and_acquisition_clock` that verifies and sets clock frequency (!538, #371)
-- Deprecation - Refactored tests to remove deprecated `qcompile`, refactored to `SerialCompiler` (!529, #368)
-- Documentation - Removed deprecated code from the Compiling to Hardware Tutorial (!582)
-- Documentation - Sphinx build now compatible with qcodes==0.36.0 (!552)
-- Installation - Refactor of setup configuration (!592)
 - NV centers - Avoid python warning when parsing docstring in `nv_element.py` (!562)
 - NV centers - Dark ESR schedule combining all prior operations (!527)
 - NV centers - `BasicElectronicNVElement` parameters accept physics-motivated values (!551)
 - Qblox backend - Add preparation of acquisition settings and accompanying datastructures for NV centers (!567)
-- Qblox backend - add TriggerCount to `QRMAcquisitionManager` (!556)
-- Qblox Backend - Added method for gain configuration, overriding gain now raises ValueError (!533)
+- Qblox backend - Add TriggerCount to `QRMAcquisitionManager` (!556)
+- Qblox backend - Added method for gain configuration, overriding gain now raises ValueError (!533)
 - Qblox backend - Provide sequencer setting to reset AWG offset and AWG gain to a known value (default 0 for offset and 1 for gain) before starting experiment (!544, #377)
 - Qblox backend - Remove `mix_lo` from `SequencerSettings` (!896)
 - Qblox backend - Typecast attenuations to `int`s before assigning them (!570)
@@ -69,9 +61,8 @@ For help in migrating from deprecated methods, see [Quantify Deprecated Code Sug
 
 ### Merged branches and closed issues
 
-- Deprecation - Removed dependencies on deprecated code from tests and production code (!526)
 - Deprecation - Replaced `DeprecationWarning`s with `FutureWarning`s so they are shown to end-users by default (!536, counterpart to quantify-core!411)
-- Visualization - Show clock name in plotly pulse diagram (!547)
+- Deprecation - Remove code and test dependencies on deprecated `data` keyword in `Operations` (!545, #381)
 - Documentation - Instrument naming requirements in qblox hardware config (!531)
 - Documentation - Make class `__init__` docstring visible on Sphinx (!541, #314)
 - Documentation - Improve parameter documentation for DeviceElements (!493)
@@ -90,17 +81,13 @@ For help in migrating from deprecated methods, see [Quantify Deprecated Code Sug
 - Qblox backend - `QbloxInstrumentCoordinatorComponentBase` accepts both `InstrumentModule` and `InstrumentChannel` as instrument reference to cluster module (!508)
 - Qblox backend - Explicit error message when trying to do acquisitions on a QCM (!519)
 - Qblox backend - Renamed `output_mode` to `io_mode` in `get_operation_strategy` (!497)
-- Instrument Coordinator - Changed argument of `GenericInstrumentCoordinatorComponent` from `name` to `instrument_reference`. (!497)
-- Deprecation - Removed dependencies on deprecated code from tests and production code (!526)
-- Deprecation - Replaced `DeprecationWarning`s with `FutureWarning`s so they are shown to end-users by default (!536, counterpart to quantify-core!411)
-- Qblox backend - Added `TriggerCountAcquisitionStrategy` to acquisitions, generating the Q1ASM commands. (!540)
-- Documentation - Make class `__init__` docstring visible on Sphinx (!541, #314)
-- Deprecation - Remove code and test dependencies on deprecated `data` keyword in `Operations` (!545, #381)
+- Qblox backend - Added `TriggerCountAcquisitionStrategy` to acquisitions, generating the Q1ASM commands. (!540) 
 - Tests - Refactored tests to remove duplicated `temp_dir` setup, and only use `tmp_test_data_dir` fixture (#370,  !525)
 - Tests - Update tests to use `mock_setup_basic_transmon_with_standard_params` where needed (#369, !522)
 - Tests - Tests refactoring, move to `mock_setup_basic_transmon_with_standard_params` and replace `qcompile` by `SerialCompiler` (!516)
-- Updated pulse_diagram_matplotlib to be compatible with future quantify-core release (!517)
 - Validation - Replaced most of the asserts with raising proper exceptions so that they are raised in production environment too (#342, !499)
+- Visualization - Updated `pulse_diagram_matplotlib` to be compatible with future quantify-core release (!517)
+- Visualization - Show clock name in plotly pulse diagram (!547)
 
 ## 0.9.0 (2022-10-06)
 
