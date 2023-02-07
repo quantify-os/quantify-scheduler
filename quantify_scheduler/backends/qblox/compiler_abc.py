@@ -7,7 +7,6 @@ from __future__ import annotations
 import dataclasses
 import json
 import logging
-import numpy as np
 from abc import ABC, ABCMeta, abstractmethod
 from collections import defaultdict, deque
 from functools import partial
