@@ -12,7 +12,6 @@
 
 from typing import Tuple
 
-import numpy as np
 import pytest
 
 from quantify_scheduler.backends.types import qblox as types
