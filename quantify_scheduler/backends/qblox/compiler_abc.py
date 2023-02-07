@@ -485,13 +485,14 @@ class Sequencer:
             Attempting to set the modulation frequency to a new value even though a
             different value has been previously assigned.
         """
-        if self._settings.modulation_freq != freq:
-            if self._settings.modulation_freq is not None:
-                raise ValueError(
-                    f"Attempting to set the modulation frequency of {self.name} of "
-                    f"{self.parent.name} to {freq}, while it has previously been set "
-                    f"to {self._settings.modulation_freq}."
-                )
+        if self._settings.modulation_freq is not None and not np.isclose(
+            self._settings.modulation_freq, freq
+        ):
+            raise ValueError(
+                f"Attempting to set the modulation frequency of '{self.name}' of "
+                f"'{self.parent.name}' to {freq:e}, while it has previously been set "
+                f"to {self._settings.modulation_freq:e}."
+            )
         self._settings.modulation_freq = freq
         if freq != 0:
             self._settings.nco_en = True
@@ -1328,11 +1329,12 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         if underconstr or overconstr:
             raise ValueError(
                 f"Frequency settings {'under' if underconstr else 'over'}constrained for "
-                f"sequencer {sequencer.name} with port {sequencer.port} and clock "
-                f"{sequencer.clock}. It is required to either supply an "
-                f'"lo_freq" or an "interm_freq" '
+                f"sequencer '{sequencer.name}' of '{self.name}' "
+                f"with port '{sequencer.port}' and clock '{sequencer.clock}'. "
+                f"It is required to either supply an "
+                f"'lo_freq' or an 'interm_freq' "
                 f"({'neither' if underconstr else 'both'} supplied)"
-                "{}.".format(
+                + "{}.".format(
                     ""
                     if sequencer.associated_ext_lo is None
                     else f" in using an external local oscillator "
@@ -1347,7 +1349,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             if lo_freq_setting_name is not None:
                 previous_lo_freq = getattr(self._settings, lo_freq_setting_name)
 
-                if previous_lo_freq is not None and freqs.LO != previous_lo_freq:
+                if previous_lo_freq is not None and not np.isclose(
+                    freqs.LO, previous_lo_freq
+                ):
                     raise ValueError(
                         f"Attempting to set '{lo_freq_setting_name}' to frequency "
                         f"'{freqs.LO:e}', while it has previously already been set to "
@@ -1637,10 +1641,16 @@ class QbloxBasebandModule(QbloxBaseModule):
         else:
             # In using external local oscillator, determine clock and LO/IF freqs,
             # and then set LO/IF freqs, and enable NCO (via setter)
-            compiler_lo = compiler_container.instrument_compilers[
-                sequencer.associated_ext_lo
-            ]
-
+            if (
+                compiler_lo := compiler_container.instrument_compilers.get(
+                    sequencer.associated_ext_lo
+                )
+            ) is None:
+                raise RuntimeError(
+                    f"External local oscillator '{sequencer.associated_ext_lo}' set to "
+                    f"be used by '{sequencer.name}' of '{self.name}' not found! Make "
+                    f"sure it is present in the hardware configuration."
+                )
             try:
                 freqs = helpers.determine_clock_lo_interm_freqs(
                     clock_freq=clock_freq,
@@ -1649,12 +1659,11 @@ class QbloxBasebandModule(QbloxBaseModule):
                     downconverter_freq=sequencer.downconverter_freq,
                     mix_lo=sequencer.mix_lo,
                 )
-            except Exception as error:
+            except Exception as error:  # Adding sequencer info to exception message
                 raise error.__class__(
-                    f"{error} (for {sequencer.name} with port {sequencer.port} and "
-                    f"clock {sequencer.clock})."
+                    f"{error} (for '{sequencer.name}' of '{self.name}' "
+                    f"with port '{sequencer.port}' and clock '{sequencer.clock}')."
                 )
-
             self._set_lo_interm_freqs(
                 freqs=freqs, sequencer=sequencer, compiler_lo=compiler_lo
             )
@@ -1698,12 +1707,11 @@ class QbloxRFModule(QbloxBaseModule):
                     downconverter_freq=sequencer.downconverter_freq,
                     mix_lo=True,
                 )
-            except Exception as error:
+            except Exception as error:  # Adding sequencer info to exception message
                 raise error.__class__(
-                    f"{error} (for {sequencer.name} with port {sequencer.port} and "
-                    f"clock {sequencer.clock})."
+                    f"{error} (for '{sequencer.name}' of '{self.name}' "
+                    f"with port '{sequencer.port}' and clock '{sequencer.clock}')."
                 )
-
             self._set_lo_interm_freqs(
                 freqs=freqs,
                 sequencer=sequencer,
@@ -1744,23 +1752,35 @@ class QbloxRFModule(QbloxBaseModule):
         converts setpoints to floats when using an attenuation as settable.
         """
 
-        def _convert_to_int(value, label: str) -> int:
+        def _convert_to_int(value, label: str) -> Optional[int]:
             if value is not None:
                 if not np.isclose(value % 1, 0):
                     raise ValueError(
                         f'Trying to set "{label}" to non-integer value {value}'
                     )
                 return int(value)
+            return None
 
-        self._settings.in0_att = _convert_to_int(
-            self.hw_mapping.get("complex_input_0", {}).get("input_att", None),
-            label="in0_att",
-        )
+        complex_input_0 = self.hw_mapping.get("complex_input_0", {})
+        complex_output_0 = self.hw_mapping.get("complex_output_0", {})
+
+        input_att = complex_input_0.get("input_att", None)
+        if (input_att_output := complex_output_0.get("input_att", None)) is not None:
+            if input_att is not None:
+                raise ValueError(
+                    f"'input_att' is defined for both 'complex_input_0' and "
+                    f"'complex_output_0' on module '{self.name}', which is prohibited. "
+                    f"Make sure you define it at a single place."
+                )
+            input_att = input_att_output
+        self._settings.in0_att = _convert_to_int(input_att, label="in0_att")
+
         self._settings.out0_att = _convert_to_int(
-            self.hw_mapping.get("complex_output_0", {}).get("output_att", None),
+            complex_output_0.get("output_att", None),
             label="out0_att",
         )
+        complex_output_1 = self.hw_mapping.get("complex_output_1", {})
         self._settings.out1_att = _convert_to_int(
-            self.hw_mapping.get("complex_output_1", {}).get("output_att", None),
+            complex_output_1.get("output_att", None),
             label="out1_att",
         )

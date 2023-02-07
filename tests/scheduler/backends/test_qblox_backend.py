@@ -14,6 +14,7 @@ import json
 import logging
 import os
 import re
+from contextlib import nullcontext
 from typing import Dict, Generator, Optional
 
 import numpy as np
@@ -876,16 +877,41 @@ def test_compile_simple(
     )
 
 
+@pytest.mark.parametrize("delete_lo0", [False, True])
 def test_compile_cluster(
-    cluster_only_schedule, compile_config_basic_transmon_qblox_hardware
+    cluster_only_schedule,
+    mock_setup_basic_transmon_with_standard_params,
+    load_example_qblox_hardware_config,
+    delete_lo0: bool,
 ):
     sched = cluster_only_schedule
     sched.add_resource(ClockResource("q5.01", freq=5e9))
 
-    compiler = SerialCompiler(name="compiler")
-    compiler.compile(
-        schedule=sched, config=compile_config_basic_transmon_qblox_hardware
+    mock_setup_basic_transmon_with_standard_params["quantum_device"].hardware_config(
+        load_example_qblox_hardware_config
     )
+    compiler = SerialCompiler(name="compiler")
+
+    context_mngr = nullcontext()
+    if delete_lo0:
+        del load_example_qblox_hardware_config["lo0"]
+        context_mngr = pytest.raises(RuntimeError)
+
+    with context_mngr as error:
+        compiler.compile(
+            schedule=sched,
+            config=mock_setup_basic_transmon_with_standard_params[
+                "quantum_device"
+            ].generate_compilation_config(),
+        )
+
+    if delete_lo0:
+        assert (
+            error.value.args[0]
+            == "External local oscillator 'lo0' set to be used by 'seq0' of "
+            "'cluster0_module1' not found! Make sure it is present in the hardware "
+            "configuration."
+        )
 
 
 @pytest.mark.filterwarnings("ignore::FutureWarning")
@@ -1535,11 +1561,14 @@ def test_container_prepare_baseband(
         schedule=baseband_square_pulse_schedule,
         config=quantum_device.generate_compilation_config(),
     )
+
     container = compiler_container.CompilerContainer.from_hardware_cfg(
-        sched, hardware_cfg_baseband
+        schedule=sched, hardware_cfg=hardware_cfg_baseband
     )
     assign_pulse_and_acq_info_to_devices(
-        sched, container.instrument_compilers, hardware_cfg_baseband
+        schedule=sched,
+        device_compilers=container.instrument_compilers,
+        hardware_cfg=hardware_cfg_baseband,
     )
     container.prepare()
 
@@ -1739,45 +1768,46 @@ def test_assign_frequencies_baseband_downconverter(
     q0_clock_freq = q0.clock_freqs.f01()
     q1_clock_freq = q1.clock_freqs.f01()
 
-    if downconverter_freq0 in (None, 0):
-        expected_lo0 = q0_clock_freq - if0
-    else:
-        expected_lo0 = downconverter_freq0 - q0_clock_freq - if0
-
-    if downconverter_freq1 in (None, 0):
-        expected_if1 = q1_clock_freq - lo1
-    else:
-        expected_if1 = downconverter_freq1 - q1_clock_freq - lo1
-
     quantum_device.hardware_config(hardware_cfg)
     compiler = SerialCompiler(name="compiler")
-    try:
+
+    context_mngr = nullcontext()
+    if (
+        downconverter_freq0 is not None
+        and (downconverter_freq0 < 0 or downconverter_freq0 < q0_clock_freq)
+    ) or (
+        downconverter_freq1 is not None
+        and (downconverter_freq1 < 0 or downconverter_freq1 < q1_clock_freq)
+    ):
+        context_mngr = pytest.raises(ValueError)
+    with context_mngr as error:
         compiled_schedule = compiler.compile(
             sched, config=quantum_device.generate_compilation_config()
         )
-    except ValueError as error:
-        portclock_config = hardware_cfg["qcm0"]["complex_output_0"][
-            "portclock_configs"
-        ][0]
-        if downconverter_freq0 < 1:
-            assert (
-                str(error) == f"Downconverter frequency must be positive "
-                f"(downconverter_freq={downconverter_freq0:e}) "
-                f"(for seq0 with port {portclock_config['port']} and "
-                f"clock {portclock_config['clock']})."
-            )
-            return
-        elif downconverter_freq0 < q0_clock_freq:
-            assert (
-                str(error)
-                == "Downconverter frequency must be greater than clock frequency "
-                f"(downconverter_freq={downconverter_freq0:e}, "
-                f"clock_freq={q0_clock_freq:e}) "
-                f"(for seq0 with port {portclock_config['port']} and "
-                f"clock {portclock_config['clock']})."
-            )
-            return
-        raise
+    if error is not None:
+        if downconverter_freq0 is not None:
+            portclock_config = hardware_cfg["qcm0"]["complex_output_0"][
+                "portclock_configs"
+            ][0]
+            if downconverter_freq0 < 0:
+                assert (
+                    error.value.args[0] == f"Downconverter frequency must be positive "
+                    f"(downconverter_freq={downconverter_freq0:e}) "
+                    f"(for 'seq0' of 'qcm0' with "
+                    f"port '{portclock_config['port']}' and "
+                    f"clock '{portclock_config['clock']}')."
+                )
+            elif downconverter_freq0 < q0_clock_freq:
+                assert (
+                    error.value.args[0]
+                    == "Downconverter frequency must be greater than clock frequency "
+                    f"(downconverter_freq={downconverter_freq0:e}, "
+                    f"clock_freq={q0_clock_freq:e}) "
+                    f"(for 'seq0' of 'qcm0' with "
+                    f"port '{portclock_config['port']}' and "
+                    f"clock '{portclock_config['clock']}')."
+                )
+        return
 
     generic_ic_program = compiled_schedule["compiled_instructions"][
         constants.GENERIC_IC_COMPONENT_NAME
@@ -1785,6 +1815,16 @@ def test_assign_frequencies_baseband_downconverter(
     qcm_program = compiled_schedule["compiled_instructions"]["qcm0"]
     actual_lo0 = generic_ic_program[f"{io0_lo_name}.frequency"]
     actual_if1 = qcm_program["seq1"]["modulation_freq"]
+
+    if downconverter_freq0 is None:
+        expected_lo0 = q0_clock_freq - if0
+    else:
+        expected_lo0 = downconverter_freq0 - q0_clock_freq - if0
+
+    if downconverter_freq1 is None:
+        expected_if1 = q1_clock_freq - lo1
+    else:
+        expected_if1 = downconverter_freq1 - q1_clock_freq - lo1
 
     assert expected_lo0 == actual_lo0, (
         f"LO frequency of channel 0 "
@@ -1892,37 +1932,51 @@ def test_assign_frequencies_rf_downconverter(
 
     quantum_device.hardware_config(hardware_cfg)
     compiler = SerialCompiler(name="compiler")
-    try:
+
+    context_mngr = nullcontext()
+    if (
+        downconverter_freq0 is not None
+        and (downconverter_freq0 < 0 or downconverter_freq0 < qubit0_clock_freq)
+    ) or (
+        downconverter_freq1 is not None
+        and (downconverter_freq1 < 0 or downconverter_freq1 < qubit1_clock_freq)
+    ):
+        context_mngr = pytest.raises(ValueError)
+    with context_mngr as error:
         compiled_schedule = compiler.compile(
             sched, config=quantum_device.generate_compilation_config()
         )
-    except ValueError as error:
-        portclock_config = hardware_cfg["cluster0"]["cluster0_module2"][
-            "complex_output_0"
-        ]["portclock_configs"][0]
-        if downconverter_freq0 < 1:
-            assert (
-                str(error) == f"Downconverter frequency must be positive "
-                f"(downconverter_freq={downconverter_freq0:e}) "
-                f"(for seq0 with port {portclock_config['port']} and "
-                f"clock {portclock_config['clock']})."
-            )
-            return
-        elif downconverter_freq0 < qubit0_clock_freq:
-            assert (
-                str(error)
-                == "Downconverter frequency must be greater than clock frequency "
-                f"(downconverter_freq={downconverter_freq0:e}, "
-                f"clock_freq={qubit0_clock_freq:e}) "
-                f"(for seq0 with port {portclock_config['port']} and "
-                f"clock {portclock_config['clock']})."
-            )
-            return
-        raise
+    if error is not None:
+        if downconverter_freq0 is not None:
+            portclock_config = hardware_cfg["cluster0"]["cluster0_module2"][
+                "complex_output_0"
+            ]["portclock_configs"][0]
+            if downconverter_freq0 < 0:
+                assert (
+                    error.value.args[0] == f"Downconverter frequency must be positive "
+                    f"(downconverter_freq={downconverter_freq0:e}) "
+                    f"(for 'seq0' of 'cluster0_module2' with "
+                    f"port '{portclock_config['port']}' and "
+                    f"clock '{portclock_config['clock']}')."
+                )
+            elif downconverter_freq0 < qubit0_clock_freq:
+                assert (
+                    error.value.args[0]
+                    == "Downconverter frequency must be greater than clock frequency "
+                    f"(downconverter_freq={downconverter_freq0:e}, "
+                    f"clock_freq={qubit0_clock_freq:e}) "
+                    f"(for 'seq0' of 'cluster0_module2' with "
+                    f"port '{portclock_config['port']}' and "
+                    f"clock '{portclock_config['clock']}')."
+                )
+        return
 
     qcm_program = compiled_schedule["compiled_instructions"]["cluster0"][
         "cluster0_module2"
     ]
+    actual_lo0 = qcm_program["settings"]["lo0_freq"]
+    actual_lo1 = qcm_program["settings"]["lo1_freq"]
+    actual_if1 = qcm_program["seq1"]["modulation_freq"]
 
     if0 = hardware_cfg["cluster0"]["cluster0_module2"]["complex_output_0"][
         "portclock_configs"
@@ -1930,22 +1984,17 @@ def test_assign_frequencies_rf_downconverter(
     lo1 = hardware_cfg["cluster0"]["cluster0_module2"]["complex_output_1"].get(
         "lo_freq"
     )
+    expected_lo1 = lo1
 
-    if downconverter_freq0 in (None, 0):
+    if downconverter_freq0 is None:
         expected_lo0 = qubit0_clock_freq - if0
     else:
         expected_lo0 = downconverter_freq0 - qubit0_clock_freq - if0
 
-    if downconverter_freq1 in (None, 0):
+    if downconverter_freq1 is None:
         expected_if1 = qubit1_clock_freq - lo1
     else:
         expected_if1 = downconverter_freq1 - qubit1_clock_freq - lo1
-
-    expected_lo1 = lo1
-
-    actual_lo0 = qcm_program["settings"]["lo0_freq"]
-    actual_lo1 = qcm_program["settings"]["lo1_freq"]
-    actual_if1 = qcm_program["seq1"]["modulation_freq"]
 
     assert expected_lo0 == actual_lo0, (
         f"LO frequency of channel 0 "
@@ -1964,11 +2013,18 @@ def test_assign_frequencies_rf_downconverter(
     )
 
 
-@pytest.mark.parametrize("element_names", [["q5"]])
+@pytest.mark.parametrize(
+    "element_names, input_att_output",
+    [
+        (["q5"], True),
+        (["q5"], False),
+    ],
+)
 def test_assign_attenuation(
     mock_setup_basic_transmon_elements,
     load_example_qblox_hardware_config,
     element_names,
+    input_att_output,
 ):
     """
     Test function that checks if attenuation settings on a QRM-RF compile correctly.
@@ -1977,10 +2033,18 @@ def test_assign_attenuation(
     sched = Schedule("readout_experiment")
     sched.add(Measure(element_names[0]))
 
-    hardware_cfg = load_example_qblox_hardware_config
-    input_att = hardware_cfg["cluster0"]["cluster0_module4"]["complex_input_0"].get(
-        "input_att"
-    )
+    hardware_cfg = copy.deepcopy(load_example_qblox_hardware_config)
+
+    input_att = 10
+    complex_input = hardware_cfg["cluster0"]["cluster0_module4"]["complex_input_0"]
+    complex_output = hardware_cfg["cluster0"]["cluster0_module4"]["complex_output_0"]
+    if input_att_output:
+        complex_output["input_att"] = input_att
+        complex_input.pop("input_att", None)
+    else:
+        complex_input["input_att"] = input_att
+        complex_output.pop("input_att", None)
+
     output_att = hardware_cfg["cluster0"]["cluster0_module4"]["complex_output_0"].get(
         "output_att"
     )
@@ -2011,6 +2075,52 @@ def test_assign_attenuation(
 
     assert isinstance(compiled_in0_att, int)
     assert isinstance(compiled_out0_att, int)
+
+
+def test_assign_input_att_both_output_input_raises(
+    make_basic_multi_qubit_schedule,
+    mock_setup_basic_transmon_with_standard_params,
+):
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module4": {
+                "instrument_type": "QRM_RF",
+                "complex_output_0": {
+                    "input_att": 10,
+                    "portclock_configs": [
+                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6},
+                    ],
+                },
+                "complex_input_0": {
+                    "input_att": 10,
+                    "portclock_configs": [
+                        {"port": "q1:res", "clock": "q1.ro", "interm_freq": 50e6},
+                    ],
+                },
+            },
+        },
+    }
+
+    schedule = Schedule("test_assign_input_att_both_output_input_raises")
+    schedule.add(SquarePulse(amp=0.5, duration=1e-6, port="q0:res", clock="q0.ro"))
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+
+    with pytest.raises(ValueError) as exc:
+        compiler = SerialCompiler(name="compiler")
+        compiler.compile(
+            schedule=schedule, config=quantum_device.generate_compilation_config()
+        )
+
+    # assert exception was raised with correct message.
+    assert (
+        exc.value.args[0] == "'input_att' is defined for both 'complex_input_0' and "
+        "'complex_output_0' on module 'cluster0_module4', which is prohibited. "
+        "Make sure you define it at a single place."
+    )
 
 
 def test_assign_attenuation_invalid_raises(

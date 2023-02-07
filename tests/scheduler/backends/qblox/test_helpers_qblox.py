@@ -9,6 +9,7 @@
 """Tests for the helpers module."""
 
 import pytest
+from contextlib import nullcontext
 from typing import Union
 
 from quantify_scheduler.backends.qblox import helpers
@@ -129,7 +130,12 @@ def test_determine_clock_lo_interm_freqs(
     mix_lo: bool,
     expected_freqs: helpers.Frequencies,
 ):
-    try:
+    context_mngr = nullcontext()
+    if downconverter_freq is not None and (
+        downconverter_freq < 0 or downconverter_freq < clock_freq
+    ):
+        context_mngr = pytest.raises(ValueError)
+    with context_mngr as error:
         assert (
             helpers.determine_clock_lo_interm_freqs(
                 clock_freq=clock_freq,
@@ -140,18 +146,16 @@ def test_determine_clock_lo_interm_freqs(
             )
             == expected_freqs
         )
-    except ValueError as error:
-        if downconverter_freq < 1:
+
+    if error is not None:
+        if downconverter_freq < 0:
             assert (
-                str(error) == f"Downconverter frequency must be positive "
+                error.value.args[0] == f"Downconverter frequency must be positive "
                 f"({downconverter_freq=:e})"
             )
-            return
         elif downconverter_freq < clock_freq:
             assert (
-                str(error)
+                error.value.args[0]
                 == "Downconverter frequency must be greater than clock frequency "
                 f"({downconverter_freq=:e}, {clock_freq=:e})"
             )
-            return
-        raise

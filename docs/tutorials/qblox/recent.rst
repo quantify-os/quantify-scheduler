@@ -1,10 +1,18 @@
 Recent interface changes
 ========================
 
-Unreleased: Gain and attenuation parameters
--------------------------------------------
+0.11.1: Input attenuation parameter both for input and output
+-------------------------------------------------------------
 
-Ability added to set input/output gain/attenuation parameters through the hardware configuration for Qblox hardware.
+Ability to set ``input_att`` parameter for both ``complex_input_0`` and ``complex_output_0`` on QRM-RF.
+To make sure that you can use the same sequencer for both input and output
+on QRM-RF with input modulation and input attenuation, you can set ``input_att`` on either input or output,
+but not on both in the same module at the same time.
+
+0.11.0: Gain and attenuation parameters
+---------------------------------------
+
+Ability to set input/output gain/attenuation parameters via the Qblox hardware configuration file.
 
 .. note::
    ``input_gain`` introduced in version 0.9.0 is now renamed to ``input_gain_<n>``.
