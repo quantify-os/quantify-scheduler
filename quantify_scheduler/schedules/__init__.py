@@ -16,7 +16,7 @@ from .spectroscopy_schedules import (
     heterodyne_spec_sched_batched,
     nv_dark_esr_sched,
     two_tone_spec_sched,
-    two_tone_spec_sched_batched
+    two_tone_spec_sched_batched,
 )
 from .timedomain_schedules import (
     allxy_sched,
