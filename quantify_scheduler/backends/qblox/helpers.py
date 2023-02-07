@@ -3,6 +3,7 @@
 """Helper functions for Qblox backend."""
 import dataclasses
 import re
+import warnings
 from copy import deepcopy
 from collections import UserDict
 from typing import Any, Dict, Iterable, List, Literal, Optional, Tuple, Union
@@ -465,6 +466,10 @@ def determine_clock_lo_interm_freqs(
     Returns
     -------
 
+    Warns
+    -----
+    ValueWarning
+
     Raises
     ------
     ValueError
@@ -473,7 +478,11 @@ def determine_clock_lo_interm_freqs(
 
     def _downconvert_clock(downconverter_freq: float, clock_freq: float) -> float:
         if downconverter_freq == 0:
-            return clock_freq
+            warnings.warn(
+                "Downconverter frequency 0 supplied. To unset 'downconverter_freq', "
+                "set to 'null' instead in hardware configuration.",
+                RuntimeWarning,
+            )
 
         if downconverter_freq < 0:
             raise ValueError(

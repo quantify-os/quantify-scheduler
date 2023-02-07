@@ -1312,8 +1312,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         if underconstr or overconstr:
             raise ValueError(
                 f"Frequency settings {'under' if underconstr else 'over'}constrained for "
-                f"sequencer {sequencer.name} with port {sequencer.port} and clock "
-                f"{sequencer.clock}. It is required to either supply an "
+                f"sequencer '{sequencer.name}' of '{self.name}' "
+                f"with port '{sequencer.port}' and clock '{sequencer.clock}'. "
+                f"It is required to either supply an "
                 f"'lo_freq' or an 'interm_freq' "
                 f"({'neither' if underconstr else 'both'} supplied)"
                 + "{}.".format(
@@ -1643,8 +1644,8 @@ class QbloxBasebandModule(QbloxBaseModule):
                 )
             except Exception as error:  # Adding sequencer info to exception message
                 raise error.__class__(
-                    f"{error} (for {sequencer.name} with port {sequencer.port} and "
-                    f"clock {sequencer.clock})."
+                    f"{error} (for '{sequencer.name}' of '{self.name}' "
+                    f"with port '{sequencer.port}' and clock '{sequencer.clock}')."
                 )
             self._set_lo_interm_freqs(
                 freqs=freqs, sequencer=sequencer, compiler_lo=compiler_lo
@@ -1691,8 +1692,8 @@ class QbloxRFModule(QbloxBaseModule):
                 )
             except Exception as error:  # Adding sequencer info to exception message
                 raise error.__class__(
-                    f"{error} (for {sequencer.name} with port {sequencer.port} and "
-                    f"clock {sequencer.clock})."
+                    f"{error} (for '{sequencer.name}' of '{self.name}' "
+                    f"with port '{sequencer.port}' and clock '{sequencer.clock}')."
                 )
             self._set_lo_interm_freqs(
                 freqs=freqs,
