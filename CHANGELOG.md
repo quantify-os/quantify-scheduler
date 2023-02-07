@@ -1,12 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.11.1 (2023-02-07)
 
 ### Breaking changes
 
-- Qblox backend - `"input_att"` can be the property of `"complex_input_0"` and `"complex_output_0"`, but not both at the same time for QRM-RF (!596)
-
-### Merged branches and closed issues
+- Qblox backend - `"input_att"` can be the property of `"complex_input_0"` and `"complex_output_0"`, but not both at the same time for QRM-RF (!596, !597)
 
 ## 0.11.0 (2023-02-03)
 
