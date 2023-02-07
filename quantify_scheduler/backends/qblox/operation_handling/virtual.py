@@ -131,14 +131,14 @@ class NcoSetClockFrequencyStrategy(IdleStrategy):
         if clock_freq_old is None or np.isnan(clock_freq_old):
             raise RuntimeError(
                 f"Clock '{self.operation_info.data.get('clock')}' has an undefined "
-                f"initial frequency ({clock_freq_old=}); "
+                f"initial frequency ({clock_freq_old=:e}); "
                 f"ensure this resource has been added to the schedule or to the device "
                 f"config."
             )
         if interm_freq_old is None:
             raise RuntimeError(
                 f"Clock '{self.operation_info.data.get('clock')}' has an undefined "
-                f"intermodulation frequency ({interm_freq_old=}) associated to it; make "
+                f"intermodulation frequency ({interm_freq_old=:e}) associated to it; make "
                 f"sure an 'interm_freq' is supplied or that 'mix_lo' is set to true in "
                 f"the hardware config."
             )
@@ -148,7 +148,7 @@ class NcoSetClockFrequencyStrategy(IdleStrategy):
         qasm_program.emit(
             q1asm_instructions.SET_FREQUENCY,
             frequency_args,
-            comment=f"set NCO frequency to {iterm_freq_new:.2f} Hz",
+            comment=f"set NCO frequency to {iterm_freq_new:e} Hz",
         )
         qasm_program.emit(
             q1asm_instructions.UPDATE_PARAMETERS,

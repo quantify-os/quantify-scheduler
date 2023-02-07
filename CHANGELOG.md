@@ -9,6 +9,7 @@
 ### Merged branches and closed issues
 
 - Qblox backend - Introduce `determine_clock_lo_interm_freqs` helper and use in `assign_frequencies` (!574)
+- Qblox backend - Introduce `SetClockFrequency` operation (!575, follow-up to !539 and !543)
 
 ## 0.11.1 (2023-02-07)
 
@@ -41,7 +42,6 @@ For help in migrating from deprecated methods, see [Quantify Deprecated Code Sug
 - NV centers - `BasicElectronicNVElement` parameters accept physics-motivated values (!551)
 - Qblox backend - Add preparation of acquisition settings and accompanying datastructures for NV centers (!567)
 - Waveforms - Fix `sudden_net_zero` waveform generation function misunderstands `amp_B` (!549, #390)
-- Qblox backend - Introduce `SetClockFrequency` operation, made possible by qblox-instruments==0.8 (!575, follow-up to !539 and !543)
 - Acquisition - Raise an exception if user tries to use same acquisition index and channel for different operations, and only extract data from used modules (!573)
 - Compilation - Fix clock not being added to schedule from quantum device layer via new graph node `set_pulse_and_acquisition_clock` that verifies and sets clock frequency (!538,#371)
 - Schedule Functions - make experiment-related schedule functions available in `quantify_scheduler.schedules` (!572)
