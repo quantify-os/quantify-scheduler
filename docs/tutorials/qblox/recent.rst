@@ -1,6 +1,14 @@
 Recent interface changes
 ========================
 
+0.11.1: Input attenuation parameter both for input and output
+-------------------------------------------------------------
+
+Ability to set ``input_att`` parameter for both ``complex_input_0`` and ``complex_output_0`` on QRM-RF.
+To make sure that you can use the same sequencer for both input and output
+on QRM-RF with input modulation and input attenuation, you can set ``input_att`` on either input or output,
+but not on both in the same module at the same time.
+
 0.11.0: Gain and attenuation parameters
 ---------------------------------------
 
