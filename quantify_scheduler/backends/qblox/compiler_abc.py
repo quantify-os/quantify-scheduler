@@ -485,13 +485,14 @@ class Sequencer:
             Attempting to set the modulation frequency to a new value even though a
             different value has been previously assigned.
         """
-        if self._settings.modulation_freq != freq:
-            if self._settings.modulation_freq is not None:
-                raise ValueError(
-                    f"Attempting to set the modulation frequency of {self.name} of "
-                    f"{self.parent.name} to {freq}, while it has previously been set "
-                    f"to {self._settings.modulation_freq}."
-                )
+        if self._settings.modulation_freq is not None and not np.isclose(
+            self._settings.modulation_freq, freq
+        ):
+            raise ValueError(
+                f"Attempting to set the modulation frequency of '{self.name}' of "
+                f"'{self.parent.name}' to {freq:e}, while it has previously been set "
+                f"to {self._settings.modulation_freq:e}."
+            )
         self._settings.modulation_freq = freq
         if freq != 0:
             self._settings.nco_en = True
@@ -1313,9 +1314,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 f"Frequency settings {'under' if underconstr else 'over'}constrained for "
                 f"sequencer {sequencer.name} with port {sequencer.port} and clock "
                 f"{sequencer.clock}. It is required to either supply an "
-                f'"lo_freq" or an "interm_freq" '
+                f"'lo_freq' or an 'interm_freq' "
                 f"({'neither' if underconstr else 'both'} supplied)"
-                "{}.".format(
+                + "{}.".format(
                     ""
                     if sequencer.associated_ext_lo is None
                     else f" in using an external local oscillator "
@@ -1330,7 +1331,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             if lo_freq_setting_name is not None:
                 previous_lo_freq = getattr(self._settings, lo_freq_setting_name)
 
-                if previous_lo_freq is not None and freqs.LO != previous_lo_freq:
+                if previous_lo_freq is not None and not np.isclose(
+                    freqs.LO, previous_lo_freq
+                ):
                     raise ValueError(
                         f"Attempting to set '{lo_freq_setting_name}' to frequency "
                         f"'{freqs.LO:e}', while it has previously already been set to "
@@ -1620,10 +1623,16 @@ class QbloxBasebandModule(QbloxBaseModule):
         else:
             # In using external local oscillator, determine clock and LO/IF freqs,
             # and then set LO/IF freqs, and enable NCO (via setter)
-            compiler_lo = compiler_container.instrument_compilers[
-                sequencer.associated_ext_lo
-            ]
-
+            if (
+                compiler_lo := compiler_container.instrument_compilers.get(
+                    sequencer.associated_ext_lo
+                )
+            ) is None:
+                raise RuntimeError(
+                    f"External local oscillator '{sequencer.associated_ext_lo}' set to "
+                    f"be used by '{sequencer.name}' of '{self.name}' not found! Make "
+                    f"sure it is present in the hardware configuration."
+                )
             try:
                 freqs = helpers.determine_clock_lo_interm_freqs(
                     clock_freq=clock_freq,
@@ -1632,12 +1641,11 @@ class QbloxBasebandModule(QbloxBaseModule):
                     downconverter_freq=sequencer.downconverter_freq,
                     mix_lo=sequencer.mix_lo,
                 )
-            except Exception as error:
+            except Exception as error:  # Adding sequencer info to exception message
                 raise error.__class__(
                     f"{error} (for {sequencer.name} with port {sequencer.port} and "
                     f"clock {sequencer.clock})."
                 )
-
             self._set_lo_interm_freqs(
                 freqs=freqs, sequencer=sequencer, compiler_lo=compiler_lo
             )
@@ -1673,7 +1681,6 @@ class QbloxRFModule(QbloxBaseModule):
 
         for lo_idx in QbloxRFModule._get_connected_lo_indices(sequencer):
             lo_freq_setting_name = f"lo{lo_idx}_freq"
-
             try:
                 freqs = helpers.determine_clock_lo_interm_freqs(
                     clock_freq=compiler_container.resources[sequencer.clock]["freq"],
@@ -1682,12 +1689,11 @@ class QbloxRFModule(QbloxBaseModule):
                     downconverter_freq=sequencer.downconverter_freq,
                     mix_lo=True,
                 )
-            except Exception as error:
+            except Exception as error:  # Adding sequencer info to exception message
                 raise error.__class__(
                     f"{error} (for {sequencer.name} with port {sequencer.port} and "
                     f"clock {sequencer.clock})."
                 )
-
             self._set_lo_interm_freqs(
                 freqs=freqs,
                 sequencer=sequencer,
