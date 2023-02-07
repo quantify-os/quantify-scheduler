@@ -1929,11 +1929,18 @@ def test_assign_frequencies_rf_downconverter(
     )
 
 
-@pytest.mark.parametrize("element_names", [["q5"]])
+@pytest.mark.parametrize(
+    "element_names, input_att_output",
+    [
+        (["q5"], True),
+        (["q5"], False),
+    ],
+)
 def test_assign_attenuation(
     mock_setup_basic_transmon_elements,
     load_example_qblox_hardware_config,
     element_names,
+    input_att_output,
 ):
     """
     Test function that checks if attenuation settings on a QRM-RF compile correctly.
@@ -1942,10 +1949,18 @@ def test_assign_attenuation(
     sched = Schedule("readout_experiment")
     sched.add(Measure(element_names[0]))
 
-    hardware_cfg = load_example_qblox_hardware_config
-    input_att = hardware_cfg["cluster0"]["cluster0_module4"]["complex_input_0"].get(
-        "input_att"
-    )
+    hardware_cfg = copy.deepcopy(load_example_qblox_hardware_config)
+
+    input_att = 10
+    complex_input = hardware_cfg["cluster0"]["cluster0_module4"]["complex_input_0"]
+    complex_output = hardware_cfg["cluster0"]["cluster0_module4"]["complex_output_0"]
+    if input_att_output:
+        complex_output["input_att"] = input_att
+        complex_input.pop("input_att", None)
+    else:
+        complex_input["input_att"] = input_att
+        complex_output.pop("input_att", None)
+
     output_att = hardware_cfg["cluster0"]["cluster0_module4"]["complex_output_0"].get(
         "output_att"
     )
@@ -1976,6 +1991,52 @@ def test_assign_attenuation(
 
     assert isinstance(compiled_in0_att, int)
     assert isinstance(compiled_out0_att, int)
+
+
+def test_assign_input_att_both_output_input_raises(
+    make_basic_multi_qubit_schedule,
+    mock_setup_basic_transmon_with_standard_params,
+):
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module4": {
+                "instrument_type": "QRM_RF",
+                "complex_output_0": {
+                    "input_att": 10,
+                    "portclock_configs": [
+                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6},
+                    ],
+                },
+                "complex_input_0": {
+                    "input_att": 10,
+                    "portclock_configs": [
+                        {"port": "q1:res", "clock": "q1.ro", "interm_freq": 50e6},
+                    ],
+                },
+            },
+        },
+    }
+
+    schedule = Schedule("test_assign_input_att_both_output_input_raises")
+    schedule.add(SquarePulse(amp=0.5, duration=1e-6, port="q0:res", clock="q0.ro"))
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+
+    with pytest.raises(ValueError) as exc:
+        compiler = SerialCompiler(name="compiler")
+        compiler.compile(
+            schedule=schedule, config=quantum_device.generate_compilation_config()
+        )
+
+    # assert exception was raised with correct message.
+    assert (
+        exc.value.args[0] == "'input_att' is defined for both 'complex_input_0' and "
+        "'complex_output_0' on module 'cluster0_module4', which is prohibited. "
+        "Make sure you define it at a single place."
+    )
 
 
 def test_assign_attenuation_invalid_raises(

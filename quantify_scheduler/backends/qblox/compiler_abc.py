@@ -1735,23 +1735,35 @@ class QbloxRFModule(QbloxBaseModule):
         converts setpoints to floats when using an attenuation as settable.
         """
 
-        def _convert_to_int(value, label: str) -> int:
+        def _convert_to_int(value, label: str) -> Optional[int]:
             if value is not None:
                 if not np.isclose(value % 1, 0):
                     raise ValueError(
                         f'Trying to set "{label}" to non-integer value {value}'
                     )
                 return int(value)
+            return None
 
-        self._settings.in0_att = _convert_to_int(
-            self.hw_mapping.get("complex_input_0", {}).get("input_att", None),
-            label="in0_att",
-        )
+        complex_input_0 = self.hw_mapping.get("complex_input_0", {})
+        complex_output_0 = self.hw_mapping.get("complex_output_0", {})
+
+        input_att = complex_input_0.get("input_att", None)
+        if (input_att_output := complex_output_0.get("input_att", None)) is not None:
+            if input_att is not None:
+                raise ValueError(
+                    f"'input_att' is defined for both 'complex_input_0' and "
+                    f"'complex_output_0' on module '{self.name}', which is prohibited. "
+                    f"Make sure you define it at a single place."
+                )
+            input_att = input_att_output
+        self._settings.in0_att = _convert_to_int(input_att, label="in0_att")
+
         self._settings.out0_att = _convert_to_int(
-            self.hw_mapping.get("complex_output_0", {}).get("output_att", None),
+            complex_output_0.get("output_att", None),
             label="out0_att",
         )
+        complex_output_1 = self.hw_mapping.get("complex_output_1", {})
         self._settings.out1_att = _convert_to_int(
-            self.hw_mapping.get("complex_output_1", {}).get("output_att", None),
+            complex_output_1.get("output_att", None),
             label="out1_att",
         )

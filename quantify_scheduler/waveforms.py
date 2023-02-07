@@ -294,7 +294,7 @@ def interpolated_complex_waveform(
     samples: np.ndarray,
     t_samples: np.ndarray,
     interpolation: str = "linear",
-    **kwargs
+    **kwargs,
 ) -> np.ndarray:
     """
     Wrapper function around `scipy.interpolate.interp1d`, which takes the array of
