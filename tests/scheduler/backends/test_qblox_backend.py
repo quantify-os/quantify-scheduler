@@ -877,16 +877,41 @@ def test_compile_simple(
     )
 
 
+@pytest.mark.parametrize("delete_lo0", [False, True])
 def test_compile_cluster(
-    cluster_only_schedule, compile_config_basic_transmon_qblox_hardware
+    cluster_only_schedule,
+    mock_setup_basic_transmon_with_standard_params,
+    load_example_qblox_hardware_config,
+    delete_lo0: bool,
 ):
     sched = cluster_only_schedule
     sched.add_resource(ClockResource("q5.01", freq=5e9))
 
-    compiler = SerialCompiler(name="compiler")
-    compiler.compile(
-        schedule=sched, config=compile_config_basic_transmon_qblox_hardware
+    mock_setup_basic_transmon_with_standard_params["quantum_device"].hardware_config(
+        load_example_qblox_hardware_config
     )
+    compiler = SerialCompiler(name="compiler")
+
+    context_mngr = nullcontext()
+    if delete_lo0:
+        del load_example_qblox_hardware_config["lo0"]
+        context_mngr = pytest.raises(RuntimeError)
+
+    with context_mngr as error:
+        compiler.compile(
+            schedule=sched,
+            config=mock_setup_basic_transmon_with_standard_params[
+                "quantum_device"
+            ].generate_compilation_config(),
+        )
+
+    if delete_lo0:
+        assert (
+            error.value.args[0]
+            == "External local oscillator 'lo0' set to be used by 'seq0' of "
+            "'cluster0_module1' not found! Make sure it is present in the hardware "
+            "configuration."
+        )
 
 
 @pytest.mark.filterwarnings("ignore::FutureWarning")
@@ -1527,11 +1552,14 @@ def test_container_prepare_baseband(
         schedule=baseband_square_pulse_schedule,
         config=quantum_device.generate_compilation_config(),
     )
+
     container = compiler_container.CompilerContainer.from_hardware_cfg(
-        sched, hardware_cfg_baseband
+        schedule=sched, hardware_cfg=hardware_cfg_baseband
     )
     assign_pulse_and_acq_info_to_devices(
-        sched, container.instrument_compilers, hardware_cfg_baseband
+        schedule=sched,
+        device_compilers=container.instrument_compilers,
+        hardware_cfg=hardware_cfg_baseband,
     )
     container.prepare()
 
