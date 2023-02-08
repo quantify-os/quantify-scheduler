@@ -9,6 +9,7 @@ from typing import Any, Dict
 from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends.corrections import (
     apply_distortion_corrections,
+    determine_relative_latencies,
     LatencyCorrections,
 )
 from quantify_scheduler.backends.qblox import compiler_container, helpers
@@ -46,12 +47,6 @@ def hardware_compile(
         hardware_cfg
     )
 
-    if "latency_corrections" in converted_hw_config.keys():
-        # Important: currently only used to validate the input, should also be
-        # used for storing the latency corrections
-        # (see also https://gitlab.com/groups/quantify-os/-/epics/1)
-        LatencyCorrections(latencies=converted_hw_config["latency_corrections"])
-
     # Directly comparing dictionaries that contain numpy arrays raises a
     # ValueError. It is however sufficient to compare all the keys of nested
     # dictionaries.
@@ -80,6 +75,15 @@ def hardware_compile(
             FutureWarning,
         )
         hardware_cfg = converted_hw_config
+
+    if "latency_corrections" in hardware_cfg.keys():
+        # Important: currently only used to validate the input, should also be
+        # used for storing the latency corrections
+        # (see also https://gitlab.com/groups/quantify-os/-/epics/1)
+        LatencyCorrections(latencies=converted_hw_config["latency_corrections"])
+
+        # Subtract minimum latency to allow for negative latencies
+        hardware_cfg["latency_corrections"] = determine_relative_latencies(hardware_cfg)
 
     schedule = apply_distortion_corrections(schedule, hardware_cfg)
 

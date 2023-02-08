@@ -17,7 +17,7 @@ import pytest
 from pydantic import ValidationError
 
 from quantify_scheduler import CompiledSchedule, Schedule, enums
-from quantify_scheduler.backends import SerialCompiler, zhinst_backend
+from quantify_scheduler.backends import corrections, SerialCompiler, zhinst_backend
 from quantify_scheduler.backends.types import common, zhinst
 from quantify_scheduler.backends.zhinst import settings
 from quantify_scheduler.compilation import qcompile
@@ -101,7 +101,7 @@ def create_typical_timing_table(make_schedule, load_example_zhinst_hardware_conf
 
         # the timing of all pulses and acquisitions is corrected
         # based on the latency corr.
-        latency_dict = zhinst_backend._extract_latencies(hardware_config)
+        latency_dict = corrections.determine_relative_latencies(hardware_config)
         timing_table = zhinst_backend._apply_latency_corrections(
             timing_table=timing_table, latency_dict=latency_dict
         )
@@ -812,7 +812,7 @@ def test__extract_port_clock_channelmapping_hdawg(
     assert generated_dict == expected_dict
 
 
-def test__extract_latencies(
+def test_determine_relative_latencies(
     load_example_zhinst_hardware_config,
 ) -> None:
     hardware_config = load_example_zhinst_hardware_config
@@ -824,7 +824,9 @@ def test__extract_latencies(
         "q2:mw-q2.01": 9.5e-08,
         "q3:mw-q3.01": 9.5e-08,
     }
-    generated_dict = zhinst_backend._extract_latencies(hardware_cfg=hardware_config)
+    generated_dict = corrections.determine_relative_latencies(
+        hardware_cfg=hardware_config
+    )
 
     assert generated_dict == expected_latency_dict
 
