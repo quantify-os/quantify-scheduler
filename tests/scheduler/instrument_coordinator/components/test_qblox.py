@@ -29,7 +29,6 @@ from qblox_instruments import (
 )
 from qcodes.instrument import Instrument, InstrumentChannel, InstrumentModule
 
-# pylint: disable=no-name-in-module
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.instrument_coordinator.components import qblox

@@ -1707,7 +1707,7 @@ def test_assign_frequencies_baseband_downconverter(
             ][0]
             if downconverter_freq0 < 0:
                 assert (
-                    error.value.args[0] == f"Downconverter frequency must be positive "
+                    str(error.value) == f"Downconverter frequency must be positive "
                     f"(downconverter_freq={downconverter_freq0:e}) "
                     f"(for 'seq0' of 'qcm0' with "
                     f"port '{portclock_config['port']}' and "
@@ -1715,7 +1715,7 @@ def test_assign_frequencies_baseband_downconverter(
                 )
             elif downconverter_freq0 < q0_clock_freq:
                 assert (
-                    error.value.args[0]
+                    str(error.value)
                     == "Downconverter frequency must be greater than clock frequency "
                     f"(downconverter_freq={downconverter_freq0:e}, "
                     f"clock_freq={q0_clock_freq:e}) "
@@ -1742,12 +1742,12 @@ def test_assign_frequencies_baseband_downconverter(
     else:
         expected_if1 = downconverter_freq1 - q1_clock_freq - lo1
 
-    assert expected_lo0 == actual_lo0, (
+    assert actual_lo0 == expected_lo0, (
         f"LO frequency of channel 0 "
         f"{'without' if downconverter_freq0 in (None, 0) else 'after'} "
         f"downconversion must be equal to {expected_lo0} but is equal to {actual_lo0}"
     )
-    assert expected_if1 == actual_if1, (
+    assert actual_if1 == expected_if1, (
         f"Modulation frequency of channel 1 "
         f"{'without' if downconverter_freq1 in (None, 0) else 'after'} "
         f"downconversion must be equal to {expected_if1} but is equal to {actual_if1}"
@@ -1869,7 +1869,7 @@ def test_assign_frequencies_rf_downconverter(
             ]["portclock_configs"][0]
             if downconverter_freq0 < 0:
                 assert (
-                    error.value.args[0] == f"Downconverter frequency must be positive "
+                    str(error.value) == f"Downconverter frequency must be positive "
                     f"(downconverter_freq={downconverter_freq0:e}) "
                     f"(for 'seq0' of 'cluster0_module2' with "
                     f"port '{portclock_config['port']}' and "
@@ -1877,7 +1877,7 @@ def test_assign_frequencies_rf_downconverter(
                 )
             elif downconverter_freq0 < qubit0_clock_freq:
                 assert (
-                    error.value.args[0]
+                    str(error.value)
                     == "Downconverter frequency must be greater than clock frequency "
                     f"(downconverter_freq={downconverter_freq0:e}, "
                     f"clock_freq={qubit0_clock_freq:e}) "
@@ -1912,7 +1912,7 @@ def test_assign_frequencies_rf_downconverter(
     else:
         expected_if1 = downconverter_freq1 - qubit1_clock_freq - lo1
 
-    assert expected_lo0 == actual_lo0, (
+    assert actual_lo0 == expected_lo0, (
         f"LO frequency of channel 0 "
         f"{'without' if downconverter_freq0 in (None, 0) else 'after'} "
         f"downconversion must be equal to {expected_lo0}, but is equal to {actual_lo0}"
@@ -1922,7 +1922,7 @@ def test_assign_frequencies_rf_downconverter(
         f"{'without' if downconverter_freq1 in (None, 0) else 'after'} "
         f"downconversion must be equal to {expected_lo1}, but is equal to {actual_lo1}"
     )
-    assert expected_if1 == actual_if1, (
+    assert actual_if1 == expected_if1, (
         f"Modulation frequency of channel 1 "
         f"{'without' if downconverter_freq1 in (None, 0) else 'after'} "
         f"downconversion must be equal to {expected_if1}, but is equal to {actual_if1}"
