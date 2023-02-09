@@ -21,6 +21,7 @@ For help in migrating from deprecated methods, see [Quantify Deprecated Code Sug
 ### Breaking changes
 
 - Installation - Instead of `requirements.txt` and `requirements_dev.txt` `quantify-scheduler` uses optional requirements. Use `pip install "quantify-scheduler[dev]"` to install all of them. (!592)
+- Compilation - Raise error upon clock being used in operation that was not added as resource to the schedule or device configuration (!538)
 - Qblox ICCs - Replace `"acq_mapping"` by `"trace_acq_channel"` in the compiled schedule (!515)
 - Qblox backend - Replace `"input_gain<n>"` by `"input_gain_<n>"` and `"input_att"` is the property of `"complex_input"` (!585)
 
