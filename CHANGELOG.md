@@ -7,10 +7,8 @@
 - Qblox backend - Set `"downconverter_freq"` to `null` (json) or `None` to deactivate (0 no longer deactivates it) (!574)
 
 ### Merged branches and closed issues
-### Merged branches and closed issue
 
 - Compilation - Add `determine_relative_latencies` that determines latencies for all port-clock combinations in the hardware config relative to the minimum latency (!566, #379)
-
 - Qblox backend - Introduce `determine_clock_lo_interm_freqs` helper and use in `assign_frequencies` (!574)
 
 ## 0.11.1 (2023-02-07)
