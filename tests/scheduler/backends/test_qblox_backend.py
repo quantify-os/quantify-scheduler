@@ -19,12 +19,11 @@ from typing import Dict, Generator
 
 import numpy as np
 import pytest
+import quantify_scheduler
 from pydantic import ValidationError
 from qblox_instruments import Pulsar, PulsarType
-
-import quantify_scheduler
 from quantify_scheduler import Schedule
-from quantify_scheduler.backends import SerialCompiler
+from quantify_scheduler.backends import SerialCompiler, corrections
 from quantify_scheduler.backends.qblox import (
     compiler_container,
     constants,
@@ -73,9 +72,7 @@ from quantify_scheduler.schedules.timedomain_schedules import (
     allxy_sched,
     readout_calibration_sched,
 )
-
 from tests.fixtures.mock_setup import close_instruments
-
 
 REGENERATE_REF_FILES: bool = False  # Set flag to true to regenerate the reference files
 
@@ -209,7 +206,7 @@ def hardware_cfg_multiplexing():
 def hardware_cfg_latency_corrections():
     return {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "latency_corrections": {"q0:mw-q0.01": 2e-8, "q1:mw-q1.01": 5e-9},
+        "latency_corrections": {"q0:mw-q0.01": 2e-8, "q1:mw-q1.01": -5e-9},
         "qcm0": {
             "instrument_type": "Pulsar_QCM",
             "ref": "internal",
@@ -2486,15 +2483,25 @@ def test_apply_latency_corrections_valid(
             compiled_data = compiled_data.get(instrument)
             config_data = config_data.get(instrument)
 
+        latency_dict = corrections.determine_relative_latencies(hardware_cfg)
         port = config_data["complex_output_0"]["portclock_configs"][0]["port"]
         clock = config_data["complex_output_0"]["portclock_configs"][0]["clock"]
-        latency = int(1e9 * hardware_cfg["latency_corrections"][f"{port}-{clock}"])
+        latency = int(1e9 * latency_dict[f"{port}-{clock}"])
 
         program_lines = compiled_data["seq0"]["sequence"]["program"].splitlines()
         assert any(
             f"latency correction of {constants.GRID_TIME} + {latency} ns" in line
             for line in program_lines
         ), f"instrument={instrument}, latency={latency}"
+
+
+def test_determine_relative_latencies(
+    hardware_cfg_latency_corrections,
+) -> None:
+    generated_latency_dict = corrections.determine_relative_latencies(
+        hardware_cfg=hardware_cfg_latency_corrections
+    )
+    assert generated_latency_dict == {"q0:mw-q0.01": 2.5e-08, "q1:mw-q1.01": 0.0}
 
 
 def test_apply_latency_corrections_warning(
@@ -2509,10 +2516,10 @@ def test_apply_latency_corrections_warning(
     )
     sched = Schedule("Single Gate Experiment")
     sched.add(
-        SquarePulse(port="q1:mw", clock="q1.01", amp=0.25, duration=12e-9),
+        SquarePulse(port="q0:mw", clock="q0.01", amp=0.25, duration=12e-9),
         ref_pt="start",
     )
-    sched.add_resource(ClockResource("q1.01", freq=5e9))
+    sched.add_resource(ClockResource("q0.01", freq=5e9))
 
     warning = f"not a multiple of {constants.GRID_TIME}"
     with caplog.at_level(

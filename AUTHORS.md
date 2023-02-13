@@ -27,6 +27,7 @@
 - Robert Sokolewicz \<<mailto:rsokolewicz@qblox.com>>
 - Thomas Middelburg \<<mailto:tmiddelburg@qblox.com>>
 - Thomas Reynders \<<mailto:thomas@orangeqs.com>>
+- Tobias Bonsen \<<mailto:tobias@orangeqs.com>>
 - Viacheslav Ostroukh \<<mailto:viacheslav@orangeqs.com>>
 - Victor Negirneac \<<mailto:vnegirneac@qblox.com>>
 - Zhihao Wu \<<mailto:zhihaowu@quanta.org.cn>>
