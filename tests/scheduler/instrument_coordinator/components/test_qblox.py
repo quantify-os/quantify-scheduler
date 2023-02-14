@@ -28,10 +28,13 @@ from qblox_instruments import (
     DummyScopeAcquisitionData,
 )
 from qcodes.instrument import Instrument, InstrumentChannel, InstrumentModule
+from xarray import DataArray, Dataset
 
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
+from quantify_scheduler.enums import BinMode
 from quantify_scheduler.instrument_coordinator.components import qblox
+from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 
 from tests.fixtures.mock_setup import close_instruments
 
@@ -58,10 +61,13 @@ def make_cluster_component(mocker):
             },
         )
         dummy_scope_acquisition_data = DummyScopeAcquisitionData(
-            [(0, 1)] * 15000, (False, False), (0, 0)
+            data=[(0, 1)] * 15000, out_of_range=(False, False), avg_cnt=(0, 0)
         )
         cluster.set_dummy_scope_acquisition_data(
             slot_idx=3, sequencer=None, data=dummy_scope_acquisition_data
+        )
+        cluster.set_dummy_scope_acquisition_data(
+            slot_idx=4, sequencer=None, data=dummy_scope_acquisition_data
         )
 
         nonlocal cluster_component
@@ -164,6 +170,12 @@ def make_qrm_component(mocker):
         close_instruments([f"ic_{name}", name])
         qrm = Pulsar(name=name, dummy_type=PulsarType.PULSAR_QRM)
         qrm._serial = serial
+        dummy_scope_acquisition_data = DummyScopeAcquisitionData(
+            [(0, 1)] * 15000, (False, False), (0, 0)
+        )
+        qrm.set_dummy_scope_acquisition_data(
+            sequencer=None, data=dummy_scope_acquisition_data
+        )
 
         nonlocal component
         component = qblox.PulsarQRMComponent(qrm)
@@ -777,7 +789,7 @@ def test_prepare_exception_qcm(close_all_instruments, make_qcm_component):
     # Arrange
     qcm: qblox.PulsarQCMComponent = make_qcm_component("qcm0", "1234")
 
-    invalid_config = {"idontexist": "this is not used"}
+    invalid_config = {"sequencers": {"idontexist": "this is not used"}}
 
     # Act
     with pytest.raises(KeyError) as execinfo:
@@ -794,7 +806,7 @@ def test_prepare_exception_qrm(close_all_instruments, make_qrm_component):
     # Arrange
     qrm: qblox.PulsarQRMComponent = make_qrm_component("qcm0", "1234")
 
-    invalid_config = {"idontexist": "this is not used"}
+    invalid_config = {"sequencers": {"idontexist": "this is not used"}}
 
     # Act
     with pytest.raises(KeyError) as execinfo:
@@ -811,7 +823,7 @@ def test_prepare_exception_qcm_rf(close_all_instruments, make_qcm_rf):
     # Arrange
     qcm: qblox.QCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
 
-    invalid_config = {"idontexist": "this is not used"}
+    invalid_config = {"sequencers": {"idontexist": "this is not used"}}
 
     # Act
     with pytest.raises(KeyError) as execinfo:
@@ -828,7 +840,7 @@ def test_prepare_exception_qrm_rf(close_all_instruments, make_qrm_rf):
     # Arrange
     qrm: qblox.QRMRFComponent = make_qrm_rf("qcm_rf0", "1234")
 
-    invalid_config = {"idontexist": "this is not used"}
+    invalid_config = {"sequencers": {"idontexist": "this is not used"}}
 
     # Act
     with pytest.raises(KeyError) as execinfo:
@@ -909,7 +921,13 @@ def test_retrieve_acquisition_qrm(
     acq = qrm.retrieve_acquisition()
 
     # Assert
-    assert len(acq[(0, 0)]) == 2
+    expected_dataarray = DataArray(
+        [[float("nan") + float("nan") * 1j]],
+        coords=[[0], [0]],
+        dims=["repetition", "acq_index"],
+    )
+    expected_dataset = Dataset({0: expected_dataarray})
+    assert acq.equals(expected_dataset)
 
 
 def test_retrieve_acquisition_qcm_rf(close_all_instruments, make_qcm_rf):
@@ -944,7 +962,13 @@ def test_retrieve_acquisition_qrm_rf(
     acq = qrm_rf.retrieve_acquisition()
 
     # Assert
-    assert len(acq[(0, 0)]) == 2
+    expected_dataarray = DataArray(
+        [[0]],
+        coords=[[0], [0]],
+        dims=["repetition", "acq_index"],
+    )
+    expected_dataset = Dataset({0: expected_dataarray})
+    assert acq.equals(expected_dataset)
 
 
 def test_retrieve_acquisition_cluster(
@@ -1092,44 +1116,60 @@ def test_stop_cluster(close_all_instruments, make_cluster_component):
 def test_qrm_acquisition_manager__init__(make_qrm_component):
     qrm: qblox.PulsarQRMComponent = make_qrm_component("qrm0", "1234")
     qblox._QRMAcquisitionManager(
-        qrm, qrm._hardware_properties.number_of_sequencers, dict(), None
+        parent=qrm,
+        acquisition_metadata=dict(),
+        scope_mode_sequencer_and_channel=None,
+        acquisition_duration={},
+        seq_name_to_idx_map={},
     )
-
-
-def test_get_threshold_data(make_qrm_component, mock_acquisition_data):
-    qrm: qblox.PulsarQRMComponent = make_qrm_component("qrm0", "1234")
-    acq_manager = qblox._QRMAcquisitionManager(
-        qrm, qrm._hardware_properties.number_of_sequencers, dict(), None
-    )
-    data = acq_manager._get_threshold_data(mock_acquisition_data, 0, 0)
-    assert data == 0.12
 
 
 def test_get_integration_data(make_qrm_component, mock_acquisition_data):
     qrm: qblox.PulsarQRMComponent = make_qrm_component("qrm0", "1234")
     acq_manager = qblox._QRMAcquisitionManager(
-        qrm, qrm._hardware_properties.number_of_sequencers, dict(), None
+        parent=qrm,
+        acquisition_metadata=dict(),
+        scope_mode_sequencer_and_channel=None,
+        acquisition_duration={0: 10},
+        seq_name_to_idx_map={"seq0": 0},
     )
-    acq_manager.acq_duration[0] = 10
-    data = acq_manager._get_integration_data(
-        mock_acquisition_data, acq_metadata=None, acq_channel=0
+    acq_metadata = AcquisitionMetadata(
+        "SSBIntegrationComplex", BinMode.AVERAGE, complex, {0: [0]}, 1
     )
-    np.testing.assert_array_equal(data[0], np.array([0.0] * 10))
-    np.testing.assert_array_equal(data[1], np.array([0.0] * 10))
+    formatted_acquisitions = acq_manager._get_integration_data(
+        acq_indices=range(10),
+        acquisitions=mock_acquisition_data,
+        acquisition_metadata=acq_metadata,
+        acq_duration=10,
+        acq_channel=0,
+    )
+
+    np.testing.assert_almost_equal(
+        formatted_acquisitions.sel(repetition=0).values, [0.0] * 10
+    )
 
 
 def test_store_scope_acquisition(make_qrm_component):
     # Arrange
-    acq_mapping = {
-        qblox.AcquisitionIndexing(acq_index=0, acq_channel=0): ("seq0", "trace"),
-    }
     qrm: qblox.PulsarQRMComponent = make_qrm_component(
         name="qrm0", serial="1234", patch_acquisitions=True
     )
+    acq_metadata = {
+        "0": AcquisitionMetadata(
+            acq_protocol="Trace",
+            bin_mode=BinMode.AVERAGE,
+            acq_return_type=complex,
+            acq_indices={0: [0]},
+            repetitions=1,
+        )
+    }
     acq_manager = qblox._QRMAcquisitionManager(
-        qrm, qrm._hardware_properties.number_of_sequencers, acq_mapping, None
+        parent=qrm,
+        acquisition_metadata=acq_metadata,
+        scope_mode_sequencer_and_channel=(0, 0),
+        acquisition_duration={},
+        seq_name_to_idx_map={"seq0": 0},
     )
-    acq_manager.scope_mode_sequencer = 0
 
     # Act
     acq_manager._store_scope_acquisition()

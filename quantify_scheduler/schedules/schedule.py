@@ -838,6 +838,8 @@ class AcquisitionMetadata:
     acq_indices: Dict[int, List[int]]
     """A dictionary containing the acquisition channel as key and a list of acquisition
     indices that are used for every channel."""
+    repetitions: int
+    """How many times the acquisition was repeated on this specific sequencer."""
 
     def __getstate__(self):
         data = dataclasses.asdict(self)

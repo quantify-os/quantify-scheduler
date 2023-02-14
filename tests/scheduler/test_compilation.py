@@ -344,7 +344,7 @@ def test_compile_trace_acquisition(device_compile_config_basic_transmon):
     )
 
     measure_repr = list(sched.schedulables.values())[-1]["operation_repr"]
-    assert sched.operations[measure_repr]["acquisition_info"][0]["protocol"] == "trace"
+    assert sched.operations[measure_repr]["acquisition_info"][0]["protocol"] == "Trace"
 
 
 def test_compile_no_device_cfg_determine_absolute_timing(
