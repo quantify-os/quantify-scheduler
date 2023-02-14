@@ -19,12 +19,11 @@ from typing import Dict, Generator, Optional
 
 import numpy as np
 import pytest
+import quantify_scheduler
 from pydantic import ValidationError
 from qblox_instruments import Pulsar, PulsarType
-
-import quantify_scheduler
 from quantify_scheduler import Schedule
-from quantify_scheduler.backends import SerialCompiler
+from quantify_scheduler.backends import SerialCompiler, corrections
 from quantify_scheduler.backends.qblox import (
     compiler_container,
     constants,
@@ -74,9 +73,7 @@ from quantify_scheduler.schedules.timedomain_schedules import (
     allxy_sched,
     readout_calibration_sched,
 )
-
 from tests.fixtures.mock_setup import close_instruments
-
 
 REGENERATE_REF_FILES: bool = False  # Set flag to true to regenerate the reference files
 
@@ -212,7 +209,7 @@ def hardware_cfg_multiplexing():
 def hardware_cfg_latency_corrections():
     return {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "latency_corrections": {"q0:mw-q0.01": 2e-8, "q1:mw-q1.01": 5e-9},
+        "latency_corrections": {"q0:mw-q0.01": 2e-8, "q1:mw-q1.01": -5e-9},
         "qcm0": {
             "instrument_type": "Pulsar_QCM",
             "ref": "internal",
@@ -891,12 +888,10 @@ def test_compile_cluster(
         load_example_qblox_hardware_config
     )
     compiler = SerialCompiler(name="compiler")
-
     context_mngr = nullcontext()
     if delete_lo0:
         del load_example_qblox_hardware_config["lo0"]
         context_mngr = pytest.raises(RuntimeError)
-
     with context_mngr as error:
         compiler.compile(
             schedule=sched,
@@ -922,7 +917,9 @@ def test_deprecated_qcompile_no_device_cfg(load_example_qblox_hardware_config):
 
     compiled_schedule = qcompile(sched, hardware_cfg=load_example_qblox_hardware_config)
 
-    wf_and_prog = compiled_schedule.compiled_instructions["qcm0"]["seq0"]["sequence"]
+    wf_and_prog = compiled_schedule.compiled_instructions["qcm0"]["sequencers"]["seq0"][
+        "sequence"
+    ]
     assert "play" in wf_and_prog["program"]
 
 
@@ -952,7 +949,10 @@ def test_compile_identical_pulses(
     compiled_schedule = compiler.compile(
         identical_pulses_schedule, config=compile_config_basic_transmon_qblox_hardware
     )
-    prog = compiled_schedule.compiled_instructions["qcm0"]["seq0"]["sequence"]
+
+    prog = compiled_schedule.compiled_instructions["qcm0"]["sequencers"]["seq0"][
+        "sequence"
+    ]
     assert len(prog["waveforms"]) == 2
 
 
@@ -963,7 +963,9 @@ def test_compile_measure(
     full_program = compiler.compile(
         duplicate_measure_schedule, config=compile_config_basic_transmon_qblox_hardware
     )
-    qrm0_seq0_json = full_program["compiled_instructions"]["qrm0"]["seq0"]["sequence"]
+    qrm0_seq0_json = full_program["compiled_instructions"]["qrm0"]["sequencers"][
+        "seq0"
+    ]["sequence"]
 
     assert len(qrm0_seq0_json["weights"]) == 0
 
@@ -1036,9 +1038,9 @@ def test_compile_clock_operations(
             config=quantum_device.generate_compilation_config(),
         )
 
-    program_lines = compiled_sched.compiled_instructions["qcm0"]["seq0"]["sequence"][
-        "program"
-    ].splitlines()
+    program_lines = compiled_sched.compiled_instructions["qcm0"]["sequencers"]["seq0"][
+        "sequence"
+    ]["program"].splitlines()
     assert any(instruction_to_check in line for line in program_lines), "\n".join(
         line for line in program_lines
     )
@@ -1064,9 +1066,9 @@ def test_compile_cz_gate(
 
     program_lines = {}
     for seq in ["seq0", "seq1", "seq2"]:
-        program_lines[seq] = compiled_sched.compiled_instructions["qcm0"][seq][
-            "sequence"
-        ]["program"].splitlines()
+        program_lines[seq] = compiled_sched.compiled_instructions["qcm0"]["sequencers"][
+            seq
+        ]["sequence"]["program"].splitlines()
 
     assert any(
         "play          0,1,4" in line for line in program_lines["seq0"]
@@ -1091,7 +1093,10 @@ def test_compile_simple_with_acq(
         mixed_schedule_with_acquisition,
         config=compile_config_basic_transmon_qblox_hardware,
     )
-    qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["sequence"]
+
+    qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["sequencers"][
+        "seq0"
+    ]["sequence"]
 
     qcm0 = dummy_pulsars["qcm0"]
     qcm0.sequencer0.sequence(qcm0_seq0_json)
@@ -1113,7 +1118,9 @@ def test_deprecated_qcompile_simple_with_acq(
         device_cfg=load_example_transmon_config,
         hardware_cfg=load_example_qblox_hardware_config,
     )
-    qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["sequence"]
+    qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["sequencers"][
+        "seq0"
+    ]["sequence"]
 
     qcm0 = dummy_pulsars["qcm0"]
     qcm0.sequencer0.sequence(qcm0_seq0_json)
@@ -1156,8 +1163,9 @@ def test_compile_acq_measurement_with_clock_phase_reset(
     compiled_schedule = compiler.compile(
         schedule, config=mock_setup["quantum_device"].generate_compilation_config()
     )
-
-    qrm0_seq0_json = compiled_schedule.compiled_instructions["qrm0"]["seq0"]["seq_fn"]
+    qrm0_seq0_json = compiled_schedule.compiled_instructions["qrm0"]["sequencers"][
+        "seq0"
+    ]["seq_fn"]
     with open(qrm0_seq0_json) as file:
         program = json.load(file)["program"]
     reset_counts = program.count(" reset_ph ")
@@ -1223,7 +1231,10 @@ def test_compile_with_rel_time(
         pulse_only_schedule_with_operation_timing,
         config=compile_config_basic_transmon_qblox_hardware,
     )
-    qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["seq0"]["sequence"]
+
+    qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["sequencers"][
+        "seq0"
+    ]["sequence"]
 
     qcm0 = dummy_pulsars["qcm0"]
     qcm0.sequencer0.sequence(qcm0_seq0_json)
@@ -1241,9 +1252,9 @@ def test_compile_with_repetitions(
         config=compile_config_basic_transmon_qblox_hardware,
     )
 
-    program_from_json = full_program["compiled_instructions"]["qcm0"]["seq0"][
-        "sequence"
-    ]["program"]
+    program_from_json = full_program["compiled_instructions"]["qcm0"]["sequencers"][
+        "seq0"
+    ]["sequence"]["program"]
     move_line = program_from_json.split("\n")[5]
     move_items = move_line.split()  # splits on whitespace
     args = move_items[1]
@@ -1288,9 +1299,9 @@ def test_qasm_hook(pulse_only_schedule, mock_setup_basic_transmon_with_standard_
             "quantum_device"
         ].generate_compilation_config(),
     )
-    program = full_program["compiled_instructions"]["qrm0"]["seq0"]["sequence"][
-        "program"
-    ]
+    program = full_program["compiled_instructions"]["qrm0"]["sequencers"]["seq0"][
+        "sequence"
+    ]["program"]
     program_lines = program.splitlines()
 
     assert program_lines[1].strip() == q1asm_instructions.NOP
@@ -1327,9 +1338,9 @@ def test_real_mode_pulses(
     )
 
     for output in range(4):
-        seq_instructions = full_program.compiled_instructions["qcm0"][f"seq{output}"][
-            "sequence"
-        ]
+        seq_instructions = full_program.compiled_instructions["qcm0"]["sequencers"][
+            f"seq{output}"
+        ]["sequence"]
 
         for value in seq_instructions["waveforms"].values():
             waveform_data, seq_path = value["data"], value["index"]
@@ -1504,46 +1515,13 @@ def test_multiple_trace_acquisition_error(compile_config_basic_transmon_qblox_ha
         _ = compiler.compile(
             schedule=sched, config=compile_config_basic_transmon_qblox_hardware
         )
-    assert (
-        'Both sequencer "0" and "1" of "qrm0" need to perform scope mode acquisitions. '
-        "Only one sequencer per device can trigger raw trace capture.\n\n"
-        "Please ensure that only one port and clock combination "
-        "has to perform raw trace acquisition per instrument." == str(exception.value)
-    )
-
-
-def test_determine_scope_mode_acquisition_sequencer(
-    mock_setup_basic_transmon_with_standard_params, load_example_qblox_hardware_config
-):
-    mock_setup = mock_setup_basic_transmon_with_standard_params
-    sched = Schedule("determine_scope_mode_acquisition_sequencer")
-    sched.add(Measure("q0"))
-    sched.add(Trace(duration=100e-9, port="q0:res", clock="q0.multiplex"))
-    sched.add(Trace(duration=100e-9, port="q5:res", clock="q5.ro"))
-
-    # Clocks q0.multiplex and q5.ro need to be manually added
-    sched.add_resources(
-        [ClockResource("q0.multiplex", freq=5e9), ClockResource("q5.ro", freq=6e9)]
-    )
-
-    hardware_cfg = load_example_qblox_hardware_config
-    mock_setup["quantum_device"].hardware_config(hardware_cfg)
-
-    compiler = SerialCompiler(name="compiler")
-    sched = compiler.compile(
-        sched,
-        config=mock_setup["quantum_device"].generate_compilation_config(),
-    )
-
-    assert hardware_cfg["qrm0"]["instrument_type"] == "Pulsar_QRM"
-    assert sched.compiled_instructions["qrm0"]["settings"]["scope_mode_sequencer"] == 1
-
-    assert hardware_cfg["cluster0"]["cluster0_module4"]["instrument_type"] == "QRM_RF"
-    assert (
-        sched.compiled_instructions["cluster0"]["cluster0_module4"]["settings"][
-            "scope_mode_sequencer"
-        ]
-        == 0
+    assert str(exception.value) == (
+        f"Both sequencer '0' and '1' "
+        f"of 'qrm0' attempts to perform scope mode acquisitions. "
+        f"Only one sequencer per device can "
+        f"trigger raw trace capture.\n\nPlease ensure that "
+        f"only one port-clock combination performs "
+        f"raw trace acquisition per instrument."
     )
 
 
@@ -1733,7 +1711,7 @@ def test_assign_frequencies_baseband(
     generic_icc = constants.GENERIC_IC_COMPONENT_NAME
     assert compiled_instructions[generic_icc][f"{io0_lo_name}.frequency"] == lo0
     assert compiled_instructions[generic_icc][f"{io1_lo_name}.frequency"] == lo1
-    assert compiled_instructions["qcm0"]["seq1"]["modulation_freq"] == if1
+    assert compiled_instructions["qcm0"]["sequencers"]["seq1"]["modulation_freq"] == if1
 
 
 @pytest.mark.parametrize(
@@ -1791,7 +1769,7 @@ def test_assign_frequencies_baseband_downconverter(
             ][0]
             if downconverter_freq0 < 0:
                 assert (
-                    error.value.args[0] == f"Downconverter frequency must be positive "
+                    str(error.value) == f"Downconverter frequency must be positive "
                     f"(downconverter_freq={downconverter_freq0:e}) "
                     f"(for 'seq0' of 'qcm0' with "
                     f"port '{portclock_config['port']}' and "
@@ -1799,7 +1777,7 @@ def test_assign_frequencies_baseband_downconverter(
                 )
             elif downconverter_freq0 < q0_clock_freq:
                 assert (
-                    error.value.args[0]
+                    str(error.value)
                     == "Downconverter frequency must be greater than clock frequency "
                     f"(downconverter_freq={downconverter_freq0:e}, "
                     f"clock_freq={q0_clock_freq:e}) "
@@ -1814,7 +1792,7 @@ def test_assign_frequencies_baseband_downconverter(
     ]
     qcm_program = compiled_schedule["compiled_instructions"]["qcm0"]
     actual_lo0 = generic_ic_program[f"{io0_lo_name}.frequency"]
-    actual_if1 = qcm_program["seq1"]["modulation_freq"]
+    actual_if1 = qcm_program["sequencers"]["seq1"]["modulation_freq"]
 
     if downconverter_freq0 is None:
         expected_lo0 = q0_clock_freq - if0
@@ -1826,12 +1804,12 @@ def test_assign_frequencies_baseband_downconverter(
     else:
         expected_if1 = downconverter_freq1 - q1_clock_freq - lo1
 
-    assert expected_lo0 == actual_lo0, (
+    assert actual_lo0 == expected_lo0, (
         f"LO frequency of channel 0 "
         f"{'without' if downconverter_freq0 in (None, 0) else 'after'} "
         f"downconversion must be equal to {expected_lo0} but is equal to {actual_lo0}"
     )
-    assert expected_if1 == actual_if1, (
+    assert actual_if1 == expected_if1, (
         f"Modulation frequency of channel 1 "
         f"{'without' if downconverter_freq1 in (None, 0) else 'after'} "
         f"downconversion must be equal to {expected_if1} but is equal to {actual_if1}"
@@ -1887,7 +1865,7 @@ def test_assign_frequencies_rf(
 
     assert qcm_program["settings"]["lo0_freq"] == lo0
     assert qcm_program["settings"]["lo1_freq"] == lo1
-    assert qcm_program["seq1"]["modulation_freq"] == if1
+    assert qcm_program["sequencers"]["seq1"]["modulation_freq"] == if1
 
 
 @pytest.mark.parametrize(
@@ -1953,7 +1931,7 @@ def test_assign_frequencies_rf_downconverter(
             ]["portclock_configs"][0]
             if downconverter_freq0 < 0:
                 assert (
-                    error.value.args[0] == f"Downconverter frequency must be positive "
+                    str(error.value) == f"Downconverter frequency must be positive "
                     f"(downconverter_freq={downconverter_freq0:e}) "
                     f"(for 'seq0' of 'cluster0_module2' with "
                     f"port '{portclock_config['port']}' and "
@@ -1961,7 +1939,7 @@ def test_assign_frequencies_rf_downconverter(
                 )
             elif downconverter_freq0 < qubit0_clock_freq:
                 assert (
-                    error.value.args[0]
+                    str(error.value)
                     == "Downconverter frequency must be greater than clock frequency "
                     f"(downconverter_freq={downconverter_freq0:e}, "
                     f"clock_freq={qubit0_clock_freq:e}) "
@@ -1976,7 +1954,7 @@ def test_assign_frequencies_rf_downconverter(
     ]
     actual_lo0 = qcm_program["settings"]["lo0_freq"]
     actual_lo1 = qcm_program["settings"]["lo1_freq"]
-    actual_if1 = qcm_program["seq1"]["modulation_freq"]
+    actual_if1 = qcm_program["sequencers"]["seq1"]["modulation_freq"]
 
     if0 = hardware_cfg["cluster0"]["cluster0_module2"]["complex_output_0"][
         "portclock_configs"
@@ -1996,7 +1974,7 @@ def test_assign_frequencies_rf_downconverter(
     else:
         expected_if1 = downconverter_freq1 - qubit1_clock_freq - lo1
 
-    assert expected_lo0 == actual_lo0, (
+    assert actual_lo0 == expected_lo0, (
         f"LO frequency of channel 0 "
         f"{'without' if downconverter_freq0 in (None, 0) else 'after'} "
         f"downconversion must be equal to {expected_lo0}, but is equal to {actual_lo0}"
@@ -2006,7 +1984,7 @@ def test_assign_frequencies_rf_downconverter(
         f"{'without' if downconverter_freq1 in (None, 0) else 'after'} "
         f"downconversion must be equal to {expected_lo1}, but is equal to {actual_lo1}"
     )
-    assert expected_if1 == actual_if1, (
+    assert actual_if1 == expected_if1, (
         f"Modulation frequency of channel 1 "
         f"{'without' if downconverter_freq1 in (None, 0) else 'after'} "
         f"downconversion must be equal to {expected_if1}, but is equal to {actual_if1}"
@@ -2189,7 +2167,7 @@ def test_markers(mock_setup_basic_transmon, load_example_qblox_hardware_config):
             mrk_config.start,
             mrk_config.end,
         )
-        qasm = device_program["seq0"]["sequence"]["program"]
+        qasm = device_program["sequencers"]["seq0"]["sequence"]["program"]
 
         matches = re.findall(r"set\_mrk +\d+", qasm)
         matches = [int(m.replace("set_mrk", "").strip()) for m in matches]
@@ -2242,18 +2220,18 @@ def assembly_valid(compiled_schedule, qcm0, qrm0):
     """
 
     # test the program for the qcm
-    qcm0_seq0_json = compiled_schedule["compiled_instructions"]["qcm0"]["seq0"][
-        "sequence"
-    ]
+    qcm0_seq0_json = compiled_schedule["compiled_instructions"]["qcm0"]["sequencers"][
+        "seq0"
+    ]["sequence"]
     qcm0.sequencer0.sequence(qcm0_seq0_json)
     qcm0.arm_sequencer(0)
     uploaded_waveforms = qcm0.get_waveforms(0)
     assert uploaded_waveforms is not None
 
     # test the program for the qrm
-    qrm0_seq0_json = compiled_schedule["compiled_instructions"]["qrm0"]["seq0"][
-        "sequence"
-    ]
+    qrm0_seq0_json = compiled_schedule["compiled_instructions"]["qrm0"]["sequencers"][
+        "seq0"
+    ]["sequence"]
     qrm0.sequencer0.sequence(qrm0_seq0_json)
     qrm0.arm_sequencer(0)
     uploaded_waveforms = qrm0.get_waveforms(0)
@@ -2277,8 +2255,8 @@ def test_acq_protocol_append_mode_valid_assembly_ssro(
     )
 
     qrm0_seq_instructions = compiled_ssro_sched["compiled_instructions"]["qrm0"][
-        "seq0"
-    ]["sequence"]
+        "sequencers"
+    ]["seq0"]["sequence"]
 
     baseline_assembly = os.path.join(
         quantify_scheduler.__path__[0],
@@ -2318,8 +2296,8 @@ def test_acq_protocol_average_mode_valid_assembly_allxy(
     )
 
     qrm0_seq_instructions = compiled_allxy_sched["compiled_instructions"]["qrm0"][
-        "seq0"
-    ]["sequence"]
+        "sequencers"
+    ]["seq0"]["sequence"]
 
     baseline_assembly = os.path.join(
         quantify_scheduler.__path__[0],
@@ -2351,8 +2329,8 @@ def test_acq_declaration_dict_append_mode(compile_config_basic_transmon_qblox_ha
     )
 
     qrm0_seq_instructions = compiled_ssro_sched["compiled_instructions"]["qrm0"][
-        "seq0"
-    ]["sequence"]
+        "sequencers"
+    ]["seq0"]["sequence"]
 
     acquisitions = qrm0_seq_instructions["acquisitions"]
     # the only key corresponds to channel 0
@@ -2369,8 +2347,8 @@ def test_acq_declaration_dict_bin_avg_mode(
         allxy, config=compile_config_basic_transmon_qblox_hardware
     )
     qrm0_seq_instructions = compiled_allxy_sched["compiled_instructions"]["qrm0"][
-        "seq0"
-    ]["sequence"]
+        "sequencers"
+    ]["seq0"]["sequence"]
 
     acquisitions = qrm0_seq_instructions["acquisitions"]
 
@@ -2570,15 +2548,27 @@ def test_apply_latency_corrections_valid(
             compiled_data = compiled_data.get(instrument)
             config_data = config_data.get(instrument)
 
+        latency_dict = corrections.determine_relative_latencies(hardware_cfg)
         port = config_data["complex_output_0"]["portclock_configs"][0]["port"]
         clock = config_data["complex_output_0"]["portclock_configs"][0]["clock"]
-        latency = int(1e9 * hardware_cfg["latency_corrections"][f"{port}-{clock}"])
+        latency = int(1e9 * latency_dict[f"{port}-{clock}"])
 
-        program_lines = compiled_data["seq0"]["sequence"]["program"].splitlines()
+        program_lines = compiled_data["sequencers"]["seq0"]["sequence"][
+            "program"
+        ].splitlines()
         assert any(
             f"latency correction of {constants.GRID_TIME} + {latency} ns" in line
             for line in program_lines
         ), f"instrument={instrument}, latency={latency}"
+
+
+def test_determine_relative_latencies(
+    hardware_cfg_latency_corrections,
+) -> None:
+    generated_latency_dict = corrections.determine_relative_latencies(
+        hardware_cfg=hardware_cfg_latency_corrections
+    )
+    assert generated_latency_dict == {"q0:mw-q0.01": 2.5e-08, "q1:mw-q1.01": 0.0}
 
 
 def test_apply_latency_corrections_warning(
@@ -2593,10 +2583,10 @@ def test_apply_latency_corrections_warning(
     )
     sched = Schedule("Single Gate Experiment")
     sched.add(
-        SquarePulse(port="q1:mw", clock="q1.01", amp=0.25, duration=12e-9),
+        SquarePulse(port="q0:mw", clock="q0.01", amp=0.25, duration=12e-9),
         ref_pt="start",
     )
-    sched.add_resource(ClockResource("q1.01", freq=5e9))
+    sched.add_resource(ClockResource("q0.01", freq=5e9))
 
     warning = f"not a multiple of {constants.GRID_TIME}"
     with caplog.at_level(

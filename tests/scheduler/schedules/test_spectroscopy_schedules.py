@@ -179,6 +179,7 @@ def test_nco_heterodyne_spec_sched__qblox_backend(
         bin_mode=BinMode.AVERAGE,
         acq_return_type=complex,
         acq_indices={0: [*range(len(ro_freqs))]},
+        repetitions=1,  # TODO
     )
     data = 1 * np.exp(1j * np.deg2rad(45))
     acq_indices_data = _reshape_array_into_acq_return_type(

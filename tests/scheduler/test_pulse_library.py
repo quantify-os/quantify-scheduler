@@ -266,7 +266,6 @@ class TestPulseLevelOperation:
 
     def test__repr__modify_not_equal(self, operation: Operation) -> None:
         # Arrange
-        # Arrange
         operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
 
         # Act

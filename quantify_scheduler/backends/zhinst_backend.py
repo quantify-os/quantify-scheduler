@@ -16,7 +16,10 @@ from zhinst.toolkit.helpers import Waveform
 
 
 from quantify_scheduler import enums
-from quantify_scheduler.backends.corrections import LatencyCorrections
+from quantify_scheduler.backends.corrections import (
+    determine_relative_latencies,
+    LatencyCorrections,
+)
 from quantify_scheduler.backends.types import common, zhinst
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 from quantify_scheduler.backends.zhinst import resolvers, seqc_il_generator
@@ -146,34 +149,6 @@ def _extract_port_clock_channelmapping(hardware_cfg: Dict[str, Any]) -> Dict[str
                 port_clock_dict[f"{port}-{clock}"] = f"{instr_name}.awg{channel_idx}"
 
     return port_clock_dict
-
-
-def _extract_latencies(hardware_cfg: Dict[str, Any]) -> Dict[str, float]:
-    """
-    The latency is specified on a port-clock combination basis in the hardware
-    configuration file. Relative latencies calculated here are added to the absolute
-    times of the operations having the specific port-clock combination specified in the
-    latency_dict.
-    """
-
-    port_clock_dict = _extract_port_clock_channelmapping(hardware_cfg=hardware_cfg)
-    raw_latency_dict = hardware_cfg.get("latency_corrections")
-
-    latency_dict = {}
-
-    if raw_latency_dict:
-        for port_clock in port_clock_dict:
-            latency_dict[port_clock] = raw_latency_dict.get(port_clock, 0)
-
-        # Subtract lowest value to ensure minimal latency is used.
-        # note that this also supports negative delays (which is useful for
-        # calibrating)
-        minimum_of_latencies = min(latency_dict.values())
-        # Offset the latencies to be relative to the minimum
-        for port_clock, latency_at_port_clock in latency_dict.items():
-            latency_dict[port_clock] = latency_at_port_clock - minimum_of_latencies
-
-    return latency_dict
 
 
 def _determine_clock_sample_start(
@@ -774,7 +749,7 @@ def compile_backend(
     )
 
     # the timing of all pulses and acquisitions is corrected based on the latency corr.
-    latency_dict = _extract_latencies(hardware_cfg)
+    latency_dict = determine_relative_latencies(hardware_cfg)
     timing_table = _apply_latency_corrections(
         timing_table=timing_table, latency_dict=latency_dict
     )
@@ -1454,7 +1429,7 @@ def _compile_for_uhfqa(
             + f" acq_duration={acq_duration} integration_length={integration_length}"
         )
 
-        if acq_protocol == "trace":
+        if acq_protocol == "Trace":
             # Disable Weighted integration because we'd like to see
             # the raw signal.
             settings_builder.with_qas_monitor_enable(True).with_qas_monitor_averages(

@@ -2,17 +2,15 @@
 # Licensed according to the LICENCE file on the main branch
 """Pulse and acquisition corrections for hardware compilation."""
 import logging
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Generator, Optional, Tuple
 
 import numpy as np
-
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.qblox.helpers import generate_waveform_data
 from quantify_scheduler.helpers.importers import import_python_object_from_string
 from quantify_scheduler.operations.pulse_library import NumericalPulse
 from quantify_scheduler.structure import DataStructure
-
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +37,55 @@ class LatencyCorrections(DataStructure):
     """
 
     latencies: Dict[str, float]
+
+
+def determine_relative_latencies(hardware_cfg: Dict[str, Any]) -> Dict[str, float]:
+    """
+    Generates the latency configuration dict for all port-clock combinations that are present in
+    the hardware_cfg. This is done by first setting unspecified latencies to zero, and then
+    subtracting the minimum latency from all latencies.
+    """
+
+    def _extract_port_clocks(hardware_cfg: Dict[str, Any]) -> Generator:
+        """
+        Extracts all port-clock combinations that are present in a hardware configuration.
+        Based on: https://stackoverflow.com/questions/9807634/find-all-occurrences-of-a-key-in-nested-dictionaries-and-lists
+        """
+
+        if hasattr(hardware_cfg, "items"):
+            for k, v in hardware_cfg.items():
+                if k == "port":
+                    port_clock = f'{hardware_cfg["port"]}-{hardware_cfg["clock"]}'
+                    yield port_clock
+
+                elif isinstance(v, dict):
+                    for port_clock in _extract_port_clocks(v):
+                        yield port_clock
+
+                elif isinstance(v, list):
+                    for d in v:
+                        for port_clock in _extract_port_clocks(d):
+                            yield port_clock
+
+    if (raw_latency_dict := hardware_cfg.get("latency_corrections")) is None:
+        return {}
+
+    port_clocks = _extract_port_clocks(hardware_cfg=hardware_cfg)
+
+    latency_dict = {}
+    for port_clock in port_clocks:
+        # Set unspecified latencies to zero to avoid ending up with negative latencies
+        # after subtracting minimum
+        latency_dict[port_clock] = raw_latency_dict.get(port_clock, 0)
+
+    # Subtract lowest value to ensure minimal latency is used and offset the latencies
+    # to be relative to the minimum. Note that this supports negative delays (which is
+    # useful for calibrating)
+    minimum_of_latencies = min(latency_dict.values())
+    for port_clock, latency_at_port_clock in latency_dict.items():
+        latency_dict[port_clock] = latency_at_port_clock - minimum_of_latencies
+
+    return latency_dict
 
 
 def distortion_correct_pulse(  # pylint: disable=too-many-arguments

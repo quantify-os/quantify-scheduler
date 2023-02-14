@@ -229,13 +229,13 @@ class ScheduleGettable:
         return result
 
     def _reshape_data(self, acq_metadata, vals):
-        if acq_metadata.acq_protocol == "trigger_count":
+        if acq_metadata.acq_protocol == "TriggerCount":
             return [vals.real.astype(np.uint64)]
 
         if (
-            acq_metadata.acq_protocol == "trace"
-            or acq_metadata.acq_protocol == "ssb_integration_complex"
-            or acq_metadata.acq_protocol == "weighted_integrated_complex"
+            acq_metadata.acq_protocol == "Trace"
+            or acq_metadata.acq_protocol == "SSBIntegrationComplex"
+            or acq_metadata.acq_protocol == "WeightedIntegratedComplex"
         ):
             ret_val = []
             if self.real_imag:
@@ -285,8 +285,9 @@ class ScheduleGettable:
                 )
                 acq_stride = len(acq_indices)
                 for acq_idx in acq_indices:
-                    vals = acquired_data[(acq_channel, acq_idx)]
-                    dataset[acq_channel][acq_idx::acq_stride] = vals[0]
+                    dataset[acq_channel][acq_idx::acq_stride] = (
+                        acquired_data[acq_channel].sel(acq_index=acq_idx).values
+                    )
             return dataset
         raise NotImplementedError(
             f"Acquisition protocol {acq_metadata.acq_protocol} with bin"
@@ -306,29 +307,27 @@ class ScheduleGettable:
 
         # retrieve the acquisition results
         # FIXME: acq_metadata should be an attribute of the schedule, see also #192
-        if acq_metadata.acq_protocol == "trigger_count":
+        if acq_metadata.acq_protocol == "TriggerCount":
             dataset = self._process_acquired_data_trigger_count(
                 acquired_data, acq_metadata, repetitions
             )
 
-        elif (
-            acq_metadata.bin_mode == BinMode.AVERAGE
-            and acq_metadata.acq_protocol == "trace"
-        ):
+        elif acq_metadata.acq_protocol == "Trace":
             dataset = {}
             for acq_channel, acq_indices in acq_metadata.acq_indices.items():
-                dataset[acq_channel] = np.zeros(len(acq_indices), dtype=complex)
-                for acq_idx in acq_indices:
-                    val = acquired_data[(acq_channel, acq_idx)]
-                    dataset[acq_channel] = val[0] + 1j * val[1]
+                # Trace only supports AVERAGE binmode, therefore only has values at repetition=0.
+                dataset[acq_channel] = (
+                    acquired_data[acq_channel].sel(repetition=0).values
+                )
 
         elif acq_metadata.bin_mode == BinMode.AVERAGE:
             dataset = {}
             for acq_channel, acq_indices in acq_metadata.acq_indices.items():
                 dataset[acq_channel] = np.zeros(len(acq_indices), dtype=complex)
                 for acq_idx in acq_indices:
-                    val = acquired_data[(acq_channel, acq_idx)]
-                    dataset[acq_channel][acq_idx] = val[0] + 1j * val[1]
+                    dataset[acq_channel][acq_idx] = (
+                        acquired_data[acq_channel].sel(acq_index=acq_idx).values
+                    )
 
         elif acq_metadata.bin_mode == BinMode.APPEND:
             dataset = {}
@@ -338,8 +337,9 @@ class ScheduleGettable:
                 )
                 acq_stride = len(acq_indices)
                 for acq_idx in acq_indices:
-                    vals = acquired_data[(acq_channel, acq_idx)]
-                    dataset[acq_channel][acq_idx::acq_stride] = vals[0] + 1j * vals[1]
+                    dataset[acq_channel][acq_idx::acq_stride] = (
+                        acquired_data[acq_channel].sel(acq_index=acq_idx).values
+                    )
 
         else:
             raise NotImplementedError(

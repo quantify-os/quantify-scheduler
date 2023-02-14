@@ -169,7 +169,7 @@ def heterodyne_spec_sched_batched(
      init_duration
          The relaxation time or dead time.
      repetitions
-         The amount of times the Schedule will be repeated.
+         The amount of times the Schedule will be repeated. # TODO
      port_out
          Output port on the device where the pulse should be applied. If `None`, then use
          the same as `port`.
@@ -417,7 +417,7 @@ def two_tone_spec_sched_batched(
      init_duration
          The relaxation time or dead time.
      repetitions
-         The amount of times the Schedule will be repeated.
+         The amount of times the Schedule will be repeated.  # TODO
     """
     sched = Schedule("Fast two-tone spectroscopy (batched)")
     sched.add_resources(

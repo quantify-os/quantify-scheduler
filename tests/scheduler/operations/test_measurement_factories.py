@@ -117,7 +117,7 @@ def test_optical_measurement_trigger_count(
     # Assert
     assert isinstance(operation.data["acquisition_info"][0], dict)
     acq_info = operation.data["acquisition_info"][0]
-    assert acq_info["protocol"] == "trigger_count"
+    assert acq_info["protocol"] == "TriggerCount"
     assert acq_info["acq_return_type"] == int
     assert_acquisition_equal(acq_info, kwargs)
 
@@ -138,7 +138,7 @@ def test_optical_measurement_trace(
     # Assert
     assert isinstance(operation.data["acquisition_info"][0], dict)
     acq_info = operation.data["acquisition_info"][0]
-    assert acq_info["protocol"] == "trace"
+    assert acq_info["protocol"] == "Trace"
     assert acq_info["acq_return_type"] == np.ndarray
     assert_acquisition_equal(acq_info, kwargs)
 

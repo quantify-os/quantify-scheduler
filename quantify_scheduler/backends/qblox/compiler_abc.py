@@ -57,9 +57,6 @@ from quantify_scheduler.backends.types.qblox import (
     MarkerConfiguration,
 )
 from quantify_scheduler.enums import BinMode
-from quantify_scheduler.helpers.schedule import (
-    _extract_acquisition_metadata_from_acquisitions,
-)
 from quantify_scheduler.operations.pulse_library import SetClockFrequency
 
 if TYPE_CHECKING:
@@ -329,7 +326,7 @@ class Sequencer:
             an IQ mixer. This is used for frequency calculations.
         downconverter_freq
             Frequency of the external downconverter if one is being used.
-            Defaults to 0, in which case no downconverter is being used.
+            Defaults to None, in which case the downconverter is inactive.
         mix_lo
             Boolean flag for IQ mixing with LO.
             Defaults to True meaning IQ mixing is applied.
@@ -577,7 +574,9 @@ class Sequencer:
             acq.generate_data(wf_dict)
         return wf_dict
 
-    def _prepare_acq_settings(self, acquisitions: List[IOperationStrategy]):
+    def _prepare_acq_settings(
+        self, acquisitions: List[IOperationStrategy], repetitions: int
+    ):
         """
         Sets sequencer settings that are specific to certain acquisitions.
         For example for a TTL acquisition strategy.
@@ -585,14 +584,17 @@ class Sequencer:
         Parameters
         ----------
         acquisitions
+            List of the acquisitions assigned to this sequencer.
+        repetitions
+            The number of times to repeat execution of the schedule.
         """
         acquisition_infos: List[OpInfo] = list(
             map(lambda acq: acq.operation_info, acquisitions)
         )
-        acq_metadata = _extract_acquisition_metadata_from_acquisitions(
-            acquisition_infos
+        acq_metadata = helpers.extract_acquisition_metadata_from_acquisitions(
+            acquisitions=acquisition_infos, repetitions=repetitions
         )
-        if acq_metadata.acq_protocol == "trigger_count":
+        if acq_metadata.acq_protocol == "TriggerCount":
             self._settings.ttl_acq_auto_bin_incr_en = (
                 acq_metadata.bin_mode == BinMode.AVERAGE
             )
@@ -641,8 +643,8 @@ class Sequencer:
         )
 
         # acquisition metadata for acquisitions relevant to this sequencer only
-        acq_metadata = _extract_acquisition_metadata_from_acquisitions(
-            acquisition_infos
+        acq_metadata = helpers.extract_acquisition_metadata_from_acquisitions(
+            acquisitions=acquisition_infos, repetitions=repetitions
         )
 
         # initialize an empty dictionary for the format required by module
@@ -662,7 +664,7 @@ class Sequencer:
                     f"Please make sure the used bins increment by 1 starting from "
                     f"0. Found: {max(acq_indices)} as the highest bin out of "
                     f"{len(acq_indices)} for channel {acq_channel}, indicating "
-                    f"an acquisition_index was skipped. "
+                    f"an acquisition index was skipped. "
                     f"Problem occurred for port {self.port} with clock {self.clock}, "
                     f"which corresponds to {self.name} of {self.parent.name}."
                 )
@@ -671,7 +673,7 @@ class Sequencer:
             if acq_metadata.bin_mode == BinMode.APPEND:
                 num_bins = repetitions * (max(acq_indices) + 1)
             elif acq_metadata.bin_mode == BinMode.AVERAGE:
-                if acq_metadata.acq_protocol == "trigger_count":
+                if acq_metadata.acq_protocol == "TriggerCount":
                     num_bins = constants.MAX_NUMBER_OF_BINS
                 else:
                     num_bins = max(acq_indices) + 1
@@ -961,7 +963,9 @@ class Sequencer:
             weights_dict = {}
             acq_declaration_dict = {}
             if len(self.acquisitions) > 0:
-                self._prepare_acq_settings(self.acquisitions)
+                self._prepare_acq_settings(
+                    acquisitions=self.acquisitions, repetitions=repetitions
+                )
                 weights_dict = self._generate_weights_dict()
                 acq_declaration_dict = self._generate_acq_declaration_dict(
                     acquisitions=self.acquisitions, repetitions=repetitions
@@ -1213,7 +1217,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         if len(self._acquisitions) > 0 and not self.supports_acquisition:
             raise RuntimeError(
-                f"Attempting to add acquisitions to {self.__class__} {self.name}, "
+                f"Attempting to add acquisitions to  {self.__class__} {self.name}, "
                 f"which is not supported by hardware."
             )
 
@@ -1275,49 +1279,41 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         r"""
         An abstract method that should be overridden. Meant to assign an IF frequency
         to each sequencer, and an LO frequency to each output (if applicable).
-
-        What is executed depends on the mix_lo boolean.
-
-        Raises
-        ------
-        ValueError
-            Neither the LO nor the IF frequency has been set and thus contain
-            :code:`None` values.
         """
 
     def _set_lo_interm_freqs(
         self,
         freqs: helpers.Frequencies,
         sequencer: Sequencer,
-        compiler_lo: Optional[LocalOscillator] = None,
-        lo_freq_setting_name: Optional[str] = None,
+        compiler_lo_baseband: Optional[LocalOscillator] = None,
+        lo_freq_setting_rf: Optional[str] = None,
     ):
         """
-        Sets the LO/IF frequencies, for baseband and for RF modules.
-
-        For baseband + external LO, set compiler_lo
-        For RF ... , set lo_freq_setting_name
-
-        It is expected that either the IF or the LO frequency is supplied. Otherwise, an
-        error is thrown.
-
-        In case of RF, checks if the LO freq has already been set, throws an error
+        Sets the LO/IF frequencies, for baseband and RF modules.
 
         Parameters
         ----------
         freqs
+            LO, IF, and clock frequencies, supplied via an :class:`.helpers.Frequencies`
+            object.
         sequencer
-        compiler_lo
-        lo_freq_setting_name
-
-        Returns
-        -------
+            The sequencer for which frequences are to be set.
+        compiler_lo_baseband
+            For baseband modules, supply the :class:`.LocalOscillator` instrument
+            compiler of which the frequency is to be set.
+        lo_freq_setting_rf
+            For RF modules, supply the name of the LO frequency param from the
+            :class:`.RFModuleSettings` that is to be set.
 
         Raises
         ------
         ValueError
-            Neither the LO nor the IF frequency has been set and thus contain
-            :code:`None` values.
+            In case neither LO frequency nor IF has been supplied.
+        ValueError
+            In case both LO frequency and IF have been supplied and do not adhere to
+            :math:`f_{RF} = f_{LO} + f_{IF}`.
+        ValueError
+            In case of RF, when the LO frequency was already set to a different value.
         """
         underconstr = freqs.LO is None and freqs.IF is None
         overconstr = (
@@ -1343,25 +1339,25 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             )
 
         if freqs.LO is not None:
-            if compiler_lo is not None:
-                compiler_lo.frequency = freqs.LO
+            if compiler_lo_baseband is not None:
+                compiler_lo_baseband.frequency = freqs.LO
 
-            if lo_freq_setting_name is not None:
-                previous_lo_freq = getattr(self._settings, lo_freq_setting_name)
+            elif lo_freq_setting_rf is not None:
+                previous_lo_freq = getattr(self._settings, lo_freq_setting_rf)
 
                 if previous_lo_freq is not None and not np.isclose(
                     freqs.LO, previous_lo_freq
                 ):
                     raise ValueError(
-                        f"Attempting to set '{lo_freq_setting_name}' to frequency "
+                        f"Attempting to set '{lo_freq_setting_rf}' to frequency "
                         f"'{freqs.LO:e}', while it has previously already been set to "
                         f"'{previous_lo_freq:e}'!"
                     )
 
-                setattr(self._settings, lo_freq_setting_name, freqs.LO)
+                setattr(self._settings, lo_freq_setting_rf, freqs.LO)
 
         if freqs.IF is not None:
-            sequencer.frequency = freqs.IF  # Setter also enables/disables nco
+            sequencer.frequency = freqs.IF
 
     @abstractmethod
     def assign_attenuation(self):
@@ -1386,7 +1382,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         for seq in self.sequencers.values():
             self.assign_frequencies(seq)
         self.distribute_data()
-        self._determine_scope_mode_acquisition_sequencer()
+        self._ensure_single_scope_mode_acquisition_sequencer()
         self.assign_attenuation()
 
     def _configure_input_gains(self):
@@ -1468,10 +1464,13 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                     voltage_range, self.name, "dc_mixer_offset_Q", output_cfg
                 )
 
-    def _determine_scope_mode_acquisition_sequencer(self) -> None:
+    def _ensure_single_scope_mode_acquisition_sequencer(self) -> None:
         """
-        Finds which sequencer has to perform raw trace acquisitions and adds it to the
-        `scope_mode_sequencer` of the settings.
+        Raises an error if multiple sequencers use scope mode acquisition,
+        because that's not supported by the hardware.
+        Also, see
+        :func:`~quantify_scheduler.instrument_coordinator.components.qblox.QRMComponent._determine_scope_mode_acquisition_sequencer_and_channel`
+        which also ensures the program that gets uploaded to the hardware satisfies this requirement.
 
         Raises
         ------
@@ -1481,7 +1480,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         """
 
         def is_scope_acquisition(acquisition: OpInfo) -> bool:
-            return acquisition.data["protocol"] == "trace"
+            return acquisition.data["protocol"] == "Trace"
 
         scope_acq_seq = None
         for seq in self.sequencers.values():
@@ -1490,17 +1489,12 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             has_scope = any(map(is_scope_acquisition, op_infos))
             if has_scope:
                 if scope_acq_seq is not None:
-                    raise ValueError(
-                        f'Both sequencer "{scope_acq_seq}" and "{seq.index}" of '
-                        f'"{self.name}" need to perform scope mode '
-                        "acquisitions. Only one sequencer per device can "
-                        "trigger raw trace capture.\n\nPlease ensure that "
-                        "only one port and clock combination has to "
-                        "perform raw trace acquisition per instrument."
+                    helpers.single_scope_mode_acquisition_raise(
+                        sequencer_0=scope_acq_seq,
+                        sequencer_1=seq.index,
+                        module_name=self.name,
                     )
                 scope_acq_seq = seq.index
-
-        self._settings.scope_mode_sequencer = scope_acq_seq
 
     def compile(
         self,
@@ -1509,8 +1503,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
     ) -> Optional[Dict[str, Any]]:
         """
         Performs the actual compilation steps for this module, by calling the sequencer
-        level compilation functions and combining them into a single dictionary. The
-        compiled program has a settings key, and keys for every sequencer.
+        level compilation functions and combining them into a single dictionary.
 
         Parameters
         ----------
@@ -1523,8 +1516,13 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         Returns
         -------
         :
-            The compiled program corresponding to this module. It contains an entry for
-            every sequencer and general "settings". If the device is not actually used,
+            The compiled program corresponding to this module.
+            It contains an entry for every sequencer under the key `"sequencers"`,
+            and acquisition metadata under the key `"acq_metadata"`,
+            and the `"repetitions"` is an integer with
+            the number of times the defined schedule is repeated.
+            All the other generic settings are under the key `"settings"`.
+            If the device is not actually used,
             and an empty program is compiled, None is returned instead.
         """
         program = {}
@@ -1532,12 +1530,13 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         if sequence_to_file is None:
             sequence_to_file = self.hw_mapping.get("sequence_to_file", True)
 
+        program["sequencers"] = {}
         for seq_name, seq in self.sequencers.items():
             seq_program = seq.compile(
                 repetitions=repetitions, sequence_to_file=sequence_to_file
             )
             if seq_program is not None:
-                program[seq_name] = seq_program
+                program["sequencers"][seq_name] = seq_program
 
         if len(program) == 0:
             return None
@@ -1545,66 +1544,19 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         self._settings.hardware_averages = repetitions
         program["settings"] = self._settings.to_dict()
         if self.supports_acquisition:
-            # Add both acquisition metadata (a summary) and trace_acq_channel
             program["acq_metadata"] = {}
 
             for sequencer in self.sequencers.values():
                 if not sequencer.acquisitions:
                     continue
-                acq_metadata = _extract_acquisition_metadata_from_acquisitions(
-                    [acq.operation_info for acq in sequencer.acquisitions]
+                acq_metadata = helpers.extract_acquisition_metadata_from_acquisitions(
+                    acquisitions=[acq.operation_info for acq in sequencer.acquisitions],
+                    repetitions=repetitions,
                 )
                 program["acq_metadata"][sequencer.name] = acq_metadata
+        program["repetitions"] = repetitions
 
-            if (trace_acq_channel := self._get_trace_acq_channel()) is not None:
-                program["trace_acq_channel"] = trace_acq_channel
         return program
-
-    def _get_trace_acq_channel(self) -> Optional[int]:
-        """
-        Returns the acquisition channel set by the user on the only trace operation in
-        the module.
-        If there is no trace operation in the schedule, it returns None.
-        If there are more than one, it raises an exception, this is not a valid
-        schedule.
-
-        Returns
-        -------
-        :
-            If there is a trace operation, returns the channel for the trace operation.
-            If there is no trace operation in the schedule, it returns `None`.
-
-        Raises
-        ------
-        ValueError
-            There is more than one trace acquisition operation.
-        """
-
-        def _is_trace_acquisition(acquisition):
-            return acquisition.operation_info.data["protocol"] == "trace"
-
-        def _extract_channel(acquisition):
-            return acquisition.operation_info.data["acq_channel"]
-
-        trace_acq_channels = []
-        for sequencer in self.sequencers.values():
-            for acquisition in sequencer.acquisitions:
-                if _is_trace_acquisition(acquisition):
-                    trace_acq_channels.append(_extract_channel(acquisition))
-
-        if len(trace_acq_channels) == 0:
-            return None
-
-        elif len(trace_acq_channels) > 1:
-            raise ValueError(
-                f"Invalid schedule. "
-                f"Only one trace acquisition is permitted per hardware component. "
-                f"The following channels are attempting to use trace acquisition: "
-                f"{trace_acq_channels}"
-            )
-
-        else:
-            return trace_acq_channels[0]
 
 
 class QbloxBasebandModule(QbloxBaseModule):
@@ -1620,13 +1572,14 @@ class QbloxBasebandModule(QbloxBaseModule):
 
     def assign_frequencies(self, sequencer: Sequencer):
         """
-        Determines LO/IF frequencies and assigns them, for RF baseband modules.
+        Determines LO/IF frequencies and assigns them, for baseband modules.
 
         In case of **no** external local oscillator, the NCO is given the same
         frequency as the clock.
 
         In case of **an** external local oscillator and `sequencer.mix_lo` is
-        ``False``, the LO is given the same frequency as the clock.
+        ``False``, the LO is given the same frequency as the clock
+        (via :func:`.helpers.determine_clock_lo_interm_freqs`).
         """
         compiler_container = self.parent if self.is_pulsar else self.parent.parent
         if sequencer.clock not in compiler_container.resources:
@@ -1665,7 +1618,7 @@ class QbloxBasebandModule(QbloxBaseModule):
                     f"with port '{sequencer.port}' and clock '{sequencer.clock}')."
                 )
             self._set_lo_interm_freqs(
-                freqs=freqs, sequencer=sequencer, compiler_lo=compiler_lo
+                freqs=freqs, sequencer=sequencer, compiler_lo_baseband=compiler_lo
             )
 
     def assign_attenuation(self):
@@ -1715,33 +1668,24 @@ class QbloxRFModule(QbloxBaseModule):
             self._set_lo_interm_freqs(
                 freqs=freqs,
                 sequencer=sequencer,
-                lo_freq_setting_name=lo_freq_setting_name,
+                lo_freq_setting_rf=lo_freq_setting_name,
             )
 
     @staticmethod
     def _get_connected_lo_indices(sequencer: Sequencer) -> Generator[int]:
         """
-        Identify the LO the sequencer is outputting to. We can do this by first checking
-        the Sequencer-Output correspondence, and then use the fact that LOX is connected
-        to OutputX.
-
-        Parameters
-        ----------
-        sequencer
-
-        Returns
-        -------
-
+        Identify the LO the sequencer is outputting.
+        Use the sequencer output to module output correspondence, and then
+        use the fact that LOX is connected to module output X.
         """
-        for sequencer_output in sequencer.connected_outputs:
-            if sequencer_output % 2 != 0:
-                # We will only use real output 0 and 2,
-                # since 1 and 3 are part of the same
-                # complex outputs.
+        for sequencer_output_index in sequencer.connected_outputs:
+            if sequencer_output_index % 2 != 0:
+                # We will only use real output 0 and 2, as they are part of the same
+                # complex outputs as real output 1 and 3
                 continue
 
-            module_output = 0 if sequencer_output == 0 else 1
-            yield module_output
+            module_output_index = 0 if sequencer_output_index == 0 else 1
+            yield module_output_index
 
     def assign_attenuation(self):
         """

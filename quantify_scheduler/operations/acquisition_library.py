@@ -97,7 +97,7 @@ class Trace(AcquisitionOperation):  # pylint: disable=too-many-ancestors
                             "acq_channel": acq_channel,
                             "acq_index": acq_index,
                             "bin_mode": bin_mode,
-                            "protocol": "trace",
+                            "protocol": "Trace",
                             "acq_return_type": np.ndarray,
                         }
                     ],
@@ -208,10 +208,10 @@ class WeightedIntegratedComplex(
             raise NotImplementedError("Non-zero phase not yet implemented")
 
         if data is None:
-            super().__init__(name="WeightedIntegrationComplex")
+            super().__init__(name="WeightedIntegratedComplex")
             self.data.update(
                 {
-                    "name": "WeightedIntegrationComplex",
+                    "name": "WeightedIntegratedComplex",
                     "acquisition_info": [
                         {
                             "waveforms": [waveform_a, waveform_b],
@@ -223,7 +223,7 @@ class WeightedIntegratedComplex(
                             "acq_channel": acq_channel,
                             "acq_index": acq_index,
                             "bin_mode": bin_mode,
-                            "protocol": "weighted_integrated_complex",
+                            "protocol": "WeightedIntegratedComplex",
                             "acq_return_type": complex,
                         }
                     ],
@@ -235,7 +235,7 @@ class WeightedIntegratedComplex(
                 self.data["acquisition_info"][0]["acq_return_type"] = complex
                 self.data["acquisition_info"][0][
                     "protocol"
-                ] = "weighted_integrated_complex"
+                ] = "WeightedIntegratedComplex"
         else:
             warnings.warn(
                 "Support for the data argument will be dropped in"
@@ -246,7 +246,7 @@ class WeightedIntegratedComplex(
             )
             if "acq_return_type" not in data["acquisition_info"][0]:
                 data["acquisition_info"][0]["acq_return_type"] = complex
-                data["acquisition_info"][0]["protocol"] = "weighted_integrated_complex"
+                data["acquisition_info"][0]["protocol"] = "WeightedIntegratedComplex"
 
             super().__init__(name=data["name"], data=data)
 
@@ -356,7 +356,7 @@ class SSBIntegrationComplex(AcquisitionOperation):  # pylint: disable=too-many-a
                             "acq_index": acq_index,
                             "bin_mode": bin_mode,
                             "acq_return_type": complex,
-                            "protocol": "ssb_integration_complex",
+                            "protocol": "SSBIntegrationComplex",
                         }
                     ],
                 }
@@ -365,7 +365,7 @@ class SSBIntegrationComplex(AcquisitionOperation):  # pylint: disable=too-many-a
             # certain fields are required in the acquisition data
             if "acq_return_type" not in self.data["acquisition_info"][0]:
                 self.data["acquisition_info"][0]["acq_return_type"] = complex
-                self.data["acquisition_info"][0]["protocol"] = "ssb_integration_complex"
+                self.data["acquisition_info"][0]["protocol"] = "SSBIntegrationComplex"
         else:
             warnings.warn(
                 "Support for the data argument will be dropped in"
@@ -376,7 +376,7 @@ class SSBIntegrationComplex(AcquisitionOperation):  # pylint: disable=too-many-a
             )
             if "acq_return_type" not in data["acquisition_info"][0]:
                 data["acquisition_info"][0]["acq_return_type"] = complex
-                data["acquisition_info"][0]["protocol"] = "ssb_integration_complex"
+                data["acquisition_info"][0]["protocol"] = "SSBIntegrationComplex"
             super().__init__(name=data["name"], data=data)
 
     def __str__(self) -> str:
@@ -605,7 +605,7 @@ class TriggerCount(AcquisitionOperation):  # pylint: disable=too-many-ancestors
                         "acq_index": acq_index,
                         "bin_mode": bin_mode,
                         "acq_return_type": int,
-                        "protocol": "trigger_count",
+                        "protocol": "TriggerCount",
                     }
                 ],
             }
