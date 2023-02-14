@@ -25,7 +25,11 @@ from quantify_scheduler.backends.qblox import (
     q1asm_instructions,
     register_manager,
 )
-from quantify_scheduler.backends.qblox.helpers import calc_from_units_volt
+from quantify_scheduler.backends.qblox.helpers import (
+    calc_from_units_volt,
+    extract_acquisition_metadata_from_acquisitions,
+    single_scope_mode_acquisition_raise,
+)
 from quantify_scheduler.backends.qblox.operation_handling.acquisitions import (
     AcquisitionStrategyPartial,
 )
@@ -46,9 +50,6 @@ from quantify_scheduler.backends.types.qblox import (
     MarkerConfiguration,
 )
 from quantify_scheduler.enums import BinMode
-from quantify_scheduler.helpers.schedule import (
-    _extract_acquisition_metadata_from_acquisitions,
-)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
@@ -561,7 +562,9 @@ class Sequencer:
             acq.generate_data(wf_dict)
         return wf_dict
 
-    def _prepare_acq_settings(self, acquisitions: List[IOperationStrategy]):
+    def _prepare_acq_settings(
+        self, acquisitions: List[IOperationStrategy], repetitions: int
+    ):
         """
         Sets sequencer settings that are specific to certain acquisitions.
         For example for a TTL acquisition strategy.
@@ -569,14 +572,17 @@ class Sequencer:
         Parameters
         ----------
         acquisitions
+            List of the acquisitions assigned to this sequencer.
+        repetitions
+            The number of times to repeat execution of the schedule.
         """
         acquisition_infos: List[OpInfo] = list(
             map(lambda acq: acq.operation_info, acquisitions)
         )
-        acq_metadata = _extract_acquisition_metadata_from_acquisitions(
-            acquisition_infos
+        acq_metadata = extract_acquisition_metadata_from_acquisitions(
+            acquisitions=acquisition_infos, repetitions=repetitions
         )
-        if acq_metadata.acq_protocol == "trigger_count":
+        if acq_metadata.acq_protocol == "TriggerCount":
             self._settings.ttl_acq_auto_bin_incr_en = (
                 acq_metadata.bin_mode == BinMode.AVERAGE
             )
@@ -625,8 +631,8 @@ class Sequencer:
         )
 
         # acquisition metadata for acquisitions relevant to this sequencer only
-        acq_metadata = _extract_acquisition_metadata_from_acquisitions(
-            acquisition_infos
+        acq_metadata = extract_acquisition_metadata_from_acquisitions(
+            acquisitions=acquisition_infos, repetitions=repetitions
         )
 
         # initialize an empty dictionary for the format required by module
@@ -646,7 +652,7 @@ class Sequencer:
                     f"Please make sure the used bins increment by 1 starting from "
                     f"0. Found: {max(acq_indices)} as the highest bin out of "
                     f"{len(acq_indices)} for channel {acq_channel}, indicating "
-                    f"an acquisition_index was skipped. "
+                    f"an acquisition index was skipped. "
                     f"Problem occurred for port {self.port} with clock {self.clock},"
                     f"which corresponds to {self.name} of {self.parent.name}."
                 )
@@ -655,7 +661,7 @@ class Sequencer:
             if acq_metadata.bin_mode == BinMode.APPEND:
                 num_bins = repetitions * (max(acq_indices) + 1)
             elif acq_metadata.bin_mode == BinMode.AVERAGE:
-                if acq_metadata.acq_protocol == "trigger_count":
+                if acq_metadata.acq_protocol == "TriggerCount":
                     num_bins = constants.MAX_NUMBER_OF_BINS
                 else:
                     num_bins = max(acq_indices) + 1
@@ -945,7 +951,9 @@ class Sequencer:
             weights_dict = {}
             acq_declaration_dict = {}
             if len(self.acquisitions) > 0:
-                self._prepare_acq_settings(self.acquisitions)
+                self._prepare_acq_settings(
+                    acquisitions=self.acquisitions, repetitions=repetitions
+                )
                 weights_dict = self._generate_weights_dict()
                 acq_declaration_dict = self._generate_acq_declaration_dict(
                     acquisitions=self.acquisitions, repetitions=repetitions
@@ -1307,7 +1315,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         self._configure_mixer_offsets()
         self._construct_sequencers()
         self.distribute_data()
-        self._determine_scope_mode_acquisition_sequencer()
+        self._ensure_single_scope_mode_acquisition_sequencer()
         for seq in self.sequencers.values():
             self.assign_frequencies(seq)
         self.assign_attenuation()
@@ -1391,10 +1399,13 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                     voltage_range, self.name, "dc_mixer_offset_Q", output_cfg
                 )
 
-    def _determine_scope_mode_acquisition_sequencer(self) -> None:
+    def _ensure_single_scope_mode_acquisition_sequencer(self) -> None:
         """
-        Finds which sequencer has to perform raw trace acquisitions and adds it to the
-        `scope_mode_sequencer` of the settings.
+        Raises an error if multiple sequencers use scope mode acquisition,
+        because that's not supported by the hardware.
+        Also, see
+        :func:`~quantify_scheduler.instrument_coordinator.components.qblox.QRMComponent._determine_scope_mode_acquisition_sequencer_and_channel`
+        which also ensures the program that gets uploaded to the hardware satisfies this requirement.
 
         Raises
         ------
@@ -1404,7 +1415,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         """
 
         def is_scope_acquisition(acquisition: OpInfo) -> bool:
-            return acquisition.data["protocol"] == "trace"
+            return acquisition.data["protocol"] == "Trace"
 
         scope_acq_seq = None
         for seq in self.sequencers.values():
@@ -1413,17 +1424,12 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             has_scope = any(map(is_scope_acquisition, op_infos))
             if has_scope:
                 if scope_acq_seq is not None:
-                    raise ValueError(
-                        f'Both sequencer "{scope_acq_seq}" and "{seq.index}" of '
-                        f'"{self.name}" need to perform scope mode '
-                        "acquisitions. Only one sequencer per device can "
-                        "trigger raw trace capture.\n\nPlease ensure that "
-                        "only one port and clock combination has to "
-                        "perform raw trace acquisition per instrument."
+                    single_scope_mode_acquisition_raise(
+                        sequencer_0=scope_acq_seq,
+                        sequencer_1=seq.index,
+                        module_name=self.name,
                     )
                 scope_acq_seq = seq.index
-
-        self._settings.scope_mode_sequencer = scope_acq_seq
 
     def compile(
         self,
@@ -1432,8 +1438,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
     ) -> Optional[Dict[str, Any]]:
         """
         Performs the actual compilation steps for this module, by calling the sequencer
-        level compilation functions and combining them into a single dictionary. The
-        compiled program has a settings key, and keys for every sequencer.
+        level compilation functions and combining them into a single dictionary.
 
         Parameters
         ----------
@@ -1446,8 +1451,13 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         Returns
         -------
         :
-            The compiled program corresponding to this module. It contains an entry for
-            every sequencer and general "settings". If the device is not actually used,
+            The compiled program corresponding to this module.
+            It contains an entry for every sequencer under the key `"sequencers"`,
+            and acquisition metadata under the key `"acq_metadata"`,
+            and the `"repetitions"` is an integer with
+            the number of times the defined schedule is repeated.
+            All the other generic settings are under the key `"settings"`.
+            If the device is not actually used,
             and an empty program is compiled, None is returned instead.
         """
         program = {}
@@ -1455,12 +1465,13 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         if sequence_to_file is None:
             sequence_to_file = self.hw_mapping.get("sequence_to_file", True)
 
+        program["sequencers"] = {}
         for seq_name, seq in self.sequencers.items():
             seq_program = seq.compile(
                 repetitions=repetitions, sequence_to_file=sequence_to_file
             )
             if seq_program is not None:
-                program[seq_name] = seq_program
+                program["sequencers"][seq_name] = seq_program
 
         if len(program) == 0:
             return None
@@ -1468,66 +1479,19 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         self._settings.hardware_averages = repetitions
         program["settings"] = self._settings.to_dict()
         if self.supports_acquisition:
-            # Add both acquisition metadata (a summary) and trace_acq_channel
             program["acq_metadata"] = {}
 
             for sequencer in self.sequencers.values():
                 if not sequencer.acquisitions:
                     continue
-                acq_metadata = _extract_acquisition_metadata_from_acquisitions(
-                    [acq.operation_info for acq in sequencer.acquisitions]
+                acq_metadata = extract_acquisition_metadata_from_acquisitions(
+                    acquisitions=[acq.operation_info for acq in sequencer.acquisitions],
+                    repetitions=repetitions,
                 )
                 program["acq_metadata"][sequencer.name] = acq_metadata
+        program["repetitions"] = repetitions
 
-            if (trace_acq_channel := self._get_trace_acq_channel()) is not None:
-                program["trace_acq_channel"] = trace_acq_channel
         return program
-
-    def _get_trace_acq_channel(self) -> Optional[int]:
-        """
-        Returns the acquisition channel set by the user on the only trace operation in
-        the module.
-        If there is no trace operation in the schedule, it returns None.
-        If there are more than one, it raises an exception, this is not a valid
-        schedule.
-
-        Returns
-        -------
-        :
-            If there is a trace operation, returns the channel for the trace operation.
-            If there is no trace operation in the schedule, it returns `None`.
-
-        Raises
-        ------
-        ValueError
-            There is more than one trace acquisition operation.
-        """
-
-        def _is_trace_acquisition(acquisition):
-            return acquisition.operation_info.data["protocol"] == "trace"
-
-        def _extract_channel(acquisition):
-            return acquisition.operation_info.data["acq_channel"]
-
-        trace_acq_channels = []
-        for sequencer in self.sequencers.values():
-            for acquisition in sequencer.acquisitions:
-                if _is_trace_acquisition(acquisition):
-                    trace_acq_channels.append(_extract_channel(acquisition))
-
-        if len(trace_acq_channels) == 0:
-            return None
-
-        elif len(trace_acq_channels) > 1:
-            raise ValueError(
-                f"Invalid schedule. "
-                f"Only one trace acquisition is permitted per hardware component. "
-                f"The following channels are attempting to use trace acquisition: "
-                f"{trace_acq_channels}"
-            )
-
-        else:
-            return trace_acq_channels[0]
 
 
 class QbloxBasebandModule(QbloxBaseModule):

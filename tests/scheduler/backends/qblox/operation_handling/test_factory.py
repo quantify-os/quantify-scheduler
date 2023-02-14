@@ -51,7 +51,7 @@ TEST_OP_INFO_MAPPING = {
     "ssb": OpInfo(
         name="",
         data={
-            "protocol": "ssb_integration_complex",
+            "protocol": "SSBIntegrationComplex",
             "acq_channel": 0,
             "acq_index": 0,
             "bin_mode": BinMode.AVERAGE,
@@ -63,7 +63,7 @@ TEST_OP_INFO_MAPPING = {
     "weighted": OpInfo(
         name="",
         data={
-            "protocol": "weighted_integrated_complex",
+            "protocol": "WeightedIntegratedComplex",
             "acq_channel": 0,
             "acq_index": 0,
             "bin_mode": BinMode.AVERAGE,
@@ -75,7 +75,7 @@ TEST_OP_INFO_MAPPING = {
     "trace": OpInfo(
         name="",
         data={
-            "protocol": "trace",
+            "protocol": "Trace",
             "acq_channel": 0,
             "acq_index": 0,
             "bin_mode": BinMode.AVERAGE,
@@ -87,7 +87,7 @@ TEST_OP_INFO_MAPPING = {
     "trigger_count": OpInfo(
         name="",
         data={
-            "protocol": "trigger_count",
+            "protocol": "TriggerCount",
             "acq_channel": 0,
             "acq_index": 0,
             "bin_mode": BinMode.AVERAGE,
@@ -198,7 +198,7 @@ def test_trace_append_exception():
         name="",
         data={
             "duration": 12e-9,
-            "protocol": "trace",
+            "protocol": "Trace",
             "acq_channel": 0,
             "acq_index": 0,
             "bin_mode": BinMode.APPEND,
@@ -218,7 +218,7 @@ def test_trace_append_exception():
     assert (
         exc.value.args[0]
         == "Trace acquisition does not support APPEND bin mode.\n\nAcquisition  "
-        "(t=0 to 1.2e-08)\ndata={'duration': 1.2e-08, 'protocol': 'trace', "
+        "(t=0 to 1.2e-08)\ndata={'duration': 1.2e-08, 'protocol': 'Trace', "
         "'acq_channel': 0, 'acq_index': 0, 'bin_mode': <BinMode.APPEND: "
         "'append'>, 'port': 'some_port', 'clock': 'some_clock'} caused this exception "
         "to occur."

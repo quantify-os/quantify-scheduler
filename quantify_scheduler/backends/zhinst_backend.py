@@ -1429,7 +1429,7 @@ def _compile_for_uhfqa(
             + f" acq_duration={acq_duration} integration_length={integration_length}"
         )
 
-        if acq_protocol == "trace":
+        if acq_protocol == "Trace":
             # Disable Weighted integration because we'd like to see
             # the raw signal.
             settings_builder.with_qas_monitor_enable(True).with_qas_monitor_averages(

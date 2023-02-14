@@ -160,8 +160,8 @@ def test_compile_sequence_to_file(
     else:
         compiled_data = compiled_data.get(instrument)
 
-    seq0_json = compiled_data["seq0"]["sequence"]
-    seq_fn = compiled_data["seq0"]["seq_fn"]
+    seq0_json = compiled_data["sequencers"]["seq0"]["sequence"]
+    seq_fn = compiled_data["sequencers"]["seq0"]["seq_fn"]
     assert len(seq0_json["program"]) > 0
 
     if sequence_to_file is True or sequence_to_file is None:

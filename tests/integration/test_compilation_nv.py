@@ -168,7 +168,7 @@ def test_compilation_measure_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
     assert "acquisition_info" in schedule_device.operations[measure_str]
     acquisition_info = schedule_device.operations[measure_str]["acquisition_info"][0]
     assert acquisition_info["t0"] == 1e-8
-    assert acquisition_info["protocol"] == "trigger_count"
+    assert acquisition_info["protocol"] == "TriggerCount"
 
     assert len(schedule_device.operations[measure_str]["pulse_info"]) > 0
 
@@ -260,7 +260,7 @@ def test_compilation_cr_count_qblox_hardware(mock_setup_basic_nv):
     assert "acquisition_info" in schedule_device.operations[cr_count_str]
     acquisition_info = schedule_device.operations[cr_count_str]["acquisition_info"][0]
     assert acquisition_info["t0"] == 1e-8
-    assert acquisition_info["protocol"] == "trigger_count"
+    assert acquisition_info["protocol"] == "TriggerCount"
 
     assert len(schedule_device.operations[cr_count_str]["pulse_info"]) > 0
 

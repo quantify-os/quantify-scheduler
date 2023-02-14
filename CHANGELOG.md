@@ -4,6 +4,8 @@
 
 ### Breaking changes
 
+- Acquisition - `InstrumentCoordinator.retrieve_acquisition` returns an `xarray.Dataset` (!550, #362)
+
 ### Merged branches and closed issue
 
 - Compilation - Add `determine_relative_latencies` that determines latencies for all port-clock combinations in the hardware config relative to the minimum latency (!566, #379)

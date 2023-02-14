@@ -491,7 +491,7 @@ def test_extract_acquisition_metadata_from_schedule(compiled_two_qubit_t1_schedu
     comp_t1_sched = compiled_two_qubit_t1_schedule
     acq_metadata = extract_acquisition_metadata_from_schedule(comp_t1_sched)
 
-    assert acq_metadata.acq_protocol == "ssb_integration_complex"
+    assert acq_metadata.acq_protocol == "SSBIntegrationComplex"
     assert acq_metadata.bin_mode == BinMode.AVERAGE
     assert acq_metadata.acq_return_type == complex
 
