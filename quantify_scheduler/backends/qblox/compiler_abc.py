@@ -1294,15 +1294,16 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         Parameters
         ----------
         freqs
-            LO, IF, and clock frequencies, supplied via an `helpers.Frequencies` object.
+            LO, IF, and clock frequencies, supplied via an :class:`.helpers.Frequencies`
+            object.
         sequencer
             The sequencer for which frequences are to be set.
         compiler_lo_baseband
-            For baseband modules, supply the `instrument_compiler` of the LO of which
-            the frequency is to be set.
+            For baseband modules, supply the :class:`.LocalOscillator` instrument
+            compiler of which the frequency is to be set.
         lo_freq_setting_rf
             For RF modules, supply the name of the LO frequency param from the
-            `RFModuleSettings` that is to be set.
+            :class:`.RFModuleSettings` that is to be set.
 
         Raises
         ------
