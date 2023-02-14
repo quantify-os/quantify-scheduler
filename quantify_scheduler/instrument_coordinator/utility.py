@@ -5,6 +5,9 @@
 import logging
 from typing import Any
 
+import numpy as np
+import xarray
+
 from qcodes.instrument.base import InstrumentBase
 from qcodes.instrument import Parameter
 
@@ -89,11 +92,47 @@ def lazy_set(instrument: InstrumentBase, parameter_name: str, val: Any) -> None:
         )
 
 
-def check_already_existing_acq_index(index, acqs):
-    if index in acqs:
-        acq_channel, acq_idx = index
+def check_already_existing_acquisition(
+    new_dataset: xarray.Dataset, current_dataset: xarray.Dataset
+):
+    """
+    Checks whether there is any data which is at the same coordinate in
+    `new_dataset` and `current_dataset`. If there is, it will raise an error.
+
+    Parameters
+    ----------
+    new_dataset
+        New dataset.
+    current_dataset
+        Current dataset.
+    """
+    conflicting_indices_str = []
+    for acq_channel, _data_array in new_dataset.items():
+        if acq_channel in current_dataset:
+            # The return values are two `DataArray`s with only coordinates which are common in the inputs.
+            common_0, common_1 = xarray.align(
+                new_dataset[acq_channel], current_dataset[acq_channel], join="inner"
+            )
+            # We need to check if the values are `math.nan`, because if they are,
+            # that means there is no value at that position (xarray standard).
+            mask_func = lambda x, y: 0 if (np.isnan(x) or np.isnan(y)) else 1
+            conflict_mask = xarray.apply_ufunc(
+                mask_func, common_0, common_1, vectorize=True
+            )
+            for conflict in conflict_mask:
+                if conflict.values == [1]:
+                    conflicting_coords = [("acq_channel", acq_channel)]
+                    conflicting_coords += [
+                        (dim, conflict[dim].values) for dim in conflict.coords
+                    ]
+                    coords_str = [f"{dim}={coord}" for dim, coord in conflicting_coords]
+                    conflicting_indices_str.append("; ".join(coords_str))
+
+    if conflicting_indices_str:
+        conflicting_indices_str = "\n".join(conflicting_indices_str)
         raise RuntimeError(
             f"Attempting to gather acquisitions. "
-            f"Acquisition {acq_channel=}, {acq_idx=} is already stored, "
-            f"make sure for an acq_channel, acq_index corresponds to not more than one acquisition."
+            f"Make sure an acq_channel, acq_index corresponds to not more than one acquisition.\n"
+            f"The following indices are defined multiple times.\n"
+            f"{conflicting_indices_str}"
         )

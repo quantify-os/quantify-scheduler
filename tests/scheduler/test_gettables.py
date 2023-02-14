@@ -18,6 +18,7 @@ import zipfile
 import numpy as np
 import pytest
 from qcodes.instrument.parameter import ManualParameter
+from xarray import DataArray, Dataset
 
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.enums import BinMode
@@ -25,9 +26,6 @@ from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.gettables_profiled import ProfiledScheduleGettable
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
-)
-from quantify_scheduler.instrument_coordinator.components.qblox import (
-    AcquisitionIndexing,
 )
 from quantify_scheduler.schedules.schedule import AcquisitionMetadata, Schedule
 from quantify_scheduler.schedules.spectroscopy_schedules import (
@@ -50,12 +48,18 @@ def test_process_acquired_data(
     # arrange
     quantum_device = mock_setup_basic_transmon["quantum_device"]
     acq_metadata = AcquisitionMetadata(
-        acq_protocol="ssb_integration_complex",
+        acq_protocol="SSBIntegrationComplex",
         bin_mode=BinMode.AVERAGE,
         acq_return_type=complex,
         acq_indices={i: [0] for i in range(num_channels)},
+        repetitions=1,
     )
-    mock_data = {AcquisitionIndexing(i, 0): (4815, 162342) for i in range(num_channels)}
+
+    mock_data_array = DataArray(
+        [[4815, 162342]], coords=[[0], [0, 1]], dims=["repetition", "acq_index"]
+    )
+    mock_data = Dataset({i: mock_data_array for i in range(num_channels)})
+
     gettable = ScheduleGettable(
         quantum_device=quantum_device,
         schedule_function=lambda x: x,
@@ -97,10 +101,11 @@ def test_ScheduleGettableSingleChannel_iterative_heterodyne_spec(
     # Prepare the mock data the spectroscopy schedule
 
     acq_metadata = AcquisitionMetadata(
-        acq_protocol="ssb_integration_complex",
+        acq_protocol="SSBIntegrationComplex",
         bin_mode=BinMode.AVERAGE,
         acq_return_type=complex,
         acq_indices={0: [0]},
+        repetitions=1,
     )
 
     data = 1 * np.exp(1j * np.deg2rad(45))
@@ -305,12 +310,12 @@ def test_ScheduleGettableSingleChannel_trace_acquisition(
     sample_times = np.arange(0, device_element.measure.integration_time(), 1 / 1e9)
     exp_trace = np.ones(len(sample_times)) * np.exp(1j * np.deg2rad(35))
 
-    exp_data = {
-        AcquisitionIndexing(acq_channel=0, acq_index=0): (
-            exp_trace.real,
-            exp_trace.imag,
-        )
-    }
+    exp_data_array = DataArray(
+        [exp_trace],
+        coords=[[0], range(len(exp_trace))],
+        dims=["repetition", "acq_index"],
+    )
+    exp_data = Dataset({0: exp_data_array})
 
     mocker.patch.object(
         mock_setup_basic_transmon_with_standard_params["instrument_coordinator"],
@@ -339,10 +344,11 @@ def test_ScheduleGettable_generate_diagnostic(
 
     # Prepare the mock data the t1 schedule
     acq_metadata = AcquisitionMetadata(
-        acq_protocol="ssb_integration_complex",
+        acq_protocol="SSBIntegrationComplex",
         bin_mode=BinMode.AVERAGE,
         acq_return_type=complex,
         acq_indices={0: range(50)},
+        repetitions=1,
     )
 
     data = np.ones(50) * np.exp(1j * np.deg2rad(45))
@@ -399,47 +405,40 @@ def test_ScheduleGettable_generate_diagnostic(
 # instrument coordinator
 def _reshape_array_into_acq_return_type(
     data: np.ndarray, acq_metadata: AcquisitionMetadata
-) -> Dict[Tuple[int, int], Any]:
+) -> Dataset:
     """
-    Takes one or more complex valued arrays and reshapes the data into a dictionary
-    with AcquisitionIndexing
+    Takes one or more complex valued arrays and reshapes the data into xarray.Dataset.
     """
 
-    # Temporary. Will probably be replaced by an xarray object
-    # See quantify-core#187, quantify-core#233, quantify-scheduler#36
-    acquisitions = {}
+    acquisitions = Dataset()
 
     # if len is 1, we have only 1 channel in the retrieved data
     if len(np.shape(data)) == 0:
         for acq_channel, acq_indices in acq_metadata.acq_indices.items():
-            for acq_index in acq_indices:
-                acqs = {
-                    AcquisitionIndexing(acq_channel, acq_index): (
-                        data.real,
-                        data.imag,
-                    )
-                }
-                acquisitions.update(acqs)
+            acqs = DataArray(
+                [[data] * len(acq_indices)],
+                coords=[[0], acq_indices],
+                dims=["repetition", "acq_index"],
+            )
+            acquisitions.update({acq_channel: acqs})
     elif len(np.shape(data)) == 1:
         for acq_channel, acq_indices in acq_metadata.acq_indices.items():
-            for acq_index in acq_indices:
-                acqs = {
-                    AcquisitionIndexing(acq_channel, acq_index): (
-                        data[acq_index].real,
-                        data[acq_index].imag,
-                    )
-                }
-                acquisitions.update(acqs)
+            reshaped_data = [data[i] for i in acq_indices]
+            acqs = DataArray(
+                [reshaped_data],
+                coords=[[0], acq_indices],
+                dims=["repetition", "acq_index"],
+            )
+            acquisitions.update({acq_channel: acqs})
     else:
         for acq_channel, acq_indices in acq_metadata.acq_indices.items():
-            for acq_index in acq_indices:
-                acqs = {
-                    AcquisitionIndexing(acq_channel, acq_index): (
-                        data[acq_channel, acq_index].real,
-                        data[acq_channel, acq_index].imag,
-                    )
-                }
-                acquisitions.update(acqs)
+            reshaped_data = [data[acq_channel, i] for i in acq_indices]
+            acqs = DataArray(
+                [reshaped_data],
+                coords=[[0], acq_indices],
+                dims=["repetition", "acq_index"],
+            )
+            acquisitions.update({acq_channel: acqs})
     return acquisitions
 
 
@@ -511,14 +510,13 @@ def test_formatting_trigger_count(mock_setup_basic_nv):
     nv_center.cfg_sched_repetitions(1)
 
     # data returned by the instrument coordinator
-    return_data = np.asarray([101, 35, 2])
-    acquired_data = {
-        AcquisitionIndexing(acq_channel=0, acq_index=i): (
-            return_data[i],
-            [1],
-        )
-        for i in range(3)
-    }
+    return_data = [101 + 1j, 35 + 1j, 2 + 1j]
+    acquired_data_array = DataArray(
+        [return_data],
+        coords=[[0], range(len(return_data))],
+        dims=["repetition", "acq_index"],
+    )
+    acquired_data = Dataset({0: acquired_data_array})
 
     # Make instrument coordinator a dummy that only returns data
     instrument_coordinator.retrieve_acquisition = Mock(return_value=acquired_data)
@@ -565,20 +563,20 @@ def test_incompatible_acquisition_protocols(mock_setup_basic_nv):
     dark_esr_gettable.unit = [""]
 
     acq_metadata = AcquisitionMetadata(
-        acq_protocol="trigger_count",
+        acq_protocol="TriggerCount",
         bin_mode=BinMode.AVERAGE,
         acq_return_type=int,
         acq_indices={i: [0] for i in range(3)},
+        repetitions=10,
     )
 
     # data returned by the instrument coordinator
-    return_data = np.asarray([101, 35, 2])
-    acquired_data = {
-        AcquisitionIndexing(acq_channel=0, acq_index=i): (
-            return_data[i],
-            [1],
-        )
-        for i in range(3)
-    }
+    return_data = np.asarray([101 + 1j, 35 + 1j, 2 + 1j])
+    data_array = DataArray(
+        [return_data],
+        coords=[[0], range(len(return_data))],
+        dims=["repetition", "acq_index"],
+    )
+    acquired_data = Dataset({0: data_array})
     with pytest.raises(NotImplementedError):
         dark_esr_gettable.process_acquired_data(acquired_data, acq_metadata, 10)

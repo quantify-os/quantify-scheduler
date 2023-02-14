@@ -51,18 +51,18 @@ def _get_acquisition_strategy(
     """Handles the logic for determining the correct acquisition type."""
 
     protocol = operation_info.data["protocol"]
-    if protocol in ("trace", "ssb_integration_complex"):
-        if protocol == "trace" and operation_info.data["bin_mode"] == BinMode.APPEND:
+    if protocol in ("Trace", "SSBIntegrationComplex"):
+        if protocol == "Trace" and operation_info.data["bin_mode"] == BinMode.APPEND:
             raise ValueError(
                 f"Trace acquisition does not support APPEND bin mode.\n\n"
                 f"{repr(operation_info)} caused this exception to occur."
             )
         return acquisitions.SquareAcquisitionStrategy(operation_info)
 
-    if protocol == "weighted_integrated_complex":
+    elif protocol == "WeightedIntegratedComplex":
         return acquisitions.WeightedAcquisitionStrategy(operation_info)
 
-    if protocol == "trigger_count":
+    elif protocol == "TriggerCount":
         return acquisitions.TriggerCountAcquisitionStrategy(operation_info)
 
     raise ValueError(

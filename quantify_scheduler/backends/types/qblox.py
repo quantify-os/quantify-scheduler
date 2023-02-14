@@ -180,11 +180,6 @@ class LOSettings(DataClassJsonMixin):
 class BaseModuleSettings(DataClassJsonMixin):
     """Shared settings between all the Qblox modules."""
 
-    scope_mode_sequencer: Optional[int] = None
-    """The index of the sequencer that triggers scope mode Acquisitions. Only a single
-    sequencer can perform trace acquisition. This setting gets set as a QCoDeS parameter
-    on the driver as well as used for internal checks. Having multiple sequencers
-    perform trace acquisition will result in an exception being raised."""
     offset_ch0_path0: Union[float, None] = None
     """The DC offset on the path 0 of channel 0."""
     offset_ch0_path1: Union[float, None] = None

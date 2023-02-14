@@ -12,11 +12,12 @@ import numpy as np
 from qcodes.instrument import base as qcodes_base
 from qcodes.instrument import parameter
 from qcodes.utils import validators
+from xarray import Dataset
 
 from quantify_scheduler import CompiledSchedule
 from quantify_scheduler.instrument_coordinator.components import base, generic
 from quantify_scheduler.instrument_coordinator.utility import (
-    check_already_existing_acq_index,
+    check_already_existing_acquisition,
 )
 
 
@@ -282,7 +283,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
                 instrument = self.find_instrument(instr_name)
                 instrument.stop()
 
-    def retrieve_acquisition(self) -> Dict[Tuple[int, int], Any]:
+    def retrieve_acquisition(self) -> Dataset:
         """
         Retrieves the latest acquisition results of the components
         with acquisition capabilities.
@@ -290,24 +291,22 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         Returns
         -------
         :
-            The acquisition data per component.
+            The acquisition data in an :code:`xarray.Dataset`.
+            For each acquisition channel it contains an :code:`xarray.DataArray`.
         """
-        # pylint: disable=fixme
-        # FIXME: update the description of the return type of the instrument coordinator
 
         self.wait_done(timeout_sec=self.timeout())
 
-        # Temporary. Will probably be replaced by an xarray object
-        # See quantify-core#187, quantify-core#233, quantify-scheduler#36
-        acquisitions: Dict[Tuple[int, int], Any] = {}
+        acquisitions: Dataset = Dataset()
         compiled_instructions = self._compiled_schedule.get("compiled_instructions", {})
         for instrument_name in compiled_instructions:
             component_acquisitions = self.get_component(
                 base.instrument_to_component_name(instrument_name)
             ).retrieve_acquisition()
             if component_acquisitions is not None:
-                for index in component_acquisitions:
-                    check_already_existing_acq_index(index, acquisitions)
+                check_already_existing_acquisition(
+                    new_dataset=component_acquisitions, current_dataset=acquisitions
+                )
                 acquisitions.update(component_acquisitions)
         return acquisitions
 
@@ -331,10 +330,10 @@ class InstrumentCoordinator(qcodes_base.Instrument):
 
 def _convert_acquisition_data_format(raw_results):
     acquisition_dict = {}
-    for channel, i in raw_results.keys():
+    for channel in raw_results:
         if channel not in acquisition_dict.keys():
             acquisition_dict[channel] = []
-        acquisition_dict[channel].append(raw_results.get((channel, i)))
+        acquisition_dict[channel] = raw_results[channel].values
     acquisitions_list = []
     for channel in acquisition_dict:
         acquisitions_list.append(np.array(acquisition_dict.get(channel)))

@@ -12,6 +12,10 @@ from quantify_core.utilities.general import without
 
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.helpers.waveforms import exec_waveform_function
+from quantify_scheduler.schedules.schedule import AcquisitionMetadata
+from quantify_scheduler.helpers.schedule import (
+    extract_acquisition_metadata_from_acquisition_protocols,
+)
 from quantify_scheduler import Schedule
 
 from quantify_scheduler.backends.types.qblox import OpInfo
@@ -703,3 +707,45 @@ def calc_from_units_volt(
         )
 
     return calculated_offset
+
+
+def extract_acquisition_metadata_from_acquisitions(
+    acquisitions: List[OpInfo], repetitions: int
+) -> AcquisitionMetadata:
+    """
+    Variant of
+    :func:`~quantify_scheduler.helpers.schedule.extract_acquisition_metadata_from_acquisition_protocols`
+    for use with the Qblox backend.
+    """
+    return extract_acquisition_metadata_from_acquisition_protocols(
+        acquisition_protocols=[acq.data for acq in acquisitions],
+        repetitions=repetitions,
+    )
+
+
+def single_scope_mode_acquisition_raise(sequencer_0, sequencer_1, module_name):
+    """
+    Raises an error stating that only one scope mode acquisition can be used per module.
+
+    Parameters
+    ----------
+    sequencer_0
+        First sequencer which attempts to use the scope mode acquisition.
+    sequencer_1
+        Second sequencer which attempts to use the scope mode acquisition.
+    module_name
+        Name of the module.
+
+    Raises
+    ------
+    ValueError
+        Always raises the error message.
+    """
+    raise ValueError(
+        f"Both sequencer '{sequencer_0}' and '{sequencer_1}' "
+        f"of '{module_name}' attempts to perform scope mode acquisitions. "
+        f"Only one sequencer per device can "
+        f"trigger raw trace capture.\n\nPlease ensure that "
+        f"only one port-clock combination performs "
+        f"raw trace acquisition per instrument."
+    )
