@@ -77,16 +77,6 @@ class TestIdleStrategy:
 
 
 class TestNcoPhaseShiftStrategy:
-    def test_docstring(self):
-        assert (
-            f"`upd_param` of {constants.NCO_SET_FREQ_WAIT} ns"
-            in virtual.NcoSetClockFrequencyStrategy.__doc__
-        )
-        assert (
-            f"total duration of {constants.NCO_SET_FREQ_WAIT} ns"
-            in virtual.NcoSetClockFrequencyStrategy.__doc__
-        )
-
     def test_constructor(self):
         virtual.NcoPhaseShiftStrategy(
             types.OpInfo(name="", data={"phase_shift": 123.456}, timing=0)

@@ -888,12 +888,10 @@ def test_compile_cluster(
         load_example_qblox_hardware_config
     )
     compiler = SerialCompiler(name="compiler")
-
     context_mngr = nullcontext()
     if delete_lo0:
         del load_example_qblox_hardware_config["lo0"]
         context_mngr = pytest.raises(RuntimeError)
-
     with context_mngr as error:
         compiler.compile(
             schedule=sched,

@@ -1217,7 +1217,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         if len(self._acquisitions) > 0 and not self.supports_acquisition:
             raise RuntimeError(
-                f"Attempting to add acquisitions to {self.__class__} {self.name}, "
+                f"Attempting to add acquisitions to  {self.__class__} {self.name}, "
                 f"which is not supported by hardware."
             )
 
