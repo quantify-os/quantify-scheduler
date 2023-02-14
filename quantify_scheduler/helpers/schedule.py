@@ -16,7 +16,6 @@ from quantify_scheduler.schedules.schedule import (
 
 if TYPE_CHECKING:
     from quantify_scheduler import Operation
-    from quantify_scheduler.backends.types import qblox
 
 
 def get_pulse_uuid(pulse_info: Dict[str, Any], excludes: List[str] = None) -> int:
@@ -378,13 +377,14 @@ def extract_acquisition_metadata_from_schedule(
     # a dictionary containing the acquisition indices used for each channel
     acqid_acqinfo_dict = get_acq_info_by_uuid(schedule)
 
-    return _extract_acquisition_metadata_from_acquisition_protocols(
-        list(acqid_acqinfo_dict.values())
+    return extract_acquisition_metadata_from_acquisition_protocols(
+        acquisition_protocols=list(acqid_acqinfo_dict.values()),
+        repetitions=schedule.repetitions,
     )
 
 
-def _extract_acquisition_metadata_from_acquisition_protocols(
-    acquisition_protocols: List[Dict[str, Any]],
+def extract_acquisition_metadata_from_acquisition_protocols(
+    acquisition_protocols: List[Dict[str, Any]], repetitions: int
 ) -> AcquisitionMetadata:
     """
     Private function containing the logic of extract_acquisition_metadata_from_schedule.
@@ -395,6 +395,8 @@ def _extract_acquisition_metadata_from_acquisition_protocols(
     ----------
     acquisition_protocols
         A list of acquisition protocols.
+    repetitions
+        How many times the acquisition was repeated.
     """
     acq_indices: Dict[int, List[int]] = {}
 
@@ -422,7 +424,6 @@ def _extract_acquisition_metadata_from_acquisition_protocols(
         # add the individual channel
         if acq_protocol["acq_channel"] not in acq_indices.keys():
             acq_indices[acq_protocol["acq_channel"]] = []
-
         acq_indices[acq_protocol["acq_channel"]].append(acq_protocol["acq_index"])
 
     # combine the information in the acq metadata dataclass.
@@ -431,18 +432,6 @@ def _extract_acquisition_metadata_from_acquisition_protocols(
         bin_mode=bin_mode,
         acq_indices=acq_indices,
         acq_return_type=acq_return_type,
+        repetitions=repetitions,
     )
     return acq_metadata
-
-
-def _extract_acquisition_metadata_from_acquisitions(
-    acquisitions: List[qblox.OpInfo],
-) -> AcquisitionMetadata:
-    """
-    Private variant of extract_acquisition_metadata_from_schedule explicitly for use
-    with the qblox assembler backend.
-    """
-    acquisition_protocols = [acq.data for acq in acquisitions]
-    return _extract_acquisition_metadata_from_acquisition_protocols(
-        acquisition_protocols
-    )

@@ -14,6 +14,7 @@ from unittest.mock import call
 
 import pytest
 from qcodes import Instrument
+from xarray import DataArray, Dataset
 
 from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.instrument_coordinator import (
@@ -310,7 +311,11 @@ def test_retrieve_acquisition(
     instrument_coordinator.add_component(component2)
     instrument_coordinator.add_component(component3)
 
-    component1.retrieve_acquisition.return_value = {(0, 0): [1, 2, 3, 4]}
+    dummy_dataarray = DataArray(
+        [[1, 2, 3, 4]], coords=[[0], [0, 1, 2, 3]], dims=["repetition", "acq_index"]
+    )
+
+    component1.retrieve_acquisition.return_value = Dataset({0: dummy_dataarray})
     component2.retrieve_acquisition.return_value = None
 
     # Act
@@ -320,7 +325,9 @@ def test_retrieve_acquisition(
     component1.retrieve_acquisition.assert_called()
     component2.retrieve_acquisition.assert_called()
     component3.retrieve_acquisition.assert_called()
-    assert {(0, 0): [1, 2, 3, 4]} == data
+
+    expected_dataset = Dataset({0: dummy_dataarray})
+    assert data.equals(expected_dataset)
 
 
 def test_reacquire_acquisition_successful(
@@ -334,11 +341,17 @@ def test_reacquire_acquisition_successful(
     zi_instrument_coordinator.add_component(component2)
     zi_instrument_coordinator.add_component(component3)
 
-    component1.retrieve_acquisition.return_value = {(0, 0): [1, 2, 3, 4]}
+    dummy_dataarray = DataArray(
+        [[1, 2, 3, 4]], coords=[[0], [0, 1, 2, 3]], dims=["repetition", "acq_index"]
+    )
+    component1.retrieve_acquisition.return_value = Dataset({0: dummy_dataarray})
     component2.retrieve_acquisition.return_value = None
 
     # Set the last cache of the ZIInstrumentCoordinator to something different
-    zi_instrument_coordinator._last_acquisition = {(0, 0): [5, 6, 7, 8]}
+    dummy_dataarray_cache = DataArray(
+        [[5, 6, 7, 8]], coords=[[0], [0, 1, 2, 3]], dims=["repetition", "acq_index"]
+    )
+    zi_instrument_coordinator._last_acquisition = Dataset({0: dummy_dataarray_cache})
 
     # Act
     data = zi_instrument_coordinator.retrieve_acquisition()
@@ -347,7 +360,8 @@ def test_reacquire_acquisition_successful(
     component1.retrieve_acquisition.assert_called()
     component2.retrieve_acquisition.assert_called()
     assert zi_instrument_coordinator._last_acquisition is not None
-    assert {(0, 0): [1, 2, 3, 4]} == data
+    expected_dataset = Dataset({0: dummy_dataarray})
+    assert data.equals(expected_dataset)
 
 
 def test_reacquire_acquisition_failed(
@@ -361,7 +375,10 @@ def test_reacquire_acquisition_failed(
     zi_instrument_coordinator.add_component(component2)
     zi_instrument_coordinator.add_component(component3)
 
-    component1.retrieve_acquisition.return_value = {(0, 0): [1, 2, 3, 4]}
+    dummy_dataarray = DataArray(
+        [[1, 2, 3, 4]], coords=[[0], [0, 1, 2, 3]], dims=["repetition", "acq_index"]
+    )
+    component1.retrieve_acquisition.return_value = Dataset({0: dummy_dataarray})
     component2.retrieve_acquisition.return_value = None
 
     # Assert

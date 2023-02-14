@@ -16,6 +16,7 @@ import pytest
 import numpy as np
 from qcodes.instrument.parameter import ManualParameter
 from qblox_instruments import ClusterType, PulsarType
+from xarray import Dataset, DataArray
 
 from quantify_scheduler import waveforms, Schedule
 
@@ -35,7 +36,6 @@ from quantify_scheduler.instrument_coordinator.components.generic import (
 )
 from quantify_scheduler.instrument_coordinator.components.qblox import (
     QbloxInstrumentCoordinatorComponentBase,
-    AcquisitionIndexing,
     _QRMAcquisitionManager,
 )
 from quantify_scheduler.operations.pulse_library import SquarePulse
@@ -521,6 +521,7 @@ def test_trace_acquisition_measurement_control(
 
     quantum_device = mock_setup["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
+    quantum_device.cfg_sched_repetitions(1)
 
     acq_duration = 5e-6  # retrieve 5000 samples
     q2 = mock_setup["q2"]
@@ -562,7 +563,7 @@ def test_trace_acquisition_measurement_control(
     instr_coordinator.remove_component(ic_cluster0.name)
 
 
-def test_TriggerCount_acquisition(
+def test_trigger_count_acquisition(
     mock_setup_basic_nv, make_cluster_component
 ):  # pylint: disable=too-many-locals
     hardware_cfg = {
@@ -625,24 +626,32 @@ def test_TriggerCount_acquisition(
 
     # Assert intended behaviour
     assert len(data) == 1
-    assert data[AcquisitionIndexing(acq_channel=0, acq_index=0)][0][0] == 0
-    assert data[AcquisitionIndexing(acq_channel=0, acq_index=0)][1][0] == 1
+    assert data[0].sel(acq_index=0, repetition=0).values == [1]
 
     instr_coordinator.remove_component("ic_cluster0")
 
 
-def test_triggerCount_append(make_qrm_component):
+def test_trigger_count_append(make_qrm_component):
     qrm = make_qrm_component("qrm0")
-    acq_metadata = AcquisitionMetadata("test", BinMode.AVERAGE, int, {})
+    acq_metadata = AcquisitionMetadata("test", BinMode.AVERAGE, int, {}, repetitions=1)
     acq = {
         "0": {
             "index": 0,
             "acquisition": {"bins": {"avg_cnt": (100, 100, 75, 50, 25, 25, 5)}},
         }
     }
-    acq_man = _QRMAcquisitionManager(qrm, 0, acq, acq_metadata)
-    data = acq_man._get_trigger_count_data(acq, acq_metadata, 0)
-    assert data == ([2, 3, 4, 6], [25, 25, 25, 20])
+    acq_man = _QRMAcquisitionManager(
+        parent=qrm,
+        acquisition_metadata=acq_metadata,
+        scope_mode_sequencer_and_channel=None,
+        acquisition_duration={},
+        seq_name_to_idx_map={"seq0": 0},
+    )
+    data = acq_man._get_trigger_count_data([], acq, acq_metadata, 0)
+    expected_data = DataArray(
+        [[25, 25, 25, 20]], coords=[[0], [2, 3, 4, 6]], dims=["repetition", "acq_index"]
+    )
+    assert data.equals(expected_data)
 
 
 def test_multiple_measurements(
@@ -711,9 +720,91 @@ def test_multiple_measurements(
     instr_coordinator.stop()
 
     # Assert intended behaviour
-    assert len(data) == 2
-    assert data[AcquisitionIndexing(acq_channel=1, acq_index=0)][0].size == 3000
-    assert math.isnan(data[AcquisitionIndexing(acq_channel=0, acq_index=0)][0][0])
+    assert isinstance(data, Dataset)
+    expected_dataarray_trace = DataArray(
+        [[1 + 0j] * 3000], coords=[[0], range(3000)], dims=["repetition", "acq_index"]
+    )
+    expected_dataarray_binned = DataArray(
+        [[float("nan") + float("nan") * 1j]],
+        coords=[[0], [0]],
+        dims=["repetition", "acq_index"],
+    )
+    expected_dataset = Dataset(
+        {0: expected_dataarray_binned, 1: expected_dataarray_trace}
+    )
+
+    assert data.equals(expected_dataset)
+
+    instr_coordinator.remove_component("ic_cluster0")
+
+
+def test_multiple_trace_raises(
+    mock_setup_basic_transmon_with_standard_params, make_cluster_component
+):
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module3": {
+                "instrument_type": "QRM_RF",
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6},
+                    ],
+                },
+            },
+        },
+    }
+
+    # Setup objects needed for experiment
+    mock_setup = mock_setup_basic_transmon_with_standard_params
+    ic_cluster0 = make_cluster_component("cluster0")
+    instr_coordinator = mock_setup["instrument_coordinator"]
+    instr_coordinator.add_component(ic_cluster0)
+
+    quantum_device = mock_setup["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+
+    q0 = mock_setup["q0"]
+
+    # Define experiment schedule
+    schedule = Schedule("test multiple measurements")
+    meas0 = Measure("q0", acq_protocol="Trace")
+    schedule.add(meas0)
+
+    # Change acq delay, duration and channel
+    q0.measure.acq_delay(1e-6)
+    q0.measure.integration_time(5e-6)
+
+    # Generate compiled schedule
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    # Imitate a compiled schedule which contains multiple trace acquisition for one module.
+    acq_metadata = compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"][
+        "acq_metadata"
+    ]
+    acq_metadata_trace = acq_metadata["seq0"]
+    acq_metadata = {"seq0": acq_metadata_trace, "seq1": acq_metadata_trace}
+    compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"][
+        "acq_metadata"
+    ] = acq_metadata
+
+    with pytest.raises(ValueError) as exc:
+        instr_coordinator.prepare(compiled_sched)
+
+    # assert
+    assert exc.value.args[0] == (
+        f"Both sequencer '1' and '0' "
+        f"of 'ic_cluster0_module3' attempts to perform scope mode acquisitions. "
+        f"Only one sequencer per device can "
+        f"trigger raw trace capture.\n\nPlease ensure that "
+        f"only one port-clock combination performs "
+        f"raw trace acquisition per instrument."
+    )
 
     instr_coordinator.remove_component("ic_cluster0")
 
@@ -723,6 +814,7 @@ def test_multiple_measurements(
     ["q1", "q2"],
 )
 def test_same_index_in_module_and_cluster_measurement_error(
+    mocker,
     mock_setup_basic_transmon_with_standard_params,
     make_cluster_component,
     qubit_to_overwrite,
@@ -757,6 +849,18 @@ def test_same_index_in_module_and_cluster_measurement_error(
     ic_cluster0 = make_cluster_component("cluster0")
     instr_coordinator = mock_setup["instrument_coordinator"]
     instr_coordinator.add_component(ic_cluster0)
+
+    for comp in ic_cluster0._cluster_modules.values():
+        instrument = comp._instrument_module
+        mock_acquisition_data = {
+            "0": {
+                "index": 0,
+                "acquisition": {"bins": {"integration": {"path0": [0], "path1": [0]}}},
+            }
+        }
+        mocker.patch.object(
+            instrument, "get_acquisitions", return_value=mock_acquisition_data
+        )
 
     quantum_device = mock_setup["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
@@ -798,8 +902,9 @@ def test_same_index_in_module_and_cluster_measurement_error(
     # assert
     assert (
         exc.value.args[0] == "Attempting to gather acquisitions. "
-        "Acquisition acq_channel=0, acq_idx=0 is already stored, "
-        "make sure for an acq_channel, acq_index corresponds to not more than one acquisition."
+        "Make sure an acq_channel, acq_index corresponds to not more than one acquisition.\n"
+        "The following indices are defined multiple times.\n"
+        "acq_channel=0; repetition=0; acq_index=[0]"
     )
 
     instr_coordinator.stop()
@@ -882,15 +987,19 @@ def test_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_nv):
     instr_coordinator.stop()
 
     # Assert intended behaviour
-    assert len(data) == 1
-    assert len(data[AcquisitionIndexing(acq_channel=0, acq_index=0)][0]) == 15000
-    assert compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq1"][
-        "connected_inputs"
-    ] == [0]
+    assert isinstance(data, Dataset)
+    expected_dataarray = DataArray(
+        [[1 + 0j] * 15000], coords=[[0], range(15000)], dims=["repetition", "acq_index"]
+    )
+    expected_dataset = Dataset({0: expected_dataarray})
+    assert data.equals(expected_dataset)
+    assert compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"][
+        "sequencers"
+    ]["seq1"]["connected_inputs"] == [0]
     assert (
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq1"][
-            "nco_en"
-        ]
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"][
+            "sequencers"
+        ]["seq1"]["nco_en"]
         == False
     )
 
@@ -956,12 +1065,17 @@ def test_complex_input_hardware_cfg(make_cluster_component, mock_setup_basic_tra
     instr_coordinator.stop()
 
     # Assert intended behaviour
-    assert len(data) == 2
-    assert math.isnan(data[AcquisitionIndexing(acq_channel=0, acq_index=0)][0][0])
-    assert math.isnan(data[AcquisitionIndexing(acq_channel=1, acq_index=0)][0][0])
-    assert compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq1"][
-        "connected_inputs"
-    ] == [0, 1]
+    assert isinstance(data, Dataset)
+    expected_dataarray = DataArray(
+        [[float("nan") + float("nan") * 1j]],
+        coords=[[0], [0]],
+        dims=["repetition", "acq_index"],
+    )
+    expected_dataset = Dataset({0: expected_dataarray, 1: expected_dataarray})
+    assert data.equals(expected_dataset)
+    assert compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"][
+        "sequencers"
+    ]["seq1"]["connected_inputs"] == [0, 1]
 
     instr_coordinator.remove_component("ic_cluster0")
 
@@ -1053,10 +1167,18 @@ def test_multi_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_
     )
 
     # Assert intended behaviour
-    seq_0 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq0"]
-    seq_1 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq1"]
-    seq_2 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq2"]
-    seq_3 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["seq3"]
+    seq_0 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"][
+        "sequencers"
+    ]["seq0"]
+    seq_1 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"][
+        "sequencers"
+    ]["seq1"]
+    seq_2 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"][
+        "sequencers"
+    ]["seq2"]
+    seq_3 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"][
+        "sequencers"
+    ]["seq3"]
 
     assert seq_0["connected_outputs"] == [0]
     assert seq_0["nco_en"] is True
@@ -1195,10 +1317,12 @@ def test_trace_acquisition_instrument_coordinator(  # pylint: disable=too-many-l
     acquired_data = instr_coordinator.retrieve_acquisition()
     instr_coordinator.stop()
 
-    acquired_data = list(acquired_data.values())[0]
-    assert isinstance(acquired_data, tuple)
-    assert tuple(map(type, acquired_data)) == (np.ndarray, np.ndarray)
-
+    assert isinstance(acquired_data, Dataset)
+    expected_dataarray = DataArray(
+        [[1 + 0j] * 1000], coords=[[0], range(1000)], dims=["repetition", "acq_index"]
+    )
+    expected_dataset = Dataset({0: expected_dataarray})
+    assert acquired_data.equals(expected_dataset)
     instr_coordinator.remove_component(ic_component.name)
 
 

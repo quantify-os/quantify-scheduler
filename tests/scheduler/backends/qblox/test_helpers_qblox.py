@@ -150,12 +150,12 @@ def test_determine_clock_lo_interm_freqs(
     if error is not None:
         if downconverter_freq < 0:
             assert (
-                error.value.args[0] == f"Downconverter frequency must be positive "
+                str(error.value) == f"Downconverter frequency must be positive "
                 f"({downconverter_freq=:e})"
             )
         elif downconverter_freq < clock_freq:
             assert (
-                error.value.args[0]
+                str(error.value)
                 == "Downconverter frequency must be greater than clock frequency "
                 f"({downconverter_freq=:e}, {clock_freq=:e})"
             )
