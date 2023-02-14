@@ -1722,7 +1722,6 @@ def test_assign_frequencies_baseband_downconverter(
     else:
         expected_if1 = downconverter_freq1 - q1_clock_freq - lo1
 
-
     assert actual_lo0 == expected_lo0, (
         f"LO frequency of channel 0 "
         f"{'without' if downconverter_freq0 in (None, 0) else 'after'} "
