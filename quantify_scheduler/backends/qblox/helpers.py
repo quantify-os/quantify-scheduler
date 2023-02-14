@@ -443,44 +443,58 @@ def determine_clock_lo_interm_freqs(
     downconverter_freq: Optional[float] = None,
     mix_lo: bool = True,
 ) -> Frequencies:
-    r"""
-    Determine LO and IF frequencies, after optionally applying downconverter_freq to
-    clock.
+    """
+    .. warning::
+        Using `downconverter_freq` requires custom Qblox hardware, do not use otherwise.
 
-    Warning: Using downconverter_freq requires custom Qblox hardware, do not use
-    otherwise.
+    From known frequency for the local oscillator or known intermodulation frequency,
+    determine any missing frequency, after optionally applying `downconverter_freq` to
+    the clock frequency.
 
-    The following relation is obeyed, if `mix_lo` is True:
+    If `mix_lo` is ``True``, the following relation is obeyed:
     :math:`f_{RF} = f_{LO} + f_{IF}`.
 
-    If `mix_lo` is False, relation :math:`f_{RF} = f_{LO}` is upheld.
+    If `mix_lo` is ``False``, :math:`f_{RF} = f_{LO}` is upheld.
 
     Parameters
     ----------
-    clock_freq
-    lo_freq
-    interm_freq
-    downconverter_freq
-    mix_lo
+    clock_freq : float
+        Frequency of the clock.
+    lo_freq : Union[float, None]
+        Frequency of the local oscillator (LO).
+    interm_freq : Union[float, None]
+        Intermodulation frequency (IF), the frequency of the numerically controlled
+        oscillator (NCO).
+    downconverter_freq : Optional[float]
+        Frequency for downconverting the clock frequency, using:
+        :math:`f_\mathrm{out} = f_\mathrm{downconverter} - f_\mathrm{in}`.
+    mix_lo : bool
+        Flag indicating whether IQ mixing is enabled with the LO.
 
     Returns
     -------
+    :
+        :class:`.Frequencies` object containing the determined LO and IF frequencies and
+        the optionally downconverted clock frequency.
 
     Warns
     -----
     ValueWarning
-
+        In case `downconverter_freq` is set equal to 0, warns to unset via
+        ``null``/``None`` instead.
     Raises
     ------
     ValueError
-        fgf
+        In case `downconverter_freq` is less than 0.
+    ValueError
+        In case `downconverter_freq` is less than `clock_freq`.
     """
 
     def _downconvert_clock(downconverter_freq: float, clock_freq: float) -> float:
         if downconverter_freq == 0:
             warnings.warn(
                 "Downconverter frequency 0 supplied. To unset 'downconverter_freq', "
-                "set to 'null' instead in hardware configuration.",
+                "set to `null` (json) / `None` instead in hardware configuration.",
                 RuntimeWarning,
             )
 

@@ -328,7 +328,7 @@ class Sequencer:
             an IQ mixer. This is used for frequency calculations.
         downconverter_freq
             Frequency of the external downconverter if one is being used.
-            Defaults to 0, in which case no downconverter is being used.
+            Defaults to None, in which case the downconverter is inactive.
         mix_lo
             Boolean flag for IQ mixing with LO.
             Defaults to True meaning IQ mixing is applied.
@@ -1257,49 +1257,40 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         r"""
         An abstract method that should be overridden. Meant to assign an IF frequency
         to each sequencer, and an LO frequency to each output (if applicable).
-
-        What is executed depends on the mix_lo boolean.
-
-        Raises
-        ------
-        ValueError
-            Neither the LO nor the IF frequency has been set and thus contain
-            :code:`None` values.
         """
 
     def _set_lo_interm_freqs(
         self,
         freqs: helpers.Frequencies,
         sequencer: Sequencer,
-        compiler_lo: Optional[LocalOscillator] = None,
-        lo_freq_setting_name: Optional[str] = None,
+        compiler_lo_baseband: Optional[LocalOscillator] = None,
+        lo_freq_setting_rf: Optional[str] = None,
     ):
         """
-        Sets the LO/IF frequencies, for baseband and for RF modules.
-
-        For baseband + external LO, set compiler_lo
-        For RF ... , set lo_freq_setting_name
-
-        It is expected that either the IF or the LO frequency is supplied. Otherwise, an
-        error is thrown.
-
-        In case of RF, checks if the LO freq has already been set, throws an error
+        Sets the LO/IF frequencies, for baseband and RF modules.
 
         Parameters
         ----------
         freqs
+            LO, IF, and clock frequencies, supplied via an `helpers.Frequencies` object.
         sequencer
-        compiler_lo
-        lo_freq_setting_name
-
-        Returns
-        -------
+            The sequencer for which frequences are to be set.
+        compiler_lo_baseband
+            For baseband modules, supply the `instrument_compiler` of the LO of which
+            the frequency is to be set.
+        lo_freq_setting_rf
+            For RF modules, supply the name of the LO frequency param from the
+            `RFModuleSettings` that is to be set.
 
         Raises
         ------
         ValueError
-            Neither the LO nor the IF frequency has been set and thus contain
-            :code:`None` values.
+            In case neither LO frequency nor IF has been supplied.
+        ValueError
+            In case both LO frequency and IF have been supplied and do not adhere to
+            :math:`f_{RF} = f_{LO} + f_{IF}`.
+        ValueError
+            In case of RF, when the LO frequency was already set to a different value.
         """
         underconstr = freqs.LO is None and freqs.IF is None
         overconstr = (
@@ -1325,25 +1316,25 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             )
 
         if freqs.LO is not None:
-            if compiler_lo is not None:
-                compiler_lo.frequency = freqs.LO
+            if compiler_lo_baseband is not None:
+                compiler_lo_baseband.frequency = freqs.LO
 
-            if lo_freq_setting_name is not None:
-                previous_lo_freq = getattr(self._settings, lo_freq_setting_name)
+            elif lo_freq_setting_rf is not None:
+                previous_lo_freq = getattr(self._settings, lo_freq_setting_rf)
 
                 if previous_lo_freq is not None and not np.isclose(
                     freqs.LO, previous_lo_freq
                 ):
                     raise ValueError(
-                        f"Attempting to set '{lo_freq_setting_name}' to frequency "
+                        f"Attempting to set '{lo_freq_setting_rf}' to frequency "
                         f"'{freqs.LO:e}', while it has previously already been set to "
                         f"'{previous_lo_freq:e}'!"
                     )
 
-                setattr(self._settings, lo_freq_setting_name, freqs.LO)
+                setattr(self._settings, lo_freq_setting_rf, freqs.LO)
 
         if freqs.IF is not None:
-            sequencer.frequency = freqs.IF  # Setter also enables/disables nco
+            sequencer.frequency = freqs.IF
 
     @abstractmethod
     def assign_attenuation(self):
@@ -1602,13 +1593,14 @@ class QbloxBasebandModule(QbloxBaseModule):
 
     def assign_frequencies(self, sequencer: Sequencer):
         """
-        Determines LO/IF frequencies and assigns them, for RF baseband modules.
+        Determines LO/IF frequencies and assigns them, for baseband modules.
 
         In case of **no** external local oscillator, the NCO is given the same
         frequency as the clock.
 
         In case of **an** external local oscillator and `sequencer.mix_lo` is
-        ``False``, the LO is given the same frequency as the clock.
+        ``False``, the LO is given the same frequency as the clock
+        (via :func:`.helpers.determine_clock_lo_interm_freqs`).
         """
         compiler_container = self.parent if self.is_pulsar else self.parent.parent
         if sequencer.clock not in compiler_container.resources:
@@ -1647,7 +1639,7 @@ class QbloxBasebandModule(QbloxBaseModule):
                     f"with port '{sequencer.port}' and clock '{sequencer.clock}')."
                 )
             self._set_lo_interm_freqs(
-                freqs=freqs, sequencer=sequencer, compiler_lo=compiler_lo
+                freqs=freqs, sequencer=sequencer, compiler_lo_baseband=compiler_lo
             )
 
     def assign_attenuation(self):
@@ -1697,33 +1689,24 @@ class QbloxRFModule(QbloxBaseModule):
             self._set_lo_interm_freqs(
                 freqs=freqs,
                 sequencer=sequencer,
-                lo_freq_setting_name=lo_freq_setting_name,
+                lo_freq_setting_rf=lo_freq_setting_name,
             )
 
     @staticmethod
     def _get_connected_lo_indices(sequencer: Sequencer) -> Generator[int]:
         """
-        Identify the LO the sequencer is outputting to. We can do this by first checking
-        the Sequencer-Output correspondence, and then use the fact that LOX is connected
-        to OutputX.
-
-        Parameters
-        ----------
-        sequencer
-
-        Returns
-        -------
-
+        Identify the LO the sequencer is outputting.
+        Use the sequencer output to module output correspondence, and then
+        use the fact that LOX is connected to module output X.
         """
-        for sequencer_output in sequencer.connected_outputs:
-            if sequencer_output % 2 != 0:
-                # We will only use real output 0 and 2,
-                # since 1 and 3 are part of the same
-                # complex outputs.
+        for sequencer_output_index in sequencer.connected_outputs:
+            if sequencer_output_index % 2 != 0:
+                # We will only use real output 0 and 2, as they are part of the same
+                # complex outputs as real output 1 and 3
                 continue
 
-            module_output = 0 if sequencer_output == 0 else 1
-            yield module_output
+            module_output_index = 0 if sequencer_output_index == 0 else 1
+            yield module_output_index
 
     def assign_attenuation(self):
         """

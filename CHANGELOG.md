@@ -9,7 +9,7 @@
 ### Merged branches and closed issues
 
 - Compilation - Add `determine_relative_latencies` that determines latencies for all port-clock combinations in the hardware config relative to the minimum latency (!566, #379)
-- Qblox backend - Introduce `determine_clock_lo_interm_freqs` helper and use in `assign_frequencies` (!574)
+- Qblox backend - Introduce `qblox.helpers.determine_clock_lo_interm_freqs` and use in `QbloxBasebandModule.assign_frequencies` and `QbloxRFModule.assign_frequencies` (!574) 
 
 ## 0.11.1 (2023-02-07)
 
