@@ -228,7 +228,7 @@ class TestNcoSetClockFrequencyStrategy:
         # act
         try:
             strategy.insert_qasm(qasm)
-        except ValueError as error:
+        except ValueError as error:  # TODO: use nullcontext
             interm_freq_new = interm_freq_old + clock_freq_new - clock_freq_old
             limit = 500e6
             if interm_freq_new < -limit or interm_freq_new > limit:

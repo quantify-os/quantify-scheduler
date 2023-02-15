@@ -2,7 +2,8 @@
 # Licensed according to the LICENCE file on the main branch
 """Constants for compilation to Qblox hardware."""
 
-
+MAX_NUMBER_OF_INSTRUCTIONS: int = 16000  # TODO: add right number
+"""Maximum supported number of instructions in Q1ASM programs."""
 IMMEDIATE_SZ_GAIN = pow(2, 16) - 1
 """Size of gain instruction immediates in Q1ASM programs."""
 IMMEDIATE_MAX_WAIT_TIME = pow(2, 16) - 4
