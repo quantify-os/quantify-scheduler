@@ -370,7 +370,7 @@ resources of the schedule. It may be necessary to add this clock manually, as in
 the final line of the example above.
 ```
 
-### Device and Hardware compilation combined : Serial Compiler
+## Device and Hardware compilation combined : Serial Compiler
 {class}`~quantify_scheduler.backends.SerialCompiler` is used when a {class}`quantify_scheduler.device_under_test.quantum_device.QuantumDevice` is used to define your device configuration. In this tutorial we do not attach any hardware configuration to the `QuantumDevice`. The [compiling to hardware](https://quantify-quantify-scheduler.readthedocs-hosted.com/en/latest/tutorials/Compiling%20to%20Hardware.html) tutorial demonstrates how to correctly use a hardware configuration with a `quantum device`.
 
 ```{code-cell} ipython3
