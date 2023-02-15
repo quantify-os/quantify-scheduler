@@ -155,3 +155,4 @@ class NcoSetClockFrequencyStrategy(IdleStrategy):
             constants.NCO_SET_FREQ_WAIT,
             comment=f"apply nco frequency change",
         )
+        qasm_program.elapsed_time += constants.NCO_SET_FREQ_WAIT
