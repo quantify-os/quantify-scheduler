@@ -1,6 +1,11 @@
 Recent interface changes
 ========================
 
+Unreleased: Marker behavior for RF Cluster modules
+--------------------------------------------------
+
+For the Qblox QCM-RF and QRM-RF modules, the marker override QCoDeS parameter ``marker_ovr_en`` is now always set to ``False`` before the execution of a schedule. This way, the markers behave as expected, even if they were previously overridden. Please refer to the `qblox-instruments documentation <https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/documentation/pulsar.html#marker-output-channels>`_ for more information about the ``marker_ovr_en`` and ``marker_ovr_value`` parameters.
+
 0.11.1: Input attenuation parameter both for input and output
 -------------------------------------------------------------
 
