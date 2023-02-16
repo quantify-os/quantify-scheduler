@@ -804,17 +804,6 @@ class Sequencer:
         if self.qasm_hook_func:
             self.qasm_hook_func(qasm)
 
-        if (
-            num_instructions := len(qasm.instructions)
-        ) > constants.MAX_NUMBER_OF_INSTRUCTIONS:
-            raise RuntimeError(
-                f"Number of instructions ({num_instructions}) compiled for "
-                f"'{self.name}' of {self.parent.__class__.__name__} "
-                f"'{self.parent.name}' exceeds the maximum supported number of "
-                f"instructions in Q1ASM programs "
-                f"({constants.MAX_NUMBER_OF_INSTRUCTIONS})."
-            )
-
         self._settings.integration_length_acq = qasm.integration_length_acq
         return str(qasm)
 
