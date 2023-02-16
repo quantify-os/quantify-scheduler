@@ -709,7 +709,25 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
         return sequencer_and_channel
 
 
-class QCMRFComponent(QCMComponent):
+class QbloxRFComponent(QbloxInstrumentCoordinatorComponentBase):
+    """
+    Mix-in for RF-module-specific InstrumentCoordinatorComponent behaviour.
+    """
+
+    def _configure_sequencer_settings(
+        self, seq_idx: int, settings: SequencerSettings
+    ) -> None:
+        super()._configure_sequencer_settings(seq_idx, settings)
+        # Always set override to False. Markers should be controlled using
+        # MarkerConfiguration
+        self._set_parameter(
+            self.instrument[f"sequencer{seq_idx}"],
+            "marker_ovr_en",
+            False,
+        )
+
+
+class QCMRFComponent(QbloxRFComponent, QCMComponent):
     """
     QCM-RF specific InstrumentCoordinator component.
     """
@@ -754,7 +772,7 @@ class QCMRFComponent(QCMComponent):
             self._set_parameter(self.instrument, "out1_att", settings.out1_att)
 
 
-class QRMRFComponent(QRMComponent):
+class QRMRFComponent(QbloxRFComponent, QRMComponent):
     """
     QRM-RF specific InstrumentCoordinator component.
     """
