@@ -4,6 +4,8 @@
 
 ### Breaking changes
 
+- Acquisition - `InstrumentCoordinator.retrieve_acquisition` returns an `xarray.Dataset` (!550, #362)
+- Qblox backend - Set the `marker_ovr_en` QCoDeS parameter by default to `False` before schedule execution, so that the markers are always controlled using the `MarkerConfiguration` (!576)
 - Qblox backend - Set `"downconverter_freq"` to `null` (json) or `None` to deactivate (0 no longer deactivates it) (!574)
 
 ### Merged branches and closed issues
