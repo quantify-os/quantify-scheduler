@@ -328,11 +328,13 @@ class Sequencer:
             The name of the local oscillator instrument connected to the same output via
             an IQ mixer. This is used for frequency calculations.
         downconverter_freq
+            .. warning::
+                Using `downconverter_freq` requires custom Qblox hardware, do not use otherwise.
             Frequency of the external downconverter if one is being used.
-            Defaults to None, in which case the downconverter is inactive.
+            Defaults to ``None``, in which case the downconverter is inactive.
         mix_lo
             Boolean flag for IQ mixing with LO.
-            Defaults to True meaning IQ mixing is applied.
+            Defaults to ``True`` meaning IQ mixing is applied.
         """
         self.parent = parent
         self.index = index
