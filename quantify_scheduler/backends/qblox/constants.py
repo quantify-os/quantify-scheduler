@@ -32,8 +32,6 @@ Clock period of the sequencers. All time intervals used must be multiples of thi
 """
 MIN_TIME_BETWEEN_ACQUISITIONS = 1000  # ns
 """Minimum time between two acquisitions to prevent FIFO errors."""
-MAX_SAMPLE_SIZE_ACQUISITIONS: int = 16384
-"""Maximal amount of acquisition datapoints returned."""
 SAMPLING_RATE = 1_000_000_000  # 1GS/s
 """Sampling rate of the Qblox control/readout instruments."""
 PULSE_STITCHING_DURATION = 1e-6
@@ -56,6 +54,8 @@ NUMBER_OF_SEQUENCERS_QRM = 6
 """Number of sequencers supported by a QRM/QRM-RF in the latest firmware."""
 NUMBER_OF_REGISTERS: int = 64
 """Number of registers available in the Qblox sequencers."""
+MAX_SAMPLE_SIZE_ACQUISITIONS: int = 16384
+"""Maximal amount of acquisition datapoints returned."""
 MAX_NUMBER_OF_BINS: int = 131072
 """Number of bins available in the Qblox sequencers."""
 GENERIC_IC_COMPONENT_NAME: str = "generic"

@@ -375,7 +375,7 @@ def test_initialize_cluster_component(make_cluster_component):
     make_cluster_component("cluster0")
 
 
-def test_reset_awg_offset_and_gain(
+def test_reset_qcodes_settings(
     schedule_with_measurement,
     load_example_qblox_hardware_config,
     make_qcm_component,
@@ -451,7 +451,41 @@ def test_reset_awg_offset_and_gain(
             ].get() == pytest.approx(qrm2_gain[f"seq{seq}_path{path}"])
 
 
-def test_init_awg_offset_and_gain(
+def test_marker_override_false(
+    schedule_with_measurement_q2,
+    load_example_qblox_hardware_config,
+    make_qcm_rf,
+    make_qrm_rf,
+    mock_setup_basic_transmon_with_standard_params,
+):
+    # Arrange
+    qcm_rf0: qblox.QCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
+    qrm_rf0: qblox.QRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
+
+    mock_setup = mock_setup_basic_transmon_with_standard_params
+    mock_setup["q2"].clock_freqs.readout(7.5e9)
+    mock_setup["q2"].clock_freqs.f01(6.03e9)
+
+    # These should be reset when `prepare` is called.
+    qcm_rf0.instrument["sequencer0"].set("marker_ovr_en", True)
+    qrm_rf0.instrument["sequencer0"].set("marker_ovr_en", True)
+
+    mock_setup["quantum_device"].hardware_config(load_example_qblox_hardware_config)
+    compiled_schedule = SerialCompiler(name="compiler").compile(
+        schedule=schedule_with_measurement_q2,
+        config=mock_setup["quantum_device"].generate_compilation_config(),
+    )
+    prog = compiled_schedule["compiled_instructions"]
+
+    qcm_rf0.prepare(prog[qcm_rf0.instrument.name])
+    qrm_rf0.prepare(prog[qrm_rf0.instrument.name])
+
+    # Assert
+    assert qcm_rf0.instrument["sequencer0"].parameters["marker_ovr_en"].get() is False
+    assert qrm_rf0.instrument["sequencer0"].parameters["marker_ovr_en"].get() is False
+
+
+def test_init_qcodes_settings(
     mocker,
     schedule_with_measurement,
     load_example_qblox_hardware_config,
@@ -532,7 +566,7 @@ def test_init_awg_offset_and_gain(
             ].set.assert_called_once_with(qrm2_gain[f"seq{seq}_path{path}"])
 
 
-def test_invalid_init_awg_offset_and_gain(
+def test_invalid_init_qcodes_settings(
     mocker,
     schedule_with_measurement,
     load_example_qblox_hardware_config,

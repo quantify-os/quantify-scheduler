@@ -4,11 +4,12 @@
 
 ### Breaking changes
 
+- Acquisition - `InstrumentCoordinator.retrieve_acquisition` returns an `xarray.Dataset` (!550, #362)
+- Qblox backend - Set the `marker_ovr_en` QCoDeS parameter by default to `False` before schedule execution, so that the markers are always controlled using the `MarkerConfiguration` (!576)
 - Qblox backend - Set `"downconverter_freq"` to `null` (json) or `None` to deactivate (0 no longer deactivates it) (!574)
 
 ### Merged branches and closed issues
 
-- Acquisition - `InstrumentCoordinator.retrieve_acquisition` returns an `xarray.Dataset` (!550, #362)
 - Compilation - Add `determine_relative_latencies` that determines latencies for all port-clock combinations in the hardware config relative to the minimum latency (!566, #379)
 - Operations - Introduce `SetClockFrequency` operation (!575, follow-up to !539 !543)
 - Qblox backend - Introduce `qblox.helpers.determine_clock_lo_interm_freqs` and use in `QbloxBasebandModule.assign_frequencies` and `QbloxRFModule.assign_frequencies` (!574) 
