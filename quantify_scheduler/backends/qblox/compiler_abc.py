@@ -7,6 +7,7 @@ from __future__ import annotations
 import dataclasses
 import json
 import logging
+import warnings
 from abc import ABC, ABCMeta, abstractmethod
 from collections import defaultdict, deque
 from functools import partial
@@ -34,6 +35,7 @@ from quantify_scheduler.backends.qblox import (
     constants,
     driver_version_check,
     helpers,
+    instrument_compilers,
     q1asm_instructions,
     register_manager,
 )
@@ -56,6 +58,7 @@ from quantify_scheduler.backends.types.qblox import (
     StaticHardwareProperties,
     MarkerConfiguration,
 )
+
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.pulse_library import SetClockFrequency
 
@@ -700,7 +703,7 @@ class Sequencer:
     def generate_qasm_program(
         self,
         total_sequence_time: float,
-        repetitions: Optional[int] = 1,
+        repetitions: int = 1,
     ) -> str:
         """
         Generates a QASM program for a sequencer. Requires the awg and acq dicts to
@@ -736,6 +739,18 @@ class Sequencer:
         -------
         :
             The generated QASM program.
+
+        Warns
+        -----
+        RuntimeWarning
+            When number of instructions in the generated QASM program exceeds the
+            maximum supported number of instructions for sequencers in the type of
+            module.
+
+        Raises
+        ------
+        RuntimeError
+            Upon `total_sequence_time` exceeding :attr:`.QASMProgram.elapsed_time`.
         """
         loop_label = "start"
         marker_config = self.static_hw_properties.marker_configuration
@@ -805,6 +820,23 @@ class Sequencer:
             self.qasm_hook_func(qasm)
 
         self._settings.integration_length_acq = qasm.integration_length_acq
+
+        max_instructions = (
+            constants.MAX_NUMBER_OF_INSTRUCTIONS_QCM
+            if self.parent.__class__
+            in [instrument_compilers.QcmModule, instrument_compilers.QcmRfModule]
+            else constants.MAX_NUMBER_OF_INSTRUCTIONS_QRM
+        )
+        if (num_instructions := len(qasm.instructions)) > max_instructions:
+            warnings.warn(
+                f"Number of instructions ({num_instructions}) compiled for "
+                f"'{self.name}' of {self.parent.__class__.__name__} "
+                f"'{self.parent.name}' exceeds the maximum supported number of "
+                f"instructions in Q1ASM programs for {self.parent.__class__.__name__} "
+                f"({max_instructions}).",
+                RuntimeWarning,
+            )
+
         return str(qasm)
 
     def _initialize_append_mode_registers(

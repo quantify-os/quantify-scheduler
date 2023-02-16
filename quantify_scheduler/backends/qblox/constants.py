@@ -3,6 +3,10 @@
 """Constants for compilation to Qblox hardware."""
 
 
+MAX_NUMBER_OF_INSTRUCTIONS_QCM: int = 16384
+"""Maximum supported number of instructions in Q1ASM programs for QCM/QCM-RF."""
+MAX_NUMBER_OF_INSTRUCTIONS_QRM: int = 12288
+"""Maximum supported number of instructions in Q1ASM programs for QRM/QRM-RF."""
 IMMEDIATE_SZ_GAIN = pow(2, 16) - 1
 """Size of gain instruction immediates in Q1ASM programs."""
 IMMEDIATE_MAX_WAIT_TIME = pow(2, 16) - 4
@@ -47,9 +51,9 @@ MAX_MIXER_AMP_RATIO = 2.0
 """Highest value the amplitude correction can be set to. N.B. This correction is defined
 as Q/I."""
 NUMBER_OF_SEQUENCERS_QCM = 6
-"""Number of sequencers supported by a QCM in the latest firmware."""
+"""Number of sequencers supported by a QCM/QCM-RF in the latest firmware."""
 NUMBER_OF_SEQUENCERS_QRM = 6
-"""Number of sequencers supported by a QRM in the latest firmware."""
+"""Number of sequencers supported by a QRM/QRM-RF in the latest firmware."""
 NUMBER_OF_REGISTERS: int = 64
 """Number of registers available in the Qblox sequencers."""
 MAX_NUMBER_OF_BINS: int = 131072
