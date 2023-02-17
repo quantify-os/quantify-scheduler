@@ -383,7 +383,6 @@ dut.close()
 dut = QuantumDevice("DUT")
 q0 = BasicTransmonElement("q0")
 q1 = BasicTransmonElement("q1")
-dut.hardware_config({}) # This is the default, showing for completeness
 dut.add_element(q0)
 dut.add_element(q1)
 dut.get_element("q0").rxy.amp180(0.6)
