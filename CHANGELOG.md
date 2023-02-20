@@ -14,6 +14,7 @@
 - Operations - Introduce `SetClockFrequency` operation (!575, follow-up to !539 !543)
 - Qblox backend - Introduce `qblox.helpers.determine_clock_lo_interm_freqs` and use in `QbloxBasebandModule.assign_frequencies` and `QbloxRFModule.assign_frequencies` (!574) 
 - Qblox backend - Compile `SetClockFrequency` operation to `set_freq` + `upd_param` of 8 ns (!575, follow-up to !539 !543)
+- Schedules - Add fast NCO sweep schedules using `SetClockFrequency` (!542)
 
 ## 0.11.1 (2023-02-07)
 

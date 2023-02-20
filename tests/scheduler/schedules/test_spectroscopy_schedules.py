@@ -64,7 +64,7 @@ class TestHeterodyneSpecSchedule(_CompilesAllBackends):
         )
 
 
-class TestHeterodyneSpecScheduleBatched(TestHeterodyneSpecSchedule):
+class TestHeterodyneSpecScheduleNCO(TestHeterodyneSpecSchedule):
     @classmethod
     def setup_class(cls):
         cls.sched_kwargs = {
@@ -78,27 +78,21 @@ class TestHeterodyneSpecScheduleBatched(TestHeterodyneSpecSchedule):
             "init_duration": 18e-6,
             "repetitions": 10,
         }
-        cls.uncomp_sched = sps.heterodyne_spec_sched_batched(**cls.sched_kwargs)
-
-    def test_repetitions(self):
-        assert self.uncomp_sched.repetitions == 1  # Repetition internally
+        cls.uncomp_sched = sps.heterodyne_spec_sched_nco(**cls.sched_kwargs)
 
     def test_timing(self):
         """Test that the right operations are added and timing is as expected."""
         sched = determine_absolute_timing(self.uncomp_sched)
 
-        labels = ["buffer", "set_freq"]
-        labels += [
-            "spec_pulse",
-            "acquisition",
-        ] * self.sched_kwargs["repetitions"]
+        labels = ["buffer", "set_freq", "spec_pulse", "acquisition"]
         labels *= len(self.sched_kwargs["frequencies"])
 
-        rel_times = [self.sched_kwargs["init_duration"], 8e-9]
-        rel_times += [
+        rel_times = [
+            self.sched_kwargs["init_duration"],
+            8e-9,
             self.sched_kwargs["acquisition_delay"],
             self.sched_kwargs["integration_time"],
-        ] * self.sched_kwargs["repetitions"]
+        ]
         rel_times *= len(self.sched_kwargs["frequencies"])
 
         abs_time = 0.0
@@ -118,7 +112,7 @@ class TestHeterodyneSpecScheduleBatched(TestHeterodyneSpecSchedule):
         )
 
 
-def test_nco_heterodyne_spec_sched__qblox_backend(
+def test_heterodyne_spec_sched_nco__qblox_hardware(
     mock_setup_basic_transmon_with_standard_params, make_cluster_component, mocker
 ):
     cluster_name = "cluster0"
@@ -166,7 +160,7 @@ def test_nco_heterodyne_spec_sched__qblox_backend(
     }
     spec_gettable = ScheduleGettable(
         quantum_device=quantum_device,
-        schedule_function=sps.heterodyne_spec_sched_batched,
+        schedule_function=sps.heterodyne_spec_sched_nco,
         schedule_kwargs=schedule_kwargs,
         real_imag=False,
         batched=True,
@@ -179,7 +173,7 @@ def test_nco_heterodyne_spec_sched__qblox_backend(
         bin_mode=BinMode.AVERAGE,
         acq_return_type=complex,
         acq_indices={0: [*range(len(ro_freqs))]},
-        repetitions=1,  # TODO
+        repetitions=quantum_device.cfg_sched_repetitions,
     )
     data = 1 * np.exp(1j * np.deg2rad(45))
     acq_indices_data = _reshape_array_into_acq_return_type(
@@ -196,7 +190,9 @@ def test_nco_heterodyne_spec_sched__qblox_backend(
     meas_ctrl.settables(ro_freq)
     meas_ctrl.setpoints(ro_freqs)
     meas_ctrl.gettables(spec_gettable)
-    dataset = meas_ctrl.run(name=f"Batched heterodyne spectroscopy {qubit.name}")
+    dataset = meas_ctrl.run(
+        name=f"Fast heterodyne spectroscopy (NCO sweep) {qubit.name}"
+    )
     assert spec_gettable.is_initialized is True
 
     # Assert that the data is coming out correctly
@@ -257,7 +253,7 @@ class TestTwoToneSpecSchedule(_CompilesAllBackends):
         )
 
 
-class TestTwoToneSpecScheduleBatched(TestTwoToneSpecSchedule):
+class TestTwoToneSpecScheduleNCO(TestTwoToneSpecSchedule):
     @classmethod
     def setup_class(cls):
         cls.sched_kwargs = {
@@ -277,30 +273,23 @@ class TestTwoToneSpecScheduleBatched(TestTwoToneSpecSchedule):
             "init_duration": 18e-6,
             "repetitions": 10,
         }
-        cls.uncomp_sched = sps.two_tone_spec_sched_batched(**cls.sched_kwargs)
-
-    def test_repetitions(self):
-        assert self.uncomp_sched.repetitions == 1  # Repetition internally
+        cls.uncomp_sched = sps.two_tone_spec_sched_nco(**cls.sched_kwargs)
 
     def test_timing(self):
         """Test that the right operations are added and timing is as expected."""
         sched = determine_absolute_timing(self.uncomp_sched)
 
-        labels = ["buffer", "set_freq"]
-        labels += [
-            "spec_pulse",
-            "readout_pulse",
-            "acquisition",
-        ] * self.sched_kwargs["repetitions"]
+        labels = ["buffer", "set_freq", "spec_pulse", "readout_pulse", "acquisition"]
         labels *= len(self.sched_kwargs["spec_pulse_frequencies"])
 
-        rel_times = [self.sched_kwargs["init_duration"], 8e-9]
-        rel_times += [
+        rel_times = [
+            self.sched_kwargs["init_duration"],
+            8e-9,
             self.sched_kwargs["spec_pulse_duration"]
             + self.sched_kwargs["ro_pulse_delay"],
             self.sched_kwargs["ro_acquisition_delay"],
             self.sched_kwargs["ro_integration_time"],
-        ] * self.sched_kwargs["repetitions"]
+        ]
         rel_times *= len(self.sched_kwargs["spec_pulse_frequencies"])
 
         abs_time = 0.0
