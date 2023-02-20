@@ -79,11 +79,8 @@ sched = bell_schedule(
 
 ```{code-cell} ipython3
 
-# import the circuit visualizer
-from quantify_scheduler.visualization.circuit_diagram import circuit_diagram_matplotlib
-
 # visualize the circuit
-f, ax = circuit_diagram_matplotlib(sched)
+f, ax = sched.plot_circuit_diagram()
 
 ```
 
@@ -152,15 +149,15 @@ Valid qubits are strings that appear in the {ref}`device configuration file<sec-
 
 #### Visualization
 
-A {class}`.Schedule` containing operations can be visualized using as a circuit diagram using {func}`~quantify_scheduler.visualization.circuit_diagram.circuit_diagram_matplotlib`.
+A {class}`.Schedule` containing operations can be visualized using a circuit diagram by calling its method {meth}`.plot_circuit_diagram`.
 
-Alternatively, one can plot the waveforms in schedules using {func}`~quantify_scheduler.visualization.pulse_diagram.pulse_diagram_matplotlib`:
+Alternatively, one can plot the waveforms in schedules using {meth}`.plot_pulse_diagram` (the default plotting backend is `matplotlib`, but it is possible 
+to use `plotly` by adding the argument {code}`plot_backend='plotly'`):
 
 ```{code-cell} ipython3
 
 from quantify_scheduler.operations.pulse_library import SquarePulse, RampPulse
 from quantify_scheduler.compilation import determine_absolute_timing
-from quantify_scheduler.visualization.pulse_diagram import pulse_diagram_matplotlib
 
 schedule = Schedule("waveforms")
 schedule.add(SquarePulse(amp=0.2, duration=4e-6, port="P"))
@@ -168,7 +165,7 @@ schedule.add(RampPulse(amp=-0.1, offset=.2, duration=6e-6, port="P"))
 schedule.add(SquarePulse(amp=0.1, duration=4e-6, port="Q"), ref_pt='start')
 determine_absolute_timing(schedule)
 
-_ = pulse_diagram_matplotlib(schedule, sampling_rate=20e6)
+_ = schedule.plot_pulse_diagram(sampling_rate=20e6)
 
 ```
 

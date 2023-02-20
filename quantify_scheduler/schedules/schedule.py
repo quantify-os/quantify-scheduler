@@ -3,13 +3,13 @@
 """Module containing the core concepts of the scheduler."""
 from __future__ import annotations
 
+import dataclasses
 import json
 import warnings
 import weakref
 from abc import ABC
 from collections import UserDict
 from copy import deepcopy
-import dataclasses
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Type, Union
 from uuid import uuid4
 
@@ -194,16 +194,14 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         ax: Optional[Axes] = None,
         plot_backend: Literal["mpl"] = "mpl",
     ) -> Tuple[Figure, Union[Axes, List[Axes]]]:
+        # pylint: disable=line-too-long
         """
         Creates a circuit diagram visualization of the schedule using the specified
         plotting backend.
 
-        The circuit diagram visualization visualizes the schedule at the quantum circuit
-        layer.
-        This visualization provides no timing information, only showing the order of
-        operations.
-        Because quantify-scheduler uses a hybrid gate-pulse paradigm, operations for
-        which no information is specified at the gate level are visualized using an
+        The circuit diagram visualization depicts the schedule at the quantum circuit
+        layer. Because quantify-scheduler uses a hybrid gate-pulse paradigm, operations
+        for which no information is specified at the gate level are visualized using an
         icon (e.g., a stylized wavy pulse) depending on the information specified at
         the quantum device layer.
 
@@ -226,11 +224,57 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             matplotlib figure object.
         ax
             matplotlib axis object.
+
+
+
+        Each gate, pulse, measurement, and any other operation are plotted in the order
+        of execution, but no timing information is provided.
+
+        .. admonition:: Example
+            :class: tip
+
+            .. jupyter-execute::
+
+                from quantify_scheduler import Schedule
+                from quantify_scheduler.operations.gate_library import Reset, X90, CZ, Rxy, Measure
+
+                sched = Schedule(f"Bell experiment on q0-q1")
+
+                sched.add(Reset("q0", "q1"))
+                sched.add(X90("q0"))
+                sched.add(X90("q1"), ref_pt="start", rel_time=0)
+                sched.add(CZ(qC="q0", qT="q1"))
+                sched.add(Rxy(theta=45, phi=0, qubit="q0") )
+                sched.add(Measure("q0", acq_index=0))
+                sched.add(Measure("q1", acq_index=0), ref_pt="start")
+
+                sched.plot_circuit_diagram();
+
+        .. note::
+
+            Gates that are started simultaneously on the same qubit will overlap.
+
+            .. jupyter-execute::
+
+                from quantify_scheduler import Schedule
+                from quantify_scheduler.operations.gate_library import X90, Measure
+
+                sched = Schedule(f"overlapping gates")
+
+                sched.add(X90("q0"))
+                sched.add(Measure("q0"), ref_pt="start", rel_time=0)
+                sched.plot_circuit_diagram();
+
+        .. note::
+
+            If the pulse's port address was not found then the pulse will be plotted on the
+            'other' timeline.
+
         """
         # NB imported here to avoid circular import
         # pylint: disable=import-outside-toplevel
         if plot_backend == "mpl":
-            import quantify_scheduler.visualization.circuit_diagram as cd
+            import quantify_scheduler.schedules._visualization.circuit_diagram as cd
 
             return cd.circuit_diagram_matplotlib(schedule=self, figsize=figsize, ax=ax)
 
@@ -248,6 +292,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         plot_backend: Literal["mpl", "plotly"] = "mpl",
         plot_kwargs: Optional[dict] = None,
     ) -> Union[Tuple[Figure, Axes], go.Figure]:
+        # pylint: disable=line-too-long
         """
         Creates a visualization of all the pulses in a schedule using the specified
         plotting backend.
@@ -280,13 +325,31 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         -------
         Union[Tuple[Figure, Axes], :class:`!plotly.graph_objects.Figure`]
             the plot
+
+
+        .. admonition:: Example
+            :class: tip
+
+            .. jupyter-execute::
+
+                from quantify_scheduler.operations.pulse_library import SquarePulse, RampPulse
+                from quantify_scheduler.compilation import determine_absolute_timing
+
+                schedule = Schedule("waveforms")
+                schedule.add(SquarePulse(amp=0.2, duration=4e-6, port="P"))
+                schedule.add(RampPulse(amp=-0.1, offset=.2, duration=6e-6, port="P"))
+                schedule.add(SquarePulse(amp=0.1, duration=4e-6, port="Q"), ref_pt='start')
+                determine_absolute_timing(schedule)
+
+                _ = schedule.plot_pulse_diagram(sampling_rate=20e6)
+
         """
         if plot_kwargs is None:
             plot_kwargs = {}
         if plot_backend == "mpl":
             # NB imported here to avoid circular import
             # pylint: disable=import-outside-toplevel
-            from quantify_scheduler.visualization.pulse_diagram import (
+            from quantify_scheduler.schedules._visualization.pulse_diagram import (
                 pulse_diagram_matplotlib,
             )
 
@@ -301,7 +364,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         if plot_backend == "plotly":
             # NB imported here to avoid circular import
             # pylint: disable=import-outside-toplevel
-            from quantify_scheduler.visualization.pulse_diagram import (
+            from quantify_scheduler.schedules._visualization.pulse_diagram import (
                 pulse_diagram_plotly,
             )
 

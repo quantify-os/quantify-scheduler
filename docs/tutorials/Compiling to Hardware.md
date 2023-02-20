@@ -155,7 +155,6 @@ The schedule defined at the beginning of this tutorial consists of 2 pulse opera
 
 from quantify_scheduler.backends.graph_compilation import SerialCompiler
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.visualization.pulse_diagram import pulse_diagram_plotly
 
 quantum_device = QuantumDevice("DUT")
 
@@ -165,7 +164,7 @@ compiled_sched = compiler.compile(
     schedule=sched, config=quantum_device.generate_compilation_config()
 )
 
-pulse_diagram_plotly(compiled_sched)
+compiled_sched.plot_pulse_diagram(plot_backend='plotly')
 
 
 ```
