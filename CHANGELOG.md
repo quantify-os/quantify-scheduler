@@ -6,6 +6,7 @@
 
 - Acquisition - `InstrumentCoordinator.retrieve_acquisition` returns an `xarray.Dataset` (!550, #362)
 - Qblox backend - Set the `marker_ovr_en` QCoDeS parameter by default to `False` before schedule execution, so that the markers are always controlled using the `MarkerConfiguration` (!576)
+- Visualization - Deprecate `visualization` module and its functions `circuit_diagram_matplotlib`, `pulse_diagram_matplotlib`, and `pulse_diagram_plotly`. Create `_visualization` submodule within `schedules`. Make plots via `ScheduleBase` methods (!599). Move visualization tests to `schedules` directory, and make tests for `ScheduleBase` plotting methods
 
 ### Merged branches and closed issue
 

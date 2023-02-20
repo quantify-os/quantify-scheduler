@@ -4,15 +4,18 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
 
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
-import quantify_scheduler.visualization.pulse_scheme as ps
-from quantify_core.utilities import deprecated
+import quantify_scheduler.schedules._visualization.pulse_scheme as ps
 from quantify_scheduler.helpers.importers import import_python_object_from_string
-from quantify_scheduler.visualization import constants
+from quantify_scheduler.schedules._visualization import constants
+
+
+if TYPE_CHECKING:
+    from quantify_scheduler import Schedule
 
 
 def gate_box(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
@@ -41,7 +44,7 @@ def gate_box(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
 
 def pulse_baseband(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
     """
-    Adds a visual indicator for a Baseband pulse to the `mathplotlib.axes.Axis`
+    Adds a visual indicator for a Baseband pulse to the `matplotlib.axes.Axis`
     instance.
 
     Parameters
@@ -67,7 +70,7 @@ def pulse_baseband(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw
 
 def pulse_modulated(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
     """
-    Adds a visual indicator for a Modulated pulse to the `mathplotlib.axes.Axis`
+    Adds a visual indicator for a Modulated pulse to the `matplotlib.axes.Axis`
     instance.
 
     Parameters
@@ -233,24 +236,13 @@ def _locate_qubit_in_address(qubit_map, address):
 
 # pylint disabled because func was implemented before pylint was adopted
 # pylint: disable=too-many-locals, too-many-branches, too-many-statements
-@deprecated(
-    "0.14.0",
-    "To plot a circuit diagram, please call `ScheduleBase.plot_circuit_diagram()` from"
-    "`quantify_scheduler.schedules.schedule.py` instead.",
-)
 def circuit_diagram_matplotlib(
     schedule: Schedule,
     figsize: Tuple[int, int] = None,
     ax: Optional[Axes] = None,
 ) -> Tuple[Figure, Union[Axes, List[Axes]]]:
     """
-    .. warning::
-        This function is deprecated and will be removed after `quantify-scheduler>=0.14`.
-        To plot a circuit diagram, please call :func:`~quantify_scheduler.schedules.schedule.ScheduleBase.plot_circuit_diagram()`
-        from :class:`~quantify_scheduler.schedules.schedule.ScheduleBase` instead.
-
     Creates a circuit diagram visualization of a schedule using matplotlib.
-    Each gate, pulse, measurement, and operation are plotted in the order of execution, but the exact timing is not visible here.
 
     Parameters
     ----------
@@ -267,47 +259,6 @@ def circuit_diagram_matplotlib(
         matplotlib figure object.
     ax
         matplotlib axis object.
-
-
-    .. admonition:: Example
-        :class: tip
-
-        .. jupyter-execute::
-
-            from quantify_scheduler import Schedule
-            from quantify_scheduler.operations.gate_library import Reset, X90, CZ, Rxy, Measure
-            from quantify_scheduler.visualization.circuit_diagram import circuit_diagram_matplotlib
-
-            sched = Schedule(f"Bell experiment on q0-q1")
-
-            sched.add(Reset("q0", "q1"))
-            sched.add(X90("q0"))
-            sched.add(X90("q1"), ref_pt="start", rel_time=0)
-            sched.add(CZ(qC="q0", qT="q1"))
-            sched.add(Rxy(theta=45, phi=0, qubit="q0") )
-            sched.add(Measure("q0", acq_index=0))
-            sched.add(Measure("q1", acq_index=0), ref_pt="start")
-
-            circuit_diagram_matplotlib(sched);
-
-    .. note::
-
-        Gates that are started simultaneously on the same qubit will overlap.
-
-        .. jupyter-execute::
-
-            from quantify_scheduler import Schedule
-            from quantify_scheduler.operations.gate_library import X90, Measure
-
-            sched = Schedule(f"overlapping gates")
-
-            sched.add(X90("q0"))
-            sched.add(Measure("q0"), ref_pt="start", rel_time=0)
-            sched.plot_circuit_diagram();
-
-    .. note::
-
-        If the pulse's port address was not found then the pulse will be plotted on the 'other' timeline.
 
     """
     # to prevent the original input schedule from being modified.

@@ -173,7 +173,9 @@ def test_empty_sched():
 def test_bad_gate(device_compile_config_basic_transmon):
     class NotAGate(Operation):
         def __init__(self, q):
-            plot_func = "quantify_scheduler.visualization.circuit_diagram.cnot"
+            plot_func = (
+                "quantify_scheduler.schedules._visualization.circuit_diagram.cnot"
+            )
             data = {
                 "gate_info": {
                     "unitary": np.array(
