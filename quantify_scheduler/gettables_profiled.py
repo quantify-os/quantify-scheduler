@@ -21,7 +21,9 @@ import matplotlib.pyplot as plt
 from qcodes import Instrument
 
 from quantify_scheduler.gettables import ScheduleGettable
-from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
+from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
+    InstrumentCoordinator,
+)
 
 
 def profiler(func):
@@ -31,7 +33,7 @@ def profiler(func):
 
     Parameters
     ----------
-    func: function
+    func: Callable
         Target function to be profiled.
     """
 

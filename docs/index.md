@@ -18,6 +18,7 @@ tutorials/Compiling*
 tutorials/Operations*
 tutorials/qblox/index
 tutorials/zhinst/index
+examples/deprecated
 contributing
 authors
 changelog

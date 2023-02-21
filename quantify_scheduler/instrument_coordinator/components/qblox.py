@@ -1034,7 +1034,7 @@ class _QRMAcquisitionManager:
 
         Returns
         -------
-        scope_data
+        :
             The scope mode data.
         """
         if acq_duration < 0 or acq_duration > constants.MAX_SAMPLE_SIZE_ACQUISITIONS:

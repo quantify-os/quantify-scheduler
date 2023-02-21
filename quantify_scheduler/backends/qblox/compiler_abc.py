@@ -258,6 +258,7 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
     def _portclocks_with_pulses(self) -> Set[Tuple[str, str]]:
         """
         All the port-clock combinations associated with at least one pulse.
+
         Returns
         -------
         :
@@ -495,9 +496,9 @@ class Sequencer:
                 f"'{self.parent.name}' to {freq:e}, while it has previously been set "
                 f"to {self._settings.modulation_freq:e}."
             )
+
         self._settings.modulation_freq = freq
-        if freq != 0:
-            self._settings.nco_en = True
+        self._settings.nco_en = freq is not None
 
     def _generate_awg_dict(self) -> Dict[str, Any]:
         """
@@ -1609,7 +1610,8 @@ class QbloxBasebandModule(QbloxBaseModule):
         Determines LO/IF frequencies and assigns them, for baseband modules.
 
         In case of **no** external local oscillator, the NCO is given the same
-        frequency as the clock.
+        frequency as the clock -- unless NCO was permanently disabled via
+        `"interm_freq": 0` in the hardware config.
 
         In case of **an** external local oscillator and `sequencer.mix_lo` is
         ``False``, the LO is given the same frequency as the clock
@@ -1621,9 +1623,9 @@ class QbloxBasebandModule(QbloxBaseModule):
 
         clock_freq = compiler_container.resources[sequencer.clock]["freq"]
         if sequencer.associated_ext_lo is None:
-            # Setting "interm_freq" to 0 in hardware config disables the NCO
+            # Set NCO frequency to the clock frequency, unless NCO was permanently
+            # disabled via `"interm_freq": 0` in the hardware config
             if sequencer.frequency != 0:
-                # Set NCO frequency to the clock frequency, and enable NCO (via setter)
                 sequencer.frequency = clock_freq
         else:
             # In using external local oscillator, determine clock and LO/IF freqs,
@@ -1726,7 +1728,7 @@ class QbloxRFModule(QbloxBaseModule):
         Assigns attenuation settings from the hardware configuration.
 
         Floats that are a multiple of 1 are converted to ints.
-        This is needed because the :class:`~quantify_core.measurement.control.grid_setpoints`
+        This is needed because the :func:`quantify_core.measurement.control.grid_setpoints`
         converts setpoints to floats when using an attenuation as settable.
         """
 

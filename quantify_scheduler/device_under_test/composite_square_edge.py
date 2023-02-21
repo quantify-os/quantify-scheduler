@@ -10,6 +10,7 @@ from qcodes.instrument.parameter import ManualParameter
 from quantify_scheduler.backends.circuit_to_device import OperationCompilationConfig
 from quantify_scheduler.helpers.validators import Numbers
 from quantify_scheduler.device_under_test.edge import Edge
+from quantify_scheduler.operations.pulse_factories import composite_square_pulse
 from quantify_scheduler.resources import BasebandClockResource
 
 
@@ -87,8 +88,7 @@ class CompositeSquareEdge(Edge):
         edge_op_config = {
             f"{self.name}": {
                 "CZ": OperationCompilationConfig(
-                    factory_func="quantify_scheduler.operations."
-                    + "pulse_factories.composite_square_pulse",
+                    factory_func=composite_square_pulse,
                     factory_kwargs={
                         "square_port": self.parent_device_element.ports.flux(),
                         "square_clock": BasebandClockResource.IDENTITY,

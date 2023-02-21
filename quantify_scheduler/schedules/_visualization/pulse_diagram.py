@@ -23,10 +23,9 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from quantify_core.visualization.SI_utilities import set_xlabel, set_ylabel
 
-from quantify_core.utilities import deprecated
 import quantify_scheduler.operations.pulse_library as pl
+from quantify_core.visualization.SI_utilities import set_xlabel, set_ylabel
 from quantify_scheduler.helpers.importers import import_python_object_from_string
 from quantify_scheduler.operations.acquisition_library import AcquisitionOperation
 from quantify_scheduler.waveforms import modulate_wave
@@ -86,11 +85,6 @@ def validate_operation_data(operation_data, port_map, schedulable, operation):
 # pylint: disable=too-many-arguments
 # pylint: disable=too-many-locals
 # pylint: disable=too-many-statements
-@deprecated(
-    "0.14.0",
-    "To plot a pulse diagram, please call `ScheduleBase.plot_pulse_diagram()` from"
-    "`quantify_scheduler.schedules.schedule.py` instead.",
-)
 def pulse_diagram_plotly(
     schedule: Union[Schedule, CompiledSchedule],
     port_list: Optional[List[str]] = None,
@@ -102,11 +96,6 @@ def pulse_diagram_plotly(
 ) -> go.Figure:
     """
     Produce a plotly visualization of the pulses used in the schedule.
-
-    .. warning:
-        This function is deprecated and will be removed after `quantify-scheduler>=0.14`.
-        To plot a circuit diagram, please call :func:`~quantify_scheduler.schedules.schedule.ScheduleBase.plot_pulse_diagram()`
-        from :class:`~quantify_scheduler.schedules.schedule.ScheduleBase` instead. Make sure to include the argument `plot_backend="plotly"`.
 
     Parameters
     ------------
@@ -458,11 +447,6 @@ def sample_schedule(
     return timestamps, waveforms
 
 
-@deprecated(
-    "0.14.0",
-    "To plot a pulse diagram, please call `ScheduleBase.plot_pulse_diagram()` from"
-    "`quantify_scheduler.schedules.schedule.py` instead.",
-)
 def pulse_diagram_matplotlib(
     schedule: Union[Schedule, CompiledSchedule],
     port_list: Optional[List[str]] = None,
@@ -473,11 +457,6 @@ def pulse_diagram_matplotlib(
 ) -> Tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
     """
     Plots a schedule using matplotlib.
-
-    .. warning:
-        This function is deprecated and will be removed after `quantify-scheduler>=0.14`.
-        To plot a circuit diagram, please call :func:`~quantify_scheduler.schedules.schedule.ScheduleBase.plot_pulse_diagram()`
-        from :class:`~quantify_scheduler.schedules.schedule.ScheduleBase` instead.
 
     Parameters
     ----------

@@ -176,6 +176,7 @@ def optical_measurement(
 
     Returns
     -------
+    :
         Operation with the generated pulses and acquisition
 
     Raises
