@@ -11,9 +11,6 @@ from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.helpers.importers import import_python_object_from_string
 from quantify_scheduler.structure.model import DataStructure
 
-if TYPE_CHECKING:
-    from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-
 
 class CompilationError(RuntimeError):
     """
@@ -78,17 +75,16 @@ class CompilationNode:
         """
         A node representing a compiler pass.
 
+        .. note::
+
+            To compile, the :meth:`~.CompilationNode.compile` method should be used.
+
         Parameters
         ----------
         name
             The name of the node. Should be unique if it is added to a (larger)
             compilation
             graph.
-
-        .. note:
-
-            Note that to compile, the :meth:`~.CompilationNode.compile` method should be
-            used.
         """
         self.name = name
 
@@ -148,6 +144,10 @@ class SimpleNode(CompilationNode):
         A node representing a simple compiler pass consisting of calling a single
         compilation function.
 
+        .. note::
+
+            To compile, the :meth:`~.CompilationNode.compile` method should be used.
+
         Parameters
         ----------
         name
@@ -158,11 +158,6 @@ class SimpleNode(CompilationNode):
             should take the intermediate representation (commonly :class:`~.Schedule`)
             and a config as inputs and returns a new (modified) intermediate
             representation.
-
-        .. note::
-
-            Note that to compile, the :meth:`~.CompilationNode.compile` method should be
-            used.
         """
         super().__init__(name=name)
         self.compilation_func = compilation_func
@@ -189,7 +184,13 @@ class QuantifyCompiler(CompilationNode):
     compilation passes.
     """
 
-    def __init__(self, name, quantum_device: Optional["QuantumDevice"] = None) -> None:
+    def __init__(
+        self,
+        name,
+        quantum_device: Optional[
+            "quantify_scheduler.device_under_test.quantum_device.QuantumDevice"
+        ] = None,
+    ) -> None:
         """
         Parameters
         ----------

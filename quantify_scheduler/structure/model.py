@@ -45,7 +45,7 @@ class DataStructure(BaseModel):  # pylint: disable=too-few-public-methods
     If required, data fields can be validated, see examples for more information.
     It is also possible to define custom field types with advanced validation.
 
-    This class is a pre-configured `pydantic <https://pydantic-docs.helpmanual.io/>`_
+    This class is a pre-configured `pydantic <https://docs.pydantic.dev/>`_
     model. See its documentation for details of usage information.
 
     .. admonition:: Examples

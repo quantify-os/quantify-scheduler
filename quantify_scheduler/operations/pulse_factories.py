@@ -123,6 +123,7 @@ def nv_spec_pulse_mw(
 
     Returns
     -------
+    :
         Hermite pulse operation
     """
     return pulse_library.SkewedHermitePulse(

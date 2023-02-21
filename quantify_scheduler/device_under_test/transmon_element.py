@@ -416,6 +416,9 @@ class TransmonElement(DeviceElement):
 
         .. jupyter-execute::
 
+            import warnings
+            warnings.filterwarnings("ignore", category=FutureWarning)
+
             from quantify_scheduler.device_under_test import transmon_element
             q0 = transmon_element.TransmonElement("q0")
 

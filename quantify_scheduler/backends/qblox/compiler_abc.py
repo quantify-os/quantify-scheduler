@@ -244,6 +244,7 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
     def _portclocks_with_pulses(self) -> Set[Tuple[str, str]]:
         """
         All the port-clock combinations associated with at least one pulse.
+
         Returns
         -------
         :
@@ -1690,7 +1691,7 @@ class QbloxRFModule(QbloxBaseModule):
         Assigns attenuation settings from the hardware configuration.
 
         Floats that are a multiple of 1 are converted to ints.
-        This is needed because the :class:`~quantify_core.measurement.control.grid_setpoints`
+        This is needed because the :func:`quantify_core.measurement.control.grid_setpoints`
         converts setpoints to floats when using an attenuation as settable.
         """
 

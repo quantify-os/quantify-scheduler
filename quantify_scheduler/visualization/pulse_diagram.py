@@ -101,12 +101,12 @@ def pulse_diagram_plotly(
     sampling_rate: float = 1e9,
 ) -> go.Figure:
     """
-    .. warning::
+    Produce a plotly visualization of the pulses used in the schedule.
+
+    .. warning:
         This function is deprecated and will be removed after `quantify-scheduler>=0.14`.
         To plot a circuit diagram, please call :func:`~quantify_scheduler.schedules.schedule.ScheduleBase.plot_pulse_diagram()`
         from :class:`~quantify_scheduler.schedules.schedule.ScheduleBase` instead. Make sure to include the argument `plot_backend="plotly"`.
-
-    Produce a plotly visualization of the pulses used in the schedule.
 
     Parameters
     ------------
@@ -472,12 +472,12 @@ def pulse_diagram_matplotlib(
     ax: Optional[matplotlib.axes.Axes] = None,
 ) -> Tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
     """
-    .. warning::
+    Plots a schedule using matplotlib.
+
+    .. warning:
         This function is deprecated and will be removed after `quantify-scheduler>=0.14`.
         To plot a circuit diagram, please call :func:`~quantify_scheduler.schedules.schedule.ScheduleBase.plot_pulse_diagram()`
         from :class:`~quantify_scheduler.schedules.schedule.ScheduleBase` instead.
-
-    Plots a schedule using matplotlib.
 
     Parameters
     ----------
