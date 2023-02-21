@@ -7,7 +7,7 @@
 - Acquisition - `InstrumentCoordinator.retrieve_acquisition` returns an `xarray.Dataset` (!550, #362)
 - Qblox backend - Set the `marker_ovr_en` QCoDeS parameter by default to `False` before schedule execution, so that the markers are always controlled using the `MarkerConfiguration` (!576)
 - Qblox backend - Set `"downconverter_freq"` to `null` (json) or `None` to deactivate (`0` no longer deactivates it) (!574)
-- Qblox backend - The NCO is enabled when setting `sequencer.frequency` to `0` (`0` no longer disables it) (!574)
+- Qblox backend - The NCO is now enabled when setting `sequencer.frequency` to `0` (`0` no longer disables it) (!574)
   - For baseband modules without external LO, NCO is still permanently disabled by setting `"interm_freq"` to `0` in the hardware config
 - Visualization - Deprecate `visualization` module and its functions `circuit_diagram_matplotlib`, `pulse_diagram_matplotlib`, and `pulse_diagram_plotly`. Create `_visualization` submodule within `schedules`. Make plots via `ScheduleBase` methods (!599). Move visualization tests to `schedules` directory, and make tests for `ScheduleBase` plotting methods
 
