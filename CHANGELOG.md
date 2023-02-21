@@ -13,6 +13,7 @@
 - Zhinst backend - Added distortion corrections (!600)
 - Compilation - Add `determine_relative_latencies` that determines latencies for all port-clock combinations in the hardware config relative to the minimum latency (!566, #379)
 - Documentation - Qblox backend reference guide overhaul and fix docs generation warnings (!587)
+- JSON utilities - Introduce serialization of python objects to a dotted import string, next to the already existing deserialization (`import_python_object_from_string`). Serialization now happens automatically in `DataStructure`s, deserialization is implemented using Pydantic validators in the configuration models.
 
 ## 0.11.1 (2023-02-07)
 

@@ -45,9 +45,7 @@ def test_compiles_standard_schedules(
 
     config = device_compile_config_basic_transmon
     assert config.name == "Device compiler"
-    assert (
-        config.backend == "quantify_scheduler.backends.graph_compilation.SerialCompiler"
-    )
+    assert config.backend == SerialCompiler
 
     backend = SerialCompiler(name=config.name)  # assert that no exception is raised.
     comp_sched = backend.compile(schedule=schedule, config=config)
