@@ -15,9 +15,8 @@ from unittest.mock import ANY, call
 import numpy as np
 import pytest
 from pydantic import ValidationError
-
 from quantify_scheduler import CompiledSchedule, Schedule, enums
-from quantify_scheduler.backends import corrections, SerialCompiler, zhinst_backend
+from quantify_scheduler.backends import SerialCompiler, corrections, zhinst_backend
 from quantify_scheduler.backends.types import common, zhinst
 from quantify_scheduler.backends.zhinst import settings
 from quantify_scheduler.compilation import qcompile
@@ -28,14 +27,12 @@ from quantify_scheduler.operations.gate_library import X90, Measure, Reset
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules import spectroscopy_schedules, trace_schedules
 from quantify_scheduler.schedules.verification import acquisition_staircase_sched
-
 from tests.scheduler.backends.graph_backends.standard_schedules import (
-    single_qubit_schedule_circuit_level,
-    pulse_only_schedule,
-    parametrized_operation_schedule,
     hybrid_schedule_rabi,
+    parametrized_operation_schedule,
+    pulse_only_schedule,
+    single_qubit_schedule_circuit_level,
 )
-
 
 ARRAY_DECIMAL_PRECISION = 16
 
@@ -162,6 +159,50 @@ def create_typical_timing_table(make_schedule, load_example_zhinst_hardware_conf
         }
 
     yield _create_test_compile_datastructure
+
+
+@pytest.fixture
+def hardware_cfg_distortion_corrections():
+    return {
+        "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
+        # Latency corrections are needed to avoid error in compilation of two-qubit
+        # gate schedule in test_apply_distortion_corrections
+        "latency_corrections": {"q2:fl-cl0.baseband": 100e-9, "q2:mw-q2.01": 0},
+        "local_oscillators": [
+            {
+                "unique_name": "lo0",
+                "instrument_name": "lo0",
+                "frequency": {"frequency": 4.8e9},
+            }
+        ],
+        "devices": [
+            {
+                "name": "hdawg_1234",
+                "type": "HDAWG4",
+                "ref": "none",
+                "channel_0": {
+                    "port": "q2:fl",
+                    "clock": "cl0.baseband",
+                    "mode": "real",
+                    "modulation": {
+                        "type": "none",
+                    },
+                    "trigger": 1,
+                    "local_oscillator": "lo0",
+                },
+                "channel_1": {
+                    "port": "q2:mw",
+                    "clock": "q2.01",
+                    "mode": "real",
+                    "modulation": {
+                        "type": "none",
+                    },
+                    "markers": ["AWG_MARKER1", "AWG_MARKER2"],
+                    "local_oscillator": "lo0",
+                },
+            }
+        ],
+    }
 
 
 @pytest.mark.parametrize(

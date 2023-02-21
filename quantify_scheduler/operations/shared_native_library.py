@@ -38,7 +38,7 @@ class SpectroscopyOperation(Operation):
                 {
                     "gate_info": {
                         "unitary": None,
-                        "plot_func": "quantify_scheduler.visualization"
+                        "plot_func": "quantify_scheduler.schedules._visualization"
                         ".circuit_diagram.pulse_modulated",
                         "tex": r"Spectroscopy operation",
                         "qubits": [qubit],

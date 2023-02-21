@@ -499,3 +499,18 @@ def test_config_with_callables():
     sched = Schedule("Test callable op")
     sched.add(Reset("q0", "q1"))
     _ = compile_circuit_to_device(sched, device_cfg=simple_config)
+
+
+def test_config_validation():
+    # Raises no error
+    _ = OperationCompilationConfig(
+        factory_func=rxy_drag_pulse,
+        gate_info_factory_kwargs=["theta", "phi"],
+        factory_kwargs={
+            "amp180": 0.32,
+            "motzoi": 0.45,
+            "port": "q0:mw",
+            "clock": "q0.01",
+            "duration": 2e-08,
+        },
+    )

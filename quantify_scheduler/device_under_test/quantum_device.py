@@ -10,12 +10,15 @@ from qcodes.instrument.base import Instrument
 from qcodes.instrument.parameter import InstrumentRefParameter, ManualParameter
 from qcodes.utils import validators
 
-from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
+from quantify_scheduler.backends.circuit_to_device import (
+    DeviceCompilationConfig,
+    compile_circuit_to_device,
+)
 from quantify_scheduler.backends.graph_compilation import (
-    CompilationConfig,
     SimpleNodeConfig,
     SerialCompilationConfig,
 )
+from quantify_scheduler.compilation import determine_absolute_timing
 from quantify_scheduler.device_under_test.device_element import DeviceElement
 from quantify_scheduler.device_under_test.edge import Edge
 
@@ -113,8 +116,7 @@ class QuantumDevice(Instrument):
             ),
             SimpleNodeConfig(
                 name="determine_absolute_timing",
-                compilation_func="quantify_scheduler.compilation."
-                + "determine_absolute_timing",
+                compilation_func=determine_absolute_timing,
             ),
         ]
 
@@ -208,8 +210,7 @@ class QuantumDevice(Instrument):
             edges_cfg.update(edge_cfg)
 
         device_config = DeviceCompilationConfig(
-            backend="quantify_scheduler.backends"
-            ".circuit_to_device.compile_circuit_to_device",
+            backend=compile_circuit_to_device,
             elements=elements_cfg,
             clocks=clocks,
             edges=edges_cfg,

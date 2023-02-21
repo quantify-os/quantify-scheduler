@@ -3,7 +3,7 @@ file_format: mystnb
 
 ---
 
-# Quantify Deprecated Code Suggestions
+# Deprecated Code Suggestions
 
 ```{seealso}
 Download the notebook: {nb-download}`deprecated.ipynb`
@@ -15,7 +15,7 @@ Download the notebook: {nb-download}`deprecated.ipynb`
 
 As of `quantify-scheduler==0.10.0`, deprecation warnings are shown by default (as `FutureWarning`).
 
-### Compilation Setup
+## Compilation Setup
 
 ```{code-cell} ipython3
 from quantify_core.data import handling as dh

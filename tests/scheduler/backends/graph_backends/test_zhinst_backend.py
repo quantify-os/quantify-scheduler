@@ -47,9 +47,7 @@ def test_compiles_standard_schedules(
 
     config = compile_config_basic_transmon_zhinst_hardware
     assert config.name == "Zhinst compiler"
-    assert (
-        config.backend == "quantify_scheduler.backends.graph_compilation.SerialCompiler"
-    )
+    assert config.backend == SerialCompiler
 
     backend = SerialCompiler(name=config.name)
     comp_sched = backend.compile(schedule=schedule, config=config)
