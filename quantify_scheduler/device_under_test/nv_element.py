@@ -24,6 +24,11 @@ from quantify_scheduler.helpers.validators import (
     _Delays,
 )
 from quantify_scheduler.device_under_test.device_element import DeviceElement
+from quantify_scheduler.operations import (
+    pulse_factories,
+    pulse_library,
+    measurement_factories,
+)
 
 
 # pylint: disable=too-few-public-methods
@@ -407,8 +412,7 @@ class BasicElectronicNVElement(DeviceElement):
         qubit_config = {
             f"{self.name}": {
                 "spectroscopy_operation": OperationCompilationConfig(
-                    factory_func="quantify_scheduler.operations."
-                    + "pulse_factories.nv_spec_pulse_mw",
+                    factory_func=pulse_factories.nv_spec_pulse_mw,
                     factory_kwargs={
                         "duration": self.spectroscopy_operation.duration(),
                         "amplitude": self.spectroscopy_operation.amplitude(),
@@ -417,8 +421,7 @@ class BasicElectronicNVElement(DeviceElement):
                     },
                 ),
                 "reset": OperationCompilationConfig(
-                    factory_func="quantify_scheduler.operations."
-                    + "pulse_library.SquarePulse",
+                    factory_func=pulse_library.SquarePulse,
                     factory_kwargs={
                         "duration": self.reset.duration(),
                         "amp": self.reset.amplitude(),
@@ -427,8 +430,7 @@ class BasicElectronicNVElement(DeviceElement):
                     },
                 ),
                 "charge_reset": OperationCompilationConfig(
-                    factory_func="quantify_scheduler.operations."
-                    + "pulse_library.SquarePulse",
+                    factory_func=pulse_library.SquarePulse,
                     factory_kwargs={
                         "duration": self.charge_reset.duration(),
                         "amp": self.charge_reset.amplitude(),
@@ -437,8 +439,7 @@ class BasicElectronicNVElement(DeviceElement):
                     },
                 ),
                 "measure": OperationCompilationConfig(
-                    factory_func="quantify_scheduler.operations."
-                    + "measurement_factories.optical_measurement",
+                    factory_func=measurement_factories.optical_measurement,
                     factory_kwargs={
                         "pulse_amplitudes": [self.measure.pulse_amplitude()],
                         "pulse_durations": [self.measure.pulse_duration()],
@@ -455,8 +456,7 @@ class BasicElectronicNVElement(DeviceElement):
                     gate_info_factory_kwargs=["acq_index", "bin_mode", "acq_protocol"],
                 ),
                 "cr_count": OperationCompilationConfig(
-                    factory_func="quantify_scheduler.operations."
-                    + "measurement_factories.optical_measurement",
+                    factory_func=measurement_factories.optical_measurement,
                     factory_kwargs={
                         "pulse_amplitudes": [
                             self.cr_count.readout_pulse_amplitude(),

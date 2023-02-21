@@ -69,10 +69,9 @@ Note that these plots are interactive and modulation is not shown by default.
 ```{code-cell} ipython3
 
 from quantify_scheduler import compilation
-from quantify_scheduler.visualization.pulse_diagram import pulse_diagram_plotly
 
 compilation.determine_absolute_timing(sched)
-pulse_diagram_plotly(sched)
+sched.plot_pulse_diagram(plot_backend='plotly')
 
 
 ```
@@ -90,7 +89,7 @@ sched.add(
 )
 
 compilation.determine_absolute_timing(sched)
-pulse_diagram_plotly(sched)
+sched.plot_pulse_diagram(plot_backend='plotly')
 
 
 ```
@@ -111,7 +110,7 @@ sched.add(
 sched.add_resource(ClockResource(name="q0.01", freq=7e9))
 
 compilation.determine_absolute_timing(sched)
-pulse_diagram_plotly(sched)
+sched.plot_pulse_diagram(plot_backend='plotly')
 
 
 ```
@@ -158,7 +157,7 @@ def pulse_train_schedule(
 
 sched = pulse_train_schedule(1, 200e-9, 300e-9, 5)
 compilation.determine_absolute_timing(sched)
-pulse_diagram_plotly(sched)
+sched.plot_pulse_diagram(plot_backend='plotly')
 
 
 ```

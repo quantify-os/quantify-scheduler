@@ -536,6 +536,7 @@ def nv_dark_esr_sched(
 
     Returns
     -------
+    :
         Schedule with a single frequency
     """
     sched = Schedule("Dark ESR Schedule", repetitions=repetitions)

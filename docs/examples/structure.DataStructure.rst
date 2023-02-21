@@ -109,5 +109,5 @@ User may implement custom validators:
 
 
 
-See `pydantic documentation <https://pydantic-docs.helpmanual.io/>`_ for more usage
+See `pydantic documentation <https://docs.pydantic.dev/>`_ for more usage
 examples.

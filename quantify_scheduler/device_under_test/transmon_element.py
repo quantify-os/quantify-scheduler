@@ -17,6 +17,11 @@ from quantify_scheduler.backends.circuit_to_device import (
 )
 from quantify_scheduler.helpers.validators import Numbers
 from quantify_scheduler.device_under_test.device_element import DeviceElement
+from quantify_scheduler.operations import (
+    pulse_factories,
+    pulse_library,
+    measurement_factories,
+)
 
 
 class Ports(InstrumentChannel):
@@ -318,16 +323,14 @@ class BasicTransmonElement(DeviceElement):
         qubit_config = {
             f"{self.name}": {
                 "reset": OperationCompilationConfig(
-                    factory_func="quantify_scheduler.operations."
-                    + "pulse_library.IdlePulse",
+                    factory_func=pulse_library.IdlePulse,
                     factory_kwargs={
                         "duration": self.reset.duration(),
                     },
                 ),
                 # example of a pulse with a parametrized mapping, using a factory
                 "Rxy": OperationCompilationConfig(
-                    factory_func="quantify_scheduler.operations."
-                    + "pulse_factories.rxy_drag_pulse",
+                    factory_func=pulse_factories.rxy_drag_pulse,
                     factory_kwargs={
                         "amp180": self.rxy.amp180(),
                         "motzoi": self.rxy.motzoi(),
@@ -343,8 +346,7 @@ class BasicTransmonElement(DeviceElement):
                 # the measurement also has a parametrized mapping, and uses a
                 # factory function.
                 "measure": OperationCompilationConfig(
-                    factory_func="quantify_scheduler.operations."
-                    + "measurement_factories.dispersive_measurement",
+                    factory_func=measurement_factories.dispersive_measurement,
                     factory_kwargs={
                         "port": self.ports.readout(),
                         "clock": f"{self.name}.ro",
@@ -415,6 +417,9 @@ class TransmonElement(DeviceElement):
         follows:
 
         .. jupyter-execute::
+
+            import warnings
+            warnings.filterwarnings("ignore", category=FutureWarning)
 
             from quantify_scheduler.device_under_test import transmon_element
             q0 = transmon_element.TransmonElement("q0")
@@ -692,16 +697,14 @@ class TransmonElement(DeviceElement):
         qubit_config = {
             f"{self.name}": {
                 "reset": OperationCompilationConfig(
-                    factory_func="quantify_scheduler.operations."
-                    + "pulse_library.IdlePulse",
+                    factory_func=pulse_library.IdlePulse,
                     factory_kwargs={
                         "duration": self.init_duration(),
                     },
                 ),
                 # example of a pulse with a parametrized mapping, using a factory
                 "Rxy": OperationCompilationConfig(
-                    factory_func="quantify_scheduler.operations."
-                    + "pulse_factories.rxy_drag_pulse",
+                    factory_func=pulse_factories.rxy_drag_pulse,
                     factory_kwargs={
                         "amp180": self.mw_amp180(),
                         "motzoi": self.mw_motzoi(),
@@ -717,8 +720,7 @@ class TransmonElement(DeviceElement):
                 # the measurement also has a parametrized mapping, and uses a
                 # factory function.
                 "measure": OperationCompilationConfig(
-                    factory_func="quantify_scheduler.operations."
-                    + "measurement_factories.dispersive_measurement",
+                    factory_func=measurement_factories.dispersive_measurement,
                     factory_kwargs={
                         "port": self.ro_port(),
                         "clock": self.ro_clock(),

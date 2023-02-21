@@ -31,7 +31,7 @@ class ChargeReset(Operation):
                 "name": f"ChargeReset {', '.join(qubits)}",
                 "gate_info": {
                     "unitary": None,
-                    "plot_func": "quantify_scheduler.visualization."
+                    "plot_func": "quantify_scheduler.schedules._visualization."
                     + "circuit_diagram.reset",
                     "tex": r"$NV^-$",
                     "qubits": list(qubits),
@@ -132,9 +132,7 @@ class CRCount(Operation):
                     FutureWarning,
                 )
         if data is None:
-            plot_func = (
-                "quantify_scheduler.visualization.circuit_diagram.acq_meter_text"
-            )
+            plot_func = "quantify_scheduler.schedules._visualization.circuit_diagram.acq_meter_text"
             super().__init__(f"CRCount {', '.join(qubits)}")
             self.data.update(
                 {
