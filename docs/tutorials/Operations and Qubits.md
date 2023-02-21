@@ -232,9 +232,7 @@ Let us briefly investigate the backend function:
 
 ```{code-cell} ipython3
 
-from quantify_scheduler.helpers.importers import import_python_object_from_string
-
-help(import_python_object_from_string(device_cfg.backend))
+help(device_cfg.backend)
 
 
 ```

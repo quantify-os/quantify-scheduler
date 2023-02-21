@@ -355,7 +355,12 @@ def test_compile_no_device_cfg_determine_absolute_timing(
     sched = Schedule("One pulse schedule")
     sched.add(SquarePulse(amp=1 / 4, duration=12e-9, port="q0:mw", clock="q0.01"))
 
-    mock = mocker.patch("quantify_scheduler.compilation.determine_absolute_timing")
+    # Function is defined in quantify_scheduler.compilation, but imported in
+    # quantum_device. The import makes a copy, therefore this is the path that
+    # is patched by mocker.
+    mock = mocker.patch(
+        "quantify_scheduler.device_under_test.quantum_device.determine_absolute_timing"
+    )
     compiler = SerialCompiler(name="compile")
     compiler.compile(schedule=sched, config=device_compile_config_basic_transmon)
-    mock.assert_called()
+    assert mock.is_called()

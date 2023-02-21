@@ -1,15 +1,29 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple, Union
+from __future__ import annotations
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+)
 
 import matplotlib.pyplot as plt
 import networkx as nx
 from matplotlib.axes import Axes
+from pydantic import validator
 
 from quantify_scheduler import CompiledSchedule, Schedule
-from quantify_scheduler.helpers.importers import import_python_object_from_string
-from quantify_scheduler.structure.model import DataStructure
+from quantify_scheduler.structure.model import (
+    DataStructure,
+    deserialize_class,
+    deserialize_function,
+)
 
 if TYPE_CHECKING:
     from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
@@ -40,10 +54,19 @@ class SimpleNodeConfig(DataStructure):
     """
 
     name: str
-    compilation_func: str
+    compilation_func: Callable[[Schedule, Any], Schedule]
     # N.B. custom node configs could inherit and put a stronger type check/schema
     # on options for a particular node.
     compilation_options: Optional[Dict]
+
+    @validator("compilation_func", pre=True)
+    @classmethod
+    def import_compilation_func_if_str(
+        cls, fun: Callable[[Schedule, Any], Schedule]
+    ) -> Callable[[Schedule, Any], Schedule]:
+        if isinstance(fun, str):
+            return deserialize_function(fun)
+        return fun  # type: ignore
 
 
 # pylint: disable=too-few-public-methods
@@ -55,18 +78,16 @@ class CompilationConfig(DataStructure):
     """
 
     name: str
-    backend: str
+    backend: Type[QuantifyCompiler]
 
-
-# pylint: disable=too-few-public-methods
-class SerialCompilationConfig(CompilationConfig):
-    """
-    A compilation config for a simple serial compiler.
-    Specifies compilation as a list of compilation passes.
-    """
-
-    backend: str = "quantify_scheduler.backends.graph_compilation.SerialCompiler"
-    compilation_passes: List[SimpleNodeConfig]
+    @validator("backend", pre=True)
+    @classmethod
+    def import_backend_if_str(
+        cls, class_: Union[Type[QuantifyCompiler], str]
+    ) -> Type[QuantifyCompiler]:
+        if isinstance(class_, str):
+            return deserialize_class(class_)
+        return class_  # type: ignore
 
 
 class CompilationNode:
@@ -347,11 +368,9 @@ class SerialCompiler(QuantifyCompiler):
         self._task_graph.clear()
 
         for i, compilation_pass in enumerate(config.compilation_passes):
-            compilation_func = import_python_object_from_string(
-                compilation_pass.compilation_func
-            )
             node = SimpleNode(
-                name=compilation_pass.name, compilation_func=compilation_func
+                name=compilation_pass.name,
+                compilation_func=compilation_pass.compilation_func,
             )
             # the first node is a bit special as no edge can be added
             if i == 0:
@@ -403,3 +422,23 @@ class SerialCompiler(QuantifyCompiler):
         # single Schedule class, see
         # also https://gitlab.com/quantify-os/quantify-scheduler/-/issues/311
         return CompiledSchedule(schedule)
+
+
+# pylint: disable=too-few-public-methods
+class SerialCompilationConfig(CompilationConfig):
+    """
+    A compilation config for a simple serial compiler.
+    Specifies compilation as a list of compilation passes.
+    """
+
+    backend: Type[SerialCompiler] = SerialCompiler
+    compilation_passes: List[SimpleNodeConfig]
+
+    @validator("backend", pre=True)
+    @classmethod
+    def import_backend_if_str(
+        cls, class_: Union[Type[SerialCompiler], str]
+    ) -> Type[SerialCompiler]:
+        if isinstance(class_, str):
+            return deserialize_class(class_)
+        return class_  # type: ignore
