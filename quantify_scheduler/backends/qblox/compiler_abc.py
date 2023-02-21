@@ -1560,7 +1560,8 @@ class QbloxBasebandModule(QbloxBaseModule):
         Determines LO/IF frequencies and assigns them, for baseband modules.
 
         In case of **no** external local oscillator, the NCO is given the same
-        frequency as the clock.
+        frequency as the clock -- unless NCO was permanently disabled via
+        `"interm_freq": 0` in the hardware config.
 
         In case of **an** external local oscillator and `sequencer.mix_lo` is
         ``False``, the LO is given the same frequency as the clock
@@ -1572,8 +1573,10 @@ class QbloxBasebandModule(QbloxBaseModule):
 
         clock_freq = compiler_container.resources[sequencer.clock]["freq"]
         if sequencer.associated_ext_lo is None:
-            # Set NCO frequency to the clock frequency
-            sequencer.frequency = clock_freq
+            # Set NCO frequency to the clock frequency, unless NCO was permanently
+            # disabled via `"interm_freq": 0` in the hardware config
+            if sequencer.frequency != 0:
+                sequencer.frequency = clock_freq
         else:
             # In using external local oscillator, determine clock and LO/IF freqs,
             # and then set LO/IF freqs, and enable NCO (via setter)

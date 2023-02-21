@@ -444,7 +444,9 @@ class SequencerSettings(DataClassJsonMixin):
             return val
 
         modulation_freq: Optional[float] = seq_settings.get("interm_freq", None)
-        nco_en: bool = modulation_freq is not None
+        nco_en: bool = (
+            modulation_freq is not None and modulation_freq != 0
+        )  # Allow NCO to be permanently disabled via `"interm_freq": 0` in the hardware config
 
         mixer_amp_ratio = extract_and_verify_range(
             param_name="mixer_amp_ratio",
