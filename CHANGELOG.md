@@ -10,6 +10,7 @@
 
 ### Merged branches and closed issue
 
+- Zhinst backend - Added distortion corrections (!600)
 - Compilation - Add `determine_relative_latencies` that determines latencies for all port-clock combinations in the hardware config relative to the minimum latency (!566, #379)
 
 ## 0.11.1 (2023-02-07)

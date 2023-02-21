@@ -17,6 +17,7 @@ from zhinst.toolkit.helpers import Waveform
 
 from quantify_scheduler import enums
 from quantify_scheduler.backends.corrections import (
+    apply_distortion_corrections,
     determine_relative_latencies,
     LatencyCorrections,
 )
@@ -733,6 +734,8 @@ def compile_backend(
         # used for storing the latency corrections
         # (see also https://gitlab.com/groups/quantify-os/-/epics/1)
         LatencyCorrections(latencies=hardware_cfg["latency_corrections"])
+
+    schedule = apply_distortion_corrections(schedule, hardware_cfg)
 
     ################################################
     # Timing table manipulation
