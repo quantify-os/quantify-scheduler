@@ -6,7 +6,9 @@
 
 - Acquisition - `InstrumentCoordinator.retrieve_acquisition` returns an `xarray.Dataset` (!550, #362)
 - Qblox backend - Set the `marker_ovr_en` QCoDeS parameter by default to `False` before schedule execution, so that the markers are always controlled using the `MarkerConfiguration` (!576)
-- Qblox backend - Set `"downconverter_freq"` to `null` (json) or `None` to deactivate (0 no longer deactivates it) (!574)
+- Qblox backend - Set `"downconverter_freq"` to `null` (json) or `None` to deactivate (`0` no longer deactivates it) (!574)
+- Qblox backend - The NCO is enabled when setting `sequencer.frequency` to `0` (`0` no longer disables it) (!574)
+  - For baseband + no external LO, NCO is still permanently disabled by setting `"interm_freq"` to `0` in the hardware config
 
 ### Merged branches and closed issues
 
