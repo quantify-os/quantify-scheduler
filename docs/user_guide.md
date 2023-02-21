@@ -349,7 +349,7 @@ Several utility instruments are used to control the flow of the experiments.
 
 #### Physical instruments
 
-[QCoDeS instrument drivers](https://qcodes.github.io/Qcodes/api/generated/qcodes.instrument_drivers.html) are used to represent the physical hardware.
+[QCoDeS instrument drivers](https://qcodes.github.io/Qcodes/drivers_api/index.html) are used to represent the physical hardware.
 For the purpose of quantify-scheduler, these instruments are treated as stateless, the desired configurations for an experiment being described by the compiled instructions.
 Because the instruments correspond to physical hardware, there is a significant overhead in querying and configuring these parameters.
 As such, the state of the instruments in the software is intended to track the state of the physical hardware to facilitate lazy configuration and logging purposes.
@@ -370,7 +370,7 @@ Because the {class}`~quantify_scheduler.device_under_test.quantum_device.Quantum
 ### Experiment flow
 
 To use schedules in an experimental setting, in which the parameters used for compilation as well as the schedules themselves routinely change, we provide a framework for performing experiments making use of the concepts of {mod}`quantify_core`.
-Central in this framework are the schedule {mod}`quantify_scheduler.gettables` that can be used by the {class}`~quantify_core.measurement.control.MeasurementControl` and are responsible for the experiment flow.
+Central in this framework are the schedule {mod}`quantify_scheduler.gettables` that can be used by the `quantify_core.measurement.control.MeasurementControl` and are responsible for the experiment flow.
 
 This flow is schematically shown in {numref}`experiments_control_flow`.
 
@@ -386,7 +386,7 @@ Let us consider the example of an experiment used to measure the coherence time 
 In this experiment a {math}`\pi` pulse is used to excite the qubit, which is left to idle for a time {math}`\tau` before it is measured.
 This experiment is then repeated for different {math}`\tau` and averaged.
 
-In terms of settables and gettables to use with the {class}`~quantify_core.measurement.control.MeasurementControl`, the settable in this experiment is the delay time {math}`\tau`, and the gettable is the execution of the schedule.
+In terms of settables and gettables to use with the `quantify_core.measurement.control.MeasurementControl`, the settable in this experiment is the delay time {math}`\tau`, and the gettable is the execution of the schedule.
 
 We represent the settable as a {class}`qcodes.instrument.parameter.ManualParameter`:
 
@@ -423,7 +423,7 @@ sched_kwargs = {
 ```
 
 The {code}`ScheduleGettable` is set up to evaluate the value of these parameter on every call of {code}`ScheduleGettable.get`.
-This flexibility allows the user to create template schedules that can then be measured by varying any of it's input parameters using the {class}`~quantify_core.measurement.control.MeasurementControl`.
+This flexibility allows the user to create template schedules that can then be measured by varying any of it's input parameters using the `quantify_core.measurement.control.MeasurementControl`.
 
 Similar to how the schedule keyword arguments are evaluated for every call to {code}`ScheduleGettable.get`, the device config and hardware config files are re-generated from the {class}`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` for every iteration.
 This ensures that if a calibration parameter is changed on the {class}`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice`, the compilation will be affected as expected.

@@ -1,7 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 r"""
-Module containing :class:`~quantify_core.measurement.types.Gettable`\s for use with
+Module containing :class:`quantify_core.measurement.types.Gettable`\s for use with
 quantify-scheduler.
 
 .. warning::

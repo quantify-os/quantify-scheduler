@@ -210,7 +210,7 @@ def set_pulse_and_acquisition_clock(
 
     Raises
     ------
-    RunTimeError
+    RuntimeError
         When operation is not at pulse/acquisition-level.
     ValueError
         When clock frequency is unknown.

@@ -244,13 +244,13 @@ def circuit_diagram_matplotlib(
     ax: Optional[Axes] = None,
 ) -> Tuple[Figure, Union[Axes, List[Axes]]]:
     """
+    Creates a circuit diagram visualization of a schedule using matplotlib.
+    Each gate, pulse, measurement, and operation are plotted in the order of execution, but the exact timing is not visible here.
+
     .. warning::
         This function is deprecated and will be removed after `quantify-scheduler>=0.14`.
         To plot a circuit diagram, please call :func:`~quantify_scheduler.schedules.schedule.ScheduleBase.plot_circuit_diagram()`
         from :class:`~quantify_scheduler.schedules.schedule.ScheduleBase` instead.
-
-    Creates a circuit diagram visualization of a schedule using matplotlib.
-    Each gate, pulse, measurement, and operation are plotted in the order of execution, but the exact timing is not visible here.
 
     Parameters
     ----------
@@ -276,7 +276,6 @@ def circuit_diagram_matplotlib(
 
             from quantify_scheduler import Schedule
             from quantify_scheduler.operations.gate_library import Reset, X90, CZ, Rxy, Measure
-            from quantify_scheduler.visualization.circuit_diagram import circuit_diagram_matplotlib
 
             sched = Schedule(f"Bell experiment on q0-q1")
 
@@ -288,7 +287,7 @@ def circuit_diagram_matplotlib(
             sched.add(Measure("q0", acq_index=0))
             sched.add(Measure("q1", acq_index=0), ref_pt="start")
 
-            circuit_diagram_matplotlib(sched);
+            sched.plot_circuit_diagram();
 
     .. note::
 
