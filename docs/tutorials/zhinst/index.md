@@ -238,9 +238,8 @@ instrument = zhinst.qcodes.HDAWG(name='hdawg0', serial='dev1234', ...)
 - The `markers` property specifies which markers to trigger on each sequencer iteration.
   The values are used as input for the `setTrigger` sequencer instruction.
 
-- The `triggers` property specifies for a sequencer which digital trigger to wait for.
-  The first value of the `triggers` array is used as input parameter for the
-  `waitDigTrigger` sequencer instruction.
+- The `trigger` property specifies for a sequencer which digital trigger to wait for.
+  This value is used as input parameter for the `waitDigTrigger` sequencer instruction.
 
 ```{eval-rst}
 .. autoclass:: quantify_scheduler.backends.types.zhinst.Output
