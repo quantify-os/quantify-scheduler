@@ -492,9 +492,9 @@ class Sequencer:
                 f"'{self.parent.name}' to {freq:e}, while it has previously been set "
                 f"to {self._settings.modulation_freq:e}."
             )
+
         self._settings.modulation_freq = freq
-        if freq != 0:
-            self._settings.nco_en = True
+        self._settings.nco_en = freq is not None
 
     def _generate_awg_dict(self) -> Dict[str, Any]:
         """
@@ -1572,10 +1572,8 @@ class QbloxBasebandModule(QbloxBaseModule):
 
         clock_freq = compiler_container.resources[sequencer.clock]["freq"]
         if sequencer.associated_ext_lo is None:
-            # Setting "interm_freq" to 0 in hardware config disables the NCO
-            if sequencer.frequency != 0:
-                # Set NCO frequency to the clock frequency, and enable NCO (via setter)
-                sequencer.frequency = clock_freq
+            # Set NCO frequency to the clock frequency
+            sequencer.frequency = clock_freq
         else:
             # In using external local oscillator, determine clock and LO/IF freqs,
             # and then set LO/IF freqs, and enable NCO (via setter)

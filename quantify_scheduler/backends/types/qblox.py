@@ -443,8 +443,8 @@ class SequencerSettings(DataClassJsonMixin):
                 )
             return val
 
-        modulation_freq: Union[float, None] = seq_settings.get("interm_freq", None)
-        nco_en: bool = modulation_freq != 0 and modulation_freq is not None
+        modulation_freq: Optional[float] = seq_settings.get("interm_freq", None)
+        nco_en: bool = modulation_freq is not None
 
         mixer_amp_ratio = extract_and_verify_range(
             param_name="mixer_amp_ratio",
