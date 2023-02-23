@@ -9,14 +9,13 @@ from typing import Any, Dict
 from qcodes.instrument.base import Instrument
 from qcodes.instrument.parameter import InstrumentRefParameter, ManualParameter
 from qcodes.utils import validators
-
 from quantify_scheduler.backends.circuit_to_device import (
     DeviceCompilationConfig,
     compile_circuit_to_device,
 )
 from quantify_scheduler.backends.graph_compilation import (
-    SimpleNodeConfig,
     SerialCompilationConfig,
+    SimpleNodeConfig,
 )
 from quantify_scheduler.compilation import determine_absolute_timing
 from quantify_scheduler.device_under_test.device_element import DeviceElement
@@ -161,7 +160,11 @@ class QuantumDevice(Instrument):
             )
 
         compilation_config = SerialCompilationConfig(
-            name=backend_name, compilation_passes=compilation_passes
+            name=backend_name,
+            device_compilation_config=dev_cfg,
+            hardware_options=[],
+            connectivity=hardware_config,
+            compilation_passes=compilation_passes,
         )
 
         return compilation_config

@@ -6,10 +6,11 @@ from copy import deepcopy
 from typing import Literal, Optional, Union
 
 from quantify_core.utilities import deprecated
+
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler.backends.graph_compilation import (
-    SimpleNodeConfig,
     SerialCompilationConfig,
+    SimpleNodeConfig,
 )
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.importers import import_python_object_from_string
@@ -526,7 +527,11 @@ def qcompile(
             )
 
         compilation_config = SerialCompilationConfig(
-            name=backend_name, compilation_passes=compilation_passes
+            name=backend_name,
+            device_compilation_config=device_config,
+            hardware_options=[],
+            connectivity=hardware_config,
+            compilation_passes=compilation_passes,
         )
         return compilation_config
 

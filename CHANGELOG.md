@@ -13,6 +13,7 @@
 
 ### Merged branches and closed issues
 
+- Compilation - Update `CompilationConfig` with high-level structure (!603, #332)
 - Zhinst backend - Added distortion corrections (!600)
 - Compilation - Add `determine_relative_latencies` that determines latencies for all port-clock combinations in the hardware config relative to the minimum latency (!566, #379)
 - Operations - Introduce `SetClockFrequency` operation (!575, follow-up to !539 !543)
