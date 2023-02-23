@@ -15,7 +15,7 @@ import logging
 import os
 import re
 from contextlib import nullcontext
-from typing import Dict, Generator
+from typing import Dict, Generator, Optional
 
 import numpy as np
 import pytest
@@ -65,6 +65,7 @@ from quantify_scheduler.operations.pulse_library import (
     IdlePulse,
     RampPulse,
     ShiftClockPhase,
+    SetClockFrequency,
     SquarePulse,
 )
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
@@ -79,7 +80,7 @@ REGENERATE_REF_FILES: bool = False  # Set flag to true to regenerate the referen
 
 # --------- Test fixtures ---------
 @pytest.fixture
-def hardware_cfg_baseband():
+def hardware_cfg_baseband(add_lo1):
     yield {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "qcm0": {
@@ -99,10 +100,12 @@ def hardware_cfg_baseband():
                 ],
             },
             "complex_output_1": {
+                "lo_name": "lo1" if add_lo1 else None,
                 "portclock_configs": [{"port": "q1:mw", "clock": "q1.01"}],
             },
         },
         "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
+        "lo1": {"instrument_type": "LocalOscillator", "frequency": 4.8e9, "power": 1},
     }
 
 
@@ -871,16 +874,39 @@ def test_compile_simple(
     )
 
 
+@pytest.mark.parametrize("delete_lo0", [False, True])
 def test_compile_cluster(
-    cluster_only_schedule, compile_config_basic_transmon_qblox_hardware
+    cluster_only_schedule,
+    mock_setup_basic_transmon_with_standard_params,
+    load_example_qblox_hardware_config,
+    delete_lo0: bool,
 ):
     sched = cluster_only_schedule
     sched.add_resource(ClockResource("q5.01", freq=5e9))
 
-    compiler = SerialCompiler(name="compiler")
-    compiler.compile(
-        schedule=sched, config=compile_config_basic_transmon_qblox_hardware
+    mock_setup_basic_transmon_with_standard_params["quantum_device"].hardware_config(
+        load_example_qblox_hardware_config
     )
+    compiler = SerialCompiler(name="compiler")
+    context_mngr = nullcontext()
+    if delete_lo0:
+        del load_example_qblox_hardware_config["lo0"]
+        context_mngr = pytest.raises(RuntimeError)
+    with context_mngr as error:
+        compiler.compile(
+            schedule=sched,
+            config=mock_setup_basic_transmon_with_standard_params[
+                "quantum_device"
+            ].generate_compilation_config(),
+        )
+
+    if delete_lo0:
+        assert (
+            error.value.args[0]
+            == "External local oscillator 'lo0' set to be used by 'seq0' of "
+            "'cluster0_module1' not found! Make sure it is present in the hardware "
+            "configuration."
+        )
 
 
 @pytest.mark.filterwarnings("ignore::FutureWarning")
@@ -945,20 +971,39 @@ def test_compile_measure(
 
 
 @pytest.mark.parametrize(
-    "operation, instruction_to_check",
+    "operation, instruction_to_check, clock_freq_old, add_lo1",
     [
-        (IdlePulse(duration=64e-9), "wait       64"),
-        (Reset("q1"), "wait       65532"),
-        (ShiftClockPhase(clock="q1.01", phase_shift=180.0), "set_ph_delta  500000000"),
-    ],
+        [
+            (IdlePulse(duration=64e-9), f"{'wait':<9}  64", None, add_lo1),
+            (Reset("q1"), f"{'wait':<9}  65532", None, add_lo1),
+            (
+                ShiftClockPhase(clock=clock, phase_shift=180.0),
+                f"{'set_ph_delta'}  500000000",
+                None,
+                add_lo1,
+            ),
+            (
+                SetClockFrequency(clock=clock, clock_freq_new=clock_freq_new),
+                f"{'set_freq':<9}  {round((2e8 + clock_freq_new - clock_freq_old)*4)}",
+                clock_freq_old,
+                add_lo1,
+            ),
+        ]
+        for clock in ["q1.01"]
+        for clock_freq_old in [5e9]
+        for clock_freq_new in [5.001e9]
+        for add_lo1 in [True]
+    ][0],
 )
 def test_compile_clock_operations(
     mock_setup_basic_transmon_with_standard_params,
     hardware_cfg_baseband,
     operation: Operation,
     instruction_to_check: str,
+    clock_freq_old: Optional[float],
+    add_lo1: bool,  # pylint: disable=unused-argument
 ):
-    sched = Schedule("shift_clock_phase_only")
+    sched = Schedule("compile_clock_operations")
     sched.add(operation)
 
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
@@ -968,6 +1013,30 @@ def test_compile_clock_operations(
         schedule=sched,
         config=quantum_device.generate_compilation_config(),
     )
+
+    if operation.__class__ is SetClockFrequency:
+        clock_name = operation.data["pulse_info"][0]["clock"]
+        qubit_name, clock_short_name = clock_name.split(".")
+        qubit = quantum_device.get_element(qubit_name)
+        qubit.clock_freqs[f"f{clock_short_name}"](np.nan)
+
+        with pytest.raises(ValueError) as error:
+            _ = compiler.compile(
+                schedule=sched,
+                config=quantum_device.generate_compilation_config(),
+            )
+        assert (
+            error.value.args[0]
+            == f"Operation '{operation}' contains clock '{clock_name}' with an "
+            f"undefined (initial) frequency; ensure this resource has been "
+            f"added to the schedule or to the device config."
+        )
+
+        sched.add_resource(ClockResource(clock_name, clock_freq_old))
+        _ = compiler.compile(
+            schedule=sched,
+            config=quantum_device.generate_compilation_config(),
+        )
 
     program_lines = compiled_sched.compiled_instructions["qcm0"]["sequencers"]["seq0"][
         "sequence"
@@ -983,7 +1052,6 @@ def test_compile_cz_gate(
     two_qubit_gate_schedule,
 ):
     mock_setup = mock_setup_basic_transmon_with_standard_params
-
     edge_q2_q3 = mock_setup["q2_q3"]
     edge_q2_q3.cz.q2_phase_correction(44)
     edge_q2_q3.cz.q3_phase_correction(63)
@@ -1448,10 +1516,12 @@ def test_multiple_trace_acquisition_error(compile_config_basic_transmon_qblox_ha
     )
 
 
+@pytest.mark.parametrize("add_lo1", [False])
 def test_container_prepare_baseband(
+    mock_setup_basic_transmon,
     baseband_square_pulse_schedule,
     hardware_cfg_baseband,
-    mock_setup_basic_transmon,
+    add_lo1: bool,  # pylint: disable=unused-argument
 ):
     quantum_device = mock_setup_basic_transmon["quantum_device"]
     quantum_device.hardware_config(hardware_cfg_baseband)
@@ -1460,11 +1530,14 @@ def test_container_prepare_baseband(
         schedule=baseband_square_pulse_schedule,
         config=quantum_device.generate_compilation_config(),
     )
+
     container = compiler_container.CompilerContainer.from_hardware_cfg(
-        sched, hardware_cfg_baseband
+        schedule=sched, hardware_cfg=hardware_cfg_baseband
     )
     assign_pulse_and_acq_info_to_devices(
-        sched, container.instrument_compilers, hardware_cfg_baseband
+        schedule=sched,
+        device_compilers=container.instrument_compilers,
+        hardware_cfg=hardware_cfg_baseband,
     )
     container.prepare()
 

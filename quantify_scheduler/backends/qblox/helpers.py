@@ -433,6 +433,44 @@ def get_nco_phase_arguments(phase_deg: float) -> int:
     return round(phase_deg * constants.NCO_PHASE_STEPS_PER_DEG)
 
 
+def get_nco_set_frequency_arguments(frequency_hz: float) -> int:
+    """
+    Converts a frequency in Hz to the int argument the NCO set_freq instruction expects.
+
+    Parameters
+    ----------
+    frequency_hz
+        The frequency in Hz.
+
+    Returns
+    -------
+    :
+        The frequency expressed in steps for the NCO set_freq instruction.
+
+    Raises
+    ------
+    ValueError
+        If the frequency_hz is out of range.
+    """
+    frequency_steps = round(frequency_hz * constants.NCO_FREQ_STEPS_PER_HZ)
+
+    if (
+        frequency_steps < -constants.NCO_FREQ_LIMIT_STEPS
+        or frequency_steps > constants.NCO_FREQ_LIMIT_STEPS
+    ):
+        min_max_frequency_in_hz = (
+            constants.NCO_FREQ_LIMIT_STEPS / constants.NCO_FREQ_STEPS_PER_HZ
+        )
+        raise ValueError(
+            f"Attempting to set NCO frequency. "
+            f"The frequency must be between and including "
+            f"-{min_max_frequency_in_hz:e} Hz and {min_max_frequency_in_hz:e} Hz. "
+            f"Got {frequency_hz:e} Hz."
+        )
+
+    return frequency_steps
+
+
 @dataclasses.dataclass
 class Frequencies:
     clock: Optional[float] = None

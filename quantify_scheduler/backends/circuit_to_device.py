@@ -295,8 +295,8 @@ def set_pulse_and_acquisition_clock(
                 if np.isnan(clock_freq_device_cfg := device_cfg.clocks[clock]):
                     raise ValueError(
                         f"Operation '{operation}' contains clock '{clock}' with an "
-                        f"undefined frequency; ensure this resource has been added to "
-                        f"the schedule or to the device config."
+                        f"undefined (initial) frequency; ensure this resource has been "
+                        f"added to the schedule or to the device config."
                     )
 
                 clock_resource = ClockResource(name=clock, freq=clock_freq_device_cfg)

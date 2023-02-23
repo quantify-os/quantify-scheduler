@@ -12,6 +12,7 @@ from numpy.typing import NDArray
 from qcodes import validators
 
 from quantify_scheduler import Operation
+from quantify_scheduler.backends.qblox import constants as qblox_constants
 from quantify_scheduler.helpers.waveforms import area_pulses
 from quantify_scheduler.resources import BasebandClockResource
 
@@ -121,6 +122,57 @@ class ResetClockPhase(Operation):
                 FutureWarning,
             )
             super().__init__(name=data["name"], data=data)
+
+    def __str__(self) -> str:
+        pulse_info = self.data["pulse_info"][0]
+        return self._get_signature(pulse_info)
+
+
+class SetClockFrequency(Operation):
+    """
+    Operation that sets updates the frequency of a clock. This is a low-level operation
+    and therefore depends on the backend.
+
+    Currently only implemented for Qblox backend, refer to
+    :class:`~quantify_scheduler.backends.qblox.operation_handling.virtual.NcoSetClockFrequencyStrategy`
+    for more details.
+    """
+
+    def __init__(
+        self,
+        clock: str,
+        clock_freq_new: float,
+        t0: float = 0,
+        duration: float = qblox_constants.NCO_SET_FREQ_WAIT * 1e-9,
+    ):
+        """
+
+        Parameters
+        ----------
+        clock
+            The clock for which a new frequency is to be set.
+        clock_freq_new
+            The new frequency in Hz.
+        t0
+            Time in seconds when to execute the command relative to the start time of
+            the Operation in the Schedule.
+        duration
+            The duration of the operation in seconds.
+        """
+        super().__init__(name=self.__class__.__name__)
+        self.data["pulse_info"] = [
+            {
+                "wf_func": None,
+                "t0": t0,
+                "clock": clock,
+                "clock_freq_new": clock_freq_new,
+                "clock_freq_old": None,
+                "interm_freq_old": None,
+                "port": None,
+                "duration": duration,
+            }
+        ]
+        self._update()
 
     def __str__(self) -> str:
         pulse_info = self.data["pulse_info"][0]

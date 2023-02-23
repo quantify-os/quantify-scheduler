@@ -18,12 +18,18 @@ import networkx as nx
 from matplotlib.axes import Axes
 from pydantic import validator
 
-from quantify_scheduler import CompiledSchedule, Schedule
+from quantify_scheduler.schedules.schedule import (
+    CompiledSchedule,
+    Schedule,
+)  # Using full import path to prevent circular import
 from quantify_scheduler.structure.model import (
     DataStructure,
     deserialize_class,
     deserialize_function,
 )
+
+if TYPE_CHECKING:
+    from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 
 
 class CompilationError(RuntimeError):

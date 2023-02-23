@@ -7,6 +7,7 @@ from __future__ import annotations
 import dataclasses
 import json
 import logging
+import warnings
 from abc import ABC, ABCMeta, abstractmethod
 from collections import defaultdict, deque
 from functools import partial
@@ -34,10 +35,10 @@ from quantify_scheduler.backends.qblox import (
     constants,
     driver_version_check,
     helpers,
+    instrument_compilers,
     q1asm_instructions,
     register_manager,
 )
-
 from quantify_scheduler.backends.qblox.operation_handling.acquisitions import (
     AcquisitionStrategyPartial,
 )
@@ -57,7 +58,9 @@ from quantify_scheduler.backends.types.qblox import (
     StaticHardwareProperties,
     MarkerConfiguration,
 )
+
 from quantify_scheduler.enums import BinMode
+from quantify_scheduler.operations.pulse_library import SetClockFrequency
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.qblox.instrument_compilers import LocalOscillator
@@ -179,8 +182,8 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
             the top layer of hardware config.
         """
         super().__init__(parent, name, total_play_time, hw_mapping, latency_corrections)
-        self._pulses = defaultdict(list)
-        self._acquisitions = defaultdict(list)
+        self._pulses: Dict[Tuple[str, str], List[OpInfo]] = defaultdict(list)
+        self._acquisitions: Dict[Tuple[str, str], List[OpInfo]] = defaultdict(list)
 
     @property
     @abstractmethod
@@ -703,7 +706,7 @@ class Sequencer:
     def generate_qasm_program(
         self,
         total_sequence_time: float,
-        repetitions: Optional[int] = 1,
+        repetitions: int = 1,
     ) -> str:
         """
         Generates a QASM program for a sequencer. Requires the awg and acq dicts to
@@ -739,6 +742,18 @@ class Sequencer:
         -------
         :
             The generated QASM program.
+
+        Warns
+        -----
+        RuntimeWarning
+            When number of instructions in the generated QASM program exceeds the
+            maximum supported number of instructions for sequencers in the type of
+            module.
+
+        Raises
+        ------
+        RuntimeError
+            Upon `total_sequence_time` exceeding :attr:`.QASMProgram.elapsed_time`.
         """
         loop_label = "start"
         marker_config = self.static_hw_properties.marker_configuration
@@ -808,6 +823,23 @@ class Sequencer:
             self.qasm_hook_func(qasm)
 
         self._settings.integration_length_acq = qasm.integration_length_acq
+
+        max_instructions = (
+            constants.MAX_NUMBER_OF_INSTRUCTIONS_QCM
+            if self.parent.__class__
+            in [instrument_compilers.QcmModule, instrument_compilers.QcmRfModule]
+            else constants.MAX_NUMBER_OF_INSTRUCTIONS_QRM
+        )
+        if (num_instructions := len(qasm.instructions)) > max_instructions:
+            warnings.warn(
+                f"Number of instructions ({num_instructions}) compiled for "
+                f"'{self.name}' of {self.parent.__class__.__name__} "
+                f"'{self.parent.name}' exceeds the maximum supported number of "
+                f"instructions in Q1ASM programs for {self.parent.__class__.__name__} "
+                f"({max_instructions}).",
+                RuntimeWarning,
+            )
+
         return str(qasm)
 
     def _initialize_append_mode_registers(
@@ -1220,19 +1252,36 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         if len(self._acquisitions) > 0 and not self.supports_acquisition:
             raise RuntimeError(
-                f"Attempting to add acquisitions to {self.__class__} {self.name}, "
+                f"Attempting to add acquisitions to  {self.__class__} {self.name}, "
                 f"which is not supported by hardware."
             )
 
+        compiler_container = self.parent if self.is_pulsar else self.parent.parent
+
+        portclock: Tuple[str, str]
+        pulse_data_list: List[OpInfo]
         for portclock, pulse_data_list in self._pulses.items():
             for seq in self.sequencers.values():
-                instr_gen_pulses = seq.instruction_generated_pulses_enabled
                 if seq.portclock == portclock or (
                     portclock[0] is None and portclock[1] == seq.clock
                 ):
+                    clock_freq = compiler_container.resources.get(seq.clock, {}).get(
+                        "freq", None
+                    )
+
+                    pulse_data: OpInfo
+                    for pulse_data in pulse_data_list:
+                        if pulse_data.name == SetClockFrequency.__name__:
+                            pulse_data.data.update(
+                                {
+                                    "clock_freq_old": clock_freq,
+                                    "interm_freq_old": seq.frequency,
+                                }
+                            )
+
                     op_info_to_op_strategy_func = partial(
                         get_operation_strategy,
-                        instruction_generated_pulses_enabled=instr_gen_pulses,
+                        instruction_generated_pulses_enabled=seq.instruction_generated_pulses_enabled,
                         io_mode=seq.io_mode,
                     )
                     strategies_for_pulses = map(
@@ -1245,20 +1294,20 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                     for pulse_strategy in strategies_for_pulses:
                         seq.pulses.append(pulse_strategy)
 
+        acq_data_list: List[OpInfo]
         for portclock, acq_data_list in self._acquisitions.items():
             for seq in self.sequencers.values():
-                instr_gen_pulses = seq.instruction_generated_pulses_enabled
                 if seq.portclock == portclock:
-                    partial_func = partial(
+                    op_info_to_op_strategy_func = partial(
                         get_operation_strategy,
-                        instruction_generated_pulses_enabled=instr_gen_pulses,
+                        instruction_generated_pulses_enabled=seq.instruction_generated_pulses_enabled,
                         io_mode=seq.io_mode,
                     )
-                    func_map = map(
-                        partial_func,
+                    strategies_for_acquisitions = map(
+                        op_info_to_op_strategy_func,
                         acq_data_list,
                     )
-                    seq.acquisitions = list(func_map)
+                    seq.acquisitions = list(strategies_for_acquisitions)
 
     @abstractmethod
     def assign_frequencies(self, sequencer: Sequencer):
@@ -1365,10 +1414,10 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         self._configure_input_gains()
         self._configure_mixer_offsets()
         self._construct_sequencers()
-        self.distribute_data()
-        self._ensure_single_scope_mode_acquisition_sequencer()
         for seq in self.sequencers.values():
             self.assign_frequencies(seq)
+        self.distribute_data()
+        self._ensure_single_scope_mode_acquisition_sequencer()
         self.assign_attenuation()
 
     def _configure_input_gains(self):
