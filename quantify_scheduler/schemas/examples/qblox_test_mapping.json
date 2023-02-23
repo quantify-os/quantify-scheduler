@@ -46,12 +46,12 @@
                 ]
             },
             "complex_output_1": {
+                "lo_freq": 5e9,
                 "output_att": 6,
                 "portclock_configs": [
                     {
                         "port": "q6:mw",
-                        "clock": "q6.01",
-                        "interm_freq": 50e6
+                        "clock": "q6.01"
                     }
                 ]
             }

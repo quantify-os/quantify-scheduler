@@ -1,7 +1,9 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Helper functions for Qblox backend."""
+import dataclasses
 import re
+import warnings
 from copy import deepcopy
 from collections import UserDict
 from typing import Any, Dict, Iterable, List, Literal, Optional, Tuple, Union
@@ -429,6 +431,109 @@ def get_nco_phase_arguments(phase_deg: float) -> int:
     """
     phase_deg %= 360
     return round(phase_deg * constants.NCO_PHASE_STEPS_PER_DEG)
+
+
+@dataclasses.dataclass
+class Frequencies:
+    clock: Optional[float] = None
+    LO: Optional[float] = None
+    IF: Optional[float] = None
+
+
+def determine_clock_lo_interm_freqs(
+    clock_freq: float,
+    lo_freq: Union[float, None],
+    interm_freq: Union[float, None],
+    downconverter_freq: Optional[float] = None,
+    mix_lo: bool = True,
+) -> Frequencies:
+    """
+    .. warning::
+        Using `downconverter_freq` requires custom Qblox hardware, do not use otherwise.
+
+    From known frequency for the local oscillator or known intermodulation frequency,
+    determine any missing frequency, after optionally applying `downconverter_freq` to
+    the clock frequency.
+
+    If `mix_lo` is ``True``, the following relation is obeyed:
+    :math:`f_{RF} = f_{LO} + f_{IF}`.
+
+    If `mix_lo` is ``False``, :math:`f_{RF} = f_{LO}` is upheld.
+
+    Parameters
+    ----------
+    clock_freq : float
+        Frequency of the clock.
+    lo_freq : Union[float, None]
+        Frequency of the local oscillator (LO).
+    interm_freq : Union[float, None]
+        Intermodulation frequency (IF), the frequency of the numerically controlled
+        oscillator (NCO).
+    downconverter_freq : Optional[float]
+        Frequency for downconverting the clock frequency, using:
+        :math:`f_\mathrm{out} = f_\mathrm{downconverter} - f_\mathrm{in}`.
+    mix_lo : bool
+        Flag indicating whether IQ mixing is enabled with the LO.
+
+    Returns
+    -------
+    :
+        :class:`.Frequencies` object containing the determined LO and IF frequencies and
+        the optionally downconverted clock frequency.
+
+    Warns
+    -----
+    ValueWarning
+        In case `downconverter_freq` is set equal to 0, warns to unset via
+        ``null``/``None`` instead.
+    Raises
+    ------
+    ValueError
+        In case `downconverter_freq` is less than 0.
+    ValueError
+        In case `downconverter_freq` is less than `clock_freq`.
+    """
+
+    def _downconvert_clock(downconverter_freq: float, clock_freq: float) -> float:
+        if downconverter_freq == 0:
+            warnings.warn(
+                "Downconverter frequency 0 supplied. To unset 'downconverter_freq', "
+                "set to `null` (json) / `None` instead in hardware configuration.",
+                RuntimeWarning,
+            )
+
+        if downconverter_freq < 0:
+            raise ValueError(
+                f"Downconverter frequency must be positive ({downconverter_freq=:e})"
+            )
+
+        if downconverter_freq < clock_freq:
+            raise ValueError(
+                f"Downconverter frequency must be greater than clock frequency "
+                f"({downconverter_freq=:e}, {clock_freq=:e})"
+            )
+
+        return downconverter_freq - clock_freq
+
+    freqs = Frequencies(clock=clock_freq, LO=lo_freq, IF=interm_freq)
+
+    if downconverter_freq is not None:
+        freqs.clock = _downconvert_clock(
+            downconverter_freq=downconverter_freq,
+            clock_freq=clock_freq,
+        )
+
+    if not mix_lo:
+        freqs.LO = freqs.clock
+        freqs.IF = None
+    else:
+        if interm_freq is not None:
+            freqs.LO = freqs.clock - interm_freq
+
+        if lo_freq is not None:
+            freqs.IF = freqs.clock - lo_freq
+
+    return freqs
 
 
 def generate_port_clock_to_device_map(

@@ -6,12 +6,16 @@
 
 - Acquisition - `InstrumentCoordinator.retrieve_acquisition` returns an `xarray.Dataset` (!550, #362)
 - Qblox backend - Set the `marker_ovr_en` QCoDeS parameter by default to `False` before schedule execution, so that the markers are always controlled using the `MarkerConfiguration` (!576)
+- Qblox backend - Set `"downconverter_freq"` to `null` (json) or `None` to deactivate (`0` no longer deactivates it) (!574)
+- Qblox backend - The NCO is now enabled when setting `sequencer.frequency` to `0` (`0` no longer disables it) (!574)
+  - For baseband modules without external LO, NCO is still permanently disabled by setting `"interm_freq"` to `0` in the hardware config
 - Visualization - Deprecate `visualization` module and its functions `circuit_diagram_matplotlib`, `pulse_diagram_matplotlib`, and `pulse_diagram_plotly`. Create `_visualization` submodule within `schedules`. Make plots via `ScheduleBase` methods (!599). Move visualization tests to `schedules` directory, and make tests for `ScheduleBase` plotting methods
 
-### Merged branches and closed issue
+### Merged branches and closed issues
 
 - Zhinst backend - Added distortion corrections (!600)
 - Compilation - Add `determine_relative_latencies` that determines latencies for all port-clock combinations in the hardware config relative to the minimum latency (!566, #379)
+- Qblox backend - Introduce `qblox.helpers.determine_clock_lo_interm_freqs` and use in `QbloxBasebandModule.assign_frequencies` and `QbloxRFModule.assign_frequencies` (!574) 
 - Documentation - Qblox backend reference guide overhaul and fix docs generation warnings (!587)
 - JSON utilities - Introduce serialization of python objects to a dotted import string, next to the already existing deserialization (`import_python_object_from_string`). Serialization now happens automatically in `DataStructure`s, deserialization is implemented using Pydantic validators in the configuration models.
 

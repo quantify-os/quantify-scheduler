@@ -30,7 +30,6 @@ from qblox_instruments import (
 from qcodes.instrument import Instrument, InstrumentChannel, InstrumentModule
 from xarray import DataArray, Dataset
 
-# pylint: disable=no-name-in-module
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.enums import BinMode
