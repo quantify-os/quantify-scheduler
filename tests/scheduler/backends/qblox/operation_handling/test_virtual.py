@@ -10,6 +10,7 @@
 # pylint: disable=too-many-locals
 # pylint: disable=too-many-arguments
 
+from contextlib import nullcontext
 from typing import Tuple
 
 import pytest
@@ -226,20 +227,21 @@ class TestNcoSetClockFrequencyStrategy:
         )
 
         # act
-        try:
+        context_mngr = nullcontext()
+        interm_freq_new = interm_freq_old + clock_freq_new - clock_freq_old
+        limit = 500e6
+        if interm_freq_new < -limit or interm_freq_new > limit:
+            context_mngr = pytest.raises(ValueError)
+        with context_mngr as error:
             strategy.insert_qasm(qasm)
-        except ValueError as error:  # TODO: use nullcontext
-            interm_freq_new = interm_freq_old + clock_freq_new - clock_freq_old
-            limit = 500e6
-            if interm_freq_new < -limit or interm_freq_new > limit:
-                assert (
-                    str(error) == f"Attempting to set NCO frequency. "
-                    f"The frequency must be between and including "
-                    f"-{limit:e} Hz and {limit:e} Hz. "
-                    f"Got {interm_freq_new:e} Hz."
-                )
-                return
-            raise
 
         # assert
-        assert extract_instruction_and_args(qasm) == expected_instruction
+        if interm_freq_new < -limit or interm_freq_new > limit:
+            assert (
+                str(error.value) == f"Attempting to set NCO frequency. "
+                f"The frequency must be between and including "
+                f"-{limit:e} Hz and {limit:e} Hz. "
+                f"Got {interm_freq_new:e} Hz."
+            )
+        else:
+            assert extract_instruction_and_args(qasm) == expected_instruction
