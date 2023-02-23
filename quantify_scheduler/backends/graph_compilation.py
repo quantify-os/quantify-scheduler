@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 from __future__ import annotations
+
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -17,11 +18,8 @@ import matplotlib.pyplot as plt
 import networkx as nx
 from matplotlib.axes import Axes
 from pydantic import validator
-
-from quantify_scheduler.schedules.schedule import (
-    CompiledSchedule,
-    Schedule,
-)  # Using full import path to prevent circular import
+from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
+from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 from quantify_scheduler.structure.model import (
     DataStructure,
     deserialize_class,
@@ -72,16 +70,52 @@ class SimpleNodeConfig(DataStructure):
         return fun  # type: ignore
 
 
+class HardwareOption(DataStructure):
+    """
+    Base class for hardware options, such as
+    :class:`~quantify_scheduler.backends.corrections.LatencyCorrections`.
+    """
+
+
+class Connectivity(DataStructure):
+    """
+    Describes how the instruments are connected to port-clock combinations on the
+    quantum device.
+    """
+
+
 # pylint: disable=too-few-public-methods
 class CompilationConfig(DataStructure):
     """
-    Base class for a CompilationConfig.
-    Subclassing is generally required to create useful configs, here extra fields can
-    be defined.
+    Base class for a compilation config. Subclassing is generally required to create
+    useful compilation configs, here extra fields can be defined.
+
+    Parameters
+    ----------
+    name
+        The name of the compiler.
+    version
+        The version of the `CompilationConfig` to facilitate backwards compatibility.
+    backend
+        A reference string to the `QuantifyCompiler` class used in the compilation.
+    device_compilation_config
+        The `DeviceCompilationConfig` used in the compilation from the quantum-circuit
+        layer to the quantum-device layer.
+    hardware_options
+        A list of `HardwareOption`s used in the compilation from the quantum-device
+        layer to the control-hardware layer.
+    connectivity
+        Datastructure representing how the port-clocks on the quantum device are
+        connected to the control hardware.
     """
 
     name: str
+    version: str = "v0.1"
     backend: Type[QuantifyCompiler]
+    device_compilation_config: Optional[Union[DeviceCompilationConfig, Dict]] = None
+    hardware_options: Optional[List[HardwareOption]] = None
+    connectivity: Optional[Union[Connectivity, Dict]] = None
+    # Dicts for legacy support for the old hardware config and device config
 
     @validator("backend", pre=True)
     @classmethod
