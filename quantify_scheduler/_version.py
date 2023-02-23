@@ -23,7 +23,7 @@ def get_version(version_file=STATIC_VERSION_FILE):
         if not version:
             version = get_version_from_git_archive(version_info)
         if not version:
-            version = Version("unknown", None, None)
+            version = Version("0.0.0.dev0", None, None)
         return pep440_format(version)
     else:
         return version
