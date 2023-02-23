@@ -13,7 +13,7 @@ package_root = os.path.dirname(os.path.realpath(__file__))
 package_name = os.path.basename(package_root)
 
 STATIC_VERSION_FILE = "_static_version.py"
-
+UNKNOWN_VERSION = "0.0.0.dev0"
 
 def get_version(version_file=STATIC_VERSION_FILE):
     version_info = get_static_version_info(version_file)
@@ -23,7 +23,7 @@ def get_version(version_file=STATIC_VERSION_FILE):
         if not version:
             version = get_version_from_git_archive(version_info)
         if not version:
-            version = Version("0.0.0.dev0", None, None)
+            version = Version(UNKNOWN_VERSION, None, None)
         return pep440_format(version)
     else:
         return version
@@ -91,7 +91,7 @@ def get_version_from_git():
     except ValueError:  # No tags, only the git hash
         # prepend 'g' to match with format returned by 'git describe'
         git = "g{}".format(*description)
-        release = "unknown"
+        release = UNKNOWN_VERSION
         dev = None
 
     labels = []
@@ -136,7 +136,7 @@ def get_version_from_git_archive(version_info):
         release, *_ = sorted(version_tags)  # prefer e.g. "2.0" over "2.0rc1"
         return Version(release, dev=None, labels=None)
     else:
-        return Version("unknown", dev=None, labels=["g{}".format(git_hash)])
+        return Version(UNKNOWN_VERSION, dev=None, labels=["g{}".format(git_hash)])
 
 
 __version__ = get_version()
