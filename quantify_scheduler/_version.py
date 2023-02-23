@@ -15,6 +15,7 @@ package_name = os.path.basename(package_root)
 STATIC_VERSION_FILE = "_static_version.py"
 UNKNOWN_VERSION = "0.0.0.dev0"
 
+
 def get_version(version_file=STATIC_VERSION_FILE):
     version_info = get_static_version_info(version_file)
     version = version_info["version"]
