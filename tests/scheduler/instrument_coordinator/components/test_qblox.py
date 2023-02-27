@@ -511,6 +511,9 @@ def test_init_qcodes_settings(
             mocker.patch.object(
                 dev.instrument[f"sequencer{seq}"].parameters["gain_awg_path1"], "set"
             )
+            mocker.patch.object(
+                dev.instrument[f"sequencer{seq}"].parameters["sync_en"], "set"
+            )
 
     hardware_cfg = deepcopy(load_example_qblox_hardware_config)
 
@@ -551,6 +554,9 @@ def test_init_qcodes_settings(
         qcm0.instrument["sequencer0"].parameters[
             f"gain_awg_path{path}"
         ].set.assert_called_once_with(qcm0_gain[path])
+
+    qcm0.instrument["sequencer0"].parameters[f"sync_en"].set.assert_called_with(True)
+    qrm2.instrument["sequencer0"].parameters[f"sync_en"].set.assert_called_with(True)
 
     qrm2_offset = defaultdict(lambda: 0.0)
     qrm2_gain = defaultdict(lambda: 1.0)
@@ -721,10 +727,12 @@ def test_prepare_cluster_rf(
     qcm_rf = ic_cluster.instrument.module2
     mocker.patch.object(qcm_rf.parameters["out0_att"], "set")
     mocker.patch.object(qcm_rf.parameters["out1_att"], "set")
+    mocker.patch.object(qcm_rf[f"sequencer0"].parameters["sync_en"], "set")
 
     qrm_rf = ic_cluster.instrument.module4
     mocker.patch.object(qrm_rf.parameters["out0_att"], "set")
     mocker.patch.object(qrm_rf.parameters["in0_att"], "set")
+    mocker.patch.object(qrm_rf[f"sequencer0"].parameters["sync_en"], "set")
 
     ic_cluster.force_set_parameters(force_set_parameters)
     ic_cluster.instrument.reference_source("internal")  # Put it in a known state
@@ -773,6 +781,7 @@ def test_prepare_cluster_rf(
                 hw_config_param[1]
             ]
         )
+    qcm_rf["sequencer0"].parameters[f"sync_en"].set.assert_called_with(True)
 
     for qcodes_param, hw_config_param in [
         ("out0_att", ["complex_output_0", "output_att"]),
@@ -783,6 +792,7 @@ def test_prepare_cluster_rf(
                 hw_config_param[1]
             ]
         )
+    qrm_rf["sequencer0"].parameters[f"sync_en"].set.assert_called_with(True)
 
 
 def test_prepare_rf(
