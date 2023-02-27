@@ -538,6 +538,11 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
             For global settings, the options are under different keys, e.g. :code:`"settings"`.
         """
 
+        for seq_idx in range(self._hardware_properties.number_of_sequencers):
+            self._set_parameter(
+                self.instrument[f"sequencer{seq_idx}"], "sync_en", False
+            )
+
         acq_duration = {}
         for seq_name, seq_cfg in program["sequencers"].items():
             if seq_name in self._seq_name_to_idx_map:
@@ -573,11 +578,6 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
                 )
         else:
             self._acquisition_manager = None
-
-        for seq_idx in range(self._hardware_properties.number_of_sequencers):
-            self._set_parameter(
-                self.instrument[f"sequencer{seq_idx}"], "sync_en", False
-            )
 
         if (settings_entry := program.get("settings")) is not None:
             module_settings = self._hardware_properties.settings_type.from_dict(
