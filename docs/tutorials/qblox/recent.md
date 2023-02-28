@@ -1,8 +1,17 @@
 # Recent interface changes
 
-## Unreleased: Marker behavior for RF Cluster modules
+## 0.12.0: Marker behavior for RF modules; Custom Qblox downconverter
 
-For the Qblox QCM-RF and QRM-RF modules, the marker override QCoDeS parameter `marker_ovr_en` is now always set to `False` before the execution of a schedule. This way, the markers behave as expected, even if they were previously overridden. Please refer to the [qblox-instruments documentation](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/documentation/pulsar.html#marker-output-channels) for more information about the `marker_ovr_en` and `marker_ovr_value` parameters.
+1. For the Qblox QCM-RF and QRM-RF modules, the marker override QCoDeS parameter `marker_ovr_en`
+   is now always set to `False` before the execution of a schedule. This way, the markers
+   behave as expected, even if they were previously overridden.
+   Please refer to the
+   [qblox-instruments documentation](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/documentation/pulsar.html#marker-output-channels) for more information about the `marker_ovr_en` and `marker_ovr_value` parameters.
+
+2. For deactivating the custom Qblox downconverter, set `downconverter_freq` to `null` (json) or `None` (instead of `0` before).
+    ```{note}
+    Using `downconverter_freq` requires custom Qblox hardware, do not use otherwise.
+    ``` 
 
 ## 0.11.1: Input attenuation parameter both for input and output
 
