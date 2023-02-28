@@ -50,7 +50,6 @@ dependencies = [
     "pathvalidate",
     "plotly",
     "pydantic",
-    "pyqtgraph==0.12.4", # 0.13 causes test to fail. Fixed in core, remove with next quantify-core release
     "qblox-instruments==0.8", # Prevent upgrade upon minor release while allowing for installing patch releases
     "quantify_core>=0.6.5", # For deprecation hints shown to end-users by default
     "qcodes>=0.32.0", # 0.32.0: introduces InstrumentModule
