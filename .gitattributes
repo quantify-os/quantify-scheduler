@@ -1,4 +1,5 @@
 # Ensure all text files are committed with unix-style line endings
 * text=auto eol=lf
+CHANGELOG.md merge=union
 AUTHORS.md merge=union
 quantify_scheduler/_static_version.py export-subst
