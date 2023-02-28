@@ -15,7 +15,7 @@
     - Rename it, commit & push:
 
       ```bash
-      NEW_VERSION=$(python setup.py --version)
+      NEW_VERSION=X.Y.Z
       echo $NEW_VERSION
 
       mv frozen_requirements/frozen-requirements.txt frozen_requirements/frozen-requirements-$NEW_VERSION.txt
@@ -33,7 +33,7 @@
       echo $NEW_VERSION
 
       git tag -a "v${NEW_VERSION}"  # Note: should be vX.Y.Z, not X.Y.Z
-      # You will be prompted for a tag description here. Provide a list of highlights.
+      # You will be prompted for a tag description here. Provide a summary of the release.
       git push origin "v${NEW_VERSION}"
       ```
     <!-- - Future TODO: finish automation of this step in `.gitlab-ci.yml`. -->
@@ -41,7 +41,7 @@
     <!--     - NB this can only be done after unix and windows test & docs jobs pass. -->
 
 
-1. [ ] Add `Unreleased` chapter back to `CHANGELOG.md`. Commit and push it to `main` directly (no need to review it). Commit message could be, for example, `start development of vX.Y.(Z+1)`.
+1. [ ] Add `Unreleased` chapter back to `CHANGELOG.md`. Commit and push it to `main` directly (no need to review it). Commit message could be, for example, `Start development of vX.Y.(Z+1)`.
 
 1. [ ] Create and push an **annotated** tag `vX.Y.(Z+1).dev` pointing to the commit above.  Commit annotation could be, for example, `Start development of vX.Y.Z+1`.
     <!-- Note: if we are following semver, this should be rather vX.(Y+1).0.dev, and bugfixes need to go into a separate bugfix branch for each minor release a-la `stable/vX.Y`.
