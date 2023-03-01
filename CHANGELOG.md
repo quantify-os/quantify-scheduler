@@ -4,6 +4,8 @@
 
 ### Breaking changes
 
+- Compilation - `CompilationNode`s take the full `CompilationConfig` as input (!615, #405)
+
 ### Merged branches and closed issues
 
 ## 0.12.0 (2023-02-28)
