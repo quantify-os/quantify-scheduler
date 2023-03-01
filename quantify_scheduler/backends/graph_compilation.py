@@ -568,7 +568,7 @@ class SerialCompiler(QuantifyCompiler):
                 ) from e
 
         # exclude the input and output from the path to use to compile
-        for i, node in enumerate(path):
+        for node in path:
             schedule = node.compile(
                 schedule=schedule,
                 compilation_config=compilation_config,
