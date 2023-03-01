@@ -563,10 +563,16 @@ class SerialCompiler(QuantifyCompiler):
 
         # exclude the input and output from the path to use to compile
         for i, node in enumerate(path):
-            schedule = node.compile(
-                schedule=schedule,
-                config=config.compilation_passes[i].compilation_options,
-            )
+            if config.compilation_passes[i].name == "circuit_to_device":
+                schedule = node.compile(
+                    schedule=schedule,
+                    config=config,
+                )
+            else:
+                schedule = node.compile(
+                    schedule=schedule,
+                    config=config.compilation_passes[i].compilation_options,
+                )
 
         # mark the schedule as "Compiled" before returning at the final step.
         # in the future CompiledSchedule will likely become an attribute of a

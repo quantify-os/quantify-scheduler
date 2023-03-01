@@ -105,7 +105,6 @@ class QuantumDevice(Instrument):
             SimpleNodeConfig(
                 name="circuit_to_device",
                 compilation_func=dev_cfg.backend,
-                compilation_options=dev_cfg,
             ),
             SimpleNodeConfig(
                 name="set_pulse_and_acquisition_clock",
