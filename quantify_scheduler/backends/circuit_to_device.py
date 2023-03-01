@@ -149,7 +149,7 @@ def set_pulse_and_acquisition_clock(
     """
     if config and device_cfg:
         raise ValueError(
-            f"compile_circuit_to_device was called with both a config={config} and a device_cfg={device_cfg}. "
+            f"set_pulse_and_acquisition_clock was called with both a config={config} and a device_cfg={device_cfg}. "
             "Please make sure this function is called with either of the two (CompilationConfig recommended)."
         )
     # In the graph-based compilation, CompilationNodes should accept the full
