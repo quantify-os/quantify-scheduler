@@ -49,16 +49,10 @@ class SimpleNodeConfig(DataStructure):
     compilation_func
         the function to perform the compilation pass as an
         importable string (e.g., "package_name.my_module.function_name").
-    compilation_options
-        the options passed to the compilation function along with the intermediate
-        representation.
     """
 
     name: str
     compilation_func: Callable[[Schedule, Any], Schedule]
-    # N.B. custom node configs could inherit and put a stronger type check/schema
-    # on options for a particular node.
-    compilation_options: Optional[Dict]
 
     @validator("compilation_func", pre=True)
     @classmethod
