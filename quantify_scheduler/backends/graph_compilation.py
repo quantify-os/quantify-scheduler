@@ -563,36 +563,15 @@ class SerialCompiler(QuantifyCompiler):
 
         # exclude the input and output from the path to use to compile
         for i, node in enumerate(path):
-            if config.compilation_passes[i].name == "circuit_to_device":
+            if config.compilation_passes[i].name == "determine_absolute_timing":
                 schedule = node.compile(
                     schedule=schedule,
-                    config=config,
-                )
-            elif config.compilation_passes[i].name == "qblox_hardware_compile":
-                schedule = node.compile(
-                    schedule=schedule,
-                    config=config,
-                )
-            elif config.compilation_passes[i].name == "zhinst_hardware_compile":
-                schedule = node.compile(
-                    schedule=schedule,
-                    config=config,
-                )
-            elif config.compilation_passes[i].name == "set_pulse_and_acquisition_clock":
-                schedule = node.compile(
-                    schedule=schedule,
-                    config=config,
-                )
-            # needed for backwards compatibility qcompile:
-            elif config.compilation_passes[i].name == "add_pulse_information_transmon":
-                schedule = node.compile(
-                    schedule=schedule,
-                    config=config,
+                    config=None,
                 )
             else:
                 schedule = node.compile(
                     schedule=schedule,
-                    config=config.compilation_passes[i].compilation_options,
+                    config=config,
                 )
 
         # mark the schedule as "Compiled" before returning at the final step.
