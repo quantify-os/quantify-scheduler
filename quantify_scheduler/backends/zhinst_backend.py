@@ -738,7 +738,7 @@ def compile_backend(
         )
     # In the graph-based compilation, CompilationNodes should accept the full
     # CompilationConfig as input (#405, !615, &1)
-    if isinstance(config, CompilationConfig):
+    if config:
         hardware_cfg = config.connectivity
 
     _validate_schedule(schedule)

@@ -208,7 +208,7 @@ def add_pulse_information_transmon(
         )
     # In the graph-based compilation, CompilationNodes should accept the full
     # CompilationConfig as input (#405, !615, &1)
-    if isinstance(config, CompilationConfig):
+    if config:
         device_cfg = config.device_compilation_config
 
     validate_config(device_cfg, scheme_fn="transmon_cfg.json")

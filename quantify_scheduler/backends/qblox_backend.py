@@ -56,7 +56,7 @@ def hardware_compile(
         )
     # In the graph-based compilation, CompilationNodes should accept the full
     # CompilationConfig as input (#405, !615, &1)
-    if isinstance(config, CompilationConfig):
+    if config:
         hardware_cfg = config.connectivity
 
     converted_hw_config = helpers.convert_hw_config_to_portclock_configs_spec(

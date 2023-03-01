@@ -51,7 +51,7 @@ def compile_circuit_to_device(
         )
     # In the graph-based compilation, CompilationNodes should accept the full
     # CompilationConfig as input (#405, !615, &1)
-    if isinstance(config, CompilationConfig):
+    if config:
         device_cfg = config.device_compilation_config
 
     if not isinstance(device_cfg, DeviceCompilationConfig):
@@ -154,7 +154,7 @@ def set_pulse_and_acquisition_clock(
         )
     # In the graph-based compilation, CompilationNodes should accept the full
     # CompilationConfig as input (#405, !615, &1)
-    if isinstance(config, CompilationConfig):
+    if config:
         device_cfg = config.device_compilation_config
 
     if not isinstance(device_cfg, DeviceCompilationConfig):
