@@ -23,7 +23,7 @@ In the previous tutorials, experiments were created on the {ref}`quantum-device 
 operations are defined in terms of explicit signals and locations on chip, rather than the qubit and the intended operation.
 To work at a greater level of abstraction, `quantify_scheduler` allows creating operations on the
 {ref}`quantum-circuit level<sec-user-guide-quantum-circuit>`.
-Instead of signals, clocks, and ports, operations are defined by the the effect they have on specific qubits. This representation of the schedules can be compiled to the quantum-device level to create the pulse schemes.
+Instead of signals, clocks, and ports, operations are defined by the effect they have on specific qubits. This representation of the schedules can be compiled to the quantum-device level to create the pulse schemes.
 
 In this tutorial we show how to define operations on the {ref}`quantum-circuit level<sec-user-guide-quantum-circuit>`, combine them into schedules, and show their circuit-level visualization.
 We go through the configuration file needed to compile the schedule to the quantum-device level and show how these configuration files can be created automatically and dynamically.
@@ -282,7 +282,7 @@ dut, dut.elements()
 
 ```
 
-The different transmon properties can be set through attributes of the {class}`~quantify_scheduler.device_under_test.transmon_element.BasicTransmonElement` class instanc, e.g.:
+The different transmon properties can be set through attributes of the {class}`~quantify_scheduler.device_under_test.transmon_element.BasicTransmonElement` class instance, e.g.:
 
 ```{code-cell} ipython3
 qubit.clock_freqs.f01(6e9)
