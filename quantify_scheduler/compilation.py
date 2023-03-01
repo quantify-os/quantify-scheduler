@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 def determine_absolute_timing(
     schedule: Schedule,
-    config: Optional[CompilationConfig] = None,
+    compilation_config: Optional[CompilationConfig] = None,
     time_unit: Literal[
         "physical", "ideal", None
     ] = "physical",  # should be included in CompilationConfig
@@ -54,7 +54,7 @@ def determine_absolute_timing(
     ----------
     schedule
         The schedule for which to determine timings.
-    config
+    compilation_config
         CompilationConfig used in the :class:`~QuantifyCompiler`, which is currently
         not used in this compilation step.
     time_unit
@@ -158,7 +158,7 @@ def add_pulse_information_transmon(
     schedule: Schedule,
     device_cfg: Optional[dict] = None,
     # CompilationConfig for forwards compatibility (if this function is used in a CompilationNode):
-    config: Optional[CompilationConfig] = None,
+    compilation_config: Optional[CompilationConfig] = None,
 ) -> Schedule:
     # pylint: disable=line-too-long
     """
@@ -172,7 +172,7 @@ def add_pulse_information_transmon(
     device_cfg
         A dictionary specifying the required pulse information.
 
-    config
+    compilation_config
         CompilationConfig used in the :class:`~QuantifyCompiler`, from which only
         the :class:`~DeviceCompilationConfig` is used in this compilation step.
 
@@ -201,15 +201,15 @@ def add_pulse_information_transmon(
     """
     # pylint: enable=line-too-long
 
-    if config and device_cfg:
+    if compilation_config and device_cfg:
         raise ValueError(
-            f"add_pulse_information_transmon was called with both a config={config} and a device_cfg={device_cfg}. "
+            f"add_pulse_information_transmon was called with both a compilation_config={compilation_config} and a device_cfg={device_cfg}. "
             "Please make sure this function is called with either of the two."
         )
     # In the graph-based compilation, CompilationNodes should accept the full
     # CompilationConfig as input (#405, !615, &1)
-    if config:
-        device_cfg = config.device_compilation_config
+    if compilation_config:
+        device_cfg = compilation_config.device_compilation_config
 
     validate_config(device_cfg, scheme_fn="transmon_cfg.json")
 
@@ -565,7 +565,9 @@ def qcompile(
     schedule = deepcopy(schedule)
 
     backend = compilation_config.backend(name=compilation_config.name)
-    compiled_schedule = backend.compile(schedule=schedule, config=compilation_config)
+    compiled_schedule = backend.compile(
+        schedule=schedule, compilation_config=compilation_config
+    )
 
     return compiled_schedule
 

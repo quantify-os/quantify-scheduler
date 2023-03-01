@@ -1,5 +1,4 @@
 import pytest
-
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.compilation import device_compile, hardware_compile
@@ -246,7 +245,8 @@ def test_compilation_cr_count_qblox_hardware(mock_setup_basic_nv):
 
     compiler = SerialCompiler(name="compiler")
     schedule_device = compiler.compile(
-        schedule=schedule, config=quantum_device.generate_compilation_config()
+        schedule=schedule,
+        compilation_config=quantum_device.generate_compilation_config(),
     )
 
     # The gate_info and acquisition_info remains unchanged, but the pulse info has been

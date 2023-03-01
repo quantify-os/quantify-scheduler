@@ -20,23 +20,21 @@ import pytest
 from qblox_instruments import (
     Cluster,
     ClusterType,
+    DummyScopeAcquisitionData,
     Pulsar,
     PulsarType,
     SequencerState,
     SequencerStatus,
     SequencerStatusFlags,
-    DummyScopeAcquisitionData,
 )
 from qcodes.instrument import Instrument, InstrumentChannel, InstrumentModule
-from xarray import DataArray, Dataset
-
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.instrument_coordinator.components import qblox
 from quantify_scheduler.schedules.schedule import AcquisitionMetadata
-
 from tests.fixtures.mock_setup import close_instruments
+from xarray import DataArray, Dataset
 
 
 @pytest.fixture
@@ -417,7 +415,7 @@ def test_reset_qcodes_settings(
     quantum_device.hardware_config(hardware_cfg)
     config = quantum_device.generate_compilation_config()
     compiled_schedule = SerialCompiler(name="compiler").compile(
-        schedule=schedule_with_measurement, config=config
+        schedule=schedule_with_measurement, compilation_config=config
     )
     prog = compiled_schedule["compiled_instructions"]
 
@@ -473,7 +471,7 @@ def test_marker_override_false(
     mock_setup["quantum_device"].hardware_config(load_example_qblox_hardware_config)
     compiled_schedule = SerialCompiler(name="compiler").compile(
         schedule=schedule_with_measurement_q2,
-        config=mock_setup["quantum_device"].generate_compilation_config(),
+        compilation_config=mock_setup["quantum_device"].generate_compilation_config(),
     )
     prog = compiled_schedule["compiled_instructions"]
 
@@ -535,7 +533,7 @@ def test_init_qcodes_settings(
     quantum_device.hardware_config(hardware_cfg)
     config = quantum_device.generate_compilation_config()
     compiled_schedule = SerialCompiler(name="compiler").compile(
-        schedule=schedule_with_measurement, config=config
+        schedule=schedule_with_measurement, compilation_config=config
     )
     prog = compiled_schedule["compiled_instructions"]
 
@@ -602,7 +600,7 @@ def test_invalid_init_qcodes_settings(
     config = quantum_device.generate_compilation_config()
     with pytest.raises(ValueError):
         _ = SerialCompiler(name="compiler").compile(
-            schedule=schedule_with_measurement, config=config
+            schedule=schedule_with_measurement, compilation_config=config
         )
 
 
@@ -659,7 +657,8 @@ def test_prepare_qcm_qrm(
 
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
-        schedule_with_measurement, config=quantum_device.generate_compilation_config()
+        schedule_with_measurement,
+        compilation_config=quantum_device.generate_compilation_config(),
     )
     prog = compiled_schedule["compiled_instructions"]
 
@@ -756,7 +755,7 @@ def test_prepare_cluster_rf(
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
         sched,
-        config=quantum_device.generate_compilation_config(),
+        compilation_config=quantum_device.generate_compilation_config(),
     )
     compiled_schedule_before_prepare = deepcopy(compiled_schedule)
 
@@ -816,7 +815,7 @@ def test_prepare_rf(
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
         schedule_with_measurement_q2,
-        config=quantum_device.generate_compilation_config(),
+        compilation_config=quantum_device.generate_compilation_config(),
     )
 
     # Act
@@ -955,7 +954,8 @@ def test_retrieve_acquisition_qrm(
 
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
-        schedule_with_measurement, config=quantum_device.generate_compilation_config()
+        schedule_with_measurement,
+        compilation_config=quantum_device.generate_compilation_config(),
     )
     prog = compiled_schedule["compiled_instructions"]
     prog = dict(prog)
@@ -996,7 +996,7 @@ def test_retrieve_acquisition_qrm_rf(
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
         schedule=schedule_with_measurement_q2,
-        config=mock_setup["quantum_device"].generate_compilation_config(),
+        compilation_config=mock_setup["quantum_device"].generate_compilation_config(),
     )
     prog = compiled_schedule["compiled_instructions"]
     prog = dict(prog)
@@ -1038,7 +1038,7 @@ def test_retrieve_acquisition_cluster(
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
         schedule=make_schedule_with_measurement("q4"),
-        config=mock_setup["quantum_device"].generate_compilation_config(),
+        compilation_config=mock_setup["quantum_device"].generate_compilation_config(),
     )
 
     # Act
@@ -1067,7 +1067,8 @@ def test_start_qcm_qrm(
 
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
-        schedule_with_measurement, config=quantum_device.generate_compilation_config()
+        schedule_with_measurement,
+        compilation_config=quantum_device.generate_compilation_config(),
     )
     prog = compiled_schedule["compiled_instructions"]
 
@@ -1101,7 +1102,7 @@ def test_start_qcm_qrm_rf(
 
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
-        schedule=schedule_with_measurement_q2, config=compilation_config
+        schedule=schedule_with_measurement_q2, compilation_config=compilation_config
     )
     prog = compiled_schedule["compiled_instructions"]
 

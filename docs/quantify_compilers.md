@@ -81,7 +81,7 @@ We can then instantiate the compiler and compile the program.
 from quantify_scheduler.backends.graph_compilation import SerialCompiler
 
 compiler = SerialCompiler(name="Device compile")
-comp_sched = compiler.compile(schedule=echo_schedule, config=config)
+comp_sched = compiler.compile(schedule=echo_schedule, compilation_config=config)
 
 comp_sched
 

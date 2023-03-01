@@ -991,7 +991,9 @@ def test_compile_backend_with_undefined_local_oscillator(
     with pytest.raises(
         KeyError, match='Missing configuration for LocalOscillator "lo_unknown"'
     ):
-        compiler.compile(schedule, config=quantum_device.generate_compilation_config())
+        compiler.compile(
+            schedule, compilation_config=quantum_device.generate_compilation_config()
+        )
 
 
 def test_compile_backend_with_duplicate_local_oscillator(
@@ -1050,7 +1052,9 @@ def test_compile_backend_with_duplicate_local_oscillator(
     # Act
     compiler = SerialCompiler(name="compiler")
     with pytest.raises(RuntimeError) as execinfo:
-        compiler.compile(schedule, config=quantum_device.generate_compilation_config())
+        compiler.compile(
+            schedule, compilation_config=quantum_device.generate_compilation_config()
+        )
 
     # Assert
     assert (
@@ -1076,7 +1080,7 @@ def test_acquisition_staircase_unique_acquisitions(
     # Act
     compiler = SerialCompiler(name="compiler")
     comp_sched = compiler.compile(
-        schedule, config=compile_config_basic_transmon_zhinst_hardware
+        schedule, compilation_config=compile_config_basic_transmon_zhinst_hardware
     )
 
     # Assert
@@ -1158,7 +1162,7 @@ def test_acquisition_staircase_right_acq_channel(
     # Act
     compiler = SerialCompiler(name="compiler")
     comp_sched = compiler.compile(
-        schedule, config=compile_config_basic_transmon_zhinst_hardware
+        schedule, compilation_config=compile_config_basic_transmon_zhinst_hardware
     )
 
     # Assert
@@ -1246,7 +1250,7 @@ def test_too_long_acquisition_raises_readable_exception(
     compiler = SerialCompiler(name="compiler")
     with pytest.raises(ValueError) as exc_info:
         _ = compiler.compile(
-            sched, config=compile_config_basic_transmon_zhinst_hardware
+            sched, compilation_config=compile_config_basic_transmon_zhinst_hardware
         )
 
     # assert that the name of the offending operation is in the exception message.

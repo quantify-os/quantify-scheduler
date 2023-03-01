@@ -9,8 +9,7 @@ import json
 import numpy as np
 import pandas as pd
 import pytest
-
-from quantify_scheduler import enums, json_utils, Operation
+from quantify_scheduler import Operation, enums, json_utils
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.json_utils import ScheduleJSONDecoder
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
@@ -298,7 +297,7 @@ def test_t1_sched_pulse_diagram(t1_schedule, device_compile_config_basic_transmo
     """
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
-        schedule=t1_schedule, config=device_compile_config_basic_transmon
+        schedule=t1_schedule, compilation_config=device_compile_config_basic_transmon
     )
     # will only test that a figure is created and runs without errors
     _ = compiled_schedule.plot_pulse_diagram()
@@ -332,7 +331,8 @@ def test_sched_timing_table(
 
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
-        schedule=schedule, config=quantum_device.generate_compilation_config()
+        schedule=schedule,
+        compilation_config=quantum_device.generate_compilation_config(),
     )
 
     timing_table_data = compiled_schedule.timing_table.data
@@ -397,7 +397,8 @@ def test_sched_hardware_timing_table(
 ):
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
-        schedule=t1_schedule, config=compile_config_basic_transmon_zhinst_hardware
+        schedule=t1_schedule,
+        compilation_config=compile_config_basic_transmon_zhinst_hardware,
     )
 
     hardware_timing_table = compiled_schedule.hardware_timing_table
@@ -415,7 +416,8 @@ def test_sched_hardware_waveform_dict(
 ):
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
-        schedule=t1_schedule, config=compile_config_basic_transmon_zhinst_hardware
+        schedule=t1_schedule,
+        compilation_config=compile_config_basic_transmon_zhinst_hardware,
     )
 
     # Filter out operations that are not waveforms such as Reset and ClockPhaseReset,

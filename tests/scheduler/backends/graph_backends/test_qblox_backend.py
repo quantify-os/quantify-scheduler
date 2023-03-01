@@ -15,20 +15,18 @@ import json
 from typing import Union
 
 import pytest
-
-
-from quantify_scheduler import Schedule, CompiledSchedule
+from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.resources import ClockResource
 
 from .standard_schedules import (
-    single_qubit_schedule_circuit_level,
-    two_qubit_t1_schedule,
-    two_qubit_schedule_with_edge,
-    pulse_only_schedule,
-    parametrized_operation_schedule,
     hybrid_schedule_rabi,
+    parametrized_operation_schedule,
+    pulse_only_schedule,
+    single_qubit_schedule_circuit_level,
+    two_qubit_schedule_with_edge,
+    two_qubit_t1_schedule,
 )
 
 
@@ -56,7 +54,7 @@ def test_compiles_standard_schedules(
     assert config.backend == SerialCompiler
 
     backend = SerialCompiler(config.name)
-    compiled_sched = backend.compile(schedule=schedule, config=config)
+    compiled_sched = backend.compile(schedule=schedule, compilation_config=config)
 
     # Assert that no exception was raised and output is the right type
     assert isinstance(compiled_sched, CompiledSchedule)
@@ -76,7 +74,7 @@ def test_compile_empty_device(load_example_qblox_hardware_config):
 
     sched = pulse_only_schedule()
     sched.add_resource(ClockResource("q0.ro", 6.2e9))
-    compiled_sched = backend.compile(schedule=sched, config=config)
+    compiled_sched = backend.compile(schedule=sched, compilation_config=config)
 
     # Assert that no exception was raised and output is the right type
     assert isinstance(compiled_sched, CompiledSchedule)
@@ -148,7 +146,7 @@ def test_compile_sequence_to_file(
     # Act
     sched = pulse_only_schedule()
     sched.add_resource(ClockResource("q0.ro", 6.2e9))
-    compiled_sched = backend.compile(schedule=sched, config=config)
+    compiled_sched = backend.compile(schedule=sched, compilation_config=config)
 
     # Assert
     compiled_data = compiled_sched.compiled_instructions

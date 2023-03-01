@@ -5,7 +5,6 @@
 
 import numpy as np
 import pytest
-
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.schedules import timedomain_schedules as ts
 
@@ -45,7 +44,8 @@ class TestRabiPulse(_CompilesAllBackends):
         # This will determine the timing
         compiler = SerialCompiler(name="compiler")
         sched = compiler.compile(
-            schedule=self.uncomp_sched, config=device_compile_config_basic_transmon
+            schedule=self.uncomp_sched,
+            compilation_config=device_compile_config_basic_transmon,
         )
 
         # test that the right operations are added and timing is as expected.
@@ -66,7 +66,8 @@ class TestRabiPulse(_CompilesAllBackends):
         # assert that files properly compile
         compiler = SerialCompiler(name="compiler")
         compiler.compile(
-            schedule=self.uncomp_sched, config=device_compile_config_basic_transmon
+            schedule=self.uncomp_sched,
+            compilation_config=device_compile_config_basic_transmon,
         )
 
 
@@ -93,7 +94,8 @@ class TestRabiSched(_CompilesAllBackends):
         # This will determine the timing
         compiler = SerialCompiler(name="compiler")
         sched = compiler.compile(
-            schedule=self.uncomp_sched, config=device_compile_config_basic_transmon
+            schedule=self.uncomp_sched,
+            compilation_config=device_compile_config_basic_transmon,
         )
 
         # test that the right operations are added and timing is as expected.
@@ -126,7 +128,7 @@ class TestRabiSched(_CompilesAllBackends):
         )
         compiler = SerialCompiler(name="compiler")
         _ = compiler.compile(
-            schedule=sched, config=device_compile_config_basic_transmon
+            schedule=sched, compilation_config=device_compile_config_basic_transmon
         )
 
         # test that the right operations are added and timing is as expected.
@@ -155,7 +157,7 @@ class TestRabiSched(_CompilesAllBackends):
         )
         compiler = SerialCompiler(name="compiler")
         _ = compiler.compile(
-            schedule=sched, config=device_compile_config_basic_transmon
+            schedule=sched, compilation_config=device_compile_config_basic_transmon
         )
 
         # test that the right operations are added and timing is as expected.
@@ -189,7 +191,7 @@ class TestRabiSched(_CompilesAllBackends):
         )
         compiler = SerialCompiler(name="compiler")
         _ = compiler.compile(
-            schedule=sched, config=device_compile_config_basic_transmon
+            schedule=sched, compilation_config=device_compile_config_basic_transmon
         )
 
         # test that the right operations are added and timing is as expected.
@@ -257,7 +259,7 @@ class TestT1Sched(_CompilesAllBackends):
         sched = ts.t1_sched(**sched_kwargs)
         compiler = SerialCompiler(name="compiler")
         _ = compiler.compile(
-            schedule=sched, config=device_compile_config_basic_transmon
+            schedule=sched, compilation_config=device_compile_config_basic_transmon
         )
 
     def test_operations(self):
@@ -302,7 +304,7 @@ class TestRamseySchedDetuning(_CompilesAllBackends):
         sched = ts.ramsey_sched(**sched_kwargs)
         compiler = SerialCompiler(name="compiler")
         _ = compiler.compile(
-            schedule=sched, config=device_compile_config_basic_transmon
+            schedule=sched, compilation_config=device_compile_config_basic_transmon
         )
         assert any(
             op["timing_constraints"][0]["rel_time"] == 3e-6
@@ -349,7 +351,7 @@ class TestRamseySched(_CompilesAllBackends):
         sched = ts.ramsey_sched(**sched_kwargs)
         compiler = SerialCompiler(name="compiler")
         _ = compiler.compile(
-            schedule=sched, config=device_compile_config_basic_transmon
+            schedule=sched, compilation_config=device_compile_config_basic_transmon
         )
 
     def test_operations(self):
@@ -380,7 +382,7 @@ class TestEchoSched(_CompilesAllBackends):
         sched = ts.echo_sched(**sched_kwargs)
         compiler = SerialCompiler(name="compiler")
         _ = compiler.compile(
-            schedule=sched, config=device_compile_config_basic_transmon
+            schedule=sched, compilation_config=device_compile_config_basic_transmon
         )
 
     def test_timing(self):

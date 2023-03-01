@@ -21,7 +21,9 @@ class _CompilesAllBackends:
         compilation_config = compile_config_basic_transmon_qblox_hardware
         compiler = SerialCompiler(name="compiler")
         try:
-            compiler.compile(schedule=self.uncomp_sched, config=compilation_config)
+            compiler.compile(
+                schedule=self.uncomp_sched, compilation_config=compilation_config
+            )
         except ValueError:
             pprint.pprint(compilation_config.dict())
             raise
@@ -31,4 +33,6 @@ class _CompilesAllBackends:
     ) -> None:
         compilation_config = compile_config_basic_transmon_zhinst_hardware
         compiler = SerialCompiler(name="compiler")
-        compiler.compile(schedule=self.uncomp_sched, config=compilation_config)
+        compiler.compile(
+            schedule=self.uncomp_sched, compilation_config=compilation_config
+        )

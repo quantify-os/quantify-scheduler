@@ -10,17 +10,13 @@
 """Tests for acquisitions module."""
 import math
 import pprint
-from typing import Dict, Any
+from typing import Any, Dict
 
-import pytest
 import numpy as np
-from qcodes.instrument.parameter import ManualParameter
+import pytest
 from qblox_instruments import ClusterType, PulsarType
-from xarray import Dataset, DataArray
-
-from quantify_scheduler import waveforms, Schedule
-
-from quantify_scheduler.enums import BinMode
+from qcodes.instrument.parameter import ManualParameter
+from quantify_scheduler import Schedule, waveforms
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.qblox.instrument_compilers import QrmModule
@@ -28,9 +24,9 @@ from quantify_scheduler.backends.qblox.operation_handling import acquisitions
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox.register_manager import RegisterManager
 from quantify_scheduler.backends.types import qblox as types
+from quantify_scheduler.enums import BinMode
 from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.helpers.mock_instruments import MockLocalOscillator
-from quantify_scheduler.operations.gate_library import Measure
 from quantify_scheduler.instrument_coordinator.components.generic import (
     GenericInstrumentCoordinatorComponent,
 )
@@ -38,16 +34,17 @@ from quantify_scheduler.instrument_coordinator.components.qblox import (
     QbloxInstrumentCoordinatorComponentBase,
     _QRMAcquisitionManager,
 )
+from quantify_scheduler.operations.gate_library import Measure
 from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 from quantify_scheduler.schedules.trace_schedules import trace_schedule_circuit_layer
-
 from tests.fixtures.mock_setup import close_instruments
 from tests.scheduler.instrument_coordinator.components.test_qblox import (  # pylint: disable=unused-import
     make_cluster_component,
     make_qrm_component,
 )
+from xarray import DataArray, Dataset
 
 
 @pytest.fixture(name="empty_qasm_program_qrm")
@@ -615,7 +612,8 @@ def test_trigger_count_acquisition(
     # Generate compiled schedule
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
-        schedule=schedule, config=quantum_device.generate_compilation_config()
+        schedule=schedule,
+        compilation_config=quantum_device.generate_compilation_config(),
     )
 
     # Upload schedule and run experiment
@@ -710,7 +708,8 @@ def test_multiple_measurements(
     # Generate compiled schedule
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
-        schedule=schedule, config=quantum_device.generate_compilation_config()
+        schedule=schedule,
+        compilation_config=quantum_device.generate_compilation_config(),
     )
 
     # Upload schedule and run experiment
@@ -780,7 +779,8 @@ def test_multiple_trace_raises(
     # Generate compiled schedule
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
-        schedule=schedule, config=quantum_device.generate_compilation_config()
+        schedule=schedule,
+        compilation_config=quantum_device.generate_compilation_config(),
     )
 
     # Imitate a compiled schedule which contains multiple trace acquisition for one module.
@@ -889,7 +889,8 @@ def test_same_index_in_module_and_cluster_measurement_error(
     # Generate compiled schedule
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
-        schedule=schedule, config=quantum_device.generate_compilation_config()
+        schedule=schedule,
+        compilation_config=quantum_device.generate_compilation_config(),
     )
 
     # Upload schedule and run experiment
@@ -977,7 +978,8 @@ def test_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_nv):
     # Generate compiled schedule
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
-        schedule=schedule, config=quantum_device.generate_compilation_config()
+        schedule=schedule,
+        compilation_config=quantum_device.generate_compilation_config(),
     )
 
     # Upload schedule and run experiment
@@ -1055,7 +1057,8 @@ def test_complex_input_hardware_cfg(make_cluster_component, mock_setup_basic_tra
     # Generate compiled schedule
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
-        schedule=schedule, config=quantum_device.generate_compilation_config()
+        schedule=schedule,
+        compilation_config=quantum_device.generate_compilation_config(),
     )
 
     # Upload schedule and run experiment
@@ -1163,7 +1166,8 @@ def test_multi_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_
     # Generate compiled schedule
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
-        schedule=schedule, config=quantum_device.generate_compilation_config()
+        schedule=schedule,
+        compilation_config=quantum_device.generate_compilation_config(),
     )
 
     # Assert intended behaviour
@@ -1283,7 +1287,8 @@ def test_trace_acquisition_instrument_coordinator(  # pylint: disable=too-many-l
     # Generate compiled schedule
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
-        schedule=schedule, config=quantum_device.generate_compilation_config()
+        schedule=schedule,
+        compilation_config=quantum_device.generate_compilation_config(),
     )
 
     wrappee = (
@@ -1363,13 +1368,15 @@ def test_mix_lo_flag(
     # Generate compiled schedule where mix_lo is true
     compiler = SerialCompiler(name="compiler")
     compiled_sched_mix_lo_true = compiler.compile(
-        schedule=schedule, config=quantum_device.generate_compilation_config()
+        schedule=schedule,
+        compilation_config=quantum_device.generate_compilation_config(),
     )
 
     # Change mix_lo to false, set new LO freq and generate new compiled schedule
     hardware_cfg["cluster0"]["cluster0_module1"]["complex_output_0"]["mix_lo"] = False
     compiled_sched_mix_lo_false = compiler.compile(
-        schedule=schedule, config=quantum_device.generate_compilation_config()
+        schedule=schedule,
+        compilation_config=quantum_device.generate_compilation_config(),
     )
 
     # Assert LO freq got set if mix_lo is true.

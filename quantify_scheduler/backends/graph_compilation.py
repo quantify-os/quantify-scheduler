@@ -262,7 +262,9 @@ class CompilationNode:
         return self.name
 
     def _compilation_func(
-        self, schedule: Union[Schedule, DataStructure], config: DataStructure
+        self,
+        schedule: Union[Schedule, DataStructure],
+        compilation_config: CompilationConfig,
     ) -> Union[Schedule, DataStructure]:
         """
         This is the private compilation method. It should be completely stateless
@@ -280,7 +282,9 @@ class CompilationNode:
         raise NotImplementedError
 
     def compile(
-        self, schedule: Union[Schedule, DataStructure], config: DataStructure
+        self,
+        schedule: Union[Schedule, DataStructure],
+        compilation_config: CompilationConfig,
     ) -> Union[Schedule, DataStructure]:
         """
         Execute a compilation pass, taking a :class:`~.Schedule` and using the
@@ -294,7 +298,9 @@ class CompilationNode:
 
         # classes inheriting from this node should overwrite the _compilation_func and
         # not the public facing compile.
-        return self._compilation_func(schedule=schedule, config=config)
+        return self._compilation_func(
+            schedule=schedule, compilation_config=compilation_config
+        )
 
 
 # pylint: disable=too-few-public-methods
@@ -328,7 +334,7 @@ class SimpleNode(CompilationNode):
         self.compilation_func = compilation_func
 
     def _compilation_func(
-        self, schedule: Schedule, config: Union[DataStructure, dict]
+        self, schedule: Schedule, compilation_config: CompilationConfig
     ) -> Schedule:
         # note that in contrast to the CompilationNode parent class, the compilation
         # function has a much stricter type hint as this is for use in a SerialCompiler
@@ -337,7 +343,9 @@ class SimpleNode(CompilationNode):
         # note, the type hint indicates both datastructures and dicts as valid configs.
         # In the future we should only support DataStructures for the compiler options
         # to have stricter typing and error handling. Dict is for legacy support.
-        return self.compilation_func(schedule=schedule, config=config)
+        return self.compilation_func(
+            schedule=schedule, compilation_config=compilation_config
+        )
 
 
 # pylint: disable=abstract-method
@@ -379,7 +387,7 @@ class QuantifyCompiler(CompilationNode):
         self.quantum_device = quantum_device
 
     def compile(
-        self, schedule: Schedule, config: Optional[CompilationConfig] = None
+        self, schedule: Schedule, compilation_config: Optional[CompilationConfig] = None
     ) -> CompiledSchedule:
         """
         Compile a :class:`~.Schedule` using the information provided in the config.
@@ -388,7 +396,7 @@ class QuantifyCompiler(CompilationNode):
         ----------
         schedule
             the schedule to compile.
-        config
+        compilation_config
             describing the information required to compile the schedule. If not specified,
             self.quantum_device will be used to generate the config.
 
@@ -406,11 +414,15 @@ class QuantifyCompiler(CompilationNode):
 
         # classes inheriting from this node should overwrite the _compilation_func and
         # not the public facing compile.
-        if config is None:
+        if compilation_config is None:
             if self.quantum_device is None:
-                raise RuntimeError("Either quantum_device or config must be specified")
-            config = self.quantum_device.generate_compilation_config()
-        return self._compilation_func(schedule=schedule, config=config)
+                raise RuntimeError(
+                    "Either quantum_device or compilation_config must be specified"
+                )
+            compilation_config = self.quantum_device.generate_compilation_config()
+        return self._compilation_func(
+            schedule=schedule, compilation_config=compilation_config
+        )
 
     @property
     def input_node(self):
@@ -428,9 +440,9 @@ class QuantifyCompiler(CompilationNode):
         """
         return self._ouput_node
 
-    def construct_graph(self, config: CompilationConfig):
+    def construct_graph(self, compilation_config: CompilationConfig):
         """
-        Construct the compilation graph based on a provided config.
+        Construct the compilation graph based on a provided compilation_config.
         """
         raise NotImplementedError
 
@@ -497,7 +509,7 @@ class SerialCompiler(QuantifyCompiler):
     passes upon calling the compile method.
     """
 
-    def construct_graph(self, config: SerialCompilationConfig):
+    def construct_graph(self, compilation_config: SerialCompilationConfig):
         """
         Construct the compilation graph based on a provided config.
 
@@ -512,7 +524,7 @@ class SerialCompiler(QuantifyCompiler):
         # like caching and visualization of compilation errors.
         self._task_graph.clear()
 
-        for i, compilation_pass in enumerate(config.compilation_passes):
+        for i, compilation_pass in enumerate(compilation_config.compilation_passes):
             node = SimpleNode(
                 name=compilation_pass.name,
                 compilation_func=compilation_pass.compilation_func,
@@ -527,7 +539,7 @@ class SerialCompiler(QuantifyCompiler):
         self._ouput_node = node
 
     def _compilation_func(
-        self, schedule: Schedule, config: SerialCompilationConfig
+        self, schedule: Schedule, compilation_config: SerialCompilationConfig
     ) -> CompiledSchedule:
         """
         Compile a schedule using the backend and the information provided in the config.
@@ -536,12 +548,12 @@ class SerialCompiler(QuantifyCompiler):
         ----------
         schedule
             The schedule to compile.
-        config
+        compilation_config
             A dictionary containing the information needed to compile the schedule.
             Nodes in this compiler specify what key they need information from in this
             dictionary.
         """
-        self.construct_graph(config=config)
+        self.construct_graph(compilation_config=compilation_config)
         # if there is only 1 node there is no shortest_path defined
         if self.input_node == self.output_node:
             path = [self.input_node]
@@ -559,7 +571,7 @@ class SerialCompiler(QuantifyCompiler):
         for i, node in enumerate(path):
             schedule = node.compile(
                 schedule=schedule,
-                config=config,
+                compilation_config=compilation_config,
             )
 
         # mark the schedule as "Compiled" before returning at the final step.

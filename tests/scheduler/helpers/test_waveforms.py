@@ -10,7 +10,6 @@ from unittest.case import TestCase
 import numpy as np
 import pytest
 from pytest_mock.plugin import MockerFixture
-
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.helpers.schedule import get_pulse_uuid
@@ -114,7 +113,7 @@ def test_get_waveform_by_pulseid_are_unique(
 
     compiler = SerialCompiler(name="compiler")
     schedule = compiler.compile(
-        schedule=schedule, config=device_compile_config_basic_transmon
+        schedule=schedule, compilation_config=device_compile_config_basic_transmon
     )
 
     operation_repr = list(schedule.schedulables.values())[0]["operation_repr"]

@@ -19,20 +19,19 @@ import logging
 import os
 import time
 import zipfile
-from typing import Any, Callable, Dict, Tuple, Union, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 from qcodes import Parameter
 from qcodes.utils.helpers import NumpyJSONEncoder
-
 from quantify_core.data.handling import gen_tuid, get_datadir, snapshot
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
-    extract_acquisition_metadata_from_schedule,
     AcquisitionMetadata,
+    extract_acquisition_metadata_from_schedule,
 )
 
 logger = logging.getLogger(__name__)
@@ -162,7 +161,7 @@ class ScheduleGettable:
         # made into a private variable for debugging and future caching functionality
         self._backend = compilation_config.backend(name=compilation_config.name)
         self._compiled_schedule = self._backend.compile(
-            schedule=sched, config=compilation_config
+            schedule=sched, compilation_config=compilation_config
         )
 
     def initialize(self):

@@ -710,7 +710,7 @@ def test_construct_sequencers(
 
     compiler = SerialCompiler(name="compiler")
     sched = compiler.compile(
-        schedule=sched, config=compile_config_basic_transmon_qblox_hardware
+        schedule=sched, compilation_config=compile_config_basic_transmon_qblox_hardware
     )
     assign_pulse_and_acq_info_to_devices(
         schedule=sched,
@@ -755,7 +755,7 @@ def test_construct_sequencers_repeated_portclocks_error(
 
     compiler = SerialCompiler(name="compiler")
     sched = compiler.compile(
-        schedule=sched, config=compile_config_basic_transmon_qblox_hardware
+        schedule=sched, compilation_config=compile_config_basic_transmon_qblox_hardware
     )
     assign_pulse_and_acq_info_to_devices(
         schedule=sched,
@@ -814,7 +814,7 @@ def test_construct_sequencers_exceeds_seq__invalid_io(
     with pytest.raises(ValueError) as error:
         sched = compiler.compile(
             schedule=sched,
-            config=quantum_device.generate_compilation_config(),
+            compilation_config=quantum_device.generate_compilation_config(),
         )
 
     name = "cluster0_module1"
@@ -841,7 +841,7 @@ def test_portclocks(
 
     compiler = SerialCompiler(name="compiler")
     sched = compiler.compile(
-        schedule=sched, config=compile_config_basic_transmon_qblox_hardware
+        schedule=sched, compilation_config=compile_config_basic_transmon_qblox_hardware
     )
 
     hardware_cfg = load_example_qblox_hardware_config
@@ -870,7 +870,8 @@ def test_compile_simple(
 
     compiler = SerialCompiler(name="compiler")
     compiler.compile(
-        pulse_only_schedule, config=compile_config_basic_transmon_qblox_hardware
+        pulse_only_schedule,
+        compilation_config=compile_config_basic_transmon_qblox_hardware,
     )
 
 
@@ -895,7 +896,7 @@ def test_compile_cluster(
     with context_mngr as error:
         compiler.compile(
             schedule=sched,
-            config=mock_setup_basic_transmon_with_standard_params[
+            compilation_config=mock_setup_basic_transmon_with_standard_params[
                 "quantum_device"
             ].generate_compilation_config(),
         )
@@ -936,7 +937,7 @@ def test_compile_simple_multiplexing(
     compiler = SerialCompiler(name="compiler")
     compiler.compile(
         schedule=sched,
-        config=quantum_device.generate_compilation_config(),
+        compilation_config=quantum_device.generate_compilation_config(),
     )
 
 
@@ -947,7 +948,8 @@ def test_compile_identical_pulses(
 
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
-        identical_pulses_schedule, config=compile_config_basic_transmon_qblox_hardware
+        identical_pulses_schedule,
+        compilation_config=compile_config_basic_transmon_qblox_hardware,
     )
 
     prog = compiled_schedule.compiled_instructions["qcm0"]["sequencers"]["seq0"][
@@ -961,7 +963,8 @@ def test_compile_measure(
 ):
     compiler = SerialCompiler(name="compiler")
     full_program = compiler.compile(
-        duplicate_measure_schedule, config=compile_config_basic_transmon_qblox_hardware
+        duplicate_measure_schedule,
+        compilation_config=compile_config_basic_transmon_qblox_hardware,
     )
     qrm0_seq0_json = full_program["compiled_instructions"]["qrm0"]["sequencers"][
         "seq0"
@@ -1011,7 +1014,7 @@ def test_compile_clock_operations(
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
         schedule=sched,
-        config=quantum_device.generate_compilation_config(),
+        compilation_config=quantum_device.generate_compilation_config(),
     )
 
     if operation.__class__ is SetClockFrequency:
@@ -1023,7 +1026,7 @@ def test_compile_clock_operations(
         with pytest.raises(ValueError) as error:
             _ = compiler.compile(
                 schedule=sched,
-                config=quantum_device.generate_compilation_config(),
+                compilation_config=quantum_device.generate_compilation_config(),
             )
         assert (
             error.value.args[0]
@@ -1035,7 +1038,7 @@ def test_compile_clock_operations(
         sched.add_resource(ClockResource(clock_name, clock_freq_old))
         _ = compiler.compile(
             schedule=sched,
-            config=quantum_device.generate_compilation_config(),
+            compilation_config=quantum_device.generate_compilation_config(),
         )
 
     program_lines = compiled_sched.compiled_instructions["qcm0"]["sequencers"]["seq0"][
@@ -1061,7 +1064,7 @@ def test_compile_cz_gate(
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
         schedule=two_qubit_gate_schedule,
-        config=quantum_device.generate_compilation_config(),
+        compilation_config=quantum_device.generate_compilation_config(),
     )
 
     program_lines = {}
@@ -1091,7 +1094,7 @@ def test_compile_simple_with_acq(
     compiler = SerialCompiler(name="compiler")
     full_program = compiler.compile(
         mixed_schedule_with_acquisition,
-        config=compile_config_basic_transmon_qblox_hardware,
+        compilation_config=compile_config_basic_transmon_qblox_hardware,
     )
 
     qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["sequencers"][
@@ -1161,7 +1164,8 @@ def test_compile_acq_measurement_with_clock_phase_reset(
 
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
-        schedule, config=mock_setup["quantum_device"].generate_compilation_config()
+        schedule,
+        compilation_config=mock_setup["quantum_device"].generate_compilation_config(),
     )
     qrm0_seq0_json = compiled_schedule.compiled_instructions["qrm0"]["sequencers"][
         "seq0"
@@ -1189,7 +1193,7 @@ def test_acquisitions_back_to_back(
         compiler = SerialCompiler(name="compiler")
         _ = compiler.compile(
             sched,
-            config=compile_config_basic_transmon_qblox_hardware,
+            compilation_config=compile_config_basic_transmon_qblox_hardware,
         )
 
     assert (
@@ -1232,7 +1236,7 @@ def test_compile_with_rel_time(
     compiler = SerialCompiler(name="compiler")
     full_program = compiler.compile(
         pulse_only_schedule_with_operation_timing,
-        config=compile_config_basic_transmon_qblox_hardware,
+        compilation_config=compile_config_basic_transmon_qblox_hardware,
     )
 
     qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["sequencers"][
@@ -1252,7 +1256,7 @@ def test_compile_with_repetitions(
     compiler = SerialCompiler(name="compiler")
     full_program = compiler.compile(
         mixed_schedule_with_acquisition,
-        config=compile_config_basic_transmon_qblox_hardware,
+        compilation_config=compile_config_basic_transmon_qblox_hardware,
     )
 
     program_from_json = full_program["compiled_instructions"]["qcm0"]["sequencers"][
@@ -1298,7 +1302,7 @@ def test_qasm_hook(pulse_only_schedule, mock_setup_basic_transmon_with_standard_
     compiler = SerialCompiler(name="compiler")
     full_program = compiler.compile(
         sched,
-        config=mock_setup_basic_transmon_with_standard_params[
+        compilation_config=mock_setup_basic_transmon_with_standard_params[
             "quantum_device"
         ].generate_compilation_config(),
     )
@@ -1335,7 +1339,7 @@ def test_real_mode_pulses(
     compiler = SerialCompiler(name="compiler")
     full_program = compiler.compile(
         real_square_pulse_schedule,
-        config=mock_setup_basic_transmon[
+        compilation_config=mock_setup_basic_transmon[
             "quantum_device"
         ].generate_compilation_config(),
     )
@@ -1449,7 +1453,7 @@ def test_assign_pulse_and_acq_info_to_devices(
     compiler = SerialCompiler(name="compiler")
     sched_with_pulse_info = compiler.compile(
         schedule=sched,
-        config=mock_setup_basic_transmon_with_standard_params[
+        compilation_config=mock_setup_basic_transmon_with_standard_params[
             "quantum_device"
         ].generate_compilation_config(),
     )
@@ -1486,7 +1490,7 @@ def test_container_prepare(
     compiler = SerialCompiler(name="compiler")
     sched = compiler.compile(
         schedule=pulse_only_schedule,
-        config=compile_config_basic_transmon_qblox_hardware,
+        compilation_config=compile_config_basic_transmon_qblox_hardware,
     )
 
     container = compiler_container.CompilerContainer.from_hardware_cfg(
@@ -1516,7 +1520,8 @@ def test_multiple_trace_acquisition_error(compile_config_basic_transmon_qblox_ha
     with pytest.raises(ValueError) as exception:
         compiler = SerialCompiler(name="compiler")
         _ = compiler.compile(
-            schedule=sched, config=compile_config_basic_transmon_qblox_hardware
+            schedule=sched,
+            compilation_config=compile_config_basic_transmon_qblox_hardware,
         )
     assert str(exception.value) == (
         f"Both sequencer '0' and '1' "
@@ -1540,7 +1545,7 @@ def test_container_prepare_baseband(
     compiler = SerialCompiler(name="compiler")
     sched = compiler.compile(
         schedule=baseband_square_pulse_schedule,
-        config=quantum_device.generate_compilation_config(),
+        compilation_config=quantum_device.generate_compilation_config(),
     )
 
     container = compiler_container.CompilerContainer.from_hardware_cfg(
@@ -1567,7 +1572,7 @@ def test_container_prepare_no_lo(
     compiler = SerialCompiler(name="compiler")
     sched = compiler.compile(
         schedule=pulse_only_schedule_no_lo,
-        config=compile_config_basic_transmon_qblox_hardware,
+        compilation_config=compile_config_basic_transmon_qblox_hardware,
     )
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         sched, load_example_qblox_hardware_config
@@ -1658,7 +1663,7 @@ def test_real_mode_container(
     compiler = SerialCompiler(name="compiler")
     sched = compiler.compile(
         schedule=real_square_pulse_schedule,
-        config=quantum_device.generate_compilation_config(),
+        compilation_config=quantum_device.generate_compilation_config(),
     )
     assign_pulse_and_acq_info_to_devices(
         sched, container.instrument_compilers, hardware_cfg_real_mode
@@ -1707,7 +1712,7 @@ def test_assign_frequencies_baseband(
 
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
-        sched, config=quantum_device.generate_compilation_config()
+        sched, compilation_config=quantum_device.generate_compilation_config()
     )
     compiled_instructions = compiled_schedule["compiled_instructions"]
 
@@ -1763,7 +1768,7 @@ def test_assign_frequencies_baseband_downconverter(
         context_mngr = pytest.raises(ValueError)
     with context_mngr as error:
         compiled_schedule = compiler.compile(
-            sched, config=quantum_device.generate_compilation_config()
+            sched, compilation_config=quantum_device.generate_compilation_config()
         )
     if error is not None:
         if downconverter_freq0 is not None:
@@ -1925,7 +1930,7 @@ def test_assign_frequencies_rf_downconverter(
         context_mngr = pytest.raises(ValueError)
     with context_mngr as error:
         compiled_schedule = compiler.compile(
-            sched, config=quantum_device.generate_compilation_config()
+            sched, compilation_config=quantum_device.generate_compilation_config()
         )
     if error is not None:
         if downconverter_freq0 is not None:
@@ -2043,7 +2048,7 @@ def test_assign_attenuation(
     quantum_device.hardware_config(hardware_cfg)
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
-        schedule=sched, config=quantum_device.generate_compilation_config()
+        schedule=sched, compilation_config=quantum_device.generate_compilation_config()
     )
     compiled_instructions = compiled_schedule["compiled_instructions"]
     qrm_rf_program = compiled_instructions["cluster0"]["cluster0_module4"]
@@ -2093,7 +2098,8 @@ def test_assign_input_att_both_output_input_raises(
     with pytest.raises(ValueError) as exc:
         compiler = SerialCompiler(name="compiler")
         compiler.compile(
-            schedule=schedule, config=quantum_device.generate_compilation_config()
+            schedule=schedule,
+            compilation_config=quantum_device.generate_compilation_config(),
         )
 
     # assert exception was raised with correct message.
@@ -2125,7 +2131,7 @@ def test_assign_attenuation_invalid_raises(
         compiler = SerialCompiler(name="compiler")
         _ = compiler.compile(
             sched,
-            config=mock_setup_basic_transmon_with_standard_params[
+            compilation_config=mock_setup_basic_transmon_with_standard_params[
                 "quantum_device"
             ].generate_compilation_config(),
         )
@@ -2347,7 +2353,7 @@ def test_acq_declaration_dict_bin_avg_mode(
     allxy = allxy_sched("q0")
     compiler = SerialCompiler(name="compiler")
     compiled_allxy_sched = compiler.compile(
-        allxy, config=compile_config_basic_transmon_qblox_hardware
+        allxy, compilation_config=compile_config_basic_transmon_qblox_hardware
     )
     qrm0_seq_instructions = compiled_allxy_sched["compiled_instructions"]["qrm0"][
         "sequencers"
@@ -2477,7 +2483,8 @@ def test_convert_hw_config_to_portclock_configs_spec(
     ):
         compiler = SerialCompiler(name="compiler")
         compiler.compile(
-            schedule=sched, config=quantum_device.generate_compilation_config()
+            schedule=sched,
+            compilation_config=quantum_device.generate_compilation_config(),
         )
 
 
@@ -2507,7 +2514,7 @@ def test_apply_latency_corrections_invalid_raises(
         compiler = SerialCompiler(name="compiler")
         _ = compiler.compile(
             sched,
-            config=mock_setup_basic_transmon[
+            compilation_config=mock_setup_basic_transmon[
                 "quantum_device"
             ].generate_compilation_config(),
         )
@@ -2536,7 +2543,7 @@ def test_apply_latency_corrections_valid(
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
         sched,
-        config=mock_setup["quantum_device"].generate_compilation_config(),
+        compilation_config=mock_setup["quantum_device"].generate_compilation_config(),
     )
 
     for instrument in ["qcm0", ("cluster0", "cluster0_module1")]:
@@ -2598,7 +2605,7 @@ def test_apply_latency_corrections_warning(
         compiler = SerialCompiler(name="compiler")
         compiler.compile(
             sched,
-            config=mock_setup_basic_transmon[
+            compilation_config=mock_setup_basic_transmon[
                 "quantum_device"
             ].generate_compilation_config(),
         )

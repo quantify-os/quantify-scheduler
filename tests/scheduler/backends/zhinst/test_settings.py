@@ -10,14 +10,14 @@ from unittest.mock import ANY, call
 
 import numpy as np
 import pytest
-from zhinst.qcodes import base
-
 from quantify_scheduler import waveforms
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.types import zhinst as zi_types
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 from quantify_scheduler.backends.zhinst import settings
 from quantify_scheduler.schedules.verification import awg_staircase_sched
+
+from zhinst.qcodes import base
 
 
 def make_ufhqa(mocker) -> base.ZIBaseInstrument:
@@ -53,13 +53,13 @@ def test_zi_settings_equality(
     hw_cfg["devices"][1]["channel_0"]["modulation"]["interm_freq"] = 10e6
     quantum_device.hardware_config(hw_cfg)
     config = quantum_device.generate_compilation_config()
-    comp_sched_a = compiler.compile(sched, config=config)
+    comp_sched_a = compiler.compile(sched, compilation_config=config)
 
     hw_cfg["devices"][1]["channel_0"]["modulation"]["interm_freq"] = -100e6
     quantum_device.hardware_config(hw_cfg)
     config = quantum_device.generate_compilation_config()
-    comp_sched_b = compiler.compile(sched, config=config)
-    comp_sched_c = compiler.compile(sched, config=config)
+    comp_sched_b = compiler.compile(sched, compilation_config=config)
+    comp_sched_c = compiler.compile(sched, compilation_config=config)
 
     # Act
     sett_a = comp_sched_a.compiled_instructions["ic_uhfqa0"].settings_builder.build()

@@ -7,17 +7,16 @@ This test style covers the classes and functions in the backends/graph_compilati
 file.
 """
 
-import pytest
 import networkx as nx
+import pytest
 from matplotlib.axes import Axes
-
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends.graph_compilation import QuantifyCompiler, SimpleNode
 from quantify_scheduler.operations.gate_library import Reset
 
 
 # pylint: disable=unused-argument
-def dummy_compile_add_reset_q0(schedule: Schedule, config=None) -> Schedule:
+def dummy_compile_add_reset_q0(schedule: Schedule, compilation_config=None) -> Schedule:
     schedule.add(Reset("q0"))
     return schedule
 

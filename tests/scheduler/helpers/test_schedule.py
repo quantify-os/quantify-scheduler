@@ -8,22 +8,21 @@ from __future__ import annotations
 
 import numpy as np
 from pytest import approx
-
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.enums import BinMode
+from quantify_scheduler.helpers.collections import make_hash
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
     get_acq_info_by_uuid,
     get_acq_uuid,
-    get_operation_start,
     get_operation_end,
+    get_operation_start,
     get_port_timeline,
     get_pulse_info_by_uuid,
     get_pulse_uuid,
     get_total_duration,
 )
-from quantify_scheduler.helpers.collections import make_hash
 from quantify_scheduler.operations.gate_library import X90, Measure, Reset
 from quantify_scheduler.schedules import spectroscopy_schedules
 
@@ -89,7 +88,7 @@ def test_get_info_by_uuid_are_unique(device_compile_config_basic_transmon):
 
     compiler = SerialCompiler(name="compiler")
     schedule_with_pulse_info = compiler.compile(
-        schedule=schedule, config=device_compile_config_basic_transmon
+        schedule=schedule, compilation_config=device_compile_config_basic_transmon
     )
 
     operation_repr = list(schedule.schedulables.values())[0]["operation_repr"]
@@ -112,7 +111,8 @@ def test_get_acq_info_by_uuid(
     # Arrange
     compiler = SerialCompiler(name="compiler")
     schedule = compiler.compile(
-        schedule=schedule_with_measurement, config=device_compile_config_basic_transmon
+        schedule=schedule_with_measurement,
+        compilation_config=device_compile_config_basic_transmon,
     )
 
     operation_repr = list(schedule.schedulables.values())[-1]["operation_repr"]
@@ -183,7 +183,7 @@ def test_get_port_timeline_sorted(
 
     compiler = SerialCompiler(name="compiler")
     schedule = compiler.compile(
-        schedule=schedule, config=device_compile_config_basic_transmon
+        schedule=schedule, compilation_config=device_compile_config_basic_transmon
     )
 
     reset_operation_id = list(schedule.schedulables.values())[0]["operation_repr"]
@@ -238,7 +238,7 @@ def test_get_port_timeline_are_unique(device_compile_config_basic_transmon):
 
     compiler = SerialCompiler(name="compiler")
     schedule = compiler.compile(
-        schedule=schedule, config=device_compile_config_basic_transmon
+        schedule=schedule, compilation_config=device_compile_config_basic_transmon
     )
 
     reset_operation_id = list(schedule.schedulables.values())[0]["operation_repr"]
@@ -279,7 +279,7 @@ def test_get_port_timeline_with_duplicate_op(device_compile_config_basic_transmo
 
     compiler = SerialCompiler(name="compiler")
     schedule = compiler.compile(
-        schedule=schedule, config=device_compile_config_basic_transmon
+        schedule=schedule, compilation_config=device_compile_config_basic_transmon
     )
 
     X90_q0_operation_id = list(schedule.schedulables.values())[0]["operation_repr"]
@@ -468,7 +468,8 @@ def test_schedule_timing_table(mock_setup_basic_transmon_with_standard_params):
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     compiler = SerialCompiler(name="compiler")
     schedule = compiler.compile(
-        schedule=schedule, config=quantum_device.generate_compilation_config()
+        schedule=schedule,
+        compilation_config=quantum_device.generate_compilation_config(),
     )
 
     q0 = mock_setup_basic_transmon_with_standard_params["q0"]

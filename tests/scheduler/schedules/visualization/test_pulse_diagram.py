@@ -2,10 +2,9 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import pytest
-
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.compilation import determine_absolute_timing
@@ -59,7 +58,7 @@ def test_pulse_diagram_plotly(device_compile_config_basic_transmon) -> None:
     # Pulse information is added
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
-        schedule=sched, config=device_compile_config_basic_transmon
+        schedule=sched, compilation_config=device_compile_config_basic_transmon
     )
 
     # It should be possible to generate this visualization after compilation
@@ -204,7 +203,7 @@ def test_pulse_diagram_plotly_deprecated(device_compile_config_basic_transmon) -
     # Pulse information is added
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
-        schedule=sched, config=device_compile_config_basic_transmon
+        schedule=sched, compilation_config=device_compile_config_basic_transmon
     )
 
     # It should be possible to generate this visualization after compilation

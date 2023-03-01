@@ -61,7 +61,7 @@ def test_acq_staircase_comp_transmon(
     compiler = SerialCompiler(name="compiler")
     _ = compiler.compile(
         schedule=gen_acquisition_staircase_sched[0],
-        config=device_compile_config_basic_transmon,
+        compilation_config=device_compile_config_basic_transmon,
     )
 
 
@@ -71,7 +71,7 @@ def test_acq_staircase_comp_qblox(
     compiler = SerialCompiler(name="compiler")
     _ = compiler.compile(
         schedule=gen_acquisition_staircase_sched[0],
-        config=compile_config_basic_transmon_qblox_hardware,
+        compilation_config=compile_config_basic_transmon_qblox_hardware,
     )
 
 
@@ -81,7 +81,7 @@ def test_acq_staircase_comp_zhinst(
     compiler = SerialCompiler(name="compiler")
     _ = compiler.compile(
         schedule=gen_acquisition_staircase_sched[0],
-        config=compile_config_basic_transmon_zhinst_hardware,
+        compilation_config=compile_config_basic_transmon_zhinst_hardware,
     )
 
 
@@ -128,7 +128,7 @@ def test_awg_staircase_comp_transmon(
     compiler = SerialCompiler(name="compiler")
     _ = compiler.compile(
         schedule=gen_awg_staircase_sched[0],
-        config=mock_setup_basic_transmon[
+        compilation_config=mock_setup_basic_transmon[
             "quantum_device"
         ].generate_compilation_config(),
     )
@@ -140,7 +140,7 @@ def test_awg_staircase_comp_qblox(
     compiler = SerialCompiler(name="compiler")
     _ = compiler.compile(
         schedule=gen_awg_staircase_sched[0],
-        config=compile_config_basic_transmon_qblox_hardware,
+        compilation_config=compile_config_basic_transmon_qblox_hardware,
     )
 
 
@@ -151,7 +151,7 @@ def test_awg_staircase_comp_zhinst(
     compiler = SerialCompiler(name="compiler")
     _ = compiler.compile(
         schedule=gen_awg_staircase_sched[0],
-        config=compile_config_basic_transmon_zhinst_hardware,
+        compilation_config=compile_config_basic_transmon_zhinst_hardware,
     )
 
 
@@ -181,7 +181,7 @@ def test_multiplex_staircase_comp_transmon(
     compiler = SerialCompiler(name="compiler")
     _ = compiler.compile(
         schedule=gen_multiplexing_staircase_sched[0],
-        config=device_compile_config_basic_transmon,
+        compilation_config=device_compile_config_basic_transmon,
     )
 
 
@@ -191,5 +191,5 @@ def test_multiplex_staircase_comp_qblox(
     compiler = SerialCompiler(name="compiler")
     _ = compiler.compile(
         schedule=gen_multiplexing_staircase_sched[0],
-        config=compile_config_basic_transmon_qblox_hardware,
+        compilation_config=compile_config_basic_transmon_qblox_hardware,
     )
