@@ -110,6 +110,8 @@ def compile_circuit_to_device(
 
 def set_pulse_and_acquisition_clock(
     schedule: Schedule,
+    config: Optional[CompilationConfig] = None,
+    # device_cfg for backwards compatibility:
     device_cfg: Optional[Union[DeviceCompilationConfig, dict]] = None,
 ) -> Schedule:
     """
@@ -122,6 +124,9 @@ def set_pulse_and_acquisition_clock(
     ----------
     schedule
         The schedule to be compiled.
+    config
+        CompilationConfig used in the :class:`~QuantifyCompiler`, from which only
+        the :class:`~DeviceCompilationConfig` is used in this compilation step.
     device_cfg
         Device specific configuration, defines the compilation step from
         the quantum-circuit layer to the quantum-device layer description.
@@ -142,10 +147,15 @@ def set_pulse_and_acquisition_clock(
     ValueError
         When clock frequency is NaN.
     """
+    if config and device_cfg:
+        raise ValueError(
+            f"compile_circuit_to_device was called with both a config={config} and a device_cfg={device_cfg}. "
+            "Please make sure this function is called with either of the two (CompilationConfig recommended)."
+        )
     # In the graph-based compilation, CompilationNodes should accept the full
     # CompilationConfig as input (#405, !615, &1)
-    if isinstance(device_cfg, CompilationConfig):
-        device_cfg = device_cfg.device_compilation_config
+    if isinstance(config, CompilationConfig):
+        device_cfg = config.device_compilation_config
 
     if not isinstance(device_cfg, DeviceCompilationConfig):
         # this is a special case to be supported to enable compilation for schedules
