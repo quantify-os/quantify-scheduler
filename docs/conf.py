@@ -347,6 +347,13 @@ set_type_checking_flag = True  # this will run `typing.TYPE_CHECKING = True`
 # The following fails the build when one of the notebooks has an execution error.
 nb_execution_raise_on_error = True
 
+# Making sure sphinx builders understand cells which include multiple mime types,
+# for example linkcheck can check cells which contain html and images
+nb_mime_priority_overrides = [
+    ("linkcheck", "text/html", 0),
+    ("linkcheck", "image/png", 40),
+]
+
 # Enable nitpicky mode - warns about all references where the target cannot be found
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-nitpicky
 
@@ -380,6 +387,19 @@ nitpick_ignore = [
     ("py:class", "quantify_scheduler.Resource"),
     ("py:obj", "quantify_scheduler.structure.DataStructure"),
     ("py:obj", "quantify_scheduler.backends.SerialCompiler"),
+    ("py:obj", "quantify_scheduler.schedules.heterodyne_spec_sched"),
+    ("py:obj", "quantify_scheduler.schedules.nv_dark_esr_sched"),
+    ("py:obj", "quantify_scheduler.schedules.two_tone_spec_sched"),
+    ("py:obj", "quantify_scheduler.schedules.allxy_sched"),
+    ("py:obj", "quantify_scheduler.schedules.echo_sched"),
+    ("py:obj", "quantify_scheduler.schedules.rabi_pulse_sched"),
+    ("py:obj", "quantify_scheduler.schedules.rabi_sched"),
+    ("py:obj", "quantify_scheduler.schedules.ramsey_sched"),
+    ("py:obj", "quantify_scheduler.schedules.readout_calibration_sched"),
+    ("py:obj", "quantify_scheduler.schedules.t1_sched"),
+    ("py:obj", "quantify_scheduler.schedules.trace_schedule"),
+    ("py:obj", "quantify_scheduler.schedules.trace_schedule_circuit_layer"),
+    ("py:obj", "quantify_scheduler.schedules.two_tone_trace_schedule"),
 ]  # Tuple[str, str], ignore certain warnings
 
 nitpick_ignore_regex = [

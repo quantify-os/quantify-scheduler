@@ -7,6 +7,7 @@ workflow:
 
 variables:
   COV_MODULE: quantify_scheduler
+  GIT_DEPTH: 0  # Disable shallow clone that breaks `miniver`
 
 include:
   - project: "quantify-os/ci"

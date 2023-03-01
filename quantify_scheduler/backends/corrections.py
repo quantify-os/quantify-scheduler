@@ -6,17 +6,17 @@ from typing import Any, Dict, Generator, Optional, Tuple
 
 import numpy as np
 from quantify_scheduler import Schedule
+from quantify_scheduler.backends.graph_compilation import HardwareOption
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.qblox.helpers import generate_waveform_data
 from quantify_scheduler.helpers.importers import import_python_object_from_string
 from quantify_scheduler.operations.pulse_library import NumericalPulse
-from quantify_scheduler.structure import DataStructure
 
 logger = logging.getLogger(__name__)
 
 
 # pylint: disable=too-few-public-methods
-class LatencyCorrections(DataStructure):
+class LatencyCorrections(HardwareOption):
     """
     A datastructure containing the information required to correct for latencies
     on signals specified by port-clock combinations.

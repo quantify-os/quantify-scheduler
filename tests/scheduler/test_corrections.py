@@ -17,12 +17,19 @@ from quantify_scheduler.operations.pulse_library import NumericalPulse, SquarePu
 from tests.scheduler.backends.test_qblox_backend import (  # pylint: disable=unused-import
     hardware_cfg_two_qubit_gate as qblox_hardware_cfg_two_qubit_gate,
 )
+from tests.scheduler.backends.test_zhinst_backend import (  # pylint: disable=unused-import
+    hardware_cfg_distortion_corrections as zhinst_hardware_cfg_distortion_corrections,
+)
 
 
 # --------- Test fixtures ---------
 @pytest.fixture
 def hardware_cfg_distortion_corrections(
-    filter_coefficients, qblox_hardware_cfg_two_qubit_gate, backend, use_numpy_array
+    filter_coefficients,
+    qblox_hardware_cfg_two_qubit_gate,
+    zhinst_hardware_cfg_distortion_corrections,
+    backend,
+    use_numpy_array,
 ):
     hardware_cfg = {
         "distortion_corrections": {
@@ -40,6 +47,8 @@ def hardware_cfg_distortion_corrections(
 
     if "qblox" in backend:
         hardware_cfg = {**hardware_cfg, **qblox_hardware_cfg_two_qubit_gate}
+    elif "zhinst" in backend:
+        hardware_cfg = {**hardware_cfg, **zhinst_hardware_cfg_distortion_corrections}
 
     return hardware_cfg
 
@@ -127,7 +136,10 @@ def test_distortion_correct_pulse(
     "backend, use_numpy_array",
     [
         (backend, use_numpy)
-        for backend in ["quantify_scheduler.backends.qblox_backend.hardware_compile"]
+        for backend in [
+            "quantify_scheduler.backends.qblox_backend.hardware_compile",
+            "quantify_scheduler.backends.zhinst_backend.compile_backend",
+        ]
         for use_numpy in [True, False]
     ],
 )

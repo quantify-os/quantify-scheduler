@@ -17,6 +17,7 @@
 - Fokko de Vries \<<mailto:fdvries@qblox.com>>
 - Gabor Oszkar Denes \<<mailto:gdenes@qblox.com>>
 - Gijs Vermarien \<<mailto:gijs@orangeqs.com>>
+- Hiresh Jadoenathmissier \<<mailto:hiresh@orangeqs.com>>
 - Jordy Gloudemans \<<mailto:jgloudemans@qblox.com>>
 - Jules van Oven \<<mailto:jules@qblox.com>>
 - Kelvin Loh \<<mailto:kelvin@orangeqs.com>>
@@ -29,5 +30,6 @@
 - Thomas Reynders \<<mailto:thomas@orangeqs.com>>
 - Tobias Bonsen \<<mailto:tobias@orangeqs.com>>
 - Viacheslav Ostroukh \<<mailto:viacheslav@orangeqs.com>>
+- Victor Gervilla \<<mailto:vgervilla@qblox.com>>
 - Victor Negirneac \<<mailto:vnegirneac@qblox.com>>
 - Zhihao Wu \<<mailto:zhihaowu@quanta.org.cn>>

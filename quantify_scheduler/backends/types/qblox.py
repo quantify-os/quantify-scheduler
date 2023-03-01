@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from dataclasses import field as dataclasses_field
-from typing import Any, Dict, Optional, Tuple, Union, List
+from typing import Any, Dict, Optional, Tuple, TypeVar, Union, List
 
 from dataclasses_json import DataClassJsonMixin
 
@@ -424,14 +424,16 @@ class SequencerSettings(DataClassJsonMixin):
             The class with initial values.
         """
 
+        T = TypeVar("T", int, float)
+
         def extract_and_verify_range(
             param_name: str,
             settings: Dict[str, Any],
-            default_value: float,
-            min_value: float,
-            max_value: float,
-        ) -> float:
-            val: float = settings.get(param_name, default_value)
+            default_value: T,
+            min_value: T,
+            max_value: T,
+        ) -> T:
+            val = settings.get(param_name, default_value)
             if val < min_value or val > max_value:
                 raise ValueError(
                     f"Attempting to configure {param_name} to {val} for the sequencer "
@@ -441,44 +443,54 @@ class SequencerSettings(DataClassJsonMixin):
                 )
             return val
 
-        modulation_freq: Union[float, None] = seq_settings.get("interm_freq", None)
-        nco_en: bool = modulation_freq != 0 and modulation_freq is not None
+        modulation_freq: Optional[float] = seq_settings.get("interm_freq", None)
+        nco_en: bool = (
+            modulation_freq is not None and modulation_freq != 0
+        )  # Allow NCO to be permanently disabled via `"interm_freq": 0` in the hardware config
 
         mixer_amp_ratio = extract_and_verify_range(
-            "mixer_amp_ratio",
-            seq_settings,
-            1.0,
-            constants.MIN_MIXER_AMP_RATIO,
-            constants.MAX_MIXER_AMP_RATIO,
+            param_name="mixer_amp_ratio",
+            settings=seq_settings,
+            default_value=1.0,
+            min_value=constants.MIN_MIXER_AMP_RATIO,
+            max_value=constants.MAX_MIXER_AMP_RATIO,
         )
         mixer_phase_error = extract_and_verify_range(
-            "mixer_phase_error_deg",
-            seq_settings,
-            0.0,
-            constants.MIN_MIXER_PHASE_ERROR_DEG,
-            constants.MAX_MIXER_PHASE_ERROR_DEG,
+            param_name="mixer_phase_error_deg",
+            settings=seq_settings,
+            default_value=0.0,
+            min_value=constants.MIN_MIXER_PHASE_ERROR_DEG,
+            max_value=constants.MAX_MIXER_PHASE_ERROR_DEG,
         )
         ttl_acq_threshold = seq_settings.get("ttl_acq_threshold", None)
 
         init_offset_awg_path_0 = extract_and_verify_range(
-            "init_offset_awg_path_0",
-            seq_settings,
-            cls.init_offset_awg_path_0,
-            -1.0,
-            1.0,
+            param_name="init_offset_awg_path_0",
+            settings=seq_settings,
+            default_value=cls.init_offset_awg_path_0,
+            min_value=-1.0,
+            max_value=1.0,
         )
         init_offset_awg_path_1 = extract_and_verify_range(
-            "init_offset_awg_path_1",
-            seq_settings,
-            cls.init_offset_awg_path_1,
-            -1.0,
-            1.0,
+            param_name="init_offset_awg_path_1",
+            settings=seq_settings,
+            default_value=cls.init_offset_awg_path_1,
+            min_value=-1.0,
+            max_value=1.0,
         )
         init_gain_awg_path_0 = extract_and_verify_range(
-            "init_gain_awg_path_0", seq_settings, cls.init_gain_awg_path_0, -1.0, 1.0
+            param_name="init_gain_awg_path_0",
+            settings=seq_settings,
+            default_value=cls.init_gain_awg_path_0,
+            min_value=-1.0,
+            max_value=1.0,
         )
         init_gain_awg_path_1 = extract_and_verify_range(
-            "init_gain_awg_path_1", seq_settings, cls.init_gain_awg_path_1, -1.0, 1.0
+            param_name="init_gain_awg_path_1",
+            settings=seq_settings,
+            default_value=cls.init_gain_awg_path_1,
+            min_value=-1.0,
+            max_value=1.0,
         )
 
         settings = cls(

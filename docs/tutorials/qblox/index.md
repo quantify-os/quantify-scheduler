@@ -47,14 +47,22 @@ for more information.
 - ✅ QCM-RF
 - ✅ QRM-RF
 - ✅ Cluster
+- ✅ Local Oscillator
 - ⬜️ SPI
+
+## Recent changes
+
+For recent changes regarding the Qblox backend see the following.
+
+```{toctree}
+recent
+```
 
 ## How to use
 
 ```{toctree}
 :maxdepth: 2
 
-recent
 How to use
 Pulsar
 Cluster

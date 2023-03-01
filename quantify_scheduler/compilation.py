@@ -6,10 +6,11 @@ from copy import deepcopy
 from typing import Literal, Optional, Union
 
 from quantify_core.utilities import deprecated
+
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler.backends.graph_compilation import (
-    SimpleNodeConfig,
     SerialCompilationConfig,
+    SimpleNodeConfig,
 )
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.importers import import_python_object_from_string
@@ -487,7 +488,7 @@ def qcompile(
         compilation_passes.append(
             SimpleNodeConfig(
                 name="determine_absolute_timing",
-                compilation_func="quantify_scheduler.compilation.determine_absolute_timing",
+                compilation_func=determine_absolute_timing,
             )
         )
 
@@ -526,7 +527,11 @@ def qcompile(
             )
 
         compilation_config = SerialCompilationConfig(
-            name=backend_name, compilation_passes=compilation_passes
+            name=backend_name,
+            device_compilation_config=device_config,
+            hardware_options=[],
+            connectivity=hardware_config,
+            compilation_passes=compilation_passes,
         )
         return compilation_config
 
@@ -537,8 +542,7 @@ def qcompile(
     # to prevent the original input schedule from being modified.
     schedule = deepcopy(schedule)
 
-    backend_class = import_python_object_from_string(compilation_config.backend)
-    backend = backend_class(name=compilation_config.name)
+    backend = compilation_config.backend(name=compilation_config.name)
     compiled_schedule = backend.compile(schedule=schedule, config=compilation_config)
 
     return compiled_schedule
@@ -569,10 +573,11 @@ def device_compile(
         The updated schedule.
     """
 
-    try:
-        device_compilation_bck = import_python_object_from_string(device_cfg.backend)
-    except AttributeError:  # legacy support for add_pulse_information_transmon
+    # legacy support for add_pulse_information_transmon
+    if isinstance(device_cfg, dict):
         device_compilation_bck = import_python_object_from_string(device_cfg["backend"])
+    else:
+        device_compilation_bck = device_cfg.backend
 
     schedule = device_compilation_bck(schedule=schedule, device_cfg=device_cfg)
     schedule = determine_absolute_timing(schedule=schedule, time_unit="physical")

@@ -62,7 +62,9 @@ class Rxy(Operation):
         phi = phi % 360
         if data is None:
             tex = r"$R_{xy}^{" + f"{theta:.0f}, {phi:.0f}" + r"}$"
-            plot_func = "quantify_scheduler.visualization.circuit_diagram.gate_box"
+            plot_func = (
+                "quantify_scheduler.schedules._visualization.circuit_diagram.gate_box"
+            )
             theta_r = np.deg2rad(theta)
             phi_r = np.deg2rad(phi)
 
@@ -362,7 +364,9 @@ class CNOT(Operation):
             dictionary after initialization.
         """
         if data is None:
-            plot_func = "quantify_scheduler.visualization.circuit_diagram.cnot"
+            plot_func = (
+                "quantify_scheduler.schedules._visualization.circuit_diagram.cnot"
+            )
             super().__init__(f"CNOT ({qC}, {qT})")
             self.data.update(
                 {
@@ -438,7 +442,7 @@ class CZ(Operation):
             dictionary after initialization.
         """
         if data is None:
-            plot_func = "quantify_scheduler.visualization.circuit_diagram.cz"
+            plot_func = "quantify_scheduler.schedules._visualization.circuit_diagram.cz"
             super().__init__(f"CZ ({qC}, {qT})")
             self.data.update(
                 {
@@ -520,7 +524,9 @@ class Reset(Operation):
         """
         if data is None:
             super().__init__(f"Reset {', '.join(qubits)}")
-            plot_func = "quantify_scheduler.visualization.circuit_diagram.reset"
+            plot_func = (
+                "quantify_scheduler.schedules._visualization.circuit_diagram.reset"
+            )
             self.data.update(
                 {
                     "name": f"Reset {', '.join(qubits)}",
@@ -641,7 +647,9 @@ class Measure(Operation):
                     FutureWarning,
                 )
         if data is None:
-            plot_func = "quantify_scheduler.visualization.circuit_diagram.meter"
+            plot_func = (
+                "quantify_scheduler.schedules._visualization.circuit_diagram.meter"
+            )
             super().__init__(f"Measure {', '.join(qubits)}")
             self.data.update(
                 {

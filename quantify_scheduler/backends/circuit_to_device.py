@@ -10,11 +10,13 @@ from typing import Any, Callable, Dict, List, Optional, Union
 import numpy as np
 
 
-from quantify_scheduler.helpers.importers import import_python_object_from_string
+from pydantic import validator
+
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.schedule import Schedule
 from quantify_scheduler.structure import DataStructure
+from quantify_scheduler.structure.model import deserialize_function
 
 
 class OperationCompilationConfig(DataStructure):
@@ -35,9 +37,18 @@ class OperationCompilationConfig(DataStructure):
         be retrieved from the `gate_info` of the operation.
     """
 
-    factory_func: Union[Callable, str]
+    factory_func: Callable[..., Operation]
     factory_kwargs: Dict[str, Any]
     gate_info_factory_kwargs: Optional[List[str]]
+
+    @validator("factory_func", pre=True)
+    @classmethod
+    def import_factory_func_if_str(
+        cls, fun: Union[str, Callable[..., Operation]]
+    ) -> Callable[..., Operation]:
+        if isinstance(fun, str):
+            return deserialize_function(fun)
+        return fun  # type: ignore
 
 
 # pylint: disable=line-too-long
@@ -103,10 +114,19 @@ class DeviceCompilationConfig(DataStructure):
 
     """
 
-    backend: str
+    backend: Callable[[Schedule, Any], Schedule]
     clocks: Dict[str, float]
     elements: Dict[str, Dict[str, OperationCompilationConfig]]
     edges: Dict[str, Dict[str, OperationCompilationConfig]]
+
+    @validator("backend", pre=True)
+    @classmethod
+    def import_backend_if_str(
+        cls, fun: Callable[[Schedule, Any], Schedule]
+    ) -> Callable[[Schedule, Any], Schedule]:
+        if isinstance(fun, str):
+            return deserialize_function(fun)
+        return fun  # type: ignore
 
 
 def compile_circuit_to_device(
@@ -210,7 +230,7 @@ def set_pulse_and_acquisition_clock(
 
     Raises
     ------
-    RunTimeError
+    RuntimeError
         When operation is not at pulse/acquisition-level.
     ValueError
         When clock frequency is unknown.
@@ -275,8 +295,8 @@ def set_pulse_and_acquisition_clock(
                 if np.isnan(clock_freq_device_cfg := device_cfg.clocks[clock]):
                     raise ValueError(
                         f"Operation '{operation}' contains clock '{clock}' with an "
-                        f"undefined frequency; ensure this resource has been added to "
-                        f"the schedule or to the device config."
+                        f"undefined (initial) frequency; ensure this resource has been "
+                        f"added to the schedule or to the device config."
                     )
 
                 clock_resource = ClockResource(name=clock, freq=clock_freq_device_cfg)
@@ -377,10 +397,6 @@ def _add_device_repr_from_cfg(
     operation_cfg = deepcopy(operation_cfg)
     factory_func = operation_cfg.factory_func
 
-    # if specified as an importable string, import the function.
-    if isinstance(factory_func, str):
-        factory_func = import_python_object_from_string(factory_func)
-
     factory_kwargs: Dict = operation_cfg.factory_kwargs
 
     # retrieve keyword args for parametrized operations from the gate info
@@ -397,10 +413,6 @@ def _add_device_repr_from_cfg_multiplexed(
 ):
     operation_cfg = deepcopy(operation_cfg)
     factory_func = operation_cfg.factory_func
-
-    # if specified as an importable string, import the function.
-    if isinstance(factory_func, str):
-        factory_func = import_python_object_from_string(factory_func)
 
     factory_kwargs: Dict = operation_cfg.factory_kwargs
 

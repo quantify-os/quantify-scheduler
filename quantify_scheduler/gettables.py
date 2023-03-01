@@ -1,7 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 r"""
-Module containing :class:`~quantify_core.measurement.types.Gettable`\s for use with
+Module containing :class:`quantify_core.measurement.types.Gettable`\s for use with
 quantify-scheduler.
 
 .. warning::
@@ -29,7 +29,6 @@ from quantify_core.data.handling import gen_tuid, get_datadir, snapshot
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.helpers.importers import import_python_object_from_string
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
@@ -161,8 +160,7 @@ class ScheduleGettable:
         compilation_config = self.quantum_device.generate_compilation_config()
 
         # made into a private variable for debugging and future caching functionality
-        backend_class = import_python_object_from_string(compilation_config.backend)
-        self._backend = backend_class(name=compilation_config.name)
+        self._backend = compilation_config.backend(name=compilation_config.name)
         self._compiled_schedule = self._backend.compile(
             schedule=sched, config=compilation_config
         )

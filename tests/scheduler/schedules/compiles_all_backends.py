@@ -2,6 +2,8 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
+import pprint
+
 from quantify_scheduler.backends import SerialCompiler
 
 
@@ -18,7 +20,11 @@ class _CompilesAllBackends:
         # assert that files properly compile
         compilation_config = compile_config_basic_transmon_qblox_hardware
         compiler = SerialCompiler(name="compiler")
-        compiler.compile(schedule=self.uncomp_sched, config=compilation_config)
+        try:
+            compiler.compile(schedule=self.uncomp_sched, config=compilation_config)
+        except ValueError:
+            pprint.pprint(compilation_config.dict())
+            raise
 
     def test_compiles_zi_backend(
         self, compile_config_basic_transmon_zhinst_hardware

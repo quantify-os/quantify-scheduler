@@ -13,8 +13,10 @@ Module containing a standard library of schedules for common experiments as well
 """
 from .spectroscopy_schedules import (
     heterodyne_spec_sched,
+    heterodyne_spec_sched_nco,
     nv_dark_esr_sched,
     two_tone_spec_sched,
+    two_tone_spec_sched_nco,
 )
 from .timedomain_schedules import (
     allxy_sched,
@@ -35,6 +37,7 @@ __all__ = [
     "allxy_sched",
     "echo_sched",
     "heterodyne_spec_sched",
+    "heterodyne_spec_sched_nco",
     "nv_dark_esr_sched",
     "rabi_pulse_sched",
     "rabi_sched",
@@ -44,5 +47,6 @@ __all__ = [
     "trace_schedule",
     "trace_schedule_circuit_layer",
     "two_tone_spec_sched",
+    "two_tone_spec_sched_nco",
     "two_tone_trace_schedule",
 ]

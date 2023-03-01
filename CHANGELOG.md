@@ -4,11 +4,35 @@
 
 ### Breaking changes
 
+### Merged branches and closed issues
+
+## 0.12.0 (2023-02-28)
+
+### Breaking changes
+
 - Acquisition - `InstrumentCoordinator.retrieve_acquisition` returns an `xarray.Dataset` (!550, #362)
+- Qblox backend - Set the `marker_ovr_en` QCoDeS parameter by default to `False` before schedule execution, so that the markers are always controlled using the `MarkerConfiguration` (!576)
+- Qblox backend - Set `"downconverter_freq"` to `null` (json) or `None` to deactivate (`0` no longer deactivates it) (!574)
+- Qblox backend - The NCO is now enabled when setting `sequencer.frequency` to `0` (`0` no longer disables it) (!574)
+  - For baseband modules without external LO, NCO is still permanently disabled by setting `"interm_freq"` to `0` in the hardware config
+- Visualization - Deprecate `visualization` module and its functions `circuit_diagram_matplotlib`, `pulse_diagram_matplotlib`, and `pulse_diagram_plotly` (!599, #397)
+  - Create `_visualization` submodule within `schedules`
+  - Make plots via `ScheduleBase` methods
+  - Move visualization tests to `schedules` directory, and make tests for `ScheduleBase` plotting methods
 
-### Merged branches and closed issue
+### Merged branches and closed issues
 
+- Compilation - Update `CompilationConfig` with high-level structure (!603, #332)
 - Compilation - Add `determine_relative_latencies` that determines latencies for all port-clock combinations in the hardware config relative to the minimum latency (!566, #379)
+- Documentation - Qblox backend reference guide overhaul and fix docs generation warnings (!587)
+- JSON utilities - Introduce serialization of python objects to a dotted import string, next to the already existing deserialization (`import_python_object_from_string`) (!578, #393)
+  - Serialization now happens automatically in `DataStructure`s, deserialization is implemented using Pydantic validators in the configuration models
+- Operations - Introduce `SetClockFrequency` operation (!575, follow-up to !539 !543)
+- Qblox backend - Introduce `qblox.helpers.determine_clock_lo_interm_freqs` and use in `QbloxBasebandModule.assign_frequencies` and `QbloxRFModule.assign_frequencies` (!574)
+- Qblox backend - Compile `SetClockFrequency` operation to `set_freq` + `upd_param` of 8 ns (!575, follow-up to !539 !543)
+- Qblox backend - Fix Qblox sync reset bug following !550 (!611)
+- Schedules - Add fast NCO sweep schedules using `SetClockFrequency` (!542)
+- ZI LabOne backend - Support distortion corrections (!600)
 
 ## 0.11.1 (2023-02-07)
 

@@ -304,7 +304,7 @@ class SSBIntegrationComplex(AcquisitionOperation):  # pylint: disable=too-many-a
             Describes what is done when data is written to a register that already
             contains a value. Options are "append" which appends the result to the
             list or "average" which stores the weighted average value of the
-            new result and the old register value, by default BinMode.APPEND
+            new result and the old register value, by default BinMode.AVERAGE
         phase :
             The phase of the pulse and acquisition in degrees, by default 0
         t0 :
