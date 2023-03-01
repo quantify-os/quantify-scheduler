@@ -102,7 +102,7 @@ test_sched.add_resource(ClockResource(name="q4.01", freq=7e9))
 test_sched.add_resource(ClockResource(name="q5.01", freq=8e9))
 test_sched = determine_absolute_timing(test_sched)
 
-hardware_compile(test_sched, mapping_config)
+hardware_compile(schedule=test_sched, hardware_cfg=mapping_config)
 ```
 
 Notice the {code}`"quantify_scheduler.backends.qblox_backend.hardware_compile"` backend is used. In the example, we notice that the cluster is specified using an instrument with {code}`"instrument_type": "Cluster"`. In the backend, the cluster instrument functions as a collection of modules. The modules themselves can be configured with {code}`portclock_configs`.
@@ -417,7 +417,7 @@ test_sched.add(SquarePulse(amp=0.25, duration=1e-6, port="q1:mw", clock="q1.01")
 test_sched.add(SquarePulse(amp=0.25, duration=1e-6, port="q2:mw", clock="q2.01"))
 test_sched.add(SquarePulse(amp=0.25, duration=1e-6, port="q3:mw", clock="q3.01"))
 test_sched = determine_absolute_timing(test_sched)
-hardware_compile(test_sched, mapping_config)
+hardware_compile(schedule=test_sched, hardware_cfg=mapping_config)
 ```
 
 #### Downconverter
@@ -473,7 +473,7 @@ mapping_config = {
        }
     }
 }
-hardware_compile(test_sched, mapping_config)
+hardware_compile(schedule=test_sched, hardware_cfg=mapping_config)
 
 ```
 

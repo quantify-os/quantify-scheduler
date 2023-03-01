@@ -88,7 +88,7 @@ test_sched.add(
 test_sched.add_resource(ClockResource(name="q0.01", freq=7e9))
 test_sched = determine_absolute_timing(test_sched)
 
-hardware_compile(test_sched, mapping_config)
+hardware_compile(schedule=test_sched, hardware_cfg=mapping_config)
 ```
 
 Here we specify a setup containing only a Pulsar QCM, with both outputs connected to a local oscillator sources.
@@ -170,7 +170,7 @@ mapping_config_rf = {
         }
     }
 }
-hardware_compile(test_sched, mapping_config_rf)
+hardware_compile(schedule=test_sched, hardware_cfg=mapping_config_rf)
 
 ```
 
@@ -242,7 +242,7 @@ mystnb:
   remove_code_outputs: true
 ---
 
-hardware_compile(test_sched, mapping_config)
+hardware_compile(schedule=test_sched, hardware_cfg=mapping_config)
 ```
 
 ## Frequency multiplexing
@@ -301,7 +301,7 @@ test_sched.add_resource(ClockResource(name="some_other_clock", freq=100e6))
 
 test_sched = determine_absolute_timing(test_sched)
 
-hardware_compile(test_sched, mapping_config)
+hardware_compile(schedule=test_sched, hardware_cfg=mapping_config)
 ```
 
 In the given example, we added a second port-clock configuration to output 0. Now any signal on port {code}`"q0:mw"` with clock {code}`"some_other_clock"` will be added digitally to the signal with the same port but clock {code}`"q0.01"`. The Qblox modules currently have six sequencers available, which sets the upper limit to our multiplexing capabilities.
@@ -421,7 +421,7 @@ test_sched.add_resource(ClockResource(name="q1.01", freq=100e6))
 
 test_sched = determine_absolute_timing(test_sched)
 
-hardware_compile(test_sched, mapping_config)
+hardware_compile(schedule=test_sched, hardware_cfg=mapping_config)
 ```
 
 When using real outputs, the backend automatically maps the signals to the correct output paths. We note that for real outputs, it is not allowed to use any pulses that have an imaginary component i.e. only real valued pulses are allowed. If you were to use a complex pulse, the backend will produce an error, e.g. square and ramp pulses are allowed but DRAG pulses not.
@@ -446,7 +446,7 @@ test_sched.add(
 
 test_sched = determine_absolute_timing(test_sched)
 
-hardware_compile(test_sched, mapping_config)
+hardware_compile(schedule=test_sched, hardware_cfg=mapping_config)
 
 ```
 
@@ -497,7 +497,7 @@ test_sched.add_resource(ClockResource(name="q0.01", freq=200e6))
 
 test_sched = determine_absolute_timing(test_sched)
 
-hardware_compile(test_sched, mapping_config)
+hardware_compile(schedule=test_sched, hardware_cfg=mapping_config)
 ```
 
 Currently, this has the following effects:
