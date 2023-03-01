@@ -154,7 +154,12 @@ def _find_edge(device_cfg, parent_element_name, child_element_name, op_name):
     "`example_transmon_cfg` is defined in "
     "`quantify_scheduler/schemas/examples/circuit_to_device_example_cfgs.py`.",
 )
-def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Schedule:
+def add_pulse_information_transmon(
+    schedule: Schedule,
+    device_cfg: Optional[dict] = None,
+    # CompilationConfig for forwards compatibility (if this function is used in a CompilationNode):
+    config: Optional[CompilationConfig] = None,
+) -> Schedule:
     # pylint: disable=line-too-long
     """
     Adds pulse information specified in the device config to the schedule.
@@ -166,6 +171,10 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
 
     device_cfg
         A dictionary specifying the required pulse information.
+
+    config
+        CompilationConfig used in the :class:`~QuantifyCompiler`, from which only
+        the :class:`~DeviceCompilationConfig` is used in this compilation step.
 
 
     Returns
@@ -192,10 +201,15 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
     """
     # pylint: enable=line-too-long
 
+    if config and device_cfg:
+        raise ValueError(
+            f"add_pulse_information_transmon was called with both a config={config} and a device_cfg={device_cfg}. "
+            "Please make sure this function is called with either of the two."
+        )
     # In the graph-based compilation, CompilationNodes should accept the full
     # CompilationConfig as input (#405, !615, &1)
-    if isinstance(device_cfg, CompilationConfig):
-        device_cfg = device_cfg.device_compilation_config
+    if isinstance(config, CompilationConfig):
+        device_cfg = config.device_compilation_config
 
     validate_config(device_cfg, scheme_fn="transmon_cfg.json")
 
