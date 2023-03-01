@@ -161,7 +161,7 @@ quantum_device.hardware_config(hardware_cfg)
 
 compiler = SerialCompiler(name="compiler")
 compiled_schedule = compiler.compile(
-    schedule=sched, compilation_config=quantum_device.generate_compilation_config()
+    schedule=sched, config=quantum_device.generate_compilation_config()
 )
 ```
 

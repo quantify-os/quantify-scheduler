@@ -161,7 +161,7 @@ quantum_device = QuantumDevice("DUT")
 quantum_device.hardware_config(hardware_cfg)
 compiler = SerialCompiler(name="compiler")
 compiled_sched = compiler.compile(
-    schedule=sched, compilation_config=quantum_device.generate_compilation_config()
+    schedule=sched, config=quantum_device.generate_compilation_config()
 )
 
 compiled_sched.plot_pulse_diagram(plot_backend='plotly')

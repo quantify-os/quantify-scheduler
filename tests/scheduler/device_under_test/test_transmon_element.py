@@ -5,12 +5,13 @@
 import json
 
 import pytest
+
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler.backends.graph_compilation import SerialCompiler
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
-from quantify_scheduler.json_utils import ScheduleJSONDecoder, ScheduleJSONEncoder
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.json_utils import ScheduleJSONEncoder, ScheduleJSONDecoder
 from quantify_scheduler.operations.gate_library import Measure
 
 
@@ -123,7 +124,7 @@ def test_basic_transmon_deserialization(q0: BasicTransmonElement, dev: QuantumDe
 
     compiler = SerialCompiler(name="compiler")
     compiled_sched_q0 = compiler.compile(
-        schedule=sched, compilation_config=dev.generate_compilation_config()
+        schedule=sched, config=dev.generate_compilation_config()
     )
 
     q0_as_str = json.dumps(q0, cls=ScheduleJSONEncoder)
@@ -135,7 +136,7 @@ def test_basic_transmon_deserialization(q0: BasicTransmonElement, dev: QuantumDe
     assert deserialized_q0.__class__ is BasicTransmonElement
 
     compiled_sched_deserialized_q0 = compiler.compile(
-        schedule=sched, compilation_config=dev.generate_compilation_config()
+        schedule=sched, config=dev.generate_compilation_config()
     )
     assert compiled_sched_deserialized_q0.operations == compiled_sched_q0.operations, (
         f"Compiled operations of deserialized '{deserialized_q0.name}' does not match "

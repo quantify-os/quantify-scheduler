@@ -6,6 +6,7 @@ from copy import deepcopy
 
 import numpy as np
 import pytest
+
 from quantify_scheduler import Operation, Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.circuit_to_device import ConfigKeyError
@@ -198,8 +199,8 @@ def test_bad_gate(device_compile_config_basic_transmon):
     ):
         compiler = SerialCompiler(name="compiler")
         compiler.compile(
-            schedule=sched,
-            compilation_config=device_compile_config_basic_transmon,
+            sched,
+            config=device_compile_config_basic_transmon,
         )
 
 
@@ -214,8 +215,8 @@ def test_pulse_and_clock(device_compile_config_basic_transmon):
     compiler = SerialCompiler(name="compiler")
     with pytest.raises(ValueError) as execinfo:
         compiler.compile(
-            schedule=sched,
-            compilation_config=device_compile_config_basic_transmon,
+            sched,
+            config=device_compile_config_basic_transmon,
         )
     assert str(execinfo.value) == (
         f"Operation '{op_hash}' contains an unknown clock '{mystery_clock}'; "
@@ -225,8 +226,8 @@ def test_pulse_and_clock(device_compile_config_basic_transmon):
 
     sched.add_resource(ClockResource(mystery_clock, 6e9))
     compiler.compile(
-        schedule=sched,
-        compilation_config=device_compile_config_basic_transmon,
+        sched,
+        config=device_compile_config_basic_transmon,
     )
 
 
@@ -244,8 +245,8 @@ def test_resource_resolution(device_compile_config_basic_transmon):
     sched.add_resources([qcm0_s0, qrm0_s0])
     compiler = SerialCompiler(name="compiler")
     _ = compiler.compile(
-        schedule=sched,
-        compilation_config=device_compile_config_basic_transmon,
+        sched,
+        config=device_compile_config_basic_transmon,
     )
 
 
@@ -265,8 +266,8 @@ def test_schedule_modified(device_compile_config_basic_transmon):
 
     compiler = SerialCompiler(name="compiler")
     _ = compiler.compile(
-        schedule=sched,
-        compilation_config=device_compile_config_basic_transmon,
+        sched,
+        config=device_compile_config_basic_transmon,
     )
     # Fails if schedule is modified
     assert copy_of_sched == sched
@@ -288,7 +289,7 @@ def test_measurement_specification_of_binmode(device_compile_config_basic_transm
     compiler = SerialCompiler(name="compiler")
     comp_sched = compiler.compile(
         schedule=schedule,
-        compilation_config=device_compile_config_basic_transmon,
+        config=device_compile_config_basic_transmon,
     )
 
     for key, value in comp_sched.data["operation_dict"].items():
@@ -307,7 +308,7 @@ def test_measurement_specification_of_binmode(device_compile_config_basic_transm
 
     comp_sched = compiler.compile(
         schedule=schedule,
-        compilation_config=device_compile_config_basic_transmon,
+        config=device_compile_config_basic_transmon,
     )
 
     for key, value in comp_sched.data["operation_dict"].items():
@@ -324,7 +325,7 @@ def test_measurement_specification_of_binmode(device_compile_config_basic_transm
 
     comp_sched = compiler.compile(
         schedule=schedule,
-        compilation_config=device_compile_config_basic_transmon,
+        config=device_compile_config_basic_transmon,
     )
 
     for key, value in comp_sched.data["operation_dict"].items():
@@ -341,7 +342,7 @@ def test_compile_trace_acquisition(device_compile_config_basic_transmon):
 
     compiler = SerialCompiler(name="compile")
     sched = compiler.compile(
-        schedule=sched, compilation_config=device_compile_config_basic_transmon
+        schedule=sched, config=device_compile_config_basic_transmon
     )
 
     measure_repr = list(sched.schedulables.values())[-1]["operation_repr"]
@@ -361,7 +362,5 @@ def test_compile_no_device_cfg_determine_absolute_timing(
         "quantify_scheduler.device_under_test.quantum_device.determine_absolute_timing"
     )
     compiler = SerialCompiler(name="compile")
-    compiler.compile(
-        schedule=sched, compilation_config=device_compile_config_basic_transmon
-    )
+    compiler.compile(schedule=sched, config=device_compile_config_basic_transmon)
     assert mock.is_called()

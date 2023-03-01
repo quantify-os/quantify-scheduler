@@ -696,7 +696,7 @@ class ZIDeviceConfig:
 
 def compile_backend(
     schedule: Schedule,
-    compilation_config: Optional[CompilationConfig] = None,
+    config: Optional[CompilationConfig] = None,
     # hardware_cfg for backwards compatibility:
     hardware_cfg: Optional[Dict[str, Any]] = None,
 ) -> CompiledSchedule:
@@ -712,7 +712,7 @@ def compile_backend(
     ----------
     schedule :
         The schedule to be compiled.
-    compilation_config
+    config
         CompilationConfig used in the :class:`~QuantifyCompiler`, from which the `hardware_cfg`
         is currently extracted in this compilation step.
     hardware_cfg :
@@ -731,15 +731,15 @@ def compile_backend(
     NotImplementedError
         Thrown when using unsupported ZI Instruments.
     """
-    if compilation_config and hardware_cfg:
+    if config and hardware_cfg:
         raise ValueError(
-            f"Zhinst compile_backend was called with both a compilation_config={compilation_config} and a hardware_cfg={hardware_cfg}. "
+            f"Zhinst compile_backend was called with both a config={config} and a hardware_cfg={hardware_cfg}. "
             "Please make sure this function is called with either of the two (CompilationConfig recommended)."
         )
     # In the graph-based compilation, CompilationNodes should accept the full
     # CompilationConfig as input (#405, !615, &1)
-    if compilation_config:
-        hardware_cfg = compilation_config.connectivity
+    if config:
+        hardware_cfg = config.connectivity
 
     _validate_schedule(schedule)
 

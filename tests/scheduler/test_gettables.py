@@ -5,19 +5,21 @@
 # pylint: disable=invalid-name
 # pylint: disable=unused-argument
 
-import json
-import os
-import zipfile
-
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 from typing import Any, Dict, Tuple
 from unittest import TestCase
 from unittest.mock import Mock
 
+import json
+import os
+import zipfile
+
 import numpy as np
 import pytest
 from qcodes.instrument.parameter import ManualParameter
+from xarray import DataArray, Dataset
+
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.gettables import ScheduleGettable
@@ -37,7 +39,6 @@ from quantify_scheduler.schedules.timedomain_schedules import (
     t1_sched,
 )
 from quantify_scheduler.schedules.trace_schedules import trace_schedule
-from xarray import DataArray, Dataset
 
 
 @pytest.mark.parametrize("num_channels, real_imag", [(1, True), (2, False), (10, True)])
@@ -164,7 +165,7 @@ def test_ScheduleGettableSingleChannel_batched_allxy(
     compiler = SerialCompiler(name="compiler")
     comp_allxy_sched = compiler.compile(
         schedule=sched,
-        compilation_config=quantum_device.generate_compilation_config(),
+        config=quantum_device.generate_compilation_config(),
     )
 
     data = np.concatenate(
@@ -237,7 +238,7 @@ def test_ScheduleGettableSingleChannel_append_readout_cal(
     compiler = SerialCompiler(name="compiler")
     comp_ssro_sched = compiler.compile(
         schedule=ssro_sched,
-        compilation_config=quantum_device.generate_compilation_config(),
+        config=quantum_device.generate_compilation_config(),
     )
 
     data = np.tile(np.arange(2), repetitions) * np.exp(1j)
@@ -394,7 +395,7 @@ def test_ScheduleGettable_generate_diagnostic(
 
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
-        schedule=sched, compilation_config=quantum_device.generate_compilation_config()
+        schedule=sched, config=quantum_device.generate_compilation_config()
     )
 
     assert gettable._compiled_schedule == compiled_sched

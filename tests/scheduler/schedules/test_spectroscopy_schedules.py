@@ -5,14 +5,16 @@
 import numpy as np
 import pytest
 from qcodes.instrument.parameter import ManualParameter
+
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.compilation import determine_absolute_timing
-from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.schedules import spectroscopy_schedules as sps
 from quantify_scheduler.schedules.schedule import AcquisitionMetadata
+
 from tests.scheduler.instrument_coordinator.components.test_qblox import (  # pylint: disable=unused-import
     make_cluster_component,
 )
@@ -58,8 +60,7 @@ class TestHeterodyneSpecSchedule(_CompilesAllBackends):
         # assert that files properly compile
         compiler = SerialCompiler(name="compiler")
         compiler.compile(
-            schedule=self.uncomp_sched,
-            compilation_config=device_compile_config_basic_transmon,
+            schedule=self.uncomp_sched, config=device_compile_config_basic_transmon
         )
 
 
@@ -248,8 +249,7 @@ class TestTwoToneSpecSchedule(_CompilesAllBackends):
         # assert that files properly compile
         compiler = SerialCompiler(name="compiler")
         compiler.compile(
-            schedule=self.uncomp_sched,
-            compilation_config=device_compile_config_basic_transmon,
+            schedule=self.uncomp_sched, config=device_compile_config_basic_transmon
         )
 
 
@@ -340,7 +340,7 @@ class TestNVDarkESRSched:
         compiler = SerialCompiler(name="compiler")
         sched = compiler.compile(
             schedule=self.uncomp_sched,
-            compilation_config=quantum_device.generate_compilation_config(),
+            config=quantum_device.generate_compilation_config(),
         )
 
         # Assert
@@ -360,9 +360,7 @@ class TestNVDarkESRSched:
         compiler = SerialCompiler(name="compiler")
         compiler.compile(
             schedule=self.uncomp_sched,
-            compilation_config=mock_setup_basic_nv[
-                "quantum_device"
-            ].generate_compilation_config(),
+            config=mock_setup_basic_nv["quantum_device"].generate_compilation_config(),
         )
 
     def test_compiles_qblox_backend(self, mock_setup_basic_nv_qblox_hardware) -> None:
@@ -374,6 +372,6 @@ class TestNVDarkESRSched:
 
         schedule = compiler.compile(
             schedule=self.uncomp_sched,
-            compilation_config=quantum_device.generate_compilation_config(),
+            config=quantum_device.generate_compilation_config(),
         )
         assert not schedule.compiled_instructions == {}

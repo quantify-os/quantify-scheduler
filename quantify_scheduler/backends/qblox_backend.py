@@ -18,7 +18,7 @@ from quantify_scheduler.backends.qblox import compiler_container, helpers
 
 def hardware_compile(
     schedule: Schedule,
-    compilation_config: Optional[CompilationConfig] = None,
+    config: Optional[CompilationConfig] = None,
     # hardware_cfg for backwards compatibility:
     hardware_cfg: Optional[Dict[str, Any]] = None,
 ) -> CompiledSchedule:
@@ -38,7 +38,7 @@ def hardware_compile(
     schedule
         The schedule to compile. It is assumed the pulse and acquisition info is
         already added to the operation. Otherwise an exception is raised.
-    compilation_config
+    config
         CompilationConfig used in the :class:`~QuantifyCompiler`, from which the `hardware_cfg`
         is currently extracted in this compilation step.
     hardware_cfg
@@ -49,15 +49,15 @@ def hardware_compile(
     :
         The compiled schedule.
     """
-    if compilation_config and hardware_cfg:
+    if config and hardware_cfg:
         raise ValueError(
-            f"Qblox hardware_compile was called with both a compilation_config={compilation_config} and a hardware_cfg={hardware_cfg}. "
+            f"Qblox hardware_compile was called with both a config={config} and a hardware_cfg={hardware_cfg}. "
             "Please make sure this function is called with either of the two (CompilationConfig recommended)."
         )
     # In the graph-based compilation, CompilationNodes should accept the full
     # CompilationConfig as input (#405, !615, &1)
-    if compilation_config:
-        hardware_cfg = compilation_config.connectivity
+    if config:
+        hardware_cfg = config.connectivity
 
     converted_hw_config = helpers.convert_hw_config_to_portclock_configs_spec(
         hardware_cfg

@@ -4,28 +4,33 @@
 from typing import List
 
 import pytest
-from quantify_scheduler import Operation, Schedule
+
+from quantify_scheduler import Operation
+
+from quantify_scheduler import Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.circuit_to_device import (
+    compile_circuit_to_device,
+    set_pulse_and_acquisition_clock,
     ConfigKeyError,
     DeviceCompilationConfig,
     OperationCompilationConfig,
-    compile_circuit_to_device,
-    set_pulse_and_acquisition_clock,
 )
+
+from quantify_scheduler.operations.pulse_library import IdlePulse
 from quantify_scheduler.operations.gate_library import (
     CNOT,
     CZ,
-    Y90,
     Measure,
     Reset,
     Rxy,
     X,
     Y,
+    Y90,
 )
 from quantify_scheduler.operations.pulse_factories import rxy_drag_pulse
-from quantify_scheduler.operations.pulse_library import IdlePulse
 from quantify_scheduler.resources import ClockResource
+
 from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import (
     example_transmon_cfg,
 )
@@ -247,7 +252,7 @@ def test_set_device_cfg_clock(
 
     compiler = SerialCompiler("test")
     compiled_sched = compiler.compile(
-        schedule=sched, compilation_config=quantum_device.generate_compilation_config()
+        schedule=sched, config=quantum_device.generate_compilation_config()
     )
     assert compiled_sched.resources[clock]["freq"] == q0.clock_freqs.f01()
 
