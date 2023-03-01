@@ -8,10 +8,11 @@ from typing import Any, Dict
 
 from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends.corrections import (
+    LatencyCorrections,
     apply_distortion_corrections,
     determine_relative_latencies,
-    LatencyCorrections,
 )
+from quantify_scheduler.backends.graph_compilation import CompilationConfig
 from quantify_scheduler.backends.qblox import compiler_container, helpers
 
 
@@ -42,6 +43,10 @@ def hardware_compile(
     :
         The compiled schedule.
     """
+    # In the graph-based compilation, CompilationNodes should accept the full
+    # CompilationConfig as input (#405, !615, &1)
+    if isinstance(hardware_cfg, CompilationConfig):
+        hardware_cfg = hardware_cfg.connectivity
 
     converted_hw_config = helpers.convert_hw_config_to_portclock_configs_spec(
         hardware_cfg
