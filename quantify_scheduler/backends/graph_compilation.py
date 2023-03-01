@@ -563,16 +563,10 @@ class SerialCompiler(QuantifyCompiler):
 
         # exclude the input and output from the path to use to compile
         for i, node in enumerate(path):
-            if config.compilation_passes[i].name == "determine_absolute_timing":
-                schedule = node.compile(
-                    schedule=schedule,
-                    config=None,
-                )
-            else:
-                schedule = node.compile(
-                    schedule=schedule,
-                    config=config,
-                )
+            schedule = node.compile(
+                schedule=schedule,
+                config=config,
+            )
 
         # mark the schedule as "Compiled" before returning at the final step.
         # in the future CompiledSchedule will likely become an attribute of a
