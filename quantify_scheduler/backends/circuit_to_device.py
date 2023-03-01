@@ -46,7 +46,7 @@ def compile_circuit_to_device(
     """
     if config and device_cfg:
         raise ValueError(
-            "compile_circuit_to_device with both a config=CompilationConfig and a device_cfg (deprecated). "
+            f"compile_circuit_to_device was called with both a config={config} and a device_cfg={device_cfg}. "
             "Please make sure this function is called with either of the two (CompilationConfig recommended)."
         )
     # In the graph-based compilation, CompilationNodes should accept the full
