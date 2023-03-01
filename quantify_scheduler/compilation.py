@@ -54,6 +54,9 @@ def determine_absolute_timing(
     ----------
     schedule
         The schedule for which to determine timings.
+    config
+        CompilationConfig used in the :class:`~QuantifyCompiler`, which is currently
+        not used in this compilation step.
     time_unit
         Whether to use physical units to determine the absolute time or ideal time.
         When :code:`time_unit == "physical"` the duration attribute is used.
