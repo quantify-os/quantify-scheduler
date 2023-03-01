@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends.corrections import (
@@ -17,7 +17,10 @@ from quantify_scheduler.backends.qblox import compiler_container, helpers
 
 
 def hardware_compile(
-    schedule: Schedule, hardware_cfg: Dict[str, Any]
+    schedule: Schedule,
+    config: Optional[CompilationConfig] = None,
+    # hardware_cfg for backwards compatibility:
+    hardware_cfg: Optional[Dict[str, Any]] = None,
 ) -> CompiledSchedule:
     """
     Main function driving the compilation. The principle behind the overall compilation
@@ -35,6 +38,9 @@ def hardware_compile(
     schedule
         The schedule to compile. It is assumed the pulse and acquisition info is
         already added to the operation. Otherwise an exception is raised.
+    config
+        CompilationConfig used in the :class:`~QuantifyCompiler`, from which the `hardware_cfg`
+        is currently extracted in this compilation step.
     hardware_cfg
         The hardware configuration of the setup.
 
@@ -43,10 +49,15 @@ def hardware_compile(
     :
         The compiled schedule.
     """
+    if config and hardware_cfg:
+        raise ValueError(
+            f"hardware_compile was called with both a config={config} and a hardware_cfg={hardware_cfg}. "
+            "Please make sure this function is called with either of the two (CompilationConfig recommended)."
+        )
     # In the graph-based compilation, CompilationNodes should accept the full
     # CompilationConfig as input (#405, !615, &1)
-    if isinstance(hardware_cfg, CompilationConfig):
-        hardware_cfg = hardware_cfg.connectivity
+    if isinstance(config, CompilationConfig):
+        hardware_cfg = config.connectivity
 
     converted_hw_config = helpers.convert_hw_config_to_portclock_configs_spec(
         hardware_cfg
