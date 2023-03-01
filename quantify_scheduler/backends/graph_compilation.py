@@ -337,7 +337,7 @@ class SimpleNode(CompilationNode):
         # note, the type hint indicates both datastructures and dicts as valid configs.
         # In the future we should only support DataStructures for the compiler options
         # to have stricter typing and error handling. Dict is for legacy support.
-        return self.compilation_func(schedule, config)
+        return self.compilation_func(schedule=schedule, config=config)
 
 
 # pylint: disable=abstract-method
