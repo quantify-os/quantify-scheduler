@@ -152,7 +152,6 @@ class QuantumDevice(Instrument):
                 SimpleNodeConfig(
                     name="custom_hardware_compile",
                     compilation_func=hardware_config["backend"],
-                    compilation_options=hardware_config,
                 )
             )
 
