@@ -110,7 +110,6 @@ class QuantumDevice(Instrument):
                 name="set_pulse_and_acquisition_clock",
                 compilation_func="quantify_scheduler.backends.circuit_to_device."
                 + "set_pulse_and_acquisition_clock",
-                compilation_options=dev_cfg,
             ),
             SimpleNodeConfig(
                 name="determine_absolute_timing",

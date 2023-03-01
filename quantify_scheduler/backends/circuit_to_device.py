@@ -132,6 +132,11 @@ def set_pulse_and_acquisition_clock(
     ValueError
         When clock frequency is NaN.
     """
+    # In the graph-based compilation, CompilationNodes should accept the full
+    # CompilationConfig as input (#405, !615, &1)
+    if isinstance(device_cfg, CompilationConfig):
+        device_cfg = device_cfg.device_compilation_config
+
     if not isinstance(device_cfg, DeviceCompilationConfig):
         # this is a special case to be supported to enable compilation for schedules
         # that are defined completely at the quantum-device layer and require no

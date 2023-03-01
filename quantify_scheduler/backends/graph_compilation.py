@@ -578,6 +578,11 @@ class SerialCompiler(QuantifyCompiler):
                     schedule=schedule,
                     config=config,
                 )
+            elif config.compilation_passes[i].name == "set_pulse_and_acquisition_clock":
+                schedule = node.compile(
+                    schedule=schedule,
+                    config=config,
+                )
             else:
                 schedule = node.compile(
                     schedule=schedule,
