@@ -7,8 +7,9 @@ from typing import Literal, Optional, Union
 
 from quantify_core.utilities import deprecated
 
-from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler.backends.graph_compilation import (
+    CompilationConfig,
+    DeviceCompilationConfig,
     SerialCompilationConfig,
     SimpleNodeConfig,
 )
@@ -183,6 +184,11 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
 
     """
     # pylint: enable=line-too-long
+
+    # In the graph-based compilation, CompilationNodes should accept the full
+    # CompilationConfig as input (#405, !615, &1)
+    if isinstance(device_cfg, CompilationConfig):
+        device_cfg = device_cfg.device_compilation_config
 
     validate_config(device_cfg, scheme_fn="transmon_cfg.json")
 
@@ -461,7 +467,6 @@ def qcompile(
                 SimpleNodeConfig(
                     name="circuit_to_device",
                     compilation_func=device_config.backend,
-                    compilation_options=device_config,
                 )
             )
             compilation_passes.append(
@@ -469,7 +474,6 @@ def qcompile(
                     name="set_pulse_and_acquisition_clock",
                     compilation_func="quantify_scheduler.backends.circuit_to_device."
                     + "set_pulse_and_acquisition_clock",
-                    compilation_options=device_config,
                 )
             )
         elif isinstance(device_config, dict):
@@ -478,7 +482,6 @@ def qcompile(
                 SimpleNodeConfig(
                     name="add_pulse_information_transmon",
                     compilation_func=device_config["backend"],
-                    compilation_options=device_config,
                 )
             )
         else:
@@ -505,7 +508,6 @@ def qcompile(
                 SimpleNodeConfig(
                     name="qblox_hardware_compile",
                     compilation_func=hardware_config["backend"],
-                    compilation_options=hardware_config,
                 )
             )
         elif (
@@ -517,7 +519,6 @@ def qcompile(
                 SimpleNodeConfig(
                     name="zhinst_hardware_compile",
                     compilation_func=hardware_config["backend"],
-                    compilation_options=hardware_config,
                 )
             )
 

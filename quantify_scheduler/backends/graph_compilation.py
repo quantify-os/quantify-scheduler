@@ -583,6 +583,12 @@ class SerialCompiler(QuantifyCompiler):
                     schedule=schedule,
                     config=config,
                 )
+            # needed for backwards compatibility qcompile:
+            elif config.compilation_passes[i].name == "add_pulse_information_transmon":
+                schedule = node.compile(
+                    schedule=schedule,
+                    config=config,
+                )
             else:
                 schedule = node.compile(
                     schedule=schedule,
