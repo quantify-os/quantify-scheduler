@@ -12,21 +12,19 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
-from zhinst.toolkit.helpers import Waveform
-
-
 from quantify_scheduler import enums
 from quantify_scheduler.backends.corrections import (
+    LatencyCorrections,
     apply_distortion_corrections,
     determine_relative_latencies,
-    LatencyCorrections,
 )
+from quantify_scheduler.backends.graph_compilation import CompilationConfig
 from quantify_scheduler.backends.types import common, zhinst
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 from quantify_scheduler.backends.zhinst import resolvers, seqc_il_generator
 from quantify_scheduler.backends.zhinst import settings as zi_settings
-from quantify_scheduler.helpers import waveforms as waveform_helpers
 from quantify_scheduler.helpers import schedule as schedule_helpers
+from quantify_scheduler.helpers import waveforms as waveform_helpers
 from quantify_scheduler.instrument_coordinator.components.generic import (
     DEFAULT_NAME as generic_icc_default_name,
 )
@@ -34,6 +32,7 @@ from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.resources import Resource
 from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 
+from zhinst.toolkit.helpers import Waveform
 
 logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
@@ -726,6 +725,11 @@ def compile_backend(
     NotImplementedError
         Thrown when using unsupported ZI Instruments.
     """
+
+    # In the graph-based compilation, CompilationNodes should accept the full
+    # CompilationConfig as input (#405, !615, &1)
+    if isinstance(hardware_cfg, CompilationConfig):
+        hardware_cfg = hardware_cfg.connectivity
 
     _validate_schedule(schedule)
 

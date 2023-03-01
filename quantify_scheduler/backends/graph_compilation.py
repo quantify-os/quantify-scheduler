@@ -573,6 +573,11 @@ class SerialCompiler(QuantifyCompiler):
                     schedule=schedule,
                     config=config,
                 )
+            elif config.compilation_passes[i].name == "zhinst_hardware_compile":
+                schedule = node.compile(
+                    schedule=schedule,
+                    config=config,
+                )
             else:
                 schedule = node.compile(
                     schedule=schedule,
