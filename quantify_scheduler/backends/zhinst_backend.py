@@ -695,7 +695,10 @@ class ZIDeviceConfig:
 
 
 def compile_backend(
-    schedule: Schedule, hardware_cfg: Dict[str, Any]
+    schedule: Schedule,
+    config: Optional[CompilationConfig] = None,
+    # hardware_cfg for backwards compatibility:
+    hardware_cfg: Optional[Dict[str, Any]] = None,
 ) -> CompiledSchedule:
     """
     Compiles backend for Zurich Instruments hardware according
@@ -709,6 +712,9 @@ def compile_backend(
     ----------
     schedule :
         The schedule to be compiled.
+    config
+        CompilationConfig used in the :class:`~QuantifyCompiler`, from which the `hardware_cfg`
+        is currently extracted in this compilation step.
     hardware_cfg :
         Hardware configuration, defines the compilation step from
         the pulse-level to a hardware backend.
@@ -725,11 +731,15 @@ def compile_backend(
     NotImplementedError
         Thrown when using unsupported ZI Instruments.
     """
-
+    if config and hardware_cfg:
+        raise ValueError(
+            f"hardware_compile was called with both a config={config} and a hardware_cfg={hardware_cfg}. "
+            "Please make sure this function is called with either of the two (CompilationConfig recommended)."
+        )
     # In the graph-based compilation, CompilationNodes should accept the full
     # CompilationConfig as input (#405, !615, &1)
-    if isinstance(hardware_cfg, CompilationConfig):
-        hardware_cfg = hardware_cfg.connectivity
+    if isinstance(config, CompilationConfig):
+        hardware_cfg = config.connectivity
 
     _validate_schedule(schedule)
 
