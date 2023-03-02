@@ -64,8 +64,8 @@ from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     IdlePulse,
     RampPulse,
-    SetClockFrequency,
     ShiftClockPhase,
+    SetClockFrequency,
     SquarePulse,
 )
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
@@ -1213,10 +1213,7 @@ def test_deprecated_acquisitions_back_to_back(
 
     sched_with_pulse_info = device_compile(sched, load_example_transmon_config)
     with pytest.raises(ValueError) as error:
-        hardware_compile(
-            schedule=sched_with_pulse_info,
-            hardware_cfg=load_example_qblox_hardware_config,
-        )
+        hardware_compile(sched_with_pulse_info, load_example_qblox_hardware_config)
 
     assert (
         "Please ensure a minimum interval of 1000 ns between acquisitions"

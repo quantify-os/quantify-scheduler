@@ -287,9 +287,7 @@ def test_compile_hardware_hdawg4_successfully(
     }
 
     # Act
-    comp_sched = zhinst_backend.compile_backend(
-        schedule=schedule, hardware_cfg=hdawg_hardware_cfg
-    )
+    comp_sched = zhinst_backend.compile_backend(schedule, hdawg_hardware_cfg)
     device_configs = comp_sched["compiled_instructions"]
 
     # Assert
@@ -367,9 +365,7 @@ def test_compile_hardware_uhfqa_successfully(
     }
 
     # Act
-    comp_sched = zhinst_backend.compile_backend(
-        schedule=schedule, hardware_cfg=uhfqa_hardware_cfg
-    )
+    comp_sched = zhinst_backend.compile_backend(schedule, uhfqa_hardware_cfg)
     device_configs = comp_sched["compiled_instructions"]
 
     # Assert
@@ -401,7 +397,7 @@ def test_compile_invalid_latencies_raises(
 
     # should raise a pydantic validation error
     with pytest.raises(ValidationError):
-        _ = zhinst_backend.compile_backend(schedule=schedule, hardware_cfg=hardware_cfg)
+        _ = zhinst_backend.compile_backend(schedule, hardware_cfg)
 
 
 def test_hdawg4_sequence(
@@ -437,9 +433,7 @@ def test_hdawg4_sequence(
     # pylint: enable=line-too-long
 
     # Act
-    comp_sched = zhinst_backend.compile_backend(
-        schedule=schedule, hardware_cfg=hdawg_hardware_cfg
-    )
+    comp_sched = zhinst_backend.compile_backend(schedule, hdawg_hardware_cfg)
     compiled_instructions = comp_sched["compiled_instructions"]
 
     # Assert
@@ -702,9 +696,7 @@ def test_uhfqa_sequence1(
     # pylint: enable=line-too-long
 
     # Act
-    comp_sched = zhinst_backend.compile_backend(
-        schedule=schedule, hardware_cfg=uhfqa_hardware_cfg
-    )
+    comp_sched = zhinst_backend.compile_backend(schedule, uhfqa_hardware_cfg)
     device_configs = comp_sched["compiled_instructions"]
 
     # Assert
@@ -762,9 +754,7 @@ def test_uhfqa_sequence2_trace_acquisition(
     # pylint: enable=line-too-long
 
     # Act
-    comp_sched = zhinst_backend.compile_backend(
-        schedule=schedule, hardware_cfg=uhfqa_hardware_cfg
-    )
+    comp_sched = zhinst_backend.compile_backend(schedule, uhfqa_hardware_cfg)
     device_configs = comp_sched["compiled_instructions"]
 
     # Assert
@@ -830,9 +820,7 @@ def test_uhfqa_sequence3_spectroscopy(
     # pylint: enable=line-too-long
 
     # Act
-    comp_sched = zhinst_backend.compile_backend(
-        schedule=schedule, hardware_cfg=uhfqa_hardware_cfg
-    )
+    comp_sched = zhinst_backend.compile_backend(schedule, uhfqa_hardware_cfg)
     device_configs = comp_sched["compiled_instructions"]
 
     # Assert
