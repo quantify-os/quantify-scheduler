@@ -49,6 +49,15 @@ def compile_circuit_to_device(
             f"compile_circuit_to_device was called with config={config} and device_cfg={device_cfg}. "
             "Please make sure this function is called with either of the two (CompilationConfig recommended)."
         )
+    if device_cfg is not None:
+        warnings.warn(
+            "Support for the using compile_circuit_to_device "
+            "with only the device configuration as input argument "
+            "will be dropped in quantify-scheduler >= 0.14.0.\n"
+            "Please consider providing the full CompilationConfig"
+            "instead by using the config keyword argument.",
+            FutureWarning,
+        )
     if config is not None:
         device_cfg = config.device_compilation_config
 
@@ -149,6 +158,15 @@ def set_pulse_and_acquisition_clock(
         raise ValueError(
             f"set_pulse_and_acquisition_clock was called with config={config} and device_cfg={device_cfg}. "
             "Please make sure this function is called with either of the two (CompilationConfig recommended)."
+        )
+    if device_cfg is not None:
+        warnings.warn(
+            "Support for the using set_pulse_and_acquisition_clock "
+            "with only the device configuration as input argument "
+            "will be dropped in quantify-scheduler >= 0.14.0.\n"
+            "Please consider providing the full CompilationConfig"
+            "instead by using the config keyword argument.",
+            FutureWarning,
         )
     if config is not None:
         device_cfg = config.device_compilation_config

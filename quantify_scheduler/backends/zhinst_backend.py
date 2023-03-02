@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import logging
 import re
+import warnings
 from dataclasses import dataclass
 from functools import partial
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
@@ -735,6 +736,15 @@ def compile_backend(
         raise ValueError(
             f"Zhinst compile_backend was called with config={config} and hardware_cfg={hardware_cfg}. "
             "Please make sure this function is called with either of the two (CompilationConfig recommended)."
+        )
+    if hardware_cfg is not None:
+        warnings.warn(
+            "Support for the using zhinst_backend.compile_backend "
+            "with only the hardware configuration as input argument "
+            "will be dropped in quantify-scheduler >= 0.14.0.\n"
+            "Please consider providing the full CompilationConfig"
+            "instead by using the config keyword argument.",
+            FutureWarning,
         )
     if config is not None:
         hardware_cfg = config.connectivity

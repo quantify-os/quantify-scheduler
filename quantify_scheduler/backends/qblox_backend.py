@@ -54,6 +54,15 @@ def hardware_compile(
             f"Qblox hardware_compile was called with config={config} and hardware_cfg={hardware_cfg}. "
             "Please make sure this function is called with either of the two (CompilationConfig recommended)."
         )
+    if hardware_cfg is not None:
+        warnings.warn(
+            "Support for the using qblox_backend.hardware_compile "
+            "with only the hardware configuration as input argument "
+            "will be dropped in quantify-scheduler >= 0.14.0.\n"
+            "Please consider providing the full CompilationConfig"
+            "instead by using the config keyword argument.",
+            FutureWarning,
+        )
     if config is not None:
         hardware_cfg = config.connectivity
 

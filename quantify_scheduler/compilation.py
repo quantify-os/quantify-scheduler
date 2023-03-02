@@ -2,6 +2,7 @@
 # Licensed according to the LICENCE file on the main branch
 """Compiler for the quantify_scheduler."""
 import logging
+import warnings
 from copy import deepcopy
 from typing import Literal, Optional, Union
 
@@ -204,8 +205,17 @@ def add_pulse_information_transmon(
     if not ((config is not None) ^ (device_cfg is not None)):
         raise ValueError(
             f"add_pulse_information_transmon was called with config={config} and "
-            " device_cfg={device_cfg}. Please make sure this function is called "
+            f" device_cfg={device_cfg}. Please make sure this function is called "
             "with either of the two."
+        )
+    if device_cfg is not None:
+        warnings.warn(
+            "Support for the using add_pulse_information_transmon "
+            "with only the device configuration as input argument "
+            "will be dropped in quantify-scheduler >= 0.14.0.\n"
+            "Please consider providing the full CompilationConfig"
+            "instead by using the config keyword argument.",
+            FutureWarning,
         )
     if config is not None:
         device_cfg = config.device_compilation_config
