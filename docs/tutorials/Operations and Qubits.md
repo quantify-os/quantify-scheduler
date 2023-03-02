@@ -42,7 +42,7 @@ q0, q1 = ("q0", "q1")
 X90(q0)
 Measure(q1)
 CZ(q0, q1)
-Reset(q0)
+Reset(q0);
 
 ```
 
@@ -82,14 +82,14 @@ pprint(operation_schema["properties"]["gate_info"]["properties"])
 
 ## Schedule creation from the circuit layer (Bell)
 
-The circuit-level operations can be used to create a `schedule` within
+The circuit-level operations can be used to create a {class}`~quantify_scheduler.schedules.schedule.Schedule` within
 `quantify_scheduler` using the same method as for the pulse-level operations.
 This enables creating schedules on a more abstract level.
-Here, we demonstrate this extra layer of abstraction by creating a `schedule` for measuring
-`Bell violations`.
+Here, we demonstrate this extra layer of abstraction by creating a {class}`~quantify_scheduler.schedules.schedule.Schedule` for measuring
+Bell violations.
 
 ```{note}
-Within a single `schedule`, high-level circuit layer operations can be mixed with quantum-device level operations. This mixed representation is useful for experiments where some pulses cannot easily be represented as qubit gates. An example of this is given by the `Chevron` experiment given in {ref}`Mixing pulse and circuit layer operations (Chevron)`.
+Within a single {class}`~quantify_scheduler.schedules.schedule.Schedule`, high-level circuit layer operations can be mixed with quantum-device level operations. This mixed representation is useful for experiments where some pulses cannot easily be represented as qubit gates. An example of this is given by the `Chevron` experiment given in {ref}`Mixing pulse and circuit layer operations (Chevron)`.
 ```
 
 As the first example, we want to create a schedule for performing the
@@ -118,10 +118,10 @@ for acq_idx, theta in enumerate(np.linspace(0, 360, 21)):
     sched.add(Rxy(theta=theta, phi=0, qubit=q0))
 
     sched.add(Measure(q0, acq_index=acq_idx), label="M q0 {:.2f} deg".format(theta))
-    sched.add(  # Start at the same time as the other measure
+    sched.add(  
         Measure(q1, acq_index=acq_idx),
         label="M q1 {:.2f} deg".format(theta),
-        ref_pt="start",
+        ref_pt="start",  # Start at the same time as the other measure
     )
 
 sched
@@ -295,8 +295,7 @@ for submodule_name, submodule in qubit.submodules.items():
 ```
 
 The device configuration is now simply obtained using {code}`dut.generate_device_config()`.
-In order for this command to provide a correct device configuration, the different
-parameters need to be specified in the {class}`~quantify_scheduler.device_under_test.transmon_element.BasicTransmonElement` and {class}`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` objects.
+In order for this command to provide a correct device configuration, the different properties need to be set to applicable values in the {class}`~quantify_scheduler.device_under_test.transmon_element.BasicTransmonElement` and {class}`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` objects.
 
 ```{code-cell} ipython3
 pprint(dut.generate_device_config())
@@ -333,7 +332,7 @@ for duration in np.linspace(start=20e-9, stop=60e-9, num=6):
         reset = sched.add(Reset("q0", "q1"))
         sched.add(X("q0"), ref_op=reset, ref_pt="end")  # Start at the end of the reset
         # We specify a clock for tutorial purposes, Chevron experiments do not necessarily use modulated square pulses
-        square = sched.add(SquarePulse(amp, duration, "q0:mw", clock="q0.01"))
+        square = sched.add(SquarePulse(amp=amp, duration=duration, port="q0:mw", clock="q0.01"))
         sched.add(X90("q0"), ref_op=square)  # Start at the end of the square pulse
         sched.add(X90("q1"), ref_op=square)
         sched.add(Measure(q0, acq_index=acq_idx), label=f"M q0 {acq_idx}")
@@ -346,8 +345,8 @@ for duration in np.linspace(start=20e-9, stop=60e-9, num=6):
         acq_idx += 1
 
 
-# We add each clock to the schedule
-sched.add_resources([ClockResource("q0.01", 6.02e9),ClockResource("q1.01", 6.02e9),ClockResource("q0.ro", 5.02e9),ClockResource("q1.ro", 5.02e9)]) 
+# Specify the frequencies for the clocks; this can also be done via the DeviceElement (BasicTransmonElement) instead
+sched.add_resources([ClockResource("q0.01", 6.02e9), ClockResource("q1.01", 6.02e9), ClockResource("q0.ro", 5.02e9), ClockResource("q1.ro", 5.02e9)]) 
 ```
 
 ```{code-cell} ipython3
@@ -362,14 +361,12 @@ for t in ax.texts:
 This example shows that we add gates using the same interface as pulses. Gates are Operations, and
 as such support the same timing and reference operators as Pulses.
 
-```{warning}
-When adding a Pulse to a schedule, the clock is not automatically added to the
-resources of the schedule. It may be necessary to add this clock manually, as in
-the final line of the example above.
-```
 
-## Device and Hardware compilation combined : Serial Compiler
-{class}`~quantify_scheduler.backends.SerialCompiler` is used when a {class}`quantify_scheduler.device_under_test.quantum_device.QuantumDevice` is used to define your device configuration. In this tutorial we do not attach any hardware configuration to the `QuantumDevice`. The [compiling to hardware](https://quantify-quantify-scheduler.readthedocs-hosted.com/en/latest/tutorials/Compiling%20to%20Hardware.html) tutorial demonstrates how to correctly use a hardware configuration with a `quantum device`.
+## Device and Hardware compilation combined: Serial Compiler
+
+{class}`~quantify_scheduler.backends.graph_compilation.SerialCompiler` can be used to execute the device and hardware compilation separately, or execute both in one call. Here we will not set the hardware configuration thus only executing device compile. The {ref}`Compiling to Hardware <sec-tutorial-compiling>` tutorial demonstrates how to set the hardware configuration.
+
+{class}`~quantify_scheduler.backends.graph_compilation.SerialCompiler` requires a {class}`~quantify_scheduler.backends.graph_compilation.CompilationConfig` and this holds both the device and hardware configurations (when set). In the example below, we generate a {class}`~quantify_scheduler.backends.graph_compilation.CompilationConfig` via  {meth}`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice.generate_compilation_config` of {class}`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice`.
 
 ```{code-cell} ipython3
 from quantify_scheduler.backends import SerialCompiler
@@ -377,7 +374,6 @@ from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 
 dut.close()
-# BasicTransmonElement.close_all()
 dut = QuantumDevice("DUT")
 q0 = BasicTransmonElement("q0")
 q1 = BasicTransmonElement("q1")
@@ -387,7 +383,7 @@ dut.get_element("q0").rxy.amp180(0.6)
 dut.get_element("q1").rxy.amp180(0.6)
 
 compiler = SerialCompiler(name='compiler')
-compiled_sched = compiler.compile(schedule=sched,config=dut.generate_compilation_config())
+compiled_sched = compiler.compile(schedule=sched, config=dut.generate_compilation_config())
 ```
 
 So, finally, we can show the timing table associated to the chevron schedule and plot
