@@ -201,15 +201,13 @@ def add_pulse_information_transmon(
     """
     # pylint: enable=line-too-long
 
-    if not (bool(config) ^ bool(device_cfg)):
+    if not ((config is not None) ^ (device_cfg is not None)):
         raise ValueError(
             f"add_pulse_information_transmon was called with config={config} and "
             " device_cfg={device_cfg}. Please make sure this function is called "
             "with either of the two."
         )
-    # In the graph-based compilation, CompilationNodes should accept the full
-    # CompilationConfig as input (#405, !615, &1)
-    if config:
+    if config is not None:
         device_cfg = config.device_compilation_config
 
     validate_config(device_cfg, scheme_fn="transmon_cfg.json")
