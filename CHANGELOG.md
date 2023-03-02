@@ -1,6 +1,12 @@
 # Changelog
 
-## 0.12.1
+## Unreleased
+
+### Breaking changes
+
+### Merged branches and closed issues
+
+## 0.12.1 (2023-03-02)
 
 ### Breaking changes
 
