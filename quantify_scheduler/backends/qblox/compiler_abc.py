@@ -1576,7 +1576,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         if len(program) == 0:
             return None
 
-        self._settings.hardware_averages = repetitions
         program["settings"] = self._settings.to_dict()
         if self.supports_acquisition:
             program["acq_metadata"] = {}

@@ -6,7 +6,6 @@ from __future__ import annotations
 import copy
 import logging
 from abc import abstractmethod
-from collections import namedtuple
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, Iterable, Optional, Tuple, Type, Union
 
