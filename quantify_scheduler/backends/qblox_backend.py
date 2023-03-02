@@ -18,9 +18,9 @@ from quantify_scheduler.backends.qblox import compiler_container, helpers
 
 def hardware_compile(
     schedule: Schedule,
-    config: Optional[CompilationConfig] = None,
     # hardware_cfg for backwards compatibility:
     hardware_cfg: Optional[Dict[str, Any]] = None,
+    config: Optional[CompilationConfig] = None,
 ) -> CompiledSchedule:
     """
     Main function driving the compilation. The principle behind the overall compilation

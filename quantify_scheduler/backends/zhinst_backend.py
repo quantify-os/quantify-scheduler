@@ -696,9 +696,9 @@ class ZIDeviceConfig:
 
 def compile_backend(
     schedule: Schedule,
-    config: Optional[CompilationConfig] = None,
     # hardware_cfg for backwards compatibility:
     hardware_cfg: Optional[Dict[str, Any]] = None,
+    config: Optional[CompilationConfig] = None,
 ) -> CompiledSchedule:
     """
     Compiles backend for Zurich Instruments hardware according

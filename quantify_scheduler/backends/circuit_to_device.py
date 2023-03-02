@@ -21,9 +21,9 @@ from quantify_scheduler.schedules.schedule import Schedule
 
 def compile_circuit_to_device(
     schedule: Schedule,
-    config: Optional[CompilationConfig] = None,
     # device_cfg for backwards compatibility:
     device_cfg: Optional[Union[DeviceCompilationConfig, dict]] = None,
+    config: Optional[CompilationConfig] = None,
 ) -> Schedule:
     """
     Adds the information required to represent operations on the quantum-device
@@ -110,9 +110,9 @@ def compile_circuit_to_device(
 
 def set_pulse_and_acquisition_clock(
     schedule: Schedule,
-    config: Optional[CompilationConfig] = None,
     # device_cfg for backwards compatibility:
     device_cfg: Optional[Union[DeviceCompilationConfig, dict]] = None,
+    config: Optional[CompilationConfig] = None,
 ) -> Schedule:
     """
     Ensures that each pulse/acquisition-level clock resource has either been added

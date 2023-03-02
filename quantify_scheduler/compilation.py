@@ -34,10 +34,10 @@ logger = logging.getLogger(__name__)
 
 def determine_absolute_timing(
     schedule: Schedule,
-    config: Optional[CompilationConfig] = None,
     time_unit: Literal[
         "physical", "ideal", None
     ] = "physical",  # should be included in CompilationConfig
+    config: Optional[CompilationConfig] = None,
 ) -> Schedule:
     """
     Determines the absolute timing of a schedule based on the timing constraints.
