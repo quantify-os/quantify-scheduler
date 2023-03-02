@@ -201,9 +201,9 @@ def add_pulse_information_transmon(
     """
     # pylint: enable=line-too-long
 
-    if config and device_cfg:
+    if not (bool(config) ^ bool(device_cfg)):
         raise ValueError(
-            f"add_pulse_information_transmon was called with both a config={config} and a device_cfg={device_cfg}. "
+            f"add_pulse_information_transmon was called with config={config} and device_cfg={device_cfg}. "
             "Please make sure this function is called with either of the two."
         )
     # In the graph-based compilation, CompilationNodes should accept the full

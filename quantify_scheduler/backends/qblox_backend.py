@@ -49,9 +49,9 @@ def hardware_compile(
     :
         The compiled schedule.
     """
-    if config and hardware_cfg:
+    if not (bool(config) ^ bool(hardware_cfg)):
         raise ValueError(
-            f"Qblox hardware_compile was called with both a config={config} and a hardware_cfg={hardware_cfg}. "
+            f"Qblox hardware_compile was called with config={config} and hardware_cfg={hardware_cfg}. "
             "Please make sure this function is called with either of the two (CompilationConfig recommended)."
         )
     # In the graph-based compilation, CompilationNodes should accept the full

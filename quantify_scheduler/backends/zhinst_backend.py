@@ -731,9 +731,9 @@ def compile_backend(
     NotImplementedError
         Thrown when using unsupported ZI Instruments.
     """
-    if config and hardware_cfg:
+    if not (bool(config) ^ bool(hardware_cfg)):
         raise ValueError(
-            f"Zhinst compile_backend was called with both a config={config} and a hardware_cfg={hardware_cfg}. "
+            f"Zhinst compile_backend was called with config={config} and hardware_cfg={hardware_cfg}. "
             "Please make sure this function is called with either of the two (CompilationConfig recommended)."
         )
     # In the graph-based compilation, CompilationNodes should accept the full
