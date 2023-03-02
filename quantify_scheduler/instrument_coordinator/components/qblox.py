@@ -88,6 +88,8 @@ class _SequencerStateInfo:
             or flag is SequencerStatusFlags.ACQ_BIN_INDEX_INVALID
             or flag is SequencerStatusFlags.CLOCK_INSTABILITY
             or flag is SequencerStatusFlags.OUTPUT_OVERFLOW
+            or flag is SequencerStatusFlags.TRIGGER_NETWORK_CONFLICT
+            or flag is SequencerStatusFlags.TRIGGER_NETWORK_MISSED_INTERNAL_TRIGGER
         ):
             return logging.ERROR
 
