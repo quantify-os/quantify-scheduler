@@ -1,10 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.12.1
 
 ### Breaking changes
 
-### Merged branches and closed issues
+- Qblox backend - Strictly requires v0.9.x of the `qblox-instruments` package (!616)
 
 ## 0.12.0 (2023-02-28)
 
