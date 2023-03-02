@@ -4,33 +4,28 @@
 from typing import List
 
 import pytest
-
-from quantify_scheduler import Operation
-
-from quantify_scheduler import Schedule
+from quantify_scheduler import Operation, Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.circuit_to_device import (
-    compile_circuit_to_device,
-    set_pulse_and_acquisition_clock,
     ConfigKeyError,
     DeviceCompilationConfig,
     OperationCompilationConfig,
+    compile_circuit_to_device,
+    set_pulse_and_acquisition_clock,
 )
-
-from quantify_scheduler.operations.pulse_library import IdlePulse
 from quantify_scheduler.operations.gate_library import (
     CNOT,
     CZ,
+    Y90,
     Measure,
     Reset,
     Rxy,
     X,
     Y,
-    Y90,
 )
 from quantify_scheduler.operations.pulse_factories import rxy_drag_pulse
+from quantify_scheduler.operations.pulse_library import IdlePulse
 from quantify_scheduler.resources import ClockResource
-
 from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import (
     example_transmon_cfg,
 )
@@ -226,7 +221,7 @@ def test_multiply_defined_clock_freq_raises(
             schedule=dev_sched, device_cfg=device_cfg
         )
     assert (
-        warning[0].message.args[0]
+        warning[1].message.args[0]
         == f"Clock '{clock}' has conflicting frequency definitions: "
         f"{clock_freq_schedule} Hz in the schedule and "
         f"{clock_freq_device_cfg} Hz in the device config. "
