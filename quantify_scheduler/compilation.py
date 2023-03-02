@@ -203,8 +203,9 @@ def add_pulse_information_transmon(
 
     if not (bool(config) ^ bool(device_cfg)):
         raise ValueError(
-            f"add_pulse_information_transmon was called with config={config} and device_cfg={device_cfg}. "
-            "Please make sure this function is called with either of the two."
+            f"add_pulse_information_transmon was called with config={config} and "
+            " device_cfg={device_cfg}. Please make sure this function is called "
+            "with either of the two."
         )
     # In the graph-based compilation, CompilationNodes should accept the full
     # CompilationConfig as input (#405, !615, &1)
