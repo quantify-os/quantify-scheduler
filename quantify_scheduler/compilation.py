@@ -157,9 +157,10 @@ def _find_edge(device_cfg, parent_element_name, child_element_name, op_name):
 )
 def add_pulse_information_transmon(
     schedule: Schedule,
-    device_cfg: Optional[dict] = None,
-    # CompilationConfig for forwards compatibility (if this function is used in a CompilationNode):
-    config: Optional[CompilationConfig] = None,
+    config: Union[CompilationConfig, dict, None] = None,
+    *,
+    # Support for (deprecated) calling with device_cfg as keyword argument
+    device_cfg: Union[dict, None] = None,
 ) -> Schedule:
     # pylint: disable=line-too-long
     """
@@ -181,7 +182,7 @@ def add_pulse_information_transmon(
     Returns
     ----------
     :
-        a new schedule object where the pulse information has been added.
+        A new schedule object where the pulse information has been added.
 
 
     .. rubric:: Supported operations
@@ -208,17 +209,16 @@ def add_pulse_information_transmon(
             f" device_cfg={device_cfg}. Please make sure this function is called "
             "with either of the two."
         )
-    if device_cfg is not None:
+    if not isinstance(config, CompilationConfig):
         warnings.warn(
-            "Support for using add_pulse_information_transmon "
-            "with only the device configuration as input argument "
-            "will be dropped in quantify-scheduler >= 0.14.0.\n"
-            "Please consider providing the full CompilationConfig"
-            "instead by using the config keyword argument.",
+            "Since quantify-scheduler >= 0.14.0 calling `add_pulse_information_transmon`"
+            " will require a full CompilationConfig as input.",
             FutureWarning,
         )
-    if config is not None:
+    if isinstance(config, CompilationConfig):
         device_cfg = config.device_compilation_config
+    elif config is not None:
+        device_cfg = config
 
     validate_config(device_cfg, scheme_fn="transmon_cfg.json")
 
