@@ -6,7 +6,7 @@ Compilation backend for quantum-circuit to quantum-device layer.
 import warnings
 from copy import deepcopy
 from itertools import permutations
-from typing import Dict, Optional, Union
+from typing import Dict, Union
 
 import numpy as np
 from quantify_scheduler.backends.graph_compilation import (
@@ -34,7 +34,7 @@ def compile_circuit_to_device(
     `config` as they are expected to arrive to device (latency or distortion corrections
     are not taken into account).
 
-    From a point of view of :ref:`sec-compilation` this function converts a scehdule
+    From a point of view of :ref:`sec-compilation` this function converts a schedule
     defined on a quantum-circuit layer to a schedule defined on a quantum-device layer.
 
     Parameters
@@ -50,12 +50,12 @@ def compile_circuit_to_device(
     Returns
     -------
     :
-        A copy of `scheudle` with pulse information added to all gates.
+        A copy of `schedule` with pulse information added to all gates.
     """
     if not ((config is not None) ^ (device_cfg is not None)):
         raise ValueError(
             f"compile_circuit_to_device was called with config={config} and"
-            " device_cfg={device_cfg}. Please make sure this function is called with"
+            f" device_cfg={device_cfg}. Please make sure this function is called with"
             " either of the two (CompilationConfig recommended)."
         )
     if not isinstance(config, CompilationConfig):
