@@ -1060,7 +1060,7 @@ class _QRMAcquisitionManager:
         return self._format_acquisitions_data_array_for_scope_and_integration(
             acquisition_metadata=acquisition_metadata,
             acq_indices=range(acq_duration),
-            acquisitions_data=scope_data_i * 1j + scope_data_q,
+            acquisitions_data=scope_data_i + scope_data_q * 1j,
         )
 
     def _get_integration_data(
@@ -1100,7 +1100,7 @@ class _QRMAcquisitionManager:
             np.array(bin_data["integration"]["path1"]),
         )
 
-        acquisitions_data = i_data * 1j + q_data
+        acquisitions_data = i_data + q_data * 1j
         return self._format_acquisitions_data_array_for_scope_and_integration(
             acquisition_metadata=acquisition_metadata,
             acq_indices=acq_indices,
