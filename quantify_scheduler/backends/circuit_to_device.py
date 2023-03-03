@@ -130,8 +130,10 @@ def set_pulse_and_acquisition_clock(
     device_cfg: Union[DeviceCompilationConfig, dict, None] = None,
 ) -> Schedule:
     """
-    Ensures that each pulse/acquisition-level clock resource has either been added
-    to the schedule or, if present in device_cfg, adds it to the schedule.
+    Ensures that each clock resource is added to the schedule.
+
+    If a pulse/acquisition-level clock resource has not been added
+    to the schedule and is present in device_cfg, it is added to the schedule.
     A warning is given when a clock resource has conflicting frequency
     definitions, and an error is raised if the clock resource is unknown.
 
