@@ -739,7 +739,7 @@ def compile_backend(
         )
     if hardware_cfg is not None:
         warnings.warn(
-            "Support for the using zhinst_backend.compile_backend "
+            "Support for using the zhinst_backend.compile_backend "
             "with only the hardware configuration as input argument "
             "will be dropped in quantify-scheduler >= 0.14.0.\n"
             "Please consider providing the full CompilationConfig"

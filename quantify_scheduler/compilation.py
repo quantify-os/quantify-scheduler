@@ -210,7 +210,7 @@ def add_pulse_information_transmon(
         )
     if device_cfg is not None:
         warnings.warn(
-            "Support for the using add_pulse_information_transmon "
+            "Support for using add_pulse_information_transmon "
             "with only the device configuration as input argument "
             "will be dropped in quantify-scheduler >= 0.14.0.\n"
             "Please consider providing the full CompilationConfig"

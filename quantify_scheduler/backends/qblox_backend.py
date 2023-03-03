@@ -56,7 +56,7 @@ def hardware_compile(
         )
     if hardware_cfg is not None:
         warnings.warn(
-            "Support for the using qblox_backend.hardware_compile "
+            "Support for using the qblox_backend.hardware_compile "
             "with only the hardware configuration as input argument "
             "will be dropped in quantify-scheduler >= 0.14.0.\n"
             "Please consider providing the full CompilationConfig"

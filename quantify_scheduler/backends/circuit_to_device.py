@@ -51,7 +51,7 @@ def compile_circuit_to_device(
         )
     if device_cfg is not None:
         warnings.warn(
-            "Support for the using compile_circuit_to_device "
+            "Support for using compile_circuit_to_device "
             "with only the device configuration as input argument "
             "will be dropped in quantify-scheduler >= 0.14.0.\n"
             "Please consider providing the full CompilationConfig"
@@ -161,7 +161,7 @@ def set_pulse_and_acquisition_clock(
         )
     if device_cfg is not None:
         warnings.warn(
-            "Support for the using set_pulse_and_acquisition_clock "
+            "Support for using set_pulse_and_acquisition_clock "
             "with only the device configuration as input argument "
             "will be dropped in quantify-scheduler >= 0.14.0.\n"
             "Please consider providing the full CompilationConfig"
