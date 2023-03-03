@@ -703,8 +703,7 @@ def compile_backend(
     hardware_cfg: Union[Dict[str, Any], None] = None,
 ) -> CompiledSchedule:
     """
-    Compiles backend for Zurich Instruments hardware according
-    to the CompiledSchedule and hardware configuration.
+    Compiles zhinst hardware instructions for a schedule.
 
     This method generates sequencer programs, waveforms and
     configurations required for the instruments defined in

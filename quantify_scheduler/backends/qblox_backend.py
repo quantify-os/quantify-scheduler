@@ -24,8 +24,9 @@ def hardware_compile(
     hardware_cfg: Union[Dict[str, Any], None] = None,
 ) -> CompiledSchedule:
     """
-    Main function driving the compilation. The principle behind the overall compilation
-    works as follows:
+    Compiles qblox hardware instructions for a schedule.
+
+    The principle behind the overall compilation works as follows:
 
     For every instrument in the hardware configuration, we instantiate a compiler
     object. Then we assign all the pulses/acquisitions that need to be played by that
