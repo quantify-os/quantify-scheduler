@@ -21,55 +21,62 @@ from quantify_scheduler.schedules.schedule import Schedule
 
 def compile_circuit_to_device(
     schedule: Schedule,
-    # device_cfg for backwards compatibility:
-    device_cfg: Optional[Union[DeviceCompilationConfig, dict]] = None,
-    config: Optional[CompilationConfig] = None,
+    config: Union[CompilationConfig, DeviceCompilationConfig, dict, None] = None,
+    *,
+    # Support for (deprecated) calling with device_cfg as keyword argument
+    device_cfg: Union[DeviceCompilationConfig, dict, None] = None,
 ) -> Schedule:
     """
-    Adds the information required to represent operations on the quantum-device
-    abstraction layer to operations that contain information on how to be represented
-    on the quantum-circuit layer.
+    Add pulse information to all gates in schedule.
+
+    Before calling this fucntion schedule can contain abstract operations (gates or
+    measurements). This function adds pulse and acquisition information with respect to
+    `config` as they are expected to arrive to device (latency or distortion corrections
+    are not taken into account).
+
+    From a point of view of :ref:`sec-compilation` this function converts a scehdule
+    defined on a quantum-circuit layer to a schedule defined on a quantum-device layer.
 
     Parameters
     ----------
     schedule
         The schedule to be compiled.
     config
-        CompilationConfig used in the :class:`~QuantifyCompiler`, from which only
-        the :class:`~DeviceCompilationConfig` is used in this compilation step.
+        Compilation config for
+        :class:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler`.
     device_cfg
-        Device specific configuration, defines the compilation step from
-        the quantum-circuit layer to the quantum-device layer description.
-        Note, if a dictionary is passed, it will be parsed to a
-        :class:`~DeviceCompilationConfig`.
+        (deprecated) Pass a full compilation config instead using `config` argument.
 
+    Returns
+    -------
+    :
+        A copy of `scheudle` with pulse information added to all gates.
     """
     if not ((config is not None) ^ (device_cfg is not None)):
         raise ValueError(
-            f"compile_circuit_to_device was called with config={config} and device_cfg={device_cfg}. "
-            "Please make sure this function is called with either of the two (CompilationConfig recommended)."
+            f"compile_circuit_to_device was called with config={config} and"
+            " device_cfg={device_cfg}. Please make sure this function is called with"
+            " either of the two (CompilationConfig recommended)."
         )
-    if device_cfg is not None:
+    if not isinstance(config, CompilationConfig):
         warnings.warn(
-            "Support for using compile_circuit_to_device "
-            "with only the device configuration as input argument "
-            "will be dropped in quantify-scheduler >= 0.14.0.\n"
-            "Please consider providing the full CompilationConfig"
-            "instead by using the config keyword argument.",
+            "Since quantify-scheduler >= 0.14.0 calling `compile_circuit_to_device`"
+            " will require a full CompilationConfig as input.",
             FutureWarning,
         )
-    if config is not None:
+    if isinstance(config, CompilationConfig):
         device_cfg = config.device_compilation_config
+    elif config is not None:
+        device_cfg = config
 
-    if not isinstance(device_cfg, DeviceCompilationConfig):
+    if device_cfg is None:
         # this is a special case to be supported to enable compilation for schedules
         # that are defined completely at the quantum-device layer and require no
         # circuit to device compilation.
         # A better solution would be to omit skip this compile call in a backend,
         # but this is supported for backwards compatibility reasons.
-        if device_cfg is None:
-            return schedule
-
+        return schedule
+    elif not isinstance(device_cfg, DeviceCompilationConfig):
         device_cfg = DeviceCompilationConfig.parse_obj(device_cfg)
 
     # to prevent the original input schedule from being modified.
