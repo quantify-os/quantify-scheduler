@@ -167,7 +167,7 @@ def set_pulse_and_acquisition_clock(
     if not ((config is not None) ^ (device_cfg is not None)):
         raise ValueError(
             f"set_pulse_and_acquisition_clock was called with config={config} and"
-            " device_cfg={device_cfg}. Please make sure this function is called with"
+            f" device_cfg={device_cfg}. Please make sure this function is called with"
             " either of the two (CompilationConfig recommended)."
         )
     if not isinstance(config, CompilationConfig):
