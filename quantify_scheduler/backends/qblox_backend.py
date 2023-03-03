@@ -41,8 +41,8 @@ def hardware_compile(
         The schedule to compile. It is assumed the pulse and acquisition info is
         already added to the operation. Otherwise an exception is raised.
     config
-        CompilationConfig used in the :class:`~QuantifyCompiler`, from which the `hardware_cfg`
-        is currently extracted in this compilation step.
+        CompilationConfig used in the :class:`quantify_scheduler.backends.graph_compilation.QuantifyCompiler`,
+        from which the `hardware_cfg` is currently extracted in this compilation step.
     hardware_cfg
         The hardware configuration of the setup.
 

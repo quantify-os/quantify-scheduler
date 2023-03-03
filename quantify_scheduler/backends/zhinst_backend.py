@@ -714,8 +714,8 @@ def compile_backend(
     schedule :
         The schedule to be compiled.
     config
-        CompilationConfig used in the :class:`~QuantifyCompiler`, from which the `hardware_cfg`
-        is currently extracted in this compilation step.
+        CompilationConfig used in the :class:`quantify_scheduler.backends.graph_compilation.QuantifyCompiler`,
+        from which the `hardware_cfg` is currently extracted in this compilation step.
     hardware_cfg :
         Hardware configuration, defines the compilation step from
         the pulse-level to a hardware backend.
