@@ -124,9 +124,10 @@ def compile_circuit_to_device(
 
 def set_pulse_and_acquisition_clock(
     schedule: Schedule,
-    # device_cfg for backwards compatibility:
-    device_cfg: Optional[Union[DeviceCompilationConfig, dict]] = None,
-    config: Optional[CompilationConfig] = None,
+    config: Union[CompilationConfig, DeviceCompilationConfig, dict, None] = None,
+    *,
+    # Support for (deprecated) calling with device_cfg as keyword argument
+    device_cfg: Union[DeviceCompilationConfig, dict, None] = None,
 ) -> Schedule:
     """
     Ensures that each pulse/acquisition-level clock resource has either been added
@@ -163,29 +164,30 @@ def set_pulse_and_acquisition_clock(
     """
     if not ((config is not None) ^ (device_cfg is not None)):
         raise ValueError(
-            f"set_pulse_and_acquisition_clock was called with config={config} and device_cfg={device_cfg}. "
-            "Please make sure this function is called with either of the two (CompilationConfig recommended)."
+            f"set_pulse_and_acquisition_clock was called with config={config} and"
+            " device_cfg={device_cfg}. Please make sure this function is called with"
+            " either of the two (CompilationConfig recommended)."
         )
-    if device_cfg is not None:
+    if not isinstance(config, CompilationConfig):
         warnings.warn(
-            "Support for using set_pulse_and_acquisition_clock "
-            "with only the device configuration as input argument "
-            "will be dropped in quantify-scheduler >= 0.14.0.\n"
-            "Please consider providing the full CompilationConfig"
-            "instead by using the config keyword argument.",
+            "Since quantify-scheduler >= 0.14.0 calling `set_pulse_and_acquisition_clock`"
+            " will require a full CompilationConfig as input.",
             FutureWarning,
         )
-    if config is not None:
+    if isinstance(config, CompilationConfig):
         device_cfg = config.device_compilation_config
+    elif config is not None:
+        device_cfg = config
 
-    if not isinstance(device_cfg, DeviceCompilationConfig):
+    if device_cfg is None:
         # this is a special case to be supported to enable compilation for schedules
         # that are defined completely at the quantum-device layer and require no
         # circuit to device compilation.
         # A better solution would be to omit skip this compile call in a backend,
         # but this is supported for backwards compatibility reasons.
-        if device_cfg is not None:
-            device_cfg = DeviceCompilationConfig.parse_obj(device_cfg)
+        return schedule
+    elif not isinstance(device_cfg, DeviceCompilationConfig):
+        device_cfg = DeviceCompilationConfig.parse_obj(device_cfg)
 
     # to prevent the original input schedule from being modified.
     schedule = deepcopy(schedule)
