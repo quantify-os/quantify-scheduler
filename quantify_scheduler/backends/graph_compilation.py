@@ -66,8 +66,11 @@ class SimpleNodeConfig(DataStructure):
 
 class OperationCompilationConfig(DataStructure):
     """
-    A datastructure containing the information required to compile an individual
-    operation to the representation at the device level.
+    Information required to compile an individual operation to the quantum-device layer.
+
+    From a point of view of :ref:`sec-compilation` this information is needed
+    to convert an operation defined on a quantum-circuit layer to an operation
+    defined on a quantum-device layer.
 
     Parameters
     ----------
@@ -75,7 +78,7 @@ class OperationCompilationConfig(DataStructure):
         A callable designating a factory function used to create the representation
         of the operation at the quantum-device level.
     factory_kwargs:
-        a dictionary containing the keyword arguments and corresponding values to use
+        A dictionary containing the keyword arguments and corresponding values to use
         when creating the operation by evaluating the factory function.
     gate_info_factory_kwargs:
         A list of keyword arguments of the factory function for which the value must
@@ -99,23 +102,26 @@ class OperationCompilationConfig(DataStructure):
 # pylint: disable=line-too-long
 class DeviceCompilationConfig(DataStructure):
     """
-    A datastructure containing the information required to compile a
-    schedule to the representation at the quantum-device layer.
+    Information required to compile a schedule to the quantum-device layer.
+
+    From a point of view of :ref:`sec-compilation` this information is needed
+    to convert a schedule defined on a quantum-circuit layer to a schedule
+    defined on a quantum-device layer.
 
     Parameters
     ----------
     backend:
-        a . separated string specifying the location of the compilation backend this
+        A . separated string specifying the location of the compilation backend this
         configuration is intended for e.g.,
         :func:`~.backends.circuit_to_device.compile_circuit_to_device`.
     clocks:
-        a dictionary specifying the clock frequencies available on the device e.g.,
+        A dictionary specifying the clock frequencies available on the device e.g.,
         :code:`{"q0.01": 6.123e9}`.
     elements:
-        a dictionary specifying the elements on the device, what operations can be
+        A dictionary specifying the elements on the device, what operations can be
         applied to them and how to compile them.
     edges:
-        a dictionary specifying the edges, links between elements on the device to which
+        A dictionary specifying the edges, links between elements on the device to which
         operations can be applied, the operations tha can be  applied to them and how
         to compile them.
 
