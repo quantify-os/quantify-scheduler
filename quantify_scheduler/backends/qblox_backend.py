@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Union
 
 from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends.corrections import (
@@ -18,9 +18,10 @@ from quantify_scheduler.backends.qblox import compiler_container, helpers
 
 def hardware_compile(
     schedule: Schedule,
-    # hardware_cfg for backwards compatibility:
-    hardware_cfg: Optional[Dict[str, Any]] = None,
-    config: Optional[CompilationConfig] = None,
+    config: Union[CompilationConfig, Dict[str, Any], None] = None,
+    *,
+    # Support for (deprecated) calling with hardware_cfg as keyword argument
+    hardware_cfg: Union[Dict[str, Any], None] = None,
 ) -> CompiledSchedule:
     """
     Main function driving the compilation. The principle behind the overall compilation
@@ -54,17 +55,16 @@ def hardware_compile(
             f"Qblox hardware_compile was called with config={config} and hardware_cfg={hardware_cfg}. "
             "Please make sure this function is called with either of the two (CompilationConfig recommended)."
         )
-    if hardware_cfg is not None:
+    if not isinstance(config, CompilationConfig):
         warnings.warn(
-            "Support for using the qblox_backend.hardware_compile "
-            "with only the hardware configuration as input argument "
-            "will be dropped in quantify-scheduler >= 0.14.0.\n"
-            "Please consider providing the full CompilationConfig"
-            "instead by using the config keyword argument.",
+            "Since quantify-scheduler >= 0.14.0 calling `hardware_compile`"
+            " will require a full CompilationConfig as input.",
             FutureWarning,
         )
-    if config is not None:
+    if isinstance(config, CompilationConfig):
         hardware_cfg = config.connectivity
+    elif config is not None:
+        hardware_cfg = config
 
     converted_hw_config = helpers.convert_hw_config_to_portclock_configs_spec(
         hardware_cfg
