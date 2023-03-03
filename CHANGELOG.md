@@ -8,6 +8,8 @@
 
 ### Merged branches and closed issues
 
+- Qblox backend - raise DriverVersionError when importing qblox module with incompatible qblox-instruments version (!620)
+
 ## 0.12.1 (2023-03-02)
 
 ### Breaking changes
