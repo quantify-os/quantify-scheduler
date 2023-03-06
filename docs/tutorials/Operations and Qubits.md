@@ -320,7 +320,6 @@ from quantify_scheduler.resources import ClockResource
 sched = Schedule("Chevron Experiment")
 acq_idx = 0
 
-# Multiples of 4 ns need to be used due to sampling rate of the Qblox modules
 for duration in np.linspace(start=20e-9, stop=60e-9, num=6):
     for amp in np.linspace(start=0.1, stop=1.0, num=10):
         reset = sched.add(Reset("q0", "q1"))
