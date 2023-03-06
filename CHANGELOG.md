@@ -4,11 +4,20 @@
 
 ### Breaking changes
 
-- Qblox backend - Fix imaginary and real part of the acquisition by swapping them, and fix trigger count formatting (!619)
 
 ### Merged branches and closed issues
 
 - Documentation - Replace deprecated code in the Operations and Qubits tutorial (!602)
+
+## 0.12.2 (2023-03-05)
+
+### Breaking changes
+
+- Qblox backend - Fix imaginary and real part of the acquisition by swapping them, and fix trigger count formatting (!619)
+
+### Merged branches and closed issues
+
+- Qblox backend - raise DriverVersionError when importing qblox module with incompatible qblox-instruments version (!620)
 
 ## 0.12.1 (2023-03-02)
 

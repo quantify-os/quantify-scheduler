@@ -19,7 +19,7 @@ from qblox_instruments import (
 from qcodes.instrument import Instrument, InstrumentModule
 from xarray import DataArray, Dataset
 
-from quantify_scheduler.backends.qblox import constants
+from quantify_scheduler.backends.qblox import constants, driver_version_check
 from quantify_scheduler.backends.qblox.helpers import (
     single_scope_mode_acquisition_raise,
 )
@@ -38,6 +38,9 @@ from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
+
+# Prevent unsupported qblox-instruments version from crashing this submodule
+driver_version_check.verify_qblox_instruments_version()
 
 
 @dataclass(frozen=True)
