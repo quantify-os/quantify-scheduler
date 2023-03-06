@@ -302,12 +302,6 @@ pprint(dut.generate_device_config())
 
 ```
 
-The device configuration is now simply obtained using {code}`dut.generate_device_config()`.
-In order for this command to provide a correct device configuration, the different
-parameters need to be specified in the {class}`~quantify_scheduler.device_under_test.transmon_element.BasicTransmonElement` and {class}`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` objects.
-
-+++
-
 ## Mixing pulse and circuit layer operations (Chevron)
 
 As well as defining our schedules in terms of gates, we can also mix the circuit layer
@@ -336,10 +330,10 @@ for duration in np.linspace(start=20e-9, stop=60e-9, num=6):
         sched.add(X90("q0"), ref_op=square)  # Start at the end of the square pulse
         sched.add(X90("q1"), ref_op=square)
         sched.add(Measure(q0, acq_index=acq_idx), label=f"M q0 {acq_idx}")
-        sched.add(  # Start at the same time as the other measure
+        sched.add(
             Measure(q1, acq_index=acq_idx),
             label=f"M q1 {acq_idx}",
-            ref_pt="start",
+            ref_pt="start",  # Start at the same time as the other measure
         )
 
         acq_idx += 1
