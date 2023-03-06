@@ -722,7 +722,7 @@ def test_multiple_measurements(
     # Assert intended behaviour
     assert isinstance(data, Dataset)
     expected_dataarray_trace = DataArray(
-        [[1 + 0j] * 3000], coords=[[0], range(3000)], dims=["repetition", "acq_index"]
+        [[0 + 1j] * 3000], coords=[[0], range(3000)], dims=["repetition", "acq_index"]
     )
     expected_dataarray_binned = DataArray(
         [[float("nan") + float("nan") * 1j]],
@@ -989,7 +989,7 @@ def test_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_nv):
     # Assert intended behaviour
     assert isinstance(data, Dataset)
     expected_dataarray = DataArray(
-        [[1 + 0j] * 15000], coords=[[0], range(15000)], dims=["repetition", "acq_index"]
+        [[0 + 1j] * 15000], coords=[[0], range(15000)], dims=["repetition", "acq_index"]
     )
     expected_dataset = Dataset({0: expected_dataarray})
     assert data.equals(expected_dataset)
@@ -1319,7 +1319,7 @@ def test_trace_acquisition_instrument_coordinator(  # pylint: disable=too-many-l
 
     assert isinstance(acquired_data, Dataset)
     expected_dataarray = DataArray(
-        [[1 + 0j] * 1000], coords=[[0], range(1000)], dims=["repetition", "acq_index"]
+        [[0 + 1j] * 1000], coords=[[0], range(1000)], dims=["repetition", "acq_index"]
     )
     expected_dataset = Dataset({0: expected_dataarray})
     assert acquired_data.equals(expected_dataset)

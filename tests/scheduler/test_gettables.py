@@ -510,10 +510,9 @@ def test_formatting_trigger_count(mock_setup_basic_nv):
     nv_center.cfg_sched_repetitions(1)
 
     # data returned by the instrument coordinator
-    return_data = [101 + 1j, 35 + 1j, 2 + 1j]
     acquired_data_array = DataArray(
-        [return_data],
-        coords=[[0], range(len(return_data))],
+        [[1, 1, 1]],
+        coords=[[0], [101, 35, 2]],
         dims=["repetition", "acq_index"],
     )
     acquired_data = Dataset({0: acquired_data_array})
