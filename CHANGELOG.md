@@ -9,6 +9,7 @@
 ### Merged branches and closed issues
 
 - Documentation - Replace deprecated code in the Operations and Qubits tutorial (!602)
+
 ## 0.12.1 (2023-03-02)
 
 ### Breaking changes
