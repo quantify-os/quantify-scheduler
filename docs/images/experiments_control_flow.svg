@@ -89,8 +89,8 @@
                 <tspan x="8" y="28">Compiles a schedule, returns </tspan>
                 <tspan x="8" y="38">files the hardware can execute. </tspan>
             </text>
-            <text id="qcompile()" font-family="AndaleMono, Andale Mono" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
-                <tspan x="5" y="14">qcompile()</tspan>
+            <text id="QuantifyCompiler" font-family="AndaleMono, Andale Mono" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
+                <tspan x="5" y="14">QuantifyCompiler</tspan>
             </text>
         </g>
         <text id="Schedule" font-family="AndaleMono, Andale Mono" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">

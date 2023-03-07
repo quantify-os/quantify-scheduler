@@ -95,7 +95,7 @@ qubits, onto physical properties of the instrument.
 The Zurich Instruments hardware configuration file is divided in four main sections.
 
 1\. The `backend` property defines the python method which will be executed by
-{func}`~quantify_scheduler.compilation.qcompile` in order to compile the backend.
+{meth}`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler.compile` in order to compile the backend.
 
 2. The `local_oscillators` property is a list of dicts which describe the available local oscillators in the hardware setup. An example entry are as follows:
 

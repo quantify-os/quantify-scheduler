@@ -781,7 +781,7 @@ class CompiledSchedule(ScheduleBase):
     .. tip::
 
         A :class:`~.CompiledSchedule` can be obtained by compiling a
-        :class:`~.Schedule` using :func:`~quantify_scheduler.compilation.qcompile`.
+        :class:`~.Schedule` using :meth:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler.compile`.
 
     """  # pylint: disable=line-too-long
 
