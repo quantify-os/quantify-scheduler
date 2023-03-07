@@ -44,12 +44,18 @@ class InstrumentCoordinator(qcodes_base.Instrument):
 
         .. code-block::
 
-            from quantify_scheduler.compilation import qcompile
+            from quantify_scheduler.backends.graph_compilation import SerialCompiler
 
             my_sched: Schedule = ...  # a Schedule describing the experiment to perform
-            device_config: dict = ...  # a config file describing the quantum device
+            quantum_device: QuantumDevice = ...  # the device under test
             hardware_config: dict = ...  # a config file describing the connection to the hardware
-            compiled_sched: CompiledSchedule = qcompile(my_sched, device_config, hardware_config)
+
+            quantum_device.hardware_config(hardware_config)
+
+            compiler = SerialCompiler(name="compiler")
+            compiled_sched = compiler.compile(
+                schedule=sched, config=quantum_device.generate_compilation_config()
+            )
 
             instrument_coordinator.prepare(compiled_sched)
             instrument_coordinator.start()
