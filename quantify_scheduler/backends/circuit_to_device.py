@@ -27,14 +27,14 @@ def compile_circuit_to_device(
     device_cfg: Union[DeviceCompilationConfig, dict, None] = None,
 ) -> Schedule:
     """
-    Add pulse information to all gates in schedule.
+    Add pulse information to all gates in the schedule.
 
-    Before calling this fucntion schedule can contain abstract operations (gates or
+    Before calling this function, the schedule can contain abstract operations (gates or
     measurements). This function adds pulse and acquisition information with respect to
     `config` as they are expected to arrive to device (latency or distortion corrections
     are not taken into account).
 
-    From a point of view of :ref:`sec-compilation` this function converts a schedule
+    From a point of view of :ref:`sec-compilation`, this function converts a schedule
     defined on a quantum-circuit layer to a schedule defined on a quantum-device layer.
 
     Parameters
@@ -43,9 +43,12 @@ def compile_circuit_to_device(
         The schedule to be compiled.
     config
         Compilation config for
-        :class:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler`.
+        :class:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler`. Note,
+        only the :class:`~.DeviceCompilationConfig` is used in this compilation step.
     device_cfg
-        (deprecated) Pass a full compilation config instead using `config` argument.
+        (deprecated) Device compilation config. Pass a full compilation config instead
+        using `config` argument. Note, if a dictionary is passed, it will be parsed to a
+        :class:`~.DeviceCompilationConfig`.
 
     Returns
     -------
@@ -130,10 +133,11 @@ def set_pulse_and_acquisition_clock(
     device_cfg: Union[DeviceCompilationConfig, dict, None] = None,
 ) -> Schedule:
     """
-    Ensures that each clock resource is added to the schedule.
+    Ensures that each pulse/acquisition-level clock resource is added to the schedule.
 
     If a pulse/acquisition-level clock resource has not been added
     to the schedule and is present in device_cfg, it is added to the schedule.
+    
     A warning is given when a clock resource has conflicting frequency
     definitions, and an error is raised if the clock resource is unknown.
 
@@ -142,13 +146,17 @@ def set_pulse_and_acquisition_clock(
     schedule
         The schedule to be compiled.
     config
-        CompilationConfig used in the :class:`~QuantifyCompiler`, from which only
-        the :class:`~DeviceCompilationConfig` is used in this compilation step.
+        Compilation config for
+        :class:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler`. Note,
+        only the :class:`~.DeviceCompilationConfig` is used in this compilation step.
     device_cfg
-        Device specific configuration, defines the compilation step from
-        the quantum-circuit layer to the quantum-device layer description.
-        Note, if a dictionary is passed, it will be parsed to a
-        :class:`~DeviceCompilationConfig`.
+        (deprecated) Device compilation config. Pass a full compilation config instead
+        using `config` argument. Note, if a dictionary is passed, it will be parsed to a
+        :class:`~.DeviceCompilationConfig`.
+    Returns
+    -------
+    :
+        A copy of `schedule` with all clock resources added.
 
     Warns
     -----

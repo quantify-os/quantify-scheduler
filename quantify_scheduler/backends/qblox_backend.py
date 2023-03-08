@@ -24,7 +24,7 @@ def hardware_compile(
     hardware_cfg: Union[Dict[str, Any], None] = None,
 ) -> CompiledSchedule:
     """
-    Compiles qblox hardware instructions for a schedule.
+    Generate qblox hardware instructions for executing the schedule.
 
     The principle behind the overall compilation works as follows:
 
@@ -41,10 +41,13 @@ def hardware_compile(
         The schedule to compile. It is assumed the pulse and acquisition info is
         already added to the operation. Otherwise an exception is raised.
     config
-        CompilationConfig used in the :class:`quantify_scheduler.backends.graph_compilation.QuantifyCompiler`,
-        from which the `hardware_cfg` is currently extracted in this compilation step.
+        Compilation config for
+        :class:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler`, of
+        which only the :attr:`.CompilationConfig.connectivity`
+        is currently extracted in this compilation step.
     hardware_cfg
-        The hardware configuration of the setup.
+        (deprecated) The hardware configuration of the setup. Pass a full compilation
+        config instead using `config` argument.
 
     Returns
     -------
