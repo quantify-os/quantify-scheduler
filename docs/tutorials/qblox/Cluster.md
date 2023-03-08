@@ -107,10 +107,10 @@ hardware_compile(test_sched, mapping_config)
 
 Notice the {code}`"quantify_scheduler.backends.qblox_backend.hardware_compile"` backend is used. In the example, we notice that the cluster is specified using an instrument with {code}`"instrument_type": "Cluster"`. In the backend, the cluster instrument functions as a collection of modules. The modules themselves can be configured with {code}`portclock_configs`.
 
-Also notice, that not only a cluster, but a local oscillator can also be configured with Qblox. Currently the only instrument types that can be at the top level are the
+Also notice, that not only a cluster, but a local oscillator can also be configured with Qblox. Currently the only instrument types that can be at the top level are:
 - {code}`"Cluster"`
 - {code}`"LocalOscillator"`
-- {ref}`pulsars <sec-qblox-pulsar>`.
+- {ref}`pulsars <sec-qblox-pulsar>`
 
 ## Cluster configuration
 
@@ -131,15 +131,15 @@ It is possible to overwrite this parameter to `"True"` in each module configurat
 emphasize-lines: 6
 ---
 {
-  "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-  "cluster0": {
-      "instrument_type": "Cluster",
-      "ref": "internal",
-      "sequence_to_file": True,
-      "module0": {...},
-      "module1": {...},
-      ...
-  }
+    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "cluster0": {
+    "instrument_type": "Cluster",
+        "ref": "internal",
+        "sequence_to_file": True,
+        "module0": {...},
+        "module1": {...},
+        ...
+    }
 }
 ```
 
@@ -231,16 +231,16 @@ And you can also add `"mixer_amp_ratio"` and `"mixer_phase_error_deg"` to a spec
 emphasize-lines: 7,8
 ---
 "complex_output_0": {
-  ...
-  "portclock_configs": [
-    {
-      "port": <port>,
-      "clock": <clock>,
-      "mixer_amp_ratio": 0.9997,
-      "mixer_phase_error_deg": -4.0,
-      ...
-    }
-  ]
+    ...
+    "portclock_configs": [
+        {
+            "port": <port>,
+            "clock": <clock>,
+            "mixer_amp_ratio": 0.9997,
+            "mixer_phase_error_deg": -4.0,
+            ...
+        }
+    ]
 }
 ```
 
@@ -319,10 +319,10 @@ emphasize-lines: 5,9,16,20
 See [Qblox Instruments: QCM-QRM](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/qcm_qrm.html) documentation for allowed values.
 
 
-### `max_awg_output_voltage`
+### Maximum AWG output voltage
 
 ```{note}
-This subsection is still under construction.
+This subsection on `max_awg_output_voltage` is still under construction.
 ```
 
 (sec-qblox-clock-settings)=
