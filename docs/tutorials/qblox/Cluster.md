@@ -218,9 +218,9 @@ We configure this by adding `"dc_mixer_offset_I"` and/or `"dc_mixer_offset_Q"` t
 emphasize-lines: 2,3
 ---
 "complex_output_0": {
-  "dc_mixer_offset_I": -0.054,
-  "dc_mixer_offset_Q": -0.034,
-  ...
+    "dc_mixer_offset_I": -0.054,
+    "dc_mixer_offset_Q": -0.034,
+    ...
 }
 ```
 
