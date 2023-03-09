@@ -3,6 +3,8 @@
 """
 Compilation backend for quantum-circuit to quantum-device layer.
 """
+from __future__ import annotations
+
 import warnings
 from copy import deepcopy
 from itertools import permutations
@@ -21,10 +23,11 @@ from quantify_scheduler.schedules.schedule import Schedule
 
 def compile_circuit_to_device(
     schedule: Schedule,
-    config: Union[CompilationConfig, DeviceCompilationConfig, dict, None] = None,
-    *,
-    # Support for (deprecated) calling with device_cfg as keyword argument
-    device_cfg: Union[DeviceCompilationConfig, dict, None] = None,
+    config: CompilationConfig | DeviceCompilationConfig | Dict | None = None,
+    # DeviceCompilationConfig and Dict to support (deprecated) calling with device_cfg
+    # as positional argument.
+    *,  # Support for (deprecated) calling with device_cfg as keyword argument:
+    device_cfg: DeviceCompilationConfig | Dict | None = None,
 ) -> Schedule:
     """
     Add pulse information to all gates in the schedule.
@@ -127,17 +130,18 @@ def compile_circuit_to_device(
 
 def set_pulse_and_acquisition_clock(
     schedule: Schedule,
-    config: Union[CompilationConfig, DeviceCompilationConfig, dict, None] = None,
-    *,
-    # Support for (deprecated) calling with device_cfg as keyword argument
-    device_cfg: Union[DeviceCompilationConfig, dict, None] = None,
+    config: CompilationConfig | DeviceCompilationConfig | Dict | None = None,
+    # DeviceCompilationConfig and Dict to support (deprecated) calling with device_cfg
+    # as positional argument.
+    *,  # Support for (deprecated) calling with device_cfg as keyword argument:
+    device_cfg: DeviceCompilationConfig | Dict | None = None,
 ) -> Schedule:
     """
     Ensures that each pulse/acquisition-level clock resource is added to the schedule.
 
     If a pulse/acquisition-level clock resource has not been added
     to the schedule and is present in device_cfg, it is added to the schedule.
-    
+
     A warning is given when a clock resource has conflicting frequency
     definitions, and an error is raised if the clock resource is unknown.
 
