@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 from matplotlib.axes import Axes
 from pydantic import validator
+from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 from quantify_scheduler.structure.model import (
     DataStructure,
@@ -27,7 +28,6 @@ from quantify_scheduler.structure.model import (
 
 if TYPE_CHECKING:
     from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-    from quantify_scheduler.operations.operation import Operation
 
 
 class CompilationError(RuntimeError):
