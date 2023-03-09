@@ -5,7 +5,7 @@
 
 ## Stable release
 
-To install Quantify-Scheduler follow the {doc}`installation guide of quantify-core <quantify-core:installation>`.
+To install `quantify-scheduler` follow the {doc}`installation guide of quantify-core <quantify-core:installation>`.
 
 ## Update to latest version
 

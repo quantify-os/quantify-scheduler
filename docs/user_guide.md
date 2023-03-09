@@ -27,7 +27,7 @@ Quantify-scheduler is a python module for writing quantum programs featuring a h
 It extends the circuit model from quantum information processing by adding a pulse-level representation to operations defined at the gate-level, and the ability to specify timing constraints between operations.
 Thus, a user is able to mix gate- and pulse-level operations in a quantum circuit.
 
-In quantify-scheduler, both a quantum circuit consisting of gates and measurements and a timed sequence of control pulses are described as a {class}`.Schedule` .
+In `quantify-scheduler`, both a quantum circuit consisting of gates and measurements and a timed sequence of control pulses are described as a {class}`.Schedule` .
 The {class}`.Schedule` contains information on *when* operations should be performed.
 When adding operations to a schedule, one does not need to specify how to represent this {class}`.Operation` on all (both gate and pulse) abstraction levels.
 Instead, this information can be added later during {ref}`Compilation`.

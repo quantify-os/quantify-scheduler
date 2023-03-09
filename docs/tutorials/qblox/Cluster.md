@@ -122,7 +122,7 @@ To add a new module mapping to the cluster, add a new key with a valid `"instrum
 
 ### Write sequencer program to files
 
-It is possible to optionally set `"sequence_to_file"` key to `True` or `False`. If it's not set quantify will behave the same way as if it was set to `True`. If it is `True`, a file will be created for each sequencer with the program that's uploaded to the sequencer with the filename `<data_dir>/schedules/<year><month><day>-<hour><minute><seconds>-<milliseconds>-<random>_<port>_<clock>.json` in a JSON format, where `<random>` is 6 random characters in the range `0-9`, `a-f`.
+It is possible to optionally set `"sequence_to_file"` key to `True` or `False`. If it's not set Quantify will behave the same way as if it was set to `True`. If it is `True`, a file will be created for each sequencer with the program that's uploaded to the sequencer with the filename `<data_dir>/schedules/<year><month><day>-<hour><minute><seconds>-<milliseconds>-<random>_<port>_<clock>.json` in a JSON format, where `<random>` is 6 random characters in the range `0-9`, `a-f`.
 
 It is possible to overwrite this parameter to `"True"` in each module configuration for each module.
 
@@ -328,7 +328,7 @@ This subsection on `max_awg_output_voltage` is still under construction.
 (sec-qblox-clock-settings)=
 ### Clock settings
 
-The aim of quantify-scheduler is to only specify the final RF frequency when the signal arrives at the chip, rather than any parameters related to I/Q modulation. However, you still need to provide some parameters for the up/downconversion.
+The aim of `quantify-scheduler` is to only specify the final RF frequency when the signal arrives at the chip, rather than any parameters related to I/Q modulation. However, you still need to provide some parameters for the up/downconversion.
 
 The backend assumes that upconversion happens according to the relation
 
