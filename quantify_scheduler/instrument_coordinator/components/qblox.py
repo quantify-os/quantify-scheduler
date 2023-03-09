@@ -6,7 +6,6 @@ from __future__ import annotations
 import copy
 import logging
 from abc import abstractmethod
-from collections import namedtuple
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, Iterable, Optional, Tuple, Type, Union
 
@@ -20,7 +19,7 @@ from qblox_instruments import (
 from qcodes.instrument import Instrument, InstrumentModule
 from xarray import DataArray, Dataset
 
-from quantify_scheduler.backends.qblox import constants
+from quantify_scheduler.backends.qblox import constants, driver_version_check
 from quantify_scheduler.backends.qblox.helpers import (
     single_scope_mode_acquisition_raise,
 )
@@ -39,6 +38,9 @@ from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
+
+# Prevent unsupported qblox-instruments version from crashing this submodule
+driver_version_check.verify_qblox_instruments_version()
 
 
 @dataclass(frozen=True)
@@ -88,6 +90,8 @@ class _SequencerStateInfo:
             or flag is SequencerStatusFlags.ACQ_BIN_INDEX_INVALID
             or flag is SequencerStatusFlags.CLOCK_INSTABILITY
             or flag is SequencerStatusFlags.OUTPUT_OVERFLOW
+            or flag is SequencerStatusFlags.TRIGGER_NETWORK_CONFLICT
+            or flag is SequencerStatusFlags.TRIGGER_NETWORK_MISSED_INTERNAL_TRIGGER
         ):
             return logging.ERROR
 
@@ -1059,7 +1063,7 @@ class _QRMAcquisitionManager:
         return self._format_acquisitions_data_array_for_scope_and_integration(
             acquisition_metadata=acquisition_metadata,
             acq_indices=range(acq_duration),
-            acquisitions_data=scope_data_i * 1j + scope_data_q,
+            acquisitions_data=scope_data_i + scope_data_q * 1j,
         )
 
     def _get_integration_data(
@@ -1099,7 +1103,7 @@ class _QRMAcquisitionManager:
             np.array(bin_data["integration"]["path1"]),
         )
 
-        acquisitions_data = i_data * 1j + q_data
+        acquisitions_data = i_data + q_data * 1j
         return self._format_acquisitions_data_array_for_scope_and_integration(
             acquisition_metadata=acquisition_metadata,
             acq_indices=acq_indices,

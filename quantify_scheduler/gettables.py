@@ -278,14 +278,12 @@ class ScheduleGettable:
         dataset = {}
         if acq_metadata.bin_mode == BinMode.APPEND:
             for acq_channel, acq_indices in acq_metadata.acq_indices.items():
-                dataset[acq_channel] = np.zeros(
-                    len(acq_indices) * repetitions, dtype=int
+                dataset[acq_channel] = (
+                    acquired_data[acq_channel]
+                    .sel(repetition=0)
+                    .coords["acq_index"]
+                    .values
                 )
-                acq_stride = len(acq_indices)
-                for acq_idx in acq_indices:
-                    dataset[acq_channel][acq_idx::acq_stride] = (
-                        acquired_data[acq_channel].sel(acq_index=acq_idx).values
-                    )
             return dataset
         raise NotImplementedError(
             f"Acquisition protocol {acq_metadata.acq_protocol} with bin"

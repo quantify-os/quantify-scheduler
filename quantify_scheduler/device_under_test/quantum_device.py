@@ -34,7 +34,7 @@ class QuantumDevice(Instrument):
     This object can be used to generate configuration files for the compilation step
     from the gate-level to the pulse level description.
     These configuration files should be compatible with the
-    :func:`~quantify_scheduler.compilation.qcompile` function.
+    :meth:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler.compile` function.
     """
 
     def __init__(self, name: str) -> None:
@@ -172,10 +172,6 @@ class QuantumDevice(Instrument):
         -------
             The hardware configuration file used for compiling from the quantum-device
             layer to a hardware backend.
-
-
-        The hardware config should be valid input for the
-        :func:`quantify_scheduler.compilation.qcompile` function.
 
         .. warning:
 

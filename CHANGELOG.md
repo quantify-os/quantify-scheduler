@@ -4,9 +4,27 @@
 
 ### Breaking changes
 
+
 ### Merged branches and closed issues
 
 - Compilation - `CompilationNode`s take the full `CompilationConfig` as input (!615, #405)
+- Documentation - Replace deprecated code in the Operations and Qubits tutorial (!602)
+
+## 0.12.2 (2023-03-05)
+
+### Breaking changes
+
+- Qblox backend - Fix imaginary and real part of the acquisition by swapping them, and fix trigger count formatting (!619)
+
+### Merged branches and closed issues
+
+- Qblox backend - raise DriverVersionError when importing qblox module with incompatible qblox-instruments version (!620)
+
+## 0.12.1 (2023-03-02)
+
+### Breaking changes
+
+- Qblox backend - Strictly requires v0.9.x of the `qblox-instruments` package (!616)
 
 ## 0.12.0 (2023-02-28)
 

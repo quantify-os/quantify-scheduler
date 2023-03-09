@@ -346,13 +346,15 @@ def test_sequencer_state_flag_info():
         qblox._SEQUENCER_STATE_FLAG_INFO
     ), "Verify all flags are represented"
 
-    assert (
-        countOf(
-            [info.logging_level for info in qblox._SEQUENCER_STATE_FLAG_INFO.values()],
-            logging.DEBUG,
-        )
-        == 3
-    ), "Verify no new flags were implicitly added (possibly update count)"
+    debug_status = [
+        key
+        for key, info in qblox._SEQUENCER_STATE_FLAG_INFO.items()
+        if info.logging_level == logging.DEBUG
+    ]
+    assert len(debug_status) == 3, (
+        "Verify no new flags were implicitly added "
+        "(otherwise update `qblox._SequencerStateInfo.get_logging_level()`)"
+    )
 
 
 def test_initialize_pulsar_qcm_component(make_qcm_component):

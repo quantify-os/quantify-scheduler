@@ -262,10 +262,8 @@ The information in the {ref}`hardware configuration <sec-hardware-config>` is th
 
 In the first compilation step, pulse information is added to all operations that are not valid pulses (see {attr}`.Operation.valid_pulse`) based on the information specified in the {ref}`device configuration file<sec-device-config>`.
 
-A second compilation step takes the schedule at the pulse level and translates this for use on a hardware back end.
+A second compilation step takes the schedule at the pulse level and translates this for use on a hardware backend.
 This compilation step is performed using a hardware dependent compiler and uses the information specified in the {ref}`hardware configuration file<sec-hardware-config>`.
-
-Both compilation steps can be triggered by passing a {class}`.Schedule` and the appropriate configuration files to {func}`~quantify_scheduler.compilation.qcompile`.
 
 ```{note}
 We use the term "**device**" to refer to the physical object(s) on the receiving end of the control pulses, e.g. a thin-film chip inside a dilution refrigerator.
