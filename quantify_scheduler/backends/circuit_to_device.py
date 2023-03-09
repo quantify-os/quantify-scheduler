@@ -71,7 +71,7 @@ def compile_circuit_to_device(
         )
     if not isinstance(config, CompilationConfig):
         warnings.warn(
-            f"Qblox `{compile_circuit_to_device.__name__}` will require a full "
+            f"`{compile_circuit_to_device.__name__}` will require a full "
             f"CompilationConfig as input as of quantify-scheduler >= 0.15.0",
             FutureWarning,
         )
@@ -192,7 +192,7 @@ def set_pulse_and_acquisition_clock(
         )
     if not isinstance(config, CompilationConfig):
         warnings.warn(
-            f"Qblox `{set_pulse_and_acquisition_clock.__name__}` will require a full "
+            f"`{set_pulse_and_acquisition_clock.__name__}` will require a full "
             f"CompilationConfig as input as of quantify-scheduler >= 0.15.0",
             FutureWarning,
         )
