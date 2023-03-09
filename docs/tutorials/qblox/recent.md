@@ -53,7 +53,7 @@ The Qblox backend now dynamically allocates sequencers to port-clock combination
 This enables the user to target an arbitrary number of port-clock combinations using the same module, as long as they are not being *simultaneously* targeted.
 Given that Qblox instruments have 6 sequencers, up to 6 port-clock combinations may be simultaneously targeted.
 
-This change has introduced new syntax for the hardware configuration file:
+This change has introduced a new syntax for the hardware configuration file:
 
 1. We now specify a list of `portclock_configs` instead of sequencers.
 
@@ -64,7 +64,7 @@ This change has introduced new syntax for the hardware configuration file:
    - {func}`~quantify_scheduler.backends.qblox.helpers.convert_hw_config_to_portclock_configs_spec`
    - Temporarily, this method is called by the Qblox backend before compilation.
 
-Old syntax:
+The old syntax:
 
 ```python
 hardware_cfg = {
@@ -100,7 +100,7 @@ hardware_cfg = {
 }
 ```
 
-New syntax:
+The new syntax:
 
 ```python
 hardware_cfg = {

@@ -32,12 +32,12 @@ The {class}`.Schedule` contains information on *when* operations should be perfo
 When adding operations to a schedule, one does not need to specify how to represent this {class}`.Operation` on all (both gate and pulse) abstraction levels.
 Instead, this information can be added later during {ref}`Compilation`.
 This allows the user to effortlessly mix the gate- and pulse-level descriptions as is required for many experiments.
-We support a similar flexibility in the timing constraints, one can either explicitly specify the timing using {attr}`.ScheduleBase.schedulables`, or rely on the compilation which will use the duration of operations to schedule them back-to-back.
+We support similar flexibility in the timing constraints, one can either explicitly specify the timing using {attr}`.ScheduleBase.schedulables`, or rely on the compilation which will use the duration of operations to schedule them back-to-back.
 
 ## Creating a schedule
 
 The most convenient way to interact with a {class}`.Schedule` is through the {mod}`quantify_scheduler` API.
-In the following example, we will create a function to generate a {class}`.Schedule` for a a [Bell experiment](https://en.wikipedia.org/wiki/Bell%27s_theorem) and visualize one instance of such a circuit.
+In the following example, we will create a function to generate a {class}`.Schedule` for a [Bell experiment](https://en.wikipedia.org/wiki/Bell%27s_theorem) and visualize one instance of such a circuit.
 
 ```{code-cell} ipython3
 ---
@@ -132,7 +132,7 @@ The Quantum-circuit description is an idealized mathematical description of a sc
 
 #### Gates and measurements
 
-In this description operations are [quantum gates](https://en.wikipedia.org/wiki/Quantum_logic_gate)  that act on idealized qubits as part of a [quantum circuit](https://en.wikipedia.org/wiki/Quantum_circuit).
+In this description operations are [quantum gates](https://en.wikipedia.org/wiki/Quantum_logic_gate) that act on idealized qubits as part of a [quantum circuit](https://en.wikipedia.org/wiki/Quantum_circuit).
 Operations can be represented by (idealized) unitaries acting on qubits.
 The {mod}`~quantify_scheduler.operations.gate_library` contains common operations (including the measurement operation) described at the quantum-circuit level.
 
@@ -203,9 +203,9 @@ To specify *where* an operation is applied, the quantum-device layer description
 For many systems, it is possible to associate a qubit with an element or location on a device that a signal can be applied to.
 We call such a location on a device a port.
 Like qubits, ports are represented as strings (e.g., {code}`P0`, {code}`feedline_in`, {code}`q0:mw_drive`, etc.).
-In the last example, a port is associated with a qubit by including the qubit name in the beginning of the port name (separated by a colon {code}`:`).
+In the last example, a port is associated with a qubit by including the qubit name at the beginning of the port name (separated by a colon {code}`:`).
 
-Associating a qubit can be useful when visualizing a schedule and or to keep configuration files readable.
+Associating a qubit can be useful when visualizing a schedule and or keeping configuration files readable.
 It is, however, not required to associate a port with a single qubit.
 This keeps matters simple when ports are associated with multiple qubits or with non-qubit elements such as tunable couplers.
 
@@ -381,7 +381,7 @@ A schematic overview of the experiments control flow.
 ```
 
 Let us consider the example of an experiment used to measure the coherence time {math}`T_1`.
-In this experiment a {math}`\pi` pulse is used to excite the qubit, which is left to idle for a time {math}`\tau` before it is measured.
+In this experiment, a {math}`\pi` pulse is used to excite the qubit, which is left to idle for a time {math}`\tau` before it is measured.
 This experiment is then repeated for different {math}`\tau` and averaged.
 
 In terms of settables and gettables to use with the `quantify_core.measurement.control.MeasurementControl`, the settable in this experiment is the delay time {math}`\tau`, and the gettable is the execution of the schedule.
@@ -467,4 +467,4 @@ and the resulting dataset can be analyzed using
 ```{rubric} Footnotes
 ```
 
-[^id3]: {mod}`quantify-scheduler` threats physical instruments as stateless in the sense that the compiled instructions contain all information that specify the executing of a schedule. However, for performance reasons, it is important to not reconfigure all parameters of all instruments whenever a new schedule is executed. The parameters (state) of the instruments are used to track the state of physical instruments to allow lazy configuration as well as ensuring metadata containing the current settings is stored correctly.
+[^id3]: {mod}`quantify-scheduler` threats physical instruments as stateless in the sense that the compiled instructions contain all information that specifies the execution of a schedule. However, for performance reasons, it is important to not reconfigure all parameters of all instruments whenever a new schedule is executed. The parameters (state) of the instruments are used to track the state of physical instruments to allow lazy configuration as well as ensure metadata containing the current settings is stored correctly.

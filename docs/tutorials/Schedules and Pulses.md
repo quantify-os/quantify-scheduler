@@ -29,7 +29,7 @@ sched
 
 ```
 
-As we can see, our newly created schedule is still empty. We need to manually add operations to it. In `quantify_scheduler` there are three types of operations: pulses, acquisitions and gates. All of these have explicit timing control. In this tutorial we will only cover pulses. The goal will not be to make a schedule that is physically meaningful, but to demonstrate the control over the scheduling to its fullest.
+As we can see, our newly created schedule is still empty. We need to manually add operations to it. In `quantify_scheduler` there are three types of operations: pulses, acquisitions and gates. All of these have explicit timing control. In this tutorial, we will only cover pulses. The goal will not be to make a schedule that is physically meaningful, but to demonstrate the control over the scheduling to its fullest.
 
 While it is possible to define a pulse completely from scratch, we will be using some of the pulse definitions provided with the `quantify_scheduler`. These pulses are described in the {mod}`quantify_scheduler.operations.pulse_library` submodule. It's worth noting that no sampling of the data yet occurs at this stage, but the pulse is kept in a parameterized form.
 
@@ -118,7 +118,7 @@ sched.plot_pulse_diagram(plot_backend='plotly')
 We see that we added a DRAG pulse to the schedule. Two things stand out:
 
 1. The DRAG pulse is plotted separately from the square pulse, this is because we specified a different {code}`port` for this pulse than we did for the square pulse.
-2. The DRAG pulse shows two lines instead of one. This is because a DRAG pulse is specified as a complex-valued pulse, so we have to plot both the I and Q components of the signal. The real part of the waveform is shown in color, whereas the imaginary component is shown in greyscale.
+2. The DRAG pulse shows two lines instead of one. This is because a DRAG pulse is specified as a complex-valued pulse, so we have to plot both the I and Q components of the signal. The real part of the waveform is shown in color, whereas the imaginary component is shown in grayscale.
 
 ## Parameterized schedules
 
@@ -162,4 +162,4 @@ sched.plot_pulse_diagram(plot_backend='plotly')
 
 ```
 
-Note that we used the {class}`~quantify_scheduler.resources.BasebandClockResource` as clock, which is always at 0 Hz and added automatically to the schedule for convenience. We can see that the pulses start every 500 ns and are 200 ns long.
+Note that we used the {class}`~quantify_scheduler.resources.BasebandClockResource` as a clock, which is always at 0 Hz and was added automatically to the schedule for convenience. We can see that the pulses start every 500 ns and are 200 ns long.

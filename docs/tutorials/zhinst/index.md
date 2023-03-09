@@ -36,12 +36,12 @@ In this context a single HDAWG is treated as the master device that sends out a 
 After the synchronization trigger is given, all devices execute a compiled program for which the timings of all instructions have been calculated.
 
 The compilation from operations at the quantum-device layer to instructions that the hardware can execute is done in several steps.
-The zhinst {func}`~quantify_scheduler.backends.zhinst_backend.compile_backend` starts from the {attr}`.ScheduleBase.timing_table` and maps the operations to channels on the hardware using information specified in the
+The zhinst {func}`~quantify_scheduler.backends.zhinst_backend.compile_backend` starts from the {attr}`.ScheduleBase.timing_table` and maps the operations to channels on the hardware using the information specified in the
 {ref}`sec-hardware configuration file <hardware configuration file>`.
 Corrections for channel latency, as well as moving operations around to ensure all measurements start at the first sample (0) of a clock cycle are also done at this stage.
 
-Once the starting time and sample of each operation is known, the numerical waveforms that have to be uploaded to the hardware can be generated.
-The numerical waveforms differ from the idealized waveforms of the device description in that the they include corrections for effects such as mixer-skewness and linear-dynamical distortions (not implemented yet), and intermediate frequency modulation if required.
+Once the starting time and sample of each operation are known, the numerical waveforms that have to be uploaded to the hardware can be generated.
+The numerical waveforms differ from the idealized waveforms of the device description in that they include corrections for effects such as mixer-skewness and linear-dynamical distortions (not implemented yet), and intermediate frequency modulation if required.
 
 Both the {attr}`.CompiledSchedule.hardware_timing_table` and {attr}`.CompiledSchedule.hardware_waveform_dict` are available as properties of the {class}`.CompiledSchedule`.
 
@@ -50,7 +50,7 @@ All of this information is combined in {class}`~.backends.zhinst.settings.ZISett
 
 ## Limitations
 
-There are several limitation to the paradigm and to the current implementation.
+There are several limitations to the paradigm and to the current implementation.
 Some of these are relatively easy to address while others are more fundamental to the paradigm.
 Here we give an overview of the known limitations.
 Note that some of these can be quite specific.
@@ -60,8 +60,8 @@ Note that some of these can be quite specific.
 There are some inherent limitations to the paradigm of describing the program as a single linear timeline that is started using a single synchronization trigger.
 These limitations cannot easily be addressed so should be taken into account when thinking about experiments.
 
-- Because the **synchronization of the HDAWG and the UFHQA relies on a trigger on two devices operating at different clock frequencies** one cannot guarantee at what sample within the clock domain the slave device gets triggered. The consequence is that although the triggering is stable within an experiment, the exact time difference (in number of samples) between the different devices varies between different experiments. This problem is inherent to the triggering scheme and cannot be easily resolved.
-- The paradigm of a single fixed timeline with a single synchronizing trigger is **not compatible with control loop affecting feedback**.
+- Because the **synchronization of the HDAWG and the UFHQA relies on a trigger on two devices operating at different clock frequencies** one cannot guarantee at what sample within the clock domain the slave device gets triggered. The consequence is that although the triggering is stable within an experiment, the exact time difference (in the number of samples) between the different devices varies between different experiments. This problem is inherent to the triggering scheme and cannot be easily resolved.
+- The paradigm of a single fixed timeline with a single synchronizing trigger is **not compatible with a control loop affecting feedback**.
 
 ### Limitations with the current implementation
 
@@ -92,12 +92,12 @@ The configuration file contains parameters about the Instruments and properties 
 to map {class}`quantify_scheduler.operations.operation.Operation`s, which act on
 qubits, onto physical properties of the instrument.
 
-The Zurich Instruments hardware configuration file is divided in four main sections.
+The Zurich Instruments hardware configuration file is divided into four main sections.
 
 1\. The `backend` property defines the python method which will be executed by
 {meth}`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler.compile` in order to compile the backend.
 
-2. The `local_oscillators` property is a list of dicts which describe the available local oscillators in the hardware setup. An example entry are as follows:
+2. The `local_oscillators` property is a list of dicts that describe the available local oscillators in the hardware setup. An example entry is as follows:
 
 ```{code-block} json
 :linenos: true
@@ -128,7 +128,7 @@ The Zurich Instruments hardware configuration file is divided in four main secti
 - In the example, the particular local_oscillator is given a `unique_name` which is then used in the `devices` to couple the channel of the device to that local oscillator.
 - The `instrument_name` is the QCoDes Instrument name for the local oscillator object.
 - The `frequency` property maps the frequency parameter which is used to set the frequency of the local oscillator. If set to `null`, then the local oscillator frequency is automatically calculated from the relation, LO frequency = RF frequency - Intermodulation frequency.
-- The `power` property is an optional key which maps the power parameter used to set the power of the local oscillator. If the key is not provided, no value will be set. Note that the units are based on the instruments used (i.e. if the QCoDeS instrument sets the power in dbm, then the power value should be in dbm).
+- The `power` property is an optional key that maps the power parameter used to set the power of the local oscillator. If the key is not provided, no value will be set. Note that the units are based on the instruments used (i.e. if the QCoDeS instrument sets the power in dbm, then the power value should be in dbm).
 - The `phase` property is an optional key that maps the phase parameter used to set the phase of the local oscillator signal. If the key is not provided, no value will be set. Note that the units are based on the instruments used (i.e. if the QCoDeS instrument sets the phase in radians, then the phase value should be in radians).
 
 3. The `latency_corrections` property specifies a delay on a port-clock combination which is implemented by incrementing the `abs_time` of all operations applied to the port-clock combination. The delay is used to manually adjust the timing to correct for e.g., delays due to different cable lengths.
@@ -187,7 +187,7 @@ according to the {class}`~quantify_scheduler.backends.types.zhinst.Device` and
   > - `none` Ignores waiting for Marker
 
 - The `channelgrouping` property sets the HDAWG channel grouping value and impacts the amount
-  of HDAWG channels per AWG must be used.
+  of HDAWG channels per AWG that must be used.
 
 ```{code-block} python
 :emphasize-lines: 5,17
@@ -239,7 +239,7 @@ instrument = zhinst.qcodes.HDAWG(name='hdawg0', serial='dev1234', ...)
   The values are used as input for the `setTrigger` sequencer instruction.
 
 - The `trigger` property specifies for a sequencer which digital trigger to wait for.
-  This value is used as input parameter for the `waitDigTrigger` sequencer instruction.
+  This value is used as the input parameter for the `waitDigTrigger` sequencer instruction.
 
 ```{eval-rst}
 .. autoclass:: quantify_scheduler.backends.types.zhinst.Output
