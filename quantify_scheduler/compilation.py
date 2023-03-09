@@ -1,10 +1,12 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Compiler for the quantify_scheduler."""
+from __future__ import annotations
+
 import logging
 import warnings
 from copy import deepcopy
-from typing import Literal, Optional, Union
+from typing import Dict, Literal, Optional, Union
 
 from quantify_core.utilities import deprecated
 
@@ -157,10 +159,11 @@ def _find_edge(device_cfg, parent_element_name, child_element_name, op_name):
 )
 def add_pulse_information_transmon(
     schedule: Schedule,
-    config: Union[CompilationConfig, dict, None] = None,
-    *,
-    # Support for (deprecated) calling with device_cfg as keyword argument
-    device_cfg: Union[dict, None] = None,
+    config: CompilationConfig | DeviceCompilationConfig | Dict | None = None,
+    # config can be DeviceCompilationConfig and Dict to support (deprecated) calling
+    # with device_cfg as positional argument.
+    *,  # Support for (deprecated) calling with device_cfg as keyword argument:
+    device_cfg: DeviceCompilationConfig | Dict | None = None,
 ) -> Schedule:
     # pylint: disable=line-too-long
     """
@@ -184,6 +187,11 @@ def add_pulse_information_transmon(
     :
         A new schedule object where the pulse information has been added.
 
+    Raises
+    ------
+    ValueError
+        When both config and device_cfg are supplied.
+
 
     .. rubric:: Supported operations
 
@@ -205,19 +213,20 @@ def add_pulse_information_transmon(
 
     if not ((config is not None) ^ (device_cfg is not None)):
         raise ValueError(
-            f"add_pulse_information_transmon was called with config={config} and "
-            f" device_cfg={device_cfg}. Please make sure this function is called "
-            "with either of the two."
+            f"`{add_pulse_information_transmon.__name__}` was called with {config=}"
+            f" and {device_cfg=}. Please make sure this function is called with "
+            f" either of the two (CompilationConfig recommended)."
         )
     if not isinstance(config, CompilationConfig):
         warnings.warn(
-            "Since quantify-scheduler >= 0.14.0 calling `add_pulse_information_transmon`"
-            " will require a full CompilationConfig as input.",
+            f"`{add_pulse_information_transmon.__name__}` will require a full "
+            f"CompilationConfig as input as of quantify-scheduler >= 0.15.0",
             FutureWarning,
         )
     if isinstance(config, CompilationConfig):
         device_cfg = config.device_compilation_config
     elif config is not None:
+        # Support for (deprecated) calling with device_cfg as positional argument:
         device_cfg = config
 
     validate_config(device_cfg, scheme_fn="transmon_cfg.json")
