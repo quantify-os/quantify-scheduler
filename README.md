@@ -19,9 +19,9 @@ and [quantify-scheduler](https://pypi.org/project/quantify-scheduler/) ([git rep
 It is built on top of [QCoDeS](https://qcodes.github.io/Qcodes/)
 and is a spiritual successor of [PycQED](https://github.com/DiCarloLab-Delft/PycQED_py3).
 
-Quantify-scheduler is a Python module for writing quantum programs featuring a hybrid gate-pulse control model with explicit timing control.
+`quantify-scheduler` is a Python module for writing quantum programs featuring a hybrid gate-pulse control model with explicit timing control.
 This control model allows quantum gate and pulse-level descriptions to be combined in a clearly defined and hardware-agnostic way.
-Quantify-scheduler is designed to allow experimentalists to easily define complex experiments. It produces synchronized pulse schedules
+`quantify-scheduler` is designed to allow experimentalists to easily define complex experiments. It produces synchronized pulse schedules
 that are distributed to control hardware, after compiling these schedules into control-hardware specific executable programs.
 
 Take a look at the [latest documentation for quantify-scheduler](https://quantify-quantify-scheduler.readthedocs-hosted.com/)

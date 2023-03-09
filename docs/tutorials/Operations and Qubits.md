@@ -183,7 +183,7 @@ By compiling the schedule to the quantum-device layer, we incorporate the device
 
 To start this section, we will unpack the structure of the device configuration.
 Here we will use an example device configuration for a transmon-based system that is used in the
-`quantify-scheduler` test suite.
+{mod}`quantify-scheduler` test suite.
 
 ```{code-cell} ipython3
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig

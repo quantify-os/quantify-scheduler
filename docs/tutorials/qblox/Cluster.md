@@ -328,7 +328,7 @@ This subsection on `max_awg_output_voltage` is still under construction.
 (sec-qblox-clock-settings)=
 ### Clock settings
 
-The aim of `quantify-scheduler` is to only specify the final RF frequency when the signal arrives at the chip, rather than any parameters related to I/Q modulation. However, you still need to provide some parameters for the up/downconversion.
+The aim of {mod}`quantify-scheduler` is to only specify the final RF frequency when the signal arrives at the chip, rather than any parameters related to I/Q modulation. However, you still need to provide some parameters for the up/downconversion.
 
 The backend assumes that upconversion happens according to the relation
 

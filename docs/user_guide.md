@@ -23,11 +23,11 @@ pretty.install()
 
 ## Introduction
 
-Quantify-scheduler is a python module for writing quantum programs featuring a hybrid gate-pulse control model with explicit timing control.
+{mod}`quantify-scheduler` is a python module for writing quantum programs featuring a hybrid gate-pulse control model with explicit timing control.
 It extends the circuit model from quantum information processing by adding a pulse-level representation to operations defined at the gate-level, and the ability to specify timing constraints between operations.
 Thus, a user is able to mix gate- and pulse-level operations in a quantum circuit.
 
-In `quantify-scheduler`, both a quantum circuit consisting of gates and measurements and a timed sequence of control pulses are described as a {class}`.Schedule` .
+In {mod}`quantify-scheduler`, both a quantum circuit consisting of gates and measurements and a timed sequence of control pulses are described as a {class}`.Schedule` .
 The {class}`.Schedule` contains information on *when* operations should be performed.
 When adding operations to a schedule, one does not need to specify how to represent this {class}`.Operation` on all (both gate and pulse) abstraction levels.
 Instead, this information can be added later during {ref}`Compilation`.
@@ -90,7 +90,7 @@ Creating schedule generating functions is a convenient design pattern when creat
 
 ## Concepts and terminology
 
-Quantify-scheduler can be understood by understanding the following concepts.
+{mod}`quantify-scheduler` can be understood by understanding the following concepts.
 
 - {class}`.Schedule`s describe when an operation needs to be applied.
 - {class}`.Operation`s describe what needs to be done.
@@ -467,4 +467,4 @@ and the resulting dataset can be analyzed using
 ```{rubric} Footnotes
 ```
 
-[^id3]: Quantify-scheduler threats physical instruments as stateless in the sense that the compiled instructions contain all information that specify the executing of a schedule. However, for performance reasons, it is important to not reconfigure all parameters of all instruments whenever a new schedule is executed. The parameters (state) of the instruments are used to track the state of physical instruments to allow lazy configuration as well as ensuring metadata containing the current settings is stored correctly.
+[^id3]: {mod}`quantify-scheduler` threats physical instruments as stateless in the sense that the compiled instructions contain all information that specify the executing of a schedule. However, for performance reasons, it is important to not reconfigure all parameters of all instruments whenever a new schedule is executed. The parameters (state) of the instruments are used to track the state of physical instruments to allow lazy configuration as well as ensuring metadata containing the current settings is stored correctly.
