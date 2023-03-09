@@ -19,8 +19,8 @@ Functionality included in this backend:
 - Waveform generation and modulation, in a parameterized fashion as supported by Qblox hardware.
 - Built-in version handling to ensure the backend works correctly with the installed driver version.
 - Automatic handling of the hardware constraints such as output voltage ranges and sampling rates.
-- Calculation of the optimal hardware settings for execution of the provided schedule using the Instrument Coordinator.
-- Real mode, which allows to address the individual outputs separately rather than using IQ signals.
+- Calculation of the optimal hardware settings for the execution of the provided schedule using the Instrument Coordinator.
+- Real mode, which allows addressing the individual outputs separately rather than using IQ signals.
 - Full support of frequency multiplexing.
 - Automatic calculation of the required parameters for external local oscillators.
 - Correction of the mixer errors using specified correction parameters.

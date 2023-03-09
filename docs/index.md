@@ -1,14 +1,11 @@
 # Welcome to Quantify's documentation!
 
-%
-
-```{include} readme.md
+```{include} ../README.md
 ```
 
 ```{toctree}
 :caption: Contents
 :glob: true
-:hidden: true
 :maxdepth: 2
 
 installation
@@ -28,8 +25,13 @@ bibliography
 ```{toctree}
 :caption: API Reference
 :glob: true
-:hidden: true
 :maxdepth: 2
 
 autoapi/quantify_scheduler/index
 ```
+
+# Indices and tables
+
+- {ref}`genindex`
+- {ref}`modindex`
+- {ref}`search`

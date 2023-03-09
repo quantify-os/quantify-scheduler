@@ -22,7 +22,7 @@ pretty.install()
 
 In order to execute a {class}`~.Schedule` on physical hardware or a simulator one needs to compile the schedule.
 This is done using a {class}`~.backends.graph_compilation.QuantifyCompiler`.
-The {meth}`~.backends.graph_compilation.QuantifyCompiler.compile` method requires both the {class}`~.Schedule` to compile and a {class}`~.CompilationConfig` describing the information required to perform the compilation.
+The {meth}`~.backends.graph_compilation.QuantifyCompiler.compile` method requires both the {class}`~.Schedule` to compile and a {class}`~.CompilationConfig` that describes the information required to perform the compilation.
 
 Upon the start of the compilation, the {class}`~.backends.graph_compilation.QuantifyCompiler` defines a directed acyclic graph in which individual nodes represent compilation steps.
 A {class}`~.Schedule` can be compiled by traversing the graph.
@@ -41,7 +41,7 @@ When executing schedules, one needs to interact with and manage the parameters o
 For this we refer to the {ref}`section on execution <sec-user-guide-execution>` in the user guide.
 ```
 
-First we set up a mock setup and create a simple schedule that we want to compile.
+First, we set up a mock setup and create a simple schedule that we want to compile.
 
 ```{code-cell}
 
