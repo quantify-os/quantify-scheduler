@@ -57,22 +57,31 @@ def compile_circuit_to_device(
     -------
     :
         A copy of `schedule` with pulse information added to all gates.
+
+    Warns
+    ------
+
+    Raises
+    ------
+    ValueError
+        When both config and (deprecated) device_cfg are supplied.
     """
-    if not ((config is not None) ^ (device_cfg is not None)):
+    if (config is not None) and (device_cfg is not None):
         raise ValueError(
-            f"compile_circuit_to_device was called with config={config} and"
-            f" device_cfg={device_cfg}. Please make sure this function is called with"
-            " either of the two (CompilationConfig recommended)."
+            f"`{compile_circuit_to_device.__name__}` was called with {config=}"
+            f"and {device_cfg=}. Please make sure this function is called with"
+            f"either of the two (CompilationConfig recommended)."
         )
     if not isinstance(config, CompilationConfig):
         warnings.warn(
-            "Since quantify-scheduler >= 0.14.0 calling `compile_circuit_to_device`"
+            "Since quantify-scheduler >= 0.15.0 calling `compile_circuit_to_device`"
             " will require a full CompilationConfig as input.",
             FutureWarning,
         )
     if isinstance(config, CompilationConfig):
         device_cfg = config.device_compilation_config
     elif config is not None:
+        # Support for (deprecated) calling with device_cfg as positional argument.
         device_cfg = config
 
     if device_cfg is None:
@@ -172,25 +181,28 @@ def set_pulse_and_acquisition_clock(
     RuntimeError
         When operation is not at pulse/acquisition-level.
     ValueError
+        When both config and (deprecated) device_cfg are supplied.
+    ValueError
         When clock frequency is unknown.
     ValueError
         When clock frequency is NaN.
     """
-    if not ((config is not None) ^ (device_cfg is not None)):
+    if (config is not None) and (device_cfg is not None):
         raise ValueError(
-            f"set_pulse_and_acquisition_clock was called with config={config} and"
-            f" device_cfg={device_cfg}. Please make sure this function is called with"
-            " either of the two (CompilationConfig recommended)."
+            f"`{set_pulse_and_acquisition_clock.__name__}` was called with {config=}"
+            f" and {device_cfg=}. Please make sure this function is called with "
+            f" either of the two (CompilationConfig recommended)."
         )
     if not isinstance(config, CompilationConfig):
         warnings.warn(
-            "Since quantify-scheduler >= 0.14.0 calling `set_pulse_and_acquisition_clock`"
+            "Since quantify-scheduler >= 0.15.0 calling `set_pulse_and_acquisition_clock`"
             " will require a full CompilationConfig as input.",
             FutureWarning,
         )
     if isinstance(config, CompilationConfig):
         device_cfg = config.device_compilation_config
     elif config is not None:
+        # Support for (deprecated) calling with device_cfg as positional argument.
         device_cfg = config
 
     if device_cfg is None:
