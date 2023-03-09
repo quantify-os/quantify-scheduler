@@ -21,13 +21,13 @@ The complete source code of this tutorial can be found in
 
 In the previous tutorials, experiments were created on the {ref}`quantum-device level<sec-user-guide-quantum-device>`. On this level,
 operations are defined in terms of explicit signals and locations on the chip, rather than the qubit and the intended operation.
-To work at a greater level of abstraction, `quantify_scheduler` allows creating operations on the
+To work at a greater level of abstraction, {mod}`quantify_scheduler` allows creating operations on the
 {ref}`quantum-circuit level<sec-user-guide-quantum-circuit>`.
 Instead of signals, clocks, and ports, operations are defined by the effect they have on specific qubits. This representation of the schedules can be compiled to the quantum-device level to create the pulse schemes.
 
 In this tutorial we show how to define operations on the {ref}`quantum-circuit level<sec-user-guide-quantum-circuit>`, combine them into schedules, and show their circuit-level visualization.
 We go through the configuration file needed to compile the schedule to the quantum-device level and show how these configuration files can be created automatically and dynamically.
-Finally, we showcase the hybrid nature of `quantify_scheduler`, allowing the scheduling of circuit-level and device-level operations side by side in the same schedule.
+Finally, we showcase the hybrid nature of {mod}`quantify_scheduler`, allowing the scheduling of circuit-level and device-level operations side by side in the same schedule.
 
 Many of the gates used in the circuit layer description are defined in
 {class}`~quantify_scheduler.operations.gate_library` such as {class}`~quantify_scheduler.operations.gate_library.Reset`, {class}`~quantify_scheduler.operations.gate_library.X90` and
@@ -357,7 +357,7 @@ as such support the same timing and reference operators as Pulses.
 
 ## Device and Hardware compilation combined: Serial Compiler
 
-{class}`~quantify_scheduler.backends.graph_compilation.SerialCompiler` can be used to execute the device and hardware compilation separately, or execute both in one call. Here we will not set the hardware configuration thus only executing `device-compile`. The {ref}`Compiling to Hardware <sec-tutorial-compiling>` tutorial demonstrates how to set the hardware configuration.
+{class}`~quantify_scheduler.backends.graph_compilation.SerialCompiler` can be used to execute the device and hardware compilation separately, or execute both in one call. Here we will not set the hardware configuration thus only executing device compilation. The {ref}`Compiling to Hardware <sec-tutorial-compiling>` tutorial demonstrates how to set the hardware configuration.
 
 {class}`~quantify_scheduler.backends.graph_compilation.SerialCompiler` requires a {class}`~quantify_scheduler.backends.graph_compilation.CompilationConfig` and this holds both the device and hardware configurations (when set). In the example below, we generate a {class}`~quantify_scheduler.backends.graph_compilation.CompilationConfig` via  {meth}`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice.generate_compilation_config` of {class}`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice`.
 
@@ -379,7 +379,7 @@ compiler = SerialCompiler(name='compiler')
 compiled_sched = compiler.compile(schedule=sched, config=dut.generate_compilation_config())
 ```
 
-So, finally, we can show the timing table associated with the chevron schedule and plot
+So, finally, we can show the timing table associated with the Chevron schedule and plot
 its pulse diagram:
 
 ```{code-cell} ipython3
