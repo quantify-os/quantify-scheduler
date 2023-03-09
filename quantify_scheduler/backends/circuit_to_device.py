@@ -8,7 +8,7 @@ from __future__ import annotations
 import warnings
 from copy import deepcopy
 from itertools import permutations
-from typing import Dict, Union
+from typing import Dict
 
 import numpy as np
 from quantify_scheduler.backends.graph_compilation import (
@@ -24,8 +24,8 @@ from quantify_scheduler.schedules.schedule import Schedule
 def compile_circuit_to_device(
     schedule: Schedule,
     config: CompilationConfig | DeviceCompilationConfig | Dict | None = None,
-    # DeviceCompilationConfig and Dict to support (deprecated) calling with device_cfg
-    # as positional argument.
+    # config can be DeviceCompilationConfig and Dict to support (deprecated) calling
+    # with device_cfg as positional argument.
     *,  # Support for (deprecated) calling with device_cfg as keyword argument:
     device_cfg: DeviceCompilationConfig | Dict | None = None,
 ) -> Schedule:
@@ -58,13 +58,10 @@ def compile_circuit_to_device(
     :
         A copy of `schedule` with pulse information added to all gates.
 
-    Warns
-    ------
-
     Raises
     ------
     ValueError
-        When both config and (deprecated) device_cfg are supplied.
+        When both config and device_cfg are supplied.
     """
     if (config is not None) and (device_cfg is not None):
         raise ValueError(
@@ -74,14 +71,14 @@ def compile_circuit_to_device(
         )
     if not isinstance(config, CompilationConfig):
         warnings.warn(
-            "Since quantify-scheduler >= 0.15.0 calling `compile_circuit_to_device`"
-            " will require a full CompilationConfig as input.",
+            f"Qblox `{compile_circuit_to_device.__name__}` will require a full "
+            f"CompilationConfig as input as of quantify-scheduler >= 0.15.0",
             FutureWarning,
         )
     if isinstance(config, CompilationConfig):
         device_cfg = config.device_compilation_config
     elif config is not None:
-        # Support for (deprecated) calling with device_cfg as positional argument.
+        # Support for (deprecated) calling with device_cfg as positional argument:
         device_cfg = config
 
     if device_cfg is None:
@@ -140,8 +137,8 @@ def compile_circuit_to_device(
 def set_pulse_and_acquisition_clock(
     schedule: Schedule,
     config: CompilationConfig | DeviceCompilationConfig | Dict | None = None,
-    # DeviceCompilationConfig and Dict to support (deprecated) calling with device_cfg
-    # as positional argument.
+    # config can be DeviceCompilationConfig and Dict to support (deprecated) calling
+    # with device_cfg as positional argument.
     *,  # Support for (deprecated) calling with device_cfg as keyword argument:
     device_cfg: DeviceCompilationConfig | Dict | None = None,
 ) -> Schedule:
@@ -181,7 +178,7 @@ def set_pulse_and_acquisition_clock(
     RuntimeError
         When operation is not at pulse/acquisition-level.
     ValueError
-        When both config and (deprecated) device_cfg are supplied.
+        When both config and device_cfg are supplied.
     ValueError
         When clock frequency is unknown.
     ValueError
@@ -195,14 +192,14 @@ def set_pulse_and_acquisition_clock(
         )
     if not isinstance(config, CompilationConfig):
         warnings.warn(
-            "Since quantify-scheduler >= 0.15.0 calling `set_pulse_and_acquisition_clock`"
-            " will require a full CompilationConfig as input.",
+            f"Qblox `{set_pulse_and_acquisition_clock.__name__}` will require a full "
+            f"CompilationConfig as input as of quantify-scheduler >= 0.15.0",
             FutureWarning,
         )
     if isinstance(config, CompilationConfig):
         device_cfg = config.device_compilation_config
     elif config is not None:
-        # Support for (deprecated) calling with device_cfg as positional argument.
+        # Support for (deprecated) calling with device_cfg as positional argument:
         device_cfg = config
 
     if device_cfg is None:
