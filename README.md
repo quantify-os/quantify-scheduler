@@ -1,4 +1,4 @@
-# Quantify-scheduler
+# quantify-scheduler
 
 [![Slack](https://img.shields.io/badge/slack-chat-green.svg)](https://quantify-os.org/slack.html#sec-slack)
 [![Pipelines](https://gitlab.com/quantify-os/quantify-scheduler/badges/main/pipeline.svg)](https://gitlab.com/quantify-os/quantify-scheduler/-/pipelines/)
