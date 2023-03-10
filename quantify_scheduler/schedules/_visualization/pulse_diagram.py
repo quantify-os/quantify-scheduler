@@ -123,9 +123,8 @@ def pulse_diagram_plotly(
 
     port_map: Dict[str, int] = {}
     ports_length: int = 8
-    auto_map: bool = port_list is None
 
-    if auto_map is False:
+    if port_list is not None:
         ports_length = len(port_list)
         port_map = dict(zip(port_list, range(len(port_list))))
     else:
@@ -318,11 +317,12 @@ def pulse_diagram_plotly(
 
 # pylint: disable=too-many-branches
 def sample_schedule(
-    schedule: Schedule,
+    schedule: Schedule | CompiledSchedule,
     port_list: Optional[List[str]] = None,
     modulation: Literal["off", "if", "clock"] = "off",
     modulation_if: float = 0.0,
     sampling_rate: float = 1e9,
+    x_range: Tuple[float, float] = (-np.inf, np.inf),
 ) -> Tuple[np.ndarray, Dict[str, np.ndarray]]:
     """
     Sample a schedule at discrete points in time.
@@ -340,6 +340,8 @@ def sample_schedule(
         Modulation frequency used when modulation is set to "if".
     sampling_rate :
         The time resolution used to sample the schedule in Hz.
+    x_range :
+        The minimum and maximum time values at which to sample the waveforms.
 
     Returns
     -------
@@ -349,18 +351,23 @@ def sample_schedule(
         Dictionary with the data samples for each port.
     """
 
+    if x_range[0] > x_range[1]:
+        raise ValueError(
+            f"Expected the left limit of x_range to be smaller than the right limit, "
+            f"but got (left, right) = {x_range}"
+        )
+
     port_map: Dict[str, int] = {}
     ports_length: int = 8
-    auto_map: bool = port_list is None
 
-    if auto_map is False:
+    if port_list is not None:
         ports_length = len(port_list)
         port_map = dict(zip(port_list, range(len(port_list))))
     else:
         _populate_port_mapping(schedule, port_map, ports_length)
         ports_length = len(port_map)
 
-    time_window: list = None
+    min_x, max_x = x_range
     for pls_idx, schedulable in enumerate(schedule.schedulables.values()):
         operation = schedule.operations[schedulable["operation_repr"]]
 
@@ -372,17 +379,13 @@ def sample_schedule(
 
             # times at which to evaluate waveform
             t0 = schedulable["abs_time"] + pulse_info["t0"]
-            if time_window is None:
-                time_window = [t0, t0 + pulse_info["duration"]]
+            if np.isinf(min_x) or np.isinf(max_x):
+                min_x, max_x = t0, t0 + pulse_info["duration"]
             else:
-                time_window = [
-                    min(t0, time_window[0]),
-                    max(t0 + pulse_info["duration"], time_window[1]),
-                ]
+                min_x = max(min(t0, min_x), x_range[0])
+                max_x = min(max(t0 + pulse_info["duration"], max_x), x_range[1])
 
-    logger.debug(f"time_window {time_window}, port_map {port_map}")
-
-    if time_window is None:
+    if np.isinf(min_x) or np.isinf(max_x):
         raise RuntimeError(
             f"Attempting to sample schedule {schedule.name}, "
             "but the schedule does not contain any `pulse_info`. "
@@ -390,7 +393,11 @@ def sample_schedule(
             "device compilation has been performed."
         )
 
-    timestamps = np.arange(time_window[0], time_window[1], 1 / sampling_rate)
+    time_window = [min_x, max_x]
+
+    logger.debug(f"time_window {time_window}, port_map {port_map}")
+
+    timestamps = np.arange(min_x, max_x, 1 / sampling_rate)
     waveforms = {key: np.zeros_like(timestamps) for key in port_map}
 
     for pls_idx, schedulable in enumerate(schedule.schedulables.values()):
@@ -403,15 +410,18 @@ def sample_schedule(
             ):
                 continue
 
+            # times at which to evaluate waveform
+            t0 = schedulable["abs_time"] + pulse_info["t0"]
+            t1 = t0 + pulse_info["duration"]
+
+            if t1 < timestamps[0] or t0 > timestamps[-1]:
+                continue
+
             # port to map the waveform too
             port: str = pulse_info["port"]
 
             # function to generate waveform
             wf_func: Callable = import_python_object_from_string(pulse_info["wf_func"])
-
-            # times at which to evaluate waveform
-            t0 = schedulable["abs_time"] + pulse_info["t0"]
-            t1 = t0 + pulse_info["duration"]
 
             time_indices = np.where(np.logical_and(timestamps >= t0, timestamps < t1))
             t = timestamps[time_indices]
@@ -453,6 +463,7 @@ def pulse_diagram_matplotlib(
     sampling_rate: float = 1e9,
     modulation: Literal["off", "if", "clock"] = "off",
     modulation_if: float = 0.0,
+    x_range: Tuple[float, float] = (-np.inf, np.inf),
     ax: Optional[matplotlib.axes.Axes] = None,
 ) -> Tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
     """
@@ -471,6 +482,10 @@ def pulse_diagram_matplotlib(
         Modulation frequency used when modulation is set to "if".
     sampling_rate :
         The time resolution used to sample the schedule in Hz.
+    x_range :
+        The range of the x-axis that is plotted, given as a tuple (left limit,
+        right limit). This can be used to reduce memory usage when plotting a
+        small section of a long pulse sequence.
     ax:
         Axis onto which to plot.
 
@@ -487,6 +502,7 @@ def pulse_diagram_matplotlib(
         port_list=port_list,
         modulation=modulation,
         modulation_if=modulation_if,
+        x_range=x_range,
     )
     if ax is None:
         _, ax = plt.subplots()

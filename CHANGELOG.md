@@ -6,6 +6,8 @@
 
 ### Merged branches and closed issues
 
+- Visualization - Introduce the `x_range` keyword for the matplotlib backend in `Schedule.plot_pulse_diagram`. This will cut off any points outside the given range when creating the plot. This can be used to reduce memory usage when plotting a small section of a long pulse sequence (!629).
+
 ## 0.12.3 (2023-03-09)
 
 ### Merged branches and closed issues
