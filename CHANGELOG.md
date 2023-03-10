@@ -8,6 +8,7 @@
 ### Merged branches and closed issues
 
 - Documentation - Replace deprecated code in the Operations and Qubits tutorial (!602)
+- Workflow - `ruff` and `pyright` are enabled for linting the code (in `pre-commit` and in CI pipeline). All existing code is added to exclusion list because it does not comply with them yet. (!614)
 
 ## 0.12.2 (2023-03-05)
 
@@ -135,7 +136,7 @@ For help in migrating from deprecated methods, see [Quantify Deprecated Code Sug
 - Qblox backend - `QbloxInstrumentCoordinatorComponentBase` accepts both `InstrumentModule` and `InstrumentChannel` as instrument reference to cluster module (!508)
 - Qblox backend - Explicit error message when trying to do acquisitions on a QCM (!519)
 - Qblox backend - Renamed `output_mode` to `io_mode` in `get_operation_strategy` (!497)
-- Qblox backend - Added `TriggerCountAcquisitionStrategy` to acquisitions, generating the Q1ASM commands. (!540) 
+- Qblox backend - Added `TriggerCountAcquisitionStrategy` to acquisitions, generating the Q1ASM commands. (!540)
 - Tests - Refactored tests to remove duplicated `temp_dir` setup, and only use `tmp_test_data_dir` fixture (#370,  !525)
 - Tests - Update tests to use `mock_setup_basic_transmon_with_standard_params` where needed (#369, !522)
 - Tests - Tests refactoring, move to `mock_setup_basic_transmon_with_standard_params` and replace `qcompile` by `SerialCompiler` (!516)
