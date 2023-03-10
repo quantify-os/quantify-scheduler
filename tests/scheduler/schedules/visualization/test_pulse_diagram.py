@@ -118,7 +118,9 @@ def test_sample_schedule() -> None:
     schedule.add(r)
     determine_absolute_timing(schedule=schedule)
 
-    timestamps, waveforms = sample_schedule(schedule, sampling_rate=0.5e9)
+    timestamps, waveforms = sample_schedule(
+        schedule, sampling_rate=0.5e9, x_range=(0, 1.21e-8)
+    )
 
     np.testing.assert_array_almost_equal(
         timestamps,
@@ -131,17 +133,15 @@ def test_sample_schedule() -> None:
                 8.0e-09,
                 1.0e-08,
                 1.2e-08,
-                1.4e-08,
-                1.6e-08,
             ]
         ),
     )
 
     np.testing.assert_array_almost_equal(
-        waveforms["SDP"], np.array([0.2, 0.2, 0.0, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3])
+        waveforms["SDP"], np.array([0.2, 0.2, 0.0, 0.3, 0.3, 0.3, 0.3])
     )
     np.testing.assert_array_almost_equal(
-        waveforms["T"], np.array([-0.2, -0.2, -0.2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        waveforms["T"], np.array([-0.2, -0.2, -0.2, 0.0, 0.0, 0.0, 0.0])
     )
 
 

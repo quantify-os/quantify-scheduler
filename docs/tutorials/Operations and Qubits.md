@@ -390,6 +390,5 @@ compiled_sched.timing_table.hide(slice(11, None), axis="index").hide(
 ```
 
 ```{code-cell} ipython3
-f, ax = compiled_sched.plot_pulse_diagram()
-ax.set_xlim(200e-6, 200.4e-6)
+f, ax = compiled_sched.plot_pulse_diagram(plot_kwargs={"x_range": (200e-6, 200.4e-6)})
 ```
