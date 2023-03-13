@@ -105,13 +105,11 @@ class QuantumDevice(Instrument):
             SimpleNodeConfig(
                 name="circuit_to_device",
                 compilation_func=dev_cfg.backend,
-                compilation_options=dev_cfg,
             ),
             SimpleNodeConfig(
                 name="set_pulse_and_acquisition_clock",
                 compilation_func="quantify_scheduler.backends.circuit_to_device."
                 + "set_pulse_and_acquisition_clock",
-                compilation_options=dev_cfg,
             ),
             SimpleNodeConfig(
                 name="determine_absolute_timing",
@@ -133,7 +131,6 @@ class QuantumDevice(Instrument):
                 SimpleNodeConfig(
                     name="qblox_hardware_compile",
                     compilation_func=hardware_config["backend"],
-                    compilation_options=hardware_config,
                 )
             )
         elif (
@@ -145,7 +142,6 @@ class QuantumDevice(Instrument):
                 SimpleNodeConfig(
                     name="zhinst_hardware_compile",
                     compilation_func=hardware_config["backend"],
-                    compilation_options=hardware_config,
                 )
             )
 
@@ -155,7 +151,6 @@ class QuantumDevice(Instrument):
                 SimpleNodeConfig(
                     name="custom_hardware_compile",
                     compilation_func=hardware_config["backend"],
-                    compilation_options=hardware_config,
                 )
             )
 

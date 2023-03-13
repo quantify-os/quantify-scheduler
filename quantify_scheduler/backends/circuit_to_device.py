@@ -3,161 +3,93 @@
 """
 Compilation backend for quantum-circuit to quantum-device layer.
 """
+from __future__ import annotations
+
 import warnings
-from itertools import permutations
 from copy import deepcopy
-from typing import Any, Callable, Dict, List, Optional, Union
+from itertools import permutations
+from typing import Dict
+
 import numpy as np
-
-
-from pydantic import validator
-
+from quantify_scheduler.backends.graph_compilation import (
+    CompilationConfig,
+    DeviceCompilationConfig,
+    OperationCompilationConfig,
+)
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.schedule import Schedule
-from quantify_scheduler.structure import DataStructure
-from quantify_scheduler.structure.model import deserialize_function
-
-
-class OperationCompilationConfig(DataStructure):
-    """
-    A datastructure containing the information required to compile an individual
-    operation to the representation at the device level.
-
-    Parameters
-    ----------
-    factory_func:
-        A callable designating a factory function used to create the representation
-        of the operation at the quantum-device level.
-    factory_kwargs:
-        a dictionary containing the keyword arguments and corresponding values to use
-        when creating the operation by evaluating the factory function.
-    gate_info_factory_kwargs:
-        A list of keyword arguments of the factory function for which the value must
-        be retrieved from the `gate_info` of the operation.
-    """
-
-    factory_func: Callable[..., Operation]
-    factory_kwargs: Dict[str, Any]
-    gate_info_factory_kwargs: Optional[List[str]]
-
-    @validator("factory_func", pre=True)
-    @classmethod
-    def import_factory_func_if_str(
-        cls, fun: Union[str, Callable[..., Operation]]
-    ) -> Callable[..., Operation]:
-        if isinstance(fun, str):
-            return deserialize_function(fun)
-        return fun  # type: ignore
-
-
-# pylint: disable=line-too-long
-class DeviceCompilationConfig(DataStructure):
-    """
-    A datastructure containing the information required to compile a
-    schedule to the representation at the quantum-device layer.
-
-    Parameters
-    ----------
-    backend:
-        a . separated string specifying the location of the compilation backend this
-        configuration is intended for e.g.,
-        :func:`~.backends.circuit_to_device.compile_circuit_to_device`.
-    clocks:
-        a dictionary specifying the clock frequencies available on the device e.g.,
-        :code:`{"q0.01": 6.123e9}`.
-    elements:
-        a dictionary specifying the elements on the device, what operations can be
-        applied to them and how to compile them.
-    edges:
-        a dictionary specifying the edges, links between elements on the device to which
-        operations can be applied, the operations tha can be  applied to them and how
-        to compile them.
-
-
-
-    .. admonition:: Examples
-        :class: dropdown
-
-        The DeviceCompilationConfig is structured such that it should allow the
-        specification of the circuit-to-device compilation for many different qubit
-        platforms.
-        Here we show a basic configuration for a two-transmon quantum device.
-        In this example, the DeviceCompilationConfig is created by parsing a dictionary
-        containing the relevant information.
-
-        .. important::
-
-            Although it is possible to manually create a configuration using
-            dictionaries, this is not recommended. The
-            :class:`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice`
-            is responsible for managing and generating configuration files.
-
-        .. jupyter-execute::
-
-            from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
-            import pprint
-            from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import (
-                example_transmon_cfg,
-            )
-
-            pprint.pprint(example_transmon_cfg)
-
-
-        The dictionary can be parsed using the :code:`parse_obj` method.
-
-        .. jupyter-execute::
-
-            device_cfg = DeviceCompilationConfig.parse_obj(example_transmon_cfg)
-            device_cfg
-
-
-    """
-
-    backend: Callable[[Schedule, Any], Schedule]
-    clocks: Dict[str, float]
-    elements: Dict[str, Dict[str, OperationCompilationConfig]]
-    edges: Dict[str, Dict[str, OperationCompilationConfig]]
-
-    @validator("backend", pre=True)
-    @classmethod
-    def import_backend_if_str(
-        cls, fun: Callable[[Schedule, Any], Schedule]
-    ) -> Callable[[Schedule, Any], Schedule]:
-        if isinstance(fun, str):
-            return deserialize_function(fun)
-        return fun  # type: ignore
 
 
 def compile_circuit_to_device(
     schedule: Schedule,
-    device_cfg: Optional[Union[DeviceCompilationConfig, dict]] = None,
+    config: CompilationConfig | DeviceCompilationConfig | Dict | None = None,
+    # config can be DeviceCompilationConfig and Dict to support (deprecated) calling
+    # with device_cfg as positional argument.
+    *,  # Support for (deprecated) calling with device_cfg as keyword argument:
+    device_cfg: DeviceCompilationConfig | Dict | None = None,
 ) -> Schedule:
     """
-    Adds the information required to represent operations on the quantum-device
-    abstraction layer to operations that contain information on how to be represented
-    on the quantum-circuit layer.
+    Add pulse information to all gates in the schedule.
+
+    Before calling this function, the schedule can contain abstract operations (gates or
+    measurements). This function adds pulse and acquisition information with respect to
+    `config` as they are expected to arrive to device (latency or distortion corrections
+    are not taken into account).
+
+    From a point of view of :ref:`sec-compilation`, this function converts a schedule
+    defined on a quantum-circuit layer to a schedule defined on a quantum-device layer.
 
     Parameters
     ----------
     schedule
         The schedule to be compiled.
+    config
+        Compilation config for
+        :class:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler`, of
+        which only the :attr:`.CompilationConfig.device_compilation_config`
+        is used in this compilation step.
     device_cfg
-        Device specific configuration, defines the compilation step from
-        the quantum-circuit layer to the quantum-device layer description.
-        Note, if a dictionary is passed, it will be parsed to a
-        :class:`~DeviceCompilationConfig`.
+        (deprecated) Device compilation config. Pass a full compilation config instead
+        using `config` argument. Note, if a dictionary is passed, it will be parsed to a
+        :class:`~.DeviceCompilationConfig`.
 
+    Returns
+    -------
+    :
+        A copy of `schedule` with pulse information added to all gates.
+
+    Raises
+    ------
+    ValueError
+        When both `config` and `device_cfg` are supplied.
     """
-    if not isinstance(device_cfg, DeviceCompilationConfig):
+    if (config is not None) and (device_cfg is not None):
+        raise ValueError(
+            f"`{compile_circuit_to_device.__name__}` was called with {config=} "
+            f"and {device_cfg=}. Please make sure this function is called with "
+            f"only one of the two (CompilationConfig recommended)."
+        )
+    if not isinstance(config, CompilationConfig):
+        warnings.warn(
+            f"`{compile_circuit_to_device.__name__}` will require a full "
+            f"CompilationConfig as input as of quantify-scheduler >= 0.15.0",
+            FutureWarning,
+        )
+    if isinstance(config, CompilationConfig):
+        device_cfg = config.device_compilation_config
+    elif config is not None:
+        # Support for (deprecated) calling with device_cfg as positional argument:
+        device_cfg = config
+
+    if device_cfg is None:
         # this is a special case to be supported to enable compilation for schedules
         # that are defined completely at the quantum-device layer and require no
         # circuit to device compilation.
         # A better solution would be to omit skip this compile call in a backend,
         # but this is supported for backwards compatibility reasons.
-        if device_cfg is None:
-            return schedule
-
+        return schedule
+    elif not isinstance(device_cfg, DeviceCompilationConfig):
         device_cfg = DeviceCompilationConfig.parse_obj(device_cfg)
 
     # to prevent the original input schedule from being modified.
@@ -205,11 +137,18 @@ def compile_circuit_to_device(
 
 def set_pulse_and_acquisition_clock(
     schedule: Schedule,
-    device_cfg: Optional[Union[DeviceCompilationConfig, dict]] = None,
+    config: CompilationConfig | DeviceCompilationConfig | Dict | None = None,
+    # config can be DeviceCompilationConfig and Dict to support (deprecated) calling
+    # with device_cfg as positional argument.
+    *,  # Support for (deprecated) calling with device_cfg as keyword argument:
+    device_cfg: DeviceCompilationConfig | Dict | None = None,
 ) -> Schedule:
     """
-    Ensures that each pulse/acquisition-level clock resource has either been added
-    to the schedule or, if present in device_cfg, adds it to the schedule.
+    Ensures that each pulse/acquisition-level clock resource is added to the schedule.
+
+    If a pulse/acquisition-level clock resource has not been added
+    to the schedule and is present in device_cfg, it is added to the schedule.
+
     A warning is given when a clock resource has conflicting frequency
     definitions, and an error is raised if the clock resource is unknown.
 
@@ -217,11 +156,19 @@ def set_pulse_and_acquisition_clock(
     ----------
     schedule
         The schedule to be compiled.
+    config
+        Compilation config for
+        :class:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler`, of
+        which only the :attr:`.CompilationConfig.device_compilation_config`
+        is used in this compilation step.
     device_cfg
-        Device specific configuration, defines the compilation step from
-        the quantum-circuit layer to the quantum-device layer description.
-        Note, if a dictionary is passed, it will be parsed to a
-        :class:`~DeviceCompilationConfig`.
+        (deprecated) Device compilation config. Pass a full compilation config instead
+        using `config` argument. Note, if a dictionary is passed, it will be parsed to a
+        :class:`~.DeviceCompilationConfig`.
+    Returns
+    -------
+    :
+        A copy of `schedule` with all clock resources added.
 
     Warns
     -----
@@ -233,18 +180,39 @@ def set_pulse_and_acquisition_clock(
     RuntimeError
         When operation is not at pulse/acquisition-level.
     ValueError
+        When both `config` and `device_cfg` are supplied.
+    ValueError
         When clock frequency is unknown.
     ValueError
         When clock frequency is NaN.
     """
-    if not isinstance(device_cfg, DeviceCompilationConfig):
+    if (config is not None) and (device_cfg is not None):
+        raise ValueError(
+            f"`{set_pulse_and_acquisition_clock.__name__}` was called with {config=} "
+            f"and {device_cfg=}. Please make sure this function is called with "
+            f"only one of the two (CompilationConfig recommended)."
+        )
+    if not isinstance(config, CompilationConfig):
+        warnings.warn(
+            f"`{set_pulse_and_acquisition_clock.__name__}` will require a full "
+            f"CompilationConfig as input as of quantify-scheduler >= 0.15.0",
+            FutureWarning,
+        )
+    if isinstance(config, CompilationConfig):
+        device_cfg = config.device_compilation_config
+    elif config is not None:
+        # Support for (deprecated) calling with device_cfg as positional argument:
+        device_cfg = config
+
+    if device_cfg is None:
         # this is a special case to be supported to enable compilation for schedules
         # that are defined completely at the quantum-device layer and require no
         # circuit to device compilation.
         # A better solution would be to omit skip this compile call in a backend,
         # but this is supported for backwards compatibility reasons.
-        if device_cfg is not None:
-            device_cfg = DeviceCompilationConfig.parse_obj(device_cfg)
+        return schedule
+    elif not isinstance(device_cfg, DeviceCompilationConfig):
+        device_cfg = DeviceCompilationConfig.parse_obj(device_cfg)
 
     # to prevent the original input schedule from being modified.
     schedule = deepcopy(schedule)

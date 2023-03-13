@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 from matplotlib.axes import Axes
 from pydantic import validator
-from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
+from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 from quantify_scheduler.structure.model import (
     DataStructure,
@@ -49,20 +49,130 @@ class SimpleNodeConfig(DataStructure):
     compilation_func
         the function to perform the compilation pass as an
         importable string (e.g., "package_name.my_module.function_name").
-    compilation_options
-        the options passed to the compilation function along with the intermediate
-        representation.
     """
 
     name: str
     compilation_func: Callable[[Schedule, Any], Schedule]
-    # N.B. custom node configs could inherit and put a stronger type check/schema
-    # on options for a particular node.
-    compilation_options: Optional[Dict]
 
     @validator("compilation_func", pre=True)
     @classmethod
     def import_compilation_func_if_str(
+        cls, fun: Callable[[Schedule, Any], Schedule]
+    ) -> Callable[[Schedule, Any], Schedule]:
+        if isinstance(fun, str):
+            return deserialize_function(fun)
+        return fun  # type: ignore
+
+
+class OperationCompilationConfig(DataStructure):
+    """
+    Information required to compile an individual operation to the quantum-device layer.
+
+    From a point of view of :ref:`sec-compilation` this information is needed
+    to convert an operation defined on a quantum-circuit layer to an operation
+    defined on a quantum-device layer.
+
+    Parameters
+    ----------
+    factory_func:
+        A callable designating a factory function used to create the representation
+        of the operation at the quantum-device level.
+    factory_kwargs:
+        A dictionary containing the keyword arguments and corresponding values to use
+        when creating the operation by evaluating the factory function.
+    gate_info_factory_kwargs:
+        A list of keyword arguments of the factory function for which the value must
+        be retrieved from the `gate_info` of the operation.
+    """
+
+    factory_func: Callable[..., Operation]
+    factory_kwargs: Dict[str, Any]
+    gate_info_factory_kwargs: Optional[List[str]]
+
+    @validator("factory_func", pre=True)
+    @classmethod
+    def import_factory_func_if_str(
+        cls, fun: Union[str, Callable[..., Operation]]
+    ) -> Callable[..., Operation]:
+        if isinstance(fun, str):
+            return deserialize_function(fun)
+        return fun  # type: ignore
+
+
+# pylint: disable=line-too-long
+class DeviceCompilationConfig(DataStructure):
+    """
+    Information required to compile a schedule to the quantum-device layer.
+
+    From a point of view of :ref:`sec-compilation` this information is needed
+    to convert a schedule defined on a quantum-circuit layer to a schedule
+    defined on a quantum-device layer.
+
+    Parameters
+    ----------
+    backend:
+        A . separated string specifying the location of the compilation backend this
+        configuration is intended for e.g.,
+        :func:`~.backends.circuit_to_device.compile_circuit_to_device`.
+    clocks:
+        A dictionary specifying the clock frequencies available on the device e.g.,
+        :code:`{"q0.01": 6.123e9}`.
+    elements:
+        A dictionary specifying the elements on the device, what operations can be
+        applied to them and how to compile them.
+    edges:
+        A dictionary specifying the edges, links between elements on the device to which
+        operations can be applied, the operations tha can be  applied to them and how
+        to compile them.
+
+
+
+    .. admonition:: Examples
+        :class: dropdown
+
+        The DeviceCompilationConfig is structured such that it should allow the
+        specification of the circuit-to-device compilation for many different qubit
+        platforms.
+        Here we show a basic configuration for a two-transmon quantum device.
+        In this example, the DeviceCompilationConfig is created by parsing a dictionary
+        containing the relevant information.
+
+        .. important::
+
+            Although it is possible to manually create a configuration using
+            dictionaries, this is not recommended. The
+            :class:`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice`
+            is responsible for managing and generating configuration files.
+
+        .. jupyter-execute::
+
+            from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
+            import pprint
+            from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import (
+                example_transmon_cfg,
+            )
+
+            pprint.pprint(example_transmon_cfg)
+
+
+        The dictionary can be parsed using the :code:`parse_obj` method.
+
+        .. jupyter-execute::
+
+            device_cfg = DeviceCompilationConfig.parse_obj(example_transmon_cfg)
+            device_cfg
+
+
+    """
+
+    backend: Callable[[Schedule, Any], Schedule]
+    clocks: Dict[str, float]
+    elements: Dict[str, Dict[str, OperationCompilationConfig]]
+    edges: Dict[str, Dict[str, OperationCompilationConfig]]
+
+    @validator("backend", pre=True)
+    @classmethod
+    def import_backend_if_str(
         cls, fun: Callable[[Schedule, Any], Schedule]
     ) -> Callable[[Schedule, Any], Schedule]:
         if isinstance(fun, str):
@@ -233,7 +343,7 @@ class SimpleNode(CompilationNode):
         # note, the type hint indicates both datastructures and dicts as valid configs.
         # In the future we should only support DataStructures for the compiler options
         # to have stricter typing and error handling. Dict is for legacy support.
-        return self.compilation_func(schedule, config)
+        return self.compilation_func(schedule=schedule, config=config)
 
 
 # pylint: disable=abstract-method
@@ -452,10 +562,10 @@ class SerialCompiler(QuantifyCompiler):
                 ) from e
 
         # exclude the input and output from the path to use to compile
-        for i, node in enumerate(path):
+        for node in path:
             schedule = node.compile(
                 schedule=schedule,
-                config=config.compilation_passes[i].compilation_options,
+                config=config,
             )
 
         # mark the schedule as "Compiled" before returning at the final step.

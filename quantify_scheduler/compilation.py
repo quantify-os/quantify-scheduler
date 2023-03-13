@@ -1,14 +1,17 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Compiler for the quantify_scheduler."""
+from __future__ import annotations
+
 import logging
 from copy import deepcopy
-from typing import Literal, Optional, Union
+from typing import Dict, Literal, Optional, Union
 
 from quantify_core.utilities import deprecated
 
-from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler.backends.graph_compilation import (
+    CompilationConfig,
+    DeviceCompilationConfig,
     SerialCompilationConfig,
     SimpleNodeConfig,
 )
@@ -32,7 +35,11 @@ logger = logging.getLogger(__name__)
 
 
 def determine_absolute_timing(
-    schedule: Schedule, time_unit: Literal["physical", "ideal", None] = "physical"
+    schedule: Schedule,
+    time_unit: Literal[
+        "physical", "ideal", None
+    ] = "physical",  # should be included in CompilationConfig
+    config: Optional[CompilationConfig] = None,
 ) -> Schedule:
     """
     Determines the absolute timing of a schedule based on the timing constraints.
@@ -49,6 +56,10 @@ def determine_absolute_timing(
     ----------
     schedule
         The schedule for which to determine timings.
+    config
+        Compilation config for
+        :class:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler`,
+        which is currently not used in this compilation step.
     time_unit
         Whether to use physical units to determine the absolute time or ideal time.
         When :code:`time_unit == "physical"` the duration attribute is used.
@@ -146,28 +157,42 @@ def _find_edge(device_cfg, parent_element_name, child_element_name, op_name):
     "`example_transmon_cfg` is defined in "
     "`quantify_scheduler/schemas/examples/circuit_to_device_example_cfgs.py`.",
 )
-def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Schedule:
+def add_pulse_information_transmon(
+    schedule: Schedule,
+    config: CompilationConfig | Dict | None = None,
+    device_cfg: Optional[Dict] = None,
+) -> Schedule:
     # pylint: disable=line-too-long
     """
     Adds pulse information specified in the device config to the schedule.
+
+    Supply either `config` or `device_cfg`.
 
     Parameters
     ------------
     schedule
         The schedule for which to add pulse information.
-
+    config
+        Compilation config for
+        :class:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler`, of
+        which only the :attr:`.CompilationConfig.device_compilation_config`
+        is used in this compilation step.
+        Type of :attr:`.CompilationConfig.device_compilation_config` needs to be Dict,
+        and specifies the required pulse information.
     device_cfg
         A dictionary specifying the required pulse information.
-
 
     Returns
     ----------
     :
-        a new schedule object where the pulse information has been added.
+        A new schedule object where the pulse information has been added.
 
+    Raises
+    ------
+    ValueError
+        When both `config` and `device_cfg` are supplied.
 
     .. rubric:: Supported operations
-
 
     The following gate type operations are supported by this compilation step.
 
@@ -176,13 +201,24 @@ def add_pulse_information_transmon(schedule: Schedule, device_cfg: dict) -> Sche
     - :class:`~quantify_scheduler.operations.gate_library.Measure`
     - :class:`~quantify_scheduler.operations.gate_library.CZ`
 
-
     .. rubric:: Configuration specification
 
     .. jsonschema:: https://gitlab.com/quantify-os/quantify-scheduler/-/raw/main/quantify_scheduler/schemas/transmon_cfg.json
 
     """
     # pylint: enable=line-too-long
+
+    if not ((config is not None) ^ (device_cfg is not None)):
+        raise ValueError(
+            f"`{add_pulse_information_transmon.__name__}` was called with {config=} "
+            f"and {device_cfg=}. Please make sure this function is called with "
+            f"one of the two (CompilationConfig recommended)."
+        )
+    if isinstance(config, CompilationConfig):
+        device_cfg = config.device_compilation_config
+    elif config is not None:
+        # Support for calling with device_cfg as positional argument
+        device_cfg = config
 
     validate_config(device_cfg, scheme_fn="transmon_cfg.json")
 
@@ -461,7 +497,6 @@ def qcompile(
                 SimpleNodeConfig(
                     name="circuit_to_device",
                     compilation_func=device_config.backend,
-                    compilation_options=device_config,
                 )
             )
             compilation_passes.append(
@@ -469,7 +504,6 @@ def qcompile(
                     name="set_pulse_and_acquisition_clock",
                     compilation_func="quantify_scheduler.backends.circuit_to_device."
                     + "set_pulse_and_acquisition_clock",
-                    compilation_options=device_config,
                 )
             )
         elif isinstance(device_config, dict):
@@ -478,7 +512,6 @@ def qcompile(
                 SimpleNodeConfig(
                     name="add_pulse_information_transmon",
                     compilation_func=device_config["backend"],
-                    compilation_options=device_config,
                 )
             )
         else:
@@ -505,7 +538,6 @@ def qcompile(
                 SimpleNodeConfig(
                     name="qblox_hardware_compile",
                     compilation_func=hardware_config["backend"],
-                    compilation_options=hardware_config,
                 )
             )
         elif (
@@ -517,7 +549,6 @@ def qcompile(
                 SimpleNodeConfig(
                     name="zhinst_hardware_compile",
                     compilation_func=hardware_config["backend"],
-                    compilation_options=hardware_config,
                 )
             )
 

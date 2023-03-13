@@ -4,23 +4,30 @@
 from __future__ import annotations
 
 import warnings
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends.corrections import (
+    LatencyCorrections,
     apply_distortion_corrections,
     determine_relative_latencies,
-    LatencyCorrections,
 )
+from quantify_scheduler.backends.graph_compilation import CompilationConfig
 from quantify_scheduler.backends.qblox import compiler_container, helpers
 
 
 def hardware_compile(
-    schedule: Schedule, hardware_cfg: Dict[str, Any]
+    schedule: Schedule,
+    config: CompilationConfig | Dict[str, Any] | None = None,
+    # config can be Dict to support (deprecated) calling with hardware config
+    # as positional argument.
+    *,  # Support for (deprecated) calling with hardware_cfg as keyword argument:
+    hardware_cfg: Optional[Dict[str, Any]] = None,
 ) -> CompiledSchedule:
     """
-    Main function driving the compilation. The principle behind the overall compilation
-    works as follows:
+    Generate qblox hardware instructions for executing the schedule.
+
+    The principle behind the overall compilation is as follows:
 
     For every instrument in the hardware configuration, we instantiate a compiler
     object. Then we assign all the pulses/acquisitions that need to be played by that
@@ -34,14 +41,42 @@ def hardware_compile(
     schedule
         The schedule to compile. It is assumed the pulse and acquisition info is
         already added to the operation. Otherwise an exception is raised.
+    config
+        Compilation config for
+        :class:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler`, of
+        which only the :attr:`.CompilationConfig.connectivity`
+        is currently extracted in this compilation step.
     hardware_cfg
-        The hardware configuration of the setup.
+        (deprecated) The hardware configuration of the setup. Pass a full compilation
+        config instead using `config` argument.
 
     Returns
     -------
     :
         The compiled schedule.
+
+    Raises
+    ------
+    ValueError
+        When both `config` and `hardware_cfg` are supplied.
     """
+    if not ((config is not None) ^ (hardware_cfg is not None)):
+        raise ValueError(
+            f"Qblox `{hardware_compile.__name__}` was called with {config=} and "
+            f"{hardware_cfg=}. Please make sure this function is called with "
+            f"one of the two (CompilationConfig recommended)."
+        )
+    if not isinstance(config, CompilationConfig):
+        warnings.warn(
+            f"Qblox `{hardware_compile.__name__}` will require a full "
+            f"CompilationConfig as input as of quantify-scheduler >= 0.15.0",
+            FutureWarning,
+        )
+    if isinstance(config, CompilationConfig):
+        hardware_cfg = config.connectivity
+    elif config is not None:
+        # Support for (deprecated) calling with hardware_cfg as positional argument.
+        hardware_cfg = config
 
     converted_hw_config = helpers.convert_hw_config_to_portclock_configs_spec(
         hardware_cfg

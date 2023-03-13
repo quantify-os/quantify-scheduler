@@ -6,27 +6,26 @@ from __future__ import annotations
 
 import logging
 import re
+import warnings
 from dataclasses import dataclass
 from functools import partial
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
-from zhinst.toolkit.helpers import Waveform
-
-
 from quantify_scheduler import enums
 from quantify_scheduler.backends.corrections import (
+    LatencyCorrections,
     apply_distortion_corrections,
     determine_relative_latencies,
-    LatencyCorrections,
 )
+from quantify_scheduler.backends.graph_compilation import CompilationConfig
 from quantify_scheduler.backends.types import common, zhinst
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 from quantify_scheduler.backends.zhinst import resolvers, seqc_il_generator
 from quantify_scheduler.backends.zhinst import settings as zi_settings
-from quantify_scheduler.helpers import waveforms as waveform_helpers
 from quantify_scheduler.helpers import schedule as schedule_helpers
+from quantify_scheduler.helpers import waveforms as waveform_helpers
 from quantify_scheduler.instrument_coordinator.components.generic import (
     DEFAULT_NAME as generic_icc_default_name,
 )
@@ -34,6 +33,7 @@ from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.resources import Resource
 from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 
+from zhinst.toolkit.helpers import Waveform
 
 logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
@@ -696,11 +696,15 @@ class ZIDeviceConfig:
 
 
 def compile_backend(
-    schedule: Schedule, hardware_cfg: Dict[str, Any]
+    schedule: Schedule,
+    config: CompilationConfig | Dict[str, Any] | None = None,
+    # config can be Dict to support (deprecated) calling with hardware config
+    # as positional argument.
+    *,  # Support for (deprecated) calling with hardware_cfg as keyword argument:
+    hardware_cfg: Optional[Dict[str, Any]] = None,
 ) -> CompiledSchedule:
     """
-    Compiles backend for Zurich Instruments hardware according
-    to the CompiledSchedule and hardware configuration.
+    Compiles zhinst hardware instructions for a schedule.
 
     This method generates sequencer programs, waveforms and
     configurations required for the instruments defined in
@@ -710,10 +714,14 @@ def compile_backend(
     ----------
     schedule :
         The schedule to be compiled.
+    config
+        Compilation config for
+        :class:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler`, of
+        which only the :attr:`.CompilationConfig.connectivity`
+        is currently extracted in this compilation step.
     hardware_cfg :
-        Hardware configuration, defines the compilation step from
-        the pulse-level to a hardware backend.
-
+        (deprecated) The hardware configuration of the setup. Pass a full compilation
+        config instead using `config` argument.
 
     Returns
     -------
@@ -725,7 +733,26 @@ def compile_backend(
     ------
     NotImplementedError
         Thrown when using unsupported ZI Instruments.
+    ValueError
+        When both `config` and `hardware_cfg` are supplied.
     """
+    if not ((config is not None) ^ (hardware_cfg is not None)):
+        raise ValueError(
+            f"Zhinst `{compile_backend.__name__}` was called with {config=} and "
+            f"{hardware_cfg=}. Please make sure this function is called with "
+            f"one of the two (CompilationConfig recommended)."
+        )
+    if not isinstance(config, CompilationConfig):
+        warnings.warn(
+            f"Zhinst `{compile_backend.__name__}` will require a full "
+            f"CompilationConfig as input as of quantify-scheduler >= 0.15.0",
+            FutureWarning,
+        )
+    if isinstance(config, CompilationConfig):
+        hardware_cfg = config.connectivity
+    elif config is not None:
+        # Support for (deprecated) calling with hardware_cfg as positional argument.
+        hardware_cfg = config
 
     _validate_schedule(schedule)
 
