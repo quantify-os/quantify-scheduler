@@ -303,7 +303,7 @@ class SeqcILGenerator(object):
             playWave(w)
 
         """
-        if not comment:
+        if comment:
             comment = f"\t// {comment}"
 
         _names = ", ".join(names)
@@ -339,7 +339,7 @@ class SeqcILGenerator(object):
         # using default arguments to start all channels for acquisition.
         # example based on the UHFQA manual.
 
-        if not comment:
+        if comment:
             comment = f"\t// {comment}"
 
         self._emit(f"startQA(QA_INT_ALL, true);{comment}")
@@ -381,7 +381,7 @@ class SeqcILGenerator(object):
                 The trigger to wait on, by default 0
         """
 
-        if not comment:
+        if comment:
             comment = f"\t// {comment}"
 
         if index == 0:
@@ -540,7 +540,7 @@ def add_wait(
     ------
     ValueError
     """
-    if not comment:
+    if comment:
         comment = f"{comment}\t"
 
     assert delay >= 0
@@ -592,7 +592,7 @@ def add_play_wave(
     int
         Elapsed number of clock cycles.
     """
-    if not comment:
+    if comment:
         comment = f"{comment}\t"
 
     n_assembly_instructions = SEQC_INSTR_CLOCKS[device_type][SeqcInstructions.PLAY_WAVE]
