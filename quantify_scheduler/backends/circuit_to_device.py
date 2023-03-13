@@ -46,8 +46,9 @@ def compile_circuit_to_device(
         The schedule to be compiled.
     config
         Compilation config for
-        :class:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler`. Note,
-        only the :class:`~.DeviceCompilationConfig` is used in this compilation step.
+        :class:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler`, of
+        which only the :attr:`.CompilationConfig.device_compilation_config`
+        is used in this compilation step.
     device_cfg
         (deprecated) Device compilation config. Pass a full compilation config instead
         using `config` argument. Note, if a dictionary is passed, it will be parsed to a
@@ -61,13 +62,13 @@ def compile_circuit_to_device(
     Raises
     ------
     ValueError
-        When both config and device_cfg are supplied.
+        When both `config` and `device_cfg` are supplied.
     """
     if (config is not None) and (device_cfg is not None):
         raise ValueError(
-            f"`{compile_circuit_to_device.__name__}` was called with {config=}"
-            f"and {device_cfg=}. Please make sure this function is called with"
-            f"either of the two (CompilationConfig recommended)."
+            f"`{compile_circuit_to_device.__name__}` was called with {config=} "
+            f"and {device_cfg=}. Please make sure this function is called with "
+            f"only one of the two (CompilationConfig recommended)."
         )
     if not isinstance(config, CompilationConfig):
         warnings.warn(
@@ -157,8 +158,9 @@ def set_pulse_and_acquisition_clock(
         The schedule to be compiled.
     config
         Compilation config for
-        :class:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler`. Note,
-        only the :class:`~.DeviceCompilationConfig` is used in this compilation step.
+        :class:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler`, of
+        which only the :attr:`.CompilationConfig.device_compilation_config`
+        is used in this compilation step.
     device_cfg
         (deprecated) Device compilation config. Pass a full compilation config instead
         using `config` argument. Note, if a dictionary is passed, it will be parsed to a
@@ -178,7 +180,7 @@ def set_pulse_and_acquisition_clock(
     RuntimeError
         When operation is not at pulse/acquisition-level.
     ValueError
-        When both config and device_cfg are supplied.
+        When both `config` and `device_cfg` are supplied.
     ValueError
         When clock frequency is unknown.
     ValueError
@@ -186,9 +188,9 @@ def set_pulse_and_acquisition_clock(
     """
     if (config is not None) and (device_cfg is not None):
         raise ValueError(
-            f"`{set_pulse_and_acquisition_clock.__name__}` was called with {config=}"
-            f" and {device_cfg=}. Please make sure this function is called with "
-            f" either of the two (CompilationConfig recommended)."
+            f"`{set_pulse_and_acquisition_clock.__name__}` was called with {config=} "
+            f"and {device_cfg=}. Please make sure this function is called with "
+            f"only one of the two (CompilationConfig recommended)."
         )
     if not isinstance(config, CompilationConfig):
         warnings.warn(

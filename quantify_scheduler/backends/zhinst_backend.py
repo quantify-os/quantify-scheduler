@@ -715,12 +715,13 @@ def compile_backend(
     schedule :
         The schedule to be compiled.
     config
-        CompilationConfig used in the :class:`quantify_scheduler.backends.graph_compilation.QuantifyCompiler`,
-        from which the `hardware_cfg` is currently extracted in this compilation step.
+        Compilation config for
+        :class:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler`, of
+        which only the :attr:`.CompilationConfig.connectivity`
+        is currently extracted in this compilation step.
     hardware_cfg :
-        Hardware configuration, defines the compilation step from
-        the pulse-level to a hardware backend.
-
+        (deprecated) The hardware configuration of the setup. Pass a full compilation
+        config instead using `config` argument.
 
     Returns
     -------
@@ -733,13 +734,13 @@ def compile_backend(
     NotImplementedError
         Thrown when using unsupported ZI Instruments.
     ValueError
-        When both config and hardware_cfg are supplied.
+        When both `config` and `hardware_cfg` are supplied.
     """
     if not ((config is not None) ^ (hardware_cfg is not None)):
         raise ValueError(
             f"Zhinst `{compile_backend.__name__}` was called with {config=} and "
             f"{hardware_cfg=}. Please make sure this function is called with "
-            f"either of the two (CompilationConfig recommended)."
+            f"one of the two (CompilationConfig recommended)."
         )
     if not isinstance(config, CompilationConfig):
         warnings.warn(

@@ -27,7 +27,7 @@ def hardware_compile(
     """
     Generate qblox hardware instructions for executing the schedule.
 
-    The principle behind the overall compilation works as follows:
+    The principle behind the overall compilation is as follows:
 
     For every instrument in the hardware configuration, we instantiate a compiler
     object. Then we assign all the pulses/acquisitions that need to be played by that
@@ -58,13 +58,13 @@ def hardware_compile(
     Raises
     ------
     ValueError
-        When both config and hardware_cfg are supplied.
+        When both `config` and `hardware_cfg` are supplied.
     """
     if not ((config is not None) ^ (hardware_cfg is not None)):
         raise ValueError(
             f"Qblox `{hardware_compile.__name__}` was called with {config=} and "
             f"{hardware_cfg=}. Please make sure this function is called with "
-            f"either of the two (CompilationConfig recommended)."
+            f"one of the two (CompilationConfig recommended)."
         )
     if not isinstance(config, CompilationConfig):
         warnings.warn(
