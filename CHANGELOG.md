@@ -6,13 +6,13 @@
 
 ### Merged branches and closed issues
 
+- Compilation - `CompilationNode`s take the full `CompilationConfig` as input (!615, #405)
 - Visualization - Introduce the `x_range` keyword for the matplotlib backend in `Schedule.plot_pulse_diagram`. This will cut off any points outside the given range when creating the plot. This can be used to reduce memory usage when plotting a small section of a long pulse sequence (!629).
 
 ## 0.12.3 (2023-03-09)
 
 ### Merged branches and closed issues
 
-- Compilation - `CompilationNode`s take the full `CompilationConfig` as input (!615, #405)
 - Documentation - Replace deprecated code in the Operations and Qubits tutorial (!602)
 - Workflow - `ruff` and `pyright` are enabled for linting the code (in `pre-commit` and in CI pipeline). All existing code is added to exclusion list because it does not comply with them yet. (!614)
 
