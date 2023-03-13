@@ -64,22 +64,21 @@ In this tutorial we make use of the example configuration file that contains an 
 
 ## Verifying the hardware compilation
 
-Quantify-scheduler comes with several build in verification programs in the {mod}`~.schedules.verification` module.
+{mod}`quantify-scheduler` comes with several built-in verification programs in the {mod}`~.schedules.verification` module.
 Here we will start by building and compiling the first schedule by hand to show how one can construct such a schedule and debug it, before giving an overview of test programs.
 
 ### Bining and averaging - AWG staircase
 
 #### Description
-
-In this schedule we will play pulses of increasing amplitude on the HDAWG.
-These pulses are modulated with a local oscillator so that they appear on the same frequency as the readout pulse.
+In this schedule, we will play pulses of increasing amplitude on the HDAWG.
+These pulses are modulated with a local oscillator so that they appear at the same frequency as the readout pulse.
 This ensures that they are visible in the acquired signal.
 
 #### Expected outcome
 
 One would expect to see a monotonic increase in the measured amplitude.
 The actual amplitudes would probably not match the input amplitudes 1-to-1 because there is likely some loss on the signal path from the up- and down-conversion.
-Additionally, depending on the overlap between the pulse and the integration window, the average measured voltage will be slightly lower, and the phase can be slightly different resulting in not all signal being in the I-quadrature.
+Additionally, depending on the overlap between the pulse and the integration window, the average measured voltage will be slightly lower, and the phase can be slightly different resulting in not all signals being in the I-quadrature.
 
 #### Creating the staircase program
 
@@ -194,7 +193,7 @@ comp_sched.timing_table
 
 ##### The hardware timing table
 
-The {attr}`.CompiledSchedule.hardware_timing_table` is populated during the hardware compilation. It gives an overview of all operations in the schedule at the control-electronics layer. This means that this the signals are corrected for effects such as gain and latency, and that modulations have been applied.
+The {attr}`.CompiledSchedule.hardware_timing_table` is populated during the hardware compilation. It gives an overview of all operations in the schedule at the control-electronics layer. This means that the signals are corrected for effects such as gain and latency, and that modulations have been applied.
 
 The "waveform_id" key can be used to find the numerical waveforms in {attr}`.CompiledSchedule.hardware_waveform_dict`.
 
@@ -225,7 +224,7 @@ comp_sched.compiled_instructions
 
 ```
 
-The setting for the Zurich Instruments instruments are stored as a {class}`~.ZIDeviceConfig`, of which the settings_builder contains the {class}`~.backends.zhinst.settings.ZISettingsBuilder` containing both the settings to set on all the nodes in the Zurich Instruments drivers as well as the compiled `seqc` instructions.
+The settings for the Zurich Instruments instruments are stored as a {class}`~.ZIDeviceConfig`, of which the `settings_builder` contains the {class}`~.backends.zhinst.settings.ZISettingsBuilder` containing both the settings to set on all the nodes in the Zurich Instruments drivers as well as the compiled `seqc` instructions.
 
 ```{code-cell} ipython3
 
@@ -272,8 +271,8 @@ print(uhfqa_settings_dict["compiler/sourcestring"][awg_index])
 
 ## Verification programs
 
-Quantify-scheduler comes with several test programs that can be used to verify that the software and the hardware is configured and functioning correctly.
-You should be able to run this notebook on your setup directly if you replace the mock_setup initialization with your own initialization script.
+{mod}`quantify-scheduler` comes with several test programs that can be used to verify that the software and the hardware are configured and functioning correctly.
+You should be able to run this notebook on your setup directly if you replace the mock_setup initialization with your initialization script.
 
 ```{note}
 This documentation is a work in progress. See issue #237.
@@ -299,7 +298,7 @@ A square pulse with some modulation is visible in the integration window.
 
 #### Description
 
-In this experiment, a square pulse is applied on the microwave drive line. This pulse should be visible in the acquisition window and can be used to calibrate the timing delay between the readout and control pulses.
+In this experiment, a square pulse is applied to the microwave drive line. This pulse should be visible in the acquisition window and can be used to calibrate the timing delay between the readout and control pulses.
 
 This experiment can be used to verify the time-trace acquisition functionality of the readout module (e.g., Qblox QRM or ZI UHFQA) is working in combination with the synchronization between the readout module (e.g., Qblox QRM or ZI UHFQA) and the pulse generating module (e.g., Qblox QCM or ZI HDAWG).
 
@@ -317,7 +316,7 @@ A square pulse with some modulation is visible on top of a second pulse with a d
 
 {func}`~quantify_scheduler.schedules.spectroscopy_schedules.heterodyne_spec_sched`
 
-### Bining and averaging - acquisition staircase
+### Binning and averaging - acquisition staircase
 
 #### Description
 
@@ -325,7 +324,7 @@ A square pulse with some modulation is visible on top of a second pulse with a d
 
 One would expect to see a monotonic increase in the measured amplitude.
 The actual amplitudes would probably not match the input amplitudes 1-to-1 because there is likely some loss on the signal path from the up- and down-conversion.
-Additionally, depending on the overlap between the pulse and the integration window, the average measured voltage will be slightly lower, and the phase can be slightly different resulting in not all signal being in the I-quadrature.
+Additionally, depending on the overlap between the pulse and the integration window, the average measured voltage will be slightly lower, and the phase can be slightly different resulting in not all signals being in the I-quadrature.
 
 {func}`~quantify_scheduler.schedules.verification.acquisition_staircase_sched`
 

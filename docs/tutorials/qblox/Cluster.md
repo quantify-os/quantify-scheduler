@@ -107,10 +107,10 @@ hardware_compile(test_sched, mapping_config)
 
 Notice the {code}`"quantify_scheduler.backends.qblox_backend.hardware_compile"` backend is used. In the example, we notice that the cluster is specified using an instrument with {code}`"instrument_type": "Cluster"`. In the backend, the cluster instrument functions as a collection of modules. The modules themselves can be configured with {code}`portclock_configs`.
 
-Also notice, that not only a cluster, but a local oscillator can also be configured with Qblox. Currently the only instrument types that can be at the top level are the
+Also notice, that not only a cluster, but a local oscillator can also be configured with Qblox. Currently the only instrument types that can be at the top level are:
 - {code}`"Cluster"`
 - {code}`"LocalOscillator"`
-- {ref}`pulsars <sec-qblox-pulsar>`.
+- {ref}`pulsars <sec-qblox-pulsar>`
 
 ## Cluster configuration
 
@@ -122,7 +122,7 @@ To add a new module mapping to the cluster, add a new key with a valid `"instrum
 
 ### Write sequencer program to files
 
-It is possible to optionally set `"sequence_to_file"` key to `True` or `False`. If it's not set quantify will behave the same way as if it was set to `True`. If it is `True`, a file will be created for each sequencer with the program that's uploaded to the sequencer with the filename `<data_dir>/schedules/<year><month><day>-<hour><minute><seconds>-<milliseconds>-<random>_<port>_<clock>.json` in a JSON format, where `<random>` is 6 random characters in the range `0-9`, `a-f`.
+It is possible to optionally set `"sequence_to_file"` key to `True` or `False`. If it's not set Quantify will behave the same way as if it was set to `True`. If it is `True`, a file will be created for each sequencer with the program that's uploaded to the sequencer with the filename `<data_dir>/schedules/<year><month><day>-<hour><minute><seconds>-<milliseconds>-<random>_<port>_<clock>.json` in a JSON format, where `<random>` is 6 random characters in the range `0-9`, `a-f`.
 
 It is possible to overwrite this parameter to `"True"` in each module configuration for each module.
 
@@ -131,15 +131,15 @@ It is possible to overwrite this parameter to `"True"` in each module configurat
 emphasize-lines: 6
 ---
 {
-  "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-  "cluster0": {
-      "instrument_type": "Cluster",
-      "ref": "internal",
-      "sequence_to_file": True,
-      "module0": {...},
-      "module1": {...},
-      ...
-  }
+    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "cluster0": {
+    "instrument_type": "Cluster",
+        "ref": "internal",
+        "sequence_to_file": True,
+        "module0": {...},
+        "module1": {...},
+        ...
+    }
 }
 ```
 
@@ -218,9 +218,9 @@ We configure this by adding `"dc_mixer_offset_I"` and/or `"dc_mixer_offset_Q"` t
 emphasize-lines: 2,3
 ---
 "complex_output_0": {
-  "dc_mixer_offset_I": -0.054,
-  "dc_mixer_offset_Q": -0.034,
-  ...
+    "dc_mixer_offset_I": -0.054,
+    "dc_mixer_offset_Q": -0.034,
+    ...
 }
 ```
 
@@ -231,16 +231,16 @@ And you can also add `"mixer_amp_ratio"` and `"mixer_phase_error_deg"` to a spec
 emphasize-lines: 7,8
 ---
 "complex_output_0": {
-  ...
-  "portclock_configs": [
-    {
-      "port": <port>,
-      "clock": <clock>,
-      "mixer_amp_ratio": 0.9997,
-      "mixer_phase_error_deg": -4.0,
-      ...
-    }
-  ]
+    ...
+    "portclock_configs": [
+        {
+            "port": <port>,
+            "clock": <clock>,
+            "mixer_amp_ratio": 0.9997,
+            "mixer_phase_error_deg": -4.0,
+            ...
+        }
+    ]
 }
 ```
 
@@ -319,16 +319,16 @@ emphasize-lines: 5,9,16,20
 See [Qblox Instruments: QCM-QRM](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/qcm_qrm.html) documentation for allowed values.
 
 
-### `max_awg_output_voltage`
+### Maximum AWG output voltage
 
 ```{note}
-This subsection is still under construction.
+This subsection on `max_awg_output_voltage` is still under construction.
 ```
 
 (sec-qblox-clock-settings)=
 ### Clock settings
 
-The aim of quantify-scheduler is to only specify the final RF frequency when the signal arrives at the chip, rather than any parameters related to I/Q modulation. However, you still need to provide some parameters for the up/downconversion.
+The aim of {mod}`quantify-scheduler` is to only specify the final RF frequency when the signal arrives at the chip, rather than any parameters related to I/Q modulation. However, you still need to provide some parameters for the up/downconversion.
 
 The backend assumes that upconversion happens according to the relation
 

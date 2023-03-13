@@ -91,7 +91,7 @@ test_sched = determine_absolute_timing(test_sched)
 hardware_compile(test_sched, mapping_config)
 ```
 
-Here we specify a setup containing only a Pulsar QCM, with both outputs connected to a local oscillator sources.
+Here we specify a setup containing only a Pulsar QCM, with both outputs connected to local oscillator sources.
 
 The first entry specifies the backend, the function that will compile a schedule using the information specified in this hardware config.
 All other entries at the highest level are instruments ({code}`"qcm0"`, {code}`"lo0"`, {code}`"lo1"`).
@@ -109,7 +109,7 @@ respectively. Multiple devices can be added to the config, similar to how we add
 ## Output settings
 
 Most notably under the {code}`complex_output_0`, we specify the port-clock combinations the output may target (see the {ref}`User guide <sec-user-guide>`
-for more information on the role of ports and clocks within the Quantify-Scheduler).
+for more information on the role of ports and clocks within {mod}`quantify-scheduler`).
 
 ```{code-block} python
 :linenos: true
@@ -130,7 +130,7 @@ Additionally, the entry {code}`interm_freq` specifies the intermediate frequency
 To perform upconversion using an I/Q mixer and an external local oscillator, simply specify a local oscillator in the config using the {code}`lo_name` entry.
 {code}`complex_output_0` is connected to a local oscillator instrument named
 {code}`lo0` and {code}`complex_output_1` to {code}`lo1`.
-Since the Quantify-Scheduler aim is to only specify the final RF frequency when the signal arrives at the chip, rather than any parameters related to I/Q modulation, we specify this information here.
+Since the aim of {mod}`quantify-scheduler` is to only specify the final RF frequency when the signal arrives at the chip, rather than any parameters related to I/Q modulation, we specify this information here.
 
 The backend assumes that upconversion happens according to the relation
 
@@ -358,9 +358,9 @@ See [Qblox Instruments: QCM-QRM](https://qblox-qblox-instruments.readthedocs-hos
 
 For the baseband modules, it is also possible to use the backend to generate signals for the outputs individually rather than using IQ pairs.
 
-In order to do this, instead of {code}`"complex_output_X"`, we use {code}`"real_output_X"`. In case of a QCM, we have four of those outputs. The QRM has two available.
+In order to do this, instead of {code}`"complex_output_X"`, we use {code}`"real_output_X"`. In the case of a QCM, we have four of those outputs. The QRM has two available.
 
-The resulting config looks like:
+The resulting config looks like this:
 
 ```{code-cell} ipython3
 ---
@@ -424,7 +424,7 @@ test_sched = determine_absolute_timing(test_sched)
 hardware_compile(test_sched, mapping_config)
 ```
 
-When using real outputs, the backend automatically maps the signals to the correct output paths. We note that for real outputs, it is not allowed to use any pulses that have an imaginary component i.e. only real valued pulses are allowed. If you were to use a complex pulse, the backend will produce an error, e.g. square and ramp pulses are allowed but DRAG pulses not.
+When using real outputs, the backend automatically maps the signals to the correct output paths. We note that for real outputs, it is not allowed to use any pulses that have an imaginary component i.e. only real-valued pulses are allowed. If you were to use a complex pulse, the backend will produce an error, e.g. square and ramp pulses are allowed but DRAG pulses are not.
 
 ```{warning}
 When using real mode, we highly recommend using it in combination with the instrument coordinator as the outputs need to be configured correctly in order for this to function.
