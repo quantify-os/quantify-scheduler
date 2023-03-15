@@ -692,11 +692,8 @@ class Schedulable(JSONSchemaValMixin, UserDict):
             return
 
         # assert the name is unique
-        name_is_unique = (
-            len([item for item in schedule["schedulables"].keys() if item == name]) == 0
-        )
-        if not name_is_unique:
-            raise ValueError(f'Name "{name}" must be unique.')
+        if name in schedule["schedulables"]:
+            raise ValueError(f"Schedulable name '{name}' must be unique.")
 
         self.data["name"] = name
         self.data["operation_repr"] = operation_repr
@@ -706,7 +703,6 @@ class Schedulable(JSONSchemaValMixin, UserDict):
         self.data["label"] = name
 
         self.schedule = weakref.proxy(schedule)
-        # self.schedule = schedule
 
     def add_timing_constraint(
         self,
