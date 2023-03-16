@@ -1,4 +1,5 @@
 * Quantify-scheduler version:
+* Quantify-core version (or n/a):
 * Python version:
 * Python install method (anaconda/virtualenv/other?):
 * Operating System:
