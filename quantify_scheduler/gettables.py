@@ -208,11 +208,8 @@ class ScheduleGettable:
         # before the stop can fail.
         instr_coordinator.stop(allow_failure=True)
 
-        if self.always_initialize:
+        if not self.is_initialized or self.always_initialize:
             self.initialize()
-        else:
-            if not self.is_initialized:
-                self.initialize()
 
         instr_coordinator.start()
         acquired_data = instr_coordinator.retrieve_acquisition()
