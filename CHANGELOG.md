@@ -6,6 +6,7 @@
 
 ### Merged branches and closed issues
 
+- Gettables - Clean up code syntax (!638)
 - Schedulables - Make name uniqueness check more efficient and readable. (!631)
 - Compilation - `CompilationNode`s take the full `CompilationConfig` as input (!615, #405)
 - Visualization - Introduce the `x_range` keyword for the matplotlib backend in `Schedule.plot_pulse_diagram`. This will cut off any points outside the given range when creating the plot. This can be used to reduce memory usage when plotting a small section of a long pulse sequence (!629).
