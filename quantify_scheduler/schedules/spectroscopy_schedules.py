@@ -548,3 +548,52 @@ def nv_dark_esr_sched(
     sched.add(Measure(qubit, acq_index=1), label="Measure")
     sched.add(CRCount(qubit, acq_index=2), label="CRCount post")
     return sched
+
+
+def nv_dark_esr_sched_nco(
+    qubit: str,
+    spec_clock: str,
+    spec_frequencies: np.ndarray,
+    repetitions: int = 1,
+) -> Schedule:
+    """Generates a schedule for a dark ESR experiment on an NV-center, in which
+    the NCO frequency is swept.
+
+    .. note::
+        This schedule currently cannot be compiled with the Zurich Instruments backend.
+
+    Parameters
+    ----------
+    qubit
+        Name of the 'DeviceElement' representing the NV-center.
+    spec_clock
+        Reference clock of the spectroscopy operation.
+    spec_frequencies
+        Sample frequencies for the spectroscopy pulse in Hertz.
+    repetitions, optional
+        Number of schedule repetitions.
+
+    Returns
+    -------
+    :
+        Schedule with NCO frequency sweeping for spectroscopy operation.
+    """
+    sched = Schedule("Dark ESR Schedule", repetitions=repetitions)
+
+    for acq_idx, spec_freq in enumerate(spec_frequencies):
+        sched.add(
+            SetClockFrequency(clock=spec_clock, clock_freq_new=spec_freq),
+            label=f"set_freq ({spec_clock} {spec_freq:e} Hz)",
+        )
+        sched.add(ChargeReset(qubit), label=f"Charge reset {acq_idx}")
+        sched.add(CRCount(qubit, acq_index=acq_idx * 3), label=f"CRCount pre {acq_idx}")
+        sched.add(Reset(qubit), label=f"Reset {acq_idx}")
+        sched.add(
+            SpectroscopyOperation(qubit), label=f"Spectroscopy ({spec_freq:e} Hz)"
+        )
+        sched.add(Measure(qubit, acq_index=acq_idx * 3 + 1), label=f"Measure {acq_idx}")
+        sched.add(
+            CRCount(qubit, acq_index=acq_idx * 3 + 2), label=f"CRCount post {acq_idx}"
+        )
+
+    return sched

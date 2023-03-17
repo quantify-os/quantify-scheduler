@@ -375,3 +375,92 @@ class TestNVDarkESRSched:
             config=quantum_device.generate_compilation_config(),
         )
         assert not schedule.compiled_instructions == {}
+
+
+class TestNVDarkESRSchedNCO:
+    @classmethod
+    def setup_class(cls):
+        cls.sched_kwargs = {
+            "qubit": "qe0",
+            "spec_clock": "qe0.spec",
+            "spec_frequencies": np.asarray(np.linspace(1.988e9, 2.198e9, 10)),
+            "repetitions": 10,
+        }
+        cls.uncomp_sched = sps.nv_dark_esr_sched_nco(**cls.sched_kwargs)
+
+    def test_repetitions(self):
+        assert self.uncomp_sched.repetitions == self.sched_kwargs["repetitions"]
+
+    def test_timing(self, mock_setup_basic_nv):
+        # Arrange
+        quantum_device: QuantumDevice = mock_setup_basic_nv["quantum_device"]
+        qe0: BasicElectronicNVElement = mock_setup_basic_nv["qe0"]
+
+        # For operations, whose duration is not trivial to calculate, use values that
+        # allow to easily predict the duration of the operations (used below when
+        # constructing abs_times).
+        qe0.cr_count.acq_delay(0)
+        qe0.cr_count.acq_duration(40e-6)
+        qe0.cr_count.readout_pulse_duration(40e-6)
+        qe0.cr_count.spinpump_pulse_duration(40e-6)
+        qe0.measure.pulse_duration(40e-6)
+        qe0.measure.acq_duration(40e-6)
+        qe0.measure.acq_delay(0)
+
+        # Act
+        compiler = SerialCompiler(name="compiler")
+        sched = compiler.compile(
+            schedule=self.uncomp_sched,
+            config=quantum_device.generate_compilation_config(),
+        )
+
+        labels = [
+            "set_freq",
+            "Charge reset",
+            "CRCount pre",
+            "Reset",
+            "Spectroscopy",
+            "Measure",
+            "CRCount post",
+        ]
+        labels *= len(self.sched_kwargs["spec_frequencies"])
+
+        rel_times = [
+            8e-9,
+            qe0.charge_reset.duration(),
+            qe0.cr_count.acq_duration(),
+            qe0.reset.duration(),
+            qe0.spectroscopy_operation.duration(),
+            qe0.measure.acq_duration(),
+            qe0.cr_count.acq_duration(),
+        ]
+        rel_times *= len(self.sched_kwargs["spec_frequencies"])
+
+        abs_time = 0.0
+        for i, schedulable in enumerate(sched.schedulables.values()):
+            assert labels[i] in schedulable["label"]
+            assert np.isclose(
+                schedulable["abs_time"], abs_time, atol=0.0, rtol=1e-15
+            ), schedulable["label"]
+            abs_time += rel_times[i]
+
+    def test_compiles_device_cfg_only(self, mock_setup_basic_nv):
+        # assert that files properly compile
+        compiler = SerialCompiler(name="compiler")
+        compiler.compile(
+            schedule=self.uncomp_sched,
+            config=mock_setup_basic_nv["quantum_device"].generate_compilation_config(),
+        )
+
+    def test_compiles_qblox_backend(self, mock_setup_basic_nv_qblox_hardware) -> None:
+        # assert that files properly compile
+        quantum_device: QuantumDevice = mock_setup_basic_nv_qblox_hardware[
+            "quantum_device"
+        ]
+        compiler = SerialCompiler(name="compiler")
+
+        schedule = compiler.compile(
+            schedule=self.uncomp_sched,
+            config=quantum_device.generate_compilation_config(),
+        )
+        assert not schedule.compiled_instructions == {}
