@@ -12,15 +12,16 @@ from unittest.mock import call
 
 import numpy as np
 import pytest
+import xarray as xr
 from zhinst import qcodes
 
-from quantify_scheduler import enums
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 from quantify_scheduler.backends.zhinst import settings
 from quantify_scheduler.backends.zhinst_backend import (
     ZIAcquisitionConfig,
     ZIDeviceConfig,
 )
+from quantify_scheduler.enums import BinMode
 from quantify_scheduler.instrument_coordinator.components import zhinst
 
 
@@ -248,20 +249,47 @@ def test_uhfqa_prepare(mocker, make_uhfqa):
     copy2.assert_called_with("uhfqa0_awg0.csv", "waves")
 
 
-@pytest.mark.parametrize("bin_mode", [enums.BinMode.AVERAGE, enums.BinMode.APPEND])
-def test_uhfqa_retrieve_acquisition(mocker, make_uhfqa, bin_mode):
-    # Arrange
-    uhfqa: zhinst.UHFQAInstrumentCoordinatorComponent = make_uhfqa("uhfqa0", "dev1234")
-    expected_data = np.ones(64)
+@pytest.fixture(
+    params=[
+        ("Trace", BinMode.AVERAGE),
+        ("SSBIntegrationComplex", BinMode.AVERAGE),
+        ("SSBIntegrationComplex", BinMode.APPEND),
+    ]
+)
+def acquisition_test_data(request):
+    acq_protocol, bin_mode = request.param
 
-    def resolver(uhfqa):  # pylint: disable=unused-argument
+    if acq_protocol == "Trace" and bin_mode == BinMode.AVERAGE:
+        expected_data = np.ones((1, 64), dtype=np.complex_)
+        expected_result = xr.Dataset({0: (["repetition", "acq_index"], expected_data)})
+    elif acq_protocol == "SSBIntegrationComplex" and bin_mode == BinMode.AVERAGE:
+        expected_data = np.ones((1, 1), dtype=np.complex_)
+        expected_result = xr.Dataset({0: (["repetition", "acq_index"], expected_data)})
+    elif acq_protocol == "SSBIntegrationComplex" and bin_mode == BinMode.APPEND:
+        expected_data = np.ones((64, 1), dtype=np.complex_)
+        expected_result = xr.Dataset({0: (["repetition", "acq_index"], expected_data)})
+    else:
+        raise RuntimeError("Unknown protocol")
+
+    def resolver(uhfqa):  # pylint: disable=unused-variable
         return expected_data
+
+    return acq_protocol, bin_mode, resolver, expected_result
+
+
+def test_uhfqa_retrieve_acquisition(mocker, make_uhfqa, acquisition_test_data):
+    # Arrange
+    acq_protocol, bin_mode, resolver, expected_result = acquisition_test_data
+    uhfqa: zhinst.UHFQAInstrumentCoordinatorComponent = make_uhfqa("uhfqa0", "dev1234")
 
     config = ZIDeviceConfig(
         "hdawg0",
         settings.ZISettingsBuilder(),
         ZIAcquisitionConfig(
-            n_acquisitions=1, resolvers={0: resolver}, bin_mode=bin_mode
+            n_acquisitions=1,
+            resolvers={0: resolver},
+            bin_mode=bin_mode,
+            acq_protocols={0: acq_protocol},
         ),
     )
     mocker.patch.object(settings.ZISettings, "serialize")
@@ -275,21 +303,7 @@ def test_uhfqa_retrieve_acquisition(mocker, make_uhfqa, bin_mode):
 
     # Act
     acq_result = uhfqa.retrieve_acquisition()
-
-    expected_acq_result: Dict[Tuple[int, int], Any] = dict()
-    expected_acq_result[(0, 0)] = (expected_data, np.zeros(expected_data.shape))
-
-    # Assert
-    assert not acq_result is None
-    assert (0, 0) in acq_result
-
-    for key in acq_result:
-        np.testing.assert_array_almost_equal(
-            acq_result[key][0], expected_acq_result[key][0]
-        )
-        np.testing.assert_array_almost_equal(
-            acq_result[key][1], expected_acq_result[key][1]
-        )
+    xr.testing.assert_identical(acq_result, expected_result)
 
 
 def test_uhfqa_wait_done(mocker, make_uhfqa):
