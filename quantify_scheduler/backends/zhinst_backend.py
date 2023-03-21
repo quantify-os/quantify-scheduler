@@ -9,10 +9,11 @@ import re
 import warnings
 from dataclasses import dataclass
 from functools import partial
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Literal, get_args
 
 import numpy as np
-import pandas as pd
+from zhinst.toolkit.helpers import Waveform
+
 from quantify_scheduler import enums
 from quantify_scheduler.backends.corrections import (
     LatencyCorrections,
@@ -27,13 +28,16 @@ from quantify_scheduler.backends.zhinst import settings as zi_settings
 from quantify_scheduler.helpers import schedule as schedule_helpers
 from quantify_scheduler.helpers import waveforms as waveform_helpers
 from quantify_scheduler.instrument_coordinator.components.generic import (
-    DEFAULT_NAME as generic_icc_default_name,
+    DEFAULT_NAME as GENERIC_ICC_DEFAULT_NAME,
 )
-from quantify_scheduler.operations.operation import Operation
-from quantify_scheduler.resources import Resource
 from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 
-from zhinst.toolkit.helpers import Waveform
+if TYPE_CHECKING:
+    import pandas as pd
+
+    from quantify_scheduler.operations.operation import Operation
+    from quantify_scheduler.resources import Resource
+
 
 logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
@@ -45,20 +49,21 @@ logger.addHandler(handler)
 
 
 # List of supported zhinst devices
-SUPPORTED_DEVICE_TYPES: List[str] = ["HDAWG", "UHFQA"]
+SUPPORTED_DEVICE_TYPES: list[str] = ["HDAWG", "UHFQA"]
+SUPPORTED_ACQ_PROTOCOLS = Literal["Trace", "SSBIntegrationComplex"]
 
 # https://www.zhinst.com/sites/default/files/documents/2020-09/ziHDAWG_UserManual_20.07.1.pdf
 # Section: 3.4. Basic Qubit Characterization, page 83
 # All waveform lengths need to be multiples of 16 sample-clock cycles to comply
 # with the waveform granularity specification.
-WAVEFORM_GRANULARITY: Dict[zhinst.DeviceType, int] = {
+WAVEFORM_GRANULARITY: dict[zhinst.DeviceType, int] = {
     zhinst.DeviceType.HDAWG: 16,
     zhinst.DeviceType.UHFQA: 16,
 }
 
 # https://www.zhinst.com/sites/default/files/documents/2020-09/ziHDAWG_UserManual_20.07.2.pdf
 # page: 262
-HDAWG_DEVICE_TYPE_CHANNEL_GROUPS: Dict[str, Dict[int, int]] = {
+HDAWG_DEVICE_TYPE_CHANNEL_GROUPS: dict[str, dict[int, int]] = {
     "HDAWG8": {
         # Use the outputs in groups of 2. One sequencer program controls 2 outputs.
         0: 2,
@@ -75,7 +80,7 @@ HDAWG_DEVICE_TYPE_CHANNEL_GROUPS: Dict[str, Dict[int, int]] = {
     },
 }
 
-DEVICE_SAMPLING_RATES: Dict[zhinst.DeviceType, Dict[int, int]] = {
+DEVICE_SAMPLING_RATES: dict[zhinst.DeviceType, dict[int, int]] = {
     zhinst.DeviceType.HDAWG: zi_helpers.get_sampling_rates(2.4e9),
     zhinst.DeviceType.UHFQA: zi_helpers.get_sampling_rates(1.8e9),
 }
@@ -88,7 +93,7 @@ NUM_UHFQA_READOUT_CHANNELS = 10
 MAX_QAS_INTEGRATION_LENGTH = 4096
 
 
-def ensure_no_operations_overlap(timing_table: pd.DataFrame):
+def ensure_no_operations_overlap(timing_table: pd.DataFrame) -> None:
     """
     Iterates over all hardware_channels in a schedule to determine if any of the pulses
     have overlap.
@@ -110,7 +115,7 @@ def ensure_no_operations_overlap(timing_table: pd.DataFrame):
             continue
 
         tt_output_ch = timing_table[timing_table["hardware_channel"] == output_ch]
-        tt_output_ch = tt_output_ch[tt_output_ch.is_acquisition != False]
+        tt_output_ch = tt_output_ch[tt_output_ch.is_acquisition != False]  # noqa: E712
 
         end_time = tt_output_ch["abs_time"] + tt_output_ch["duration"]
         # if any have overlap
@@ -128,7 +133,7 @@ def ensure_no_operations_overlap(timing_table: pd.DataFrame):
             )
 
 
-def _extract_port_clock_channelmapping(hardware_cfg: Dict[str, Any]) -> Dict[str, str]:
+def _extract_port_clock_channelmapping(hardware_cfg: dict[str, Any]) -> dict[str, str]:
     """
     Take the hardware configuration file and return a dictionary that maps port-clock
     pairs to instrument output channels.
@@ -156,7 +161,7 @@ def _determine_clock_sample_start(
     hardware_channel: str,
     abs_time: float,
     operation_name: str = "",
-) -> Tuple[int, float]:
+) -> tuple[int, float]:
     """
     depending on the output channel, select the right clock cycle time and sample rate
     from the channel descriptor for ZI channels.
@@ -211,7 +216,9 @@ def _determine_clock_sample_start(
     return (clock_cycle, sample_float)
 
 
-def _determine_clock_start(hardware_channel: str, abs_time: float, operation_name: str):
+def _determine_clock_start(
+    hardware_channel: str, abs_time: float, operation_name: str
+) -> float:
     if hardware_channel is None:
         return float("nan")
     clock_start, _ = _determine_clock_sample_start(
@@ -224,7 +231,7 @@ def _determine_clock_start(hardware_channel: str, abs_time: float, operation_nam
 
 def _determine_sample_start(
     hardware_channel: str, abs_time: float, operation_name: str
-):
+) -> float:
     if hardware_channel is None:
         return float("nan")
     _, sample_start = _determine_clock_sample_start(
@@ -237,7 +244,7 @@ def _determine_sample_start(
 
 def _add_channel_information(
     timing_table: pd.DataFrame, port_clock_channelmapping: dict
-) -> pd.DataFrame:
+) -> pd.DataFrame | None:
     """ """
 
     def map_port_clock_to_channel(port: str, clock: str) -> str:
@@ -280,7 +287,7 @@ def _apply_latency_corrections(
 
 def _determine_measurement_fixpoint_correction(
     measurement_start_sample: int, common_frequency: float = 600e6
-) -> Tuple[float, int]:
+) -> tuple[float, int]:
     """
     Calculates by how much time to shift all operations to ensure a measurement starts
     at sample 0.
@@ -415,7 +422,7 @@ def _add_waveform_ids(timing_table: pd.DataFrame) -> pd.DataFrame:
 
     def _determine_waveform_id(
         waveform_op_id: str, sample_start: float, phase: float = 0
-    ):
+    ) -> str:
         # acq_index is not part of the waveform this is filtered out from the
         # waveform_id as it doesn't affect the waveform itself.
         waveform_op_id = re.sub(r"acq_index=\(.*\)", "acq_index=(*)", waveform_op_id)
@@ -441,7 +448,7 @@ def _add_waveform_ids(timing_table: pd.DataFrame) -> pd.DataFrame:
     return timing_table
 
 
-def _parse_local_oscillators(data: Dict[str, Any]) -> Dict[str, common.LocalOscillator]:
+def _parse_local_oscillators(data: dict[str, Any]) -> dict[str, common.LocalOscillator]:
     """
     Returns the LocalOscillator domain models parsed from the data dictionary.
 
@@ -460,8 +467,8 @@ def _parse_local_oscillators(data: Dict[str, Any]) -> Dict[str, common.LocalOsci
     RuntimeError
         If duplicate LocalOscillators have been found.
     """
-    local_oscillators: Dict[str, common.LocalOscillator] = dict()
-    lo_list: List[common.LocalOscillator] = common.LocalOscillator.schema().load(
+    local_oscillators: dict[str, common.LocalOscillator] = dict()
+    lo_list: list[common.LocalOscillator] = common.LocalOscillator.schema().load(
         data, many=True
     )
     for local_oscillator in lo_list:
@@ -476,8 +483,8 @@ def _parse_local_oscillators(data: Dict[str, Any]) -> Dict[str, common.LocalOsci
     return local_oscillators
 
 
-def _parse_devices(data: Dict[str, Any]) -> List[zhinst.Device]:
-    device_list: List[zhinst.Device] = zhinst.Device.schema().load(data, many=True)
+def _parse_devices(data: dict[str, Any]) -> list[zhinst.Device]:
+    device_list: list[zhinst.Device] = zhinst.Device.schema().load(data, many=True)
 
     for device in device_list:
         if device.device_type.value not in SUPPORTED_DEVICE_TYPES:
@@ -486,7 +493,7 @@ def _parse_devices(data: Dict[str, Any]) -> List[zhinst.Device]:
             )
 
         sample_rates = DEVICE_SAMPLING_RATES[device.device_type]
-        if not device.clock_select in sample_rates:
+        if device.clock_select not in sample_rates:
             raise ValueError(
                 f"Unknown value clock_select='{device.clock_select}' "
                 + f"for device type '{device.device_type.value}'"
@@ -524,10 +531,10 @@ def _validate_schedule(schedule: Schedule) -> None:
 def apply_waveform_corrections(
     output: zhinst.Output,
     waveform: np.ndarray,
-    start_and_duration_in_seconds: Tuple[float, float],
+    start_and_duration_in_seconds: tuple[float, float],
     instrument_info: zhinst.InstrumentInfo,
     is_pulse: bool,
-) -> Tuple[int, int, np.ndarray]:
+) -> tuple[int, int, np.ndarray]:
     """
     Add waveform corrections such as modulation, changing the
     waveform starting time by shifting it and resizing it
@@ -561,23 +568,23 @@ def apply_waveform_corrections(
             waveform = waveform_helpers.modulate_waveform(
                 t, waveform, output.modulation.interm_freq
             )
-        if not output.mixer_corrections is None:
+        if output.mixer_corrections is not None:
             waveform = waveform_helpers.apply_mixer_skewness_corrections(
                 waveform,
                 output.mixer_corrections.amp_ratio,
                 output.mixer_corrections.phase_error,
             )
-
-    else:  # in the case where the waveform is an integration weight
+    # in the case where the waveform is an integration weight
+    elif output.modulation.type == enums.ModulationModeType.PREMODULATE:
         # Modulate the waveform
-        if output.modulation.type == enums.ModulationModeType.PREMODULATE:
-            t: np.ndarray = np.arange(
-                0, 0 + duration_in_seconds, 1 / instrument_info.sample_rate
-            )
-            # N.B. the minus sign with respect to the pulse being applied
-            waveform = waveform_helpers.modulate_waveform(
-                t, waveform, -1 * output.modulation.interm_freq
-            )
+        t: np.ndarray = np.arange(
+            0, 0 + duration_in_seconds, 1 / instrument_info.sample_rate
+        )
+        # N.B. the minus sign with respect to the pulse being applied
+        waveform = waveform_helpers.modulate_waveform(
+            t, waveform, -1 * output.modulation.interm_freq
+        )
+
         # mixer corrections for the integration are not supported yet.
         # they would belong here.
 
@@ -594,41 +601,15 @@ def apply_waveform_corrections(
     return start_in_clocks, n_samples_shifted, waveform
 
 
-def _flatten_dict(collection: Dict[Any, Any]) -> Iterable[Tuple[Any, Any]]:
-    """
-    Flattens a collection to an iterable set of tuples.
-
-    Parameters
-    ----------
-    collection :
-
-    Returns
-    -------
-    :
-    """
-
-    def expand(key, obj):
-        if isinstance(obj, dict):
-            for i, value in obj.items():
-                yield from expand(i, value)
-        elif isinstance(obj, list):
-            for value in obj:
-                yield (key, value)
-        else:
-            yield (key, obj)
-
-    return expand(None, collection)
-
-
 def _get_instruction_list(
     output_timing_table: pd.DataFrame,
-) -> List[zhinst.Instruction]:
+) -> list[zhinst.Instruction]:
     """
     Iterates over a timing table for a specific output for which clock_cycle_start and
     waveform_id have been determined to return a list of all instructions to be played
     on a Zurich Instruments device.
     """
-    instruction_list: List[zhinst.Instruction] = []
+    instruction_list: list[zhinst.Instruction] = []
     for _, row in output_timing_table.iterrows():
         if row.is_acquisition:
             instruction_list.append(
@@ -657,51 +638,58 @@ class ZIAcquisitionConfig:
 
     Parameters
     ----------
-    n_acquisitions :
-        the number of distinct acquisitions in this experiment.
-    resolvers:
-        resolvers used to retrieve the results from the right UHFQA nodes.
-        See also :mod:`~quantify_scheduler.backends.zhinst.resolvers`
     bin_mode:
-        the bin mode (average or append)
     """
 
     n_acquisitions: int
-    resolvers: Dict[int, Callable]
+    """The number of distinct acquisitions in this experiment."""
+
+    resolvers: dict[int, Callable]
+    """
+    Resolvers used to retrieve the results from the right UHFQA nodes.
+
+    See also :mod:`~quantify_scheduler.backends.zhinst.resolvers`
+    """
+
     bin_mode: enums.BinMode
+    """The bin mode of the acquisitions."""
+
+    acq_protocols: dict[int, SUPPORTED_ACQ_PROTOCOLS]
+    """Acquisition protocols for each acquisition channel."""
 
 
 @dataclass(frozen=True)
 class ZIDeviceConfig:
-    """
-    Zurich Instruments device configuration.
-
-    Parameters
-    ----------
-    name :
-        the name of the schedule the config is for.
-    settings_builder:
-        the builder to configure the ZI settings. This typically includes AWG and
-        AWG settings.
-    acq_config:
-        the acquisition config contains the number of acquisitions and a dictionary of
-        resolvers used to retrieve the results from the right UHFQA nodes.
-        Note that this part of the config is not needed during prepare, but only during
-        the retrieve acquisitions step.
-    """
+    """Zurich Instruments device configuration."""
 
     name: str
+    """The name of the schedule the config is for."""
+
     settings_builder: zi_settings.ZISettingsBuilder
-    acq_config: Optional[ZIAcquisitionConfig]
+    """
+    The builder to configure the ZI settings.
+
+    The builder typically includes DAQ and AWG settings.
+    """
+
+    acq_config: ZIAcquisitionConfig | None
+    """
+    Acquisition config for the schedule.
+
+    The acquisition config contains the number of acquisitions and a dictionary of
+    resolvers used to retrieve the results from the right UHFQA nodes.
+    Note that this part of the config is not needed during prepare, but only during
+    the retrieve acquisitions step.
+    """
 
 
 def compile_backend(
     schedule: Schedule,
-    config: CompilationConfig | Dict[str, Any] | None = None,
+    config: CompilationConfig | dict[str, Any] | None = None,
     # config can be Dict to support (deprecated) calling with hardware config
     # as positional argument.
     *,  # Support for (deprecated) calling with hardware_cfg as keyword argument:
-    hardware_cfg: Optional[Dict[str, Any]] = None,
+    hardware_cfg: dict[str, Any] | None = None,
 ) -> CompiledSchedule:
     """
     Compiles zhinst hardware instructions for a schedule.
@@ -756,7 +744,7 @@ def compile_backend(
 
     _validate_schedule(schedule)
 
-    if "latency_corrections" in hardware_cfg.keys():
+    if "latency_corrections" in hardware_cfg:
         # Important: currently only used to validate the input, should also be
         # used for storing the latency corrections
         # (see also https://gitlab.com/groups/quantify-os/-/epics/1)
@@ -808,9 +796,9 @@ def compile_backend(
 
     # Parse the hardware configuration file, zhinst.Device is a dataclass containing
     # device descriptions (name, type, channels etc. )
-    devices: List[zhinst.Device] = _parse_devices(hardware_cfg["devices"])
+    devices: list[zhinst.Device] = _parse_devices(hardware_cfg["devices"])
 
-    local_oscillators: Dict[str, common.LocalOscillator] = _parse_local_oscillators(
+    local_oscillators: dict[str, common.LocalOscillator] = _parse_local_oscillators(
         hardware_cfg["local_oscillators"]
     )
 
@@ -842,7 +830,7 @@ def compile_backend(
 
     # keys are instrument names, and the ZIDeviceConfig contain the settings incl seqc
     # to configure.
-    device_configs: Dict[str, Union[ZIDeviceConfig, float]] = dict()
+    device_configs: dict[str, ZIDeviceConfig | float] = dict()
 
     for device in devices:
         if device.device_type == zhinst.DeviceType.HDAWG:
@@ -852,7 +840,7 @@ def compile_backend(
                 numerical_wf_dict=numerical_wf_dict,
                 repetitions=schedule.repetitions,
             )
-            acq_config: Optional[ZIAcquisitionConfig] = None
+            acq_config: ZIAcquisitionConfig | None = None
 
         elif device.device_type == zhinst.DeviceType.UHFQA:
             acq_metadata = schedule_helpers.extract_acquisition_metadata_from_schedule(
@@ -891,11 +879,11 @@ def compile_backend(
     return compiled_schedule
 
 
-def _add_lo_config(
+def _add_lo_config(  # noqa: PLR0912
     channel: zhinst.Output,
-    local_oscillators: Dict[str, common.LocalOscillator],
-    resources: Dict[str, Resource],
-    device_configs: Dict[str, Union[ZIDeviceConfig, float]],
+    local_oscillators: dict[str, common.LocalOscillator],
+    resources: dict[str, Resource],
+    device_configs: dict[str, ZIDeviceConfig | float],
 ) -> None:
     """
     Adds configuration for a local oscillator required for a specific output channel to
@@ -949,12 +937,14 @@ def _add_lo_config(
             f'must be set for LocalOscillator "{unique_name}"'
         )
 
-    if local_oscillator.unique_name in device_configs:
+    if (
+        local_oscillator.unique_name in device_configs
+        and device_configs[local_oscillator.unique_name].get("frequency") != lo_freq_val
+    ):
         # the device_config currently only contains the frequency
-        if device_configs[local_oscillator.unique_name].get("frequency") != lo_freq_val:
-            raise ValueError(
-                f'Multiple frequencies assigned to LocalOscillator "{unique_name}"'
-            )
+        raise ValueError(
+            f'Multiple frequencies assigned to LocalOscillator "{unique_name}"'
+        )
 
     lo_config = {
         f"{local_oscillator.instrument_name}.{lo_freq_key}": lo_freq_val,
@@ -972,7 +962,7 @@ def _add_lo_config(
     if local_oscillator.generic_icc_name:
         generic_icc_name = local_oscillator.generic_icc_name
     else:
-        generic_icc_name = generic_icc_default_name
+        generic_icc_name = GENERIC_ICC_DEFAULT_NAME
 
     if generic_icc_name in device_configs:
         device_configs[generic_icc_name].update(lo_config)
@@ -983,8 +973,8 @@ def _add_lo_config(
 def _add_wave_nodes(
     device_type: zhinst.DeviceType,
     awg_index: int,
-    wf_id_mapping: Dict[str, int],
-    numerical_wf_dict: Dict[str, np.ndarray],
+    wf_id_mapping: dict[str, int],
+    numerical_wf_dict: dict[str, np.ndarray],
     settings_builder: zi_settings.ZISettingsBuilder,
 ) -> zi_settings.ZISettingsBuilder:
     for wf_id, wf_index in wf_id_mapping.items():
@@ -1005,7 +995,7 @@ def _add_wave_nodes(
 def _compile_for_hdawg(
     device: zhinst.Device,
     timing_table: pd.DataFrame,
-    numerical_wf_dict: Dict[str, np.ndarray],
+    numerical_wf_dict: dict[str, np.ndarray],
     repetitions: int,
 ) -> zi_settings.ZISettingsBuilder:
     """
@@ -1059,7 +1049,7 @@ def _compile_for_hdawg(
         + f" awg_count={n_awgs} {str(device)}"
     )
 
-    enabled_outputs: Dict[int, zhinst.Output] = dict()
+    enabled_outputs: dict[int, zhinst.Output] = dict()
 
     for i, awg_index in enumerate(range(0, sequencer_stop, sequencer_step)):
         # here Output corresponds to an awg unit or a channel pair
@@ -1071,7 +1061,7 @@ def _compile_for_hdawg(
         logger.debug(f"[{device.name}-awg{awg_index}] enabling outputs...")
         mixer_corrections = (
             output.mixer_corrections
-            if not output.mixer_corrections is None
+            if output.mixer_corrections is not None
             else common.MixerCorrections()
         )
         settings_builder.with_sigouts(awg_index, (1, 1)).with_gain(
@@ -1093,7 +1083,7 @@ def _compile_for_hdawg(
             timing_table["hardware_channel"] == f"{device.name}.awg{awg_index}"
         ]
 
-        instructions: List[zhinst.Instruction] = _get_instruction_list(
+        instructions: list[zhinst.Instruction] = _get_instruction_list(
             output_timing_table
         )
 
@@ -1142,14 +1132,14 @@ def _compile_for_hdawg(
 
 
 def _assemble_hdawg_sequence(
-    instructions: List[zhinst.Instruction],
-    wf_id_mapping: Dict[str, int],
-    numerical_wf_dict: Dict[str, np.ndarray],
+    instructions: list[zhinst.Instruction],
+    wf_id_mapping: dict[str, int],
+    numerical_wf_dict: dict[str, np.ndarray],
     repetitions: int,
     schedule_duration: float,
-    markers: Union[str, int, None] = None,
+    markers: str | int | None = None,
     trigger: int = None,
-) -> Tuple[str, str]:
+) -> tuple[str, str]:
     """ """
     seqc_instructions = ""
     commandtable_json = str({})
@@ -1162,7 +1152,7 @@ def _assemble_hdawg_sequence(
     ###############################################################
     # Generate the command table and waveforms
     ###############################################################
-    command_table_entries: List[zhinst.CommandTableEntry] = list()
+    command_table_entries: list[zhinst.CommandTableEntry] = list()
     for waveform_id, waveform_index in wf_id_mapping.items():
         name: str = f"w{waveform_index}"
         waveform = numerical_wf_dict[waveform_id]
@@ -1264,7 +1254,9 @@ def _assemble_hdawg_sequence(
             seqc_gen=seqc_gen,
             delay=int(clock_cycles_to_wait),
             device_type=zhinst.DeviceType.HDAWG,
-            comment=f"clock={current_clock}, dead time to ensure total schedule duration",
+            comment=(
+                f"clock={current_clock}, dead time to ensure total schedule duration"
+            ),
         )
 
     seqc_gen.emit_end_repeat()
@@ -1274,15 +1266,14 @@ def _assemble_hdawg_sequence(
     return seqc_instructions, commandtable_json
 
 
-# pylint: disable=too-many-locals
-def _compile_for_uhfqa(
+def _compile_for_uhfqa(  # noqa: PLR0915
     device: zhinst.Device,
     timing_table: pd.DataFrame,
-    numerical_wf_dict: Dict[str, np.ndarray],
+    numerical_wf_dict: dict[str, np.ndarray],
     repetitions: int,
-    operations: Dict[str, Operation],
+    operations: dict[str, Operation],
     bin_mode: enums.BinMode,
-) -> Tuple[zi_settings.ZISettingsBuilder, ZIAcquisitionConfig]:
+) -> tuple[zi_settings.ZISettingsBuilder, ZIAcquisitionConfig]:
     """
     Initialize programming the UHFQA ZI Instrument.
 
@@ -1321,7 +1312,7 @@ def _compile_for_uhfqa(
     logger.debug(f"[{device.name}-awg{awg_index}] {str(device)}")
     mixer_corrections = (
         channel.mixer_corrections
-        if not channel.mixer_corrections is None
+        if channel.mixer_corrections is not None
         else common.MixerCorrections()
     )
 
@@ -1358,7 +1349,7 @@ def _compile_for_uhfqa(
         timing_table["hardware_channel"] == f"{device.name}.awg{awg_index}"
     ]
 
-    instructions: List[zhinst.Instruction] = _get_instruction_list(output_timing_table)
+    instructions: list[zhinst.Instruction] = _get_instruction_list(output_timing_table)
 
     # FIXME ensure unique_wf_ids is only for pulses and not integration weights
     # enumerate the waveform_ids used in this particular output channel
@@ -1400,7 +1391,7 @@ def _compile_for_uhfqa(
     #######################################################
 
     # Get a list of all acquisition protocol channels
-    acq_channel_resolvers_map: Dict[int, Callable[..., Any]] = dict()
+    acq_channel_resolvers_map: dict[int, Callable[..., Any]] = dict()
 
     # select only the acquisition operations relevant for the output channel.
     timing_table_acquisitions = output_timing_table[output_timing_table.is_acquisition]
@@ -1423,8 +1414,9 @@ def _compile_for_uhfqa(
 
     # a list of used acquisition channels, this is used to raise an exception
     # when multiple acquisitions assign to the same channel.
-    acq_channels_used: List[int] = []
+    acq_channels_used: list[int] = []
 
+    acq_protocols: dict[int, SUPPORTED_ACQ_PROTOCOLS] = {}
     for _, acq_row in timing_table_unique_acquisitions.iterrows():
         acquisition = operations[acq_row.operation]
         wf_id = acq_row.wf_idx
@@ -1441,8 +1433,17 @@ def _compile_for_uhfqa(
                 "The integration lenght needs to be identical for all acquisitions."
             )
 
-        acq_protocol: str = acq_info["protocol"]
+        if (acq_protocol := acq_info["protocol"]) not in get_args(
+            SUPPORTED_ACQ_PROTOCOLS
+        ):
+            raise ValueError(
+                f"Acquisition protocol {acq_protocol} is not supported by"
+                " Zurich Instruments LabOne backend."
+            )
+
+        acq_protocol: SUPPORTED_ACQ_PROTOCOLS
         acq_channel: int = acq_info["acq_channel"]
+        acq_protocols[acq_channel] = acq_protocol
         if acq_channel not in acq_channels_used:
             acq_channels_used.append(acq_channel)
         else:
@@ -1552,13 +1553,14 @@ def _compile_for_uhfqa(
             n_unique_acquisitions,
             resolvers=acq_channel_resolvers_map,
             bin_mode=bin_mode,
+            acq_protocols=acq_protocols,
         ),
     )
 
 
 def _assemble_uhfqa_sequence(
-    instructions: List[zhinst.Instruction],
-    wf_id_mapping: Dict[str, int],
+    instructions: list[zhinst.Instruction],
+    wf_id_mapping: dict[str, int],
     repetitions: int,
     device_name: str,
     trigger: int = 2,
@@ -1644,9 +1646,9 @@ def _assemble_uhfqa_sequence(
 
 def construct_waveform_table(
     timing_table: pd.DataFrame,
-    operations_dict: Dict[str, Operation],
-    device_dict: Dict[str, zhinst.Device],
-) -> Dict[str, np.ndarray]:
+    operations_dict: dict[str, Operation],
+    device_dict: dict[str, zhinst.Device],
+) -> dict[str, np.ndarray]:
     """
     Iterates over all unique waveforms in a timing_table dataframe to calculate the
     numerical waveforms.

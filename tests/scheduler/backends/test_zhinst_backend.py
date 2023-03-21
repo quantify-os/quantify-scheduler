@@ -599,21 +599,6 @@ def test_apply_waveform_corrections_throw_modulation_error(is_pulse):
         )
 
 
-def test__flatten_dict():
-    # Arrange
-    collection = {0: [0, 1, 2]}
-
-    # Act
-    result = zhinst_backend._flatten_dict(collection)
-
-    # Assert
-    assert list(result) == [
-        (0, 0),
-        (0, 1),
-        (0, 2),
-    ]
-
-
 def test__get_instruction_list(create_typical_timing_table):
     # Arrange
     test_config_dict = create_typical_timing_table()
