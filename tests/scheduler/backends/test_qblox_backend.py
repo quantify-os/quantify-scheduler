@@ -64,8 +64,8 @@ from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     IdlePulse,
     RampPulse,
-    ShiftClockPhase,
     SetClockFrequency,
+    ShiftClockPhase,
     SquarePulse,
 )
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
@@ -2548,7 +2548,7 @@ def test_apply_latency_corrections_valid(
             compiled_data = compiled_data.get(instrument)
             config_data = config_data.get(instrument)
 
-        latency_dict = corrections.determine_relative_latencies(hardware_cfg)
+        latency_dict = corrections.determine_relative_latency_corrections(hardware_cfg)
         port = config_data["complex_output_0"]["portclock_configs"][0]["port"]
         clock = config_data["complex_output_0"]["portclock_configs"][0]["clock"]
         latency = int(1e9 * latency_dict[f"{port}-{clock}"])
@@ -2562,10 +2562,10 @@ def test_apply_latency_corrections_valid(
         ), f"instrument={instrument}, latency={latency}"
 
 
-def test_determine_relative_latencies(
+def test_determine_relative_latency_corrections(
     hardware_cfg_latency_corrections,
 ) -> None:
-    generated_latency_dict = corrections.determine_relative_latencies(
+    generated_latency_dict = corrections.determine_relative_latency_corrections(
         hardware_cfg=hardware_cfg_latency_corrections
     )
     assert generated_latency_dict == {"q0:mw-q0.01": 2.5e-08, "q1:mw-q1.01": 0.0}

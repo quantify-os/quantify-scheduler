@@ -16,11 +16,13 @@ from zhinst.toolkit.helpers import Waveform
 
 from quantify_scheduler import enums
 from quantify_scheduler.backends.corrections import (
-    LatencyCorrections,
     apply_distortion_corrections,
-    determine_relative_latencies,
+    determine_relative_latency_corrections,
 )
-from quantify_scheduler.backends.graph_compilation import CompilationConfig
+from quantify_scheduler.backends.graph_compilation import (
+    CompilationConfig,
+    LatencyCorrections,
+)
 from quantify_scheduler.backends.types import common, zhinst
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 from quantify_scheduler.backends.zhinst import resolvers, seqc_il_generator
@@ -269,8 +271,8 @@ def _apply_latency_corrections(
     timing_table: pd.DataFrame, latency_dict: dict
 ) -> pd.DataFrame:
     """
-    Changes the "abs_time" of a timing table depending on the specified latencies
-    for each port-clock combination as specified in the latency dict. The latencies are
+    Changes the "abs_time" of a timing table depending on the specified latency corrections
+    for each port-clock combination as specified in the latency dict. The corrections are
     added to the abs_time elements fulfilling the specific port-clock combination.
     """
 
@@ -737,7 +739,12 @@ def compile_backend(
             FutureWarning,
         )
     if isinstance(config, CompilationConfig):
+        # Extract the hardware config from the CompilationConfig
         hardware_cfg = config.connectivity
+        if config.hardware_options.latency_corrections is not None:
+            hardware_cfg[
+                "latency_corrections"
+            ] = config.hardware_options.latency_corrections.corrections
     elif config is not None:
         # Support for (deprecated) calling with hardware_cfg as positional argument.
         hardware_cfg = config
@@ -748,7 +755,7 @@ def compile_backend(
         # Important: currently only used to validate the input, should also be
         # used for storing the latency corrections
         # (see also https://gitlab.com/groups/quantify-os/-/epics/1)
-        LatencyCorrections(latencies=hardware_cfg["latency_corrections"])
+        LatencyCorrections(corrections=hardware_cfg["latency_corrections"])
 
     schedule = apply_distortion_corrections(schedule, hardware_cfg)
 
@@ -767,7 +774,7 @@ def compile_backend(
     )
 
     # the timing of all pulses and acquisitions is corrected based on the latency corr.
-    latency_dict = determine_relative_latencies(hardware_cfg)
+    latency_dict = determine_relative_latency_corrections(hardware_cfg)
     timing_table = _apply_latency_corrections(
         timing_table=timing_table, latency_dict=latency_dict
     )

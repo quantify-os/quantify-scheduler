@@ -3,21 +3,18 @@
 """Pytest fixtures for quantify-scheduler."""
 
 import os
-import shutil
 import pathlib
-
+import shutil
 from typing import Any, Dict, List, Union
 
 import pytest
 from qcodes import Instrument
-
 from quantify_core.data.handling import get_datadir, set_datadir
-
 from quantify_scheduler.device_under_test.mock_setup import (
     set_standard_params_basic_nv,
+    set_standard_params_transmon,
     set_up_basic_mock_nv_setup,
     set_up_mock_transmon_setup,
-    set_standard_params_transmon,
 )
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
@@ -27,6 +24,9 @@ from quantify_scheduler.schemas.examples import utils
 # mapping for the graph based compilation.
 QBLOX_HARDWARE_MAPPING = utils.load_json_example_scheme("qblox_test_mapping.json")
 ZHINST_HARDWARE_MAPPING = utils.load_json_example_scheme("zhinst_test_mapping.json")
+
+QBLOX_HARDWARE_OPTIONS = utils.load_json_example_scheme("qblox_hardware_options.json")
+ZHINST_HARDWARE_OPTIONS = utils.load_json_example_scheme("zhinst_hardware_options.json")
 
 
 def close_instruments(instrument_names: Union[List[str], Dict[str, Any]]):
@@ -174,6 +174,7 @@ def compile_config_basic_transmon_zhinst_hardware(
     # the old JSON files to load settings from.
     mock_setup = mock_setup_basic_transmon_with_standard_params
     mock_setup["quantum_device"].hardware_config(ZHINST_HARDWARE_MAPPING)
+    mock_setup["quantum_device"].hardware_options(ZHINST_HARDWARE_OPTIONS)
 
     # add the hardware config here
     yield mock_setup["quantum_device"].generate_compilation_config()
@@ -192,6 +193,7 @@ def compile_config_basic_transmon_qblox_hardware(
     # the old JSON files to load settings from.
     mock_setup = mock_setup_basic_transmon_with_standard_params
     mock_setup["quantum_device"].hardware_config(QBLOX_HARDWARE_MAPPING)
+    mock_setup["quantum_device"].hardware_options(QBLOX_HARDWARE_OPTIONS)
 
     yield mock_setup["quantum_device"].generate_compilation_config()
 

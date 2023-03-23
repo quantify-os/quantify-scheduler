@@ -149,7 +149,7 @@ The Zurich Instruments hardware configuration file is divided into four main sec
 }
 ```
 
-In this example, the user has specified latencies at each port-clock combination in the hardware config. The relative latencies to the minimum of the latencies are then calculated and applied to the signals for the specific port-clock combination. For this case, pulses with `port=q0:res`, and `clock=q0.r0` i.e. "q0:res-q0.ro" will have no corrections, whilst, pulses with `port=q0:mw`, and `clock=q0.01` i.e. "q0:mw-q0.01" will have a corrected delay of 190e-9 s added to the pulses.
+In this example, the user has specified latency corrections at each port-clock combination in the hardware config. The relative latency corrections to the minimum of the latency corrections are then calculated and applied to the signals for the specific port-clock combination. For this case, pulses with `port=q0:res`, and `clock=q0.r0` i.e. "q0:res-q0.ro" will have no corrections, whilst, pulses with `port=q0:mw`, and `clock=q0.01` i.e. "q0:mw-q0.01" will have a corrected delay of 190e-9 s added to the pulses.
 
 4\. The `devices` property is an array of {class}`~quantify_scheduler.backends.types.zhinst.Device`.
 A Device describes the type of Zurich Instruments and the physical setup.
