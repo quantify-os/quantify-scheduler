@@ -6,6 +6,7 @@
 
 ### Merged branches and closed issues
 
+- Compilation - Move `LatencyCorrections` to `CompilationConfig.hardware_options` and use field name `corrections` instead of `latencies` (!633).
 - Gettables - Clean up code syntax (!638)
 - Schedulables - Make name uniqueness check more efficient and readable. (!631)
 - Compilation - `CompilationNode`s take the full `CompilationConfig` as input (!615, #405)

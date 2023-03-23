@@ -38,7 +38,7 @@ ARRAY_DECIMAL_PRECISION = 16
 
 
 @pytest.fixture
-def zhinst_hw_config_invalid_latencies(load_example_zhinst_hardware_config):
+def zhinst_hw_config_invalid_latency_corrections(load_example_zhinst_hardware_config):
     hw_config = deepcopy(load_example_zhinst_hardware_config)
     hw_config["latency_corrections"] = {"q0:mw-q0.01": 2e-8, "q1:mw-q1.01": None}
 
@@ -98,7 +98,9 @@ def create_typical_timing_table(make_schedule, load_example_zhinst_hardware_conf
 
         # the timing of all pulses and acquisitions is corrected
         # based on the latency corr.
-        latency_dict = corrections.determine_relative_latencies(hardware_config)
+        latency_dict = corrections.determine_relative_latency_corrections(
+            hardware_config
+        )
         timing_table = zhinst_backend._apply_latency_corrections(
             timing_table=timing_table, latency_dict=latency_dict
         )
@@ -387,11 +389,11 @@ def test_compile_hardware_uhfqa_successfully(
     # assert device_configs["lo0"] == ro_freq - intermodulation_frequency
 
 
-def test_compile_invalid_latencies_raises(
+def test_compile_invalid_latency_corrections_raises(
     make_schedule,
-    zhinst_hw_config_invalid_latencies,
+    zhinst_hw_config_invalid_latency_corrections,
 ) -> None:
-    hardware_cfg = zhinst_hw_config_invalid_latencies
+    hardware_cfg = zhinst_hw_config_invalid_latency_corrections
     # Arrange
     schedule = make_schedule()
 
@@ -401,10 +403,9 @@ def test_compile_invalid_latencies_raises(
 
 
 def test_hdawg4_sequence(
-    load_example_zhinst_hardware_config,
+    compile_config_basic_transmon_zhinst_hardware,
     make_schedule,
 ) -> None:
-    hdawg_hardware_cfg = load_example_zhinst_hardware_config
     # Arrange
     awg_index = 0
     schedule = make_schedule()
@@ -433,7 +434,10 @@ def test_hdawg4_sequence(
     # pylint: enable=line-too-long
 
     # Act
-    comp_sched = zhinst_backend.compile_backend(schedule, hdawg_hardware_cfg)
+    compiler = SerialCompiler("compiler")
+    comp_sched = compiler.compile(
+        schedule=schedule, config=compile_config_basic_transmon_zhinst_hardware
+    )
     compiled_instructions = comp_sched["compiled_instructions"]
 
     # Assert
@@ -838,10 +842,14 @@ def test__extract_port_clock_channelmapping_hdawg(
     assert generated_dict == expected_dict
 
 
-def test_determine_relative_latencies(
-    load_example_zhinst_hardware_config,
+def test_determine_relative_latency_corrections(
+    compile_config_basic_transmon_zhinst_hardware,
 ) -> None:
-    hardware_config = load_example_zhinst_hardware_config
+    compilation_config = compile_config_basic_transmon_zhinst_hardware
+    hardware_config = compilation_config.connectivity
+    hardware_config[
+        "latency_corrections"
+    ] = compilation_config.hardware_options.latency_corrections.corrections
 
     expected_latency_dict = {
         "q0:mw-q0.01": 190e-9,
@@ -850,7 +858,7 @@ def test_determine_relative_latencies(
         "q2:mw-q2.01": 9.5e-08,
         "q3:mw-q3.01": 9.5e-08,
     }
-    generated_dict = corrections.determine_relative_latencies(
+    generated_dict = corrections.determine_relative_latency_corrections(
         hardware_cfg=hardware_config
     )
 

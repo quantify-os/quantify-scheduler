@@ -14,6 +14,7 @@ from quantify_scheduler.backends.circuit_to_device import (
     compile_circuit_to_device,
 )
 from quantify_scheduler.backends.graph_compilation import (
+    HardwareOptions,
     SerialCompilationConfig,
     SimpleNodeConfig,
 )
@@ -93,6 +94,15 @@ class QuantumDevice(Instrument):
             initial_value=None,
         )
 
+        self.add_parameter(
+            "hardware_options",
+            docstring="The hardware options dictionary used for compiling from the "
+            "quantum-device layer to a hardware backend.",
+            parameter_class=ManualParameter,
+            vals=validators.Dict(),
+            initial_value={},
+        )
+
     def generate_compilation_config(self) -> SerialCompilationConfig:
         """
         Generates a compilation config for use with a
@@ -154,10 +164,12 @@ class QuantumDevice(Instrument):
                 )
             )
 
+        hw_options = self.generate_hardware_options()
+
         compilation_config = SerialCompilationConfig(
             name=backend_name,
             device_compilation_config=dev_cfg,
-            hardware_options=[],
+            hardware_options=hw_options,
             connectivity=hardware_config,
             compilation_passes=compilation_passes,
         )
@@ -211,6 +223,16 @@ class QuantumDevice(Instrument):
         )
 
         return device_config
+
+    def generate_hardware_options(self):
+        """
+        Generates the :class:`~quantify_scheduler.backends.graph_compilation.HardwareOptions`
+        datastructure used for compiling from the quantum-device layer to a hardware backend.
+        """
+
+        hardware_options = HardwareOptions.parse_obj(self.hardware_options())
+
+        return hardware_options
 
     def get_element(self, name: str) -> DeviceElement:
         """

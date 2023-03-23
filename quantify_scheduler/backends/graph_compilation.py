@@ -14,6 +14,8 @@ from typing import (
     Union,
 )
 
+import warnings
+
 import matplotlib.pyplot as plt
 import networkx as nx
 from matplotlib.axes import Axes
@@ -180,11 +182,46 @@ class DeviceCompilationConfig(DataStructure):
         return fun  # type: ignore
 
 
-class HardwareOption(DataStructure):
+class LatencyCorrections(DataStructure):
     """
-    Base class for hardware options, such as
-    :class:`~quantify_scheduler.backends.corrections.LatencyCorrections`.
+    A datastructure containing the information required to correct for latencies.
+
+    Note: If the port-clock combination of a signal is not specified in the corrections,
+    it is set to zero in compilation.
+    The minimum correction is then subtracted to allow for negative
+    latency corrections and to ensure minimal wait time
+    (see :meth:`~quantify_scheduler.backends.corrections.determine_relative_latency_corrections`).
+
+
+    Parameters
+    ----------
+    corrections
+        A dictionary specifying the corrections for each port-clock combination.
+
+        Keys are port-clocks combinations specifying the signals for which latency
+        corrections should be applied.
+        Values are the corrections in seconds that are applied to all operations at
+        the port-clock combination.
+        Positive values delay the operations on the corresponding port-clock combination,
+        while negative values shift the operation backwards in time with respect to other
+        operations in the schedule.
+
+        Example:
+        If :code:`corrections={"q0:res-q0.ro":-20e-9,"q0:mw-q0.01":120e-9}`, all operations
+        on `port=q0:mw` and `clock=q0.01` will be delayed by 140 ns with respect to operations
+        on `port=q0:res` and `clock=q0.ro`.
     """
+
+    corrections: Dict[str, float]
+
+
+class HardwareOptions(DataStructure):
+    """
+    Datastructure containing the hardware options for each port-clock combination, such
+    as :class:`~quantify_scheduler.backends.graph_compilation.LatencyCorrections`.
+    """
+
+    latency_corrections: Optional[LatencyCorrections]
 
 
 class Connectivity(DataStructure):
@@ -220,10 +257,10 @@ class CompilationConfig(DataStructure):
     """
 
     name: str
-    version: str = "v0.1"
+    version: str = "v0.2"
     backend: Type[QuantifyCompiler]
     device_compilation_config: Optional[Union[DeviceCompilationConfig, Dict]] = None
-    hardware_options: Optional[List[HardwareOption]] = None
+    hardware_options: Optional[HardwareOptions] = None
     connectivity: Optional[Union[Connectivity, Dict]] = None
     # Dicts for legacy support for the old hardware config and device config
 
@@ -235,6 +272,18 @@ class CompilationConfig(DataStructure):
         if isinstance(class_, str):
             return deserialize_class(class_)
         return class_  # type: ignore
+
+    @validator("connectivity")
+    def latencies_in_hardware_config(cls, connectivity):
+        if isinstance(connectivity, Dict):  # if connectivity is a hardware config
+            if "latency_corrections" in connectivity:
+                warnings.warn(
+                    f"Latency corrections should be specified in the "
+                    f":class:`~quantify_scheduler.backends.graph_compilation.HardwareOptions`"
+                    f"instead of the hardware configuration as of quantify-scheduler >= 0.15.0",
+                    FutureWarning,
+                )
+        return connectivity
 
 
 class CompilationNode:

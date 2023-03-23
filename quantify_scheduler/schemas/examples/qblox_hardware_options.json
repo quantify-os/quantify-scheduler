@@ -1,0 +1,8 @@
+{
+    "latency_corrections": {
+        "corrections": {
+            "q4:mw-q4.01": 8e-9,
+            "q5:mw-q5.01": 4e-9
+        }
+    }
+}

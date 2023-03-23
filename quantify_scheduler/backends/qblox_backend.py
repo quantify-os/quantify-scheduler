@@ -8,11 +8,13 @@ from typing import Any, Dict, Optional
 
 from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends.corrections import (
-    LatencyCorrections,
     apply_distortion_corrections,
-    determine_relative_latencies,
+    determine_relative_latency_corrections,
 )
-from quantify_scheduler.backends.graph_compilation import CompilationConfig
+from quantify_scheduler.backends.graph_compilation import (
+    CompilationConfig,
+    LatencyCorrections,
+)
 from quantify_scheduler.backends.qblox import compiler_container, helpers
 
 
@@ -73,7 +75,12 @@ def hardware_compile(
             FutureWarning,
         )
     if isinstance(config, CompilationConfig):
+        # Extract the hardware config from the CompilationConfig
         hardware_cfg = config.connectivity
+        if config.hardware_options.latency_corrections is not None:
+            hardware_cfg[
+                "latency_corrections"
+            ] = config.hardware_options.latency_corrections.corrections
     elif config is not None:
         # Support for (deprecated) calling with hardware_cfg as positional argument.
         hardware_cfg = config
@@ -115,10 +122,12 @@ def hardware_compile(
         # Important: currently only used to validate the input, should also be
         # used for storing the latency corrections
         # (see also https://gitlab.com/groups/quantify-os/-/epics/1)
-        LatencyCorrections(latencies=converted_hw_config["latency_corrections"])
+        LatencyCorrections(corrections=converted_hw_config["latency_corrections"])
 
-        # Subtract minimum latency to allow for negative latencies
-        hardware_cfg["latency_corrections"] = determine_relative_latencies(hardware_cfg)
+        # Subtract minimum latency to allow for negative latency corrections
+        hardware_cfg["latency_corrections"] = determine_relative_latency_corrections(
+            hardware_cfg
+        )
 
     schedule = apply_distortion_corrections(schedule, hardware_cfg)
 

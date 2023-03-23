@@ -6,7 +6,6 @@ from typing import Any, Dict, Generator, Optional, Tuple
 
 import numpy as np
 from quantify_scheduler import Schedule
-from quantify_scheduler.backends.graph_compilation import HardwareOption
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.qblox.helpers import generate_waveform_data
 from quantify_scheduler.helpers.importers import import_python_object_from_string
@@ -16,34 +15,15 @@ logger = logging.getLogger(__name__)
 
 
 # pylint: disable=too-few-public-methods
-class LatencyCorrections(HardwareOption):
-    """
-    A datastructure containing the information required to correct for latencies
-    on signals specified by port-clock combinations.
-
-    Note, if the port-clock combination of a signal is not specified in the latency
-    corrections, no correction will be applied.
-
-    Parameters
-    ----------
-    latencies
-        A dictionary specifying the latencies to be corrected for.
-        Keys are port-clocks combinations specifying the signal for which latency
-        should be corrected, e.g., `port=q0:mw` and `clock=q0.01` will have the
-        string ``"q0:mw-q0.01"`` as a key.
-        Values are latencies of the signal to be corrected for in seconds, e.g.,
-        if a signal has a latency of 120e-9, the signal will be shifted by
-        -120 ns to correct for this latency.
-    """
-
-    latencies: Dict[str, float]
 
 
-def determine_relative_latencies(hardware_cfg: Dict[str, Any]) -> Dict[str, float]:
+def determine_relative_latency_corrections(
+    hardware_cfg: Dict[str, Any]
+) -> Dict[str, float]:
     """
     Generates the latency configuration dict for all port-clock combinations that are present in
-    the hardware_cfg. This is done by first setting unspecified latencies to zero, and then
-    subtracting the minimum latency from all latencies.
+    the hardware_cfg. This is done by first setting unspecified latency corrections to zero, and then
+    subtracting the minimum latency from all latency corrections.
     """
 
     def _extract_port_clocks(hardware_cfg: Dict[str, Any]) -> Generator:
@@ -74,16 +54,18 @@ def determine_relative_latencies(hardware_cfg: Dict[str, Any]) -> Dict[str, floa
 
     latency_dict = {}
     for port_clock in port_clocks:
-        # Set unspecified latencies to zero to avoid ending up with negative latencies
-        # after subtracting minimum
+        # Set unspecified latency corrections to zero to avoid ending up with
+        # negative latency corrections after subtracting minimum
         latency_dict[port_clock] = raw_latency_dict.get(port_clock, 0)
 
-    # Subtract lowest value to ensure minimal latency is used and offset the latencies
-    # to be relative to the minimum. Note that this supports negative delays (which is
-    # useful for calibrating)
-    minimum_of_latencies = min(latency_dict.values())
+    # Subtract lowest value to ensure minimal latency is used and offset the latency
+    # corrections to be relative to the minimum. Note that this supports negative delays
+    # (which is useful for calibrating)
+    minimum_of_latency_corrections = min(latency_dict.values())
     for port_clock, latency_at_port_clock in latency_dict.items():
-        latency_dict[port_clock] = latency_at_port_clock - minimum_of_latencies
+        latency_dict[port_clock] = (
+            latency_at_port_clock - minimum_of_latency_corrections
+        )
 
     return latency_dict
 
