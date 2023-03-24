@@ -589,7 +589,7 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
         self,
         operation: Operation,
         rel_time: float = 0,
-        ref_op: Schedulable = None,
+        ref_op: Schedulable | str | None = None,
         ref_pt: Literal["start", "center", "end"] = "end",
         ref_pt_new: Literal["start", "center", "end"] = "start",
         label: str = None,
@@ -707,7 +707,7 @@ class Schedulable(JSONSchemaValMixin, UserDict):
     def add_timing_constraint(
         self,
         rel_time: float = 0,
-        ref_schedulable: Schedulable = None,
+        ref_schedulable: Schedulable | str | None = None,
         ref_pt: Literal["start", "center", "end"] = "end",
         ref_pt_new: Literal["start", "center", "end"] = "start",
     ):
