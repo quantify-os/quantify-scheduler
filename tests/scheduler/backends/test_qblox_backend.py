@@ -704,7 +704,7 @@ def test_construct_sequencers(
         parent=None,
         name="tester",
         total_play_time=1,
-        hw_mapping=load_example_qblox_hardware_config["qcm0"],
+        instrument_cfg=load_example_qblox_hardware_config["qcm0"],
     )
     sched = make_basic_multi_qubit_schedule(["q0", "q1"])
 
@@ -749,7 +749,7 @@ def test_construct_sequencers_repeated_portclocks_error(
         parent=None,
         name="tester",
         total_play_time=1,
-        hw_mapping=hardware_cfg["qcm0"],
+        instrument_cfg=hardware_cfg["qcm0"],
     )
     sched = make_basic_multi_qubit_schedule(["q0", "q1"])  # Schedule with two qubits
 
@@ -1309,10 +1309,10 @@ def test_qasm_hook(pulse_only_schedule, mock_setup_basic_transmon_with_standard_
 
 def test_qcm_acquisition_error(load_example_qblox_hardware_config):
     qcm = QcmModule(
-        None,
-        "qcm0",
+        parent=None,
+        name="qcm0",
         total_play_time=10,
-        hw_mapping=load_example_qblox_hardware_config["qcm0"],
+        instrument_cfg=load_example_qblox_hardware_config["qcm0"],
     )
     qcm._acquisitions[0] = 0
 

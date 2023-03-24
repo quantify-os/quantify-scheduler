@@ -85,7 +85,7 @@ class InstrumentCompiler(ABC):
         parent,  # No type hint due to circular import, added to docstring
         name: str,
         total_play_time: float,
-        hw_mapping: Dict[str, Any],
+        instrument_cfg: Dict[str, Any],
         latency_corrections: Optional[Dict[str, float]] = None,
     ):
         # pylint: disable=line-too-long
@@ -103,8 +103,8 @@ class InstrumentCompiler(ABC):
             used to ensure that the different devices, potentially with different clock
             rates, can work in a synchronized way when performing multiple executions of
             the schedule.
-        hw_mapping
-            The hardware configuration dictionary for this specific device. This is one
+        instrument_cfg
+            The part of the hardware configuration dictionary referring to this device. This is one
             of the inner dictionaries of the overall hardware config.
         latency_corrections
             Dict containing the delays for each port-clock combination. This is specified in
@@ -114,7 +114,7 @@ class InstrumentCompiler(ABC):
         self.parent = parent
         self.name = name
         self.total_play_time = total_play_time
-        self.hw_mapping = hw_mapping
+        self.instrument_cfg = instrument_cfg
         self.latency_corrections = latency_corrections or {}
 
     def prepare(self) -> None:
@@ -156,7 +156,7 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
         parent,  # No type hint due to circular import, added to docstring
         name: str,
         total_play_time: float,
-        hw_mapping: Dict[str, Any],
+        instrument_cfg: Dict[str, Any],
         latency_corrections: Optional[Dict[str, float]] = None,
     ):
         # pylint: disable=line-too-long
@@ -174,14 +174,20 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
             used to ensure that the different devices, potentially with different clock
             rates, can work in a synchronized way when performing multiple executions of
             the schedule.
-        hw_mapping
-            The hardware configuration dictionary for this specific device. This is one
+        instrument_cfg
+            The part of the hardware configuration dictionary referring to this device. This is one
             of the inner dictionaries of the overall hardware config.
         latency_corrections
             Dict containing the delays for each port-clock combination. This is specified in
             the top layer of hardware config.
         """
-        super().__init__(parent, name, total_play_time, hw_mapping, latency_corrections)
+        super().__init__(
+            parent=parent,
+            name=name,
+            total_play_time=total_play_time,
+            instrument_cfg=instrument_cfg,
+            latency_corrections=latency_corrections,
+        )
         self._pulses: Dict[Tuple[str, str], List[OpInfo]] = defaultdict(list)
         self._acquisitions: Dict[Tuple[str, str], List[OpInfo]] = defaultdict(list)
 
@@ -1042,7 +1048,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         parent,  # No type hint due to circular import, added to docstring
         name: str,
         total_play_time: float,
-        hw_mapping: Dict[str, Any],
+        instrument_cfg: Dict[str, Any],
         latency_corrections: Optional[Dict[str, float]] = None,
     ):
         # pylint: disable=line-too-long
@@ -1060,14 +1066,20 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             used to ensure that the different devices, potentially with different clock
             rates, can work in a synchronized way when performing multiple executions of
             the schedule.
-        hw_mapping
-            The hardware configuration dictionary for this specific device. This is one
+        instrument_cfg
+            The part of the hardware configuration dictionary referring to this device. This is one
             of the inner dictionaries of the overall hardware config.
         latency_corrections
             Dict containing the delays for each port-clock combination. This is specified in
             the top layer of hardware config.
         """
-        super().__init__(parent, name, total_play_time, hw_mapping, latency_corrections)
+        super().__init__(
+            parent=parent,
+            name=name,
+            total_play_time=total_play_time,
+            instrument_cfg=instrument_cfg,
+            latency_corrections=latency_corrections,
+        )
         driver_version_check.verify_qblox_instruments_version()
 
         self.is_pulsar: bool = True
@@ -1085,10 +1097,10 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         portclocks = []
 
         for io in self.static_hw_properties.valid_ios:
-            if io not in self.hw_mapping:
+            if io not in self.instrument_cfg:
                 continue
 
-            portclock_configs = self.hw_mapping[io].get("portclock_configs", [])
+            portclock_configs = self.instrument_cfg[io].get("portclock_configs", [])
             if not portclock_configs:
                 raise KeyError(
                     f"No 'portclock_configs' entry found in '{io}' of {self.name}."
@@ -1137,7 +1149,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         """
         # Figure out which outputs need to be turned on.
         marker_start_config = self.static_hw_properties.marker_configuration.start
-        for io, io_cfg in self.hw_mapping.items():
+        for io, io_cfg in self.instrument_cfg.items():
             if (
                 not isinstance(io_cfg, dict)
                 or io not in self.static_hw_properties.valid_ios
@@ -1172,7 +1184,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         sequencers: Dict[str, Sequencer] = {}
         portclock_io_map: Dict[Tuple, str] = {}
 
-        for io, io_cfg in self.hw_mapping.items():
+        for io, io_cfg in self.instrument_cfg.items():
             if not isinstance(io_cfg, dict):
                 continue
             if io not in self.static_hw_properties.valid_ios:
@@ -1409,7 +1421,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         used.
         """
         self._settings = self.settings_type.extract_settings_from_mapping(
-            self.hw_mapping
+            self.instrument_cfg
         )
         self._configure_input_gains()
         self._configure_mixer_offsets()
@@ -1428,7 +1440,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         """
         in0_gain, in1_gain = None, None
         for io_name in self.static_hw_properties.valid_ios:
-            io_mapping = self.hw_mapping.get(io_name, None)
+            io_mapping = self.instrument_cfg.get(io_name, None)
             if io_mapping is None:
                 continue
 
@@ -1479,10 +1491,10 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         """
         supported_outputs = ("complex_output_0", "complex_output_1")
         for output_idx, output_label in enumerate(supported_outputs):
-            if output_label not in self.hw_mapping:
+            if output_label not in self.instrument_cfg:
                 continue
 
-            output_cfg = self.hw_mapping[output_label]
+            output_cfg = self.instrument_cfg[output_label]
             voltage_range = self.static_hw_properties.mixer_dc_offset_range
             if output_idx == 0:
                 self._settings.offset_ch0_path0 = helpers.calc_from_units_volt(
@@ -1563,7 +1575,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         program = {}
 
         if sequence_to_file is None:
-            sequence_to_file = self.hw_mapping.get("sequence_to_file", True)
+            sequence_to_file = self.instrument_cfg.get("sequence_to_file", True)
 
         program["sequencers"] = {}
         for seq_name, seq in self.sequencers.items():
@@ -1740,8 +1752,8 @@ class QbloxRFModule(QbloxBaseModule):
                 return int(value)
             return None
 
-        complex_input_0 = self.hw_mapping.get("complex_input_0", {})
-        complex_output_0 = self.hw_mapping.get("complex_output_0", {})
+        complex_input_0 = self.instrument_cfg.get("complex_input_0", {})
+        complex_output_0 = self.instrument_cfg.get("complex_output_0", {})
 
         input_att = complex_input_0.get("input_att", None)
         if (input_att_output := complex_output_0.get("input_att", None)) is not None:
@@ -1758,7 +1770,7 @@ class QbloxRFModule(QbloxBaseModule):
             complex_output_0.get("output_att", None),
             label="out0_att",
         )
-        complex_output_1 = self.hw_mapping.get("complex_output_1", {})
+        complex_output_1 = self.instrument_cfg.get("complex_output_1", {})
         self._settings.out1_att = _convert_to_int(
             complex_output_1.get("output_att", None),
             label="out1_att",

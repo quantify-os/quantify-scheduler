@@ -31,7 +31,7 @@ class LocalOscillator(compiler_abc.InstrumentCompiler):
         parent: compiler_container.CompilerContainer,
         name: str,
         total_play_time: float,
-        hw_mapping: Dict[str, Any],
+        instrument_cfg: Dict[str, Any],
     ):
         """
         Constructor for a local oscillator compiler.
@@ -47,8 +47,8 @@ class LocalOscillator(compiler_abc.InstrumentCompiler):
             used to ensure that the different devices, potentially with different clock
             rates, can work in a synchronized way when performing multiple executions of
             the schedule.
-        hw_mapping
-            The hardware mapping dict for this instrument.
+        instrument_cfg
+            The part of the hardware mapping dict referring to this instrument.
         """
 
         def _extract_parameter(
@@ -57,8 +57,13 @@ class LocalOscillator(compiler_abc.InstrumentCompiler):
             items: abc.ItemsView = parameter_dict.items()
             return list(items)[0]
 
-        super().__init__(parent, name, total_play_time, hw_mapping)
-        self._settings = LOSettings.from_mapping(hw_mapping)
+        super().__init__(
+            parent=parent,
+            name=name,
+            total_play_time=total_play_time,
+            instrument_cfg=instrument_cfg,
+        )
+        self._settings = LOSettings.from_mapping(instrument_cfg)
         self.freq_param_name, self._frequency = _extract_parameter(
             self._settings.frequency
         )
@@ -225,7 +230,7 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
         parent: compiler_container.CompilerContainer,
         name: str,
         total_play_time: float,
-        hw_mapping: Dict[str, Any],
+        instrument_cfg: Dict[str, Any],
         latency_corrections: Optional[Dict[str, float]] = None,
     ):
         """
@@ -239,8 +244,8 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
             Name of the `QCoDeS` instrument this compiler object corresponds to.
         total_play_time
             Total time execution of the schedule should go on for.
-        hw_mapping
-            The hardware configuration dictionary for this specific device. This is one
+        instrument_cfg
+            The part of the hardware configuration dictionary referring to this device. This is one
             of the inner dictionaries of the overall hardware config.
         latency_corrections
             Dict containing the delays for each port-clock combination. This is
@@ -250,7 +255,7 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
             parent=parent,
             name=name,
             total_play_time=total_play_time,
-            hw_mapping=hw_mapping,
+            instrument_cfg=instrument_cfg,
             latency_corrections=latency_corrections,
         )
         self.instrument_compilers: dict = self.construct_instrument_compilers()
@@ -267,7 +272,7 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
             compiler.
         """
         instrument_compilers = {}
-        for name, cfg in self.hw_mapping.items():
+        for name, cfg in self.instrument_cfg.items():
             if not isinstance(cfg, dict):
                 continue  # not an instrument definition
             if "instrument_type" not in cfg:
@@ -285,10 +290,10 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
                 )
             compiler_type: type = self.compiler_classes[instrument_type]
             instance = compiler_type(
-                self,
+                parent=self,
                 name=name,
                 total_play_time=self.total_play_time,
-                hw_mapping=cfg,
+                instrument_cfg=cfg,
                 latency_corrections=self.latency_corrections,
             )
             assert hasattr(instance, "is_pulsar")
@@ -335,9 +340,9 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
             The part of the compiled instructions relevant for this instrument.
         """
         program = {}
-        program["settings"] = {"reference_source": self.hw_mapping["ref"]}
+        program["settings"] = {"reference_source": self.instrument_cfg["ref"]}
 
-        sequence_to_file = self.hw_mapping.get("sequence_to_file", None)
+        sequence_to_file = self.instrument_cfg.get("sequence_to_file", None)
         for compiler in self.instrument_compilers.values():
             instrument_program = compiler.compile(
                 repetitions=repetitions, sequence_to_file=sequence_to_file
