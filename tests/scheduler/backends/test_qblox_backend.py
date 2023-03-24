@@ -2657,3 +2657,69 @@ def test_overwrite_gain(mock_setup_basic_transmon_with_standard_params):
         == "Overwriting gain of real_output_1 of module cluster0_module1 to in0_gain: 10."
         "\nIt was previously set to in0_gain: 5."
     )
+
+
+def test_too_long_waveform_doesnt_raise(compile_config_basic_transmon_qblox_hardware):
+    sched = Schedule("Too long waveform")
+    sched.add(
+        SquarePulse(
+            amp=0.5,
+            duration=constants.MAX_SAMPLE_SIZE_WAVEFORMS // 2 * 1e-9,
+            port="q0:res",
+            clock="q0.ro",
+        )
+    )
+    sched.add(
+        SquarePulse(
+            amp=0.5,
+            duration=constants.MAX_SAMPLE_SIZE_WAVEFORMS // 2 * 1e-9,
+            port="q0:res",
+            clock="q0.ro",
+        )
+    )
+    compiler = SerialCompiler(name="compiler")
+    _ = compiler.compile(sched, config=compile_config_basic_transmon_qblox_hardware)
+
+
+def test_too_long_waveform_raises(compile_config_basic_transmon_qblox_hardware):
+    sched = Schedule("Too long waveform")
+    sched.add(
+        SquarePulse(
+            amp=0.5,
+            duration=(constants.MAX_SAMPLE_SIZE_WAVEFORMS // 2 + 4) * 1e-9,
+            port="q0:res",
+            clock="q0.ro",
+        )
+    )
+    compiler = SerialCompiler(name="compiler")
+    with pytest.raises(RuntimeError) as error:
+        _ = compiler.compile(sched, config=compile_config_basic_transmon_qblox_hardware)
+    assert (
+        "waveform size" in error.value.args[0] or "sample limit" in error.value.args[0]
+    )
+
+
+def test_too_long_waveform_raises2(compile_config_basic_transmon_qblox_hardware):
+    sched = Schedule("Too long waveform")
+    sched.add(
+        SquarePulse(
+            amp=0.5,
+            duration=constants.MAX_SAMPLE_SIZE_WAVEFORMS // 4 * 1e-9,
+            port="q0:res",
+            clock="q0.ro",
+        )
+    )
+    sched.add(
+        RampPulse(
+            amp=0.5,
+            duration=(constants.MAX_SAMPLE_SIZE_WAVEFORMS // 4 + 4) * 1e-9,
+            port="q0:res",
+            clock="q0.ro",
+        )
+    )
+    compiler = SerialCompiler(name="compiler")
+    with pytest.raises(RuntimeError) as error:
+        _ = compiler.compile(sched, config=compile_config_basic_transmon_qblox_hardware)
+    assert (
+        "waveform size" in error.value.args[0] or "sample limit" in error.value.args[0]
+    )

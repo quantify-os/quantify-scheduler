@@ -539,10 +539,15 @@ class Sequencer:
         ------
         ValueError
             I or Q amplitude is being set outside of maximum range.
+
+        RuntimeError
+            When the total waveform size specified for a port-clock combination exceeds
+            the waveform sample limit of the hardware.
         """
         wf_dict: Dict[str, Any] = {}
         for pulse in self.pulses:
             pulse.generate_data(wf_dict=wf_dict)
+        self._validate_awg_dict(wf_dict=wf_dict)
         return wf_dict
 
     def _generate_weights_dict(self) -> Dict[str, Any]:
@@ -585,6 +590,18 @@ class Sequencer:
         for acq in self.acquisitions:
             acq.generate_data(wf_dict)
         return wf_dict
+
+    def _validate_awg_dict(self, wf_dict: Dict[str, Any]) -> None:
+        total_size = 0
+        for waveform in wf_dict.values():
+            total_size += len(waveform["data"])
+        if total_size > constants.MAX_SAMPLE_SIZE_WAVEFORMS:
+            raise RuntimeError(
+                f"Total waveform size specified for port-clock {self.port}-"
+                f"{self.clock} is {total_size} samples, which exceeds the sample "
+                f"limit of {constants.MAX_SAMPLE_SIZE_WAVEFORMS}. The compiled "
+                f"schedule cannot be uploaded to the sequencer.",
+            )
 
     def _prepare_acq_settings(
         self, acquisitions: List[IOperationStrategy], repetitions: int
