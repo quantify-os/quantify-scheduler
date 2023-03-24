@@ -271,9 +271,10 @@ def _apply_latency_corrections(
     timing_table: pd.DataFrame, latency_dict: dict
 ) -> pd.DataFrame:
     """
-    Changes the "abs_time" of a timing table depending on the specified latency corrections
-    for each port-clock combination as specified in the latency dict. The corrections are
-    added to the abs_time elements fulfilling the specific port-clock combination.
+    Changes the "abs_time" of a timing table depending on the specified latency
+    corrections for each port-clock combination as specified in the latency
+    dict. The corrections are added to the abs_time elements fulfilling the
+    specific port-clock combination.
     """
 
     for port_clock_combination_key in latency_dict:
