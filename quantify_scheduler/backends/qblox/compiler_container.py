@@ -124,7 +124,7 @@ class CompilerContainer:
                     parent=self,
                     name=name,
                     total_play_time=self.total_play_time,
-                    hw_mapping=instrument_cfg,
+                    instrument_cfg=instrument_cfg,
                 )
                 self.generics.add(name)
             else:
@@ -132,7 +132,7 @@ class CompilerContainer:
                     parent=self,
                     name=name,
                     total_play_time=self.total_play_time,
-                    hw_mapping=instrument_cfg,
+                    instrument_cfg=instrument_cfg,
                     latency_corrections=latency_corrections,
                 )
 
