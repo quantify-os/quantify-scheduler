@@ -162,7 +162,7 @@ class SpectroscopyOperationHermiteMW(InstrumentModule):
             name="duration",
             label="Duration of spectroscopy pulse",
             instrument=self,
-            initial_value=15e-6,
+            initial_value=8e-6,
             unit="s",
             vals=_Durations(),
         )

@@ -579,6 +579,7 @@ def test_trigger_count_acquisition(
                             "port": "qe0:optical_readout",
                             "clock": "qe0.ge0",
                             "interm_freq": 50e6,
+                            "instruction_generated_pulses_enabled": True,
                         },
                     ],
                 },
@@ -588,6 +589,7 @@ def test_trigger_count_acquisition(
                             "port": "qe0:optical_control",
                             "clock": "qe0.ge0",
                             "interm_freq": 0,
+                            "instruction_generated_pulses_enabled": True,
                         }
                     ],
                 },
