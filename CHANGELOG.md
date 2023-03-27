@@ -6,6 +6,7 @@
 
 ### Merged branches and closed issues
 
+- Compilation - Move `DistortionCorrections` to `CompilationConfig.hardware_options` (!648)
 - Compilation - Move `LatencyCorrections` to `CompilationConfig.hardware_options` and use field name `corrections` instead of `latencies` (!633).
 - Typing - More lenient typehints (!640)
 - Gettables - Clean up code syntax (!638)

@@ -4,5 +4,27 @@
             "q4:mw-q4.01": 8e-9,
             "q5:mw-q5.01": 4e-9
         }
+    },
+    "distortion_corrections": {
+        "corrections": {
+            "q0:fl-cl0.baseband": {
+                "filter_func": "scipy.signal.lfilter",
+                "input_var_name": "x",
+                "kwargs": {
+                    "b": [
+                        0,
+                        0.25,
+                        0.5
+                    ],
+                    "a": [
+                        1
+                    ]
+                },
+                "clipping_values": [
+                    -2.5,
+                    2.5
+                ]
+            }
+        }
     }
 }

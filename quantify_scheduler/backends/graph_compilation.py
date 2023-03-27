@@ -215,6 +215,37 @@ class LatencyCorrections(DataStructure):
     corrections: Dict[str, float]
 
 
+class DistortionCorrections(DataStructure):
+    """
+    A datastructure containing the information required to correct for distortions.
+
+    Keys are port-clocks combinations specifying the signals for which distortion
+    corrections should be applied.
+    Values are Dicts containing the information required to apply distortion corrections:
+
+    - "filter_func" is the function applied to the waveforms
+    - "input_var_name" is the argument to which the waveforms will be passed
+    - "kwargs" are the keyword arguments that are passed to the "filter_func"
+    - "clipping_values" are the optional boundaries to which the corrected pulses will be clipped, upon exceeding
+
+    Example:
+
+    .. code-block:: python
+
+        "q0:fl-cl0.baseband": {
+            "filter_func": "scipy.signal.lfilter",
+            "input_var_name": "x",
+            "kwargs": {
+                "b": [0, 0.25, 0.5],
+                "a": [1]
+            },
+            "clipping_values": [-2.5, 2.5]
+        }
+    """
+
+    corrections: Dict[str, Dict]
+
+
 class HardwareOptions(DataStructure):
     """
     Datastructure containing the hardware options for each port-clock combination, such
@@ -222,6 +253,7 @@ class HardwareOptions(DataStructure):
     """
 
     latency_corrections: Optional[LatencyCorrections]
+    distortion_corrections: Optional[DistortionCorrections]
 
 
 class Connectivity(DataStructure):
@@ -265,7 +297,6 @@ class CompilationConfig(DataStructure):
     # Dicts for legacy support for the old hardware config and device config
 
     @validator("backend", pre=True)
-    @classmethod
     def import_backend_if_str(
         cls, class_: Union[Type[QuantifyCompiler], str]
     ) -> Type[QuantifyCompiler]:
@@ -275,15 +306,56 @@ class CompilationConfig(DataStructure):
 
     @validator("connectivity")
     def latencies_in_hardware_config(cls, connectivity):
-        if isinstance(connectivity, Dict):  # if connectivity is a hardware config
+        if isinstance(connectivity, Dict):
+            # if connectivity contains an old-style hardware config
             if "latency_corrections" in connectivity:
                 warnings.warn(
                     f"Latency corrections should be specified in the "
-                    f":class:`~quantify_scheduler.backends.graph_compilation.HardwareOptions`"
-                    f"instead of the hardware configuration as of quantify-scheduler >= 0.15.0",
+                    f"`backends.graph_compilation.HardwareOptions` instead of "
+                    f"the hardware configuration as of quantify-scheduler >= 0.15.0",
                     FutureWarning,
                 )
         return connectivity
+
+    @validator("connectivity")
+    def distortions_in_hardware_config(cls, connectivity):
+        if isinstance(connectivity, Dict):
+            # if connectivity contains an old-style hardware config
+            if "distortion_corrections" in connectivity:
+                warnings.warn(
+                    f"Distortion corrections should be specified in the "
+                    f"`backends.graph_compilation.HardwareOptions` instead of "
+                    f"the hardware configuration as of quantify-scheduler >= 0.15.0",
+                    FutureWarning,
+                )
+        return connectivity
+
+    def extract_hardware_config(self) -> Dict[str, Any]:
+        """
+        Extracts the (to be deprecated) hardware config from the CompilationConfig.
+
+        Raises
+        ------
+        KeyError
+            If the CompilationConfig.connectivity does not contain a hardware config.
+        """
+        if not isinstance(self.connectivity, Dict):
+            raise KeyError(
+                f"CompilationConfig.connectivity does not contain a hardware config dict:\n"
+                f"{self.connectivity=}"
+            )
+
+        hardware_config = self.connectivity
+        if self.hardware_options.latency_corrections is not None:
+            hardware_config[
+                "latency_corrections"
+            ] = self.hardware_options.latency_corrections.corrections
+        if self.hardware_options.distortion_corrections is not None:
+            hardware_config[
+                "distortion_corrections"
+            ] = self.hardware_options.distortion_corrections.corrections
+
+        return hardware_config
 
 
 class CompilationNode:

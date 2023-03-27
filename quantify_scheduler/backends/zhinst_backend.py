@@ -741,11 +741,7 @@ def compile_backend(
         )
     if isinstance(config, CompilationConfig):
         # Extract the hardware config from the CompilationConfig
-        hardware_cfg = config.connectivity
-        if config.hardware_options.latency_corrections is not None:
-            hardware_cfg[
-                "latency_corrections"
-            ] = config.hardware_options.latency_corrections.corrections
+        hardware_cfg = config.extract_hardware_config()
     elif config is not None:
         # Support for (deprecated) calling with hardware_cfg as positional argument.
         hardware_cfg = config
