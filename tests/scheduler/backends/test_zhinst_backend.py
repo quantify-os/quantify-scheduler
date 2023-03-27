@@ -167,9 +167,6 @@ def create_typical_timing_table(make_schedule, load_example_zhinst_hardware_conf
 def hardware_cfg_distortion_corrections():
     return {
         "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
-        # Latency corrections are needed to avoid error in compilation of two-qubit
-        # gate schedule in test_apply_distortion_corrections
-        "latency_corrections": {"q2:fl-cl0.baseband": 100e-9, "q2:mw-q2.01": 0},
         "local_oscillators": [
             {
                 "unique_name": "lo0",
