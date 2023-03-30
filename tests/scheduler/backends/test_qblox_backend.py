@@ -1176,14 +1176,39 @@ def test_compile_acq_measurement_with_clock_phase_reset(
     )
 
 
-def test_acquisitions_back_to_back(
-    mixed_schedule_with_acquisition,
+def test_acquisitions_same_index_raises(
     compile_config_basic_transmon_qblox_hardware,
 ):
-    sched = copy.deepcopy(mixed_schedule_with_acquisition)
-    meas_op = sched.add(Measure("q0"))
+    sched = Schedule("acquisitions_same_index_raises")
+    sched.add(Measure("q0", acq_index=0))
+    sched.add(Measure("q0", acq_index=0))
+
+    with pytest.raises(ValueError) as error:
+        compiler = SerialCompiler(name="compiler")
+        _ = compiler.compile(
+            sched,
+            config=compile_config_basic_transmon_qblox_hardware,
+        )
+
+    assert (
+        "Found 0 as the highest bin out of "
+        "2 for channel 0, indicating "
+        "an acquisition index was skipped or an acquisition index was repeated. "
+        "Please make sure the used bins increment by 1 starting from 0. "
+        "Problem occurred for port q0:res with clock q0.ro, "
+        "which corresponds to seq0 of qrm0." == error.value.args[0]
+    )
+
+
+def test_acquisitions_back_to_back(
+    compile_config_basic_transmon_qblox_hardware,
+):
+    sched = Schedule("acquisitions_back_to_back")
+    meas_op = sched.add(Measure("q0", acq_index=0))
     # Add another one too quickly
-    sched.add(Measure("q0"), ref_op=meas_op, ref_pt="start", rel_time=500e-9)
+    sched.add(
+        Measure("q0", acq_index=1), ref_op=meas_op, ref_pt="start", rel_time=500e-9
+    )
 
     with pytest.raises(ValueError) as error:
         compiler = SerialCompiler(name="compiler")
@@ -1202,14 +1227,15 @@ def test_acquisitions_back_to_back(
     "ignore::FutureWarning"
 )  # Tests both device_compile and hardware_compile, keep for coverage
 def test_deprecated_acquisitions_back_to_back(
-    mixed_schedule_with_acquisition,
     load_example_transmon_config,
     load_example_qblox_hardware_config,
 ):
-    sched = copy.deepcopy(mixed_schedule_with_acquisition)
-    meas_op = sched.add(Measure("q0"))
+    sched = Schedule("acquisitions_back_to_back")
+    meas_op = sched.add(Measure("q0", acq_index=0))
     # Add another one too quickly
-    sched.add(Measure("q0"), ref_op=meas_op, ref_pt="start", rel_time=500e-9)
+    sched.add(
+        Measure("q0", acq_index=1), ref_op=meas_op, ref_pt="start", rel_time=500e-9
+    )
 
     sched_with_pulse_info = device_compile(sched, load_example_transmon_config)
     with pytest.raises(ValueError) as error:
