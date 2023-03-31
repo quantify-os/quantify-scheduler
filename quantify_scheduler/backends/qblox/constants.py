@@ -54,8 +54,8 @@ NUMBER_OF_SEQUENCERS_QRM = 6
 """Number of sequencers supported by a QRM/QRM-RF in the latest firmware."""
 NUMBER_OF_REGISTERS: int = 64
 """Number of registers available in the Qblox sequencers."""
-MAX_SAMPLE_SIZE_ACQUISITIONS: int = 16384
-"""Maximal amount of acquisition datapoints returned."""
+MAX_SAMPLE_SIZE_SCOPE_ACQUISITIONS: int = 16384
+"""Maximal amount of scope trace acquisition datapoints returned."""
 MAX_SAMPLE_SIZE_WAVEFORMS: int = 16384
 """Maximal amount of samples in the waveforms to be uploaded to a sequencer."""
 MAX_NUMBER_OF_BINS: int = 131072

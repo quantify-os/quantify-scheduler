@@ -17,6 +17,7 @@
 - ZI LabOne backend - Return datasets from UHFQA instrument coordinator component (which fixes the broken backend) (#410, !623).
 - Qblox backend - Renamed `hw_mapping` input parameter to `instrument_cfg` in `InstrumentCompiler` and up
 - Qblox backend - Let the compiler raise an error when the waveforms specified in the schedule are too large to be uploaded to a sequencer.
+- Qblox backend - Rename the `MAX_SAMPLE_SIZE_ACQUISITIONS` constant to `MAX_SAMPLE_SIZE_SCOPE_ACQUISITIONS`, and modify the docstring to clarify that this constant only refers to scope trace acquisitions (!649).
 
 ## 0.12.3 (2023-03-09)
 
