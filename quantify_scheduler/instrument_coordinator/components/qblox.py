@@ -1041,12 +1041,15 @@ class _QRMAcquisitionManager:
         :
             The scope mode data.
         """
-        if acq_duration < 0 or acq_duration > constants.MAX_SAMPLE_SIZE_ACQUISITIONS:
+        if (
+            acq_duration < 0
+            or acq_duration > constants.MAX_SAMPLE_SIZE_SCOPE_ACQUISITIONS
+        ):
             raise ValueError(
                 "Attempting to retrieve sample of size "
-                f"{acq_duration} "
-                f"(maximum allowed sample size: "
-                f"{constants.MAX_SAMPLE_SIZE_ACQUISITIONS})"
+                f"{acq_duration}, but only integer values "
+                f"0,...,{constants.MAX_SAMPLE_SIZE_SCOPE_ACQUISITIONS} "
+                f"are allowed."
             )
         acq_name = self._channel_index_to_channel_name(acq_channel)
         scope_data = acquisitions[acq_name]["acquisition"]["scope"]
