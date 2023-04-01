@@ -1176,10 +1176,10 @@ def test_compile_acq_measurement_with_clock_phase_reset(
     )
 
 
-def test_acquisitions_same_index_raises(
+def test_acquisitions_max_index_raises(
     compile_config_basic_transmon_qblox_hardware,
 ):
-    sched = Schedule("acquisitions_same_index_raises")
+    sched = Schedule("acquisitions_max_index_raises")
     sched.add(Measure("q0", acq_index=0))
     sched.add(Measure("q0", acq_index=0))
 
@@ -1191,10 +1191,35 @@ def test_acquisitions_same_index_raises(
         )
 
     assert (
-        "Found 0 as the highest bin out of "
+        "Found 0 as the highest index out of "
         "2 for channel 0, indicating "
         "an acquisition index was skipped or an acquisition index was repeated. "
-        "Please make sure the used bins increment by 1 starting from 0. "
+        "Please make sure the used indices increment by 1 starting from 0. "
+        "Problem occurred for port q0:res with clock q0.ro, "
+        "which corresponds to seq0 of qrm0." == error.value.args[0]
+    )
+
+
+def test_acquisitions_same_index_raises(
+    compile_config_basic_transmon_qblox_hardware,
+):
+    sched = Schedule("acquisitions_same_index_raises")
+    sched.add(Measure("q0", acq_index=0))
+    sched.add(Measure("q0", acq_index=2))
+    sched.add(Measure("q0", acq_index=2))
+
+    with pytest.raises(ValueError) as error:
+        compiler = SerialCompiler(name="compiler")
+        _ = compiler.compile(
+            sched,
+            config=compile_config_basic_transmon_qblox_hardware,
+        )
+
+    assert (
+        "Found 2 unique indices out of "
+        "3 for channel 0, indicating "
+        "an acquisition index was skipped or an acquisition index was repeated. "
+        "Please make sure the used indices increment by 1 starting from 0. "
         "Problem occurred for port q0:res with clock q0.ro, "
         "which corresponds to seq0 of qrm0." == error.value.args[0]
     )
