@@ -682,18 +682,28 @@ class Sequencer:
             # Some sanity checks on the input for easier debugging.
             if min(acq_indices) != 0:
                 raise ValueError(
-                    f"Please make sure the lowest bin index used is 0. "
-                    f"Found: {min(acq_indices)} as lowest bin for channel "
+                    f"Please make sure the lowest acquisition index used is 0. "
+                    f"Found: {min(acq_indices)} as lowest index for channel "
                     f"{acq_channel}. Problem occurred for port {self.port} with"
                     f" clock {self.clock}, which corresponds to {self.name} of "
                     f"{self.parent.name}."
                 )
             if len(acq_indices) != max(acq_indices) + 1:
                 raise ValueError(
-                    f"Found {max(acq_indices)} as the highest bin out of "
+                    f"Found {max(acq_indices)} as the highest index out of "
                     f"{len(acq_indices)} for channel {acq_channel}, indicating "
                     f"an acquisition index was skipped or an acquisition index was repeated. "
-                    f"Please make sure the used bins increment by 1 starting from 0. "
+                    f"Please make sure the used indices increment by 1 starting from 0. "
+                    f"Problem occurred for port {self.port} with clock {self.clock}, "
+                    f"which corresponds to {self.name} of {self.parent.name}."
+                )
+            unique_acq_indices = len(set(acq_indices))
+            if len(acq_indices) != unique_acq_indices:
+                raise ValueError(
+                    f"Found {unique_acq_indices} unique indices out of "
+                    f"{len(acq_indices)} for channel {acq_channel}, indicating "
+                    f"an acquisition index was skipped or an acquisition index was repeated. "
+                    f"Please make sure the used indices increment by 1 starting from 0. "
                     f"Problem occurred for port {self.port} with clock {self.clock}, "
                     f"which corresponds to {self.name} of {self.parent.name}."
                 )
