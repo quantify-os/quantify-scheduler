@@ -20,6 +20,7 @@
 - Qblox backend - Forbid repeated acquisition index in schedule (!655, partially revert !542)
 - Qblox backend - Rename the `MAX_SAMPLE_SIZE_ACQUISITIONS` constant to `MAX_SAMPLE_SIZE_SCOPE_ACQUISITIONS`, and modify the docstring to clarify that this constant only refers to scope trace acquisitions (!649).
 - Qblox backend - Forbid repeated acquisition index in schedule (!655, !657, partially revert !542)
+- Git - Change back to default merge strategy for CHANGELOG.md (!659).
 
 ## 0.12.3 (2023-03-09)
 
