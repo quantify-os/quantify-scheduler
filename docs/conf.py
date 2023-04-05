@@ -386,8 +386,10 @@ nitpick_ignore = [
     ("py:obj", "quantify_scheduler.structure.DataStructure"),
     ("py:obj", "quantify_scheduler.backends.SerialCompiler"),
     ("py:obj", "quantify_scheduler.schedules.heterodyne_spec_sched"),
+    ("py:obj", "quantify_scheduler.schedules.heterodyne_spec_sched_nco"),
     ("py:obj", "quantify_scheduler.schedules.nv_dark_esr_sched"),
     ("py:obj", "quantify_scheduler.schedules.two_tone_spec_sched"),
+    ("py:obj", "quantify_scheduler.schedules.two_tone_spec_sched_nco"),
     ("py:obj", "quantify_scheduler.schedules.allxy_sched"),
     ("py:obj", "quantify_scheduler.schedules.echo_sched"),
     ("py:obj", "quantify_scheduler.schedules.rabi_pulse_sched"),
@@ -398,6 +400,7 @@ nitpick_ignore = [
     ("py:obj", "quantify_scheduler.schedules.trace_schedule"),
     ("py:obj", "quantify_scheduler.schedules.trace_schedule_circuit_layer"),
     ("py:obj", "quantify_scheduler.schedules.two_tone_trace_schedule"),
+    ("py:class", "SUPPORTED_ACQ_PROTOCOLS"),
 ]  # Tuple[str, str], ignore certain warnings
 
 nitpick_ignore_regex = [

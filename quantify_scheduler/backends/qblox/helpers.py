@@ -486,9 +486,6 @@ def determine_clock_lo_interm_freqs(
     mix_lo: bool = True,
 ) -> Frequencies:
     """
-    .. warning::
-        Using `downconverter_freq` requires custom Qblox hardware, do not use otherwise.
-
     From known frequency for the local oscillator or known intermodulation frequency,
     determine any missing frequency, after optionally applying `downconverter_freq` to
     the clock frequency.
@@ -497,6 +494,9 @@ def determine_clock_lo_interm_freqs(
     :math:`f_{RF} = f_{LO} + f_{IF}`.
 
     If `mix_lo` is ``False``, :math:`f_{RF} = f_{LO}` is upheld.
+
+    .. warning::
+        Using `downconverter_freq` requires custom Qblox hardware, do not use otherwise.
 
     Parameters
     ----------

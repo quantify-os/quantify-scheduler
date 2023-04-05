@@ -13,7 +13,7 @@ from qcodes.instrument.parameter import (
     Parameter,
 )
 from qcodes.utils import validators
-from quantify_scheduler.backends.circuit_to_device import (
+from quantify_scheduler.backends.graph_compilation import (
     DeviceCompilationConfig,
     OperationCompilationConfig,
 )

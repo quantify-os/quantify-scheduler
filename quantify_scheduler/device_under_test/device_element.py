@@ -2,7 +2,7 @@
 # Licensed according to the LICENCE file on the main branch
 
 from qcodes.instrument.base import Instrument
-from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
+from quantify_scheduler.backends.graph_compilation import DeviceCompilationConfig
 
 
 class DeviceElement(Instrument):

@@ -23,11 +23,11 @@ pretty.install()
 
 ## Introduction
 
-{mod}`quantify-scheduler` is a python module for writing quantum programs featuring a hybrid gate-pulse control model with explicit timing control.
+`quantify-scheduler` is a python module for writing quantum programs featuring a hybrid gate-pulse control model with explicit timing control.
 It extends the circuit model from quantum information processing by adding a pulse-level representation to operations defined at the gate-level, and the ability to specify timing constraints between operations.
 Thus, a user is able to mix gate- and pulse-level operations in a quantum circuit.
 
-In {mod}`quantify-scheduler`, both a quantum circuit consisting of gates and measurements and a timed sequence of control pulses are described as a {class}`.Schedule` .
+In `quantify-scheduler`, both a quantum circuit consisting of gates and measurements and a timed sequence of control pulses are described as a {class}`.Schedule` .
 The {class}`.Schedule` contains information on *when* operations should be performed.
 When adding operations to a schedule, one does not need to specify how to represent this {class}`.Operation` on all (both gate and pulse) abstraction levels.
 Instead, this information can be added later during {ref}`Compilation`.
@@ -90,7 +90,7 @@ Creating schedule generating functions is a convenient design pattern when creat
 
 ## Concepts and terminology
 
-{mod}`quantify-scheduler` can be understood by understanding the following concepts.
+`quantify-scheduler` can be understood by understanding the following concepts.
 
 - {class}`.Schedule`s describe when an operation needs to be applied.
 - {class}`.Operation`s describe what needs to be done.
@@ -285,10 +285,10 @@ quantify_compilers
 ### Device configuration
 
 The device configuration is used to compile from the quantum-circuit layer to the quantum-device layer.
-The {class}`~.backends.circuit_to_device.DeviceCompilationConfig` data structure contains the information required to add the quantum-device level representation to every operation in a schedule.
+The {class}`~.backends.graph_compilation.DeviceCompilationConfig` data structure contains the information required to add the quantum-device level representation to every operation in a schedule.
 
 ```{eval-rst}
-.. autoclass:: quantify_scheduler.backends.circuit_to_device.DeviceCompilationConfig
+.. autoclass:: quantify_scheduler.backends.graph_compilation.DeviceCompilationConfig
     :noindex:
 
 ```
@@ -367,7 +367,7 @@ Because the {class}`~quantify_scheduler.device_under_test.quantum_device.Quantum
 
 ### Experiment flow
 
-To use schedules in an experimental setting, in which the parameters used for compilation as well as the schedules themselves routinely change, we provide a framework for performing experiments making use of the concepts of {mod}`quantify_core`.
+To use schedules in an experimental setting, in which the parameters used for compilation as well as the schedules themselves routinely change, we provide a framework for performing experiments making use of the concepts of `quantify-core`.
 Central in this framework are the schedule {mod}`quantify_scheduler.gettables` that can be used by the `quantify_core.measurement.control.MeasurementControl` and are responsible for the experiment flow.
 
 This flow is schematically shown in {numref}`experiments_control_flow`.
@@ -467,4 +467,4 @@ and the resulting dataset can be analyzed using
 ```{rubric} Footnotes
 ```
 
-[^id3]: {mod}`quantify-scheduler` threats physical instruments as stateless in the sense that the compiled instructions contain all information that specifies the execution of a schedule. However, for performance reasons, it is important to not reconfigure all parameters of all instruments whenever a new schedule is executed. The parameters (state) of the instruments are used to track the state of physical instruments to allow lazy configuration as well as ensure metadata containing the current settings is stored correctly.
+[^id3]: `quantify-scheduler` threats physical instruments as stateless in the sense that the compiled instructions contain all information that specifies the execution of a schedule. However, for performance reasons, it is important to not reconfigure all parameters of all instruments whenever a new schedule is executed. The parameters (state) of the instruments are used to track the state of physical instruments to allow lazy configuration as well as ensure metadata containing the current settings is stored correctly.

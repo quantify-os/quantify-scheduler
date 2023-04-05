@@ -111,7 +111,7 @@ def deserialize_class(cls: str) -> type:
 
     Returns
     -------
-    T
+    :
         The type you are trying to import.
 
     Raises

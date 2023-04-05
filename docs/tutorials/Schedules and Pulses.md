@@ -16,7 +16,7 @@ The complete source code of this tutorial can be found in
 
 ## The Schedule
 
-The main data structure that describes an experiment in the `quantify_scheduler` is the Schedule. We will show how the Schedule works through an example.
+The main data structure that describes an experiment in the `quantify-scheduler` is the Schedule. We will show how the Schedule works through an example.
 
 ```{code-cell} ipython3
 
@@ -29,9 +29,9 @@ sched
 
 ```
 
-As we can see, our newly created schedule is still empty. We need to manually add operations to it. In {mod}`quantify_scheduler` there are three types of operations: pulses, acquisitions and gates. All of these have explicit timing control. In this tutorial, we will only cover pulses. The goal will not be to make a schedule that is physically meaningful, but to demonstrate the control over the scheduling to its fullest.
+As we can see, our newly created schedule is still empty. We need to manually add operations to it. In `quantify-scheduler` there are three types of operations: pulses, acquisitions and gates. All of these have explicit timing control. In this tutorial, we will only cover pulses. The goal will not be to make a schedule that is physically meaningful, but to demonstrate the control over the scheduling to its fullest.
 
-While it is possible to define a pulse completely from scratch, we will be using some of the pulse definitions provided with the `quantify_scheduler`. These pulses are described in the {mod}`quantify_scheduler.operations.pulse_library` submodule. It's worth noting that no sampling of the data yet occurs at this stage, but the pulse is kept in a parameterized form.
+While it is possible to define a pulse completely from scratch, we will be using some of the pulse definitions provided with the `quantify-scheduler`. These pulses are described in the {mod}`quantify_scheduler.operations.pulse_library` submodule. It's worth noting that no sampling of the data yet occurs at this stage, but the pulse is kept in a parameterized form.
 
 We will add a square pulse from the pulse library to the schedule.
 
@@ -62,7 +62,7 @@ sched
 
 ```
 
-`quantify_scheduler` provides several visualization tools to show a visual representation of the schedule we made. First, however, we need to instruct the scheduler to calculate the pulse timings. We can accomplish this using the {func}`~quantify_scheduler.compilation.determine_absolute_timing` function. In the cell below we call this function and draw the schedule.
+`quantify-scheduler` provides several visualization tools to show a visual representation of the schedule we made. First, however, we need to instruct the scheduler to calculate the pulse timings. We can accomplish this using the {func}`~quantify_scheduler.compilation.determine_absolute_timing` function. In the cell below we call this function and draw the schedule.
 
 Note that these plots are interactive and modulation is not shown by default.
 

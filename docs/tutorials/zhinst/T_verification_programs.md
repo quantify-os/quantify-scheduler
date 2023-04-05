@@ -64,7 +64,7 @@ In this tutorial we make use of the example configuration file that contains an 
 
 ## Verifying the hardware compilation
 
-{mod}`quantify-scheduler` comes with several built-in verification programs in the {mod}`~.schedules.verification` module.
+`quantify-scheduler` comes with several built-in verification programs in the {mod}`~.schedules.verification` module.
 Here we will start by building and compiling the first schedule by hand to show how one can construct such a schedule and debug it, before giving an overview of test programs.
 
 ### Bining and averaging - AWG staircase
@@ -271,7 +271,7 @@ print(uhfqa_settings_dict["compiler/sourcestring"][awg_index])
 
 ## Verification programs
 
-{mod}`quantify-scheduler` comes with several test programs that can be used to verify that the software and the hardware are configured and functioning correctly.
+`quantify-scheduler` comes with several test programs that can be used to verify that the software and the hardware are configured and functioning correctly.
 You should be able to run this notebook on your setup directly if you replace the mock_setup initialization with your initialization script.
 
 ```{note}

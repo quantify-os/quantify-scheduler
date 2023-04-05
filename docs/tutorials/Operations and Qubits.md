@@ -21,13 +21,13 @@ The complete source code of this tutorial can be found in
 
 In the previous tutorials, experiments were created on the {ref}`quantum-device level<sec-user-guide-quantum-device>`. On this level,
 operations are defined in terms of explicit signals and locations on the chip, rather than the qubit and the intended operation.
-To work at a greater level of abstraction, {mod}`quantify_scheduler` allows creating operations on the
+To work at a greater level of abstraction, `quantify-scheduler` allows creating operations on the
 {ref}`quantum-circuit level<sec-user-guide-quantum-circuit>`.
 Instead of signals, clocks, and ports, operations are defined by the effect they have on specific qubits. This representation of the schedules can be compiled to the quantum-device level to create the pulse schemes.
 
 In this tutorial we show how to define operations on the {ref}`quantum-circuit level<sec-user-guide-quantum-circuit>`, combine them into schedules, and show their circuit-level visualization.
 We go through the configuration file needed to compile the schedule to the quantum-device level and show how these configuration files can be created automatically and dynamically.
-Finally, we showcase the hybrid nature of {mod}`quantify_scheduler`, allowing the scheduling of circuit-level and device-level operations side by side in the same schedule.
+Finally, we showcase the hybrid nature of `quantify-scheduler`, allowing the scheduling of circuit-level and device-level operations side by side in the same schedule.
 
 Many of the gates used in the circuit layer description are defined in
 {class}`~quantify_scheduler.operations.gate_library` such as {class}`~quantify_scheduler.operations.gate_library.Reset`, {class}`~quantify_scheduler.operations.gate_library.X90` and
@@ -83,7 +83,7 @@ pprint(operation_schema["properties"]["gate_info"]["properties"])
 ## Schedule creation from the circuit layer (Bell)
 
 The circuit-level operations can be used to create a {class}`~quantify_scheduler.schedules.schedule.Schedule` within
-`quantify_scheduler` using the same method as for the pulse-level operations.
+`quantify-scheduler` using the same method as for the pulse-level operations.
 This enables creating schedules on a more abstract level.
 Here, we demonstrate this extra layer of abstraction by creating a {class}`~quantify_scheduler.schedules.schedule.Schedule` for measuring
 Bell violations.
@@ -183,10 +183,10 @@ By compiling the schedule to the quantum-device layer, we incorporate the device
 
 To start this section, we will unpack the structure of the device configuration.
 Here we will use an example device configuration for a transmon-based system that is used in the
-{mod}`quantify-scheduler` test suite.
+`quantify-scheduler` test suite.
 
 ```{code-cell} ipython3
-from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
+from quantify_scheduler.backends.graph_compilation import DeviceCompilationConfig
 from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import (
     example_transmon_cfg,
 )
@@ -243,7 +243,7 @@ print(device_cfg.clocks)
 
 ```
 
-Lastly, the complete example device configuration (also see {class}`~quantify_scheduler.backends.circuit_to_device.DeviceCompilationConfig`):
+Lastly, the complete example device configuration (also see {class}`~quantify_scheduler.backends.graph_compilation.DeviceCompilationConfig`):
 
 ```{code-cell} ipython3
 pprint(example_transmon_cfg)
@@ -254,7 +254,7 @@ pprint(example_transmon_cfg)
 
 The {ref}`device configuration<sec-device-config>` contains all knowledge
 of the physical device under test (DUT).
-To generate these device configurations on the fly, `quantify_scheduler` provides the
+To generate these device configurations on the fly, `quantify-scheduler` provides the
 {class}`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` and
 {class}`~quantify_scheduler.device_under_test.device_element.DeviceElement` classes.
 
@@ -262,7 +262,7 @@ These classes contain the information necessary to generate the device configs a
 changing their parameters on-the-fly.
 The {class}`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` class
 represents the DUT containing different {class}`~quantify_scheduler.device_under_test.device_element.DeviceElement` s.
-Currently, `quantify_scheduler` contains the
+Currently, `quantify-scheduler` contains the
 {class}`~quantify_scheduler.device_under_test.transmon_element.BasicTransmonElement` class
 to represent a fixed-frequency transmon qubit connected to a feedline. We show their interaction below:
 
