@@ -2,7 +2,6 @@ import pytest
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends import SerialCompiler
-from quantify_scheduler.compilation import device_compile, hardware_compile
 from quantify_scheduler.operations.gate_library import Measure, Reset
 from quantify_scheduler.operations.nv_native_library import ChargeReset, CRCount
 from quantify_scheduler.operations.shared_native_library import SpectroscopyOperation
@@ -52,41 +51,40 @@ def test_compilation_spectroscopy_operation_qblox_hardware(
         "qe0"
     ).spectroscopy_operation.duration.get()
 
-    dev_cfg = quantum_device.generate_device_config()
-    schedule_device = device_compile(schedule, dev_cfg)
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
 
     # The gate_info remains unchanged, but the pulse info has been added
-    assert spec_pulse_str in schedule_device.operations
-    assert "gate_info" in schedule_device.operations[spec_pulse_str]
+    assert spec_pulse_str in compiled_sched.operations
+    assert "gate_info" in compiled_sched.operations[spec_pulse_str]
     assert (
-        schedule_device.operations[spec_pulse_str]["gate_info"]
+        compiled_sched.operations[spec_pulse_str]["gate_info"]
         == schedule.operations[spec_pulse_str]["gate_info"]
     )
-    assert not schedule_device.operations[spec_pulse_str]["pulse_info"] == []
+    assert not compiled_sched.operations[spec_pulse_str]["pulse_info"] == []
 
     # Timing info has been added
-    assert "abs_time" in schedule_device.schedulables[label1].data.keys()
-    assert "abs_time" in schedule_device.schedulables[label2].data.keys()
-    assert schedule_device.schedulables[label1].data["abs_time"] == 0
-    duration_pulse_1 = schedule_device.operations[spec_pulse_str].data["pulse_info"][0][
+    assert "abs_time" in compiled_sched.schedulables[label1].data.keys()
+    assert "abs_time" in compiled_sched.schedulables[label2].data.keys()
+    assert compiled_sched.schedulables[label1].data["abs_time"] == 0
+    duration_pulse_1 = compiled_sched.operations[spec_pulse_str].data["pulse_info"][0][
         "duration"
     ]
-    assert schedule_device.schedulables[label2].data["abs_time"] == pytest.approx(
+    assert compiled_sched.schedulables[label2].data["abs_time"] == pytest.approx(
         0 + duration_pulse_1
     )
 
-    hardware_cfg = quantum_device.generate_hardware_config()
-    assert not "compiled_instructions" in schedule_device.data
-    schedule_hardware = hardware_compile(schedule_device, hardware_cfg)
+    assert isinstance(compiled_sched, CompiledSchedule)
+    assert "compiled_instructions" in compiled_sched.data
 
-    assert isinstance(schedule_hardware, CompiledSchedule)
-    assert "compiled_instructions" in schedule_hardware.data
+    assert compiled_sched.timing_table.data.loc[0, "duration"] == pulse_duration
+    assert compiled_sched.timing_table.data.loc[1, "duration"] == pulse_duration
+    assert compiled_sched.timing_table.data.loc[1, "abs_time"] == pulse_duration
 
-    assert schedule_hardware.timing_table.data.loc[0, "duration"] == pulse_duration
-    assert schedule_hardware.timing_table.data.loc[1, "duration"] == pulse_duration
-    assert schedule_hardware.timing_table.data.loc[1, "abs_time"] == pulse_duration
-    assert schedule_hardware.timing_table.data.loc[0, "is_acquisition"] is False
-    assert schedule_hardware.timing_table.data.loc[1, "is_acquisition"] is False
+    assert compiled_sched.timing_table.data.loc[0, "is_acquisition"] is False
+    assert compiled_sched.timing_table.data.loc[1, "is_acquisition"] is False
 
 
 def test_compilation_reset_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
@@ -108,31 +106,29 @@ def test_compilation_reset_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
     quantum_device = mock_setup_basic_nv_qblox_hardware["quantum_device"]
     pulse_duration = quantum_device.get_element("qe0").reset.duration.get()
 
-    dev_cfg = quantum_device.generate_device_config()
-    schedule_device = device_compile(schedule, dev_cfg)
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
 
     # The gate_info remains unchanged, but the pulse info has been added
-    assert reset_str in schedule_device.operations
-    assert "gate_info" in schedule_device.operations[reset_str]
+    assert reset_str in compiled_sched.operations
+    assert "gate_info" in compiled_sched.operations[reset_str]
     assert (
-        schedule_device.operations[reset_str]["gate_info"]
+        compiled_sched.operations[reset_str]["gate_info"]
         == schedule.operations[reset_str]["gate_info"]
     )
-    assert not schedule_device.operations[reset_str]["pulse_info"] == []
+    assert not compiled_sched.operations[reset_str]["pulse_info"] == []
 
     # Timing info has been added
-    assert "abs_time" in schedule_device.schedulables[label].data.keys()
-    assert schedule_device.schedulables[label].data["abs_time"] == 0
+    assert "abs_time" in compiled_sched.schedulables[label].data.keys()
+    assert compiled_sched.schedulables[label].data["abs_time"] == 0
 
-    hardware_cfg = quantum_device.generate_hardware_config()
-    assert not "compiled_instructions" in schedule_device.data
-    schedule_hardware = hardware_compile(schedule_device, hardware_cfg)
+    assert isinstance(compiled_sched, CompiledSchedule)
+    assert "compiled_instructions" in compiled_sched.data
 
-    assert isinstance(schedule_hardware, CompiledSchedule)
-    assert "compiled_instructions" in schedule_hardware.data
-
-    assert schedule_hardware.timing_table.data.loc[0, "duration"] == pulse_duration
-    assert schedule_hardware.timing_table.data.loc[0, "is_acquisition"] is False
+    assert compiled_sched.timing_table.data.loc[0, "duration"] == pulse_duration
+    assert compiled_sched.timing_table.data.loc[0, "is_acquisition"] is False
 
 
 def test_compilation_measure_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
@@ -152,31 +148,42 @@ def test_compilation_measure_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
     schedule.plot_circuit_diagram()
 
     quantum_device = mock_setup_basic_nv_qblox_hardware["quantum_device"]
-    quantum_device.get_element("qe0").measure.acq_delay(1e-8)
+    quantum_device.get_element("qe0").measure.acq_delay(1e-7)
 
-    dev_cfg = quantum_device.generate_device_config()
-    schedule_device = device_compile(schedule, dev_cfg)
+    pulse_duration = quantum_device.get_element("qe0").measure.pulse_duration()
+    acq_duration = quantum_device.get_element("qe0").measure.acq_duration()
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
 
     # The gate_info and acquisition_info remains unchanged, but the pulse info has been
     # added
-    assert measure_str in schedule_device.operations
-    assert "gate_info" in schedule_device.operations[measure_str]
+    assert measure_str in compiled_sched.operations
+    assert "gate_info" in compiled_sched.operations[measure_str]
     assert (
-        schedule_device.operations[measure_str]["gate_info"]
+        compiled_sched.operations[measure_str]["gate_info"]
         == schedule.operations[measure_str]["gate_info"]
     )
-    assert "acquisition_info" in schedule_device.operations[measure_str]
-    acquisition_info = schedule_device.operations[measure_str]["acquisition_info"][0]
-    assert acquisition_info["t0"] == 1e-8
+    assert "acquisition_info" in compiled_sched.operations[measure_str]
+    acquisition_info = compiled_sched.operations[measure_str]["acquisition_info"][0]
+    assert acquisition_info["t0"] == 1e-7
     assert acquisition_info["protocol"] == "TriggerCount"
 
-    assert len(schedule_device.operations[measure_str]["pulse_info"]) > 0
+    assert len(compiled_sched.operations[measure_str]["pulse_info"]) > 0
 
     # Timing info has been added
-    assert "abs_time" in schedule_device.schedulables[label].data.keys()
-    assert schedule_device.schedulables[label].data["abs_time"] == 0
+    assert "abs_time" in compiled_sched.schedulables[label].data.keys()
+    assert compiled_sched.schedulables[label].data["abs_time"] == 0
 
-    # TODO: add hardware compilation once it is implemented
+    assert isinstance(compiled_sched, CompiledSchedule)
+    assert "compiled_instructions" in compiled_sched.data
+
+    assert compiled_sched.timing_table.data.loc[0, "duration"] == pulse_duration
+    assert compiled_sched.timing_table.data.loc[0, "is_acquisition"] is False
+    assert compiled_sched.timing_table.data.loc[1, "duration"] == acq_duration
+    assert compiled_sched.timing_table.data.loc[1, "is_acquisition"] is True
 
 
 def test_compilation_charge_reset_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
@@ -198,31 +205,29 @@ def test_compilation_charge_reset_qblox_hardware(mock_setup_basic_nv_qblox_hardw
     quantum_device = mock_setup_basic_nv_qblox_hardware["quantum_device"]
     pulse_duration = quantum_device.get_element("qe0").charge_reset.duration.get()
 
-    dev_cfg = quantum_device.generate_device_config()
-    schedule_device = device_compile(schedule, dev_cfg)
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
 
     # The gate_info remains unchanged, but the pulse info has been added
-    assert charge_reset_str in schedule_device.operations
-    assert "gate_info" in schedule_device.operations[charge_reset_str]
+    assert charge_reset_str in compiled_sched.operations
+    assert "gate_info" in compiled_sched.operations[charge_reset_str]
     assert (
-        schedule_device.operations[charge_reset_str]["gate_info"]
+        compiled_sched.operations[charge_reset_str]["gate_info"]
         == schedule.operations[charge_reset_str]["gate_info"]
     )
-    assert not schedule_device.operations[charge_reset_str]["pulse_info"] == []
+    assert not compiled_sched.operations[charge_reset_str]["pulse_info"] == []
 
     # Timing info has been added
-    assert "abs_time" in schedule_device.schedulables[label].data.keys()
-    assert schedule_device.schedulables[label].data["abs_time"] == 0
+    assert "abs_time" in compiled_sched.schedulables[label].data.keys()
+    assert compiled_sched.schedulables[label].data["abs_time"] == 0
 
-    hardware_cfg = quantum_device.generate_hardware_config()
-    assert not "compiled_instructions" in schedule_device.data
-    schedule_hardware = hardware_compile(schedule_device, hardware_cfg)
+    assert isinstance(compiled_sched, CompiledSchedule)
+    assert "compiled_instructions" in compiled_sched.data
 
-    assert isinstance(schedule_hardware, CompiledSchedule)
-    assert "compiled_instructions" in schedule_hardware.data
-
-    assert schedule_hardware.timing_table.data.loc[0, "duration"] == pulse_duration
-    assert schedule_hardware.timing_table.data.loc[0, "is_acquisition"] is False
+    assert compiled_sched.timing_table.data.loc[0, "duration"] == pulse_duration
+    assert compiled_sched.timing_table.data.loc[0, "is_acquisition"] is False
 
 
 def test_compilation_cr_count_qblox_hardware(mock_setup_basic_nv):
@@ -244,28 +249,36 @@ def test_compilation_cr_count_qblox_hardware(mock_setup_basic_nv):
     quantum_device = mock_setup_basic_nv["quantum_device"]
     quantum_device.get_element("qe0").cr_count.acq_delay(1e-8)
 
+    pulse_duration = quantum_device.get_element("qe0").measure.pulse_duration()
+    acq_duration = quantum_device.get_element("qe0").measure.acq_duration()
+
     compiler = SerialCompiler(name="compiler")
-    schedule_device = compiler.compile(
+    compiled_sched = compiler.compile(
         schedule=schedule, config=quantum_device.generate_compilation_config()
     )
 
     # The gate_info and acquisition_info remains unchanged, but the pulse info has been
     # added
-    assert cr_count_str in schedule_device.operations
-    assert "gate_info" in schedule_device.operations[cr_count_str]
+    assert cr_count_str in compiled_sched.operations
+    assert "gate_info" in compiled_sched.operations[cr_count_str]
     assert (
-        schedule_device.operations[cr_count_str]["gate_info"]
+        compiled_sched.operations[cr_count_str]["gate_info"]
         == schedule.operations[cr_count_str]["gate_info"]
     )
-    assert "acquisition_info" in schedule_device.operations[cr_count_str]
-    acquisition_info = schedule_device.operations[cr_count_str]["acquisition_info"][0]
+    assert "acquisition_info" in compiled_sched.operations[cr_count_str]
+    acquisition_info = compiled_sched.operations[cr_count_str]["acquisition_info"][0]
     assert acquisition_info["t0"] == 1e-8
     assert acquisition_info["protocol"] == "TriggerCount"
 
-    assert len(schedule_device.operations[cr_count_str]["pulse_info"]) > 0
+    assert len(compiled_sched.operations[cr_count_str]["pulse_info"]) > 0
 
     # Timing info has been added
-    assert "abs_time" in schedule_device.schedulables[label].data.keys()
-    assert schedule_device.schedulables[label].data["abs_time"] == 0
+    assert "abs_time" in compiled_sched.schedulables[label].data.keys()
+    assert compiled_sched.schedulables[label].data["abs_time"] == 0
 
-    # TODO: add hardware compilation once it is implemented
+    assert isinstance(compiled_sched, CompiledSchedule)
+    assert "compiled_instructions" in compiled_sched.data
+    assert compiled_sched.timing_table.data.loc[0, "duration"] == pulse_duration
+    assert compiled_sched.timing_table.data.loc[0, "is_acquisition"] is False
+    assert compiled_sched.timing_table.data.loc[2, "duration"] == acq_duration
+    assert compiled_sched.timing_table.data.loc[2, "is_acquisition"] is True
