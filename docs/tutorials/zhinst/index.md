@@ -4,13 +4,13 @@
 
 ## Introduction
 
-{mod}`quantify_scheduler` provides a stateless module: {mod}`~quantify_scheduler.backends.zhinst_backend`,
+`quantify-scheduler` provides a stateless module: {mod}`~quantify_scheduler.backends.zhinst_backend`,
 that abstracts the complexity of setting up experiments using [Zurich Instruments](https://www.zhinst.com) hardware.
-{mod}`quantify_scheduler` uses information on the quantum device
+`quantify-scheduler` uses information on the quantum device
 and instrument properties to compile a {class}`quantify_scheduler.schedules.schedule.Schedule` into waveforms and sequencing instructions suitable for execution on Zurich Instruments hardware.
 More information about `compilation` can be found in the {ref}`User Guide <sec-user-guide>`.
 
-Using existing programming interfaces provided via {doc}`zhinst-qcodes <zhinst-qcodes:index>` and {doc}`zhinst-toolkit <zhinst-toolkit:index>`, {mod}`quantify_scheduler` prepares the instruments that are present in the {ref}`sec-hardware configuration file <Hardware configuration file>`.
+Using existing programming interfaces provided via {doc}`zhinst-qcodes <zhinst-qcodes:index>` and {doc}`zhinst-toolkit <zhinst-toolkit:index>`, `quantify-scheduler` prepares the instruments that are present in the {ref}`sec-hardware configuration file <Hardware configuration file>`.
 
 Finally, after configuring and running {func}`~quantify_scheduler.backends.zhinst_backend.compile_backend`
 successfully the instruments are prepared for execution.

@@ -28,9 +28,6 @@ from quantify_scheduler.structure.model import (
     deserialize_function,
 )
 
-if TYPE_CHECKING:
-    from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-
 
 class CompilationError(RuntimeError):
     """
@@ -148,7 +145,7 @@ class DeviceCompilationConfig(DataStructure):
 
         .. jupyter-execute::
 
-            from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
+            from quantify_scheduler.backends.graph_compilation import DeviceCompilationConfig
             import pprint
             from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import (
                 example_transmon_cfg,
@@ -281,7 +278,7 @@ class CompilationConfig(DataStructure):
         The `DeviceCompilationConfig` used in the compilation from the quantum-circuit
         layer to the quantum-device layer.
     hardware_options
-        A list of `HardwareOption`s used in the compilation from the quantum-device
+        A list of `HardwareOptions` used in the compilation from the quantum-device
         layer to the control-hardware layer.
     connectivity
         Datastructure representing how the port-clocks on the quantum device are

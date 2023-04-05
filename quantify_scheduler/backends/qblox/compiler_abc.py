@@ -337,6 +337,7 @@ class Sequencer:
         downconverter_freq
             .. warning::
                 Using `downconverter_freq` requires custom Qblox hardware, do not use otherwise.
+
             Frequency of the external downconverter if one is being used.
             Defaults to ``None``, in which case the downconverter is inactive.
         mix_lo
@@ -1373,7 +1374,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         sequencer
             The sequencer for which frequences are to be set.
         compiler_lo_baseband
-            For baseband modules, supply the :class:`.LocalOscillator` instrument
+            For baseband modules, supply the :class:`.instrument_compilers.LocalOscillator` instrument
             compiler of which the frequency is to be set.
         lo_freq_setting_rf
             For RF modules, supply the name of the LO frequency param from the

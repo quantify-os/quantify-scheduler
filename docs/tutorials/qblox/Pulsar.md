@@ -109,7 +109,7 @@ respectively. Multiple devices can be added to the config, similar to how we add
 ## Output settings
 
 Most notably under the {code}`complex_output_0`, we specify the port-clock combinations the output may target (see the {ref}`User guide <sec-user-guide>`
-for more information on the role of ports and clocks within {mod}`quantify-scheduler`).
+for more information on the role of ports and clocks within `quantify-scheduler`).
 
 ```{code-block} python
 :linenos: true
@@ -130,7 +130,7 @@ Additionally, the entry {code}`interm_freq` specifies the intermediate frequency
 To perform upconversion using an I/Q mixer and an external local oscillator, simply specify a local oscillator in the config using the {code}`lo_name` entry.
 {code}`complex_output_0` is connected to a local oscillator instrument named
 {code}`lo0` and {code}`complex_output_1` to {code}`lo1`.
-Since the aim of {mod}`quantify-scheduler` is to only specify the final RF frequency when the signal arrives at the chip, rather than any parameters related to I/Q modulation, we specify this information here.
+Since the aim of `quantify-scheduler` is to only specify the final RF frequency when the signal arrives at the chip, rather than any parameters related to I/Q modulation, we specify this information here.
 
 The backend assumes that upconversion happens according to the relation
 

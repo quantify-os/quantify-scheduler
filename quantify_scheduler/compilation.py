@@ -192,6 +192,8 @@ def add_pulse_information_transmon(
     ValueError
         When both `config` and `device_cfg` are supplied.
 
+    Notes
+    -----
     .. rubric:: Supported operations
 
     The following gate type operations are supported by this compilation step.
