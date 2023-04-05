@@ -22,6 +22,7 @@
 - Qblox backend - Forbid repeated acquisition index in schedule (!655, !657, partially revert !542)
 - Git - Change back to default merge strategy for CHANGELOG.md (!659).
 - Documentation - Fix documentation generation warnings and errors (!658)
+- Documentation - Acquisition data format in user guide (!646)
 
 ## 0.12.3 (2023-03-09)
 
