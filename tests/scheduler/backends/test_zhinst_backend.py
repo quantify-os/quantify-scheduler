@@ -38,8 +38,8 @@ ARRAY_DECIMAL_PRECISION = 16
 
 
 @pytest.fixture
-def zhinst_hw_config_invalid_latency_corrections(load_example_zhinst_hardware_config):
-    hw_config = deepcopy(load_example_zhinst_hardware_config)
+def zhinst_hw_config_invalid_latency_corrections(hardware_cfg_zhinst_example):
+    hw_config = deepcopy(hardware_cfg_zhinst_example)
     hw_config["latency_corrections"] = {"q0:mw-q0.01": 2e-8, "q1:mw-q1.01": None}
 
     yield hw_config
@@ -81,10 +81,10 @@ def make_schedule(create_schedule_with_pulse_info):
 
 
 @pytest.fixture
-def create_typical_timing_table(make_schedule, load_example_zhinst_hardware_config):
+def create_typical_timing_table(make_schedule, hardware_cfg_zhinst_example):
     def _create_test_compile_datastructure():
         schedule = make_schedule()
-        hardware_config = load_example_zhinst_hardware_config
+        hardware_config = hardware_cfg_zhinst_example
         timing_table = schedule.timing_table.data
 
         # information is added on what output channel is used for every pulse and acq.
@@ -242,9 +242,9 @@ def test_compile_backend_unsupported_devices(
 def test_compile_hardware_hdawg4_successfully(
     mocker,
     create_schedule_with_pulse_info,
-    load_example_zhinst_hardware_config: Dict[str, Any],
+    hardware_cfg_zhinst_example: Dict[str, Any],
 ) -> None:
-    hdawg_hardware_cfg = load_example_zhinst_hardware_config
+    hdawg_hardware_cfg = hardware_cfg_zhinst_example
     # Arrange
     (q0, q1) = ("q0", "q1")
     schedule = Schedule("test")
@@ -314,9 +314,9 @@ def test_compile_hardware_hdawg4_successfully(
 def test_compile_hardware_uhfqa_successfully(
     mocker,
     make_schedule,
-    load_example_zhinst_hardware_config: Dict[str, Any],
+    hardware_cfg_zhinst_example: Dict[str, Any],
 ) -> None:
-    uhfqa_hardware_cfg = load_example_zhinst_hardware_config
+    uhfqa_hardware_cfg = hardware_cfg_zhinst_example
     # Arrange
     schedule = make_schedule()
     settings_builder = mocker.Mock(wraps=settings.ZISettingsBuilder())
@@ -652,9 +652,9 @@ def test__get_instruction_list(create_typical_timing_table):
 
 def test_uhfqa_sequence1(
     make_schedule,
-    load_example_zhinst_hardware_config,
+    hardware_cfg_zhinst_example,
 ) -> None:
-    uhfqa_hardware_cfg = load_example_zhinst_hardware_config
+    uhfqa_hardware_cfg = hardware_cfg_zhinst_example
     # Arrange
     awg_index = 0
     schedule = make_schedule()
@@ -699,9 +699,9 @@ def test_uhfqa_sequence1(
 
 def test_uhfqa_sequence2_trace_acquisition(
     create_schedule_with_pulse_info,
-    load_example_zhinst_hardware_config,
+    hardware_cfg_zhinst_example,
 ):
-    uhfqa_hardware_cfg = load_example_zhinst_hardware_config
+    uhfqa_hardware_cfg = hardware_cfg_zhinst_example
     # Arrange
     awg_index = 0
     schedule = trace_schedules.trace_schedule(
@@ -757,9 +757,9 @@ def test_uhfqa_sequence2_trace_acquisition(
 
 def test_uhfqa_sequence3_spectroscopy(
     create_schedule_with_pulse_info,
-    load_example_zhinst_hardware_config,
+    hardware_cfg_zhinst_example,
 ) -> None:
-    uhfqa_hardware_cfg = load_example_zhinst_hardware_config
+    uhfqa_hardware_cfg = hardware_cfg_zhinst_example
     # Arrange
     awg_index = 0
     ro_acquisition_delay = -40e-9
@@ -822,9 +822,9 @@ def test_uhfqa_sequence3_spectroscopy(
 
 
 def test__extract_port_clock_channelmapping_hdawg(
-    load_example_zhinst_hardware_config,
+    hardware_cfg_zhinst_example,
 ) -> None:
-    hardware_config = load_example_zhinst_hardware_config
+    hardware_config = hardware_cfg_zhinst_example
 
     expected_dict = {
         "q0:mw-q0.01": "ic_hdawg0.awg0",
@@ -1235,7 +1235,7 @@ def test_too_long_acquisition_raises_readable_exception(
 
 
 @pytest.mark.filterwarnings("ignore::FutureWarning")
-def test_deprecated_qcompile_empty_device(load_example_zhinst_hardware_config):
+def test_deprecated_qcompile_empty_device(hardware_cfg_zhinst_example):
     """
     Test if compilation works for a pulse only schedule on a freshly initialized
     quantum device object to which only a hardware config has been provided.
@@ -1246,9 +1246,7 @@ def test_deprecated_qcompile_empty_device(load_example_zhinst_hardware_config):
 
     quantum_device = QuantumDevice(name="empty_quantum_device")
 
-    comp_sched = qcompile(
-        schedule=sched, hardware_cfg=load_example_zhinst_hardware_config
-    )
+    comp_sched = qcompile(schedule=sched, hardware_cfg=hardware_cfg_zhinst_example)
 
     # Assert that no exception was raised and output is the right type.
     assert isinstance(comp_sched, CompiledSchedule)
@@ -1273,8 +1271,8 @@ def test_deprecated_qcompile_empty_device(load_example_zhinst_hardware_config):
 )
 def test_deprecated_qcompile_standard_schedules(
     schedule: Schedule,
-    load_example_transmon_config,
-    load_example_zhinst_hardware_config,
+    device_cfg_transmon_example,
+    hardware_cfg_zhinst_example,
 ):
     """
     Test if a set of standard schedules compile correctly on this backend.
@@ -1282,8 +1280,8 @@ def test_deprecated_qcompile_standard_schedules(
 
     comp_sched = qcompile(
         schedule=schedule,
-        device_cfg=load_example_transmon_config,
-        hardware_cfg=load_example_zhinst_hardware_config,
+        device_cfg=device_cfg_transmon_example,
+        hardware_cfg=hardware_cfg_zhinst_example,
     )
 
     # Assert that no exception was raised and output is the right type.

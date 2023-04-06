@@ -15,10 +15,10 @@ class _CompilesAllBackends:
     """
 
     def test_compiles_qblox_backend(
-        self, compile_config_basic_transmon_qblox_hardware
+        self, compile_config_basic_transmon_qblox_hardware_pulsar
     ) -> None:
         # assert that files properly compile
-        compilation_config = compile_config_basic_transmon_qblox_hardware
+        compilation_config = compile_config_basic_transmon_qblox_hardware_pulsar
         compiler = SerialCompiler(name="compiler")
         try:
             compiler.compile(schedule=self.uncomp_sched, config=compilation_config)
