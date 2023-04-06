@@ -202,7 +202,7 @@ extend-exclude = [
 "quantify_scheduler/backends/zhinst_backend.py" = ["D"]
 "quantify_scheduler/backends/circuit_to_device.py" = ["I", "F", "E", "W", "D", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
 "quantify_scheduler/backends/corrections.py" = ["I", "F", "E", "W", "D", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/backends/graph_compilation.py" = ["I", "F", "E", "W", "D", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
+"quantify_scheduler/backends/graph_compilation.py" = ["UP", "TCH", "ANN", "ARG", "PLR"]
 "quantify_scheduler/device_under_test/device_element.py" = ["I", "F", "E", "W", "D", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
 "quantify_scheduler/device_under_test/edge.py" = ["I", "F", "E", "W", "D", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
 "quantify_scheduler/device_under_test/mock_setup.py" = ["I", "F", "E", "W", "D", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
@@ -252,7 +252,7 @@ extend-exclude = [
 "quantify_scheduler/schedules/spectroscopy_schedules.py" = ["I", "F", "E", "W", "D", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
 "quantify_scheduler/schemas/__init__.py" = ["I", "F", "E", "W", "D", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
 "quantify_scheduler/schemas/examples/__init__.py" = ["I", "F", "E", "W", "D", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/schemas/examples/circuit_to_device_example_cfgs.py" = ["I", "F", "E", "W", "D", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
+"quantify_scheduler/schemas/examples/device_example_cfgs.py" = ["I", "F", "E", "W", "D", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
 "quantify_scheduler/schemas/examples/utils.py" = ["I", "F", "E", "W", "D", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
 "quantify_scheduler/structure/__init__.py" = ["I", "F", "E", "W", "D", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
 "quantify_scheduler/structure/model.py" = ["I", "F", "E", "W", "D", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
@@ -437,7 +437,7 @@ exclude = [
     "quantify_scheduler/schedules/spectroscopy_schedules.py",
     "quantify_scheduler/schemas/__init__.py",
     "quantify_scheduler/schemas/examples/__init__.py",
-    "quantify_scheduler/schemas/examples/circuit_to_device_example_cfgs.py",
+    "quantify_scheduler/schemas/examples/device_example_cfgs.py",
     "quantify_scheduler/schemas/examples/utils.py",
     "quantify_scheduler/structure/__init__.py",
     "quantify_scheduler/structure/model.py",

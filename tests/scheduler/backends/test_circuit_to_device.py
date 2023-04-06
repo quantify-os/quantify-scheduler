@@ -26,7 +26,7 @@ from quantify_scheduler.operations.gate_library import (
 from quantify_scheduler.operations.pulse_factories import rxy_drag_pulse
 from quantify_scheduler.operations.pulse_library import IdlePulse
 from quantify_scheduler.resources import ClockResource
-from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import (
+from quantify_scheduler.schemas.examples.device_example_cfgs import (
     example_transmon_cfg,
 )
 

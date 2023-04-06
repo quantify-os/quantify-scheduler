@@ -31,20 +31,16 @@ def hardware_options_distortion_corrections(
     return {
         # Latency corrections are needed to avoid error in compilation of two-qubit
         # gate schedule in test_apply_distortion_corrections with the zhinst backend
-        "latency_corrections": {
-            "corrections": {"q2:fl-cl0.baseband": 100e-9, "q2:mw-q2.01": 0}
-        },
+        "latency_corrections": {"q2:fl-cl0.baseband": 100e-9, "q2:mw-q2.01": 0},
         "distortion_corrections": {
-            "corrections": {
-                "q2:fl-cl0.baseband": {
-                    "filter_func": "scipy.signal.lfilter",
-                    "input_var_name": "x",
-                    "kwargs": {
-                        "b": filter_coefficients,
-                        "a": np.array([1]) if use_numpy_array else [1],
-                    },
-                    "clipping_values": [-2.5, 2.5],
+            "q2:fl-cl0.baseband": {
+                "filter_func": "scipy.signal.lfilter",
+                "input_var_name": "x",
+                "kwargs": {
+                    "b": filter_coefficients,
+                    "a": np.array([1]) if use_numpy_array else [1],
                 },
+                "clipping_values": [-2.5, 2.5],
             },
         },
     }

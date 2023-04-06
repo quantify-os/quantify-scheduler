@@ -1,7 +1,9 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
+"""Graph compilation backend of quantify-scheduler."""
 from __future__ import annotations
 
+import warnings
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -14,12 +16,12 @@ from typing import (
     Union,
 )
 
-import warnings
-
 import matplotlib.pyplot as plt
 import networkx as nx
 from matplotlib.axes import Axes
+from numpy.typing import NDArray
 from pydantic import validator
+
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 from quantify_scheduler.structure.model import (
@@ -28,35 +30,33 @@ from quantify_scheduler.structure.model import (
     deserialize_function,
 )
 
+if TYPE_CHECKING:
+    from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+
 
 class CompilationError(RuntimeError):
-    """
-    Custom exception class for failures in compilation of quantify schedules.
-    """
+    """Custom exception class for failures in compilation of quantify schedules."""
 
 
 # pylint: disable=too-few-public-methods
 class SimpleNodeConfig(DataStructure):
     """
-    Datastructure specifying the structure of a simple compiler pass config
-    (also see :class:`~.SimpleNode`).
+    Datastructure specifying the structure of a simple compiler pass config.
 
-    Parameters
-    ----------
-    name
-        the name of the compilation pass
-    compilation_func
-        the function to perform the compilation pass as an
-        importable string (e.g., "package_name.my_module.function_name").
+    See also :class:`~.SimpleNode`.
     """
 
     name: str
+    """The name of the compilation pass."""
     compilation_func: Callable[[Schedule, Any], Schedule]
+    """
+    The function to perform the compilation pass as an
+    importable string (e.g., "package_name.my_module.function_name").
+    """
 
     @validator("compilation_func", pre=True)
-    @classmethod
-    def import_compilation_func_if_str(
-        cls, fun: Callable[[Schedule, Any], Schedule]
+    def _import_compilation_func_if_str(
+        cls, fun: Callable[[Schedule, Any], Schedule]  # noqa: N805
     ) -> Callable[[Schedule, Any], Schedule]:
         if isinstance(fun, str):
             return deserialize_function(fun)
@@ -70,28 +70,27 @@ class OperationCompilationConfig(DataStructure):
     From a point of view of :ref:`sec-compilation` this information is needed
     to convert an operation defined on a quantum-circuit layer to an operation
     defined on a quantum-device layer.
-
-    Parameters
-    ----------
-    factory_func:
-        A callable designating a factory function used to create the representation
-        of the operation at the quantum-device level.
-    factory_kwargs:
-        A dictionary containing the keyword arguments and corresponding values to use
-        when creating the operation by evaluating the factory function.
-    gate_info_factory_kwargs:
-        A list of keyword arguments of the factory function for which the value must
-        be retrieved from the `gate_info` of the operation.
     """
 
     factory_func: Callable[..., Operation]
+    """
+    A callable designating a factory function used to create the representation
+    of the operation at the quantum-device level.
+    """
     factory_kwargs: Dict[str, Any]
+    """
+    A dictionary containing the keyword arguments and corresponding values to use
+    when creating the operation by evaluating the factory function.
+    """
     gate_info_factory_kwargs: Optional[List[str]]
+    """
+    A list of keyword arguments of the factory function for which the value must
+    be retrieved from the `gate_info` of the operation.
+    """
 
     @validator("factory_func", pre=True)
-    @classmethod
-    def import_factory_func_if_str(
-        cls, fun: Union[str, Callable[..., Operation]]
+    def _import_factory_func_if_str(
+        cls, fun: Union[str, Callable[..., Operation]]  # noqa: N805
     ) -> Callable[..., Operation]:
         if isinstance(fun, str):
             return deserialize_function(fun)
@@ -106,25 +105,6 @@ class DeviceCompilationConfig(DataStructure):
     From a point of view of :ref:`sec-compilation` this information is needed
     to convert a schedule defined on a quantum-circuit layer to a schedule
     defined on a quantum-device layer.
-
-    Parameters
-    ----------
-    backend:
-        A . separated string specifying the location of the compilation backend this
-        configuration is intended for e.g.,
-        :func:`~.backends.circuit_to_device.compile_circuit_to_device`.
-    clocks:
-        A dictionary specifying the clock frequencies available on the device e.g.,
-        :code:`{"q0.01": 6.123e9}`.
-    elements:
-        A dictionary specifying the elements on the device, what operations can be
-        applied to them and how to compile them.
-    edges:
-        A dictionary specifying the edges, links between elements on the device to which
-        operations can be applied, the operations tha can be  applied to them and how
-        to compile them.
-
-
 
     .. admonition:: Examples
         :class: dropdown
@@ -145,10 +125,12 @@ class DeviceCompilationConfig(DataStructure):
 
         .. jupyter-execute::
 
-            from quantify_scheduler.backends.graph_compilation import DeviceCompilationConfig
             import pprint
-            from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import (
-                example_transmon_cfg,
+            from quantify_scheduler.backends.graph_compilation import (
+                DeviceCompilationConfig
+            )
+            from quantify_scheduler.schemas.examples.device_example_cfgs import (
+                example_transmon_cfg
             )
 
             pprint.pprint(example_transmon_cfg)
@@ -160,101 +142,172 @@ class DeviceCompilationConfig(DataStructure):
 
             device_cfg = DeviceCompilationConfig.parse_obj(example_transmon_cfg)
             device_cfg
-
-
     """
 
     backend: Callable[[Schedule, Any], Schedule]
+    """
+    A . separated string specifying the location of the compilation backend this
+    configuration is intended for e.g.,
+    :code:`"quantify_scheduler.backends.circuit_to_device.compile_circuit_to_device"`.
+    """
     clocks: Dict[str, float]
+    """
+    A dictionary specifying the clock frequencies available on the device e.g.,
+    :code:`{"q0.01": 6.123e9}`.
+    """
     elements: Dict[str, Dict[str, OperationCompilationConfig]]
+    """
+    A dictionary specifying the elements on the device, what operations can be
+    applied to them and how to compile these.
+    """
     edges: Dict[str, Dict[str, OperationCompilationConfig]]
+    """
+    A dictionary specifying the edges, links between elements on the device to which
+    operations can be applied, and the operations that can be applied to them and how
+    to compile these.
+    """
 
     @validator("backend", pre=True)
-    @classmethod
-    def import_backend_if_str(
-        cls, fun: Callable[[Schedule, Any], Schedule]
+    def _import_backend_if_str(
+        cls, fun: Callable[[Schedule, Any], Schedule]  # noqa: N805
     ) -> Callable[[Schedule, Any], Schedule]:
         if isinstance(fun, str):
             return deserialize_function(fun)
         return fun  # type: ignore
 
 
-class LatencyCorrections(DataStructure):
+class LatencyCorrection(float):
     """
-    A datastructure containing the information required to correct for latencies.
+    Latency correction in seconds for a port-clock combination.
 
-    Note: If the port-clock combination of a signal is not specified in the corrections,
-    it is set to zero in compilation.
-    The minimum correction is then subtracted to allow for negative
-    latency corrections and to ensure minimal wait time
-    (see :meth:`~quantify_scheduler.backends.corrections.determine_relative_latency_corrections`).
+    Positive values delay the operations on the corresponding port-clock combination,
+    while negative values shift the operation backwards in time with respect to other
+    operations in the schedule.
 
+    .. note::
 
-    Parameters
-    ----------
-    corrections
-        A dictionary specifying the corrections for each port-clock combination.
+        If the port-clock combination of a signal is not specified in the corrections,
+        it is set to zero in compilation. The minimum correction over all port-clock
+        combinations is then subtracted to allow for negative latency corrections and to
+        ensure minimal wait time (see
+        :meth:`~quantify_scheduler.backends.corrections.determine_relative_latency_corrections`).
 
-        Keys are port-clocks combinations specifying the signals for which latency
-        corrections should be applied.
-        Values are the corrections in seconds that are applied to all operations at
-        the port-clock combination.
-        Positive values delay the operations on the corresponding port-clock combination,
-        while negative values shift the operation backwards in time with respect to other
-        operations in the schedule.
+    .. admonition:: Example
+        :class: dropdown
 
-        Example:
-        If :code:`corrections={"q0:res-q0.ro":-20e-9,"q0:mw-q0.01":120e-9}`, all operations
-        on `port=q0:mw` and `clock=q0.01` will be delayed by 140 ns with respect to operations
-        on `port=q0:res` and `clock=q0.ro`.
-    """
+        Let's say we have specified two latency corrections in the CompilationConfig:
 
-    corrections: Dict[str, float]
+        .. code-block:: python
 
+            compilation_config.latency_corrections = {
+                "q0:res-q0.ro": LatencyCorrection(-20e-9),
+                "q0:mw-q0.01": LatencyCorrection(120e9),
+            }
 
-class DistortionCorrections(DataStructure):
-    """
-    A datastructure containing the information required to correct for distortions.
-
-    Keys are port-clocks combinations specifying the signals for which distortion
-    corrections should be applied.
-    Values are Dicts containing the information required to apply distortion corrections:
-
-    - "filter_func" is the function applied to the waveforms
-    - "input_var_name" is the argument to which the waveforms will be passed
-    - "kwargs" are the keyword arguments that are passed to the "filter_func"
-    - "clipping_values" are the optional boundaries to which the corrected pulses will be clipped, upon exceeding
-
-    Example:
-
-    .. code-block:: python
-
-        "q0:fl-cl0.baseband": {
-            "filter_func": "scipy.signal.lfilter",
-            "input_var_name": "x",
-            "kwargs": {
-                "b": [0, 0.25, 0.5],
-                "a": [1]
-            },
-            "clipping_values": [-2.5, 2.5]
-        }
+        In this case, all operations on port ``"q0:mw"`` and clock ``"q0.01"`` will
+        be delayed by 140 ns with respect to operations on port ``"q0:res"`` and
+        clock ``"q0.ro"``.
     """
 
-    corrections: Dict[str, Dict]
+
+class DistortionCorrection(DataStructure):
+    """Distortion correction information for a port-clock combination."""
+
+    filter_func: str
+    """The function applied to the waveforms."""
+    input_var_name: str
+    """The argument to which the waveforms will be passed in the filter_func."""
+    kwargs: Dict[str, Union[List, NDArray]]
+    """The keyword arguments that are passed to the filter_func."""
+    clipping_values: Optional[List]
+    """
+    The optional boundaries to which the corrected pulses will be clipped,
+    upon exceeding.
+
+
+    .. admonition:: Example
+        :class: dropdown
+
+        .. code-block:: python
+
+            compilation_config.distortion_corrections = {
+                "q0:fl-cl0.baseband": DistortionCorrection(
+                    filter_func = "scipy.signal.lfilter",
+                    input_var_name = "x",
+                    kwargs = {
+                        "b": [0, 0.25, 0.5],
+                        "a": [1]
+                    },
+                    clipping_values = [-2.5, 2.5]
+                )
+            }
+    """
+
+    class Config:  # noqa: D106
+        arbitrary_types_allowed = True
+        # This is needed because NDArray does not have a validator.
 
 
 class HardwareOptions(DataStructure):
     """
-    Datastructure containing the hardware options for each port-clock combination, such
-    as :class:`~quantify_scheduler.backends.graph_compilation.LatencyCorrections`.
+    Datastructure containing the hardware options for each port-clock combination.
+
+    .. admonition:: Examples
+        :class: dropdown
+
+        Here, the HardwareOptions datastructure is created by parsing a
+        dictionary containing the relevant information.
+
+        .. jupyter-execute::
+
+            import pprint
+            from quantify_scheduler.backends.graph_compilation import (
+                HardwareOptions
+            )
+            from quantify_scheduler.schemas.examples.utils import (
+                load_json_example_scheme
+            )
+
+        Example for the Qblox backend:
+
+        .. jupyter-execute::
+
+            qblox_hw_options_dict=load_json_example_scheme("qblox_hardware_options.json")
+            pprint.pprint(qblox_hw_options_dict)
+
+        The dictionary can be parsed using the :code:`parse_obj` method.
+
+        .. jupyter-execute::
+
+            qblox_hw_options = HardwareOptions.parse_obj(qblox_hw_options_dict)
+            qblox_hw_options
+
+        For the Zurich Instruments backend:
+
+        .. jupyter-execute::
+
+            zi_hw_options_dict=load_json_example_scheme("zhinst_hardware_options.json")
+            pprint.pprint(zi_hw_options_dict)
+            zi_hw_options = HardwareOptions.parse_obj(zi_hw_options_dict)
+            zi_hw_options
     """
 
-    latency_corrections: Optional[LatencyCorrections]
-    distortion_corrections: Optional[DistortionCorrections]
+    latency_corrections: Optional[Dict[str, LatencyCorrection]]
+    """
+    Dictionary containing the latency corrections (values) that should be applied
+    to operations on a certain port-clock combination (keys).
+    """
+    distortion_corrections: Optional[Dict[str, DistortionCorrection]]
+    """
+    Dictionary containing the distortion corrections (values) that should be applied
+    to waveforms on a certain port-clock combination (keys).
+    """
 
 
 class Connectivity(DataStructure):
     """
+    Connectivity between the control hardware and port-clock combinations.
+
     Describes how the instruments are connected to port-clock combinations on the
     quantum device.
     """
@@ -263,73 +316,70 @@ class Connectivity(DataStructure):
 # pylint: disable=too-few-public-methods
 class CompilationConfig(DataStructure):
     """
-    Base class for a compilation config. Subclassing is generally required to create
-    useful compilation configs, here extra fields can be defined.
+    Base class for a compilation config.
 
-    Parameters
-    ----------
-    name
-        The name of the compiler.
-    version
-        The version of the `CompilationConfig` to facilitate backwards compatibility.
-    backend
-        A reference string to the `QuantifyCompiler` class used in the compilation.
-    device_compilation_config
-        The `DeviceCompilationConfig` used in the compilation from the quantum-circuit
-        layer to the quantum-device layer.
-    hardware_options
-        A list of `HardwareOptions` used in the compilation from the quantum-device
-        layer to the control-hardware layer.
-    connectivity
-        Datastructure representing how the port-clocks on the quantum device are
-        connected to the control hardware.
+    Subclassing is generally required to create useful compilation configs, here extra
+    fields can be defined.
     """
 
     name: str
-    version: str = "v0.2"
+    """The name of the compiler."""
+    version: str = "v0.3"
+    """The version of the `CompilationConfig` to facilitate backwards compatibility."""
     backend: Type[QuantifyCompiler]
+    """A reference string to the `QuantifyCompiler` class used in the compilation."""
     device_compilation_config: Optional[Union[DeviceCompilationConfig, Dict]] = None
+    """
+    The `DeviceCompilationConfig` used in the compilation from the quantum-circuit
+    layer to the quantum-device layer.
+    """
     hardware_options: Optional[HardwareOptions] = None
+    """
+    The `HardwareOptions` used in the compilation from the quantum-device layer to
+    the control-hardware layer.
+    """
     connectivity: Optional[Union[Connectivity, Dict]] = None
+    """
+    Datastructure representing how the port-clocks on the quantum device are
+    connected to the control hardware.
+    """
     # Dicts for legacy support for the old hardware config and device config
 
     @validator("backend", pre=True)
-    def import_backend_if_str(
-        cls, class_: Union[Type[QuantifyCompiler], str]
+    def _import_backend_if_str(
+        cls, class_: Union[Type[QuantifyCompiler], str]  # noqa: N805
     ) -> Type[QuantifyCompiler]:
         if isinstance(class_, str):
             return deserialize_class(class_)
         return class_  # type: ignore
 
     @validator("connectivity")
-    def latencies_in_hardware_config(cls, connectivity):
-        if isinstance(connectivity, Dict):
-            # if connectivity contains an old-style hardware config
-            if "latency_corrections" in connectivity:
-                warnings.warn(
-                    f"Latency corrections should be specified in the "
-                    f"`backends.graph_compilation.HardwareOptions` instead of "
-                    f"the hardware configuration as of quantify-scheduler >= 0.15.0",
-                    FutureWarning,
-                )
+    def _latencies_in_hardware_config(cls, connectivity):  # noqa: N805
+        # if connectivity contains a hardware config with latency corrections
+        if isinstance(connectivity, Dict) and "latency_corrections" in connectivity:
+            warnings.warn(
+                "Latency corrections should be specified in the "
+                "`backends.graph_compilation.HardwareOptions` instead of "
+                "the hardware configuration as of quantify-scheduler >= 0.15.0",
+                FutureWarning,
+            )
         return connectivity
 
     @validator("connectivity")
-    def distortions_in_hardware_config(cls, connectivity):
-        if isinstance(connectivity, Dict):
-            # if connectivity contains an old-style hardware config
-            if "distortion_corrections" in connectivity:
-                warnings.warn(
-                    f"Distortion corrections should be specified in the "
-                    f"`backends.graph_compilation.HardwareOptions` instead of "
-                    f"the hardware configuration as of quantify-scheduler >= 0.15.0",
-                    FutureWarning,
-                )
+    def _distortions_in_hardware_config(cls, connectivity):  # noqa: N805
+        # if connectivity contains a hardware config with distortion corrections
+        if isinstance(connectivity, Dict) and "distortion_corrections" in connectivity:
+            warnings.warn(
+                "Distortion corrections should be specified in the "
+                "`backends.graph_compilation.HardwareOptions` instead of "
+                "the hardware configuration as of quantify-scheduler >= 0.15.0",
+                FutureWarning,
+            )
         return connectivity
 
     def extract_hardware_config(self) -> Dict[str, Any]:
         """
-        Extracts the (to be deprecated) hardware config from the CompilationConfig.
+        Extract the (to be deprecated) hardware config from the CompilationConfig.
 
         Raises
         ------
@@ -338,31 +388,29 @@ class CompilationConfig(DataStructure):
         """
         if not isinstance(self.connectivity, Dict):
             raise KeyError(
-                f"CompilationConfig.connectivity does not contain a hardware config dict:\n"
-                f"{self.connectivity=}"
+                f"CompilationConfig.connectivity does not contain a "
+                f"hardware config dict:\n {self.connectivity=}"
             )
 
         hardware_config = self.connectivity
         if self.hardware_options.latency_corrections is not None:
-            hardware_config[
+            hardware_config["latency_corrections"] = self.hardware_options.dict()[
                 "latency_corrections"
-            ] = self.hardware_options.latency_corrections.corrections
+            ]
         if self.hardware_options.distortion_corrections is not None:
-            hardware_config[
+            hardware_config["distortion_corrections"] = self.hardware_options.dict()[
                 "distortion_corrections"
-            ] = self.hardware_options.distortion_corrections.corrections
+            ]
 
         return hardware_config
 
 
 class CompilationNode:
-    """
-    A node representing a compiler pass.
-    """
+    """A node representing a compiler pass."""
 
     def __init__(self, name: str):
         """
-        A node representing a compiler pass.
+        Initialize a node representing a compiler pass.
 
         .. note::
 
@@ -378,22 +426,22 @@ class CompilationNode:
         self.name = name
 
     # used as the key in a networkx graph so we like this to be a simple string.
-    def __repr__(self):
+    def __repr__(self):  # noqa: D105
         return self.name
 
     # used as a label when visualizing using networkx
-    def __str__(self):
+    def __str__(self):  # noqa: D105
         return self.name
 
     def _compilation_func(
         self, schedule: Union[Schedule, DataStructure], config: DataStructure
     ) -> Union[Schedule, DataStructure]:
         """
-        This is the private compilation method. It should be completely stateless
-        whenever inheriting from the CompilationNode, this is the object that should
-        be modified.
-        """
+        Private compilation method of this CompilationNode.
 
+        It should be completely stateless whenever inheriting from the CompilationNode,
+        this is the object that should be modified.
+        """
         # note that for linear/serial compilation graphs, the input and output is always
         # a Schedule class but for more advanced compilers, a graph might want to do
         # several steps in parallel. For this reason the base class supports a more
@@ -407,11 +455,11 @@ class CompilationNode:
         self, schedule: Union[Schedule, DataStructure], config: DataStructure
     ) -> Union[Schedule, DataStructure]:
         """
-        Execute a compilation pass, taking a :class:`~.Schedule` and using the
-        information provided in the config to return a new (updated)
-        :class:`~.Schedule`.
-        """
+        Execute a compilation pass.
 
+        This method takes a :class:`~.Schedule` and returns a new (updated)
+        :class:`~.Schedule` using the information provided in the config.
+        """
         # this is the public facing compile method.
         # it wraps around the self._compilation_func, but also contains the common logic
         # to support (planned) features like caching and parallel evaluation.
@@ -423,15 +471,11 @@ class CompilationNode:
 
 # pylint: disable=too-few-public-methods
 class SimpleNode(CompilationNode):
-    """
-    A node representing a simple compiler pass consisting of calling a single
-    compilation function.
-    """
+    """A node representing a single compilation pass."""
 
     def __init__(self, name: str, compilation_func: Callable):
         """
-        A node representing a simple compiler pass consisting of calling a single
-        compilation function.
+        Initialize a node representing a single compilation pass.
 
         .. note::
 
@@ -468,19 +512,16 @@ class SimpleNode(CompilationNode):
 class QuantifyCompiler(CompilationNode):
     """
     A compiler for quantify :class:`~.Schedule` s.
+
     The compiler defines a directed acyclic graph containing
-    :class:`~.CompilationNode` s. In this graph, nodes represent modular
-    compilation passes.
+    :class:`~.CompilationNode` s. In this graph, nodes represent
+    modular compilation passes.
     """
 
-    def __init__(
-        self,
-        name,
-        quantum_device: Optional[
-            "quantify_scheduler.device_under_test.quantum_device.QuantumDevice"
-        ] = None,
-    ) -> None:
+    def __init__(self, name, quantum_device: Optional[QuantumDevice] = None) -> None:
         """
+        Initialize a QuantifyCompiler for quantify :class:`~.Schedule` s.
+
         Parameters
         ----------
         name
@@ -513,8 +554,9 @@ class QuantifyCompiler(CompilationNode):
         schedule
             the schedule to compile.
         config
-            describing the information required to compile the schedule. If not specified,
-            self.quantum_device will be used to generate the config.
+            describing the information required to compile the schedule.
+            If not specified, self.quantum_device will be used to generate
+            the config.
 
         Returns
         -------
@@ -523,7 +565,6 @@ class QuantifyCompiler(CompilationNode):
             for execution on a (hardware) backend.
 
         """
-
         # this is the public facing compile method.
         # it wraps around the self._compilation_func, but also contains the common logic
         # to support (planned) features like caching and parallel evaluation.
@@ -540,6 +581,7 @@ class QuantifyCompiler(CompilationNode):
     def input_node(self):
         """
         Node designated as the default input for compilation.
+
         If not specified will return None.
         """
         return self._input_node
@@ -548,14 +590,13 @@ class QuantifyCompiler(CompilationNode):
     def output_node(self):
         """
         Node designated as the default output for compilation.
+
         If not specified will return None.
         """
         return self._ouput_node
 
     def construct_graph(self, config: CompilationConfig):
-        """
-        Construct the compilation graph based on a provided config.
-        """
+        """Construct the compilation graph based on a provided config."""
         raise NotImplementedError
 
     def draw(
@@ -584,7 +625,6 @@ class QuantifyCompiler(CompilationNode):
             :code:`networkx.draw_networkx`.
 
         """
-
         if self._task_graph is None:
             raise RuntimeError(
                 "Task graph has not been initialized. Consider compiling a Schedule "
@@ -616,10 +656,7 @@ class QuantifyCompiler(CompilationNode):
 
 
 class SerialCompiler(QuantifyCompiler):
-    """
-    A compiler that dynamically generates a graph of serial compilation
-    passes upon calling the compile method.
-    """
+    """A compiler that executes compilation passes sequentially."""
 
     def construct_graph(self, config: SerialCompilationConfig):
         """
@@ -627,7 +664,6 @@ class SerialCompiler(QuantifyCompiler):
 
         For a serial backend, it is just a list of compilation passes.
         """
-
         if self._task_graph is None:
             self._task_graph = nx.DiGraph(name=self.name)
 
@@ -645,8 +681,8 @@ class SerialCompiler(QuantifyCompiler):
             if i == 0:
                 self._input_node = node
             else:
-                self._task_graph.add_edge(last_added_node, node)
-            last_added_node = node
+                self._task_graph.add_edge(last_added_node, node)  # noqa: F821
+            last_added_node = node  # noqa: F841
 
         self._ouput_node = node
 
@@ -697,6 +733,7 @@ class SerialCompiler(QuantifyCompiler):
 class SerialCompilationConfig(CompilationConfig):
     """
     A compilation config for a simple serial compiler.
+
     Specifies compilation as a list of compilation passes.
     """
 
@@ -704,9 +741,8 @@ class SerialCompilationConfig(CompilationConfig):
     compilation_passes: List[SimpleNodeConfig]
 
     @validator("backend", pre=True)
-    @classmethod
-    def import_backend_if_str(
-        cls, class_: Union[Type[SerialCompiler], str]
+    def _import_backend_if_str(
+        cls, class_: Union[Type[SerialCompiler], str]  # noqa: N805
     ) -> Type[SerialCompiler]:
         if isinstance(class_, str):
             return deserialize_class(class_)

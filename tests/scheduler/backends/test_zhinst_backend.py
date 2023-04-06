@@ -846,7 +846,7 @@ def test_determine_relative_latency_corrections(
     hardware_config = compilation_config.connectivity
     hardware_config[
         "latency_corrections"
-    ] = compilation_config.hardware_options.latency_corrections.corrections
+    ] = compilation_config.hardware_options.latency_corrections
 
     expected_latency_dict = {
         "q0:mw-q0.01": 190e-9,

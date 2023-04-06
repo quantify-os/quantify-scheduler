@@ -1,32 +1,28 @@
 {
     "latency_corrections": {
-        "corrections": {
-            "q0:mw-q0.01": 95e-9,
-            "q1:mw-q1.01": 95e-9,
-            "q0:res-q0.ro": -95e-9,
-            "q1:res-q1.ro": -95e-9
-        }
+        "q0:mw-q0.01": 95e-9,
+        "q1:mw-q1.01": 95e-9,
+        "q0:res-q0.ro": -95e-9,
+        "q1:res-q1.ro": -95e-9
     },
     "distortion_corrections": {
-        "corrections": {
-            "q0:fl-cl0.baseband": {
-                "filter_func": "scipy.signal.lfilter",
-                "input_var_name": "x",
-                "kwargs": {
-                    "b": [
-                        0,
-                        0.25,
-                        0.5
-                    ],
-                    "a": [
-                        1
-                    ]
-                },
-                "clipping_values": [
-                    -2.5,
-                    2.5
+        "q0:fl-cl0.baseband": {
+            "filter_func": "scipy.signal.lfilter",
+            "input_var_name": "x",
+            "kwargs": {
+                "b": [
+                    0,
+                    0.25,
+                    0.5
+                ],
+                "a": [
+                    1
                 ]
-            }
+            },
+            "clipping_values": [
+                -2.5,
+                2.5
+            ]
         }
     }
 }

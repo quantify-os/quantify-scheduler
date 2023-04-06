@@ -6,6 +6,8 @@
 ### Breaking changes
 
 ### Merged branches and closed issues
+
+- Compilation - Update structure of `HardwareOptions` datastructure with fields `latency_corrections: Dict[str, LatencyCorrection]` and `distortion_corrections: Dict[str, DistortionCorrection]` (!650).
 - Deprecation - Replace `device_compile` and `hardware_compile` by `SerialCompiler`  in NV center tests (!651)
 - Compilation - Move `DistortionCorrections` to `CompilationConfig.hardware_options` (!648)
 - Compilation - Move `LatencyCorrections` to `CompilationConfig.hardware_options` and use field name `corrections` instead of `latencies` (!633).
