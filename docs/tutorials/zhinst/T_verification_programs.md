@@ -165,7 +165,7 @@ Now that we have generated the schedule we can compile it and verify if the hard
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler.compilation import qcompile
 from quantify_scheduler.schemas.examples import utils
-from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import (
+from quantify_scheduler.schemas.examples.device_example_cfgs import (
     example_transmon_cfg,
 )
 

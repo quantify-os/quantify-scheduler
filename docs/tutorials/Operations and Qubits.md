@@ -186,8 +186,8 @@ Here we will use an example device configuration for a transmon-based system tha
 `quantify-scheduler` test suite.
 
 ```{code-cell} ipython3
-from quantify_scheduler.backends.graph_compilation import DeviceCompilationConfig
-from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import (
+from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
+from quantify_scheduler.schemas.examples.device_example_cfgs import (
     example_transmon_cfg,
 )
 

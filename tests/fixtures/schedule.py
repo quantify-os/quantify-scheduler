@@ -20,7 +20,7 @@ from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfi
 from quantify_scheduler.compilation import device_compile
 from quantify_scheduler.operations.gate_library import CZ, Measure, Reset, X, X90
 from quantify_scheduler.schemas.examples import utils
-from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import (
+from quantify_scheduler.schemas.examples.device_example_cfgs import (
     example_transmon_cfg,
 )
 

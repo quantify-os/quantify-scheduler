@@ -21,7 +21,7 @@ from quantify_scheduler.backends.corrections import (
 )
 from quantify_scheduler.backends.graph_compilation import (
     CompilationConfig,
-    LatencyCorrections,
+    HardwareOptions,
 )
 from quantify_scheduler.backends.types import common, zhinst
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
@@ -751,7 +751,7 @@ def compile_backend(
         # Important: currently only used to validate the input, should also be
         # used for storing the latency corrections
         # (see also https://gitlab.com/groups/quantify-os/-/epics/1)
-        LatencyCorrections(corrections=hardware_cfg["latency_corrections"])
+        HardwareOptions(latency_corrections=hardware_cfg["latency_corrections"])
 
     schedule = apply_distortion_corrections(schedule, hardware_cfg)
 

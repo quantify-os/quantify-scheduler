@@ -13,7 +13,7 @@ from quantify_scheduler.backends.corrections import (
 )
 from quantify_scheduler.backends.graph_compilation import (
     CompilationConfig,
-    LatencyCorrections,
+    HardwareOptions,
 )
 from quantify_scheduler.backends.qblox import compiler_container, helpers
 
@@ -118,7 +118,7 @@ def hardware_compile(
         # Important: currently only used to validate the input, should also be
         # used for storing the latency corrections
         # (see also https://gitlab.com/groups/quantify-os/-/epics/1)
-        LatencyCorrections(corrections=converted_hw_config["latency_corrections"])
+        HardwareOptions(latency_corrections=hardware_cfg["latency_corrections"])
 
         # Subtract minimum latency to allow for negative latency corrections
         hardware_cfg["latency_corrections"] = determine_relative_latency_corrections(
