@@ -10,6 +10,7 @@
 
 installation
 user_guide
+tutorials/Running an Experiment
 tutorials/Schedules*
 tutorials/Compiling*
 tutorials/Operations*

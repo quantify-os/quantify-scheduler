@@ -1,3 +1,8 @@
 .wy-nav-content {
     max-width: 81% !important;
 }
+
+/* add horizontal scroll bar to pandas tables */
+.output.text_html {
+    overflow-x: auto;
+}
