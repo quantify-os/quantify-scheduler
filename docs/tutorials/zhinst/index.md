@@ -77,6 +77,7 @@ Keep these in mind when operating the hardware.
 - Only a single HDAWG supported as the primary device, other HDAWGs need to be configured as secondary devices.
 - **Multiplexed readout is currently not supported**. One can only read out a single channel. (#191)
 
+(zhinst-hardware)=
 ## Hardware configuration
 
 ```{note}
