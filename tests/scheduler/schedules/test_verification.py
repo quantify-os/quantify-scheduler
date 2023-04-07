@@ -6,6 +6,7 @@
 import numpy as np
 import pytest
 from numpy.testing import assert_array_equal
+
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.schedules.verification import (
     acquisition_staircase_sched,
@@ -66,12 +67,13 @@ def test_acq_staircase_comp_transmon(
 
 
 def test_acq_staircase_comp_qblox(
-    gen_acquisition_staircase_sched, compile_config_basic_transmon_qblox_hardware
+    gen_acquisition_staircase_sched,
+    compile_config_basic_transmon_qblox_hardware_pulsar,
 ):
     compiler = SerialCompiler(name="compiler")
     _ = compiler.compile(
         schedule=gen_acquisition_staircase_sched[0],
-        config=compile_config_basic_transmon_qblox_hardware,
+        config=compile_config_basic_transmon_qblox_hardware_pulsar,
     )
 
 
@@ -135,12 +137,13 @@ def test_awg_staircase_comp_transmon(
 
 
 def test_awg_staircase_comp_qblox(
-    gen_awg_staircase_sched, compile_config_basic_transmon_qblox_hardware
+    gen_awg_staircase_sched,
+    compile_config_basic_transmon_qblox_hardware_pulsar,
 ):
     compiler = SerialCompiler(name="compiler")
     _ = compiler.compile(
         schedule=gen_awg_staircase_sched[0],
-        config=compile_config_basic_transmon_qblox_hardware,
+        config=compile_config_basic_transmon_qblox_hardware_pulsar,
     )
 
 
@@ -186,10 +189,11 @@ def test_multiplex_staircase_comp_transmon(
 
 
 def test_multiplex_staircase_comp_qblox(
-    gen_multiplexing_staircase_sched, compile_config_basic_transmon_qblox_hardware
+    gen_multiplexing_staircase_sched,
+    compile_config_basic_transmon_qblox_hardware_pulsar,
 ):
     compiler = SerialCompiler(name="compiler")
     _ = compiler.compile(
         schedule=gen_multiplexing_staircase_sched[0],
-        config=compile_config_basic_transmon_qblox_hardware,
+        config=compile_config_basic_transmon_qblox_hardware_pulsar,
     )

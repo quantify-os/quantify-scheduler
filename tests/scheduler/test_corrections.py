@@ -14,8 +14,8 @@ from quantify_scheduler.backends.corrections import distortion_correct_pulse
 from quantify_scheduler.backends.qblox import constants as qblox_constants
 from quantify_scheduler.operations.pulse_library import NumericalPulse, SquarePulse
 
-from tests.scheduler.backends.test_qblox_backend import (  # pylint: disable=unused-import
-    hardware_cfg_two_qubit_gate as qblox_hardware_cfg_two_qubit_gate,
+from tests.scheduler.backends.qblox.fixtures.hardware_config import (  # pylint: disable=unused-import, line-too-long
+    hardware_cfg_pulsar_qcm_two_qubit_gate as qblox_hardware_cfg_pulsar_qcm_two_qubit_gate,
 )
 from tests.scheduler.backends.test_zhinst_backend import (  # pylint: disable=unused-import
     hardware_cfg_distortion_corrections as zhinst_hardware_cfg_distortion_corrections,
@@ -31,20 +31,16 @@ def hardware_options_distortion_corrections(
     return {
         # Latency corrections are needed to avoid error in compilation of two-qubit
         # gate schedule in test_apply_distortion_corrections with the zhinst backend
-        "latency_corrections": {
-            "corrections": {"q2:fl-cl0.baseband": 100e-9, "q2:mw-q2.01": 0}
-        },
+        "latency_corrections": {"q2:fl-cl0.baseband": 100e-9, "q2:mw-q2.01": 0},
         "distortion_corrections": {
-            "corrections": {
-                "q2:fl-cl0.baseband": {
-                    "filter_func": "scipy.signal.lfilter",
-                    "input_var_name": "x",
-                    "kwargs": {
-                        "b": filter_coefficients,
-                        "a": np.array([1]) if use_numpy_array else [1],
-                    },
-                    "clipping_values": [-2.5, 2.5],
+            "q2:fl-cl0.baseband": {
+                "filter_func": "scipy.signal.lfilter",
+                "input_var_name": "x",
+                "kwargs": {
+                    "b": filter_coefficients,
+                    "a": np.array([1]) if use_numpy_array else [1],
                 },
+                "clipping_values": [-2.5, 2.5],
             },
         },
     }
@@ -145,13 +141,12 @@ def test_apply_distortion_corrections(  # pylint: disable=unused-argument disabl
     hardware_options_distortion_corrections,
     two_qubit_gate_schedule,
     backend,
-    qblox_hardware_cfg_two_qubit_gate,
+    qblox_hardware_cfg_pulsar_qcm_two_qubit_gate,
     zhinst_hardware_cfg_distortion_corrections,
-    use_numpy_array,
 ):
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     if "qblox" in backend:
-        quantum_device.hardware_config(qblox_hardware_cfg_two_qubit_gate)
+        quantum_device.hardware_config(qblox_hardware_cfg_pulsar_qcm_two_qubit_gate)
     elif "zhinst" in backend:
         quantum_device.hardware_config(zhinst_hardware_cfg_distortion_corrections)
     quantum_device.hardware_options(hardware_options_distortion_corrections)

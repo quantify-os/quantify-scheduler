@@ -23,11 +23,11 @@ pretty.install()
 
 ## Introduction
 
-{mod}`quantify-scheduler` is a python module for writing quantum programs featuring a hybrid gate-pulse control model with explicit timing control.
+`quantify-scheduler` is a python module for writing quantum programs featuring a hybrid gate-pulse control model with explicit timing control.
 It extends the circuit model from quantum information processing by adding a pulse-level representation to operations defined at the gate-level, and the ability to specify timing constraints between operations.
 Thus, a user is able to mix gate- and pulse-level operations in a quantum circuit.
 
-In {mod}`quantify-scheduler`, both a quantum circuit consisting of gates and measurements and a timed sequence of control pulses are described as a {class}`.Schedule` .
+In `quantify-scheduler`, both a quantum circuit consisting of gates and measurements and a timed sequence of control pulses are described as a {class}`.Schedule` .
 The {class}`.Schedule` contains information on *when* operations should be performed.
 When adding operations to a schedule, one does not need to specify how to represent this {class}`.Operation` on all (both gate and pulse) abstraction levels.
 Instead, this information can be added later during {ref}`Compilation`.
@@ -90,7 +90,7 @@ Creating schedule generating functions is a convenient design pattern when creat
 
 ## Concepts and terminology
 
-{mod}`quantify-scheduler` can be understood by understanding the following concepts.
+`quantify-scheduler` can be understood by understanding the following concepts.
 
 - {class}`.Schedule`s describe when an operation needs to be applied.
 - {class}`.Operation`s describe what needs to be done.
@@ -285,10 +285,10 @@ quantify_compilers
 ### Device configuration
 
 The device configuration is used to compile from the quantum-circuit layer to the quantum-device layer.
-The {class}`~.backends.circuit_to_device.DeviceCompilationConfig` data structure contains the information required to add the quantum-device level representation to every operation in a schedule.
+The {class}`~.backends.graph_compilation.DeviceCompilationConfig` data structure contains the information required to add the quantum-device level representation to every operation in a schedule.
 
 ```{eval-rst}
-.. autoclass:: quantify_scheduler.backends.circuit_to_device.DeviceCompilationConfig
+.. autoclass:: quantify_scheduler.backends.graph_compilation.DeviceCompilationConfig
     :noindex:
 
 ```
@@ -367,7 +367,7 @@ Because the {class}`~quantify_scheduler.device_under_test.quantum_device.Quantum
 
 ### Experiment flow
 
-To use schedules in an experimental setting, in which the parameters used for compilation as well as the schedules themselves routinely change, we provide a framework for performing experiments making use of the concepts of {mod}`quantify_core`.
+To use schedules in an experimental setting, in which the parameters used for compilation as well as the schedules themselves routinely change, we provide a framework for performing experiments making use of the concepts of `quantify-core`.
 Central in this framework are the schedule {mod}`quantify_scheduler.gettables` that can be used by the `quantify_core.measurement.control.MeasurementControl` and are responsible for the experiment flow.
 
 This flow is schematically shown in {numref}`experiments_control_flow`.
@@ -460,11 +460,124 @@ and the resulting dataset can be analyzed using
 
 # from quantify_core.analysis.t1_analysis import T1Analysis
 # analysis = T1Analysis(label=label).run()
+```
+
+## Acquisition data format
+
+`quantify-scheduler` has multiple interfaces for retrieving acquisition results. This section describes the structure of the return value of the interfaces of {class}`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator`'s {meth}`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator.retrieve_acquisition` and {meth}`quantify_scheduler.gettables.ScheduleGettable.get`.
+
+Each acquisition and measurement operation in the schedule has an attached `acq_channel` and `acq_index`. These can be set through the operation arguments (`acq_channel` can optionally be set through subclasses of {class}`~quantify_scheduler.device_under_test.device_element.DeviceElement`, such as {class}`~quantify_scheduler.device_under_test.transmon_element.BasicTransmonElement`, if the measurement operation is a gate-level operation). Moreover, the `bin_mode` parameter can be set explicitly; by default, `bin_mode` is average. See the example below:
 
 
+```{code-block} python
+schedule.add(
+    SSBIntegrationComplex(
+        t0=0,
+        duration=100e-9,
+        port="q0:res",
+        clock="q0.ro",
+        acq_channel=3,
+        acq_index=1,
+        bin_mode=BinMode.AVERAGE
+    )
+)
+```
+
+### Retrieve acquisitions through `InstrumentCoordinator`
+
+{class}`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator`'s {meth}`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator.retrieve_acquisition` returns an `xarray.Dataset`:
+
+- Each `xarray.DataArray` in the dataset corresponds to one `acq_channel`.
+- Each `xarray.DataArray` has two dimensions: `acq_index` and `repetition`. 
+
+The example below shows the outcome of two *binned acquisitions* with acquisition channels `0` and `1` and acquisition indices `0`, `1` and `2` for each channel. In this example, `repetitions` takes the value of `2` for the schedule and the `bin_mode` is set to append. Note that the `repetition` dimension only takes on one value (`0`) in case `bin_mode` is set to average.
+
+```{code-cell} ipython3
+---
+mystnb:
+  remove_code_source: true
+---
+
+import xarray
+
+xarray.Dataset({
+    0: xarray.DataArray(
+        [[0, 0.02, 0.04j], [0, 0.8j, 0.16]],
+        coords=[[0, 1], [0, 1, 2]],
+        dims=["repetition", "acquisition_index"]
+    ),
+    1: xarray.DataArray(
+        [[0, 0.03, 0.06j], [0, 0.12j, 0.24]],
+        coords=[[0, 1], [0, 1, 2]],
+        dims=["repetition", "acquisition_index"]
+    ),
+})
+
+```
+
+For *trace acquisitions*, the returned data is still a two-dimensional array: one dimension specifying the repetition, and the other dimension represents the time. Currently it is not possible to use trace acquisition together with append `bin_mode`, hence the `repetition` dimension will only take one value (`0`). See the example below.
+
+```{code-cell} ipython3
+---
+mystnb:
+  remove_code_source: true
+---
+
+import xarray
+
+xarray.Dataset({
+    0: xarray.DataArray(
+        [[1j] * 1000],
+        coords=[[0], list(range(1000))],
+        dims=["repetition", "acquisition_index"]
+    ),
+})
+
+```
+
+### Retrieve acquisition through `ScheduleGettable`
+
+{meth}`quantify_scheduler.gettables.ScheduleGettable.get` returns the following data structure for *binned acquisitions* in the generic case. Note, in the example below `real_imag=True`. If this were `False`, the result would contain `abs` and `phase` instead of `real` and `imag`.
+
+```{code-block} python
+[
+    # 1st channel
+    
+        # Real parts
+        array([
+            # 1st rep for all indices in channel
+            real(index0_rep0), real(index1_rep0), real(index2_rep0),
+          
+            # 2nd rep for all indices in channel
+            real(index0_rep1), real(index1_rep1), real(index2_rep1),
+        ]),
+        
+        # Imaginary parts
+        array([
+            # 1st rep for all indices in channel
+            imag(index0_rep0), imag(index1_rep0), imag(index2_rep0),
+            
+            # 2nd rep for all indices in channel
+            imag(index0_rep1), imag(index1_rep1), imag(index2_rep1),
+        ]),
+            
+    # 2nd channel
+    ...
+]
+```
+
+For *trace acquisition*, the generic return value is the following:
+
+```{code-block} python
+[
+    # Real parts
+    array([0, 0, 0, 0, ..., 0]),
+    # Imaginary parts
+    array([1, 1, 1, 1, ..., 1])
+]
 ```
 
 ```{rubric} Footnotes
 ```
 
-[^id3]: {mod}`quantify-scheduler` threats physical instruments as stateless in the sense that the compiled instructions contain all information that specifies the execution of a schedule. However, for performance reasons, it is important to not reconfigure all parameters of all instruments whenever a new schedule is executed. The parameters (state) of the instruments are used to track the state of physical instruments to allow lazy configuration as well as ensure metadata containing the current settings is stored correctly.
+[^id3]: `quantify-scheduler` threats physical instruments as stateless in the sense that the compiled instructions contain all information that specifies the execution of a schedule. However, for performance reasons, it is important to not reconfigure all parameters of all instruments whenever a new schedule is executed. The parameters (state) of the instruments are used to track the state of physical instruments to allow lazy configuration as well as ensure metadata containing the current settings is stored correctly.

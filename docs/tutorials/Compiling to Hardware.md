@@ -243,4 +243,4 @@ The {class}`~~quantify_scheduler.instrument_coordinator.instrument_coordinator.I
   \- Stops all running instruments.
 
 Note that the schedule used in this tutorial was defined purely in terms of pulses.
-However, {mod}`quantify-scheduler` also supports the usage of quantum gates in schedules. Given that gates may require different pulses depending on the type of quantum system, an extra step of defining the quantum device configuration, i.e. the qubits, is necessary. This use case is covered in the {ref}`sec-tutorial-ops-qubits` tutorial.
+However, `quantify-scheduler` also supports the usage of quantum gates in schedules. Given that gates may require different pulses depending on the type of quantum system, an extra step of defining the quantum device configuration, i.e. the qubits, is necessary. This use case is covered in the {ref}`sec-tutorial-ops-qubits` tutorial.

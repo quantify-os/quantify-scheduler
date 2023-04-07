@@ -155,7 +155,7 @@ def _find_edge(device_cfg, parent_element_name, child_element_name, op_name):
     "`backends.circuits_to_device.compile_circuit_to_device` instead. "
     "See `DeviceCompilationConfig.parse_obj(example_transmon_cfg)`, "
     "`example_transmon_cfg` is defined in "
-    "`quantify_scheduler/schemas/examples/circuit_to_device_example_cfgs.py`.",
+    "`quantify_scheduler/schemas/examples/device_example_cfgs.py`.",
 )
 def add_pulse_information_transmon(
     schedule: Schedule,
@@ -192,6 +192,8 @@ def add_pulse_information_transmon(
     ValueError
         When both `config` and `device_cfg` are supplied.
 
+    Notes
+    -----
     .. rubric:: Supported operations
 
     The following gate type operations are supported by this compilation step.

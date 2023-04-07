@@ -28,9 +28,7 @@ def make_ufhqa(mocker) -> base.ZIBaseInstrument:
     return instrument
 
 
-def test_zi_settings_equality(
-    mock_setup_basic_transmon, load_example_zhinst_hardware_config
-):
+def test_zi_settings_equality(mock_setup_basic_transmon, hardware_cfg_zhinst_example):
     sched_kwargs = {
         "pulse_amps": np.linspace(0, 0.5, 11),
         "pulse_duration": 1e-6,
@@ -45,7 +43,7 @@ def test_zi_settings_equality(
         "repetitions": 10,
     }
     sched = awg_staircase_sched(**sched_kwargs)
-    hw_cfg = load_example_zhinst_hardware_config
+    hw_cfg = hardware_cfg_zhinst_example
     quantum_device = mock_setup_basic_transmon["quantum_device"]
 
     compiler = SerialCompiler(name="compiler")

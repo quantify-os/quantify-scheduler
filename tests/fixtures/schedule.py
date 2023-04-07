@@ -20,17 +20,16 @@ from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfi
 from quantify_scheduler.compilation import device_compile
 from quantify_scheduler.operations.gate_library import CZ, Measure, Reset, X, X90
 from quantify_scheduler.schemas.examples import utils
-from quantify_scheduler.schemas.examples.circuit_to_device_example_cfgs import (
+from quantify_scheduler.schemas.examples.device_example_cfgs import (
     example_transmon_cfg,
 )
 
 
-QBLOX_HARDWARE_MAPPING = utils.load_json_example_scheme("qblox_test_mapping.json")
 ZHINST_HARDWARE_MAPPING = utils.load_json_example_scheme("zhinst_test_mapping.json")
 
 
 @pytest.fixture
-def load_example_transmon_config() -> Generator[DeviceCompilationConfig, None, None]:
+def device_cfg_transmon_example() -> Generator[DeviceCompilationConfig, None, None]:
     """
     Circuit to device level compilation for the add_pulse_info_transmon compilation
     backend.
@@ -39,25 +38,20 @@ def load_example_transmon_config() -> Generator[DeviceCompilationConfig, None, N
 
 
 @pytest.fixture
-def load_example_qblox_hardware_config() -> Generator[Dict[str, Any], None, None]:
-    yield dict(QBLOX_HARDWARE_MAPPING)
-
-
-@pytest.fixture
-def load_example_zhinst_hardware_config() -> Generator[Dict[str, Any], None, None]:
+def hardware_cfg_zhinst_example() -> Generator[Dict[str, Any], None, None]:
     yield dict(ZHINST_HARDWARE_MAPPING)
 
 
 @pytest.fixture
 def create_schedule_with_pulse_info(
-    load_example_transmon_config, basic_schedule: Schedule
+    device_cfg_transmon_example, basic_schedule: Schedule
 ):
     def _create_schedule_with_pulse_info(
         schedule: Optional[Schedule] = None, device_config: Optional[dict] = None
     ) -> Schedule:
         _schedule = schedule if schedule is not None else deepcopy(basic_schedule)
         _device_config = (
-            device_config if device_config is not None else load_example_transmon_config
+            device_config if device_config is not None else device_cfg_transmon_example
         )
         _schedule = device_compile(_schedule, _device_config)
         return _schedule

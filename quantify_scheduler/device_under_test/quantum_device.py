@@ -9,14 +9,12 @@ from typing import Any, Dict
 from qcodes.instrument.base import Instrument
 from qcodes.instrument.parameter import InstrumentRefParameter, ManualParameter
 from qcodes.utils import validators
-from quantify_scheduler.backends.circuit_to_device import (
-    DeviceCompilationConfig,
-    compile_circuit_to_device,
-)
+from quantify_scheduler.backends.circuit_to_device import compile_circuit_to_device
 from quantify_scheduler.backends.graph_compilation import (
     HardwareOptions,
     SerialCompilationConfig,
     SimpleNodeConfig,
+    DeviceCompilationConfig,
 )
 from quantify_scheduler.compilation import determine_absolute_timing
 from quantify_scheduler.device_under_test.device_element import DeviceElement

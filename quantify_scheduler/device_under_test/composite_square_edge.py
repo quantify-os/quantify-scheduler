@@ -7,7 +7,7 @@ from qcodes.instrument import InstrumentChannel
 from qcodes.instrument.base import InstrumentBase
 from qcodes.instrument.parameter import ManualParameter
 
-from quantify_scheduler.backends.circuit_to_device import OperationCompilationConfig
+from quantify_scheduler.backends.graph_compilation import OperationCompilationConfig
 from quantify_scheduler.helpers.validators import Numbers
 from quantify_scheduler.device_under_test.edge import Edge
 from quantify_scheduler.operations.pulse_factories import composite_square_pulse

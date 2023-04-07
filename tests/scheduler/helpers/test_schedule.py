@@ -301,10 +301,10 @@ def test_get_port_timeline_with_duplicate_op(device_compile_config_basic_transmo
 def test_get_port_timeline_with_acquisition(
     create_schedule_with_pulse_info,
     schedule_with_measurement: Schedule,
-    load_example_transmon_config,
+    device_cfg_transmon_example,
 ):
     # Arrange
-    device_config = load_example_transmon_config
+    device_config = device_cfg_transmon_example
 
     schedule = create_schedule_with_pulse_info(schedule_with_measurement, device_config)
 

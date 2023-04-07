@@ -9,7 +9,7 @@ Breaking changes at this stage are not excluded.
 
 ## Introduction
 
-{mod}`quantify_scheduler` provides a modular system: {mod}`~quantify_scheduler.backends.qblox_backend`,
+`quantify-scheduler` provides a modular system: {mod}`~quantify_scheduler.backends.qblox_backend`,
 that abstracts the full experimental setup using [Qblox](https://www.qblox.com) hardware for
 experiments in a modern and automated fashion.
 

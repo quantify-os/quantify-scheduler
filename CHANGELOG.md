@@ -1,17 +1,21 @@
 # Changelog
 
+
 ## Unreleased
 
 ### Breaking changes
 
 ### Merged branches and closed issues
 
+- Compilation - Update structure of `HardwareOptions` datastructure with fields `latency_corrections: Dict[str, LatencyCorrection]` and `distortion_corrections: Dict[str, DistortionCorrection]` (!650).
+- Deprecation - Replace `device_compile` and `hardware_compile` by `SerialCompiler`  in NV center tests (!651)
 - Compilation - Move `DistortionCorrections` to `CompilationConfig.hardware_options` (!648)
 - Compilation - Move `LatencyCorrections` to `CompilationConfig.hardware_options` and use field name `corrections` instead of `latencies` (!633).
 - Typing - More lenient typehints (!640)
 - Gettables - Clean up code syntax (!638)
 - Schedulables - Make name uniqueness check more efficient and readable. (!631)
 - Compilation - `CompilationNode`s take the full `CompilationConfig` as input (!615, #405)
+- Tests - Move Qblox Pulsar entries from `qblox_test_mapping.json` to pytest fixtures (!632)
 - Visualization - Introduce the `x_range` keyword for the matplotlib backend in `Schedule.plot_pulse_diagram`. This will cut off any points outside the given range when creating the plot. This can be used to reduce memory usage when plotting a small section of a long pulse sequence (!629).
 - Schedules - Add `nv_dark_esr_sched_nco` spectroscopy schedule using SetClockFrequency Operation to sweep the NCO frequency (!639)
 - ZI LabOne backend - Return datasets from UHFQA instrument coordinator component (which fixes the broken backend) (#410, !623).
@@ -20,6 +24,9 @@
 - Qblox backend - Forbid repeated acquisition index in schedule (!655, partially revert !542)
 - Qblox backend - Rename the `MAX_SAMPLE_SIZE_ACQUISITIONS` constant to `MAX_SAMPLE_SIZE_SCOPE_ACQUISITIONS`, and modify the docstring to clarify that this constant only refers to scope trace acquisitions (!649).
 - Qblox backend - Forbid repeated acquisition index in schedule (!655, !657, partially revert !542)
+- Git - Change back to default merge strategy for CHANGELOG.md (!659).
+- Documentation - Fix documentation generation warnings and errors (!658)
+- Documentation - Acquisition data format in user guide (!646)
 
 ## 0.12.3 (2023-03-09)
 

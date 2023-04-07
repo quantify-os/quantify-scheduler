@@ -12,7 +12,7 @@ import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-import xarray as xr
+import xarray
 from zhinst import qcodes
 
 from quantify_core.data import handling
@@ -105,7 +105,7 @@ class ZIInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
 
         return True
 
-    def retrieve_acquisition(self) -> xr.Dataset | None:
+    def retrieve_acquisition(self) -> xarray.Dataset | None:
         return None
 
 
@@ -260,7 +260,7 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
             self.zi_settings.apply(self.instrument)
         return True
 
-    def retrieve_acquisition(self) -> xr.Dataset:
+    def retrieve_acquisition(self) -> xarray.Dataset:
         if self.zi_device_config is None:
             raise RuntimeError("Undefined device config, first prepare UHFQA!")
 
@@ -273,13 +273,13 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
             )
 
         # acq_channel_results: Dict[int, np.ndarray] = dict()
-        acq_channel_results: list[xr.DataArray] = []
+        acq_channel_results: list[xarray.DataArray] = []
         for acq_channel, resolve in acq_config.resolvers.items():
             data: NDArray = resolve(uhfqa=self.instrument)
             acq_protocol = acq_config.acq_protocols[acq_channel]
             if acq_protocol == "Trace" and acq_config.bin_mode == BinMode.AVERAGE:
                 acq_channel_results.append(
-                    xr.DataArray(
+                    xarray.DataArray(
                         data.reshape((1, -1)),
                         dims=("repetition", "acq_index"),
                         name=acq_channel,
@@ -290,7 +290,7 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
                 and acq_config.bin_mode == BinMode.AVERAGE
             ):
                 acq_channel_results.append(
-                    xr.DataArray(
+                    xarray.DataArray(
                         # Sanity check: data size must be equal to n_acquisitions
                         data.reshape((1, acq_config.n_acquisitions)),
                         dims=("repetition", "acq_index"),
@@ -302,7 +302,7 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
                 and acq_config.bin_mode == BinMode.APPEND
             ):
                 acq_channel_results.append(
-                    xr.DataArray(
+                    xarray.DataArray(
                         data.reshape((-1, acq_config.n_acquisitions)),
                         dims=("repetition", "acq_index"),
                         name=acq_channel,
@@ -314,7 +314,7 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
                     f" {acq_config.bin_mode} is not supproted by the backend."
                 )
 
-        return xr.merge(acq_channel_results, compat="no_conflicts")
+        return xarray.merge(acq_channel_results, compat="no_conflicts")
 
     def wait_done(self, timeout_sec: int = 10) -> None:
         self.instrument.awg.wait_done(timeout_sec)

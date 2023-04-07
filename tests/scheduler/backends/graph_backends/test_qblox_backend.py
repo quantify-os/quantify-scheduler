@@ -16,19 +16,18 @@ from typing import Union
 
 import pytest
 
-
-from quantify_scheduler import Schedule, CompiledSchedule
+from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.resources import ClockResource
 
 from .standard_schedules import (
-    single_qubit_schedule_circuit_level,
-    two_qubit_t1_schedule,
-    two_qubit_schedule_with_edge,
-    pulse_only_schedule,
-    parametrized_operation_schedule,
     hybrid_schedule_rabi,
+    parametrized_operation_schedule,
+    pulse_only_schedule,
+    single_qubit_schedule_circuit_level,
+    two_qubit_schedule_with_edge,
+    two_qubit_t1_schedule,
 )
 
 
@@ -45,13 +44,13 @@ from .standard_schedules import (
 )
 def test_compiles_standard_schedules(
     schedule: Schedule,
-    compile_config_basic_transmon_qblox_hardware,
+    compile_config_basic_transmon_qblox_hardware_pulsar,
 ):
     """
     Tests if a set of standard schedules compile without raising exceptions
     """
 
-    config = compile_config_basic_transmon_qblox_hardware
+    config = compile_config_basic_transmon_qblox_hardware_pulsar
     assert config.name == "Qblox compiler"
     assert config.backend == SerialCompiler
 
@@ -62,14 +61,14 @@ def test_compiles_standard_schedules(
     assert isinstance(compiled_sched, CompiledSchedule)
 
 
-def test_compile_empty_device(load_example_qblox_hardware_config):
+def test_compile_empty_device(hardware_cfg_pulsar):
     """
     Test if compilation works for a pulse only schedule on a freshly initialized
     quantum device object to which only a hardware config has been provided.
     """
 
     quantum_device = QuantumDevice(name="empty_quantum_device")
-    quantum_device.hardware_config(load_example_qblox_hardware_config)
+    quantum_device.hardware_config(hardware_cfg_pulsar)
 
     config = quantum_device.generate_compilation_config()
     backend = SerialCompiler(config.name)

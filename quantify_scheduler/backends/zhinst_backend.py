@@ -21,7 +21,7 @@ from quantify_scheduler.backends.corrections import (
 )
 from quantify_scheduler.backends.graph_compilation import (
     CompilationConfig,
-    LatencyCorrections,
+    HardwareOptions,
 )
 from quantify_scheduler.backends.types import common, zhinst
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
@@ -35,11 +35,10 @@ from quantify_scheduler.instrument_coordinator.components.generic import (
 from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 
 if TYPE_CHECKING:
-    import pandas as pd
+    import pandas
 
     from quantify_scheduler.operations.operation import Operation
     from quantify_scheduler.resources import Resource
-
 
 logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
@@ -95,7 +94,7 @@ NUM_UHFQA_READOUT_CHANNELS = 10
 MAX_QAS_INTEGRATION_LENGTH = 4096
 
 
-def ensure_no_operations_overlap(timing_table: pd.DataFrame) -> None:
+def ensure_no_operations_overlap(timing_table: pandas.DataFrame) -> None:
     """
     Iterates over all hardware_channels in a schedule to determine if any of the pulses
     have overlap.
@@ -245,8 +244,8 @@ def _determine_sample_start(
 
 
 def _add_channel_information(
-    timing_table: pd.DataFrame, port_clock_channelmapping: dict
-) -> pd.DataFrame | None:
+    timing_table: pandas.DataFrame, port_clock_channelmapping: dict
+) -> pandas.DataFrame | None:
     """ """
 
     def map_port_clock_to_channel(port: str, clock: str) -> str:
@@ -268,8 +267,8 @@ def _add_channel_information(
 
 
 def _apply_latency_corrections(
-    timing_table: pd.DataFrame, latency_dict: dict
-) -> pd.DataFrame:
+    timing_table: pandas.DataFrame, latency_dict: dict
+) -> pandas.DataFrame:
     """
     Changes the "abs_time" of a timing table depending on the specified latency
     corrections for each port-clock combination as specified in the latency
@@ -342,8 +341,8 @@ def _determine_measurement_fixpoint_correction(
 
 
 def _apply_measurement_fixpoint_correction(
-    timing_table: pd.DataFrame, common_frequency: float = 600e6
-) -> pd.DataFrame:
+    timing_table: pandas.DataFrame, common_frequency: float = 600e6
+) -> pandas.DataFrame:
     """
     Updates the abs_time of all operations based on the measurement fixpoint correction.
 
@@ -389,7 +388,7 @@ def _apply_measurement_fixpoint_correction(
     return timing_table
 
 
-def _add_clock_sample_starts(timing_table: pd.DataFrame) -> pd.DataFrame:
+def _add_clock_sample_starts(timing_table: pandas.DataFrame) -> pandas.DataFrame:
     """
     Adds the sequence clock cycle start and sampling start of each operation for each
     channel
@@ -414,7 +413,7 @@ def _add_clock_sample_starts(timing_table: pd.DataFrame) -> pd.DataFrame:
     return timing_table
 
 
-def _add_waveform_ids(timing_table: pd.DataFrame) -> pd.DataFrame:
+def _add_waveform_ids(timing_table: pandas.DataFrame) -> pandas.DataFrame:
     """
     Multiple (numerical) waveforms might be needed to represent a single operation.
 
@@ -605,7 +604,7 @@ def apply_waveform_corrections(
 
 
 def _get_instruction_list(
-    output_timing_table: pd.DataFrame,
+    output_timing_table: pandas.DataFrame,
 ) -> list[zhinst.Instruction]:
     """
     Iterates over a timing table for a specific output for which clock_cycle_start and
@@ -752,7 +751,7 @@ def compile_backend(
         # Important: currently only used to validate the input, should also be
         # used for storing the latency corrections
         # (see also https://gitlab.com/groups/quantify-os/-/epics/1)
-        LatencyCorrections(corrections=hardware_cfg["latency_corrections"])
+        HardwareOptions(latency_corrections=hardware_cfg["latency_corrections"])
 
     schedule = apply_distortion_corrections(schedule, hardware_cfg)
 
@@ -998,7 +997,7 @@ def _add_wave_nodes(
 
 def _compile_for_hdawg(
     device: zhinst.Device,
-    timing_table: pd.DataFrame,
+    timing_table: pandas.DataFrame,
     numerical_wf_dict: dict[str, np.ndarray],
     repetitions: int,
 ) -> zi_settings.ZISettingsBuilder:
@@ -1272,7 +1271,7 @@ def _assemble_hdawg_sequence(
 
 def _compile_for_uhfqa(  # noqa: PLR0915
     device: zhinst.Device,
-    timing_table: pd.DataFrame,
+    timing_table: pandas.DataFrame,
     numerical_wf_dict: dict[str, np.ndarray],
     repetitions: int,
     operations: dict[str, Operation],
@@ -1649,7 +1648,7 @@ def _assemble_uhfqa_sequence(
 
 
 def construct_waveform_table(
-    timing_table: pd.DataFrame,
+    timing_table: pandas.DataFrame,
     operations_dict: dict[str, Operation],
     device_dict: dict[str, zhinst.Device],
 ) -> dict[str, np.ndarray]:
