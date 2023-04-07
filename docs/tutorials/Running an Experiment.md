@@ -27,7 +27,7 @@ The following is a general workflow for using Quantify
 
 - **{ref}`initial_setup`**
   - Set the directory for data storage for the experiment
-  - Initialize the {class}`~quantify_core.measurement.control.MeasurementControl` and {class}`~quantify_scheduler.instrument_coordinator.InstrumentCoordinator` objects
+  - Initialize the {class}`~quantify_core.measurement.control.MeasurementControl` and {class}`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator` objects
 
 - **{ref}`device_setup`**
   - Set up a *device configuration* for the *device under test*
