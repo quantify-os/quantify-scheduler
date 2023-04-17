@@ -14,19 +14,14 @@ import pytest
 import numpy as np
 
 from quantify_scheduler import waveforms
-
 from quantify_scheduler.helpers.waveforms import normalize_waveform_data
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.backends.qblox import constants
-from quantify_scheduler.backends.qblox.instrument_compilers import QcmModule
-from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
-from quantify_scheduler.backends.qblox.register_manager import RegisterManager
 from quantify_scheduler.backends.qblox.operation_handling import pulses
 
-
-@pytest.fixture(name="empty_qasm_program_qcm")
-def fixture_empty_qasm_program():
-    yield QASMProgram(QcmModule.static_hw_properties, RegisterManager())
+from .empty_qasm_program import (  # pylint: disable=unused-import
+    fixture_empty_qasm_program,
+)
 
 
 class TestGenericPulseStrategy:
@@ -232,11 +227,13 @@ class TestGenericPulseStrategy:
 
 
 class TestStitchedSquarePulseStrategy:
+    @pytest.mark.filterwarnings("ignore::FutureWarning")
     def test_constructor(self):
         pulses.StitchedSquarePulseStrategy(
             types.OpInfo(name="", data={}, timing=0), io_mode="real"
         )
 
+    @pytest.mark.filterwarnings("ignore::FutureWarning")
     def test_operation_info_property(self):
         # arrange
         op_info = types.OpInfo(name="", data={}, timing=0)
@@ -248,6 +245,7 @@ class TestStitchedSquarePulseStrategy:
         # assert
         assert op_info == from_property
 
+    @pytest.mark.filterwarnings("ignore::FutureWarning")
     @pytest.mark.parametrize("duration", [400e-9, 1e-6, 1e-3])
     def test_generate_data(self, duration):
         # arrange
@@ -270,6 +268,7 @@ class TestStitchedSquarePulseStrategy:
         assert waveform0_data == answer_path0
         assert waveform1_data == answer_path1
 
+    @pytest.mark.filterwarnings("ignore::FutureWarning")
     @pytest.mark.parametrize(
         "duration, io_mode",
         [
@@ -300,6 +299,7 @@ class TestStitchedSquarePulseStrategy:
         assert waveform0_data == answer_path0
         assert len(waveforms_generated) == 1
 
+    @pytest.mark.filterwarnings("ignore::FutureWarning")
     @pytest.mark.parametrize(
         "duration, answer",
         [
@@ -381,11 +381,13 @@ class TestStitchedSquarePulseStrategy:
 
 
 class TestStaircasePulseStrategy:
+    @pytest.mark.filterwarnings("ignore::FutureWarning")
     def test_constructor(self):
         pulses.StaircasePulseStrategy(
             types.OpInfo(name="", data={}, timing=0), io_mode="complex"
         )
 
+    @pytest.mark.filterwarnings("ignore::FutureWarning")
     def test_operation_info_property(self):
         # arrange
         op_info = types.OpInfo(name="", data={}, timing=0)
@@ -397,6 +399,7 @@ class TestStaircasePulseStrategy:
         # assert
         assert op_info == from_property
 
+    @pytest.mark.filterwarnings("ignore::FutureWarning")
     def test_generate_data(self):
         # arrange
         op_info = types.OpInfo(name="", data={}, timing=0)
@@ -410,6 +413,7 @@ class TestStaircasePulseStrategy:
         # assert
         assert data is None
 
+    @pytest.mark.filterwarnings("ignore::FutureWarning")
     @pytest.mark.parametrize(
         "start_amp, final_amp, num_steps, io_mode, answer",
         [

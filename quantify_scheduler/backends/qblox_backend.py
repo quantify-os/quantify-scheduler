@@ -2,9 +2,10 @@
 # Licensed according to the LICENCE file on the main branch
 """Compiler backend for Qblox hardware."""
 from __future__ import annotations
+from copy import deepcopy
 
 import warnings
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends.corrections import (
@@ -15,7 +16,119 @@ from quantify_scheduler.backends.graph_compilation import (
     CompilationConfig,
     HardwareOptions,
 )
-from quantify_scheduler.backends.qblox import compiler_container, helpers
+from quantify_scheduler.backends.qblox import compiler_container, constants, helpers
+from quantify_scheduler.operations.pulse_factories import long_square_pulse
+
+
+def _get_square_pulses_to_replace(schedule: Schedule) -> Dict[str, List[int]]:
+    """Generate a dict referring to long square pulses to replace in the schedule.
+
+    This function generates a mapping (dict) from the keys in the
+    :meth:`~quantify_scheduler.schedules.schedule.ScheduleBase.operations` dict to a
+    list of indices, which refer to entries in the `"pulse_info"` list that describe a
+    square pulse.
+
+    Parameters
+    ----------
+    schedule : Schedule
+        A :class:`~quantify_scheduler.schedules.schedule.Schedule`, possibly containing
+        long square pulses.
+
+    Returns
+    -------
+    square_pulse_idx_map : Dict[str, List[int]]
+        The mapping from ``operation_repr`` to ``"pulse_info"`` indices to be replaced.
+    """
+    square_pulse_idx_map: Dict[str, List[int]] = {}
+    for ref, operation in schedule.operations.items():
+        square_pulse_idx_to_replace: List[int] = []
+        for i, pulse_info in enumerate(operation.data["pulse_info"]):
+            if (
+                pulse_info.get("wf_func", "") == "quantify_scheduler.waveforms.square"
+                and pulse_info["duration"] >= constants.PULSE_STITCHING_DURATION
+            ):
+                square_pulse_idx_to_replace.append(i)
+        if square_pulse_idx_to_replace:
+            square_pulse_idx_map[ref] = square_pulse_idx_to_replace
+    return square_pulse_idx_map
+
+
+def _replace_long_square_pulses(
+    schedule: Schedule, pulse_idx_map: Dict[str, List[int]]
+) -> Schedule:
+    """Replace any square pulses indicated by pulse_idx_map by a `long_square_pulse`.
+
+    Parameters
+    ----------
+    schedule : Schedule
+        A :class:`~quantify_scheduler.schedules.schedule.Schedule`, possibly containing
+        long square pulses.
+    pulse_idx_map : Dict[str, List[int]]
+        A mapping from the keys in the
+        :meth:`~quantify_scheduler.schedules.schedule.ScheduleBase.operations` dict to
+        a list of indices, which refer to entries in the `"pulse_info"` list that
+        describe a square pulse.
+
+    Returns
+    -------
+    Schedule
+        The schedule with square pulses longer than
+        :class:`~quantify_scheduler.backends.qblox.constants.PULSE_STITCHING_DURATION`
+        replaced by
+        :func:`~quantify_scheduler.operations.pulse_factories.long_square_pulse`. If no
+        replacements were done, this is the original unmodified schedule.
+    """
+    schedule = deepcopy(schedule)
+    for ref, square_pulse_idx_to_replace in pulse_idx_map.items():
+        operation = schedule.operations[ref]
+        while square_pulse_idx_to_replace:
+            pulse_info = operation.data["pulse_info"].pop(
+                square_pulse_idx_to_replace.pop()
+            )
+            new_square_pulse = long_square_pulse(
+                amp=pulse_info["amp"],
+                duration=pulse_info["duration"],
+                port=pulse_info["port"],
+                clock=pulse_info["clock"],
+                t0=pulse_info["t0"],
+            )
+            operation.add_pulse(new_square_pulse)
+    return schedule
+
+
+def compile_long_square_pulses_to_awg_offsets(schedule: Schedule, **_: Any) -> Schedule:
+    """Replace square pulses in the schedule with long square pulses.
+
+    Introspects operations in the schedule to find square pulses with a duration
+    longer than
+    :class:`~quantify_scheduler.backends.qblox.constants.PULSE_STITCHING_DURATION`. Any
+    of these square pulses are converted to
+    :func:`~quantify_scheduler.operations.pulse_factories.long_square_pulse`, which
+    consist of AWG voltage offsets.
+
+    If any operations are to be replaced, a deepcopy will be made of the schedule, which
+    is returned by this function. Otherwise the original unmodified schedule will be
+    returned.
+
+    Parameters
+    ----------
+    schedule : Schedule
+        A :class:`~quantify_scheduler.schedules.schedule.Schedule`, possibly containing
+        long square pulses.
+
+    Returns
+    -------
+    schedule : Schedule
+        The schedule with square pulses longer than
+        :class:`~quantify_scheduler.backends.qblox.constants.PULSE_STITCHING_DURATION`
+        replaced by
+        :func:`~quantify_scheduler.operations.pulse_factories.long_square_pulse`. If no
+        replacements were done, this is the original unmodified schedule.
+    """
+    pulse_idx_map = _get_square_pulses_to_replace(schedule)
+    if pulse_idx_map:
+        schedule = _replace_long_square_pulses(schedule, pulse_idx_map)
+    return schedule
 
 
 def hardware_compile(

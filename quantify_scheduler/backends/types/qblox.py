@@ -10,7 +10,7 @@ from typing import Any, Dict, Optional, Tuple, TypeVar, Union, List
 
 from dataclasses_json import DataClassJsonMixin
 
-from quantify_scheduler.backends.qblox import constants
+from quantify_scheduler.backends.qblox import constants, q1asm_instructions
 
 
 @dataclass(frozen=True)
@@ -84,27 +84,38 @@ class OpInfo(DataClassJsonMixin):
 
     @property
     def duration(self) -> float:
-        """
-        The duration of the pulse/acquisition.
-
-        Returns
-        -------
-        :
-            The duration of the pulse/acquisition.
-        """
+        """The duration of the pulse/acquisition."""
         return self.data["duration"]
 
     @property
-    def is_acquisition(self):
-        """
-        Returns true if this is an acquisition, false if it's a pulse.
-
-        Returns
-        -------
-        :
-            Is this an acquisition?
-        """
+    def is_acquisition(self) -> bool:
+        """Returns ``True`` if this is an acquisition, ``False`` otherwise."""
         return "acq_index" in self.data
+
+    @property
+    def is_real_time_io_operation(self) -> bool:
+        """Returns ``True`` if the operation is a non-idle pulse (i.e., it has a
+        waveform), ``False`` otherwise.
+        """
+        return (
+            self.is_acquisition
+            or self.is_parameter_update
+            or self.data.get("wf_func") is not None
+        )
+
+    @property
+    def is_offset_instruction(self) -> bool:
+        """Returns ``True`` if the operation describes a DC offset operation,
+        corresponding to the Q1ASM instruction ``set_awg_offset``.
+        """
+        return "offset_path_0" in self.data or "offset_path_1" in self.data
+
+    @property
+    def is_parameter_update(self) -> bool:
+        """Return ``True`` if the operation is a parameter update, corresponding to the
+        Q1ASM instruction ``upd_param``.
+        """
+        return self.data.get("instruction", "") == q1asm_instructions.UPDATE_PARAMETERS
 
     def __str__(self):
         type_label: str = "Acquisition" if self.is_acquisition else "Pulse"

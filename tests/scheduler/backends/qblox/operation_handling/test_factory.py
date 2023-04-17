@@ -10,14 +10,16 @@
 from typing import Type
 
 import pytest
+from quantify_scheduler.backends.qblox import q1asm_instructions
 
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.backends.types.qblox import OpInfo
 from quantify_scheduler.backends.qblox.operation_handling import (
+    acquisitions,
     base,
     factory,
     pulses,
-    acquisitions,
+    virtual,
 )
 
 TEST_OP_INFO_MAPPING = {
@@ -96,9 +98,30 @@ TEST_OP_INFO_MAPPING = {
         },
         timing=0,
     ),
+    "offset": OpInfo(
+        name="",
+        data={
+            "instruction": q1asm_instructions.SET_AWG_OFFSET,
+            "offset_path_0": 0.5,
+            "offset_path_1": 0.5,
+            "port": "some_port",
+            "clock": "some_clock",
+        },
+        timing=0,
+    ),
+    "upd_param": OpInfo(
+        name="",
+        data={
+            "instruction": q1asm_instructions.UPDATE_PARAMETERS,
+            "port": "some_port",
+            "clock": "some_clock",
+        },
+        timing=0,
+    ),
 }
 
 
+@pytest.mark.filterwarnings("ignore::FutureWarning")
 @pytest.mark.parametrize(
     "op_info, answer",
     [
@@ -112,6 +135,8 @@ TEST_OP_INFO_MAPPING = {
             TEST_OP_INFO_MAPPING["trigger_count"],
             acquisitions.TriggerCountAcquisitionStrategy,
         ),
+        (TEST_OP_INFO_MAPPING["offset"], virtual.AwgOffsetStrategy),
+        (TEST_OP_INFO_MAPPING["upd_param"], virtual.UpdateParameterStrategy),
     ],
 )
 def test_get_operation_strategy(
@@ -131,6 +156,7 @@ def test_get_operation_strategy(
     assert isinstance(obj, answer)
 
 
+@pytest.mark.filterwarnings("ignore::FutureWarning")
 @pytest.mark.parametrize(
     "op_info",
     [
@@ -155,6 +181,7 @@ def test_get_operation_strategy_no_instr_gen(
     assert isinstance(obj, pulses.GenericPulseStrategy)
 
 
+@pytest.mark.filterwarnings("ignore::FutureWarning")
 def test_invalid_protocol_exception():
     # arrange
     instruction_generated_pulses_enabled = True
@@ -190,6 +217,7 @@ def test_invalid_protocol_exception():
     )
 
 
+@pytest.mark.filterwarnings("ignore::FutureWarning")
 def test_trace_append_exception():
     # arrange
     instruction_generated_pulses_enabled = True

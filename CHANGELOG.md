@@ -5,6 +5,8 @@
 
 ### Breaking changes
 
+- Qblox backend - Deprecate the `instruction_generated_pulses_enabled` hardware configuration setting, as well as the `StitchedSquarePulseStrategy` and `StaircasePulseStrategy`. The newly introduced `StitchedPulse`, as well as the helper functions in `quantify_scheduler.pulse_factories` can be used instead. `SquarePulse`s with a duration >1 microsecond (a constant in the Qblox backend) are compiled to AWG offset instructions (!637).
+
 ### Merged branches and closed issues
 
 - Compilation - Update structure of `HardwareOptions` datastructure with fields `latency_corrections: Dict[str, LatencyCorrection]` and `distortion_corrections: Dict[str, DistortionCorrection]` (!650).
@@ -26,6 +28,9 @@
 - Qblox backend - Forbid repeated acquisition index in schedule (!655, !657, partially revert !542)
 - Qblox backend - `Measure` can now use the `NumericalWeightedIntegrationComplex` protocol. The `DispersiveMeasurement` has been expanded with optional weight parameters for use in this protocol (!612).
 - Git - Change back to default merge strategy for CHANGELOG.md (!659).
+- Operations - Introduce the `StitchedPulse`, an Operation that can be composed of AWG offset instructions and waveforms, and the `StitchedPulseBuilder` which can be used to create `StitchedPulse`s (!588).
+  - Additionally, helper functions `long_square_pulse`, `long_ramp_pulse` and `staircase_pulse` are introduced in `quantify_scheduler.pulse_factories`, to more easily generate the operations for these common use-cases.
+- Operations, Qblox backend - Introduce the `VoltageOffset` operation, for use in the `StitchedPulse`, and modify the compilation steps to compile this operation (!588).
 - Documentation - Fix documentation generation warnings and errors (!658)
 - Documentation - Acquisition data format in user guide (!646)
 

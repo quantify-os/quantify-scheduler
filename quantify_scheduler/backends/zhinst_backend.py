@@ -529,6 +529,12 @@ def _validate_schedule(schedule: Schedule) -> None:
                 + f"for the schedule '{schedule.name}'!"
             )
 
+    if any(op.has_voltage_offset for op in schedule.operations.values()):
+        raise NotImplementedError(
+            "Compilation of operations containing DC voltage offset instructions is "
+            "not yet supported for Zurich Instruments."
+        )
+
 
 def apply_waveform_corrections(
     output: zhinst.Output,

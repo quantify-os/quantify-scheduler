@@ -220,7 +220,11 @@ def set_pulse_and_acquisition_clock(
     for operation in schedule.operations.values():
         # if the operation is at gate-level it must be compiled from
         # circuit to device first.
-        if not operation.valid_pulse and not operation.valid_acquisition:
+        if not (
+            operation.valid_pulse
+            or operation.valid_acquisition
+            or operation.has_voltage_offset
+        ):
             raise RuntimeError(
                 f"Operation '{operation}' is a gate-level operation and must be "
                 f"compiled from circuit to device; ensure compilation "

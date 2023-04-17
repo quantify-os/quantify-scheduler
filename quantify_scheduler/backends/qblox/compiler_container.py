@@ -9,6 +9,7 @@ from typing import Any, Dict, Optional, Set, Union
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.qblox import instrument_compilers as compiler_classes
+from quantify_scheduler.backends.qblox.compiler_abc import InstrumentCompiler
 from quantify_scheduler.helpers.importers import import_python_object_from_string
 from quantify_scheduler.helpers.schedule import get_total_duration
 
@@ -44,7 +45,7 @@ class CompilerContainer:
         The resources attribute of the schedule. Used for getting the information
          from the clocks.
         """
-        self.instrument_compilers = {}
+        self.instrument_compilers: Dict[str, InstrumentCompiler] = {}
         """The compilers for the individual instruments."""
         self.generics: Set[str] = set()
         """Set of generic instruments in the setup."""

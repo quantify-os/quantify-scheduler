@@ -9,6 +9,7 @@ import logging
 from collections import UserDict
 from enum import Enum
 from pydoc import locate
+from typing import Optional
 import warnings
 
 import numpy as np
@@ -68,7 +69,7 @@ class Operation(JSONSchemaValMixin, UserDict):
     schema_filename = "operation.json"
     _class_signature = None
 
-    def __init__(self, name: str, data: dict = None) -> None:
+    def __init__(self, name: str, data: Optional[dict] = None) -> None:
         super().__init__()
 
         # ensure keys exist
@@ -124,6 +125,9 @@ class Operation(JSONSchemaValMixin, UserDict):
     def __setstate__(self, state):
         self.data = state["data"]
         self._update()
+
+    def __hash__(self) -> int:
+        return self.hash
 
     def _update(self) -> None:
         """Update the Operation's internals."""
@@ -336,5 +340,17 @@ class Operation(JSONSchemaValMixin, UserDict):
         represent the operation as a acquisition on the pulse level.
         """
         if len(self.data["acquisition_info"]) > 0:
+            return True
+        return False
+
+    @property
+    def has_voltage_offset(self) -> bool:
+        """
+        Checks if the operation contains information for a voltage offset.
+        """
+        if any(
+            "offset_path_0" in pulse_info or "offset_path_1" in pulse_info
+            for pulse_info in self.data["pulse_info"]
+        ):
             return True
         return False

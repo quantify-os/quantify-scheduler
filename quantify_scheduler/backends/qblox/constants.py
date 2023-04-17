@@ -34,6 +34,11 @@ MIN_TIME_BETWEEN_ACQUISITIONS = 1000  # ns
 """Minimum time between two acquisitions to prevent FIFO errors."""
 SAMPLING_RATE = 1_000_000_000  # 1GS/s
 """Sampling rate of the Qblox control/readout instruments."""
+STITCHED_PULSE_PART_DURATION_NS = 2000
+"""Default duration of the individual waveforms that are used to build up a longer
+stitched waveform. See
+:func:`~quantify_scheduler.operations.pulse_factories.long_ramp_pulse` for an
+example."""
 PULSE_STITCHING_DURATION = 1e-6
 """Duration of the individual pulses when pulse stitching is used."""
 MIN_MIXER_PHASE_ERROR_DEG = -45

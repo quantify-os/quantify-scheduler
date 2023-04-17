@@ -499,7 +499,7 @@ The following parameters are available.
 - `"init_gain_awg_path_0"` by default `1.0`, must be between `-1.0` and `1.0`,
 - `"init_gain_awg_path_1"` by default `1.0`, must be between `-1.0` and `1.0`,
 - `"qasm_hook_func"`, see {ref}`QASM hook <sec-qblox-qasm-hook>`,
-- `"instruction_generated_pulses_enabled"`, see {ref}`Instruction generated pulses <sec-qblox-instruction-generated-pulses>`.
+- `"instruction_generated_pulses_enabled"`, see {ref}`Instruction generated pulses (_deprecated_) <sec-qblox-instruction-generated-pulses>`.
 
 ```{note}
 We note that it is a requirement of the backend that each combination of a port and a clock is unique, i.e. it is possible to use the same port or clock multiple times in the hardware config but the combination of a port with a certain clock can only occur once.
@@ -540,6 +540,10 @@ hw_config = {
 
 (sec-qblox-instruction-generated-pulses)=
 #### Instruction generated pulses
+
+```{warning}
+The {code}`instruction_generated_pulses_enabled` option is deprecated and will be removed in a future version. Long square pulses and staircase pulses can be generated with the newly introduced {class}`~quantify_scheduler.operations.stitched_pulse.StitchedPulseBuilder`. More information can be found in {ref}`Long waveform support <sec-qblox-cluster-long-waveform-support>`.
+```
 
 The Qblox backend contains some intelligence that allows it to generate certain specific waveforms from the pulse library using a more complicated series of sequencer instructions, which helps conserve waveform memory. Though in order to keep the backend fully transparent, all such advanced capabilities are disabled by default.
 
@@ -642,3 +646,82 @@ Clipping values are the boundaries to which the corrected pulses will be clipped
 upon exceeding, these are optional to supply.
 
 The `"filter_func"` is a python function that we apply with `"kwargs"` arguments. The waveform to be modified will be passed to this function in the argument name specified by `"input_var_name"`. The waveform will be passed as a `np.ndarray`.
+
+(sec-qblox-cluster-long-waveform-support)=
+## Long waveform support
+
+It is possible to play waveforms that are too long to fit in the waveform memory of Qblox modules. For a few standard waveforms, the square pulse, ramp pulse and staircase pulse, the following helper functions create operations that can readily be added to schedules:
+
+```{code-cell} ipython3
+---
+mystnb:
+  number_source_lines: true
+  remove_code_outputs: true
+---
+
+from quantify_scheduler.operations.pulse_factories import (
+    long_ramp_pulse,
+    long_square_pulse,
+    staircase_pulse,
+)
+
+ramp_pulse = long_ramp_pulse(amp=0.5, duration=1e-3, port="q0:mw")
+square_pulse = long_square_pulse(amp=0.5, duration=1e-3, port="q0:mw")
+staircase_pulse = staircase_pulse(
+    start_amp=0.0, final_amp=1.0, num_steps=20, duration=1e-4, port="q0:mw"
+)
+```
+
+More complex waveforms can be created from the {class}`~quantify_scheduler.operations.stitched_pulse.StitchedPulseBuilder`. This class allows you to construct complex waveforms by stitching together available pulses, and adding voltage offsets in between. Voltage offsets can be specified with or without a duration. In the latter case, the offset will hold until the last operation in the {class}`~quantify_scheduler.operations.stitched_pulse.StitchedPulse` ends. For example,
+
+```{code-cell} ipython3
+---
+mystnb:
+  number_source_lines: true
+  remove_code_outputs: true
+---
+
+from quantify_scheduler.operations.pulse_library import RampPulse
+from quantify_scheduler.operations.stitched_pulse import StitchedPulseBuilder
+
+trapezoid_pulse = (
+    StitchedPulseBuilder(port="q0:mw", clock="q0.01")
+    .add_pulse(RampPulse(amp=0.5, duration=1e-8, port="q0:mw"))
+    .add_voltage_offset(path_0=0.5, path_1=0.0, duration=1e-7)
+    .add_pulse(RampPulse(amp=-0.5, offset=0.5, duration=1e-8, port="q0:mw"))
+    .build()
+)
+
+repeat_pulse_with_offset = (
+    StitchedPulseBuilder(port="q0:mw", clock="q0.01")
+    .add_pulse(RampPulse(amp=0.2, duration=8e-6, port="q0:mw"))
+    .add_voltage_offset(path_0=0.4, path_1=0.0)
+    .add_pulse(RampPulse(amp=0.2, duration=8e-6, port="q0:mw"))
+    .build()
+)
+```
+
+Pulses and offsets are appended to the end of the last added operation by default. By specifying the `append=False` keyword argument in the `add_pulse` and `add_voltage_offset` methods, in combination with the `rel_time` argument, you can insert an operation at the specified time relative to the start of the {class}`~quantify_scheduler.operations.stitched_pulse.StitchedPulse`. The example below uses this to generate a series of square pulses of various durations and amplitudes.
+
+```{code-cell} ipython3
+---
+mystnb:
+  number_source_lines: true
+  remove_code_outputs: true
+---
+
+from quantify_scheduler.operations.stitched_pulse import StitchedPulseBuilder
+
+offsets = [0.3, 0.4, 0.5]
+durations = [1e-6, 2e-6, 1e-6]
+start_times = [0.0, 2e-6, 6e-6]
+
+builder = StitchedPulseBuilder(port="q0:mw", clock="q0.01")
+
+for offset, duration, t_start in zip(offsets, durations, start_times):
+    builder.add_voltage_offset(
+        path_0=offset, path_1=0.0, duration=duration, append=False, rel_time=t_start
+    )
+
+pulse = builder.build()
+```

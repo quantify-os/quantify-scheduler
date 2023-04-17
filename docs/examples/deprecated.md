@@ -1,5 +1,7 @@
 ---
 file_format: mystnb
+kernelspec:
+    name: python3
 
 ---
 
@@ -12,6 +14,7 @@ Download the notebook: {nb-download}`deprecated.ipynb`
 - {ref}`1. Qcompile => SerialCompiler`
 - {ref}`2. Qblox Hardware Configuration`
 - {ref}`3. TransmonElement => BasicTransmonElement`
+- {ref}`4. Instruction-generated pulses (Qblox only)`
 
 As of `quantify-scheduler==0.10.0`, deprecation warnings are shown by default (as `FutureWarning`).
 
@@ -307,3 +310,22 @@ device_config_basic_transmon = basic.generate_device_config().dict()
 pprint.pprint(device_config_basic_transmon)
 ```
 
+## 4. Instruction-generated pulses (Qblox only)
+
+Instead of using the ``instruction_generated_pulses_enabled: True`` field in the port-clock configuration for generating long square and staircase pulses (see {ref}`Instruction generated pulses <sec-qblox-instruction-generated-pulses>`), you can now create long square, staircase and ramp waveforms (that would otherwise not fit in memory), by creating these operations with the following helper functions.
+
+```{code-cell} ipython3
+from quantify_scheduler.operations.pulse_factories import (
+    long_ramp_pulse,
+    long_square_pulse,
+    staircase_pulse,
+)
+
+ramp_pulse = long_ramp_pulse(amp=0.5, duration=1e-3, port="q0:mw")
+square_pulse = long_square_pulse(amp=0.5, duration=1e-3, port="q0:mw")
+staircase_pulse = staircase_pulse(
+    start_amp=0.0, final_amp=1.0, num_steps=20, duration=1e-4, port="q0:mw"
+)
+```
+
+More complex long waveforms can now also be created, see section {ref}`Long waveform support <sec-qblox-cluster-long-waveform-support>`.

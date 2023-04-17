@@ -359,8 +359,18 @@ class Sequencer:
         self.register_manager = register_manager.RegisterManager()
 
         self.instruction_generated_pulses_enabled = seq_settings.get(
-            "instruction_generated_pulses_enabled", False
+            "instruction_generated_pulses_enabled", None
         )
+        if self.instruction_generated_pulses_enabled is not None:
+            warnings.warn(
+                "Support for the instruction_generated_pulses_enabled configuration "
+                "field will be dropped in quantify-scheduler >= 0.15.0.\nFor long "
+                "square, ramp, or staircase pulses, please look at the pulse library "
+                "in quantify_scheduler.operations.pulse_factories.",
+                FutureWarning,
+            )
+        else:
+            self.instruction_generated_pulses_enabled = False
 
         self._settings = SequencerSettings.initialize_from_config_dict(
             seq_settings=seq_settings,
@@ -807,11 +817,17 @@ class Sequencer:
 
         self._initialize_append_mode_registers(qasm, acquisitions)
 
-        # program body
+        # Program body. The operations are sorted such that real-time IO operations
+        # always come after any other operations. E.g., an offset instruction should
+        # always come before the parameter update, play, or acquisition instruction.
         op_list = pulses + acquisitions
         op_list = sorted(
             op_list,
-            key=lambda p: (p.operation_info.timing, p.operation_info.is_acquisition),
+            # Note: round to nanoseconds below such that e.g. 1.0000000001 == 1
+            key=lambda op: (
+                round(op.operation_info.timing, ndigits=9),
+                op.operation_info.is_real_time_io_operation,
+            ),
         )
 
         # Adds the latency correction, this needs to be a minimum of 4 ns,
@@ -1290,7 +1306,10 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         the device does not support acquisitions.
         """
 
-        if len(self._acquisitions) > 0 and not self.supports_acquisition:
+        if (
+            any(len(acq) > 0 for acq in self._acquisitions.values())
+            and not self.supports_acquisition
+        ):
             raise RuntimeError(
                 f"Attempting to add acquisitions to  {self.__class__} {self.name}, "
                 f"which is not supported by hardware."
@@ -1454,6 +1473,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         self._configure_input_gains()
         self._configure_mixer_offsets()
         self._construct_sequencers()
+        self._insert_update_parameters()
         for seq in self.sequencers.values():
             self.assign_frequencies(seq)
         self.distribute_data()
@@ -1570,6 +1590,56 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                         module_name=self.name,
                     )
                 scope_acq_seq = seq.index
+
+    def _insert_update_parameters(self):
+        """
+        Insert update parameter instructions to activate offsets, if they are not
+        already activated by a play, acquire or acquire_weighed instruction (see also
+        `the Q1ASM reference
+        <https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/documentation/sequencer.html#instructions>`_).
+        """
+        for portclock, pulses in self._pulses.items():
+            upd_params = self._new_update_parameters_for_port_clock(
+                pulses_and_acqs=pulses + self._acquisitions[portclock]
+            )
+            self._pulses[portclock] += upd_params
+
+    def _new_update_parameters_for_port_clock(
+        self,
+        pulses_and_acqs: List[OpInfo],
+    ) -> List[OpInfo]:
+        def any_other_updating_instruction_at_timing(timing: float) -> bool:
+            return any(
+                np.isclose(op.timing, timing) and op.is_real_time_io_operation
+                for op in pulses_and_acqs
+            )
+
+        # Collect all (port, clock, time) triples where an upd_param needs to be
+        # inserted
+        upd_param_infos: Set[Tuple[str, str, float]] = set()
+        for op in pulses_and_acqs:
+            if op.is_offset_instruction and not (
+                np.isclose(self.total_play_time, op.timing)
+                or any_other_updating_instruction_at_timing(op.timing)
+            ):
+                upd_param_infos.add(
+                    (op.data["port"], op.data["clock"], round(op.timing, ndigits=9))
+                )  # Note: round to nanoseconds
+
+        return [
+            OpInfo(
+                name="UpdateParameters",
+                data={
+                    "t0": 0,
+                    "port": port,
+                    "clock": clock,
+                    "duration": 0,
+                    "instruction": q1asm_instructions.UPDATE_PARAMETERS,
+                },
+                timing=timing,
+            )
+            for port, clock, timing in upd_param_infos
+        ]
 
     def compile(
         self,

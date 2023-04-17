@@ -6,9 +6,9 @@ from __future__ import annotations
 
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.backends.qblox.operation_handling import (
+    acquisitions,
     base,
     pulses,
-    acquisitions,
     virtual,
 )
 from quantify_scheduler.backends.types.qblox import OpInfo
@@ -80,7 +80,12 @@ def _get_pulse_strategy(
     io_mode: str,
 ) -> base.IOperationStrategy:
     """Handles the logic for determining the correct pulse type."""
-    if operation_info.data["port"] is None:
+    if operation_info.is_offset_instruction:
+        return virtual.AwgOffsetStrategy(operation_info)
+    elif operation_info.is_parameter_update:
+        return virtual.UpdateParameterStrategy(operation_info)
+
+    elif operation_info.data["port"] is None:
         if "phase_shift" in operation_info.data:
             return virtual.NcoPhaseShiftStrategy(operation_info)
         elif "reset_clock_phase" in operation_info.data:
