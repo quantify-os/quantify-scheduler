@@ -327,6 +327,32 @@ class TestWeightedAcquisitionStrategy:
             ]
         ]
 
+    def test_duration_must_be_present(self, empty_qasm_program_qrm):
+        # arrange
+        qasm = empty_qasm_program_qrm
+        weights = [
+            {
+                "wf_func": "quantify_scheduler.waveforms.square",
+                "amp": 1,
+            },
+            {
+                "wf_func": "quantify_scheduler.waveforms.square",
+                "amp": 0,
+            },
+        ]
+        data = {
+            "bin_mode": BinMode.AVERAGE,
+            "acq_channel": 2,
+            "acq_index": 12,
+            "waveforms": weights,
+        }
+        strategy = acquisitions.WeightedAcquisitionStrategy(
+            types.OpInfo(name="", data=data, timing=0)
+        )
+        strategy.bin_idx_register = qasm.register_manager.allocate_register()
+        with pytest.raises(KeyError):
+            strategy.generate_data({})
+
     def test_acquire_append(self, empty_qasm_program_qrm):
         # arrange
         qasm = empty_qasm_program_qrm
@@ -370,6 +396,34 @@ class TestWeightedAcquisitionStrategy:
             ],
             ["", "", "", ""],
         ]
+
+    def test_bad_weights(self, empty_qasm_program_qrm):
+        # arrange
+        qasm = empty_qasm_program_qrm
+        weights = [
+            {
+                "wf_func": "quantify_scheduler.waveforms.square",
+                "amp": 1.2,
+                "duration": 1e-6,
+            },
+            {
+                "wf_func": "quantify_scheduler.waveforms.square",
+                "amp": 0,
+                "duration": 1e-6,
+            },
+        ]
+        data = {
+            "bin_mode": BinMode.AVERAGE,
+            "acq_channel": 2,
+            "acq_index": 12,
+            "waveforms": weights,
+        }
+        strategy = acquisitions.WeightedAcquisitionStrategy(
+            types.OpInfo(name="", data=data, timing=0)
+        )
+        strategy.bin_idx_register = qasm.register_manager.allocate_register()
+        with pytest.raises(ValueError):
+            strategy.generate_data({})
 
 
 class TestTriggerCountStrategy:

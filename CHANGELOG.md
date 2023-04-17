@@ -19,11 +19,12 @@
 - Visualization - Introduce the `x_range` keyword for the matplotlib backend in `Schedule.plot_pulse_diagram`. This will cut off any points outside the given range when creating the plot. This can be used to reduce memory usage when plotting a small section of a long pulse sequence (!629).
 - Schedules - Add `nv_dark_esr_sched_nco` spectroscopy schedule using SetClockFrequency Operation to sweep the NCO frequency (!639)
 - ZI LabOne backend - Return datasets from UHFQA instrument coordinator component (which fixes the broken backend) (#410, !623).
-- Qblox backend - Renamed `hw_mapping` input parameter to `instrument_cfg` in `InstrumentCompiler` and up
-- Qblox backend - Let the compiler raise an error when the waveforms specified in the schedule are too large to be uploaded to a sequencer.
+- Qblox backend - Renamed `hw_mapping` input parameter to `instrument_cfg` in `InstrumentCompiler` and up (!644).
+- Qblox backend - Let the compiler raise an error when the waveforms specified in the schedule are too large to be uploaded to a sequencer (!625).
 - Qblox backend - Forbid repeated acquisition index in schedule (!655, partially revert !542)
 - Qblox backend - Rename the `MAX_SAMPLE_SIZE_ACQUISITIONS` constant to `MAX_SAMPLE_SIZE_SCOPE_ACQUISITIONS`, and modify the docstring to clarify that this constant only refers to scope trace acquisitions (!649).
 - Qblox backend - Forbid repeated acquisition index in schedule (!655, !657, partially revert !542)
+- Qblox backend - `Measure` can now use the `NumericalWeightedIntegrationComplex` protocol. The `DispersiveMeasurement` has been expanded with optional weight parameters for use in this protocol (!612).
 - Git - Change back to default merge strategy for CHANGELOG.md (!659).
 - Documentation - Fix documentation generation warnings and errors (!658)
 - Documentation - Acquisition data format in user guide (!646)

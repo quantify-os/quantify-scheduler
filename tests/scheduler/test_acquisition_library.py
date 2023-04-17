@@ -116,6 +116,70 @@ def test_trigger_count():
     assert trigger_count.data["acquisition_info"][0]["t0"] == 12e-9
 
 
+def test_weighted_acquisition():
+    weighted = NumericalWeightedIntegrationComplex(
+        port="q0:res",
+        clock="q0.ro",
+        weights_a=[0.25, 0.5, 0.25, 0.25],
+        weights_b=[0.25, 0.5, 0.5, 0.25],
+        interpolation="linear",
+        acq_channel=1,
+        acq_index=2,
+        bin_mode=BinMode.APPEND,
+        t0=16e-9,
+    )
+    expected = {
+        "t0": 1.6e-08,
+        "clock": "q0.ro",
+        "port": "q0:res",
+        "duration": pytest.approx(4e-9),
+        "phase": 0,
+        "acq_channel": 1,
+        "acq_index": 2,
+        "bin_mode": BinMode.APPEND,
+        "protocol": "WeightedIntegratedComplex",
+        "acq_return_type": complex,
+    }
+    for k, v in expected.items():
+        assert weighted.data["acquisition_info"][0][k] == v
+    wf_a, wf_b = weighted.data["acquisition_info"][0]["waveforms"]
+    assert list(wf_a["t_samples"]) == [0.0e00, 1.0e-09, 2.0e-09, 3.0e-09]
+    assert list(wf_b["t_samples"]) == [0.0e00, 1.0e-09, 2.0e-09, 3.0e-09]
+
+
+@pytest.mark.filterwarnings("ignore::FutureWarning")
+def test_weighted_acquisition_deprecated():
+    weighted = NumericalWeightedIntegrationComplex(
+        port="q0:res",
+        clock="q0.ro",
+        weights_a=[0.25, 0.5, 0.25, 0.25],
+        weights_b=[0.25, 0.5, 0.5, 0.25],
+        t=np.arange(4) / 1e9,
+        interpolation="linear",
+        acq_channel=1,
+        acq_index=2,
+        bin_mode=BinMode.APPEND,
+        t0=16e-9,
+    )
+    expected = {
+        "t0": 1.6e-08,
+        "clock": "q0.ro",
+        "port": "q0:res",
+        "duration": pytest.approx(4e-9),
+        "phase": 0,
+        "acq_channel": 1,
+        "acq_index": 2,
+        "bin_mode": BinMode.APPEND,
+        "protocol": "WeightedIntegratedComplex",
+        "acq_return_type": complex,
+    }
+    for k, v in expected.items():
+        assert weighted.data["acquisition_info"][0][k] == v
+    wf_a, wf_b = weighted.data["acquisition_info"][0]["waveforms"]
+    assert list(wf_a["t_samples"]) == [0.0e00, 1.0e-09, 2.0e-09, 3.0e-09]
+    assert list(wf_b["t_samples"]) == [0.0e00, 1.0e-09, 2.0e-09, 3.0e-09]
+
+
 @pytest.mark.parametrize(
     "operation",
     [
@@ -157,7 +221,7 @@ def test__repr__(operation: Operation):
         NumericalWeightedIntegrationComplex(
             weights_a=np.zeros(3, dtype=complex),
             weights_b=np.ones(3, dtype=complex),
-            t=np.linspace(0, 3, 1),
+            t=np.arange(0, 3, 1),
             port="q0:res",
             clock="q0.ro",
         ),
@@ -188,7 +252,7 @@ def test__str__(operation: Operation):
         NumericalWeightedIntegrationComplex(
             weights_a=np.zeros(3, dtype=complex),
             weights_b=np.ones(3, dtype=complex),
-            t=np.linspace(0, 3, 1),
+            t=np.arange(0, 3, 1),
             port="q0:res",
             clock="q0.ro",
         ),

@@ -97,28 +97,45 @@ def find_all_port_clock_combinations(d: dict) -> List[Tuple[str, str]]:
     return port_clocks
 
 
-def generate_waveform_data(data_dict: dict, sampling_rate: float) -> np.ndarray:
-    """
-    Generates an array using the parameters specified in `data_dict`.
+def generate_waveform_data(
+    data_dict: dict, sampling_rate: float, duration: Optional[float] = None
+) -> np.ndarray:
+    """Generates an array using the parameters specified in ``data_dict``.
 
     Parameters
     ----------
-    data_dict
+    data_dict : dict
         The dictionary that contains the values needed to parameterize the
-        waveform. `data_dict['wf_func']` is then called to calculate the values.
-    sampling_rate
+        waveform. ``data_dict['wf_func']`` is then called to calculate the values.
+    sampling_rate : float
         The sampling rate used to generate the time axis values.
+    duration : float or None, optional
+        The duration of the waveform in seconds. This parameter can be used if
+        ``data_dict`` does not contain a ``'duration'`` key. By default None.
 
     Returns
     -------
-    :
+    wf_data : np.ndarray
         The (possibly complex) values of the generated waveform. The number of values is
         determined by rounding to the nearest integer.
+
+    Raises
+    ------
+    TypeError
+        If ``data_dict`` does not contain a ``'duration'`` entry and ``duration is
+        None``.
     """
-    time_duration = data_dict["duration"]
-    t = np.linspace(
-        start=0, stop=time_duration, num=int(np.round(time_duration * sampling_rate))
-    )
+    if duration is None:
+        try:
+            duration = data_dict["duration"]
+        except KeyError as exc:
+            raise TypeError(
+                "Parameter 'duration' has value None. If 'data_dict' does not contain "
+                "'duration', the function parameter can be used instead."
+            ) from exc
+
+    num_samples = round(duration * sampling_rate)
+    t = np.arange(start=0, stop=num_samples, step=1) / sampling_rate
 
     wf_data = exec_waveform_function(
         wf_func=data_dict["wf_func"], t=t, pulse_info=data_dict
@@ -712,7 +729,13 @@ def assign_pulse_and_acq_info_to_devices(
             hashed_dict = without(acq_data, ["t0", "waveforms"])
             hashed_dict["waveforms"] = []
             for acq in acq_data["waveforms"]:
-                hashed_dict["waveforms"].append(without(acq, ["t0"]))
+                if "t0" in acq:
+                    # TODO 'without' will raise a KeyError if the key is not already
+                    # present. Keep only the else-part and update the requirements when
+                    # quantify-core!438 is in the latest release.
+                    hashed_dict["waveforms"].append(without(acq, ["t0"]))
+                else:
+                    hashed_dict["waveforms"].append(acq)
 
             combined_data = OpInfo(
                 name=op_data.data["name"],

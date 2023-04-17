@@ -106,7 +106,10 @@ class TestGenericPulseStrategy:
         op_info = types.OpInfo(name="", data=data, timing=0)
         strategy = pulses.GenericPulseStrategy(op_info, io_mode="complex")
         wf_dict = {}
-        t_test = np.linspace(0, duration, int(duration * constants.SAMPLING_RATE))
+        t_test = (
+            np.arange(0, int(round(duration * constants.SAMPLING_RATE)), 1)
+            / constants.SAMPLING_RATE
+        )
 
         # act
         strategy.generate_data(wf_dict=wf_dict)

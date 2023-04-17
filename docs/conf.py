@@ -379,6 +379,7 @@ nitpick_ignore = [
         "quantify_scheduler.instrument_coordinator.components.InstrumentCoordinatorComponentBase",
     ),
     ("py:class", "AcquisitionIndexing"),
+    ("py:class", "optional"),
     ("py:obj", "quantify_scheduler.Operation"),
     ("py:class", "quantify_scheduler.Operation"),
     ("py:obj", "quantify_scheduler.Resource"),
@@ -405,6 +406,7 @@ nitpick_ignore = [
 
 nitpick_ignore_regex = [
     ("py:class", r"numpy.*"),
+    ("py:class", r"np.*"),
     ("py:class", r"plotly.*"),
     ("py:.*", r"orjson.*"),
     ("py:.*", r"pydantic.*"),
@@ -415,6 +417,7 @@ nitpick_ignore_regex = [
     (".*", r".*Schedule"),
     ("py:class", r"qblox_instruments.*"),
     ("py:class", r"matplotlib.*"),
+    ("py:class", r"\"[a-zA-Z]+\""),  # Ignore string literals
 ]
 
 with open("nitpick-exceptions.txt", encoding="utf-8") as nitpick_exceptions:

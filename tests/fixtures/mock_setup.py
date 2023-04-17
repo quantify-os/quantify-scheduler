@@ -6,6 +6,7 @@ import os
 import pathlib
 import shutil
 from typing import Any, Dict, List, Union
+import numpy as np
 
 import pytest
 from qcodes import Instrument
@@ -121,6 +122,20 @@ def mock_setup_basic_transmon_with_standard_params(mock_setup_basic_transmon):
 
 
 @pytest.fixture(scope="function", autouse=False)
+def mock_setup_basic_transmon_with_weighted_integration(mock_setup_basic_transmon):
+    set_standard_params_transmon(mock_setup_basic_transmon)
+    for i in range(5):
+        qi: BasicTransmonElement = mock_setup_basic_transmon[f"q{i}"]
+        sample_rate_MHz = 500
+        acq_duration_us = 2
+        qi.measure.acq_weights_a(np.ones(sample_rate_MHz * acq_duration_us) * 0.6)
+        qi.measure.acq_weights_b(np.ones(sample_rate_MHz * acq_duration_us) * 0.4)
+        qi.measure.acq_weights_sampling_rate(sample_rate_MHz * 1e6)
+        qi.measure.acq_weight_type("Numerical")
+    yield mock_setup_basic_transmon
+
+
+@pytest.fixture(scope="function", autouse=False)
 def mock_setup_basic_nv():
     """
     Returns a mock setup for a basic 1-qubit NV-center device.
@@ -163,6 +178,21 @@ def device_compile_config_basic_transmon(
 
 
 @pytest.fixture(scope="function", autouse=False)
+def device_compile_config_basic_transmon_with_weighted_integration(
+    mock_setup_basic_transmon_with_weighted_integration,
+):
+    """
+    A config generated from a quantum device with 5 transmon qubits
+    connected in a star configuration, with added parameters for weighted integration.
+
+    The mock setup has no hardware attached to it.
+    """
+
+    mock_setup = mock_setup_basic_transmon_with_weighted_integration
+    yield mock_setup["quantum_device"].generate_compilation_config()
+
+
+@pytest.fixture(scope="function", autouse=False)
 def compile_config_basic_transmon_zhinst_hardware(
     mock_setup_basic_transmon_with_standard_params,
 ):
@@ -195,6 +225,22 @@ def compile_config_basic_transmon_qblox_hardware(
     mock_setup = mock_setup_basic_transmon_with_standard_params
     mock_setup["quantum_device"].hardware_config(QBLOX_HARDWARE_MAPPING)
     mock_setup["quantum_device"].hardware_options(QBLOX_HARDWARE_OPTIONS)
+
+    yield mock_setup["quantum_device"].generate_compilation_config()
+
+
+@pytest.fixture(scope="function", autouse=False)
+def compile_config_transmon_weighted_integration_qblox_hardware_pulsar(
+    mock_setup_basic_transmon_with_weighted_integration,
+    hardware_cfg_pulsar,
+):
+    """
+    A config for a quantum device with 5 transmon qubits connected in a star
+    configuration controlled using Qblox Hardware, with added parameters for weighted
+    integration.
+    """
+    mock_setup = mock_setup_basic_transmon_with_weighted_integration
+    mock_setup["quantum_device"].hardware_config(hardware_cfg_pulsar)
 
     yield mock_setup["quantum_device"].generate_compilation_config()
 
