@@ -3,12 +3,13 @@
 # pylint: disable=too-many-arguments
 """Standard acquisition protocols for use with the quantify_scheduler."""
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Sequence, Union
 import warnings
 
 import numpy as np
 
 from quantify_scheduler import Operation
+import quantify_scheduler.backends.qblox.constants as qblox_constants
 from quantify_scheduler.enums import BinMode
 
 
@@ -384,6 +385,37 @@ class SSBIntegrationComplex(AcquisitionOperation):  # pylint: disable=too-many-a
         return self._get_signature(acq_info)
 
 
+def _is_increasing_at_constant_rate(array: Sequence[float]) -> bool:
+    """Checks whether the array is increasing at a constant rate.
+
+    An array with size 2 is assumed to be increasing at a constant rate.
+
+    .. admonition:: Examples
+
+        .. jupyter-execute::
+            :hide-code:
+
+            from quantify_scheduler.operations.acquisition_library import (
+                _is_increasing_at_constant_rate
+            )
+
+        .. jupyter-execute::
+
+            assert _is_increasing_at_constant_rate([1,2,3,4]) is True
+            assert _is_increasing_at_constant_rate([1,2,4]) is False
+            assert _is_increasing_at_constant_rate([4,3,2,1]) is False
+            assert _is_increasing_at_constant_rate([1,1,1]) is False
+            assert _is_increasing_at_constant_rate([2,1]) is False
+            assert _is_increasing_at_constant_rate([1]) is False
+    """
+    if len(array) < 2:
+        return False
+    diff = np.diff(array)
+    is_constant_rate = np.all(np.isclose(diff, diff[0], atol=1e-10))
+    is_increasing = diff[0] > 0
+    return bool(is_constant_rate and is_increasing)
+
+
 class NumericalWeightedIntegrationComplex(
     WeightedIntegratedComplex
 ):  # pylint: disable=too-many-ancestors
@@ -394,11 +426,12 @@ class NumericalWeightedIntegrationComplex(
 
     def __init__(
         self,
-        weights_a: Union[List[complex], np.ndarray],
-        weights_b: Union[List[complex], np.ndarray],
-        t: Union[List[float], np.ndarray],
         port: str,
         clock: str,
+        weights_a: Union[List[complex], np.ndarray],
+        weights_b: Union[List[complex], np.ndarray],
+        weights_sampling_rate: float = qblox_constants.SAMPLING_RATE,
+        t: Optional[Union[List[float], np.ndarray]] = None,
         interpolation: str = "linear",
         acq_channel: int = 0,
         acq_index: int = 0,
@@ -427,18 +460,25 @@ class NumericalWeightedIntegrationComplex(
 
         Parameters
         ----------
+        port :
+            The acquisition port.
+        clock :
+            The clock used to demodulate the acquisition.
         weights_a :
             The list of complex values used as weights :math:`A(t)` on
             the incoming complex signal.
         weights_b :
             The list of complex values used as weights :math:`B(t)` on
             the incoming complex signal.
+        weights_sampling_rate :
+            The rate with which the weights have been sampled, in Hz. By default equal
+            to the Qblox backend sampling rate. Note that during hardware compilation,
+            the weights will be resampled with the sampling rate supported by the target
+            hardware.
         t :
-            The time values of each weight.
-        port :
-            The acquisition port.
-        clock :
-            The clock used to demodulate the acquisition.
+            The time values of each weight. This parameter is deprecated in favor of
+            ``weights_sampling_rate``. If a value is provided for ``t``, the
+            ``weights_sampling_rate`` parameter will be ignored.
         interpolation :
             The type of interpolation to use, by default "linear". This argument is
             passed to :obj:`~scipy.interpolate.interp1d`.
@@ -468,26 +508,39 @@ class NumericalWeightedIntegrationComplex(
             quantify-scheduler >= 0.13.0. Please consider updating the data
             dictionary after initialization.
         """
-        if not isinstance(weights_a, np.ndarray):
-            weights_a = np.array(weights_a)
-        if not isinstance(weights_b, np.ndarray):
-            weights_b = np.array(weights_b)
-        if not isinstance(t, np.ndarray):
-            t = np.array(t)
+        if t is not None:
+            warnings.warn(
+                "Support for the 't' argument will be dropped in quantify-scheduler >= "
+                "0.16.0. Please use 'weights_sampling_rate' instead.",
+                FutureWarning,
+            )
+            if not _is_increasing_at_constant_rate(t):
+                raise ValueError(
+                    "The NumericalWeightedIntegrationComplex protocol requires that "
+                    "the 't' argument has a length larger than 1 and increases at a "
+                    "constant rate"
+                )
+            t_samples = np.array(t)
+            weights_sampling_rate = 1 / (t_samples[1] - t_samples[0])
+        else:
+            t_samples = np.arange(len(weights_a)) / weights_sampling_rate
+
+        weights_a = np.array(weights_a)
+        weights_b = np.array(weights_b)
 
         waveforms_a = {
             "wf_func": "quantify_scheduler.waveforms.interpolated_complex_waveform",
             "samples": weights_a,
-            "t_samples": t,
+            "t_samples": t_samples,
             "interpolation": interpolation,
         }
         waveforms_b = {
             "wf_func": "quantify_scheduler.waveforms.interpolated_complex_waveform",
             "samples": weights_b,
-            "t_samples": t,
+            "t_samples": t_samples,
             "interpolation": interpolation,
         }
-        duration = t[-1] - t[0]
+        duration = len(t_samples) / weights_sampling_rate
         if data is not None:
             warnings.warn(
                 "Support for the data argument will be dropped in"
@@ -520,9 +573,8 @@ class NumericalWeightedIntegrationComplex(
         weights_b = np.array2string(
             acq_info["waveforms"][1]["samples"], separator=", ", precision=9
         )
-        t = np.array2string(
-            acq_info["waveforms"][0]["t_samples"], separator=", ", precision=9
-        )
+        t_samples = acq_info["waveforms"][0]["t_samples"]
+        weights_sampling_rate = 1 / (t_samples[1] - t_samples[0])
         port = acq_info["port"]
         clock = acq_info["clock"]
         interpolation = acq_info["waveforms"][0]["interpolation"]
@@ -534,9 +586,8 @@ class NumericalWeightedIntegrationComplex(
 
         return (
             f"{self.__class__.__name__}(weights_a={weights_a}, weights_b={weights_b}, "
-            f"t={t}, port='{port}', clock='{clock}', interpolation='{interpolation}', "
-            f"acq_channel={acq_channel}, acq_index={acq_index}, bin_mode='{bin_mode}', "
-            f"phase={phase}, t0={t0})"
+            f"{weights_sampling_rate=}, {port=}, {clock=}, {interpolation=}, "
+            f"{acq_channel=}, {acq_index=}, {bin_mode=}, {phase=}, {t0=})"
         )
 
     def __repr__(self) -> str:

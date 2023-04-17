@@ -1071,6 +1071,52 @@ def test_deprecated_acquisitions_back_to_back(
     )
 
 
+def test_weighted_acquisition_end_to_end(
+    pulse_only_schedule_with_operation_timing,
+    compile_config_transmon_weighted_integration_qblox_hardware_pulsar,
+):
+    sched = pulse_only_schedule_with_operation_timing
+    sched.add(Measure("q0", acq_protocol="NumericalWeightedIntegrationComplex"))
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        sched,
+        config=compile_config_transmon_weighted_integration_qblox_hardware_pulsar,
+    )
+    assert " acquire_weighed  0,0,0,1,4 " in (
+        compiled_sched.compiled_instructions["qrm0"]["sequencers"]["seq0"]["sequence"][
+            "program"
+        ]
+    )
+
+
+def test_weighted_acquisition_too_high_sampling_rate_raises(
+    pulse_only_schedule_with_operation_timing,
+    compile_config_transmon_weighted_integration_qblox_hardware_pulsar,
+):
+    sched = pulse_only_schedule_with_operation_timing
+    sched.add(Measure("q0", acq_protocol="NumericalWeightedIntegrationComplex"))
+    compile_config_transmon_weighted_integration_qblox_hardware_pulsar.device_compilation_config.elements[
+        "q0"
+    ][
+        "measure"
+    ].factory_kwargs[
+        "acq_weights_sampling_rate"
+    ] = 5e9
+
+    compiler = SerialCompiler(name="compiler")
+    with pytest.raises(ValueError) as exc:
+        _ = compiler.compile(
+            sched,
+            config=compile_config_transmon_weighted_integration_qblox_hardware_pulsar,
+        )
+    assert exc.value.args[0] == (
+        "Qblox hardware supports a sampling rate up to 1.0e+00 GHz, but a sampling "
+        "rate of 5.0e+00 GHz was provided to WeightedAcquisitionStrategy. Please check "
+        "the device configuration."
+    )
+
+
 def test_compile_with_rel_time(
     dummy_pulsars,
     pulse_only_schedule_with_operation_timing,

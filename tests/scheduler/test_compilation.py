@@ -349,6 +349,30 @@ def test_compile_trace_acquisition(device_compile_config_basic_transmon):
     assert sched.operations[measure_repr]["acquisition_info"][0]["protocol"] == "Trace"
 
 
+def test_compile_weighted_acquisition(
+    device_compile_config_basic_transmon_with_weighted_integration,
+):
+    sched = Schedule("Test schedule")
+    q0 = "q0"
+    sched.add(Reset(q0))
+    sched.add(Rxy(90, 0, qubit=q0))
+    sched.add(
+        Measure(q0, acq_protocol="NumericalWeightedIntegrationComplex"), label="M0"
+    )
+
+    compiler = SerialCompiler(name="compile")
+    sched = compiler.compile(
+        schedule=sched,
+        config=device_compile_config_basic_transmon_with_weighted_integration,
+    )
+
+    measure_repr = list(sched.schedulables.values())[-1]["operation_repr"]
+    assert (
+        sched.operations[measure_repr]["acquisition_info"][0]["protocol"]
+        == "WeightedIntegratedComplex"
+    )
+
+
 def test_compile_no_device_cfg_determine_absolute_timing(
     mocker, device_compile_config_basic_transmon
 ):

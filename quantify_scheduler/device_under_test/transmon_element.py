@@ -33,7 +33,7 @@ class Ports(InstrumentChannel):
         super().__init__(parent=parent, name=name)
 
         self.microwave = Parameter(
-            "microwave",
+            name="microwave",
             instrument=self,
             initial_cache_value=kwargs.get("microwave", f"{parent.name}:mw"),
             set_cmd=False,
@@ -41,7 +41,7 @@ class Ports(InstrumentChannel):
         """Name of the element's microwave port."""
 
         self.flux = Parameter(
-            "flux",
+            name="flux",
             instrument=self,
             initial_cache_value=kwargs.get("flux", f"{parent.name}:fl"),
             set_cmd=False,
@@ -49,7 +49,7 @@ class Ports(InstrumentChannel):
         """Name of the element's flux port."""
 
         self.readout = Parameter(
-            "readout",
+            name="readout",
             instrument=self,
             initial_cache_value=kwargs.get("readout", f"{parent.name}:res"),
             set_cmd=False,
@@ -66,7 +66,7 @@ class ClocksFrequencies(InstrumentChannel):
         super().__init__(parent=parent, name=name)
 
         self.f01 = ManualParameter(
-            "f01",
+            name="f01",
             instrument=self,
             label="Qubit frequency",
             unit="Hz",
@@ -76,7 +76,7 @@ class ClocksFrequencies(InstrumentChannel):
         """Frequency of the 01 clock"""
 
         self.f12 = ManualParameter(
-            "f12",
+            name="f12",
             instrument=self,
             label="Frequency of the |1>-|2> transition",
             unit="Hz",
@@ -86,7 +86,7 @@ class ClocksFrequencies(InstrumentChannel):
         """Frequency of the 12 clock"""
 
         self.readout = ManualParameter(
-            "readout",
+            name="readout",
             instrument=self,
             label="Readout frequency",
             unit="Hz",
@@ -105,7 +105,7 @@ class IdlingReset(InstrumentChannel):
         super().__init__(parent=parent, name=name)
 
         self.duration = ManualParameter(
-            "duration",
+            name="duration",
             instrument=self,
             initial_value=kwargs.get("duration", 200e-6),
             unit="s",
@@ -123,7 +123,7 @@ class RxyDRAG(InstrumentChannel):
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
         super().__init__(parent=parent, name=name)
         self.amp180 = ManualParameter(
-            "amp180",
+            name="amp180",
             instrument=self,
             label=r"$\pi-pulse amplitude$",
             initial_value=kwargs.get("amp180", float("nan")),
@@ -133,7 +133,7 @@ class RxyDRAG(InstrumentChannel):
         r"""Amplitude required to perform a $\pi$ pulse."""
 
         self.motzoi = ManualParameter(
-            "motzoi",
+            name="motzoi",
             instrument=self,
             initial_value=kwargs.get("motzoi", 0),
             unit="",
@@ -143,7 +143,7 @@ class RxyDRAG(InstrumentChannel):
         components of the DRAG pulse."""
 
         self.duration = ManualParameter(
-            "duration",
+            name="duration",
             instrument=self,
             initial_value=kwargs.get("duration", 20e-9),
             unit="s",
@@ -163,7 +163,7 @@ class DispersiveMeasurement(InstrumentChannel):
 
         pulse_types = validators.Enum("SquarePulse")
         self.pulse_type = ManualParameter(
-            "pulse_type",
+            name="pulse_type",
             instrument=self,
             initial_value=kwargs.get("pulse_type", "SquarePulse"),
             vals=pulse_types,
@@ -172,7 +172,7 @@ class DispersiveMeasurement(InstrumentChannel):
         modulation."""
 
         self.pulse_amp = ManualParameter(
-            "pulse_amp",
+            name="pulse_amp",
             instrument=self,
             initial_value=kwargs.get("pulse_amp", 0.25),
             unit="V",
@@ -181,7 +181,7 @@ class DispersiveMeasurement(InstrumentChannel):
         """Amplitude of the readout pulse."""
 
         self.pulse_duration = ManualParameter(
-            "pulse_duration",
+            name="pulse_duration",
             instrument=self,
             initial_value=kwargs.get("pulse_duration", 300e-9),
             unit="s",
@@ -190,7 +190,7 @@ class DispersiveMeasurement(InstrumentChannel):
         """Duration of the readout pulse."""
 
         self.acq_channel = ManualParameter(
-            "acq_channel",
+            name="acq_channel",
             instrument=self,
             initial_value=kwargs.get("acq_channel", 0),
             unit="#",
@@ -199,7 +199,7 @@ class DispersiveMeasurement(InstrumentChannel):
         """Acquisition channel of to this device element."""
 
         self.acq_delay = ManualParameter(
-            "acq_delay",
+            name="acq_delay",
             instrument=self,
             initial_value=kwargs.get("acq_delay", 0),  # float("nan"),
             unit="s",
@@ -213,7 +213,7 @@ class DispersiveMeasurement(InstrumentChannel):
         delay an invalid value."""
 
         self.integration_time = ManualParameter(
-            "integration_time",
+            name="integration_time",
             instrument=self,
             initial_value=kwargs.get("integration_time", 1e-6),
             unit="s",
@@ -224,7 +224,7 @@ class DispersiveMeasurement(InstrumentChannel):
         """Integration time for the readout acquisition."""
 
         self.reset_clock_phase = ManualParameter(
-            "reset_clock_phase",
+            name="reset_clock_phase",
             instrument=self,
             initial_value=kwargs.get("reset_clock_phase", True),
             vals=validators.Bool(),
@@ -233,9 +233,36 @@ class DispersiveMeasurement(InstrumentChannel):
         control hardware at the start of each measurement if
         ``reset_clock_phase=True``."""
 
-        ro_acq_weight_type_validator = validators.Enum("SSB")
+        self.acq_weights_a = ManualParameter(
+            name="acq_weights_a",
+            instrument=self,
+            initial_value=kwargs.get("acq_weights_a", None),
+            vals=validators.Arrays(),
+        )
+        """The weights for the I path. Used when specifying the
+        ``"NumericalWeightedIntegrationComplex"`` acquisition protocol."""
+
+        self.acq_weights_b = ManualParameter(
+            name="acq_weights_b",
+            instrument=self,
+            initial_value=kwargs.get("acq_weights_b", None),
+            vals=validators.Arrays(),
+        )
+        """The weights for the Q path. Used when specifying the
+        ``"NumericalWeightedIntegrationComplex"`` acquisition protocol."""
+
+        self.acq_weights_sampling_rate = ManualParameter(
+            name="acq_weights_sampling_rate",
+            instrument=self,
+            initial_value=kwargs.get("acq_weights_sampling_rate", None),
+            vals=validators.Numbers(min_value=1, max_value=10e9),
+        )
+        """The sample rate of the weights arrays, in Hertz. Used when specifying the
+        ``"NumericalWeightedIntegrationComplex"`` acquisition protocol."""
+
+        ro_acq_weight_type_validator = validators.Enum("SSB", "Numerical")
         self.acq_weight_type = ManualParameter(
-            "acq_weight_type",
+            name="acq_weight_type",
             instrument=self,
             initial_value=kwargs.get("acq_weight_type", "SSB"),
             vals=ro_acq_weight_type_validator,
@@ -358,6 +385,9 @@ class BasicTransmonElement(DeviceElement):
                         "acq_channel": self.measure.acq_channel(),
                         "acq_protocol_default": "SSBIntegrationComplex",
                         "reset_clock_phase": self.measure.reset_clock_phase(),
+                        "acq_weights_a": self.measure.acq_weights_a(),
+                        "acq_weights_b": self.measure.acq_weights_b(),
+                        "acq_weights_sampling_rate": self.measure.acq_weights_sampling_rate(),
                     },
                     gate_info_factory_kwargs=["acq_index", "bin_mode", "acq_protocol"],
                 ),

@@ -453,12 +453,15 @@ def normalize_waveform_data(data: np.ndarray) -> Tuple[np.ndarray, float, float]
     """
     amp_real, amp_imag = np.max(np.abs(data.real)), np.max(np.abs(data.imag))
     norm_data_re = (
-        data.real / amp_real if amp_real != 0.0 else np.zeros(data.real.shape)
+        data.real / amp_real
+        if not np.isclose(amp_real, 0.0)
+        else np.zeros(data.real.shape)
     )
-    norm_data_im = (
-        data.imag / amp_imag if amp_imag != 0.0 else np.zeros(data.imag.shape)
-    )
-    rescaled_data = norm_data_re + 1.0j * norm_data_im
+    if np.isclose(amp_imag, 0.0):
+        rescaled_data = norm_data_re
+    else:
+        norm_data_im = data.imag / amp_imag
+        rescaled_data = norm_data_re + 1.0j * norm_data_im
     return rescaled_data, amp_real, amp_imag
 
 

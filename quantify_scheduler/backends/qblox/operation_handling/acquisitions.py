@@ -216,9 +216,44 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
                     f"weights.\n\nException caused by "
                     f"{repr(self.operation_info)}."
                 )
+            if "duration" in parameterized_waveform:
+                duration = parameterized_waveform["duration"]
+            elif "duration" in self.operation_info.data:
+                duration = self.operation_info.data["duration"]
+            else:
+                raise KeyError(
+                    "'duration' is not present in either 'self.operation_info.data' "
+                    "or in the waveform dictionaries of "
+                    "'self.operation_info.data[\"waveforms\"]'"
+                )
+            if "interpolated" in parameterized_waveform["wf_func"]:
+                weights_sampling_rate = (
+                    len(parameterized_waveform["t_samples"]) / duration
+                )
+                if weights_sampling_rate > constants.SAMPLING_RATE:
+                    raise ValueError(
+                        f"Qblox hardware supports a sampling rate up to "
+                        f"{constants.SAMPLING_RATE * 1e-9:0.1e} GHz, but a sampling "
+                        f"rate of {weights_sampling_rate * 1e-9:0.1e} GHz was provided "
+                        f"to WeightedAcquisitionStrategy. Please check the device "
+                        f"configuration."
+                    )
             waveform_data = helpers.generate_waveform_data(
-                parameterized_waveform, sampling_rate=constants.SAMPLING_RATE
+                data_dict=parameterized_waveform,
+                sampling_rate=constants.SAMPLING_RATE,
+                duration=duration,
             )
+            if abs(max(waveform_data)) > 1:
+                first_bad_idx, bad_value = next(
+                    (i, x) for i, x in enumerate(waveform_data) if x > 1
+                )
+                total = sum(np.abs(waveform_data) > 1)
+                raise ValueError(
+                    f"Acquisition weights with an amplitude greater than 1 are not "
+                    f"supported by hardware. Acquisition weights array {idx} contains "
+                    f"{total} values out of range. The first out-of-range value is "
+                    f"{bad_value} at position {first_bad_idx}."
+                )
             if not np.isrealobj(waveform_data):
                 raise ValueError(
                     f"Complex weights not supported by hardware. Please use two 1d "

@@ -8,7 +8,8 @@ These functions are intended to be used to generate waveforms defined in the
 Examples of waveforms that are too advanced are flux pulses that require knowledge of
 the flux sensitivity and interaction strengths and qubit frequencies.
 """
-from typing import List, Optional, Union
+from __future__ import annotations
+from typing import List, Literal, Optional, Union
 
 import numpy as np
 from scipy import signal, interpolate
@@ -294,6 +295,8 @@ def interpolated_complex_waveform(
     samples: np.ndarray,
     t_samples: np.ndarray,
     interpolation: str = "linear",
+    bounds_error: Optional[bool] = False,
+    fill_value: np.ndarray | float | Literal["extrapolate"] = "extrapolate",
     **kwargs,
 ) -> np.ndarray:
     """
@@ -320,11 +323,28 @@ def interpolated_complex_waveform(
     """
     if isinstance(samples, list):
         samples = np.array(samples)
+
     real_interpolator = interpolate.interp1d(
-        t_samples, samples.real, kind=interpolation, **kwargs
+        t_samples,
+        samples.real,
+        kind=interpolation,
+        bounds_error=bounds_error,
+        fill_value=fill_value,
+        **kwargs,
     )
+
+    if np.all(np.isreal(samples)):
+        # If samples is purely real, early return with purely real result, since the
+        # calling code might not expect complex values
+        return real_interpolator(t)
+
     imag_interpolator = interpolate.interp1d(
-        t_samples, samples.imag, kind=interpolation, **kwargs
+        t_samples,
+        samples.imag,
+        kind=interpolation,
+        bounds_error=bounds_error,
+        fill_value=fill_value,
+        **kwargs,
     )
     return real_interpolator(t) + 1.0j * imag_interpolator(t)
 

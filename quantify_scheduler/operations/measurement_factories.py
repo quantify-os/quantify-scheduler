@@ -6,11 +6,16 @@ A module containing factory functions for measurements on the quantum-device lay
 These factories are used to take a parametrized representation of on a operation
 and use that to create an instance of the operation itself.
 """
-from typing import List, Literal, Union
+from __future__ import annotations
+from typing import List, Literal
+import warnings
+
+import numpy as np
 
 from quantify_scheduler import Operation
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.acquisition_library import (
+    NumericalWeightedIntegrationComplex,
     SSBIntegrationComplex,
     Trace,
     TriggerCount,
@@ -28,13 +33,19 @@ def dispersive_measurement(
     acq_delay: float,
     acq_channel: int,
     acq_index: int,
-    acq_protocol: Literal["SSBIntegrationComplex", "Trace", None],
+    acq_protocol: Literal[
+        "SSBIntegrationComplex", "Trace", "NumericalWeightedIntegrationComplex"
+    ]
+    | None,
     pulse_type: Literal["SquarePulse"] = "SquarePulse",
-    bin_mode: Union[BinMode, None] = BinMode.AVERAGE,
+    bin_mode: BinMode | None = BinMode.AVERAGE,
     acq_protocol_default: Literal[
-        "SSBIntegrationComplex", "Trace"
+        "SSBIntegrationComplex", "Trace", "NumericalWeightedIntegrationComplex"
     ] = "SSBIntegrationComplex",
     reset_clock_phase: bool = True,
+    acq_weights_a: List[complex] | np.ndarray | None = None,
+    acq_weights_b: List[complex] | np.ndarray | None = None,
+    acq_weights_sampling_rate: float | None = None,
 ) -> Operation:
     """
     Generator function for a standard dispersive measurement.
@@ -102,6 +113,41 @@ def dispersive_measurement(
                 port=port,
             )
         )
+    elif acq_protocol == "NumericalWeightedIntegrationComplex":
+        if (
+            acq_weights_a is None
+            or acq_weights_b is None
+            or acq_weights_sampling_rate is None
+        ):
+            raise TypeError(
+                f"Keyword arguments 'acq_weights_a', 'acq_weights_b' and "
+                f"'acq_weights_sampling_rate' must not be None when {acq_protocol=} is "
+                f"selected. These arguments can be specified in the device "
+                f"configuration."
+            )
+        dur_from_weights = len(acq_weights_a) / acq_weights_sampling_rate
+        if not np.isclose(acq_duration, dur_from_weights):
+            warnings.warn(
+                f"The specified weights and sampling rate lead to a weighted "
+                f"integration duration of {dur_from_weights:0.1e} s, which is "
+                f"different from the specified default acquisition duration of "
+                f"{acq_duration:0.1e} s. The default acquisition duration will be "
+                f"ignored for weighted acquisition.",
+                UserWarning,
+            )
+        device_op.add_acquisition(
+            NumericalWeightedIntegrationComplex(
+                weights_a=acq_weights_a,
+                weights_b=acq_weights_b,
+                weights_sampling_rate=acq_weights_sampling_rate,
+                port=port,
+                clock=clock,
+                acq_channel=acq_channel,
+                acq_index=acq_index,
+                bin_mode=bin_mode,
+                t0=acq_delay,
+            )
+        )
     else:
         raise ValueError(f'Acquisition protocol "{acq_protocol}" is not supported.')
 
@@ -119,8 +165,8 @@ def optical_measurement(
     acq_clock: str,
     acq_channel: int,
     acq_index: int,
-    bin_mode: Union[BinMode, None],
-    acq_protocol: Literal["Trace", "TriggerCount", None],
+    bin_mode: BinMode | None,
+    acq_protocol: Literal["Trace", "TriggerCount"] | None,
     acq_protocol_default: Literal["Trace", "TriggerCount"],
     pulse_type: Literal["SquarePulse"],
 ) -> Operation:

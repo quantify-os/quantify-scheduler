@@ -323,11 +323,13 @@ def test_apply_mixer_skewness_corrections() -> None:
     assert np.allclose(normalized_real, normalized_imag)
 
 
-def test_modulate_waveform() -> None:
+@pytest.mark.parametrize(
+    "frequency,t0,points",
+    [(10e6, 50e-9, 1000), (-10e6, 0.0, 1000), (0.0, -10e-9, 2), (10e6, -10e-9, 1)],
+)
+def test_modulate_waveform(frequency, t0, points) -> None:
     # Arrange
-    frequency = 10e6
-    t0 = 50e-9
-    t = np.linspace(0, 1e-6, 1000)
+    t = np.linspace(0, 1e-6, points)
     envelope = np.ones(len(t))
 
     expected_real = np.cos(2 * np.pi * frequency * (t + t0))
@@ -339,6 +341,24 @@ def test_modulate_waveform() -> None:
     # Assert
     assert np.allclose(waveform.real, expected_real)
     assert np.allclose(waveform.imag, expected_imag)
+
+
+@pytest.mark.parametrize(
+    "frequency,t0,points",
+    [(10e6, 50e-9, 1000), (-10e6, 0.0, 1000), (0.0, -10e-9, 2), (10e6, -10e-9, 1)],
+)
+def test_demodulate_waveform(frequency, t0, points) -> None:
+    # Arrange
+    t = np.linspace(0, 1e-6, points)
+    envelopes = [np.ones(len(t)), np.sin(2 * np.pi * t * 1e6)]
+
+    for envelope in envelopes:
+        # Act
+        mod_waveform = modulate_waveform(t, envelope, frequency, t0)
+        demod_waveform = modulate_waveform(t, mod_waveform, -frequency, t0)
+
+        # Assert
+        assert np.allclose(demod_waveform, envelope)
 
 
 def test_area_pulse() -> None:

@@ -2,6 +2,7 @@
 # Licensed according to the LICENCE file on the main branch
 # pylint: disable=invalid-name
 """Standard gateset for use with the quantify_scheduler."""
+from __future__ import annotations
 from typing import Literal, Optional, Tuple, Union
 import warnings
 
@@ -569,16 +570,18 @@ class Measure(Operation):
     def __init__(
         self,
         *qubits: str,
-        acq_channel: Union[Tuple[int, ...], int] = None,
-        acq_index: Union[Tuple[int, ...], int] = None,
+        acq_channel: Tuple[int, ...] | int | None = None,
+        acq_index: Tuple[int, ...] | int | None = None,
         # These are the currently supported acquisition protocols.
-        acq_protocol: Literal[
-            "SSBIntegrationComplex",
-            "Trace",
-            "TriggerCount",
-            None,
+        acq_protocol: Optional[
+            Literal[
+                "SSBIntegrationComplex",
+                "Trace",
+                "TriggerCount",
+                "NumericalWeightedIntegrationComplex",
+            ]
         ] = None,
-        bin_mode: BinMode = None,
+        bin_mode: BinMode | None = None,
         data: Optional[dict] = None,
     ):
         """
@@ -589,22 +592,26 @@ class Measure(Operation):
 
         Parameters
         ----------
-        qubits
-            The qubits you want to measure
-        acq_channel
-            Acquisition channel on which the measurement is performed
-        acq_index
-            Index of the register where the measurement is stored.
-            If None specified, it will default if a tuple(0
-        acq_protocol
-            Acquisition protocol (currently ``"SSBIntegrationComplex"`` and ``"Trace"``)
-            are supported. If ``None`` is specified, the default protocol is chosen
-            based on the device and backend configuration.
-        bin_mode
-            The binning mode that is to be used. If not None, it will overwrite
-            the binning mode used for Measurements in the quantum-circuit to
-            quantum-device compilation step.
-        data
+        qubits : str
+            The qubits you want to measure.
+        acq_channel : Tuple[int, ...] | int | None, optional
+            Acquisition channel on which the measurement is performed. If None, this
+            defaults to mapping qubits to channels dependent on the order of the
+            arguments By default None.
+        acq_index : Tuple[int, ...] | int | None, optional
+            Index of the register where the measurement is stored.  If None specified,
+            this defaults to writing the result of all qubits to acq_index 0. By default
+            None.
+        acq_protocol : "SSBIntegrationComplex" | "Trace" | "TriggerCount" | \
+                "NumericalWeightedIntegrationComplex" | None, optional
+            Acquisition protocols that are supported. If ``None`` is specified, the
+            default protocol is chosen based on the device and backend configuration. By
+            default None.
+        bin_mode : BinMode or None, optional
+            The binning mode that is to be used. If not None, it will overwrite the
+            binning mode used for Measurements in the circuit-to-device compilation
+            step. By default None.
+        data : dict or None, optional
             The operation's dictionary, by default None\n
             Note: if the data parameter is not None all other parameters are
             overwritten using the contents of data.\n

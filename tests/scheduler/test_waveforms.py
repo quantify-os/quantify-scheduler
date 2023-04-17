@@ -8,7 +8,6 @@ import pytest
 
 from quantify_scheduler.waveforms import (
     drag,
-    staircase,
     interpolated_complex_waveform,
     modulate_wave,
     rotate_wave,
