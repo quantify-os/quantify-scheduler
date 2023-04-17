@@ -2,6 +2,7 @@
 # Licensed according to the LICENCE file on the main branch
 """Pulse and acquisition corrections for hardware compilation."""
 import logging
+import warnings
 from typing import Any, Dict, Generator, Optional, Tuple
 
 import numpy as np
@@ -9,6 +10,7 @@ from quantify_scheduler import Schedule
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.qblox.helpers import generate_waveform_data
 from quantify_scheduler.helpers.importers import import_python_object_from_string
+from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import NumericalPulse
 
 logger = logging.getLogger(__name__)
@@ -138,6 +140,11 @@ def distortion_correct_pulse(  # pylint: disable=too-many-arguments
     return corrected_pulse
 
 
+def _is_distortion_correctable(operation: Operation) -> bool:
+    """Checks whether distortion corrections can be applied to the given operation."""
+    return operation.valid_pulse and not operation.has_voltage_offset
+
+
 def apply_distortion_corrections(
     schedule: Schedule, hardware_cfg: Dict[str, Any]
 ) -> Schedule:
@@ -182,6 +189,12 @@ def apply_distortion_corrections(
     :
         The schedule with distortion corrected operations.
 
+    Warns
+    -----
+    RuntimeWarning
+        If distortion correction can not be applied to the type of Operation in the
+        schedule.
+
     Raises
     ------
     KeyError
@@ -205,6 +218,17 @@ def apply_distortion_corrections(
             portclock_key = f"{pulse_data['port']}-{pulse_data['clock']}"
 
             if portclock_key in hardware_cfg[distortion_corrections_key]:
+                if not _is_distortion_correctable(schedule.operations[operation_repr]):
+                    warnings.warn(
+                        f"Schedule contains an operation, for which distortion "
+                        f"correction is not implemented. Please either replace the "
+                        f"operation, or omit the distortion correction setting for "
+                        f"this port in order to suppress this warning. Offending "
+                        f"operation: {schedule.operations[operation_repr]}",
+                        RuntimeWarning,
+                    )
+                    continue
+
                 correction_cfg = hardware_cfg[distortion_corrections_key][portclock_key]
 
                 filter_func_name = correction_cfg.get("filter_func", None)

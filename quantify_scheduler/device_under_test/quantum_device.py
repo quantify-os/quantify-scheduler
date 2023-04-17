@@ -16,6 +16,9 @@ from quantify_scheduler.backends.graph_compilation import (
     SimpleNodeConfig,
     DeviceCompilationConfig,
 )
+from quantify_scheduler.backends.qblox_backend import (
+    compile_long_square_pulses_to_awg_offsets,
+)
 from quantify_scheduler.compilation import determine_absolute_timing
 from quantify_scheduler.device_under_test.device_element import DeviceElement
 from quantify_scheduler.device_under_test.edge import Edge
@@ -135,6 +138,12 @@ class QuantumDevice(Instrument):
             == "quantify_scheduler.backends.qblox_backend.hardware_compile"
         ):
             backend_name = "Qblox compiler"
+            compilation_passes.append(
+                SimpleNodeConfig(
+                    name="compile_long_square_pulses_to_awg_offsets",
+                    compilation_func=compile_long_square_pulses_to_awg_offsets,
+                )
+            )
             compilation_passes.append(
                 SimpleNodeConfig(
                     name="qblox_hardware_compile",

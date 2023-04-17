@@ -2,6 +2,7 @@
 # Licensed according to the LICENCE file on the main branch
 """Module containing the core concepts of the scheduler."""
 from __future__ import annotations
+from itertools import chain
 
 import dataclasses
 import json
@@ -431,31 +432,18 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
                 raise ValueError("Absolute time has not been determined yet.")
             operation = self.operations[schedulable["operation_repr"]]
 
-            # iterate over pulse information
-            for i, pulse_info in enumerate(operation["pulse_info"]):
-                abs_time = pulse_info["t0"] + schedulable["abs_time"]
-                df_row = {
-                    "waveform_op_id": schedulable["operation_repr"] + f"_p_{i}",
-                    "port": pulse_info["port"],
-                    "clock": pulse_info["clock"],
-                    "abs_time": abs_time,
-                    "duration": pulse_info["duration"],
-                    "is_acquisition": False,
-                    "operation": schedulable["operation_repr"],
-                    "wf_idx": i,
-                }
-                timing_table_list.append(pd.DataFrame(df_row, index=range(1)))
-
-            # iterate over acquisition information
-            for i, acq_info in enumerate(operation["acquisition_info"]):
-                abs_time = acq_info["t0"] + schedulable["abs_time"]
+            for i, op_info in chain(
+                enumerate(operation["pulse_info"]),
+                enumerate(operation["acquisition_info"]),
+            ):
+                abs_time = op_info["t0"] + schedulable["abs_time"]
                 df_row = {
                     "waveform_op_id": schedulable["operation_repr"] + f"_acq_{i}",
-                    "port": acq_info["port"],
-                    "clock": acq_info["clock"],
+                    "port": op_info["port"],
+                    "clock": op_info["clock"],
                     "abs_time": abs_time,
-                    "duration": acq_info["duration"],
-                    "is_acquisition": True,
+                    "duration": op_info["duration"],
+                    "is_acquisition": "acq_index" in op_info,
                     "operation": schedulable["operation_repr"],
                     "wf_idx": i,
                 }

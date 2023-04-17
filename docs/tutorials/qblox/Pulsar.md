@@ -450,7 +450,12 @@ hardware_compile(test_sched, mapping_config)
 
 ```
 
-## Experimental features
+(sec-qblox-pulsar-instruction-generated)=
+## Instruction-generated pulses
+
+```{warning}
+The {code}`instruction_generated_pulses_enabled` option is deprecated and will be removed in a future version. Long square pulses and staircase pulses can be generated with the newly introduced {class}`~quantify_scheduler.operations.stitched_pulse.StitchedPulseBuilder`. More information can be found in the {ref}`relevant section of the Cluster user guide <sec-qblox-cluster-long-waveform-support>`.
+```
 
 The Qblox backend contains some intelligence that allows it to generate certain specific waveforms from the pulse library using a more complicated series of sequencer instructions, which helps conserve waveform memory. Though in order to keep the backend fully transparent, all such advanced capabilities are disabled by default.
 

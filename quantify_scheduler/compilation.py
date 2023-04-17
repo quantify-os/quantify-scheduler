@@ -15,6 +15,9 @@ from quantify_scheduler.backends.graph_compilation import (
     SerialCompilationConfig,
     SimpleNodeConfig,
 )
+from quantify_scheduler.backends.qblox_backend import (
+    compile_long_square_pulses_to_awg_offsets,
+)
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.importers import import_python_object_from_string
 from quantify_scheduler.json_utils import load_json_schema, validate_json
@@ -538,6 +541,12 @@ def qcompile(
             backend_name = "Qblox backend"
             compilation_passes.append(
                 SimpleNodeConfig(
+                    name="compile_long_square_pulses_to_awg_offsets",
+                    compilation_func=compile_long_square_pulses_to_awg_offsets,
+                )
+            )
+            compilation_passes.append(
+                SimpleNodeConfig(
                     name="qblox_hardware_compile",
                     compilation_func=hardware_config["backend"],
                 )
@@ -641,6 +650,7 @@ def hardware_compile(schedule: Schedule, hardware_cfg: dict) -> CompiledSchedule
         The compiled schedule.
     """
 
+    schedule = compile_long_square_pulses_to_awg_offsets(schedule)
     hw_compile = import_python_object_from_string(hardware_cfg["backend"])
     compiled_schedule = hw_compile(schedule, hardware_cfg=hardware_cfg)
     return compiled_schedule

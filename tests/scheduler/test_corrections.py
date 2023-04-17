@@ -10,9 +10,13 @@ import numpy as np
 import pytest
 
 from quantify_scheduler.backends import SerialCompiler
-from quantify_scheduler.backends.corrections import distortion_correct_pulse
+from quantify_scheduler.backends.corrections import (
+    distortion_correct_pulse,
+)
 from quantify_scheduler.backends.qblox import constants as qblox_constants
+from quantify_scheduler.operations.stitched_pulse import StitchedPulseBuilder
 from quantify_scheduler.operations.pulse_library import NumericalPulse, SquarePulse
+from quantify_scheduler.schedules.schedule import Schedule
 
 from tests.scheduler.backends.qblox.fixtures.hardware_config import (  # pylint: disable=unused-import, line-too-long
     hardware_cfg_pulsar_qcm_two_qubit_gate as qblox_hardware_cfg_pulsar_qcm_two_qubit_gate,
@@ -196,3 +200,34 @@ def test_apply_distortion_corrections(  # pylint: disable=unused-argument disabl
             0.5184381916899999,
         ]
     )
+
+
+@pytest.mark.parametrize("use_numpy_array", (True, False))
+def test_apply_distortion_corrections_stitched_pulse_warns(
+    qblox_hardware_cfg_pulsar_qcm_two_qubit_gate,
+    mock_setup_basic_transmon,
+    hardware_options_distortion_corrections,
+    use_numpy_array,  # pylint: disable=unused-argument
+):
+    sched = Schedule("Test schedule")
+    port = "q2:fl"
+    clock = "cl0.baseband"
+
+    builder = StitchedPulseBuilder(port=port, clock=clock)
+    stitched_pulse = (
+        builder.add_pulse(SquarePulse(0.4, 20e-9, port, clock=clock))
+        .add_voltage_offset(0.4, 0.0, duration=20e-9)
+        .build()
+    )
+
+    sched.add(stitched_pulse)
+
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device.hardware_options(hardware_options_distortion_corrections)
+    quantum_device.hardware_config(qblox_hardware_cfg_pulsar_qcm_two_qubit_gate)
+    with pytest.warns(RuntimeWarning):
+        compiler = SerialCompiler(name="compiler")
+        _ = compiler.compile(
+            schedule=sched,
+            config=quantum_device.generate_compilation_config(),
+        )

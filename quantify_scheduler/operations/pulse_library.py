@@ -179,6 +179,60 @@ class SetClockFrequency(Operation):
         return self._get_signature(pulse_info)
 
 
+class VoltageOffset(Operation):
+    """
+    Operation that represents setting a constant offset to the output voltage.
+
+    Currently only implemented for Qblox backend, refer to
+    :class:`~quantify_scheduler.backends.qblox.operation_handling.virtual.AwgOffsetStrategy`
+    for more details.
+    """
+
+    def __init__(
+        self,
+        offset_path_0: float,
+        offset_path_1: float,
+        duration: float = 0.0,
+        port: Optional[str] = None,
+        clock: Optional[str] = None,
+        t0: float = 0,
+    ):
+        """
+        Parameters
+        ----------
+        offset_path_0 : float
+            Offset of path 0 (the I-path).
+        offset_path_1 : float
+            Offset of path 1 (the Q-path).
+        port : str or None, optional
+            Port of the stitched pulse.
+        clock : str or None, optional
+            Clock used to modulate the stitched pulse.
+        duration : float, optional
+            The time to hold the offset for (in seconds).
+        t0 : float, optional
+            Time in seconds when to start the pulses relative to the start time
+            of the Operation in the Schedule.
+        """
+        super().__init__(name=self.__class__.__name__)
+        self.data["pulse_info"] = [
+            {
+                "wf_func": None,
+                "t0": t0,
+                "offset_path_0": offset_path_0,
+                "offset_path_1": offset_path_1,
+                "clock": clock,
+                "port": port,
+                "duration": duration,
+            }
+        ]
+        self._update()
+
+    def __str__(self) -> str:
+        pulse_info = self.data["pulse_info"][0]
+        return self._get_signature(pulse_info)
+
+
 class IdlePulse(Operation):
     """
     The IdlePulse Operation is a placeholder for a specified duration of time.

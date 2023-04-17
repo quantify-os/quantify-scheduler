@@ -58,7 +58,14 @@ from quantify_scheduler.compilation import (
     device_compile,
     qcompile,
 )
-from quantify_scheduler.operations.acquisition_library import Trace
+from quantify_scheduler.operations.acquisition_library import (
+    SSBIntegrationComplex,
+    Trace,
+)
+from quantify_scheduler.operations.pulse_factories import long_square_pulse
+from quantify_scheduler.operations.stitched_pulse import (
+    StitchedPulseBuilder,
+)
 from quantify_scheduler.operations.gate_library import Measure, Reset, X
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import (
@@ -67,6 +74,7 @@ from quantify_scheduler.operations.pulse_library import (
     RampPulse,
     SetClockFrequency,
     ShiftClockPhase,
+    SoftSquarePulse,
     SquarePulse,
 )
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
@@ -324,7 +332,7 @@ def real_square_pulse_schedule():
     sched.add(
         SquarePulse(
             amp=2.0,
-            duration=2.5e-6,
+            duration=5e-7,
             port="dummy_port_1",
             clock=BasebandClockResource.IDENTITY,
             t0=1e-6,
@@ -333,7 +341,7 @@ def real_square_pulse_schedule():
     sched.add(
         SquarePulse(
             amp=1.0,
-            duration=2.0e-6,
+            duration=7e-7,
             port="dummy_port_2",
             clock=BasebandClockResource.IDENTITY,
             t0=0.5e-6,
@@ -342,7 +350,7 @@ def real_square_pulse_schedule():
     sched.add(
         SquarePulse(
             amp=1.2,
-            duration=3.5e-6,
+            duration=9e-7,
             port="dummy_port_3",
             clock=BasebandClockResource.IDENTITY,
             t0=0,
@@ -351,7 +359,7 @@ def real_square_pulse_schedule():
     sched.add(
         SquarePulse(
             amp=1.2,
-            duration=3.5e-6,
+            duration=9e-7,
             port="dummy_port_4",
             clock=BasebandClockResource.IDENTITY,
             t0=0,
@@ -1210,12 +1218,13 @@ def test_qcm_acquisition_error(hardware_cfg_pulsar):
         total_play_time=10,
         instrument_cfg=hardware_cfg_pulsar["qcm0"],
     )
-    qcm._acquisitions[0] = 0
+    qcm._acquisitions[0] = [0]
 
     with pytest.raises(RuntimeError):
         qcm.distribute_data()
 
 
+@pytest.mark.filterwarnings("ignore::FutureWarning")
 @pytest.mark.parametrize("instruction_generated_pulses_enabled", [False])
 def test_real_mode_pulses(
     real_square_pulse_schedule,
@@ -1532,6 +1541,7 @@ def test_generate_uuid_from_wf_data():
     assert hash1 != hash2
 
 
+@pytest.mark.filterwarnings("ignore::FutureWarning")
 @pytest.mark.parametrize("instruction_generated_pulses_enabled", [False])
 def test_real_mode_container(
     real_square_pulse_schedule,
@@ -2570,6 +2580,174 @@ def test_overwrite_gain(mock_setup_basic_transmon_with_standard_params):
     )
 
 
+def test_stitched_pulse_compilation_smoke_test(mock_setup_basic_nv_qblox_hardware):
+    sched = Schedule("Test schedule")
+    port = "qe0:optical_readout"
+    clock = "qe0.ge0"
+    sched.add_resource(ClockResource(name=clock, freq=470.4e12))
+
+    sched.add(SquarePulse(amp=0.1, duration=1e-6, port=port, clock=clock))
+
+    builder = StitchedPulseBuilder(port=port, clock=clock)
+    stitched_pulse = (
+        builder.add_pulse(SquarePulse(amp=0.16, duration=5e-6, port=port, clock=clock))
+        .add_voltage_offset(0.4, 0.0, duration=5e-6)
+        .build()
+    )
+    sched.add(stitched_pulse)
+    sched.add(
+        SSBIntegrationComplex(port=port, clock=clock, duration=9.996e-6),
+        ref_pt="start",
+        rel_time=4e-9,
+    )
+
+    sched.add(SquarePulse(amp=0.2, duration=1e-6, port=port, clock=clock))
+
+    quantum_device = mock_setup_basic_nv_qblox_hardware["quantum_device"]
+    compiler = SerialCompiler(name="compiler")
+    _ = compiler.compile(
+        schedule=sched,
+        config=quantum_device.generate_compilation_config(),
+    )
+
+
+def test_stitched_pulse_compilation_upd_param_at_end(
+    mock_setup_basic_nv_qblox_hardware,
+):
+    sched = Schedule("Test schedule")
+    port = "qe0:optical_readout"
+    port2 = "qe0:optical_control"
+    clock = "qe0.ge0"
+    sched.add_resource(ClockResource(name=clock, freq=470.4e12))
+
+    sched.add(long_square_pulse(amp=0.5, duration=1e-5, port=port, clock=clock))
+    # Add a pulse on a different port to ensure a wait is inserted for the
+    # sequencer that plays the above pulse
+    sched.add(SquarePulse(amp=0.5, duration=1e-7, port=port2, clock=clock))
+
+    quantum_device = mock_setup_basic_nv_qblox_hardware["quantum_device"]
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=sched,
+        config=quantum_device.generate_compilation_config(),
+    )
+    program_with_long_square = compiled_sched.compiled_instructions["cluster0"][
+        "cluster0_module4"
+    ]["sequencers"]["seq0"]["sequence"]["program"].splitlines()
+    for i, string in enumerate(program_with_long_square):
+        if "set_awg_offs" in string:
+            break
+    assert re.search(r"^\s*set_awg_offs\s+32767,0\s+", program_with_long_square[i])
+    assert re.search(r"^\s*upd_param\s+4\s+", program_with_long_square[i + 1])
+    assert re.search(r"^\s*wait\s+9996\s+", program_with_long_square[i + 2])
+    assert re.search(r"^\s*set_awg_offs\s+0,0\s+", program_with_long_square[i + 3])
+    assert re.search(r"^\s*upd_param\s+4\s+", program_with_long_square[i + 4])
+    assert re.search(r"^\s*wait\s+96\s+", program_with_long_square[i + 5])
+
+
+def test_auto_compile_long_square_pulses(
+    mock_setup_basic_nv_qblox_hardware,
+):
+    sched = Schedule("long_square_pulse_schedule")
+    port = "qe0:optical_readout"
+    clock = "qe0.ge0"
+    sched.add_resource(ClockResource(name=clock, freq=470.4e12))
+    square_pulse = SquarePulse(
+        amp=0.2,
+        duration=2.5e-6,
+        port=port,
+        clock=clock,
+        t0=1e-6,
+    )
+    # copy to check later if the compilation does not affect the original operation
+    saved_pulse = copy.deepcopy(square_pulse)
+    sched.add(square_pulse)
+    quantum_device = mock_setup_basic_nv_qblox_hardware["quantum_device"]
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        sched,
+        config=quantum_device.generate_compilation_config(),
+    )
+
+    seq_instructions = compiled_sched.compiled_instructions["cluster0"][
+        "cluster0_module4"
+    ]["sequencers"]["seq0"]["sequence"]["program"].splitlines()
+
+    idx = 0
+    for i, string in enumerate(seq_instructions):
+        if "set_awg_offs" in string:
+            idx = i
+            break
+    assert re.search(r"^\s*set_awg_offs\s+13107,0\s+", seq_instructions[idx])
+    assert re.search(r"^\s*upd_param\s+4\s+", seq_instructions[idx + 1])
+    assert re.search(r"^\s*wait\s+2496\s+", seq_instructions[idx + 2])
+    assert re.search(r"^\s*set_awg_offs\s+0,0\s+", seq_instructions[idx + 3])
+    assert square_pulse == saved_pulse
+
+
+def test_auto_compile_long_square_pulses_raises(
+    mock_setup_basic_nv_qblox_hardware,
+):
+    sched = Schedule("long_square_pulse_schedule")
+    port = "qe0:optical_readout"
+    clock = "qe0.ge0"
+    sched.add_resource(ClockResource(name=clock, freq=470.4e12))
+    bad_duration = 2.5e-6 + 1e-9
+    sched.add(
+        SquarePulse(
+            amp=0.2,
+            duration=bad_duration,
+            port=port,
+            clock=clock,
+            t0=1e-6,
+        )
+    )
+    quantum_device = mock_setup_basic_nv_qblox_hardware["quantum_device"]
+    compiler = SerialCompiler(name="compiler")
+    with pytest.raises(ValueError) as exc:
+        _ = compiler.compile(
+            sched,
+            config=quantum_device.generate_compilation_config(),
+        )
+    assert (
+        f"A duration of {bad_duration * 1e9} ns does not align with a grid time of "
+        f"{constants.GRID_TIME} ns. Please make sure all operations have a duration "
+        f"that is a multiple of {constants.GRID_TIME} ns."
+    ) in str(exc.value)
+
+
+def test_long_acquisition(
+    mixed_schedule_with_acquisition,
+    compile_config_basic_transmon_qblox_hardware_pulsar,
+):
+    compile_config_basic_transmon_qblox_hardware_pulsar.device_compilation_config.elements[
+        "q0"
+    ][
+        "measure"
+    ].factory_kwargs[
+        "pulse_duration"
+    ] = 3e-6
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        mixed_schedule_with_acquisition,
+        config=compile_config_basic_transmon_qblox_hardware_pulsar,
+    )
+    seq_instructions = compiled_sched.compiled_instructions["qrm0"]["sequencers"][
+        "seq0"
+    ]["sequence"]["program"].splitlines()
+    idx = 0
+    for i, string in enumerate(seq_instructions):
+        if "set_awg_offs" in string:
+            idx = i
+            break
+    assert re.search(r"^\s*set_awg_offs\s+16383,0\s+", seq_instructions[idx])
+    assert re.search(r"^\s*upd_param\s+4\s+", seq_instructions[idx + 1])
+    assert re.search(r"^\s*wait\s+96\s+", seq_instructions[idx + 2])
+    assert re.search(r"^\s*acquire\s+0,0,4\s+", seq_instructions[idx + 3])
+    assert re.search(r"^\s*wait\s+2896\s+", seq_instructions[idx + 4])
+    assert re.search(r"^\s*set_awg_offs\s+0,0\s+", seq_instructions[idx + 5])
+
+
 def test_too_long_waveform_doesnt_raise(
     compile_config_basic_transmon_qblox_hardware_pulsar,
 ):
@@ -2601,7 +2779,7 @@ def test_too_long_waveform_raises(
 ):
     sched = Schedule("Too long waveform")
     sched.add(
-        SquarePulse(
+        SoftSquarePulse(
             amp=0.5,
             duration=(constants.MAX_SAMPLE_SIZE_WAVEFORMS // 2 + 4) * 1e-9,
             port="q0:res",
@@ -2623,7 +2801,7 @@ def test_too_long_waveform_raises2(
 ):
     sched = Schedule("Too long waveform")
     sched.add(
-        SquarePulse(
+        SoftSquarePulse(
             amp=0.5,
             duration=constants.MAX_SAMPLE_SIZE_WAVEFORMS // 4 * 1e-9,
             port="q0:res",

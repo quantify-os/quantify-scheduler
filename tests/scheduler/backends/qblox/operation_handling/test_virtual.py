@@ -16,8 +16,8 @@ from typing import Tuple
 import pytest
 
 from quantify_scheduler.backends.types import qblox as types
-
 from quantify_scheduler.backends.qblox import constants
+from quantify_scheduler.backends.qblox import q1asm_instructions
 from quantify_scheduler.backends.qblox.instrument_compilers import QcmModule
 from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
 from quantify_scheduler.backends.qblox.operation_handling import virtual
@@ -136,6 +136,57 @@ class TestNcoPhaseShiftStrategy:
             assert qasm.instructions == []
         else:
             assert extract_instruction_and_args(qasm) == answer
+
+
+class TestAwgOffsetStrategy:
+    def test_constructor(self):
+        virtual.AwgOffsetStrategy(types.OpInfo(name="", data={}, timing=0))
+
+    def test_insert_qasm(self, empty_qasm_program_qcm):
+        # arrange
+        op_info = {
+            "instruction": q1asm_instructions.SET_AWG_OFFSET,
+            "offset_path_0": 0.4,
+            "offset_path_1": 0,
+        }
+        expected_qasm = [["", "set_awg_offs", "5242,0", ""]]
+
+        qasm = empty_qasm_program_qcm
+        duration = 24e-9
+        data = {"duration": duration, **op_info}
+
+        op_info = types.OpInfo(name="test_pulse", data=data, timing=0)
+        strategy = virtual.AwgOffsetStrategy(op_info)
+        strategy.generate_data(wf_dict={})
+
+        # act
+        strategy.insert_qasm(qasm)
+
+        # assert
+        assert qasm.instructions == expected_qasm
+
+
+class TestUpdateParameterStrategy:
+    def test_constructor(self):
+        virtual.UpdateParameterStrategy(types.OpInfo(name="", data={}, timing=0))
+
+    def test_insert_qasm(self, empty_qasm_program_qcm):
+        # arrange
+        op_info = {"instruction": q1asm_instructions.UPDATE_PARAMETERS}
+        expected_qasm = [["", "upd_param", "4", ""]]
+        qasm = empty_qasm_program_qcm
+        duration = 24e-9
+        data = {"duration": duration, **op_info}
+
+        op_info = types.OpInfo(name="test_pulse", data=data, timing=0)
+        strategy = virtual.UpdateParameterStrategy(op_info)
+        strategy.generate_data(wf_dict={})
+
+        # act
+        strategy.insert_qasm(qasm)
+
+        # assert
+        assert qasm.instructions == expected_qasm
 
 
 class TestNcoSetClockFrequencyStrategy:

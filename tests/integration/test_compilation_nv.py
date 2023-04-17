@@ -182,8 +182,8 @@ def test_compilation_measure_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
 
     assert compiled_sched.timing_table.data.loc[0, "duration"] == pulse_duration
     assert compiled_sched.timing_table.data.loc[0, "is_acquisition"] is False
-    assert compiled_sched.timing_table.data.loc[1, "duration"] == acq_duration
-    assert compiled_sched.timing_table.data.loc[1, "is_acquisition"] is True
+    assert compiled_sched.timing_table.data.loc[2, "duration"] == acq_duration
+    assert compiled_sched.timing_table.data.loc[2, "is_acquisition"] is True
 
 
 def test_compilation_charge_reset_qblox_hardware(mock_setup_basic_nv_qblox_hardware):

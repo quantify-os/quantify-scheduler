@@ -18,11 +18,9 @@ class IdleStrategy(IOperationStrategy):
 
     def __init__(self, operation_info: types.OpInfo):
         """
-        Constructor for the IdleStrategy class.
-
         Parameters
         ----------
-        operation_info:
+        operation_info : quantify_scheduler.backends.types.qblox.OpInfo
             The operation info that corresponds to this operation.
         """
         self._op_info = operation_info
@@ -104,17 +102,6 @@ class NcoSetClockFrequencyStrategy(IdleStrategy):
     leading to a total duration of 8 ns before the next command can be issued.
     """
 
-    def __init__(self, operation_info: types.OpInfo):
-        """
-        Constructor for the NcoSetClockFrequencyStrategy class.
-
-        Parameters
-        ----------
-        operation_info
-            The operation info that corresponds to this operation.
-        """
-        super().__init__(operation_info)
-
     def insert_qasm(self, qasm_program: QASMProgram):
         """
         Inserts the instructions needed to set the NCO frequency.
@@ -153,6 +140,63 @@ class NcoSetClockFrequencyStrategy(IdleStrategy):
         qasm_program.emit(
             q1asm_instructions.UPDATE_PARAMETERS,
             constants.NCO_SET_FREQ_WAIT,
-            comment=f"apply nco frequency change",
+            comment="apply nco frequency change",
         )
         qasm_program.elapsed_time += constants.NCO_SET_FREQ_WAIT
+
+
+class AwgOffsetStrategy(IdleStrategy):
+    """
+    Strategy for compiling a DC voltage offset instruction. The generated Q1ASM contains
+    only the ``set_awg_offs`` instruction and no ``upd_param`` instruction.
+    """
+
+    def insert_qasm(self, qasm_program: QASMProgram):
+        """Add the Q1ASM instruction for a DC voltage offset.
+
+        Parameters
+        ----------
+        qasm_program : QASMProgram
+            The QASMProgram to add the assembly instructions to.
+        """
+        path0_amp = qasm_program.expand_from_normalised_range(
+            val=self.operation_info.data["offset_path_0"]
+            / qasm_program.static_hw_properties.max_awg_output_voltage,
+            immediate_size=constants.IMMEDIATE_SZ_OFFSET,
+            param="offset_awg_path_0",
+            operation=self.operation_info,
+        )
+        path1_amp = qasm_program.expand_from_normalised_range(
+            val=self.operation_info.data["offset_path_1"]
+            / qasm_program.static_hw_properties.max_awg_output_voltage,
+            immediate_size=constants.IMMEDIATE_SZ_OFFSET,
+            param="offset_awg_path_1",
+            operation=self.operation_info,
+        )
+
+        qasm_program.emit(
+            q1asm_instructions.SET_AWG_OFFSET,
+            path0_amp,
+            path1_amp,
+        )
+
+
+class UpdateParameterStrategy(IdleStrategy):
+    """
+    Strategy for compiling an "update parameters" real-time instruction.
+    """
+
+    def insert_qasm(self, qasm_program: QASMProgram):
+        """
+        Add the ``upd_param`` assembly instruction for the Q1 sequence processor.
+
+        Parameters
+        ----------
+        qasm_program : QASMProgram
+            The QASMProgram to add the assembly instructions to.
+        """
+        qasm_program.emit(
+            q1asm_instructions.UPDATE_PARAMETERS,
+            constants.GRID_TIME,
+        )
+        qasm_program.elapsed_time += constants.GRID_TIME

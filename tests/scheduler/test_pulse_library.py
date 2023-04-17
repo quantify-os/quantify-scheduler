@@ -26,6 +26,7 @@ from quantify_scheduler.operations.pulse_library import (
     SquarePulse,
     StaircasePulse,
     SuddenNetZeroPulse,
+    VoltageOffset,
     create_dc_compensation_pulse,
     decompose_long_square_pulse,
 )
@@ -211,6 +212,13 @@ def test_decompose_long_square_pulse() -> None:
                 duration=duration,
                 port="qe0.mw",
                 clock="qe0.spec",
+            ),
+            VoltageOffset(
+                offset_path_0=0.5,
+                offset_path_1=0.1,
+                duration=duration,
+                port=port,
+                clock=clock,
             ),
         ]
         for clock in ["q0.01"]

@@ -678,11 +678,32 @@ def assign_pulse_and_acq_info_to_devices(
             )
 
         operation_start_time = schedulable["abs_time"]
+        # Check whether the duration aligns with grid time
+        try:
+            _ = to_grid_time(op_data.duration)
+        except ValueError as exc:
+            raise ValueError(
+                f"A duration of {op_data.duration * 1e9} ns does not align with a grid "
+                f"time of {constants.GRID_TIME} ns. Please make sure all operations "
+                f"have a duration that is a multiple of {constants.GRID_TIME} ns."
+                f"\n\nOffending operation:\n{repr(op_data)}."
+            ) from exc
         for pulse_data in op_data.data["pulse_info"]:
             if "t0" in pulse_data:
                 pulse_start_time = operation_start_time + pulse_data["t0"]
             else:
                 pulse_start_time = operation_start_time
+            # Check whether start time aligns with grid time
+            try:
+                _ = to_grid_time(pulse_start_time)
+            except ValueError as exc:
+                raise ValueError(
+                    f"An operation start time of {pulse_start_time * 1e9} ns does not "
+                    f"align with a grid time of {constants.GRID_TIME} ns. Please make "
+                    f"sure the start time of all operations is a multiple of "
+                    f"{constants.GRID_TIME} ns.\n\nOffending operation:"
+                    f"\n{repr(op_data)}."
+                ) from exc
 
             port = pulse_data["port"]
             clock = pulse_data["clock"]
