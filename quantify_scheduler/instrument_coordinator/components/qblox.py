@@ -722,8 +722,7 @@ class QbloxRFComponent(QbloxInstrumentCoordinatorComponentBase):
         self, seq_idx: int, settings: SequencerSettings
     ) -> None:
         super()._configure_sequencer_settings(seq_idx, settings)
-        # Always set override to False. Markers should be controlled using
-        # MarkerConfiguration
+        # Always set override to False.
         self._set_parameter(
             self.instrument[f"sequencer{seq_idx}"],
             "marker_ovr_en",

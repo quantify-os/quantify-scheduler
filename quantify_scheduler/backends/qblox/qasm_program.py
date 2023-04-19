@@ -477,7 +477,6 @@ class QASMProgram:
             from quantify_scheduler.backends.qblox import register_manager, constants
             from quantify_scheduler.backends.types.qblox import (
                 StaticHardwareProperties,
-                MarkerConfiguration,
                 BoundedParameter
             )
 
@@ -485,7 +484,6 @@ class QASMProgram:
                 instrument_type="QCM",
                 max_sequencers=constants.NUMBER_OF_SEQUENCERS_QCM,
                 max_awg_output_voltage=2.5,
-                marker_configuration=MarkerConfiguration(init=None, start=0b1111, end=0b0000),
                 mixer_dc_offset_range=BoundedParameter(min_val=-2.5, max_val=2.5, units="V"),
                 valid_ios=[f"complex_output_{i}" for i in [0, 1]]
                 + [f"real_output_{i}" for i in range(4)],

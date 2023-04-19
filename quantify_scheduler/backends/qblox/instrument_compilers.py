@@ -14,7 +14,6 @@ from quantify_scheduler.backends.qblox.constants import (
 from quantify_scheduler.backends.types.qblox import (
     BoundedParameter,
     LOSettings,
-    MarkerConfiguration,
     StaticHardwareProperties,
 )
 
@@ -141,7 +140,6 @@ class QcmModule(compiler_abc.QbloxBasebandModule):
         instrument_type="QCM",
         max_sequencers=NUMBER_OF_SEQUENCERS_QCM,
         max_awg_output_voltage=2.5,
-        marker_configuration=MarkerConfiguration(init=None, start=0b1111, end=0b0000),
         mixer_dc_offset_range=BoundedParameter(min_val=-2.5, max_val=2.5, units="V"),
         valid_ios=[f"complex_output_{i}" for i in [0, 1]]
         + [f"real_output_{i}" for i in range(4)],
@@ -159,7 +157,6 @@ class QrmModule(compiler_abc.QbloxBasebandModule):
         instrument_type="QRM",
         max_sequencers=NUMBER_OF_SEQUENCERS_QRM,
         max_awg_output_voltage=0.5,
-        marker_configuration=MarkerConfiguration(init=None, start=0b1111, end=0b0000),
         mixer_dc_offset_range=BoundedParameter(min_val=-0.5, max_val=0.5, units="V"),
         valid_ios=[f"complex_output_{i}" for i in [0]]
         + [f"real_output_{i}" for i in range(2)]
@@ -178,17 +175,13 @@ class QcmRfModule(compiler_abc.QbloxRFModule):
         instrument_type="QCM-RF",
         max_sequencers=NUMBER_OF_SEQUENCERS_QCM,
         max_awg_output_voltage=0.25,
-        marker_configuration=MarkerConfiguration(
-            init=0b0011,
-            start=0b1100,
-            end=0b0000,
-            output_map={
-                "complex_output_0": 0b0001,
-                "complex_output_1": 0b0010,
-            },
-        ),
         mixer_dc_offset_range=BoundedParameter(min_val=-50, max_val=50, units="mV"),
         valid_ios=[f"complex_output_{i}" for i in [0, 1]],
+        output_map={
+            "complex_output_0": 0b0001,
+            "complex_output_1": 0b0010,
+        },
+        default_marker=0b0011,
     )
 
 
@@ -202,10 +195,10 @@ class QrmRfModule(compiler_abc.QbloxRFModule):
         instrument_type="QRM-RF",
         max_sequencers=NUMBER_OF_SEQUENCERS_QRM,
         max_awg_output_voltage=0.25,
-        marker_configuration=MarkerConfiguration(init=0b0011, start=0b1111, end=0b0000),
         mixer_dc_offset_range=BoundedParameter(min_val=-50, max_val=50, units="mV"),
         valid_ios=[f"complex_output_{i}" for i in [0]]
         + [f"complex_input_{i}" for i in [0]],
+        default_marker=0b0011,
     )
 
 

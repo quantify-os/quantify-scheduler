@@ -5,6 +5,7 @@
 
 ### Breaking changes
 
+- Qblox backend - Markers will not be pulled high at the start of sequences anymore. Removed MarkerConfiguration from the Qblox backend. Moved output_map to StaticHardwareProperties, the RF output switches are controlled by the output_map. (!1081)
 - Qblox backend - Deprecate the `instruction_generated_pulses_enabled` hardware configuration setting, as well as the `StitchedSquarePulseStrategy` and `StaircasePulseStrategy`. The newly introduced `StitchedPulse`, as well as the helper functions in `quantify_scheduler.pulse_factories` can be used instead. `SquarePulse`s with a duration >1 microsecond (a constant in the Qblox backend) are compiled to AWG offset instructions (!637).
 
 ### Merged branches and closed issues

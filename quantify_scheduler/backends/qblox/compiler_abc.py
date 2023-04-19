@@ -56,7 +56,6 @@ from quantify_scheduler.backends.types.qblox import (
     RFModuleSettings,
     SequencerSettings,
     StaticHardwareProperties,
-    MarkerConfiguration,
 )
 
 from quantify_scheduler.enums import BinMode
@@ -314,6 +313,7 @@ class Sequencer:
         lo_name: Optional[str] = None,
         downconverter_freq: Optional[float] = None,
         mix_lo: bool = True,
+        default_marker: int = 0,
     ):
         """
         Constructor for the sequencer compiler.
@@ -343,6 +343,9 @@ class Sequencer:
         mix_lo
             Boolean flag for IQ mixing with LO.
             Defaults to ``True`` meaning IQ mixing is applied.
+        default_marker
+            The default marker value to use, will be set in the beginning of program.
+            Especially important for RF where the set_mrk command is used to enable/disable the RF path.
         """
         self.parent = parent
         self.index = index
@@ -353,6 +356,7 @@ class Sequencer:
         self.associated_ext_lo: str = lo_name
         self.downconverter_freq: float = downconverter_freq
         self.mix_lo: bool = mix_lo
+        self.default_marker = default_marker
 
         self.static_hw_properties: StaticHardwareProperties = static_hw_properties
 
@@ -800,17 +804,13 @@ class Sequencer:
             Upon `total_sequence_time` exceeding :attr:`.QASMProgram.elapsed_time`.
         """
         loop_label = "start"
-        marker_config = self.static_hw_properties.marker_configuration
 
         qasm = QASMProgram(self.static_hw_properties, self.register_manager)
-        if marker_config.init is not None:
-            qasm.set_marker(marker_config.init)
-            qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
+        qasm.set_marker(self.default_marker)
+        qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
         # program header
         qasm.emit(q1asm_instructions.WAIT_SYNC, constants.GRID_TIME)
         qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
-        if marker_config.start is not None:
-            qasm.set_marker(marker_config.start)
 
         pulses = [] if self.pulses is None else self.pulses
         acquisitions = [] if self.acquisitions is None else self.acquisitions
@@ -863,10 +863,6 @@ class Sequencer:
             qasm.auto_wait(wait_time)
 
         # program footer
-        if marker_config.end is not None:
-            qasm.set_marker(marker_config.end)
-        qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
-
         qasm.emit(q1asm_instructions.STOP)
 
         if self.qasm_hook_func:
@@ -1192,7 +1188,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         """
         # Figure out which outputs need to be turned on.
-        marker_start_config = self.static_hw_properties.marker_configuration.start
+        default_marker = self.static_hw_properties.default_marker
         for io, io_cfg in self.instrument_cfg.items():
             if (
                 not isinstance(io_cfg, dict)
@@ -1209,20 +1205,8 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             for target in portclock_configs:
                 portclock = (target["port"], target["clock"])
                 if portclock in self._portclocks_with_pulses:
-                    output_map = (
-                        self.static_hw_properties.marker_configuration.output_map
-                    )
-                    if io in output_map:
-                        marker_start_config |= output_map[io]
-
-        updated_static_hw_properties = dataclasses.replace(
-            self.static_hw_properties,
-            marker_configuration=MarkerConfiguration(
-                init=self.static_hw_properties.marker_configuration.init,
-                start=marker_start_config,
-                end=self.static_hw_properties.marker_configuration.end,
-            ),
-        )
+                    if io in self.static_hw_properties.output_map:
+                        default_marker = self.static_hw_properties.output_map[io]
 
         # Setup each sequencer.
         sequencers: Dict[str, Sequencer] = {}
@@ -1264,7 +1248,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                         parent=self,
                         index=seq_idx,
                         portclock=portclock,
-                        static_hw_properties=updated_static_hw_properties,
+                        static_hw_properties=self.static_hw_properties,
                         connected_outputs=connected_outputs,
                         connected_inputs=connected_inputs,
                         seq_settings=target,
@@ -1272,6 +1256,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                         lo_name=lo_name,
                         mix_lo=mix_lo,
                         downconverter_freq=downconverter_freq,
+                        default_marker=default_marker,
                     )
                     sequencers[new_seq.name] = new_seq
 
