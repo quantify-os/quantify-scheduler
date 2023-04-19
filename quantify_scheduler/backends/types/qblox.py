@@ -26,24 +26,6 @@ class BoundedParameter:
 
 
 @dataclass(frozen=True)
-class MarkerConfiguration:
-    """Specifies the marker configuration set during the execution of the sequencer
-    program."""
-
-    init: Optional[int]
-    """Value to set in the header before the wait sync."""
-    start: Optional[int]
-    """The setting set in the header at the start of the program (after the wait sync).
-    """
-    end: Optional[int]
-    """Setting set in the footer at the end of the program."""
-    output_map: Dict[str, int] = dataclasses_field(default_factory=dict)
-    """A mapping from output name to marker setting.
-    Specifies which marker bit needs to be set at start if the
-    output (as a string ex. `complex_output_0`) contains a pulse."""
-
-
-@dataclass(frozen=True)
 class StaticHardwareProperties:
     """
     Specifies the fixed hardware properties needed in the backend.
@@ -55,13 +37,18 @@ class StaticHardwareProperties:
     """The amount of sequencers available."""
     max_awg_output_voltage: float
     """Maximum output voltage of the awg."""
-    marker_configuration: MarkerConfiguration
-    """The marker configuration to use."""
     mixer_dc_offset_range: BoundedParameter
     """Specifies the range over which the dc offsets can be set that are used for mixer
     calibration."""
     valid_ios: List[str]
     """Specifies the complex/real output identifiers supported by this device."""
+    default_marker: int = 0
+    """The default marker value to set at the beginning of programs.
+    Important for RF instruments that use the marker to enable the RF output."""
+    output_map: Dict[str, int] = dataclasses_field(default_factory=dict)
+    """A mapping from output name to marker setting.
+    Specifies which marker bit needs to be set at start if the
+    output (as a string ex. `complex_output_0`) contains a pulse."""
 
 
 @dataclass(frozen=True)

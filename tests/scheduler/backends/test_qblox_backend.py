@@ -51,7 +51,6 @@ from quantify_scheduler.backends.qblox_backend import hardware_compile
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.backends.types.qblox import (
     BasebandModuleSettings,
-    MarkerConfiguration,
 )
 from quantify_scheduler.compilation import (
     determine_absolute_timing,
@@ -1159,7 +1158,7 @@ def test_compile_with_repetitions(
     program_from_json = full_program["compiled_instructions"]["qcm0"]["sequencers"][
         "seq0"
     ]["sequence"]["program"]
-    move_line = program_from_json.split("\n")[5]
+    move_line = program_from_json.split("\n")[6]
     move_items = move_line.split()  # splits on whitespace
     args = move_items[1]
     iterations = int(args.split(",")[0])
@@ -2031,21 +2030,13 @@ def test_assign_attenuation_invalid_raises(
 def test_markers(
     mock_setup_basic_transmon, hardware_cfg_pulsar, hardware_cfg_pulsar_rf
 ):
-    def _confirm_correct_markers(device_program, mrk_config, is_rf=False):
-        answers = (
-            mrk_config.init,
-            mrk_config.start,
-            mrk_config.end,
-        )
+    def _confirm_correct_markers(device_program, default_marker, is_rf=False):
+        answer = default_marker
         qasm = device_program["sequencers"]["seq0"]["sequence"]["program"]
 
         matches = re.findall(r"set\_mrk +\d+", qasm)
-        matches = [int(m.replace("set_mrk", "").strip()) for m in matches]
-        if not is_rf:
-            matches = [None, *matches]
-
-        for match, answer in zip(matches, answers):
-            assert match == answer
+        match = [int(m.replace("set_mrk", "").strip()) for m in matches][0]
+        assert match == answer
 
     # Test for baseband
     sched = Schedule("gate_experiment")
@@ -2079,12 +2070,8 @@ def test_markers(
     )
     program = compiled_schedule["compiled_instructions"]
 
-    _confirm_correct_markers(
-        program["qcm0"], MarkerConfiguration(init=None, start=0b1111, end=0)
-    )
-    _confirm_correct_markers(
-        program["qrm0"], MarkerConfiguration(init=None, start=0b1111, end=0)
-    )
+    _confirm_correct_markers(program["qcm0"], 0)
+    _confirm_correct_markers(program["qrm0"], 0)
 
     # # Test for rf
     sched = Schedule("gate_experiment")
@@ -2099,12 +2086,12 @@ def test_markers(
     program = compiled_schedule["compiled_instructions"]
     _confirm_correct_markers(
         program["qcm_rf0"],
-        MarkerConfiguration(init=0b0011, start=0b1101, end=0),
+        0b0001,
         is_rf=True,
     )
     _confirm_correct_markers(
         program["qrm_rf0"],
-        MarkerConfiguration(init=0b0011, start=0b1111, end=0),
+        0b0011,
         is_rf=True,
     )
 
