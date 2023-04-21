@@ -151,6 +151,7 @@ def long_square_pulse(
     port: str,
     clock: str = BasebandClockResource.IDENTITY,
     t0: float = 0,
+    grid_time_ns: int = qblox_constants.GRID_TIME,
 ) -> StitchedPulse:
     """Create a long square pulse using DC voltage offsets.
 
@@ -173,13 +174,28 @@ def long_square_pulse(
     t0 : float, optional
         Time in seconds when to start the pulses relative to the start time
         of the Operation in the Schedule. By default 0.
+    grid_time_ns : int, optional
+        Grid time in ns. The duration of the long_square_pulse must be a multiple
+        of this. By default equal to the grid time of Qblox modules.
 
     Returns
     -------
     StitchedPulse
         A StitchedPulse object containing an offset instruction with the specified
         amplitude.
+
+    Raises
+    ------
+    ValueError
+        When the duration of the pulse is not a multiple of ``grid_time_ns``.
     """
+    try:
+        duration = qblox_helpers.to_grid_time(duration, grid_time_ns) * 1e-9
+    except ValueError as err:
+        raise ValueError(
+            f"The duration of a long_square_pulse must be a multiple of "
+            f"{grid_time_ns} ns."
+        ) from err
 
     pulse = (
         StitchedPulseBuilder(port=port, clock=clock, t0=t0)

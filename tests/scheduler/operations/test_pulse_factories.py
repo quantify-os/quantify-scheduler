@@ -83,3 +83,12 @@ def test_staircase_raises():
         )
     # Exact phrasing is not important, but should be about staircase
     assert "step" in str(err.value) and "staircase" in str(err.value)
+
+
+def test_bad_duration_raises():
+    """Test a long_square_pulse with a duration that is not a multiple of grid time."""
+    with pytest.raises(ValueError) as err:
+        _ = long_square_pulse(
+            amp=0.5, duration=2.5e-6 + 1e-9, port="r0:res", clock="q0.ro"
+        )
+    assert "The duration of a long_square_pulse must be a multiple of" in str(err.value)

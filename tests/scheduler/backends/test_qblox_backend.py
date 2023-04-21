@@ -2696,11 +2696,7 @@ def test_auto_compile_long_square_pulses_raises(
             sched,
             config=quantum_device.generate_compilation_config(),
         )
-    assert (
-        f"A duration of {bad_duration * 1e9} ns does not align with a grid time of "
-        f"{constants.GRID_TIME} ns. Please make sure all operations have a duration "
-        f"that is a multiple of {constants.GRID_TIME} ns."
-    ) in str(exc.value)
+    assert "The duration of a long_square_pulse must be a multiple of" in str(exc.value)
 
 
 def test_long_acquisition(
