@@ -29,7 +29,7 @@
 - Qblox backend - Forbid repeated acquisition index in schedule (!655, !657, partially revert !542)
 - Qblox backend - `Measure` can now use the `NumericalWeightedIntegrationComplex` protocol. The `DispersiveMeasurement` has been expanded with optional weight parameters for use in this protocol (!612).
 - Git - Change back to default merge strategy for CHANGELOG.md (!659).
-- Operations - Introduce the `StitchedPulse`, an Operation that can be composed of AWG offset instructions and waveforms, and the `StitchedPulseBuilder` which can be used to create `StitchedPulse`s (!588).
+- Operations - Introduce the `StitchedPulse`, an Operation that can be composed of AWG offset instructions and waveforms, and the `StitchedPulseBuilder` which can be used to create `StitchedPulse`s (!588, !666).
   - Additionally, helper functions `long_square_pulse`, `long_ramp_pulse` and `staircase_pulse` are introduced in `quantify_scheduler.pulse_factories`, to more easily generate the operations for these common use-cases.
 - Operations, Qblox backend - Introduce the `VoltageOffset` operation, for use in the `StitchedPulse`, and modify the compilation steps to compile this operation (!588).
 - Documentation - Fix documentation generation warnings and errors (!658)
