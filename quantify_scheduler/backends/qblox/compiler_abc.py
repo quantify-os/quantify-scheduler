@@ -313,6 +313,7 @@ class Sequencer:
         lo_name: Optional[str] = None,
         downconverter_freq: Optional[float] = None,
         mix_lo: bool = True,
+        marker_debug_mode_enable: bool = False,
         default_marker: int = 0,
     ):
         """
@@ -343,6 +344,9 @@ class Sequencer:
         mix_lo
             Boolean flag for IQ mixing with LO.
             Defaults to ``True`` meaning IQ mixing is applied.
+        marker_debug_mode_enable
+            Boolean flag to indicate if markers should be pulled high at the start of operations.
+            Defaults to False, which means the markers will not be used during the sequence.
         default_marker
             The default marker value to use, will be set in the beginning of program.
             Especially important for RF where the set_mrk command is used to enable/disable the RF path.
@@ -356,6 +360,7 @@ class Sequencer:
         self.associated_ext_lo: str = lo_name
         self.downconverter_freq: float = downconverter_freq
         self.mix_lo: bool = mix_lo
+        self._marker_debug_mode_enable: bool = marker_debug_mode_enable
         self.default_marker = default_marker
 
         self.static_hw_properties: StaticHardwareProperties = static_hw_properties
@@ -848,8 +853,19 @@ class Sequencer:
             op_queue = deque(op_list)
             while len(op_queue) > 0:
                 operation = op_queue.popleft()
+                valid_operation = (
+                    operation.operation_info.is_acquisition
+                    or operation.operation_info.data.get("wf_func") is not None
+                )
                 qasm.wait_till_start_operation(operation.operation_info)
-                operation.insert_qasm(qasm)
+                if self._marker_debug_mode_enable and valid_operation:
+                    qasm.set_marker(self._decide_markers(operation))
+                    operation.insert_qasm(qasm)
+                    qasm.set_marker(self.default_marker)
+                    qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
+                    qasm.elapsed_time += constants.GRID_TIME
+                else:
+                    operation.insert_qasm(qasm)
 
             end_time = helpers.to_grid_time(total_sequence_time)
             wait_time = end_time - qasm.elapsed_time
@@ -1071,6 +1087,51 @@ class Sequencer:
         seq_settings = self._settings.to_dict()
         return seq_settings
 
+    def _decide_markers(self, operation) -> int:
+        """
+        Helper method to decide what markers should be pulled high when enable_marker is set to True.
+        Checks what module and operation are being processed, then builds a bit string accordingly.
+
+        Note that with the current quantify structure a sequencer cannot have connected inputs and outputs simultaneously.
+        Therefore, the QRM baseband module pulls both input or output markers high when doing an operation,
+        as it is impossible during compile time to find out what physical port is being used.
+
+        Parameters
+        ----------
+        sequencer
+            The sequencer currently in the process of constructing a Q1ASM program.
+        operation
+            The operation currently being processed by the sequence.
+
+        Returns
+        -------
+            A bit string passed on to the set_mrk function of the Q1ASM object.
+        """
+
+        marker_bit_string = 0
+        instrument_type = self.static_hw_properties.instrument_type
+        if instrument_type == "QCM":
+            for output in self.connected_outputs:
+                marker_bit_string |= 1 << output
+        elif instrument_type == "QRM":
+            if operation.operation_info.is_acquisition:
+                marker_bit_string = 0b1100
+            else:
+                marker_bit_string = 0b0011
+
+        # For RF modules, the first two indices correspond to path enable/disable.
+        # Therefore, the index of the output is shifted by 2.
+        elif instrument_type == "QCM-RF":
+            for output in self.connected_outputs:
+                marker_bit_string |= 1 << (output + 2)
+                marker_bit_string |= self.default_marker
+        elif instrument_type == "QRM-RF":
+            if operation.operation_info.is_acquisition:
+                marker_bit_string = 0b1011
+            else:
+                marker_bit_string = 0b0111
+        return marker_bit_string
+
 
 class QbloxBaseModule(ControlDeviceCompiler, ABC):
     """
@@ -1227,6 +1288,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             lo_name = io_cfg.get("lo_name", None)
             downconverter_freq = io_cfg.get("downconverter_freq", None)
             mix_lo = io_cfg.get("mix_lo", True)
+            marker_debug_mode_enable = io_cfg.get("marker_debug_mode_enable", False)
 
             portclock_configs: List[Dict[str, Any]] = io_cfg.get(
                 "portclock_configs", []
@@ -1255,6 +1317,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                         latency_corrections=self.latency_corrections,
                         lo_name=lo_name,
                         mix_lo=mix_lo,
+                        marker_debug_mode_enable=marker_debug_mode_enable,
                         downconverter_freq=downconverter_freq,
                         default_marker=default_marker,
                     )

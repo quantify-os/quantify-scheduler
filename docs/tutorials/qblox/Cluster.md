@@ -204,7 +204,17 @@ emphasize-lines: 4,12,20
 
 ### Marker configuration
 
-Currently it is not possible to set marker configuration by the user on the modules. For all module types, the markers are set to all high at the start of the schedule.
+The markers can be configured by adding a `"marker_debug_mode_enable"` key to I/O configurations. If the value is set to True, the operations defined for this I/O will be accompanied by a 4 ns trigger pulse on the marker located next to the I/O port.
+The marker will be pulled high at the same time as the module starts playing or acquiring.
+```{code-block} python
+---
+emphasize-lines: 2
+---
+"complex_output_0": {
+    "marker_debug_mode_enable": True,
+    ...
+}
+```
 
 (sec-qblox-mixer-corrections)=
 ### Mixer corrections
