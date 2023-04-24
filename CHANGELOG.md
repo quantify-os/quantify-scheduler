@@ -20,6 +20,7 @@
 - Compilation - `CompilationNode`s take the full `CompilationConfig` as input (!615, #405)
 - Tests - Move Qblox Pulsar entries from `qblox_test_mapping.json` to pytest fixtures (!632)
 - Visualization - Introduce the `x_range` keyword for the matplotlib backend in `Schedule.plot_pulse_diagram`. This will cut off any points outside the given range when creating the plot. This can be used to reduce memory usage when plotting a small section of a long pulse sequence (!629).
+- Qblox backend - Add the `marker_debug_mode_enable` parameter to the hardware configuration, which toggles markers at the start of operations on inputs and outputs where it is set to True (!606).
 - Schedules - Add `nv_dark_esr_sched_nco` spectroscopy schedule using SetClockFrequency Operation to sweep the NCO frequency (!639)
 - ZI LabOne backend - Return datasets from UHFQA instrument coordinator component (which fixes the broken backend) (#410, !623).
 - Qblox backend - Renamed `hw_mapping` input parameter to `instrument_cfg` in `InstrumentCompiler` and up (!644).

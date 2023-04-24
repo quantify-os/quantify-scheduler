@@ -14,6 +14,7 @@ from typing import Dict, Any
 
 import pytest
 import numpy as np
+import re
 from qcodes.instrument.parameter import ManualParameter
 from qblox_instruments import ClusterType, PulsarType
 from xarray import Dataset, DataArray
@@ -1435,4 +1436,79 @@ def test_mix_lo_flag(
         compiled_sched_mix_lo_false.compiled_instructions["generic"]["lo0.frequency"]
         == 8e9
     )
+    instr_coordinator.remove_component("ic_cluster0")
+
+
+def test_marker_debug_mode_enable(
+    mock_setup_basic_transmon_with_standard_params, make_cluster_component
+):
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module1": {
+                "instrument_type": "QRM",
+                "complex_input_0": {
+                    "marker_debug_mode_enable": True,
+                    "portclock_configs": [
+                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": 0},
+                    ],
+                },
+            },
+        },
+    }
+
+    # Setup objects needed for experiment
+    mock_setup = mock_setup_basic_transmon_with_standard_params
+    ic_cluster0 = make_cluster_component("cluster0")
+    instr_coordinator = mock_setup["instrument_coordinator"]
+    instr_coordinator.add_component(ic_cluster0)
+    quantum_device = mock_setup["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+
+    # Define experiment schedule
+    schedule = Schedule("test marker_enable")
+    schedule.add(Measure("q0", acq_protocol="SSBIntegrationComplex"))
+    schedule.add_resource(ClockResource(name="q0.res", freq=50e6))
+
+    # Generate compiled schedule for QRM
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched_qrm = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    # Generate compiled schedule for QRM-RF
+    hardware_cfg["cluster0"]["cluster0_module1"]["instrument_type"] = "QRM_RF"
+    compiled_sched_qrm_rf = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    # Assert markers were set correctly, and wait time is correct for both modules.
+    seq0_qrm = compiled_sched_qrm.compiled_instructions["cluster0"]["cluster0_module1"][
+        "sequencers"
+    ]["seq0"]["sequence"]["program"].splitlines()
+    idx = 0
+    for i, string in enumerate(seq0_qrm):
+        if re.search(r"^\s*set_mrk\s+3", string):
+            idx = i
+            break
+    # 2 instructions after set mrk are set_awg_gain and play
+    assert re.search(r"^\s*set_mrk\s+0", seq0_qrm[idx + 3])
+    assert re.search(r"^\s*upd_param\s+4", seq0_qrm[idx + 4])
+    assert re.search(r"^\s*wait\s+92", seq0_qrm[idx + 5])
+
+    seq0_qrm_rf = compiled_sched_qrm_rf.compiled_instructions["cluster0"][
+        "cluster0_module1"
+    ]["sequencers"]["seq0"]["sequence"]["program"].splitlines()
+    idx = 0
+    for i, string in enumerate(seq0_qrm_rf):
+        if re.search(r"^\s*set_mrk\s+7", string):
+            idx = i
+            break
+    # 2 instructions after set mrk are set_awg_gain and play
+    assert re.search(r"^\s*set_mrk\s+3", seq0_qrm_rf[idx + 3])
+    assert re.search(r"^\s*upd_param\s+4", seq0_qrm_rf[idx + 4])
+    assert re.search(r"^\s*wait\s+92", seq0_qrm_rf[idx + 5])
+
     instr_coordinator.remove_component("ic_cluster0")
