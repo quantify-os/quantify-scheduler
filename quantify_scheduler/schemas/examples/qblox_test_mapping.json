@@ -11,7 +11,6 @@
                     {
                         "port": "q4:mw",
                         "clock": "q4.01",
-                        "interm_freq": 200e6,
                         "mixer_amp_ratio": 0.9999,
                         "mixer_phase_error_deg": -4.2
                     }
@@ -24,14 +23,16 @@
                 "output_att": 4,
                 "portclock_configs": [
                     {
+                        "port": "q0:mw",
+                        "clock": "q0.01"
+                    },
+                    {
                         "port": "q5:mw",
-                        "clock": "q5.01",
-                        "interm_freq": 50e6
+                        "clock": "q5.01"
                     }
                 ]
             },
             "complex_output_1": {
-                "lo_freq": 5e9,
                 "output_att": 6,
                 "portclock_configs": [
                     {
@@ -52,8 +53,7 @@
                         "mixer_amp_ratio": 0.9997,
                         "mixer_phase_error_deg": -4.0,
                         "port": "q4:res",
-                        "clock": "q4.ro",
-                        "interm_freq": null
+                        "clock": "q4.ro"
                     }
                 ]
             }
@@ -65,8 +65,7 @@
                 "portclock_configs": [
                     {
                         "port": "q5:res",
-                        "clock": "q5.ro",
-                        "interm_freq": 50e6
+                        "clock": "q5.ro"
                     }
                 ]
             },
@@ -74,9 +73,8 @@
                 "output_att": 12,
                 "portclock_configs": [
                     {
-                        "port": "q5:mw",
-                        "clock": "q5.01",
-                        "interm_freq": 50e6
+                        "port": "q0:res",
+                        "clock": "q0.ro"
                     }
                 ]
             }
@@ -130,12 +128,10 @@
     },
     "lo0": {
         "instrument_type": "LocalOscillator",
-        "frequency": null,
         "power": 1
     },
     "lo1": {
         "instrument_type": "LocalOscillator",
-        "frequency": 7.2e9,
         "power": 1
     }
 }

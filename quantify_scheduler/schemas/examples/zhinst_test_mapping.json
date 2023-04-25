@@ -5,9 +5,7 @@
         {
             "unique_name": "mw_qubit_ch1",
             "instrument_name": "mw_qubit",
-            "frequency": {
-                "ch_1.frequency": null
-            },
+            "frequency_param": "ch1.frequency",
             "power": {
                 "power": 13
             }
@@ -15,9 +13,7 @@
         {
             "unique_name": "mw_qubit_ch2",
             "instrument_name": "mw_qubit",
-            "frequency": {
-                "ch_2.frequency": null
-            },
+            "frequency_param": "ch2.frequency",
             "power": {
                 "ch_2.power": 10
             }
@@ -25,9 +21,7 @@
         {
             "unique_name": "mw_readout",
             "instrument_name": "mw_readout",
-            "frequency": {
-                "frequency": null
-            },
+            "frequency_param": "frequency",
             "power": {
                 "power": 16
             }
@@ -44,12 +38,7 @@
                 "port": "q0:mw",
                 "clock": "q0.01",
                 "mode": "complex",
-                "modulation": {
-                    "type": "premod",
-                    "interm_freq": -100000000.0
-                },
                 "local_oscillator": "mw_qubit_ch1",
-                "clock_frequency": 6000000000.0,
                 "markers": [
                     "AWG_MARKER1",
                     "AWG_MARKER2"
@@ -67,12 +56,7 @@
                 "port": "q1:mw",
                 "clock": "q1.01",
                 "mode": "complex",
-                "modulation": {
-                    "type": "premod",
-                    "interm_freq": -100000000.0
-                },
                 "local_oscillator": "mw_qubit_ch2",
-                "clock_frequency": 6000000000.0,
                 "markers": [
                     "AWG_MARKER1",
                     "AWG_MARKER2"
@@ -90,12 +74,7 @@
                 "port": "q2:mw",
                 "clock": "q2.01",
                 "mode": "complex",
-                "modulation": {
-                    "type": "premod",
-                    "interm_freq": -100000000.0
-                },
                 "local_oscillator": "mw_qubit_ch2",
-                "clock_frequency": 6000000000.0,
                 "markers": [
                     "AWG_MARKER1",
                     "AWG_MARKER2"
@@ -113,12 +92,7 @@
                 "port": "q3:mw",
                 "clock": "q3.01",
                 "mode": "complex",
-                "modulation": {
-                    "type": "premod",
-                    "interm_freq": -100000000.0
-                },
                 "local_oscillator": "mw_qubit_ch2",
-                "clock_frequency": 6000000000.0,
                 "markers": [
                     "AWG_MARKER1",
                     "AWG_MARKER2"
@@ -141,12 +115,7 @@
                 "port": "q0:res",
                 "clock": "q0.ro",
                 "mode": "real",
-                "modulation": {
-                    "type": "premod",
-                    "interm_freq": 200000000.0
-                },
                 "local_oscillator": "mw_readout",
-                "clock_frequency": 6000000000.0,
                 "trigger": 2
             }
         }

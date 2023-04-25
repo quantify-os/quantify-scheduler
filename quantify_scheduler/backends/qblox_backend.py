@@ -189,7 +189,7 @@ def hardware_compile(
         )
     if isinstance(config, CompilationConfig):
         # Extract the hardware config from the CompilationConfig
-        hardware_cfg = config.extract_hardware_config()
+        hardware_cfg = helpers.generate_hardware_config(compilation_config=config)
     elif config is not None:
         # Support for (deprecated) calling with hardware_cfg as positional argument.
         hardware_cfg = config

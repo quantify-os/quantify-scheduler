@@ -22,5 +22,33 @@
                 2.5
             ]
         }
+    },
+    "modulation_frequencies": {
+        "q0:res-q0.ro": {
+            "interm_freq": null,
+            "lo_freq": 7.8e9
+        },
+        "q0:mw-q0.01": {
+            "interm_freq": 50e6,
+            "lo_freq": null
+        },
+        "q4:mw-q4.01": {
+            "interm_freq": 200e6,
+            "lo_freq": null
+        },
+        "q4:res-q4.ro": {
+            "interm_freq": null,
+            "lo_freq": 7.2e9
+        },
+        "q5:mw-q5.01": {
+            "interm_freq": 50e6,
+            "lo_freq": null
+        },
+        "q5:res-q5.ro": {
+            "interm_freq": 50e6
+        },
+        "q6:mw-q6.01": {
+            "lo_freq": 5e9
+        }
     }
 }

@@ -26,6 +26,7 @@ from quantify_scheduler.schemas.examples.device_example_cfgs import (
 
 
 ZHINST_HARDWARE_MAPPING = utils.load_json_example_scheme("zhinst_test_mapping.json")
+ZHINST_HARDWARE_OPTIONS = utils.load_json_example_scheme("zhinst_hardware_options.json")
 
 
 @pytest.fixture
@@ -40,6 +41,11 @@ def device_cfg_transmon_example() -> Generator[DeviceCompilationConfig, None, No
 @pytest.fixture
 def hardware_cfg_zhinst_example() -> Generator[Dict[str, Any], None, None]:
     yield dict(ZHINST_HARDWARE_MAPPING)
+
+
+@pytest.fixture
+def hardware_options_zhinst_example() -> Generator[Dict[str, Any], None, None]:
+    yield dict(ZHINST_HARDWARE_OPTIONS)
 
 
 @pytest.fixture

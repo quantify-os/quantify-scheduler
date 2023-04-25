@@ -105,7 +105,7 @@ def set_standard_params_transmon(mock_setup):
     """
 
     q0 = mock_setup["q0"]
-    q0.rxy.amp180(0.45)
+    q0.rxy.amp180(0.115)
     q0.clock_freqs.f01(7.3e9)
     q0.clock_freqs.f12(7.0e9)
     q0.clock_freqs.readout(8.0e9)

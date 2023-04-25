@@ -7,6 +7,7 @@ from __future__ import annotations
 import logging
 import re
 import warnings
+from copy import deepcopy
 from dataclasses import dataclass
 from functools import partial
 from typing import TYPE_CHECKING, Any, Callable, Literal, get_args
@@ -29,6 +30,10 @@ from quantify_scheduler.backends.zhinst import resolvers, seqc_il_generator
 from quantify_scheduler.backends.zhinst import settings as zi_settings
 from quantify_scheduler.helpers import schedule as schedule_helpers
 from quantify_scheduler.helpers import waveforms as waveform_helpers
+from quantify_scheduler.helpers.collections import (
+    find_all_port_clock_combinations,
+    find_port_clock_path,
+)
 from quantify_scheduler.instrument_coordinator.components.generic import (
     DEFAULT_NAME as GENERIC_ICC_DEFAULT_NAME,
 )
@@ -691,6 +696,150 @@ class ZIDeviceConfig:
     """
 
 
+def generate_hardware_config(  # noqa: PLR0912, PLR0915
+    compilation_config: CompilationConfig,
+) -> dict:
+    """
+    Extract the old-style Zhinst hardware config from the CompilationConfig.
+
+    Parameters
+    ----------
+    config: CompilationConfig
+        CompilationConfig from which hardware config is extracted.
+
+    Returns
+    -------
+    hardware_config : dict
+        Zhinst hardware configuration.
+
+    Raises
+    ------
+    KeyError
+        If the CompilationConfig.connectivity does not contain a hardware config.
+    KeyError
+        If the 'frequency_param' is not specified for in a LO config.
+    ValueError
+        If a value is specified in both the hardware options and the hardware config.
+    RuntimeError
+        If no external local oscillator is found in the generated zhinst
+        hardware configuration.
+    """
+    if not isinstance(compilation_config.connectivity, dict):
+        raise KeyError(
+            f"CompilationConfig.connectivity does not contain a "
+            f"hardware config dict:\n {compilation_config.connectivity=}"
+        )
+
+    hardware_config = deepcopy(compilation_config.connectivity)
+    hardware_options = compilation_config.hardware_options
+
+    # Add latency corrections from hardware options to hardware config
+    latency_corrections = hardware_options.dict()["latency_corrections"]
+    legacy_latency_corrections = hardware_config.get("latency_corrections")
+
+    if latency_corrections is None:
+        pass
+    elif legacy_latency_corrections is None:
+        hardware_config["latency_corrections"] = latency_corrections
+    elif legacy_latency_corrections != latency_corrections:
+        raise ValueError(
+            f"Trying to set latency corrections to {latency_corrections} from "
+            f"the hardware options while it has previously been set to "
+            f"{legacy_latency_corrections} in the hardware config. To avoid conflicting"
+            f" settings, please make sure these corrections are only set in one place."
+        )
+
+    # Add distortion corrections from hardware options to hardware config
+    distortion_corrections = hardware_options.dict()["distortion_corrections"]
+    legacy_distortion_corrections = hardware_config.get("distortion_corrections")
+
+    if distortion_corrections is None:
+        pass
+    elif legacy_distortion_corrections is None:
+        hardware_config["distortion_corrections"] = distortion_corrections
+    elif legacy_distortion_corrections != distortion_corrections:
+        raise ValueError(
+            f"Trying to set latency corrections to {distortion_corrections} from "
+            f"the hardware options while it has previously been set to "
+            f"{legacy_distortion_corrections} in the hardware config. To avoid "
+            f"conflicting settings, please make sure these corrections are only "
+            f"set in one place."
+        )
+
+    modulation_frequencies = compilation_config.hardware_options.modulation_frequencies
+
+    if modulation_frequencies is not None:
+        for port, clock in find_all_port_clock_combinations(hardware_config):
+            if (pc_mod_freqs := modulation_frequencies.get(f"{port}-{clock}")) is None:
+                # No modulation frequencies to set for this port-clock.
+                continue
+            ch_path = find_port_clock_path(
+                hardware_config=hardware_config, port=port, clock=clock
+            )
+            # Set the interm_freq in the channel config:
+            ch_config = hardware_config
+            for key in ch_path:
+                ch_config = ch_config[key]
+            if "modulation" not in ch_config:
+                # Initialize modulation config:
+                ch_config["modulation"] = {"type": "premod"}
+            legacy_interm_freq = ch_config["modulation"].get(
+                "interm_freq", "not_present"
+            )
+            # Using default="not_present" because IF=None is also a valid setting
+            if legacy_interm_freq == "not_present":
+                ch_config["modulation"]["interm_freq"] = pc_mod_freqs.interm_freq
+            elif legacy_interm_freq != pc_mod_freqs.interm_freq:
+                raise ValueError(
+                    f"Trying to set IF for channel={ch_path} to"
+                    f" {pc_mod_freqs.interm_freq} from the hardware options while it"
+                    f" has previously been set to {legacy_interm_freq} in the hardware"
+                    f" config. To avoid conflicting settings, please make sure this"
+                    f" value is only set in one place."
+                )
+            # Find the LO config and add the frequency config:
+            lo_name: str = ch_config["local_oscillator"]
+            lo_configs: list = hardware_config.get("local_oscillators", [])
+            lo_config_found = False
+            for lo_config in lo_configs:
+                if lo_config["unique_name"] == lo_name:
+                    lo_config_found = True
+                    if "frequency_param" not in lo_config:
+                        raise KeyError(
+                            f"Frequency parameter for {lo_name} not found in the"
+                            f" hardware config. Please specify it under the "
+                            f" 'frequency_param' key in {lo_config=}."
+                        )
+                    if "frequency" not in lo_config:
+                        # Initialize frequency config dict:
+                        lo_config["frequency"] = {}
+                    # Set LO freq in frequency config dict:
+                    lo_freq_key = lo_config.get("frequency_param")
+                    legacy_lo_freq = lo_config["frequency"].get(
+                        lo_freq_key, "not_present"
+                    )
+                    # Using default="not_present" because lo_freq=None is
+                    # also a valid setting
+                    if legacy_lo_freq == "not_present":
+                        lo_config["frequency"][lo_freq_key] = pc_mod_freqs.lo_freq
+                    elif legacy_lo_freq != pc_mod_freqs.lo_freq:
+                        raise ValueError(
+                            f"Trying to set frequency for {lo_name} to"
+                            f" {pc_mod_freqs.lo_freq} from the hardware options while"
+                            f" it has previously been set to {legacy_lo_freq} in"
+                            f" the hardware config. To avoid conflicting settings,"
+                            f" please make sure this value is only set in one place."
+                        )
+            if not lo_config_found:
+                raise RuntimeError(
+                    f"External local oscillator '{lo_name}' set to "
+                    f"be used for {port=} and {clock=} not found! Make "
+                    f"sure it is present in the hardware configuration."
+                )
+
+    return hardware_config
+
+
 def compile_backend(
     schedule: Schedule,
     config: CompilationConfig | dict[str, Any] | None = None,
@@ -746,7 +895,7 @@ def compile_backend(
         )
     if isinstance(config, CompilationConfig):
         # Extract the hardware config from the CompilationConfig
-        hardware_cfg = config.extract_hardware_config()
+        hardware_cfg = generate_hardware_config(compilation_config=config)
     elif config is not None:
         # Support for (deprecated) calling with hardware_cfg as positional argument.
         hardware_cfg = config

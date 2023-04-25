@@ -83,6 +83,8 @@ class LocalOscillator(DataClassJsonMixin):
     frequency :
         A dict which tells the generic icc what parameter maps to the local oscillator
         (LO) frequency in Hz.
+    frequency_param
+        The parameter on the LO instrument used to control the frequency.
     power :
         A dict which tells the generic icc what parameter maps to the local oscillator
         (LO) power in dBm.
@@ -98,6 +100,7 @@ class LocalOscillator(DataClassJsonMixin):
     instrument_name: str
     generic_icc_name: Optional[str] = None
     frequency: Optional[dict] = None
+    frequency_param: Optional[str] = None
     power: Optional[dict] = None
     phase: Optional[dict] = None
     parameters: Optional[dict] = None
