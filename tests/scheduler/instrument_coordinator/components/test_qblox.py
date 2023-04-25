@@ -716,8 +716,9 @@ def test_prepare_qcm_qrm(
 def test_prepare_cluster_rf(
     mocker,
     mock_setup_basic_transmon,
-    make_basic_schedule,
+    make_schedule_with_measurement,
     hardware_cfg_qblox_example,
+    hardware_options_qblox_example,
     make_cluster_component,
     force_set_parameters,
 ):
@@ -748,11 +749,12 @@ def test_prepare_cluster_rf(
     q5.clock_freqs.readout(8.5e9)
     q5.measure.acq_delay(100e-9)
 
-    sched = make_basic_schedule("q5")
+    sched = make_schedule_with_measurement("q5")
 
     hardware_cfg = hardware_cfg_qblox_example
     quantum_device = mock_setup_basic_transmon["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
+    quantum_device.hardware_options(hardware_options_qblox_example)
 
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
@@ -1021,10 +1023,12 @@ def test_retrieve_acquisition_cluster(
     mock_setup_basic_transmon_with_standard_params,
     make_cluster_component,
     hardware_cfg_qblox_example,
+    hardware_options_qblox_example,
 ):
     # Arrange
     mock_setup = mock_setup_basic_transmon_with_standard_params
     mock_setup["quantum_device"].hardware_config(hardware_cfg_qblox_example)
+    mock_setup["quantum_device"].hardware_options(hardware_options_qblox_example)
 
     q4 = mock_setup["q4"]
     q4.clock_freqs.f01.set(5040000000)

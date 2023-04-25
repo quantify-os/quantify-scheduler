@@ -248,6 +248,29 @@ class DistortionCorrection(DataStructure):
         # This is needed because NDArray does not have a validator.
 
 
+class ModulationFrequencies(DataStructure):
+    """
+    Modulation frequencies for a port-clock combination.
+
+    .. admonition:: Example
+        :class: dropdown
+
+        .. code-block:: python
+
+            compilation_config.modulation_frequencies = {
+                "q0:res-q0.ro": ModulationFrequencies(
+                    interm_freq = None,
+                    lo_freq = 6e9,
+                )
+            }
+    """
+
+    interm_freq: Optional[float]
+    """The intermodulation frequency (IF) used for this port-clock combination."""
+    lo_freq: Optional[float]
+    """The local oscillator frequency (LO) used for this port-clock combination."""
+
+
 class HardwareOptions(DataStructure):
     """
     Datastructure containing the hardware options for each port-clock combination.
@@ -302,6 +325,11 @@ class HardwareOptions(DataStructure):
     Dictionary containing the distortion corrections (values) that should be applied
     to waveforms on a certain port-clock combination (keys).
     """
+    modulation_frequencies: Optional[Dict[str, ModulationFrequencies]]
+    """
+    Dictionary containing the modulation frequencies (values) that should be used
+    for signals on a certain port-clock combination (keys).
+    """
 
 
 class Connectivity(DataStructure):
@@ -324,7 +352,7 @@ class CompilationConfig(DataStructure):
 
     name: str
     """The name of the compiler."""
-    version: str = "v0.3"
+    version: str = "v0.4"
     """The version of the `CompilationConfig` to facilitate backwards compatibility."""
     backend: Type[QuantifyCompiler]
     """A reference string to the `QuantifyCompiler` class used in the compilation."""
@@ -376,33 +404,6 @@ class CompilationConfig(DataStructure):
                 FutureWarning,
             )
         return connectivity
-
-    def extract_hardware_config(self) -> Dict[str, Any]:
-        """
-        Extract the (to be deprecated) hardware config from the CompilationConfig.
-
-        Raises
-        ------
-        KeyError
-            If the CompilationConfig.connectivity does not contain a hardware config.
-        """
-        if not isinstance(self.connectivity, Dict):
-            raise KeyError(
-                f"CompilationConfig.connectivity does not contain a "
-                f"hardware config dict:\n {self.connectivity=}"
-            )
-
-        hardware_config = self.connectivity
-        if self.hardware_options.latency_corrections is not None:
-            hardware_config["latency_corrections"] = self.hardware_options.dict()[
-                "latency_corrections"
-            ]
-        if self.hardware_options.distortion_corrections is not None:
-            hardware_config["distortion_corrections"] = self.hardware_options.dict()[
-                "distortion_corrections"
-            ]
-
-        return hardware_config
 
 
 class CompilationNode:

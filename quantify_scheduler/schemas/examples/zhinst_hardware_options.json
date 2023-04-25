@@ -24,5 +24,27 @@
                 2.5
             ]
         }
+    },
+    "modulation_frequencies": {
+        "q0:mw-q0.01": {
+            "interm_freq": -1e8,
+            "lo_freq": null
+        },
+        "q0:res-q0.ro": {
+            "interm_freq": 2e8,
+            "lo_freq": null
+        },
+        "q1:mw-q1.01": {
+            "interm_freq": -1e8,
+            "lo_freq": null
+        },
+        "q2:mw-q2.01": {
+            "interm_freq": -1e8,
+            "lo_freq": null
+        },
+        "q3:mw-q3.01": {
+            "interm_freq": -1e8,
+            "lo_freq": null
+        }
     }
 }

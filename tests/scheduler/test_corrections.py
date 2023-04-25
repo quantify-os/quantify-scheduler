@@ -9,6 +9,7 @@
 import numpy as np
 import pytest
 
+from pydantic import ValidationError
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.corrections import (
     distortion_correct_pulse,
@@ -16,6 +17,7 @@ from quantify_scheduler.backends.corrections import (
 from quantify_scheduler.backends.qblox import constants as qblox_constants
 from quantify_scheduler.operations.stitched_pulse import StitchedPulseBuilder
 from quantify_scheduler.operations.pulse_library import NumericalPulse, SquarePulse
+from quantify_scheduler.operations.gate_library import X
 from quantify_scheduler.schedules.schedule import Schedule
 
 from tests.scheduler.backends.qblox.fixtures.hardware_config import (  # pylint: disable=unused-import, line-too-long
@@ -200,6 +202,36 @@ def test_apply_distortion_corrections(  # pylint: disable=unused-argument disabl
             0.5184381916899999,
         ]
     )
+
+
+def test_apply_latency_corrections_hardware_options_invalid_raises(
+    mock_setup_basic_transmon,
+):
+    """
+    This test function checks that:
+    Providing an invalid latency correction specification raises an exception
+    when compiling.
+    """
+
+    sched = Schedule("Latency experiment")
+    sched.add(X("q4"))
+    sched.add(
+        SquarePulse(port="q4:res", clock="q4.ro", amp=0.25, duration=12e-9),
+        ref_pt="start",
+    )
+
+    mock_setup_basic_transmon["quantum_device"].hardware_options(
+        {"latency_corrections": {"q4:mw-q4.01": 2e-8, "q4:res-q4.ro": None}}
+    )
+
+    with pytest.raises(ValidationError):
+        compiler = SerialCompiler(name="compiler")
+        _ = compiler.compile(
+            sched,
+            config=mock_setup_basic_transmon[
+                "quantum_device"
+            ].generate_compilation_config(),
+        )
 
 
 @pytest.mark.parametrize("use_numpy_array", (True, False))

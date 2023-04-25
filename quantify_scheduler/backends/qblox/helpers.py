@@ -5,8 +5,7 @@ import dataclasses
 import re
 import warnings
 from copy import deepcopy
-from collections import UserDict
-from typing import Any, Dict, Iterable, List, Literal, Optional, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 
@@ -15,6 +14,10 @@ from quantify_core.utilities.general import without
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.helpers.waveforms import exec_waveform_function
 from quantify_scheduler.schedules.schedule import AcquisitionMetadata
+from quantify_scheduler.helpers.collections import (
+    find_all_port_clock_combinations,
+    find_port_clock_path,
+)
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_acquisition_protocols,
 )
@@ -22,79 +25,7 @@ from quantify_scheduler import Schedule
 
 from quantify_scheduler.backends.types.qblox import OpInfo
 from quantify_scheduler.operations.pulse_library import WindowOperation
-
-
-# pylint: disable=invalid-name
-def find_inner_dicts_containing_key(d: dict, key: Any) -> List[dict]:
-    """
-    Generates a list of the first dictionaries encountered that contain a certain key,
-    in a complicated dictionary with nested dictionaries or Iterables.
-
-    This is achieved by recursively traversing the nested structures until the key is
-    found, which is then appended to a list.
-
-    Parameters
-    ----------
-    d
-        The dictionary to traverse.
-    key
-        The key to search for.
-
-    Returns
-    -------
-    :
-        A list containing all the inner dictionaries containing the specified key.
-    """
-    dicts_found = []
-    if isinstance(d, dict):
-        if key in d:
-            dicts_found.append(d)
-    for val in d.values():
-        if isinstance(val, (dict, UserDict)):
-            dicts_found.extend(find_inner_dicts_containing_key(val, key))
-        elif isinstance(val, Iterable) and not isinstance(val, str):
-            for i_item in val:
-                try:
-                    dicts_found.extend(find_inner_dicts_containing_key(i_item, key))
-                # having a list that contains something other than a dict can cause an
-                # AttributeError on d, but this should be ignored anyway
-                except AttributeError:
-                    continue
-        else:
-            continue
-    return dicts_found
-
-
-# pylint: disable=invalid-name
-def find_all_port_clock_combinations(d: dict) -> List[Tuple[str, str]]:
-    """
-    Generates a list with all port and clock combinations found in a dictionary with
-    nested structures. Traversing the dictionary is done using the
-    `find_inner_dicts_containing_key` function.
-
-    Parameters
-    ----------
-    d
-        The dictionary to traverse.
-
-    Returns
-    -------
-    :
-        A list containing tuples representing the port and clock combinations found
-        in the dictionary.
-    """
-    port_clocks = []
-    dicts_with_port = find_inner_dicts_containing_key(d, "port")
-    for inner_dict in dicts_with_port:
-        if "port" in inner_dict:
-            port = inner_dict["port"]
-            if port is None:
-                continue
-            if "clock" not in inner_dict:
-                raise AttributeError(f"Port {inner_dict['port']} missing clock")
-            clock = inner_dict["clock"]
-            port_clocks.append((port, clock))
-    return port_clocks
+from quantify_scheduler.backends.graph_compilation import CompilationConfig
 
 
 def generate_waveform_data(
@@ -927,3 +858,143 @@ def single_scope_mode_acquisition_raise(sequencer_0, sequencer_1, module_name):
         f"only one port-clock combination performs "
         f"raw trace acquisition per instrument."
     )
+
+
+def generate_hardware_config(compilation_config: CompilationConfig):
+    """
+    Extract the old-style Qblox hardware config from the CompilationConfig.
+
+    Parameters
+    ----------
+    config: CompilationConfig
+        CompilationConfig from which hardware config is extracted.
+
+    Returns
+    -------
+    hardware_config : dict
+        Qblox hardware configuration.
+
+    Raises
+    ------
+    KeyError
+        If the CompilationConfig.connectivity does not contain a hardware config.
+    ValueError
+        If a value is specified in both the hardware options and the hardware config.
+    RuntimeError
+        If no external local oscillator is found in the generated Qblox hardware configuration.
+    """
+    if not isinstance(compilation_config.connectivity, Dict):
+        raise KeyError(
+            f"CompilationConfig.connectivity does not contain a "
+            f"hardware config dict:\n {compilation_config.connectivity=}"
+        )
+
+    hardware_config = deepcopy(compilation_config.connectivity)
+    hardware_options = compilation_config.hardware_options
+
+    # Add latency corrections from hardware options to hardware config
+    latency_corrections = hardware_options.dict()["latency_corrections"]
+    legacy_latency_corrections = hardware_config.get("latency_corrections")
+
+    if latency_corrections is None:
+        pass
+    elif legacy_latency_corrections is None:
+        hardware_config["latency_corrections"] = latency_corrections
+    elif legacy_latency_corrections != latency_corrections:
+        raise ValueError(
+            f"Trying to set latency corrections to {latency_corrections} from "
+            f"the hardware options while it has previously been set to "
+            f"{legacy_latency_corrections} in the hardware config. To avoid conflicting "
+            f"settings, please make sure these corrections are only set in one place."
+        )
+
+    # Add distortion corrections from hardware options to hardware config
+    distortion_corrections = hardware_options.dict()["distortion_corrections"]
+    legacy_distortion_corrections = hardware_config.get("distortion_corrections")
+
+    if distortion_corrections is None:
+        pass
+    elif legacy_distortion_corrections is None:
+        hardware_config["distortion_corrections"] = distortion_corrections
+    elif legacy_distortion_corrections != distortion_corrections:
+        raise ValueError(
+            f"Trying to set distortion corrections to {distortion_corrections} from "
+            f"the hardware options while it has previously been set to "
+            f"{legacy_distortion_corrections} in the hardware config. To avoid conflicting "
+            f"settings, please make sure these corrections are only set in one place."
+        )
+
+    if compilation_config.hardware_options.modulation_frequencies is not None:
+        for port, clock in find_all_port_clock_combinations(hardware_config):
+            if (
+                pc_mod_freqs := compilation_config.hardware_options.modulation_frequencies.get(
+                    f"{port}-{clock}"
+                )
+            ) is None:
+                # No modulation frequencies to set for this port-clock.
+                continue
+            pc_path = find_port_clock_path(
+                hardware_config=hardware_config, port=port, clock=clock
+            )
+            # Set the interm_freq in the port-clock config.
+            pc_config = hardware_config
+            for key in pc_path:
+                pc_config = pc_config[key]
+
+            legacy_interm_freq = pc_config.get("interm_freq", "not_present")
+            # Using default="not_present" because IF=None is also a valid setting
+            if legacy_interm_freq == "not_present":
+                pc_config["interm_freq"] = pc_mod_freqs.interm_freq
+            elif legacy_interm_freq != pc_mod_freqs.interm_freq:
+                raise ValueError(
+                    f"Trying to set IF for {port=}, {clock=} to"
+                    f" {pc_mod_freqs.interm_freq} from the hardware options while it"
+                    f" has previously been set to {legacy_interm_freq} in the hardware"
+                    f" config. To avoid conflicting settings, please make sure this"
+                    f" value is only set in one place."
+                )
+
+            # Extract instrument config and output config.
+            instr_config = hardware_config
+            # Exclude the port-clock config index, "portclock_config", and "complex_output_X" keys.
+            for key in pc_path[:-3]:
+                instr_config = instr_config[key]
+            output_config = instr_config[pc_path[-3]]
+
+            # If RF module, set the lo frequency in the output config:
+            if "RF" in instr_config["instrument_type"]:
+                legacy_lo_freq = output_config.get("lo_freq", "not_present")
+                # Using default="not_present" because lo_freq=None is also a valid setting
+                if legacy_lo_freq == "not_present":
+                    output_config["lo_freq"] = pc_mod_freqs.lo_freq
+                elif legacy_lo_freq != pc_mod_freqs.lo_freq:
+                    raise ValueError(
+                        f"Trying to set frequency for {lo_name} to"
+                        f" {pc_mod_freqs.lo_freq} from the hardware options while"
+                        f" it has previously been set to {legacy_lo_freq} in"
+                        f" the hardware config. To avoid conflicting settings,"
+                        f" please make sure this value is only set in one place."
+                    )
+            # Else, set the lo frequency in the external lo config:
+            else:
+                lo_name: str = output_config["lo_name"]
+                if (lo_config := hardware_config.get(lo_name)) is None:
+                    raise RuntimeError(
+                        f"External local oscillator '{lo_name}' set to "
+                        f"be used for {port=} and {clock=} not found! Make "
+                        f"sure it is present in the hardware configuration."
+                    )
+                legacy_lo_freq = lo_config.get("frequency", "not_present")
+                # Using default="not_present" because lo_freq=None is also a valid setting
+                if legacy_lo_freq == "not_present":
+                    lo_config["frequency"] = pc_mod_freqs.lo_freq
+                elif legacy_lo_freq != pc_mod_freqs.lo_freq:
+                    raise ValueError(
+                        f"Trying to set frequency for {lo_name} to"
+                        f" {pc_mod_freqs.lo_freq} from the hardware options while"
+                        f" it has previously been set to {legacy_lo_freq} in"
+                        f" the hardware config. To avoid conflicting settings,"
+                        f" please make sure this value is only set in one place."
+                    )
+
+    return hardware_config

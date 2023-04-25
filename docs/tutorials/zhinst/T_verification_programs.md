@@ -58,6 +58,12 @@ In this tutorial we make use of the example configuration file that contains an 
 ```{literalinclude} ../../../quantify_scheduler/schemas/examples/zhinst_test_mapping.json
 :language: JSON
 ```
+
+Additionally, we use the hardware options datastructure, which is currently under development:
+
+```{literalinclude} ../../../quantify_scheduler/schemas/examples/zhinst_hardware_options.json
+:language: JSON
+```
 ``````
 
 (sec-zhinst-verification-programs)=
@@ -163,17 +169,22 @@ Now that we have generated the schedule we can compile it and verify if the hard
 ```{code-cell} ipython3
 
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
-from quantify_scheduler.compilation import qcompile
+from quantify_scheduler.backends.graph_compilation import SerialCompiler
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.schemas.examples import utils
 from quantify_scheduler.schemas.examples.device_example_cfgs import (
     example_transmon_cfg,
 )
 
-transmon_device_cfg = DeviceCompilationConfig.parse_obj(example_transmon_cfg)
-zhinst_hardware_cfg = utils.load_json_example_scheme("zhinst_test_mapping.json")
+quantum_device = QuantumDevice("DUT")
 
-comp_sched = qcompile(
-    schedule=sched, device_cfg=transmon_device_cfg, hardware_cfg=zhinst_hardware_cfg
+transmon_device_cfg = DeviceCompilationConfig.parse_obj(example_transmon_cfg)
+quantum_device.hardware_config(utils.load_json_example_scheme("zhinst_test_mapping.json"))
+quantum_device.hardware_options(utils.load_json_example_scheme("zhinst_hardware_options.json"))
+
+compiler = SerialCompiler(name="compiler")
+comp_sched = compiler.compile(
+    schedule=sched, config=quantum_device.generate_compilation_config()
 )
 
 
@@ -346,7 +357,9 @@ schedule = acquisition_staircase_sched(
 )
 
 
-comp_sched = qcompile(
-    schedule, device_cfg=transmon_device_cfg, hardware_cfg=zhinst_hardware_cfg
+comp_sched = compiler.compile(
+    schedule=schedule, config=quantum_device.generate_compilation_config()
 )
+
+comp_sched.hardware_timing_table
 ```

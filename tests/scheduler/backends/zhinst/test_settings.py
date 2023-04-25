@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 from unittest.mock import ANY, call
 
+from copy import deepcopy
 import numpy as np
 import pytest
 from zhinst.qcodes import base
@@ -28,7 +29,11 @@ def make_ufhqa(mocker) -> base.ZIBaseInstrument:
     return instrument
 
 
-def test_zi_settings_equality(mock_setup_basic_transmon, hardware_cfg_zhinst_example):
+def test_zi_settings_equality(
+    mock_setup_basic_transmon,
+    hardware_cfg_zhinst_example,
+    hardware_options_zhinst_example,
+):
     sched_kwargs = {
         "pulse_amps": np.linspace(0, 0.5, 11),
         "pulse_duration": 1e-6,
@@ -43,17 +48,19 @@ def test_zi_settings_equality(mock_setup_basic_transmon, hardware_cfg_zhinst_exa
         "repetitions": 10,
     }
     sched = awg_staircase_sched(**sched_kwargs)
-    hw_cfg = hardware_cfg_zhinst_example
+    hw_cfg = deepcopy(hardware_cfg_zhinst_example)
+    hw_options = deepcopy(hardware_options_zhinst_example)
     quantum_device = mock_setup_basic_transmon["quantum_device"]
 
     compiler = SerialCompiler(name="compiler")
 
-    hw_cfg["devices"][1]["channel_0"]["modulation"]["interm_freq"] = 10e6
+    hw_options["modulation_frequencies"]["q0:res-q0.ro"]["interm_freq"] = 10e6
     quantum_device.hardware_config(hw_cfg)
+    quantum_device.hardware_options(hw_options)
     config = quantum_device.generate_compilation_config()
     comp_sched_a = compiler.compile(sched, config=config)
 
-    hw_cfg["devices"][1]["channel_0"]["modulation"]["interm_freq"] = -100e6
+    hw_options["modulation_frequencies"]["q0:res-q0.ro"]["interm_freq"] = -100e6
     quantum_device.hardware_config(hw_cfg)
     config = quantum_device.generate_compilation_config()
     comp_sched_b = compiler.compile(sched, config=config)

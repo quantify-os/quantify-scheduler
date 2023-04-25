@@ -74,6 +74,9 @@ class DataStructure(BaseModel):  # pylint: disable=too-few-public-methods
         # part of a model when initializing.
         extra = Extra.forbid
 
+        # run validation when assigning attributes
+        validate_assignment = True
+
 
 def deserialize_function(fun: str) -> Callable[..., Any]:
     """Import a python function from a dotted import string (e.g.,

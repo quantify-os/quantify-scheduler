@@ -10,6 +10,7 @@
 
 ### Merged branches and closed issues
 
+- Compilation - Move `ModulationFrequencies` to `CompilationConfig.hardware_options` (!660)
 - Compilation - Update structure of `HardwareOptions` datastructure with fields `latency_corrections: Dict[str, LatencyCorrection]` and `distortion_corrections: Dict[str, DistortionCorrection]` (!650).
 - Deprecation - Replace `device_compile` and `hardware_compile` by `SerialCompiler`  in NV center tests (!651)
 - Compilation - Move `DistortionCorrections` to `CompilationConfig.hardware_options` (!648)
