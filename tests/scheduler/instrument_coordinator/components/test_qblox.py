@@ -158,6 +158,10 @@ def make_qrm_component(mocker):
         mocker.patch(
             "qblox_instruments.scpi.pulsar_qrm.PulsarQrm._set_reference_source"
         )
+        if patch_acquisitions:
+            mocker.patch(
+                "qblox_instruments.native.pulsar.Pulsar.store_scope_acquisition"
+            )
 
         close_instruments([f"ic_{name}", name])
         qrm = Pulsar(name=name, dummy_type=PulsarType.PULSAR_QRM)
@@ -172,10 +176,6 @@ def make_qrm_component(mocker):
         mocker.patch.object(qrm, "arm_sequencer", wraps=qrm.arm_sequencer)
         mocker.patch.object(qrm, "start_sequencer", wraps=qrm.start_sequencer)
         mocker.patch.object(qrm, "stop_sequencer", wraps=qrm.stop_sequencer)
-        if patch_acquisitions:
-            mocker.patch.object(
-                qrm, "store_scope_acquisition", wraps=qrm.store_scope_acquisition
-            )
 
         nonlocal component
         component = qblox.PulsarQRMComponent(qrm)
