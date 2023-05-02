@@ -98,6 +98,10 @@ dev = [
     "pytest-xdist", # run tests in parallel
     "ruff",  # linter
     "quantify-scheduler[docs,test]",
+    # This qblox-instruments is a temporary dependency here, which we need to remove later;
+    # It's here, because some tests require explicitly this version,
+    # but we allow older version of qblox-instruments for non-dev users
+    "qblox-instruments~=0.10.0",
 ]
 
 [project.urls]

@@ -155,16 +155,9 @@ def make_qrm_component(mocker):
         sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
         patch_acquisitions: bool = False,
     ) -> qblox.PulsarQRMComponent:
-        mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
-        mocker.patch("qblox_instruments.native.pulsar.Pulsar.start_sequencer")
-        mocker.patch("qblox_instruments.native.pulsar.Pulsar.stop_sequencer")
         mocker.patch(
             "qblox_instruments.scpi.pulsar_qrm.PulsarQrm._set_reference_source"
         )
-        if patch_acquisitions:
-            mocker.patch(
-                "qblox_instruments.native.pulsar.Pulsar.store_scope_acquisition"
-            )
 
         close_instruments([f"ic_{name}", name])
         qrm = Pulsar(name=name, dummy_type=PulsarType.PULSAR_QRM)
@@ -175,6 +168,14 @@ def make_qrm_component(mocker):
         qrm.set_dummy_scope_acquisition_data(
             sequencer=None, data=dummy_scope_acquisition_data
         )
+
+        mocker.patch.object(qrm, "arm_sequencer", wraps=qrm.arm_sequencer)
+        mocker.patch.object(qrm, "start_sequencer", wraps=qrm.start_sequencer)
+        mocker.patch.object(qrm, "stop_sequencer", wraps=qrm.stop_sequencer)
+        if patch_acquisitions:
+            mocker.patch.object(
+                qrm, "store_scope_acquisition", wraps=qrm.store_scope_acquisition
+            )
 
         nonlocal component
         component = qblox.PulsarQRMComponent(qrm)
@@ -350,7 +351,7 @@ def test_sequencer_state_flag_info():
         for key, info in qblox._SEQUENCER_STATE_FLAG_INFO.items()
         if info.logging_level == logging.DEBUG
     ]
-    assert len(debug_status) == 3, (
+    assert len(debug_status) == 5, (
         "Verify no new flags were implicitly added "
         "(otherwise update `qblox._SequencerStateInfo.get_logging_level()`)"
     )
@@ -670,7 +671,7 @@ def test_prepare_qcm_qrm(
 
     # Assert
     qcm0.instrument.arm_sequencer.assert_called_with(sequencer=1)
-    qrm0.instrument.arm_sequencer.assert_called_with(sequencer=1)
+    qrm0.instrument.arm_sequencer.assert_called_with(sequencer=0)
     qrm2.instrument.arm_sequencer.assert_called_with(sequencer=1)
 
     if set_reference_source:
