@@ -50,7 +50,7 @@ dependencies = [
     "pathvalidate",
     "plotly",
     "pydantic",
-    "qblox-instruments~=0.9.0", # Prevent upgrade upon minor release while allowing for installing patch releases
+    "qblox-instruments~=0.9.0, ~=0.10.0", # Prevent upgrade upon minor release while allowing for installing patch releases
     "quantify_core>=0.6.5", # For deprecation hints shown to end-users by default
     "qcodes>=0.32.0", # 0.32.0: introduces InstrumentModule
     "scipy",

@@ -1,7 +1,7 @@
 # Changelog
 
 
-## Unreleased
+## 0.12.4 (2023-05-02)
 
 ### Breaking changes
 
