@@ -36,6 +36,7 @@
 - Operations, Qblox backend - Introduce the `VoltageOffset` operation, for use in the `StitchedPulse`, and modify the compilation steps to compile this operation (!588).
 - Documentation - Fix documentation generation warnings and errors (!658)
 - Documentation - Acquisition data format in user guide (!646)
+- Tests - Qblox acquisition testcases with dummy data (!654)
 
 ## 0.12.3 (2023-03-09)
 
