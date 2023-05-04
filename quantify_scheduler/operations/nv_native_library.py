@@ -55,7 +55,6 @@ class CRCount(Operation):
     def __init__(
         self,
         *qubits: str,
-        acq_channel: Union[Tuple[int, ...], int] = None,
         acq_index: Union[Tuple[int, ...], int] = None,
         # These are the currently supported acquisition protocols.
         acq_protocol: Literal[
@@ -76,8 +75,6 @@ class CRCount(Operation):
         ----------
         qubits
             The qubits you want to measure
-        acq_channel
-            Acquisition channel on which the measurement is performed
         acq_index
             Index of the register where the measurement is stored.
             If None specified, it will default to a list of zeros of len(qubits)
@@ -103,8 +100,6 @@ class CRCount(Operation):
         # this snippet has some automatic behaviour that is error prone.
         # see #262
         if len(qubits) == 1:
-            if acq_channel is None:
-                acq_channel = 0
             if acq_index is None:
                 acq_index = 0
         else:
@@ -118,19 +113,6 @@ class CRCount(Operation):
                 # measurements are present in the same schedule (#262)
                 acq_index = list(0 for i in range(len(qubits)))
 
-            # defaults to mapping qubits to channels dependent on the order of the
-            # arguments. note that this will result in mislabeling data if not all
-            # measurements in an experiment contain the same order of qubits (#262)
-            if acq_channel is None:
-                acq_channel = list(i for i in range(len(qubits)))
-            else:
-                warnings.warn(
-                    "`acq_channel` keyword argument does not have any effect if specified here"
-                    "and should be set in the device layer. See `BasicTransmonElement.measure.acq_channel`"
-                    "for more info on how to set it. This keyword argument will be removed in "
-                    "quantify-scheduler >= 0.12.0.",
-                    FutureWarning,
-                )
         if data is None:
             plot_func = "quantify_scheduler.schedules._visualization.circuit_diagram.acq_meter_text"
             super().__init__(f"CRCount {', '.join(qubits)}")
@@ -142,7 +124,6 @@ class CRCount(Operation):
                         "plot_func": plot_func,
                         "tex": r"CR",
                         "qubits": list(qubits),
-                        "acq_channel": acq_channel,
                         "acq_index": acq_index,
                         "acq_protocol": acq_protocol,
                         "bin_mode": bin_mode,
@@ -164,12 +145,11 @@ class CRCount(Operation):
     def __str__(self) -> str:
         gate_info = self.data["gate_info"]
         qubits = map(lambda x: f"'{x}'", gate_info["qubits"])
-        acq_channel = gate_info["acq_channel"]
         acq_index = gate_info["acq_index"]
         acq_protocol = gate_info["acq_protocol"]
         bin_mode = gate_info["bin_mode"]
         return (
             f'{self.__class__.__name__}({",".join(qubits)}, '
-            f"acq_channel={acq_channel}, acq_index={acq_index}, "
-            f'acq_protocol="{acq_protocol}", bin_mode={str(bin_mode)})'
+            f'acq_index={acq_index}, acq_protocol="{acq_protocol}", '
+            f"bin_mode={str(bin_mode)})"
         )

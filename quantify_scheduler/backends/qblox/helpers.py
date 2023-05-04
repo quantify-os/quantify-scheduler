@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 
+from quantify_core.utilities import deprecated
 from quantify_core.utilities.general import without
 
 from quantify_scheduler.backends.qblox import constants
@@ -699,6 +700,11 @@ def assign_pulse_and_acq_info_to_devices(
             )
 
 
+@deprecated(
+    "0.16.0",
+    "`convert_hw_config_to_portclock_configs_spec` will be removed in a future "
+    "version.",
+)
 def convert_hw_config_to_portclock_configs_spec(
     hw_config: Dict[str, Any],
 ) -> Dict[str, Any]:
