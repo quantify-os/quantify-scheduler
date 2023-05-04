@@ -11,10 +11,12 @@ kernelspec:
 Download the notebook: {nb-download}`deprecated.ipynb`
 ```
 
-- {ref}`1. Qcompile => SerialCompiler`
-- {ref}`2. Qblox Hardware Configuration`
-- {ref}`3. TransmonElement => BasicTransmonElement`
-- {ref}`4. Instruction-generated pulses (Qblox only)`
+- {ref}`1. acq_channel`
+- {ref}`2. Qcompile => SerialCompiler`
+- {ref}`3. add_pulse_information_transmon => compile_circuit_to_device`
+- {ref}`4. Qblox Hardware Configuration`
+- {ref}`5. TransmonElement => BasicTransmonElement`
+- {ref}`6. Instruction-generated pulses (Qblox only)`
 
 As of `quantify-scheduler==0.10.0`, deprecation warnings are shown by default (as `FutureWarning`).
 
@@ -147,14 +149,21 @@ def simple_trace_sched(
 sched = simple_trace_sched(repetitions=1)
 ```
 
-## 1. Qcompile => SerialCompiler
+## 1. acq_channel
+
+In the {class}`~quantify_scheduler.operations.gate_library.Measure` and {class}`~quantify_scheduler.operations.nv_native_library.CRCount` classes, the `acq_channel` parameter has been removed from the initializers. For gate-level operations, the acquisition channel can be set in the {class}`~quantify_scheduler.device_under_test.device_element.DeviceElement` subclasses, such as {class}`~quantify_scheduler.device_under_test.transmon_element.BasicTransmonElement`, instead. See, for example, `q0.measure.acq_channel(0)` in the {ref}`Compilation Setup`.
+
+## 2. Qcompile => SerialCompiler
+
+The `qcompile`, `device_compile` and `hardware_compile` compilation functions have been replaced by the {class}`~quantify_scheduler.backends.graph_compilation.SerialCompiler`. For step-by-step guides on how to perform compilation to the device level and hardware, please see {ref}`Compiling to Hardware<sec-tutorial-compiling>` and {ref}`Operations and Qubits<sec-tutorial-ops-qubits>`. A brief example is shown below.
 
 First, run {ref}`Compilation Setup`.
 
 ```{code-cell} ipython3
-from quantify_scheduler.compilation import qcompile
+# Old way:
+# from quantify_scheduler.compilation import qcompile
 
-compiled_schedule = qcompile(sched, device_cfg, hardware_cfg)
+# compiled_schedule = qcompile(sched, device_cfg, hardware_cfg)
 ```
 
 ```{code-cell} ipython3
@@ -172,11 +181,20 @@ compiled_schedule = compiler.compile(
 compiled_schedule.timing_table
 ```
 
-## 2. Qblox Hardware Configuration
+## 3. add_pulse_information_transmon => compile_circuit_to_device
+
+The compilation step `add_pulse_information_transmon` has been replaced by `compile_circuit_to_device`. For steps on how to add device configuration to your compilation steps, please see {ref}`Operations and Qubits<sec-tutorial-ops-qubits>`.
+
+## 4. Qblox Hardware Configuration
+
+In quantify-scheduler 0.8.0, the schema for the Qblox hardware configuration was revised. From version 0.13.0, old hardware configurations will no longer be automatically converted. Below is a summary of the changes.
+
 1. `seqx` => `portclock_configs`  
 1. `latency_correction` => standalone/top-level `latency_corrections`
 1. `line_gain_db` removed
 
+The code below can be used to convert old-style to new-style hardware configurations.
+Note that helper function `convert_hw_config_to_portclock_configs_spec` will be removed in version 0.16.0.
 
 ```{code-cell} ipython3
 depr_hardware_cfg = {
@@ -226,23 +244,30 @@ import json
 print(json.dumps(new_hardware_cfg, indent=4))
 ```
 
-## 3. TransmonElement => BasicTransmonElement
+## 5. TransmonElement => BasicTransmonElement
+
+In quantify-scheduler 0.7.0, the {class}`~quantify_scheduler.device_under_test.transmon_element.BasicTransmonElement` class was added and replaced the `TransmonElement` class.
 
 ```{code-cell} ipython3
+---
+tags:
+    - hide-cell
+---
+
 from qcodes import Instrument
 
 Instrument.close_all()
 ```
 
 ```{code-cell} ipython3
-from quantify_scheduler.device_under_test.transmon_element import (
-    BasicTransmonElement,
-    TransmonElement,
-)
+# Before:
+# from quantify_scheduler.device_under_test.transmon_element import TransmonElement
 
-transmon = TransmonElement("transmon")
-print(f"{transmon.name}: {list(transmon.parameters.keys())}")
-print()
+# transmon = TransmonElement("transmon")
+# print(f"{transmon.name}: {list(transmon.parameters.keys())}")
+
+# After:
+from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 
 basic = BasicTransmonElement("basic")
 print(f"{basic.name}: {list(basic.parameters.keys()) + list(basic.submodules.keys())}")
@@ -250,67 +275,54 @@ for submodule_name, submodule in basic.submodules.items():
     print(f"{basic.name}.{submodule_name}: {list(submodule.parameters.keys())}")
 ```
 
-```{code-cell} ipython3
-spec_str = f'via:\tschedule.add(SpectroscopyOperation("{basic.name}")), not implemented for BasicTransmonElement, see BasicElectronicNVElement.spectroscopy_operation'
+The block below shows how the attributes of the `TransmonElement` (`transmon`) are converted to attributes of the `BasicTransmonElement` (`basic`).
 
-convert = {
-    ".IDN": ".IDN",
-    ".init_duration": ".reset.duration",
-    ".mw_amp180": ".rxy.amp180",
-    ".mw_motzoi": ".rxy.motzoi",
-    ".mw_pulse_duration": ".rxy.duration",
-    ".mw_ef_amp180": None,
-    ".mw_port": ".ports.microwave",
-    ".fl_port": ".ports.flux",
-    ".ro_port": ".ports.readout",
-    ".mw_01_clock": f'no longer settable, always "{basic.name}.01"',
-    ".mw_12_clock": f'no longer settable, always "{basic.name}.12"',
-    ".ro_clock": f'no longer settable, always "{basic.name}.ro"',
-    ".freq_01": ".clock_freqs.f01",
-    ".freq_12": ".clock_freqs.f12",
-    ".ro_freq": ".clock_freqs.readout",
-    ".ro_pulse_amp": ".measure.pulse_amp",
-    ".ro_pulse_duration": ".measure.pulse_duration",
-    ".ro_pulse_type": ".measure.pulse_type",
-    ".ro_pulse_delay": "via:\tschedule.add(..., rel_time=...)",
-    ".ro_acq_channel": ".measure.acq_channel",
-    f'schedule.add(Measure("{transmon.name}", acq_channel=...))': ".measure.acq_channel",
-    ".ro_acq_delay": ".measure.acq_delay",
-    ".ro_acq_integration_time": ".measure.integration_time",
-    ".spec_pulse_duration": spec_str,
-    ".spec_pulse_frequency": spec_str,
-    ".spec_pulse_amp": spec_str,
-    ".spec_pulse_clock": spec_str,
-    ".acquisition": f'via:\tschedule.add(Measure("{basic.name}", acq_protocol=...))',
-    ".ro_acq_weight_type": ".measure.acq_weight_type",
-}
+```
+transmon.IDN                                         =>    basic.IDN
+transmon.instrument_coordinator                      =>    None
+transmon.init_duration                               =>    basic.reset.duration
+transmon.mw_amp180                                   =>    basic.rxy.amp180
+transmon.mw_motzoi                                   =>    basic.rxy.motzoi
+transmon.mw_pulse_duration                           =>    basic.rxy.duration
+transmon.mw_ef_amp180                                =>    None
+transmon.mw_port                                     =>    basic.ports.microwave
+transmon.fl_port                                     =>    basic.ports.flux
+transmon.ro_port                                     =>    basic.ports.readout
+transmon.mw_01_clock                                 =>    no longer settable, always "basic.01"
+transmon.mw_12_clock                                 =>    no longer settable, always "basic.12"
+transmon.ro_clock                                    =>    no longer settable, always "basic.ro"
+transmon.freq_01                                     =>    basic.clock_freqs.f01
+transmon.freq_12                                     =>    basic.clock_freqs.f12
+transmon.ro_freq                                     =>    basic.clock_freqs.readout
+transmon.ro_pulse_amp                                =>    basic.measure.pulse_amp
+transmon.ro_pulse_duration                           =>    basic.measure.pulse_duration
+transmon.ro_pulse_type                               =>    basic.measure.pulse_type
+transmon.ro_pulse_delay                              =>    via:	schedule.add(..., rel_time=...)
+transmon.ro_acq_channel                              =>    basic.measure.acq_channel
+transmon.ro_acq_delay                                =>    basic.measure.acq_delay
+transmon.ro_acq_integration_time                     =>    basic.measure.integration_time
+transmon.spec_pulse_duration                         =>    via:	schedule.add(SpectroscopyOperation("basic")), not implemented for BasicTransmonElement, see BasicElectronicNVElement.spectroscopy_operation
+transmon.spec_pulse_frequency                        =>    via:	schedule.add(SpectroscopyOperation("basic")), not implemented for BasicTransmonElement, see BasicElectronicNVElement.spectroscopy_operation
+transmon.spec_pulse_amp                              =>    via:	schedule.add(SpectroscopyOperation("basic")), not implemented for BasicTransmonElement, see BasicElectronicNVElement.spectroscopy_operation
+transmon.spec_pulse_clock                            =>    via:	schedule.add(SpectroscopyOperation("basic")), not implemented for BasicTransmonElement, see BasicElectronicNVElement.spectroscopy_operation
+transmon.acquisition                                 =>    via:	schedule.add(Measure("basic", acq_protocol=...))
+transmon.ro_acq_weight_type                          =>    basic.measure.acq_weight_type
+schedule.add(Measure("transmon", acq_channel=...))   =>    basic.measure.acq_channel
 ```
 
-```{code-cell} ipython3
-transmon_params = [f".{param}" for param in transmon.parameters]
-
-for transmon_param in transmon_params + list(convert.keys() - transmon_params):
-    basic_param = str(convert.get(transmon_param, None))
-    print(
-        f"{transmon.name if transmon_param.startswith('.') else ''}{transmon_param:<42}   =>    {basic.name if basic_param.startswith('.') else ''}{basic_param}"
-    )
-```
+Both classes will generate the same device configuration.
 
 ```{code-cell} ipython3
 import pprint
 
-device_config_transmon = transmon.generate_device_config().dict()
-pprint.pprint(device_config_transmon)
-```
-
-```{code-cell} ipython3
-import pprint
+# device_config_transmon = transmon.generate_device_config().dict()
+# pprint.pprint(device_config_transmon)
 
 device_config_basic_transmon = basic.generate_device_config().dict()
 pprint.pprint(device_config_basic_transmon)
 ```
 
-## 4. Instruction-generated pulses (Qblox only)
+## 6. Instruction-generated pulses (Qblox only)
 
 Instead of using the ``instruction_generated_pulses_enabled: True`` field in the port-clock configuration for generating long square and staircase pulses (see {ref}`Instruction generated pulses <sec-qblox-instruction-generated-pulses>`), you can now create long square, staircase and ramp waveforms (that would otherwise not fit in memory), by creating these operations with the following helper functions.
 

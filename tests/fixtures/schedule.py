@@ -16,8 +16,11 @@ import pytest
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends import SerialCompiler
-from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
-from quantify_scheduler.compilation import device_compile
+from quantify_scheduler.backends.circuit_to_device import (
+    DeviceCompilationConfig,
+    compile_circuit_to_device,
+)
+from quantify_scheduler.compilation import determine_absolute_timing
 from quantify_scheduler.operations.gate_library import CZ, Measure, Reset, X, X90
 from quantify_scheduler.schemas.examples import utils
 from quantify_scheduler.schemas.examples.device_example_cfgs import (
@@ -32,8 +35,8 @@ ZHINST_HARDWARE_OPTIONS = utils.load_json_example_scheme("zhinst_hardware_option
 @pytest.fixture
 def device_cfg_transmon_example() -> Generator[DeviceCompilationConfig, None, None]:
     """
-    Circuit to device level compilation for the add_pulse_info_transmon compilation
-    backend.
+    Circuit to device level compilation for the compile_circuit_to_device
+    compilation backend.
     """
     yield DeviceCompilationConfig.parse_obj(example_transmon_cfg)
 
@@ -59,7 +62,8 @@ def create_schedule_with_pulse_info(
         _device_config = (
             device_config if device_config is not None else device_cfg_transmon_example
         )
-        _schedule = device_compile(_schedule, _device_config)
+        _schedule = compile_circuit_to_device(_schedule, _device_config)
+        _schedule = determine_absolute_timing(schedule=_schedule, time_unit="physical")
         return _schedule
 
     yield _create_schedule_with_pulse_info
@@ -160,13 +164,13 @@ def compiled_two_qubit_t1_schedule(mock_setup_basic_transmon_with_standard_param
         schedule.add(X(q1), label=f"pi {i} {q1}", ref_pt="start")
 
         schedule.add(
-            Measure(q0, acq_index=i, acq_channel=0),
+            Measure(q0, acq_index=i),
             ref_pt="start",
             rel_time=tau,
             label=f"Measurement {q0}{i}",
         )
         schedule.add(
-            Measure(q1, acq_index=i, acq_channel=1),
+            Measure(q1, acq_index=i),
             ref_pt="start",
             rel_time=tau,
             label=f"Measurement {q1}{i}",
