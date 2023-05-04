@@ -1,7 +1,6 @@
 # Changelog
 
-
-## 0.13.0 (2023-05-02)
+## 0.13.0 (2023-05-05)
 
 ### Breaking changes
 
@@ -12,33 +11,37 @@
 
 - Compilation - Move `ModulationFrequencies` to `CompilationConfig.hardware_options` (!660)
 - Compilation - Update structure of `HardwareOptions` datastructure with fields `latency_corrections: Dict[str, LatencyCorrection]` and `distortion_corrections: Dict[str, DistortionCorrection]` (!650).
-- Deprecation - Replace `device_compile` and `hardware_compile` by `SerialCompiler`  in NV center tests (!651)
 - Compilation - Move `DistortionCorrections` to `CompilationConfig.hardware_options` (!648)
 - Compilation - Move `LatencyCorrections` to `CompilationConfig.hardware_options` and use field name `corrections` instead of `latencies` (!633).
-- Typing - More lenient typehints (!640)
-- Gettables - Clean up code syntax (!638)
-- Schedulables - Make name uniqueness check more efficient and readable. (!631)
 - Compilation - `CompilationNode`s take the full `CompilationConfig` as input (!615, #405)
-- Tests - Move Qblox Pulsar entries from `qblox_test_mapping.json` to pytest fixtures (!632)
-- Visualization - Introduce the `x_range` keyword for the matplotlib backend in `Schedule.plot_pulse_diagram`. This will cut off any points outside the given range when creating the plot. This can be used to reduce memory usage when plotting a small section of a long pulse sequence (!629).
+- Deprecation - Replace `device_compile` and `hardware_compile` by `SerialCompiler`  in NV center tests (!651)
+- Deprecation - Deprecated code that had been scheduled to be removed after version 0.12 has been removed. The deprecated code suggestions have been updated (!667).
+- Documentation - Fix documentation generation warnings and errors (!658)
+- Documentation - Acquisition data format in user guide (!646)
+- Gettables - Clean up code syntax (!638)
+- Git - Change back to default merge strategy for CHANGELOG.md (!659).
+- Operations - Introduce the `StitchedPulse`, an Operation that can be composed of AWG offset instructions and waveforms, and the `StitchedPulseBuilder` which can be used to create `StitchedPulse`s (!588, !666).
+  - Additionally, helper functions `long_square_pulse`, `long_ramp_pulse` and `staircase_pulse` are introduced in `quantify_scheduler.pulse_factories`, to more easily generate the operations for these common use-cases.
+- Operations, Qblox backend - Introduce the `VoltageOffset` operation, for use in the `StitchedPulse`, and modify the compilation steps to compile this operation (!588).
 - Qblox backend - Add the `marker_debug_mode_enable` parameter to the hardware configuration, which toggles markers at the start of operations on inputs and outputs where it is set to True (!606).
-- Schedules - Add `nv_dark_esr_sched_nco` spectroscopy schedule using SetClockFrequency Operation to sweep the NCO frequency (!639)
-- ZI LabOne backend - Return datasets from UHFQA instrument coordinator component (which fixes the broken backend) (#410, !623).
 - Qblox backend - Renamed `hw_mapping` input parameter to `instrument_cfg` in `InstrumentCompiler` and up (!644).
 - Qblox backend - Let the compiler raise an error when the waveforms specified in the schedule are too large to be uploaded to a sequencer (!625).
 - Qblox backend - Forbid repeated acquisition index in schedule (!655, partially revert !542)
 - Qblox backend - Rename the `MAX_SAMPLE_SIZE_ACQUISITIONS` constant to `MAX_SAMPLE_SIZE_SCOPE_ACQUISITIONS`, and modify the docstring to clarify that this constant only refers to scope trace acquisitions (!649).
 - Qblox backend - Forbid repeated acquisition index in schedule (!655, !657, partially revert !542)
 - Qblox backend - `Measure` can now use the `NumericalWeightedIntegrationComplex` protocol. The `DispersiveMeasurement` has been expanded with optional weight parameters for use in this protocol (!612).
-- Git - Change back to default merge strategy for CHANGELOG.md (!659).
-- Operations - Introduce the `StitchedPulse`, an Operation that can be composed of AWG offset instructions and waveforms, and the `StitchedPulseBuilder` which can be used to create `StitchedPulse`s (!588, !666).
-  - Additionally, helper functions `long_square_pulse`, `long_ramp_pulse` and `staircase_pulse` are introduced in `quantify_scheduler.pulse_factories`, to more easily generate the operations for these common use-cases.
-- Operations, Qblox backend - Introduce the `VoltageOffset` operation, for use in the `StitchedPulse`, and modify the compilation steps to compile this operation (!588).
-- Documentation - Fix documentation generation warnings and errors (!658)
-- Documentation - Acquisition data format in user guide (!646)
+- Schedulables - Make name uniqueness check more efficient and readable. (!631)
+- Schedules - Add `nv_dark_esr_sched_nco` spectroscopy schedule using SetClockFrequency Operation to sweep the NCO frequency (!639) 
+- Tests - Move Qblox Pulsar entries from `qblox_test_mapping.json` to pytest fixtures (!632)
 - Tests - Qblox acquisition testcases with dummy data (!654)
-- Deprecation - Deprecated code that had been scheduled to be removed after version 0.12 has been removed. The deprecated code suggestions have been updated (!667).
+- Typing - More lenient typehints (!640)
+- Visualization - Introduce the `x_range` keyword for the matplotlib backend in `Schedule.plot_pulse_diagram`. This will cut off any points outside the given range when creating the plot. This can be used to reduce memory usage when plotting a small section of a long pulse sequence (!629).
+- ZI LabOne backend - Return datasets from UHFQA instrument coordinator component (which fixes the broken backend) (#410, !623).
 
+### Compatibility info
+
+- Qblox: `qblox-instruments==0.9.0` (Cluster firmware v0.4.0) and `qblox-instruments==0.10.x` (Cluster firmware v0.5.0) 
+- ZI:    `zhinst==21.8.20515` `zhinst-qcodes==0.1.4` `zhinst-toolkit==0.1.5`
 
 ## 0.12.3 (2023-03-09)
 
