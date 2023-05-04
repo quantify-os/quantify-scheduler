@@ -3,7 +3,7 @@
 # pylint: disable=invalid-name
 """Standard gateset for use with the quantify_scheduler."""
 from __future__ import annotations
-from typing import Literal, Optional, Tuple, Union
+from typing import Literal, Optional, Tuple
 import warnings
 
 import numpy as np
@@ -570,7 +570,6 @@ class Measure(Operation):
     def __init__(
         self,
         *qubits: str,
-        acq_channel: Tuple[int, ...] | int | None = None,
         acq_index: Tuple[int, ...] | int | None = None,
         # These are the currently supported acquisition protocols.
         acq_protocol: Optional[
@@ -594,10 +593,6 @@ class Measure(Operation):
         ----------
         qubits : str
             The qubits you want to measure.
-        acq_channel : Tuple[int, ...] | int | None, optional
-            Acquisition channel on which the measurement is performed. If None, this
-            defaults to mapping qubits to channels dependent on the order of the
-            arguments By default None.
         acq_index : Tuple[int, ...] | int | None, optional
             Index of the register where the measurement is stored.  If None specified,
             this defaults to writing the result of all qubits to acq_index 0. By default
@@ -625,8 +620,6 @@ class Measure(Operation):
         # this snippet has some automatic behaviour that is error prone.
         # see #262
         if len(qubits) == 1:
-            if acq_channel is None:
-                acq_channel = 0
             if acq_index is None:
                 acq_index = 0
         else:
@@ -640,19 +633,6 @@ class Measure(Operation):
                 # measurements are present in the same schedule (#262)
                 acq_index = list(0 for i in range(len(qubits)))
 
-            # defaults to mapping qubits to channels dependent on the order of the
-            # arguments. note that this will result in mislabeling data if not all
-            # measurements in an experiment contain the same order of qubits (#262)
-            if acq_channel is None:
-                acq_channel = list(i for i in range(len(qubits)))
-            else:
-                warnings.warn(
-                    "`acq_channel` keyword argument does not have any effect if specified here"
-                    "and should be set in the device layer. See `BasicTransmonElement.measure.acq_channel`"
-                    "for more info on how to set it. This keyword argument will be removed in "
-                    "quantify-scheduler >= 0.12.0.",
-                    FutureWarning,
-                )
         if data is None:
             plot_func = (
                 "quantify_scheduler.schedules._visualization.circuit_diagram.meter"
@@ -666,7 +646,6 @@ class Measure(Operation):
                         "plot_func": plot_func,
                         "tex": r"$\langle0|$",
                         "qubits": list(qubits),
-                        "acq_channel": acq_channel,
                         "acq_index": acq_index,
                         "acq_protocol": acq_protocol,
                         "bin_mode": bin_mode,

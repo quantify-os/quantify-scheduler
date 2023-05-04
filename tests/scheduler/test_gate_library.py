@@ -138,13 +138,6 @@ def test__repr__(operation: Operation) -> None:
     is__repr__equal(operation)
 
 
-def test_deprecated__repr__() -> None:
-    """Tests deprecated ``acq_channel`` keyword. To be removed in
-    quantify-scheduler >= 0.13.0."""
-    with pytest.warns(FutureWarning):
-        is__repr__equal(Measure("q0", "q6", acq_channel=4))
-
-
 @pytest.mark.parametrize(
     "operation",
     [
@@ -166,13 +159,6 @@ def test_deprecated__repr__() -> None:
 )
 def test__str__(operation: Operation) -> None:
     is__str__equal(operation)
-
-
-def test_deprecated__str__() -> None:
-    """Tests deprecated ``acq_channel`` keyword. To be removed in
-    quantify-scheduler >= 0.13.0."""
-    with pytest.warns(FutureWarning):
-        is__str__equal(Measure("q0", "q6", acq_channel=4))
 
 
 @pytest.mark.parametrize(
@@ -221,37 +207,6 @@ def test_deserialize(operation: Operation) -> None:
     TestCase().assertDictEqual(obj.data, operation.data)
 
 
-def test_deprecated_deserialize() -> None:
-    """Tests deprecated ``acq_channel`` keyword. To be removed in
-    quantify-scheduler >= 0.13.0."""
-    # Arrange
-    with pytest.warns(FutureWarning):
-        operation = Measure("q0", "q6", acq_channel=4)
-    operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
-
-    # Act
-    obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
-
-    # Assert
-    if (
-        "unitary" in operation.data["gate_info"]
-        and not operation.data["gate_info"]["unitary"] is None
-    ):
-        assert isinstance(obj.data["gate_info"]["unitary"], (np.generic, np.ndarray))
-        np.testing.assert_array_almost_equal(
-            obj.data["gate_info"]["unitary"],
-            operation.data["gate_info"]["unitary"],
-            decimal=9,
-        )
-
-        # TestCase().assertDictEqual cannot compare numpy arrays for equality
-        # therefore "unitary" is removed
-        del obj.data["gate_info"]["unitary"]
-        del operation.data["gate_info"]["unitary"]
-
-    TestCase().assertDictEqual(obj.data, operation.data)
-
-
 @pytest.mark.parametrize(
     "operation",
     [
@@ -273,25 +228,6 @@ def test_deprecated_deserialize() -> None:
 )
 def test__repr__modify_not_equal(operation: Operation) -> None:
     # Arrange
-    operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
-
-    # Act
-    obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
-    assert obj == operation
-
-    # Act
-    obj.data["pulse_info"].append({"clock": "q0.01"})
-
-    # Assert
-    assert obj != operation
-
-
-def test_deprecated__repr__modify_not_equal() -> None:
-    """Tests deprecated ``acq_channel`` keyword. To be removed in
-    quantify-scheduler >= 0.13.0."""
-    # Arrange
-    with pytest.warns(FutureWarning):
-        operation = Measure("q0", "q6", acq_channel=4)
     operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
 
     # Act

@@ -144,3 +144,29 @@ def test_basic_transmon_deserialization(q0: BasicTransmonElement, dev: QuantumDe
     )
 
     deserialized_q0.close()
+
+
+def test_generate_config_measure(q0: BasicTransmonElement):
+    """Setting values updates the correct values in the config."""
+    # Set values for measure
+    q0.measure.pulse_amp(0.1234)
+    q0.measure.pulse_duration(300e-6)
+    q0.measure.acq_channel(123)
+    q0.measure.acq_delay(13e-6)
+    q0.measure.integration_time(8e-7)
+    q0.measure.reset_clock_phase(False)
+
+    # Get device config
+    dev_cfg = q0.generate_device_config()
+    cfg_measure = dev_cfg.elements["q0"]["measure"]
+
+    # Assert values are in right place
+    assert cfg_measure.factory_kwargs["port"] == "q0:res"
+    assert cfg_measure.factory_kwargs["clock"] == "q0.ro"
+    assert cfg_measure.factory_kwargs["pulse_type"] == "SquarePulse"
+    assert cfg_measure.factory_kwargs["pulse_amp"] == 0.1234
+    assert cfg_measure.factory_kwargs["pulse_duration"] == 300e-6
+    assert cfg_measure.factory_kwargs["acq_delay"] == 13e-6
+    assert cfg_measure.factory_kwargs["acq_duration"] == 8e-7
+    assert cfg_measure.factory_kwargs["acq_channel"] == 123
+    assert not cfg_measure.factory_kwargs["reset_clock_phase"]

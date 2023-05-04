@@ -37,6 +37,8 @@
 - Documentation - Fix documentation generation warnings and errors (!658)
 - Documentation - Acquisition data format in user guide (!646)
 - Tests - Qblox acquisition testcases with dummy data (!654)
+- Deprecation - Deprecated code that had been scheduled to be removed after version 0.12 has been removed. The deprecated code suggestions have been updated (!667).
+
 
 ## 0.12.3 (2023-03-09)
 

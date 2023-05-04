@@ -46,21 +46,15 @@ from quantify_scheduler.backends.qblox.instrument_compilers import (
     QcmRfModule,
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
-from quantify_scheduler.backends.qblox_backend import hardware_compile
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.backends.types.qblox import (
     BasebandModuleSettings,
 )
-from quantify_scheduler.compilation import (
-    determine_absolute_timing,
-    device_compile,
-    qcompile,
-)
+from quantify_scheduler.compilation import determine_absolute_timing
 from quantify_scheduler.helpers.collections import (
     find_inner_dicts_containing_key,
     find_all_port_clock_combinations,
 )
-from quantify_scheduler.operations.acquisition_library import Trace
 from quantify_scheduler.operations.acquisition_library import (
     SSBIntegrationComplex,
     Trace,
@@ -711,20 +705,6 @@ def test_compile_cluster(
         )
 
 
-@pytest.mark.filterwarnings("ignore::FutureWarning")
-def test_deprecated_qcompile_no_device_cfg(hardware_cfg_pulsar):
-    sched = Schedule("One pulse schedule")
-    sched.add_resource(ClockResource("q0.01", 3.1e9))
-    sched.add(SquarePulse(amp=1 / 4, duration=12e-9, port="q0:mw", clock="q0.01"))
-
-    compiled_schedule = qcompile(sched, hardware_cfg=hardware_cfg_pulsar)
-
-    wf_and_prog = compiled_schedule.compiled_instructions["qcm0"]["sequencers"]["seq0"][
-        "sequence"
-    ]
-    assert "play" in wf_and_prog["program"]
-
-
 def test_compile_simple_multiplexing(
     pulse_only_schedule_multiplexed,
     hardware_cfg_pulsar_qcm_multiplexing,
@@ -912,30 +892,6 @@ def test_compile_simple_with_acq(
     assert uploaded_waveforms is not None
 
 
-@pytest.mark.filterwarnings("ignore::FutureWarning")
-def test_deprecated_qcompile_simple_with_acq(
-    dummy_pulsars,
-    mixed_schedule_with_acquisition,
-    device_cfg_transmon_example,
-    hardware_cfg_pulsar,
-):
-    full_program = qcompile(
-        schedule=mixed_schedule_with_acquisition,
-        device_cfg=device_cfg_transmon_example,
-        hardware_cfg=hardware_cfg_pulsar,
-    )
-    qcm0_seq0_json = full_program["compiled_instructions"]["qcm0"]["sequencers"][
-        "seq0"
-    ]["sequence"]
-
-    qcm0 = dummy_pulsars["qcm0"]
-    qcm0.sequencer0.sequence(qcm0_seq0_json)
-    qcm0.arm_sequencer(0)
-
-    uploaded_waveforms = qcm0.get_waveforms(0)
-    assert uploaded_waveforms is not None
-
-
 @pytest.mark.parametrize(
     "reset_clock_phase",
     [True, False],
@@ -955,7 +911,7 @@ def test_compile_acq_measurement_with_clock_phase_reset(
         schedule.add(X(q1), label=f"pi {i} {q1}", ref_pt="start")
 
         schedule.add(
-            Measure(q0, acq_index=i, acq_channel=0),
+            Measure(q0, acq_index=i),
             ref_pt="start",
             rel_time=tau,
             label=f"Measurement {q0}{i}",
@@ -1047,30 +1003,6 @@ def test_acquisitions_back_to_back(
             sched,
             config=compile_config_basic_transmon_qblox_hardware_pulsar,
         )
-
-    assert (
-        "Please ensure a minimum interval of 1000 ns between acquisitions"
-        in error.value.args[0]
-    )
-
-
-@pytest.mark.filterwarnings(
-    "ignore::FutureWarning"
-)  # Tests both device_compile and hardware_compile, keep for coverage
-def test_deprecated_acquisitions_back_to_back(
-    device_cfg_transmon_example,
-    hardware_cfg_pulsar,
-):
-    sched = Schedule("acquisitions_back_to_back")
-    meas_op = sched.add(Measure("q0", acq_index=0))
-    # Add another one too quickly
-    sched.add(
-        Measure("q0", acq_index=1), ref_op=meas_op, ref_pt="start", rel_time=500e-9
-    )
-
-    sched_with_pulse_info = device_compile(sched, device_cfg_transmon_example)
-    with pytest.raises(ValueError) as error:
-        hardware_compile(sched_with_pulse_info, hardware_cfg_pulsar)
 
     assert (
         "Please ensure a minimum interval of 1000 ns between acquisitions"
@@ -2470,6 +2402,7 @@ def test_acq_declaration_dict_bin_avg_mode(
     assert acquisitions["0"] == {"num_bins": 21, "index": 0}
 
 
+@pytest.mark.filterwarnings("ignore::FutureWarning")
 def test_convert_hw_config_to_portclock_configs_spec(
     make_basic_multi_qubit_schedule,
     mock_setup_basic_transmon_with_standard_params,
@@ -2575,20 +2508,6 @@ def test_convert_hw_config_to_portclock_configs_spec(
     # Test that the conversion works adequately
     migrated_config = convert_hw_config_to_portclock_configs_spec(old_config)
     assert migrated_config == expected_config
-
-    # Test that qblox_backend.hardware_compile is converting automatically
-    sched = make_basic_multi_qubit_schedule(["q0", "q1"])
-    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    quantum_device.hardware_config(old_config)
-
-    with pytest.warns(
-        FutureWarning,
-        match=r"hardware config adheres to a specification that is deprecated",
-    ):
-        compiler = SerialCompiler(name="compiler")
-        compiler.compile(
-            schedule=sched, config=quantum_device.generate_compilation_config()
-        )
 
 
 # Setting latency corrections in the hardware config is deprecated
