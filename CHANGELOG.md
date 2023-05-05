@@ -2,8 +2,15 @@
 
 ## 0.13.0 (2023-05-05)
 
+### Release Highlights
+- This release introduces a new acquisition protocol: `NumericalWeightedIntegrationComplex`, that allows users perform a weighted integration acquisition. 
+- The schedule library now has a new schedule that performs an NCO frequency sweep in a dark ESR experiment on an NV-center. 
+- A lot of code that was marked as deprecated has been removed. Please checkout our [deprecated code suggestions](https://quantify-quantify-scheduler.readthedocs-hosted.com/en/latest/examples/deprecated.html) on how to modify you code to ammend any problems caused by this removal. 
+- Many improvements and small bug fixes.
+
 ### Breaking changes
 
+- Deprecation - Deprecated code that had been scheduled to be removed after version 0.12 has been removed. The deprecated code suggestions have been updated (!667).
 - Qblox backend - Markers will not be pulled high at the start of sequences anymore. Removed MarkerConfiguration from the Qblox backend. Moved output_map to StaticHardwareProperties, the RF output switches are controlled by the output_map. (!1081)
 - Qblox backend - Deprecate the `instruction_generated_pulses_enabled` hardware configuration setting, as well as the `StitchedSquarePulseStrategy` and `StaircasePulseStrategy`. The newly introduced `StitchedPulse`, as well as the helper functions in `quantify_scheduler.pulse_factories` can be used instead. `SquarePulse`s with a duration >1 microsecond (a constant in the Qblox backend) are compiled to AWG offset instructions (!637).
 
@@ -15,7 +22,7 @@
 - Compilation - Move `LatencyCorrections` to `CompilationConfig.hardware_options` and use field name `corrections` instead of `latencies` (!633).
 - Compilation - `CompilationNode`s take the full `CompilationConfig` as input (!615, #405)
 - Deprecation - Replace `device_compile` and `hardware_compile` by `SerialCompiler`  in NV center tests (!651)
-- Deprecation - Deprecated code that had been scheduled to be removed after version 0.12 has been removed. The deprecated code suggestions have been updated (!667).
+
 - Documentation - Fix documentation generation warnings and errors (!658)
 - Documentation - Acquisition data format in user guide (!646)
 - Gettables - Clean up code syntax (!638)
@@ -40,7 +47,7 @@
 
 ### Compatibility info
 
-- Qblox: `qblox-instruments==0.9.0` (Cluster firmware v0.4.0) and `qblox-instruments==0.10.x` (Cluster firmware v0.5.0) 
+- Qblox: `qblox-instruments==0.9.0` ([Cluster firmware v0.4.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.4.0)) and `qblox-instruments==0.10.x` ([Cluster firmware v0.5.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.5.0)) 
 - ZI:    `zhinst==21.8.20515` `zhinst-qcodes==0.1.4` `zhinst-toolkit==0.1.5`
 
 ## 0.12.3 (2023-03-09)
