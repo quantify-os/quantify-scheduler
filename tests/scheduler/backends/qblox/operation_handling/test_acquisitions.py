@@ -8,19 +8,23 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Tests for acquisitions module."""
-import math
 import pprint
+import re
 from typing import Dict, Any
 
 import pytest
 import numpy as np
-import re
+
 from qcodes.instrument.parameter import ManualParameter
-from qblox_instruments import ClusterType, PulsarType
+from qblox_instruments import (
+    ClusterType,
+    DummyBinnedAcquisitionData,
+    DummyScopeAcquisitionData,
+    PulsarType,
+)
 from xarray import Dataset, DataArray
 
 from quantify_scheduler import waveforms, Schedule
-
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.qblox import constants
@@ -31,7 +35,6 @@ from quantify_scheduler.backends.qblox.register_manager import RegisterManager
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.helpers.mock_instruments import MockLocalOscillator
-from quantify_scheduler.operations.gate_library import Measure
 from quantify_scheduler.instrument_coordinator.components.generic import (
     GenericInstrumentCoordinatorComponent,
 )
@@ -39,6 +42,8 @@ from quantify_scheduler.instrument_coordinator.components.qblox import (
     QbloxInstrumentCoordinatorComponentBase,
     _QRMAcquisitionManager,
 )
+from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
+from quantify_scheduler.operations.gate_library import Measure
 from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.schedule import AcquisitionMetadata
@@ -597,6 +602,14 @@ def test_trace_acquisition_measurement_control(
         batched=True,
     )
 
+    # Setup dummy acquisition data
+    dummy_scope_acquisition_data = DummyScopeAcquisitionData(
+        data=[(0, 1)] * 15000, out_of_range=(False, False), avg_cnt=(0, 0)
+    )
+    ic_cluster0.instrument.set_dummy_scope_acquisition_data(
+        slot_idx=4, sequencer=None, data=dummy_scope_acquisition_data
+    )
+
     meas_ctrl = quantum_device.instr_measurement_control.get_instr()
     meas_ctrl.settables(sample_param)
     meas_ctrl.setpoints(sample_times)
@@ -711,7 +724,7 @@ def test_trigger_count_append(make_qrm_component):
     assert data.equals(expected_data)
 
 
-def test_multiple_measurements(
+def test_mixed_binned_trace_measurements(
     mock_setup_basic_transmon, make_cluster_component
 ):  # pylint: disable=too-many-locals
     hardware_cfg = {
@@ -764,6 +777,20 @@ def test_multiple_measurements(
     q0.measure.integration_time(5e-6)
     q1.measure.integration_time(3e-6)
 
+    # Setup dummy acquisition data
+    dummy_scope_acquisition_data = DummyScopeAcquisitionData(
+        data=[(0, 1)] * 15000, out_of_range=(False, False), avg_cnt=(0, 0)
+    )
+    ic_cluster0.instrument.set_dummy_scope_acquisition_data(
+        slot_idx=3, sequencer=None, data=dummy_scope_acquisition_data
+    )
+    dummy_binned_acquisition_data = [
+        DummyBinnedAcquisitionData(data=(100.0, 200.0), thres=0, avg_cnt=0),
+    ]
+    ic_cluster0.instrument.set_dummy_binned_acquisition_data(
+        slot_idx=3, sequencer=0, acq_index_name="0", data=dummy_binned_acquisition_data
+    )
+
     # Generate compiled schedule
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
@@ -782,7 +809,7 @@ def test_multiple_measurements(
         [[0 + 1j] * 3000], coords=[[0], range(3000)], dims=["repetition", "acq_index"]
     )
     expected_dataarray_binned = DataArray(
-        [[float("nan") + float("nan") * 1j]],
+        [[0.02 + 0.04j]],
         coords=[[0], [0]],
         dims=["repetition", "acq_index"],
     )
@@ -1036,6 +1063,14 @@ def test_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_nv):
         schedule=schedule, config=quantum_device.generate_compilation_config()
     )
 
+    # Setup dummy acquisition data
+    dummy_scope_acquisition_data = DummyScopeAcquisitionData(
+        data=[(0, 1)] * 15000, out_of_range=(False, False), avg_cnt=(0, 0)
+    )
+    ic_cluster0.instrument.set_dummy_scope_acquisition_data(
+        slot_idx=3, sequencer=None, data=dummy_scope_acquisition_data
+    )
+
     # Upload schedule and run experiment
     instr_coordinator.prepare(compiled_sched)
     instr_coordinator.start()
@@ -1114,6 +1149,17 @@ def test_complex_input_hardware_cfg(make_cluster_component, mock_setup_basic_tra
         schedule=schedule, config=quantum_device.generate_compilation_config()
     )
 
+    # Setup dummy acquisition data
+    dummy_binned_acquisition_data = [
+        DummyBinnedAcquisitionData(data=(100.0, 200.0), thres=0, avg_cnt=0),
+    ]
+    ic_cluster0.instrument.set_dummy_binned_acquisition_data(
+        slot_idx=3, sequencer=0, acq_index_name="0", data=dummy_binned_acquisition_data
+    )
+    ic_cluster0.instrument.set_dummy_binned_acquisition_data(
+        slot_idx=3, sequencer=1, acq_index_name="1", data=dummy_binned_acquisition_data
+    )
+
     # Upload schedule and run experiment
     instr_coordinator.prepare(compiled_sched)
     instr_coordinator.start()
@@ -1123,7 +1169,7 @@ def test_complex_input_hardware_cfg(make_cluster_component, mock_setup_basic_tra
     # Assert intended behaviour
     assert isinstance(data, Dataset)
     expected_dataarray = DataArray(
-        [[float("nan") + float("nan") * 1j]],
+        [[0.1 + 0.2j]],
         coords=[[0], [0]],
         dims=["repetition", "acq_index"],
     )
@@ -1340,11 +1386,20 @@ def test_trace_acquisition_instrument_coordinator(  # pylint: disable=too-many-l
         schedule=schedule, config=quantum_device.generate_compilation_config()
     )
 
-    wrappee = (
+    module = (
         ic_component._cluster_modules[module_name]
         if isinstance(module_under_test, ClusterType)
         else ic_component
     )
+
+    # Setup dummy acquisition data
+    dummy_scope_acquisition_data = DummyScopeAcquisitionData(
+        data=[(0, 1)] * 15000, out_of_range=(False, False), avg_cnt=(0, 0)
+    )
+    module.instrument.set_dummy_scope_acquisition_data(
+        sequencer=None, data=dummy_scope_acquisition_data
+    )
+
     wrapped = QbloxInstrumentCoordinatorComponentBase._set_parameter
     called_with = None
 
@@ -1352,7 +1407,7 @@ def test_trace_acquisition_instrument_coordinator(  # pylint: disable=too-many-l
         nonlocal called_with
         if "scope_acq_sequencer_select" in args + tuple(kwargs.values()):
             called_with = args + tuple(kwargs.values())
-        wrapped(wrappee, *args, **kwargs)
+        wrapped(module, *args, **kwargs)
 
     with mocker.patch(
         "quantify_scheduler.instrument_coordinator.components.qblox."
@@ -1365,11 +1420,13 @@ def test_trace_acquisition_instrument_coordinator(  # pylint: disable=too-many-l
             pprint.pprint(compiled_sched.compiled_instructions)
             raise
 
-    assert called_with == (wrappee.instrument, "scope_acq_sequencer_select", 0)
+    assert called_with == (module.instrument, "scope_acq_sequencer_select", 0)
 
     instr_coordinator.start()
     acquired_data = instr_coordinator.retrieve_acquisition()
     instr_coordinator.stop()
+
+    module.instrument.store_scope_acquisition.assert_called_with(0, "0")
 
     assert isinstance(acquired_data, Dataset)
     expected_dataarray = DataArray(
@@ -1510,5 +1567,289 @@ def test_marker_debug_mode_enable(
     assert re.search(r"^\s*set_mrk\s+3", seq0_qrm_rf[idx + 3])
     assert re.search(r"^\s*upd_param\s+4", seq0_qrm_rf[idx + 4])
     assert re.search(r"^\s*wait\s+92", seq0_qrm_rf[idx + 5])
+
+    instr_coordinator.remove_component("ic_cluster0")
+
+
+def test_multiple_binned_measurements(
+    mock_setup_basic_transmon, make_cluster_component
+):  # pylint: disable=too-many-locals
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module3": {
+                "instrument_type": "QRM",
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6},
+                    ],
+                },
+            },
+            "cluster0_module4": {
+                "instrument_type": "QRM_RF",
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {"port": "q1:res", "clock": "q1.ro", "interm_freq": 50e6},
+                    ],
+                },
+            },
+        },
+    }
+
+    # Setup objects needed for experiment
+    mock_setup = mock_setup_basic_transmon
+    ic_cluster0 = make_cluster_component("cluster0")
+
+    instr_coordinator = mock_setup["instrument_coordinator"]
+    instr_coordinator.add_component(ic_cluster0)
+
+    quantum_device = mock_setup["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+
+    q0 = mock_setup["q0"]
+    q1 = mock_setup["q1"]
+    q0.clock_freqs.readout(50e6)
+    q1.clock_freqs.readout(50e6)
+
+    # Define experiment schedule
+    schedule = Schedule("test multiple measurements")
+    schedule.add(Measure("q0", acq_index=0, acq_protocol="SSBIntegrationComplex"))
+    schedule.add(Measure("q0", acq_index=1, acq_protocol="SSBIntegrationComplex"))
+    schedule.add(
+        SSBIntegrationComplex(
+            port="q0:res", clock="q0.ro", duration=5e-6, acq_channel=0, acq_index=2
+        )
+    )
+    schedule.add(
+        SSBIntegrationComplex(
+            port="q0:res", clock="q0.ro", duration=5e-6, acq_channel=0, acq_index=3
+        )
+    )
+    schedule.add(
+        SSBIntegrationComplex(
+            port="q0:res", clock="q0.ro", duration=5e-6, acq_channel=2, acq_index=0
+        )
+    )
+    schedule.add(
+        SSBIntegrationComplex(
+            port="q0:res", clock="q0.ro", duration=5e-6, acq_channel=2, acq_index=1
+        )
+    )
+    schedule.add(Measure("q1", acq_index=0, acq_protocol="SSBIntegrationComplex"))
+    schedule.add(Measure("q1", acq_index=1, acq_protocol="SSBIntegrationComplex"))
+    schedule.add(
+        SSBIntegrationComplex(
+            port="q1:res", clock="q1.ro", duration=5e-6, acq_channel=1, acq_index=2
+        )
+    )
+    schedule.add(
+        SSBIntegrationComplex(
+            port="q1:res", clock="q1.ro", duration=5e-6, acq_channel=1, acq_index=3
+        )
+    )
+    schedule.add(
+        SSBIntegrationComplex(
+            port="q1:res", clock="q1.ro", duration=5e-6, acq_channel=3, acq_index=0
+        )
+    )
+    schedule.add(
+        SSBIntegrationComplex(
+            port="q1:res", clock="q1.ro", duration=5e-6, acq_channel=3, acq_index=1
+        )
+    )
+
+    # Change acq delay, duration and channel
+    q0.measure.acq_delay(1e-6)
+    q1.measure.acq_delay(1e-6)
+    q0.measure.integration_time(5e-6)
+    q1.measure.integration_time(5e-6)
+    q0.measure.acq_channel(0)
+    q1.measure.acq_channel(1)
+    q1.clock_freqs.readout(7404000000.0)
+
+    # Setup dummy acquisition data
+    ic_cluster0.instrument.set_dummy_binned_acquisition_data(
+        slot_idx=3,
+        sequencer=0,
+        acq_index_name="0",
+        data=[
+            DummyBinnedAcquisitionData(data=(10000, 15000), thres=0, avg_cnt=0),
+            DummyBinnedAcquisitionData(data=(20000, 25000), thres=0, avg_cnt=0),
+            DummyBinnedAcquisitionData(data=(30000, 35000), thres=0, avg_cnt=0),
+            DummyBinnedAcquisitionData(data=(40000, 45000), thres=0, avg_cnt=0),
+        ],
+    )
+    ic_cluster0.instrument.set_dummy_binned_acquisition_data(
+        slot_idx=3,
+        sequencer=0,
+        acq_index_name="2",
+        data=[
+            DummyBinnedAcquisitionData(data=(50000, 55000), thres=0, avg_cnt=0),
+            DummyBinnedAcquisitionData(data=(60000, 65000), thres=0, avg_cnt=0),
+        ],
+    )
+    ic_cluster0.instrument.set_dummy_binned_acquisition_data(
+        slot_idx=4,
+        sequencer=0,
+        acq_index_name="1",
+        data=[
+            DummyBinnedAcquisitionData(data=(100000, 150000), thres=0, avg_cnt=0),
+            DummyBinnedAcquisitionData(data=(200000, 250000), thres=0, avg_cnt=0),
+            DummyBinnedAcquisitionData(data=(300000, 350000), thres=0, avg_cnt=0),
+            DummyBinnedAcquisitionData(data=(400000, 450000), thres=0, avg_cnt=0),
+        ],
+    )
+    ic_cluster0.instrument.set_dummy_binned_acquisition_data(
+        slot_idx=4,
+        sequencer=0,
+        acq_index_name="3",
+        data=[
+            DummyBinnedAcquisitionData(data=(500000, 550000), thres=0, avg_cnt=0),
+            DummyBinnedAcquisitionData(data=(600000, 650000), thres=0, avg_cnt=0),
+        ],
+    )
+
+    # Generate compiled schedule
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    # Upload schedule and run experiment
+    instr_coordinator.prepare(compiled_sched)
+    instr_coordinator.start()
+    data = instr_coordinator.retrieve_acquisition()
+    instr_coordinator.stop()
+
+    # Assert intended behaviour
+    assert isinstance(data, Dataset)
+    expected_dataset = Dataset(
+        {
+            0: DataArray(
+                [[2 + 3j, 4 + 5j, 6 + 7j, 8 + 9j]],
+                coords=[[0], [0, 1, 2, 3]],
+                dims=["repetition", "acq_index"],
+            ),
+            2: DataArray(
+                [[10 + 11j, 12 + 13j]],
+                coords=[[0], [0, 1]],
+                dims=["repetition", "acq_index"],
+            ),
+            1: DataArray(
+                [[20 + 30j, 40 + 50j, 60 + 70j, 80 + 90j]],
+                coords=[[0], [0, 1, 2, 3]],
+                dims=["repetition", "acq_index"],
+            ),
+            3: DataArray(
+                [[100 + 110j, 120 + 130j]],
+                coords=[[0], [0, 1]],
+                dims=["repetition", "acq_index"],
+            ),
+        }
+    )
+
+    assert data.equals(expected_dataset)
+
+    instr_coordinator.remove_component("ic_cluster0")
+
+
+def test_append_measurements(
+    mock_setup_basic_transmon, make_cluster_component
+):  # pylint: disable=too-many-locals
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module3": {
+                "instrument_type": "QRM",
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6},
+                    ],
+                },
+            },
+        },
+    }
+
+    # Setup objects needed for experiment
+    mock_setup = mock_setup_basic_transmon
+    ic_cluster0 = make_cluster_component("cluster0")
+
+    instr_coordinator = mock_setup["instrument_coordinator"]
+    instr_coordinator.add_component(ic_cluster0)
+
+    quantum_device = mock_setup["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+
+    q0 = mock_setup["q0"]
+    q0.clock_freqs.readout(50e6)
+
+    # Define experiment schedule
+    schedule = Schedule("test multiple measurements", repetitions=3)
+    schedule.add(
+        Measure(
+            "q0",
+            acq_index=0,
+            acq_protocol="SSBIntegrationComplex",
+            bin_mode=BinMode.APPEND,
+        )
+    )
+    schedule.add(
+        Measure(
+            "q0",
+            acq_index=1,
+            acq_protocol="SSBIntegrationComplex",
+            bin_mode=BinMode.APPEND,
+        )
+    )
+
+    # Change acq delay, duration and channel
+    q0.measure.acq_delay(1e-6)
+    q0.measure.integration_time(5e-6)
+    q0.measure.acq_channel(1)
+
+    # Setup dummy acquisition data
+    ic_cluster0.instrument.set_dummy_binned_acquisition_data(
+        slot_idx=3,
+        sequencer=0,
+        acq_index_name="1",
+        data=[
+            DummyBinnedAcquisitionData(data=(10000, 15000), thres=0, avg_cnt=0),
+            DummyBinnedAcquisitionData(data=(20000, 25000), thres=0, avg_cnt=0),
+            DummyBinnedAcquisitionData(data=(30000, 35000), thres=0, avg_cnt=0),
+            DummyBinnedAcquisitionData(data=(40000, 45000), thres=0, avg_cnt=0),
+            DummyBinnedAcquisitionData(data=(50000, 55000), thres=0, avg_cnt=0),
+            DummyBinnedAcquisitionData(data=(60000, 65000), thres=0, avg_cnt=0),
+        ],
+    )
+
+    # Generate compiled schedule
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    # Upload schedule and run experiment
+    instr_coordinator.prepare(compiled_sched)
+    instr_coordinator.start()
+    data = instr_coordinator.retrieve_acquisition()
+    instr_coordinator.stop()
+
+    # Assert intended behaviour
+    assert isinstance(data, Dataset)
+    expected_dataset = Dataset(
+        {
+            1: DataArray(
+                [[2 + 3j, 4 + 5j], [6 + 7j, 8 + 9j], [10 + 11j, 12 + 13j]],
+                coords=[[0, 1, 2], [0, 1]],
+                dims=["repetition", "acq_index"],
+            ),
+        }
+    )
+
+    assert data.equals(expected_dataset)
 
     instr_coordinator.remove_component("ic_cluster0")

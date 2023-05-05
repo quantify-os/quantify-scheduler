@@ -12,7 +12,6 @@
 import logging
 from collections import defaultdict
 from copy import deepcopy
-from operator import countOf
 from typing import List, Optional
 
 import numpy as np
@@ -20,7 +19,7 @@ import pytest
 from qblox_instruments import (
     Cluster,
     ClusterType,
-    DummyScopeAcquisitionData,
+    DummyBinnedAcquisitionData,
     Pulsar,
     PulsarType,
     SequencerState,
@@ -35,6 +34,7 @@ from quantify_scheduler.device_under_test.transmon_element import BasicTransmonE
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.instrument_coordinator.components import qblox
 from quantify_scheduler.schedules.schedule import AcquisitionMetadata
+
 from tests.fixtures.mock_setup import close_instruments
 
 
@@ -58,15 +58,6 @@ def make_cluster_component(mocker):
                 "10": ClusterType.CLUSTER_QCM,  # for flux pulsing q0_q3
                 "12": ClusterType.CLUSTER_QCM,  # for flux pulsing q4
             },
-        )
-        dummy_scope_acquisition_data = DummyScopeAcquisitionData(
-            data=[(0, 1)] * 15000, out_of_range=(False, False), avg_cnt=(0, 0)
-        )
-        cluster.set_dummy_scope_acquisition_data(
-            slot_idx=3, sequencer=None, data=dummy_scope_acquisition_data
-        )
-        cluster.set_dummy_scope_acquisition_data(
-            slot_idx=4, sequencer=None, data=dummy_scope_acquisition_data
         )
 
         nonlocal cluster_component
@@ -92,6 +83,11 @@ def make_cluster_component(mocker):
                     sequencer_status, sequencer_flags if sequencer_flags else []
                 ),
             )
+            mocker.patch.object(
+                instrument,
+                "store_scope_acquisition",
+                wraps=instrument.store_scope_acquisition,
+            )
 
         return cluster_component
 
@@ -113,16 +109,16 @@ def make_qcm_component(mocker):
         sequencer_status: SequencerStatus = SequencerStatus.ARMED,
         sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
     ) -> qblox.PulsarQCMComponent:
-        mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
-        mocker.patch("qblox_instruments.native.pulsar.Pulsar.start_sequencer")
-        mocker.patch("qblox_instruments.native.pulsar.Pulsar.stop_sequencer")
         mocker.patch(
             "qblox_instruments.scpi.pulsar_qcm.PulsarQcm._set_reference_source"
         )
-
         close_instruments([f"ic_{name}", name])
         qcm = Pulsar(name=name, dummy_type=PulsarType.PULSAR_QCM)
         qcm._serial = serial
+
+        mocker.patch.object(qcm, "arm_sequencer", wraps=qcm.arm_sequencer)
+        mocker.patch.object(qcm, "start_sequencer", wraps=qcm.start_sequencer)
+        mocker.patch.object(qcm, "stop_sequencer", wraps=qcm.stop_sequencer)
 
         nonlocal component
         component = qblox.PulsarQCMComponent(qcm)
@@ -155,26 +151,23 @@ def make_qrm_component(mocker):
         sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
         patch_acquisitions: bool = False,
     ) -> qblox.PulsarQRMComponent:
-        mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
-        mocker.patch("qblox_instruments.native.pulsar.Pulsar.start_sequencer")
-        mocker.patch("qblox_instruments.native.pulsar.Pulsar.stop_sequencer")
         mocker.patch(
             "qblox_instruments.scpi.pulsar_qrm.PulsarQrm._set_reference_source"
         )
-        if patch_acquisitions:
-            mocker.patch(
-                "qblox_instruments.native.pulsar.Pulsar.store_scope_acquisition"
-            )
-
         close_instruments([f"ic_{name}", name])
         qrm = Pulsar(name=name, dummy_type=PulsarType.PULSAR_QRM)
         qrm._serial = serial
-        dummy_scope_acquisition_data = DummyScopeAcquisitionData(
-            [(0, 1)] * 15000, (False, False), (0, 0)
+
+        mocker.patch.object(qrm, "arm_sequencer", wraps=qrm.arm_sequencer)
+        mocker.patch.object(qrm, "start_sequencer", wraps=qrm.start_sequencer)
+        mocker.patch.object(qrm, "stop_sequencer", wraps=qrm.stop_sequencer)
+        mocker.patch.object(
+            qrm, "store_scope_acquisition", wraps=qrm.store_scope_acquisition
         )
-        qrm.set_dummy_scope_acquisition_data(
-            sequencer=None, data=dummy_scope_acquisition_data
-        )
+
+        mocker.patch.object(qrm, "arm_sequencer", wraps=qrm.arm_sequencer)
+        mocker.patch.object(qrm, "start_sequencer", wraps=qrm.start_sequencer)
+        mocker.patch.object(qrm, "stop_sequencer", wraps=qrm.stop_sequencer)
 
         nonlocal component
         component = qblox.PulsarQRMComponent(qrm)
@@ -187,24 +180,6 @@ def make_qrm_component(mocker):
                 sequencer_status, sequencer_flags if sequencer_flags else []
             ),
         )
-
-        if patch_acquisitions:
-            mocker.patch.object(
-                component.instrument,
-                "get_acquisitions",
-                return_value={
-                    "0": {
-                        "index": 0,
-                        "acquisition": {
-                            "bins": {
-                                "integration": {"path0": [0], "path1": [0]},
-                                "threshold": [0.12],
-                                "avg_cnt": [1],
-                            }
-                        },
-                    }
-                },
-            )
 
         return component
 
@@ -258,13 +233,13 @@ def make_qcm_rf(mocker):
         sequencer_status: SequencerStatus = SequencerStatus.ARMED,
         sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
     ) -> qblox.QCMRFComponent:
-        mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
-        mocker.patch("qblox_instruments.native.pulsar.Pulsar.start_sequencer")
-        mocker.patch("qblox_instruments.native.pulsar.Pulsar.stop_sequencer")
-
         close_instruments([name])
         qcm_rf = Pulsar(name=name, dummy_type=PulsarType._PULSAR_QCM_RF)
         qcm_rf._serial = serial
+
+        mocker.patch.object(qcm_rf, "arm_sequencer", wraps=qcm_rf.arm_sequencer)
+        mocker.patch.object(qcm_rf, "start_sequencer", wraps=qcm_rf.start_sequencer)
+        mocker.patch.object(qcm_rf, "stop_sequencer", wraps=qcm_rf.stop_sequencer)
 
         nonlocal component
         component = qblox.QCMRFComponent(qcm_rf)
@@ -296,13 +271,13 @@ def make_qrm_rf(mocker):
         sequencer_status: SequencerStatus = SequencerStatus.ARMED,
         sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
     ) -> qblox.QRMRFComponent:
-        mocker.patch("qblox_instruments.native.pulsar.Pulsar.arm_sequencer")
-        mocker.patch("qblox_instruments.native.pulsar.Pulsar.start_sequencer")
-        mocker.patch("qblox_instruments.native.pulsar.Pulsar.stop_sequencer")
-
         close_instruments([name])
         qrm_rf = Pulsar(name=name, dummy_type=PulsarType._PULSAR_QRM_RF)
         qrm_rf._serial = serial
+
+        mocker.patch.object(qrm_rf, "arm_sequencer", wraps=qrm_rf.arm_sequencer)
+        mocker.patch.object(qrm_rf, "start_sequencer", wraps=qrm_rf.start_sequencer)
+        mocker.patch.object(qrm_rf, "stop_sequencer", wraps=qrm_rf.stop_sequencer)
 
         nonlocal component
         component = qblox.QRMRFComponent(qrm_rf)
@@ -314,22 +289,6 @@ def make_qrm_rf(mocker):
             return_value=SequencerState(
                 sequencer_status, sequencer_flags if sequencer_flags else []
             ),
-        )
-        mocker.patch.object(
-            component.instrument,
-            "get_acquisitions",
-            return_value={
-                "0": {
-                    "index": 0,
-                    "acquisition": {
-                        "bins": {
-                            "integration": {"path0": [0], "path1": [0]},
-                            "threshold": [0.12],
-                            "avg_cnt": [1],
-                        }
-                    },
-                }
-            },
         )
 
         return component
@@ -350,7 +309,7 @@ def test_sequencer_state_flag_info():
         for key, info in qblox._SEQUENCER_STATE_FLAG_INFO.items()
         if info.logging_level == logging.DEBUG
     ]
-    assert len(debug_status) == 3, (
+    assert len(debug_status) == 5, (
         "Verify no new flags were implicitly added "
         "(otherwise update `qblox._SequencerStateInfo.get_logging_level()`)"
     )
@@ -669,8 +628,8 @@ def test_prepare_qcm_qrm(
     qrm2.prepare(prog[qrm2.instrument.name])
 
     # Assert
-    qcm0.instrument.arm_sequencer.assert_called_with(sequencer=1)
-    qrm0.instrument.arm_sequencer.assert_called_with(sequencer=1)
+    qcm0.instrument.arm_sequencer.assert_called_with(sequencer=0)
+    qrm0.instrument.arm_sequencer.assert_called_with(sequencer=0)
     qrm2.instrument.arm_sequencer.assert_called_with(sequencer=1)
 
     if set_reference_source:
@@ -963,13 +922,20 @@ def test_retrieve_acquisition_qrm(
     prog = compiled_schedule["compiled_instructions"]
     prog = dict(prog)
 
+    dummy_data = [
+        DummyBinnedAcquisitionData(data=(100.0, 200.0), thres=0, avg_cnt=0),
+    ]
+    qrm.instrument.set_dummy_binned_acquisition_data(
+        sequencer=0, acq_index_name="0", data=dummy_data
+    )
+
     qrm.prepare(prog[qrm.instrument.name])
     qrm.start()
     acq = qrm.retrieve_acquisition()
 
     # Assert
     expected_dataarray = DataArray(
-        [[float("nan") + float("nan") * 1j]],
+        [[0.1 + 0.2j]],
         coords=[[0], [0]],
         dims=["repetition", "acq_index"],
     )
@@ -1004,13 +970,20 @@ def test_retrieve_acquisition_qrm_rf(
     prog = compiled_schedule["compiled_instructions"]
     prog = dict(prog)
 
+    dummy_data = [
+        DummyBinnedAcquisitionData(data=(100.0, 200.0), thres=0, avg_cnt=0),
+    ]
+    qrm_rf.instrument.set_dummy_binned_acquisition_data(
+        sequencer=0, acq_index_name="0", data=dummy_data
+    )
+
     qrm_rf.prepare(prog[qrm_rf.instrument.name])
     qrm_rf.start()
     acq = qrm_rf.retrieve_acquisition()
 
     # Assert
     expected_dataarray = DataArray(
-        [[0]],
+        [[0.1 + 0.2j]],
         coords=[[0], [0]],
         dims=["repetition", "acq_index"],
     )
@@ -1196,35 +1169,6 @@ def test_get_integration_data(make_qrm_component, mock_acquisition_data):
     np.testing.assert_almost_equal(
         formatted_acquisitions.sel(repetition=0).values, [0.0] * 10
     )
-
-
-def test_store_scope_acquisition(make_qrm_component):
-    # Arrange
-    qrm: qblox.PulsarQRMComponent = make_qrm_component(
-        name="qrm0", serial="1234", patch_acquisitions=True
-    )
-    acq_metadata = {
-        "0": AcquisitionMetadata(
-            acq_protocol="Trace",
-            bin_mode=BinMode.AVERAGE,
-            acq_return_type=complex,
-            acq_indices={0: [0]},
-            repetitions=1,
-        )
-    }
-    acq_manager = qblox._QRMAcquisitionManager(
-        parent=qrm,
-        acquisition_metadata=acq_metadata,
-        scope_mode_sequencer_and_channel=(0, 0),
-        acquisition_duration={},
-        seq_name_to_idx_map={"seq0": 0},
-    )
-
-    # Act
-    acq_manager._store_scope_acquisition()
-
-    # Assert
-    qrm.instrument.store_scope_acquisition.assert_called_once()
 
 
 def test_instrument_module():
