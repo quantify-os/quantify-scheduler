@@ -28,6 +28,12 @@ Take a look at the [latest documentation for quantify-scheduler](https://quantif
 or use the switch at the bottom of the left panel to read the documentation for older releases.
 Also see the [latest documentation for quantify-core](https://quantify-quantify-core.readthedocs-hosted.com/).
 
+## Hardware/driver compatibility
+
+- Qblox: `qblox-instruments==0.9.0` ([Cluster firmware v0.4.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.4.0)) and `qblox-instruments==0.10.x` ([Cluster firmware v0.5.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.5.0)) 
+- ZI:    `zhinst==21.8.20515` `zhinst-qcodes==0.1.4` `zhinst-toolkit==0.1.5`
+
+
 ## Overview and Community
 
 For a general overview of Quantify and connecting to its open-source community, see [quantify-os.org](https://quantify-os.org/).
