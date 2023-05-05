@@ -67,6 +67,7 @@ test = [
     "pytest",
     "pytest-mock",
 ]
+
 docs = [
     "jupyter_sphinx>=0.4.0",
     "jupytext",
@@ -81,8 +82,8 @@ docs = [
     "sphinx-togglebutton",
     "sphinx>=5.1.1",
     "sphinxcontrib-bibtex",
-    "urllib3==1.*",
 ]
+
 dev = [
     "black",
     "coverage",
