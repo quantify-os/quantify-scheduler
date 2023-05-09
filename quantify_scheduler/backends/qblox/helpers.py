@@ -897,6 +897,7 @@ def generate_hardware_config(compilation_config: CompilationConfig):
 
     hardware_config = deepcopy(compilation_config.connectivity)
     hardware_options = compilation_config.hardware_options
+    port_clocks = find_all_port_clock_combinations(hardware_config)
 
     # Add latency corrections from hardware options to hardware config
     latency_corrections = hardware_options.dict()["latency_corrections"]
@@ -931,7 +932,7 @@ def generate_hardware_config(compilation_config: CompilationConfig):
         )
 
     if compilation_config.hardware_options.modulation_frequencies is not None:
-        for port, clock in find_all_port_clock_combinations(hardware_config):
+        for port, clock in port_clocks:
             if (
                 pc_mod_freqs := compilation_config.hardware_options.modulation_frequencies.get(
                     f"{port}-{clock}"
@@ -1002,5 +1003,50 @@ def generate_hardware_config(compilation_config: CompilationConfig):
                         f" the hardware config. To avoid conflicting settings,"
                         f" please make sure this value is only set in one place."
                     )
+
+    mixer_corrections = compilation_config.hardware_options.mixer_corrections
+
+    if mixer_corrections is not None:
+        for port, clock in port_clocks:
+            if (pc_mix_corr := mixer_corrections.get(f"{port}-{clock}")) is None:
+                # No mixer corrections to set for this port-clock.
+                continue
+            pc_mix_corr = {
+                "mixer_amp_ratio": pc_mix_corr.amp_ratio,
+                "mixer_phase_error_deg": pc_mix_corr.phase_error,
+                "dc_mixer_offset_I": pc_mix_corr.dc_offset_i,
+                "dc_mixer_offset_Q": pc_mix_corr.dc_offset_q,
+            }
+            pc_path = find_port_clock_path(
+                hardware_config=hardware_config, port=port, clock=clock
+            )
+            ch_config = hardware_config
+            # Remove port-clock index and "portclock_configs" key to find channel config:
+            for key in pc_path[:-2]:
+                ch_config = ch_config[key]
+            pc_config = ch_config["portclock_configs"][pc_path[-1]]
+
+            # Add mixer corrections from hardware options to channel config
+            legacy_mix_corr = {
+                "mixer_amp_ratio": pc_config.get("mixer_amp_ratio"),
+                "mixer_phase_error_deg": pc_config.get("mixer_phase_error_deg"),
+                "dc_mixer_offset_I": ch_config.get("dc_mixer_offset_I"),
+                "dc_mixer_offset_Q": ch_config.get("dc_mixer_offset_Q"),
+            }
+            if all(v is None for v in legacy_mix_corr.values()):
+                pc_config["mixer_amp_ratio"] = pc_mix_corr["mixer_amp_ratio"]
+                pc_config["mixer_phase_error_deg"] = pc_mix_corr[
+                    "mixer_phase_error_deg"
+                ]
+                ch_config["dc_mixer_offset_I"] = pc_mix_corr["dc_mixer_offset_I"]
+                ch_config["dc_mixer_offset_Q"] = pc_mix_corr["dc_mixer_offset_Q"]
+            elif legacy_mix_corr != pc_mix_corr:
+                raise ValueError(
+                    f"Trying to set mixer corrections for channel={pc_path[:-2]} to "
+                    f"{pc_mix_corr} from the hardware options while it has previously "
+                    f"been set to {legacy_mix_corr} in the hardware config. To avoid "
+                    f"conflicting settings, please make sure these corrections are "
+                    f"only set in one place."
+                )
 
     return hardware_config

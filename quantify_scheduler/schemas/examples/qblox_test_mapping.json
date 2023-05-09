@@ -10,9 +10,7 @@
                 "portclock_configs": [
                     {
                         "port": "q4:mw",
-                        "clock": "q4.01",
-                        "mixer_amp_ratio": 0.9999,
-                        "mixer_phase_error_deg": -4.2
+                        "clock": "q4.01"
                     }
                 ]
             }
@@ -46,12 +44,8 @@
             "instrument_type": "QRM",
             "complex_output_0": {
                 "lo_name": "lo1",
-                "dc_mixer_offset_I": -0.054,
-                "dc_mixer_offset_Q": -0.034,
                 "portclock_configs": [
                     {
-                        "mixer_amp_ratio": 0.9997,
-                        "mixer_phase_error_deg": -4.0,
                         "port": "q4:res",
                         "clock": "q4.ro"
                     }

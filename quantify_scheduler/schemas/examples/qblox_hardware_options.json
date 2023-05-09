@@ -50,5 +50,17 @@
         "q6:mw-q6.01": {
             "lo_freq": 5e9
         }
+    },
+    "mixer_corrections": {
+        "q4:mw-q4.01": {
+            "amp_ratio": 0.9999,
+            "phase_error": -4.2
+        },
+        "q4:res-q4.ro": {
+            "dc_offset_i": -0.054,
+            "dc_offset_q": -0.034,
+            "amp_ratio": 0.9997,
+            "phase_error": -4.0
+        }
     }
 }

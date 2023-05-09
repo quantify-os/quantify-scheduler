@@ -6,6 +6,7 @@
 
 ### Merged branches and closed issues
 
+- Compilation - Move `MixerCorrections` to `CompilationConfig.hardware_options` (!669)
 
 ## 0.13.0 (2023-05-05)
 
