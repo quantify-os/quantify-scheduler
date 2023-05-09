@@ -2750,6 +2750,111 @@ def test_apply_latency_corrections_warning(
     assert any(warning in mssg for mssg in caplog.messages)
 
 
+def test_apply_mixer_corrections(
+    compile_config_basic_transmon_qblox_hardware,
+):
+    """
+    This test function checks that:
+    mixer corrections are set for the correct portclock key
+    by checking against the value set in the compiled instructions.
+    """
+    expected_settings = (
+        compile_config_basic_transmon_qblox_hardware.hardware_options.mixer_corrections[
+            "q4:res-q4.ro"
+        ]
+    )
+
+    sched = Schedule("Simple experiment")
+    sched.add(
+        SquarePulse(port="q4:res", clock="q4.ro", amp=0.25, duration=12e-9),
+        ref_pt="start",
+    )
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        sched,
+        config=compile_config_basic_transmon_qblox_hardware,
+    )
+
+    qrm_compiled_instructions = compiled_sched.compiled_instructions["cluster0"][
+        "cluster0_module3"
+    ]
+
+    assert (
+        qrm_compiled_instructions["settings"]["offset_ch0_path0"]
+        == expected_settings.dc_offset_i
+    )
+    assert (
+        qrm_compiled_instructions["settings"]["offset_ch0_path1"]
+        == expected_settings.dc_offset_q
+    )
+
+    assert (
+        qrm_compiled_instructions["sequencers"]["seq0"]["mixer_corr_gain_ratio"]
+        == expected_settings.amp_ratio
+    )
+    assert (
+        qrm_compiled_instructions["sequencers"]["seq0"][
+            "mixer_corr_phase_offset_degree"
+        ]
+        == expected_settings.phase_error
+    )
+
+
+@pytest.mark.deprecated
+@pytest.mark.parametrize(
+    "dc_offset_i, dc_offset_q, amp_ratio, phase_error",
+    [
+        (0.0123, None, None, None),
+        (None, 0.0321, None, None),
+        (None, None, 1.0123, None),
+        (None, None, None, 1.0321),
+    ],
+)
+def test_set_conflicting_mixer_corrections(
+    mock_setup_basic_transmon_with_standard_params,
+    hardware_cfg_qblox_example,
+    hardware_options_qblox_example,
+    dc_offset_i,
+    dc_offset_q,
+    amp_ratio,
+    phase_error,
+):
+    sched = Schedule("Simple experiment")
+    sched.add(
+        SquarePulse(port="q4:res", clock="q4.ro", amp=0.25, duration=12e-9),
+        ref_pt="start",
+    )
+
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    hardware_config = copy.deepcopy(hardware_cfg_qblox_example)
+    if dc_offset_i is not None:
+        hardware_config["cluster0"]["cluster0_module3"]["complex_output_0"][
+            "dc_mixer_offset_I"
+        ] = dc_offset_i
+    if dc_offset_q is not None:
+        hardware_config["cluster0"]["cluster0_module3"]["complex_output_0"][
+            "dc_mixer_offset_Q"
+        ] = dc_offset_q
+    if amp_ratio is not None:
+        hardware_config["cluster0"]["cluster0_module3"]["complex_output_0"][
+            "portclock_configs"
+        ][0]["mixer_amp_ratio"] = amp_ratio
+    if phase_error is not None:
+        hardware_config["cluster0"]["cluster0_module3"]["complex_output_0"][
+            "portclock_configs"
+        ][0]["mixer_phase_error_deg"] = phase_error
+    quantum_device.hardware_config(hardware_config)
+    quantum_device.hardware_options(hardware_options_qblox_example)
+
+    with pytest.raises(ValueError, match="conflicting settings"):
+        compiler = SerialCompiler(name="compiler")
+        _ = compiler.compile(
+            sched,
+            config=quantum_device.generate_compilation_config(),
+        )
+
+
 def _strip_comments(program: str):
     # helper function for comparing programs
     stripped_program = []

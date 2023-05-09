@@ -732,6 +732,7 @@ def generate_hardware_config(  # noqa: PLR0912, PLR0915
 
     hardware_config = deepcopy(compilation_config.connectivity)
     hardware_options = compilation_config.hardware_options
+    port_clocks = find_all_port_clock_combinations(hardware_config)
 
     # Add latency corrections from hardware options to hardware config
     latency_corrections = hardware_options.dict()["latency_corrections"]
@@ -769,7 +770,7 @@ def generate_hardware_config(  # noqa: PLR0912, PLR0915
     modulation_frequencies = compilation_config.hardware_options.modulation_frequencies
 
     if modulation_frequencies is not None:
-        for port, clock in find_all_port_clock_combinations(hardware_config):
+        for port, clock in port_clocks:
             if (pc_mod_freqs := modulation_frequencies.get(f"{port}-{clock}")) is None:
                 # No modulation frequencies to set for this port-clock.
                 continue
@@ -835,6 +836,39 @@ def generate_hardware_config(  # noqa: PLR0912, PLR0915
                     f"External local oscillator '{lo_name}' set to "
                     f"be used for {port=} and {clock=} not found! Make "
                     f"sure it is present in the hardware configuration."
+                )
+
+    mixer_corrections = compilation_config.hardware_options.mixer_corrections
+
+    if mixer_corrections is not None:
+        for port, clock in port_clocks:
+            if (pc_mix_corr := mixer_corrections.get(f"{port}-{clock}")) is None:
+                # No mixer corrections to set for this port-clock.
+                continue
+            pc_mix_corr = {
+                "amp_ratio": pc_mix_corr.amp_ratio,
+                "phase_error": pc_mix_corr.phase_error,
+                "dc_offset_I": pc_mix_corr.dc_offset_i,
+                "dc_offset_Q": pc_mix_corr.dc_offset_q,
+            }
+            ch_path = find_port_clock_path(
+                hardware_config=hardware_config, port=port, clock=clock
+            )
+            ch_config = hardware_config
+            for key in ch_path:
+                ch_config = ch_config[key]
+
+            # Add mixer corrections from hardware options to channel config
+            legacy_mix_corr = ch_config.get("mixer_corrections")
+            if legacy_mix_corr is None:
+                ch_config["mixer_corrections"] = pc_mix_corr
+            elif legacy_mix_corr != pc_mix_corr:
+                raise ValueError(
+                    f"Trying to set mixer corrections for channel={ch_path} to "
+                    f"{pc_mix_corr} from the hardware options while it has previously "
+                    f"been set to {legacy_mix_corr} in the hardware config. To avoid "
+                    f"conflicting settings, please make sure these corrections are "
+                    f"only set in one place."
                 )
 
     return hardware_config

@@ -462,7 +462,7 @@ def test_set_conflicting_distortion_corrections(
     quantum_device.hardware_config(hardware_config)
     quantum_device.hardware_options(hardware_options_zhinst_example)
 
-    with pytest.raises(ValueError, match="conflicting"):
+    with pytest.raises(ValueError, match="conflicting settings"):
         compiler = SerialCompiler(name="compiler")
         _ = compiler.compile(
             sched,
@@ -509,6 +509,35 @@ def test_set_conflicting_lo_freq(
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     hardware_config = deepcopy(hardware_cfg_zhinst_example)
     hardware_config["local_oscillators"][0]["frequency"] = {"ch1.frequency": 5e9}
+
+    quantum_device.hardware_config(hardware_config)
+    quantum_device.hardware_options(hardware_options_zhinst_example)
+
+    with pytest.raises(ValueError, match="conflicting settings"):
+        compiler = SerialCompiler(name="compiler")
+        _ = compiler.compile(
+            sched,
+            config=quantum_device.generate_compilation_config(),
+        )
+
+
+@pytest.mark.deprecated
+def test_set_conflicting_mixer_corrections(
+    make_schedule,
+    mock_setup_basic_transmon_with_standard_params,
+    hardware_cfg_zhinst_example,
+    hardware_options_zhinst_example,
+):
+    sched = make_schedule()
+
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    hardware_config = deepcopy(hardware_cfg_zhinst_example)
+    hardware_config["devices"][0]["channel_0"]["mixer_corrections"] = {
+        "amp_ratio": 0.93,
+        "phase_error": 0.04,
+        "dc_offset_I": 0.0542,
+        "dc_offset_Q": -0.0328,
+    }
 
     quantum_device.hardware_config(hardware_config)
     quantum_device.hardware_options(hardware_options_zhinst_example)

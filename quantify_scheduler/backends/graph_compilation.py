@@ -199,7 +199,7 @@ class LatencyCorrection(float):
 
         .. code-block:: python
 
-            compilation_config.latency_corrections = {
+            compilation_config.hardware_options.latency_corrections = {
                 "q0:res-q0.ro": LatencyCorrection(-20e-9),
                 "q0:mw-q0.01": LatencyCorrection(120e9),
             }
@@ -230,7 +230,7 @@ class DistortionCorrection(DataStructure):
 
         .. code-block:: python
 
-            compilation_config.distortion_corrections = {
+            compilation_config.hardware_options.distortion_corrections = {
                 "q0:fl-cl0.baseband": DistortionCorrection(
                     filter_func = "scipy.signal.lfilter",
                     input_var_name = "x",
@@ -257,7 +257,7 @@ class ModulationFrequencies(DataStructure):
 
         .. code-block:: python
 
-            compilation_config.modulation_frequencies = {
+            compilation_config.hardware_options.modulation_frequencies = {
                 "q0:res-q0.ro": ModulationFrequencies(
                     interm_freq = None,
                     lo_freq = 6e9,
@@ -269,6 +269,35 @@ class ModulationFrequencies(DataStructure):
     """The intermodulation frequency (IF) used for this port-clock combination."""
     lo_freq: Optional[float]
     """The local oscillator frequency (LO) used for this port-clock combination."""
+
+
+class MixerCorrections(DataStructure):
+    """
+    Mixer corrections for a port-clock combination.
+
+    .. admonition:: Example
+        :class: dropdown
+
+        .. code-block:: python
+
+            compilation_config.hardware_options.mixer_corrections = {
+                "q0:mw-q0.01": MixerCorrections(
+                    dc_offset_i = -0.0542,
+                    dc_offset_q = -0.0328,
+                    amp_ratio = 0.95,
+                    phase_error_deg= 0.07,
+                )
+            }
+    """
+
+    dc_offset_i: Optional[float]
+    """The DC offset on the I channel used for this port-clock combination."""
+    dc_offset_q: Optional[float]
+    """The DC offset on the Q channel used for this port-clock combination."""
+    amp_ratio: Optional[float]
+    """The mixer gain ratio used for this port-clock combination."""
+    phase_error: Optional[float]
+    """The mixer phase error used for this port-clock combination."""
 
 
 class HardwareOptions(DataStructure):
@@ -328,6 +357,11 @@ class HardwareOptions(DataStructure):
     modulation_frequencies: Optional[Dict[str, ModulationFrequencies]]
     """
     Dictionary containing the modulation frequencies (values) that should be used
+    for signals on a certain port-clock combination (keys).
+    """
+    mixer_corrections: Optional[Dict[str, MixerCorrections]]
+    """
+    Dictionary containing the mixer corrections (values) that should be used
     for signals on a certain port-clock combination (keys).
     """
 
