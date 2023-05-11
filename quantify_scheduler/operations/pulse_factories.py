@@ -19,7 +19,14 @@ from quantify_scheduler.resources import BasebandClockResource
 
 
 def rxy_drag_pulse(
-    amp180, motzoi, theta, phi, port, duration, clock
+    amp180,
+    motzoi,
+    theta,
+    phi,
+    port,
+    duration,
+    clock,
+    reference_magnitude=None,
 ) -> pulse_library.DRAGPulse:
     """
     Generate a :class:`~.operations.pulse_library.DRAGPulse` that achieves the right
@@ -35,7 +42,13 @@ def rxy_drag_pulse(
     D_amp = motzoi
 
     return pulse_library.DRAGPulse(
-        G_amp=G_amp, D_amp=D_amp, phase=phi, port=port, duration=duration, clock=clock
+        G_amp=G_amp,
+        D_amp=D_amp,
+        phase=phi,
+        port=port,
+        duration=duration,
+        clock=clock,
+        reference_magnitude=reference_magnitude,
     )
 
 
@@ -48,6 +61,7 @@ def composite_square_pulse(  # pylint: disable=too-many-arguments
     virt_z_parent_qubit_clock: str,
     virt_z_child_qubit_phase: float,
     virt_z_child_qubit_clock: str,
+    reference_magnitude: float = None,
     t0: float = 0,
 ) -> pulse_library.SquarePulse:
     """
@@ -72,6 +86,9 @@ def composite_square_pulse(  # pylint: disable=too-many-arguments
         The phase shift in degrees applied to the child qubit.
     virt_z_child_qubit_clock
         The clock of which to shift the phase applied to the child qubit.
+    reference_magnitude
+        Scaling value and unit for the unitless amplitude. Uses settings in
+        hardware config if not provided.
     t0
         Time in seconds when to start the pulses relative to the start time
         of the Operation in the Schedule.
@@ -80,6 +97,7 @@ def composite_square_pulse(  # pylint: disable=too-many-arguments
     # Start the flux pulse
     composite_pulse = pulse_library.SquarePulse(
         amp=square_amp,
+        reference_magnitude=reference_magnitude,
         duration=square_duration,
         port=square_port,
         clock=square_clock,
@@ -110,6 +128,7 @@ def nv_spec_pulse_mw(
     amplitude: float,
     clock: str,
     port: str,
+    reference_magnitude: float = None,
 ) -> pulse_library.SkewedHermitePulse:
     """Generate hermite pulse for spectroscopy experiment.
 
@@ -129,6 +148,9 @@ def nv_spec_pulse_mw(
         Name of clock for frequency modulation of hermite pulse
     port
         Name of port where hermite pulse is applied
+    reference_magnitude
+        Scaling value and unit for the unitless amplitude. Uses settings in
+        hardware config if not provided.
 
     Returns
     -------
@@ -138,6 +160,7 @@ def nv_spec_pulse_mw(
     return pulse_library.SkewedHermitePulse(
         duration=duration,
         amplitude=amplitude,
+        reference_magnitude=reference_magnitude,
         skewness=0,
         phase=0,
         clock=clock,

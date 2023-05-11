@@ -10,7 +10,7 @@ import warnings
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import partial
-from typing import TYPE_CHECKING, Any, Callable, Literal, get_args
+from typing import TYPE_CHECKING, Any, Literal, get_args
 
 import numpy as np
 from zhinst.toolkit.helpers import Waveform
@@ -40,6 +40,8 @@ from quantify_scheduler.instrument_coordinator.components.generic import (
 from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     import pandas
 
     from quantify_scheduler.operations.operation import Operation
@@ -533,6 +535,10 @@ def _validate_schedule(schedule: Schedule) -> None:
                 "Absolute timing has not been determined "
                 + f"for the schedule '{schedule.name}'!"
             )
+    for op in schedule.operations.values():
+        for pulse_data in op.data["pulse_info"]:
+            if pulse_data.get("reference_magnitude", None) is not None:
+                raise NotImplementedError
 
     if any(op.has_voltage_offset for op in schedule.operations.values()):
         raise NotImplementedError(

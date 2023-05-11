@@ -66,6 +66,7 @@ from quantify_scheduler.operations.stitched_pulse import (
 from quantify_scheduler.operations.gate_library import Measure, Reset, X
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import (
+    ReferenceMagnitude,
     DRAGPulse,
     IdlePulse,
     RampPulse,
@@ -312,7 +313,7 @@ def baseband_square_pulse_schedule():
     )
     sched.add(
         SquarePulse(
-            amp=2.0,
+            amp=2.0 / 5.0,
             duration=2.5e-6,
             port="q0:mw",
             clock=BasebandClockResource.IDENTITY,
@@ -328,7 +329,7 @@ def real_square_pulse_schedule():
     sched.add(Reset("q0"))
     sched.add(
         SquarePulse(
-            amp=2.0,
+            amp=1.0,
             duration=5e-7,
             port="dummy_port_1",
             clock=BasebandClockResource.IDENTITY,
@@ -337,7 +338,7 @@ def real_square_pulse_schedule():
     )
     sched.add(
         SquarePulse(
-            amp=1.0,
+            amp=0.5,
             duration=7e-7,
             port="dummy_port_2",
             clock=BasebandClockResource.IDENTITY,
@@ -346,7 +347,7 @@ def real_square_pulse_schedule():
     )
     sched.add(
         SquarePulse(
-            amp=1.2,
+            amp=1.2 / 5.0,
             duration=9e-7,
             port="dummy_port_3",
             clock=BasebandClockResource.IDENTITY,
@@ -355,7 +356,7 @@ def real_square_pulse_schedule():
     )
     sched.add(
         SquarePulse(
-            amp=1.2,
+            amp=1.2 / 5.0,
             duration=9e-7,
             port="dummy_port_4",
             clock=BasebandClockResource.IDENTITY,
@@ -3152,3 +3153,19 @@ def test_too_long_waveform_raises2(
     assert (
         "waveform size" in error.value.args[0] or "sample limit" in error.value.args[0]
     )
+
+
+def test_set_reference_magnitude_raises(compile_config_basic_transmon_qblox_hardware):
+    sched = Schedule("amp_ref")
+    sched.add(
+        SquarePulse(
+            amp=0.5,
+            duration=20e-9,
+            reference_magnitude=ReferenceMagnitude(1.0, "V"),
+            port="q0:res",
+            clock="q0.ro",
+        )
+    )
+    compiler = SerialCompiler(name="compiler")
+    with pytest.raises(NotImplementedError):
+        _ = compiler.compile(sched, config=compile_config_basic_transmon_qblox_hardware)

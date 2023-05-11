@@ -4,6 +4,10 @@
 
 ### Breaking changes
 
+- Compilation - Introduced new `ReferenceMagnitude` parameter for pulses to allow specification of amplitudes and powers over different orders of magnitude (using variable attenuations, for example) (!652)
+  - Currently, only the user interface is implemented - changes to the backends will be made later (#413)
+  - The code is backwards compatible, i.e., all schedules remain valid, but pulse amplitudes are not backwards compatible and will need adjustment / re-calibrating
+
 ### Merged branches and closed issues
 
 - Compilation - Move `MixerCorrections` to `CompilationConfig.hardware_options` (!669)
