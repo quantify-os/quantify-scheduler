@@ -220,7 +220,7 @@ class TestGenericPulseStrategy:
         strategy.insert_qasm(qasm)
 
         # assert
-        line0 = ["", "set_awg_gain", "13107,0", "# setting gain for test_pulse"]
+        line0 = ["", "set_awg_gain", "32767,0", "# setting gain for test_pulse"]
         line1 = ["", "play", "0,1,4", "# play test_pulse (24 ns)"]
         assert qasm.instructions[0] == line0
         assert qasm.instructions[1] == line1
@@ -306,7 +306,7 @@ class TestStitchedSquarePulseStrategy:
             (
                 400e-9,
                 [
-                    ["", "set_awg_gain", "13107,0", "# setting gain for test_pulse"],
+                    ["", "set_awg_gain", "32767,0", "# setting gain for test_pulse"],
                     ["", "play", "0,1,400", ""],
                     ["", "set_awg_gain", "0,0", "# set to 0 at end of pulse"],
                 ],
@@ -314,7 +314,7 @@ class TestStitchedSquarePulseStrategy:
             (
                 1e-6,
                 [
-                    ["", "set_awg_gain", "13107,0", "# setting gain for test_pulse"],
+                    ["", "set_awg_gain", "32767,0", "# setting gain for test_pulse"],
                     ["", "play", "0,1,1000", ""],
                     ["", "set_awg_gain", "0,0", "# set to 0 at end of pulse"],
                 ],
@@ -322,7 +322,7 @@ class TestStitchedSquarePulseStrategy:
             (
                 1.2e-6,
                 [
-                    ["", "set_awg_gain", "13107,0", "# setting gain for test_pulse"],
+                    ["", "set_awg_gain", "32767,0", "# setting gain for test_pulse"],
                     ["", "play", "0,1,1000", ""],
                     ["", "play", "0,1,200", ""],
                     ["", "set_awg_gain", "0,0", "# set to 0 at end of pulse"],
@@ -331,7 +331,7 @@ class TestStitchedSquarePulseStrategy:
             (
                 2e-6,
                 [
-                    ["", "set_awg_gain", "13107,0", "# setting gain for test_pulse"],
+                    ["", "set_awg_gain", "32767,0", "# setting gain for test_pulse"],
                     ["", "move", "2,R0", "# iterator for loop with label stitch1"],
                     ["stitch1:", "", "", ""],
                     ["", "play", "0,1,1000", ""],
@@ -341,7 +341,7 @@ class TestStitchedSquarePulseStrategy:
             (
                 2.4e-6,
                 [
-                    ["", "set_awg_gain", "13107,0", "# setting gain for test_pulse"],
+                    ["", "set_awg_gain", "32767,0", "# setting gain for test_pulse"],
                     ["", "move", "2,R0", "# iterator for loop with label stitch1"],
                     ["stitch1:", "", "", ""],
                     ["", "play", "0,1,1000", ""],
@@ -353,7 +353,7 @@ class TestStitchedSquarePulseStrategy:
             (
                 1e-3,
                 [
-                    ["", "set_awg_gain", "13107,0", "# setting gain for test_pulse"],
+                    ["", "set_awg_gain", "32767,0", "# setting gain for test_pulse"],
                     ["", "move", "1000,R0", "# iterator for loop with label stitch1"],
                     ["stitch1:", "", "", ""],
                     ["", "play", "0,1,1000", ""],
@@ -431,7 +431,7 @@ class TestStaircasePulseStrategy:
                     ["ramp4:", "", "", ""],
                     ["", "set_awg_offs", "R0,R1", ""],
                     ["", "upd_param", "4", ""],
-                    ["", "add", "R0,1456,R0", "# next incr offs by 1456"],
+                    ["", "add", "R0,3640,R0", "# next incr offs by 3640"],
                     ["", "wait", "116", "# auto generated wait (116 ns)"],
                     ["", "loop", "R10,@ramp4", ""],
                     ["", "set_awg_offs", "0,0", "# return offset to 0 after staircase"],
@@ -452,7 +452,7 @@ class TestStaircasePulseStrategy:
                     ["ramp4:", "", "", ""],
                     ["", "set_awg_offs", "R1,R0", ""],
                     ["", "upd_param", "4", ""],
-                    ["", "add", "R0,1456,R0", "# next incr offs by 1456"],
+                    ["", "add", "R0,3640,R0", "# next incr offs by 3640"],
                     ["", "wait", "116", "# auto generated wait (116 ns)"],
                     ["", "loop", "R10,@ramp4", ""],
                     ["", "set_awg_offs", "0,0", "# return offset to 0 after staircase"],
@@ -473,7 +473,7 @@ class TestStaircasePulseStrategy:
                     ["ramp4:", "", "", ""],
                     ["", "set_awg_offs", "R0,R1", ""],
                     ["", "upd_param", "4", ""],
-                    ["", "add", "R0,1456,R0", "# next incr offs by 1456"],
+                    ["", "add", "R0,3640,R0", "# next incr offs by 3640"],
                     ["", "wait", "116", "# auto generated wait (116 ns)"],
                     ["", "loop", "R10,@ramp4", ""],
                     ["", "set_awg_offs", "0,0", "# return offset to 0 after staircase"],
@@ -487,14 +487,14 @@ class TestStaircasePulseStrategy:
                 "real",
                 [
                     ["", "set_awg_gain", "32767,32767", "# set gain to known value"],
-                    ["", "move", "4294954188,R0", "# keeps track of the offsets"],
+                    ["", "move", "4294934527,R0", "# keeps track of the offsets"],
                     ["", "move", "0,R1", "# zero for unused output path"],
                     ["", "", "", ""],
                     ["", "move", "12,R10", "# iterator for loop with label ramp4"],
                     ["ramp4:", "", "", ""],
                     ["", "set_awg_offs", "R0,R1", ""],
                     ["", "upd_param", "4", ""],
-                    ["", "add", "R0,3574,R0", "# next incr offs by 3574"],
+                    ["", "add", "R0,8936,R0", "# next incr offs by 8936"],
                     ["", "wait", "96", "# auto generated wait (96 ns)"],
                     ["", "loop", "R10,@ramp4", ""],
                     ["", "set_awg_offs", "0,0", "# return offset to 0 after staircase"],
@@ -508,14 +508,14 @@ class TestStaircasePulseStrategy:
                 "imag",
                 [
                     ["", "set_awg_gain", "32767,32767", "# set gain to known value"],
-                    ["", "move", "13107,R0", "# keeps track of the offsets"],
+                    ["", "move", "32767,R0", "# keeps track of the offsets"],
                     ["", "move", "0,R1", "# zero for unused output path"],
                     ["", "", "", ""],
                     ["", "move", "12,R10", "# iterator for loop with label ramp4"],
                     ["ramp4:", "", "", ""],
                     ["", "set_awg_offs", "R1,R0", ""],
                     ["", "upd_param", "4", ""],
-                    ["", "sub", "R0,3575,R0", "# next decr offs by 3575"],
+                    ["", "sub", "R0,8937,R0", "# next decr offs by 8937"],
                     ["", "wait", "96", "# auto generated wait (96 ns)"],
                     ["", "loop", "R10,@ramp4", ""],
                     ["", "set_awg_offs", "0,0", "# return offset to 0 after staircase"],

@@ -323,54 +323,32 @@ class QASMProgram:
         self.elapsed_time += number_of_times * (duration_ns + buffer_time_ns)
 
     def set_gain_from_amplitude(
-        self, voltage_path0: float, voltage_path1: float, operation: Optional[OpInfo]
+        self,
+        amplitude_path0: float,
+        amplitude_path1: float,
+        operation: Optional[OpInfo],
     ) -> None:
         """
-        Sets the gain such that a 1.0 in waveform memory corresponds to the specified
-        voltage. i.e. changes the full scale range.
+        Sets the gain such that a 1.0 in waveform memory corresponds to the full awg gain.
 
         Parameters
         ----------
-        voltage_path0
+        amplitude_path0
             Voltage to set on path0.
-        voltage_path1
+        amplitude_path1
             Voltage to set on path1.
         operation
             The operation for which this is done. Used for the exception messages.
-
-        Raises
-        ------
-        ValueError
-            Trying to set a voltage outside the max range of the instrument.
         """
-        max_awg_output_voltage = self.static_hw_properties.max_awg_output_voltage
-        if np.abs(voltage_path0) > max_awg_output_voltage:
-            raise ValueError(
-                f"Attempting to set amplitude to an invalid value. "
-                f"Maximum voltage range is +-"
-                f"{max_awg_output_voltage} V for "
-                f"{self.static_hw_properties.instrument_type}.\n"
-                f"{voltage_path0} V is set as amplitude for the I channel for "
-                f"{repr(operation)}"
-            )
-        if np.abs(voltage_path1) > max_awg_output_voltage:
-            raise ValueError(
-                f"Attempting to set amplitude to an invalid value. "
-                f"Maximum voltage range is +-"
-                f"{max_awg_output_voltage} V for "
-                f"{self.static_hw_properties.instrument_type}.\n"
-                f"{voltage_path1} V is set as amplitude for the Q channel for "
-                f"{repr(operation)}"
-            )
 
         awg_gain_path0_immediate = self.expand_from_normalised_range(
-            voltage_path0 / max_awg_output_voltage,
+            amplitude_path0,
             constants.IMMEDIATE_SZ_GAIN,
             "awg_gain_0",
             operation,
         )
         awg_gain_path1_immediate = self.expand_from_normalised_range(
-            voltage_path1 / max_awg_output_voltage,
+            amplitude_path1,
             constants.IMMEDIATE_SZ_GAIN,
             "awg_gain_1",
             operation,

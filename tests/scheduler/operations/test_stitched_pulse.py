@@ -120,6 +120,7 @@ def test_add_operations():
     assert len(pulse.data["pulse_info"]) == 4
     assert pulse.data["pulse_info"][0] == {
         "amp": 0.2,
+        "reference_magnitude": None,
         "clock": "q0.01",
         "duration": 1e-06,
         "phase": 0,
@@ -129,6 +130,7 @@ def test_add_operations():
     }
     assert pulse.data["pulse_info"][1] == {
         "amp": 0.5,
+        "reference_magnitude": None,
         "clock": "q0.01",
         "duration": 2.8e-08,
         "offset": 0,
@@ -170,6 +172,7 @@ def test_add_operations_insert_timing():
     assert len(pulse.data["pulse_info"]) == 4
     assert pulse.data["pulse_info"][0] == {
         "amp": 0.2,
+        "reference_magnitude": None,
         "clock": "q0.01",
         "duration": 1e-06,
         "phase": 0,
@@ -179,6 +182,7 @@ def test_add_operations_insert_timing():
     }
     assert pulse.data["pulse_info"][1] == {
         "amp": 0.5,
+        "reference_magnitude": None,
         "clock": "q0.01",
         "duration": 2.8e-08,
         "offset": 0,

@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
+import math
 
 from qcodes.instrument import InstrumentChannel
 from qcodes.instrument.base import InstrumentBase
@@ -149,6 +150,17 @@ class RxyDRAG(InstrumentChannel):
         )
         """Duration of the control pulse."""
 
+        self.add_submodule(
+            name="reference_magnitude",
+            submodule=ReferenceMagnitude(
+                parent=self,
+                name="reference_magnitude",
+                dBm=kwargs.get("reference_magnitude_dBm", math.nan),
+                V=kwargs.get("reference_magnitude_V", math.nan),
+                A=kwargs.get("reference_magnitude_A", math.nan),
+            ),
+        )
+
 
 class DispersiveMeasurement(InstrumentChannel):
     """
@@ -265,6 +277,91 @@ class DispersiveMeasurement(InstrumentChannel):
             initial_value=kwargs.get("acq_weight_type", "SSB"),
             vals=ro_acq_weight_type_validator,
         )
+        self.add_submodule(
+            name="reference_magnitude",
+            submodule=ReferenceMagnitude(
+                parent=self,
+                name="reference_magnitude",
+                dBm=kwargs.get("reference_magnitude_dBm", math.nan),
+                V=kwargs.get("reference_magnitude_V", math.nan),
+                A=kwargs.get("reference_magnitude_A", math.nan),
+            ),
+        )
+
+
+class ReferenceMagnitude(InstrumentChannel):
+    """
+    Submodule which describes an amplitude / power reference level, with respect to
+    which pulse amplitudes are defined. This can be specified in units of "V", "dBm"
+    or "A".
+
+    Only one unit parameter may have a defined value at a time. If we call the set
+    method for any given unit parameter, all other unit parameters will be
+    automatically set to nan.
+    """
+
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+        super().__init__(parent=parent, name=name)
+
+        self.dBm = Parameter(
+            "reference_magnitude_dBm",
+            instrument=self,
+            initial_value=kwargs.get("dBm", math.nan),
+            set_cmd=lambda value: self._set_parameter(value, "reference_magnitude_dBm"),
+            unit="dBm",
+            vals=Numbers(allow_nan=True),
+        )
+        self.V = Parameter(
+            "reference_magnitude_V",
+            instrument=self,
+            initial_value=kwargs.get("V", math.nan),
+            set_cmd=lambda value: self._set_parameter(value, "reference_magnitude_V"),
+            unit="V",
+            vals=Numbers(allow_nan=True),
+        )
+        self.A = Parameter(
+            "reference_magnitude_A",
+            instrument=self,
+            initial_value=kwargs.get("A", math.nan),
+            set_cmd=lambda value: self._set_parameter(value, "reference_magnitude_A"),
+            unit="A",
+            vals=Numbers(allow_nan=True),
+        )
+
+    def _set_parameter(self, value: float, parameter: str):
+        """
+        Set the value of one of the unit parameters, while setting all the other
+        unit parameters to nan.
+        """
+        for name, par in self.parameters.items():
+            if name == parameter:
+                par.cache.set(value)
+            else:
+                par.cache.set(math.nan)
+
+    def get_val_unit(self) -> Tuple[float, str]:
+        """
+        Get the value of the amplitude reference and its unit, if one is defined.
+        If a value is defined for more than one unit, raise an exception.
+
+        Returns
+        ----------
+        value
+            The value of the amplitude reference
+        unit
+            The unit in which this value is specified
+        """
+        value_and_unit = math.nan, ""
+        for param in self.parameters.values():
+            if not math.isnan(value := param()):
+                if math.isnan(value_and_unit[0]):
+                    value_and_unit = value, param.unit  # type: ignore
+                else:
+                    raise ValueError(
+                        "ReferenceMagnitude values defined for multiple units. Only "
+                        "one unit may be defined at a time."
+                    )
+        return value_and_unit
 
 
 class BasicTransmonElement(DeviceElement):
@@ -362,6 +459,9 @@ class BasicTransmonElement(DeviceElement):
                         "port": self.ports.microwave(),
                         "clock": f"{self.name}.01",
                         "duration": self.rxy.duration(),
+                        "reference_magnitude": pulse_library.ReferenceMagnitude.from_parameter(
+                            self.rxy.reference_magnitude
+                        ),
                     },
                     gate_info_factory_kwargs=[
                         "theta",
@@ -383,6 +483,9 @@ class BasicTransmonElement(DeviceElement):
                         "acq_channel": self.measure.acq_channel(),
                         "acq_protocol_default": "SSBIntegrationComplex",
                         "reset_clock_phase": self.measure.reset_clock_phase(),
+                        "reference_magnitude": pulse_library.ReferenceMagnitude.from_parameter(
+                            self.measure.reference_magnitude
+                        ),
                         "acq_weights_a": self.measure.acq_weights_a(),
                         "acq_weights_b": self.measure.acq_weights_b(),
                         "acq_weights_sampling_rate": self.measure.acq_weights_sampling_rate(),

@@ -7,7 +7,8 @@ These factories are used to take a parametrized representation of on a operation
 and use that to create an instance of the operation itself.
 """
 from __future__ import annotations
-from typing import List, Literal
+
+from typing import List, Literal, Optional
 import warnings
 
 import numpy as np
@@ -20,7 +21,11 @@ from quantify_scheduler.operations.acquisition_library import (
     Trace,
     TriggerCount,
 )
-from quantify_scheduler.operations.pulse_library import SquarePulse, ResetClockPhase
+from quantify_scheduler.operations.pulse_library import (
+    SquarePulse,
+    ReferenceMagnitude,
+    ResetClockPhase,
+)
 
 
 # pylint: disable=too-many-arguments
@@ -43,6 +48,7 @@ def dispersive_measurement(
         "SSBIntegrationComplex", "Trace", "NumericalWeightedIntegrationComplex"
     ] = "SSBIntegrationComplex",
     reset_clock_phase: bool = True,
+    reference_magnitude: Optional[ReferenceMagnitude] = None,
     acq_weights_a: List[complex] | np.ndarray | None = None,
     acq_weights_b: List[complex] | np.ndarray | None = None,
     acq_weights_sampling_rate: float | None = None,
@@ -71,6 +77,7 @@ def dispersive_measurement(
             duration=pulse_duration,
             port=port,
             clock=clock,
+            reference_magnitude=reference_magnitude,
         )
     else:
         # here we need to add support for SoftSquarePulse

@@ -4,17 +4,44 @@
 # pylint: disable= too-many-arguments, too-many-ancestors
 from __future__ import annotations
 
-from typing import List, Optional, Dict, Any, Union
+from typing import List, Optional, Dict, Any, Union, Literal
+from dataclasses import dataclass
 import warnings
 
 import numpy as np
 from numpy.typing import NDArray
-from qcodes import validators
+from qcodes import validators, InstrumentChannel
 
 from quantify_scheduler import Operation
 from quantify_scheduler.backends.qblox import constants as qblox_constants
 from quantify_scheduler.helpers.waveforms import area_pulses
 from quantify_scheduler.resources import BasebandClockResource
+
+
+@dataclass
+class ReferenceMagnitude:
+    """
+    Dataclass which describes an amplitude / power reference level, with respect to
+    which pulse amplitudes are defined. This can be specified in units of "V", "dBm"
+    or "A".
+    """
+
+    value: float
+    unit: Literal["V", "dBm", "A"]
+
+    @classmethod
+    def from_parameter(cls, parameter: InstrumentChannel):
+        """
+        Initialise this dataclass by taking the value and unit from an
+        ReferenceMagnitude QCoDeS InstrumentChannnel.
+        """
+        value, unit = parameter.get_val_unit()
+        if np.isnan(value):
+            return None
+        if unit not in (allowed_units := ["V", "dBm", "A"]):
+            raise ValueError(f"Invalid unit: {unit}. Allowed units: {allowed_units}")
+
+        return cls(value, unit)
 
 
 class ShiftClockPhase(Operation):
@@ -300,8 +327,9 @@ class RampPulse(Operation):
         amp: float,
         duration: float,
         port: str,
-        offset: float = 0,
         clock: str = BasebandClockResource.IDENTITY,
+        reference_magnitude: Optional[ReferenceMagnitude] = None,
+        offset: float = 0,
         t0: float = 0,
         data: Optional[dict] = None,
     ):
@@ -321,7 +349,7 @@ class RampPulse(Operation):
         Parameters
         ----------
         amp
-            Amplitude of the ramp envelope function.
+            Unitless amplitude of the ramp envelope function.
         duration
             The pulse duration in seconds.
         offset
@@ -331,6 +359,9 @@ class RampPulse(Operation):
         clock
             Clock used to modulate the pulse, by default a
             BasebandClock is used.
+        reference_magnitude
+            Scaling value and unit for the unitless amplitude. Uses settings in
+            hardware config if not provided.
         t0
             Time in seconds when to start the pulses relative
             to the start time
@@ -352,6 +383,7 @@ class RampPulse(Operation):
                         {
                             "wf_func": "quantify_scheduler.waveforms.ramp",
                             "amp": amp,
+                            "reference_magnitude": reference_magnitude,
                             "duration": duration,
                             "offset": offset,
                             "t0": t0,
@@ -391,6 +423,7 @@ class StaircasePulse(Operation):  # pylint: disable=too-many-ancestors
         duration: float,
         port: str,
         clock: str = BasebandClockResource.IDENTITY,
+        reference_magnitude: Optional[ReferenceMagnitude] = None,
         t0: float = 0,
         data: Optional[dict] = None,
     ):
@@ -400,9 +433,9 @@ class StaircasePulse(Operation):  # pylint: disable=too-many-ancestors
         Parameters
         ----------
         start_amp
-            Starting amplitude of the staircase envelope function.
+            Starting unitless amplitude of the staircase envelope function.
         final_amp
-            Final amplitude of the staircase envelope function.
+            Final unitless amplitude of the staircase envelope function.
         num_steps
             The number of plateaus.
         duration
@@ -411,6 +444,9 @@ class StaircasePulse(Operation):  # pylint: disable=too-many-ancestors
             Port of the pulse.
         clock
             Clock used to modulate the pulse.
+        reference_magnitude
+            Scaling value and unit for the unitless amplitude. Uses settings in
+            hardware config if not provided.
         t0
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule.
@@ -433,6 +469,7 @@ class StaircasePulse(Operation):  # pylint: disable=too-many-ancestors
                             "wf_func": "quantify_scheduler.waveforms.staircase",
                             "start_amp": start_amp,
                             "final_amp": final_amp,
+                            "reference_magnitude": reference_magnitude,
                             "num_steps": num_steps,
                             "duration": duration,
                             "t0": t0,
@@ -470,6 +507,7 @@ class SquarePulse(Operation):
         duration: float,
         port: str,
         clock: str = BasebandClockResource.IDENTITY,
+        reference_magnitude: Optional[ReferenceMagnitude] = None,
         phase: float = 0,
         t0: float = 0,
         data: Optional[dict] = None,
@@ -483,13 +521,16 @@ class SquarePulse(Operation):
         Parameters
         ----------
         amp
-            Amplitude of the envelope.
+            Unitless amplitude of the envelope.
         duration
             The pulse duration in seconds.
         port
             Port of the pulse, must be capable of playing a complex waveform.
         clock
             Clock used to modulate the pulse.
+        reference_magnitude
+            Scaling value and unit for the unitless amplitude. Uses settings in
+            hardware config if not provided.
         phase
             Phase of the pulse in degrees.
         t0
@@ -511,6 +552,7 @@ class SquarePulse(Operation):
                         {
                             "wf_func": "quantify_scheduler.waveforms.square",
                             "amp": amp,
+                            "reference_magnitude": reference_magnitude,
                             "duration": duration,
                             "phase": phase,
                             "t0": t0,
@@ -549,6 +591,7 @@ class SuddenNetZeroPulse(Operation):
         t_integral_correction: float,
         port: str,
         clock: str = BasebandClockResource.IDENTITY,
+        reference_magnitude: Optional[ReferenceMagnitude] = None,
         t0: float = 0,
         data: Optional[dict] = None,
     ):
@@ -561,9 +604,9 @@ class SuddenNetZeroPulse(Operation):
         Parameters
         ----------
         amp_A
-            amplitude of the main square pulse
+            unitless amplitude of the main square pulse
         amp_B
-            scaling correction for the final sample of the first square and first sample
+            unitless scaling correction for the final sample of the first square and first sample
             of the second square pulse.
         net_zero_A_scale
             amplitude scaling correction factor of the negative arm of the net-zero
@@ -578,6 +621,9 @@ class SuddenNetZeroPulse(Operation):
             Port of the pulse, must be capable of playing a complex waveform.
         clock
             Clock used to modulate the pulse.
+        reference_magnitude
+            Scaling value and unit for the unitless amplitude. Uses settings in
+            hardware config if not provided.
         t0
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule.
@@ -601,6 +647,7 @@ class SuddenNetZeroPulse(Operation):
                             "wf_func": "quantify_scheduler.waveforms.sudden_net_zero",
                             "amp_A": amp_A,
                             "amp_B": amp_B,
+                            "reference_magnitude": reference_magnitude,
                             "net_zero_A_scale": net_zero_A_scale,
                             "t_pulse": t_pulse,
                             "t_phi": t_phi,
@@ -689,6 +736,7 @@ class SoftSquarePulse(Operation):
         duration: float,
         port: str,
         clock: str,
+        reference_magnitude: Optional[ReferenceMagnitude] = None,
         t0: float = 0,
         data: Optional[dict] = None,
     ):
@@ -701,13 +749,16 @@ class SoftSquarePulse(Operation):
         Parameters
         ----------
         amp
-            Amplitude of the envelope.
+            Unitless amplitude of the envelope.
         duration
             The pulse duration in seconds.
         port
             Port of the pulse, must be capable of playing a complex waveform.
         clock
             Clock used to modulate the pulse.
+        reference_magnitude
+            Scaling value and unit for the unitless amplitude. Uses settings in
+            hardware config if not provided.
         t0
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule.
@@ -728,6 +779,7 @@ class SoftSquarePulse(Operation):
                         {
                             "wf_func": "quantify_scheduler.waveforms.soft_square",
                             "amp": amp,
+                            "reference_magnitude": reference_magnitude,
                             "duration": duration,
                             "t0": t0,
                             "clock": clock,
@@ -765,6 +817,7 @@ class ChirpPulse(Operation):  # pylint: disable=too-many-ancestors
         clock: str,
         start_freq: float,
         end_freq: float,
+        reference_magnitude: Optional[ReferenceMagnitude] = None,
         t0: float = 0,
         data: Optional[dict] = None,
     ):
@@ -774,7 +827,7 @@ class ChirpPulse(Operation):  # pylint: disable=too-many-ancestors
         Parameters
         ----------
         amp
-            Amplitude of the envelope.
+            Unitless amplitude of the envelope.
         duration
             Duration of the pulse.
         port
@@ -786,6 +839,9 @@ class ChirpPulse(Operation):  # pylint: disable=too-many-ancestors
             waveform is calculated, this may differ from the clock frequency.
         end_freq
             End frequency of the Chirp.
+        reference_magnitude
+            Scaling value and unit for the unitless amplitude. Uses settings in
+            hardware config if not provided.
         t0
             Shift of the start time with respect to the start of the operation.
         """
@@ -798,6 +854,7 @@ class ChirpPulse(Operation):  # pylint: disable=too-many-ancestors
                         {
                             "wf_func": "quantify_scheduler.waveforms.chirp",
                             "amp": amp,
+                            "reference_magnitude": reference_magnitude,
                             "duration": duration,
                             "start_freq": start_freq,
                             "end_freq": end_freq,
@@ -842,9 +899,10 @@ class DRAGPulse(Operation):
         G_amp: float,
         D_amp: float,
         phase: float,
-        clock: str,
         duration: float,
         port: str,
+        clock: str,
+        reference_magnitude: Optional[ReferenceMagnitude] = None,
         t0: float = 0,
         data: Optional[dict] = None,
     ):
@@ -854,9 +912,9 @@ class DRAGPulse(Operation):
         Parameters
         ----------
         G_amp
-            Amplitude of the Gaussian envelope.
+            Unitless amplitude of the Gaussian envelope.
         D_amp
-            Amplitude of the derivative component, the DRAG-pulse parameter.
+            Unitless amplitude of the derivative component, the DRAG-pulse parameter.
         duration
             The pulse duration in seconds.
         phase
@@ -865,6 +923,9 @@ class DRAGPulse(Operation):
             Clock used to modulate the pulse.
         port
             Port of the pulse, must be capable of carrying a complex waveform.
+        reference_magnitude
+            Scaling value and unit for the unitless amplitude. Uses settings in
+            hardware config if not provided.
         t0
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule.
@@ -887,6 +948,7 @@ class DRAGPulse(Operation):
                             "wf_func": "quantify_scheduler.waveforms.drag",
                             "G_amp": G_amp,
                             "D_amp": D_amp,
+                            "reference_magnitude": reference_magnitude,
                             "duration": duration,
                             "phase": phase,
                             "nr_sigma": 4,
@@ -919,6 +981,7 @@ def create_dc_compensation_pulse(
     port: str,
     t0: float = 0,
     amp: Optional[float] = None,
+    reference_magnitude: Optional[ReferenceMagnitude] = None,
     duration: Optional[float] = None,
     data: Optional[Dict[str, Any]] = None,
 ) -> SquarePulse:
@@ -938,7 +1001,7 @@ def create_dc_compensation_pulse(
         Resolution to calculate the enclosure of the
         pulses to calculate the area to compensate.
     amp
-        Desired amplitude of the DCCompensationPulse.
+        Desired unitless amplitude of the DCCompensationPulse.
         Leave to None to calculate the value for compensation,
         in this case you must assign a value to duration.
         The sign of the amplitude is ignored and adjusted
@@ -954,6 +1017,9 @@ def create_dc_compensation_pulse(
         belong to the specified port is ignored.
     clock
         Clock used to modulate the pulse.
+    reference_magnitude
+            Scaling value and unit for the unitless amplitude. Uses settings in
+            hardware config if not provided.
     phase
         Phase of the pulse in degrees.
     t0
@@ -1113,6 +1179,7 @@ class NumericalPulse(Operation):
         t_samples: Union[np.ndarray, list],
         port: str,
         clock: str,
+        reference_magnitude: Optional[ReferenceMagnitude] = None,
         t0: float = 0,
         interpolation: str = "linear",
         data: Optional[dict] = None,
@@ -1131,6 +1198,9 @@ class NumericalPulse(Operation):
             The port that the pulse should be played on.
         clock
             Clock used to (de)modulate the pulse.
+        reference_magnitude
+            Scaling value and unit for the unitless samples. Uses settings in
+            hardware config if not provided.
         t0
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule.
@@ -1167,6 +1237,7 @@ class NumericalPulse(Operation):
                             "wf_func": "quantify_scheduler.waveforms.interpolated_complex_waveform",
                             "samples": samples,
                             "t_samples": t_samples,
+                            "reference_magnitude": reference_magnitude,
                             "duration": duration,
                             "interpolation": interpolation,
                             "clock": clock,
@@ -1209,6 +1280,7 @@ class SkewedHermitePulse(Operation):
         phase: float,
         port: str,
         clock: str,
+        reference_magnitude: Optional[ReferenceMagnitude] = None,
         t0: float = 0,
         data: Optional[dict] = None,
     ):
@@ -1220,7 +1292,7 @@ class SkewedHermitePulse(Operation):
         duration
             The pulse duration in seconds.
         amplitude
-            Amplitude of the hermite pulse.
+            Unitless amplitude of the hermite pulse.
         skewness
             Skewness in the frequency space.
         phase
@@ -1229,6 +1301,9 @@ class SkewedHermitePulse(Operation):
             Clock used to modulate the pulse.
         port
             Port of the pulse, must be capable of carrying a complex waveform.
+        reference_magnitude
+            Scaling value and unit for the unitless amplitude. Uses settings in
+            hardware config if not provided.
         t0
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule. By default 0.
@@ -1250,6 +1325,7 @@ class SkewedHermitePulse(Operation):
                             "wf_func": "quantify_scheduler.waveforms.skewed_hermite",
                             "duration": duration,
                             "amplitude": amplitude,
+                            "reference_magnitude": reference_magnitude,
                             "skewness": skewness,
                             "phase": phase,
                             "clock": clock,

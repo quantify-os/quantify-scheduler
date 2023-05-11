@@ -24,7 +24,7 @@ from quantify_scheduler.operations.gate_library import (
     Y,
 )
 from quantify_scheduler.operations.pulse_factories import rxy_drag_pulse
-from quantify_scheduler.operations.pulse_library import IdlePulse
+from quantify_scheduler.operations.pulse_library import IdlePulse, ReferenceMagnitude
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schemas.examples.device_example_cfgs import (
     example_transmon_cfg,
@@ -508,4 +508,52 @@ def test_config_validation():
             "clock": "q0.01",
             "duration": 2e-08,
         },
+    )
+
+
+def test_set_reference_magnitude(mock_setup_basic_transmon):
+    """
+    Test if compilation using the BasicTransmonElement reproduces old behaviour.
+    """
+
+    sched = Schedule("Test schedule")
+
+    q2 = mock_setup_basic_transmon["q2"]
+    q3 = mock_setup_basic_transmon["q3"]
+    q2.rxy.reference_magnitude.V(0.5)
+    q2.measure.reference_magnitude.dBm(20)
+    q3.rxy.reference_magnitude.A(1e-3)
+
+    # define the resources
+    q2, q3 = ("q2", "q3")
+    sched.add(Reset(q2, q3))
+    sched.add(Rxy(90, 0, qubit=q2))
+    sched.add(Rxy(12, 0, qubit=q3))
+    sched.add(X(qubit=q2))
+    sched.add(Y(qubit=q2))
+    sched.add(Y90(qubit=q2))
+    sched.add(operation=CZ(qC=q2, qT=q3))
+    sched.add(Rxy(theta=90, phi=0, qubit=q2))
+    sched.add(Measure(q2, q3), label="M_q2_q3")
+
+    # test that all these operations compile correctly.
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    compiled_schedule = compile_circuit_to_device(
+        sched, device_cfg=quantum_device.generate_device_config()
+    )
+
+    assert compiled_schedule.operations["Rxy(theta=90, phi=0, qubit='q2')"][
+        "pulse_info"
+    ][0]["reference_magnitude"] == ReferenceMagnitude(0.5, "V")
+    assert compiled_schedule.operations["Rxy(theta=12, phi=0, qubit='q3')"][
+        "pulse_info"
+    ][0]["reference_magnitude"] == ReferenceMagnitude(1e-3, "A")
+    assert compiled_schedule.operations[
+        "Measure('q2','q3', acq_index=[0, 0], acq_protocol=\"None\", bin_mode=None)"
+    ]["pulse_info"][1]["reference_magnitude"] == ReferenceMagnitude(20, "dBm")
+    assert (
+        compiled_schedule.operations[
+            "Measure('q2','q3', acq_index=[0, 0], acq_protocol=\"None\", bin_mode=None)"
+        ]["pulse_info"][3]["reference_magnitude"]
+        is None
     )

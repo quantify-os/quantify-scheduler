@@ -627,6 +627,9 @@ def assign_pulse_and_acq_info_to_devices(
                     f"\n{repr(op_data)}."
                 ) from exc
 
+            if pulse_data.get("reference_magnitude", None) is not None:
+                raise NotImplementedError
+
             port = pulse_data["port"]
             clock = pulse_data["clock"]
 

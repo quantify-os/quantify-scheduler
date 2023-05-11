@@ -16,9 +16,10 @@ def test_short_long_ramp_pulse():
         {
             "wf_func": "quantify_scheduler.waveforms.ramp",
             "amp": 0.8,
+            "reference_magnitude": None,
             "duration": pytest.approx(1e-07),
             "offset": 0,
-            "t0": 0,
+            "t0": 0.0,
             "clock": "cl0.baseband",
             "port": "q0:res",
         }

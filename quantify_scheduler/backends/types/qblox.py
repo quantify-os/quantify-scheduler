@@ -35,7 +35,7 @@ class StaticHardwareProperties:
     """The type of instrument."""
     max_sequencers: int
     """The amount of sequencers available."""
-    max_awg_output_voltage: float
+    max_awg_output_voltage: Optional[float]
     """Maximum output voltage of the awg."""
     mixer_dc_offset_range: BoundedParameter
     """Specifies the range over which the dc offsets can be set that are used for mixer
