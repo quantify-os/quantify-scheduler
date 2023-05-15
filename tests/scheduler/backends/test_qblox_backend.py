@@ -995,7 +995,7 @@ def test_acquisitions_back_to_back(
     meas_op = sched.add(Measure("q0", acq_index=0))
     # Add another one too quickly
     sched.add(
-        Measure("q0", acq_index=1), ref_op=meas_op, ref_pt="start", rel_time=500e-9
+        Measure("q0", acq_index=1), ref_op=meas_op, ref_pt="start", rel_time=200e-9
     )
 
     with pytest.raises(ValueError) as error:
@@ -1006,7 +1006,7 @@ def test_acquisitions_back_to_back(
         )
 
     assert (
-        "Please ensure a minimum interval of 1000 ns between acquisitions"
+        "Please ensure a minimum interval of 300 ns between acquisitions"
         in error.value.args[0]
     )
 

@@ -30,7 +30,7 @@ GRID_TIME = 4  # ns
 """
 Clock period of the sequencers. All time intervals used must be multiples of this value.
 """
-MIN_TIME_BETWEEN_ACQUISITIONS = 1000  # ns
+MIN_TIME_BETWEEN_ACQUISITIONS = 300  # ns
 """Minimum time between two acquisitions to prevent FIFO errors."""
 SAMPLING_RATE = 1_000_000_000  # 1GS/s
 """Sampling rate of the Qblox control/readout instruments."""
