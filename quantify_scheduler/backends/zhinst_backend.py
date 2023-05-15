@@ -37,6 +37,9 @@ from quantify_scheduler.helpers.collections import (
 from quantify_scheduler.instrument_coordinator.components.generic import (
     DEFAULT_NAME as GENERIC_ICC_DEFAULT_NAME,
 )
+from quantify_scheduler.operations.stitched_pulse import (
+    convert_to_numerical_pulse,
+)
 from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 
 if TYPE_CHECKING:
@@ -540,11 +543,14 @@ def _validate_schedule(schedule: Schedule) -> None:
             if pulse_data.get("reference_magnitude", None) is not None:
                 raise NotImplementedError
 
-    if any(op.has_voltage_offset for op in schedule.operations.values()):
-        raise NotImplementedError(
-            "Compilation of operations containing DC voltage offset instructions is "
-            "not yet supported for Zurich Instruments."
-        )
+
+def _convert_stitched_pulses(schedule: Schedule) -> None:
+    """Convert any :class:`~quantify_scheduler.operations.stitched_pulse.StitchedPulse`
+    in the Schedule to a
+    :class:`~quantify_scheduler.operations.pulse_library.NumericalPulse`"""
+    for ref, op in schedule.operations.items():
+        if op.has_voltage_offset:
+            schedule.operations[ref] = convert_to_numerical_pulse(op)
 
 
 def apply_waveform_corrections(
@@ -941,6 +947,8 @@ def compile_backend(
         hardware_cfg = config
 
     _validate_schedule(schedule)
+
+    _convert_stitched_pulses(schedule)
 
     if "latency_corrections" in hardware_cfg:
         # Important: currently only used to validate the input, should also be

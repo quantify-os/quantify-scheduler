@@ -12,6 +12,8 @@
 ### Merged branches and closed issues
 
 - Compilation - Move `MixerCorrections` to `CompilationConfig.hardware_options` (!669)
+- Operations - The function `convert_to_numerical_pulse` has been added, which can be used to convert `StitchedPulse` to `NumericalPulse` (!665).
+  - In addition, this function is called in the pulse diagram plotting functions and the ZI LabOne backend to allow resp. plotting and compiling of `StitchedPulse`.
 
 ## 0.13.0 (2023-05-05)
 

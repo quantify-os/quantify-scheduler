@@ -28,6 +28,9 @@ import quantify_scheduler.operations.pulse_library as pl
 from quantify_core.visualization.SI_utilities import set_xlabel, set_ylabel
 from quantify_scheduler.helpers.importers import import_python_object_from_string
 from quantify_scheduler.operations.acquisition_library import AcquisitionOperation
+from quantify_scheduler.operations.stitched_pulse import (
+    convert_to_numerical_pulse,
+)
 from quantify_scheduler.waveforms import modulate_wave
 
 if TYPE_CHECKING:
@@ -145,6 +148,11 @@ def pulse_diagram_plotly(
 
     for pulse_idx, schedulable in enumerate(schedule.schedulables.values()):
         operation = schedule.operations[schedulable["operation_repr"]]
+
+        if operation.has_voltage_offset:
+            operation = convert_to_numerical_pulse(
+                operation, scheduled_at=schedulable["abs_time"]
+            )
 
         for pulse_info in operation["pulse_info"]:
             if not validate_operation_data(
@@ -368,8 +376,13 @@ def sample_schedule(
         ports_length = len(port_map)
 
     min_x, max_x = x_range
-    for pls_idx, schedulable in enumerate(schedule.schedulables.values()):
+    for schedulable in schedule.schedulables.values():
         operation = schedule.operations[schedulable["operation_repr"]]
+
+        if operation.has_voltage_offset:
+            operation = convert_to_numerical_pulse(
+                operation, scheduled_at=schedulable["abs_time"]
+            )
 
         for pulse_info in operation["pulse_info"]:
             if not validate_operation_data(
@@ -403,6 +416,11 @@ def sample_schedule(
     for pls_idx, schedulable in enumerate(schedule.schedulables.values()):
         operation = schedule.operations[schedulable["operation_repr"]]
         logger.debug(f"{pls_idx}: {operation}")
+
+        if operation.has_voltage_offset:
+            operation = convert_to_numerical_pulse(
+                operation, scheduled_at=schedulable["abs_time"]
+            )
 
         for pulse_info in operation["pulse_info"]:
             if not validate_operation_data(

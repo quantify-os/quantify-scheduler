@@ -296,13 +296,13 @@ def interpolated_complex_waveform(
     t_samples: np.ndarray,
     interpolation: str = "linear",
     bounds_error: Optional[bool] = False,
-    fill_value: np.ndarray | float | Literal["extrapolate"] = "extrapolate",
+    fill_value: np.ndarray | float | Literal["extrapolate"] = 0.0,
     **kwargs,
 ) -> np.ndarray:
     """
-    Wrapper function around `scipy.interpolate.interp1d`, which takes the array of
-    (complex) samples, interpolates the real and imaginary parts separately and returns
-    the interpolated values at the specified times.
+    Wrapper function around :class:`scipy.interpolate.interp1d`, which takes the
+    array of (complex) samples, interpolates the real and imaginary parts
+    separately and returns the interpolated values at the specified times.
 
     Parameters
     ----------
@@ -313,8 +313,16 @@ def interpolated_complex_waveform(
     t_samples
         An array of values specifying the corresponding times at which the `samples`
         are evaluated.
+    bounds_error
+        This argument is passed directly to ``scipy.interpolate.interp1d``. If
+        True, an ValueError is ranged when this function tries to sample values
+        outside of the given `t` array.
+    fill_value
+        This argument is passed directly to ``scipy.interpolate.interp1d``. When
+        `bounds_error` is False, this argument controls what value is returned
+        when the function samples outside of the bounds of the `t` array.
     kwargs
-        Optional keyword arguments to pass to `scipy.interpolate.interp1d`.
+        Optional keyword arguments to pass to ``scipy.interpolate.interp1d``.
 
     Returns
     -------
