@@ -18,6 +18,7 @@ from quantify_scheduler.backends.graph_compilation import (
 )
 from quantify_scheduler.backends.qblox import compiler_container, constants, helpers
 from quantify_scheduler.operations.pulse_factories import long_square_pulse
+from quantify_scheduler.operations.stitched_pulse import StitchedPulse
 
 
 def _get_square_pulses_to_replace(schedule: Schedule) -> Dict[str, List[int]]:
@@ -80,11 +81,16 @@ def _replace_long_square_pulses(
     """
     schedule = deepcopy(schedule)
     for ref, square_pulse_idx_to_replace in pulse_idx_map.items():
+        # Below, we replace entries in-place in a list that we loop over. The
+        # indices here are the entries to be replaced. We sort such that popping
+        # from the end returns indices in descending order.
+        square_pulse_idx_to_replace.sort()
+
         operation = schedule.operations[ref]
+
         while square_pulse_idx_to_replace:
-            pulse_info = operation.data["pulse_info"].pop(
-                square_pulse_idx_to_replace.pop()
-            )
+            idx = square_pulse_idx_to_replace.pop()
+            pulse_info = operation.data["pulse_info"].pop(idx)
             new_square_pulse = long_square_pulse(
                 amp=pulse_info["amp"],
                 duration=pulse_info["duration"],
@@ -93,6 +99,11 @@ def _replace_long_square_pulses(
                 t0=pulse_info["t0"],
             )
             operation.add_pulse(new_square_pulse)
+
+            # To not break __str__ in some cases, the operation type must be a
+            # StitchedPulse.
+            if idx == 0 and not (operation.valid_acquisition or operation.valid_gate):
+                schedule.operations[ref] = StitchedPulse(operation.data["pulse_info"])
     return schedule
 
 

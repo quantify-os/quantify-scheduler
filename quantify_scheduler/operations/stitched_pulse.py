@@ -6,11 +6,12 @@ from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, List
 
-from numpy import isclose
+import numpy as np
 
 from quantify_scheduler.backends.qblox import constants as qblox_constants
+from quantify_scheduler.backends.qblox.helpers import generate_waveform_data
 from quantify_scheduler.operations.operation import Operation
-from quantify_scheduler.operations.pulse_library import VoltageOffset
+from quantify_scheduler.operations.pulse_library import NumericalPulse, VoltageOffset
 
 
 class StitchedPulse(Operation):
@@ -80,6 +81,103 @@ class StitchedPulse(Operation):
             if pulse_info["port"] != port or pulse_info["clock"] != clock:
                 return False
         return True
+
+
+def convert_to_numerical_pulse(
+    operation: Operation,
+    scheduled_at: float = 0.0,
+    sampling_rate: float = 1e9,
+) -> Operation:
+    """Convert an operation with pulses and voltage offsets to a
+    :class:`~.NumericalPulse`. If the operation also contains gate_info and/or
+    acquisition_info, the original operation type is returned with only the
+    pulse_info replaced by that of a NumericalPulse.
+
+    The :class:`~.StitchedPulse`, and possibly other pulses, can contain descriptions
+    for DC voltage offsets in the pulse info list. Not all functionality in
+    :mod:`quantify_scheduler` supports such operations. For the cases where DC offset
+    operations are not supported, this function can be used to convert the operation to
+    a :class:`~.NumericalPulse`.
+
+    Parameters
+    ----------
+    operation : Operation
+        The operation to be converted.
+    scheduled_at : float, optional
+        The scheduled play time of the operation. The resulting NumericalPulse can be
+        sampled from this time until the end of its duration. By default 0.0.
+    sampling_rate : float, optional
+        The rate with which to sample the input operation. By default 1e9 (1 GHz).
+
+    Returns
+    -------
+    converted_operation : Operation
+        The converted operation containing the sampled pulse information of the input
+        operation. If the original operation only contained pulse_info and no
+        gate_info or acquisition_info, a NumericalPulse is returned. Otherwise,
+        the input type is returned with the pulse_info replaced by that of a
+        NumericalPulse.
+    """
+    if not operation.valid_pulse:
+        return operation
+
+    pulse_t0 = min(p_i["t0"] for p_i in operation["pulse_info"])
+    # Round to nanoseconds, to avoid rounding errors.
+    timestamps = np.round(
+        np.arange(round(operation.duration * sampling_rate) + 1) / sampling_rate
+        + pulse_t0,
+        9,
+    )
+
+    waveform = np.zeros_like(timestamps).astype(complex)
+
+    # First set all offsets
+    for pulse_info in sorted(operation["pulse_info"], key=lambda inf: inf["t0"]):
+        if "offset_path_0" not in pulse_info or "offset_path_1" not in pulse_info:
+            continue
+
+        t0 = round(pulse_info["t0"], 9)
+
+        if np.isclose(pulse_info["duration"], 0, atol=5e-10):
+            # Offset operations with "0" duration at the end of the pulse are
+            # possible; we ignore these.
+            if round(operation.duration, 9) == t0:
+                continue
+            time_idx = np.where(timestamps >= t0)
+        else:
+            t1 = round(pulse_info["t0"] + pulse_info["duration"], 9)
+            time_idx = np.where((timestamps >= t0) & (timestamps < t1))
+        waveform[time_idx] = (
+            pulse_info["offset_path_0"] + 1j * pulse_info["offset_path_1"]
+        )
+
+    # Then add the pulses
+    for pulse_info in operation["pulse_info"]:
+        if not pulse_info["wf_func"]:
+            continue
+        waveform_data = generate_waveform_data(
+            data_dict=pulse_info,
+            sampling_rate=sampling_rate,
+        )
+        t0, t1 = round(pulse_info["t0"], 9), round(
+            pulse_info["t0"] + pulse_info["duration"], 9
+        )
+        time_idx = np.where((timestamps >= t0) & (timestamps < t1))
+        waveform[time_idx] += waveform_data
+
+    num_pulse = NumericalPulse(
+        samples=waveform,
+        t_samples=timestamps + scheduled_at,
+        port=operation["pulse_info"][0]["port"],
+        clock=operation["pulse_info"][0]["clock"],
+        t0=pulse_t0,
+    )
+    if operation.valid_acquisition or operation.valid_gate:
+        converted_op = deepcopy(operation)  # Do not modify the original operation
+        converted_op.data["pulse_info"] = num_pulse.data["pulse_info"]
+        return converted_op
+    else:
+        return num_pulse
 
 
 @dataclass
@@ -365,11 +463,11 @@ class StitchedPulseBuilder:
                 continue
 
             this_end = offset_info.t0 + (offset_info.duration or 0.0)
-            if isclose(this_end, self.operation_end):
+            if np.isclose(this_end, self.operation_end):
                 background = (0.0, 0.0)
             # Reset if the next offset's start does not overlap with the current
             # offset's end, or if the current offset is the last one
-            if i + 1 >= len(self._offsets) or not isclose(
+            if i + 1 >= len(self._offsets) or not np.isclose(
                 self._offsets[i + 1].t0, this_end
             ):
                 offset_ops.append(
@@ -379,7 +477,7 @@ class StitchedPulseBuilder:
                 )
 
         # If this wasn't done yet, add a reset to 0 at the end of the StitchedPulse
-        if not (isclose(background[0], 0) and isclose(background[1], 0)):
+        if not (np.isclose(background[0], 0) and np.isclose(background[1], 0)):
             offset_ops.append(
                 create_operation_from_info(
                     _VoltageOffsetInfo(0.0, 0.0, t0=self.operation_end)

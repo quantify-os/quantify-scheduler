@@ -1,9 +1,11 @@
 """Tests for the stitched_pulse module."""
+import numpy as np
 import pytest
 
 from quantify_scheduler.operations.acquisition_library import Trace
 from quantify_scheduler.operations.gate_library import Rxy
 from quantify_scheduler.operations.operation import Operation
+from quantify_scheduler.operations.pulse_factories import long_ramp_pulse
 from quantify_scheduler.operations.pulse_library import (
     RampPulse,
     SquarePulse,
@@ -12,6 +14,7 @@ from quantify_scheduler.operations.pulse_library import (
 from quantify_scheduler.operations.stitched_pulse import (
     StitchedPulse,
     StitchedPulseBuilder,
+    convert_to_numerical_pulse,
 )
 
 
@@ -208,3 +211,56 @@ def test_add_operations_insert_timing():
         "t0": 6e-7,
         "wf_func": None,
     }
+
+
+def test_convert_to_numerical():
+    pulse = long_ramp_pulse(
+        amp=0.5, duration=1e-4, port="some_port", clock="some_clock", offset=-0.25
+    )
+    num_pulse = convert_to_numerical_pulse(pulse)
+
+    assert (
+        num_pulse.data["pulse_info"][0]["wf_func"]
+        == "quantify_scheduler.waveforms.interpolated_complex_waveform"
+    )
+    # Last point can be off
+    assert np.isclose(
+        num_pulse.data["pulse_info"][0]["samples"][:-1],
+        np.linspace(-0.25, 0.25, 100_001)[:-1],
+    ).all()
+    assert np.isclose(
+        num_pulse.data["pulse_info"][0]["t_samples"], np.linspace(0, 1e-4, 100_001)
+    ).all()
+    assert num_pulse.data["pulse_info"][0]["duration"] == 1e-4
+    assert num_pulse.data["pulse_info"][0]["interpolation"] == "linear"
+    assert num_pulse.data["pulse_info"][0]["clock"] == "some_clock"
+    assert num_pulse.data["pulse_info"][0]["port"] == "some_port"
+    assert num_pulse.data["pulse_info"][0]["t0"] == 0.0
+
+
+@pytest.mark.parametrize(
+    "not_a_pulse", [Trace(1e-6, "q0:mw", "q0.ro"), Rxy(0.5, 0.1, "q0")]
+)
+def test_convert_to_numerical_does_nothing(not_a_pulse):
+    converted_op = convert_to_numerical_pulse(not_a_pulse)
+    assert converted_op == not_a_pulse
+
+
+def test_convert_to_numerical_mixed_operation():
+    pulse = long_ramp_pulse(
+        amp=0.5, duration=1e-4, port="some_port", clock="some_clock", offset=-0.25
+    )
+    # Add some mock gate_info to make sure the type does not get converted
+    dummy_gate_info = {
+        "unitary": [[1, 0], [0, 1]],
+        "operation_type": "Example",
+        "qubits": ["q0"],
+        "symmetric": False,
+        "tex": r"example",
+        "plot_func": None,
+    }
+    pulse.data["gate_info"] = dummy_gate_info
+    num_pulse = convert_to_numerical_pulse(pulse)
+
+    assert isinstance(num_pulse, StitchedPulse)
+    assert num_pulse.data["gate_info"] == dummy_gate_info
