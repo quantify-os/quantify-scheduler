@@ -7,6 +7,7 @@
 - Compilation - Introduced new `ReferenceMagnitude` parameter for pulses to allow specification of amplitudes and powers over different orders of magnitude (using variable attenuations, for example) (!652)
   - Currently, only the user interface is implemented - changes to the backends will be made later (#413)
   - The code is backwards compatible, i.e., all schedules remain valid, but pulse amplitudes are not backwards compatible and will need adjustment / re-calibrating
+- Qblox backend - Lowering the minimum time between acquisitions to 300 ns (!676, #369)
 
 ### Merged branches and closed issues
 
@@ -23,7 +24,7 @@
 ### Breaking changes
 
 - Deprecation - Deprecated code that had been scheduled to be removed after version 0.12 has been removed. The deprecated code suggestions have been updated (!667).
-- Qblox backend - Markers will not be pulled high at the start of sequences anymore. Removed MarkerConfiguration from the Qblox backend. Moved output_map to StaticHardwareProperties, the RF output switches are controlled by the output_map. (!1081)
+- Qblox backend - Markers will not be pulled high at the start of sequences anymore; removed `MarkerConfiguration` from the Qblox backend; moved `output_map` to `StaticHardwareProperties`, the RF output switches are controlled by the `output_map` (!662)
 - Qblox backend - Deprecate the `instruction_generated_pulses_enabled` hardware configuration setting, as well as the `StitchedSquarePulseStrategy` and `StaircasePulseStrategy`. The newly introduced `StitchedPulse`, as well as the helper functions in `quantify_scheduler.pulse_factories` can be used instead. `SquarePulse`s with a duration >1 microsecond (a constant in the Qblox backend) are compiled to AWG offset instructions (!637).
 
 ### Merged branches and closed issues
