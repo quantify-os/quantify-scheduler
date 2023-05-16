@@ -761,6 +761,8 @@ class SerialCompiler(QuantifyCompiler):
         # in the future CompiledSchedule will likely become an attribute of a
         # single Schedule class, see
         # also https://gitlab.com/quantify-os/quantify-scheduler/-/issues/311
+        if isinstance(schedule, CompiledSchedule):
+            return schedule
         return CompiledSchedule(schedule)
 
 
