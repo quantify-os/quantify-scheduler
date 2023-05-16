@@ -12,8 +12,13 @@ import networkx as nx
 from matplotlib.axes import Axes
 
 from quantify_scheduler import Schedule
-from quantify_scheduler.backends.graph_compilation import QuantifyCompiler, SimpleNode
+from quantify_scheduler.backends.graph_compilation import (
+    QuantifyCompiler,
+    SerialCompiler,
+    SimpleNode,
+)
 from quantify_scheduler.operations.gate_library import Reset
+from quantify_scheduler.schedules.schedule import CompiledSchedule
 
 
 # pylint: disable=unused-argument
@@ -71,3 +76,24 @@ def test_draw_backend():
 
     ax = quantify_compilation.draw()
     assert isinstance(ax, Axes)
+
+
+def test_compiled_schedule_invariance(mock_setup_basic_transmon_with_standard_params):
+    """If the last compilation step returns an instance of CompiledSchedule (also
+    inherited), use this instance instead of creating a new CompiledSchedule.
+
+    This test skips the compilation step and passes the CompiledSchedule directly
+    to the compilation.
+    """
+    mock_setup = mock_setup_basic_transmon_with_standard_params
+    schedule = Schedule("test_schedule")
+    _ = schedule.add(Reset("q0"))
+
+    class InheritedFromCompiledSchedule(CompiledSchedule):
+        pass
+
+    compiled_schedule = SerialCompiler("test", mock_setup["quantum_device"]).compile(
+        InheritedFromCompiledSchedule(schedule)
+    )
+    assert isinstance(compiled_schedule, CompiledSchedule)
+    assert isinstance(compiled_schedule, InheritedFromCompiledSchedule)
