@@ -1,10 +1,15 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Python inspect helper functions."""
+from __future__ import annotations
+
 import inspect
+import os
+import subprocess as sp  # nosec B404
 import sys
+from pathlib import Path
 from types import ModuleType
-from typing import Any, Dict, Type
+from typing import Any, Type, Union
 
 
 def get_classes(*modules: ModuleType) -> Dict[str, Type[Any]]:
@@ -40,3 +45,87 @@ def get_classes(*modules: ModuleType) -> Dict[str, Type[Any]]:
             and member.__module__ == module_name,  # pylint: disable=cell-var-from-loop
         )
     return dict(classes)
+
+
+def make_uml_diagram(
+    obj_to_plot: Union[ModuleType, Type[Any]],
+    options: list[str],
+) -> str:
+    """
+    Generates a UML diagram of a given module or class.
+    This function is a wrapper of `pylint.pyreverse`.
+
+    Parameters
+    ----------
+    obj_to_plot
+        The module or class to visualize
+    options
+        A string containing the plotting options for pyreverse
+
+    Returns
+    -------
+    :
+        The name of the generated `png` image
+    """
+    basic_options = ["--colorized", "-m", "n"]
+
+    sp_args = {"stdout": sp.DEVNULL, "stderr": sp.STDOUT}
+    sp_err = f"Something went wrong in the plotting backend. Please make sure the provided options have the correct syntax: {options}"
+
+    if inspect.ismodule(obj_to_plot):
+        abs_module_path = Path(obj_to_plot.__file__).parent
+
+        try:
+            sp.run(  # nosec B603
+                [
+                    "pyreverse",
+                    "--only-classnames",
+                    *basic_options,
+                    *options,
+                    abs_module_path,
+                ],
+                **sp_args,
+            )
+        except Exception:
+            print(sp_err)
+
+        diagram_name = f"{abs_module_path.name}.png"
+        sp.run(  # nosec B603
+            ["dot", "-Tpng", "classes.dot", "-o", diagram_name], check=True
+        )
+        os.remove("classes.dot")
+        os.remove("packages.dot")
+
+    elif inspect.isclass(obj_to_plot):
+        class_module_str = obj_to_plot.__module__
+        class_name_str = obj_to_plot.__name__
+        class_path_str = f"{class_module_str}.{class_name_str}"
+
+        class_module = sys.modules[class_module_str]
+        repo_path = str(Path(class_module.__file__).parent)
+
+        try:
+            sp.run(  # nosec B603
+                [
+                    "pyreverse",
+                    *basic_options,
+                    *options,
+                    "-c",
+                    class_path_str,
+                    repo_path,
+                ],
+                **sp_args,
+            )
+        except Exception:
+            print(sp_err)
+
+        diagram_name = f"{class_name_str}.png"
+        sp.run(  # nosec B603
+            ["dot", "-Tpng", f"{class_path_str}.dot", "-o", diagram_name], check=True
+        )
+        os.remove(f"{class_path_str}.dot")
+
+    else:
+        raise TypeError("Argument must be either a module or a class")
+
+    return diagram_name

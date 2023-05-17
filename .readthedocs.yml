@@ -14,10 +14,11 @@ sphinx:
 # see https://github.com/readthedocs/readthedocs.org/issues/10290
 build:
   os: ubuntu-22.04
+  apt_packages:
+    - graphviz
   tools:
     python: "3.9"
-
-
+    
 # Optionally set the version of Python and requirements required to build your docs
 python:
   install:

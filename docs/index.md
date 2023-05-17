@@ -17,6 +17,7 @@ tutorials/Operations*
 tutorials/qblox/index
 tutorials/zhinst/index
 examples/deprecated
+examples/UML_class_diagrams
 contributing
 authors
 changelog

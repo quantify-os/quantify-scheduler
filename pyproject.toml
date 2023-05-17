@@ -72,6 +72,7 @@ docs = [
     "jupyter_sphinx>=0.4.0",
     "jupytext",
     "myst-nb",
+    "pylint",
     "rich[jupyter]",
     "scanpydoc",
     "sphinx-autoapi",
@@ -90,7 +91,6 @@ dev = [
     "pre-commit",
     "pre-commit-hooks", # common hooks for git repos
     "prospector",
-    "pylint",
     "pyright",  # type checker
     # Pytest-cov is used to generage test coverage reports, which is rather a development than testing requirement
     "pytest-cov",
