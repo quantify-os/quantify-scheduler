@@ -15,7 +15,6 @@ mystnb:
 # Make output easier to read
 from rich import pretty
 pretty.install()
-
 ```
 
 # Compilers
@@ -44,47 +43,38 @@ For this we refer to the {ref}`section on execution <sec-user-guide-execution>` 
 First, we set up a mock setup and create a simple schedule that we want to compile.
 
 ```{code-cell}
+import numpy as np
+from quantify_scheduler.device_under_test.mock_setup import set_up_mock_transmon_setup, set_standard_params_transmon
+from quantify_scheduler.schedules.timedomain_schedules import echo_sched
 
-    import numpy as np
-    from quantify_scheduler.device_under_test.mock_setup import set_up_mock_transmon_setup, set_standard_params_transmon
-    from quantify_scheduler.schedules.timedomain_schedules import echo_sched
+# instantiate the instruments of the mock setup
+mock_setup = set_up_mock_transmon_setup()
 
-    # instantiate the instruments of the mock setup
-    mock_setup = set_up_mock_transmon_setup()
+# provide some sensible values to allow compilation without errors
+set_standard_params_transmon(mock_setup)
 
-    # provide some sensible values to allow compilation without errors
-    set_standard_params_transmon(mock_setup)
-
-
-    echo_schedule = echo_sched(times=np.arange(0, 60e-6, 1.5e-6), qubit="q0", repetitions=1024)
-
+echo_schedule = echo_sched(times=np.arange(0, 60e-6, 1.5e-6), qubit="q0", repetitions=1024)
 ```
 
 Next, we retrieve the {class}`~.CompilationConfig` from the quantum device and see for which compilation backend this is suitable.
 In the current example we have a simple {class}`~.backends.graph_compilation.SerialCompiler` that is used to do different compilation passes as a linear chain.
 
 ```{code-cell}
+quantum_device = mock_setup["quantum_device"]
+config = quantum_device.generate_compilation_config()
 
-
-    quantum_device = mock_setup["quantum_device"]
-    config = quantum_device.generate_compilation_config()
-
-    print(config.backend)
-
-
+print(config.backend)
 ```
 
 We can then instantiate the compiler and compile the program.
 
 ```{code-cell}
-
 from quantify_scheduler.backends.graph_compilation import SerialCompiler
 
 compiler = SerialCompiler(name="Device compile")
 comp_sched = compiler.compile(schedule=echo_schedule, config=config)
 
 comp_sched
-
 ```
 
 ## Understanding the structure of compilation
@@ -96,9 +86,7 @@ Here we show the compilation structure for several commonly used compilers.
 To do this, we will use the example configuration files of the different compilers and then use the quantum device to generate the relevant {class}`~.CompilationConfig` s.
 Note that in the future we want to improve how the hardware config is managed so one does not need to set a custom dictionary to the hardware config parameter of the ``quantum_device`` object.
 
-
 ```{code-cell}
-
 from quantify_scheduler.schemas.examples import utils
 
 QBLOX_HARDWARE_MAPPING = utils.load_json_example_scheme("qblox_test_mapping.json")
@@ -111,21 +99,16 @@ qblox_cfg = quantum_device.generate_compilation_config()
 
 quantum_device.hardware_config(ZHINST_HARDWARE_MAPPING)
 zhinst_cfg = quantum_device.generate_compilation_config()
-
 ```
 
 ```{code-cell}
-
 from quantify_scheduler.backends import SerialCompiler
 
-
-
-# constructing graph is normally done when at compile time as it
-# requires information from the compilation config.
+# Constructing graph is normally done when at compile time as it
+# requires information from the compilation config
 
 dev_compiler = SerialCompiler(name="Device compiler")
 dev_compiler.construct_graph(dev_cfg)
-
 
 qblox_compiler = SerialCompiler(name="Qblox compiler")
 qblox_compiler.construct_graph(qblox_cfg)
@@ -133,11 +116,8 @@ qblox_compiler.construct_graph(qblox_cfg)
 zhinst_compiler = SerialCompiler(name="Zhinst compiler")
 zhinst_compiler.construct_graph(zhinst_cfg)
 
-
-
-
 import matplotlib.pyplot as plt
-f, axs = plt.subplots(1,3, figsize=(16,7))
+fig, axs = plt.subplots(1,3, figsize=(16,7))
 
 # Show the graph of the currently included compilers
 dev_compiler.draw(axs[0])
@@ -145,7 +125,5 @@ axs[0].set_title("Device Backend")
 qblox_compiler.draw(axs[1])
 axs[1].set_title("Qblox Backend")
 zhinst_compiler.draw(axs[2])
-axs[2].set_title("Zhinst Backend")
-f
-
+axs[2].set_title("Zhinst Backend");
 ```
