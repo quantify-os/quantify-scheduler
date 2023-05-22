@@ -579,3 +579,48 @@ def test_incompatible_acquisition_protocols(mock_setup_basic_nv):
     acquired_data = Dataset({0: data_array})
     with pytest.raises(NotImplementedError):
         dark_esr_gettable.process_acquired_data(acquired_data, acq_metadata, 10)
+
+
+def test_no_hardware_cfg_raises(mock_setup_basic_transmon):
+    meas_ctrl = mock_setup_basic_transmon["meas_ctrl"]
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+
+    qubit = quantum_device.get_element("q0")
+
+    # manual parameter for testing purposes
+    ro_freq = ManualParameter("ro_freq", initial_value=5e9, unit="Hz")
+
+    schedule_kwargs = {
+        "pulse_amp": qubit.measure.pulse_amp(),
+        "pulse_duration": qubit.measure.pulse_duration(),
+        "frequency": ro_freq,
+        "acquisition_delay": qubit.measure.acq_delay(),
+        "integration_time": qubit.measure.integration_time(),
+        "port": qubit.ports.readout(),
+        "clock": qubit.name + ".ro",
+        "init_duration": qubit.reset.duration(),
+    }
+
+    # Configure the gettable
+    spec_gettable = ScheduleGettable(
+        quantum_device=quantum_device,
+        schedule_function=heterodyne_spec_sched,
+        schedule_kwargs=schedule_kwargs,
+        real_imag=False,
+    )
+    assert spec_gettable.is_initialized is False
+
+    freqs = np.linspace(5e9, 6e9, 11)
+    meas_ctrl.settables(ro_freq)
+    meas_ctrl.setpoints(freqs)
+    meas_ctrl.gettables(spec_gettable)
+    label = f"Heterodyne spectroscopy {qubit.name}"
+    with pytest.raises(RuntimeError) as exc:
+        _ = meas_ctrl.run(label)
+    assert (
+        f"InstrumentCoordinator.retrieve_acquisition() "
+        f"('{mock_setup_basic_transmon['instrument_coordinator'].name}') did not "
+        f"return any data, but was expected to return data based on the acquisition "
+        f"metadata in the compiled schedule: acq_metadata.acq_indices="
+        in str(exc.value)
+    )

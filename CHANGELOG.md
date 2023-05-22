@@ -16,6 +16,7 @@
 - Operations - The function `convert_to_numerical_pulse` has been added, which can be used to convert `StitchedPulse` to `NumericalPulse` (!665).
   - In addition, this function is called in the pulse diagram plotting functions and the ZI LabOne backend to allow resp. plotting and compiling of `StitchedPulse`.
 - Documentation - Add `UML_class_diagrams` notebook for visualizing class hierarchies (!653)
+- Gettables - When `ScheduleGettable.get()` is called and the associated `InstrumentCoordinator` returns nothing (for example, if the hardware configuration was never set), this will no longer raise a KeyError from the xarray module. Instead, a more helpful error is raised before the data processing (!671).
 
 ## 0.13.0 (2023-05-05)
 
