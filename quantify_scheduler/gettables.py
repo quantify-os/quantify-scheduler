@@ -19,21 +19,23 @@ import logging
 import os
 import time
 import zipfile
-from typing import Any, Callable, Dict, Tuple, Union, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
-from qcodes import Parameter
-from qcodes.utils.helpers import NumpyJSONEncoder
-
+from qcodes.parameters import Parameter
+from qcodes.utils.json_utils import NumpyJSONEncoder
 from quantify_core.data.handling import gen_tuid, get_datadir, snapshot
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
-    extract_acquisition_metadata_from_schedule,
     AcquisitionMetadata,
+    extract_acquisition_metadata_from_schedule,
 )
+
+if TYPE_CHECKING:
+    from quantify_scheduler.schedules.schedule import CompiledSchedule
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +110,7 @@ class ScheduleGettable:
 
         self.always_initialize = always_initialize
         self.is_initialized = False
-        self._compiled_schedule = None
+        self._compiled_schedule: CompiledSchedule | None = None
 
         self.real_imag = real_imag
         if self.real_imag:
@@ -186,7 +188,7 @@ class ScheduleGettable:
         self.is_initialized = True
 
     @property
-    def compiled_schedule(self) -> Schedule:
+    def compiled_schedule(self) -> CompiledSchedule | None:
         """Return the schedule used in this class"""
         return self._compiled_schedule
 
@@ -211,6 +213,13 @@ class ScheduleGettable:
         if not self.is_initialized or self.always_initialize:
             self.initialize()
 
+        if self.compiled_schedule is None:
+            raise RuntimeError(
+                "No compiled schedule was found. Either the schedule was not "
+                "compiled, or the compiled schedule was not assigned to the "
+                "correct attribute."
+            )
+
         instr_coordinator.start()
         acquired_data = instr_coordinator.retrieve_acquisition()
         instr_coordinator.stop()
@@ -218,6 +227,16 @@ class ScheduleGettable:
         acq_metadata = extract_acquisition_metadata_from_schedule(
             self.compiled_schedule
         )
+
+        if len(acquired_data) == 0 and len(acq_metadata.acq_indices) != 0:
+            raise RuntimeError(
+                f"InstrumentCoordinator.retrieve_acquisition() "
+                f"('{instr_coordinator.name}') "
+                f"did not return any data, but was expected to return data based on "
+                f"the acquisition metadata in the compiled schedule: "
+                f"{acq_metadata.acq_indices=}"
+            )
+
         result = self.process_acquired_data(
             acquired_data, acq_metadata, self.compiled_schedule.repetitions
         )

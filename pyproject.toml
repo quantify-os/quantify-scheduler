@@ -91,7 +91,7 @@ dev = [
     "pre-commit",
     "pre-commit-hooks", # common hooks for git repos
     "prospector",
-    "pyright",  # type checker
+    "pyright!=1.1.309",  # Version excluded because of a bug (https://github.com/microsoft/pyright/issues/5126).
     # Pytest-cov is used to generage test coverage reports, which is rather a development than testing requirement
     "pytest-cov",
     "pytest-xdist", # run tests in parallel
@@ -464,7 +464,6 @@ exclude = [
     "quantify_scheduler/gettables_profiled.py",
     "quantify_scheduler/_version.py",
     "quantify_scheduler/compilation.py",
-    "quantify_scheduler/gettables.py",
     "tests/__init__.py",
     "tests/conftest.py",
     "tests/fixtures/__init__.py",
