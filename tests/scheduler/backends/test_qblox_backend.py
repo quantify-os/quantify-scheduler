@@ -3167,5 +3167,8 @@ def test_set_reference_magnitude_raises(compile_config_basic_transmon_qblox_hard
         )
     )
     compiler = SerialCompiler(name="compiler")
-    with pytest.raises(NotImplementedError):
+    with pytest.warns(
+        RuntimeWarning,
+        match="reference_magnitude parameter not implemented. This parameter will be ignored.",
+    ):
         _ = compiler.compile(sched, config=compile_config_basic_transmon_qblox_hardware)
