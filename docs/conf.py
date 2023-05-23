@@ -352,6 +352,7 @@ nb_mime_priority_overrides = [
     ("linkcheck", "image/png", 40),
 ]
 
+# These are working links but (the redirect) doesn't allow polling
 linkcheck_ignore = [
     "https://doi.org/10.1063/1.447644",
     "https://doi.org/10.1063/1.5089550",
