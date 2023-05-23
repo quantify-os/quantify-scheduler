@@ -352,6 +352,13 @@ nb_mime_priority_overrides = [
     ("linkcheck", "image/png", 40),
 ]
 
+linkcheck_ignore = [
+    "https://doi.org/10.1063/1.447644",
+    "https://doi.org/10.1063/1.5089550",
+    "https://doi.org/10.1109/TQE.2020.2965810",
+    "https://www.sciencedirect.com/science/article/pii/S0370157313000562",
+]
+
 # Enable nitpicky mode - warns about all references where the target cannot be found
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-nitpicky
 
