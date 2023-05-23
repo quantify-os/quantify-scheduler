@@ -213,68 +213,148 @@ def set_pulse_and_acquisition_clock(
         return schedule
     elif not isinstance(device_cfg, DeviceCompilationConfig):
         device_cfg = DeviceCompilationConfig.parse_obj(device_cfg)
+    assert isinstance(device_cfg, DeviceCompilationConfig)
 
     # to prevent the original input schedule from being modified.
     schedule = deepcopy(schedule)
 
+    # verify that required clocks are present; print warning if they are inconsistent
+    verified_clocks = []
     for operation in schedule.operations.values():
-        # if the operation is at gate-level it must be compiled from
-        # circuit to device first.
-        if not (
-            operation.valid_pulse
-            or operation.valid_acquisition
-            or operation.has_voltage_offset
-        ):
-            raise RuntimeError(
-                f"Operation '{operation}' is a gate-level operation and must be "
-                f"compiled from circuit to device; ensure compilation "
-                f"is made in the correct order."
-            )
+        # Only if we have a valid device-level operation, we can assign clocks
+        _assert_operation_valid_device_level(operation)
 
-        clocks_used = []
-        for info in operation["pulse_info"] + operation["acquisition_info"]:
-            clocks_used.append(info["clock"])
-        for clock in set(clocks_used):
-            # if clock is defined both in the schedule and device_cfg,
-            # ensures the frequency is the same in both
-            if clock in schedule.resources:
-                if device_cfg is not None and clock in device_cfg.clocks:
-                    clock_freq_device_cfg = device_cfg.clocks[clock]
-                    clock_freq_schedule = schedule.resources[clock]["freq"]
-                    if (
-                        not np.isnan(clock_freq_device_cfg)
-                        and clock_freq_device_cfg != clock_freq_schedule
-                    ):
-                        warnings.warn(
-                            f"Clock '{clock}' has conflicting frequency definitions: "
-                            f"{clock_freq_schedule} Hz in the schedule and "
-                            f"{clock_freq_device_cfg} Hz in the device config. "
-                            f"The clock is set to '{clock_freq_schedule}'. "
-                            f"Ensure the schedule clock resource matches the "
-                            f"device config clock frequency or set the "
-                            f"clock frequency in the device config to np.NaN "
-                            f"to omit this warning.",
-                            RuntimeWarning,
-                        )
-            else:
-                if device_cfg is None or clock not in device_cfg.clocks:
-                    raise ValueError(
-                        f"Operation '{operation}' contains an unknown clock '{clock}'; "
-                        f"ensure this resource has been added to the schedule "
-                        f"or to the device config."
-                    )
+        operation_info = operation["pulse_info"] + operation["acquisition_info"]
+        clocks_used = set([info["clock"] for info in operation_info])
+        for clock in clocks_used:
+            if clock in verified_clocks:
+                continue
 
-                if np.isnan(clock_freq_device_cfg := device_cfg.clocks[clock]):
-                    raise ValueError(
-                        f"Operation '{operation}' contains clock '{clock}' with an "
-                        f"undefined (initial) frequency; ensure this resource has been "
-                        f"added to the schedule or to the device config."
-                    )
-
-                clock_resource = ClockResource(name=clock, freq=clock_freq_device_cfg)
+            # raises ValueError if no clock found;
+            # enters if condition if clock only in device config
+            if not _valid_clock_in_schedule(clock, device_cfg, schedule, operation):
+                clock_resource = ClockResource(
+                    name=clock, freq=device_cfg.clocks[clock]
+                )
                 schedule.add_resource(clock_resource)
+            verified_clocks.append(clock)
 
     return schedule
+
+
+def _valid_clock_in_schedule(clock, device_cfg, schedule, operation) -> bool:
+    """Asserts that valid clock is present. Returns whether clock is already in schedule.
+
+    Parameters
+    ----------
+    clock
+        Name of the clock
+    device_cfg
+        Device config that potentially contains the clock.
+    schedule
+        Schedule that potentially has the clock in its resources
+    operation
+        Quantify operation, to which the clock belongs. Only used for error message.
+
+    Raises
+    ------
+    ValueError
+        Returns ValueError if (i) the device config is the only defined clock and
+        contains nan values or (ii) no clock is defined.
+    """
+
+    if clock in schedule.resources:
+        if clock in device_cfg.clocks:
+            # Test if clocks are compatible (emits a warning if not)
+            _ = _clocks_compatible(clock, device_cfg, schedule)
+        return True
+    else:
+        if clock in device_cfg.clocks:
+            # Clock only in device config
+            if np.isnan(device_cfg.clocks[clock]).any():
+                raise ValueError(
+                    f"Operation '{operation}' contains clock '{clock}' with an "
+                    f"undefined (initial) frequency; ensure this resource has been "
+                    f"added to the schedule or to the device config."
+                )
+            return False
+
+        # Clock neither in device config nor schedule.
+        raise ValueError(
+            f"Operation '{operation}' contains an unknown clock '{clock}'; "
+            f"ensure this resource has been added to the schedule "
+            f"or to the device config."
+        )
+
+
+def _clocks_compatible(clock, device_cfg: DeviceCompilationConfig, schedule) -> bool:
+    """Compare device config and schedule resources for compatibility of their clocks.
+
+    Clocks can be defined in the device_cfg and in the schedule. They are consistent if
+
+    - they have the same value
+    - if the clock in the device config is nan (not the other way around)
+
+    These conditions are also generalized to numpy arrays. Arrays of different length
+    are only equal if all frequencies in the device config are nan.
+
+    If the clocks are inconsistent, a warning message is emitted.
+
+    Parameters
+    ----------
+    clock
+        Name of the clock found in the device config and schedule
+    device_cfg
+        Device config containing the ``clock``
+    schedule
+        Schedule containing the ``clock``
+
+    Returns
+    -------
+        True if the clock frequencies are consistent.
+    """
+    clock_freq_device_cfg = np.asarray(device_cfg.clocks[clock])
+    clock_freq_schedule = np.asarray(schedule.resources[clock]["freq"])
+
+    is_nan = np.isnan(clock_freq_device_cfg)
+    if is_nan.all():
+        return True
+    is_equal = clock_freq_device_cfg == clock_freq_schedule
+    if (np.logical_or(is_nan, is_equal)).all():
+        return True
+
+    warnings.warn(
+        f"Clock '{clock}' has conflicting frequency definitions: "
+        f"{clock_freq_schedule} Hz in the schedule and "
+        f"{clock_freq_device_cfg} Hz in the device config. "
+        f"The clock is set to '{clock_freq_schedule}'. "
+        f"Ensure the schedule clock resource matches the "
+        f"device config clock frequency or set the "
+        f"clock frequency in the device config to np.NaN "
+        f"to omit this warning.",
+        RuntimeWarning,
+    )
+    return False
+
+
+def _assert_operation_valid_device_level(operation: Operation) -> None:
+    """Verifies that the operation has been compiled to device level.
+
+    Parameters
+    ----------
+    operation
+        Quantify operation
+    """
+    if not (
+        operation.valid_pulse
+        or operation.valid_acquisition
+        or operation.has_voltage_offset
+    ):
+        raise RuntimeError(
+            f"Operation '{operation}' is a gate-level operation and must be "
+            f"compiled from circuit to device; ensure compilation "
+            f"is made in the correct order."
+        )
 
 
 def _compile_multiplexed(operation, qubits, operation_type, device_cfg):
