@@ -628,7 +628,10 @@ def assign_pulse_and_acq_info_to_devices(
                 ) from exc
 
             if pulse_data.get("reference_magnitude", None) is not None:
-                raise NotImplementedError
+                warnings.warn(
+                    "reference_magnitude parameter not implemented. This parameter will be ignored.",
+                    RuntimeWarning,
+                )
 
             port = pulse_data["port"]
             clock = pulse_data["clock"]
