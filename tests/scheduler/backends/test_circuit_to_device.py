@@ -4,6 +4,8 @@
 from typing import List
 
 import pytest
+import numpy as np
+
 from quantify_scheduler import Operation, Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.circuit_to_device import (
@@ -12,7 +14,14 @@ from quantify_scheduler.backends.circuit_to_device import (
     OperationCompilationConfig,
     compile_circuit_to_device,
     set_pulse_and_acquisition_clock,
+    _clocks_compatible,
+    _valid_clock_in_schedule,
 )
+from quantify_scheduler.device_under_test.mock_setup import (
+    set_up_mock_transmon_setup,
+    set_standard_params_transmon,
+)
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.operations.gate_library import (
     CNOT,
     CZ,
@@ -509,6 +518,97 @@ def test_config_validation():
             "duration": 2e-08,
         },
     )
+
+
+def schedule_for_clock_tests():
+    schedule = Schedule("test schedule")
+    operation = schedule.add(rxy_drag_pulse(1, 1, 0, 0, "port", 20e-9, "q0.01"))
+    setup = set_up_mock_transmon_setup()
+    set_standard_params_transmon(setup)
+    quantum_device: QuantumDevice = setup["quantum_device"]
+    device_cfg = quantum_device.generate_device_config()
+    return schedule, device_cfg, operation
+
+
+@pytest.mark.parametrize(
+    "schedule_freq, device_cfg_freq, compatible_exp",
+    [
+        [1e9, 1e9, True],
+        [1e9, np.nan, True],
+        [1e9, 2e9, False],
+        [np.nan, 2e9, False],
+        [np.asarray(1e9), 1e9, True],
+        [1e9, np.asarray([1e9]), True],
+        [np.asarray(1e9), 2e9, False],
+        [2e9, np.asarray(1e9), False],
+        [np.asarray(1e9), np.nan, True],
+        [np.asarray(1e9), np.asarray([np.nan]), True],
+        [np.asarray(1e9), np.asarray(1e9), True],
+        [np.asarray([1e9, 2e9]), np.asarray([1e9, 2e9]), True],
+        [np.asarray([1e9, 2e9]), np.asarray([np.nan]), True],
+        [np.asarray([1e9, 2e9]), np.asarray([1e9, np.nan]), True],
+        [np.asarray([1e9, 2e9]), np.asarray([np.nan, np.nan]), True],
+        [np.asarray([1e9, 2e9]), np.asarray([1e9, np.nan, np.nan]), False],
+        [np.asarray([1e9, 2e9]), np.asarray([np.nan, np.nan, np.nan]), True],
+        [np.asarray(1e9), np.asarray(2e9), False],
+        [np.asarray([1e9, 2e9]), np.asarray([2e9, 1e9]), False],
+        [np.asarray([1e9, np.nan]), np.asarray([2e9, 1e9]), False],
+        [np.asarray([np.nan, np.nan]), np.asarray([2e9, 1e9]), False],
+    ],
+)
+def test_clocks_compatible(schedule_freq, device_cfg_freq, compatible_exp: bool):
+    # Arrange
+    schedule, device_cfg, operation = schedule_for_clock_tests()
+    schedule.add_resource(ClockResource("q0.01", schedule_freq))
+    device_cfg.clocks["q0.01"] = device_cfg_freq
+
+    # Act
+    compatible = _clocks_compatible(
+        clock="q0.01", device_cfg=device_cfg, schedule=schedule
+    )
+    # Assert
+    assert compatible_exp == compatible
+
+    # Act & Assert
+    # Even if clocks are not compatible, the schedule can be compiled
+    assert _valid_clock_in_schedule(
+        clock="q0.01", device_cfg=device_cfg, schedule=schedule, operation=operation
+    )
+
+
+def test_valid_clock_in_schedule():
+    """Test whether a valid clock is in the schedule if they can be taken from the device config."""
+    # Arrange
+    schedule, device_cfg, operation = schedule_for_clock_tests()
+    device_cfg.clocks["q0.01"] = 1e9
+
+    # Act & Assert
+    assert not _valid_clock_in_schedule(
+        clock="q0.01", device_cfg=device_cfg, schedule=schedule, operation=operation
+    )
+
+    # Arrange
+    device_cfg.clocks["q0.01"] = np.asarray(1e9)
+    # Act & Assert
+    assert not _valid_clock_in_schedule(
+        clock="q0.01", device_cfg=device_cfg, schedule=schedule, operation=operation
+    )
+
+    # Arrange
+    device_cfg.clocks["q0.01"] = np.nan
+    # Act & Assert
+    with pytest.raises(ValueError):
+        _valid_clock_in_schedule(
+            clock="q0.01", device_cfg=device_cfg, schedule=schedule, operation=operation
+        )
+
+    # Arrange
+    del device_cfg.clocks["q0.01"]
+    # Act & Assert
+    with pytest.raises(ValueError):
+        _valid_clock_in_schedule(
+            clock="q0.01", device_cfg=device_cfg, schedule=schedule, operation=operation
+        )
 
 
 def test_set_reference_magnitude(mock_setup_basic_transmon):
