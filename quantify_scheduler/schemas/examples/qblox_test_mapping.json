@@ -18,7 +18,6 @@
         "cluster0_module2": {
             "instrument_type": "QCM_RF",
             "complex_output_0": {
-                "output_att": 4,
                 "portclock_configs": [
                     {
                         "port": "q0:mw",
@@ -31,7 +30,6 @@
                 ]
             },
             "complex_output_1": {
-                "output_att": 6,
                 "portclock_configs": [
                     {
                         "port": "q6:mw",
@@ -55,7 +53,6 @@
         "cluster0_module4": {
             "instrument_type": "QRM_RF",
             "complex_input_0": {
-                "input_att": 10,
                 "portclock_configs": [
                     {
                         "port": "q5:res",
@@ -64,7 +61,6 @@
                 ]
             },
             "complex_output_0": {
-                "output_att": 12,
                 "portclock_configs": [
                     {
                         "port": "q0:res",

@@ -42,9 +42,7 @@
                 "markers": [
                     "AWG_MARKER1",
                     "AWG_MARKER2"
-                ],
-                "gain1": 1,
-                "gain2": 1
+                ]
             },
             "channel_1": {
                 "port": "q1:mw",
@@ -54,9 +52,7 @@
                 "markers": [
                     "AWG_MARKER1",
                     "AWG_MARKER2"
-                ],
-                "gain1": 1,
-                "gain2": 1
+                ]
             },
             "channel_2": {
                 "port": "q2:mw",
@@ -66,9 +62,7 @@
                 "markers": [
                     "AWG_MARKER1",
                     "AWG_MARKER2"
-                ],
-                "gain1": 1,
-                "gain2": 1
+                ]
             },
             "channel_3": {
                 "port": "q3:mw",
@@ -78,9 +72,7 @@
                 "markers": [
                     "AWG_MARKER1",
                     "AWG_MARKER2"
-                ],
-                "gain1": 1,
-                "gain2": 1
+                ]
             }
         },
         {

@@ -72,5 +72,31 @@
             "dc_offset_i": 0.042,
             "dc_offset_q": 0.028
         }
+    },
+    "power_scaling": {
+        "q0:mw-q0.01": {
+            "output_gain": [
+                1,
+                1
+            ]
+        },
+        "q1:mw-q1.01": {
+            "output_gain": [
+                1,
+                1
+            ]
+        },
+        "q2:mw-q2.01": {
+            "output_gain": [
+                1,
+                1
+            ]
+        },
+        "q3:mw-q3.01": {
+            "output_gain": [
+                1,
+                1
+            ]
+        }
     }
 }
