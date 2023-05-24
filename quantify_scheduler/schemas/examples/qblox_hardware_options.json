@@ -62,5 +62,28 @@
             "amp_ratio": 0.9997,
             "phase_error": -4.0
         }
+    },
+    "power_scaling": {
+        "q0:mw-q0.01": {
+            "output_att": 4
+        },
+        "q0:res-q0.ro": {
+            "output_att": 12
+        },
+        "q4:res-q4.ro": {
+            "input_gain": [
+                2,
+                3
+            ]
+        },
+        "q5:mw-q5.01": {
+            "output_att": 4
+        },
+        "q5:res-q5.ro": {
+            "input_att": 10
+        },
+        "q6:mw-q6.01": {
+            "output_att": 6
+        }
     }
 }

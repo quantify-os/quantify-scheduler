@@ -2027,6 +2027,7 @@ def test_assign_frequencies_rf_downconverter(
     )
 
 
+@pytest.mark.deprecated
 @pytest.mark.parametrize(
     "element_names, input_att_output",
     [
@@ -2034,7 +2035,7 @@ def test_assign_frequencies_rf_downconverter(
         (["q5"], False),
     ],
 )
-def test_assign_attenuation(
+def test_assign_attenuation_hardware_config(
     mock_setup_basic_transmon_elements,
     hardware_cfg_qblox_example,
     hardware_options_qblox_example,
@@ -2048,7 +2049,14 @@ def test_assign_attenuation(
     sched = Schedule("readout_experiment")
     sched.add(Measure(element_names[0]))
 
-    hardware_cfg = copy.deepcopy(hardware_cfg_qblox_example)
+    quantum_device = mock_setup_basic_transmon_elements["quantum_device"]
+
+    quantum_device.hardware_config(hardware_cfg_qblox_example)
+    quantum_device.hardware_options(hardware_options_qblox_example)
+
+    hardware_cfg = generate_hardware_config(
+        compilation_config=quantum_device.generate_compilation_config()
+    )
 
     input_att = 10
     complex_input = hardware_cfg["cluster0"]["cluster0_module4"]["complex_input_0"]
@@ -2067,7 +2075,6 @@ def test_assign_attenuation(
     assert input_att is not None
     assert output_att is not None
 
-    quantum_device = mock_setup_basic_transmon_elements["quantum_device"]
     qubit = quantum_device.get_element(element_names[0])
 
     qubit.clock_freqs.readout(5e9)
@@ -2075,7 +2082,7 @@ def test_assign_attenuation(
     qubit.measure.acq_delay(40e-9)
 
     quantum_device.hardware_config(hardware_cfg)
-    quantum_device.hardware_options(hardware_options_qblox_example)
+    quantum_device.hardware_options({})
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
         schedule=sched, config=quantum_device.generate_compilation_config()
@@ -2086,11 +2093,132 @@ def test_assign_attenuation(
     compiled_in0_att = qrm_rf_program["settings"]["in0_att"]
     compiled_out0_att = qrm_rf_program["settings"]["out0_att"]
 
-    assert np.isclose(compiled_in0_att, input_att)
-    assert np.isclose(compiled_out0_att, output_att)
+    assert compiled_in0_att == input_att
+    assert compiled_out0_att == output_att
 
     assert isinstance(compiled_in0_att, int)
     assert isinstance(compiled_out0_att, int)
+
+
+def test_assign_attenuation(compile_config_basic_transmon_qblox_hardware):
+    sched = Schedule("Measurement")
+    sched.add(Measure("q0"))
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        sched, config=compile_config_basic_transmon_qblox_hardware
+    )
+    compiled_instructions = compiled_schedule["compiled_instructions"]
+
+    assert (
+        compiled_instructions["cluster0"]["cluster0_module4"]["settings"]["in0_att"]
+        == 10
+    )
+    assert (
+        compiled_instructions["cluster0"]["cluster0_module4"]["settings"]["out0_att"]
+        == 12
+    )
+
+
+def test_assign_gain(compile_config_basic_transmon_qblox_hardware):
+    sched = Schedule("Measurement")
+    sched.add(Measure("q4"))
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        sched, config=compile_config_basic_transmon_qblox_hardware
+    )
+    compiled_instructions = compiled_schedule["compiled_instructions"]
+
+    assert (
+        compiled_instructions["cluster0"]["cluster0_module3"]["settings"]["in0_gain"]
+        == 2
+    )
+    assert (
+        compiled_instructions["cluster0"]["cluster0_module3"]["settings"]["in1_gain"]
+        == 3
+    )
+
+
+@pytest.mark.parametrize(
+    "portclock, not_supported_option, value",
+    [
+        # "q4:res-q4.ro" is connected to complex_output of QRM
+        ("q4:res-q4.ro", "input_att", 10),
+        ("q4:res-q4.ro", "output_att", 10),
+        ("q4:res-q4.ro", "output_gain", (2, 3)),
+        # "q4:mw-q4.01" is connected to complex_output of QCM
+        ("q4:mw-q4.01", "input_att", 10),
+        ("q4:mw-q4.01", "output_att", 10),
+        ("q4:mw-q4.01", "input_gain", (2, 3)),
+        ("q4:mw-q4.01", "output_gain", (2, 3)),
+        # "q0:res-q0.ro" is connected to complex_output of QRM-RF
+        ("q0:res-q0.ro", "input_gain", (2, 3)),
+        ("q0:res-q0.ro", "output_gain", (2, 3)),
+        # "q0:mw-q0.01" is connected to complex_output of QCM-RF
+        ("q0:mw-q0.01", "input_att", 10),
+        ("q0:mw-q0.01", "input_gain", (2, 3)),
+        ("q0:mw-q0.01", "output_gain", (2, 3)),
+    ],
+)
+def test_set_power_scaling_invalid(
+    mock_setup_basic_transmon_with_standard_params,
+    hardware_cfg_qblox_example,
+    hardware_options_qblox_example,
+    portclock,
+    not_supported_option,
+    value,
+):
+    sched = Schedule("single_gate_experiment")
+    sched.add(Measure("q0"))
+
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    hardware_options = copy.deepcopy(hardware_options_qblox_example)
+
+    hardware_options["power_scaling"][portclock] = {not_supported_option: value}
+
+    quantum_device.hardware_config(hardware_cfg_qblox_example)
+    quantum_device.hardware_options(hardware_options)
+
+    with pytest.raises(ValueError, match="not supported"):
+        compiler = SerialCompiler(name="compiler")
+        _ = compiler.compile(
+            sched,
+            config=quantum_device.generate_compilation_config(),
+        )
+
+
+@pytest.mark.deprecated
+@pytest.mark.parametrize("conflicting_setting", ["output_att", "input_att"])
+def test_set_conflicting_attenuation(
+    mock_setup_basic_transmon_with_standard_params,
+    hardware_cfg_qblox_example,
+    hardware_options_qblox_example,
+    conflicting_setting,
+):
+    sched = Schedule("single_gate_experiment")
+    sched.add(Measure("q0"))
+
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    hardware_config = copy.deepcopy(hardware_cfg_qblox_example)
+    if conflicting_setting == "output_att":
+        hardware_config["cluster0"]["cluster0_module4"]["complex_output_0"][
+            "output_att"
+        ] = 6
+    elif conflicting_setting == "input_att":
+        hardware_config["cluster0"]["cluster0_module4"]["complex_input_0"][
+            "input_att"
+        ] = 6
+
+    quantum_device.hardware_config(hardware_config)
+    quantum_device.hardware_options(hardware_options_qblox_example)
+
+    with pytest.raises(ValueError, match="conflicting settings"):
+        compiler = SerialCompiler(name="compiler")
+        _ = compiler.compile(
+            sched,
+            config=quantum_device.generate_compilation_config(),
+        )
 
 
 def test_assign_input_att_both_output_input_raises(

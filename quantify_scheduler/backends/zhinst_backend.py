@@ -780,16 +780,17 @@ def generate_hardware_config(  # noqa: PLR0912, PLR0915
         )
 
     modulation_frequencies = compilation_config.hardware_options.modulation_frequencies
-
     if modulation_frequencies is not None:
         for port, clock in port_clocks:
             if (pc_mod_freqs := modulation_frequencies.get(f"{port}-{clock}")) is None:
                 # No modulation frequencies to set for this port-clock.
                 continue
+            # Find path to port-clock combination in the hardware config, e.g.,
+            # ["devices", 0, "channel_0"]
             ch_path = find_port_clock_path(
                 hardware_config=hardware_config, port=port, clock=clock
             )
-            # Set the interm_freq in the channel config:
+            # Extract channel config dict:
             ch_config = hardware_config
             for key in ch_path:
                 ch_config = ch_config[key]
@@ -801,6 +802,7 @@ def generate_hardware_config(  # noqa: PLR0912, PLR0915
             )
             # Using default="not_present" because IF=None is also a valid setting
             if legacy_interm_freq == "not_present":
+                # Set the interm_freq in the channel config dict:
                 ch_config["modulation"]["interm_freq"] = pc_mod_freqs.interm_freq
             elif legacy_interm_freq != pc_mod_freqs.interm_freq:
                 raise ValueError(
@@ -826,7 +828,6 @@ def generate_hardware_config(  # noqa: PLR0912, PLR0915
                     if "frequency" not in lo_config:
                         # Initialize frequency config dict:
                         lo_config["frequency"] = {}
-                    # Set LO freq in frequency config dict:
                     lo_freq_key = lo_config.get("frequency_param")
                     legacy_lo_freq = lo_config["frequency"].get(
                         lo_freq_key, "not_present"
@@ -834,6 +835,7 @@ def generate_hardware_config(  # noqa: PLR0912, PLR0915
                     # Using default="not_present" because lo_freq=None is
                     # also a valid setting
                     if legacy_lo_freq == "not_present":
+                        # Set LO freq in frequency config dict:
                         lo_config["frequency"][lo_freq_key] = pc_mod_freqs.lo_freq
                     elif legacy_lo_freq != pc_mod_freqs.lo_freq:
                         raise ValueError(
@@ -851,7 +853,6 @@ def generate_hardware_config(  # noqa: PLR0912, PLR0915
                 )
 
     mixer_corrections = compilation_config.hardware_options.mixer_corrections
-
     if mixer_corrections is not None:
         for port, clock in port_clocks:
             if (pc_mix_corr := mixer_corrections.get(f"{port}-{clock}")) is None:
@@ -863,16 +864,19 @@ def generate_hardware_config(  # noqa: PLR0912, PLR0915
                 "dc_offset_I": pc_mix_corr.dc_offset_i,
                 "dc_offset_Q": pc_mix_corr.dc_offset_q,
             }
+            # Find path to port-clock combination in the hardware config, e.g.,
+            # ["devices", 0, "channel_0"]
             ch_path = find_port_clock_path(
                 hardware_config=hardware_config, port=port, clock=clock
             )
+            # Extract channel config dict:
             ch_config = hardware_config
             for key in ch_path:
                 ch_config = ch_config[key]
 
-            # Add mixer corrections from hardware options to channel config
             legacy_mix_corr = ch_config.get("mixer_corrections")
             if legacy_mix_corr is None:
+                # Set mixer corrections from hardware options in channel config dict:
                 ch_config["mixer_corrections"] = pc_mix_corr
             elif legacy_mix_corr != pc_mix_corr:
                 raise ValueError(
@@ -881,6 +885,54 @@ def generate_hardware_config(  # noqa: PLR0912, PLR0915
                     f"been set to {legacy_mix_corr} in the hardware config. To avoid "
                     f"conflicting settings, please make sure these corrections are "
                     f"only set in one place."
+                )
+
+    power_scaling = compilation_config.hardware_options.power_scaling
+    if power_scaling is not None:
+        for port, clock in find_all_port_clock_combinations(hardware_config):
+            if (pc_power_scaling := power_scaling.get(f"{port}-{clock}")) is None:
+                # No modulation frequencies to set for this port-clock.
+                continue
+            # Find path to port-clock combination in the hardware config, e.g.,
+            # ["devices", 0, "channel_0"]
+            ch_path = find_port_clock_path(
+                hardware_config=hardware_config, port=port, clock=clock
+            )
+            # Extract instrument config and I/O channel config dicts:
+            instr_config = hardware_config
+            for key in ch_path[:-1]:
+                instr_config = instr_config[key]
+            ch_name = ch_path[-1]
+            ch_config = instr_config[ch_name]
+            instr_type = instr_config["type"]
+
+            # Different instruments support different power scaling settings
+            supported_options = []
+            if instr_type in ["HDAWG4", "HDAWG8"]:
+                supported_options.append("output_gain")
+
+            for option, value in pc_power_scaling.dict().items():
+                if (option not in supported_options) and (value is not None):
+                    raise ValueError(
+                        f"Setting the '{option}' for {ch_name} of "
+                        f"{instr_type=} is not supported in the Zhinst backend."
+                    )
+
+            legacy_gain = (ch_config.get("gain1"), ch_config.get("gain2"))
+
+            if pc_power_scaling.output_gain is None:
+                pass
+            elif legacy_gain == (None, None):
+                # Set the output_gain in the channel config dict:
+                ch_config["gain1"] = pc_power_scaling.output_gain[0]
+                ch_config["gain2"] = pc_power_scaling.output_gain[1]
+            elif legacy_gain != pc_power_scaling.output_gain:
+                raise ValueError(
+                    f"Trying to set output gain for channel={ch_path} to"
+                    f" {pc_power_scaling.output_gain} from the hardware options while "
+                    f" it has previously been set to {legacy_gain} in the hardware"
+                    f" config. To avoid conflicting settings, please make sure this"
+                    f" value is only set in one place."
                 )
 
     return hardware_config

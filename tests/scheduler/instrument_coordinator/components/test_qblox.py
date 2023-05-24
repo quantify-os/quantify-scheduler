@@ -711,9 +711,10 @@ def test_prepare_cluster_rf(
     sched = make_schedule_with_measurement("q5")
 
     hardware_cfg = hardware_cfg_qblox_example
+    hardware_options = hardware_options_qblox_example
     quantum_device = mock_setup_basic_transmon["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
-    quantum_device.hardware_options(hardware_options_qblox_example)
+    quantum_device.hardware_options(hardware_options)
 
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
@@ -734,25 +735,21 @@ def test_prepare_cluster_rf(
     # Assert it's only set in initialization
     ic_cluster.instrument.reference_source.assert_called_once()
 
-    for qcodes_param, hw_config_param in [
-        ("out0_att", ["complex_output_0", "output_att"]),
-        ("out1_att", ["complex_output_1", "output_att"]),
+    for qcodes_param, hw_options_param in [
+        ("out0_att", ["q5:mw-q5.01", "output_att"]),
+        ("out1_att", ["q6:mw-q6.01", "output_att"]),
     ]:
         qcm_rf.parameters[qcodes_param].set.assert_any_call(
-            hardware_cfg[cluster_name][qcm_rf.name][hw_config_param[0]][
-                hw_config_param[1]
-            ]
+            hardware_options["power_scaling"][hw_options_param[0]][hw_options_param[1]]
         )
     qcm_rf["sequencer0"].parameters[f"sync_en"].set.assert_called_with(True)
 
-    for qcodes_param, hw_config_param in [
-        ("out0_att", ["complex_output_0", "output_att"]),
-        ("in0_att", ["complex_input_0", "input_att"]),
+    for qcodes_param, hw_options_param in [
+        ("out0_att", ["q0:res-q0.ro", "output_att"]),
+        ("in0_att", ["q5:res-q5.ro", "input_att"]),
     ]:
         qrm_rf.parameters[qcodes_param].set.assert_any_call(
-            hardware_cfg[cluster_name][qrm_rf.name][hw_config_param[0]][
-                hw_config_param[1]
-            ]
+            hardware_options["power_scaling"][hw_options_param[0]][hw_options_param[1]]
         )
     qrm_rf["sequencer0"].parameters[f"sync_en"].set.assert_called_with(True)
 

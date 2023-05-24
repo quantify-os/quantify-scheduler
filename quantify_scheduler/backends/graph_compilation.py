@@ -300,6 +300,45 @@ class MixerCorrections(DataStructure):
     """The mixer phase error used for this port-clock combination."""
 
 
+class PowerScaling(DataStructure):
+    """
+    Gain/attenuation settings for a port-clock combination.
+
+    These gain/attenuation values will be set on each control-hardware output/input
+    port that is used for this port-clock combination (if supported).
+
+    Different gain/attenuation settings for the I and Q channels of a complex output
+    or input can be specified by supplying a Tuple to the corresponding field.
+
+    .. admonition:: Example
+        :class: dropdown
+
+        .. code-block:: python
+
+            compilation_config.power_scaling = {
+                "q0:res-q0.ro": PowerScaling(
+                    output_att = 20,
+                    input_att = 10
+                ),
+                "q0:mw-q0.01": PowerScaling(
+                    output_gain = (1,1)
+                ),
+                "q1:res-q1.ro": PowerScaling(
+                    input_gain = (2,3)
+                ),
+            }
+    """
+
+    input_gain: Optional[Union[float, Tuple[float, float]]]
+    """The gain used on the input port(s) for this port-clock combination."""
+    output_gain: Optional[Union[float, Tuple[float, float]]]
+    """The gain used on the output port(s) for this port-clock combination."""
+    input_att: Optional[Union[float, Tuple[float, float]]]
+    """The attenuation used on the input port(s) for this port-clock combination."""
+    output_att: Optional[Union[float, Tuple[float, float]]]
+    """The attenuation used on the output port(s) for this port-clock combination."""
+
+
 class HardwareOptions(DataStructure):
     """
     Datastructure containing the hardware options for each port-clock combination.
@@ -362,6 +401,11 @@ class HardwareOptions(DataStructure):
     mixer_corrections: Optional[Dict[str, MixerCorrections]]
     """
     Dictionary containing the mixer corrections (values) that should be used
+    for signals on a certain port-clock combination (keys).
+    """
+    power_scaling: Optional[Dict[str, PowerScaling]]
+    """
+    Dictionary containing the gain/attenuation settings (values) that should be used
     for signals on a certain port-clock combination (keys).
     """
 

@@ -553,6 +553,72 @@ def test_set_conflicting_mixer_corrections(
         )
 
 
+@pytest.mark.deprecated
+def test_set_conflicting_output_gain(
+    make_schedule,
+    mock_setup_basic_transmon_with_standard_params,
+    hardware_cfg_zhinst_example,
+    hardware_options_zhinst_example,
+):
+    sched = make_schedule()
+
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    hardware_config = deepcopy(hardware_cfg_zhinst_example)
+    hardware_config["devices"][0]["channel_0"]["gain1"] = 0.5
+
+    quantum_device.hardware_config(hardware_config)
+    quantum_device.hardware_options(hardware_options_zhinst_example)
+
+    with pytest.raises(ValueError, match="conflicting settings"):
+        compiler = SerialCompiler(name="compiler")
+        _ = compiler.compile(
+            sched,
+            config=quantum_device.generate_compilation_config(),
+        )
+
+
+@pytest.mark.parametrize(
+    "portclock, not_supported_option, value",
+    [
+        # "q0:mw-q0.01" is connected to HDAWG
+        ("q0:mw-q0.01", "input_att", 10),
+        ("q0:mw-q0.01", "input_gain", (2, 3)),
+        ("q0:mw-q0.01", "output_att", 10),
+        # "q0:res-q0.ro" is connected to UHFQA
+        ("q0:res-q0.ro", "input_att", 10),
+        ("q0:res-q0.ro", "input_gain", (2, 3)),
+        ("q0:res-q0.ro", "output_gain", (2, 3)),
+        ("q0:res-q0.ro", "output_att", 10),
+    ],
+)
+@pytest.mark.deprecated
+def test_set_power_scaling_not_supported(
+    make_schedule,
+    mock_setup_basic_transmon_with_standard_params,
+    hardware_cfg_zhinst_example,
+    hardware_options_zhinst_example,
+    portclock,
+    not_supported_option,
+    value,
+):
+    sched = make_schedule()
+
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    hardware_options = deepcopy(hardware_options_zhinst_example)
+
+    hardware_options["power_scaling"][portclock] = {not_supported_option: value}
+
+    quantum_device.hardware_config(hardware_cfg_zhinst_example)
+    quantum_device.hardware_options(hardware_options)
+
+    with pytest.raises(ValueError, match="not supported"):
+        compiler = SerialCompiler(name="compiler")
+        _ = compiler.compile(
+            sched,
+            config=quantum_device.generate_compilation_config(),
+        )
+
+
 def test_external_lo_not_present_raises(
     make_schedule, compile_config_basic_transmon_zhinst_hardware
 ):
