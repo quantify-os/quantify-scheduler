@@ -55,6 +55,9 @@ coverage.xml
 docs/_build/
 docs/build_errors.log
 
+# Documentation generated UML diagrams
+docs/examples/BasicTransmonElement.png
+docs/examples/qblox.png
 
 # PyBuilder
 target/

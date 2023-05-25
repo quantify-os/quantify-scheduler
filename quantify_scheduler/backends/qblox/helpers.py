@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Helper functions for Qblox backend."""
+import math
 import dataclasses
 import re
 import warnings
@@ -1176,3 +1177,8 @@ def generate_hardware_config(compilation_config: CompilationConfig):
                     )
 
     return hardware_config
+
+
+def is_within_grid_time(a, b):
+    tolerance = 0.5e-9 * constants.GRID_TIME
+    return math.isclose(a, b, abs_tol=tolerance, rel_tol=0)
