@@ -70,7 +70,11 @@ def make_uml_diagram(
     basic_options = ["--colorized", "-m", "n"]
 
     sp_args = {"stdout": sp.DEVNULL, "stderr": sp.STDOUT}
-    sp_err = f"Something went wrong in the plotting backend. Please make sure the provided options have the correct syntax: {options}"
+    sp_err = (
+        f"Something went wrong in the plotting backend. "
+        f"Please make sure the provided options have the correct syntax: {options}"
+    )
+    dot_err = "Error running 'dot': is 'graphviz' installed?"
 
     if inspect.ismodule(obj_to_plot):
         abs_module_path = Path(obj_to_plot.__file__).parent
@@ -89,12 +93,16 @@ def make_uml_diagram(
         except Exception:
             print(sp_err)
 
-        diagram_name = f"{abs_module_path.name}.png"
-        sp.run(  # nosec B603
-            ["dot", "-Tpng", "classes.dot", "-o", diagram_name], check=True
-        )
-        os.remove("classes.dot")
-        os.remove("packages.dot")
+        try:
+            diagram_name = f"{abs_module_path.name}.png"
+            sp.run(  # nosec B603
+                ["dot", "-Tpng", "classes.dot", "-o", diagram_name], check=True
+            )
+            os.remove("classes.dot")
+            os.remove("packages.dot")
+        except Exception:
+            print(dot_err)
+            diagram_name = None
 
     elif inspect.isclass(obj_to_plot):
         class_module_str = obj_to_plot.__module__
@@ -119,11 +127,16 @@ def make_uml_diagram(
         except Exception:
             print(sp_err)
 
-        diagram_name = f"{class_name_str}.png"
-        sp.run(  # nosec B603
-            ["dot", "-Tpng", f"{class_path_str}.dot", "-o", diagram_name], check=True
-        )
-        os.remove(f"{class_path_str}.dot")
+        try:
+            diagram_name = f"{class_name_str}.png"
+            sp.run(  # nosec B603
+                ["dot", "-Tpng", f"{class_path_str}.dot", "-o", diagram_name],
+                check=True,
+            )
+            os.remove(f"{class_path_str}.dot")
+        except Exception:
+            print(dot_err)
+            diagram_name = None
 
     else:
         raise TypeError("Argument must be either a module or a class")
