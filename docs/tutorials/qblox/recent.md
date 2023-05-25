@@ -1,6 +1,6 @@
 # Recent interface changes
 
-## Unreleased: Long waveform support
+## 0.13.0: Long waveform support
 
 The {code}`instruction_generated_pulses_enabled` option (see {ref}`Cluster <sec-qblox-instruction-generated-pulses>` and {ref}`Pulsar <sec-qblox-pulsar-instruction-generated>` user guides) is deprecated and will be removed in a future version. Long square pulses, staircase pulses and long ramps can be generated with the newly introduced helper functions {class}`~quantify_scheduler.operations.pulse_factories.long_square_pulse`, {class}`~quantify_scheduler.operations.pulse_factories.staircase_pulse` and {class}`~quantify_scheduler.operations.pulse_factories.long_ramp_pulse`. More complex long waveforms can now also be created from the {class}`~quantify_scheduler.operations.stitched_pulse.StitchedPulseBuilder`, which generates a {class}`~quantify_scheduler.operations.stitched_pulse.StitchedPulse`. For more information, see {ref}`Long waveform support <sec-qblox-cluster-long-waveform-support>`.
 

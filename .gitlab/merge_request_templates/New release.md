@@ -2,6 +2,7 @@
 
 1. [ ] Review `CHANGELOG.md` and `AUTHORS.md` have been updated.
 1. [ ] Update `Unreleased` chapter title in `CHANGELOG.md` to `X.Y.Z (YYYY-MM-DD)`. Commit it.
+    - Also update `Unreleased` title in `docs/tutorials/qblox/recent.md` (if present).
 1. [ ] Review `@deprecated` and `FutureWarning`s that can be cleaned up now.
 
 1. CI pipeline:
