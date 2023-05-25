@@ -14,7 +14,7 @@ This notebook can be downloaded {nb-download}`here <UML_class_diagrams.ipynb>`
 - Dependencies: `pylint`, `ipykernel` (install these two in a python env), [graphviz](https://graphviz.org/download/)
 
 ```{code-cell} ipython3
-from IPython.display import Image
+from IPython.display import Image, display
 from quantify_scheduler.helpers.inspect import make_uml_diagram
 ```
 
@@ -40,7 +40,8 @@ module_to_plot = qblox
 options = ["-A"]
 
 diagram_name = make_uml_diagram(module_to_plot, options)
-Image(diagram_name)
+if diagram_name:
+    display(Image(diagram_name))
 ```
 
 ## Plotting ancestors and submodules of a class
@@ -55,7 +56,8 @@ class_to_plot = BasicTransmonElement
 options = ["--only-classnames"]
 
 diagram_name = make_uml_diagram(class_to_plot, options)
-Image(diagram_name)
+if diagram_name:
+    display(Image(diagram_name))
 ```
 
 
