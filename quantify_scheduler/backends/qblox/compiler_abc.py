@@ -26,7 +26,7 @@ from typing import (
     Union,
 )
 
-import numpy as np
+import math
 from pathvalidate import sanitize_filename
 from qcodes.utils.helpers import NumpyJSONEncoder
 from quantify_core.data.handling import gen_tuid, get_datadir
@@ -514,7 +514,7 @@ class Sequencer:
             Attempting to set the modulation frequency to a new value even though a
             different value has been previously assigned.
         """
-        if self._settings.modulation_freq is not None and not np.isclose(
+        if self._settings.modulation_freq is not None and not math.isclose(
             self._settings.modulation_freq, freq
         ):
             raise ValueError(
@@ -1461,7 +1461,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         overconstr = (
             freqs.LO is not None
             and freqs.IF is not None
-            and not np.isclose(freqs.LO + freqs.IF, freqs.clock)
+            and not math.isclose(freqs.LO + freqs.IF, freqs.clock)
         )
 
         if underconstr or overconstr:
@@ -1487,7 +1487,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             elif lo_freq_setting_rf is not None:
                 previous_lo_freq = getattr(self._settings, lo_freq_setting_rf)
 
-                if previous_lo_freq is not None and not np.isclose(
+                if previous_lo_freq is not None and not math.isclose(
                     freqs.LO, previous_lo_freq
                 ):
                     raise ValueError(
@@ -1658,7 +1658,8 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
     ) -> List[OpInfo]:
         def any_other_updating_instruction_at_timing(timing: float) -> bool:
             return any(
-                np.isclose(op.timing, timing) and op.is_real_time_io_operation
+                helpers.is_within_grid_time(op.timing, timing)
+                and op.is_real_time_io_operation
                 for op in pulses_and_acqs
             )
 
@@ -1667,7 +1668,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         upd_param_infos: Set[Tuple[str, str, float]] = set()
         for op in pulses_and_acqs:
             if op.is_offset_instruction and not (
-                np.isclose(self.total_play_time, op.timing)
+                helpers.is_within_grid_time(self.total_play_time, op.timing)
                 or any_other_updating_instruction_at_timing(op.timing)
             ):
                 upd_param_infos.add(
@@ -1891,7 +1892,7 @@ class QbloxRFModule(QbloxBaseModule):
 
         def _convert_to_int(value, label: str) -> Optional[int]:
             if value is not None:
-                if not np.isclose(value % 1, 0):
+                if not math.isclose(value % 1, 0):
                     raise ValueError(
                         f'Trying to set "{label}" to non-integer value {value}'
                     )

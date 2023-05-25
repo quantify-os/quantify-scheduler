@@ -40,6 +40,7 @@ from quantify_scheduler.backends.qblox.helpers import (
     generate_waveform_data,
     to_grid_time,
     generate_hardware_config,
+    is_within_grid_time,
 )
 from quantify_scheduler.backends.qblox.instrument_compilers import (
     QcmModule,
@@ -1244,6 +1245,20 @@ def test_to_grid_time():
     assert time_ns == 8
     with pytest.raises(ValueError):
         to_grid_time(7e-9)
+
+
+def test_is_within_grid_time_even_if_floating_point_error():
+    time1, time2 = 8e-9, 12e-9
+    assert abs(time1 - time2) < constants.GRID_TIME
+    assert not is_within_grid_time(time1, time2)
+
+
+@pytest.mark.parametrize(
+    "time1, time2, within_grid_time",
+    [(8e-9, 8e-9, True), (12e-9, 16e-9, False), (20e-9, 21e-9, True)],
+)
+def test_is_within_grid_time(time1, time2, within_grid_time):
+    assert is_within_grid_time(time1, time2) is within_grid_time
 
 
 def test_loop(empty_qasm_program_qcm):
