@@ -149,7 +149,7 @@ class TestAwgOffsetStrategy:
             "offset_path_0": 0.4,
             "offset_path_1": 0,
         }
-        expected_qasm = [["", "set_awg_offs", "5242,0", ""]]
+        expected_qasm = [["", "set_awg_offs", "13107,0", ""]]
 
         qasm = empty_qasm_program_qcm
         duration = 24e-9

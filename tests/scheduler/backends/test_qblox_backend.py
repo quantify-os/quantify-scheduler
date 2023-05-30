@@ -3115,7 +3115,7 @@ def test_stitched_pulse_compilation_upd_param_at_end(
     for i, string in enumerate(program_with_long_square):
         if "set_awg_offs" in string:
             break
-    assert re.search(r"^\s*set_awg_offs\s+32767,0\s+", program_with_long_square[i])
+    assert re.search(r"^\s*set_awg_offs\s+16383,0\s+", program_with_long_square[i])
     assert re.search(r"^\s*upd_param\s+4\s+", program_with_long_square[i + 1])
     assert re.search(r"^\s*wait\s+9996\s+", program_with_long_square[i + 2])
     assert re.search(r"^\s*set_awg_offs\s+0,0\s+", program_with_long_square[i + 3])
@@ -3156,7 +3156,7 @@ def test_auto_compile_long_square_pulses(
         if "set_awg_offs" in string:
             idx = i
             break
-    assert re.search(r"^\s*set_awg_offs\s+13107,0\s+", seq_instructions[idx])
+    assert re.search(r"^\s*set_awg_offs\s+6553,0\s+", seq_instructions[idx])
     assert re.search(r"^\s*upd_param\s+4\s+", seq_instructions[idx + 1])
     assert re.search(r"^\s*wait\s+2496\s+", seq_instructions[idx + 2])
     assert re.search(r"^\s*set_awg_offs\s+0,0\s+", seq_instructions[idx + 3])
@@ -3214,7 +3214,7 @@ def test_long_acquisition(
         if "set_awg_offs" in string:
             idx = i
             break
-    assert re.search(r"^\s*set_awg_offs\s+16383,0\s+", seq_instructions[idx])
+    assert re.search(r"^\s*set_awg_offs\s+8191,0\s+", seq_instructions[idx])
     assert re.search(r"^\s*upd_param\s+4\s+", seq_instructions[idx + 1])
     assert re.search(r"^\s*wait\s+96\s+", seq_instructions[idx + 2])
     assert re.search(r"^\s*acquire\s+0,0,4\s+", seq_instructions[idx + 3])

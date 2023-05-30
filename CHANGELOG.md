@@ -8,6 +8,7 @@
   - Currently, only the user interface is implemented - changes to the backends will be made later (#413)
   - The code is backwards compatible, i.e., all schedules remain valid, but pulse amplitudes are not backwards compatible and will need adjustment / re-calibrating
 - Qblox backend - Lowering the minimum time between acquisitions to 300 ns (!676, #369)
+- Qblox backend - The compiled offset value in `AwgOffsetStrategy` is adjusted to match the changes to pulse amplitudes in !652. A pulse with a given amplitude `A` and a `VoltageOffset` with offset `A` will now produce the same voltage at the hardware level (!683).
 
 ### Merged branches and closed issues
 
