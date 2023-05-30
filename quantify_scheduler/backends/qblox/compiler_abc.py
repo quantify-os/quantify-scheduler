@@ -34,6 +34,7 @@ from quantify_core.data.handling import gen_tuid, get_datadir
 from quantify_scheduler.backends.qblox import (
     constants,
     driver_version_check,
+    enums,
     helpers,
     instrument_compilers,
     q1asm_instructions,
@@ -308,6 +309,7 @@ class Sequencer:
         static_hw_properties: StaticHardwareProperties,
         connected_outputs: Optional[Union[Tuple[int], Tuple[int, int]]],
         connected_inputs: Optional[Union[Tuple[int], Tuple[int, int]]],
+        io_mode: enums.IoMode,
         seq_settings: Dict[str, Any],
         latency_corrections: Dict[str, float],
         lo_name: Optional[str] = None,
@@ -387,6 +389,8 @@ class Sequencer:
             connected_inputs=connected_inputs,
         )
 
+        self._io_mode = io_mode
+
         self.qasm_hook_func: Optional[Callable] = seq_settings.get(
             "qasm_hook_func", None
         )
@@ -425,17 +429,15 @@ class Sequencer:
         return self._settings.connected_inputs
 
     @property
-    def io_mode(self) -> Literal["complex", "real", "imag"]:
+    def io_mode(self) -> enums.IoMode:
         """
-        Specifies whether the sequencer is using only path0 (real), path1 (imag) or
-        both (complex).
+        Return :class:`~.enums.IoMode` used by this sequencer.
 
         If real or imag, the sequencer is restricted to only using real valued data.
+        If complex, the sequencer may also use complex data.
+        If digital, the sequencer is restricted to only producing MarkerPulses.
         """
-        if self._settings.connected_outputs is not None:
-            return helpers.io_mode_from_ios(self._settings.connected_outputs)
-        else:
-            return helpers.io_mode_from_ios(self._settings.connected_inputs)
+        return self._io_mode
 
     @property
     def portclock(self) -> Tuple[str, str]:
@@ -812,7 +814,6 @@ class Sequencer:
 
         qasm = QASMProgram(self.static_hw_properties, self.register_manager)
         qasm.set_marker(self.default_marker)
-        qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
         # program header
         qasm.emit(q1asm_instructions.WAIT_SYNC, constants.GRID_TIME)
         qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
@@ -1303,8 +1304,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 portclock = (target["port"], target["clock"])
 
                 if portclock in self._portclocks_with_data:
-                    connected_outputs = helpers.output_name_to_outputs(io)
-                    connected_inputs = helpers.input_name_to_inputs(io)
+                    io_mode, connected_outputs, connected_inputs = helpers.get_io_info(
+                        io
+                    )
                     seq_idx = len(sequencers)
                     new_seq = Sequencer(
                         parent=self,
@@ -1313,6 +1315,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                         static_hw_properties=self.static_hw_properties,
                         connected_outputs=connected_outputs,
                         connected_inputs=connected_inputs,
+                        io_mode=io_mode,
                         seq_settings=target,
                         latency_corrections=self.latency_corrections,
                         lo_name=lo_name,
@@ -1399,6 +1402,11 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                         seq.pulses = []
 
                     for pulse_strategy in strategies_for_pulses:
+                        if seq.io_mode == enums.IoMode.DIGITAL:
+                            # Digital mode always has one output.
+                            pulse_strategy.operation_info.data[
+                                "output"
+                            ] = seq.connected_outputs[0]
                         seq.pulses.append(pulse_strategy)
 
         acq_data_list: List[OpInfo]

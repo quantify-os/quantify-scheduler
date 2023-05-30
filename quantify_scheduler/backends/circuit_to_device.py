@@ -227,9 +227,11 @@ def set_pulse_and_acquisition_clock(
         operation_info = operation["pulse_info"] + operation["acquisition_info"]
         clocks_used = set([info["clock"] for info in operation_info])
         for clock in clocks_used:
+            # In digital IO's clocks are non-existant, so we skip them.
+            if clock == "digital":
+                continue
             if clock in verified_clocks:
                 continue
-
             # raises ValueError if no clock found;
             # enters if condition if clock only in device config
             if not _valid_clock_in_schedule(clock, device_cfg, schedule, operation):

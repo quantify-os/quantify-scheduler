@@ -482,3 +482,59 @@ class StaircasePulseStrategy(PulseStrategyPartial):
                 offs_reg,
                 comment=f"next decr offs by {abs(amp_step_immediate)}",
             )
+
+
+class MarkerPulseStrategy(PulseStrategyPartial):
+    """
+    If this strategy is used a digital pulse is played on the corresponding marker.
+    """
+
+    def generate_data(self, wf_dict: Dict[str, Any]):
+        """Returns None as no waveforms are generated in this strategy."""
+        return None
+
+    def insert_qasm(self, qasm_program: QASMProgram):
+        """
+        Inserts the QASM instructions to play the marker pulse.
+        Note that for RF modules the first two bits of set_mrk are used as switches for the RF outputs.
+
+        Parameters
+        ----------
+        qasm_program
+            The QASMProgram to add the assembly instructions to.
+        """
+        if self.io_mode != "digital":
+            raise ValueError(
+                f"MarkerPulseStrategy can only be used with digital IO, not {self.io_mode}. "
+                f"Operation causing exception: {self.operation_info}"
+            )
+        duration = round(self.operation_info.duration * 1e9)
+        output = int(self.operation_info.data["output"])
+        default_marker = qasm_program.static_hw_properties.default_marker
+        # RF modules use first 2 bits of marker string as output/input switch.
+        if qasm_program.static_hw_properties.instrument_type in ("QRM-RF", "QCM-RF"):
+            output += 2
+        # QRM-RF has swapped addressing of outputs, TODO: change when fixed in firmware
+        if qasm_program.static_hw_properties.instrument_type == "QRM-RF":
+            output = self._fix_output_addressing(output)
+
+        qasm_program.set_marker((1 << output) | default_marker)
+        qasm_program.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
+        qasm_program.elapsed_time += constants.GRID_TIME
+        # Wait for the duration of the pulse minus 2 times grid time, one for each upd_param.
+        qasm_program.auto_wait(duration - constants.GRID_TIME - constants.GRID_TIME)
+        qasm_program.set_marker(default_marker)
+        qasm_program.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
+        qasm_program.elapsed_time += constants.GRID_TIME
+
+    @staticmethod
+    def _fix_output_addressing(output):
+        """
+        Temporary fix for the marker output addressing of the QRM-RF.
+        QRM-RF has swapped addressing of outputs. TODO: change when fixed in firmware
+        """
+        if output == 3:
+            output = 4
+        elif output == 4:
+            output = 3
+        return output

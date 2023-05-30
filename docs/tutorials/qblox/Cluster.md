@@ -202,6 +202,31 @@ emphasize-lines: 4,12,20
 },
 ```
 
+### Digital mode
+
+The markers can be controlled by defining a digital I/O, and adding a `MarkerPulse` on this I/O.
+A digital I/O is defined by adding a `"digital_output_n"` to the module configuration. `n` is the number of the digital output port.
+For a digital I/O only a port is required, no clocks or other parameters are needed.
+
+```{code-block} python
+"qcm0": {
+    "instrument_type": "QCM",
+    "ref": "internal",
+    "digital_output_0": {
+        "portclock_configs": [
+            {
+                "port": "q0:switch",
+            },
+        ],   
+    },
+},
+```
+
+The `MarkerPulse` is defined by adding a `MarkerPulse` to the sequence in question. It takes the same parameters as any other pulse.
+```{code-block} python
+schedule.add(MarkerPulse(duration=52e-9, port="q0:switch"))
+```
+
 ### Marker configuration
 
 The markers can be configured by adding a `"marker_debug_mode_enable"` key to I/O configurations. If the value is set to True, the operations defined for this I/O will be accompanied by a 4 ns trigger pulse on the marker located next to the I/O port.

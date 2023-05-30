@@ -14,6 +14,7 @@ from quantify_core.utilities import deprecated
 from quantify_core.utilities.general import without
 
 from quantify_scheduler.backends.qblox import constants
+from quantify_scheduler.backends.qblox.enums import IoMode
 from quantify_scheduler.helpers.waveforms import exec_waveform_function
 from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 from quantify_scheduler.helpers.collections import (
@@ -188,6 +189,10 @@ def output_name_to_outputs(name: str) -> Optional[Union[Tuple[int], Tuple[int, i
         "real_output_1": (1,),
         "real_output_2": (2,),
         "real_output_3": (3,),
+        "digital_output_0": (0,),
+        "digital_output_1": (1,),
+        "digital_output_2": (2,),
+        "digital_output_3": (3,),
     }[name]
 
 
@@ -221,17 +226,21 @@ def input_name_to_inputs(name: str) -> Union[Tuple[int], Tuple[int, int]]:
     }[name]
 
 
-def io_mode_from_ios(
-    io: Union[Tuple[int], Tuple[int, int]]
-) -> Literal["complex", "real", "imag"]:
+def get_io_info(
+    io: str,
+) -> Tuple[
+    IoMode, Union[Tuple[int], Tuple[int, int]], Union[Tuple[int], Tuple[int, int]]
+]:
     """
-    Takes the specified outputs to use and extracts a "sequencer mode" from it.
+    Takes the specified io to use and extracts a "sequencer mode" from it.
+    Also returns the connected inputs and outputs.
 
     Modes:
 
     - ``"real"``: only path0 is used
     - ``"imag"``: only path1 is used
     - ``"complex"``: both path0 and path1 paths are used.
+    - ``"digital"``: the digital inputs and outputs are used.
 
     Parameters
     ----------
@@ -244,29 +253,41 @@ def io_mode_from_ios(
     -------
     :
         The mode
+    :
+        The connected outputs
+    :
+        The connected inputs
 
     Raises
     ------
     RuntimeError
         The amount of ios is more than 2, which is impossible for one sequencer.
     """
-    if len(io) > 2:
-        raise RuntimeError(f"Too many io specified for this channel. Given: {io}.")
+    connected_outputs = output_name_to_outputs(io)
+    connected_inputs = input_name_to_inputs(io)
+    if "digital" in io:
+        return IoMode.DIGITAL, connected_outputs, connected_inputs
+    inputs_or_outputs = connected_outputs or connected_inputs
 
-    if len(io) == 2:
+    if len(inputs_or_outputs) > 2:
+        raise RuntimeError(
+            f"Too many io specified for this channel. Given: {inputs_or_outputs}."
+        )
+
+    if len(inputs_or_outputs) == 2:
         assert (
-            io[0] - io[1]
+            inputs_or_outputs[0] - inputs_or_outputs[1]
         ) ** 2 == 1, "Attempting to use two outputs that are not next to each other."
-        if 1 in io:
-            assert 2 not in io, (
+        if 1 in inputs_or_outputs:
+            assert 2 not in inputs_or_outputs, (
                 "Attempting to use output 1 and output 2 (2 and 3 on front panel) "
                 "together, but they belong to different pairs."
             )
-        return "complex"
+        return IoMode.COMPLEX, connected_outputs, connected_inputs
 
-    output = io[0]
-    mode = "real" if output % 2 == 0 else "imag"
-    return mode
+    output = inputs_or_outputs[0]
+    mode = IoMode.REAL if output % 2 == 0 else IoMode.IMAG
+    return mode, connected_outputs, connected_inputs
 
 
 def generate_waveform_dict(waveforms_complex: Dict[str, np.ndarray]) -> Dict[str, dict]:
@@ -906,6 +927,19 @@ def generate_hardware_config(compilation_config: CompilationConfig):
 
     hardware_config = deepcopy(compilation_config.connectivity)
     hardware_options = compilation_config.hardware_options
+
+    # Add digital clock to digital IO's, so that users don't have to specify it.
+    def _recursive_digital_io_search(nested_dict, max_depth=3):
+        if max_depth == 0:
+            return
+        for k in nested_dict:
+            if k.startswith("digital"):
+                nested_dict[k]["portclock_configs"][0]["clock"] = "digital"
+            elif isinstance(nested_dict[k], Dict):
+                _recursive_digital_io_search(nested_dict[k], max_depth - 1)
+
+    _recursive_digital_io_search(hardware_config)
+
     port_clocks = find_all_port_clock_combinations(hardware_config)
 
     # Add latency corrections from hardware options to hardware config
