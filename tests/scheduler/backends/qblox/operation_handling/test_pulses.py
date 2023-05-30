@@ -12,12 +12,22 @@
 
 import pytest
 import numpy as np
+import re
 
+from quantify_scheduler import waveforms, Schedule
+from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler import waveforms
 from quantify_scheduler.helpers.waveforms import normalize_waveform_data
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.qblox.operation_handling import pulses
+from quantify_scheduler.operations.gate_library import Measure
+from quantify_scheduler.operations.pulse_library import MarkerPulse, SquarePulse
+from quantify_scheduler.resources import ClockResource
+
+from tests.scheduler.instrument_coordinator.components.test_qblox import (  # pylint: disable=unused-import
+    make_cluster_component,
+)
 
 from .empty_qasm_program import (  # pylint: disable=unused-import
     fixture_empty_qasm_program,
@@ -552,3 +562,179 @@ class TestStaircasePulseStrategy:
         # assert
         for row_idx, instruction in enumerate(qasm.instructions):
             assert instruction == answer[row_idx]
+
+
+class TestMarkerPulseStrategy:
+    def test_constructor(self):
+        pulses.MarkerPulseStrategy(
+            types.OpInfo(name="", data={}, timing=0), io_mode="real"
+        )
+
+    def test_operation_info_property(self):
+        # arrange
+        op_info = types.OpInfo(name="", data={}, timing=0)
+        strategy = pulses.MarkerPulseStrategy(op_info, io_mode="real")
+
+        # act
+        from_property = strategy.operation_info
+
+        # assert
+        assert op_info == from_property
+
+    def test_generate_data(self):
+        # arrange
+        op_info = types.OpInfo(name="", data={}, timing=0)
+        strategy = pulses.MarkerPulseStrategy(op_info, io_mode="real")
+
+        # act
+        # pylint: disable=assignment-from-none
+        # this is what we want to verify
+        data = strategy.generate_data({})
+
+        # assert
+        assert data is None
+
+    def test_marker_pulse_compilation_qrm(
+        self, mock_setup_basic_transmon_with_standard_params, make_cluster_component
+    ):
+        hardware_cfg = {
+            "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+            "cluster0": {
+                "ref": "internal",
+                "instrument_type": "Cluster",
+                "cluster0_module1": {
+                    "instrument_type": "QRM",
+                    "complex_input_0": {
+                        "portclock_configs": [
+                            {"port": "q0:res", "clock": "q0.ro"},
+                        ],
+                    },
+                    "digital_output_1": {
+                        "portclock_configs": [
+                            {"port": "q0:switch"},
+                        ],
+                    },
+                },
+            },
+        }
+
+        # Setup objects needed for experiment
+        mock_setup = mock_setup_basic_transmon_with_standard_params
+        quantum_device = mock_setup["quantum_device"]
+        quantum_device.hardware_config(hardware_cfg)
+
+        # Define experiment schedule
+        schedule = Schedule("test MarkerPulse compilation")
+        schedule.add(
+            MarkerPulse(
+                duration=500e-9,
+                port="q0:switch",
+            ),
+        )
+        schedule.add(
+            Measure("q0", acq_protocol="SSBIntegrationComplex"),
+            rel_time=300e-9,
+            ref_pt="start",
+        )
+        schedule.add_resource(ClockResource(name="q0.res", freq=50e6))
+
+        # Generate compiled schedule
+        compiler = SerialCompiler(name="compiler")
+        compiled_sched = compiler.compile(
+            schedule=schedule, config=quantum_device.generate_compilation_config()
+        )
+
+        # # Assert markers were set correctly, and wait time is correct for QRM
+        seq0_analog = compiled_sched.compiled_instructions["cluster0"][
+            "cluster0_module1"
+        ]["sequencers"]["seq0"]["sequence"]["program"].splitlines()
+        seq1_digital = compiled_sched.compiled_instructions["cluster0"][
+            "cluster0_module1"
+        ]["sequencers"]["seq1"]["sequence"]["program"].splitlines()
+        idx = 0
+        for i, string in enumerate(seq0_analog):
+            if re.search(r"^\s*reset_ph\s+", string):
+                idx = i
+                break
+        assert re.search(r"^\s*wait\s+300\s*($|#)", seq0_analog[idx + 2])
+        idx = 0
+        for i, string in enumerate(seq1_digital):
+            if re.search(r"^\s*set_mrk\s+2\s*($|#)", string):
+                idx = i
+                break
+        assert re.search(r"^\s*upd_param\s+4\s*($|#)", seq1_digital[idx + 1])
+        assert re.search(r"^\s*wait\s+496\s*($|#)", seq1_digital[idx + 2])
+        assert re.search(r"^\s*set_mrk\s+0\s*($|#)", seq1_digital[idx + 3])
+
+    def test_marker_pulse_compilation_qcm_rf(
+        self, mock_setup_basic_transmon_with_standard_params, make_cluster_component
+    ):
+        hardware_cfg = {
+            "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+            "cluster0": {
+                "ref": "internal",
+                "instrument_type": "Cluster",
+                "cluster0_module1": {
+                    "instrument_type": "QCM_RF",
+                    "complex_output_0": {
+                        "portclock_configs": [
+                            {"port": "q0:res", "clock": "q0.ro", "interm_freq": 0},
+                        ],
+                    },
+                    "digital_output_1": {
+                        "portclock_configs": [
+                            {
+                                "port": "q0:switch",
+                            },
+                        ],
+                    },
+                },
+            },
+        }
+
+        # Setup objects needed for experiment
+        mock_setup = mock_setup_basic_transmon_with_standard_params
+        quantum_device = mock_setup["quantum_device"]
+        quantum_device.hardware_config(hardware_cfg)
+
+        # Define experiment schedule
+        schedule = Schedule("test MarkerPulse compilation")
+        schedule.add(
+            MarkerPulse(
+                duration=500e-9,
+                port="q0:switch",
+            ),
+        )
+        schedule.add(
+            SquarePulse(amp=0.2, duration=300e-9, port="q0:res", clock="q0.ro"),
+            rel_time=300e-9,
+            ref_pt="start",
+        )
+        schedule.add_resource(ClockResource(name="q0.res", freq=50e6))
+        # Generate compiled schedule for QRM
+        compiler = SerialCompiler(name="compiler")
+        compiled_sched = compiler.compile(
+            schedule=schedule, config=quantum_device.generate_compilation_config()
+        )
+
+        # Assert markers were set correctly, and wait time is correct for QRM
+        seq0_analog = compiled_sched.compiled_instructions["cluster0"][
+            "cluster0_module1"
+        ]["sequencers"]["seq0"]["sequence"]["program"].splitlines()
+        seq1_digital = compiled_sched.compiled_instructions["cluster0"][
+            "cluster0_module1"
+        ]["sequencers"]["seq1"]["sequence"]["program"].splitlines()
+        idx = 0
+        for i, string in enumerate(seq0_analog):
+            if re.search(r"^\s*reset_ph\s+", string):
+                idx = i
+                break
+        assert re.search(r"^\s*wait\s+300\s*($|#)", seq0_analog[idx + 2])
+        idx = 0
+        for i, string in enumerate(seq1_digital):
+            if re.search(r"^\s*set_mrk\s+11\s*($|#)", string):
+                idx = i
+                break
+        assert re.search(r"^\s*upd_param\s+4\s*($|#)", seq1_digital[idx + 1])
+        assert re.search(r"^\s*wait\s+496\s*($|#)", seq1_digital[idx + 2])
+        assert re.search(r"^\s*set_mrk\s+3\s*($|#)", seq1_digital[idx + 3])

@@ -21,6 +21,7 @@
 - Gettables - When `ScheduleGettable.get()` is called and the associated `InstrumentCoordinator` returns nothing (for example, if the hardware configuration was never set), this will no longer raise a KeyError from the xarray module. Instead, a more helpful error is raised before the data processing (!671).
 - Qblox backend - Raise RuntimeWarning instead of NotImplementedError upon using `reference_magnitude` parameter (introduced in !652) (!684)
 - Qblox backend - Compilation uses `math.isclose` instead of `numpy.isclose` in certain cases to improve compile time (!682)
+- Qblox backend - Add `MarkerPulse` to pulse library, and implement Qblox backend compilation for this pulse (!628)
 
 ## 0.13.0 (2023-05-05)
 

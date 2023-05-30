@@ -141,8 +141,9 @@ class QcmModule(compiler_abc.QbloxBasebandModule):
         max_sequencers=NUMBER_OF_SEQUENCERS_QCM,
         max_awg_output_voltage=2.5,
         mixer_dc_offset_range=BoundedParameter(min_val=-2.5, max_val=2.5, units="V"),
-        valid_ios=[f"complex_output_{i}" for i in [0, 1]]
-        + [f"real_output_{i}" for i in range(4)],
+        valid_ios=[f"complex_output_{i}" for i in range(2)]
+        + [f"real_output_{i}" for i in range(4)]
+        + [f"digital_output_{i}" for i in range(4)],
     )
 
 
@@ -161,7 +162,8 @@ class QrmModule(compiler_abc.QbloxBasebandModule):
         valid_ios=[f"complex_output_{i}" for i in [0]]
         + [f"real_output_{i}" for i in range(2)]
         + [f"complex_input_{i}" for i in [0]]
-        + [f"real_input_{i}" for i in range(2)],
+        + [f"real_input_{i}" for i in range(2)]
+        + [f"digital_output_{i}" for i in range(4)],
     )
 
 
@@ -176,7 +178,8 @@ class QcmRfModule(compiler_abc.QbloxRFModule):
         max_sequencers=NUMBER_OF_SEQUENCERS_QCM,
         max_awg_output_voltage=None,
         mixer_dc_offset_range=BoundedParameter(min_val=-50, max_val=50, units="mV"),
-        valid_ios=[f"complex_output_{i}" for i in [0, 1]],
+        valid_ios=[f"complex_output_{i}" for i in range(2)]
+        + [f"digital_output_{i}" for i in range(2)],
         output_map={
             "complex_output_0": 0b0001,
             "complex_output_1": 0b0010,
@@ -197,6 +200,7 @@ class QrmRfModule(compiler_abc.QbloxRFModule):
         max_awg_output_voltage=None,
         mixer_dc_offset_range=BoundedParameter(min_val=-50, max_val=50, units="mV"),
         valid_ios=[f"complex_output_{i}" for i in [0]]
+        + [f"digital_output_{i}" for i in range(2)]
         + [f"complex_input_{i}" for i in [0]],
         default_marker=0b0011,
     )

@@ -104,4 +104,7 @@ def _get_pulse_strategy(
         elif wf_func == "quantify_scheduler.waveforms.staircase":
             return pulses.StaircasePulseStrategy(operation_info, io_mode)
 
+    elif operation_info.name == "MarkerPulse":
+        return pulses.MarkerPulseStrategy(operation_info, io_mode)
+
     return pulses.GenericPulseStrategy(operation_info, io_mode)

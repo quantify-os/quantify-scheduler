@@ -495,6 +495,47 @@ class StaircasePulse(Operation):  # pylint: disable=too-many-ancestors
         return self._get_signature(pulse_info)
 
 
+class MarkerPulse(Operation):
+    def __init__(
+        self,
+        duration: float,
+        port: str,
+        t0: float = 0,
+        clock: str = "digital",
+    ):
+        """Digital pulse that is HIGH for the specified duration.
+        Played on marker output.
+        Currently only implemented for Qblox backend.
+
+        Parameters
+        ----------
+        duration
+            Duration of the HIGH signal.
+        port
+            Name of associated port.
+        clock
+            As digital IO's technically do not have a clock, this parameter is by default set to "digital".
+            In circuit to device compilation digital IO's get assigned the digital clock.
+        """
+        super().__init__(name=self.__class__.__name__)
+        self.data["pulse_info"] = [
+            {
+                "wf_func": None,
+                "t0": t0,
+                "clock": clock,
+                "port": port,
+                "duration": duration
+                + qblox_constants.GRID_TIME  # add grid time for upd_param at end of pulse
+                * 1e-9,
+            }
+        ]
+        self._update()
+
+    def __str__(self) -> str:
+        pulse_info = self.data["pulse_info"][0]
+        return self._get_signature(pulse_info)
+
+
 class SquarePulse(Operation):
     """
     The SquarePulse Operation is a real-valued pulse with the specified

@@ -620,7 +620,9 @@ def test_construct_sequencers_exceeds_seq__invalid_io(
 
     name = "cluster0_module1"
     module_type = QcmRfModule
-    valid_ios = [f"complex_output_{i}" for i in [0, 1]]
+    valid_ios = [f"complex_output_{i}" for i in [0, 1]] + [
+        f"digital_output_{i}" for i in [0, 1]
+    ]
 
     assert (
         str(error.value.args[0])
@@ -1092,7 +1094,7 @@ def test_compile_with_repetitions(
     program_from_json = full_program["compiled_instructions"]["qcm0"]["sequencers"][
         "seq0"
     ]["sequence"]["program"]
-    move_line = program_from_json.split("\n")[6]
+    move_line = program_from_json.split("\n")[5]
     move_items = move_line.split()  # splits on whitespace
     args = move_items[1]
     iterations = int(args.split(",")[0])
