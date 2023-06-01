@@ -23,6 +23,7 @@
 - Qblox backend - Raise RuntimeWarning instead of NotImplementedError upon using `reference_magnitude` parameter (introduced in !652) (!684)
 - Qblox backend - Compilation uses `math.isclose` instead of `numpy.isclose` in certain cases to improve compile time (!682)
 - Qblox backend - Add `MarkerPulse` to pulse library, and implement Qblox backend compilation for this pulse (!628)
+- Qblox backend - Fix bug where LO/IF frequency `nan` is treated as overconstrained mixer (!690, #423)
 
 ## 0.13.0 (2023-05-05)
 

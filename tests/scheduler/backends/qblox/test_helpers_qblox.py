@@ -8,9 +8,11 @@
 # Licensed according to the LICENCE file on the main branch
 """Tests for the helpers module."""
 
-import pytest
+import math
 from contextlib import nullcontext
 from typing import Union
+
+import pytest
 
 from quantify_scheduler.backends.qblox import helpers
 
@@ -54,25 +56,30 @@ def test_invalid_get_nco_set_frequency_arguments(frequency: float):
 
 def __get_frequencies(
     clock_freq, lo_freq, interm_freq, downconverter_freq, mix_lo
-) -> helpers.Frequencies:
-    freqs = helpers.Frequencies()
+) -> Union[helpers.Frequencies, str]:
     if downconverter_freq is None or downconverter_freq == 0:
-        freqs.clock = clock_freq
+        freqs = helpers.Frequencies(clock=clock_freq)
     else:
-        freqs.clock = downconverter_freq - clock_freq
+        freqs = helpers.Frequencies(clock=downconverter_freq - clock_freq)
 
-    freqs.LO = lo_freq
     if mix_lo is False:
         freqs.LO = freqs.clock
-    elif interm_freq is not None:
-        freqs.LO = freqs.clock - interm_freq
-
-    freqs.IF = interm_freq
-    if mix_lo is False:
         freqs.IF = None
-    elif lo_freq is not None:
-        freqs.IF = freqs.clock - lo_freq
-
+    else:
+        if lo_freq is None and interm_freq is None:
+            return "underconstrained"
+        elif lo_freq is None and interm_freq is not None:
+            freqs.IF = interm_freq
+            freqs.LO = freqs.clock - interm_freq
+        elif lo_freq is not None and interm_freq is None:
+            freqs.IF = freqs.clock - lo_freq
+            freqs.LO = lo_freq
+        elif lo_freq is not None and interm_freq is not None:
+            if math.isclose(freqs.clock, lo_freq + interm_freq):
+                freqs.IF = interm_freq
+                freqs.LO = lo_freq
+            else:
+                return "overconstrained"
     return freqs
 
 
@@ -120,6 +127,16 @@ def __get_frequencies(
             ),
         )
         for downconverter_freq in [0, clock_freq - 1, -400]
+    ]
+    + [  # Test cases for float("nan")
+        (
+            clock_freq := 100,
+            lo_freq := float("nan"),
+            interm_freq := 5,
+            downconverter_freq := None,
+            mix_lo := True,
+            helpers.Frequencies(clock=100, LO=95, IF=5),
+        )
     ],
 )
 def test_determine_clock_lo_interm_freqs(
@@ -128,34 +145,66 @@ def test_determine_clock_lo_interm_freqs(
     interm_freq: Union[float, None],
     downconverter_freq: Union[float, None],
     mix_lo: bool,
-    expected_freqs: helpers.Frequencies,
+    expected_freqs: Union[helpers.Frequencies, str],
 ):
+    freqs = helpers.Frequencies(clock=clock_freq, LO=lo_freq, IF=interm_freq)
     context_mngr = nullcontext()
-    if downconverter_freq is not None and (
-        downconverter_freq < 0 or downconverter_freq < clock_freq
+    if (
+        downconverter_freq is not None
+        and (downconverter_freq < 0 or downconverter_freq < clock_freq)
+        or expected_freqs in ("overconstrained", "underconstrained")
     ):
         context_mngr = pytest.raises(ValueError)
+
     with context_mngr as error:
         assert (
             helpers.determine_clock_lo_interm_freqs(
-                clock_freq=clock_freq,
-                lo_freq=lo_freq,
-                interm_freq=interm_freq,
+                freqs=freqs,
                 downconverter_freq=downconverter_freq,
                 mix_lo=mix_lo,
             )
             == expected_freqs
         )
-
     if error is not None:
-        if downconverter_freq < 0:
-            assert (
-                str(error.value) == f"Downconverter frequency must be positive "
-                f"({downconverter_freq=:e})"
+        possible_errors = []
+        if expected_freqs == "underconstrained":
+            possible_errors.append(
+                f"Frequency settings underconstrained for {freqs.clock=}."
+                f" Neither LO nor IF supplied ({freqs.LO=}, {freqs.IF=})."
             )
-        elif downconverter_freq < clock_freq:
-            assert (
-                str(error.value)
-                == "Downconverter frequency must be greater than clock frequency "
-                f"({downconverter_freq=:e}, {clock_freq=:e})"
+        elif expected_freqs == "overconstrained":
+            possible_errors.append(
+                f"Frequency settings overconstrained."
+                f" {freqs.clock=} must be equal to {freqs.LO=}+{freqs.IF=} if both are supplied."
             )
+        if downconverter_freq is not None:
+            if downconverter_freq < 0:
+                possible_errors.append(
+                    f"Downconverter frequency must be positive "
+                    f"({downconverter_freq=:e})"
+                )
+            elif downconverter_freq < clock_freq:
+                possible_errors.append(
+                    "Downconverter frequency must be greater than clock frequency "
+                    f"({downconverter_freq=:e}, {clock_freq=:e})"
+                )
+        assert str(error.value) in possible_errors
+
+
+def test_Frequencies():
+    freq = helpers.Frequencies(clock=100, LO=float("nan"), IF=float("nan"))
+    freq.validate()
+    assert freq.LO is None
+    assert freq.IF is None
+
+    invalid_freqs = [
+        helpers.Frequencies(clock=100, LO=None, IF=None),
+        helpers.Frequencies(clock=100, LO=None, IF=None),
+        helpers.Frequencies(clock=None, LO=None, IF=None),
+    ]
+    invalid_freqs[0].LO = float("nan")
+    invalid_freqs[1].IF = float("nan")
+
+    for freq in invalid_freqs:
+        with pytest.raises(ValueError):
+            freq.validate()

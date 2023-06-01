@@ -444,15 +444,28 @@ def get_nco_set_frequency_arguments(frequency_hz: float) -> int:
 
 @dataclasses.dataclass
 class Frequencies:
-    clock: Optional[float] = None
+    clock: float
     LO: Optional[float] = None
     IF: Optional[float] = None
 
+    def __post_init__(self):
+        if self.LO is not None and math.isnan(self.LO):
+            self.LO = None
+        if self.IF is not None and math.isnan(self.IF):
+            self.IF = None
+
+    def validate(self):
+        if self.clock is None or math.isnan(self.clock):
+            raise ValueError(f"Clock frequency must be specified ({self.clock=}).")
+        for freq in [self.LO, self.IF]:
+            if freq is not None and math.isnan(freq):
+                raise ValueError(
+                    f"Frequencies must be a number or None, not NaN ({self.LO=}, {self.IF=})."
+                )
+
 
 def determine_clock_lo_interm_freqs(
-    clock_freq: float,
-    lo_freq: Union[float, None],
-    interm_freq: Union[float, None],
+    freqs: Frequencies,
     downconverter_freq: Optional[float] = None,
     mix_lo: bool = True,
 ) -> Frequencies:
@@ -471,11 +484,8 @@ def determine_clock_lo_interm_freqs(
 
     Parameters
     ----------
-    clock_freq : float
-        Frequency of the clock.
-    lo_freq : Union[float, None]
-        Frequency of the local oscillator (LO).
-    interm_freq : Union[float, None]
+    freqs : Frequencies
+        Frequencies object containing clock, local oscillator (LO) and
         Intermodulation frequency (IF), the frequency of the numerically controlled
         oscillator (NCO).
     downconverter_freq : Optional[float]
@@ -492,15 +502,25 @@ def determine_clock_lo_interm_freqs(
 
     Warns
     -----
-    ValueWarning
+    RuntimeWarning
         In case `downconverter_freq` is set equal to 0, warns to unset via
         ``null``/``None`` instead.
+    RuntimeWarning
+        In case LO is overridden to clock due to `mix_lo` being `False`
+    RuntimeWarning
+        In case IF is overridden to ``None`` due to `mix_lo` being `False`
     Raises
     ------
     ValueError
         In case `downconverter_freq` is less than 0.
     ValueError
         In case `downconverter_freq` is less than `clock_freq`.
+    ValueError
+        In case `mix_lo` is `True` and neither LO frequency nor IF has been supplied.
+    ValueError
+        In case `mix_lo` is `True` and both LO frequency and IF have been supplied and do not adhere to
+        :math:`f_{RF} = f_{LO} + f_{IF}`.
+
     """
 
     def _downconvert_clock(downconverter_freq: float, clock_freq: float) -> float:
@@ -524,23 +544,38 @@ def determine_clock_lo_interm_freqs(
 
         return downconverter_freq - clock_freq
 
-    freqs = Frequencies(clock=clock_freq, LO=lo_freq, IF=interm_freq)
+    freqs.validate()
 
     if downconverter_freq is not None:
         freqs.clock = _downconvert_clock(
             downconverter_freq=downconverter_freq,
-            clock_freq=clock_freq,
+            clock_freq=freqs.clock,
         )
-
     if not mix_lo:
+        if freqs.LO is not None and not math.isclose(freqs.LO, freqs.clock):
+            warnings.warn(
+                f"Overriding {freqs.LO=} to {freqs.clock=} due to mix_lo=False."
+            )
         freqs.LO = freqs.clock
-        freqs.IF = None
+        if freqs.IF is not None:
+            warnings.warn(f"Overriding {freqs.IF=} to None due to mix_lo=False.")
+            freqs.IF = None
     else:
-        if interm_freq is not None:
-            freqs.LO = freqs.clock - interm_freq
-
-        if lo_freq is not None:
-            freqs.IF = freqs.clock - lo_freq
+        if freqs.LO is None and freqs.IF is None:
+            raise ValueError(
+                f"Frequency settings underconstrained for {freqs.clock=}."
+                f" Neither LO nor IF supplied ({freqs.LO=}, {freqs.IF=})."
+            )
+        elif freqs.LO is not None and freqs.IF is not None:
+            if not math.isclose(freqs.LO + freqs.IF, freqs.clock):
+                raise ValueError(
+                    f"Frequency settings overconstrained."
+                    f" {freqs.clock=} must be equal to {freqs.LO=}+{freqs.IF=} if both are supplied."
+                )
+        elif freqs.LO is None and freqs.IF is not None:
+            freqs.LO = freqs.clock - freqs.IF
+        elif freqs.LO is not None and freqs.IF is None:
+            freqs.IF = freqs.clock - freqs.LO
 
     return freqs
 
