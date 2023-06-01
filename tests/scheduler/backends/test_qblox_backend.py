@@ -1751,7 +1751,7 @@ def test_assign_frequencies_baseband_downconverter(
                     f"(downconverter_freq={downconverter_freq0:e}) "
                     f"(for 'seq0' of 'qcm0' with "
                     f"port '{portclock_config['port']}' and "
-                    f"clock '{portclock_config['clock']}')."
+                    f"clock '{portclock_config['clock']}')"
                 )
             elif downconverter_freq0 < q0_clock_freq:
                 assert (
@@ -1761,7 +1761,7 @@ def test_assign_frequencies_baseband_downconverter(
                     f"clock_freq={q0_clock_freq:e}) "
                     f"(for 'seq0' of 'qcm0' with "
                     f"port '{portclock_config['port']}' and "
-                    f"clock '{portclock_config['clock']}')."
+                    f"clock '{portclock_config['clock']}')"
                 )
         return
 
@@ -1987,7 +1987,7 @@ def test_assign_frequencies_rf_downconverter(
                     f"(downconverter_freq={downconverter_freq0:e}) "
                     f"(for 'seq0' of 'cluster0_module2' with "
                     f"port '{portclock_config['port']}' and "
-                    f"clock '{portclock_config['clock']}')."
+                    f"clock '{portclock_config['clock']}')"
                 )
             elif downconverter_freq0 < qubit0_clock_freq:
                 assert (
@@ -1997,7 +1997,7 @@ def test_assign_frequencies_rf_downconverter(
                     f"clock_freq={qubit0_clock_freq:e}) "
                     f"(for 'seq0' of 'cluster0_module2' with "
                     f"port '{portclock_config['port']}' and "
-                    f"clock '{portclock_config['clock']}')."
+                    f"clock '{portclock_config['clock']}')"
                 )
         return
 
