@@ -1,33 +1,50 @@
 # Changelog
 
-## Unreleased
+## 0.14.0 (2023-06-02)
+
+### Release highlights
+
+- Priorly established pulse amplitudes in schedules need to be re-calibrated.
+  - Side effect of user-interface definition for the `ReferenceMagnitude` parameter (for future specification of amplitudes and powers over different orders of magnitude).
+  - `ReferenceMagnitude` is not yet supported by the compilation backends. 
+- Qblox backend:
+  - Introduction of `MarkerPulse` to easily specify digital pulses with exact timing to drive third-party electronics (see [Digital mode](https://quantify-quantify-scheduler.readthedocs-hosted.com/en/latest/tutorials/qblox/Cluster.html#digital-mode)).
+  - Compilation time ~10x speedup (32x speedup on 2-qubit Chevron schedule).
+  - Minimum time between acquisitions lowered from 1000 ns to 300 ns.
+  - Fix that allows supplying LO/IF frequency as `nan`.
 
 ### Breaking changes
 
 - Compilation - Introduced new `ReferenceMagnitude` parameter for pulses to allow specification of amplitudes and powers over different orders of magnitude (using variable attenuations, for example) (!652)
   - Currently, only the user interface is implemented - changes to the backends will be made later (#413)
   - The code is backwards compatible, i.e., all schedules remain valid, but pulse amplitudes are not backwards compatible and will need adjustment / re-calibrating
-- Qblox backend - Lowering the minimum time between acquisitions to 300 ns (!676, #369)
 - Qblox backend - The compiled offset value in `AwgOffsetStrategy` is adjusted to match the changes to pulse amplitudes in !652. A pulse with a given amplitude `A` and a `VoltageOffset` with offset `A` will now produce the same voltage at the hardware level (!683).
+- Qblox backend - Lowering the minimum time between acquisitions to 300 ns (!676, #369)
 
 ### Merged branches and closed issues
 
-- Compilation - Allow to subclass CompiledSchedule in graph compilation (!663).
-- Compilation - Move `MixerCorrections` to `CompilationConfig.hardware_options` (!669)
+- Compilation - Allow to subclass `CompiledSchedule` in graph compilation (!663).
 - Compilation - Support batched frequencies in schedule resources (!670)
+- Compilation - Move `MixerCorrections` to `CompilationConfig.hardware_options` (!669)
 - Compilation - Move `PowerScaling` (gain/attenuation) to `CompilationConfig.hardware_options` (!673)
-- Operations - The function `convert_to_numerical_pulse` has been added, which can be used to convert `StitchedPulse` to `NumericalPulse` (!665).
-  - In addition, this function is called in the pulse diagram plotting functions and the ZI LabOne backend to allow resp. plotting and compiling of `StitchedPulse`.
 - Documentation - Add `UML_class_diagrams` notebook for visualizing class hierarchies (!653)
 - Gettables - When `ScheduleGettable.get()` is called and the associated `InstrumentCoordinator` returns nothing (for example, if the hardware configuration was never set), this will no longer raise a KeyError from the xarray module. Instead, a more helpful error is raised before the data processing (!671).
-- Qblox backend - Raise RuntimeWarning instead of NotImplementedError upon using `reference_magnitude` parameter (introduced in !652) (!684)
+- Operations - The function `convert_to_numerical_pulse` has been added, which can be used to convert `StitchedPulse` to `NumericalPulse` (!665).
+  - In addition, this function is called in the pulse diagram plotting functions and the ZI LabOne backend to allow resp. plotting and compiling of `StitchedPulse`.
+- Qblox backend - Raise `RuntimeWarning` instead of `NotImplementedError` upon using `reference_magnitude` parameter (introduced in !652) (!684)
 - Qblox backend - Compilation uses `math.isclose` instead of `numpy.isclose` in certain cases to improve compile time (!682)
 - Qblox backend - Add `MarkerPulse` to pulse library, and implement Qblox backend compilation for this pulse (!628)
 - Qblox backend - Fix bug where LO/IF frequency `nan` is treated as overconstrained mixer (!690, #423)
 
+### Compatibility info
+
+- Qblox: `qblox-instruments==0.9.0` ([Cluster firmware v0.4.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.4.0)) and `qblox-instruments==0.10.x` ([Cluster firmware v0.5.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.5.0)) 
+- ZI:    `zhinst==21.8.20515` `zhinst-qcodes==0.1.4` `zhinst-toolkit==0.1.5`
+
 ## 0.13.0 (2023-05-05)
 
-### Release Highlights
+### Release highlights
+
 - This release introduces a new acquisition protocol: `NumericalWeightedIntegrationComplex`, that allows users perform a weighted integration acquisition. 
 - The schedule library now has a new schedule that performs an NCO frequency sweep in a dark ESR experiment on an NV-center. 
 - A lot of code that was marked as deprecated has been removed. Please checkout our [deprecated code suggestions](https://quantify-quantify-scheduler.readthedocs-hosted.com/en/latest/examples/deprecated.html) on how to modify you code to ammend any problems caused by this removal. 
