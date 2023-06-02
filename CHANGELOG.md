@@ -3,15 +3,22 @@
 ## 0.14.0 (2023-06-02)
 
 ### Release highlights
+- New features
+  - **Introducing** `ReferenceMagnitude`. A new parameter called has been introduced for pulses, enabling the flexible specification of amplitudes and powers across various orders of magnitude. This parameter allows users to utilize variable attenuations, among other techniques, to precisely control the amplitudes and powers of the pulses. **Important note** this parameter is not yet implemented for any of the available backends. Future updates are expected to include support for ReferenceMagnitude in the compilation backends.
 
-- Priorly established pulse amplitudes in schedules need to be re-calibrated.
+- Qblox backend improvements
+  - **Introducing the** `MarkerPulse`. This feature simplifies the specification of digital pulses with precise timing, facilitating the control of third-party electronics. For more information, refer to the [Digital mode tutorial](https://quantify-quantify-scheduler.readthedocs-hosted.com/en/latest/tutorials/qblox/Cluster.html#digital-mode).
+  - **Improved Compilation Time**. The compilation time has been significantly improved, achieving approximately 10 times faster execution. Notably, a 32 times speedup has been observed when running 2-qubit Chevron schedules.
+  - **Reduced Acquisition Time**. The minimum time between acquisitions has been lowered from 1000 ns to 300 ns, enhancing the efficiency of data acquisition.
+
+<!-- - Priorly established pulse amplitudes in schedules need to be re-calibrated.
   - Side effect of user-interface definition for the `ReferenceMagnitude` parameter (for future specification of amplitudes and powers over different orders of magnitude).
   - `ReferenceMagnitude` is not yet supported by the compilation backends. 
 - Qblox backend:
   - Introduction of `MarkerPulse` to easily specify digital pulses with exact timing to drive third-party electronics (see [Digital mode](https://quantify-quantify-scheduler.readthedocs-hosted.com/en/latest/tutorials/qblox/Cluster.html#digital-mode)).
   - Compilation time ~10x speedup (32x speedup on 2-qubit Chevron schedule).
   - Minimum time between acquisitions lowered from 1000 ns to 300 ns.
-  - Fix that allows supplying LO/IF frequency as `nan`.
+  - Fix that allows supplying LO/IF frequency as `nan`. -->
 
 ### Breaking changes
 
