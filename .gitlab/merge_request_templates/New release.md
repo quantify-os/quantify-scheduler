@@ -1,8 +1,20 @@
 ## Checklist for a new release
 
-1. [ ] Review `CHANGELOG.md` and `AUTHORS.md` have been updated.
-1. [ ] Update `Unreleased` chapter title in `CHANGELOG.md` to `X.Y.Z (YYYY-MM-DD)`. Commit it.
-    - Also update `Unreleased` title in `docs/tutorials/qblox/recent.md` (if present).
+1. [ ] Review that `AUTHORS.md` has been updated.
+
+1. Update `CHANGELOG.md`, `docs/tutorials/qblox/recent.md` and `README.md`:
+    - [ ] Update `Unreleased` chapter title in `CHANGELOG.md` to `X.Y.Z (YYYY-MM-DD)`.
+       - Also update `Unreleased` title in `docs/tutorials/qblox/recent.md` (if present).
+    - [ ] Order changelog alphabetically based on the key (secondary order of entries with same key can be kept as is): Key - Description
+    - [ ] Add compatibility info, extract the versions from `pyproject.toml` and https://pypi.org/project/qblox-instruments/ (Qblox Cluster firmware):
+      ```
+      ### Compatibility info
+
+      - Qblox: `qblox-instruments==x.x.x` (Cluster firmware vx.x.x)
+      - ZI:    `zhinst==x.x.x` `zhinst-qcodes==x.x.x` `zhinst-toolkit==x.x.x`
+      ```
+    - [ ] Update `## Hardware/driver compatibility` in `README.md`.
+
 1. [ ] Review `@deprecated` and `FutureWarning`s that can be cleaned up now.
 
 1. CI pipeline:
