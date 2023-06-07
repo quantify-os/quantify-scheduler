@@ -1633,7 +1633,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         Insert update parameter instructions to activate offsets, if they are not
         already activated by a play, acquire or acquire_weighed instruction (see also
         `the Q1ASM reference
-        <https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/documentation/sequencer.html#instructions>`_).
+        <https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/cluster/q1_sequence_processor.html#instructions>`_).
         """
         for portclock, pulses in self._pulses.items():
             upd_params = self._new_update_parameters_for_port_clock(

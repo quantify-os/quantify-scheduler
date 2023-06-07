@@ -285,7 +285,7 @@ For QRM, QRM-RF and QCM-RF modules you can set the gain and attenuation paramete
 
 #### Gain configuration
 
-* The parameters `"input_gain_I/0"` and `input_gain_Q/1` for QRM correspond to the qcodes parameters [in0_gain](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/qcm_qrm.html#pulsar-qrm-pulsar-in0-gain) and [in1_gain](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/qcm_qrm.html#pulsar-qrm-pulsar-in1-gain) respectively.
+* The parameters `"input_gain_I/0"` and `input_gain_Q/1` for QRM correspond to the qcodes parameters [in0_gain](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/qcm_qrm.html#cluster-qrm-module-in0-gain) and [in1_gain](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/qcm_qrm.html#cluster-qrm-module-in1-gain) respectively.
 
 Note, these parameters only affect the QRM modules. For complex inputs you have to use `"input_gain_I"` and `"input_gain_Q"`, and for real inputs `"input_gain_0"` and `"input_gain_1"`.
 

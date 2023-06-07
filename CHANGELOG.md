@@ -6,6 +6,7 @@
 
 ### Merged branches and closed issues
 
+- Documentation - Update broken qblox-instruments documentation URLs (!696)
 
 ## 0.14.0 (2023-06-02)
 
