@@ -523,15 +523,15 @@ def nv_dark_esr_sched(
     """Generates a schedule for a dark ESR experiment on an NV-center.
 
     The spectroscopy frequency is taken from the device element. Please use the clock
-    specified in the "spectroscopy_operation" entry of the device config.
+    specified in the `spectroscopy_operation` entry of the device config.
 
     This schedule can currently not be compiled with the Zurich Instruments backend.
 
     Parameters
     ----------
     qubit
-        Name of the 'DeviceElement' representing the NV-center.
-    repetitions, optional
+        Name of the `DeviceElement` representing the NV-center.
+    repetitions
         Number of schedule repetitions.
 
     Returns
@@ -565,12 +565,12 @@ def nv_dark_esr_sched_nco(
     Parameters
     ----------
     qubit
-        Name of the 'DeviceElement' representing the NV-center.
+        Name of the `DeviceElement` representing the NV-center.
     spec_clock
         Reference clock of the spectroscopy operation.
     spec_frequencies
         Sample frequencies for the spectroscopy pulse in Hertz.
-    repetitions, optional
+    repetitions
         Number of schedule repetitions.
 
     Returns
@@ -578,22 +578,21 @@ def nv_dark_esr_sched_nco(
     :
         Schedule with NCO frequency sweeping for spectroscopy operation.
     """
-    sched = Schedule("Dark ESR Schedule", repetitions=repetitions)
+    sched = Schedule("Dark ESR Schedule (NCO sweep)", repetitions=repetitions)
 
-    for acq_idx, spec_freq in enumerate(spec_frequencies):
+    sched.add(ChargeReset(qubit), label="Charge reset pre 0")
+    sched.add(CRCount(qubit, acq_index=0), label="CRCount pre 0")
+
+    for idx, spec_freq in enumerate(spec_frequencies):
         sched.add(
             SetClockFrequency(clock=spec_clock, clock_freq_new=spec_freq),
             label=f"set_freq ({spec_clock} {spec_freq:e} Hz)",
         )
-        sched.add(ChargeReset(qubit), label=f"Charge reset {acq_idx}")
-        sched.add(CRCount(qubit, acq_index=acq_idx * 3), label=f"CRCount pre {acq_idx}")
-        sched.add(Reset(qubit), label=f"Reset {acq_idx}")
+        sched.add(Reset(qubit), label=f"Reset {idx}")
         sched.add(
             SpectroscopyOperation(qubit), label=f"Spectroscopy ({spec_freq:e} Hz)"
         )
-        sched.add(Measure(qubit, acq_index=acq_idx * 3 + 1), label=f"Measure {acq_idx}")
-        sched.add(
-            CRCount(qubit, acq_index=acq_idx * 3 + 2), label=f"CRCount post {acq_idx}"
-        )
+        sched.add(Measure(qubit, acq_index=idx * 2 + 1), label=f"Measure {idx}")
+        sched.add(CRCount(qubit, acq_index=idx * 2 + 2), label=f"CRCount post {idx}")
 
     return sched

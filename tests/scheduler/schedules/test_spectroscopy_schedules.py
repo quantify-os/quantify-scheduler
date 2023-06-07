@@ -2,6 +2,7 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
+import math
 import numpy as np
 import pytest
 from qcodes.instrument.parameter import ManualParameter
@@ -98,8 +99,8 @@ class TestHeterodyneSpecScheduleNCO(TestHeterodyneSpecSchedule):
         abs_time = 0.0
         for i, schedulable in enumerate(sched.schedulables.values()):
             assert labels[i] in schedulable["label"]
-            assert np.isclose(
-                schedulable["abs_time"], abs_time, atol=0.0, rtol=1e-15
+            assert math.isclose(
+                schedulable["abs_time"], abs_time, abs_tol=0.0, rel_tol=1e-15
             ), schedulable["label"]
             abs_time += rel_times[i]
 
@@ -295,8 +296,8 @@ class TestTwoToneSpecScheduleNCO(TestTwoToneSpecSchedule):
         abs_time = 0.0
         for i, schedulable in enumerate(sched.schedulables.values()):
             assert labels[i] in schedulable["label"]
-            assert np.isclose(
-                schedulable["abs_time"], abs_time, atol=0.0, rtol=1e-15
+            assert math.isclose(
+                schedulable["abs_time"], abs_time, abs_tol=0.0, rel_tol=1e-15
             ), schedulable["label"]
             abs_time += rel_times[i]
 
@@ -414,33 +415,40 @@ class TestNVDarkESRSchedNCO:
             config=quantum_device.generate_compilation_config(),
         )
 
-        labels = [
-            "set_freq",
+        pre_labels = [
             "Charge reset",
             "CRCount pre",
+        ]
+        labels = [
+            "set_freq",
             "Reset",
             "Spectroscopy",
             "Measure",
             "CRCount post",
         ]
-        labels *= len(self.sched_kwargs["spec_frequencies"])
 
-        rel_times = [
-            8e-9,
+        labels *= len(self.sched_kwargs["spec_frequencies"])
+        labels = pre_labels + labels
+
+        pre_times = [
             qe0.charge_reset.duration(),
             qe0.cr_count.acq_duration(),
+        ]
+        rel_times = [
+            8e-9,
             qe0.reset.duration(),
             qe0.spectroscopy_operation.duration(),
             qe0.measure.acq_duration(),
             qe0.cr_count.acq_duration(),
         ]
         rel_times *= len(self.sched_kwargs["spec_frequencies"])
+        rel_times = pre_times + rel_times
 
         abs_time = 0.0
         for i, schedulable in enumerate(sched.schedulables.values()):
             assert labels[i] in schedulable["label"]
-            assert np.isclose(
-                schedulable["abs_time"], abs_time, atol=0.0, rtol=1e-15
+            assert math.isclose(
+                schedulable["abs_time"], abs_time, abs_tol=0.0, rel_tol=1e-15
             ), schedulable["label"]
             abs_time += rel_times[i]
 

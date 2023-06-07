@@ -7,6 +7,7 @@
 ### Merged branches and closed issues
 
 - Documentation - Update broken qblox-instruments documentation URLs (!696)
+- Schedules - Remove one of the `CRCount` operations in `nv_dark_esr_sched_nco` from NCO frequency loop to avoid redundancy (!643)
 
 ## 0.14.0 (2023-06-02)
 
