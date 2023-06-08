@@ -38,7 +38,7 @@ class ReferenceMagnitude:
         value, unit = parameter.get_val_unit()
         if np.isnan(value):
             return None
-        if unit not in (allowed_units := ["V", "dBm", "A"]):
+        if unit not in (allowed_units := ["V", "dBm", "A", "W"]):
             raise ValueError(f"Invalid unit: {unit}. Allowed units: {allowed_units}")
 
         return cls(value, unit)

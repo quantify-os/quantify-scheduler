@@ -153,7 +153,7 @@ class SpectroscopyOperationHermiteMW(InstrumentModule):
             label="Amplitude of spectroscopy pulse",
             instrument=self,
             initial_value=float("nan"),
-            unit="W",
+            unit="",
             vals=_Amplitudes(),
         )
         """Amplitude of spectroscopy pulse"""
@@ -182,7 +182,7 @@ class ResetSpinpump(InstrumentModule):
             name="amplitude",
             instrument=self,
             initial_value=float("nan"),
-            unit="V",
+            unit="",
             vals=_Amplitudes(),
         )
         """Amplitude of reset pulse"""
@@ -211,7 +211,7 @@ class Measure(InstrumentModule):
             name="pulse_amplitude",
             instrument=self,
             initial_value=float("nan"),
-            unit="V",
+            unit="",
             vals=_Amplitudes(),
         )
         """Amplitude of readout pulse"""
@@ -272,7 +272,7 @@ class ChargeReset(InstrumentModule):
             name="amplitude",
             instrument=self,
             initial_value=float("nan"),
-            unit="V",
+            unit="",
             vals=_Amplitudes(),
         )
         """Amplitude of charge reset pulse."""
@@ -300,7 +300,7 @@ class CRCount(InstrumentModule):
             name="readout_pulse_amplitude",
             instrument=self,
             initial_value=float("nan"),
-            unit="V",
+            unit="",
             vals=_Amplitudes(),
         )
         """Amplitude of readout pulse"""
@@ -309,7 +309,7 @@ class CRCount(InstrumentModule):
             name="spinpump_pulse_amplitude",
             instrument=self,
             initial_value=float("nan"),
-            unit="V",
+            unit="",
             vals=_Amplitudes(),
         )
         """Amplitude of spin-pump pulse"""

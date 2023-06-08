@@ -126,7 +126,7 @@ class RxyDRAG(InstrumentChannel):
             instrument=self,
             label=r"$\pi-pulse amplitude$",
             initial_value=kwargs.get("amp180", float("nan")),
-            unit="V",
+            unit="",
             vals=Numbers(min_value=-10, max_value=10, allow_nan=True),
         )
         r"""Amplitude required to perform a $\pi$ pulse."""
@@ -185,8 +185,8 @@ class DispersiveMeasurement(InstrumentChannel):
             name="pulse_amp",
             instrument=self,
             initial_value=kwargs.get("pulse_amp", 0.25),
-            unit="V",
-            vals=validators.Numbers(min_value=0, max_value=2),
+            unit="",
+            vals=validators.Numbers(min_value=0, max_value=1),
         )
         """Amplitude of the readout pulse."""
 
