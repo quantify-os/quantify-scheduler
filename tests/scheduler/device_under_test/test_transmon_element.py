@@ -5,7 +5,7 @@
 import json
 
 import pytest
-import numpy as np
+import math
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
@@ -116,27 +116,33 @@ def test_reference_magnitude_overwrite_units(q0: BasicTransmonElement):
     call the set method of a different unit parameter
     """
     # All units should initially be nan
-    assert np.isnan(q0.rxy.reference_magnitude.dBm())
-    assert np.isnan(q0.rxy.reference_magnitude.V())
+    assert math.isnan(q0.rxy.reference_magnitude.dBm())
+    assert math.isnan(q0.rxy.reference_magnitude.V())
 
     # Set dBm unit
     q0.rxy.reference_magnitude.dBm(-10)
     assert q0.rxy.reference_magnitude.dBm() == -10
-    assert np.isnan(q0.rxy.reference_magnitude.V())
+    assert math.isnan(q0.rxy.reference_magnitude.V())
 
     # Set V unit
     q0.rxy.reference_magnitude.V(10e-3)
     assert q0.rxy.reference_magnitude.V() == 10e-3
-    assert np.isnan(q0.rxy.reference_magnitude.dBm())
+    assert math.isnan(q0.rxy.reference_magnitude.dBm())
 
     assert q0.rxy.reference_magnitude.get_val_unit() == (10e-3, "V")
 
     # Set A unit
     q0.rxy.reference_magnitude.A(1e-3)
     assert q0.rxy.reference_magnitude.A() == 1e-3
-    assert np.isnan(q0.rxy.reference_magnitude.V())
+    assert math.isnan(q0.rxy.reference_magnitude.V())
 
     assert q0.rxy.reference_magnitude.get_val_unit() == (1e-3, "A")
+
+    # Set nan
+    q0.rxy.reference_magnitude.V(float("nan"))
+
+    assert math.isnan(q0.rxy.reference_magnitude.V())
+    assert q0.rxy.reference_magnitude.A() == 1e-3
 
 
 def test_basic_transmon_deserialization(q0: BasicTransmonElement, dev: QuantumDevice):

@@ -6,6 +6,7 @@
 
 ### Merged branches and closed issues
 
+- Compilation - Amended `ReferenceMagnitude` set method to ensure that all unit parameters are not overwritten when one of the parameters is set to `nan` (!695, #429).
 - Compilation - Changed units of amplitude parameters in device elements to dimesionless, for consistency with new `ReferenceMagnitude` interface (!691).
 - Documentation - Update broken qblox-instruments documentation URLs (!696)
 - Schedules - Remove one of the `CRCount` operations in `nv_dark_esr_sched_nco` from NCO frequency loop to avoid redundancy (!643)

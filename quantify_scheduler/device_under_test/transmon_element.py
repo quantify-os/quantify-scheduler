@@ -336,7 +336,7 @@ class ReferenceMagnitude(InstrumentChannel):
         for name, par in self.parameters.items():
             if name == parameter:
                 par.cache.set(value)
-            else:
+            elif not math.isnan(value):
                 par.cache.set(math.nan)
 
     def get_val_unit(self) -> Tuple[float, str]:
