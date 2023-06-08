@@ -2,6 +2,7 @@
 # pylint: disable=invalid-name
 # pylint: disable=redefined-outer-name
 
+import itertools
 import numpy as np
 import numpy.testing as npt
 import pytest
@@ -15,6 +16,7 @@ from quantify_scheduler.waveforms import (
     sudden_net_zero,
     skewed_hermite,
 )
+from quantify_scheduler.operations.pulse_library import SuddenNetZeroPulse
 
 
 def test_square_wave() -> None:
@@ -99,7 +101,7 @@ def test_drag_ns() -> None:
 
 
 def test_sudden_net_zero() -> None:
-    times = np.arange(0, 40e-9, 1e-9)
+    times = np.arange(0, 33e-9, 0.91e-9)
     amp_A = 0.4
     amp_B = 0.2
     net_zero_A_scale = 0.95
@@ -109,14 +111,51 @@ def test_sudden_net_zero() -> None:
         amp_A=amp_A,
         amp_B=amp_B,
         net_zero_A_scale=net_zero_A_scale,
-        t_pulse=20e-9,
-        t_phi=2e-9,
-        t_integral_correction=10e-9,
+        t_pulse=20.1e-9,
+        t_phi=2.3e-9,
+        t_integral_correction=10.6e-9,
     )
 
     assert np.sum(waveform) == pytest.approx(0, abs=1e-12)
     assert np.max(waveform) == amp_A
     assert np.min(waveform) == -1 * amp_A * net_zero_A_scale
+    assert np.round(amp_B * amp_A, decimals=12) in np.round(waveform, decimals=12)
+    assert np.round(-amp_B * amp_A * net_zero_A_scale, decimals=12) in np.round(
+        waveform, decimals=12
+    )
+
+
+@pytest.mark.parametrize(
+    "sample_time, t_pulse, t_phi, t_integral_correction",
+    itertools.product(
+        (0.5, 1.0, 2.0, 1.0 / 2.4), (4.0, 5.0, 6.0, 7.0), (4.0, 6.0), (6.0, 8.0)
+    ),
+)
+def test_sudden_net_zero_class_does_not_cause_error(
+    sample_time: float, t_pulse: float, t_phi: float, t_integral_correction: float
+):
+    """Test that the SuddenNetZeroPulse always provides the sudden_net_zero
+    function with valid arguments. Specifically, the sudden_net_zero function
+    should not round t_pulse, t_phi and t_integral_correction such that their
+    sum is greater than the duration specified by SuddenNetZeroPulse."""
+    amp_A = 0.4
+    amp_B = 0.2
+    net_zero_A_scale = 0.95
+    pulse = SuddenNetZeroPulse(
+        amp_A=amp_A,
+        amp_B=amp_B,
+        net_zero_A_scale=net_zero_A_scale,
+        t_pulse=t_pulse,
+        t_phi=t_phi,
+        t_integral_correction=t_integral_correction,
+        port="port",
+    )
+
+    # Array with duration from SuddenNetZeroPulse should not raise error.
+    t = np.arange(0, pulse.duration, sample_time)
+    _ = sudden_net_zero(
+        t, amp_A, amp_B, net_zero_A_scale, t_pulse, t_phi, t_integral_correction
+    )
 
 
 @pytest.mark.parametrize(

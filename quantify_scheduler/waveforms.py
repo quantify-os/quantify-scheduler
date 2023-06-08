@@ -229,65 +229,90 @@ def sudden_net_zero(
     """
     Generates the sudden net zero waveform from :cite:t:`negirneac_high_fidelity_2021`.
 
+    The waveform consists of a square pulse with a duration of half
+    ``t_pulse`` and an amplitude of ``amp_A``, followed by an idling period (0
+    V) with duration ``t_phi``, followed again by a square pulse with amplitude
+    ``-amp_A * net_zero_A_scale`` and a duration of half ``t_pulse``, followed
+    by a integral correction period with duration ``t_integral_correction``.
+
+    The last sample of the first pulse has amplitude ``amp_A * amp_B``. The
+    first sample of the second pulse has amplitude ``-amp_A * net_zero_A_scale *
+    amp_B``.
+
+    The amplitude of the integral correction period is such that ``sum(waveform)
+    == 0``.
+
+    If the total duration of the pulse parts is less than the duration set by
+    the ``t`` array, the remaining samples will be set to 0 V.
+
+    The various pulse part durations are rounded **down** (floor) to the sample
+    rate of the ``t`` array. Since ``t_pulse`` is the total duration of the two
+    square pulses, half this duration is rounded to the sample rate. For
+    example:
+
+    .. jupyter-execute::
+
+        import numpy as np
+        from quantify_scheduler.waveforms import sudden_net_zero
+
+        t = np.linspace(0, 9e-9, 10)  # 1 GSa/s
+        amp_A = 1.0
+        amp_B = 0.5
+        net_zero_A_scale = 0.8
+        t_pulse = 5.0e-9  # will be rounded to 2 pulses of 2 ns
+        t_phi = 2.6e-9  # rounded to 2 ns
+        t_integral_correction = 4.4e-9  # rounded to 4 ns
+
+        sudden_net_zero(
+            t, amp_A, amp_B, net_zero_A_scale, t_pulse, t_phi, t_integral_correction
+        )
+
     Parameters
     ----------
     t
-        Times at which to evaluate the function.
+        A uniformly sampled array of times at which to evaluate the function.
     amp_A
-        amplitude of the main square pulse
+        Amplitude of the main square pulse
     amp_B
-        scaling correction for the final sample of the first square and first sample
+        Scaling correction for the final sample of the first square and first sample
         of the second square pulse.
     net_zero_A_scale
-        amplitude scaling correction factor of the negative arm of the net-zero pulse.
+        Amplitude scaling correction factor of the negative arm of the net-zero pulse.
     t_pulse
-        the total duration of the two half square pulses
+        The total duration of the two half square pulses. The duration of each
+        half is rounded to the sample rate of the `t` array.
     t_phi
-        the idling duration between the two half pulses
+        The idling duration between the two half pulses. The duration is rounded
+        to the sample rate of the `t` array.
     t_integral_correction
-        the duration in which any non-zero pulse amplitude needs to be corrected.
+        The duration in which any non-zero pulse amplitude needs to be
+        corrected. The duration is rounded to the sample rate of the `t` array.
     """
-
-    # this transform is because all step functions are defined with respect to the
-    # start of the waveform.
-    t = t - min(t)
-
-    def _square(t, start: float, stop: float, start_amp=1, stop_amp=0):
-        """square pulses with a start and stop using a heaviside function."""
-        return np.heaviside(
-            np.around(t - start, decimals=12), start_amp
-        ) - np.heaviside(np.around(t - stop, decimals=12), 1 - stop_amp)
-
-    # the waveform itself
-    first_arm = amp_A * _square(t, start=0, stop=t_pulse / 2, stop_amp=amp_B)
-    second_arm = (
-        -1
-        * amp_A
-        * net_zero_A_scale
-        * _square(
-            t,
-            start=t_pulse / 2 + t_phi,
-            stop=t_pulse + t_phi,
-            start_amp=amp_B,
-            stop_amp=0,
-        )
-    )
-    waveform_amps = first_arm + second_arm
-
-    # adding a correction to ensure the integral evaluates to 0
     sampling_rate = t[1] - t[0]
-    num_corr_samples = t_integral_correction / sampling_rate
-    corr_amp = -np.sum(waveform_amps) / num_corr_samples
+    single_arm_samples = int(t_pulse / 2 / sampling_rate)
+    mid_samples = int(t_phi / sampling_rate)
+    num_corr_samples = int(t_integral_correction / sampling_rate)
 
-    corr_waveform_amps = waveform_amps + corr_amp * _square(
-        t,
-        start=t_pulse + t_phi,
-        stop=t_pulse + t_phi + t_integral_correction,
-        start_amp=0,
-        stop_amp=1,
-    )
+    if 2 * single_arm_samples + mid_samples + num_corr_samples > len(t):
+        raise ValueError(
+            "Specified pulse part durations add up to longer than the given time array."
+        )
 
-    return corr_waveform_amps
+    waveform = np.zeros(len(t))
+    waveform[:single_arm_samples] = amp_A
+    waveform[single_arm_samples - 1] = amp_A * amp_B
+    waveform[
+        single_arm_samples + mid_samples : 2 * single_arm_samples + mid_samples
+    ] = (-amp_A * net_zero_A_scale)
+    waveform[single_arm_samples + mid_samples] = -amp_A * net_zero_A_scale * amp_B
+    integral_value = -sum(waveform) / num_corr_samples
+    waveform[
+        2 * single_arm_samples
+        + mid_samples : 2 * single_arm_samples
+        + mid_samples
+        + num_corr_samples
+    ] = integral_value
+    return waveform
 
 
 def interpolated_complex_waveform(
