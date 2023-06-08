@@ -653,7 +653,7 @@ class Schedulable(JSONSchemaValMixin, UserDict):
 
     schema_filename = "schedulable.json"
 
-    def __init__(self, name, operation_repr, schedule, data: dict = None):
+    def __init__(self, name, operation_repr, schedule):
         """
 
         Parameters
@@ -668,16 +668,6 @@ class Schedulable(JSONSchemaValMixin, UserDict):
             to find other elements on the schedule
         """
         super().__init__()
-        if data is not None:
-            warnings.warn(
-                "Support for the data argument will be dropped in"
-                "quantify-scheduler >= 0.13.0.\n"
-                "Please consider updating the data "
-                "dictionary after initialization.",
-                FutureWarning,
-            )
-            self.data = data
-            return
 
         # assert the name is unique
         if name in schedule["schedulables"]:

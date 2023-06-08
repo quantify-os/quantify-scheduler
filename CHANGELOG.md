@@ -29,6 +29,8 @@
   - The code is backwards compatible, i.e., all schedules remain valid, but pulse amplitudes are not backwards compatible and will need adjustment / re-calibrating
 - Qblox backend - The compiled offset value in `AwgOffsetStrategy` is adjusted to match the changes to pulse amplitudes in !652. A pulse with a given amplitude `A` and a `VoltageOffset` with offset `A` will now produce the same voltage at the hardware level (!683).
 - Qblox backend - Lowering the minimum time between acquisitions to 300 ns (!676, #369)
+- Deprecation - Deprecated code that had been scheduled to be removed after version 0.13 has been removed. The deprecated code suggestions have been updated (!679).
+- Visualization - The function `quantify_scheduler.waveforms.modulate_wave` has been removed as it duplicated `quantify_scheduler.helpers.waveforms.modulate_waveform` in an incorrect manner (!679).
 
 ### Merged branches and closed issues
 

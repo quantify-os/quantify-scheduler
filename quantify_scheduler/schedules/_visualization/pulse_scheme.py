@@ -18,8 +18,7 @@ from matplotlib.axes import Axes
 # For type hints, import modules to avoid circular dependencies
 from matplotlib.figure import Figure
 
-from quantify_core.utilities import deprecated
-from quantify_scheduler.schedules._visualization import constants, pulse_diagram
+from quantify_scheduler.schedules._visualization import constants
 
 logger = logging.getLogger(__name__)
 
@@ -484,12 +483,3 @@ def box_text(
         size=fontsize,
         color=textcolor,
     ).set_clip_on(True)
-
-
-@deprecated(
-    "0.13.0",
-    "`pulse_diagram_plotly` has moved to a new module, please import from "
-    "`quantify_scheduler.schedules._visualization.pulse_diagram` instead.",
-)
-def pulse_diagram_plotly(*args, **kwargs):
-    return pulse_diagram.pulse_diagram_plotly(*args, **kwargs)

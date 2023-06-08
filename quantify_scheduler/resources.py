@@ -5,8 +5,6 @@
 from __future__ import annotations
 
 from collections import UserDict
-from typing import Optional
-import warnings
 
 from quantify_scheduler.json_utils import load_json_schema, validate_json
 
@@ -21,7 +19,7 @@ class Resource(UserDict):
     """
 
     # pylint: enable=line-too-long
-    def __init__(self, name: str, data: Optional[dict] = None) -> None:
+    def __init__(self, name: str) -> None:
         """
         Create a new instance of Resource.
 
@@ -31,22 +29,9 @@ class Resource(UserDict):
         ----------
         name :
             The resource name.
-        data :
-            The resource data dictionary, by default None
         """
         super().__init__()
-
         self.data["name"] = name
-
-        if data is not None:
-            warnings.warn(
-                "Support for the data argument will be dropped in"
-                "quantify-scheduler >= 0.13.0.\n"
-                "Please consider updating the data "
-                "dictionary after initialization.",
-                FutureWarning,
-            )
-            self.data.update(data)
 
     @classmethod
     def is_valid(cls, operation: Resource) -> bool:
@@ -121,7 +106,10 @@ class ClockResource(Resource):
     """
 
     def __init__(
-        self, name: str, freq: float, phase: float = 0, data: Optional[dict] = None
+        self,
+        name: str,
+        freq: float,
+        phase: float = 0,
     ) -> None:
         """
         A clock resource used to modulate pulses.
@@ -135,24 +123,14 @@ class ClockResource(Resource):
         phase :
             the starting phase of the clock in deg
         """
-        if data is None:
-            super().__init__(name)
+        super().__init__(name)
 
-            self.data = {
-                "name": name,
-                "type": str(self.__class__.__name__),
-                "freq": freq,
-                "phase": phase,
-            }
-        else:
-            warnings.warn(
-                "Support for the data argument will be dropped in"
-                "quantify-scheduler >= 0.13.0.\n"
-                "Please consider updating the data "
-                "dictionary after initialization.",
-                FutureWarning,
-            )
-            super().__init__(data["name"], data=data)
+        self.data = {
+            "name": name,
+            "type": str(self.__class__.__name__),
+            "freq": freq,
+            "phase": phase,
+        }
 
     def __str__(self) -> str:
         freq = self.data["freq"]
@@ -167,7 +145,7 @@ class BasebandClockResource(Resource):
 
     IDENTITY = "cl0.baseband"
 
-    def __init__(self, name: str, data: Optional[dict] = None) -> None:
+    def __init__(self, name: str) -> None:
         """
         A clock resource for pulses that operate at baseband.
 
@@ -178,21 +156,11 @@ class BasebandClockResource(Resource):
         name :
             the name of this clock
         """
-        if data is None:
-            super().__init__(name)
+        super().__init__(name)
 
-            self.data = {
-                "name": name,
-                "type": str(self.__class__.__name__),
-                "freq": 0,
-                "phase": 0,
-            }
-        else:
-            warnings.warn(
-                "Support for the data argument will be dropped in"
-                "quantify-scheduler >= 0.13.0.\n"
-                "Please consider updating the data "
-                "dictionary after initialization.",
-                FutureWarning,
-            )
-            super().__init__(data["name"], data=data)
+        self.data = {
+            "name": name,
+            "type": str(self.__class__.__name__),
+            "freq": 0,
+            "phase": 0,
+        }

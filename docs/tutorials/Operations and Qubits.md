@@ -134,6 +134,7 @@ By scheduling 7 operations for 21 different values for {code}`theta` we indeed g
 The acquisitions are different for every iteration due to their different {code}`acq_index`. The {class}`~quantify_scheduler.operations.gate_library.Rxy`-gate rotates over a different angle every iteration and must therefore also be different for every iteration (except for the last since {math}`R^{360}=R^0`). Hence the number of unique operations is 3\*21-1+4=66.
 ```
 
+(sec-tutorial-ops-qubits-vis)=
 ## Visualizing the quantum circuit
 
 We can directly visualize the created schedule on the

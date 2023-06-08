@@ -9,7 +9,6 @@ import pytest
 from quantify_scheduler.waveforms import (
     drag,
     interpolated_complex_waveform,
-    modulate_wave,
     rotate_wave,
     square,
     staircase,
@@ -172,25 +171,6 @@ def test_rotate_wave() -> None:
 
     npt.assert_array_almost_equal(I, rot_wf.real)
     npt.assert_array_almost_equal(Q, rot_wf.imag)
-
-
-def test_modulate() -> None:
-    fs = 100
-    f = 4
-    t = np.arange(fs)
-    I = np.sin(2 * np.pi * f * (t / fs))  # noqa
-    Q = np.sin(2 * np.pi * f * (t / fs) + (np.pi / 2))  # noqa
-    wf = I + 1j * Q
-
-    mod_wf = modulate_wave(np.linspace(0, 1, fs), wf, 2)
-    npt.assert_array_almost_equal(
-        mod_wf.real, np.sin(2 * np.pi * (f + 2) * (t / fs)), decimal=1
-    )
-
-    mod_wf = modulate_wave(np.linspace(0, 1, fs), wf, -2)
-    npt.assert_array_almost_equal(
-        mod_wf.imag, np.sin(2 * np.pi * (f - 2) * (t / fs) + (np.pi / 2)), decimal=1
-    )
 
 
 @pytest.fixture

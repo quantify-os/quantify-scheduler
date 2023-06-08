@@ -17,8 +17,8 @@ class AcquisitionOperation(Operation):  # pylint: disable=too-many-ancestors
     """
     This class is used to help differentiate an acquisition operation from the regular
     operations. This enables us to use
-    :func:`~.visualization.pulse_diagram.plot_acquisition_operations` to highlight
-    acquisition pulses in the pulse diagrams.
+    :func:`~.quantify_scheduler.schedules._visualization.pulse_diagram.plot_acquisition_operations`
+    to highlight acquisition pulses in the pulse diagrams.
     """
 
 
@@ -34,7 +34,6 @@ class Trace(AcquisitionOperation):  # pylint: disable=too-many-ancestors
         acq_index: int = 0,
         bin_mode: Union[BinMode, str] = BinMode.AVERAGE,
         t0: float = 0,
-        data: Optional[dict] = None,
     ) -> None:
         """
         Creates a new instance of Trace.
@@ -70,50 +69,33 @@ class Trace(AcquisitionOperation):  # pylint: disable=too-many-ancestors
             new result and the old register value, by default BinMode.APPEND
         t0 :
             The acquisition start time in seconds, by default 0
-        data :
-            The operation's dictionary, by default None\n
-            Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.\n
-            Deprecated: support for the data argument will be dropped in
-            quantify-scheduler >= 0.13.0. Please consider updating the data
-            dictionary after initialization.
         """
-        if data is None:
-            if not isinstance(duration, float):
-                duration = float(duration)
-            if isinstance(bin_mode, str):
-                bin_mode = BinMode(bin_mode)
+        if not isinstance(duration, float):
+            duration = float(duration)
+        if isinstance(bin_mode, str):
+            bin_mode = BinMode(bin_mode)
 
-            super().__init__(name="Trace")
-            self.data.update(
-                {
-                    "name": "Trace",
-                    "acquisition_info": [
-                        {
-                            "waveforms": [],
-                            "duration": duration,
-                            "t0": t0,
-                            "port": port,
-                            "clock": clock,
-                            "acq_channel": acq_channel,
-                            "acq_index": acq_index,
-                            "bin_mode": bin_mode,
-                            "protocol": "Trace",
-                            "acq_return_type": np.ndarray,
-                        }
-                    ],
-                }
-            )
-            self._update()
-        else:
-            warnings.warn(
-                "Support for the data argument will be dropped in"
-                "quantify-scheduler >= 0.13.0.\n"
-                "Please consider updating the data "
-                "dictionary after initialization.",
-                FutureWarning,
-            )
-            super().__init__(name=data["name"], data=data)
+        super().__init__(name="Trace")
+        self.data.update(
+            {
+                "name": "Trace",
+                "acquisition_info": [
+                    {
+                        "waveforms": [],
+                        "duration": duration,
+                        "t0": t0,
+                        "port": port,
+                        "clock": clock,
+                        "acq_channel": acq_channel,
+                        "acq_index": acq_index,
+                        "bin_mode": bin_mode,
+                        "protocol": "Trace",
+                        "acq_return_type": np.ndarray,
+                    }
+                ],
+            }
+        )
+        self._update()
 
     def __str__(self) -> str:
         acq_info = self.data["acquisition_info"][0]
@@ -140,7 +122,6 @@ class WeightedIntegratedComplex(
         bin_mode: Union[BinMode, str] = BinMode.APPEND,
         phase: float = 0,
         t0: float = 0,
-        data: Optional[dict] = None,
     ) -> None:
         r"""
         Creates a new instance of WeightedIntegratedComplex.
@@ -192,13 +173,6 @@ class WeightedIntegratedComplex(
             The phase of the pulse and acquisition in degrees, by default 0
         t0 :
             The acquisition start time in seconds, by default 0
-        data :
-            The operation's dictionary, by default None\n
-            Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.\n
-            Deprecated: support for the data argument will be dropped in
-            quantify-scheduler >= 0.13.0. Please consider updating the data
-            dictionary after initialization.
 
         Raises
         ------
@@ -208,48 +182,32 @@ class WeightedIntegratedComplex(
             # Because of how clock interfaces were changed.
             raise NotImplementedError("Non-zero phase not yet implemented")
 
-        if data is None:
-            super().__init__(name="WeightedIntegratedComplex")
-            self.data.update(
-                {
-                    "name": "WeightedIntegratedComplex",
-                    "acquisition_info": [
-                        {
-                            "waveforms": [waveform_a, waveform_b],
-                            "t0": t0,
-                            "clock": clock,
-                            "port": port,
-                            "duration": duration,
-                            "phase": phase,
-                            "acq_channel": acq_channel,
-                            "acq_index": acq_index,
-                            "bin_mode": bin_mode,
-                            "protocol": "WeightedIntegratedComplex",
-                            "acq_return_type": complex,
-                        }
-                    ],
-                }
-            )
-            self._update()
-            # certain fields are required in the acquisition data
-            if "acq_return_type" not in self.data["acquisition_info"][0]:
-                self.data["acquisition_info"][0]["acq_return_type"] = complex
-                self.data["acquisition_info"][0][
-                    "protocol"
-                ] = "WeightedIntegratedComplex"
-        else:
-            warnings.warn(
-                "Support for the data argument will be dropped in"
-                "quantify-scheduler >= 0.13.0.\n"
-                "Please consider updating the data "
-                "dictionary after initialization.",
-                FutureWarning,
-            )
-            if "acq_return_type" not in data["acquisition_info"][0]:
-                data["acquisition_info"][0]["acq_return_type"] = complex
-                data["acquisition_info"][0]["protocol"] = "WeightedIntegratedComplex"
-
-            super().__init__(name=data["name"], data=data)
+        super().__init__(name="WeightedIntegratedComplex")
+        self.data.update(
+            {
+                "name": "WeightedIntegratedComplex",
+                "acquisition_info": [
+                    {
+                        "waveforms": [waveform_a, waveform_b],
+                        "t0": t0,
+                        "clock": clock,
+                        "port": port,
+                        "duration": duration,
+                        "phase": phase,
+                        "acq_channel": acq_channel,
+                        "acq_index": acq_index,
+                        "bin_mode": bin_mode,
+                        "protocol": "WeightedIntegratedComplex",
+                        "acq_return_type": complex,
+                    }
+                ],
+            }
+        )
+        self._update()
+        # certain fields are required in the acquisition data
+        if "acq_return_type" not in self.data["acquisition_info"][0]:
+            self.data["acquisition_info"][0]["acq_return_type"] = complex
+            self.data["acquisition_info"][0]["protocol"] = "WeightedIntegratedComplex"
 
     def __str__(self) -> str:
         acq_info = self.data["acquisition_info"][0]
@@ -272,7 +230,6 @@ class SSBIntegrationComplex(AcquisitionOperation):  # pylint: disable=too-many-a
         bin_mode: Union[BinMode, str] = BinMode.AVERAGE,
         phase: float = 0,
         t0: float = 0,
-        data: Optional[dict] = None,
     ) -> None:
         """
         Creates a new instance of SSBIntegrationComplex. Single Sideband
@@ -310,13 +267,6 @@ class SSBIntegrationComplex(AcquisitionOperation):  # pylint: disable=too-many-a
             The phase of the pulse and acquisition in degrees, by default 0
         t0 :
             The acquisition start time in seconds, by default 0
-        data :
-            The operation's dictionary, by default None\n
-            Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.\n
-            Deprecated: support for the data argument will be dropped in
-            quantify-scheduler >= 0.13.0. Please consider updating the data
-            dictionary after initialization.
         """
         waveform_i = {
             "port": port,
@@ -340,45 +290,32 @@ class SSBIntegrationComplex(AcquisitionOperation):  # pylint: disable=too-many-a
             # Because of how clock interfaces were changed.
             raise NotImplementedError("Non-zero phase not yet implemented")
 
-        if data is None:
-            super().__init__(name="SSBIntegrationComplex")
-            self.data.update(
-                {
-                    "name": "SSBIntegrationComplex",
-                    "acquisition_info": [
-                        {
-                            "waveforms": [waveform_i, waveform_q],
-                            "t0": t0,
-                            "clock": clock,
-                            "port": port,
-                            "duration": duration,
-                            "phase": phase,
-                            "acq_channel": acq_channel,
-                            "acq_index": acq_index,
-                            "bin_mode": bin_mode,
-                            "acq_return_type": complex,
-                            "protocol": "SSBIntegrationComplex",
-                        }
-                    ],
-                }
-            )
-            self._update()
-            # certain fields are required in the acquisition data
-            if "acq_return_type" not in self.data["acquisition_info"][0]:
-                self.data["acquisition_info"][0]["acq_return_type"] = complex
-                self.data["acquisition_info"][0]["protocol"] = "SSBIntegrationComplex"
-        else:
-            warnings.warn(
-                "Support for the data argument will be dropped in"
-                "quantify-scheduler >= 0.13.0.\n"
-                "Please consider updating the data "
-                "dictionary after initialization.",
-                FutureWarning,
-            )
-            if "acq_return_type" not in data["acquisition_info"][0]:
-                data["acquisition_info"][0]["acq_return_type"] = complex
-                data["acquisition_info"][0]["protocol"] = "SSBIntegrationComplex"
-            super().__init__(name=data["name"], data=data)
+        super().__init__(name="SSBIntegrationComplex")
+        self.data.update(
+            {
+                "name": "SSBIntegrationComplex",
+                "acquisition_info": [
+                    {
+                        "waveforms": [waveform_i, waveform_q],
+                        "t0": t0,
+                        "clock": clock,
+                        "port": port,
+                        "duration": duration,
+                        "phase": phase,
+                        "acq_channel": acq_channel,
+                        "acq_index": acq_index,
+                        "bin_mode": bin_mode,
+                        "acq_return_type": complex,
+                        "protocol": "SSBIntegrationComplex",
+                    }
+                ],
+            }
+        )
+        self._update()
+        # certain fields are required in the acquisition data
+        if "acq_return_type" not in self.data["acquisition_info"][0]:
+            self.data["acquisition_info"][0]["acq_return_type"] = complex
+            self.data["acquisition_info"][0]["protocol"] = "SSBIntegrationComplex"
 
     def __str__(self) -> str:
         acq_info = self.data["acquisition_info"][0]
@@ -438,7 +375,6 @@ class NumericalWeightedIntegrationComplex(
         bin_mode: Union[BinMode, str] = BinMode.APPEND,
         phase: float = 0,
         t0: float = 0,
-        data: Optional[dict] = None,
     ) -> None:
         r"""
         Creates a new instance of NumericalWeightedIntegrationComplex.
@@ -500,13 +436,6 @@ class NumericalWeightedIntegrationComplex(
             The phase of the pulse and acquisition in degrees, by default 0
         t0 :
             The acquisition start time in seconds, by default 0
-        data :
-            The operation's dictionary, by default None\n
-            Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.\n
-            Deprecated: support for the data argument will be dropped in
-            quantify-scheduler >= 0.13.0. Please consider updating the data
-            dictionary after initialization.
         """
         if t is not None:
             warnings.warn(
@@ -541,14 +470,7 @@ class NumericalWeightedIntegrationComplex(
             "interpolation": interpolation,
         }
         duration = len(t_samples) / weights_sampling_rate
-        if data is not None:
-            warnings.warn(
-                "Support for the data argument will be dropped in"
-                "quantify-scheduler >= 0.13.0.\n"
-                "Please consider updating the data "
-                "dictionary after initialization.",
-                FutureWarning,
-            )
+
         super().__init__(
             waveforms_a,
             waveforms_b,
@@ -560,7 +482,6 @@ class NumericalWeightedIntegrationComplex(
             bin_mode,
             phase,
             t0,
-            data,
         )
         self._update()
         self.data["name"] = "NumericalWeightedIntegrationComplex"

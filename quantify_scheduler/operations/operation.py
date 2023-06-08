@@ -3,20 +3,12 @@
 """Module containing the core concepts of the scheduler."""
 from __future__ import annotations
 
-import ast
 import inspect
 import logging
 from collections import UserDict
 from enum import Enum
 from pydoc import locate
-from typing import Optional
-import warnings
 
-import numpy as np
-
-from quantify_core.utilities import deprecated
-
-from quantify_scheduler import enums
 from quantify_scheduler.helpers.collections import make_hash
 from quantify_scheduler.json_utils import JSONSchemaValMixin, lru_cache
 
@@ -69,7 +61,7 @@ class Operation(JSONSchemaValMixin, UserDict):
     schema_filename = "operation.json"
     _class_signature = None
 
-    def __init__(self, name: str, data: Optional[dict] = None) -> None:
+    def __init__(self, name: str) -> None:
         super().__init__()
 
         # ensure keys exist
@@ -79,18 +71,6 @@ class Operation(JSONSchemaValMixin, UserDict):
         self.data["acquisition_info"] = []
         self.data["logic_info"] = {}
         self._duration: float = 0
-
-        if data is not None:
-            warnings.warn(
-                "Support for the data argument will be dropped in"
-                "quantify-scheduler >= 0.13.0.\n"
-                "Please consider updating the data "
-                "dictionary after initialization.",
-                FutureWarning,
-            )
-            self.data.update(data)
-            self._deserialize()
-            self._update()
 
     def __eq__(self, other) -> bool:
         """
@@ -209,7 +189,7 @@ class Operation(JSONSchemaValMixin, UserDict):
             value = f"'{value}'" if isinstance(value, str) else value
             return f"{key}={value}"
 
-        required_params = list(signature.parameters.keys())[:-1]
+        required_params = list(signature.parameters.keys())
         kwargs_list = map(to_kwarg, required_params)
 
         return f'{cls.__name__}({",".join(kwargs_list)})'
@@ -262,42 +242,6 @@ class Operation(JSONSchemaValMixin, UserDict):
         """
         self.data["acquisition_info"] += acquisition_operation.data["acquisition_info"]
         self._update()
-
-    @deprecated(
-        "0.13.0",
-        "Deserialization is handled by the "
-        "`json_utils.ScheduleJSONDecoder` class together with the"
-        "`Operation.__set_state__` method.",
-    )
-    def _deserialize(self) -> None:
-        """Deserializes the data dictionary."""
-        if "unitary" in self.data["gate_info"] and isinstance(
-            self.data["gate_info"]["unitary"], str
-        ):
-            self.data["gate_info"]["unitary"] = np.array(
-                ast.literal_eval(self.data["gate_info"]["unitary"])
-            )
-
-        for acq_info in self.data["acquisition_info"]:
-            if "bin_mode" in acq_info and isinstance(acq_info["bin_mode"], str):
-                acq_info["bin_mode"] = enums.BinMode(acq_info["bin_mode"])
-
-            # FIXME # pylint: disable=fixme
-            # this workaround is required because we cannot easily specify types and
-            # serialize easy. We should change the implementation to dataclasses #159
-            if "<class " in str(acq_info["acq_return_type"]):
-                # first remove the class prefix
-                return_type_str = str(acq_info["acq_return_type"])[7:].strip("'>")
-                # and then use locate to retrieve the type class
-                acq_info["acq_return_type"] = cached_locate(return_type_str)
-
-            for waveform in acq_info["waveforms"]:
-                if "t" in waveform and isinstance(waveform["t"], str):
-                    waveform["t"] = np.array(ast.literal_eval(waveform["t"]))
-                if "weights" in waveform and isinstance(waveform["weights"], str):
-                    waveform["weights"] = np.array(
-                        ast.literal_eval(waveform["weights"])
-                    )
 
     @classmethod
     def is_valid(cls, object_to_be_validated) -> bool:

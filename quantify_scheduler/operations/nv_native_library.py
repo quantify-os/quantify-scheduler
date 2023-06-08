@@ -2,8 +2,7 @@
 # Licensed according to the LICENCE file on the main branch
 # pylint: disable=invalid-name
 """NV-center-specific operations for use with the quantify_scheduler."""
-from typing import Literal, Optional, Tuple, Union
-import warnings
+from typing import Literal, Tuple, Union
 from .operation import Operation
 from ..enums import BinMode
 
@@ -63,7 +62,6 @@ class CRCount(Operation):
             None,
         ] = None,
         bin_mode: BinMode = None,
-        data: Optional[dict] = None,
     ):
         """
         Gate level description for an optical CR count measurement.
@@ -86,13 +84,6 @@ class CRCount(Operation):
             The binning mode that is to be used. If not None, it will overwrite
             the binning mode used for Measurements in the quantum-circuit to
             quantum-device compilation step.
-        data
-            The operation's dictionary, by default None\n
-            Note: if the data parameter is not None all other parameters are
-            overwritten using the contents of data.\n
-            Deprecated: support for the data argument will be dropped in
-            quantify-scheduler >= 0.13.0. Please consider updating the data
-            dictionary after initialization.
         """
 
         # this if else statement a workaround to support multiplexed measurements (#262)
@@ -113,34 +104,26 @@ class CRCount(Operation):
                 # measurements are present in the same schedule (#262)
                 acq_index = list(0 for i in range(len(qubits)))
 
-        if data is None:
-            plot_func = "quantify_scheduler.schedules._visualization.circuit_diagram.acq_meter_text"
-            super().__init__(f"CRCount {', '.join(qubits)}")
-            self.data.update(
-                {
-                    "name": f"CRCount {', '.join(qubits)}",
-                    "gate_info": {
-                        "unitary": None,
-                        "plot_func": plot_func,
-                        "tex": r"CR",
-                        "qubits": list(qubits),
-                        "acq_index": acq_index,
-                        "acq_protocol": acq_protocol,
-                        "bin_mode": bin_mode,
-                        "operation_type": "cr_count",
-                    },
-                }
-            )
-            self._update()
-        else:
-            warnings.warn(
-                "Support for the data argument will be dropped in"
-                "quantify-scheduler >= 0.13.0.\n"
-                "Please consider updating the data "
-                "dictionary after initialization.",
-                FutureWarning,
-            )
-            super().__init__(name=data["name"], data=data)
+        plot_func = (
+            "quantify_scheduler.schedules._visualization.circuit_diagram.acq_meter_text"
+        )
+        super().__init__(f"CRCount {', '.join(qubits)}")
+        self.data.update(
+            {
+                "name": f"CRCount {', '.join(qubits)}",
+                "gate_info": {
+                    "unitary": None,
+                    "plot_func": plot_func,
+                    "tex": r"CR",
+                    "qubits": list(qubits),
+                    "acq_index": acq_index,
+                    "acq_protocol": acq_protocol,
+                    "bin_mode": bin_mode,
+                    "operation_type": "cr_count",
+                },
+            }
+        )
+        self._update()
 
     def __str__(self) -> str:
         gate_info = self.data["gate_info"]

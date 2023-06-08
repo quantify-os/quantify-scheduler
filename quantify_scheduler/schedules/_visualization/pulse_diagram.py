@@ -27,11 +27,11 @@ from plotly.subplots import make_subplots
 import quantify_scheduler.operations.pulse_library as pl
 from quantify_core.visualization.SI_utilities import set_xlabel, set_ylabel
 from quantify_scheduler.helpers.importers import import_python_object_from_string
+from quantify_scheduler.helpers.waveforms import modulate_waveform
 from quantify_scheduler.operations.acquisition_library import AcquisitionOperation
 from quantify_scheduler.operations.stitched_pulse import (
     convert_to_numerical_pulse,
 )
-from quantify_scheduler.waveforms import modulate_wave
 
 if TYPE_CHECKING:
     from quantify_scheduler import CompiledSchedule, Operation, Schedule
@@ -186,13 +186,13 @@ def pulse_diagram_plotly(
             # optionally adds some modulation
             if modulation == "clock":
                 # apply modulation to the waveforms
-                waveform = modulate_wave(
+                waveform = modulate_waveform(
                     t, waveform, schedule.resources[pulse_info["clock"]]["freq"]
                 )
 
             if modulation == "if":
                 # apply modulation to the waveforms
-                waveform = modulate_wave(t, waveform, modulation_if)
+                waveform = modulate_waveform(t, waveform, modulation_if)
 
             row: int = port_map[port] + 1
 
@@ -459,14 +459,14 @@ def sample_schedule(
             # optionally adds some modulation
             if modulation == "clock":
                 # apply modulation to the waveforms
-                waveform = modulate_wave(
+                waveform = modulate_waveform(
                     t, waveform, schedule.resources[pulse_info["clock"]]["freq"]
                 )
                 waveform = np.real_if_close(waveform)
 
             if modulation == "if":
                 # apply modulation to the waveforms
-                waveform = modulate_wave(t, waveform, modulation_if)
+                waveform = modulate_waveform(t, waveform, modulation_if)
 
             if np.iscomplexobj(waveform):
                 waveforms[port] = waveforms[port].astype(complex)

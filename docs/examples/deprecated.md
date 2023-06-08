@@ -11,18 +11,30 @@ kernelspec:
 Download the notebook: {nb-download}`deprecated.ipynb`
 ```
 
-- {ref}`1. acq_channel`
-- {ref}`2. Qcompile => SerialCompiler`
-- {ref}`3. add_pulse_information_transmon => compile_circuit_to_device`
-- {ref}`4. Qblox Hardware Configuration`
-- {ref}`5. TransmonElement => BasicTransmonElement`
-- {ref}`6. Instruction-generated pulses (Qblox only)`
+| **Target** | **Deprecated** | **Removed** | **Alternatives** |
+|---|---|---|---|
+| `convert_hw_config_to_portclock_configs_spec` | 0.13.0 | - | See {ref}`Qblox Hardware Configuration` |
+| `instruction_generated_pulses_enabled` hardware configuration setting | 0.13 | - | See {ref}`Instruction-generated pulses (Qblox only)` |
+| `quantify_scheduler.visualization` | 0.12 | 0.15 | See {ref}`Circuit diagrams and pulse diagrams` |
+| `acq_channel` (in {class}`~quantify_scheduler.operations.gate_library.Measure` and {class}`~quantify_scheduler.operations.nv_native_library.CRCount`) | 0.10 | 0.12 | See {ref}`acq_channel` |
+| `quantify_scheduler.compilation.qcompile`<br>`quantify_scheduler.compilation.device_compile`<br>`quantify_scheduler.compilation.hardware_compile` | 0.10 | 0.12 | See {ref}`Qcompile => SerialCompiler` |
+| The `data` parameter in `Operation` subclasses | 0.9 | 0.15 | - |
+| Old Qblox hardware configuration | 0.8 | 0.12 | See {ref}`Qblox Hardware Configuration` |
+| `TransmonElement` | 0.7 | 0.12 | See {ref}`TransmonElement => BasicTransmonElement` |
+| `add_pulse_information_transmon` | 0.6 | 0.12 | See {ref}`add_pulse_information_transmon => compile_circuit_to_device` |
+| `plot_circuit_diagram_mpl` | 0.6 | 0.9 | {meth}`~quantify_scheduler.schedules.schedule.ScheduleBase.plot_circuit_diagram` |
+| `plot_pulse_diagram_mpl` | 0.6 | 0.9 | {meth}`~quantify_scheduler.schedules.schedule.ScheduleBase.plot_pulse_diagram` |
 
 As of `quantify-scheduler==0.10.0`, deprecation warnings are shown by default (as `FutureWarning`).
 
 ## Compilation Setup
 
 ```{code-cell} ipython3
+---
+tags: [hide-cell]
+mystnb:
+  code_prompt_show: "Set up an InstrumentCoordinator, MeasurementControl and a Cluster"
+---
 from quantify_core.data import handling as dh
 from quantify_core.measurement.control import MeasurementControl
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
@@ -72,6 +84,11 @@ print(f"qcm    => {qcm}\nqrm    => {qrm}\nqcm_rf => {qcm_rf}\nqrm_rf => {qrm_rf}
 ```
 
 ```{code-cell} ipython3
+---
+tags: [hide-cell]
+mystnb:
+  code_prompt_show: "Set up a QuantumDevice with one BasicTransmonElement"
+---
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 
@@ -93,6 +110,11 @@ device_cfg = quantum_device.generate_device_config()
 ```
 
 ```{code-cell} ipython3
+---
+tags: [hide-cell]
+mystnb:
+  code_prompt_show: "Provide the hardware configuration"
+---
 hardware_cfg = {
     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
     "cluster": {
@@ -115,6 +137,11 @@ hardware_cfg = {
 ```
 
 ```{code-cell} ipython3
+---
+tags: [hide-cell]
+mystnb:
+  code_prompt_show: "Define a simple schedule function"
+---
 from quantify_scheduler import Schedule
 from quantify_scheduler.operations.gate_library import Measure, Reset
 from quantify_scheduler.operations.pulse_library import DRAGPulse
@@ -149,11 +176,33 @@ def simple_trace_sched(
 sched = simple_trace_sched(repetitions=1)
 ```
 
-## 1. acq_channel
+## Circuit diagrams and pulse diagrams
+
+The functions to plot circuit and pulse diagrams have moved to a private module in version 0.12.0.
+
+Instead, to plot circuit and pulse diagrams, call, directly on the schedule,  {meth}`~quantify_scheduler.schedules.schedule.ScheduleBase.plot_circuit_diagram` and {meth}`~quantify_scheduler.schedules.schedule.ScheduleBase.plot_pulse_diagram`. 
+
+For example, the line
+
+```python
+pulse_diagram_plotly(schedule)
+pulse_diagram_matplotlib(schedule)
+```
+
+should now be written as
+
+```python
+schedule.plot_pulse_diagram(plot_backend="plotly")
+schedule.plot_pulse_diagram(plot_backend="mpl")
+```
+
+More examples can be found in the {ref}`Schedules and Pulses<sec-tutorial-sched-pulse>` and {ref}`Operations and Qubits<sec-tutorial-ops-qubits-vis>` tutorials.
+
+## acq_channel
 
 In the {class}`~quantify_scheduler.operations.gate_library.Measure` and {class}`~quantify_scheduler.operations.nv_native_library.CRCount` classes, the `acq_channel` parameter has been removed from the initializers. For gate-level operations, the acquisition channel can be set in the {class}`~quantify_scheduler.device_under_test.device_element.DeviceElement` subclasses, such as {class}`~quantify_scheduler.device_under_test.transmon_element.BasicTransmonElement`, instead. See, for example, `q0.measure.acq_channel(0)` in the {ref}`Compilation Setup`.
 
-## 2. Qcompile => SerialCompiler
+## Qcompile => SerialCompiler
 
 The `qcompile`, `device_compile` and `hardware_compile` compilation functions have been replaced by the {class}`~quantify_scheduler.backends.graph_compilation.SerialCompiler`. For step-by-step guides on how to perform compilation to the device level and hardware, please see {ref}`Compiling to Hardware<sec-tutorial-compiling>` and {ref}`Operations and Qubits<sec-tutorial-ops-qubits>`. A brief example is shown below.
 
@@ -181,11 +230,11 @@ compiled_schedule = compiler.compile(
 compiled_schedule.timing_table
 ```
 
-## 3. add_pulse_information_transmon => compile_circuit_to_device
+## add_pulse_information_transmon => compile_circuit_to_device
 
 The compilation step `add_pulse_information_transmon` has been replaced by `compile_circuit_to_device`. For steps on how to add device configuration to your compilation steps, please see {ref}`Operations and Qubits<sec-tutorial-ops-qubits>`.
 
-## 4. Qblox Hardware Configuration
+## Qblox Hardware Configuration
 
 In quantify-scheduler 0.8.0, the schema for the Qblox hardware configuration was revised. From version 0.13.0, old hardware configurations will no longer be automatically converted. Below is a summary of the changes.
 
@@ -244,7 +293,7 @@ import json
 print(json.dumps(new_hardware_cfg, indent=4))
 ```
 
-## 5. TransmonElement => BasicTransmonElement
+## TransmonElement => BasicTransmonElement
 
 In quantify-scheduler 0.7.0, the {class}`~quantify_scheduler.device_under_test.transmon_element.BasicTransmonElement` class was added and replaced the `TransmonElement` class.
 
@@ -322,7 +371,7 @@ device_config_basic_transmon = basic.generate_device_config().dict()
 pprint.pprint(device_config_basic_transmon)
 ```
 
-## 6. Instruction-generated pulses (Qblox only)
+## Instruction-generated pulses (Qblox only)
 
 Instead of using the ``instruction_generated_pulses_enabled: True`` field in the port-clock configuration for generating long square and staircase pulses (see {ref}`Instruction generated pulses <sec-qblox-instruction-generated-pulses>`), you can now create long square, staircase and ramp waveforms (that would otherwise not fit in memory), by creating these operations with the following helper functions.
 
