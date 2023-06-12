@@ -11,6 +11,7 @@
 - Documentation - Update broken qblox-instruments documentation URLs (!696)
 - Schedules - Remove one of the `CRCount` operations in `nv_dark_esr_sched_nco` from NCO frequency loop to avoid redundancy (!643)
 - Waveforms - Fix `sudden_net_zero` waveform generation. Rounding of pulse times will now no longer lead to an incorrect SNZ pulse. I.e., the last sample of the first pulse and the first sample of the second pulse will remain correctly scaled, and the integral correction will have an amplitude such that the integral of the pulse is zero. (!581, #310)
+- Qblox backend - Remove overwriting of IF frequency to None when `mix_lo=False` (!699)
 
 ## 0.14.0 (2023-06-02)
 

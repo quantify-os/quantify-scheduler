@@ -1493,6 +1493,13 @@ def test_mix_lo_flag(
         compiled_sched_mix_lo_false.compiled_instructions["generic"]["lo0.frequency"]
         == 8e9
     )
+    # Assert NCO freq got set if mix_lo is false.
+    assert (
+        compiled_sched_mix_lo_false.compiled_instructions["cluster0"][
+            "cluster0_module1"
+        ]["sequencers"]["seq0"]["modulation_freq"]
+        == 50e6
+    )
     instr_coordinator.remove_component("ic_cluster0")
 
 

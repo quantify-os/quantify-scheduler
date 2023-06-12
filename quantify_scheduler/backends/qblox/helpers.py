@@ -507,8 +507,6 @@ def determine_clock_lo_interm_freqs(
         ``null``/``None`` instead.
     RuntimeWarning
         In case LO is overridden to clock due to `mix_lo` being `False`
-    RuntimeWarning
-        In case IF is overridden to ``None`` due to `mix_lo` being `False`
     Raises
     ------
     ValueError
@@ -557,9 +555,6 @@ def determine_clock_lo_interm_freqs(
                 f"Overriding {freqs.LO=} to {freqs.clock=} due to mix_lo=False."
             )
         freqs.LO = freqs.clock
-        if freqs.IF is not None:
-            warnings.warn(f"Overriding {freqs.IF=} to None due to mix_lo=False.")
-            freqs.IF = None
     else:
         if freqs.LO is None and freqs.IF is None:
             raise ValueError(

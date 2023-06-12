@@ -64,7 +64,7 @@ def __get_frequencies(
 
     if mix_lo is False:
         freqs.LO = freqs.clock
-        freqs.IF = None
+        freqs.IF = interm_freq
     else:
         if lo_freq is None and interm_freq is None:
             return "underconstrained"
