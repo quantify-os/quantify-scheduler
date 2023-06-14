@@ -411,6 +411,7 @@ nitpick_ignore = [
     ("py:obj", "quantify_scheduler.schedules.trace_schedule_circuit_layer"),
     ("py:obj", "quantify_scheduler.schedules.two_tone_trace_schedule"),
     ("py:class", "SUPPORTED_ACQ_PROTOCOLS"),
+    ("py:obj", "quantify_scheduler.structure.NDArray"),
 ]  # Tuple[str, str], ignore certain warnings
 
 nitpick_ignore_regex = [

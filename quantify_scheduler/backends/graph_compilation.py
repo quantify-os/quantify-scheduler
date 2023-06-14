@@ -19,7 +19,6 @@ from typing import (
 import matplotlib.pyplot as plt
 import networkx as nx
 from matplotlib.axes import Axes
-from numpy.typing import NDArray
 from pydantic import validator
 
 from quantify_scheduler.operations.operation import Operation
@@ -29,6 +28,7 @@ from quantify_scheduler.structure.model import (
     deserialize_class,
     deserialize_function,
 )
+from quantify_scheduler.structure.types import NDArray
 
 if TYPE_CHECKING:
     from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
@@ -242,10 +242,6 @@ class DistortionCorrection(DataStructure):
                 )
             }
     """
-
-    class Config:  # noqa: D106
-        arbitrary_types_allowed = True
-        # This is needed because NDArray does not have a validator.
 
 
 class ModulationFrequencies(DataStructure):

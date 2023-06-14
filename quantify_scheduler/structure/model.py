@@ -8,6 +8,7 @@ from typing import Any, Callable
 import orjson
 from pydantic import BaseModel, Extra
 
+from quantify_scheduler.structure import types as qs_types
 from quantify_scheduler.helpers.importers import (
     import_python_object_from_string,
     export_python_object_to_path_string,
@@ -68,6 +69,7 @@ class DataStructure(BaseModel):  # pylint: disable=too-few-public-methods
         json_encoders = {
             types.FunctionType: export_python_object_to_path_string,
             type: export_python_object_to_path_string,
+            qs_types.NDArray: qs_types.NDArray.to_dict,
         }
 
         # ensures exceptions are raised when passing extra argument that are not

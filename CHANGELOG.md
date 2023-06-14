@@ -11,6 +11,7 @@
 - Compilation - Amended `ReferenceMagnitude` set method to ensure that all unit parameters are not overwritten when one of the parameters is set to `nan` (!695, #429).
 - Compilation - Changed units of amplitude parameters in device elements to dimesionless, for consistency with new `ReferenceMagnitude` interface (!691).
 - Documentation - Update broken qblox-instruments documentation URLs (!696)
+- JSON utilities - `DataStructure` can serialize Numpy arrays using new `quantify_scheduler.structure.NDArray` field type. (!701)
 - Schedules - Remove one of the `CRCount` operations in `nv_dark_esr_sched_nco` from NCO frequency loop to avoid redundancy (!643)
 - Waveforms - Fix `sudden_net_zero` waveform generation. Rounding of pulse times will now no longer lead to an incorrect SNZ pulse. I.e., the last sample of the first pulse and the first sample of the second pulse will remain correctly scaled, and the integral correction will have an amplitude such that the integral of the pulse is zero. (!581, #310)
 
@@ -54,16 +55,16 @@
 
 ### Compatibility info
 
-- Qblox: `qblox-instruments==0.9.0` ([Cluster firmware v0.4.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.4.0)) and `qblox-instruments==0.10.x` ([Cluster firmware v0.5.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.5.0)) 
+- Qblox: `qblox-instruments==0.9.0` ([Cluster firmware v0.4.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.4.0)) and `qblox-instruments==0.10.x` ([Cluster firmware v0.5.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.5.0))
 - ZI:    `zhinst==21.8.20515` `zhinst-qcodes==0.1.4` `zhinst-toolkit==0.1.5`
 
 ## 0.13.0 (2023-05-05)
 
 ### Release highlights
 
-- This release introduces a new acquisition protocol: `NumericalWeightedIntegrationComplex`, that allows users perform a weighted integration acquisition. 
-- The schedule library now has a new schedule that performs an NCO frequency sweep in a dark ESR experiment on an NV-center. 
-- A lot of code that was marked as deprecated has been removed. Please checkout our [deprecated code suggestions](https://quantify-quantify-scheduler.readthedocs-hosted.com/en/latest/examples/deprecated.html) on how to modify you code to ammend any problems caused by this removal. 
+- This release introduces a new acquisition protocol: `NumericalWeightedIntegrationComplex`, that allows users perform a weighted integration acquisition.
+- The schedule library now has a new schedule that performs an NCO frequency sweep in a dark ESR experiment on an NV-center.
+- A lot of code that was marked as deprecated has been removed. Please checkout our [deprecated code suggestions](https://quantify-quantify-scheduler.readthedocs-hosted.com/en/latest/examples/deprecated.html) on how to modify you code to ammend any problems caused by this removal.
 - Many improvements and small bug fixes.
 
 ### Breaking changes
@@ -96,7 +97,7 @@
 - Qblox backend - Forbid repeated acquisition index in schedule (!655, !657, partially revert !542)
 - Qblox backend - `Measure` can now use the `NumericalWeightedIntegrationComplex` protocol. The `DispersiveMeasurement` has been expanded with optional weight parameters for use in this protocol (!612).
 - Schedulables - Make name uniqueness check more efficient and readable. (!631)
-- Schedules - Add `nv_dark_esr_sched_nco` spectroscopy schedule using SetClockFrequency Operation to sweep the NCO frequency (!639) 
+- Schedules - Add `nv_dark_esr_sched_nco` spectroscopy schedule using SetClockFrequency Operation to sweep the NCO frequency (!639)
 - Tests - Move Qblox Pulsar entries from `qblox_test_mapping.json` to pytest fixtures (!632)
 - Tests - Qblox acquisition testcases with dummy data (!654)
 - Typing - More lenient typehints (!640)
@@ -105,7 +106,7 @@
 
 ### Compatibility info
 
-- Qblox: `qblox-instruments==0.9.0` ([Cluster firmware v0.4.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.4.0)) and `qblox-instruments==0.10.x` ([Cluster firmware v0.5.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.5.0)) 
+- Qblox: `qblox-instruments==0.9.0` ([Cluster firmware v0.4.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.4.0)) and `qblox-instruments==0.10.x` ([Cluster firmware v0.5.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.5.0))
 - ZI:    `zhinst==21.8.20515` `zhinst-qcodes==0.1.4` `zhinst-toolkit==0.1.5`
 
 ## 0.12.3 (2023-03-09)
