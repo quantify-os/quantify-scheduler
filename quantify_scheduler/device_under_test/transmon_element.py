@@ -468,6 +468,15 @@ class BasicTransmonElement(DeviceElement):
                         "phi",
                     ],  # the keys from the gate info to pass to the factory function
                 ),
+                "Rz": OperationCompilationConfig(
+                    factory_func=pulse_factories.phase_shift,
+                    factory_kwargs={
+                        "clock": f"{self.name}.01",
+                    },
+                    gate_info_factory_kwargs=[
+                        "theta",
+                    ],  # the keys from the gate info to pass to the factory function
+                ),
                 # the measurement also has a parametrized mapping, and uses a
                 # factory function.
                 "measure": OperationCompilationConfig(

@@ -14,6 +14,7 @@
 - JSON utilities - `DataStructure` can serialize Numpy arrays using new `quantify_scheduler.structure.NDArray` field type. (!701)
 - Schedules - Remove one of the `CRCount` operations in `nv_dark_esr_sched_nco` from NCO frequency loop to avoid redundancy (!643)
 - Waveforms - Fix `sudden_net_zero` waveform generation. Rounding of pulse times will now no longer lead to an incorrect SNZ pulse. I.e., the last sample of the first pulse and the first sample of the second pulse will remain correctly scaled, and the integral correction will have an amplitude such that the integral of the pulse is zero. (!581, #310)
+- Gate Library - Added `Rz`, `Z` and `Z90` gate to gate library, `BasicTransmonElement` and tested the new gates in `test_gate_library.py` (!697, #290)
 
 
 ## 0.14.0 (2023-06-02)

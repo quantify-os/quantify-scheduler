@@ -52,6 +52,19 @@ def rxy_drag_pulse(
     )
 
 
+def phase_shift(
+    theta: float,
+    clock: str,
+) -> pulse_library.ShiftClockPhase:
+    """
+    Generate a :class:`~.operations.pulse_library.ShiftClockPhase` that shifts the phase of the `clock` by an angle `theta`.
+    """
+    return pulse_library.ShiftClockPhase(
+        phase_shift=theta,
+        clock=clock,
+    )
+
+
 def composite_square_pulse(  # pylint: disable=too-many-arguments
     square_amp: float,
     square_duration: float,

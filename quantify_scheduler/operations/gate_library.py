@@ -1,6 +1,5 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-# pylint: disable=invalid-name
 """Standard gateset for use with the quantify_scheduler."""
 from __future__ import annotations
 from typing import Literal, Optional, Tuple
@@ -11,20 +10,29 @@ from .operation import Operation
 from ..enums import BinMode
 
 
-# pylint: disable=too-many-ancestors
 class Rxy(Operation):
-    # pylint: disable=line-too-long
     r"""
     A single qubit rotation around an axis in the equator of the Bloch sphere.
 
-
-    This operation can be represented by the following unitary as defined in https://doi.org/10.1109/TQE.2020.2965810:
+    This operation can be represented by the following unitary as defined in
+    https://doi.org/10.1109/TQE.2020.2965810:
 
     .. math::
 
         \mathsf {R}_{xy} \left(\theta, \varphi\right) = \begin{bmatrix}
         \textrm {cos}(\theta /2) & -ie^{-i\varphi }\textrm {sin}(\theta /2)
-        \\ -ie^{i\varphi }\textrm {sin}(\theta /2) & \textrm {cos}(\theta /2) \end{bmatrix}
+        \\ -ie^{i\varphi }\textrm {sin}(\theta /2) & \textrm {cos}(\theta /2)
+        \end{bmatrix}
+
+
+    Parameters
+    ----------
+    theta
+        Rotation angle in degrees, will be casted to the [-180, 180) domain.
+    phi
+        Phase of the rotation axis, will be casted to the [0, 360) domain.
+    qubit
+        The target qubit.
 
     """
 
@@ -34,25 +42,13 @@ class Rxy(Operation):
         phi: float,
         qubit: str,
     ):
-        """
-        A single qubit rotation around an axis in the equator of the Bloch sphere.
-
-        Parameters
-        ----------
-        theta
-            rotation angle in degrees, will be casted to the [-180, 180) domain.
-        phi
-            phase of the rotation axis, will be casted to the [0, 360) domain.
-        qubit
-            the target qubit
-        """
         if not isinstance(theta, float):
             theta = float(theta)
         if not isinstance(phi, float):
             phi = float(phi)
 
         # this solves an issue where different rotations with the same rotation angle
-        # modulo a full period are treated as distinct operations in the OperationDict.
+        # modulo a full period are treated as distinct operations in the OperationDict
         theta = (theta + 180) % 360 - 180
 
         phi = phi % 360
@@ -79,20 +75,15 @@ class Rxy(Operation):
             ]
         )
         super().__init__(f"Rxy({theta:.8g}, {phi:.8g}, '{qubit}')")
-        self.data.update(
-            {
-                "name": f"Rxy({theta:.8g}, {phi:.8g}, '{qubit}')",
-                "gate_info": {
-                    "unitary": unitary,
-                    "tex": tex,
-                    "plot_func": plot_func,
-                    "qubits": [qubit],
-                    "operation_type": "Rxy",
-                    "theta": theta,
-                    "phi": phi,
-                },
-            }
-        )
+        self.data["gate_info"] = {
+            "unitary": unitary,
+            "tex": tex,
+            "plot_func": plot_func,
+            "qubits": [qubit],
+            "operation_type": "Rxy",
+            "theta": theta,
+            "phi": phi,
+        }
         self._update()
 
     def __str__(self) -> str:
@@ -100,7 +91,7 @@ class Rxy(Operation):
         theta = gate_info["theta"]
         phi = gate_info["phi"]
         qubit = gate_info["qubits"][0]
-        return f"{self.__class__.__name__}(theta={theta:.8g}, phi={phi:.8g}, qubit='{qubit}')"
+        return f"{self.__class__.__name__}({theta=:.8g}, {phi=:.8g}, qubit='{qubit}')"
 
 
 class X(Rxy):
@@ -116,18 +107,18 @@ class X(Rxy):
              0 & -i \\
              -i & 0 \\ \end{bmatrix}
 
+    Parameters
+    ----------
+    qubit
+        The target qubit.
+
     """
 
     def __init__(self, qubit: str):
-        """
-        Parameters
-        ----------
-        qubit
-            the target qubit
-        """
-        super().__init__(theta=180, phi=0, qubit=qubit)
+        super().__init__(theta=180.0, phi=0, qubit=qubit)
         self.data["name"] = f"X {qubit}"
         self.data["gate_info"]["tex"] = r"$X_{\pi}$"
+        self._update()
 
     def __str__(self) -> str:
         qubit = self.data["gate_info"]["qubits"][0]
@@ -147,22 +138,18 @@ class X90(Rxy):
                 1 & -i \\
                 -i & 1 \\ \end{bmatrix}
 
+    Parameters
+    ----------
+    qubit
+        The target qubit.
     """
 
     def __init__(self, qubit: str):
-        """
-        Create a new instance of X90.
-
-        Parameters
-        ----------
-        qubit
-            The target qubit.
-        """
-
         super().__init__(theta=90.0, phi=0.0, qubit=qubit)
         self.qubit = qubit
         self.data["name"] = f"X_90 {qubit}"
         self.data["gate_info"]["tex"] = r"$X_{\pi/2}$"
+        self._update()
 
     def __str__(self) -> str:
         qubit = self.data["gate_info"]["qubits"][0]
@@ -182,24 +169,17 @@ class Y(Rxy):
              0 & -1 \\
              1 & 0 \\ \end{bmatrix}
 
+    Parameters
+    ----------
+    qubit
+        The target qubit.
     """
 
     def __init__(self, qubit: str):
-        """
-        Create a new instance of Y.
-
-        The Y gate corresponds to a rotation of 180 degrees around the y-axis in the
-        single-qubit Bloch sphere.
-
-        Parameters
-        ----------
-        qubit
-            The target qubit.
-        """
-
         super().__init__(theta=180.0, phi=90.0, qubit=qubit)
         self.data["name"] = f"Y {qubit}"
         self.data["gate_info"]["tex"] = r"$Y_{\pi}$"
+        self._update()
 
     def __str__(self) -> str:
         qubit = self.data["gate_info"]["qubits"][0]
@@ -220,23 +200,17 @@ class Y90(Rxy):
                 1 & -1 \\
                 1 & 1 \\ \end{bmatrix}
 
+    Parameters
+    ----------
+    qubit
+        The target qubit.
     """
 
     def __init__(self, qubit: str):
-        """
-        Create a new instance of Y90.
-
-        The Y gate corresponds to a rotation of 90 degrees around the y-axis in the
-        single-qubit Bloch sphere.
-
-        Parameters
-        ----------
-        qubit
-            The target qubit.
-        """
         super().__init__(theta=90.0, phi=90.0, qubit=qubit)
         self.data["name"] = f"Y_90 {qubit}"
         self.data["gate_info"]["tex"] = r"$Y_{\pi/2}$"
+        self._update()
 
     def __str__(self) -> str:
         """
@@ -248,6 +222,130 @@ class Y90(Rxy):
         This representation is guaranteed to be
         unique.
         """
+        qubit = self.data["gate_info"]["qubits"][0]
+        return f"{self.__class__.__name__}(qubit='{qubit}')"
+
+
+class Rz(Operation):
+    r"""
+    A single qubit rotation about the Z-axis of the Bloch sphere.
+
+    This operation can be represented by the following unitary as defined in
+    https://www.quantum-inspire.com/kbase/rz-gate/:
+
+    .. math::
+
+        \mathsf {R}_{z} \left(\theta\right) = \begin{bmatrix}
+        e^{-i\theta/2} & 0
+        \\ 0 & e^{i\theta/2} \end{bmatrix}
+
+    Parameters
+    ----------
+    theta
+        Rotation angle in degrees, will be cast to the [-180, 180) domain.
+    qubit
+        The target qubit.
+    """
+
+    def __init__(self, theta: float, qubit: str):
+        if not isinstance(theta, float):
+            theta = float(theta)
+
+        # this solves an issue where different rotations with the same rotation angle
+        # modulo a full period are treated as distinct operations in the OperationDict
+        theta = (theta + 180) % 360 - 180
+
+        tex = r"$R_{z}^{" + f"{theta:.0f}" + r"}$"
+        plot_func = (
+            "quantify_scheduler.schedules._visualization.circuit_diagram.gate_box"
+        )
+        theta_r = np.deg2rad(theta)
+
+        # not all operations have a valid unitary description
+        # (e.g., measure and init)
+        unitary = np.array(
+            [
+                [np.exp(-1j * theta_r / 2), 0],
+                [0, np.exp(1j * theta_r / 2)],
+            ]
+        )
+        super().__init__(f"Rz({theta:.8g}, '{qubit}')")
+        self.data["gate_info"] = {
+            "unitary": unitary,
+            "tex": tex,
+            "plot_func": plot_func,
+            "qubits": [qubit],
+            "operation_type": "Rz",
+            "theta": theta,
+        }
+        self._update()
+
+    def __str__(self) -> str:
+        gate_info = self.data["gate_info"]
+        theta = gate_info["theta"]
+        qubit = gate_info["qubits"][0]
+        return f"{self.__class__.__name__}({theta=:.8g}, qubit='{qubit}')"
+
+
+class Z(Rz):
+    r"""
+    A single qubit rotation of 180 degrees around the Z-axis.
+
+
+    Note that the gate implements :math:`R_z(\pi) = -iZ`, adding a global phase of :math:`-\pi/2`.
+    This operation can be represented by the following unitary:
+
+    .. math::
+
+        Z180 = R_{Z180} = -iZ = e^{-\frac{\pi}{2}}Z = \begin{bmatrix}
+             -i & 0 \\
+             0 & i \\ \end{bmatrix}
+
+    Parameters
+    ----------
+    qubit
+        The target qubit.
+
+    """
+
+    def __init__(self, qubit: str):
+        super().__init__(theta=180.0, qubit=qubit)
+        self.data["name"] = f"Z {qubit}"
+        self.data["gate_info"]["tex"] = r"$Z_{\pi}$"
+        self._update()
+
+    def __str__(self) -> str:
+        qubit = self.data["gate_info"]["qubits"][0]
+        return f"{self.__class__.__name__}(qubit='{qubit}')"
+
+
+class Z90(Rz):
+    r"""
+    A single qubit rotation of 90 degrees around the Z-axis.
+
+
+    This operation can be represented by the following unitary:
+
+    .. math::
+
+        Z90 = R_{Z90} = e^{-\frac{\pi/2}{2}}S = e^{-\frac{\pi/2}{2}}\sqrt{Z} = \frac{1}{\sqrt{2}}\begin{bmatrix}
+             1-i & 0 \\
+             0 & 1+i \\ \end{bmatrix}
+
+    Parameters
+    ----------
+    qubit
+        The target qubit.
+
+    """
+
+    def __init__(self, qubit: str):
+        super().__init__(theta=90.0, qubit=qubit)
+        self.data["name"] = f"Z_90 {qubit}"
+        self.data["gate_info"]["tex"] = r"$Z_{\pi/2}$"
+        self._update()
+
+    def __str__(self) -> str:
         qubit = self.data["gate_info"]["qubits"][0]
         return f"{self.__class__.__name__}(qubit='{qubit}')"
 
@@ -269,22 +367,16 @@ class CNOT(Operation):
             0 & 0 & 0 & 1 \\
             0 & 0 & 1 & 0 \\ \end{bmatrix}
 
+    Parameters
+    ----------
+    qC
+        The control qubit.
+    qT
+        The target qubit
+
     """
 
     def __init__(self, qC: str, qT: str):
-        """
-        Create a new instance of the two-qubit CNOT or Controlled-NOT gate.
-
-        The CNOT gate performs an X gate on the target qubit(qT) conditional on the
-        state of the control qubit(qC).
-
-        Parameters
-        ----------
-        qC
-            The control qubit.
-        qT
-            The target qubit
-        """
         plot_func = "quantify_scheduler.schedules._visualization.circuit_diagram.cnot"
         super().__init__(f"CNOT ({qC}, {qT})")
         self.data.update(
@@ -328,22 +420,16 @@ class CZ(Operation):
             0 & 0 & 1 & 0 \\
             0 & 0 & 0 & -1 \\ \end{bmatrix}
 
+    Parameters
+    ----------
+    qC
+        The control qubit.
+    qT
+        The target qubit        
+    
     """
 
     def __init__(self, qC: str, qT: str):
-        """
-        Create a new instance of the two-qubit CZ or conditional-phase gate.
-
-        The CZ gate performs an Z gate on the target qubit(qT) conditional on the
-        state of the control qubit(qC).
-
-        Parameters
-        ----------
-        qC
-            The control qubit.
-        qT
-            The target qubit
-        """
         plot_func = "quantify_scheduler.schedules._visualization.circuit_diagram.cz"
         super().__init__(f"CZ ({qC}, {qT})")
         self.data.update(
@@ -394,20 +480,15 @@ class Reset(Operation):
             reset_1 = Reset("q0")
             reset_2 = Reset("q1", "q2")
             reset_3 = Reset(*[f"q{i}" for i in range(3, 6)])
+
+    Parameters
+    ----------
+    qubits
+        The qubit(s) to reset. NB one or more qubits can be specified, e.g.,
+        :code:`Reset("q0")`, :code:`Reset("q0", "q1", "q2")`, etc..
     """
 
     def __init__(self, *qubits: str):
-        """
-        Create a new instance of Reset operation that is used to initialize one or
-        more qubits.
-
-
-        Parameters
-        ----------
-        qubits
-            The qubit(s) to reset. NB one or more qubits can be specified, e.g.,
-            :code:`Reset("q0")`, :code:`Reset("q0", "q1", "q2")`, etc..
-        """
         super().__init__(f"Reset {', '.join(qubits)}")
         plot_func = "quantify_scheduler.schedules._visualization.circuit_diagram.reset"
         self.data.update(
@@ -433,10 +514,31 @@ class Measure(Operation):
     """
     A projective measurement in the Z-basis.
 
+    The measurement is compiled according to the type of acquisition specified
+    in the device configuration.
+
     .. note::
 
         Strictly speaking this is not a gate as it can not
         be described by a unitary.
+
+    Parameters
+    ----------
+    qubits : str
+        The qubits you want to measure.
+    acq_index : Tuple[int, ...] | int | None, optional
+        Index of the register where the measurement is stored.  If None specified,
+        this defaults to writing the result of all qubits to acq_index 0. By default
+        None.
+    acq_protocol : "SSBIntegrationComplex" | "Trace" | "TriggerCount" | \
+            "NumericalWeightedIntegrationComplex" | None, optional
+        Acquisition protocols that are supported. If ``None`` is specified, the
+        default protocol is chosen based on the device and backend configuration. By
+        default None.
+    bin_mode : BinMode or None, optional
+        The binning mode that is to be used. If not None, it will overwrite the
+        binning mode used for Measurements in the circuit-to-device compilation
+        step. By default None.
 
     """
 
@@ -455,31 +557,6 @@ class Measure(Operation):
         ] = None,
         bin_mode: BinMode | None = None,
     ):
-        """
-        Gate level description for a measurement.
-
-        The measurement is compiled according to the type of acquisition specified
-        in the device configuration.
-
-        Parameters
-        ----------
-        qubits : str
-            The qubits you want to measure.
-        acq_index : Tuple[int, ...] | int | None, optional
-            Index of the register where the measurement is stored.  If None specified,
-            this defaults to writing the result of all qubits to acq_index 0. By default
-            None.
-        acq_protocol : "SSBIntegrationComplex" | "Trace" | "TriggerCount" | \
-                "NumericalWeightedIntegrationComplex" | None, optional
-            Acquisition protocols that are supported. If ``None`` is specified, the
-            default protocol is chosen based on the device and backend configuration. By
-            default None.
-        bin_mode : BinMode or None, optional
-            The binning mode that is to be used. If not None, it will overwrite the
-            binning mode used for Measurements in the circuit-to-device compilation
-            step. By default None.
-        """
-
         # this if else statement a workaround to support multiplexed measurements (#262)
 
         # this snippet has some automatic behaviour that is error prone.

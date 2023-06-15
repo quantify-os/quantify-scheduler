@@ -28,15 +28,11 @@ example_transmon_cfg = {
                     "duration": 2e-08,
                 },
             },
-            "Z": {
+            "Rz": {
                 "factory_func": "quantify_scheduler.operations."
-                + "pulse_library.SoftSquarePulse",
-                "factory_kwargs": {
-                    "amp": 0.23,
-                    "duration": 4e-09,
-                    "port": "q0:fl",
-                    "clock": "cl0.baseband",
-                },
+                + "pulse_factories.phase_shift",
+                "gate_info_factory_kwargs": ["theta"],
+                "factory_kwargs": {"clock": "q0.01"},
             },
             "measure": {
                 "factory_func": "quantify_scheduler.operations."
@@ -70,6 +66,12 @@ example_transmon_cfg = {
                     "clock": "q1.01",
                     "duration": 2e-08,
                 },
+            },
+            "Rz": {
+                "factory_func": "quantify_scheduler.operations."
+                + "pulse_factories.phase_shift",
+                "gate_info_factory_kwargs": ["theta"],
+                "factory_kwargs": {"clock": "q1.01"},
             },
             "measure": {
                 "factory_func": "quantify_scheduler.operations."

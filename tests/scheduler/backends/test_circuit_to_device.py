@@ -25,12 +25,15 @@ from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.operations.gate_library import (
     CNOT,
     CZ,
-    Y90,
     Measure,
     Reset,
     Rxy,
+    Rz,
     X,
     Y,
+    Y90,
+    Z,
+    Z90,
 )
 from quantify_scheduler.operations.pulse_factories import rxy_drag_pulse
 from quantify_scheduler.operations.pulse_library import IdlePulse, ReferenceMagnitude
@@ -40,35 +43,43 @@ from quantify_scheduler.schemas.examples.device_example_cfgs import (
 )
 
 
-def test_compile_transmon_example_program():
+def test_compile_all_gates_example_transmon_cfg():
     """
-    Test if compilation using the new backend reproduces behavior of the old backend.
+    Test compiling all gates using example_transmon_cfg.
     """
 
     sched = Schedule("Test schedule")
 
     # define the resources
-    # q0, q1 = Qubits(n=2) # assumes all to all connectivity
     q0, q1 = ("q0", "q1")
     sched.add(Reset(q0, q1))
     sched.add(Rxy(90, 0, qubit=q0))
     sched.add(Rxy(45, 0, qubit=q0))
     sched.add(Rxy(12, 0, qubit=q0))
     sched.add(Rxy(12, 0, qubit=q0))
+    sched.add(Rz(90, qubit=q0))
+    sched.add(Rz(45, qubit=q0))
+    sched.add(Rz(12, qubit=q0))
+    sched.add(Rz(12, qubit=q0))
     sched.add(X(qubit=q0))
     sched.add(Y(qubit=q0))
+    sched.add(Z(qubit=q0))
     sched.add(Y90(qubit=q0))
+    sched.add(Z90(qubit=q0))
     sched.add(operation=CZ(qC=q0, qT=q1))
     sched.add(Rxy(theta=90, phi=0, qubit=q0))
+    sched.add(Rz(theta=90, qubit=q0))
     sched.add(Measure(q0, q1), label="M_q0_q1")
+
+    assert len(sched.schedulables) == 18
 
     # test that all these operations compile correctly.
     _ = compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
 
 
-def test_compile_basic_transmon_example_program(mock_setup_basic_transmon):
+def test_compile_all_gates_basic_transmon(mock_setup_basic_transmon):
     """
-    Test if compilation using the BasicTransmonElement reproduces old behaviour.
+    Test compiling all gates using BasicTransmonElement.
     """
 
     sched = Schedule("Test schedule")
@@ -80,12 +91,21 @@ def test_compile_basic_transmon_example_program(mock_setup_basic_transmon):
     sched.add(Rxy(45, 0, qubit=q2))
     sched.add(Rxy(12, 0, qubit=q2))
     sched.add(Rxy(12, 0, qubit=q2))
+    sched.add(Rz(90, qubit=q2))
+    sched.add(Rz(45, qubit=q2))
+    sched.add(Rz(12, qubit=q2))
+    sched.add(Rz(12, qubit=q2))
     sched.add(X(qubit=q2))
     sched.add(Y(qubit=q2))
+    sched.add(Z(qubit=q2))
     sched.add(Y90(qubit=q2))
+    sched.add(Z90(qubit=q2))
     sched.add(operation=CZ(qC=q2, qT=q3))
     sched.add(Rxy(theta=90, phi=0, qubit=q2))
+    sched.add(Rz(theta=90, qubit=q2))
     sched.add(Measure(q2, q3), label="M_q2_q3")
+
+    assert len(sched.schedulables) == 18
 
     # test that all these operations compile correctly.
     quantum_device = mock_setup_basic_transmon["quantum_device"]
@@ -120,13 +140,6 @@ def test_compile_asymmetric_gate(mock_setup_basic_transmon):
         _ = compile_circuit_to_device(
             sched, device_cfg=quantum_device.generate_device_config()
         )
-
-
-def test_rxy_operations_compile():
-    sched = Schedule("Test schedule")
-    sched.add(Rxy(90, 0, qubit="q0"))
-    sched.add(Rxy(180, 45, qubit="q0"))
-    _ = compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
 
 
 def test_measurement_compile():
@@ -169,9 +182,10 @@ def test_measurement_compile():
     [
         ([], ["cl0.baseband"]),
         ([X(qubit="q0")], ["cl0.baseband", "q0.01"]),
+        ([Z(qubit="q0")], ["cl0.baseband", "q0.01"]),
         ([Measure("q0", "q1")], ["cl0.baseband", "q0.ro", "q1.ro"]),
         (
-            [X(qubit="q0"), X(qubit="q1"), Measure("q0", "q1")],
+            [X(qubit="q0"), Z(qubit="q1"), Measure("q0", "q1")],
             ["cl0.baseband", "q0.01", "q1.01", "q0.ro", "q1.ro"],
         ),
     ],

@@ -15,13 +15,16 @@ from quantify_scheduler.json_utils import ScheduleJSONEncoder, ScheduleJSONDecod
 from quantify_scheduler.operations.gate_library import (
     CNOT,
     CZ,
-    X90,
-    Y90,
     Measure,
     Reset,
     Rxy,
+    Rz,
     X,
+    X90,
     Y,
+    Y90,
+    Z,
+    Z90,
 )
 from quantify_scheduler.operations.shared_native_library import SpectroscopyOperation
 from quantify_scheduler.operations.nv_native_library import ChargeReset
@@ -71,58 +74,14 @@ def test_rxy_angle_modulo() -> None:
 @pytest.mark.parametrize(
     "operation",
     [
-        Reset("q0", "q1"),
-        Rxy(theta=124, phi=23.9, qubit="q5"),
-        X("q0"),
-        X90("q1"),
-        Y("q0"),
-        Y90("q1"),
-        CZ("q0", "q1"),
-        CNOT("q0", "q6"),
-        Measure("q0", "q9"),
-        SpectroscopyOperation("q0"),
-        ChargeReset("q0"),
-    ],
-)
-def test_gate_is_valid(operation: Operation) -> None:
-    assert Operation.is_valid(operation)
-
-
-def test_rxy_is_valid() -> None:
-    rxy_q5 = Rxy(theta=124, phi=23.9, qubit="q5")
-    assert Operation.is_valid(rxy_q5)
-
-
-def is__repr__equal(operation: Operation) -> None:
-    """
-    Asserts that evaluating the representation
-    of a thing is identical to the thing
-    itself.
-    """
-    # Arrange
-    operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
-
-    # Act
-    obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
-    assert obj == operation
-
-
-def is__str__equal(obj: Any) -> None:
-    """
-    Asserts if the string representation
-    equals the object type.
-    """
-    assert isinstance(eval(str(obj)), type(obj))
-
-
-@pytest.mark.parametrize(
-    "operation",
-    [
         Rxy(theta=124, phi=23.9, qubit="q5"),
         X90("q1"),
         X("q0"),
         Y90("q1"),
         Y("q1"),
+        Rz(theta=124, qubit="q5"),
+        Z("q0"),
+        Z90("q1"),
         Reset("q0"),
         Reset("q0", "q1"),
         CZ("q0", "q1"),
@@ -134,111 +93,71 @@ def is__str__equal(obj: Any) -> None:
         ChargeReset("q0"),
     ],
 )
-def test__repr__(operation: Operation) -> None:
-    is__repr__equal(operation)
+class TestGateLevelOperation:
+    def test_gate_is_valid(self, operation: Operation) -> None:
+        assert Operation.is_valid(operation)
 
+    def test__repr__(self, operation: Operation) -> None:
+        """
+        Asserts that evaluating the representation
+        of an operation is identical to the operation
+        itself.
+        """
+        # Arrange
+        operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
 
-@pytest.mark.parametrize(
-    "operation",
-    [
-        Rxy(theta=124, phi=23.9, qubit="q5"),
-        X90("q1"),
-        X("q0"),
-        Y90("q1"),
-        Y("q1"),
-        Reset("q0"),
-        Reset("q0", "q1"),
-        CZ("q0", "q1"),
-        CNOT("q0", "q6"),
-        Measure("q0", "q6"),
-        Measure("q0"),
-        Measure("q0", "q6", acq_index=92),
-        SpectroscopyOperation("q0"),
-        ChargeReset("q0"),
-    ],
-)
-def test__str__(operation: Operation) -> None:
-    is__str__equal(operation)
+        # Act
+        obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
+        assert obj == operation
 
+    def test__str__(self, operation: Operation) -> None:
+        """
+        Asserts that the evaluation of the string representation
+        is an instance of the the operation type.
+        """
+        assert isinstance(eval(str(operation)), type(operation))  # nosec B307
 
-@pytest.mark.parametrize(
-    "operation",
-    [
-        Rxy(theta=124, phi=23.9, qubit="q5"),
-        X90("q1"),
-        X("q0"),
-        Y90("q1"),
-        Y("q1"),
-        Reset("q0"),
-        Reset("q0", "q1"),
-        CZ("q0", "q1"),
-        CNOT("q0", "q6"),
-        Measure("q0", "q6"),
-        Measure("q0"),
-        Measure("q0", "q6", acq_index=92),
-        SpectroscopyOperation("q0"),
-        ChargeReset("q0"),
-    ],
-)
-def test_deserialize(operation: Operation) -> None:
-    # Arrange
-    operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
+    def test_deserialize(self, operation: Operation) -> None:
+        # Arrange
+        operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
 
-    # Act
-    obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
+        # Act
+        obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
 
-    # Assert
-    if (
-        "unitary" in operation.data["gate_info"]
-        and not operation.data["gate_info"]["unitary"] is None
-    ):
-        assert isinstance(obj.data["gate_info"]["unitary"], (np.generic, np.ndarray))
-        np.testing.assert_array_almost_equal(
-            obj.data["gate_info"]["unitary"],
-            operation.data["gate_info"]["unitary"],
-            decimal=9,
-        )
+        # Assert
+        if (
+            "unitary" in operation.data["gate_info"]
+            and not operation.data["gate_info"]["unitary"] is None
+        ):
+            assert isinstance(
+                obj.data["gate_info"]["unitary"], (np.generic, np.ndarray)
+            )
+            np.testing.assert_array_almost_equal(
+                obj.data["gate_info"]["unitary"],
+                operation.data["gate_info"]["unitary"],
+                decimal=9,
+            )
 
-        # TestCase().assertDictEqual cannot compare numpy arrays for equality
-        # therefore "unitary" is removed
-        del obj.data["gate_info"]["unitary"]
-        del operation.data["gate_info"]["unitary"]
+            # TestCase().assertDictEqual cannot compare numpy arrays for equality
+            # therefore "unitary" is removed
+            del obj.data["gate_info"]["unitary"]
+            del operation.data["gate_info"]["unitary"]
 
-    TestCase().assertDictEqual(obj.data, operation.data)
+        TestCase().assertDictEqual(obj.data, operation.data)
 
+    def test__repr__modify_not_equal(self, operation: Operation) -> None:
+        # Arrange
+        operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
 
-@pytest.mark.parametrize(
-    "operation",
-    [
-        Rxy(theta=124, phi=23.9, qubit="q5"),
-        X90("q1"),
-        X("q0"),
-        Y90("q1"),
-        Y("q1"),
-        Reset("q0"),
-        Reset("q0", "q1"),
-        CZ("q0", "q1"),
-        CNOT("q0", "q6"),
-        Measure("q0", "q6"),
-        Measure("q0"),
-        Measure("q0", "q6", acq_index=92),
-        SpectroscopyOperation("q0"),
-        ChargeReset("q0"),
-    ],
-)
-def test__repr__modify_not_equal(operation: Operation) -> None:
-    # Arrange
-    operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
+        # Act
+        obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
+        assert obj == operation
 
-    # Act
-    obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
-    assert obj == operation
+        # Act
+        obj.data["pulse_info"].append({"clock": "q0.01"})
 
-    # Act
-    obj.data["pulse_info"].append({"clock": "q0.01"})
-
-    # Assert
-    assert obj != operation
+        # Assert
+        assert obj != operation
 
 
 def test_rotation_unitaries() -> None:
@@ -288,5 +207,37 @@ def test_rotation_unitaries() -> None:
     np.testing.assert_allclose(
         Y90(qubit=None).data["gate_info"]["unitary"],
         (1.0 + 0.0j) / np.sqrt(2) * np.array([[1, -1], [1, 1]]),
+        atol=atol,
+    )
+
+    # Test Rz for all angles:
+    # The tests are written in form: target, desired
+    np.testing.assert_allclose(
+        Rz(theta=0, qubit=None).data["gate_info"]["unitary"],
+        (1.0 + 0.0j) * np.array([[1, 0], [0, 1]]),
+        atol=atol,
+    )
+    np.testing.assert_allclose(
+        Rz(theta=90, qubit=None).data["gate_info"]["unitary"],
+        (1.0 + 0.0j) / np.sqrt(2) * np.array([[1 - 1j, 0], [0, 1 + 1j]]),
+        atol=atol,
+    )
+
+    np.testing.assert_allclose(
+        Rz(theta=-90, qubit=None).data["gate_info"]["unitary"],
+        (1.0 + 0.0j) / np.sqrt(2) * np.array([[1 + 1j, 0], [0, 1 - 1j]]),
+        atol=atol,
+    )
+
+    # Test for the Z180, Z90 gates which are derived from Rz
+    np.testing.assert_allclose(
+        Z(qubit=None).data["gate_info"]["unitary"],
+        (1.0 + 0.0j) * np.array([[1j, 0], [0, -1j]]),
+        atol=atol,
+    )
+
+    np.testing.assert_allclose(
+        Z90(qubit=None).data["gate_info"]["unitary"],
+        (1.0 + 0.0j) / np.sqrt(2) * np.array([[1 - 1j, 0], [0, 1 + 1j]]),
         atol=atol,
     )
