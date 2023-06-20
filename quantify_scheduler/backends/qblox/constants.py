@@ -25,6 +25,8 @@ NCO_FREQ_LIMIT_STEPS = 2e9
 For the minimum we multiply by -1."""
 NCO_SET_FREQ_WAIT = 8  # ns
 """Wait that is issued after NCO set_freq instruction, included via upd_param."""
+NCO_SET_PH_DELTA_WAIT = 8  # ns
+"""Wait that is issued after NCO set_ph_delta instruction, included via upd_param."""
 
 GRID_TIME = 4  # ns
 """

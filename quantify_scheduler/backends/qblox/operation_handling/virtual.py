@@ -2,15 +2,13 @@
 # Licensed according to the LICENCE file on the main branch
 """Classes for handling operations that are neither pulses nor acquisitions."""
 
-from typing import Dict, Any
+from typing import Any, Dict
 
 import numpy as np
-
-from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
-
-from quantify_scheduler.backends.types import qblox as types
-from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox import constants, helpers, q1asm_instructions
+from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
+from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
+from quantify_scheduler.backends.types import qblox as types
 
 
 class IdleStrategy(IOperationStrategy):
@@ -51,8 +49,11 @@ class IdleStrategy(IOperationStrategy):
 
 
 class NcoPhaseShiftStrategy(IdleStrategy):
-    """Strategy for operation that does not produce any output, but rather applies a
-    phase shift to the NCO."""
+    """
+    Strategy for operation that does not produce any output, but rather applies a
+    phase shift to the NCO. Implemented as `set_ph_delta` and an `upd_param` of 8 ns,
+    leading to a total duration of 8 ns before the next command can be issued.
+    """
 
     def insert_qasm(self, qasm_program: QASMProgram):
         """
@@ -71,6 +72,12 @@ class NcoPhaseShiftStrategy(IdleStrategy):
                 phase_arg,
                 comment=f"increment nco phase by {phase:.2f} deg",
             )
+            qasm_program.emit(
+                q1asm_instructions.UPDATE_PARAMETERS,
+                constants.NCO_SET_PH_DELTA_WAIT,
+                comment="apply nco phase shift",
+            )
+            qasm_program.elapsed_time += constants.NCO_SET_PH_DELTA_WAIT
 
 
 class NcoResetClockPhaseStrategy(IdleStrategy):

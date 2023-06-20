@@ -2,12 +2,12 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 # pylint: disable=eval-used
+import json
 from unittest import TestCase
 
-import json
+import numpy as np
 import pytest
 
-import numpy as np
 from quantify_scheduler import Operation, Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.json_utils import ScheduleJSONDecoder, ScheduleJSONEncoder
@@ -243,9 +243,9 @@ class TestPulseLevelOperation:
 
     def test_duration(self, operation: Operation) -> None:
         pulse_info = operation.data["pulse_info"][0]
-        if operation.__class__ in [ShiftClockPhase, ResetClockPhase]:
+        if operation.__class__ is ResetClockPhase:
             assert operation.duration == 0, operation
-        elif operation.__class__ is SetClockFrequency:
+        elif operation.__class__ in [SetClockFrequency, ShiftClockPhase]:
             assert operation.duration == 8e-9, operation
         elif operation.__class__ is SuddenNetZeroPulse:
             assert (

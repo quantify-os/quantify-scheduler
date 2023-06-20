@@ -5,6 +5,7 @@
 - Adam Lawrence \<<mailto:adam@orangeqs.com>>
 - Adithyan Radhakrishnan \<<mailto:adithyan@qblox.com>>
 - Adriaan Rol \<<mailto:adriaan@orangeqs.com>>
+- Axel Andersson \<<mailto:aandersson@qblox.com>>
 - Callum Attryde \<<mailto:cattryde@qblox.com>>
 - Christian Dickel \<<mailto:christiandickel8@gmail.com>>
 - Damaz de Jong \<<mailto:ddejong@qblox.com>>

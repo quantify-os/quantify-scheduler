@@ -44,43 +44,45 @@ class ReferenceMagnitude:
 
 
 class ShiftClockPhase(Operation):
-    """An operation that shifts the phase of a clock by a specified amount."""
+    """
+    Operation that shifts the phase of a clock by a specified amount. This is
+    a low-level operation and therefore depends on the backend.
+
+    Currently only implemented for Qblox backend, refer to
+    :class:`~quantify_scheduler.backends.qblox.operation_handling.virtual.NcoPhaseShiftStrategy`
+    for more details.
+
+    Parameters
+    ----------
+    phase_shift
+        The phase shift in degrees.
+    clock
+        The clock of which to shift the phase.
+    t0
+        Time in seconds when to execute the command relative
+        to the start time of the Operation in the Schedule.
+    duration
+        The duration of the operation in seconds.
+    """
 
     def __init__(
         self,
         phase_shift: float,
         clock: str,
         t0: float = 0,
+        duration: float = qblox_constants.NCO_SET_PH_DELTA_WAIT * 1e-9,
     ):
-        """
-        Create a new instance of ShiftClockPhase.
-
-        Parameters
-        ----------
-        phase_shift
-            The phase shift in degrees.
-        clock
-            The clock of which to shift the phase.
-        t0
-            Time in seconds when to execute the command relative
-            to the start time of the Operation in the Schedule.
-        """
-        super().__init__(name="ShiftClockPhase")
-        self.data.update(
+        super().__init__(name=self.__class__.__name__)
+        self.data["pulse_info"] = [
             {
-                "name": "ShiftClockPhase",
-                "pulse_info": [
-                    {
-                        "wf_func": None,
-                        "t0": t0,
-                        "phase_shift": phase_shift,
-                        "clock": clock,
-                        "port": None,
-                        "duration": 0,
-                    }
-                ],
+                "wf_func": None,
+                "t0": t0,
+                "phase_shift": phase_shift,
+                "clock": clock,
+                "port": None,
+                "duration": duration,
             }
-        )
+        ]
         self._update()
 
     def __str__(self) -> str:
