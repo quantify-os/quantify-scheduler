@@ -321,7 +321,12 @@ def _clocks_compatible(clock, device_cfg: DeviceCompilationConfig, schedule) -> 
     is_nan = np.isnan(clock_freq_device_cfg)
     if is_nan.all():
         return True
-    is_equal = clock_freq_device_cfg == clock_freq_schedule
+
+    try:
+        is_equal = clock_freq_device_cfg == clock_freq_schedule
+    except ValueError:
+        return False
+
     if (np.logical_or(is_nan, is_equal)).all():
         return True
 

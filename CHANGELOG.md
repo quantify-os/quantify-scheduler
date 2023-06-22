@@ -8,7 +8,7 @@
 - Qblox backend - Compile `ShiftClockPhase` operation to `set_ph_delta` + `upd_param`, extending duration from 0 to 8 ns (!704, #432)
 
 ### Merged branches and closed issues
-
+- Compilation - Minor refactor of `circuit_to_device` to be compatible with `numpy>=1.25` (!706)
 - Compilation - Amended `ReferenceMagnitude` set method to ensure that all unit parameters are not overwritten when one of the parameters is set to `nan` (!695, #429).
 - Compilation - Changed units of amplitude parameters in device elements to dimesionless, for consistency with new `ReferenceMagnitude` interface (!691).
 - Documentation - Update broken qblox-instruments documentation URLs (!696)
