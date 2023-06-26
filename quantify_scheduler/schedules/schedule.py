@@ -720,8 +720,12 @@ class Schedulable(JSONSchemaValMixin, UserDict):
             ref_schedulable is not None
             and str(ref_schedulable) not in self.schedule.data["schedulables"].keys()
         ):
+            try:
+                op_repr_str = f"{ref_schedulable.data['operation_repr']}"
+            except AttributeError:
+                op_repr_str = ""
             raise ValueError(
-                f'Reference "{ref_schedulable}" does not exist in schedule.'
+                f"Reference Schedulable '{ref_schedulable}' referring to\n{op_repr_str}\ndoes not exist in schedule."
             )
 
         timing_constr = {

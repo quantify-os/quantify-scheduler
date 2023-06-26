@@ -27,6 +27,7 @@
 - Michiel Dubbelman \<<mailto:michiel@orangeqs.com>>
 - Pieter Eendebak \<<mailto:pieter.eendebak@tno.nl>>
 - Robert Sokolewicz \<<mailto:rsokolewicz@qblox.com>>
+- Rohit Navarathna \<<mailto:rnavarathna@qblox.com>>
 - Thomas Middelburg \<<mailto:tmiddelburg@qblox.com>>
 - Thomas Reynders \<<mailto:thomas@orangeqs.com>>
 - Tobias Bonsen \<<mailto:tobias@orangeqs.com>>

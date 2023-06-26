@@ -52,6 +52,12 @@ def test_schedule_add_schedulables() -> None:
     with pytest.raises(ValueError):
         sched.add(Rxy(theta=90, phi=0, qubit="q0"), ref_op="non-existing-operation")
 
+    # specifying a Schedulable that is not in the Schedule should raise an error
+    with pytest.raises(ValueError):
+        new_sched = Schedule("redundant")
+        new_schedulable = new_sched.add(Rxy(theta=15.4, phi=42.6, qubit="q0"))
+        sched.add(Rxy(theta=90, phi=0, qubit="q0"), ref_op=new_schedulable)
+
     # All schedulables should be valid
     for schedulable in sched.schedulables.values():
         assert Schedulable.is_valid(schedulable)
