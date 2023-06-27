@@ -16,6 +16,7 @@ from typing import List, Optional
 
 import numpy as np
 import pytest
+import xarray as xr
 from qblox_instruments import (
     Cluster,
     ClusterType,
@@ -931,13 +932,11 @@ def test_retrieve_acquisition_qrm(
     acq = qrm.retrieve_acquisition()
 
     # Assert
-    expected_dataarray = DataArray(
-        [[0.1 + 0.2j]],
-        coords=[[0], [0]],
-        dims=["repetition", "acq_index"],
+    expected_dataset = Dataset(
+        {0: (["acq_index_0"], [0.1 + 0.2j])},
+        coords={"acq_index_0": [0]},
     )
-    expected_dataset = Dataset({0: expected_dataarray})
-    assert acq.equals(expected_dataset)
+    xr.testing.assert_equal(acq, expected_dataset)
 
 
 def test_retrieve_acquisition_qcm_rf(close_all_instruments, make_qcm_rf):
@@ -978,14 +977,10 @@ def test_retrieve_acquisition_qrm_rf(
     qrm_rf.start()
     acq = qrm_rf.retrieve_acquisition()
 
-    # Assert
-    expected_dataarray = DataArray(
-        [[0.1 + 0.2j]],
-        coords=[[0], [0]],
-        dims=["repetition", "acq_index"],
+    expected_dataset = Dataset(
+        {0: (["acq_index_0"], [0.1 + 0.2j])}, coords={"acq_index_0": [0]}
     )
-    expected_dataset = Dataset({0: expected_dataarray})
-    assert acq.equals(expected_dataset)
+    xr.testing.assert_equal(acq, expected_dataset)
 
 
 def test_retrieve_acquisition_cluster(
@@ -1156,16 +1151,14 @@ def test_get_integration_data(make_qrm_component, mock_acquisition_data):
         "SSBIntegrationComplex", BinMode.AVERAGE, complex, {0: [0]}, 1
     )
     formatted_acquisitions = acq_manager._get_integration_data(
-        acq_indices=range(10),
+        acq_indices=list(range(10)),
         acquisitions=mock_acquisition_data,
         acquisition_metadata=acq_metadata,
         acq_duration=10,
         acq_channel=0,
     )
 
-    np.testing.assert_almost_equal(
-        formatted_acquisitions.sel(repetition=0).values, [0.0] * 10
-    )
+    np.testing.assert_almost_equal(formatted_acquisitions.values, [0.0] * 10)
 
 
 def test_instrument_module():

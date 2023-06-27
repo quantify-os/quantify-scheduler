@@ -10,8 +10,8 @@ from qcodes.utils.validators import numbertypes
 class Numbers(validators.Numbers):
     def __init__(
         self,
-        min_value: numbertypes = -float("inf"),
-        max_value: numbertypes = float("inf"),
+        min_value: numbertypes = -np.inf,
+        max_value: numbertypes = np.inf,
         allow_nan: bool = False,
     ) -> None:
         """

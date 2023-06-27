@@ -330,7 +330,7 @@ def hardware_cfg_pulsar_qcm_real_mode(
                     {
                         "port": "dummy_port_1",
                         "clock": "cl0.baseband",
-                        "instruction_generated_pulses_enabled": instruction_generated_pulses_enabled,
+                        "instruction_generated_pulses_enabled": instruction_generated_pulses_enabled,  # noqa: E501
                     },
                 ],
             },
@@ -339,7 +339,7 @@ def hardware_cfg_pulsar_qcm_real_mode(
                     {
                         "port": "dummy_port_2",
                         "clock": "cl0.baseband",
-                        "instruction_generated_pulses_enabled": instruction_generated_pulses_enabled,
+                        "instruction_generated_pulses_enabled": instruction_generated_pulses_enabled,  # noqa: E501
                     }
                 ],
             },
@@ -348,7 +348,7 @@ def hardware_cfg_pulsar_qcm_real_mode(
                     {
                         "port": "dummy_port_3",
                         "clock": "cl0.baseband",
-                        "instruction_generated_pulses_enabled": instruction_generated_pulses_enabled,
+                        "instruction_generated_pulses_enabled": instruction_generated_pulses_enabled,  # noqa: E501
                     }
                 ],
             },
@@ -357,7 +357,7 @@ def hardware_cfg_pulsar_qcm_real_mode(
                     {
                         "port": "dummy_port_4",
                         "clock": "cl0.baseband",
-                        "instruction_generated_pulses_enabled": instruction_generated_pulses_enabled,
+                        "instruction_generated_pulses_enabled": instruction_generated_pulses_enabled,  # noqa: E501
                     }
                 ],
             },

@@ -10,22 +10,21 @@
 """Tests for acquisitions module."""
 import pprint
 import re
-from typing import Dict, Any
+from typing import Any, Dict
 
-import pytest
 import numpy as np
-
-from qcodes.instrument.parameter import ManualParameter
+import pytest
+import xarray as xr
 from qblox_instruments import (
     ClusterType,
     DummyBinnedAcquisitionData,
     DummyScopeAcquisitionData,
     PulsarType,
 )
-from xarray import Dataset, DataArray
+from qcodes.instrument.parameter import ManualParameter
+from xarray import DataArray, Dataset
 
-from quantify_scheduler import waveforms, Schedule
-from quantify_scheduler.enums import BinMode
+from quantify_scheduler import Schedule, waveforms
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.qblox.instrument_compilers import QrmModule
@@ -33,6 +32,7 @@ from quantify_scheduler.backends.qblox.operation_handling import acquisitions
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox.register_manager import RegisterManager
 from quantify_scheduler.backends.types import qblox as types
+from quantify_scheduler.enums import BinMode
 from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.helpers.mock_instruments import MockLocalOscillator
 from quantify_scheduler.instrument_coordinator.components.generic import (
@@ -48,7 +48,6 @@ from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 from quantify_scheduler.schedules.trace_schedules import trace_schedule_circuit_layer
-
 from tests.fixtures.mock_setup import close_instruments
 from tests.scheduler.instrument_coordinator.components.test_qblox import (  # pylint: disable=unused-import
     make_cluster_component,
@@ -695,8 +694,9 @@ def test_trigger_count_acquisition(
     instr_coordinator.stop()
 
     # Assert intended behaviour
-    assert len(data) == 1
-    assert data[0].sel(acq_index=0, repetition=0).values == [1]
+    arr_q0 = data[0]
+    assert len(arr_q0) == 1
+    assert arr_q0[0, 0].values == [1]
 
     instr_coordinator.remove_component("ic_cluster0")
 
@@ -712,16 +712,18 @@ def test_trigger_count_append(make_qrm_component):
     }
     acq_man = _QRMAcquisitionManager(
         parent=qrm,
-        acquisition_metadata=acq_metadata,
+        acquisition_metadata={"0": acq_metadata},
         scope_mode_sequencer_and_channel=None,
         acquisition_duration={},
         seq_name_to_idx_map={"seq0": 0},
     )
     data = acq_man._get_trigger_count_data([], acq, acq_metadata, 0)
     expected_data = DataArray(
-        [[25, 25, 25, 20]], coords=[[0], [2, 3, 4, 6]], dims=["repetition", "acq_index"]
+        [[25, 25, 25, 20]],
+        coords=[[0], [2, 3, 4, 6]],
+        dims=["repetition", "acq_index_0"],
     )
-    assert data.equals(expected_data)
+    xr.testing.assert_identical(data, expected_data)
 
 
 def test_mixed_binned_trace_measurements(
@@ -806,18 +808,20 @@ def test_mixed_binned_trace_measurements(
     # Assert intended behaviour
     assert isinstance(data, Dataset)
     expected_dataarray_trace = DataArray(
-        [[0 + 1j] * 3000], coords=[[0], range(3000)], dims=["repetition", "acq_index"]
+        [[1j] * 3000],
+        coords=[[0], range(3000)],
+        dims=["acq_index_1", "trace_index_1"],
     )
     expected_dataarray_binned = DataArray(
-        [[0.02 + 0.04j]],
-        coords=[[0], [0]],
-        dims=["repetition", "acq_index"],
+        [0.02 + 0.04j],
+        coords=[[0]],
+        dims=["acq_index_0"],
     )
     expected_dataset = Dataset(
         {0: expected_dataarray_binned, 1: expected_dataarray_trace}
     )
 
-    assert data.equals(expected_dataset)
+    xr.testing.assert_identical(data, expected_dataset)
 
     instr_coordinator.remove_component("ic_cluster0")
 
@@ -988,7 +992,7 @@ def test_same_index_in_module_and_cluster_measurement_error(
         exc.value.args[0] == "Attempting to gather acquisitions. "
         "Make sure an acq_channel, acq_index corresponds to not more than one acquisition.\n"
         "The following indices are defined multiple times.\n"
-        "acq_channel=0; repetition=0; acq_index=[0]"
+        "acq_channel=0; acq_index_0=0"
     )
 
     instr_coordinator.stop()
@@ -1080,10 +1084,12 @@ def test_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_nv):
     # Assert intended behaviour
     assert isinstance(data, Dataset)
     expected_dataarray = DataArray(
-        [[0 + 1j] * 15000], coords=[[0], range(15000)], dims=["repetition", "acq_index"]
+        [[1j] * 15000],
+        coords=[[0], range(15000)],
+        dims=["acq_index_0", "trace_index_0"],
     )
     expected_dataset = Dataset({0: expected_dataarray})
-    assert data.equals(expected_dataset)
+    xr.testing.assert_equal(data, expected_dataset)
     assert compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"][
         "sequencers"
     ]["seq1"]["connected_inputs"] == [0]
@@ -1168,13 +1174,18 @@ def test_complex_input_hardware_cfg(make_cluster_component, mock_setup_basic_tra
 
     # Assert intended behaviour
     assert isinstance(data, Dataset)
-    expected_dataarray = DataArray(
-        [[0.1 + 0.2j]],
-        coords=[[0], [0]],
-        dims=["repetition", "acq_index"],
+    expected_dataarray_0 = DataArray(
+        [0.1 + 0.2j],
+        coords=[[0]],
+        dims=["acq_index_0"],
     )
-    expected_dataset = Dataset({0: expected_dataarray, 1: expected_dataarray})
-    assert data.equals(expected_dataset)
+    expected_dataarray_1 = DataArray(
+        [0.1 + 0.2j],
+        coords=[[0]],
+        dims=["acq_index_1"],
+    )
+    expected_dataset = Dataset({0: expected_dataarray_0, 1: expected_dataarray_1})
+    xr.testing.assert_equal(data, expected_dataset)
     assert compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"][
         "sequencers"
     ]["seq1"]["connected_inputs"] == [0, 1]
@@ -1430,10 +1441,10 @@ def test_trace_acquisition_instrument_coordinator(  # pylint: disable=too-many-l
 
     assert isinstance(acquired_data, Dataset)
     expected_dataarray = DataArray(
-        [[0 + 1j] * 1000], coords=[[0], range(1000)], dims=["repetition", "acq_index"]
+        [[1j] * 1000], coords=[[0], range(1000)], dims=["acq_index_0", "trace_index_0"]
     )
     expected_dataset = Dataset({0: expected_dataarray})
-    assert acquired_data.equals(expected_dataset)
+    xr.testing.assert_equal(acquired_data, expected_dataset)
     instr_coordinator.remove_component(ic_component.name)
 
 
@@ -1735,29 +1746,29 @@ def test_multiple_binned_measurements(
     expected_dataset = Dataset(
         {
             0: DataArray(
-                [[2 + 3j, 4 + 5j, 6 + 7j, 8 + 9j]],
-                coords=[[0], [0, 1, 2, 3]],
-                dims=["repetition", "acq_index"],
+                [2 + 3j, 4 + 5j, 6 + 7j, 8 + 9j],
+                coords=[[0, 1, 2, 3]],
+                dims=["acq_index_0"],
             ),
             2: DataArray(
-                [[10 + 11j, 12 + 13j]],
-                coords=[[0], [0, 1]],
-                dims=["repetition", "acq_index"],
+                [10 + 11j, 12 + 13j],
+                coords=[[0, 1]],
+                dims=["acq_index_2"],
             ),
             1: DataArray(
-                [[20 + 30j, 40 + 50j, 60 + 70j, 80 + 90j]],
-                coords=[[0], [0, 1, 2, 3]],
-                dims=["repetition", "acq_index"],
+                [20 + 30j, 40 + 50j, 60 + 70j, 80 + 90j],
+                coords=[[0, 1, 2, 3]],
+                dims=["acq_index_1"],
             ),
             3: DataArray(
-                [[100 + 110j, 120 + 130j]],
-                coords=[[0], [0, 1]],
-                dims=["repetition", "acq_index"],
+                [100 + 110j, 120 + 130j],
+                coords=[[0, 1]],
+                dims=["acq_index_3"],
             ),
         }
     )
 
-    assert data.equals(expected_dataset)
+    xr.testing.assert_equal(data, expected_dataset)
 
     instr_coordinator.remove_component("ic_cluster0")
 
@@ -1851,12 +1862,12 @@ def test_append_measurements(
         {
             1: DataArray(
                 [[2 + 3j, 4 + 5j], [6 + 7j, 8 + 9j], [10 + 11j, 12 + 13j]],
-                coords=[[0, 1, 2], [0, 1]],
-                dims=["repetition", "acq_index"],
+                coords={"acq_index_1": [0, 1]},
+                dims=["repetition", "acq_index_1"],
             ),
         }
     )
 
-    assert data.equals(expected_dataset)
+    xr.testing.assert_equal(data, expected_dataset)
 
     instr_coordinator.remove_component("ic_cluster0")

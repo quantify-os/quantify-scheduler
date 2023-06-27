@@ -4,6 +4,7 @@
 
 ### Breaking changes
 
+- Instrument coordinator - Dimension names of the datasets returned by the instrument coordinator have changed. If you used them explicitly in processing, you can fix that by extracting the names dynamically from the dataset. Exact names of the dimensions are not guaranteed to be stable in the future. (!608)
 - Qblox backend - Remove overwriting of IF frequency to `None` when `mix_lo=False` (!699)
 - Qblox backend - Compile `ShiftClockPhase` operation to `set_ph_delta` + `upd_param`, extending duration from 0 to 8 ns (!704, #432)
 
@@ -12,6 +13,7 @@
 - Compilation - Amended `ReferenceMagnitude` set method to ensure that all unit parameters are not overwritten when one of the parameters is set to `nan` (!695, #429).
 - Compilation - Changed units of amplitude parameters in device elements to dimesionless, for consistency with new `ReferenceMagnitude` interface (!691).
 - Documentation - Update broken qblox-instruments documentation URLs (!696)
+- Gettables - Shape of the data returned by instrument coordinator components for different acquision protocols is semi-formalized and validated in the code of `ScheduleGettable.retrieve_acquisition()`. Data returned by Qblox and ZI LabOne backends is adjusted accordingly. (!608)
 - JSON utilities - `DataStructure` can serialize Numpy arrays using new `quantify_scheduler.structure.NDArray` field type. (!701)
 - Schedules - Remove one of the `CRCount` operations in `nv_dark_esr_sched_nco` from NCO frequency loop to avoid redundancy (!643)
 - Waveforms - Fix `sudden_net_zero` waveform generation. Rounding of pulse times will now no longer lead to an incorrect SNZ pulse. I.e., the last sample of the first pulse and the first sample of the second pulse will remain correctly scaled, and the integral correction will have an amplitude such that the integral of the pulse is zero. (!581, #310)

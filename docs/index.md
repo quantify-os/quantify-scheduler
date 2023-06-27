@@ -14,6 +14,7 @@ tutorials/Running an Experiment
 tutorials/Schedules*
 tutorials/Compiling*
 tutorials/Operations*
+acquisition_protocols
 tutorials/qblox/index
 tutorials/zhinst/index
 examples/deprecated

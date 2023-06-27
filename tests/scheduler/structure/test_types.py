@@ -1,6 +1,6 @@
 import numpy as np
 
-from quantify_scheduler.structure import NDArray, DataStructure
+from quantify_scheduler.structure import DataStructure, NDArray
 
 
 def test_ndarray():

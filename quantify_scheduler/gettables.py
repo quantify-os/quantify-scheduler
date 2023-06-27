@@ -12,22 +12,22 @@ quantify-scheduler.
     The intent is to have one generic ``ScheduleGettable``.
     Expect breaking changes.
 """
+# pylint: disable-all
 from __future__ import annotations
 
 import json
 import logging
 import os
 import time
+import warnings
 import zipfile
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable
 
 import numpy as np
 from qcodes.parameters import Parameter
 from qcodes.utils.json_utils import NumpyJSONEncoder
-from quantify_core.data.handling import gen_tuid, get_datadir, snapshot
 
-from quantify_scheduler import Schedule
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_core.data.handling import gen_tuid, get_datadir, snapshot
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
     AcquisitionMetadata,
@@ -35,13 +35,23 @@ from quantify_scheduler.helpers.schedule import (
 )
 
 if TYPE_CHECKING:
-    from quantify_scheduler.schedules.schedule import CompiledSchedule
+    from numpy.typing import NDArray
+    from xarray import Dataset
+
+    from quantify_scheduler import CompiledSchedule, Schedule
+    from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 
 logger = logging.getLogger(__name__)
 
 
-# pylint: disable=too-many-instance-attributes
-# pylint: disable=too-few-public-methods
+class AcquisitionProtocolError(TypeError):
+    pass
+
+
+class AcquisitionProtocolNotSupportedError(NotImplementedError):
+    pass
+
+
 class ScheduleGettable:
     """
     Generic gettable for a quantify schedule using vector (I,Q) acquisition. Can be
@@ -51,22 +61,20 @@ class ScheduleGettable:
     the :class:`quantify_scheduler.schedules.schedule.Schedule` using the
     `schedule_function`, this is then compiled and finally executed by the
     :class:`~.InstrumentCoordinator`.
-    """  # pylint: disable=line-too-long
+    """
 
-    # pylint: disable=too-many-arguments
-    # pylint: disable=line-too-long
     def __init__(
         self,
         quantum_device: QuantumDevice,
         schedule_function: Callable[..., Schedule],
-        schedule_kwargs: Dict[str, Any],
+        schedule_kwargs: dict[str, Any],
         num_channels: int = 1,
-        data_labels: Optional[List[str]] = None,
+        data_labels: list[str] | None = None,
         real_imag: bool = True,
         batched: bool = False,
         max_batch_size: int = 1024,
-        always_initialize=True,
-    ):
+        always_initialize: bool = True,
+    ) -> None:
         """
         Create a new instance of ScheduleGettable which is used to do I and Q
         acquisition or alternatively magnitude and phase.
@@ -153,11 +161,11 @@ class ScheduleGettable:
         # to facilitate debugging. Will be assigned upon compilation in self.initialize
         self._backend = None
 
-    def __call__(self) -> Union[Tuple[float, ...], Tuple[np.ndarray, ...]]:
+    def __call__(self) -> tuple[float, ...] | tuple[np.ndarray, ...]:
         """Acquire and return data"""
         return self.get()
 
-    def _compile(self, sched):
+    def _compile(self, sched: Schedule) -> None:
         """Compile schedule, separated to allow for profiling compilation duration."""
         compilation_config = self.quantum_device.generate_compilation_config()
 
@@ -167,7 +175,7 @@ class ScheduleGettable:
             schedule=sched, config=compilation_config
         )
 
-    def initialize(self):
+    def initialize(self) -> None:
         """
         This generates the schedule and uploads the compiled instructions to the
         hardware using the instrument coordinator.
@@ -192,7 +200,7 @@ class ScheduleGettable:
         """Return the schedule used in this class"""
         return self._compiled_schedule
 
-    def get(self) -> Union[Tuple[float, ...], Tuple[np.ndarray, ...]]:
+    def get(self) -> tuple[float, ...] | tuple[np.ndarray, ...]:
         """
         Start the experimental sequence and retrieve acquisition data.
 
@@ -237,12 +245,12 @@ class ScheduleGettable:
                 f"{acq_metadata.acq_indices=}"
             )
 
-        result = self.process_acquired_data(
-            acquired_data, acq_metadata, self.compiled_schedule.repetitions
-        )
+        result = self.process_acquired_data(acquired_data, acq_metadata)
         return result
 
-    def _reshape_data(self, acq_metadata, vals):
+    def _reshape_data(
+        self, acq_metadata: AcquisitionMetadata, vals: NDArray
+    ) -> list[NDArray]:
         if acq_metadata.acq_protocol == "TriggerCount":
             return [vals.real.astype(np.uint64)]
 
@@ -267,8 +275,8 @@ class ScheduleGettable:
         )
 
     def _process_acquired_data_trigger_count(
-        self, acquired_data, acq_metadata: AcquisitionMetadata, repetitions: int
-    ) -> Dict[int, np.ndarray]:
+        self, acquired_data: Dataset, acq_metadata: AcquisitionMetadata
+    ) -> dict[int, np.ndarray]:
         """Reformat acquired data in a dictionary. Used by process_acquired_data.
 
         Parameters
@@ -293,7 +301,7 @@ class ScheduleGettable:
         """
         dataset = {}
         if acq_metadata.bin_mode == BinMode.APPEND:
-            for acq_channel, acq_indices in acq_metadata.acq_indices.items():
+            for acq_channel, _ in acq_metadata.acq_indices.items():
                 dataset[acq_channel] = (
                     acquired_data[acq_channel]
                     .sel(repetition=0)
@@ -306,57 +314,129 @@ class ScheduleGettable:
             f" mode {acq_metadata.bin_mode} is not supported."
         )
 
-    def process_acquired_data(
-        self, acquired_data, acq_metadata: AcquisitionMetadata, repetitions: int
-    ) -> Union[Tuple[float, ...], Tuple[np.ndarray, ...]]:
+    def process_acquired_data(  # noqa: PLR0912
+        self,
+        acquired_data: Dataset,
+        acq_metadata: AcquisitionMetadata,
+        repetitions: int | None = None,
+    ) -> tuple[float, ...] | tuple[NDArray[np.float_], ...]:
         """
         Reshapes the data as returned from the instrument coordinator into the form
         accepted by the measurement control.
+
+        Parameters
+        ----------
+        acquired_data
+            Data that is returned by instrument coordinator.
+        acq_metadata
+            Acquisition metadata from schedule. It is supposed to be generated by
+            :func:`~quantify_scheduler.helpers.schedule.extract_acquisition_metadata_from_schedule`.
+        repetitions
+            (deprecated) Should not be specified. Will be removed in
+            quantify-scheduler-0.16.
+
+        Returns
+        -------
+        :
+            A tuple of data, casted to a historical conventions on data format.
         """
-        # pylint: disable=fixme
         # FIXME: this reshaping should happen inside the instrument coordinator
         # blocked by quantify-core#187, and quantify-core#233
 
         # retrieve the acquisition results
         # FIXME: acq_metadata should be an attribute of the schedule, see also #192
+        if repetitions is not None:
+            warnings.warn(
+                "`repetitions` argument of `ScheduleGettable.process_acquired_data()`"
+                " function has no effect and will be removed in"
+                " quantify-scheduler-0.16.",
+                FutureWarning,
+            )
         if acq_metadata.acq_protocol == "TriggerCount":
+            # We haven't yet formalized and implemented acquisition protocols and
+            # correspondent data shape for TriggerCount acquisiton protocol.
             dataset = self._process_acquired_data_trigger_count(
-                acquired_data, acq_metadata, repetitions
+                acquired_data, acq_metadata
             )
 
-        elif acq_metadata.acq_protocol == "Trace":
+        elif (
+            acq_metadata.acq_protocol == "Trace"
+            and acq_metadata.bin_mode == BinMode.AVERAGE
+        ):
             dataset = {}
-            for acq_channel, acq_indices in acq_metadata.acq_indices.items():
-                # Trace only supports AVERAGE binmode, therefore only has values at repetition=0.
-                dataset[acq_channel] = (
-                    acquired_data[acq_channel].sel(repetition=0).values
-                )
-
-        elif acq_metadata.bin_mode == BinMode.AVERAGE:
-            dataset = {}
-            for acq_channel, acq_indices in acq_metadata.acq_indices.items():
-                dataset[acq_channel] = np.zeros(len(acq_indices), dtype=complex)
-                for acq_idx in acq_indices:
-                    dataset[acq_channel][acq_idx] = (
-                        acquired_data[acq_channel].sel(acq_index=acq_idx).values
+            for acq_channel in acq_metadata.acq_indices:
+                channel_data = acquired_data[acq_channel]
+                if (num_dims := len(channel_data.dims)) != 2 or not np.iscomplexobj(
+                    channel_data
+                ):
+                    raise AcquisitionProtocolError(
+                        "Data returned by an instrument coordinator component for"
+                        f" {acq_metadata.acq_protocol} acquisition protocol in"
+                        f" {acq_metadata.bin_mode} bin mode is expected to be an"
+                        f" array of complex numbers with with two dimensions:"
+                        " acquisition index and trace index. This is not the case for"
+                        f" acquisition channel {acq_channel}, that has data"
+                        f" type {channel_data.dtype} and {num_dims} dimensions:"
+                        f" {', '.join((str(dim) for dim in channel_data.dims))}."
                     )
-
-        elif acq_metadata.bin_mode == BinMode.APPEND:
-            dataset = {}
-            for acq_channel, acq_indices in acq_metadata.acq_indices.items():
-                dataset[acq_channel] = np.zeros(
-                    len(acq_indices) * repetitions, dtype=complex
-                )
-                acq_stride = len(acq_indices)
-                for acq_idx in acq_indices:
-                    dataset[acq_channel][acq_idx::acq_stride] = (
-                        acquired_data[acq_channel].sel(acq_index=acq_idx).values
+                if channel_data.shape[0] != 1:
+                    raise AcquisitionProtocolNotSupportedError(
+                        "Trace acquisition protocol with several acquisitions on the"
+                        " same acquisition channel is not supported by"
+                        " a ScheduleGettable"
                     )
+                dataset[acq_channel] = channel_data.to_numpy().reshape((-1,))
+
+        elif (
+            acq_metadata.acq_protocol
+            in ("SSBIntegrationComplex", "WeightedIntegratedComplex")
+            and acq_metadata.bin_mode == BinMode.AVERAGE
+        ):
+            dataset = {}
+            for acq_channel in acq_metadata.acq_indices:
+                channel_data = acquired_data[acq_channel]
+                if (num_dims := len(channel_data.dims)) != 1 or not np.iscomplexobj(
+                    channel_data
+                ):
+                    raise AcquisitionProtocolError(
+                        "Data returned by an instrument coordinator component for"
+                        f" {acq_metadata.acq_protocol} acquisition protocol in"
+                        f" {acq_metadata.bin_mode} bin mode is expected to be an"
+                        f" array of complex numbers with one dimension: acquisition"
+                        " index. This is not the case for acquisition channel"
+                        f" {acq_channel}, that has data type {channel_data.dtype} and"
+                        f" {num_dims} dimensions:"
+                        f" {', '.join((str(dim) for dim in channel_data.dims))}."
+                    )
+                dataset[acq_channel] = channel_data.to_numpy()
+
+        elif (
+            acq_metadata.acq_protocol
+            in ("SSBIntegrationComplex", "WeightedIntegratedComplex")
+            and acq_metadata.bin_mode == BinMode.APPEND
+        ):
+            dataset = {}
+            for acq_channel in acq_metadata.acq_indices:
+                channel_data = acquired_data[acq_channel]
+                if (num_dims := len(channel_data.dims)) != 2 or not np.iscomplexobj(
+                    channel_data
+                ):
+                    raise AcquisitionProtocolError(
+                        "Data returned by an instrument coordinator component for"
+                        f" {acq_metadata.acq_protocol} acquisition protocol in"
+                        f" {acq_metadata.bin_mode} bin mode is expected to be an "
+                        f" array of complex numbers with two dimensions: repetition"
+                        " index and acquisition index. This is not the case for"
+                        f" acquisition channel {acq_channel}, that has data type"
+                        f" {channel_data.dtype} and {num_dims} dimensions:"
+                        f" {', '.join((str(dim) for dim in channel_data.dims))}."
+                    )
+                dataset[acq_channel] = channel_data.to_numpy().reshape((-1,))
 
         else:
-            raise NotImplementedError(
-                f"Acquisition protocol {acq_metadata.acq_protocol} with bin"
-                f" mode {acq_metadata.bin_mode} is not supported."
+            raise AcquisitionProtocolNotSupportedError(
+                f"ScheduleGettable does not support {acq_metadata.acq_protocol}"
+                f' acquisition protocol in "{acq_metadata.bin_mode}" bin mode.'
             )
 
         # Reshaping of the data before returning
@@ -371,12 +451,12 @@ class ScheduleGettable:
                     f"your acquisition channels are sequential starting from 0."
                 )
 
-            if self.batched is False:
-                if len(vals) != 1:
-                    raise ValueError(
-                        f"For iterative mode, only one value is expected for each acquisition channel."
-                        f"Got {len(vals)} values for acquisition channel '{acq_channel}' instead."
-                    )
+            if self.batched is False and len(vals) != 1:
+                raise ValueError(
+                    f"For iterative mode, only one value is expected for each"
+                    f" acquisition channel. Got {len(vals)} values for acquisition"
+                    f" channel '{acq_channel}' instead."
+                )
 
             return_data.extend(self._reshape_data(acq_metadata, vals))
 
@@ -387,9 +467,10 @@ class ScheduleGettable:
         self, execute_get: bool = False, update: bool = False
     ) -> str:
         """
-        Create a report that saves all information contained in this `ScheduleGettable` and save it in the quantify
-        datadir with its own `tuid`. The information in the report includes the generated schedule, device config,
-        hardware config and snapshot of the instruments.
+        Create a report that saves all information contained in this `ScheduleGettable`
+        and save it in the quantify datadir with its own `tuid`. The information in
+        the report includes the generated schedule, device config, hardware config
+        and snapshot of the instruments.
 
         Parameters
         ----------
@@ -408,8 +489,9 @@ class ScheduleGettable:
             self.get()
         if not self.is_initialized:
             raise RuntimeError(
-                "`generate_diagnostics_report` can only run for an initialized `ScheduleGettable`. "
-                "Please initialize manually or run with `execute_get=True`"
+                "`generate_diagnostics_report` can only run for an initialized "
+                "`ScheduleGettable`. Please initialize manually or run with "
+                "`execute_get=True`"
             )
 
         device_cfg = self.quantum_device.generate_device_config().dict()
@@ -451,7 +533,7 @@ class ScheduleGettable:
         return filename
 
 
-def _evaluate_parameter_dict(parameters: Dict[str, Any]) -> Dict[str, Any]:
+def _evaluate_parameter_dict(parameters: dict[str, Any]) -> dict[str, Any]:
     r"""
     Loop over the keys and values in a dict and replaces parameters with their current
     value.

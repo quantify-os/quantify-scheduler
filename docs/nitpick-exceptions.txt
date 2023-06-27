@@ -10,6 +10,8 @@
 # py:obj n
 # py:obj ndarray
 # py:obj args
+py:class NDArray
+py:class np.float_
 
 # other classes and functions that cannot be linked to
 # py:class numpy.ma.core.MaskedArray

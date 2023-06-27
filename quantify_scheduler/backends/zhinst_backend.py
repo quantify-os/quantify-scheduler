@@ -231,7 +231,7 @@ def _determine_clock_start(
     hardware_channel: str, abs_time: float, operation_name: str
 ) -> float:
     if hardware_channel is None:
-        return float("nan")
+        return np.nan
     clock_start, _ = _determine_clock_sample_start(
         hardware_channel=hardware_channel,
         abs_time=abs_time,
@@ -244,7 +244,7 @@ def _determine_sample_start(
     hardware_channel: str, abs_time: float, operation_name: str
 ) -> float:
     if hardware_channel is None:
-        return float("nan")
+        return np.nan
     _, sample_start = _determine_clock_sample_start(
         hardware_channel=hardware_channel,
         abs_time=abs_time,
@@ -1668,7 +1668,7 @@ def _compile_for_uhfqa(  # noqa: PLR0915
 
     # These variables have to be identical for all acquisitions.
     # initialized to None here and overwritten while iterating over the acquisitions.
-    acq_duration: float = float("nan")
+    acq_duration: float = np.nan
 
     # a list of used acquisition channels, this is used to raise an exception
     # when multiple acquisitions assign to the same channel.

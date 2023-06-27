@@ -69,7 +69,7 @@ class ClocksFrequencies(InstrumentChannel):
             instrument=self,
             label="Qubit frequency",
             unit="Hz",
-            initial_value=kwargs.get("f01", float("nan")),
+            initial_value=kwargs.get("f01", math.nan),
             vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
         """Frequency of the 01 clock"""
@@ -79,7 +79,7 @@ class ClocksFrequencies(InstrumentChannel):
             instrument=self,
             label="Frequency of the |1>-|2> transition",
             unit="Hz",
-            initial_value=kwargs.get("f12", float("nan")),
+            initial_value=kwargs.get("f12", math.nan),
             vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
         """Frequency of the 12 clock"""
@@ -89,7 +89,7 @@ class ClocksFrequencies(InstrumentChannel):
             instrument=self,
             label="Readout frequency",
             unit="Hz",
-            initial_value=kwargs.get("readout", float("nan")),
+            initial_value=kwargs.get("readout", math.nan),
             vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
         """Frequency of the ro clock. """
@@ -125,7 +125,7 @@ class RxyDRAG(InstrumentChannel):
             name="amp180",
             instrument=self,
             label=r"$\pi-pulse amplitude$",
-            initial_value=kwargs.get("amp180", float("nan")),
+            initial_value=kwargs.get("amp180", math.nan),
             unit="",
             vals=Numbers(min_value=-10, max_value=10, allow_nan=True),
         )
@@ -211,7 +211,7 @@ class DispersiveMeasurement(InstrumentChannel):
         self.acq_delay = ManualParameter(
             name="acq_delay",
             instrument=self,
-            initial_value=kwargs.get("acq_delay", 0),  # float("nan"),
+            initial_value=kwargs.get("acq_delay", 0),
             unit="s",
             # in principle the values should be a few 100 ns but the validator is here
             # only to protect against silly typos that lead to out of memory errors.

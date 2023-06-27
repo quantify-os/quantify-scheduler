@@ -3006,8 +3006,8 @@ def _strip_comments(program: str):
     stripped_program = []
     for line in program.split("\n"):
         if "#" in line:
-            line = line.split("#")[0]
-        line = line.rstrip()  # remove trailing whitespace
+            line = line.split("#")[0]  # noqa: PLW2901
+        line = line.rstrip()  # remove trailing whitespace # noqa: PLW2901
         stripped_program.append(line)
     return stripped_program
 

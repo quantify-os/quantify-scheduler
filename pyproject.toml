@@ -159,7 +159,6 @@ select = [
 ignore = ["D203", "D212", "E741", "N806", "PLR0913", "A003", "ANN101", "PLR2004"]
 
 extend-exclude = [
-    "tests",
     "docs",
 ]
 
@@ -173,6 +172,7 @@ extend-exclude = [
 
 "*/docs/conf.py" = ["E402", "F401"]
 "__init__.py" = ["F401"]
+"tests/**/*.py" = ["D", "ANN"]
 
 # All files below are temporarily excluded explicitly and expected to be gradually turned into ruff-compliancy
 "quantify_scheduler/backends/qblox/__init__.py" = ["I", "F", "E", "W", "D", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
@@ -275,7 +275,7 @@ extend-exclude = [
 "quantify_scheduler/gettables_profiled.py" = ["I", "F", "E", "W", "D", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
 "quantify_scheduler/_version.py" = ["I", "F", "E", "W", "D", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
 "quantify_scheduler/compilation.py" = ["I", "F", "E", "W", "D", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/gettables.py" = ["I", "F", "E", "W", "D", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
+"quantify_scheduler/gettables.py" = ["D"]
 "tests/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
 "tests/conftest.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
 "tests/fixtures/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
@@ -294,7 +294,7 @@ extend-exclude = [
 "tests/scheduler/backends/graph_backends/test_zhinst_backend.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
 "tests/scheduler/backends/qblox/test_compiler_abc.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
 "tests/scheduler/backends/qblox/operation_handling/test_pulses.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/backends/qblox/operation_handling/test_acquisitions.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
+"tests/scheduler/backends/qblox/operation_handling/test_acquisitions.py" = ["F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
 "tests/scheduler/backends/qblox/operation_handling/test_factory.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
 "tests/scheduler/backends/qblox/operation_handling/test_virtual.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
 "tests/scheduler/backends/qblox/operation_handling/empty_qasm_program.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]

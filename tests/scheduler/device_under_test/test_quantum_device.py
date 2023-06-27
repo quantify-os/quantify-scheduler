@@ -6,7 +6,7 @@ from quantify_scheduler.device_under_test.device_element import DeviceElement
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 
 
-def test_QuantumDevice_generate_device_config(mock_setup_basic_transmon: dict) -> None:
+def test_generate_device_config(mock_setup_basic_transmon: dict) -> None:
     quantum_device = mock_setup_basic_transmon["quantum_device"]
 
     # N.B. the validation of the generated config is happening inside the
@@ -19,7 +19,7 @@ def test_QuantumDevice_generate_device_config(mock_setup_basic_transmon: dict) -
     assert "q2_q3" in dev_cfg.edges
 
 
-def test_QuantumDevice_generate_hardware_config(
+def test_generate_hardware_config(
     mock_setup_basic_transmon: dict,
 ) -> None:
     quantum_device = mock_setup_basic_transmon["quantum_device"]
@@ -67,22 +67,22 @@ def test_QuantumDevice_generate_hardware_config(
 
 
 @pytest.fixture
-def dev() -> QuantumDevice:
+def dev():
     dev = QuantumDevice("dev")
     yield dev
     dev.close()
 
 
 @pytest.fixture
-def test_mc() -> QuantumDevice:
+def meas_ctrl():
     test_mc = QuantumDevice("test_mc")
     yield test_mc
     test_mc.close()
 
 
-def test_adding_non_element_raises(dev, test_mc):
+def test_adding_non_element_raises(dev, meas_ctrl):
     with pytest.raises(TypeError):
-        dev.add_element(test_mc)
+        dev.add_element(meas_ctrl)
 
 
 def test_invalid_device_element_name():

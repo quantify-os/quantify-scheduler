@@ -4,6 +4,7 @@
 Device elements for NV centers. Currently only for the electronic qubit,
 but could be extended for other qubits (eg. carbon qubit).
 """
+import math
 from typing import Dict, Any
 
 from qcodes.instrument import InstrumentModule
@@ -85,7 +86,7 @@ class ClockFrequencies(InstrumentModule):
             label="Microwave frequency in resonance with transition between 0 and 1.",
             unit="Hz",
             instrument=self,
-            initial_value=float("nan"),
+            initial_value=math.nan,
             vals=_NonNegativeFrequencies(),
         )
         """Microwave frequency to resonantly drive the electron spin state of a
@@ -98,7 +99,7 @@ class ClockFrequencies(InstrumentModule):
             label="Spectroscopy frequency",
             unit="Hz",
             instrument=self,
-            initial_value=float("nan"),
+            initial_value=math.nan,
             vals=_NonNegativeFrequencies(),
         )
         """Parameter that is swept for a spectroscopy measurement. It does not track
@@ -109,7 +110,7 @@ class ClockFrequencies(InstrumentModule):
             label="f_{ge0}",
             unit="Hz",
             instrument=self,
-            initial_value=float("nan"),
+            initial_value=math.nan,
             vals=_NonNegativeFrequencies(),
         )
         """Transition frequency from the m_s=0 state to the E_x,y state"""
@@ -119,7 +120,7 @@ class ClockFrequencies(InstrumentModule):
             label="f_{ge1}",
             unit="Hz",
             instrument=self,
-            initial_value=float("nan"),
+            initial_value=math.nan,
             vals=_NonNegativeFrequencies(),
         )
         """Transition frequency from the m_s=+-1 state to any of the A_1, A_2, or
@@ -130,7 +131,7 @@ class ClockFrequencies(InstrumentModule):
             label="Frequency of ionization laser",
             unit="Hz",
             instrument=self,
-            initial_value=float("nan"),
+            initial_value=math.nan,
             vals=_NonNegativeFrequencies(),
         )
         """Frequency of the green ionization laser for manipulation of the NVs charge state."""
@@ -152,7 +153,7 @@ class SpectroscopyOperationHermiteMW(InstrumentModule):
             name="amplitude",
             label="Amplitude of spectroscopy pulse",
             instrument=self,
-            initial_value=float("nan"),
+            initial_value=math.nan,
             unit="",
             vals=_Amplitudes(),
         )
@@ -181,7 +182,7 @@ class ResetSpinpump(InstrumentModule):
         self.amplitude = ManualParameter(
             name="amplitude",
             instrument=self,
-            initial_value=float("nan"),
+            initial_value=math.nan,
             unit="",
             vals=_Amplitudes(),
         )
@@ -210,7 +211,7 @@ class Measure(InstrumentModule):
         self.pulse_amplitude = ManualParameter(
             name="pulse_amplitude",
             instrument=self,
-            initial_value=float("nan"),
+            initial_value=math.nan,
             unit="",
             vals=_Amplitudes(),
         )
@@ -271,7 +272,7 @@ class ChargeReset(InstrumentModule):
         self.amplitude = ManualParameter(
             name="amplitude",
             instrument=self,
-            initial_value=float("nan"),
+            initial_value=math.nan,
             unit="",
             vals=_Amplitudes(),
         )
@@ -299,7 +300,7 @@ class CRCount(InstrumentModule):
         self.readout_pulse_amplitude = ManualParameter(
             name="readout_pulse_amplitude",
             instrument=self,
-            initial_value=float("nan"),
+            initial_value=math.nan,
             unit="",
             vals=_Amplitudes(),
         )
@@ -308,7 +309,7 @@ class CRCount(InstrumentModule):
         self.spinpump_pulse_amplitude = ManualParameter(
             name="spinpump_pulse_amplitude",
             instrument=self,
-            initial_value=float("nan"),
+            initial_value=math.nan,
             unit="",
             vals=_Amplitudes(),
         )

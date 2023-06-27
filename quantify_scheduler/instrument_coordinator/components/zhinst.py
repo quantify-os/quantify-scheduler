@@ -281,7 +281,7 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
                 acq_channel_results.append(
                     xarray.DataArray(
                         data.reshape((1, -1)),
-                        dims=("repetition", "acq_index"),
+                        dims=(f"acq_index_{acq_channel}", f"trace_index_{acq_channel}"),
                         name=acq_channel,
                     )
                 )
@@ -292,8 +292,8 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
                 acq_channel_results.append(
                     xarray.DataArray(
                         # Sanity check: data size must be equal to n_acquisitions
-                        data.reshape((1, acq_config.n_acquisitions)),
-                        dims=("repetition", "acq_index"),
+                        data.reshape((acq_config.n_acquisitions,)),
+                        dims=(f"acq_index_{acq_channel}",),
                         name=acq_channel,
                     )
                 )
@@ -304,7 +304,7 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
                 acq_channel_results.append(
                     xarray.DataArray(
                         data.reshape((-1, acq_config.n_acquisitions)),
-                        dims=("repetition", "acq_index"),
+                        dims=("repetition", f"acq_index_{acq_channel}"),
                         name=acq_channel,
                     )
                 )

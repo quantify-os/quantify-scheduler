@@ -6,6 +6,7 @@ import math
 import numpy as np
 import pytest
 from qcodes.instrument.parameter import ManualParameter
+from xarray import Dataset
 
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.compilation import determine_absolute_timing
@@ -20,7 +21,6 @@ from tests.scheduler.instrument_coordinator.components.test_qblox import (  # py
     make_cluster_component,
 )
 from tests.scheduler.schedules.compiles_all_backends import _CompilesAllBackends
-from tests.scheduler.test_gettables import _reshape_array_into_acq_return_type
 
 
 class TestHeterodyneSpecSchedule(_CompilesAllBackends):
@@ -169,21 +169,15 @@ def test_heterodyne_spec_sched_nco__qblox_hardware(
     assert spec_gettable.is_initialized is False
 
     # Prepare the mock data the spectroscopy schedule
-    acq_metadata = AcquisitionMetadata(
-        acq_protocol="ssb_integration_complex",
-        bin_mode=BinMode.AVERAGE,
-        acq_return_type=complex,
-        acq_indices={0: [*range(len(ro_freqs))]},
-        repetitions=quantum_device.cfg_sched_repetitions,
+    exp_data = np.full_like(
+        ro_freqs, 1 * np.exp(1j * np.deg2rad(45)), dtype=np.complex64
     )
-    data = 1 * np.exp(1j * np.deg2rad(45))
-    acq_indices_data = _reshape_array_into_acq_return_type(
-        data=data, acq_metadata=acq_metadata
-    )
+    acq_channel = 0
+    expected_dataset = Dataset({acq_channel: ([f"acq_index_{acq_channel}"], exp_data)})
     mocker.patch.object(
         ic,
         "retrieve_acquisition",
-        return_value=acq_indices_data,
+        return_value=expected_dataset,
     )
 
     # Run the schedule
@@ -197,7 +191,6 @@ def test_heterodyne_spec_sched_nco__qblox_hardware(
     assert spec_gettable.is_initialized is True
 
     # Assert that the data is coming out correctly
-    exp_data = np.ones(len(ro_freqs)) * data
     np.testing.assert_array_equal(dataset.x0, ro_freqs)
     np.testing.assert_array_equal(dataset.y0, abs(exp_data))
     np.testing.assert_array_equal(dataset.y1, np.angle(exp_data, deg=True))

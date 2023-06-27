@@ -7,7 +7,7 @@ import copy
 import logging
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Iterable, Optional, Tuple, Type, Union
+from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
 
 import numpy as np
 from qblox_instruments import (
@@ -931,64 +931,6 @@ class _QRMAcquisitionManager:
 
         return dataset
 
-    @classmethod
-    def _format_acquisitions_data_array_for_scope_and_integration(
-        cls,
-        acquisition_metadata: AcquisitionMetadata,
-        acq_indices: Iterable,
-        acquisitions_data: Iterable,
-    ) -> DataArray:
-        """
-        Formats the scope and integration type acquisition data to a `xarray.DataArray`.
-        acquisitions_data is expected to be in the following order for the binned acquisitions:
-        :code:`[index0_rep0, index1_rep0, index2_rep0, index0_rep1, index1_rep1, index2_rep1, ...]`.
-        The data is converted into the following order for the `xarray.DataArray`:
-        :code:`[[index0_rep0, index1_rep0, index2_rep0], [index0_rep1, index1_rep1, index2_rep1], ...]`.
-
-        Parameters
-        ----------
-        acquisition_metadata
-            Acquisition metadata.
-        acq_indices
-            Indices for the acquisition channel.
-        acquisitions_data
-            Data of the acquisitions.
-
-        Returns
-        -------
-        :
-            Formatted `xarray.DataArray` of the acquisition data by cutting the raw data
-            retrieved from the hardware into repetitions, and giving them
-            appropriate coordinates in the `xarray.DataArray`.
-        """
-        appended_repetitions = (
-            acquisition_metadata.repetitions
-            if acquisition_metadata.bin_mode == BinMode.APPEND
-            else 1
-        )
-        return cls._format_acquisitions_data_array(
-            acquisitions_data=np.split(acquisitions_data, appended_repetitions),
-            coords_repetition=range(appended_repetitions),
-            coords_acq_index=acq_indices,
-        )
-
-    @staticmethod
-    def _format_acquisitions_data_array(
-        acquisitions_data, coords_repetition, coords_acq_index
-    ) -> DataArray:
-        """
-        Formats acquisitions_data to an `xarray.DataArray` by giving them
-        the appropriate coordinates: :code:`coords_repetition` as repetition coordinates
-        and :code:`coords_acq_index` as acquisition indices.
-        It's just a simple wrapper, so that each `xarray.DataArray`
-        creation is consistent among protocols.
-        """
-        return DataArray(
-            data=acquisitions_data,
-            coords=[coords_repetition, coords_acq_index],
-            dims=["repetition", "acq_index"],
-        )
-
     def _store_scope_acquisition(self):
         """
         Calls :code:`store_scope_acquisition` function on the Qblox instrument.
@@ -1040,6 +982,11 @@ class _QRMAcquisitionManager:
         :
             The scope mode data.
         """
+        if acquisition_metadata.bin_mode != BinMode.AVERAGE:
+            raise RuntimeError(
+                f"{acquisition_metadata.acq_protocol} acquisition protocol does not"
+                f"support bin mode {acquisition_metadata.bin_mode}"
+            )
         if (
             acq_duration < 0
             or acq_duration > constants.MAX_SAMPLE_SIZE_SCOPE_ACQUISITIONS
@@ -1062,10 +1009,15 @@ class _QRMAcquisitionManager:
         scope_data_i = np.array(scope_data["path0"]["data"][:acq_duration])
         scope_data_q = np.array(scope_data["path1"]["data"][:acq_duration])
 
-        return self._format_acquisitions_data_array_for_scope_and_integration(
-            acquisition_metadata=acquisition_metadata,
-            acq_indices=range(acq_duration),
-            acquisitions_data=scope_data_i + scope_data_q * 1j,
+        acq_index_dim_name = f"acq_index_{acq_name}"
+        trace_index_dim_name = f"trace_index_{acq_name}"
+        return DataArray(
+            (scope_data_i + scope_data_q * 1j).reshape((1, -1)),
+            dims=[acq_index_dim_name, trace_index_dim_name],
+            coords={
+                acq_index_dim_name: acq_indices,
+                trace_index_dim_name: list(range(acq_duration)),
+            },
         )
 
     def _get_integration_data(
@@ -1099,18 +1051,31 @@ class _QRMAcquisitionManager:
         """
 
         bin_data = self._get_bin_data(acquisitions, acq_channel)
-
-        i_data, q_data = (
-            np.array(bin_data["integration"]["path0"]),
-            np.array(bin_data["integration"]["path1"]),
-        )
-
+        i_data = np.array(bin_data["integration"]["path0"])
+        q_data = np.array(bin_data["integration"]["path1"])
         acquisitions_data = i_data + q_data * 1j
-        return self._format_acquisitions_data_array_for_scope_and_integration(
-            acquisition_metadata=acquisition_metadata,
-            acq_indices=acq_indices,
-            acquisitions_data=acquisitions_data,
-        )
+        acq_name = self._channel_index_to_channel_name(acq_channel)
+        acq_index_dim_name = f"acq_index_{acq_name}"
+
+        if acquisition_metadata.bin_mode == BinMode.AVERAGE:
+            return DataArray(
+                acquisitions_data.reshape((len(acq_indices),)),
+                dims=[acq_index_dim_name],
+                coords={acq_index_dim_name: acq_indices},
+            )
+        elif acquisition_metadata.bin_mode == BinMode.APPEND:
+            return DataArray(
+                acquisitions_data.reshape(
+                    (acquisition_metadata.repetitions, len(acq_indices))
+                ),
+                dims=["repetition", acq_index_dim_name],
+                coords={acq_index_dim_name: acq_indices},
+            )
+        else:
+            raise RuntimeError(
+                f"{acquisition_metadata.acq_protocol} acquisition protocol does not"
+                f" support bin mode {acquisition_metadata.bin_mode}."
+            )
 
     def _get_integration_amplitude_data(
         self,
@@ -1235,6 +1200,8 @@ class _QRMAcquisitionManager:
             for BinMode.APPEND a list of 1's.
         """
         bin_data = self._get_bin_data(acquisitions, acq_channel)
+        acq_name = self._channel_index_to_channel_name(acq_channel)
+        acq_index_dim_name = f"acq_index_{acq_name}"
 
         if acquisition_metadata.bin_mode == BinMode.AVERAGE:
             bin_count_diff = np.diff(bin_data["avg_cnt"])
@@ -1243,19 +1210,23 @@ class _QRMAcquisitionManager:
                 for (count, v) in enumerate(bin_count_diff)
                 if not (np.isnan(v) or np.isclose(v, 0))
             }
-            return self._format_acquisitions_data_array(
-                acquisitions_data=[list(res.values())],
-                coords_repetition=[0],
-                coords_acq_index=list(res.keys()),
+            return DataArray(
+                np.array(list(res.values())).reshape((1, -1)),
+                dims=["repetition", acq_index_dim_name],
+                coords={"repetition": [0], acq_index_dim_name: list(res.keys())},
             )
-
         elif acquisition_metadata.bin_mode == BinMode.APPEND:
             counts = list(bin_data["avg_cnt"])
             counts = [0 if np.isnan(x) else x for x in counts]
-            return self._format_acquisitions_data_array(
-                acquisitions_data=[[1] * len(counts)],
-                coords_repetition=[0],
-                coords_acq_index=counts,
+            return DataArray(
+                np.full((1, len(counts)), 1),
+                dims=["repetition", acq_index_dim_name],
+                coords={"repetition": [0], acq_index_dim_name: counts},
+            )
+        else:
+            raise RuntimeError(
+                f"{acquisition_metadata.acq_protocol} acquisition protocol does not"
+                f"support bin mode {acquisition_metadata.bin_mode}"
             )
 
     @staticmethod

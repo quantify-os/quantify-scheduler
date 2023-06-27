@@ -85,7 +85,7 @@ intersphinx_mapping = {
 }
 
 bibtex_bibfiles = ["refs.bib"]
-bibtex_reference_style = "author_year"
+bibtex_reference_style = "label"
 
 
 # The suffix(es) of source filenames.

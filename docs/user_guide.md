@@ -5,9 +5,7 @@ kernelspec:
 
 ---
 (sec-user-guide)=
-
 # User guide
-
 
 ```{code-cell} ipython3
 ---
@@ -114,7 +112,7 @@ The following table shows an overview of the different concepts and how these ar
 - * What
   * {class}`.Operation`
   * {ref}`Gates and Measurements <sec-user-guide-gates-measurement>`
-  * {ref}`Pulses and acquisition protocols <sec-user-guide-pulses-acq-protocols>`
+  * {ref}`Pulses and acquisition protocols <sec-user-guide-pulses-acq-operations>`
 - * Where
   * {class}`~quantify_scheduler.resources.Resource`
   * {ref}`Qubits <sec-user-guide-qubits>`
@@ -132,7 +130,8 @@ The Quantum-circuit description is an idealized mathematical description of a sc
 
 #### Gates and measurements
 
-In this description operations are [quantum gates](https://en.wikipedia.org/wiki/Quantum_logic_gate) that act on idealized qubits as part of a [quantum circuit](https://en.wikipedia.org/wiki/Quantum_circuit).
+In this description operations are
+[quantum gates](https://en.wikipedia.org/wiki/Quantum_logic_gate) that act on idealized qubits as part of a [quantum circuit](https://en.wikipedia.org/wiki/Quantum_circuit).
 Operations can be represented by (idealized) unitaries acting on qubits.
 The {mod}`~quantify_scheduler.operations.gate_library` contains common operations (including the measurement operation) described at the quantum-circuit level.
 
@@ -151,7 +150,7 @@ Valid qubits are strings that appear in the {ref}`device configuration file<sec-
 
 A {class}`.Schedule` containing operations can be visualized using a circuit diagram by calling its method {meth}`.plot_circuit_diagram`.
 
-Alternatively, one can plot the waveforms in schedules using {meth}`.plot_pulse_diagram` (the default plotting backend is `matplotlib`, but it is possible 
+Alternatively, one can plot the waveforms in schedules using {meth}`.plot_pulse_diagram` (the default plotting backend is `matplotlib`, but it is possible
 to use `plotly` by adding the argument {code}`plot_backend='plotly'`):
 
 ```{code-cell} ipython3
@@ -177,25 +176,31 @@ _ = schedule.plot_pulse_diagram(sampling_rate=20e6)
 - Qubits are represented by strings.
 
 (sec-user-guide-quantum-device)=
-
 ### Quantum-device layer
 
-The quantum-device layer describes waveforms and acquisition protocols applied to a device.
-These waveforms can be used to implement the idealized operations expressed on the quantum-circuit layer, or can be used without specifying a corresponding representation at the quantum-circuit layer.
+The quantum-device layer describes waveforms and acquisition protocols applied
+to a device. These waveforms can be used to implement the idealized operations
+expressed on the quantum-circuit layer, or can be used without specifying
+a corresponding representation at the quantum-circuit layer.
 
-(sec-user-guide-pulses-acq-protocols)=
 
-#### Pulses and acquisition protocols
+(sec-user-guide-pulses-acq-operations)=
+#### Pulses and acquisition operations
 
-The pulse-level description typically contains parameterization information, such as amplitudes, durations and so forth required to synthesize the waveform on control hardware.
-The {mod}`~quantify_scheduler.operations.pulse_library` contains a collection of commonly used pulses.
 
-Measurements are represented as acquisition protocols.
-Acquisition protocols describe the processing steps to perform on an acquired signal in order to interpret it.
-The {mod}`~quantify_scheduler.operations.acquisition_library` contains a collection of commonly used acquisition protocols.
+The pulse-level description typically contains parameterization information,
+such as amplitudes, durations and so forth required to synthesize the waveform
+on control hardware.
+{mod}`~quantify_scheduler.operations.pulse_library` module contains
+a collection of commonly used pulses.
+
+Measurements are decomposed into pulses and acquisition operations.
+Similarly to pulse operations, acquisition operations contain their timing information
+and correspondent {ref}`acquisition protocols <sec-user-guide-acquisition-protocols>`.
+{mod}`~quantify_scheduler.operations.acquisition_library` module contains
+a collection of commonly used acquisition operations.
 
 (sec-user-guide-ports-clocks)=
-
 #### Ports and clocks
 
 To specify *where* an operation is applied, the quantum-device layer description needs to specify both the location in physical space as well as in frequency space.
@@ -233,15 +238,72 @@ By prefixing the name of a qubit in a clock name (separated by a colon {code}`:`
 Device image from [Dickel (2018)](https://doi.org/10.4233/uuid:78155c28-3204-4130-a645-a47e89c46bc5) .
 ```
 
+(sec-user-guide-acquisition-protocols)=
+#### Acquisition protocols
+
+When we define an acquisition, we must specify how to acquire data and how to process it
+to provide a meaningful result.
+For example, typical readout of a superconducting qubit state will consist of the following steps:
+
+1. Sending a spectroscopy pulse to a port of a device, that is connected to a readout
+   resonator of the qubit.
+2. Acquiring a raw voltage trace of the reflected or transmitted signal using
+   microwave digitizer equipment.
+3. Taking a weighted sum of the returned signal to obtain a single complex number.
+4. Assign most likely readout outcome (0 or 1) based on a pre-calibrated threshold.
+
+Description of these processing steps is called an *acquisition protocol*.
+To define an acquisition protocol, the developer must define two things:
+an *algorithm* to process the data and the *schema* of a data array returned by
+an {ref}`instrument coordinator component <sec-user-guide-hal>` (ICC).
+ICC's job is to retrieve data from the instrument, process it
+and return it in a required format.
+If the readout equipment supports hardware acceleration for part of the processing
+steps, its ICC can and should utilize it.
+
+The {ref}`sec-user-guide-acq-data-format` chapter briefly describes the implication of
+acquisition protocols and binning mode on a format of the data returned by ICC.
+For a detailed description of all acquisition protocols defined in `quantify-scheduler`
+and supported by at least some of the backends consult
+the {ref}`acquisition protocols reference section <sec-acquisition-protocols>`.
+
+(sec-user-guide-acquisition-channel-index)=
+#### Acquisition channel and acquisition index
+
+`quantify-scheduler` identifies each acquisition in a resulting dataset with
+two integer numbers: *acquisition channel* and *acquisition index*.
+
+*Acquisition channel* is a stream of acquisition data that corresponds to a single
+device element measured with the same acquisition protocol.
+Each acquisition within the same acquisition channel must return data of a uniform size
+and structure, that is described by the definition of an acquisition protocol.
+The order number of an acquisition within the acquisition channel during a schedule run
+is called an *acquisition index*.
+
+On a quantum circuit layer they roughly correspond to a qubit being measured and
+a number of the measurement of a given qubit in a schedule.
+However, if a qubit (or, more precisely, a device element) can be measured using more
+than one acquisition protocol, that will require defining several
+acquisition channels for it.
+When you are specifying a schedule on circuit level, acquisition channel is supposed
+to be configured within a submodule of a device element, that corresponds to
+a given measurement (i.e.
+{meth}`~quantify_scheduler.device_under_test.transmon_element.BasicTransmonElement.measure`
+submodule of a
+{class}`~quantify_scheduler.device_under_test.transmon_element.BasicTransmonElement`}).
+Acquisition index should be specified at the instantiation of a measurement operation.
+
 #### Summary
 
 - Pulses are described as parameterized waveforms.
 - Pulses are applied to *ports* at a frequency specified by a *clock*.
 - Ports and clocks are represented by strings.
-- Acquisition protocols describe the processing steps to perform on an acquired signal in order to interpret it.
+- Acquisition protocols describe the processing steps to perform on an acquired signal
+  in order to interpret it.
+- Acquisition channel and acquisition index describe how to find an acquisition result
+  in a dataset.
 
 (sec-compilation)=
-
 ## Compilation
 
 Different compilation steps are required to go from a high-level description of a schedule to something that can be executed on hardware.
@@ -352,6 +414,7 @@ For the purpose of quantify-scheduler, these instruments are treated as stateles
 Because the instruments correspond to physical hardware, there is a significant overhead in querying and configuring these parameters.
 As such, the state of the instruments in the software is intended to track the state of the physical hardware to facilitate lazy configuration and logging purposes.
 
+(sec-user-guide-hal)=
 #### Hardware abstraction layer
 
 Because different physical instruments have different interfaces, a hardware abstraction layer serves to provide a uniform interface.
@@ -436,6 +499,7 @@ These ingredients can then be combined to perform the experiment:
 
 ```{code-cell} ipython3
 
+
 from quantify_core.measurement import MeasurementControl
 meas_ctrl = MeasurementControl("meas_ctrl")
 ```
@@ -462,12 +526,20 @@ and the resulting dataset can be analyzed using
 # analysis = T1Analysis(label=label).run()
 ```
 
+(sec-user-guide-acq-data-format)=
 ## Acquisition data format
 
-`quantify-scheduler` has multiple interfaces for retrieving acquisition results. This section describes the structure of the return value of the interfaces of {class}`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator`'s {meth}`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator.retrieve_acquisition` and {meth}`quantify_scheduler.gettables.ScheduleGettable.get`.
+`quantify-scheduler` has two primary interfaces for retrieving acquisition results: using
+{class}`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator`
+and using {class}`quantify_scheduler.gettables.ScheduleGettable`.
 
-Each acquisition and measurement operation in the schedule has an attached `acq_channel` and `acq_index`. These can be set through the operation arguments (`acq_channel` can optionally be set through subclasses of {class}`~quantify_scheduler.device_under_test.device_element.DeviceElement`, such as {class}`~quantify_scheduler.device_under_test.transmon_element.BasicTransmonElement`, if the measurement operation is a gate-level operation). Moreover, the `bin_mode` parameter can be set explicitly; by default, `bin_mode` is average. See the example below:
-
+Each acquisition and measurement operation in the schedule has associated
+{ref}`acquisition channel and acquisition index <sec-user-guide-acquisition-channel-index>`.
+If you specifiy a schedule using raw acquisition operations (for example, using
+{class}`~quantify_scheduler.operations.acquisition_library.SSBIntegrationComplex`),
+use `acq_channel` and `acq_index` arguments of the operation to specify them.
+Optionally you may also specify the requested binning mode in `bin_mode`
+(it is `AVERAGE` by default):
 
 ```{code-block} python
 schedule.add(
@@ -483,39 +555,35 @@ schedule.add(
 )
 ```
 
+For a selected acquisition channel
+{ref}`acquisition protocol <sec-user-guide-acquisition-protocols>` and binning mode
+must be the same, otherwise compilation will fail.
+
+When circuit-to-device compilation machinery is used, `acq_channel` should be specified
+in the
+{class}`DeviceElement <quantify_scheduler.device_under_test.device_element.DeviceElement>`
+being measured, for example in the
+{class}`~quantify_scheduler.device_under_test.transmon_element.DispersiveMeasurement`
+submodule of
+{class}`~quantify_scheduler.device_under_test.transmon_element.BasicTransmonElement`.
+`acq_index` and `bin_mode` are still specified as input parameters to
+{class}`~quantify_scheduler.operations.gate_library.Measure` (or another specialised
+measurement operation supported by the device element).
+
 ### Retrieve acquisitions through `InstrumentCoordinator`
 
-{class}`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator`'s {meth}`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator.retrieve_acquisition` returns an `xarray.Dataset`:
+{meth}`InstrumentCoordinator.retrieve_acquisition() <quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator.retrieve_acquisition>`
+method returns an `xarray.Dataset`:
 
 - Each `xarray.DataArray` in the dataset corresponds to one `acq_channel`.
-- Each `xarray.DataArray` has two dimensions: `acq_index` and `repetition`. 
+- Exact structure of a data array is defined by an acquisition protocol and `bin_mode`,
+  that are associated with this acquisition channel.
 
-The example below shows the outcome of two *binned acquisitions* with acquisition channels `0` and `1` and acquisition indices `0`, `1` and `2` for each channel. In this example, `repetitions` takes the value of `2` for the schedule and the `bin_mode` is set to append. Note that the `repetition` dimension only takes on one value (`0`) in case `bin_mode` is set to average.
-
-```{code-cell} ipython3
----
-mystnb:
-  remove_code_source: true
----
-
-import xarray
-
-xarray.Dataset({
-    0: xarray.DataArray(
-        [[0, 0.02, 0.04j], [0, 0.8j, 0.16]],
-        coords=[[0, 1], [0, 1, 2]],
-        dims=["repetition", "acquisition_index"]
-    ),
-    1: xarray.DataArray(
-        [[0, 0.03, 0.06j], [0, 0.12j, 0.24]],
-        coords=[[0, 1], [0, 1, 2]],
-        dims=["repetition", "acquisition_index"]
-    ),
-})
-
-```
-
-For *trace acquisitions*, the returned data is still a two-dimensional array: one dimension specifying the repetition, and the other dimension represents the time. Currently it is not possible to use trace acquisition together with append `bin_mode`, hence the `repetition` dimension will only take one value (`0`). See the example below.
+For example, if a schedule contains two qubits (each one has its own acquisition channel,
+say, `0` and `1`), the first of which has been measured three times and second twice using
+`SSBIntegrationComplex`
+{ref}`acquisition protocol <sec-user-guide-acquisition-protocols>` in `BinMode.APPEND`,
+the resulting dataset will have the form:
 
 ```{code-cell} ipython3
 ---
@@ -523,61 +591,65 @@ mystnb:
   remove_code_source: true
 ---
 
-import xarray
+import numpy as np
+import xarray as xr
 
-xarray.Dataset({
-    0: xarray.DataArray(
-        [[1j] * 1000],
-        coords=[[0], list(range(1000))],
-        dims=["repetition", "acquisition_index"]
+num_repetitions = 5
+num_meas_0 = 3
+num_meas_1 = 2
+shape_0 = (num_repetitions, num_meas_0)
+shape_1 = (num_repetitions, num_meas_1)
+
+ds = xr.merge([
+    xr.DataArray(
+        np.random.rand(*shape_0).round(3) + 1j * np.random.rand(*shape_0).round(3),
+        dims=("repetition", "acq_index_0"),
+        name=0,
     ),
-})
-
+    xr.DataArray(
+        np.random.rand(*shape_1).round(3) + 1j * np.random.rand(*shape_1).round(3),
+        dims=("repetition", "acq_index_1"),
+        name=1,
+    ),
+])
+ds
 ```
+
+Definitions of acquisition protocols and correspondent data format can be found in the
+{ref}`acquisition protocols reference section <sec-acquisition-protocols>`.
+Note that acquisition protocols define the meaning of each dimension of a data array,
+but do not guarantee a consistent naming of the dimensions in a dataset.
+Instead, the exact names of dimensions should be retrieved dynamically during
+the processing of the dataset.
 
 ### Retrieve acquisition through `ScheduleGettable`
 
-{meth}`quantify_scheduler.gettables.ScheduleGettable.get` returns the following data structure for *binned acquisitions* in the generic case. Note, in the example below `real_imag=True`. If this were `False`, the result would contain `abs` and `phase` instead of `real` and `imag`.
+{class}`~quantify_scheduler.gettables.ScheduleGettable` proxies the instrument-coordinator format to a format that can be used with
+{class}`~quantify_core.measurement.control.MeasurementControl`.
+Effectively it flattens the data arrays retrieved from the instrument coordinator,
+splits complex numbers into either real and imaginary parts (if `real_imag` is set to
+`True`) or absolute value and phase (if `real_imag` is `False`) and pads the data
+with `nan`s to fit it into a single array.
+Data that corresponds to acquisition channel number {math}`n` will end up in
+items number {math}`2n` and {math}`2n+1` of that array.
+For example, if `real_imag` is set to `True` in the `ScheduleGettable`,
+the dataset above will be converted to:
 
-```{code-block} python
-[
-    # 1st channel
-    
-        # Real parts
-        array([
-            # 1st rep for all indices in channel
-            real(index0_rep0), real(index1_rep0), real(index2_rep0),
-          
-            # 2nd rep for all indices in channel
-            real(index0_rep1), real(index1_rep1), real(index2_rep1),
-        ]),
-        
-        # Imaginary parts
-        array([
-            # 1st rep for all indices in channel
-            imag(index0_rep0), imag(index1_rep0), imag(index2_rep0),
-            
-            # 2nd rep for all indices in channel
-            imag(index0_rep1), imag(index1_rep1), imag(index2_rep1),
-        ]),
-            
-    # 2nd channel
-    ...
-]
-```
+```{code-cell} ipython3
+---
+mystnb:
+  remove_code_source: true
+---
 
-For *trace acquisition*, the generic return value is the following:
-
-```{code-block} python
-[
-    # Real parts
-    array([0, 0, 0, 0, ..., 0]),
-    # Imaginary parts
-    array([1, 1, 1, 1, ..., 1])
-]
+(
+    ds[0].real.as_numpy().data.reshape(-1),
+    ds[0].imag.as_numpy().data.reshape(-1),
+    ds[1].real.as_numpy().data.reshape(-1),
+    ds[1].imag.as_numpy().data.reshape(-1),
+)
 ```
 
 ```{rubric} Footnotes
 ```
 
-[^id3]: `quantify-scheduler` threats physical instruments as stateless in the sense that the compiled instructions contain all information that specifies the execution of a schedule. However, for performance reasons, it is important to not reconfigure all parameters of all instruments whenever a new schedule is executed. The parameters (state) of the instruments are used to track the state of physical instruments to allow lazy configuration as well as ensure metadata containing the current settings is stored correctly.
+[^id3]: `quantify-scheduler` treats physical instruments as stateless in the sense that the compiled instructions contain all information that specifies the execution of a schedule. However, for performance reasons, it is important to not reconfigure all parameters of all instruments whenever a new schedule is executed. The parameters (state) of the instruments are used to track the state of physical instruments to allow lazy configuration as well as ensure metadata containing the current settings is stored correctly.
