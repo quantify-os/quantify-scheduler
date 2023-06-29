@@ -7,6 +7,7 @@
 - Instrument coordinator - Dimension names of the datasets returned by the instrument coordinator have changed. If you used them explicitly in processing, you can fix that by extracting the names dynamically from the dataset. Exact names of the dimensions are not guaranteed to be stable in the future. (!608)
 - Qblox backend - Remove overwriting of IF frequency to `None` when `mix_lo=False` (!699)
 - Qblox backend - Compile `ShiftClockPhase` operation to `set_ph_delta` + `upd_param`, extending duration from 0 to 8 ns (!704, #432)
+- Acquisition - Trigger count protocol changes: `ScheduleGettable` and `InstrumentCoordinator` return data reconciliation; using `counts` instead of `acq_index` as a dimension when `BinMode.AVERAGE` is used (!703)
 
 ### Merged branches and closed issues
 - Compilation - Minor refactor of `circuit_to_device` to be compatible with `numpy>=1.25` (!706)

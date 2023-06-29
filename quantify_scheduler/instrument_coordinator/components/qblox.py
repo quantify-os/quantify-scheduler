@@ -7,6 +7,7 @@ import copy
 import logging
 from abc import abstractmethod
 from dataclasses import dataclass
+from math import isnan
 from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
 
 import numpy as np
@@ -1199,29 +1200,47 @@ class _QRMAcquisitionManager:
             For BinMode.AVERAGE a list of integers with the occurence of each trigger count,
             for BinMode.APPEND a list of 1's.
         """
+
         bin_data = self._get_bin_data(acquisitions, acq_channel)
         acq_name = self._channel_index_to_channel_name(acq_channel)
         acq_index_dim_name = f"acq_index_{acq_name}"
 
         if acquisition_metadata.bin_mode == BinMode.AVERAGE:
-            bin_count_diff = np.diff(bin_data["avg_cnt"])
-            res = {
-                count + 1: -v
-                for (count, v) in enumerate(bin_count_diff)
-                if not (np.isnan(v) or np.isclose(v, 0))
-            }
+
+            def _convert_from_cumulative(cumulative_values):
+                """
+                Returns the distribution of counts from a cumulative distribution.
+                Note, the cumulative distribution is in reverse order.
+                The cumulative_values list can contain any number of integers and NaNs.
+                """
+                cumulative_values = list(enumerate(cumulative_values))
+
+                result = {}
+
+                last_cumulative_value = 0
+                for count, current_cumulative_value in reversed(cumulative_values):
+                    if (not isnan(current_cumulative_value)) and (
+                        last_cumulative_value != current_cumulative_value
+                    ):
+                        result[count + 1] = (
+                            current_cumulative_value - last_cumulative_value
+                        )
+                        last_cumulative_value = current_cumulative_value
+
+                return result
+
+            result = _convert_from_cumulative(bin_data["avg_cnt"])
             return DataArray(
-                np.array(list(res.values())).reshape((1, -1)),
-                dims=["repetition", acq_index_dim_name],
-                coords={"repetition": [0], acq_index_dim_name: list(res.keys())},
+                [list(result.values())[::-1]],
+                dims=["repetition", "counts"],
+                coords={"repetition": [0], "counts": list(result.keys())[::-1]},
             )
         elif acquisition_metadata.bin_mode == BinMode.APPEND:
-            counts = list(bin_data["avg_cnt"])
-            counts = [0 if np.isnan(x) else x for x in counts]
+            counts = np.array(bin_data["avg_cnt"]).astype(int)
             return DataArray(
-                np.full((1, len(counts)), 1),
+                [counts],
                 dims=["repetition", acq_index_dim_name],
-                coords={"repetition": [0], acq_index_dim_name: counts},
+                coords={"repetition": [0], acq_index_dim_name: range(len(counts))},
             )
         else:
             raise RuntimeError(

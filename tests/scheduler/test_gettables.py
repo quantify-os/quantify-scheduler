@@ -484,8 +484,12 @@ def test_formatting_trigger_count(mock_setup_basic_nv):
     nv_center.cfg_sched_repetitions(1)
 
     # data returned by the instrument coordinator
-    return_data = np.array([[101, 35, 2]], dtype=np.uint64)
-    acquired_data = Dataset({0: (["repetition", "acq_index"], return_data)})
+    acquired_data_array = DataArray(
+        [[101, 35, 2]],
+        coords=[[0], [0, 1, 2]],
+        dims=["repetition", "acq_index"],
+    )
+    acquired_data = Dataset({0: acquired_data_array})
 
     # Make instrument coordinator a dummy that only returns data
     instrument_coordinator.retrieve_acquisition = Mock(return_value=acquired_data)
@@ -515,40 +519,7 @@ def test_formatting_trigger_count(mock_setup_basic_nv):
     assert len(data[0]) == 3
     for count in data[0]:
         assert isinstance(count, np.uint64)
-
-
-def test_incompatible_acquisition_protocols(mock_setup_basic_nv):
-    nv_center = mock_setup_basic_nv["quantum_device"]
-    sched_kwargs = {
-        "qubit": "qe0",
-    }
-    dark_esr_gettable = ScheduleGettable(
-        quantum_device=nv_center,
-        schedule_function=nv_dark_esr_sched,
-        schedule_kwargs=sched_kwargs,
-        batched=True,
-        data_labels=["Trigger Count"],
-    )
-    dark_esr_gettable.unit = [""]
-
-    acq_metadata = AcquisitionMetadata(
-        acq_protocol="TriggerCount",
-        bin_mode=BinMode.AVERAGE,
-        acq_return_type=int,
-        acq_indices={i: [0] for i in range(3)},
-        repetitions=10,
-    )
-
-    # data returned by the instrument coordinator
-    return_data = np.asarray([101 + 1j, 35 + 1j, 2 + 1j])
-    data_array = DataArray(
-        [return_data],
-        coords=[[0], range(len(return_data))],
-        dims=["repetition", "acq_index"],
-    )
-    acquired_data = Dataset({0: data_array})
-    with pytest.raises(NotImplementedError):
-        dark_esr_gettable.process_acquired_data(acquired_data, acq_metadata)
+    np.testing.assert_array_equal(data[0], [101, 35, 2])
 
 
 def test_no_hardware_cfg_raises(mock_setup_basic_transmon):

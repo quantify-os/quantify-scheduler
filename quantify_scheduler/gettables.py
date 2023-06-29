@@ -285,8 +285,6 @@ class ScheduleGettable:
             Acquired data as returned by instrument coordinator
         acq_metadata
             Acquisition metadata from schedule
-        repetitions
-            Number of repetitions of the schedule
 
         Returns
         -------
@@ -300,19 +298,11 @@ class ScheduleGettable:
             If acquisition protocol other than BinMode.APPEND is used.
         """
         dataset = {}
-        if acq_metadata.bin_mode == BinMode.APPEND:
-            for acq_channel, _ in acq_metadata.acq_indices.items():
-                dataset[acq_channel] = (
-                    acquired_data[acq_channel]
-                    .sel(repetition=0)
-                    .coords["acq_index"]
-                    .values
-                )
-            return dataset
-        raise NotImplementedError(
-            f"Acquisition protocol {acq_metadata.acq_protocol} with bin"
-            f" mode {acq_metadata.bin_mode} is not supported."
-        )
+        for acq_channel, acq_indices in acq_metadata.acq_indices.items():
+            dataset[acq_channel] = dataset[acq_channel] = (
+                acquired_data[acq_channel].sel(repetition=0).values
+            )
+        return dataset
 
     def process_acquired_data(  # noqa: PLR0912
         self,

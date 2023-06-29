@@ -562,6 +562,15 @@ class TriggerCount(AcquisitionOperation):  # pylint: disable=too-many-ancestors
             The acquisition start time in seconds, by default 0
         """
 
+        if bin_mode == BinMode.AVERAGE and acq_index != 0:
+            # In average mode the count distribution is measured,
+            # and currently we do not support multiple indices for this,
+            # or starting the counting from a predefined count number.
+            raise NotImplementedError(
+                "Using nonzero acq_index is not yet implemented for AVERAGE bin mode for "
+                "the trigger count protocol"
+            )
+
         super().__init__(name="TriggerCount")
         self.data.update(
             {

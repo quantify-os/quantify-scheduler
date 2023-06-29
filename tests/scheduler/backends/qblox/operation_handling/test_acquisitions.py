@@ -630,7 +630,7 @@ def test_trace_acquisition_measurement_control(
     instr_coordinator.remove_component(ic_cluster0.name)
 
 
-def test_trigger_count_acquisition(
+def test_trigger_count_append(
     mock_setup_basic_nv, make_cluster_component
 ):  # pylint: disable=too-many-locals
     hardware_cfg = {
@@ -675,11 +675,36 @@ def test_trigger_count_acquisition(
 
     # Define experiment schedule
     schedule = Schedule("test multiple measurements")
-    meas0 = Measure("qe0", acq_protocol="TriggerCount")
-    schedule.add(meas0)
+    schedule.add(
+        Measure(
+            "qe0", acq_index=0, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND
+        )
+    )
+    schedule.add(
+        Measure(
+            "qe0", acq_index=1, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND
+        )
+    )
+    schedule.add(
+        Measure(
+            "qe0", acq_index=2, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND
+        )
+    )
 
     readout_clock0 = ClockResource(name="qe0.ge0", freq=50e6)
     schedule.add_resource(readout_clock0)
+
+    # Setup dummy acquisition data
+    ic_cluster0.instrument.set_dummy_binned_acquisition_data(
+        slot_idx=3,
+        sequencer=0,
+        acq_index_name="0",
+        data=[
+            DummyBinnedAcquisitionData(data=(10000, 15000), thres=0, avg_cnt=100),
+            DummyBinnedAcquisitionData(data=(20000, 25000), thres=0, avg_cnt=200),
+            DummyBinnedAcquisitionData(data=(20000, 25000), thres=0, avg_cnt=300),
+        ],
+    )
 
     # Generate compiled schedule
     compiler = SerialCompiler(name="compiler")
@@ -694,36 +719,276 @@ def test_trigger_count_acquisition(
     instr_coordinator.stop()
 
     # Assert intended behaviour
-    arr_q0 = data[0]
-    assert len(arr_q0) == 1
-    assert arr_q0[0, 0].values == [1]
+    assert isinstance(data, Dataset)
+    expected_dataarray = DataArray(
+        [[100, 200, 300]], coords=[[0], [0, 1, 2]], dims=["repetition", "acq_index_0"]
+    )
+    expected_dataset = Dataset({0: expected_dataarray})
+
+    xr.testing.assert_identical(data, expected_dataset)
 
     instr_coordinator.remove_component("ic_cluster0")
 
 
-def test_trigger_count_append(make_qrm_component):
-    qrm = make_qrm_component("qrm0")
-    acq_metadata = AcquisitionMetadata("test", BinMode.AVERAGE, int, {}, repetitions=1)
-    acq = {
-        "0": {
-            "index": 0,
-            "acquisition": {"bins": {"avg_cnt": (100, 100, 75, 50, 25, 25, 5)}},
-        }
+def test_trigger_count_append_gettables(
+    mock_setup_basic_nv, make_cluster_component
+):  # pylint: disable=too-many-locals
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module3": {
+                "instrument_type": "QRM",
+                "real_input_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "qe0:optical_readout",
+                            "clock": "qe0.ge0",
+                            "interm_freq": 50e6,
+                            "instruction_generated_pulses_enabled": True,
+                        },
+                    ],
+                },
+                "real_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "qe0:optical_control",
+                            "clock": "qe0.ge0",
+                            "interm_freq": 0,
+                            "instruction_generated_pulses_enabled": True,
+                        }
+                    ],
+                },
+            },
+        },
     }
-    acq_man = _QRMAcquisitionManager(
-        parent=qrm,
-        acquisition_metadata={"0": acq_metadata},
-        scope_mode_sequencer_and_channel=None,
-        acquisition_duration={},
-        seq_name_to_idx_map={"seq0": 0},
+
+    # Setup objects needed for experiment
+    mock_setup = mock_setup_basic_nv
+    ic_cluster0 = make_cluster_component("cluster0")
+    instr_coordinator = mock_setup["instrument_coordinator"]
+    instr_coordinator.add_component(ic_cluster0)
+
+    quantum_device = mock_setup["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+    quantum_device.instr_measurement_control("instrument_coordinator")
+
+    # Define experiment schedule
+    def _schedule_function(repetitions):
+        schedule = Schedule("test multiple measurements", repetitions=repetitions)
+        schedule.add(
+            Measure(
+                "qe0", acq_index=0, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND
+            )
+        )
+        schedule.add(
+            Measure(
+                "qe0", acq_index=1, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND
+            )
+        )
+        schedule.add(
+            Measure(
+                "qe0", acq_index=2, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND
+            )
+        )
+        readout_clock0 = ClockResource(name="qe0.ge0", freq=50e6)
+        schedule.add_resource(readout_clock0)
+        return schedule
+
+    # Setup dummy acquisition data
+    ic_cluster0.instrument.set_dummy_binned_acquisition_data(
+        slot_idx=3,
+        sequencer=0,
+        acq_index_name="0",
+        data=[
+            DummyBinnedAcquisitionData(data=(10000, 15000), thres=0, avg_cnt=100),
+            DummyBinnedAcquisitionData(data=(20000, 25000), thres=0, avg_cnt=200),
+            DummyBinnedAcquisitionData(data=(20000, 25000), thres=0, avg_cnt=300),
+        ],
     )
-    data = acq_man._get_trigger_count_data([], acq, acq_metadata, 0)
-    expected_data = DataArray(
-        [[25, 25, 25, 20]],
-        coords=[[0], [2, 3, 4, 6]],
-        dims=["repetition", "acq_index_0"],
+
+    sched_gettable = ScheduleGettable(
+        quantum_device=quantum_device,
+        schedule_function=_schedule_function,
+        schedule_kwargs={},
+        batched=True,
     )
-    xr.testing.assert_identical(data, expected_data)
+    data = sched_gettable.get()
+
+    # Assert intended behaviour
+    np.testing.assert_array_equal(data, [[100, 200, 300]])
+
+    instr_coordinator.remove_component("ic_cluster0")
+
+
+def test_trigger_count_average(mock_setup_basic_nv, make_cluster_component):
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module3": {
+                "instrument_type": "QRM",
+                "real_input_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "qe0:optical_readout",
+                            "clock": "qe0.ge0",
+                            "interm_freq": 50e6,
+                        },
+                    ],
+                },
+                "real_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "qe0:optical_control",
+                            "clock": "qe0.ge0",
+                            "interm_freq": 0,
+                        }
+                    ],
+                },
+            },
+        },
+    }
+
+    # Setup objects needed for experiment
+    mock_setup = mock_setup_basic_nv
+    ic_cluster0 = make_cluster_component("cluster0")
+    instr_coordinator = mock_setup["instrument_coordinator"]
+    instr_coordinator.add_component(ic_cluster0)
+
+    quantum_device = mock_setup["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+
+    # Define experiment schedule
+    schedule = Schedule("test multiple measurements")
+    meas0 = Measure("qe0", acq_protocol="TriggerCount", bin_mode=BinMode.AVERAGE)
+    schedule.add(meas0)
+
+    readout_clock0 = ClockResource(name="qe0.ge0", freq=50e6)
+    schedule.add_resource(readout_clock0)
+
+    # Setup dummy acquisition data
+    ic_cluster0.instrument.set_dummy_binned_acquisition_data(
+        slot_idx=3,
+        sequencer=0,
+        acq_index_name="0",
+        data=[
+            DummyBinnedAcquisitionData(data=(10000, 15000), thres=0, avg_cnt=100),
+            DummyBinnedAcquisitionData(data=(20000, 25000), thres=0, avg_cnt=100),
+            DummyBinnedAcquisitionData(data=(30000, 35000), thres=0, avg_cnt=75),
+            DummyBinnedAcquisitionData(data=(40000, 45000), thres=0, avg_cnt=50),
+            DummyBinnedAcquisitionData(data=(50000, 55000), thres=0, avg_cnt=25),
+            DummyBinnedAcquisitionData(data=(60000, 65000), thres=0, avg_cnt=25),
+            DummyBinnedAcquisitionData(data=(70000, 75000), thres=0, avg_cnt=5),
+        ],
+    )
+
+    # Generate compiled schedule
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    # Upload schedule and run experiment
+    instr_coordinator.prepare(compiled_sched)
+    instr_coordinator.start()
+    data = instr_coordinator.retrieve_acquisition()
+    instr_coordinator.stop()
+
+    # Assert intended behaviour
+    assert isinstance(data, Dataset)
+    expected_dataarray = DataArray(
+        [[25, 25, 25, 20, 5]],
+        coords=[[0], [2, 3, 4, 6, 7]],
+        dims=["repetition", "counts"],
+    )
+    expected_dataset = Dataset({0: expected_dataarray})
+
+    xr.testing.assert_identical(data, expected_dataset)
+
+    instr_coordinator.remove_component("ic_cluster0")
+
+
+def test_trigger_count_average_gettables(mock_setup_basic_nv, make_cluster_component):
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module3": {
+                "instrument_type": "QRM",
+                "real_input_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "qe0:optical_readout",
+                            "clock": "qe0.ge0",
+                            "interm_freq": 50e6,
+                        },
+                    ],
+                },
+                "real_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "qe0:optical_control",
+                            "clock": "qe0.ge0",
+                            "interm_freq": 0,
+                        }
+                    ],
+                },
+            },
+        },
+    }
+
+    # Setup objects needed for experiment
+    mock_setup = mock_setup_basic_nv
+    ic_cluster0 = make_cluster_component("cluster0")
+    instr_coordinator = mock_setup["instrument_coordinator"]
+    instr_coordinator.add_component(ic_cluster0)
+
+    quantum_device = mock_setup["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+    quantum_device.instr_measurement_control("instrument_coordinator")
+
+    # Define experiment schedule
+    def _schedule_function(repetitions):
+        schedule = Schedule("test multiple measurements", repetitions=repetitions)
+        meas0 = Measure("qe0", acq_protocol="TriggerCount", bin_mode=BinMode.AVERAGE)
+        schedule.add(meas0)
+
+        readout_clock0 = ClockResource(name="qe0.ge0", freq=50e6)
+        schedule.add_resource(readout_clock0)
+        return schedule
+
+    # Setup dummy acquisition data
+    ic_cluster0.instrument.set_dummy_binned_acquisition_data(
+        slot_idx=3,
+        sequencer=0,
+        acq_index_name="0",
+        data=[
+            DummyBinnedAcquisitionData(data=(10000, 15000), thres=0, avg_cnt=100),
+            DummyBinnedAcquisitionData(data=(20000, 25000), thres=0, avg_cnt=100),
+            DummyBinnedAcquisitionData(data=(30000, 35000), thres=0, avg_cnt=75),
+            DummyBinnedAcquisitionData(data=(40000, 45000), thres=0, avg_cnt=50),
+            DummyBinnedAcquisitionData(data=(50000, 55000), thres=0, avg_cnt=25),
+            DummyBinnedAcquisitionData(data=(60000, 65000), thres=0, avg_cnt=25),
+            DummyBinnedAcquisitionData(data=(70000, 75000), thres=0, avg_cnt=5),
+        ],
+    )
+
+    # Generate compiled schedule
+    sched_gettable = ScheduleGettable(
+        quantum_device=quantum_device,
+        schedule_function=_schedule_function,
+        schedule_kwargs={},
+        batched=True,
+    )
+    data = sched_gettable.get()
+
+    np.testing.assert_array_equal(data, [[25, 25, 25, 20, 5]])
+
+    instr_coordinator.remove_component("ic_cluster0")
 
 
 def test_mixed_binned_trace_measurements(

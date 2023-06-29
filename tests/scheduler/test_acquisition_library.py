@@ -102,7 +102,7 @@ def test_trigger_count():
         clock="q0.ro",
         duration=0.001,
         acq_channel=4815162342,
-        acq_index=4815162342,
+        acq_index=0,
         bin_mode=BinMode.AVERAGE,
         t0=12e-9,
     )
@@ -110,10 +110,29 @@ def test_trigger_count():
     assert trigger_count.data["acquisition_info"][0]["port"] == "q0:res"
     assert trigger_count.data["acquisition_info"][0]["clock"] == "q0.ro"
     assert trigger_count.data["acquisition_info"][0]["duration"] == 0.001
-    assert trigger_count.data["acquisition_info"][0]["acq_index"] == 4815162342
+    assert trigger_count.data["acquisition_info"][0]["acq_index"] == 0
     assert trigger_count.data["acquisition_info"][0]["acq_channel"] == 4815162342
     assert trigger_count.data["acquisition_info"][0]["bin_mode"] == BinMode.AVERAGE
     assert trigger_count.data["acquisition_info"][0]["t0"] == 12e-9
+
+
+def test_trigger_count_invalid_index_average_mode():
+    with pytest.raises(NotImplementedError) as error:
+        _ = TriggerCount(
+            port="q0:res",
+            clock="q0.ro",
+            duration=0.001,
+            acq_channel=0,
+            acq_index=1,
+            bin_mode=BinMode.AVERAGE,
+            t0=12e-9,
+        )
+
+    assert (
+        error.value.args[0]
+        == "Using nonzero acq_index is not yet implemented for AVERAGE bin mode for "
+        "the trigger count protocol"
+    )
 
 
 def test_weighted_acquisition():
