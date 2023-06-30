@@ -84,20 +84,20 @@ This makes it really easy to visualize the different steps in the compilation pr
 
 Here we show the compilation structure for several commonly used compilers.
 To do this, we will use the example configuration files of the different compilers and then use the quantum device to generate the relevant {class}`~.CompilationConfig` s.
-Note that in the future we want to improve how the hardware config is managed so one does not need to set a custom dictionary to the hardware config parameter of the ``quantum_device`` object.
+Note that in the future we want to improve how the hardware compilation config is managed so one does not need to set a custom dictionary to the hardware config parameter of the ``quantum_device`` object.
 
 ```{code-cell}
 from quantify_scheduler.schemas.examples import utils
 
-QBLOX_HARDWARE_MAPPING = utils.load_json_example_scheme("qblox_test_mapping.json")
-ZHINST_HARDWARE_MAPPING = utils.load_json_example_scheme("zhinst_test_mapping.json")
+QBLOX_HARDWARE_COMP_CFG = utils.load_json_example_scheme("qblox_hardware_compilation_config.json")
+ZHINST_HARDWARE_COMP_CFG = utils.load_json_example_scheme("zhinst_hardware_compilation_config.json")
 
 dev_cfg = quantum_device.generate_compilation_config()
 
-quantum_device.hardware_config(QBLOX_HARDWARE_MAPPING)
+quantum_device.hardware_config(QBLOX_HARDWARE_COMP_CFG)
 qblox_cfg = quantum_device.generate_compilation_config()
 
-quantum_device.hardware_config(ZHINST_HARDWARE_MAPPING)
+quantum_device.hardware_config(ZHINST_HARDWARE_COMP_CFG)
 zhinst_cfg = quantum_device.generate_compilation_config()
 ```
 

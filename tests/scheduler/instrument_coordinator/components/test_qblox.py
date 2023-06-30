@@ -677,8 +677,7 @@ def test_prepare_cluster_rf(
     mocker,
     mock_setup_basic_transmon,
     make_schedule_with_measurement,
-    hardware_cfg_qblox_example,
-    hardware_options_qblox_example,
+    hardware_compilation_config_qblox_example,
     make_cluster_component,
     force_set_parameters,
 ):
@@ -711,11 +710,8 @@ def test_prepare_cluster_rf(
 
     sched = make_schedule_with_measurement("q5")
 
-    hardware_cfg = hardware_cfg_qblox_example
-    hardware_options = hardware_options_qblox_example
     quantum_device = mock_setup_basic_transmon["quantum_device"]
-    quantum_device.hardware_config(hardware_cfg)
-    quantum_device.hardware_options(hardware_options)
+    quantum_device.hardware_config(hardware_compilation_config_qblox_example)
 
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
@@ -741,7 +737,9 @@ def test_prepare_cluster_rf(
         ("out1_att", ["q6:mw-q6.01", "output_att"]),
     ]:
         qcm_rf.parameters[qcodes_param].set.assert_any_call(
-            hardware_options["power_scaling"][hw_options_param[0]][hw_options_param[1]]
+            hardware_compilation_config_qblox_example["hardware_options"][
+                "power_scaling"
+            ][hw_options_param[0]][hw_options_param[1]]
         )
     qcm_rf["sequencer0"].parameters[f"sync_en"].set.assert_called_with(True)
 
@@ -750,7 +748,9 @@ def test_prepare_cluster_rf(
         ("in0_att", ["q5:res-q5.ro", "input_att"]),
     ]:
         qrm_rf.parameters[qcodes_param].set.assert_any_call(
-            hardware_options["power_scaling"][hw_options_param[0]][hw_options_param[1]]
+            hardware_compilation_config_qblox_example["hardware_options"][
+                "power_scaling"
+            ][hw_options_param[0]][hw_options_param[1]]
         )
     qrm_rf["sequencer0"].parameters[f"sync_en"].set.assert_called_with(True)
 
@@ -987,13 +987,13 @@ def test_retrieve_acquisition_cluster(
     make_schedule_with_measurement,
     mock_setup_basic_transmon_with_standard_params,
     make_cluster_component,
-    hardware_cfg_qblox_example,
-    hardware_options_qblox_example,
+    hardware_compilation_config_qblox_example,
 ):
     # Arrange
     mock_setup = mock_setup_basic_transmon_with_standard_params
-    mock_setup["quantum_device"].hardware_config(hardware_cfg_qblox_example)
-    mock_setup["quantum_device"].hardware_options(hardware_options_qblox_example)
+    mock_setup["quantum_device"].hardware_config(
+        hardware_compilation_config_qblox_example
+    )
 
     q4 = mock_setup["q4"]
     q4.clock_freqs.f01.set(5040000000)

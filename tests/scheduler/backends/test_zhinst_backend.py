@@ -32,8 +32,10 @@ ARRAY_DECIMAL_PRECISION = 16
 
 
 @pytest.fixture
-def zhinst_hw_config_invalid_latency_corrections(hardware_cfg_zhinst_example):
-    hw_config = deepcopy(hardware_cfg_zhinst_example)
+def zhinst_hw_config_invalid_latency_corrections(
+    hardware_compilation_config_zhinst_example,
+):
+    hw_config = deepcopy(hardware_compilation_config_zhinst_example["connectivity"])
     hw_config["latency_corrections"] = {"q0:mw-q0.01": 2e-8, "q1:mw-q1.01": None}
 
     yield hw_config
@@ -237,6 +239,198 @@ def test_compile_backend_unsupported_devices(
     assert unsupported_device_type.value in str(execinfo.value)
 
 
+@pytest.mark.deprecated
+@pytest.fixture(scope="function", autouse=False)
+def deprecated_zhinst_hardware_config_example():
+    return {
+        "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
+        "mode": "calibration",
+        "latency_corrections": {
+            "q0:mw-q0.01": 95e-9,
+            "q1:mw-q1.01": 95e-9,
+            "q0:res-q0.ro": -95e-9,
+            "q1:res-q1.ro": -95e-9,
+        },
+        "local_oscillators": [
+            {
+                "unique_name": "mw_qubit_ch1",
+                "instrument_name": "mw_qubit",
+                "frequency": {"ch_1.frequency": None},
+                "power": {"power": 13},
+            },
+            {
+                "unique_name": "mw_qubit_ch2",
+                "instrument_name": "mw_qubit",
+                "frequency": {"ch_2.frequency": None},
+                "power": {"ch_2.power": 10},
+            },
+            {
+                "unique_name": "mw_readout",
+                "instrument_name": "mw_readout",
+                "frequency": {"frequency": None},
+                "power": {"power": 16},
+            },
+        ],
+        "devices": [
+            {
+                "name": "ic_hdawg0",
+                "type": "HDAWG8",
+                "clock_select": 0,
+                "ref": "int",
+                "channelgrouping": 0,
+                "channel_0": {
+                    "port": "q0:mw",
+                    "clock": "q0.01",
+                    "mode": "complex",
+                    "modulation": {"type": "premod", "interm_freq": -100000000.0},
+                    "local_oscillator": "mw_qubit_ch1",
+                    "clock_frequency": 6000000000.0,
+                    "markers": ["AWG_MARKER1", "AWG_MARKER2"],
+                    "gain1": 1,
+                    "gain2": 1,
+                    "mixer_corrections": {
+                        "amp_ratio": 0.95,
+                        "phase_error": 0.07,
+                        "dc_offset_I": -0.0542,
+                        "dc_offset_Q": -0.0328,
+                    },
+                },
+                "channel_1": {
+                    "port": "q1:mw",
+                    "clock": "q1.01",
+                    "mode": "complex",
+                    "modulation": {"type": "premod", "interm_freq": -100000000.0},
+                    "local_oscillator": "mw_qubit_ch2",
+                    "clock_frequency": 6000000000.0,
+                    "markers": ["AWG_MARKER1", "AWG_MARKER2"],
+                    "gain1": 1,
+                    "gain2": 1,
+                    "mixer_corrections": {
+                        "amp_ratio": 0.95,
+                        "phase_error": 0.07,
+                        "dc_offset_I": 0.042,
+                        "dc_offset_Q": 0.028,
+                    },
+                },
+                "channel_2": {
+                    "port": "q2:mw",
+                    "clock": "q2.01",
+                    "mode": "complex",
+                    "modulation": {"type": "premod", "interm_freq": -100000000.0},
+                    "local_oscillator": "mw_qubit_ch2",
+                    "clock_frequency": 6000000000.0,
+                    "markers": ["AWG_MARKER1", "AWG_MARKER2"],
+                    "gain1": 1,
+                    "gain2": 1,
+                    "mixer_corrections": {
+                        "amp_ratio": 0.95,
+                        "phase_error": 0.07,
+                        "dc_offset_I": 0.042,
+                        "dc_offset_Q": 0.028,
+                    },
+                },
+                "channel_3": {
+                    "port": "q3:mw",
+                    "clock": "q3.01",
+                    "mode": "complex",
+                    "modulation": {"type": "premod", "interm_freq": -100000000.0},
+                    "local_oscillator": "mw_qubit_ch2",
+                    "clock_frequency": 6000000000.0,
+                    "markers": ["AWG_MARKER1", "AWG_MARKER2"],
+                    "gain1": 1,
+                    "gain2": 1,
+                    "mixer_corrections": {
+                        "amp_ratio": 0.95,
+                        "phase_error": 0.07,
+                        "dc_offset_I": 0.042,
+                        "dc_offset_Q": 0.028,
+                    },
+                },
+            },
+            {
+                "name": "ic_uhfqa0",
+                "type": "UHFQA",
+                "ref": "ext",
+                "channel_0": {
+                    "port": "q0:res",
+                    "clock": "q0.ro",
+                    "mode": "real",
+                    "modulation": {"type": "premod", "interm_freq": 200000000.0},
+                    "local_oscillator": "mw_readout",
+                    "clock_frequency": 6000000000.0,
+                    "trigger": 2,
+                },
+            },
+        ],
+    }
+
+
+@pytest.mark.deprecated
+def test_compile_hardware_hdawg4_successfully_deprecated_hardware_config(
+    mocker,
+    create_schedule_with_pulse_info,
+    deprecated_zhinst_hardware_config_example: Dict[str, Any],
+) -> None:
+    hdawg_hardware_cfg = deprecated_zhinst_hardware_config_example
+    # Arrange
+    (q0, q1) = ("q0", "q1")
+    schedule = Schedule("test")
+    schedule.add(Reset(q0, q1))
+    schedule.add(X90(q0))
+    schedule.add(X90(q1))
+    schedule.add(Measure(q0))
+    schedule = create_schedule_with_pulse_info(schedule)
+
+    modulate_wave_spy = mocker.patch.object(
+        waveform_helpers, "modulate_waveform", wraps=waveform_helpers.modulate_waveform
+    )
+    # settings_builder = mocker.Mock(wraps=settings.ZISettingsBuilder())
+    # mocker.patch.object(settings, "ZISettingsBuilder", return_value=settings_builder)
+
+    expected_settings = {
+        "sigouts/*/on": 0,
+        "awgs/*/single": 1,
+        "system/awg/channelgrouping": 0,
+        "awgs/0/time": 0,
+        "awgs/1/time": 0,
+        "sigouts/0/on": 1,
+        "sigouts/1/on": 1,
+        "sigouts/0/offset": -0.0542,
+        "sigouts/1/offset": -0.0328,
+        "sigouts/2/on": 1,
+        "sigouts/3/on": 1,
+        "awgs/0/outputs/0/gains/0": 1,
+        "awgs/0/outputs/1/gains/1": 1,
+        "awgs/1/outputs/0/gains/0": 1,
+        "awgs/1/outputs/1/gains/1": 1,
+        "sigouts/2/offset": 0.042,
+        "sigouts/3/offset": 0.028,
+        "awgs/0/commandtable/data": ANY,
+        "awgs/0/waveform/waves/0": ANY,
+        "awgs/1/commandtable/data": ANY,
+        "awgs/1/waveform/waves/0": ANY,
+        "compiler/sourcestring": ANY,
+    }
+
+    # Act
+    comp_sched = zhinst_backend.compile_backend(schedule, hdawg_hardware_cfg)
+    device_configs = comp_sched["compiled_instructions"]
+
+    # Assert
+    assert "ic_hdawg0" in device_configs
+    device_config: zhinst_backend.ZIDeviceConfig = device_configs["ic_hdawg0"]
+    zi_settings = device_config.settings_builder.build()
+    zi_settings_dict = zi_settings.as_dict()
+
+    for key, expected_value in expected_settings.items():
+        assert key in zi_settings_dict
+        if isinstance(expected_value, type(ANY)):
+            continue
+        assert (
+            zi_settings_dict[key] == expected_value
+        ), f"Expected {key} {zi_settings_dict[key]} to equal {expected_value}"
+
+
 def test_compile_hardware_hdawg4_successfully(
     mocker,
     create_schedule_with_pulse_info,
@@ -255,7 +449,7 @@ def test_compile_hardware_hdawg4_successfully(
             "q0.01"
         ]
     )
-    q0_mw_if = compile_config_basic_transmon_zhinst_hardware.hardware_options.modulation_frequencies[
+    q0_mw_if = compile_config_basic_transmon_zhinst_hardware.hardware_compilation_config.hardware_options.modulation_frequencies[
         "q0:mw-q0.01"
     ].interm_freq
 
@@ -318,6 +512,75 @@ def test_compile_hardware_hdawg4_successfully(
     assert device_configs["generic"]["mw_qubit.ch1.frequency"] == q0_mw_rf - q0_mw_if
 
 
+def test_compile_hardware_uhfqa_successfully_deprecated_hardware_config(
+    mocker,
+    make_schedule,
+    deprecated_zhinst_hardware_config_example: Dict[str, Any],
+) -> None:
+    uhfqa_hardware_cfg = deprecated_zhinst_hardware_config_example
+    # Arrange
+    schedule = make_schedule()
+    settings_builder = mocker.Mock(wraps=settings.ZISettingsBuilder())
+    mocker.patch.object(settings, "ZISettingsBuilder", return_value=settings_builder)
+
+    expected_settings = {
+        "awgs/0/single": 1,
+        "qas/0/rotations/*": (1 + 1j),
+        "sigouts/0/on": 1,
+        "sigouts/1/on": 1,
+        "awgs/0/time": 0,
+        "qas/0/integration/weights/0/real": ANY,
+        "qas/0/integration/weights/0/imag": ANY,
+        "qas/0/integration/weights/1/real": ANY,
+        "qas/0/integration/weights/1/imag": ANY,
+        "qas/0/integration/weights/2/real": ANY,
+        "qas/0/integration/weights/2/imag": ANY,
+        "qas/0/integration/weights/3/real": ANY,
+        "qas/0/integration/weights/3/imag": ANY,
+        "qas/0/integration/weights/4/real": ANY,
+        "qas/0/integration/weights/4/imag": ANY,
+        "qas/0/integration/weights/5/real": ANY,
+        "qas/0/integration/weights/5/imag": ANY,
+        "qas/0/integration/weights/6/real": ANY,
+        "qas/0/integration/weights/6/imag": ANY,
+        "qas/0/integration/weights/7/real": ANY,
+        "qas/0/integration/weights/7/imag": ANY,
+        "qas/0/integration/weights/8/real": ANY,
+        "qas/0/integration/weights/8/imag": ANY,
+        "qas/0/integration/weights/9/real": ANY,
+        "qas/0/integration/weights/9/imag": ANY,
+        "sigouts/0/offset": 0.0,
+        "sigouts/1/offset": 0.0,
+        "awgs/0/waveform/waves/0": ANY,
+        "qas/0/integration/mode": 0,
+        "qas/0/integration/length": 540,
+        "qas/0/result/enable": 1,
+        "qas/0/monitor/enable": 0,
+        "qas/0/delay": 0,
+        "qas/0/result/mode": 0,
+        "qas/0/result/source": 7,
+        "qas/0/result/length": 1,
+        "qas/0/result/averages": 1,
+        "compiler/sourcestring": ANY,
+    }
+
+    # Act
+    comp_sched = zhinst_backend.compile_backend(schedule, uhfqa_hardware_cfg)
+    device_configs = comp_sched["compiled_instructions"]
+
+    # Assert
+    assert "ic_uhfqa0" in device_configs
+    device_config: zhinst_backend.ZIDeviceConfig = device_configs["ic_uhfqa0"]
+    zi_settings = device_config.settings_builder.build()
+    compiled_settings = zi_settings.as_dict()
+
+    for key, expected_value in expected_settings.items():
+        assert key in compiled_settings.keys()
+        if isinstance(expected_value, type(ANY)):
+            continue
+        assert compiled_settings[key] == expected_value
+
+
 def test_compile_hardware_uhfqa_successfully(
     mocker,
     make_schedule,
@@ -333,7 +596,7 @@ def test_compile_hardware_uhfqa_successfully(
             "q0.ro"
         ]
     )
-    q0_ro_if = compile_config_basic_transmon_zhinst_hardware.hardware_options.modulation_frequencies[
+    q0_ro_if = compile_config_basic_transmon_zhinst_hardware.hardware_compilation_config.hardware_options.modulation_frequencies[
         "q0:res-q0.ro"
     ].interm_freq
 
@@ -420,17 +683,20 @@ def test_compile_invalid_latency_corrections_hardware_config_raises(
 def test_set_conflicting_latency_corrections(
     make_schedule,
     mock_setup_basic_transmon_with_standard_params,
-    hardware_cfg_zhinst_example,
-    hardware_options_zhinst_example,
+    hardware_compilation_config_zhinst_example,
 ):
     sched = make_schedule()
 
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    hardware_config = deepcopy(hardware_cfg_zhinst_example)
-    hardware_config["latency_corrections"] = {"q0:mw-q0.01": 20e-9, "q0:mw-q0.01": 4e-9}
+    hardware_compilation_config = deepcopy(
+        hardware_compilation_config_zhinst_example,
+    )
+    hardware_compilation_config["connectivity"]["latency_corrections"] = {
+        "q0:mw-q0.01": 20e-9,
+        "q0:mw-q0.01": 4e-9,
+    }
 
-    quantum_device.hardware_config(hardware_config)
-    quantum_device.hardware_options(hardware_options_zhinst_example)
+    quantum_device.hardware_config(hardware_compilation_config)
 
     with pytest.raises(ValueError, match="conflicting"):
         compiler = SerialCompiler(name="compiler")
@@ -444,14 +710,15 @@ def test_set_conflicting_latency_corrections(
 def test_set_conflicting_distortion_corrections(
     make_schedule,
     mock_setup_basic_transmon_with_standard_params,
-    hardware_cfg_zhinst_example,
-    hardware_options_zhinst_example,
+    hardware_compilation_config_zhinst_example,
 ):
     sched = make_schedule()
 
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    hardware_config = deepcopy(hardware_cfg_zhinst_example)
-    hardware_config["distortion_corrections"] = (
+    hardware_compilation_config = deepcopy(
+        hardware_compilation_config_zhinst_example,
+    )
+    hardware_compilation_config["connectivity"]["distortion_corrections"] = (
         {
             "q0:fl-cl0.baseband": {
                 "filter_func": "scipy.signal.lfilter",
@@ -462,8 +729,7 @@ def test_set_conflicting_distortion_corrections(
         },
     )
 
-    quantum_device.hardware_config(hardware_config)
-    quantum_device.hardware_options(hardware_options_zhinst_example)
+    quantum_device.hardware_config(hardware_compilation_config)
 
     with pytest.raises(ValueError, match="conflicting settings"):
         compiler = SerialCompiler(name="compiler")
@@ -477,20 +743,22 @@ def test_set_conflicting_distortion_corrections(
 def test_set_conflicting_interm_freq(
     make_schedule,
     mock_setup_basic_transmon_with_standard_params,
-    hardware_cfg_zhinst_example,
-    hardware_options_zhinst_example,
+    hardware_compilation_config_zhinst_example,
 ):
     sched = make_schedule()
 
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    hardware_config = deepcopy(hardware_cfg_zhinst_example)
-    hardware_config["devices"][0]["channel_0"]["modulation"] = {
+    hardware_compilation_config = deepcopy(
+        hardware_compilation_config_zhinst_example,
+    )
+    hardware_compilation_config["connectivity"]["devices"][0]["channel_0"][
+        "modulation"
+    ] = {
         "type": "premod",
         "interm_freq": 123e6,
     }
 
-    quantum_device.hardware_config(hardware_config)
-    quantum_device.hardware_options(hardware_options_zhinst_example)
+    quantum_device.hardware_config(hardware_compilation_config)
 
     with pytest.raises(ValueError, match="conflicting settings"):
         compiler = SerialCompiler(name="compiler")
@@ -504,17 +772,24 @@ def test_set_conflicting_interm_freq(
 def test_set_conflicting_lo_freq(
     make_schedule,
     mock_setup_basic_transmon_with_standard_params,
-    hardware_cfg_zhinst_example,
-    hardware_options_zhinst_example,
+    hardware_compilation_config_zhinst_example,
 ):
     sched = make_schedule()
 
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    hardware_config = deepcopy(hardware_cfg_zhinst_example)
-    hardware_config["local_oscillators"][0]["frequency"] = {"ch1.frequency": 5e9}
+    hardware_compilation_config = deepcopy(hardware_compilation_config_zhinst_example)
+    hardware_config = hardware_compilation_config["connectivity"]
+    hardware_config["local_oscillators"] = [
+        {
+            "unique_name": "mw_qubit_ch1",
+            "frequency": {"ch1.frequency": 5e9},
+            "instrument_name": "mw_qubit",
+            "frequency_param": "ch1.frequency",
+            "power": 13,
+        }
+    ]
 
-    quantum_device.hardware_config(hardware_config)
-    quantum_device.hardware_options(hardware_options_zhinst_example)
+    quantum_device.hardware_config(hardware_compilation_config)
 
     with pytest.raises(ValueError, match="conflicting settings"):
         compiler = SerialCompiler(name="compiler")
@@ -528,13 +803,13 @@ def test_set_conflicting_lo_freq(
 def test_set_conflicting_mixer_corrections(
     make_schedule,
     mock_setup_basic_transmon_with_standard_params,
-    hardware_cfg_zhinst_example,
-    hardware_options_zhinst_example,
+    hardware_compilation_config_zhinst_example,
 ):
     sched = make_schedule()
 
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    hardware_config = deepcopy(hardware_cfg_zhinst_example)
+    hardware_compilation_config = deepcopy(hardware_compilation_config_zhinst_example)
+    hardware_config = hardware_compilation_config["connectivity"]
     hardware_config["devices"][0]["channel_0"]["mixer_corrections"] = {
         "amp_ratio": 0.93,
         "phase_error": 0.04,
@@ -542,8 +817,7 @@ def test_set_conflicting_mixer_corrections(
         "dc_offset_Q": -0.0328,
     }
 
-    quantum_device.hardware_config(hardware_config)
-    quantum_device.hardware_options(hardware_options_zhinst_example)
+    quantum_device.hardware_config(hardware_compilation_config)
 
     with pytest.raises(ValueError, match="conflicting settings"):
         compiler = SerialCompiler(name="compiler")
@@ -557,17 +831,16 @@ def test_set_conflicting_mixer_corrections(
 def test_set_conflicting_output_gain(
     make_schedule,
     mock_setup_basic_transmon_with_standard_params,
-    hardware_cfg_zhinst_example,
-    hardware_options_zhinst_example,
+    hardware_compilation_config_zhinst_example,
 ):
     sched = make_schedule()
 
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    hardware_config = deepcopy(hardware_cfg_zhinst_example)
+    hardware_compilation_config = deepcopy(hardware_compilation_config_zhinst_example)
+    hardware_config = hardware_compilation_config["connectivity"]
     hardware_config["devices"][0]["channel_0"]["gain1"] = 0.5
 
-    quantum_device.hardware_config(hardware_config)
-    quantum_device.hardware_options(hardware_options_zhinst_example)
+    quantum_device.hardware_config(hardware_compilation_config)
 
     with pytest.raises(ValueError, match="conflicting settings"):
         compiler = SerialCompiler(name="compiler")
@@ -595,8 +868,7 @@ def test_set_conflicting_output_gain(
 def test_set_power_scaling_not_supported(
     make_schedule,
     mock_setup_basic_transmon_with_standard_params,
-    hardware_cfg_zhinst_example,
-    hardware_options_zhinst_example,
+    hardware_compilation_config_zhinst_example,
     portclock,
     not_supported_option,
     value,
@@ -604,12 +876,12 @@ def test_set_power_scaling_not_supported(
     sched = make_schedule()
 
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    hardware_options = deepcopy(hardware_options_zhinst_example)
+    hardware_compilation_config = deepcopy(hardware_compilation_config_zhinst_example)
+    hardware_compilation_config["hardware_options"]["power_scaling"][portclock] = {
+        not_supported_option: value
+    }
 
-    hardware_options["power_scaling"][portclock] = {not_supported_option: value}
-
-    quantum_device.hardware_config(hardware_cfg_zhinst_example)
-    quantum_device.hardware_options(hardware_options)
+    quantum_device.hardware_config(hardware_compilation_config)
 
     with pytest.raises(ValueError, match="not supported"):
         compiler = SerialCompiler(name="compiler")
@@ -627,7 +899,7 @@ def test_external_lo_not_present_raises(
     compile_config = deepcopy(compile_config_basic_transmon_zhinst_hardware)
 
     # Change to non-existent LO:
-    compile_config.connectivity["devices"][0]["channel_0"][
+    compile_config.hardware_compilation_config.connectivity["devices"][0]["channel_0"][
         "local_oscillator"
     ] = "non_existent_lo"
 
@@ -1067,9 +1339,9 @@ def test_uhfqa_sequence3_spectroscopy(
 
 
 def test__extract_port_clock_channelmapping_hdawg(
-    hardware_cfg_zhinst_example,
+    hardware_compilation_config_zhinst_example,
 ) -> None:
-    hardware_config = hardware_cfg_zhinst_example
+    hardware_config = hardware_compilation_config_zhinst_example["connectivity"]
 
     expected_dict = {
         "q0:mw-q0.01": "ic_hdawg0.awg0",
@@ -1088,10 +1360,12 @@ def test_determine_relative_latency_corrections(
     compile_config_basic_transmon_zhinst_hardware,
 ) -> None:
     compilation_config = compile_config_basic_transmon_zhinst_hardware
-    hardware_config = compilation_config.connectivity
+    hardware_config = compilation_config.hardware_compilation_config.connectivity
     hardware_config[
         "latency_corrections"
-    ] = compilation_config.hardware_options.latency_corrections
+    ] = (
+        compilation_config.hardware_compilation_config.hardware_options.latency_corrections
+    )
 
     expected_latency_dict = {
         "q0:mw-q0.01": 190e-9,

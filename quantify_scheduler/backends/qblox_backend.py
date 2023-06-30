@@ -169,9 +169,7 @@ def hardware_compile(
         already added to the operation. Otherwise an exception is raised.
     config
         Compilation config for
-        :class:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler`, of
-        which only the :attr:`.CompilationConfig.connectivity`
-        is currently extracted in this compilation step.
+        :class:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler`.
     hardware_cfg
         (deprecated) The hardware configuration of the setup. Pass a full compilation
         config instead using `config` argument.

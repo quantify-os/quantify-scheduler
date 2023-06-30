@@ -3,12 +3,15 @@
 """Python dataclasses for quantify-scheduler json-schemas."""
 from dataclasses import dataclass, field
 from enum import Enum, unique
-from typing import List, Optional, Union
+from typing import Dict, List, Literal, Optional, Union
 
 from dataclasses_json import DataClassJsonMixin
+from pydantic import Field
+from typing_extensions import Annotated
 
 from quantify_scheduler import enums
 from quantify_scheduler.backends.types import common
+from quantify_scheduler.structure.model import DataStructure
 
 
 @unique
@@ -324,3 +327,97 @@ class Wave(Instruction):
             f"|dt: {self.duration * 1e9} ns"
             f"|c0: {self.clock_cycle_start}"
         )
+
+
+class ZIChannelDescription(DataStructure):
+    """
+    Information needed to specify a ZI Channel in the :class:`~.CompilationConfig`.
+
+    A single 'channel' represents a complex output, consisting of two physical I/O channels on
+    the Instrument.
+    """
+
+    mode: Union[Literal["real"], Literal["complex"]]
+    """The output mode type."""
+    markers: List[str] = []
+    """
+    Property that specifies which markers to trigger on each sequencer iteration.
+    The values are used as input for the `setTrigger` sequencer instruction.
+    """
+    trigger: Optional[int]
+    """
+    The `trigger` property specifies for a sequencer which digital trigger to wait for.
+    This value is used as the input parameter for the `waitDigTrigger` sequencer instruction.
+    Setting this will declare the device secondary.
+    """
+
+
+class ZIBaseDescription(DataStructure):
+    """Base class for a Zurich Instrument hardware description."""
+
+    hardware_type: Literal["Zurich Instruments"]
+    """The hardware type, used to select this datastructure when parsing a :class:`~.CompilationConfig`."""
+    ref: Union[Literal["int"], Literal["ext"], None]
+    """
+    Property that describes if the instrument uses Markers or Triggers.
+    - `int` Enables sending Marker
+    - `ext` Enables waiting for Marker
+    - `none` Ignores waiting for Marker
+    """
+    channels: Dict[int, ZIChannelDescription]
+    """Description of the channels of this instrument."""
+
+
+class ZIHDAWGDescription(ZIBaseDescription):
+    """Information needed to specify a HDAWG in the :class:`~.CompilationConfig`."""
+
+    channelgrouping: int
+    """
+    The HDAWG channelgrouping property impacting the amount of HDAWG channels per AWG
+    that must be used.. (default = 0) corresponding to a single sequencer controlling 
+    a pair (2) awg outputs.
+    """
+    clock_select: int
+    """
+    The clock rate divisor which will be used to get
+    the instruments clock rate from the lookup dictionary in
+    quantify_scheduler.backends.zhinst_backend.DEVICE_CLOCK_RATES.
+
+    For information see zhinst User manuals, section /DEV..../AWGS/n/TIME
+    Examples: base sampling rate (1.8 GHz) divided by 2^clock_select. (default = 0)
+    """
+
+
+class ZIHDAWG4Description(ZIHDAWGDescription):
+    """Information needed to specify a HDAWG4 in the :class:`~.CompilationConfig`."""
+
+    instrument_type: Literal["HDAWG4"]
+    """The instrument type, used to select this datastructure when parsing a :class:`~.CompilationConfig`."""
+
+
+class ZIHDAWG8Description(ZIHDAWGDescription):
+    """Information needed to specify a HDAWG8 in the :class:`~.CompilationConfig`."""
+
+    instrument_type: Literal["HDAWG8"]
+    """The instrument type, used to select this datastructure when parsing a :class:`~.CompilationConfig`."""
+
+
+class ZIUHFQADescription(ZIBaseDescription):
+    """Information needed to specify a UHFQA in the :class:`~.CompilationConfig`."""
+
+    instrument_type: Literal["UHFQA"]
+    """The instrument type, used to select this datastructure when parsing a :class:`~.CompilationConfig`."""
+
+
+ZIHardwareDescription = Annotated[
+    Union[ZIHDAWG4Description, ZIHDAWG8Description, ZIUHFQADescription],
+    Field(discriminator="instrument_type"),
+]
+"""
+Specifies a piece of Zurich Instruments hardware and its instrument-specific settings.
+
+Currently, the supported instrument types are:
+:class:`~.ZIHDAWG4Description`,
+:class:`~.ZIHDAWG8Description`,
+:class:`~.ZIUHFQADescription`
+"""

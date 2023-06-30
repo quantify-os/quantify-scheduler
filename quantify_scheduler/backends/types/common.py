@@ -3,11 +3,12 @@
 """Common python dataclasses for multiple backends."""
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Literal, Optional
 
 from dataclasses_json import DataClassJsonMixin
 
 from quantify_scheduler import enums
+from quantify_scheduler.structure.model import DataStructure
 
 
 @dataclass
@@ -104,3 +105,20 @@ class LocalOscillator(DataClassJsonMixin):
     power: Optional[dict] = None
     phase: Optional[dict] = None
     parameters: Optional[dict] = None
+
+
+class LocalOscillatorDescription(DataStructure):
+    """Information needed to specify a Local Oscillator in the :class:`~.CompilationConfig`."""
+
+    hardware_type: Literal["LocalOscillator"]
+    """The field discriminator for this HardwareDescription datastructure."""
+    instrument_name: Optional[str]
+    """The QCoDeS instrument name corresponding to this Local Oscillator."""
+    generic_icc_name: Optional[str]
+    """The name of the :class:`~.GenericInstrumentCoordinatorComponent` corresponding to this Local Oscillator."""
+    frequency_param: str = "frequency"
+    """The QCoDeS parameter that is used to set the LO frequency."""
+    power_param: str = "power"
+    """The QCoDeS parameter that is used to set the LO power."""
+    power: Optional[int]
+    """The power setting for this Local Oscillator."""

@@ -24,11 +24,12 @@ from quantify_scheduler.schemas.examples import utils
 
 # Test hardware mappings. Note, these will change as we are updating our hardware
 # mapping for the graph based compilation.
-QBLOX_HARDWARE_MAPPING = utils.load_json_example_scheme("qblox_test_mapping.json")
-ZHINST_HARDWARE_MAPPING = utils.load_json_example_scheme("zhinst_test_mapping.json")
-
-QBLOX_HARDWARE_OPTIONS = utils.load_json_example_scheme("qblox_hardware_options.json")
-ZHINST_HARDWARE_OPTIONS = utils.load_json_example_scheme("zhinst_hardware_options.json")
+ZHINST_HARDWARE_COMPILATION_CONFIG = utils.load_json_example_scheme(
+    "zhinst_hardware_compilation_config.json"
+)
+QBLOX_HARDWARE_COMPILATION_CONFIG = utils.load_json_example_scheme(
+    "qblox_hardware_compilation_config.json"
+)
 
 
 def close_instruments(instrument_names: Union[List[str], Dict[str, Any]]):
@@ -204,8 +205,7 @@ def compile_config_basic_transmon_zhinst_hardware(
     # as we separate the config up into a more fine grained config. For now it uses
     # the old JSON files to load settings from.
     mock_setup = mock_setup_basic_transmon_with_standard_params
-    mock_setup["quantum_device"].hardware_config(ZHINST_HARDWARE_MAPPING)
-    mock_setup["quantum_device"].hardware_options(ZHINST_HARDWARE_OPTIONS)
+    mock_setup["quantum_device"].hardware_config(ZHINST_HARDWARE_COMPILATION_CONFIG)
 
     # add the hardware config here
     yield mock_setup["quantum_device"].generate_compilation_config()
@@ -223,8 +223,7 @@ def compile_config_basic_transmon_qblox_hardware(
     # as we separate the config up into a more fine grained config. For now it uses
     # the old JSON files to load settings from.
     mock_setup = mock_setup_basic_transmon_with_standard_params
-    mock_setup["quantum_device"].hardware_config(QBLOX_HARDWARE_MAPPING)
-    mock_setup["quantum_device"].hardware_options(QBLOX_HARDWARE_OPTIONS)
+    mock_setup["quantum_device"].hardware_config(QBLOX_HARDWARE_COMPILATION_CONFIG)
 
     yield mock_setup["quantum_device"].generate_compilation_config()
 

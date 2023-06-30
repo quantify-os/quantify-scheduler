@@ -19,8 +19,12 @@ from typing import (
 import matplotlib.pyplot as plt
 import networkx as nx
 from matplotlib.axes import Axes
-from pydantic import validator
+from pydantic import Field, validator
+from typing_extensions import Annotated
 
+from quantify_scheduler.backends.types.common import LocalOscillatorDescription
+from quantify_scheduler.backends.types.qblox import QbloxHardwareDescription
+from quantify_scheduler.backends.types.zhinst import ZIHardwareDescription
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 from quantify_scheduler.structure.model import (
@@ -359,7 +363,8 @@ class HardwareOptions(DataStructure):
 
         .. jupyter-execute::
 
-            qblox_hw_options_dict=load_json_example_scheme("qblox_hardware_options.json")
+            qblox_hw_options_dict = load_json_example_scheme(
+                "qblox_hardware_compilation_config.json")["hardware_options"]
             pprint.pprint(qblox_hw_options_dict)
 
         The dictionary can be parsed using the :code:`parse_obj` method.
@@ -373,7 +378,8 @@ class HardwareOptions(DataStructure):
 
         .. jupyter-execute::
 
-            zi_hw_options_dict=load_json_example_scheme("zhinst_hardware_options.json")
+            zi_hw_options_dict = load_json_example_scheme(
+                "zhinst_hardware_compilation_config.json")["hardware_options"]
             pprint.pprint(zi_hw_options_dict)
             zi_hw_options = HardwareOptions.parse_obj(zi_hw_options_dict)
             zi_hw_options
@@ -406,54 +412,63 @@ class HardwareOptions(DataStructure):
     """
 
 
+HardwareDescription = Annotated[
+    Union[QbloxHardwareDescription, ZIHardwareDescription, LocalOscillatorDescription],
+    Field(discriminator="hardware_type"),
+]
+"""
+Specifies a control hardware instrument and its instrument-specific settings.
+
+Currently, the supported types of hardware are:
+:obj:`~.QbloxHardwareDescription`,
+:obj:`~.ZIHardwareDescription`,
+:class:`~.LocalOscillatorDescription`
+"""
+
+
 class Connectivity(DataStructure):
-    """
-    Connectivity between the control hardware and port-clock combinations.
-
-    Describes how the instruments are connected to port-clock combinations on the
-    quantum device.
-    """
+    """Connectivity between ports on the quantum device and on the control hardware."""
 
 
-# pylint: disable=too-few-public-methods
-class CompilationConfig(DataStructure):
+class HardwareCompilationConfig(DataStructure):
     """
-    Base class for a compilation config.
+    Information required to compile a schedule to the control-hardware layer.
 
-    Subclassing is generally required to create useful compilation configs, here extra
-    fields can be defined.
+    From a point of view of :ref:`sec-compilation` this information is needed
+    to convert a schedule defined on a quantum-device layer to compiled instructions
+    that can be executed on the control hardware.
     """
 
-    name: str
-    """The name of the compiler."""
-    version: str = "v0.4"
-    """The version of the `CompilationConfig` to facilitate backwards compatibility."""
-    backend: Type[QuantifyCompiler]
-    """A reference string to the `QuantifyCompiler` class used in the compilation."""
-    device_compilation_config: Optional[Union[DeviceCompilationConfig, Dict]] = None
+    backend: Callable[[Schedule, Any], Schedule]
     """
-    The `DeviceCompilationConfig` used in the compilation from the quantum-circuit
-    layer to the quantum-device layer.
+    A . separated string specifying the location of the compilation backend this
+    configuration is intended for.
     """
-    hardware_options: Optional[HardwareOptions] = None
+    hardware_description: Dict[str, HardwareDescription]
+    """
+    Datastructure describing the control hardware instruments in the setup and their
+    high-level settings.
+    """
+    connectivity: Union[
+        Connectivity, Dict
+    ]  # Dict for legacy support for the old hardware config
+    """
+    Datastructure representing how ports on the quantum device are connected to ports
+    on the control hardware.
+    """
+    hardware_options: Optional[HardwareOptions]
     """
     The `HardwareOptions` used in the compilation from the quantum-device layer to
     the control-hardware layer.
     """
-    connectivity: Optional[Union[Connectivity, Dict]] = None
-    """
-    Datastructure representing how the port-clocks on the quantum device are
-    connected to the control hardware.
-    """
-    # Dicts for legacy support for the old hardware config and device config
 
     @validator("backend", pre=True)
     def _import_backend_if_str(
-        cls, class_: Union[Type[QuantifyCompiler], str]  # noqa: N805
-    ) -> Type[QuantifyCompiler]:
-        if isinstance(class_, str):
-            return deserialize_class(class_)
-        return class_  # type: ignore
+        cls, fun: Callable[[Schedule, Any], Schedule]  # noqa: N805
+    ) -> Callable[[Schedule, Any], Schedule]:
+        if isinstance(fun, str):
+            return deserialize_function(fun)
+        return fun  # type: ignore
 
     @validator("connectivity")
     def _latencies_in_hardware_config(cls, connectivity):  # noqa: N805
@@ -478,6 +493,41 @@ class CompilationConfig(DataStructure):
                 FutureWarning,
             )
         return connectivity
+
+
+# pylint: disable=too-few-public-methods
+class CompilationConfig(DataStructure):
+    """
+    Base class for a compilation config.
+
+    Subclassing is generally required to create useful compilation configs, here extra
+    fields can be defined.
+    """
+
+    name: str
+    """The name of the compiler."""
+    version: str = "v0.5"
+    """The version of the `CompilationConfig` to facilitate backwards compatibility."""
+    backend: Type[QuantifyCompiler]
+    """A reference string to the `QuantifyCompiler` class used in the compilation."""
+    device_compilation_config: Optional[Union[DeviceCompilationConfig, Dict]]
+    """
+    The `DeviceCompilationConfig` used in the compilation from the quantum-circuit
+    layer to the quantum-device layer.
+    """
+    hardware_compilation_config: Optional[HardwareCompilationConfig]
+    """
+    The `HardwareCompilationConfig` used in the compilation from the quantum-device
+    layer to the control-hardware layer.
+    """
+
+    @validator("backend", pre=True)
+    def _import_backend_if_str(
+        cls, class_: Union[Type[QuantifyCompiler], str]  # noqa: N805
+    ) -> Type[QuantifyCompiler]:
+        if isinstance(class_, str):
+            return deserialize_class(class_)
+        return class_  # type: ignore
 
 
 class CompilationNode:

@@ -1,0 +1,237 @@
+{
+    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "hardware_description": {
+        "cluster0": {
+            "hardware_type": "Qblox",
+            "instrument_type": "Cluster",
+            "ref": "internal",
+            "modules": {
+                "1": {
+                    "module_type": "QCM"
+                },
+                "2": {
+                    "module_type": "QCM_RF"
+                },
+                "3": {
+                    "module_type": "QRM"
+                },
+                "4": {
+                    "module_type": "QRM_RF"
+                },
+                "10": {
+                    "module_type": "QCM"
+                },
+                "12": {
+                    "module_type": "QCM"
+                }
+            }
+        },
+        "lo0": {
+            "hardware_type": "LocalOscillator",
+            "power": 1
+        },
+        "lo1": {
+            "hardware_type": "LocalOscillator",
+            "power": 1
+        }
+    },
+    "hardware_options": {
+        "latency_corrections": {
+            "q4:mw-q4.01": 8e-9,
+            "q5:mw-q5.01": 4e-9
+        },
+        "distortion_corrections": {
+            "q0:fl-cl0.baseband": {
+                "filter_func": "scipy.signal.lfilter",
+                "input_var_name": "x",
+                "kwargs": {
+                    "b": [
+                        0,
+                        0.25,
+                        0.5
+                    ],
+                    "a": [
+                        1
+                    ]
+                },
+                "clipping_values": [
+                    -2.5,
+                    2.5
+                ]
+            }
+        },
+        "modulation_frequencies": {
+            "q0:res-q0.ro": {
+                "interm_freq": null,
+                "lo_freq": 7.8e9
+            },
+            "q0:mw-q0.01": {
+                "interm_freq": 50e6,
+                "lo_freq": null
+            },
+            "q4:mw-q4.01": {
+                "interm_freq": 200e6,
+                "lo_freq": null
+            },
+            "q4:res-q4.ro": {
+                "interm_freq": null,
+                "lo_freq": 7.2e9
+            },
+            "q5:mw-q5.01": {
+                "interm_freq": 50e6,
+                "lo_freq": null
+            },
+            "q5:res-q5.ro": {
+                "interm_freq": 50e6
+            },
+            "q6:mw-q6.01": {
+                "lo_freq": 5e9
+            }
+        },
+        "mixer_corrections": {
+            "q4:mw-q4.01": {
+                "amp_ratio": 0.9999,
+                "phase_error": -4.2
+            },
+            "q4:res-q4.ro": {
+                "dc_offset_i": -0.054,
+                "dc_offset_q": -0.034,
+                "amp_ratio": 0.9997,
+                "phase_error": -4.0
+            }
+        },
+        "power_scaling": {
+            "q0:mw-q0.01": {
+                "output_att": 4
+            },
+            "q0:res-q0.ro": {
+                "output_att": 12
+            },
+            "q4:res-q4.ro": {
+                "input_gain": [
+                    2,
+                    3
+                ]
+            },
+            "q5:mw-q5.01": {
+                "output_att": 4
+            },
+            "q5:res-q5.ro": {
+                "input_att": 10
+            },
+            "q6:mw-q6.01": {
+                "output_att": 6
+            }
+        }
+    },
+    "connectivity": {
+        "cluster0": {
+            "cluster0_module1": {
+                "complex_output_0": {
+                    "lo_name": "lo0",
+                    "portclock_configs": [
+                        {
+                            "port": "q4:mw",
+                            "clock": "q4.01"
+                        }
+                    ]
+                }
+            },
+            "cluster0_module2": {
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "q0:mw",
+                            "clock": "q0.01"
+                        },
+                        {
+                            "port": "q5:mw",
+                            "clock": "q5.01"
+                        }
+                    ]
+                },
+                "complex_output_1": {
+                    "portclock_configs": [
+                        {
+                            "port": "q6:mw",
+                            "clock": "q6.01"
+                        }
+                    ]
+                }
+            },
+            "cluster0_module3": {
+                "complex_output_0": {
+                    "lo_name": "lo1",
+                    "portclock_configs": [
+                        {
+                            "port": "q4:res",
+                            "clock": "q4.ro"
+                        }
+                    ]
+                }
+            },
+            "cluster0_module4": {
+                "complex_input_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "q5:res",
+                            "clock": "q5.ro"
+                        }
+                    ]
+                },
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "q0:res",
+                            "clock": "q0.ro"
+                        }
+                    ]
+                }
+            },
+            "cluster0_module10": {
+                "real_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "q0:fl",
+                            "clock": "cl0.baseband"
+                        }
+                    ]
+                },
+                "real_output_1": {
+                    "portclock_configs": [
+                        {
+                            "port": "q1:fl",
+                            "clock": "cl0.baseband"
+                        }
+                    ]
+                },
+                "real_output_2": {
+                    "portclock_configs": [
+                        {
+                            "port": "q2:fl",
+                            "clock": "cl0.baseband"
+                        }
+                    ]
+                },
+                "real_output_3": {
+                    "portclock_configs": [
+                        {
+                            "port": "q3:fl",
+                            "clock": "cl0.baseband"
+                        }
+                    ]
+                }
+            },
+            "cluster0_module12": {
+                "real_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "q4:fl",
+                            "clock": "cl0.baseband"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

@@ -10,8 +10,8 @@ from quantify_scheduler.schemas.examples import utils
 @pytest.mark.parametrize(
     "filename",
     [
-        "qblox_test_mapping.json",
-        "zhinst_test_mapping.json",
+        "qblox_hardware_compilation_config.json",
+        "zhinst_hardware_compilation_config.json",
     ],
 )
 def test_load_json_example_scheme(filename: str) -> None:

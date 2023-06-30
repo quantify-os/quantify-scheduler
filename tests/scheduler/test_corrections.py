@@ -152,10 +152,21 @@ def test_apply_distortion_corrections(  # pylint: disable=unused-argument disabl
 ):
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     if "qblox" in backend:
-        quantum_device.hardware_config(qblox_hardware_cfg_pulsar_qcm_two_qubit_gate)
+        hardware_compilation_config = {
+            "backend": backend,
+            "hardware_description": {},
+            "connectivity": qblox_hardware_cfg_pulsar_qcm_two_qubit_gate,
+            "hardware_options": hardware_options_distortion_corrections,
+        }
     elif "zhinst" in backend:
-        quantum_device.hardware_config(zhinst_hardware_cfg_distortion_corrections)
-    quantum_device.hardware_options(hardware_options_distortion_corrections)
+        hardware_compilation_config = {
+            "backend": backend,
+            "hardware_description": {},
+            "connectivity": zhinst_hardware_cfg_distortion_corrections,
+            "hardware_options": hardware_options_distortion_corrections,
+        }
+
+    quantum_device.hardware_config(hardware_compilation_config)
 
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
@@ -220,8 +231,13 @@ def test_apply_latency_corrections_hardware_options_invalid_raises(
         ref_pt="start",
     )
 
-    mock_setup_basic_transmon["quantum_device"].hardware_options(
-        {"latency_corrections": {"q4:mw-q4.01": 2e-8, "q4:res-q4.ro": None}}
+    mock_setup_basic_transmon["quantum_device"].hardware_config(
+        {
+            "backend": "mock",
+            "hardware_options": {
+                "latency_corrections": {"q4:mw-q4.01": 2e-8, "q4:res-q4.ro": None}
+            },
+        }
     )
 
     with pytest.raises(ValidationError):
@@ -255,8 +271,14 @@ def test_apply_distortion_corrections_stitched_pulse_warns(
     sched.add(stitched_pulse)
 
     quantum_device = mock_setup_basic_transmon["quantum_device"]
-    quantum_device.hardware_options(hardware_options_distortion_corrections)
-    quantum_device.hardware_config(qblox_hardware_cfg_pulsar_qcm_two_qubit_gate)
+
+    hardware_compilation_config = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "hardware_description": {},
+        "connectivity": qblox_hardware_cfg_pulsar_qcm_two_qubit_gate,
+        "hardware_options": hardware_options_distortion_corrections,
+    }
+    quantum_device.hardware_config(hardware_compilation_config)
     with pytest.warns(RuntimeWarning):
         compiler = SerialCompiler(name="compiler")
         _ = compiler.compile(

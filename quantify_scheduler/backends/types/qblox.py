@@ -6,11 +6,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from dataclasses import field as dataclasses_field
-from typing import Any, Dict, Optional, Tuple, TypeVar, Union, List
+from typing import Any, Dict, Literal, Optional, Tuple, TypeVar, Union, List
 
 from dataclasses_json import DataClassJsonMixin
+from pydantic import Field
+from typing_extensions import Annotated
 
 from quantify_scheduler.backends.qblox import constants, q1asm_instructions
+from quantify_scheduler.structure.model import DataStructure
 
 
 @dataclass(frozen=True)
@@ -506,3 +509,62 @@ class SequencerSettings(DataClassJsonMixin):
             ttl_acq_threshold=ttl_acq_threshold,
         )
         return settings
+
+
+class QbloxBaseDescription(DataStructure):
+    """Base class for a Qblox hardware description."""
+
+    hardware_type: Literal["Qblox"]
+    """The hardware type, used to select this datastructure when parsing a :class:`~.CompilationConfig`."""
+    ref: Union[Literal["internal"], Literal["external"]]
+    """The reference source for the instrument."""
+    sequence_to_file: bool = True
+    """Write sequencer programs to files for (all modules in this) instrument."""
+
+
+class ClusterModuleDescription(DataStructure):
+    """Information needed to specify a Cluster module in the :class:`~.CompilationConfig`."""
+
+    module_type: Union[
+        Literal["QCM"], Literal["QRM"], Literal["QCM_RF"], Literal["QRM_RF"]
+    ]
+    """The module (instrument) type."""
+    sequence_to_file: bool = True
+    """Write sequencer programs to files, for this module."""
+
+
+class ClusterDescription(QbloxBaseDescription):
+    """Information needed to specify a Cluster in the :class:`~.CompilationConfig`."""
+
+    instrument_type: Literal["Cluster"]
+    """The instrument type, used to select this datastructure when parsing a :class:`~.CompilationConfig`."""
+    modules: Dict[int, ClusterModuleDescription]
+    """Description of the modules of this Cluster, using slot index as key."""
+
+
+class PulsarQCMDescription(QbloxBaseDescription):
+    """Information needed to specify a Pulsar QCM in the :class:`~.CompilationConfig`."""
+
+    instrument_type: Literal["Pulsar_QCM"]
+    """The instrument type, used to select this datastructure when parsing a :class:`~.CompilationConfig`."""
+
+
+class PulsarQRMDescription(QbloxBaseDescription):
+    """Information needed to specify a Pulsar QRM in the :class:`~.CompilationConfig`."""
+
+    instrument_type: Literal["Pulsar_QRM"]
+    """The instrument type, used to select this datastructure when parsing a :class:`~.CompilationConfig`."""
+
+
+QbloxHardwareDescription = Annotated[
+    Union[ClusterDescription, PulsarQCMDescription, PulsarQRMDescription],
+    Field(discriminator="instrument_type"),
+]
+"""
+Specifies a piece of Qblox hardware and its instrument-specific settings.
+
+Currently, the supported instrument types are: 
+:class:`~.ClusterDescription`,
+:class:`~.PulsarQCMDescription`,
+:class:`~.PulsarQRMDescription`
+"""

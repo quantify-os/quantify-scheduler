@@ -23,7 +23,7 @@ from .standard_schedules import (
     parametrized_operation_schedule,
     hybrid_schedule_rabi,
 )
-from ....fixtures.mock_setup import ZHINST_HARDWARE_MAPPING, ZHINST_HARDWARE_OPTIONS
+from ....fixtures.mock_setup import ZHINST_HARDWARE_COMPILATION_CONFIG
 
 
 @pytest.mark.parametrize(
@@ -127,8 +127,7 @@ def test_compile_empty_device():
     sched.add_resource(ClockResource(name="q0.ro", freq=6.4e9))
 
     quantum_device = QuantumDevice(name="empty_quantum_device")
-    quantum_device.hardware_config(ZHINST_HARDWARE_MAPPING)
-    quantum_device.hardware_options(ZHINST_HARDWARE_OPTIONS)
+    quantum_device.hardware_config(ZHINST_HARDWARE_COMPILATION_CONFIG)
 
     compilation_config = quantum_device.generate_compilation_config()
 

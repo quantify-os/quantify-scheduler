@@ -40,57 +40,77 @@ sched
 
 ```
 
-## Hardware configuration
+## Hardware compilation configuration
 
-In our example setup, we will use a Qblox Cluster containing an RF control module (QCM-RF). To compile the schedule, we will need to provide the compiler with a dictionary detailing the hardware configuration.
+In our example setup, we will use a Qblox Cluster containing an RF control module (QCM-RF). To compile the schedule, we will need to provide the compiler with a dictionary detailing the hardware compilation configuration.
 
 Please check the documentation on how to properly create such a configuration for the supported backends:
 
 - {ref}`sec-backend-qblox`
 - {ref}`sec-backend-zhinst`
 
-``````{admonition} Creating an example Qblox hardware configuration dictionary
+``````{admonition} Creating an example Qblox hardware compilation configuration
 :class: dropdown
 
 Below we create an example hardware configuration dictionary, for the Qblox backend.
 In this configuration, we include:
 
 - The backend that we want to use (the Qblox backend, in this case).
-- A Cluster containing a QCM-RF module (in the 2nd slot).
-- A Local Oscillator.
-
-In the QCM-RF output's settings, {code}`interm_freq` (which stands for Intermediate Frequency or IF) is the frequency with which the device modulates the pulses.
-In this case, the internal LO frequency is not specified but is automatically calculated by the backend, such that the relation {math}`\text{clock} = \text{LO} + \text{IF}` is respected.
+- The description of the setup, including:
+    - A Cluster containing a QCM-RF module (in the 2nd slot).
+- The hardware options we want to use in the compilation.
+- The connectivity between the control hardware and the quantum device.
 
 ```{code-block} python
 
-hardware_cfg = {
+hardware_comp_cfg = {
     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-    "cluster0": {
-        "ref": "internal",
-        "instrument_type": "Cluster",
-        "cluster0_module2": {
-            "instrument_type": "QCM_RF",
-            "complex_output_0": {
-                "lo_freq": None,
-                "dc_mixer_offset_I": -0.00552,
-                "dc_mixer_offset_Q": -0.00556,
-                "portclock_configs": [
-                    {
-                        "mixer_amp_ratio": 0.9998,
-                        "mixer_phase_error_deg": -4.1,
-                        "port": "q0:res",
-                        "clock": "q0.ro",
-                        "interm_freq": 50e6,
-                    }
-                ],
+    "hardware_description": {
+        "cluster0": {
+            "hardware_type": "Qblox",
+            "instrument_type": "Cluster",
+            "ref": "internal",
+            "modules": {
+                "2": {
+                    "module_type": "QCM_RF"
+                },
+            },
+        },
+    },
+    "hardware_options": {
+        "modulation_frequencies": {
+            "q0:res-q0.ro": {"interm_freq": 50e6},
+        },
+        "mixer_corrections": {
+            "q0:res-q0.ro": {
+                "dc_offset_i": -0.00552,
+                "dc_offset_q": -0.00556,
+                "amp_ratio": 0.9998,
+                "phase_error": -4.1
+            }
+        }
+    },
+    "connectivity": {
+        "cluster0": {
+            "cluster0_module2": {
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "q0:res",
+                            "clock": "q0.ro",
+                        }
+                    ],
+                },
             },
         },
     },
 }
 ```
 
-Note that, for any experiment, all the required instruments need to be present in the hardware configuration.
+```{note}
+The {class}`~.backends.graph_compilation.Connectivity` datastructure is currently under development. Information on the connectivity between port-clock combinations on the quantum device and ports on the control hardware is currently included in the old-style hardware configuration file, which should be included in the `"connectivity"` field of the {class}`~.backends.graph_compilation.HardwareCompilationConfig`.
+```
+
 ``````
 
 ## Compilation
@@ -121,26 +141,44 @@ mystnb:
   remove_code_outputs: true
 ---
 
-hardware_cfg = {
+hardware_comp_cfg = {
     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-    "cluster0": {
-        "ref": "internal",
-        "instrument_type": "Cluster",
-        "cluster0_module2": {
-            "instrument_type": "QCM_RF",
-            "complex_output_0": {
-                "lo_freq": None,
-                "dc_mixer_offset_I": -0.00552,
-                "dc_mixer_offset_Q": -0.00556,
-                "portclock_configs": [
-                    {
-                        "mixer_amp_ratio": 0.9998,
-                        "mixer_phase_error_deg": -4.1,
-                        "port": "q0:res",
-                        "clock": "q0.ro",
-                        "interm_freq": 50e6,
-                    }
-                ],
+    "hardware_description": {
+        "cluster0": {
+            "hardware_type": "Qblox",
+            "instrument_type": "Cluster",
+            "ref": "internal",
+            "modules": {
+                "2": {
+                    "module_type": "QCM_RF"
+                },
+            },
+        },
+    },
+    "hardware_options": {
+        "modulation_frequencies": {
+            "q0:res-q0.ro": {"interm_freq": 50e6},
+        },
+        "mixer_corrections": {
+            "q0:res-q0.ro": {
+                "dc_offset_i": -0.00552,
+                "dc_offset_q": -0.00556,
+                "amp_ratio": 0.9998,
+                "phase_error": -4.1
+            }
+        }
+    },
+    "connectivity": {
+        "cluster0": {
+            "cluster0_module2": {
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "q0:res",
+                            "clock": "q0.ro",
+                        }
+                    ],
+                },
             },
         },
     },
@@ -149,7 +187,7 @@ hardware_cfg = {
 
 Next, we create a device configuration that contains all knowledge of the physical device under test (DUT). To generate it we use the {class}`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` class.
 
-The schedule defined at the beginning of this tutorial consists of 2 pulse operations. As such, the hardware configuration must contain the necessary information to execute the schedule. We add the hardware configuration to the `QuantumDevice` object and compile the schedule using this information.
+The schedule defined at the beginning of this tutorial consists of 2 pulse operations. As such, the hardware compilation configuration must contain the necessary information to execute the schedule. We add the hardware compilation configuration to the `QuantumDevice` object and compile the schedule using this information.
 
 ```{code-cell} ipython3
 
@@ -158,7 +196,7 @@ from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 
 quantum_device = QuantumDevice("DUT")
 
-quantum_device.hardware_config(hardware_cfg)
+quantum_device.hardware_config(hardware_comp_cfg)
 compiler = SerialCompiler(name="compiler")
 compiled_sched = compiler.compile(
     schedule=sched, config=quantum_device.generate_compilation_config()

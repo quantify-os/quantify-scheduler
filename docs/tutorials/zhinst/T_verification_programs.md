@@ -48,20 +48,14 @@ Improvements to this tutorial will include adding instructions on how to connect
 
 (sec-zhinst-how-to-configure)=
 
-## How to describe the hardware configuration
+## How to create an hardware compilation configuration
 
-``````{admonition} Example Zurich Instruments hardware configuration file
+``````{admonition} Example Zurich Instruments hardware compilation configuration
 :class: dropdown
 
-In this tutorial we make use of the example configuration file that contains an HDAWG, a UHFQA and a few local oscillators. This same file is also used for testing purposes in the CI.
+In this tutorial we make use of the example configuration that contains an HDAWG, a UHFQA and a few local oscillators. This configuration is fully described by the hardware compilation config file below, which contains the `"hardware_description"`, `"connectivity"`, and `"hardware_options"` information. These same files are also used for testing purposes in the CI.
 
-```{literalinclude} ../../../quantify_scheduler/schemas/examples/zhinst_test_mapping.json
-:language: JSON
-```
-
-Additionally, we use the hardware options datastructure, which is currently under development:
-
-```{literalinclude} ../../../quantify_scheduler/schemas/examples/zhinst_hardware_options.json
+```{literalinclude} ../../../quantify_scheduler/schemas/examples/zhinst_hardware_compilation_config.json
 :language: JSON
 ```
 ``````
@@ -111,7 +105,7 @@ repetitions = 1024
 init_duration = 4000e-6  # 4us should allow for plenty of wait time
 mw_port = "q0:mw"
 ro_port = "q0:res"
-mw_clock = "q0.01"  # chosen to correspond to values in the hardware cfg
+mw_clock = "q0.01"  # chosen to correspond to values in the hardware compilation cfg
 ro_clock = "q0.ro"
 readout_frequency = (
     6.5e9  # this frequency will be used for both the AWG pulse as well as
@@ -179,8 +173,7 @@ from quantify_scheduler.schemas.examples.device_example_cfgs import (
 quantum_device = QuantumDevice("DUT")
 
 transmon_device_cfg = DeviceCompilationConfig.parse_obj(example_transmon_cfg)
-quantum_device.hardware_config(utils.load_json_example_scheme("zhinst_test_mapping.json"))
-quantum_device.hardware_options(utils.load_json_example_scheme("zhinst_hardware_options.json"))
+quantum_device.hardware_config(utils.load_json_example_scheme("zhinst_hardware_compilation_config.json"))
 
 compiler = SerialCompiler(name="compiler")
 comp_sched = compiler.compile(

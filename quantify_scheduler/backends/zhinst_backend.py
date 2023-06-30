@@ -34,6 +34,7 @@ from quantify_scheduler.helpers.collections import (
     find_all_port_clock_combinations,
     find_port_clock_path,
 )
+from quantify_scheduler.helpers.importers import export_python_object_to_path_string
 from quantify_scheduler.instrument_coordinator.components.generic import (
     DEFAULT_NAME as GENERIC_ICC_DEFAULT_NAME,
 )
@@ -736,204 +737,281 @@ def generate_hardware_config(  # noqa: PLR0912, PLR0915
         If no external local oscillator is found in the generated zhinst
         hardware configuration.
     """
-    if not isinstance(compilation_config.connectivity, dict):
+    if not isinstance(
+        compilation_config.hardware_compilation_config.connectivity, dict
+    ):
         raise KeyError(
             f"CompilationConfig.connectivity does not contain a "
-            f"hardware config dict:\n {compilation_config.connectivity=}"
+            f"hardware config dict:\n"
+            f"{compilation_config.hardware_compilation_config.connectivity=}"
         )
 
-    hardware_config = deepcopy(compilation_config.connectivity)
-    hardware_options = compilation_config.hardware_options
+    hardware_config = deepcopy(
+        compilation_config.hardware_compilation_config.connectivity
+    )
+    hardware_description = (
+        compilation_config.hardware_compilation_config.hardware_description
+    )
+    hardware_options = compilation_config.hardware_compilation_config.hardware_options
     port_clocks = find_all_port_clock_combinations(hardware_config)
 
-    # Add latency corrections from hardware options to hardware config
-    latency_corrections = hardware_options.dict()["latency_corrections"]
-    legacy_latency_corrections = hardware_config.get("latency_corrections")
+    hardware_config["backend"] = export_python_object_to_path_string(
+        compilation_config.hardware_compilation_config.backend
+    )
 
-    if latency_corrections is None:
-        pass
-    elif legacy_latency_corrections is None:
-        hardware_config["latency_corrections"] = latency_corrections
-    elif legacy_latency_corrections != latency_corrections:
-        raise ValueError(
-            f"Trying to set latency corrections to {latency_corrections} from "
-            f"the hardware options while it has previously been set to "
-            f"{legacy_latency_corrections} in the hardware config. To avoid conflicting"
-            f" settings, please make sure these corrections are only set in one place."
-        )
-
-    # Add distortion corrections from hardware options to hardware config
-    distortion_corrections = hardware_options.dict()["distortion_corrections"]
-    legacy_distortion_corrections = hardware_config.get("distortion_corrections")
-
-    if distortion_corrections is None:
-        pass
-    elif legacy_distortion_corrections is None:
-        hardware_config["distortion_corrections"] = distortion_corrections
-    elif legacy_distortion_corrections != distortion_corrections:
-        raise ValueError(
-            f"Trying to set latency corrections to {distortion_corrections} from "
-            f"the hardware options while it has previously been set to "
-            f"{legacy_distortion_corrections} in the hardware config. To avoid "
-            f"conflicting settings, please make sure these corrections are only "
-            f"set in one place."
-        )
-
-    modulation_frequencies = compilation_config.hardware_options.modulation_frequencies
-    if modulation_frequencies is not None:
-        for port, clock in port_clocks:
-            if (pc_mod_freqs := modulation_frequencies.get(f"{port}-{clock}")) is None:
-                # No modulation frequencies to set for this port-clock.
-                continue
-            # Find path to port-clock combination in the hardware config, e.g.,
-            # ["devices", 0, "channel_0"]
-            ch_path = find_port_clock_path(
-                hardware_config=hardware_config, port=port, clock=clock
-            )
-            # Extract channel config dict:
-            ch_config = hardware_config
-            for key in ch_path:
-                ch_config = ch_config[key]
-            if "modulation" not in ch_config:
-                # Initialize modulation config:
-                ch_config["modulation"] = {"type": "premod"}
-            legacy_interm_freq = ch_config["modulation"].get(
-                "interm_freq", "not_present"
-            )
-            # Using default="not_present" because IF=None is also a valid setting
-            if legacy_interm_freq == "not_present":
-                # Set the interm_freq in the channel config dict:
-                ch_config["modulation"]["interm_freq"] = pc_mod_freqs.interm_freq
-            elif legacy_interm_freq != pc_mod_freqs.interm_freq:
-                raise ValueError(
-                    f"Trying to set IF for channel={ch_path} to"
-                    f" {pc_mod_freqs.interm_freq} from the hardware options while it"
-                    f" has previously been set to {legacy_interm_freq} in the hardware"
-                    f" config. To avoid conflicting settings, please make sure this"
-                    f" value is only set in one place."
-                )
-            # Find the LO config and add the frequency config:
-            lo_name: str = ch_config["local_oscillator"]
-            lo_configs: list = hardware_config.get("local_oscillators", [])
-            lo_config_found = False
-            for lo_config in lo_configs:
-                if lo_config["unique_name"] == lo_name:
-                    lo_config_found = True
-                    if "frequency_param" not in lo_config:
-                        raise KeyError(
-                            f"Frequency parameter for {lo_name} not found in the"
-                            f" hardware config. Please specify it under the "
-                            f" 'frequency_param' key in {lo_config=}."
-                        )
-                    if "frequency" not in lo_config:
-                        # Initialize frequency config dict:
-                        lo_config["frequency"] = {}
-                    lo_freq_key = lo_config.get("frequency_param")
-                    legacy_lo_freq = lo_config["frequency"].get(
-                        lo_freq_key, "not_present"
-                    )
-                    # Using default="not_present" because lo_freq=None is
-                    # also a valid setting
-                    if legacy_lo_freq == "not_present":
-                        # Set LO freq in frequency config dict:
-                        lo_config["frequency"][lo_freq_key] = pc_mod_freqs.lo_freq
-                    elif legacy_lo_freq != pc_mod_freqs.lo_freq:
-                        raise ValueError(
-                            f"Trying to set frequency for {lo_name} to"
-                            f" {pc_mod_freqs.lo_freq} from the hardware options while"
-                            f" it has previously been set to {legacy_lo_freq} in"
-                            f" the hardware config. To avoid conflicting settings,"
-                            f" please make sure this value is only set in one place."
-                        )
-            if not lo_config_found:
-                raise RuntimeError(
-                    f"External local oscillator '{lo_name}' set to "
-                    f"be used for {port=} and {clock=} not found! Make "
-                    f"sure it is present in the hardware configuration."
-                )
-
-    mixer_corrections = compilation_config.hardware_options.mixer_corrections
-    if mixer_corrections is not None:
-        for port, clock in port_clocks:
-            if (pc_mix_corr := mixer_corrections.get(f"{port}-{clock}")) is None:
-                # No mixer corrections to set for this port-clock.
-                continue
-            pc_mix_corr = {
-                "amp_ratio": pc_mix_corr.amp_ratio,
-                "phase_error": pc_mix_corr.phase_error,
-                "dc_offset_I": pc_mix_corr.dc_offset_i,
-                "dc_offset_Q": pc_mix_corr.dc_offset_q,
-            }
-            # Find path to port-clock combination in the hardware config, e.g.,
-            # ["devices", 0, "channel_0"]
-            ch_path = find_port_clock_path(
-                hardware_config=hardware_config, port=port, clock=clock
-            )
-            # Extract channel config dict:
-            ch_config = hardware_config
-            for key in ch_path:
-                ch_config = ch_config[key]
-
-            legacy_mix_corr = ch_config.get("mixer_corrections")
-            if legacy_mix_corr is None:
-                # Set mixer corrections from hardware options in channel config dict:
-                ch_config["mixer_corrections"] = pc_mix_corr
-            elif legacy_mix_corr != pc_mix_corr:
-                raise ValueError(
-                    f"Trying to set mixer corrections for channel={ch_path} to "
-                    f"{pc_mix_corr} from the hardware options while it has previously "
-                    f"been set to {legacy_mix_corr} in the hardware config. To avoid "
-                    f"conflicting settings, please make sure these corrections are "
-                    f"only set in one place."
-                )
-
-    power_scaling = compilation_config.hardware_options.power_scaling
-    if power_scaling is not None:
-        for port, clock in find_all_port_clock_combinations(hardware_config):
-            if (pc_power_scaling := power_scaling.get(f"{port}-{clock}")) is None:
-                # No modulation frequencies to set for this port-clock.
-                continue
-            # Find path to port-clock combination in the hardware config, e.g.,
-            # ["devices", 0, "channel_0"]
-            ch_path = find_port_clock_path(
-                hardware_config=hardware_config, port=port, clock=clock
-            )
-            # Extract instrument config and I/O channel config dicts:
-            instr_config = hardware_config
-            for key in ch_path[:-1]:
-                instr_config = instr_config[key]
-            ch_name = ch_path[-1]
-            ch_config = instr_config[ch_name]
-            instr_type = instr_config["type"]
-
-            # Different instruments support different power scaling settings
-            supported_options = []
-            if instr_type in ["HDAWG4", "HDAWG8"]:
-                supported_options.append("output_gain")
-
-            for option, value in pc_power_scaling.dict().items():
-                if (option not in supported_options) and (value is not None):
+    if hardware_description is not None:
+        # Add info from hardware description to hardware config
+        if hardware_config.get("local_oscillators") is None:
+            hardware_config["local_oscillators"] = []
+        if hardware_config.get("devices") is None:
+            hardware_config["devices"] = []
+        for instr_name, instr_description in hardware_description.items():
+            if instr_description.hardware_type == "Zurich Instruments":
+                instr_indices = [
+                    i
+                    for i, v in enumerate(hardware_config["devices"])
+                    if v["name"] == instr_name
+                ]
+                if len(instr_indices) != 1:
                     raise ValueError(
-                        f"Setting the '{option}' for {ch_name} of "
-                        f"{instr_type=} is not supported in the Zhinst backend."
+                        f"Device with name {instr_name} should appear exactly once in "
+                        f"the hardware_config['devices'] list."
+                    )
+                instr_config = hardware_config["devices"][instr_indices[0]]
+                instr_config["type"] = instr_description.instrument_type
+                instr_config["ref"] = instr_description.ref
+                if instr_description.instrument_type in ["HDAWG4", "HDAWG8"]:
+                    instr_config["channelgrouping"] = instr_description.channelgrouping
+                    instr_config["clock_select"] = instr_description.clock_select
+                for (
+                    ch_number,
+                    ch_description,
+                ) in instr_description.channels.items():
+                    if instr_config.get(f"channel_{ch_number}") is None:
+                        instr_config[f"channel_{ch_number}"] = {}
+                    ch_config = instr_config[f"channel_{ch_number}"]
+
+                    ch_config["mode"] = ch_description.mode
+                    if ch_description.markers is not None:
+                        ch_config["markers"] = ch_description.markers
+                    if ch_description.trigger is not None:
+                        ch_config["trigger"] = ch_description.trigger
+
+            elif instr_description.hardware_type == "LocalOscillator":
+                lo_indices = [
+                    i
+                    for i, v in enumerate(hardware_config["local_oscillators"])
+                    if v["unique_name"] == instr_name
+                ]
+                if len(lo_indices) > 1:
+                    raise ValueError(
+                        f"LocalOscillator with name {instr_name} appears multiple "
+                        f"times in the hardware_config['local_oscillators'] list."
+                    )
+                elif len(lo_indices) == 0:
+                    hardware_config["local_oscillators"].append({})
+                    lo_indices = [len(hardware_config["local_oscillators"]) - 1]
+                lo_config = hardware_config["local_oscillators"][lo_indices[0]]
+                lo_config["unique_name"] = instr_name
+                lo_config["instrument_name"] = instr_description.instrument_name
+                lo_config["frequency_param"] = instr_description.frequency_param
+                lo_config["power"] = {
+                    instr_description.power_param: instr_description.power
+                }
+
+    if hardware_options is not None:
+        # Add latency corrections from hardware options to hardware config
+        latency_corrections = hardware_options.dict()["latency_corrections"]
+        legacy_latency_corrections = hardware_config.get("latency_corrections")
+
+        if latency_corrections is None:
+            pass
+        elif legacy_latency_corrections is None:
+            hardware_config["latency_corrections"] = latency_corrections
+        elif legacy_latency_corrections != latency_corrections:
+            raise ValueError(
+                f"Trying to set latency corrections to {latency_corrections} from "
+                f"the hardware options while it has previously been set to "
+                f"{legacy_latency_corrections} in the hardware config. To avoid "
+                f"conflicting settings, please make sure these corrections are "
+                f"only set in one place."
+            )
+
+        # Add distortion corrections from hardware options to hardware config
+        distortion_corrections = hardware_options.dict()["distortion_corrections"]
+        legacy_distortion_corrections = hardware_config.get("distortion_corrections")
+
+        if distortion_corrections is None:
+            pass
+        elif legacy_distortion_corrections is None:
+            hardware_config["distortion_corrections"] = distortion_corrections
+        elif legacy_distortion_corrections != distortion_corrections:
+            raise ValueError(
+                f"Trying to set latency corrections to {distortion_corrections} from "
+                f"the hardware options while it has previously been set to "
+                f"{legacy_distortion_corrections} in the hardware config. To avoid "
+                f"conflicting settings, please make sure these corrections are only "
+                f"set in one place."
+            )
+
+        modulation_frequencies = hardware_options.modulation_frequencies
+        if modulation_frequencies is not None:
+            for port, clock in port_clocks:
+                if (
+                    pc_mod_freqs := modulation_frequencies.get(f"{port}-{clock}")
+                ) is None:
+                    # No modulation frequencies to set for this port-clock.
+                    continue
+                # Find path to port-clock combination in the hardware config, e.g.,
+                # ["devices", 0, "channel_0"]
+                ch_path = find_port_clock_path(
+                    hardware_config=hardware_config, port=port, clock=clock
+                )
+                # Extract channel config dict:
+                ch_config = hardware_config
+                for key in ch_path:
+                    ch_config = ch_config[key]
+                if "modulation" not in ch_config:
+                    # Initialize modulation config:
+                    ch_config["modulation"] = {"type": "premod"}
+                legacy_interm_freq = ch_config["modulation"].get(
+                    "interm_freq", "not_present"
+                )
+                # Using default="not_present" because IF=None is also a valid setting
+                if legacy_interm_freq == "not_present":
+                    # Set the interm_freq in the channel config dict:
+                    ch_config["modulation"]["interm_freq"] = pc_mod_freqs.interm_freq
+                elif legacy_interm_freq != pc_mod_freqs.interm_freq:
+                    raise ValueError(
+                        f"Trying to set IF for channel={ch_path} to"
+                        f" {pc_mod_freqs.interm_freq} from the hardware options while"
+                        f" it has previously been set to {legacy_interm_freq} in the"
+                        f" hardware config. To avoid conflicting settings, please make"
+                        f" sure this value is only set in one place."
+                    )
+                # Find the LO config and add the frequency config:
+                lo_name: str = ch_config["local_oscillator"]
+                lo_configs: list = hardware_config.get("local_oscillators", [])
+                lo_config_found = False
+                for lo_config in lo_configs:
+                    if lo_config["unique_name"] == lo_name:
+                        lo_config_found = True
+                        if "frequency_param" not in lo_config:
+                            raise KeyError(
+                                f"Frequency parameter for {lo_name} not found in the"
+                                f" hardware config. Please specify it under the "
+                                f" 'frequency_param' key in {lo_config=}."
+                            )
+                        if "frequency" not in lo_config:
+                            # Initialize frequency config dict:
+                            lo_config["frequency"] = {}
+                        lo_freq_key = lo_config.get("frequency_param")
+                        legacy_lo_freq = lo_config["frequency"].get(
+                            lo_freq_key, "not_present"
+                        )
+                        # Using default="not_present" because lo_freq=None is
+                        # also a valid setting
+                        if legacy_lo_freq == "not_present":
+                            # Set LO freq in frequency config dict:
+                            lo_config["frequency"][lo_freq_key] = pc_mod_freqs.lo_freq
+                        elif legacy_lo_freq != pc_mod_freqs.lo_freq:
+                            raise ValueError(
+                                f"Trying to set frequency for {lo_name} to"
+                                f" {pc_mod_freqs.lo_freq} from the hardware options"
+                                f" while it has previously been set to {legacy_lo_freq}"
+                                f" in the hardware config. To avoid conflicting"
+                                f" settings, please make sure this value is only set"
+                                f" in one place."
+                            )
+                if not lo_config_found:
+                    raise RuntimeError(
+                        f"External local oscillator '{lo_name}' set to "
+                        f"be used for {port=} and {clock=} not found! Make "
+                        f"sure it is present in the hardware configuration."
                     )
 
-            legacy_gain = (ch_config.get("gain1"), ch_config.get("gain2"))
-
-            if pc_power_scaling.output_gain is None:
-                pass
-            elif legacy_gain == (None, None):
-                # Set the output_gain in the channel config dict:
-                ch_config["gain1"] = pc_power_scaling.output_gain[0]
-                ch_config["gain2"] = pc_power_scaling.output_gain[1]
-            elif legacy_gain != pc_power_scaling.output_gain:
-                raise ValueError(
-                    f"Trying to set output gain for channel={ch_path} to"
-                    f" {pc_power_scaling.output_gain} from the hardware options while "
-                    f" it has previously been set to {legacy_gain} in the hardware"
-                    f" config. To avoid conflicting settings, please make sure this"
-                    f" value is only set in one place."
+        mixer_corrections = hardware_options.mixer_corrections
+        if mixer_corrections is not None:
+            for port, clock in port_clocks:
+                if (pc_mix_corr := mixer_corrections.get(f"{port}-{clock}")) is None:
+                    # No mixer corrections to set for this port-clock.
+                    continue
+                pc_mix_corr = {
+                    "amp_ratio": pc_mix_corr.amp_ratio,
+                    "phase_error": pc_mix_corr.phase_error,
+                    "dc_offset_I": pc_mix_corr.dc_offset_i,
+                    "dc_offset_Q": pc_mix_corr.dc_offset_q,
+                }
+                # Find path to port-clock combination in the hardware config, e.g.,
+                # ["devices", 0, "channel_0"]
+                ch_path = find_port_clock_path(
+                    hardware_config=hardware_config, port=port, clock=clock
                 )
+                # Extract channel config dict:
+                ch_config = hardware_config
+                for key in ch_path:
+                    ch_config = ch_config[key]
+
+                legacy_mix_corr = ch_config.get("mixer_corrections")
+                if legacy_mix_corr is None:
+                    # Set mixer corrections from hw options in channel config dict:
+                    ch_config["mixer_corrections"] = pc_mix_corr
+                elif legacy_mix_corr != pc_mix_corr:
+                    raise ValueError(
+                        f"Trying to set mixer corrections for channel={ch_path} to "
+                        f"{pc_mix_corr} from the hardware options while it has "
+                        f"previously been set to {legacy_mix_corr} in the hardware "
+                        f"config. To avoid conflicting settings, please make sure "
+                        f"these corrections are only set in one place."
+                    )
+
+        power_scaling = hardware_options.power_scaling
+        if power_scaling is not None:
+            for port, clock in find_all_port_clock_combinations(hardware_config):
+                if (pc_power_scaling := power_scaling.get(f"{port}-{clock}")) is None:
+                    # No modulation frequencies to set for this port-clock.
+                    continue
+                # Find path to port-clock combination in the hardware config, e.g.,
+                # ["devices", 0, "channel_0"]
+                ch_path = find_port_clock_path(
+                    hardware_config=hardware_config, port=port, clock=clock
+                )
+                # Extract instrument config and I/O channel config dicts:
+                instr_config = hardware_config
+                for key in ch_path[:-1]:
+                    instr_config = instr_config[key]
+                ch_name = ch_path[-1]
+                ch_config = instr_config[ch_name]
+                instr_type = instr_config["type"]
+
+                # Different instruments support different power scaling settings
+                supported_options = []
+                if instr_type in ["HDAWG4", "HDAWG8"]:
+                    supported_options.append("output_gain")
+
+                for option, value in pc_power_scaling.dict().items():
+                    if (option not in supported_options) and (value is not None):
+                        raise ValueError(
+                            f"Setting the '{option}' for {ch_name} of "
+                            f"{instr_type=} is not supported in the Zhinst backend."
+                        )
+
+                legacy_gain = (ch_config.get("gain1"), ch_config.get("gain2"))
+
+                if pc_power_scaling.output_gain is None:
+                    pass
+                elif legacy_gain == (None, None):
+                    # Set the output_gain in the channel config dict:
+                    ch_config["gain1"] = pc_power_scaling.output_gain[0]
+                    ch_config["gain2"] = pc_power_scaling.output_gain[1]
+                elif legacy_gain != pc_power_scaling.output_gain:
+                    raise ValueError(
+                        f"Trying to set output gain for channel={ch_path} to"
+                        f" {pc_power_scaling.output_gain} from the hardware options "
+                        f" while it has previously been set to {legacy_gain} in the "
+                        f" hardware config. To avoid conflicting settings, please make "
+                        f" sure this value is only set in one place."
+                    )
 
     return hardware_config
 
@@ -959,9 +1037,7 @@ def compile_backend(
         The schedule to be compiled.
     config
         Compilation config for
-        :class:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler`, of
-        which only the :attr:`.CompilationConfig.connectivity`
-        is currently extracted in this compilation step.
+        :class:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler`.
     hardware_cfg :
         (deprecated) The hardware configuration of the setup. Pass a full compilation
         config instead using `config` argument.

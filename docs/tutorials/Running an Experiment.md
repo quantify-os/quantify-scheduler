@@ -30,11 +30,11 @@ The following is a general workflow for using Quantify
   - Initialize the {class}`~quantify_core.measurement.control.MeasurementControl` and {class}`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator` objects
 
 - **{ref}`device_setup`**
-  - Set up a *device configuration* for the *device under test*
+  - Set up a *device compilation configuration* for the *device under test*
 
 - **{ref}`hardware_setup`**
   - Connect to the *control hardware*
-  - Set up the *hardware configuration*
+  - Set up the *hardware compilation configuration*
 
 - **{ref}`create_schedule`**
   - Create a *schedule* containing the timeline of operations for the experiment
@@ -134,40 +134,58 @@ ic_cluster = ClusterComponent(cluster)
 instrument_coordinator.add_component(ic_cluster)
 ```
 
-The last part of setting up the hardware is to define the hardware configuration
-and attach it to our `single_qubit_device`. The hardware configuration is a
-JSON-formatted data structure, stored either in a file or in a Python
+The last part of setting up the hardware is to define the {class}`~.backends.graph_compilation.HardwareCompilationConfig`
+and attach it to our `single_qubit_device`. The hardware compilation configuration is a
+pydantic datastructure, parsed either from a file or from a Python
 dictionary. It contains all of the information about the instruments used to run
 the experiment and is used to compile the schedule to hardware. 
+For more information on this datastructure, please refer to the explanation in the {ref}`User Guide <sec-hardware-compilation-config>`.
 
 ```{code-cell} ipython3
-hardware_cfg = {
+hardware_comp_cfg = {
     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-    f"{cluster.name}": {
-        "ref": "internal",
-        "instrument_type": "Cluster",
-        f"{cluster.module1.name}": {
-            "instrument_type": "QRM_RF",
-            "complex_output_0": {
-                "lo_freq": LO_FREQ_READOUT,
-                "portclock_configs": [
-                    {
-                        "port": "q0:res",
-                        "clock": "q0.ro",
-                    }
-                ],
+    "hardware_description": {
+        f"{cluster.name}": {
+            "hardware_type": "Qblox",
+            "instrument_type": "Cluster",
+            "ref": "internal",
+            "modules": {
+                "1": {
+                    "module_type": "QRM_RF"
+                },
+                "2": {
+                    "module_type": "QCM_RF"
+                },
             },
         },
-        f"{cluster.module2.name}": {
-            "instrument_type": "QCM_RF",
-            "complex_output_0": {
-                "lo_freq": LO_FREQ_QUBIT,
-                "portclock_configs": [
-                    {
-                        "port": "q0:mw",
-                        "clock": "q0.01",
-                    }
-                ],
+    },
+    "hardware_options": {
+        "modulation_frequencies": {
+            "q0:res-q0.ro": {"lo_freq": LO_FREQ_READOUT},
+            "q0:mw-q0.01": {"lo_freq": LO_FREQ_QUBIT},
+        },
+    },
+    "connectivity": {
+        f"{cluster.name}": {
+            f"{cluster.module1.name}": {
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "q0:res",
+                            "clock": "q0.ro",
+                        }
+                    ],
+                },
+            },
+            f"{cluster.module2.name}": {
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "q0:mw",
+                            "clock": "q0.01",
+                        }
+                    ],
+                },
             },
         },
     },
@@ -176,13 +194,11 @@ hardware_cfg = {
 
 ```{code-cell} ipython3
 # Tie hardware config to device
-single_qubit_device.hardware_config(hardware_cfg)
+single_qubit_device.hardware_config(hardware_comp_cfg)
 ```
 
-```{admonition} Hardware Configurations
-For more information on how to structure these hardware configuration JSON schemas,
-please visit the {ref}`Qblox <sec-qblox-how-to-configure>` or
-{ref}`Zurich Instruments <zhinst-hardware>` pages.
+```{note}
+The {class}`~.backends.graph_compilation.Connectivity` datastructure is currently under development. Information on the connectivity between port-clock combinations on the quantum device and ports on the control hardware is currently included in the old-style hardware configuration file, which should be included in the `"connectivity"` field of the {class}`~.backends.graph_compilation.HardwareCompilationConfig`.
 ```
 
 (create_schedule)=

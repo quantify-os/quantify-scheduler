@@ -86,6 +86,7 @@ def test_compile_empty_device(hardware_cfg_pulsar):
     quantum_device.close()
 
 
+@pytest.mark.deprecated
 @pytest.mark.parametrize(
     "instrument, sequence_to_file",
     [
@@ -94,7 +95,7 @@ def test_compile_empty_device(hardware_cfg_pulsar):
         for sequence_to_file in [True, False, None]
     ],
 )
-def test_compile_sequence_to_file(
+def test_compile_sequence_to_file_deprecated_hardware_config(
     instrument: Union[str, tuple], sequence_to_file: bool
 ):
     # Arrange
@@ -140,6 +141,111 @@ def test_compile_sequence_to_file(
 
     quantum_device = QuantumDevice(name="empty_quantum_device")
     quantum_device.hardware_config(hardware_cfg)
+
+    config = quantum_device.generate_compilation_config()
+    backend = SerialCompiler(config.name)
+
+    # Act
+    sched = pulse_only_schedule()
+    sched.add_resource(ClockResource("q0.ro", 6.2e9))
+    compiled_sched = backend.compile(schedule=sched, config=config)
+
+    # Assert
+    compiled_data = compiled_sched.compiled_instructions
+    if isinstance(instrument, tuple):
+        for key in instrument:
+            compiled_data = compiled_data.get(key)
+    else:
+        compiled_data = compiled_data.get(instrument)
+
+    seq0_json = compiled_data["sequencers"]["seq0"]["sequence"]
+    seq_fn = compiled_data["sequencers"]["seq0"]["seq_fn"]
+    assert len(seq0_json["program"]) > 0
+
+    if sequence_to_file is True or sequence_to_file is None:
+        with open(seq_fn) as file:
+            seq0_json_from_disk = json.load(file)
+        assert seq0_json_from_disk == seq0_json
+    else:
+        assert seq_fn is None
+
+    quantum_device.close()
+
+
+@pytest.mark.parametrize(
+    "instrument, sequence_to_file",
+    [
+        (instrument, sequence_to_file)
+        for instrument in ["qrm0", ("cluster0", "cluster0_module1")]
+        for sequence_to_file in [True, False, None]
+    ],
+)
+def test_compile_sequence_to_file(
+    instrument: Union[str, tuple], sequence_to_file: bool
+):
+    # Arrange
+
+    hardware_comp_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile"
+    }
+    if isinstance(instrument, tuple):
+        hardware_comp_cfg["hardware_description"] = {
+            instrument[0]: {
+                "hardware_type": "Qblox",
+                "instrument_type": "Cluster",
+                "ref": "internal",
+                "sequence_to_file": sequence_to_file,
+                "modules": {
+                    instrument[1][-1]: {"module_type": "QRM"},
+                },
+            }
+        }
+        hardware_comp_cfg["connectivity"] = {
+            instrument[0]: {
+                instrument[1]: {
+                    "complex_output_0": {
+                        "portclock_configs": [
+                            {
+                                "port": "q0:res",
+                                "clock": "q0.ro",
+                            }
+                        ],
+                    },
+                },
+            }
+        }
+        if sequence_to_file is None:
+            del hardware_comp_cfg["hardware_description"][instrument[0]][
+                "sequence_to_file"
+            ]
+    else:
+        hardware_comp_cfg["hardware_description"] = {
+            instrument: {
+                "hardware_type": "Qblox",
+                "instrument_type": "Pulsar_QRM",
+                "ref": "internal",
+                "sequence_to_file": sequence_to_file,
+            }
+        }
+        hardware_comp_cfg["connectivity"] = {
+            instrument: {
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "q0:res",
+                            "clock": "q0.ro",
+                        }
+                    ],
+                },
+            }
+        }
+        if sequence_to_file is None:
+            del hardware_comp_cfg["hardware_description"][instrument][
+                "sequence_to_file"
+            ]
+
+    quantum_device = QuantumDevice(name="empty_quantum_device")
+    quantum_device.hardware_config(hardware_comp_cfg)
 
     config = quantum_device.generate_compilation_config()
     backend = SerialCompiler(config.name)

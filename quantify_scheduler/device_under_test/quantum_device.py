@@ -3,6 +3,7 @@
 """
 Module containing the QuantumDevice object.
 """
+from __future__ import annotations
 
 from typing import Any, Dict
 
@@ -10,11 +11,14 @@ from qcodes.instrument.base import Instrument
 from qcodes.instrument.parameter import InstrumentRefParameter, ManualParameter
 from qcodes.utils import validators
 from quantify_scheduler.backends.circuit_to_device import compile_circuit_to_device
+from quantify_scheduler.backends.qblox_backend import hardware_compile as qblox_backend
+from quantify_scheduler.backends.zhinst_backend import compile_backend as zhinst_backend
 from quantify_scheduler.backends.graph_compilation import (
     HardwareOptions,
     SerialCompilationConfig,
     SimpleNodeConfig,
     DeviceCompilationConfig,
+    HardwareCompilationConfig,
 )
 from quantify_scheduler.backends.qblox_backend import (
     compile_long_square_pulses_to_awg_offsets,
@@ -88,20 +92,14 @@ class QuantumDevice(Instrument):
 
         self.add_parameter(
             "hardware_config",
-            docstring="The hardware configuration file used for compiling from the "
-            "quantum-device layer to a hardware backend.",
+            docstring=(
+                "The input dictionary used to generate a valid HardwareCompilationConfig "
+                "using quantum_device.generate_hardware_compilation_config(). This configures "
+                "the compilation from the quantum-device layer to the control-hardware layer."
+            ),
             parameter_class=ManualParameter,
             vals=validators.Dict(),
             initial_value=None,
-        )
-
-        self.add_parameter(
-            "hardware_options",
-            docstring="The hardware options dictionary used for compiling from the "
-            "quantum-device layer to a hardware backend.",
-            parameter_class=ManualParameter,
-            vals=validators.Dict(),
-            initial_value={},
         )
 
     def generate_compilation_config(self) -> SerialCompilationConfig:
@@ -128,15 +126,11 @@ class QuantumDevice(Instrument):
             ),
         ]
 
-        # If statements to support the different (currently unstructured) hardware
-        # configs.
-        hardware_config = self.generate_hardware_config()
-        if hardware_config is None:
+        # If statements to support the different hardware compilation configs.
+        hw_comp_cfg = self.generate_hardware_compilation_config()
+        if hw_comp_cfg is None:
             backend_name = "Device compiler"
-        elif (
-            hardware_config["backend"]
-            == "quantify_scheduler.backends.qblox_backend.hardware_compile"
-        ):
+        elif hw_comp_cfg.backend == qblox_backend:
             backend_name = "Qblox compiler"
             compilation_passes.append(
                 SimpleNodeConfig(
@@ -147,18 +141,15 @@ class QuantumDevice(Instrument):
             compilation_passes.append(
                 SimpleNodeConfig(
                     name="qblox_hardware_compile",
-                    compilation_func=hardware_config["backend"],
+                    compilation_func=hw_comp_cfg.backend,
                 )
             )
-        elif (
-            hardware_config["backend"]
-            == "quantify_scheduler.backends.zhinst_backend.compile_backend"
-        ):
+        elif hw_comp_cfg.backend == zhinst_backend:
             backend_name = "Zhinst compiler"
             compilation_passes.append(
                 SimpleNodeConfig(
                     name="zhinst_hardware_compile",
-                    compilation_func=hardware_config["backend"],
+                    compilation_func=hw_comp_cfg.backend,
                 )
             )
 
@@ -167,17 +158,14 @@ class QuantumDevice(Instrument):
             compilation_passes.append(
                 SimpleNodeConfig(
                     name="custom_hardware_compile",
-                    compilation_func=hardware_config["backend"],
+                    compilation_func=hw_comp_cfg.backend,
                 )
             )
-
-        hw_options = self.generate_hardware_options()
 
         compilation_config = SerialCompilationConfig(
             name=backend_name,
             device_compilation_config=dev_cfg,
-            hardware_options=hw_options,
-            connectivity=hardware_config,
+            hardware_compilation_config=hw_comp_cfg,
             compilation_passes=compilation_passes,
         )
 
@@ -230,6 +218,36 @@ class QuantumDevice(Instrument):
         )
 
         return device_config
+
+    def generate_hardware_compilation_config(self) -> HardwareCompilationConfig | None:
+        """
+        Generates a hardware compilation config to compile from the quantum-device to the
+        control-hardware layer.
+        """
+
+        hardware_config = self.hardware_config()
+        if hardware_config is None:
+            return None
+
+        if any(
+            [
+                key in hardware_config
+                for key in ["hardware_description", "hardware_options", "connectivity"]
+            ]
+        ):
+            hardware_compilation_config = HardwareCompilationConfig.parse_obj(
+                hardware_config
+            )
+        else:
+            # Legacy support for the old hardware config dict:
+            hardware_compilation_config = HardwareCompilationConfig(
+                backend=hardware_config["backend"],
+                hardware_description={},
+                hardware_options={},
+                connectivity=hardware_config,
+            )
+
+        return hardware_compilation_config
 
     def generate_hardware_options(self):
         """

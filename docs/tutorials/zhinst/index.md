@@ -10,7 +10,7 @@ that abstracts the complexity of setting up experiments using [Zurich Instrument
 and instrument properties to compile a {class}`quantify_scheduler.schedules.schedule.Schedule` into waveforms and sequencing instructions suitable for execution on Zurich Instruments hardware.
 More information about `compilation` can be found in the {ref}`User Guide <sec-user-guide>`.
 
-Using existing programming interfaces provided via {doc}`zhinst-qcodes <zhinst-qcodes:index>` and {doc}`zhinst-toolkit <zhinst-toolkit:index>`, `quantify-scheduler` prepares the instruments that are present in the {ref}`sec-hardware configuration file <Hardware configuration file>`.
+Using existing programming interfaces provided via {doc}`zhinst-qcodes <zhinst-qcodes:index>` and {doc}`zhinst-toolkit <zhinst-toolkit:index>`, `quantify-scheduler` prepares the instruments that are present in the {ref}`sec-hardware-description <Hardware Description>`.
 
 Finally, after configuring and running {func}`~quantify_scheduler.backends.zhinst_backend.compile_backend`
 successfully the instruments are prepared for execution.
@@ -37,7 +37,7 @@ After the synchronization trigger is given, all devices execute a compiled progr
 
 The compilation from operations at the quantum-device layer to instructions that the hardware can execute is done in several steps.
 The zhinst {func}`~quantify_scheduler.backends.zhinst_backend.compile_backend` starts from the {attr}`.ScheduleBase.timing_table` and maps the operations to channels on the hardware using the information specified in the
-{ref}`sec-hardware configuration file <hardware configuration file>`.
+{ref}`sec-connectivity <Connectivity>`.
 Corrections for channel latency, as well as moving operations around to ensure all measurements start at the first sample (0) of a clock cycle are also done at this stage.
 
 Once the starting time and sample of each operation are known, the numerical waveforms that have to be uploaded to the hardware can be generated.
@@ -78,175 +78,92 @@ Keep these in mind when operating the hardware.
 - **Multiplexed readout is currently not supported**. One can only read out a single channel. (#191)
 
 (zhinst-hardware)=
-## Hardware configuration
-
-```{note}
-This section will move to the documentation of the hardware configuration file themselves. See issue #222.
-```
+## Hardware compilation configuration
 
 The {mod}`~quantify_scheduler.backends.zhinst_backend` allows Zurich Instruments to be
 configured individually or collectively by enabling master/slave configurations via
 Triggers and Markers.
 
-Instruments can be configured by adding them to the {ref}`hardware configuration file<user-guide-example-zhinst-config>`.
-The configuration file contains parameters about the Instruments and properties required
-to map {class}`quantify_scheduler.operations.operation.Operation`s, which act on
-qubits, onto physical properties of the instrument.
+The compilation onto Zurich Instruments hardware is configured by the {ref}`Hardware Compilation Config <sec-hardware-compilation-config>`.
+The configuration file contains parameters about the Instruments, their connectivity to the quantum device, and options used in mapping {class}`quantify_scheduler.operations.operation.Operation`s, which act on qubits, onto physical properties of the instruments.
 
-The Zurich Instruments hardware configuration file is divided into four main sections.
+To use the Zurich Instruments backend in compilation, one should pass a valid hardware compilation configuration to the `quantum_device.hardware_config` parameter, such that it can be used to generate a full `CompilationConfig` using `quantum_device.generate_compilation_config()`, which can finally be used to compile a {class}`~.Schedule` using {meth}`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler.compile`. The entry {code}`"backend": "quantify_scheduler.backends.zhinst_backend.compile_backend"` specifies to the scheduler that we are using the Zurich Instruments backend (specifically the {func}`~quantify_scheduler.backends.zhinst_backend.compile_backend` function).
+See {ref}`the hardware verification tutorial <hardware-verfication-tutorial>` for an example.
 
-1\. The `backend` property defines the python method which will be executed by
-{meth}`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler.compile` in order to compile the backend.
 
-2. The `local_oscillators` property is a list of dicts that describe the available local oscillators in the hardware setup. An example entry is as follows:
-
-```{code-block} json
-:linenos: true
-
-{
-  "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
-  "local_oscillators": [
-    {
-      "unique_name": "mw_qubit_ch1",
-      "instrument_name": "mw_qubit",
-      "frequency":
-          {
-              "ch_1.frequency": null
-          },
-      "power":
-          {
-              "power": 13
-          },
-      "phase":
-          {
-              "ch_1.phase": 90
-          }
-    }
-  ]
-}
+````{admonition} Example Zurich Instruments hardware compilation configuration file
+:class: dropdown
+```{literalinclude} ../../../quantify_scheduler/schemas/examples/zhinst_hardware_compilation_config.json
+:language: JSON
 ```
+````
 
-- In the example, the particular local_oscillator is given a `unique_name` which is then used in the `devices` to couple the channel of the device to that local oscillator.
-- The `instrument_name` is the QCoDes Instrument name for the local oscillator object.
-- The `frequency` property maps the frequency parameter which is used to set the frequency of the local oscillator. If set to `null`, then the local oscillator frequency is automatically calculated from the relation, LO frequency = RF frequency - Intermodulation frequency.
-- The `power` property is an optional key that maps the power parameter used to set the power of the local oscillator. If the key is not provided, no value will be set. Note that the units are based on the instruments used (i.e. if the QCoDeS instrument sets the power in dbm, then the power value should be in dbm).
-- The `phase` property is an optional key that maps the phase parameter used to set the phase of the local oscillator signal. If the key is not provided, no value will be set. Note that the units are based on the instruments used (i.e. if the QCoDeS instrument sets the phase in radians, then the phase value should be in radians).
+### Hardware Description
 
-3. The `latency_corrections` property specifies a delay on a port-clock combination which is implemented by incrementing the `abs_time` of all operations applied to the port-clock combination. The delay is used to manually adjust the timing to correct for e.g., delays due to different cable lengths.
+The {ref}`Hardware Description <sec-hardware-description>` describes the instruments that are used in the setup, along with some instrument-specific settings. The currently supported instruments are:
 
-```{code-block} json
-:linenos: true
+```{eval-rst}
+.. autoclass:: quantify_scheduler.backends.types.zhinst.ZIHDAWG4Description
+    :noindex:
+    :members:
+    :inherited-members: Datastructure, BaseModel
 
-{
-  "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
-  "latency_corrections":
-      {
-          "q0:mw-q0.01": 95e-9,
-          "q1:mw-q1.01": 95e-9
-          "q0:res-q0.ro": -95e-9,
-          "q0:res-q1.ro": -95e-9,
-
-      }
-}
-```
-
-In this example, the user has specified latency corrections at each port-clock combination in the hardware config. The relative latency corrections to the minimum of the latency corrections are then calculated and applied to the signals for the specific port-clock combination. For this case, pulses with `port=q0:res`, and `clock=q0.r0` i.e. "q0:res-q0.ro" will have no corrections, whilst, pulses with `port=q0:mw`, and `clock=q0.01` i.e. "q0:mw-q0.01" will have a corrected delay of 190e-9 s added to the pulses.
-
-4\. The `devices` property is an array of {class}`~quantify_scheduler.backends.types.zhinst.Device`.
-A Device describes the type of Zurich Instruments and the physical setup.
-
-```{code-block} json
-:linenos: true
-
-{
-  "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
-  "devices": [
-
-  ]
-}
-```
-
-The entries in the `devices` section of the configuration file are strictly mapped
-according to the {class}`~quantify_scheduler.backends.types.zhinst.Device` and
-{class}`~quantify_scheduler.backends.types.zhinst.Output` domain models.
-
-- In order for the backend to find the QCodes Instrument it is required that the
-  {class}`~quantify_scheduler.backends.types.zhinst.Device`'s `name` must be equal to
-  the name given to the QCodes Instrument during instantiation with an `ic` prepend.
-
-  > - Example: If the hdawg QCodes Instrument name is "hdawg_dev8831" then the {class}`~quantify_scheduler.backends.types.zhinst.Device`'s `name` is "ic_hdawg_dev8831"
-
-- The `type` property defines the instrument's model. The {class}`~quantify_scheduler.backends.types.zhinst.DeviceType`
-  is parsed from the string as well as the number of channels.
-
-  > - Example: "HDAWG8"
-
-- The `ref` property describes if the instrument uses Markers (`int`), Triggers (`ext`) or `none`.
-
-  > - `int` Enables sending Marker
-  > - `ext` Enables waiting for Marker
-  > - `none` Ignores waiting for Marker
-
-- The `channelgrouping` property sets the HDAWG channel grouping value and impacts the amount
-  of HDAWG channels per AWG that must be used.
-
-```{code-block} python
-:emphasize-lines: 5,17
-:linenos: true
-
-{
-  "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
-  "devices": [
-    {
-      "name": "hdawg0",
-      "ref": "int",
-      "channelgrouping": 0,
-      "channel_0": {
-        ...
-      },
-    },
-  ]
-}
-
-...
-
-instrument = zhinst.qcodes.HDAWG(name='hdawg0', serial='dev1234', ...)
 ```
 
 ```{eval-rst}
-.. autoclass:: quantify_scheduler.backends.types.zhinst.Device
-    :members:
+.. autoclass:: quantify_scheduler.backends.types.zhinst.ZIHDAWG8Description
     :noindex:
+    :members:
+    :inherited-members: BaseModel
+
 ```
 
-- The `channel_{0..3}` properties of the hardware configuration are mapped to
-  the {class}`~quantify_scheduler.backends.types.zhinst.Output` domain model. A single
-  `channel` represents a complex output, consisting of two physical I/O channels on
-  the Instrument.
+```{eval-rst}
+.. autoclass:: quantify_scheduler.backends.types.zhinst.ZIUHFQADescription
+    :noindex:
+    :members:
+    :inherited-members: BaseModel
 
-- The `port` and `clock` properties map the Operations to physical and frequency space.
+```
 
-- The `mode` property specifies the channel mode: real or complex.
+```{warning}
+In order for the backend to find the QCodes Instrument it is required that the keys of the 
+HardwareDescription map 1-to-1 to the names given to the QCodes Instrument during instantiation, with an `ic` prepend.
 
-- The `modulation` property specifies if the uploaded waveforms are modulated.
-  The backend supports:
+> - Example: If the hdawg QCodes Instrument name is "hdawg_dev8831" then the {class}`~quantify_scheduler.backends.types.zhinst.Device`'s `name` is "ic_hdawg_dev8831"
+```
 
-  > - Premodulation "premod"
-  > - No modulation "none"
-
-- The `interm_freq` property specifies the inter-modulation frequency.
-
-- The `markers` property specifies which markers to trigger on each sequencer iteration.
-  The values are used as input for the `setTrigger` sequencer instruction.
-
-- The `trigger` property specifies for a sequencer which digital trigger to wait for.
-  This value is used as the input parameter for the `waitDigTrigger` sequencer instruction.
+The channels of these instruments are described by
 
 ```{eval-rst}
-.. autoclass:: quantify_scheduler.backends.types.zhinst.Output
-    :members:
+.. autoclass:: quantify_scheduler.backends.types.zhinst.ZIChannelDescription
     :noindex:
+    :members:
+    :inherited-members: BaseModel
 
+```
+
+Local oscillators can also be included by using the following generic datastructure.
+
+```{eval-rst}
+.. autoclass:: quantify_scheduler.backends.types.common.LocalOscillatorDescription
+    :noindex:
+    :members: 
+
+```
+
+### Connectivity
+The {class}`~.backends.graph_compilation.Connectivity` describes how the inputs/outputs of the Zurich Instruments devices are connected to ports on the {class}`~.device_under_test.quantum_device.QuantumDevice`.
+
+```{note}
+The {class}`~.backends.graph_compilation.Connectivity` datastructure is currently under development. Information on the connectivity between port-clock combinations on the quantum device and ports on the control hardware is currently included in the old-style hardware configuration file, which should be included in the `"connectivity"` field of the {class}`~.backends.graph_compilation.HardwareCompilationConfig`.
+```
+
+### Hardware Options
+The {ref}`Hardware Options <sec-hardware-options>` provide a way of specifying some specific settings used in compiling instructions for the Zurich Instruments hardware.
+
+```{note}
+In the Zurich Instruments backend, a {class}`~.backends.graph_compilation.LatencyCorrection` is implemented by incrementing the `abs_time` of all operations applied to the port-clock combination.
 ```
 
 ## Tutorials

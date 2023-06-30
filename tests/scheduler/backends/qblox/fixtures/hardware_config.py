@@ -5,18 +5,16 @@ import pytest
 from quantify_scheduler.resources import BasebandClockResource
 from quantify_scheduler.schemas.examples import utils
 
-QBLOX_HARDWARE_MAPPING = utils.load_json_example_scheme("qblox_test_mapping.json")
-QBLOX_HARDWARE_OPTIONS = utils.load_json_example_scheme("qblox_hardware_options.json")
+QBLOX_HARDWARE_COMPILATION_CONFIG = utils.load_json_example_scheme(
+    "qblox_hardware_compilation_config.json"
+)
 
 
 @pytest.fixture
-def hardware_cfg_qblox_example() -> Generator[Dict[str, Any], None, None]:
-    yield dict(QBLOX_HARDWARE_MAPPING)
-
-
-@pytest.fixture
-def hardware_options_qblox_example() -> Generator[Dict[str, Any], None, None]:
-    yield dict(QBLOX_HARDWARE_OPTIONS)
+def hardware_compilation_config_qblox_example() -> (
+    Generator[Dict[str, Any], None, None]
+):
+    yield dict(QBLOX_HARDWARE_COMPILATION_CONFIG)
 
 
 @pytest.fixture
