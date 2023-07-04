@@ -15,6 +15,7 @@
 - Compilation - Changed units of amplitude parameters in device elements to dimensionless, for consistency with new `ReferenceMagnitude` interface (!691).
 - Compilation - Restructured `CompilationConfig` by adding `HardwareCompilationConfig` datastructure that contains `HardwareDescription`, `Connectivity`, and `HardwareOptions` (!680)
 - Documentation - Update broken qblox-instruments documentation URLs (!696)
+- Documentation - Utilize `hvplot` and `bokeh` for part of data visualization in documentation to overcome issues with `matplotlib` (!712).
 - Gettables - Shape of the data returned by instrument coordinator components for different acquisition protocols is semi-formalized and validated in the code of `ScheduleGettable.retrieve_acquisition()`. Data returned by Qblox and ZI LabOne backends is adjusted accordingly. (!608)
 - JSON utilities - `DataStructure` can serialize Numpy arrays using new `quantify_scheduler.structure.NDArray` field type. (!701)
 - Schedules - Remove one of the `CRCount` operations in `nv_dark_esr_sched_nco` from NCO frequency loop to avoid redundancy (!643)

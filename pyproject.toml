@@ -72,6 +72,7 @@ docs = [
     "jupyter_sphinx>=0.4.0",
     "jupytext",
     "myst-nb",
+    "hvplot",
     "pylint",
     "rich[jupyter]",
     "scanpydoc",

@@ -1,7 +1,14 @@
 ---
-file_format: mystnb
+jupytext:
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: 0.13
+    jupytext_version: 1.14.6
 kernelspec:
-    name: python3
+  display_name: Python 3 (ipykernel)
+  language: python
+  name: python3
 ---
 
 (sec-acquisition-protocols)=
@@ -12,6 +19,26 @@ The dataset returned by
 consists of a number of {class}`~xarray.DataArray`s containing data for every
 acquisition channel.
 This document specifies the format of these data arrays.
+
+```{code-cell} ipython3
+---
+tags: [hide-cell]
+mystnb:
+    code_prompt_show: "Imports and auxiliary definitions"
+    code_prompt_hide: "Hide imports and auxiliary definitions"
+---
+import numpy as np
+import xarray as xr
+import hvplot.xarray
+
+intermodulation_freq = 1e8  # 100 MHz
+voltage_iq = 0.32 + 0.25j
+sampling_rate = 1.8e9  # 1.8 GSa/s
+readout_duration = 1e-7  # 100 ns
+time_grid = xr.DataArray(
+    np.arange(0, readout_duration, sampling_rate**-1), dims="trace_index"
+)
+```
 
 (sec-acquisition-protocols-trace)=
 ## (Demodulated) Trace Acquisition Protocol
@@ -34,30 +61,12 @@ will look like this:
 ---
 tags: [hide-input]
 ---
-%matplotlib inline
-
-import matplotlib.pyplot as plt
-import numpy as np
-import xarray as xr
-
-intermodulation_freq = 1e8  # 100 MHz
-voltage_iq = 0.32 + 0.25j
-sampling_rate = 1.8e9  # 1.8 GSa/s
-readout_duration = 1e-7  # 100 ns
-time_grid = xr.DataArray(
-    np.arange(0, readout_duration, sampling_rate ** -1), dims="trace_index"
-)
-
 raw_trace = (
     voltage_iq * np.exp(2j * np.pi * intermodulation_freq * time_grid)
 ).assign_coords({"trace_time": time_grid})
-
-fig, ax = plt.subplots()
-xr.plot.line(raw_trace.real, ax=ax, label="I")
-xr.plot.line(raw_trace.imag, ax=ax, label="Q")
-ax.legend(loc="upper right")
-ax.set_xlabel(r"$t[s]$")
-ax.set_ylabel(r"$V$");
+xr.Dataset({"I": raw_trace.real, "Q": raw_trace.imag}).hvplot(
+    x="trace_time", xlabel="t [s]", ylabel="V", group_label="Channel"
+)
 ```
 
 Demodulated trace will unroll this data with respect to the intermodulation frequency,
@@ -69,12 +78,9 @@ tags: [hide-input]
 ---
 demodulated_trace = raw_trace * np.exp(-2j * np.pi * intermodulation_freq * time_grid)
 
-fig, ax = plt.subplots()
-xr.plot.line(demodulated_trace.real, ax=ax, label="I")
-xr.plot.line(demodulated_trace.imag, ax=ax, label="Q")
-ax.legend(loc="upper right")
-ax.set_xlabel(r"$t[s]$")
-ax.set_ylabel(r"$V$");
+xr.Dataset({"I": demodulated_trace.real, "Q": demodulated_trace.imag}).hvplot(
+    x="trace_time", xlabel="t [s]", ylabel="V", group_label="Channel"
+)
 ```
 
 This acquisition protocol is currently supported only in `BinMode.AVERAGE` binning mode.
@@ -92,14 +98,16 @@ the following structure:
 ---
 tags: [hide-input]
 ---
-xr.Dataset({
-    0: demodulated_trace.expand_dims("acq_index_0", 0).rename(
-        {"trace_index": "trace_index_0", "trace_time": "trace_time_0"}
-    ),
-    1: demodulated_trace.expand_dims("acq_index_1", 0).rename(
-        {"trace_index": "trace_index_1", "trace_time": "trace_time_1"}
-    ),
-})
+xr.Dataset(
+    {
+        0: demodulated_trace.expand_dims("acq_index_0", 0).rename(
+            {"trace_index": "trace_index_0", "trace_time": "trace_time_0"}
+        ),
+        1: demodulated_trace.expand_dims("acq_index_1", 0).rename(
+            {"trace_index": "trace_index_1", "trace_time": "trace_time_1"}
+        ),
+    }
+)
 ```
 
 (sec-acquisition-protocols-ssb-integration-complex)=
@@ -129,14 +137,16 @@ the following structure in `BinMode.APPEND`:
 ---
 tags: [hide-input]
 ---
-xr.Dataset({
-    0: demodulated_trace.reduce(np.average, "trace_index").expand_dims(
-        {"repetition": 5, "acq_index_0": 3}
-    ),
-    2: demodulated_trace.reduce(np.average, "trace_index").expand_dims(
-        {"repetition": 5, "acq_index_2": 2}
-    ),
-})
+xr.Dataset(
+    {
+        0: demodulated_trace.reduce(np.average, "trace_index").expand_dims(
+            {"repetition": 5, "acq_index_0": 3}
+        ),
+        2: demodulated_trace.reduce(np.average, "trace_index").expand_dims(
+            {"repetition": 5, "acq_index_2": 2}
+        ),
+    }
+)
 ```
 
 In `BinMode.AVERAGE` repetition dimension gets reduced and only the acquisition index
@@ -146,14 +156,16 @@ dimension is left for each channel:
 ---
 tags: [hide-input]
 ---
-xr.Dataset({
-    0: demodulated_trace.reduce(np.average, "trace_index").expand_dims(
-        {"acq_index_0": 3}
-    ),
-    2: demodulated_trace.reduce(np.average, "trace_index").expand_dims(
-        {"acq_index_2": 2}
-    ),
-})
+xr.Dataset(
+    {
+        0: demodulated_trace.reduce(np.average, "trace_index").expand_dims(
+            {"acq_index_0": 3}
+        ),
+        2: demodulated_trace.reduce(np.average, "trace_index").expand_dims(
+            {"acq_index_2": 2}
+        ),
+    }
+)
 ```
 
 (sec-acquisition-protocols-numerical-weighted-integration-complex)=
