@@ -204,12 +204,14 @@ class ScheduleGettable:
         """
         Start the experimental sequence and retrieve acquisition data.
 
+        The data format returned is dependent on the type of acquisitions used
+        in the schedule. These data formats can be found in the :ref:`user guide
+        <sec-user-guide-acquisition-data-schedulegettable>`.
+
         Returns
         -------
         :
-            The acquired I/Q voltage signal as a complex number,
-            split into a tuple of floats: either real/imaginary parts or
-            magnitude/phase, depending on whether :code:`real_imag` is :code:`True`.
+            A tuple of acquisition data per acquisition channel as specified above.
         """
         instr_coordinator = self.quantum_device.instr_instrument_coordinator.get_instr()
 

@@ -14,6 +14,7 @@ tutorials/Running an Experiment
 tutorials/Schedules*
 tutorials/Compiling*
 tutorials/Operations*
+tutorials/ScheduleGettable
 acquisition_protocols
 tutorials/qblox/index
 tutorials/zhinst/index

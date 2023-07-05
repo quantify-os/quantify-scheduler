@@ -32,6 +32,9 @@ Instead, this information can be added later during {ref}`Compilation`.
 This allows the user to effortlessly mix the gate- and pulse-level descriptions as is required for many experiments.
 We support similar flexibility in the timing constraints, one can either explicitly specify the timing using {attr}`.ScheduleBase.schedulables`, or rely on the compilation which will use the duration of operations to schedule them back-to-back.
 
+
+(sec-user-guide-creating-a-schedule)=
+
 ## Creating a schedule
 
 The most convenient way to interact with a {class}`.Schedule` is through the {mod}`quantify_scheduler` API.
@@ -492,6 +495,8 @@ As such, the state of the instruments in the software is intended to track the s
 Because different physical instruments have different interfaces, a hardware abstraction layer serves to provide a uniform interface.
 This hardware abstraction layer is implemented as the {class}`~.InstrumentCoordinator` to which individual {class}`InstrumentCoordinatorComponent <.InstrumentCoordinatorComponentBase>`s are added that provide the uniform interface to the individual instruments.
 
+(sec-user-guide-quantum-device-elements)=
+
 #### The quantum device and the device elements
 
 The knowledge of the system is described by the {class}`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` and {code}`DeviceElement`s.
@@ -693,6 +698,8 @@ Note that acquisition protocols define the meaning of each dimension of a data a
 but do not guarantee a consistent naming of the dimensions in a dataset.
 Instead, the exact names of dimensions should be retrieved dynamically during
 the processing of the dataset.
+
+(sec-user-guide-acquisition-data-schedulegettable)=
 
 ### Retrieve acquisition through `ScheduleGettable`
 
