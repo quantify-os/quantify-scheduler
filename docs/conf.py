@@ -257,6 +257,7 @@ autoapi_python_class_content = "both"
 suppress_warnings = [
     "autosectionlabel.*",
     "mystnb.unknown_mime_type",
+    "mystnb.mime_priority",
 ]
 
 # avoid ugly very long module_a.module_b.module_c.module_d.module_e.module_d.MyClass
