@@ -5,27 +5,19 @@ from __future__ import annotations
 
 import inspect
 import logging
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Dict,
-    List,
-    Literal,
-    Optional,
-    Tuple,
-    Union,
-)
+from collections import defaultdict
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Literal, Optional, Tuple
 
-import matplotlib
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+from quantify_core.visualization.SI_utilities import set_xlabel, set_ylabel
 
 import quantify_scheduler.operations.pulse_library as pl
-from quantify_core.visualization.SI_utilities import set_xlabel, set_ylabel
 from quantify_scheduler.helpers.importers import import_python_object_from_string
 from quantify_scheduler.helpers.waveforms import modulate_waveform
 from quantify_scheduler.operations.acquisition_library import AcquisitionOperation
@@ -89,7 +81,7 @@ def validate_operation_data(operation_data, port_map, schedulable, operation):
 # pylint: disable=too-many-locals
 # pylint: disable=too-many-statements
 def pulse_diagram_plotly(
-    schedule: Union[Schedule, CompiledSchedule],
+    schedule: Schedule | CompiledSchedule,
     port_list: Optional[List[str]] = None,
     fig_ch_height: float = 300,
     fig_width: float = 1000,
@@ -120,7 +112,7 @@ def pulse_diagram_plotly(
 
     Returns
     -------
-    :class:`!plotly.graph_objects.Figure` :
+    :class:`plotly.graph_objects.Figure` :
         the plot
     """
 
@@ -160,38 +152,28 @@ def pulse_diagram_plotly(
             ):
                 continue
 
-            # port to map the waveform to
             port: str = pulse_info["port"]
 
-            # function to generate waveform
             wf_func: Callable = import_python_object_from_string(pulse_info["wf_func"])
 
-            # iterate through the colors in the color map
             col_idx = (col_idx + 1) % len(colors)
 
-            # times at which to evaluate waveform
             t0 = schedulable["abs_time"] + pulse_info["t0"]
             t = np.arange(t0, t0 + pulse_info["duration"], 1 / sampling_rate)
-            # select the arguments for the waveform function
-            # that are present in pulse info
             par_map = inspect.signature(wf_func).parameters
             wf_kwargs = {}
             for kwargs in par_map.keys():
                 if kwargs in pulse_info.keys():
                     wf_kwargs[kwargs] = pulse_info[kwargs]
 
-            # Calculate the numerical waveform using the wf_func
             waveform = wf_func(t=t, **wf_kwargs)
 
-            # optionally adds some modulation
             if modulation == "clock":
-                # apply modulation to the waveforms
                 waveform = modulate_waveform(
                     t, waveform, schedule.resources[pulse_info["clock"]]["freq"]
                 )
 
             if modulation == "if":
-                # apply modulation to the waveforms
                 waveform = modulate_waveform(t, waveform, modulation_if)
 
             row: int = port_map[port] + 1
@@ -206,6 +188,7 @@ def pulse_diagram_plotly(
                     legendgroup=pulse_idx,
                     showlegend=True,
                     line_color=colors[col_idx],
+                    fill="tozeroy",
                     hoverinfo="x+y+name",
                     hoverlabel={"namelength": -1},
                 ),
@@ -214,7 +197,6 @@ def pulse_diagram_plotly(
             )
 
             if waveform.dtype.kind == "c":
-                # Only plot if the array is a complex numpy dtype
                 fig.add_trace(
                     go.Scatter(
                         x=t,
@@ -224,6 +206,7 @@ def pulse_diagram_plotly(
                         legendgroup=pulse_idx,
                         showlegend=True,
                         line_color="darkgrey",
+                        fill="tozeroy",
                         hoverinfo="x+y+name",
                         hoverlabel={"namelength": -1},
                     ),
@@ -246,7 +229,7 @@ def pulse_diagram_plotly(
                 hoverformat=".3s",
                 ticksuffix="V",
                 title=port,
-                range=[-1.1, 1.1],
+                autorange=True,
             )
 
         for acq_info in operation["acquisition_info"]:
@@ -304,7 +287,7 @@ def pulse_diagram_plotly(
                 hoverformat=".3s",
                 ticksuffix="V",
                 title=acq_port,
-                range=[-1.1, 1.1],
+                autorange=True,
             )
 
     fig.update_xaxes(
@@ -317,13 +300,18 @@ def pulse_diagram_plotly(
             dict(dtickrange=[1e-6, 1e-3], value=".4s"),
         ],
         ticksuffix="s",
-        rangeslider_visible=True,
     )
 
     return fig
 
 
-# pylint: disable=too-many-branches
+@dataclass
+class SampledPulse:
+    time: np.ndarray
+    signal: np.ndarray
+    label: str
+
+
 def sample_schedule(
     schedule: Schedule | CompiledSchedule,
     port_list: Optional[List[str]] = None,
@@ -331,7 +319,7 @@ def sample_schedule(
     modulation_if: float = 0.0,
     sampling_rate: float = 1e9,
     x_range: Tuple[float, float] = (-np.inf, np.inf),
-) -> Tuple[np.ndarray, Dict[str, np.ndarray]]:
+) -> Dict[str, List[SampledPulse]]:
     """
     Sample a schedule at discrete points in time.
 
@@ -353,12 +341,9 @@ def sample_schedule(
 
     Returns
     -------
-    timestamps
-        Sample times.
-    waveforms
-        Dictionary with the data samples for each port.
+    :
+        Dictionary that maps each used port to the sampled pulses played on that port.
     """
-
     if x_range[0] > x_range[1]:
         raise ValueError(
             f"Expected the left limit of x_range to be smaller than the right limit, "
@@ -375,6 +360,8 @@ def sample_schedule(
         _populate_port_mapping(schedule, port_map, ports_length)
         ports_length = len(port_map)
 
+    waveforms: Dict[str, List[SampledPulse]] = {}
+
     min_x, max_x = x_range
     for schedulable in schedule.schedulables.values():
         operation = schedule.operations[schedulable["operation_repr"]]
@@ -389,61 +376,22 @@ def sample_schedule(
                 pulse_info, port_map, schedulable, operation
             ):
                 logging.info(f"Operation {operation} is not valid for plotting.")
-
-            # times at which to evaluate waveform
-            t0 = schedulable["abs_time"] + pulse_info["t0"]
-            if np.isinf(min_x) or np.isinf(max_x):
-                min_x, max_x = t0, t0 + pulse_info["duration"]
-            else:
-                min_x = max(min(t0, min_x), x_range[0])
-                max_x = min(max(t0 + pulse_info["duration"], max_x), x_range[1])
-
-    if np.isinf(min_x) or np.isinf(max_x):
-        raise RuntimeError(
-            f"Attempting to sample schedule {schedule.name}, "
-            "but the schedule does not contain any `pulse_info`. "
-            "Please verify that the schedule has been populated and "
-            "device compilation has been performed."
-        )
-
-    time_window = [min_x, max_x]
-
-    logger.debug(f"time_window {time_window}, port_map {port_map}")
-
-    timestamps = np.arange(min_x, max_x, 1 / sampling_rate)
-    waveforms = {key: np.zeros_like(timestamps) for key in port_map}
-
-    for pls_idx, schedulable in enumerate(schedule.schedulables.values()):
-        operation = schedule.operations[schedulable["operation_repr"]]
-        logger.debug(f"{pls_idx}: {operation}")
-
-        if operation.has_voltage_offset:
-            operation = convert_to_numerical_pulse(
-                operation, scheduled_at=schedulable["abs_time"]
-            )
-
-        for pulse_info in operation["pulse_info"]:
-            if not validate_operation_data(
-                pulse_info, port_map, schedulable, operation
-            ):
                 continue
 
-            # times at which to evaluate waveform
             t0 = schedulable["abs_time"] + pulse_info["t0"]
             t1 = t0 + pulse_info["duration"]
 
-            if t1 < timestamps[0] or t0 > timestamps[-1]:
+            if t1 < min_x or t0 > max_x:
                 continue
 
-            # port to map the waveform too
+            t0 = max(min_x, t0)
+            t1 = min(max_x, t1)
+
             port: str = pulse_info["port"]
 
-            # function to generate waveform
             wf_func: Callable = import_python_object_from_string(pulse_info["wf_func"])
 
-            time_indices = np.where(np.logical_and(timestamps >= t0, timestamps < t1))
-            t = timestamps[time_indices]
-            logging.debug(f"t0 {t0} t1 {t1} indices {time_indices} t {t}")
+            t = np.arange(t0, t1 + 1 / sampling_rate, 1 / sampling_rate)
             if len(t) == 0:
                 continue
 
@@ -453,68 +401,197 @@ def sample_schedule(
                 if kwargs in pulse_info.keys():
                     wf_kwargs[kwargs] = pulse_info[kwargs]
 
-            # Calculate the numerical waveform using the wf_func
             waveform = wf_func(t=t, **wf_kwargs)
 
-            # optionally adds some modulation
             if modulation == "clock":
-                # apply modulation to the waveforms
                 waveform = modulate_waveform(
                     t, waveform, schedule.resources[pulse_info["clock"]]["freq"]
                 )
-                waveform = np.real_if_close(waveform)
 
             if modulation == "if":
-                # apply modulation to the waveforms
                 waveform = modulate_waveform(t, waveform, modulation_if)
 
-            if np.iscomplexobj(waveform):
-                waveforms[port] = waveforms[port].astype(complex)
-            waveforms[port][time_indices] += waveform
+            waveform = np.real_if_close(waveform)
+            label = f"{operation['name']}, clock {pulse_info['clock']}"
+            if port in waveforms:
+                waveforms[port].append(SampledPulse(t, waveform, label))
+            else:
+                waveforms[port] = [SampledPulse(t, waveform, label)]
 
-    return timestamps, waveforms
+    return waveforms
+
+
+def deduplicate_legend_handles_labels(ax: mpl.axes.Axes) -> None:
+    """Remove duplicate legend entries.
+
+    See also: https://stackoverflow.com/a/13589144
+    """
+    handles, labels = ax.get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    ax.legend(by_label.values(), by_label.keys())
+
+
+def plot_single_subplot_mpl(
+    sampled_schedule: Dict[str, List[SampledPulse]],
+    ax: Optional[mpl.axes.Axes] = None,
+) -> Tuple[mpl.figure.Figure, mpl.axes.Axes]:
+    """Plot all pulses for all ports in the schedule in the same subplot.
+
+    Pulses in the same port have the same color and legend entry, and each port
+    has its own legend entry.
+
+    Parameters
+    ----------
+    sampled_schedule :
+        Dictionary that maps each used port to the sampled pulses played on that port.
+    ax :
+        A pre-existing Axes object to plot the pulses in. If `None` (default), this object is
+        created within the function.
+
+    Returns
+    -------
+    fig :
+        A matplotlib :class:`matplotlib.figure.Figure` containing the subplot.
+
+    ax :
+        The Axes of the subplot belonging to the Figure.
+    """
+    if ax is None:
+        fig, ax = plt.subplots()
+    else:
+        fig = ax.get_figure()
+
+    for i, (port, data) in enumerate(sampled_schedule.items()):
+        for pulse in data:
+            ax.plot(pulse.time, pulse.signal.real, color=f"C{i}", label=f"port {port}")
+            ax.fill_between(pulse.time, pulse.signal.real, color=f"C{i}", alpha=0.2)
+
+            if np.iscomplexobj(pulse.signal):
+                ax.plot(
+                    pulse.time,
+                    pulse.signal.imag,
+                    color=f"C{i}",
+                    linestyle="--",
+                    label=f"port {port} (imag)",
+                )
+                ax.fill_between(pulse.time, pulse.signal.imag, color=f"C{i}", alpha=0.4)
+
+    deduplicate_legend_handles_labels(ax)
+    set_xlabel(label="Time", unit="s", axis=ax)
+    set_ylabel(label="Amplitude", unit="V", axis=ax)
+    return fig, ax
+
+
+def plot_multiple_subplots_mpl(
+    sampled_schedule: Dict[str, List[SampledPulse]]
+) -> Tuple[mpl.figure.Figure, List[mpl.axes.Axes]]:
+    """Plot pulses in a different subplot for each port in the sampled schedule.
+
+    For each subplot, each different type of pulse gets its own color and legend
+    entry.
+
+    Parameters
+    ----------
+    sampled_schedule :
+        Dictionary that maps each used port to the sampled pulses played on that port.
+
+    Returns
+    -------
+    fig :
+        A matplotlib :class:`matplotlib.figure.Figure` containing the subplots.
+
+    axs :
+        An array of Axes objects belonging to the Figure.
+    """
+    fig, axs = plt.subplots(len(sampled_schedule), 1, sharex=True)
+
+    for i, (port, data) in enumerate(sampled_schedule.items()):
+        # This automatically creates a label-to-color map as the plots get created.
+        color: Dict[str, str] = defaultdict(lambda: f"C{len(color)}")
+
+        for pulse in data:
+            axs[i].plot(
+                pulse.time,
+                pulse.signal.real,
+                color=color[pulse.label],
+                label=pulse.label,
+            )
+            axs[i].fill_between(
+                pulse.time, pulse.signal.real, color=color[pulse.label], alpha=0.2
+            )
+
+            if np.iscomplexobj(pulse.signal):
+                axs[i].plot(
+                    pulse.time,
+                    pulse.signal.imag,
+                    color=color[pulse.label],
+                    linestyle="--",
+                    label=f"{pulse.label} (imag)",
+                )
+                axs[i].fill_between(
+                    pulse.time, pulse.signal.imag, color=color[pulse.label], alpha=0.4
+                )
+
+        deduplicate_legend_handles_labels(axs[i])
+        set_ylabel(label=f"port {port}\nAmplitude", unit="V", axis=axs[i])
+
+    set_xlabel(label="Time", unit="s", axis=axs[-1])
+
+    # Make the figure taller if y-labels overlap.
+    fig.set_figheight(max(4.8 * len(axs) / 3, 4.8))
+    return fig, axs
 
 
 def pulse_diagram_matplotlib(
-    schedule: Union[Schedule, CompiledSchedule],
+    schedule: Schedule | CompiledSchedule,
     port_list: Optional[List[str]] = None,
     sampling_rate: float = 1e9,
     modulation: Literal["off", "if", "clock"] = "off",
     modulation_if: float = 0.0,
     x_range: Tuple[float, float] = (-np.inf, np.inf),
-    ax: Optional[matplotlib.axes.Axes] = None,
-) -> Tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
+    multiple_subplots: bool = False,
+    ax: Optional[mpl.axes.Axes] = None,
+) -> Tuple[mpl.figure.Figure, mpl.axes.Axes | List[mpl.axes.Axes]]:
     """
     Plots a schedule using matplotlib.
 
     Parameters
     ----------
-    schedule:
+    schedule :
         The schedule to plot.
     port_list :
-        A list of ports to show. if set to `None` will use the first
-        8 ports it encounters in the sequence.
-    modulation :
-        Determines if modulation is included in the visualization.
-    modulation_if :
-        Modulation frequency used when modulation is set to "if".
+        A list of ports to show. If `None` (default) the first 8 ports
+        encountered in the sequence are used.
     sampling_rate :
-        The time resolution used to sample the schedule in Hz.
+        The time resolution used to sample the schedule in Hz. By default 1e9.
+    modulation :
+        Determines if modulation is included in the visualization. By default "off".
+    modulation_if :
+        Modulation frequency used when modulation is set to "if". By default 0.0.
     x_range :
-        The range of the x-axis that is plotted, given as a tuple (left limit,
-        right limit). This can be used to reduce memory usage when plotting a
-        small section of a long pulse sequence.
-    ax:
-        Axis onto which to plot.
+        The range of the x-axis that is plotted, given as a tuple (left limit, right
+        limit). This can be used to reduce memory usage when plotting a small section of
+        a long pulse sequence. By default (-np.inf, np.inf).
+    multiple_subplots :
+        Plot the pulses for each port on a different subplot if True, else plot
+        everything in one subplot. By default False. When using just one
+        subplot, the pulses are colored according to the port on which they
+        play. For multiple subplots, each pulse has its own
+        color and legend entry.
+    ax :
+        Axis onto which to plot. If `None`, this is created within the function. By
+        default None.
 
     Returns
     -------
-    fig
-        The matplotlib figure.
-    ax
-        The matplotlib ax.
+    fig :
+        A matplotlib :class:`matplotlib.figure.Figure` containing the subplot(s).
+
+    ax :
+        The Axes object belonging to the Figure, or an array of Axes if
+        ``multiple_subplots=True``.
     """
-    times, pulses = sample_schedule(
+    pulses = sample_schedule(
         schedule,
         sampling_rate=sampling_rate,
         port_list=port_list,
@@ -522,17 +599,18 @@ def pulse_diagram_matplotlib(
         modulation_if=modulation_if,
         x_range=x_range,
     )
-    if ax is None:
-        _, ax = plt.subplots()
-    for gate, data in pulses.items():
-        ax.plot(times, data.real, label=gate)
-    set_xlabel(label="Time", unit="s", axis=ax)
-    # N.B. we currently use unity gain in the hardware backends so strictly
-    # speaking this is not the amplitude on the device, but the amplitude on the output.
-    set_ylabel(label="Amplitude", unit="V", axis=ax)
-    ax.legend()
 
-    return ax.get_figure(), ax
+    if len(pulses) == 0:
+        raise RuntimeError(
+            f"Attempting to sample schedule {schedule.name}, "
+            "but the schedule does not contain any `pulse_info`. "
+            "Please verify that the schedule has been populated and "
+            "device compilation has been performed."
+        )
+
+    if not multiple_subplots or len(pulses) == 1:
+        return plot_single_subplot_mpl(pulses, ax)
+    return plot_multiple_subplots_mpl(pulses)
 
 
 def get_window_operations(
@@ -564,9 +642,9 @@ def get_window_operations(
 
 def plot_window_operations(
     schedule: Schedule,
-    ax: Optional[matplotlib.axes.Axes] = None,
+    ax: Optional[mpl.axes.Axes] = None,
     time_scale_factor: float = 1,
-) -> Tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
+) -> Tuple[mpl.figure.Figure, mpl.axes.Axes]:
     """
     Plot the window operations in a schedule.
 
@@ -592,7 +670,7 @@ def plot_window_operations(
 
     window_operations = get_window_operations(schedule)
 
-    cmap = matplotlib.cm.get_cmap("jet")
+    cmap = mpl.cm.get_cmap("jet")
 
     for idx, (t0, t1, operation) in enumerate(window_operations):
         window_name = operation.window_name
@@ -611,7 +689,7 @@ def plot_window_operations(
 
 
 def plot_acquisition_operations(
-    schedule: Schedule, ax: Optional[matplotlib.axes.Axes] = None, **kwargs
+    schedule: Schedule, ax: Optional[mpl.axes.Axes] = None, **kwargs
 ) -> List[Any]:
     """
     Plot the acquisition operations in a schedule.

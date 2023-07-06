@@ -8,6 +8,7 @@
 - Qblox backend - Remove overwriting of IF frequency to `None` when `mix_lo=False` (!699)
 - Qblox backend - Compile `ShiftClockPhase` operation to `set_ph_delta` + `upd_param`, extending duration from 0 to 8 ns (!704, #432)
 - Acquisition - Trigger count protocol changes: `ScheduleGettable` and `InstrumentCoordinator` return data reconciliation; using `counts` instead of `acq_index` as a dimension when `BinMode.AVERAGE` is used (!703)
+- Visualization - The keyword argument '`plot_kwargs`' in `Schedule.plot_pulse_diagram()` has been replaced by `'**backend_kwargs'`, making it possible to directly specify keyword arguments (!664).
 
 ### Merged branches and closed issues
 - Compilation - Minor refactor of `circuit_to_device` to be compatible with `numpy>=1.25` (!706)
@@ -22,6 +23,11 @@
 - Waveforms - Fix `sudden_net_zero` waveform generation. Rounding of pulse times will now no longer lead to an incorrect SNZ pulse. I.e., the last sample of the first pulse and the first sample of the second pulse will remain correctly scaled, and the integral correction will have an amplitude such that the integral of the pulse is zero. (!581, #310)
 - Gate Library - Added `Rz`, `Z` and `Z90` gate to gate library, `BasicTransmonElement` and tested the new gates in `test_gate_library.py` (!697, #290)
 - Schedulables - Raises a more readable error when the reference point is a `Schedulable` that is not in the `Schedule` (!707)
+- Visualization - Large refactor of the pulse diagram, mostly in the matplotlib backend (!664).
+  - The matplotlib backend no longer plots 0 V points in between pulses, leading to significant performance improvements in some cases.
+  - In both the matplotlib and the plotly backend, lines are now shaded from the line to the x-axis.
+  - For the matplotlib backend, an extra keyword argument 'multiple_subplots' (bool) is added. If True, each port used in the schedule gets its own subplot, similar to how it's done in the plotly backend.
+  - In the plotly backend, the time slider at the bottom of the figure has been removed. This was necessary to allow the y-axis of the bottom-most plot to be interactively re-scalable as well.
 - Documentation - A new `ScheduleGettable` tutorial has been added (!686).
 
 ## 0.14.0 (2023-06-02)

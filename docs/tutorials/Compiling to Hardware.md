@@ -187,7 +187,7 @@ hardware_comp_cfg = {
 
 Next, we create a device configuration that contains all knowledge of the physical device under test (DUT). To generate it we use the {class}`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` class.
 
-The schedule defined at the beginning of this tutorial consists of 2 pulse operations. As such, the hardware compilation configuration must contain the necessary information to execute the schedule. We add the hardware compilation configuration to the `QuantumDevice` object and compile the schedule using this information.
+The schedule defined at the beginning of this tutorial consists of 2 pulse operations. As such, the hardware compilation configuration must contain the necessary information to execute the schedule. We add the hardware compilation configuration to the `QuantumDevice` object and compile the schedule using this information. We visualize the compiled schedule in a {meth}`pulse diagram <.plot_pulse_diagram>`.
 
 ```{code-cell} ipython3
 

@@ -67,6 +67,7 @@ intersphinx_mapping = {
     "xarray": ("https://xarray.pydata.org/en/stable/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
     "pandas": ("https://pandas.pydata.org/pandas-docs/dev/", None),
+    "plotly": ("https://plotly.com/python-api-reference/", None),
     "matplotlib": ("https://matplotlib.org/stable/", None),
     "lmfit": ("https://lmfit.github.io/lmfit-py/", None),
     "dateutil": ("https://dateutil.readthedocs.io/en/stable/", None),
@@ -421,7 +422,6 @@ nitpick_ignore = [
 nitpick_ignore_regex = [
     ("py:class", r"numpy.*"),
     ("py:class", r"np.*"),
-    ("py:class", r"plotly.*"),
     ("py:.*", r"orjson.*"),
     ("py:.*", r"pydantic.*"),
     ("py:.*", r"qcodes.*"),
@@ -431,6 +431,7 @@ nitpick_ignore_regex = [
     (".*", r".*Schedule"),
     ("py:class", r"qblox_instruments.*"),
     ("py:class", r"matplotlib.*"),
+    ("py:class", r"mpl.*"),
     ("py:class", r"\"[a-zA-Z]+\""),  # Ignore string literals
 ]
 

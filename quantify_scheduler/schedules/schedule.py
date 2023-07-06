@@ -292,6 +292,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         modulation_if: float = 0.0,
         plot_backend: Literal["mpl", "plotly"] = "mpl",
         plot_kwargs: Optional[dict] = None,
+        **backend_kwargs: Any,
     ) -> Union[Tuple[Figure, Axes], go.Figure]:
         # pylint: disable=line-too-long
         """
@@ -308,9 +309,10 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         Alias of :func:`quantify_scheduler.schedules._visualization.pulse_diagram.pulse_diagram_matplotlib` and
         :func:`quantify_scheduler.schedules._visualization.pulse_diagram.pulse_diagram_plotly`.
 
+        Parameters
+        ----------
         port_list :
-            A list of ports to show. if set to `None` will use the first
-            8 ports it encounters in the sequence.
+            A list of ports to show. If `None` (default) the first 8 ports encountered in the sequence are used.
         modulation :
             Determines if modulation is included in the visualization.
         modulation_if :
@@ -319,8 +321,12 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             The time resolution used to sample the schedule in Hz.
         plot_backend:
             Plotting library to use, can either be 'mpl' or 'plotly'.
-        plot_kwargs:
-            Dictionary of keyword arguments to pass to the plotting backend
+        backend_kwargs:
+            Keyword arguments to be passed on to the plotting backend. The arguments
+            that can be used for either backend can be found in the documentation of
+            :func:`quantify_scheduler.schedules._visualization.pulse_diagram.pulse_diagram_matplotlib`
+            and
+            :func:`quantify_scheduler.schedules._visualization.pulse_diagram.pulse_diagram_plotly`.
 
         Returns
         -------
@@ -331,22 +337,50 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         .. admonition:: Example
             :class: tip
 
+            A simple plot with matplotlib can be created as follows:
+
             .. jupyter-execute::
 
-                from quantify_scheduler.operations.pulse_library import SquarePulse, RampPulse
+                from quantify_scheduler.operations.pulse_library import DRAGPulse, SquarePulse, RampPulse
                 from quantify_scheduler.compilation import determine_absolute_timing
 
-                schedule = Schedule("waveforms")
-                schedule.add(SquarePulse(amp=0.2, duration=4e-6, port="P"))
-                schedule.add(RampPulse(amp=-0.1, offset=.2, duration=6e-6, port="P"))
+                schedule = Schedule("Multiple waveforms")
+                schedule.add(DRAGPulse(G_amp=0.2, D_amp=0.2, phase=0, duration=4e-6, port="P", clock="C"))
+                schedule.add(RampPulse(amp=0.2, offset=0.0, duration=6e-6, port="P"))
                 schedule.add(SquarePulse(amp=0.1, duration=4e-6, port="Q"), ref_pt='start')
                 determine_absolute_timing(schedule)
 
                 _ = schedule.plot_pulse_diagram(sampling_rate=20e6)
 
+            The backend can be changed to the plotly backend by specifying the
+            ``plot_backend=plotly`` argument. With the plotly backend, pulse
+            diagrams include a separate plot for each port/clock
+            combination:
+
+            .. jupyter-execute::
+
+                schedule.plot_pulse_diagram(sampling_rate=20e6, plot_backend='plotly')
+
+            The same can be achieved in the default ``plot_backend`` (``matplotlib``)
+            by passing the keyword argument ``multiple_subplots=True``:
+
+            .. jupyter-execute::
+
+                _ = schedule.plot_pulse_diagram(sampling_rate=20e6, multiple_subplots=True)
+
         """
         if plot_kwargs is None:
             plot_kwargs = {}
+        else:
+            warnings.warn(
+                "Support for the 'plot_kwargs' argument will be dropped in "
+                "quantify-scheduler >= 0.17.0.\nPlease use regular keyword arguments "
+                "instead.",
+                FutureWarning,
+            )
+
+        kwargs = {**plot_kwargs, **backend_kwargs}
+
         if plot_backend == "mpl":
             # NB imported here to avoid circular import
             # pylint: disable=import-outside-toplevel
@@ -360,7 +394,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
                 port_list=port_list,
                 modulation=modulation,
                 modulation_if=modulation_if,
-                **plot_kwargs,
+                **kwargs,
             )
         if plot_backend == "plotly":
             # NB imported here to avoid circular import
@@ -375,7 +409,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
                 port_list=port_list,
                 modulation=modulation,
                 modulation_if=modulation_if,
-                **plot_kwargs,
+                **kwargs,
             )
         raise ValueError(
             f"plot_backend must be equal to either 'mpl' or 'plotly', "

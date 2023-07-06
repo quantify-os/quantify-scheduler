@@ -138,7 +138,7 @@ The acquisitions are different for every iteration due to their different {code}
 ## Visualizing the quantum circuit
 
 We can directly visualize the created schedule on the
-{ref}`quantum-circuit level<sec-user-guide-quantum-circuit>`.
+{ref}`quantum-circuit level<sec-user-guide-quantum-circuit>` with the {meth}`~quantify_scheduler.schedules.schedule.ScheduleBase.plot_circuit_diagram` method.
 This visualization shows every operation on a line representing the different qubits.
 
 ```{code-cell} ipython3
@@ -385,8 +385,10 @@ q0 = BasicTransmonElement("q0")
 q1 = BasicTransmonElement("q1")
 dut.add_element(q0)
 dut.add_element(q1)
-dut.get_element("q0").rxy.amp180(0.6)
-dut.get_element("q1").rxy.amp180(0.6)
+dut.get_element("q0").rxy.amp180(0.65)
+dut.get_element("q1").rxy.amp180(0.55)
+dut.get_element("q0").measure.pulse_amp(0.28)
+dut.get_element("q1").measure.pulse_amp(0.22)
 
 compiler = SerialCompiler(name='compiler')
 compiled_sched = compiler.compile(schedule=sched, config=dut.generate_compilation_config())
@@ -403,5 +405,5 @@ compiled_sched.timing_table.hide(slice(11, None), axis="index").hide(
 ```
 
 ```{code-cell} ipython3
-f, ax = compiled_sched.plot_pulse_diagram(plot_kwargs={"x_range": (200e-6, 200.4e-6)})
+f, ax = compiled_sched.plot_pulse_diagram(x_range=(200e-6, 200.4e-6))
 ```

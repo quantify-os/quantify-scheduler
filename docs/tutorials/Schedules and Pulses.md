@@ -62,7 +62,7 @@ sched
 
 ```
 
-`quantify-scheduler` provides several visualization tools to show a visual representation of the schedule we made. First, however, we need to instruct the scheduler to calculate the pulse timings. We can accomplish this using the {func}`~quantify_scheduler.compilation.determine_absolute_timing` function. In the cell below we call this function and draw the schedule.
+`quantify-scheduler` provides several visualization tools to show a visual representation of the schedule we made. First, however, we need to instruct the scheduler to calculate the pulse timings. We can accomplish this using the {func}`~quantify_scheduler.compilation.determine_absolute_timing` function. In the cell below we call this function, and draw the schedule using a {meth}`pulse diagram <.plot_pulse_diagram>`.
 
 Note that these plots are interactive and modulation is not shown by default.
 
