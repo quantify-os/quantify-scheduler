@@ -29,6 +29,7 @@
   - For the matplotlib backend, an extra keyword argument 'multiple_subplots' (bool) is added. If True, each port used in the schedule gets its own subplot, similar to how it's done in the plotly backend.
   - In the plotly backend, the time slider at the bottom of the figure has been removed. This was necessary to allow the y-axis of the bottom-most plot to be interactively re-scalable as well.
 - Documentation - A new `ScheduleGettable` tutorial has been added (!686).
+- Documentation - New acquisitions tutorial (!694)
 
 ## 0.14.0 (2023-06-02)
 

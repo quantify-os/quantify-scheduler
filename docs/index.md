@@ -14,10 +14,11 @@ tutorials/Running an Experiment
 tutorials/Schedules*
 tutorials/Compiling*
 tutorials/Operations*
+tutorials/Acquisitions
 tutorials/ScheduleGettable
-acquisition_protocols
 tutorials/qblox/index
 tutorials/zhinst/index
+acquisition_protocols
 examples/deprecated
 examples/UML_class_diagrams
 contributing
