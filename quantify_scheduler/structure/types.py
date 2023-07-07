@@ -7,9 +7,9 @@ Pydantic recognizes magic method ``__get_validators__`` to recieve additional
 validators, that can be used, i.e., for custom serialization and deserialization.
 We implement several custom types here to tune behaviour of our models.
 
-See `Pydantic documentation`_ for more information about implementing new types.
+See `Pydantic docs`_ for more information about implementing new types.
 
-.. _Pydantic documentation: https://docs.pydantic.dev/latest/usage/types/#classes-with-__get_validators__
+.. _Pydantic docs: https://docs.pydantic.dev/1.10/usage/types/#custom-data-types
 """
 from __future__ import annotations
 
