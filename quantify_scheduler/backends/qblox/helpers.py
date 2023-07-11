@@ -760,7 +760,7 @@ def assign_pulse_and_acq_info_to_devices(
 
 
 @deprecated(
-    "0.16.0",
+    "0.17.0",
     "`convert_hw_config_to_portclock_configs_spec` will be removed in a future "
     "version.",
 )

@@ -374,7 +374,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         else:
             warnings.warn(
                 "Support for the 'plot_kwargs' argument will be dropped in "
-                "quantify-scheduler >= 0.17.0.\nPlease use regular keyword arguments "
+                "quantify-scheduler >= 0.18.0.\nPlease use regular keyword arguments "
                 "instead.",
                 FutureWarning,
             )

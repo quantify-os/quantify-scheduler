@@ -185,7 +185,7 @@ class GenericPulseStrategy(PulseStrategyPartial):
 
 
 @deprecated(
-    "0.15.0",
+    "0.16.0",
     "Support for the `StitchedSquarePulseStrategy` will be dropped in a future "
     "version. Please use `long_square_pulse` or `StitchedPulseBuilder` "
     "directly instead.",
@@ -326,7 +326,7 @@ assembly for the staircase."""
 
 
 @deprecated(
-    "0.15.0",
+    "0.16.0",
     "Support for the `StaircasePulseStrategy` will be dropped in a future "
     "version. Please use `staircase_pulse` or `StitchedPulseBuilder` "
     "directly instead.",

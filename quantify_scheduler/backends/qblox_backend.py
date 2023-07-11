@@ -193,7 +193,7 @@ def hardware_compile(
     if not isinstance(config, CompilationConfig):
         warnings.warn(
             f"Qblox `{hardware_compile.__name__}` will require a full "
-            f"CompilationConfig as input as of quantify-scheduler >= 0.15.0",
+            f"CompilationConfig as input as of quantify-scheduler >= 0.16.0",
             FutureWarning,
         )
     if isinstance(config, CompilationConfig):

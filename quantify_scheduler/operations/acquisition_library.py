@@ -440,7 +440,7 @@ class NumericalWeightedIntegrationComplex(
         if t is not None:
             warnings.warn(
                 "Support for the 't' argument will be dropped in quantify-scheduler >= "
-                "0.16.0. Please use 'weights_sampling_rate' instead.",
+                "0.17.0. Please use 'weights_sampling_rate' instead.",
                 FutureWarning,
             )
             if not _is_increasing_at_constant_rate(t):

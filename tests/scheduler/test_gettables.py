@@ -68,7 +68,7 @@ def test_process_acquired_data(
     )
 
     # act
-    with pytest.warns(FutureWarning, match=".* in quantify-scheduler-0.16."):
+    with pytest.warns(FutureWarning, match=".* in quantify-scheduler-0.17."):
         processed_data = gettable.process_acquired_data(
             mock_dataset, acq_metadata, repetitions=10
         )

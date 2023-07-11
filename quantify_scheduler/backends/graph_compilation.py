@@ -477,7 +477,7 @@ class HardwareCompilationConfig(DataStructure):
             warnings.warn(
                 "Latency corrections should be specified in the "
                 "`backends.graph_compilation.HardwareOptions` instead of "
-                "the hardware configuration as of quantify-scheduler >= 0.15.0",
+                "the hardware configuration as of quantify-scheduler >= 0.16.0",
                 FutureWarning,
             )
         return connectivity
@@ -489,7 +489,7 @@ class HardwareCompilationConfig(DataStructure):
             warnings.warn(
                 "Distortion corrections should be specified in the "
                 "`backends.graph_compilation.HardwareOptions` instead of "
-                "the hardware configuration as of quantify-scheduler >= 0.15.0",
+                "the hardware configuration as of quantify-scheduler >= 0.16.0",
                 FutureWarning,
             )
         return connectivity

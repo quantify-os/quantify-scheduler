@@ -341,7 +341,7 @@ class ScheduleGettable:
             warnings.warn(
                 "`repetitions` argument of `ScheduleGettable.process_acquired_data()`"
                 " function has no effect and will be removed in"
-                " quantify-scheduler-0.16.",
+                " quantify-scheduler-0.17.",
                 FutureWarning,
             )
         if acq_metadata.acq_protocol == "TriggerCount":
