@@ -13,7 +13,7 @@ Download the notebook: {nb-download}`deprecated.ipynb`
 
 | **Target** | **Deprecated** | **Removed** | **Alternatives** |
 |---|---|---|---|
-| `convert_hw_config_to_portclock_configs_spec` | 0.13.0 | - | See {ref}`Qblox Hardware Configuration` |
+| `convert_hw_config_to_portclock_configs_spec` | 0.13 | - | See {ref}`Qblox Hardware Configuration` |
 | `instruction_generated_pulses_enabled` hardware configuration setting | 0.13 | - | See {ref}`Instruction-generated pulses (Qblox only)` |
 | `quantify_scheduler.visualization` | 0.12 | 0.15 | See {ref}`Circuit diagrams and pulse diagrams` |
 | `acq_channel` (in {class}`~quantify_scheduler.operations.gate_library.Measure` and {class}`~quantify_scheduler.operations.nv_native_library.CRCount`) | 0.10 | 0.12 | See {ref}`acq_channel` |
@@ -243,7 +243,7 @@ In quantify-scheduler 0.8.0, the schema for the Qblox hardware configuration was
 1. `line_gain_db` removed
 
 The code below can be used to convert old-style to new-style hardware configurations.
-Note that helper function `convert_hw_config_to_portclock_configs_spec` will be removed in version 0.16.0.
+Note that helper function `convert_hw_config_to_portclock_configs_spec` will be removed in version 0.17.0.
 
 ```{code-cell} ipython3
 depr_hardware_cfg = {
