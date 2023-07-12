@@ -2,16 +2,8 @@
 
 # Backend: Qblox
 
-```{warning}
-The {mod}`quantify_scheduler.backends.qblox_backend` is still under development.
-Breaking changes at this stage are not excluded.
-```
-
-## Introduction
-
-`quantify-scheduler` provides a modular system: {mod}`~quantify_scheduler.backends.qblox_backend`,
-that abstracts the full experimental setup using [Qblox](https://www.qblox.com) hardware for
-experiments in a modern and automated fashion.
+`quantify-scheduler` provides the {mod}`~quantify_scheduler.backends.qblox_backend`,
+that simplifies setting up experiments using [Qblox](https://www.qblox.com) control hardware.
 
 Functionality included in this backend:
 
@@ -26,44 +18,33 @@ Functionality included in this backend:
 - Correction of the mixer errors using specified correction parameters.
 - Flexible configuration via JSON data structures.
 
-No special configuration is required to use this backend. Simply specify {obj}`quantify_scheduler.backends.qblox_backend.hardware_compile`
-in the hardware configuration to use this backend or call the function directly. Please see {ref}`Usage of the backend <sec-qblox-how-to-configure>`
+Simply specify {code}`"quantify_scheduler.backends.qblox_backend.hardware_compile"`
+in the hardware configuration to use this backend. Please see {ref}`Usage of the backend <sec-qblox-how-to-configure>`
 for information on how to set this up.
-After a schedule is compiled into a program, uploading to the hardware can be done using the usual
-[qblox-instruments](https://pypi.org/project/qblox-instruments/) drivers. Installation of these drivers
-is done through
+After a schedule is compiled into a program, uploading to the control hardware can be done using the usual
+[qblox-instruments](https://pypi.org/project/qblox-instruments/) driver under the hood. The driver is automatically included in installing `quantify-scheduler`.
+Please visit the [Qblox Instruments setup documentation](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/getting_started/setup.html)
+for detailed setup instructions. 
 
-```console
-$ pip install qblox-instruments
-```
-
-Please visit the [Qblox instruments documentation](https://qblox-qblox-instruments.readthedocs-hosted.com)
-for more information.
-
-## Supported Instruments
+Supported instruments:
 
 - ✅ QCM
 - ✅ QRM
 - ✅ QCM-RF
 - ✅ QRM-RF
-- ✅ Cluster
 - ✅ Local Oscillator
 - ⬜️ SPI
 
-## Recent changes
-
-For recent changes regarding the Qblox backend see the following.
-
 ```{toctree}
+:hidden: true
+
 recent
 ```
 
-## How to use
-
 ```{toctree}
+:hidden: true
 :maxdepth: 2
 
 How to use
-Pulsar
 Cluster
 ```
