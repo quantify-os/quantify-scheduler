@@ -1,39 +1,58 @@
 # Changelog
 
-## Unreleased
+## 0.15.0 (2023-07-13)
+
+### Release highlights
+
+- Added New tutorials on performing acquisitions:
+  - Tutorial: Acquisitions - how to add acquisitions to schedules, and how to retrieve acquisition results using the Instrument Coordinator
+  - Tutorial: ScheduleGettable - how to perform acquisitions with ScheduleGettable
+- Fixed `sudden_net_zero` waveform generation
+- Added `Rz`, `Z` and `Z90` gate to gate library and `BasicTransmonElement`
+- Improved pulse diagram, mostly in the `matplotlib` backend
+- Added new-style validated hardware config: Restructured `CompilationConfig` by adding `HardwareCompilationConfig` datastructure that contains `HardwareDescription`, `Connectivity`, and `HardwareOptions` (!680)
+  - The old-style unvalidated hardware config is still fully supported 
+  - Currently, the new-style hardware config is being converted to the old-style hardware config before processing by the hardware backends  
 
 ### Breaking changes
 
-- Instrument coordinator - Dimension names of the datasets returned by the instrument coordinator have changed. If you used them explicitly in processing, you can fix that by extracting the names dynamically from the dataset. Exact names of the dimensions are not guaranteed to be stable in the future. (!608)
+- Acquisition - Trigger count protocol changes: `ScheduleGettable` and `InstrumentCoordinator` return data reconciliation; using `counts` instead of `acq_index` as a dimension when `BinMode.AVERAGE` is used (!703)
+- Instrument Coordinator - Dimension names of the datasets returned by the instrument coordinator have changed. If you used them explicitly in processing, you can fix that by extracting the names dynamically from the dataset. The exact names of the dimensions are not guaranteed to be stable in the future. (!608)
 - Qblox backend - Remove overwriting of IF frequency to `None` when `mix_lo=False` (!699)
 - Qblox backend - Compile `ShiftClockPhase` operation to `set_ph_delta` + `upd_param`, extending duration from 0 to 8 ns (!704, #432)
-- Acquisition - Trigger count protocol changes: `ScheduleGettable` and `InstrumentCoordinator` return data reconciliation; using `counts` instead of `acq_index` as a dimension when `BinMode.AVERAGE` is used (!703)
-- Visualization - The keyword argument '`plot_kwargs`' in `Schedule.plot_pulse_diagram()` has been replaced by `'**backend_kwargs'`, making it possible to directly specify keyword arguments (!664).
+- Visualization - The keyword argument `plot_kwargs` in `Schedule.plot_pulse_diagram()` has been replaced by `**backend_kwargs`, making it possible to directly specify keyword arguments (!664).
 
 ### Merged branches and closed issues
+
 - Compilation - Minor refactor of `circuit_to_device` to be compatible with `numpy>=1.25` (!706)
 - Compilation - Amended `ReferenceMagnitude` set method to ensure that all unit parameters are not overwritten when one of the parameters is set to `nan` (!695, #429).
-- Compilation - Changed units of amplitude parameters in device elements to dimensionless, for consistency with new `ReferenceMagnitude` interface (!691).
-- Compilation - Restructured `CompilationConfig` by adding `HardwareCompilationConfig` datastructure that contains `HardwareDescription`, `Connectivity`, and `HardwareOptions` (!680)
-- Documentation - Update broken qblox-instruments documentation URLs (!696)
-- Documentation - Utilize `hvplot` and `bokeh` for part of data visualization in documentation to overcome issues with `matplotlib` (!712).
-- Gettables - Shape of the data returned by instrument coordinator components for different acquisition protocols is semi-formalized and validated in the code of `ScheduleGettable.retrieve_acquisition()`. Data returned by Qblox and ZI LabOne backends is adjusted accordingly. (!608)
-- JSON utilities - `DataStructure` can serialize Numpy arrays using new `quantify_scheduler.structure.NDArray` field type. (!701)
-- Schedules - Remove one of the `CRCount` operations in `nv_dark_esr_sched_nco` from NCO frequency loop to avoid redundancy (!643)
-- Waveforms - Fix `sudden_net_zero` waveform generation. Rounding of pulse times will now no longer lead to an incorrect SNZ pulse. I.e., the last sample of the first pulse and the first sample of the second pulse will remain correctly scaled, and the integral correction will have an amplitude such that the integral of the pulse is zero. (!581, #310)
-- Gate Library - Added `Rz`, `Z` and `Z90` gate to gate library, `BasicTransmonElement` and tested the new gates in `test_gate_library.py` (!697, #290)
-- Schedulables - Raises a more readable error when the reference point is a `Schedulable` that is not in the `Schedule` (!707)
-- Visualization - Large refactor of the pulse diagram, mostly in the matplotlib backend (!664).
-  - The matplotlib backend no longer plots 0 V points in between pulses, leading to significant performance improvements in some cases.
-  - In both the matplotlib and the plotly backend, lines are now shaded from the line to the x-axis.
-  - For the matplotlib backend, an extra keyword argument 'multiple_subplots' (bool) is added. If True, each port used in the schedule gets its own subplot, similar to how it's done in the plotly backend.
-  - In the plotly backend, the time slider at the bottom of the figure has been removed. This was necessary to allow the y-axis of the bottom-most plot to be interactively re-scalable as well.
+- Compilation - Changed units of amplitude parameters in device elements to dimensionless, for consistency with the new `ReferenceMagnitude` interface (!691).
+- Compilation - Restructured `CompilationConfig` by adding the `HardwareCompilationConfig` datastructure that contains `HardwareDescription`, `Connectivity`, and `HardwareOptions` (!680)
 - Documentation - A new `ScheduleGettable` tutorial has been added (!686).
 - Documentation - New acquisitions tutorial (!694)
+- Documentation - Update broken `qblox-instruments` documentation URLs (!696)
+- Documentation - Utilize `hvplot` and `bokeh` for part of data visualization in documentation to overcome issues with `matplotlib` (!712).
+- Gate Library - Added `Rz`, `Z` and `Z90` gate to gate library, `BasicTransmonElement` and tested the new gates in `test_gate_library.py` (!697, #290) 
+Gettables - The shape of the data returned by the instrument coordinator components for different acquisition protocols is semi-formalized and validated in the code of `ScheduleGettable.retrieve_acquisition()`. Data returned by Qblox and ZI LabOne backends is adjusted accordingly. (!608)
+- JSON utilities - `DataStructure` can serialize Numpy arrays using the new `quantify_scheduler.structure.NDArray` field type. (!701)
+- Schedulables - Raises a more readable error when the reference point is a `Schedulable` that is not in the `Schedule` (!707)
+- Schedules - Remove one of the `CRCount` operations in `nv_dark_esr_sched_nco` from the NCO frequency loop to avoid redundancy (!643)
+- Visualization - Large refactor of the pulse diagram, mostly in the matplotlib backend (!664).
+  - The `matplotlib` backend no longer plots 0 V points in between pulses, leading to significant performance improvements in some cases.
+  - In both the `matplotlib` and the plotly backend, lines are now shaded from the line to the x-axis.
+  - For the `matplotlib` backend, an extra keyword argument 'multiple_subplots' (bool) is added. If True, each port used in the schedule gets its own subplot, similar to how it's done in the `plotly` backend.
+  - In the `plotly` backend, the time slider at the bottom of the figure has been removed. This was necessary to allow the y-axis of the bottom-most plot to be interactively re-scalable as well.
+- Waveforms - Fix `sudden_net_zero` waveform generation. Rounding of pulse times will now no longer lead to an incorrect SNZ pulse. I.e., the last sample of the first pulse and the first sample of the second pulse will remain correctly scaled, and the integral correction will have an amplitude such that the integral of the pulse is zero. (!581, #310)
+
+### Compatibility info
+
+- Qblox: `qblox-instruments==0.9.0` ([Cluster firmware v0.4.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.4.0)) and `qblox-instruments==0.10.x` ([Cluster firmware v0.5.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.5.0))
+- ZI:    `zhinst==21.8.20515` `zhinst-qcodes==0.1.4` `zhinst-toolkit==0.1.5`
 
 ## 0.14.0 (2023-06-02)
 
 ### Release highlights
+
 - New features
   - **Introducing** `ReferenceMagnitude`. A new parameter called has been introduced for pulses, enabling the flexible specification of amplitudes and powers across various orders of magnitude. This parameter allows users to utilize variable attenuations, among other techniques, to precisely control the amplitudes and powers of the pulses. **Important note** this parameter is not yet implemented for any of the available backends. Future updates are expected to include support for ReferenceMagnitude in the compilation backends.
 
@@ -41,7 +60,6 @@
   - **Introducing the** `MarkerPulse`. This feature simplifies the specification of digital pulses with precise timing, facilitating the control of third-party electronics. For more information, refer to the [Digital mode tutorial](https://quantify-quantify-scheduler.readthedocs-hosted.com/en/latest/tutorials/qblox/Cluster.html#digital-mode).
   - **Improved Compilation Time**. The compilation time has been significantly improved, achieving approximately 10 times faster execution. Notably, a 32 times speedup has been observed when running 2-qubit Chevron schedules.
   - **Reduced Acquisition Time**. The minimum time between acquisitions has been lowered from 1000 ns to 300 ns, enhancing the efficiency of data acquisition.
-
 
 ### Breaking changes
 

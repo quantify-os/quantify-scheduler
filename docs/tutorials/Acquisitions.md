@@ -20,7 +20,8 @@ The complete source code of this tutorial can be found in
 
 ## Introduction
 
-In this tutorial we give examples on how to add acquisitions, and how to retrieve acquisition results using `quantify-scheduler`. More specifically, this tutorial only describes acquisitions with {class}`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator` with Qblox backend with transmon qubits (or Qblox backend with NV center in case of trigger count). See {ref}`sec-tutorial-schedulegettable` for a tutorial on how to perform acquisitions with {class}`~quantify_scheduler.gettables.ScheduleGettable`, and see {ref}`sec-backend-zhinst` for help on how to perform experiments with the Zurich Instruments backend.
+In this tutorial we give examples on how to add acquisitions to schedules, and how to retrieve acquisition results using the {class}`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator`.
+More specifically, this tutorial only describes acquisitions with {class}`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator` with Qblox backend with transmon qubits (or Qblox backend with NV center in case of trigger count). See {ref}`sec-tutorial-schedulegettable` for a tutorial on how to perform acquisitions with {class}`~quantify_scheduler.gettables.ScheduleGettable`, and see {ref}`sec-backend-zhinst` for help on how to perform experiments with the Zurich Instruments backend.
 
 This tutorial assumes you are familiar with compiling schedules and running simple pulses on the Qblox hardware. We also assume, that you have basic familiarity with `xarray` (see [xarray introduction](https://quantify-quantify-core.readthedocs-hosted.com/en/latest/technical_notes/dataset_design/Xarray%20introduction.html) and the [official documentation](https://docs.xarray.dev/en/stable/user-guide/data-structures.html)).
 
