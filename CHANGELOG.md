@@ -44,6 +44,7 @@
 Gettables - The shape of the data returned by the instrument coordinator components for different acquisition protocols is semi-formalized and validated in the code of `ScheduleGettable.retrieve_acquisition()`. Data returned by Qblox and ZI LabOne backends is adjusted accordingly. (!608)
 - JSON utilities - `DataStructure` can serialize Numpy arrays using the new `quantify_scheduler.structure.NDArray` field type. (!701)
 - Schedulables - Raises a more readable error when the reference point is a `Schedulable` that is not in the `Schedule` (!707)
+- Schedulables - store references to `Schedulables` in timing contraints as `string` rather than `Schedulable`.  (!707)
 - Schedules - Remove one of the `CRCount` operations in `nv_dark_esr_sched_nco` from the NCO frequency loop to avoid redundancy (!643)
 - Visualization - Large refactor of the pulse diagram, mostly in the matplotlib backend (!664).
   - The `matplotlib` backend no longer plots 0 V points in between pulses, leading to significant performance improvements in some cases.

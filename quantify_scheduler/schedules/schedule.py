@@ -749,18 +749,23 @@ class Schedulable(JSONSchemaValMixin, UserDict):
             ('start', 'center', 'end').
         """
 
-        # assert that the reference operation exists
-        if (
-            ref_schedulable is not None
-            and str(ref_schedulable) not in self.schedule.data["schedulables"].keys()
-        ):
-            try:
-                op_repr_str = f"{ref_schedulable.data['operation_repr']}"
-            except AttributeError:
-                op_repr_str = ""
-            raise ValueError(
-                f"Reference Schedulable '{ref_schedulable}' referring to\n{op_repr_str}\ndoes not exist in schedule."
-            )
+        # Assert that the reference schedulable exists.
+        if ref_schedulable is not None:
+            schedulables_dict = self.schedule.data["schedulables"]
+            schedulable_key = str(ref_schedulable)
+            if schedulable_key not in schedulables_dict.keys():
+                raise ValueError(
+                    f"Reference Schedulable '{schedulable_key}' does not exist in schedule."
+                )
+            elif (
+                isinstance(ref_schedulable, Schedulable)
+                and schedulables_dict.get(schedulable_key) is not ref_schedulable
+            ):
+                raise ValueError(
+                    f"Reference Schedulable object '{ref_schedulable}' does not exist in schedule."
+                )
+            else:
+                ref_schedulable = schedulable_key
 
         timing_constr = {
             "rel_time": rel_time,

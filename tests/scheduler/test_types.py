@@ -32,6 +32,7 @@ from quantify_scheduler.schedules.schedule import (
     AcquisitionMetadata,
     CompiledSchedule,
     Schedule,
+    Schedulable,
 )
 from quantify_scheduler.schedules.spectroscopy_schedules import heterodyne_spec_sched
 
@@ -121,6 +122,13 @@ def test_schedule_add_timing_constraints():
     # specifying non-existing label should raise an error
     with pytest.raises(ValueError):
         sched.add(Rxy(theta=90, phi=0, qubit="q0"), ref_op="non-existing-operation")
+
+    # specifying schedulable that is not part of the schedule should raise an error
+    different_sched = Schedule("not my exp")
+    # This schedulable is intentially given a label that also exists in `sched`
+    schedulable = different_sched.add(Rxy(theta=90, phi=0, qubit="q0"), label=test_lab)
+    with pytest.raises(ValueError):
+        sched.add(Rxy(theta=90, phi=0, qubit="q0"), ref_op=schedulable)
 
     assert Schedule.is_valid(sched)
 
