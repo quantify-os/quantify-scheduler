@@ -6,6 +6,8 @@
 
 ### Merged branches and closed issues
 
+- Pin version of `dataclasses-json` due to breaking pipelines. (!727)
+
 ## 0.15.0 (2023-07-13)
 
 ### Release highlights
