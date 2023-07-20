@@ -374,7 +374,7 @@ class TestWeightedAcquisitionStrategy:
             },
         ]
         data = {
-            "bin_mode": BinMode.AVERAGE,
+            "bin_mode": BinMode.AVERAGE,  # FIXME: this is ignored
             "acq_channel": 2,
             "acq_index": 12,
             "waveforms": weights,
@@ -388,7 +388,6 @@ class TestWeightedAcquisitionStrategy:
         # act
         strategy.acquire_append(qasm)
 
-        # assert
         assert qasm.instructions == [
             ["", "", "", ""],
             ["", "move", "0,R1", "# Store idx of acq I wave in R1"],
@@ -399,6 +398,7 @@ class TestWeightedAcquisitionStrategy:
                 "2,R0,R1,R10,4",
                 "# Store acq in acq_channel:2, bin_idx:R0",
             ],
+            ["", "add", "R0,1,R0", "# Increment bin_idx for ch2"],
             ["", "", "", ""],
         ]
 

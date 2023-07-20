@@ -335,6 +335,13 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
                 comment=f"Store acq in acq_channel:{self.acq_channel}, "
                 f"bin_idx:{acq_bin_idx_reg}",
             )
+            qasm_program.emit(
+                q1asm_instructions.ADD,
+                acq_bin_idx_reg,
+                1,
+                acq_bin_idx_reg,
+                comment=f"Increment bin_idx for ch{self.acq_channel}",
+            )
             qasm_program.emit(q1asm_instructions.NEW_LINE)
             qasm_program.elapsed_time += constants.GRID_TIME
 
