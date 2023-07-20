@@ -277,6 +277,7 @@ class DispersiveMeasurement(InstrumentChannel):
             initial_value=kwargs.get("acq_weight_type", "SSB"),
             vals=ro_acq_weight_type_validator,
         )
+
         self.add_submodule(
             name="reference_magnitude",
             submodule=ReferenceMagnitude(
@@ -287,6 +288,25 @@ class DispersiveMeasurement(InstrumentChannel):
                 A=kwargs.get("reference_magnitude_A", math.nan),
             ),
         )
+
+        self.acq_rotation = ManualParameter(
+            "acq_rotation",
+            instrument=self,
+            initial_value=kwargs.get("acq_rotation", 0),
+        )
+        """The phase rotation in degrees required to perform thresholded
+        acquisition. Note that rotation is performed before the threshold. For
+        more details see
+        :class:`~quantify_scheduler.operations.acquisition_library.ThresholdedAcquisition`."""  # noqa
+
+        self.acq_threshold = ManualParameter(
+            "acq_threshold",
+            instrument=self,
+            initial_value=kwargs.get("acq_threshold", 0),
+        )
+        """The threshold value against which the rotated and integrated result
+        is compared against. For more details see
+        :class:`~quantify_scheduler.operations.acquisition_library.ThresholdedAcquisition`."""  # noqa
 
 
 class ReferenceMagnitude(InstrumentChannel):
@@ -498,6 +518,8 @@ class BasicTransmonElement(DeviceElement):
                         "acq_weights_a": self.measure.acq_weights_a(),
                         "acq_weights_b": self.measure.acq_weights_b(),
                         "acq_weights_sampling_rate": self.measure.acq_weights_sampling_rate(),
+                        "acq_rotation": self.measure.acq_rotation(),
+                        "acq_threshold": self.measure.acq_threshold(),
                     },
                     gate_info_factory_kwargs=["acq_index", "bin_mode", "acq_protocol"],
                 ),

@@ -58,6 +58,7 @@ from quantify_scheduler.helpers.collections import (
 )
 from quantify_scheduler.operations.acquisition_library import (
     SSBIntegrationComplex,
+    ThresholdedAcquisition,
     Trace,
 )
 from quantify_scheduler.operations.pulse_factories import long_square_pulse
@@ -3436,3 +3437,52 @@ def test_set_reference_magnitude_raises(compile_config_basic_transmon_qblox_hard
         match="reference_magnitude parameter not implemented. This parameter will be ignored.",
     ):
         _ = compiler.compile(sched, config=compile_config_basic_transmon_qblox_hardware)
+
+
+def test_set_thresholded_acquisition_via_hardware_config_raises(
+    mock_setup_basic_transmon_with_standard_params,
+):
+    """Defining thresholded acquisition through the device config is not
+    allowed and should throw a KeyError. This is a test to test a temporary
+    solution until hardware validation is implemented. See
+    https://gitlab.com/groups/quantify-os/-/epics/1
+    """
+    hardware_config = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module3": {
+                "instrument_type": "QRM",
+                "complex_output_0": {
+                    "lo_name": "lo",
+                    "portclock_configs": [
+                        {
+                            "port": "q0:res",
+                            "clock": "q0.ro",
+                            "thresholded_acq_threshold": 20,
+                            "thresholded_acq_rotation": -0.2,
+                        },
+                    ],
+                },
+            },
+        },
+        "lo": {
+            "instrument_type": "LocalOscillator",
+            "frequency": 7.8e9,
+            "power": 1,
+        },
+    }
+
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+
+    quantum_device.hardware_config(hardware_config)
+
+    # basic schedule
+    schedule = Schedule("thresholded acquisition")
+    schedule.add(ThresholdedAcquisition(port="q0:res", clock="q0.ro", duration=1e-6))
+
+    compiler = SerialCompiler(name="compiler", quantum_device=quantum_device)
+
+    with pytest.raises(KeyError):
+        compiler.compile(schedule)

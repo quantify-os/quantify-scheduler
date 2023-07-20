@@ -2,6 +2,7 @@
 file_format: mystnb
 kernelspec:
     name: python3
+    display_name: python3
 
 mystnb:
   execution_timeout: 120
@@ -20,14 +21,14 @@ The complete source code of this tutorial can be found in
 
 ## Introduction
 
-In this tutorial we give examples on how to add acquisitions to schedules, and how to retrieve acquisition results using the {class}`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator`.
+In this tutorial we give examples of how to add acquisitions to schedules, and how to retrieve acquisition results using the {class}`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator`.
 More specifically, this tutorial only describes acquisitions with {class}`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator` with Qblox backend with transmon qubits (or Qblox backend with NV center in case of trigger count). See {ref}`sec-tutorial-schedulegettable` for a tutorial on how to perform acquisitions with {class}`~quantify_scheduler.gettables.ScheduleGettable`, and see {ref}`sec-backend-zhinst` for help on how to perform experiments with the Zurich Instruments backend.
 
 This tutorial assumes you are familiar with compiling schedules and running simple pulses on the Qblox hardware. We also assume, that you have basic familiarity with `xarray` (see [xarray introduction](https://quantify-quantify-core.readthedocs-hosted.com/en/latest/technical_notes/dataset_design/Xarray%20introduction.html) and the [official documentation](https://docs.xarray.dev/en/stable/user-guide/data-structures.html)).
 
 The basic structure of the returned acquisition data is that it is an {class}`xarray.Dataset`, which consists of multiple {class}`xarray.DataArray`. Each of these {class}`xarray.DataArray`s correspond to one acquisition channel.
 
-It is important to understand, that this tutorial is Qblox specific with regards to setting up the hardware configuration, and setting up the physical wiring for the hardware, but the schedules and protocols and the return data formats are backend independent.
+It is important to understand, that this tutorial is Qblox-specific with regards to setting up the hardware configuration, and setting up the physical wiring for the hardware, but the schedules and protocols and the return data formats are backend independent.
 
 ### Initial setup
 
@@ -62,6 +63,9 @@ from quantify_scheduler.device_under_test.transmon_element import BasicTransmonE
 device = QuantumDevice("device")
 transmon0 = BasicTransmonElement("q0")
 transmon0.clock_freqs.readout(6e9)
+transmon0.clock_freqs.f01(5.8e9)
+transmon0.rxy.amp180(0.325)
+
 device.add_element(transmon0)
 transmon1 = BasicTransmonElement("q1")
 transmon1.clock_freqs.readout(6e9)
@@ -81,6 +85,7 @@ hardware_config = {
                  "portclock_configs": [
                      {"port": "q0:res", "clock": "q0.ro", "interm_freq": 0},
                      {"port": "q1:res", "clock": "q1.ro", "interm_freq": 0},
+                     {"port": "q0:mw", "clock" : "q0.01", "interm_freq": 0}
                  ]
              }
         }
@@ -122,7 +127,7 @@ time_of_flight = 148e-9
 
 ### Trace acquisition
 
-One of the simplest protocol is the trace (or scope) acquisition protocol. With this protocol, you can retrieve the input signal in very small timesteps (on nanosecond timescale) for a relatively long time (on microsecond timescale). In this subsection we will send out a DRAG pulse on the output, then measure it with the input of the QRM, and plot the retrieved data. The exact duration of the acquisition and sample times depend on the hardware.
+One of the simplest protocols is the trace (or scope) acquisition protocol. With this protocol, you can retrieve the input signal in very small timesteps (on nanosecond timescale) for a relatively long time (on microsecond timescale). In this subsection we will send out a DRAG pulse on the output, then measure it with the input of the QRM, and plot the retrieved data. The exact duration of the acquisition and sample times depend on the hardware.
 
 #### Setting up the schedule
 
@@ -236,11 +241,12 @@ axs.legend()
 plt.show()
 ```
 
+(sec-ssb)=
 ### Single-sideband integration acquisition
 
 The single-sideband integration protocol involves integrating the complex input signal over a given time period. The integration weight is a square window, and this window's length is the same as the acquisition length. The signal is demodulated using the specified clock before the integration happens.
 
-In this tutorial, we will send 4 square pulses out, and measure it in 4 separate bins, indexed by all combinations of `acq_channel=0,1` and `acq_index_<acq_channel>=0,1`. We will also send out purely real and imaginary pulses (or purely I and purely Q pulses), and observe that they appear as real and imaginary acquisitions. In case of single-sideband integration the integration happens after demodulation.
+In this tutorial, we will send 4 square pulses out, and measure it in 4 separate bins, indexed by all combinations of `acq_channel=0,1` and `acq_index_<acq_channel>=0,1`. We will also send out purely real and imaginary pulses (or purely I and purely Q pulses), and observe that they appear as real and imaginary acquisitions. In the case of single-sideband integration the integration happens after demodulation.
 
 
 Typically, different acquisition channels are usually set up to refer to different qubits. However, in our simple example, we only use a single qubit port-clock combination for both acquisition channels.
@@ -299,7 +305,7 @@ pulse_and_acquisition(pulse_level=0.25,   acq_channel=1, acq_index=0, schedule=s
 pulse_and_acquisition(pulse_level=0.25j,  acq_channel=1, acq_index=1, schedule=schedule)
 ```
 
-Notice, that the amplitude is double in case of `acq_channel=1` compared to `acq_channel=0`. Also, the amplitude is complex: in case `acq_index_<acq_channel>=0` the amplitude is real, and in case `acq_index_<acq_channel>=1` the amplitude is imaginary.
+Notice, that the amplitude is double in the case of `acq_channel=1` compared to `acq_channel=0`. Also, the amplitude is complex: in case `acq_index_<acq_channel>=0` the amplitude is real, and in case `acq_index_<acq_channel>=1` the amplitude is imaginary.
 
 ```{code-cell} ipython3
 ---
@@ -365,7 +371,7 @@ As expected, the single side band integration produced a single complex number i
 To determine the number of times you want the `quantify-scheduler` to execute the schedule, you can set the `repetitions` argument or attribute for the `Schedule` object. By specifying a value for `repetitions`, you can control the number of times the schedule will run. For example, if you set `repetitions` to `8`, the following code snippet demonstrates a schedule that would execute eight times:
 
 
-```{code-block} python
+```{code-block} ipython3
 schedule = Schedule("Repeated schedule", repetitions=8)
 ```
 
@@ -377,7 +383,7 @@ Important: mixing bin modes is not allowed and all bin modes must be the same fo
 
 To specify which bin mode you would like to use, set the `bin_mode` argument for each acquisition operation. By default, they are set to `BinMode.AVERAGE`.
 
-```{code-block} python
+```{code-block} ipython3
 from quantify_scheduler.enums import BinMode
 
 schedule.add(
@@ -461,6 +467,198 @@ acquisition[0].sel(repetition=1)
 
 As expected, it has only two values, and the value of `acq_index_<acq_channel>=1` is double that of `acq_index_<acq_channel>=0`.
 
+### Thresholded acquisition
+With thresholded acquisition, we can map a complex input signal to either a 0 or a 1, by comparing the data to a threshold value. It is similar to the {ref}`single sideband integration protocol <sec-ssb>` described above, but after integration the I-Q data points are first rotated by an angle and then compared to a threshold value to assign the results to either a "0" or to a "1". See the illustration below.
+
+```{figure} /images/thresholded_acquisition_explanation.svg
+:align: center
+
+Illustration of the acquisition threshold.
+```
+
+Here the threshold line is controlled by the qubit settings: `acq_rotation` and `acq_threshold`. By default (left figure) we have `acq_rotation=0` and `acq_threshold=0`, where every measured (integrated) data point with I<0 is assigned the state "0", and the remaining data points are assigned the state "1". The first setting, `acq_rotation`, rotates the threshold line by an angle in degrees (0 - 360), clockwise. The second setting, `acq_threshold`, sets the threshold that is compared to the rotated integrated acquisition result.
+
+```{admonition} Note
+Thresholded acquisition is currently only supported by the Qblox backend.
+
+The `qblox-instruments` parameter `thresholded_acq_threshold` corresponds to a voltage obtained from an integrated acquisition, **before** normalizing with respect to the integration length.
+
+The `quantify-scheduler` parameter `acq_threshold` corresponds to an acquired voltage **after** normalizing with respect to the integration length (e.g. as obtained from a single side band integration).
+```
+
+#### Setting up the schedule
+
+Let's imagine a simple experiment where we prepare a qubit in the ground state, apply a {math}`\pi`-rotation and then measure the outcome. This experiment is then repeated 200 times. The corresponding schedule would look like:
+
+```{code-cell} ipython3
+:tags: [remove-output]
+
+from quantify_scheduler.operations.gate_library import Reset, X
+
+pulse_duration = 1e-6
+pulse_level = 0.25
+
+schedule = Schedule("ssb_acquisition", repetitions=200)
+schedule.add(Reset("q0"))
+schedule.add(X("q0"))
+schedule.add(
+    SquarePulse(
+        duration=pulse_duration,
+        amp=pulse_level,
+        port="q0:res",
+        clock="q0.ro",
+    ),
+    rel_time=1e-6,
+)
+schedule.add(
+    SSBIntegrationComplex(
+        t0=time_of_flight,
+        duration=pulse_duration,
+        port="q0:res",
+        clock="q0.ro",
+        acq_channel=0,
+        acq_index=0,
+        bin_mode=BinMode.APPEND,
+    ),
+    ref_pt="start",
+    rel_time=time_of_flight
+)
+```
+
+```{code-cell} ipython3
+---
+tags: [remove-cell]
+---
+
+from scipy.stats import norm
+import numpy as np
+np.random.seed(0)
+
+x = 0.1 + 0.03j
+y = -0.15 - 0.1j
+s = 0.03
+
+i = np.concatenate(
+    (norm.rvs(np.real(x), s, 100),
+    norm.rvs(np.real(y), s, 100))
+)
+q = np.concatenate((
+    norm.rvs(np.imag(x), s, 100),
+    norm.rvs(np.imag(y), s, 100)
+))
+
+b = -np.real(y-x)/np.imag(y-x)
+a = -1/2*np.real(x+y)*b
+rot = np.arctan(-b)-np.pi/2
+threshold = -a*b/np.sqrt(1+b*b)
+
+dummy_slot_idx = 1
+cluster.delete_dummy_binned_acquisition_data(slot_idx=dummy_slot_idx, sequencer=0)
+
+dummy_data_0 = [
+        DummyBinnedAcquisitionData(data=(1e3*a, 1e3*b), thres=0, avg_cnt=0)
+        for a, b in zip(i,q)
+]
+cluster.set_dummy_binned_acquisition_data(slot_idx=dummy_slot_idx, sequencer=0, acq_index_name="0", data=dummy_data_0)
+
+```
+
+Next, after compiling the schedule and retrieving the acquisitions from the hardware,
+
+```{code-cell} ipython3
+
+compiler = SerialCompiler(name="compiler")
+compiled_schedule = compiler.compile(schedule=schedule, config=device.generate_compilation_config())
+
+instrument_coordinator.prepare(compiled_schedule)
+instrument_coordinator.start()
+instrument_coordinator.wait_done(timeout_sec=10)
+
+acquisition = instrument_coordinator.retrieve_acquisition()
+```
+
+we might obtain the following data:
+
+```{code-cell} ipython3
+threshold, rotation = -0.043, 332.5
+plt.scatter(np.real(acquisition[0]), np.imag(acquisition[0]))
+plt.axline((0, threshold*np.cos(np.deg2rad(rotation))), slope = 1/np.tan(np.deg2rad(rotation)))
+plt.xlabel("I(V)")
+plt.ylabel("Q(V)")
+plt.show()
+```
+
+Where the two clusters of data correspond to the two qubit states of `q0`: {math}`|0\rangle` and {math}`|1\rangle`. The threshold line was chosen as the bisector of the centroids of the two clusters of data. 
+
+To assign each cluster to one state, we can set the qubit parameters {attr}`BasicTransmonElement.measure.acq_threshold` and {attr}`BasicTransmonElement.measure.acq_rotation` and run the experiment with the `ThresholdedAcquisition` protocol.
+
+```{code-cell} ipython3
+---
+tags: ['remove-output']
+---
+from quantify_scheduler.operations.acquisition_library import ThresholdedAcquisition
+
+# Set the threshold values
+transmon0.measure.acq_threshold(-0.043)
+transmon0.measure.acq_rotation(332.5)
+
+thres_acq_sched = Schedule("thresholded_acquisition", repetitions=200)
+thres_acq_sched.add(Reset("q0"))
+thres_acq_sched.add(X("q0"))
+thres_acq_sched.add(
+    SquarePulse(
+        duration=pulse_duration,
+        amp=pulse_level,
+        port="q0:res",
+        clock="q0.ro",
+    ),
+    rel_time=1e-6,
+)
+thres_acq_sched.add(
+    ThresholdedAcquisition(
+        t0=time_of_flight,
+        duration=pulse_duration,
+        port="q0:res",
+        clock="q0.ro",
+        acq_channel=0,
+        acq_index=0,
+        bin_mode=BinMode.APPEND,
+    ),
+    ref_pt="start",
+    rel_time=time_of_flight
+)
+
+compiler = SerialCompiler(name="compiler")
+compiled_schedule = compiler.compile(schedule=thres_acq_sched, config=device.generate_compilation_config())
+
+instrument_coordinator.prepare(compiled_schedule)
+instrument_coordinator.start()
+instrument_coordinator.wait_done(timeout_sec=10)
+
+acquisition = instrument_coordinator.retrieve_acquisition()
+acquisition
+```
+
+```{code-cell} ipython3
+---
+tags: ['remove-input']
+---
+# qblox-instruments doesn't support retrieving dummy thresholded data yet.
+import xarray as xr
+array = np.concatenate((np.ones(100), np.zeros(100)))
+np.random.shuffle(array)
+acquisition[0] = xr.DataArray(array.reshape((200,1)), dims=['repetitions', 'acq_index_0'])
+acquisition
+```
+The retrieved dataset contains the integrated acquired results and contains in this case equal amounts of 0s and 1s (corresponding to the two clusters).
+
+```{code-cell} ipython3
+print("state 0: ", sum(acquisition[0].values==0))
+print("state 1: ", sum(acquisition[0].values==1))
+```
+
+The above schedule was run in the bin mode `BinMode.APPEND`, rerunning the schedule with `BinMode.AVERAGE` will average the thresholded values and in this case produce the single number, 0.5.
+
 ### Trigger count acquisition
 
 The trigger count acquisition protocol is used for measuring how many times the input signal goes over some limit. This protocol is used, for example, in the case of an NV center type of qubit, or other types of qubit, where counting the number of photons (indirectly as an electrical signal) is important.
@@ -469,7 +667,7 @@ The Trigger Count protocol in `quantify-scheduler` offers two bin modes: average
 
 In the append bin mode, the resulting data will be a list of 1s, with the length of the list corresponding to the number of triggers that occurred during the acquisition. For example, if there were three triggers, the result would be a list with three 1s: `[1, 1, 1]`.
 
-In the average bin mode, the result is a distribution, mapping from the count numbers to the number of occurrences for each count numbers. It provides insights into the overall occurrence of triggers when running the acquisition multiple times. Let's consider an example where we execute a schedule three times:
+In the average bin mode, the result is a distribution, mapping from the count numbers to the number of occurrences for each count number. It provides insights into the overall occurrence of triggers when running the acquisition multiple times. Let's consider an example where we execute a schedule three times:
 
 - during the 1st run, three triggers are acquired
 - during the 2nd run, one trigger is acquired,

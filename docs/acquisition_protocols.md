@@ -89,7 +89,7 @@ channel: acquisition index (number of an acquisition in a schedule) and trace in
 (that corresponds to time from the start of the acquisition).
 All the dimension names should be suffixed with the acquisition channel to avoid
 conflicts while merging the datasets.
-It is recommended to annotate the trace index dimension with a coordinate that describes
+It is recommended to annotate the trace index dimension with a coordinate that describes the
 time since the start of the acquisition.
 For example, if two acquisition channels read out once, the resulting dataset should have
 the following structure:
@@ -129,7 +129,7 @@ repetition and acquisition index.
 All the dimension names except repetition should be suffixed with the acquisition
 channel to avoid conflicts while merging the datasets, the repetition dimension must be
 named `"repetition"`.
-For example two acquisition channels of which acquisition channel 0 read out three
+For example, two acquisition channels of which acquisition channel 0 read out three
 times and acquisition channel two read out two times, the resulting dataset should have
 the following structure in `BinMode.APPEND`:
 
@@ -168,15 +168,45 @@ xr.Dataset(
 )
 ```
 
+## Thresholded Acquisition
+
+- Referred to as `"ThresholdedAcquisition"`.
+- Supported by the {mod}`Qblox <quantify_scheduler.backends.qblox>` backend.
+
+This acquisition protocol is similar to the {ref}`SSB complex integration <sec-acquisition-protocols-ssb-integration-complex>`, but in this case, the obtained results are compared against a threshold value to obtain 0 or 1. The purpose of this protocol is to discriminate between qubit states. 
+
+For example, when acquiring on a single acquisition channel with `BinMode.APPEND` and `repetitions=12`, the corresponding dataset could look like:
+```{code-cell} ipython3
+---
+tags: [hide-input]
+---
+thresholded_data = np.array([0,0,1,0,1,0,0,1,1,0,0,1])
+xr.Dataset(
+    {0: xr.DataArray(thresholded_data.reshape(1,12), dims = ['acq_index_0', 'repetitions'])}
+)
+```
+
+In using `BinMode.AVERAGE`, the corresponding dataset could like:
+
+```{code-cell} ipython3
+---
+tags: [hide-input]
+---
+xr.Dataset(
+    {0: xr.DataArray(np.mean(thresholded_data, keepdims=1), dims = ['acq_index_0'])}
+
+)
+```
+
 (sec-acquisition-protocols-numerical-weighted-integration-complex)=
 ## Numerical Weighted Complex Integration
 
 - Referred to as `"NumericalWeightedIntegrationComplex"`.
-- Supported by {mod}`Qblox <quantify_scheduler.backends.qblox>`.
+- Supported by the {mod}`Qblox <quantify_scheduler.backends.qblox>` backend.
 
 Equivalent to
 {ref}`SSB complex integration <sec-acquisition-protocols-ssb-integration-complex>`,
-but instead of a simple average of a demodulated signal weighted average is taken.
+but instead of a simple average of a demodulated signal, a weighted average is taken.
 The dataset format is also the same.
 
 Integration weights should normally be calibrated in a separate experiment

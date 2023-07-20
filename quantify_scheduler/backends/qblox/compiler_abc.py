@@ -4,7 +4,6 @@
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
-import dataclasses
 import json
 import logging
 import warnings
@@ -19,7 +18,6 @@ from typing import (
     Dict,
     Generator,
     List,
-    Literal,
     Optional,
     Set,
     Tuple,
@@ -310,7 +308,7 @@ class Sequencer:
         connected_outputs: Optional[Union[Tuple[int], Tuple[int, int]]],
         connected_inputs: Optional[Union[Tuple[int], Tuple[int, int]]],
         io_mode: enums.IoMode,
-        seq_settings: Dict[str, Any],
+        sequencer_cfg: Dict[str, Any],
         latency_corrections: Dict[str, float],
         lo_name: Optional[str] = None,
         downconverter_freq: Optional[float] = None,
@@ -330,7 +328,7 @@ class Sequencer:
         portclock
             Tuple that specifies the unique port and clock combination for this
             sequencer. The first value is the port, second is the clock.
-        seq_settings
+        sequencer_cfg
             Sequencer settings dictionary.
         latency_corrections
             Dict containing the delays for each port-clock combination.
@@ -369,7 +367,7 @@ class Sequencer:
 
         self.register_manager = register_manager.RegisterManager()
 
-        self.instruction_generated_pulses_enabled = seq_settings.get(
+        self.instruction_generated_pulses_enabled = sequencer_cfg.get(
             "instruction_generated_pulses_enabled", None
         )
         if self.instruction_generated_pulses_enabled is not None:
@@ -384,20 +382,20 @@ class Sequencer:
             self.instruction_generated_pulses_enabled = False
 
         self._settings = SequencerSettings.initialize_from_config_dict(
-            seq_settings=seq_settings,
+            sequencer_cfg=sequencer_cfg,
             connected_outputs=connected_outputs,
             connected_inputs=connected_inputs,
         )
 
         self._io_mode = io_mode
 
-        self.qasm_hook_func: Optional[Callable] = seq_settings.get(
+        self.qasm_hook_func: Optional[Callable] = sequencer_cfg.get(
             "qasm_hook_func", None
         )
         """Allows the user to inject custom Q1ASM code into the compilation, just prior
          to returning the final string."""
 
-        portclock_key = f"{seq_settings['port']}-{seq_settings['clock']}"
+        portclock_key = f"{sequencer_cfg['port']}-{sequencer_cfg['clock']}"
         self.latency_correction: float = latency_corrections.get(portclock_key, 0)
         """Latency correction accounted for by delaying the start of the program."""
 
@@ -664,6 +662,18 @@ class Sequencer:
                         f"clock {self.clock}, which corresponds to {self.name} of "
                         f"{self.parent.name}."
                     )
+
+        elif acq_metadata.acq_protocol == "ThresholdedAcquisition":
+            self._settings.thresholded_acq_rotation = acquisition_infos[0].data.get(
+                "acq_rotation"
+            )
+
+            integration_length = (
+                acquisition_infos[0].data.get("integration_length") * 1e9
+            )
+            self._settings.thresholded_acq_threshold = (
+                acquisition_infos[0].data.get("acq_threshold") * integration_length
+            )
 
     def _generate_acq_declaration_dict(
         self,
@@ -1087,8 +1097,8 @@ class Sequencer:
                 wf_and_pr_dict=wf_and_prog, label=f"{self.port}_{self.clock}"
             )
 
-        seq_settings = self._settings.to_dict()
-        return seq_settings
+        sequencer_cfg = self._settings.to_dict()
+        return sequencer_cfg
 
     def _decide_markers(self, operation) -> int:
         """
@@ -1318,7 +1328,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                         connected_outputs=connected_outputs,
                         connected_inputs=connected_inputs,
                         io_mode=io_mode,
-                        seq_settings=target,
+                        sequencer_cfg=target,
                         latency_corrections=self.latency_corrections,
                         lo_name=lo_name,
                         mix_lo=mix_lo,

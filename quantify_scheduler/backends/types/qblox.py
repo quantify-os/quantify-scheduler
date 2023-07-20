@@ -350,11 +350,15 @@ class SequencerSettings(DataClassJsonMixin):
     """
     Sequencer level settings.
 
-    In the drivers these settings are typically recognized by parameter names of the
-    form ``"sequencer_{index}_{setting}"``. These settings are set
-    once at the start and will remain unchanged after. Meaning that these correspond to
-    the "slow" QCoDeS parameters and not settings that are changed dynamically by the
-    sequencer.
+    In the drivers these settings are typically recognized by parameter names of
+    the form ``"sequencer_{index}_{setting}"``. These settings are set once at
+    the start and will remain unchanged after. Meaning that these correspond to
+    the "slow" QCoDeS parameters and not settings that are changed dynamically
+    by the sequencer.
+
+    These settings are mostly defined in the hardware configuration under each
+    port-clock key combination or in some cases through the device configuration
+    (e.g. parameters related to thresholded acquisition).
     """
 
     nco_en: bool
@@ -392,6 +396,10 @@ class SequencerSettings(DataClassJsonMixin):
     sequencer."""
     seq_fn: Optional[str] = None
     """Filename of JSON file containing a dump of the waveforms and program."""
+    thresholded_acq_threshold: Optional[float] = None
+    """The sequencer discretization threshold for discretizing the phase rotation result."""
+    thresholded_acq_rotation: Optional[float] = None
+    """The sequencer integration result phase rotation in degrees."""
     ttl_acq_input_select: Optional[int] = None
     """Selects the input used to compare against the threshold value in the TTL trigger acquisition path."""
     ttl_acq_threshold: Optional[float] = None
@@ -402,7 +410,7 @@ class SequencerSettings(DataClassJsonMixin):
     @classmethod
     def initialize_from_config_dict(
         cls,
-        seq_settings: Dict[str, Any],
+        sequencer_cfg: Dict[str, Any],
         connected_outputs: Optional[Union[Tuple[int], Tuple[int, int]]],
         connected_inputs: Optional[Union[Tuple[int], Tuple[int, int]]],
     ) -> SequencerSettings:
@@ -412,7 +420,7 @@ class SequencerSettings(DataClassJsonMixin):
 
         Parameters
         ----------
-        seq_settings
+        sequencer_cfg : dict
             The sequencer configuration dict.
         connected_outputs
             The outputs connected to the sequencer.
@@ -421,8 +429,8 @@ class SequencerSettings(DataClassJsonMixin):
 
         Returns
         -------
-        :
-            The class with initial values.
+        : SequencerSettings
+            A SequencerSettings instance with initial values.
         """
 
         T = TypeVar("T", int, float)
@@ -435,7 +443,9 @@ class SequencerSettings(DataClassJsonMixin):
             max_value: T,
         ) -> T:
             val = settings.get(param_name, default_value)
-            if val < min_value or val > max_value:
+            if val is None:
+                return val
+            elif val < min_value or val > max_value:
                 raise ValueError(
                     f"Attempting to configure {param_name} to {val} for the sequencer "
                     f"specified with port {settings.get('port', '[port invalid!]')} and"
@@ -444,57 +454,78 @@ class SequencerSettings(DataClassJsonMixin):
                 )
             return val
 
-        modulation_freq: Optional[float] = seq_settings.get("interm_freq", None)
+        modulation_freq: Optional[float] = sequencer_cfg.get("interm_freq", None)
         nco_en: bool = (
             modulation_freq is not None and modulation_freq != 0
         )  # Allow NCO to be permanently disabled via `"interm_freq": 0` in the hardware config
 
-        mixer_amp_ratio = extract_and_verify_range(
-            param_name="mixer_amp_ratio",
-            settings=seq_settings,
-            default_value=1.0,
-            min_value=constants.MIN_MIXER_AMP_RATIO,
-            max_value=constants.MAX_MIXER_AMP_RATIO,
-        )
-        mixer_phase_error = extract_and_verify_range(
-            param_name="mixer_phase_error_deg",
-            settings=seq_settings,
-            default_value=0.0,
-            min_value=constants.MIN_MIXER_PHASE_ERROR_DEG,
-            max_value=constants.MAX_MIXER_PHASE_ERROR_DEG,
-        )
-        ttl_acq_threshold = seq_settings.get("ttl_acq_threshold", None)
-
         init_offset_awg_path_0 = extract_and_verify_range(
             param_name="init_offset_awg_path_0",
-            settings=seq_settings,
+            settings=sequencer_cfg,
             default_value=cls.init_offset_awg_path_0,
             min_value=-1.0,
             max_value=1.0,
         )
+
         init_offset_awg_path_1 = extract_and_verify_range(
             param_name="init_offset_awg_path_1",
-            settings=seq_settings,
+            settings=sequencer_cfg,
             default_value=cls.init_offset_awg_path_1,
             min_value=-1.0,
             max_value=1.0,
         )
+
         init_gain_awg_path_0 = extract_and_verify_range(
             param_name="init_gain_awg_path_0",
-            settings=seq_settings,
+            settings=sequencer_cfg,
             default_value=cls.init_gain_awg_path_0,
             min_value=-1.0,
             max_value=1.0,
         )
+
         init_gain_awg_path_1 = extract_and_verify_range(
             param_name="init_gain_awg_path_1",
-            settings=seq_settings,
+            settings=sequencer_cfg,
             default_value=cls.init_gain_awg_path_1,
             min_value=-1.0,
             max_value=1.0,
         )
 
-        settings = cls(
+        mixer_phase_error = extract_and_verify_range(
+            param_name="mixer_phase_error_deg",
+            settings=sequencer_cfg,
+            default_value=0.0,
+            min_value=constants.MIN_MIXER_PHASE_ERROR_DEG,
+            max_value=constants.MAX_MIXER_PHASE_ERROR_DEG,
+        )
+
+        mixer_amp_ratio = extract_and_verify_range(
+            param_name="mixer_amp_ratio",
+            settings=sequencer_cfg,
+            default_value=1.0,
+            min_value=constants.MIN_MIXER_AMP_RATIO,
+            max_value=constants.MAX_MIXER_AMP_RATIO,
+        )
+
+        thresholded_acq_threshold = extract_and_verify_range(
+            param_name="thresholded_acq_threshold",
+            settings=sequencer_cfg,
+            default_value=cls.thresholded_acq_threshold,
+            min_value=constants.MIN_DISCRETIZATION_THRESHOLD_ACQ,
+            max_value=constants.MAX_DISCRETIZATION_THRESHOLD_ACQ,
+        )
+
+        thresholded_acq_rotation = extract_and_verify_range(
+            param_name="thresholded_acq_rotation",
+            settings=sequencer_cfg,
+            default_value=cls.thresholded_acq_rotation,
+            min_value=constants.MIN_PHASE_ROTATION_ACQ,
+            max_value=constants.MAX_PHASE_ROTATION_ACQ,
+        )
+
+        ttl_acq_threshold = sequencer_cfg.get("ttl_acq_threshold", None)
+
+        sequencer_settings = cls(
             nco_en=nco_en,
             sync_en=True,
             connected_outputs=connected_outputs,
@@ -504,11 +535,13 @@ class SequencerSettings(DataClassJsonMixin):
             init_gain_awg_path_0=init_gain_awg_path_0,
             init_gain_awg_path_1=init_gain_awg_path_1,
             modulation_freq=modulation_freq,
-            mixer_corr_gain_ratio=mixer_amp_ratio,
             mixer_corr_phase_offset_degree=mixer_phase_error,
+            mixer_corr_gain_ratio=mixer_amp_ratio,
+            thresholded_acq_rotation=thresholded_acq_rotation,
+            thresholded_acq_threshold=thresholded_acq_threshold,
             ttl_acq_threshold=ttl_acq_threshold,
         )
-        return settings
+        return sequencer_settings
 
 
 class QbloxBaseDescription(DataStructure):

@@ -5,7 +5,7 @@
 ### Breaking changes
 
 ### Merged branches and closed issues
-
+- Acquisition - New acquisition protocol for thresholded acquisitions: `ThresholdedAcquisition` (!617)
 - Pin version of `dataclasses-json` due to breaking pipelines. (!727)
 - Schedulables - Store references to `Schedulables` in timing contraints as `string` rather than `Schedulable`. (!717)
 

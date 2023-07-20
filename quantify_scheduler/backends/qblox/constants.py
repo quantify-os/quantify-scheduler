@@ -65,6 +65,14 @@ MAX_SAMPLE_SIZE_SCOPE_ACQUISITIONS: int = 16384
 """Maximal amount of scope trace acquisition datapoints returned."""
 MAX_SAMPLE_SIZE_WAVEFORMS: int = 16384
 """Maximal amount of samples in the waveforms to be uploaded to a sequencer."""
+MIN_PHASE_ROTATION_ACQ = 0
+"""Minimum value of the sequencer integration result phase rotation in degrees."""
+MAX_PHASE_ROTATION_ACQ = 360
+"""Maximum value of the sequencer integration result phase rotation in degrees."""
+MIN_DISCRETIZATION_THRESHOLD_ACQ = -16777212.0
+"""Minimum value of the sequencer discretization threshold for discretizing the phase rotation result."""
+MAX_DISCRETIZATION_THRESHOLD_ACQ = 16777212.0
+"""Maximum value of the sequencer discretization threshold for discretizing the phase rotation result."""
 MAX_NUMBER_OF_BINS: int = 131072
 """Number of bins available in the Qblox sequencers."""
 GENERIC_IC_COMPONENT_NAME: str = "generic"

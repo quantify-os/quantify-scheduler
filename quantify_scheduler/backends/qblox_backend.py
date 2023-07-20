@@ -17,6 +17,7 @@ from quantify_scheduler.backends.graph_compilation import (
     HardwareOptions,
 )
 from quantify_scheduler.backends.qblox import compiler_container, constants, helpers
+from quantify_scheduler.helpers.collections import find_inner_dicts_containing_key
 from quantify_scheduler.operations.pulse_factories import long_square_pulse
 from quantify_scheduler.operations.stitched_pulse import StitchedPulse
 
@@ -202,6 +203,16 @@ def hardware_compile(
     elif config is not None:
         # Support for (deprecated) calling with hardware_cfg as positional argument.
         hardware_cfg = config
+
+    # To be removed when hardware config validation is implemented. See
+    # https://gitlab.com/groups/quantify-os/-/epics/1
+    for faulty_key in ["thresholded_acq_rotation", "thresholded_acq_threshold"]:
+        if find_inner_dicts_containing_key(hardware_cfg, faulty_key):
+            raise KeyError(
+                f"'{faulty_key}' found in hardware configuration. Please configure "
+                "thresholded acquisition via the device elements. See documentation "
+                "for `ThresholdedAcquisition` for more information."
+            )
 
     if "latency_corrections" in hardware_cfg.keys():
         # Important: currently only used to validate the input, should also be

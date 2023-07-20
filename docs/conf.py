@@ -417,6 +417,8 @@ nitpick_ignore = [
     ("py:class", "Literal[Zurich Instruments]"),
     ("py:class", "typing.AnnotatedAlias"),
     ("py:obj", "quantify_scheduler.structure.NDArray"),
+    ("py:attr", "BasicTransmonElement.measure.acq_threshold"),
+    ("py:attr", "BasicTransmonElement.measure.acq_rotation"),
 ]  # Tuple[str, str], ignore certain warnings
 
 nitpick_ignore_regex = [

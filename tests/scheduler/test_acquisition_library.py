@@ -16,6 +16,7 @@ from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.acquisition_library import (
     NumericalWeightedIntegrationComplex,
     SSBIntegrationComplex,
+    ThresholdedAcquisition,
     Trace,
     TriggerCount,
 )
@@ -213,6 +214,11 @@ def test_weighted_acquisition_deprecated():
             clock="q0.ro",
             duration=100e-9,
         ),
+        ThresholdedAcquisition(
+            port="q0:res",
+            clock="q0.ro",
+            duration=100e-9,
+        ),
     ],
 )
 def test__repr__(operation: Operation):
@@ -249,6 +255,11 @@ def test__repr__(operation: Operation):
             clock="q0.ro",
             duration=100e-9,
         ),
+        ThresholdedAcquisition(
+            port="q0:res",
+            clock="q0.ro",
+            duration=100e-9,
+        ),
     ],
 )
 def test__str__(operation: Operation):
@@ -276,6 +287,11 @@ def test__str__(operation: Operation):
             clock="q0.ro",
         ),
         TriggerCount(
+            port="q0:res",
+            clock="q0.ro",
+            duration=100e-9,
+        ),
+        ThresholdedAcquisition(
             port="q0:res",
             clock="q0.ro",
             duration=100e-9,
@@ -330,6 +346,11 @@ def test_deserialize(operation: Operation):
             duration=100e-9,
         ),
         TriggerCount(
+            port="q0:res",
+            clock="q0.ro",
+            duration=100e-9,
+        ),
+        ThresholdedAcquisition(
             port="q0:res",
             clock="q0.ro",
             duration=100e-9,

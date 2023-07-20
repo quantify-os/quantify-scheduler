@@ -8,7 +8,7 @@ from __future__ import annotations
 import warnings
 from copy import deepcopy
 from itertools import permutations
-from typing import Dict
+from typing import Any, Dict
 
 import numpy as np
 from quantify_scheduler.backends.graph_compilation import (
@@ -16,6 +16,7 @@ from quantify_scheduler.backends.graph_compilation import (
     DeviceCompilationConfig,
     OperationCompilationConfig,
 )
+from quantify_scheduler.operations.measurement_factories import dispersive_measurement
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.schedule import Schedule
@@ -83,7 +84,7 @@ def compile_circuit_to_device(
         device_cfg = config
 
     if device_cfg is None:
-        # this is a special case to be supported to enable compilation for schedules
+        # This is a special case to be supported to enable compilation for schedules
         # that are defined completely at the quantum-device layer and require no
         # circuit to device compilation.
         # A better solution would be to omit skip this compile call in a backend,
@@ -96,42 +97,49 @@ def compile_circuit_to_device(
     schedule = deepcopy(schedule)
 
     for operation in schedule.operations.values():
-        # if operation is a valid pulse or acquisition it will not attempt to add
-        # pulse/acquisition info in the lines below.
-        if operation.valid_pulse or operation.valid_acquisition:
-            continue
+        # If operation is a valid pulse or acquisition it will not attempt to
+        # add pulse/acquisition info in the lines below (if operation.valid_gate
+        # will not work here for e.g. Measure, which is also a valid
+        # acquisition)
 
-        qubits = operation.data["gate_info"]["qubits"]
-        operation_type = operation.data["gate_info"]["operation_type"]
+        if not (operation.valid_pulse or operation.valid_acquisition):
+            qubits = operation.data["gate_info"]["qubits"]
+            operation_type = operation.data["gate_info"]["operation_type"]
 
-        # single qubit operations
-        if len(qubits) == 1:
-            _compile_single_qubit(
-                operation=operation,
-                qubit=qubits[0],
-                operation_type=operation_type,
-                device_cfg=device_cfg,
-            )
+            # single qubit operations
+            if len(qubits) == 1:
+                _compile_single_qubit(
+                    operation=operation,
+                    qubit=qubits[0],
+                    operation_type=operation_type,
+                    device_cfg=device_cfg,
+                )
 
-        # it is a two-qubit operation if the operation not in the qubit config
-        elif len(qubits) == 2 and operation_type not in device_cfg.elements[qubits[0]]:
-            _compile_two_qubits(
-                operation=operation,
-                qubits=qubits,
-                operation_type=operation_type,
-                device_cfg=device_cfg,
-            )
-        # we only support 2-qubit operations and single-qubit operations.
-        # some single-qubit operations (reset, measure) can be expressed as acting
-        # on multiple qubits simultaneously. That is covered through this for-loop.
-        else:
-            _compile_multiplexed(
-                operation=operation,
-                qubits=qubits,
-                operation_type=operation_type,
-                device_cfg=device_cfg,
-            )
+            # it is a two-qubit operation if the operation not in the qubit config
+            elif (
+                len(qubits) == 2
+                and operation_type not in device_cfg.elements[qubits[0]]
+            ):
+                _compile_two_qubits(
+                    operation=operation,
+                    qubits=qubits,
+                    operation_type=operation_type,
+                    device_cfg=device_cfg,
+                )
+            # we only support 2-qubit operations and single-qubit operations.
+            # some single-qubit operations (reset, measure) can be expressed as acting
+            # on multiple qubits simultaneously. That is covered through this for-loop.
+            else:
+                _compile_multiplexed(
+                    operation=operation,
+                    qubits=qubits,
+                    operation_type=operation_type,
+                    device_cfg=device_cfg,
+                )
 
+        _update_acquisition_info_from_device_config(
+            operation=operation, device_compilation_config=device_cfg
+        )
     return schedule
 
 
@@ -242,6 +250,37 @@ def set_pulse_and_acquisition_clock(
             verified_clocks.append(clock)
 
     return schedule
+
+
+def _update_acquisition_info_from_device_config(
+    operation: dict[Any, Any], device_compilation_config: DeviceCompilationConfig
+) -> None:
+    """
+    Update an operation's `acquisition_info` from the device configuration.
+
+    Parameters
+    ----------
+    operation : dict
+        The operation containing acquisition info.
+    device_compilation_config : DeviceCompilationConfig
+        The device compilation configuration.
+
+    Returns
+    -------
+    None
+
+    """
+    for acquisition_info in operation["acquisition_info"]:
+        if acquisition_info["protocol"] == "ThresholdedAcquisition":
+            qubit = acquisition_info["clock"].split(".")[0]
+            device_element = device_compilation_config.elements.get(qubit)
+            if device_element["measure"].factory_func != dispersive_measurement:
+                continue
+
+            factory_kwargs = device_element["measure"].factory_kwargs
+            acquisition_info["acq_rotation"] = factory_kwargs.get("acq_rotation", 0)
+            acquisition_info["acq_threshold"] = factory_kwargs.get("acq_threshold", 0)
+            acquisition_info["integration_length"] = factory_kwargs.get("acq_duration")
 
 
 def _valid_clock_in_schedule(clock, device_cfg, schedule, operation) -> bool:

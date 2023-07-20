@@ -179,7 +179,6 @@ class WeightedIntegratedComplex(
         NotImplementedError
         """
         if phase != 0:
-            # Because of how clock interfaces were changed.
             raise NotImplementedError("Non-zero phase not yet implemented")
 
         super().__init__(name="WeightedIntegratedComplex")
@@ -287,7 +286,6 @@ class SSBIntegrationComplex(AcquisitionOperation):  # pylint: disable=too-many-a
         }
 
         if phase != 0:
-            # Because of how clock interfaces were changed.
             raise NotImplementedError("Non-zero phase not yet implemented")
 
         super().__init__(name="SSBIntegrationComplex")
@@ -351,6 +349,137 @@ def _is_increasing_at_constant_rate(array: Sequence[float]) -> bool:
     is_constant_rate = np.all(np.isclose(diff, diff[0], atol=1e-10))
     is_increasing = diff[0] > 0
     return bool(is_constant_rate and is_increasing)
+
+
+class ThresholdedAcquisition(AcquisitionOperation):
+    """
+    Create a new instance of ThresholdedAcquisition.
+
+    This acquisition protocol is similar to the :class:`~.SSBIntegrationComplex`
+    acquisition protocol, but the complex result is now rotated and thresholded
+    to produce a "0" or a "1", as controlled by the parameters for rotation
+    angle `<qubit>.measure.acq_rotation` and threshold value
+    `<qubit>.measure.acq_threshold` in the device configuration (see example
+    below).
+
+
+    The rotation angle and threshold value for each qubit can be set through
+    the device configuration
+
+    .. admonition:: Note
+
+        Thresholded acquisition is currently only supported by the Qblox
+        backend.
+
+    .. admonition:: Examples
+
+        .. jupyter-execute::
+
+            from quantify_scheduler import Schedule
+            from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
+            from quantify_scheduler.operations.acquisition_library import ThresholdedAcquisition
+
+            # set up qubit
+            qubit = BasicTransmonElement("q0")
+            qubit.clock_freqs.readout(8.0e9)
+
+            # set rotation and threshold value
+            rotation, threshold = 20, -0.1
+            qubit.measure.acq_rotation(rotation)
+            qubit.measure.acq_threshold(threshold)
+
+            # basic schedule
+            schedule = Schedule("thresholded acquisition")
+            schedule.add(ThresholdedAcquisition(port="q0:res", clock="q0.ro", duration=1e-6))
+
+
+    Parameters
+    ----------
+    port : str
+        The acquisition port.
+    clock : str
+        The clock used to demodulate the acquisition.
+    duration : float
+        The acquisition duration in seconds.
+    acq_channel : int
+        The data channel in which the acquisition is stored, by default 0.
+        Describes the "where" information of the  measurement, which
+        typically corresponds to a qubit idx.
+    acq_index : int
+        The data register in which the acquisition is stored, by default 0.
+        Describes the "when" information of the measurement, used to label
+        or tag individual measurements in a large circuit. Typically
+        corresponds to the setpoints of a schedule (e.g., tau in a T1
+        experiment).
+    bin_mode : BinMode or str
+        Describes what is done when data is written to a register that
+        already contains a value. Options are "append" which appends the
+        result to the list or "average" which stores the weighted average
+        value of the new result and the old register value, by default
+        BinMode.AVERAGE.
+    phase : float
+        The phase of the pulse and acquisition in degrees, by default 0.
+    t0 : float
+        The acquisition start time in seconds, by default 0.
+    """
+
+    def __init__(
+        self,
+        port: str,
+        clock: str,
+        duration: float,
+        acq_channel: int = 0,
+        acq_index: int = 0,
+        bin_mode: Union[BinMode, str] = BinMode.AVERAGE,
+        phase: float = 0,
+        t0: float = 0,
+    ) -> None:
+        waveform_i = {
+            "port": port,
+            "clock": clock,
+            "t0": t0,
+            "duration": duration,
+            "wf_func": "quantify_scheduler.waveforms.square",
+            "amp": 1,
+        }
+
+        waveform_q = {
+            "port": port,
+            "clock": clock,
+            "t0": t0,
+            "duration": duration,
+            "wf_func": "quantify_scheduler.waveforms.square",
+            "amp": (0 + 1j),
+        }
+
+        if phase != 0:
+            raise NotImplementedError("Non-zero phase not yet implemented")
+
+        super().__init__(name="ThresholdedAcquisition")
+        self.data["acquisition_info"] = [
+            {
+                "waveforms": [waveform_i, waveform_q],
+                "t0": t0,
+                "clock": clock,
+                "port": port,
+                "duration": duration,
+                "phase": phase,
+                "acq_channel": acq_channel,
+                "acq_index": acq_index,
+                "bin_mode": bin_mode,
+                "acq_return_type": int,
+                "protocol": "ThresholdedAcquisition",
+                # The following are set during compile_circuit_to_device
+                "acq_threshold": None,
+                "acq_rotation": None,
+                "integration_length": None,
+            },
+        ]
+        self._update()
+
+    def __str__(self) -> str:
+        acq_info = self.data["acquisition_info"][0]
+        return self._get_signature(acq_info)
 
 
 class NumericalWeightedIntegrationComplex(

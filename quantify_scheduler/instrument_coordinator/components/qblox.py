@@ -667,6 +667,18 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
                 "ttl_acq_input_select",
                 settings.ttl_acq_input_select,
             )
+        if settings.thresholded_acq_rotation is not None:
+            self._set_parameter(
+                self.instrument[f"sequencer{seq_idx}"],
+                "thresholded_acq_rotation",
+                settings.thresholded_acq_rotation,
+            )
+        if settings.thresholded_acq_threshold is not None:
+            self._set_parameter(
+                self.instrument[f"sequencer{seq_idx}"],
+                "thresholded_acq_threshold",
+                settings.thresholded_acq_threshold,
+            )
 
     def _determine_scope_mode_acquisition_sequencer_and_channel(
         self, acquisition_metadata: Dict[str, AcquisitionMetadata]
@@ -896,6 +908,7 @@ class _QRMAcquisitionManager:
         protocol_to_function_mapping = {
             "WeightedIntegratedComplex": self._get_integration_data,
             "SSBIntegrationComplex": self._get_integration_amplitude_data,
+            "ThresholdedAcquisition": self._get_threshold_data,
             "Trace": self._get_scope_data,
             "TriggerCount": self._get_trigger_count_data,
         }
@@ -1127,45 +1140,66 @@ class _QRMAcquisitionManager:
 
     def _get_threshold_data(
         self,
+        acq_indices: list,
         acquisitions: dict,
-        acquisition_metadata: AcquisitionMetadata,  # pylint: disable=unused-argument
-        acq_duration: int,  # pylint: disable=unused-argument
+        acquisition_metadata: AcquisitionMetadata,
+        acq_duration: int,
         acq_channel: int = 0,
-        acq_index: int = 0,
-    ) -> float:
+    ) -> DataArray:
         """
         Retrieves the thresholded acquisition data associated with `acq_channel` and
         `acq_index`.
 
         Parameters
         ----------
-        acquisitions
+        acq_indices : list
+            Acquisition indices.
+        acquisitions : dict
             The acquisitions dict as returned by the sequencer.
-        acquisition_metadata
-            Not used in this function.
-        acq_duration
-            Not used in this function.
-        acq_channel
+        acquisition_metadata : AcquisitionMetadata
+            Acquisition metadata.
+        acq_duration : int
+            Duration of the acquisition. This needs to be specified.
+        acq_channel : int
             The `acq_channel` from which to get the data.
-        acq_index
-            The acquisition index.
 
         Returns
         -------
         :
-            The value of the thresholded acquisition for `acq_channel` and `acq_index`.
-            Should always be 0.0 <= val <= 1.0.
+            DataArray containing thresholded acquisition data.
         """
-        bin_data = self._get_bin_data(acquisitions, acq_channel)
-        data = bin_data["threshold"]
-
-        if acq_index > len(data):
-            raise ValueError(
-                f"Attempting to access acq_index {acq_index} on "
-                f"{self.parent.name} but only {len(data)} values found "
-                f"in acquisition data."
+        if acq_duration is None:
+            raise RuntimeError(
+                "Retrieving data failed. Expected the integration length to be defined,"
+                " but it is `None`."
             )
-        return data[acq_index]
+        acq_name = self._channel_index_to_channel_name(acq_channel)
+        bin_data = self._get_bin_data(
+            acquisitions=acquisitions, acq_channel=acq_channel
+        )
+        acquisitions_data = np.array(bin_data["threshold"])
+
+        acq_index_dim_name = f"acq_index_{acq_name}"
+
+        if acquisition_metadata.bin_mode == BinMode.AVERAGE:
+            return DataArray(
+                acquisitions_data.reshape((len(acq_indices),)),
+                dims=[acq_index_dim_name],
+                coords={acq_index_dim_name: acq_indices},
+            )
+        elif acquisition_metadata.bin_mode == BinMode.APPEND:
+            return DataArray(
+                acquisitions_data.reshape(
+                    (acquisition_metadata.repetitions, len(acq_indices))
+                ),
+                dims=["repetition", acq_index_dim_name],
+                coords={acq_index_dim_name: acq_indices},
+            )
+        else:
+            raise RuntimeError(
+                f"{acquisition_metadata.acq_protocol} acquisition protocol does not"
+                f" support bin mode {acquisition_metadata.bin_mode}."
+            )
 
     def _get_trigger_count_data(
         self,

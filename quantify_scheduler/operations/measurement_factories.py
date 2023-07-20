@@ -18,6 +18,7 @@ from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.acquisition_library import (
     NumericalWeightedIntegrationComplex,
     SSBIntegrationComplex,
+    ThresholdedAcquisition,
     Trace,
     TriggerCount,
 )
@@ -29,6 +30,7 @@ from quantify_scheduler.operations.pulse_library import (
 
 
 # pylint: disable=too-many-arguments
+# pylint: disable=unused-argument
 def dispersive_measurement(
     pulse_amp: float,
     pulse_duration: float,
@@ -39,19 +41,28 @@ def dispersive_measurement(
     acq_channel: int,
     acq_index: int,
     acq_protocol: Literal[
-        "SSBIntegrationComplex", "Trace", "NumericalWeightedIntegrationComplex"
+        "SSBIntegrationComplex",
+        "Trace",
+        "NumericalWeightedIntegrationComplex",
+        "ThresholdedAcquisition",
     ]
     | None,
     pulse_type: Literal["SquarePulse"] = "SquarePulse",
     bin_mode: BinMode | None = BinMode.AVERAGE,
     acq_protocol_default: Literal[
-        "SSBIntegrationComplex", "Trace", "NumericalWeightedIntegrationComplex"
+        "SSBIntegrationComplex",
+        "Trace",
+        "NumericalWeightedIntegrationComplex",
+        "ThresholdedAcquisition",
     ] = "SSBIntegrationComplex",
     reset_clock_phase: bool = True,
     reference_magnitude: Optional[ReferenceMagnitude] = None,
     acq_weights_a: List[complex] | np.ndarray | None = None,
     acq_weights_b: List[complex] | np.ndarray | None = None,
     acq_weights_sampling_rate: float | None = None,
+    # The following are set during compile_circuit_to_device
+    acq_rotation: float | None = None,
+    acq_threshold: float | None = None,
 ) -> Operation:
     """
     Generator function for a standard dispersive measurement.
@@ -100,24 +111,13 @@ def dispersive_measurement(
         # readout pulse
         device_op.add_acquisition(
             SSBIntegrationComplex(
-                duration=acq_duration,
-                t0=acq_delay,
-                acq_channel=acq_channel,
-                acq_index=acq_index,
                 port=port,
                 clock=clock,
+                duration=acq_duration,
+                acq_channel=acq_channel,
+                acq_index=acq_index,
                 bin_mode=bin_mode,
-            )
-        )
-    elif acq_protocol == "Trace":
-        device_op.add_acquisition(
-            Trace(
-                clock=clock,
-                duration=acq_duration,
                 t0=acq_delay,
-                acq_channel=acq_channel,
-                acq_index=acq_index,
-                port=port,
             )
         )
     elif acq_protocol == "NumericalWeightedIntegrationComplex":
@@ -144,14 +144,37 @@ def dispersive_measurement(
             )
         device_op.add_acquisition(
             NumericalWeightedIntegrationComplex(
+                port=port,
+                clock=clock,
                 weights_a=acq_weights_a,
                 weights_b=acq_weights_b,
                 weights_sampling_rate=acq_weights_sampling_rate,
-                port=port,
-                clock=clock,
                 acq_channel=acq_channel,
                 acq_index=acq_index,
                 bin_mode=bin_mode,
+                t0=acq_delay,
+            )
+        )
+    elif acq_protocol == "ThresholdedAcquisition":
+        device_op.add_acquisition(
+            ThresholdedAcquisition(
+                port=port,
+                clock=clock,
+                duration=acq_duration,
+                acq_channel=acq_channel,
+                acq_index=acq_index,
+                bin_mode=bin_mode,
+                t0=acq_delay,
+            )
+        )
+    elif acq_protocol == "Trace":
+        device_op.add_acquisition(
+            Trace(
+                port=port,
+                clock=clock,
+                duration=acq_duration,
+                acq_channel=acq_channel,
+                acq_index=acq_index,
                 t0=acq_delay,
             )
         )

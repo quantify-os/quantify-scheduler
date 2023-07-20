@@ -3,9 +3,9 @@
 """
 Types that support validation in Pydantic.
 
-Pydantic recognizes magic method ``__get_validators__`` to recieve additional
+Pydantic recognizes magic method ``__get_validators__`` to receive additional
 validators, that can be used, i.e., for custom serialization and deserialization.
-We implement several custom types here to tune behaviour of our models.
+We implement several custom types here to tune behavior of our models.
 
 See `Pydantic docs`_ for more information about implementing new types.
 

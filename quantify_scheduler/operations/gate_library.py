@@ -553,6 +553,7 @@ class Measure(Operation):
                 "Trace",
                 "TriggerCount",
                 "NumericalWeightedIntegrationComplex",
+                "ThresholdedAcquisition",
             ]
         ] = None,
         bin_mode: BinMode | None = None,

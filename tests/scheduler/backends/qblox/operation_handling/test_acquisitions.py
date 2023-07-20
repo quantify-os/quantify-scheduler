@@ -630,6 +630,131 @@ def test_trace_acquisition_measurement_control(
     instr_coordinator.remove_component(ic_cluster0.name)
 
 
+@pytest.mark.parametrize(
+    argnames=["qubit_name", "rotation", "threshold"],
+    argvalues=[
+        [qubit_name, rotation, threshold]
+        for qubit_name in ["q0", "q4"]
+        for rotation in [10, 340]
+        for threshold in [0.5, -0.9]
+    ],
+)
+def test_thresholded_acquisition(
+    mock_setup_basic_transmon_with_standard_params,
+    hardware_compilation_config_qblox_example,
+    qubit_name,
+    rotation,
+    threshold,
+):
+    hardware_config = hardware_compilation_config_qblox_example
+    mock_setup = mock_setup_basic_transmon_with_standard_params
+    quantum_device = mock_setup["quantum_device"]
+    quantum_device.hardware_config(hardware_config)
+    qubit_to_device_map = {
+        "q4": "cluster0_module3",
+        "q0": "cluster0_module4",
+    }
+
+    qubit = mock_setup[qubit_name]
+    qubit.measure.acq_rotation(rotation)
+    qubit.measure.acq_threshold(threshold)
+
+    schedule = Schedule("Thresholded acquisition")
+    schedule.add(Measure(qubit_name, acq_protocol="ThresholdedAcquisition"))
+
+    compiler = SerialCompiler("compiler", quantum_device=quantum_device)
+    compiled_schedule = compiler.compile(schedule)
+
+    compiled_instructions = compiled_schedule.compiled_instructions["cluster0"][
+        qubit_to_device_map[qubit_name]
+    ]
+    sequencer_compiled_instructions = compiled_instructions["sequencers"]["seq0"]
+    sequencer_acquisition_metadata = compiled_instructions["acq_metadata"]["seq0"]
+
+    assert (
+        sequencer_compiled_instructions["thresholded_acq_threshold"]
+        == threshold * qubit.measure.integration_time() * 1e9
+    )
+    assert sequencer_compiled_instructions["thresholded_acq_rotation"] == rotation
+    assert sequencer_acquisition_metadata.acq_protocol == "ThresholdedAcquisition"
+
+
+def test_thresholded_acquisition_multiplex(
+    mock_setup_basic_transmon_with_standard_params,
+):
+    hardware_config = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module3": {
+                "instrument_type": "QRM",
+                "complex_output_0": {
+                    "lo_name": "lo",
+                    "portclock_configs": [
+                        {
+                            "port": "q0:res",
+                            "clock": "q0.ro",
+                        },
+                        {
+                            "port": "q1:res",
+                            "clock": "q1.ro",
+                        },
+                    ],
+                },
+            },
+        },
+        "lo": {
+            "instrument_type": "LocalOscillator",
+            "frequency": 7.2e9,
+            "power": 1,
+        },
+    }
+
+    mock_setup = mock_setup_basic_transmon_with_standard_params
+    q0 = mock_setup["q0"]
+    q1 = mock_setup["q1"]
+
+    quantum_device = mock_setup["quantum_device"]
+    quantum_device.hardware_config(hardware_config)
+
+    rotation_q0, rotation_q1 = 350, 222
+    threshold_q0, threshold_q1 = 0.2, -0.5
+
+    q0.measure.acq_rotation(rotation_q0)
+    q0.measure.acq_threshold(threshold_q0)
+    q1.measure.acq_rotation(rotation_q1)
+    q1.measure.acq_threshold(threshold_q1)
+
+    schedule = Schedule("Thresholded acquisition")
+    schedule.add(Measure("q0", "q1", acq_protocol="ThresholdedAcquisition"))
+
+    compiler = SerialCompiler("compiler", quantum_device=quantum_device)
+    compiled_schedule = compiler.compile(schedule)
+
+    for index, (phase, threshold) in enumerate(
+        zip((rotation_q0, rotation_q1), (threshold_q0, threshold_q1))
+    ):
+        sequencer_compiled_instructions = compiled_schedule.compiled_instructions[
+            "cluster0"
+        ]["cluster0_module3"]["sequencers"][f"seq{index}"]
+        sequencer_acquisition_metadata = compiled_schedule.compiled_instructions[
+            "cluster0"
+        ]["cluster0_module3"]["acq_metadata"][f"seq{index}"]
+
+        if index == 0:
+            integration_length = q0.measure.integration_time() * 1e9
+        else:
+            integration_length = q1.measure.integration_time() * 1e9
+
+        assert (
+            sequencer_compiled_instructions["thresholded_acq_threshold"]
+            == threshold * integration_length
+        )
+        assert sequencer_compiled_instructions["thresholded_acq_rotation"] == phase
+        assert sequencer_acquisition_metadata.acq_protocol == "ThresholdedAcquisition"
+
+
 def test_trigger_count_append(
     mock_setup_basic_nv, make_cluster_component
 ):  # pylint: disable=too-many-locals
