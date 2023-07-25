@@ -256,10 +256,10 @@ class ScheduleGettable:
         if acq_metadata.acq_protocol == "TriggerCount":
             return [vals.real.astype(np.uint64)]
 
-        if (
-            acq_metadata.acq_protocol == "Trace"
-            or acq_metadata.acq_protocol == "SSBIntegrationComplex"
-            or acq_metadata.acq_protocol == "WeightedIntegratedComplex"
+        if acq_metadata.acq_protocol in (
+            "Trace",
+            "SSBIntegrationComplex",
+            "WeightedIntegratedComplex",
         ):
             ret_val = []
             if self.real_imag:
