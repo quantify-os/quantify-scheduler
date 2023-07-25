@@ -9,6 +9,7 @@
 - Pin version of `dataclasses-json` due to breaking pipelines. (!727)
 - Schedulables - Store references to `Schedulables` in timing contraints as `string` rather than `Schedulable`. (!717)
 - Qblox backend - Fix weighted acquisition in append mode. (!725)
+- Instrument Coordinator - Improve error message for missing IC components (!718)
 
 ## 0.15.0 (2023-07-13)
 
@@ -20,7 +21,7 @@
 - Fixed `sudden_net_zero` waveform generation
 - Added `Rz`, `Z` and `Z90` gate to gate library and `BasicTransmonElement`
 - Improved pulse diagram, mostly in the `matplotlib` backend
-- Added new-style validated hardware config: Restructured `CompilationConfig` by adding `HardwareCompilationConfig` datastructure that contains `HardwareDescription`, `Connectivity`, and `HardwareOptions` (!680)
+- Added new-style validated hardware config: Restructured `CompilationConfig` by adding `HardwareCompilationConfig` datastructure that contains `HardwareDescription`, `Connectivity`, and `HardwareOptions`
   - The old-style unvalidated hardware config is still fully supported
   - Currently, the new-style hardware config is being converted to the old-style hardware config before processing by the hardware backends
 
@@ -43,7 +44,7 @@
 - Documentation - Update broken `qblox-instruments` documentation URLs (!696)
 - Documentation - Utilize `hvplot` and `bokeh` for part of data visualization in documentation to overcome issues with `matplotlib` (!712).
 - Gate Library - Added `Rz`, `Z` and `Z90` gate to gate library, `BasicTransmonElement` and tested the new gates in `test_gate_library.py` (!697, #290)
-Gettables - The shape of the data returned by the instrument coordinator components for different acquisition protocols is semi-formalized and validated in the code of `ScheduleGettable.retrieve_acquisition()`. Data returned by Qblox and ZI LabOne backends is adjusted accordingly. (!608)
+- Gettables - The shape of the data returned by the instrument coordinator components for different acquisition protocols is semi-formalized and validated in the code of `ScheduleGettable.retrieve_acquisition()`. Data returned by Qblox and ZI LabOne backends is adjusted accordingly. (!608)
 - JSON utilities - `DataStructure` can serialize Numpy arrays using the new `quantify_scheduler.structure.NDArray` field type. (!701)
 - Schedulables - Raises a more readable error when the reference point is a `Schedulable` that is not in the `Schedule` (!707)
 - Schedules - Remove one of the `CRCount` operations in `nv_dark_esr_sched_nco` from the NCO frequency loop to avoid redundancy (!643)

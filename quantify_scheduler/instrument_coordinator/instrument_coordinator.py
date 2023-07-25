@@ -3,8 +3,6 @@
 """Module containing the main InstrumentCoordinator Component."""
 from __future__ import annotations
 
-from typing import Any, Dict, Tuple
-
 import warnings
 
 import copy
@@ -163,7 +161,10 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         """
         if name in self.components():
             return self.find_instrument(name)
-        raise KeyError(f"'{name}' is not a component of {self.name}!")
+        raise KeyError(
+            f"'{name.split('ic_')[1]}' appears in the hardware config,"
+            f" but was not added as a component to InstrumentCoordinator '{self.name}'."
+        )
 
     def add_component(
         self,

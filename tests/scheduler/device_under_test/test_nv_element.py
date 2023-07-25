@@ -21,8 +21,6 @@ from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
     InstrumentCoordinator,
 )
 
-pytestmark = pytest.mark.usefixtures("close_all_instruments")
-
 
 @pytest.fixture
 def electronic_q0() -> BasicElectronicNVElement:

@@ -789,7 +789,7 @@ def test_prepare_rf(
     qrm.instrument.arm_sequencer.assert_called_with(sequencer=0)
 
 
-def test_prepare_exception_qcm(close_all_instruments, make_qcm_component):
+def test_prepare_exception_qcm(make_qcm_component):
     # Arrange
     qcm: qblox.PulsarQCMComponent = make_qcm_component("qcm0", "1234")
 
@@ -806,7 +806,7 @@ def test_prepare_exception_qcm(close_all_instruments, make_qcm_component):
     )
 
 
-def test_prepare_exception_qrm(close_all_instruments, make_qrm_component):
+def test_prepare_exception_qrm(make_qrm_component):
     # Arrange
     qrm: qblox.PulsarQRMComponent = make_qrm_component("qcm0", "1234")
 
@@ -823,7 +823,7 @@ def test_prepare_exception_qrm(close_all_instruments, make_qrm_component):
     )
 
 
-def test_prepare_exception_qcm_rf(close_all_instruments, make_qcm_rf):
+def test_prepare_exception_qcm_rf(make_qcm_rf):
     # Arrange
     qcm: qblox.QCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
 
@@ -840,7 +840,7 @@ def test_prepare_exception_qcm_rf(close_all_instruments, make_qcm_rf):
     )
 
 
-def test_prepare_exception_qrm_rf(close_all_instruments, make_qrm_rf):
+def test_prepare_exception_qrm_rf(make_qrm_rf):
     # Arrange
     qrm: qblox.QRMRFComponent = make_qrm_rf("qcm_rf0", "1234")
 
@@ -893,7 +893,7 @@ def test_wait_done_cluster(make_cluster_component):
     cluster.wait_done()
 
 
-def test_retrieve_acquisition_qcm(close_all_instruments, make_qcm_component):
+def test_retrieve_acquisition_qcm(make_qcm_component):
     qcm: qblox.PulsarQCMComponent = make_qcm_component("qcm0", "1234")
 
     assert qcm.retrieve_acquisition() is None
@@ -939,7 +939,7 @@ def test_retrieve_acquisition_qrm(
     xr.testing.assert_equal(acq, expected_dataset)
 
 
-def test_retrieve_acquisition_qcm_rf(close_all_instruments, make_qcm_rf):
+def test_retrieve_acquisition_qcm_rf(make_qcm_rf):
     qcm_rf: qblox.QCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
 
     assert qcm_rf.retrieve_acquisition() is None
@@ -1086,7 +1086,7 @@ def test_start_qcm_qrm_rf(
     qrm_rf.instrument.start_sequencer.assert_called()
 
 
-def test_stop_qcm_qrm(close_all_instruments, make_qcm_component, make_qrm_component):
+def test_stop_qcm_qrm(make_qcm_component, make_qrm_component):
     # Arrange
     qcm: qblox.PulsarQCMComponent = make_qcm_component("qcm0", "1234")
     qrm: qblox.PulsarQRMComponent = make_qrm_component("qrm0", "1234")
@@ -1100,7 +1100,7 @@ def test_stop_qcm_qrm(close_all_instruments, make_qcm_component, make_qrm_compon
     qrm.instrument.stop_sequencer.assert_called()
 
 
-def test_stop_qcm_qrm_rf(close_all_instruments, make_qcm_rf, make_qrm_rf):
+def test_stop_qcm_qrm_rf(make_qcm_rf, make_qrm_rf):
     # Arrange
     qcm_rf: qblox.QCMRFComponent = make_qcm_rf("qcm_rf0", "1234")
     qrm_rf: qblox.QRMRFComponent = make_qrm_rf("qrm_rf0", "1234")
@@ -1114,7 +1114,7 @@ def test_stop_qcm_qrm_rf(close_all_instruments, make_qcm_rf, make_qrm_rf):
     qrm_rf.instrument.stop_sequencer.assert_called()
 
 
-def test_stop_cluster(close_all_instruments, make_cluster_component):
+def test_stop_cluster(make_cluster_component):
     # Arrange
     cluster: qblox.ClusterComponent = make_cluster_component("cluster0")
 

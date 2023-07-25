@@ -126,7 +126,7 @@ def fixture_zi_instrument_coordinator(
     return zi_instrument_coordinator
 
 
-def test_constructor(close_all_instruments, instrument_coordinator):
+def test_constructor(instrument_coordinator):
     # Assert
     assert len(instrument_coordinator.components()) == 0
 
@@ -140,7 +140,6 @@ def test_constructor(close_all_instruments, instrument_coordinator):
     ],
 )
 def test_is_running(
-    close_all_instruments,
     instrument_coordinator,
     dummy_components,
     states: List[bool],
@@ -166,7 +165,7 @@ def test_is_running(
     assert is_running == expected
 
 
-def test_get_component(close_all_instruments, instrument_coordinator, dummy_components):
+def test_get_component(instrument_coordinator, dummy_components):
     for i in range(len(dummy_components)):
         # Arrange
         component_ = dummy_components.pop(0)
@@ -179,18 +178,19 @@ def test_get_component(close_all_instruments, instrument_coordinator, dummy_comp
         assert component_ == component
 
 
-def test_get_component_failed(close_all_instruments, instrument_coordinator):
+def test_get_component_failed(instrument_coordinator):
     # Act
     with pytest.raises(KeyError) as execinfo:
         instrument_coordinator.get_component("ic_dev1234")
 
     # Assert
-    assert execinfo.value.args[0] == "'ic_dev1234' is not a component of ic_0000!"
+    assert execinfo.value.args[0] == (
+        "'dev1234' appears in the hardware config,"
+        " but was not added as a component to InstrumentCoordinator 'ic_0000'."
+    )
 
 
-def test_add_component_failed_duplicate(
-    close_all_instruments, instrument_coordinator, dummy_components
-):
+def test_add_component_failed_duplicate(instrument_coordinator, dummy_components):
     # Arrange
     component1 = dummy_components.pop(0)
     instrument_coordinator.add_component(component1)
@@ -203,9 +203,7 @@ def test_add_component_failed_duplicate(
     assert execinfo.value.args[0] == "'ic_dev0' has already been added!"
 
 
-def test_add_component_failed_type_validation(
-    close_all_instruments, instrument_coordinator
-):
+def test_add_component_failed_type_validation(instrument_coordinator):
     @dataclass
     class DummyComponent:
         name: str
@@ -226,9 +224,7 @@ def test_add_component_failed_type_validation(
     )
 
 
-def test_remove_component(
-    close_all_instruments, instrument_coordinator, dummy_components
-):
+def test_remove_component(instrument_coordinator, dummy_components):
     # Arrange
     component1, component2 = dummy_components.pop(0), dummy_components.pop(0)
     instrument_coordinator.add_component(component1)
@@ -241,7 +237,7 @@ def test_remove_component(
 
 
 def test_prepare(
-    close_all_instruments, instrument_coordinator, dummy_components, mocker
+    instrument_coordinator, dummy_components, mocker
 ):  # NB order of fixtures matters for teardown, keep mocker as last!
     # Arrange
     component1 = dummy_components.pop(0)
@@ -270,7 +266,7 @@ def test_prepare(
     component2.prepare.assert_called_with(args["dev1"])
 
 
-def test_start(close_all_instruments, instrument_coordinator, dummy_components):
+def test_start(instrument_coordinator, dummy_components):
     # Arrange
     component1 = dummy_components.pop(0)
     component2 = dummy_components.pop(0)
@@ -285,7 +281,7 @@ def test_start(close_all_instruments, instrument_coordinator, dummy_components):
     component2.start.assert_called()
 
 
-def test_stop(close_all_instruments, instrument_coordinator, dummy_components):
+def test_stop(instrument_coordinator, dummy_components):
     # Arrange
     component1 = dummy_components.pop(0)
     component2 = dummy_components.pop(0)
@@ -300,9 +296,7 @@ def test_stop(close_all_instruments, instrument_coordinator, dummy_components):
     component2.stop.assert_called()
 
 
-def test_retrieve_acquisition(
-    close_all_instruments, instrument_coordinator, dummy_components
-):
+def test_retrieve_acquisition(instrument_coordinator, dummy_components):
     # Arrange
     component1 = dummy_components.pop(0)
     component2 = dummy_components.pop(0)
@@ -330,9 +324,7 @@ def test_retrieve_acquisition(
     assert data.equals(expected_dataset)
 
 
-def test_reacquire_acquisition_successful(
-    close_all_instruments, zi_instrument_coordinator, dummy_components
-):
+def test_reacquire_acquisition_successful(zi_instrument_coordinator, dummy_components):
     # Arrange
     component1 = dummy_components.pop(0)
     component2 = dummy_components.pop(0)
@@ -364,9 +356,7 @@ def test_reacquire_acquisition_successful(
     assert data.equals(expected_dataset)
 
 
-def test_reacquire_acquisition_failed(
-    close_all_instruments, zi_instrument_coordinator, dummy_components
-):
+def test_reacquire_acquisition_failed(zi_instrument_coordinator, dummy_components):
     # Arrange
     component1 = dummy_components.pop(0)
     component2 = dummy_components.pop(0)
@@ -387,7 +377,7 @@ def test_reacquire_acquisition_failed(
         zi_instrument_coordinator.retrieve_acquisition()
 
 
-def test_wait_done(close_all_instruments, instrument_coordinator, dummy_components):
+def test_wait_done(instrument_coordinator, dummy_components):
     # Arrange
     component1 = dummy_components.pop(0)
     component2 = dummy_components.pop(0)
@@ -404,7 +394,7 @@ def test_wait_done(close_all_instruments, instrument_coordinator, dummy_componen
     component2.wait_done.assert_called_with(timeout)
 
 
-def test_last_schedule(close_all_instruments, instrument_coordinator, dummy_components):
+def test_last_schedule(instrument_coordinator, dummy_components):
     component1 = dummy_components.pop(0)
     component2 = dummy_components.pop(0)
     instrument_coordinator.add_component(component1)
