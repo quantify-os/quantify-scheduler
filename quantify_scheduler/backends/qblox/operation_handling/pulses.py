@@ -44,9 +44,9 @@ class PulseStrategyPartial(IOperationStrategy):
         return self._pulse_info
 
     def _check_amplitudes_set(self):
-        if self.amplitude_path0 is None:
+        if self._amplitude_path0 is None:
             raise ValueError("Amplitude for path0 is None.")
-        if self.amplitude_path1 is None:
+        if self._amplitude_path1 is None:
             raise ValueError("Amplitude for path1 is None.")
 
 
@@ -70,13 +70,13 @@ class GenericPulseStrategy(PulseStrategyPartial):
         """
         super().__init__(operation_info, io_mode)
 
-        self.amplitude_path0: Optional[float] = None
-        self.amplitude_path1: Optional[float] = None
+        self._amplitude_path0: Optional[float] = None
+        self._amplitude_path1: Optional[float] = None
 
-        self.waveform_index0: Optional[int] = None
-        self.waveform_index1: Optional[int] = None
+        self._waveform_index0: Optional[int] = None
+        self._waveform_index1: Optional[int] = None
 
-        self.waveform_len: Optional[int] = None
+        self._waveform_len: Optional[int] = None
 
     def generate_data(self, wf_dict: Dict[str, Any]):
         """
@@ -138,9 +138,7 @@ class GenericPulseStrategy(PulseStrategyPartial):
             op_info.data, sampling_rate=constants.SAMPLING_RATE
         )
         waveform_data, amp_real, amp_imag = normalize_waveform_data(waveform_data)
-        self.waveform_len = len(waveform_data)
-        _, _, idx_real = helpers.add_to_wf_dict_if_unique(wf_dict, waveform_data.real)
-        _, _, idx_imag = helpers.add_to_wf_dict_if_unique(wf_dict, waveform_data.imag)
+        self._waveform_len = len(waveform_data)
 
         if np.any(np.iscomplex(waveform_data)) and not self.io_mode == "complex":
             raise ValueError(
@@ -150,15 +148,31 @@ class GenericPulseStrategy(PulseStrategyPartial):
                 f" marked as real.\n\nException caused by {repr(op_info)}."
             )
 
+        idx_real = (
+            helpers.add_to_wf_dict_if_unique(
+                wf_dict=wf_dict, waveform=waveform_data.real
+            )
+            if (not np.isclose(amp_real, 0.0))
+            else None
+        )
+        idx_imag = (
+            helpers.add_to_wf_dict_if_unique(
+                wf_dict=wf_dict, waveform=waveform_data.imag
+            )
+            if (not np.isclose(amp_imag, 0.0))
+            else None
+        )
+
+        # Update self._waveform_index and self._amplitude_path
         if self.io_mode == "imag":
-            self.waveform_index0, self.waveform_index1 = idx_imag, idx_real
-            self.amplitude_path0, self.amplitude_path1 = (
+            self._waveform_index0, self._waveform_index1 = idx_imag, idx_real
+            self._amplitude_path0, self._amplitude_path1 = (
                 -amp_imag,  # Multiply by -1 to undo 90-degree shift
                 amp_real,
             )
         else:
-            self.waveform_index0, self.waveform_index1 = idx_real, idx_imag
-            self.amplitude_path0, self.amplitude_path1 = amp_real, amp_imag
+            self._waveform_index0, self._waveform_index1 = idx_real, idx_imag
+            self._amplitude_path0, self._amplitude_path1 = amp_real, amp_imag
 
     def insert_qasm(self, qasm_program: QASMProgram):
         """
@@ -171,17 +185,28 @@ class GenericPulseStrategy(PulseStrategyPartial):
             The QASMProgram to add the assembly instructions to.
         """
         self._check_amplitudes_set()
-        qasm_program.set_gain_from_amplitude(
-            self.amplitude_path0, self.amplitude_path1, self.operation_info
-        )
-        qasm_program.emit(
-            q1asm_instructions.PLAY,
-            self.waveform_index0,
-            self.waveform_index1,
-            constants.GRID_TIME,  # N.B. the waveform keeps playing
-            comment=f"play {self.operation_info.name} ({self.waveform_len} ns)",
-        )
-        qasm_program.elapsed_time += constants.GRID_TIME
+
+        # Only emit play command if at least one path has a signal
+        # else auto-generate wait command
+        index0 = self._waveform_index0
+        index1 = self._waveform_index1
+        if (index0 is not None) or (index1 is not None):
+            qasm_program.set_gain_from_amplitude(
+                self._amplitude_path0, self._amplitude_path1, self.operation_info
+            )
+            # If a channel doesn't have an index (index0 or index1 is None) means,
+            # that for that channel we do not want to play any waveform;
+            # it's also ensured in this case, that the gain is set to 0 for that channel;
+            # but, the Q1ASM program needs a waveform index for both channels,
+            # so we set the other waveform's index in this case as a dummy
+            qasm_program.emit(
+                q1asm_instructions.PLAY,
+                index0 if (index0 is not None) else index1,
+                index1 if (index1 is not None) else index0,
+                constants.GRID_TIME,  # N.B. the waveform keeps playing
+                comment=f"play {self.operation_info.name} ({self._waveform_len} ns)",
+            )
+            qasm_program.elapsed_time += constants.GRID_TIME
 
 
 @deprecated(
@@ -208,11 +233,11 @@ class StitchedSquarePulseStrategy(PulseStrategyPartial):
         """
         super().__init__(operation_info, io_mode)
 
-        self.amplitude_path0: Optional[float] = None
-        self.amplitude_path1: Optional[float] = None
+        self._amplitude_path0: Optional[float] = None
+        self._amplitude_path1: Optional[float] = None
 
-        self.waveform_index0: Optional[int] = None
-        self.waveform_index1: Optional[int] = None
+        self._waveform_index0: Optional[int] = None
+        self._waveform_index1: Optional[int] = None
 
     def generate_data(self, wf_dict: Dict[str, Any]):
         """
@@ -234,20 +259,22 @@ class StitchedSquarePulseStrategy(PulseStrategyPartial):
         array_with_ones = np.ones(
             int(constants.PULSE_STITCHING_DURATION * constants.SAMPLING_RATE)
         )
-        _, _, idx_ones = helpers.add_to_wf_dict_if_unique(wf_dict, array_with_ones.real)
+        idx_ones = helpers.add_to_wf_dict_if_unique(
+            wf_dict=wf_dict, waveform=array_with_ones.real
+        )
         if self.io_mode == "complex":
-            _, _, idx_zeros = helpers.add_to_wf_dict_if_unique(
-                wf_dict, array_with_ones.imag
+            idx_zeros = helpers.add_to_wf_dict_if_unique(
+                wf_dict=wf_dict, waveform=array_with_ones.imag
             )
-            self.waveform_index0, self.waveform_index1 = idx_ones, idx_zeros
-            self.amplitude_path0, self.amplitude_path1 = amplitude, 0
+            self._waveform_index0, self._waveform_index1 = idx_ones, idx_zeros
+            self._amplitude_path0, self._amplitude_path1 = amplitude, 0
         else:
-            self.waveform_index0, self.waveform_index1 = idx_ones, idx_ones
+            self._waveform_index0, self._waveform_index1 = idx_ones, idx_ones
 
             if self.io_mode == "imag":
-                self.amplitude_path0, self.amplitude_path1 = 0, amplitude
+                self._amplitude_path0, self._amplitude_path1 = 0, amplitude
             else:
-                self.amplitude_path0, self.amplitude_path1 = amplitude, 0
+                self._amplitude_path0, self._amplitude_path1 = amplitude, 0
 
     def insert_qasm(self, qasm_program: QASMProgram):
         """
@@ -266,7 +293,7 @@ class StitchedSquarePulseStrategy(PulseStrategyPartial):
         self._check_amplitudes_set()
 
         qasm_program.set_gain_from_amplitude(
-            self.amplitude_path0, self.amplitude_path1, self.operation_info
+            self._amplitude_path0, self._amplitude_path1, self.operation_info
         )
         if repetitions > 1:
             with qasm_program.loop(
@@ -275,8 +302,8 @@ class StitchedSquarePulseStrategy(PulseStrategyPartial):
             ):
                 qasm_program.emit(
                     q1asm_instructions.PLAY,
-                    self.waveform_index0,
-                    self.waveform_index1,
+                    self._waveform_index0,
+                    self._waveform_index1,
                     helpers.to_grid_time(constants.PULSE_STITCHING_DURATION),
                 )
                 qasm_program.elapsed_time += repetitions * helpers.to_grid_time(
@@ -285,8 +312,8 @@ class StitchedSquarePulseStrategy(PulseStrategyPartial):
         elif repetitions == 1:
             qasm_program.emit(
                 q1asm_instructions.PLAY,
-                self.waveform_index0,
-                self.waveform_index1,
+                self._waveform_index0,
+                self._waveform_index1,
                 helpers.to_grid_time(constants.PULSE_STITCHING_DURATION),
             )
             qasm_program.elapsed_time += helpers.to_grid_time(
@@ -304,8 +331,8 @@ class StitchedSquarePulseStrategy(PulseStrategyPartial):
             )
             qasm_program.emit(
                 q1asm_instructions.PLAY,
-                self.waveform_index0,
-                self.waveform_index1,
+                self._waveform_index0,
+                self._waveform_index1,
                 pulse_time_remaining,
             )
             qasm_program.emit(

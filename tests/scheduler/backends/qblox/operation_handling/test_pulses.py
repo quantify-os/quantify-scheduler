@@ -87,14 +87,14 @@ class TestGenericPulseStrategy:
         # assert
         waveforms_generated = list(wf_dict.values())
         waveform0_data = waveforms_generated[0]["data"]
-        waveform1_data = waveforms_generated[1]["data"]
         normalized_data, amp_real, amp_imag = normalize_waveform_data(
             wf_func(t=t_test, **wf_kwargs)
         )
         assert waveform0_data == normalized_data.real.tolist()
-        assert waveform1_data == normalized_data.imag.tolist()
-        assert strategy.amplitude_path0 == amp_real
-        assert strategy.amplitude_path1 == amp_imag
+        assert strategy._amplitude_path0 == amp_real
+        assert strategy._amplitude_path1 == amp_imag
+        assert strategy._waveform_index0 == 0
+        assert strategy._waveform_index1 == None
 
     def test_generate_data_complex(self):
         # arrange
@@ -131,8 +131,10 @@ class TestGenericPulseStrategy:
         )
         assert waveform0_data == normalized_data.real.tolist()
         assert waveform1_data == normalized_data.imag.tolist()
-        assert strategy.amplitude_path0 == amp_real
-        assert strategy.amplitude_path1 == amp_imag
+        assert strategy._amplitude_path0 == amp_real
+        assert strategy._amplitude_path1 == amp_imag
+        assert strategy._waveform_index0 == 0
+        assert strategy._waveform_index1 == 1
 
     @pytest.mark.parametrize(
         "wf_func, wf_func_path, wf_kwargs",
@@ -170,14 +172,14 @@ class TestGenericPulseStrategy:
         # assert
         waveforms_generated = list(wf_dict.values())
         waveform0_data = waveforms_generated[0]["data"]
-        waveform1_data = waveforms_generated[1]["data"]
         normalized_data, amp_real, amp_imag = normalize_waveform_data(
             wf_func(t=t_test, **wf_kwargs)
         )
         assert waveform0_data == normalized_data.real.tolist()
-        assert waveform1_data == normalized_data.imag.tolist()
-        assert strategy.amplitude_path0 == amp_imag
-        assert strategy.amplitude_path1 == amp_real
+        assert strategy._amplitude_path0 == amp_imag
+        assert strategy._amplitude_path1 == amp_real
+        assert strategy._waveform_index0 == None
+        assert strategy._waveform_index1 == 0
 
     @pytest.mark.parametrize(
         "io_mode",
@@ -219,18 +221,25 @@ class TestGenericPulseStrategy:
         # arrange
         qasm = empty_qasm_program_qcm
         duration = 24e-9
-        wf_func_path, wf_kwargs = ("quantify_scheduler.waveforms.square", {"amp": 1})
+        wf_func_path = "quantify_scheduler.waveforms.drag"
+        wf_kwargs = {
+            "G_amp": 1.0,
+            "D_amp": 1.0,
+            "duration": 24e-9,
+            "nr_sigma": 3,
+            "phase": 0,
+        }
         data = {"wf_func": wf_func_path, "duration": duration, **wf_kwargs}
 
         op_info = types.OpInfo(name="test_pulse", data=data, timing=0)
-        strategy = pulses.GenericPulseStrategy(op_info, io_mode="real")
+        strategy = pulses.GenericPulseStrategy(op_info, io_mode="complex")
         strategy.generate_data(wf_dict={})
 
         # act
         strategy.insert_qasm(qasm)
 
         # assert
-        line0 = ["", "set_awg_gain", "32767,0", "# setting gain for test_pulse"]
+        line0 = ["", "set_awg_gain", "32212,20355", "# setting gain for test_pulse"]
         line1 = ["", "play", "0,1,4", "# play test_pulse (24 ns)"]
         assert qasm.instructions[0] == line0
         assert qasm.instructions[1] == line1

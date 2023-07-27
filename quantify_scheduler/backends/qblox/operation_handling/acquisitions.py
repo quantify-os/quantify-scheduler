@@ -260,8 +260,8 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
                     f"real-valued weights.\n\nException was triggered because of "
                     f"{repr(self.operation_info)}."
                 )
-            _, _, waveform_index = helpers.add_to_wf_dict_if_unique(
-                wf_dict, waveform_data
+            waveform_index = helpers.add_to_wf_dict_if_unique(
+                wf_dict=wf_dict, waveform=waveform_data
             )
             waveform_indices.append(waveform_index)
 

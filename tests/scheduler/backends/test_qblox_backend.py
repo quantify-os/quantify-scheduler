@@ -20,7 +20,7 @@ from typing import Dict, Generator, Optional
 import numpy as np
 import pytest
 from pydantic import ValidationError
-from qblox_instruments import Pulsar, PulsarType
+from qblox_instruments import Cluster, ClusterType, Pulsar, PulsarType
 
 import quantify_scheduler
 from quantify_scheduler import Schedule
@@ -35,12 +35,12 @@ from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
 from quantify_scheduler.backends.qblox.helpers import (
     assign_pulse_and_acq_info_to_devices,
     convert_hw_config_to_portclock_configs_spec,
+    generate_hardware_config,
     generate_port_clock_to_device_map,
     generate_uuid_from_wf_data,
     generate_waveform_data,
-    to_grid_time,
-    generate_hardware_config,
     is_within_grid_time,
+    to_grid_time,
 )
 from quantify_scheduler.backends.qblox.instrument_compilers import (
     QcmModule,
@@ -48,35 +48,31 @@ from quantify_scheduler.backends.qblox.instrument_compilers import (
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.types import qblox as types
-from quantify_scheduler.backends.types.qblox import (
-    BasebandModuleSettings,
-)
+from quantify_scheduler.backends.types.qblox import BasebandModuleSettings
 from quantify_scheduler.compilation import determine_absolute_timing
 from quantify_scheduler.helpers.collections import (
-    find_inner_dicts_containing_key,
     find_all_port_clock_combinations,
+    find_inner_dicts_containing_key,
 )
 from quantify_scheduler.operations.acquisition_library import (
     SSBIntegrationComplex,
     ThresholdedAcquisition,
     Trace,
 )
-from quantify_scheduler.operations.pulse_factories import long_square_pulse
-from quantify_scheduler.operations.stitched_pulse import (
-    StitchedPulseBuilder,
-)
 from quantify_scheduler.operations.gate_library import Measure, Reset, X
 from quantify_scheduler.operations.operation import Operation
+from quantify_scheduler.operations.pulse_factories import long_square_pulse
 from quantify_scheduler.operations.pulse_library import (
-    ReferenceMagnitude,
     DRAGPulse,
     IdlePulse,
     RampPulse,
+    ReferenceMagnitude,
     SetClockFrequency,
     ShiftClockPhase,
     SoftSquarePulse,
     SquarePulse,
 )
+from quantify_scheduler.operations.stitched_pulse import StitchedPulseBuilder
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.schedules.timedomain_schedules import (
     allxy_sched,
@@ -106,6 +102,18 @@ def dummy_pulsars() -> Generator[Dict[str, Pulsar], None, None]:
     yield _pulsars
 
     close_instruments(qcm_names + qrm_names)
+
+
+@pytest.fixture
+def dummy_cluster() -> Cluster:
+    cluster_name = "cluster0"
+
+    yield Cluster(
+        name=cluster_name,
+        dummy_cfg={"2": ClusterType.CLUSTER_QCM, "4": ClusterType.CLUSTER_QRM},
+    )
+
+    close_instruments([cluster_name])
 
 
 @pytest.fixture
@@ -929,7 +937,7 @@ def test_compile_cz_gate(
         ]["sequence"]["program"].splitlines()
 
     assert any(
-        "play          0,1,4" in line for line in program_lines["seq0"]
+        "play          0,0,4" in line for line in program_lines["seq0"]
     ), "\n".join(line for line in program_lines["seq0"])
 
     assert any(
@@ -1261,12 +1269,7 @@ def test_real_mode_pulses(
             elif seq_path == 1:
                 assert (np.array(waveform_data) == 0).all()
 
-        if output % 2 == 0:
-            iq_order = "0,1"  # I,Q
-        else:
-            iq_order = "1,0"  # Q,I
-
-        assert re.search(rf"play\s*{iq_order}", seq_instructions["program"]), (
+        assert re.search(rf"play\s+0,0", seq_instructions["program"]), (
             f"Output {output+1} must be connected to "
             f"sequencer{output} path{iq_order[0]} in real mode."
         )
@@ -2519,112 +2522,127 @@ def test_cluster_settings(
     assert isinstance(cl_qcm0._settings, BasebandModuleSettings)
 
 
-def assembly_valid(compiled_schedule, qcm0, qrm0):
-    """
-    Test helper that takes a compiled schedule and verifies if the assembly is valid
-    by passing it to a dummy qcm and qrm.
+class TestAssemblyValid:
+    @classmethod
+    def validate_seq_instructions(cls, seq_instructions, filename):
+        baseline_assembly = os.path.join(
+            quantify_scheduler.__path__[0],
+            "..",
+            "tests",
+            "baseline_qblox_assembly",
+            filename,
+        )
 
-    Assumes only qcm0 and qrm0 are used.
-    """
+        # (Utility for updating ref files during development, does not belong to the test)
+        if REGENERATE_REF_FILES:
+            with open(baseline_assembly, "w", encoding="utf-8") as file:
+                json.dump(seq_instructions, file)
 
-    # test the program for the qcm
-    qcm0_seq0_json = compiled_schedule["compiled_instructions"]["qcm0"]["sequencers"][
-        "seq0"
-    ]["sequence"]
-    qcm0.sequencer0.sequence(qcm0_seq0_json)
-    qcm0.arm_sequencer(0)
-    uploaded_waveforms = qcm0.get_waveforms(0)
-    assert uploaded_waveforms is not None
+        with open(baseline_assembly) as file:
+            baseline_seq_instructions = json.load(file)
 
-    # test the program for the qrm
-    qrm0_seq0_json = compiled_schedule["compiled_instructions"]["qrm0"]["sequencers"][
-        "seq0"
-    ]["sequence"]
-    qrm0.sequencer0.sequence(qrm0_seq0_json)
-    qrm0.arm_sequencer(0)
-    uploaded_waveforms = qrm0.get_waveforms(0)
-    assert uploaded_waveforms is not None
+        program = _strip_comments(seq_instructions["program"])
+        ref_program = _strip_comments(baseline_seq_instructions["program"])
 
+        assert list(program) == list(ref_program)
 
-def test_acq_protocol_append_mode_valid_assembly_ssro(
-    dummy_pulsars,
-    compile_config_basic_transmon_qblox_hardware_pulsar,
-):
-    repetitions = 256
-    ssro_sched = readout_calibration_sched("q0", [0, 1], repetitions=repetitions)
-    compiler = SerialCompiler(name="compiler")
-    compiled_ssro_sched = compiler.compile(
-        ssro_sched, compile_config_basic_transmon_qblox_hardware_pulsar
-    )
-    assembly_valid(
-        compiled_schedule=compiled_ssro_sched,
-        qcm0=dummy_pulsars["qcm0"],
-        qrm0=dummy_pulsars["qrm0"],
-    )
+    @classmethod
+    def validate_assembly(cls, compiled_schedule, cluster):
+        """
+        Test helper that takes a compiled schedule and verifies if the assembly is valid
+        by passing it to a cluster. Only QCM (module2) and QRM (module4) modules are
+        defined.
+        """
+        all_modules = {module.name: module for module in cluster.modules}
 
-    qrm0_seq_instructions = compiled_ssro_sched["compiled_instructions"]["qrm0"][
-        "sequencers"
-    ]["seq0"]["sequence"]
+        for slot_idx in ("2", "4"):
+            module = all_modules[f"{cluster.name}_module{slot_idx}"]
 
-    baseline_assembly = os.path.join(
-        quantify_scheduler.__path__[0],
-        "..",
-        "tests",
-        "baseline_qblox_assembly",
-        f"{ssro_sched.name}_qrm0_seq0_instr.json",
-    )
+            module_seq0_json = compiled_schedule["compiled_instructions"][cluster.name][
+                module.name
+            ]["sequencers"]["seq0"]["sequence"]
+            module.sequencer0.sequence(module_seq0_json)
+            module.arm_sequencer(0)
+            uploaded_waveforms = module.get_waveforms(0)
+            assert uploaded_waveforms is not None
 
-    if REGENERATE_REF_FILES:
-        with open(baseline_assembly, "w", encoding="utf-8") as file:
-            json.dump(qrm0_seq_instructions, file)
+    @classmethod
+    def test_acq_protocol_append_mode_ssro(
+        cls,
+        request,
+        dummy_cluster,
+        compile_config_basic_transmon_qblox_hardware,
+    ):
+        cluster = dummy_cluster
 
-    with open(baseline_assembly) as file:
-        baseline_qrm0_seq_instructions = json.load(file)
-    program = _strip_comments(qrm0_seq_instructions["program"])
-    exp_program = _strip_comments(baseline_qrm0_seq_instructions["program"])
+        sched = readout_calibration_sched("q0", [0, 1], repetitions=256)
+        compiler = SerialCompiler(name="compiler")
+        compiled_ssro_sched = compiler.compile(
+            sched, compile_config_basic_transmon_qblox_hardware
+        )
 
-    assert list(program) == list(exp_program)
+        cls.validate_assembly(compiled_schedule=compiled_ssro_sched, cluster=cluster)
 
+        qrm_name = f"{cluster.name}_module4"
+        test_name = request.node.name[len("test_") :]
+        cls.validate_seq_instructions(
+            seq_instructions=compiled_ssro_sched["compiled_instructions"][cluster.name][
+                qrm_name
+            ]["sequencers"]["seq0"]["sequence"],
+            filename=f"{test_name}_{qrm_name}_seq0_instr.json",
+        )
 
-def test_acq_protocol_average_mode_valid_assembly_allxy(
-    dummy_pulsars,
-    compile_config_basic_transmon_qblox_hardware_pulsar,
-):
-    repetitions = 256
-    sched = allxy_sched("q0", element_select_idx=np.arange(21), repetitions=repetitions)
-    compiler = SerialCompiler(name="compiler")
-    compiled_allxy_sched = compiler.compile(
-        sched, compile_config_basic_transmon_qblox_hardware_pulsar
-    )
+    @classmethod
+    def test_acq_protocol_average_mode_allxy(
+        cls,
+        request,
+        dummy_cluster,
+        compile_config_basic_transmon_qblox_hardware,
+    ):
+        cluster = dummy_cluster
 
-    assembly_valid(
-        compiled_schedule=compiled_allxy_sched,
-        qcm0=dummy_pulsars["qcm0"],
-        qrm0=dummy_pulsars["qrm0"],
-    )
+        sched = allxy_sched("q0", element_select_idx=np.arange(21), repetitions=256)
+        compiler = SerialCompiler(name="compiler")
+        compiled_allxy_sched = compiler.compile(
+            sched, compile_config_basic_transmon_qblox_hardware
+        )
 
-    qrm0_seq_instructions = compiled_allxy_sched["compiled_instructions"]["qrm0"][
-        "sequencers"
-    ]["seq0"]["sequence"]
+        cls.validate_assembly(compiled_schedule=compiled_allxy_sched, cluster=cluster)
 
-    baseline_assembly = os.path.join(
-        quantify_scheduler.__path__[0],
-        "..",
-        "tests",
-        "baseline_qblox_assembly",
-        f"{sched.name}_qrm0_seq0_instr.json",
-    )
+        qrm_name = f"{cluster.name}_module4"
+        test_name = request.node.name[len("test_") :]
+        cls.validate_seq_instructions(
+            seq_instructions=compiled_allxy_sched["compiled_instructions"][
+                cluster.name
+            ][qrm_name]["sequencers"]["seq0"]["sequence"],
+            filename=f"{test_name}_{qrm_name}_seq0_instr.json",
+        )
 
-    if REGENERATE_REF_FILES:
-        with open(baseline_assembly, "w", encoding="utf-8") as file:
-            json.dump(qrm0_seq_instructions, file)
+    @classmethod
+    def test_assigning_waveform_indices(
+        cls,
+        request,
+        dummy_cluster,
+        compile_config_basic_transmon_qblox_hardware,
+    ):
+        cluster = dummy_cluster
 
-    with open(baseline_assembly) as file:
-        baseline_qrm0_seq_instructions = json.load(file)
-    program = _strip_comments(qrm0_seq_instructions["program"])
-    exp_program = _strip_comments(baseline_qrm0_seq_instructions["program"])
+        sched = allxy_sched("q0", element_select_idx=np.arange(21), repetitions=256)
+        compiler = SerialCompiler(name="compiler")
+        compiled_allxy_sched = compiler.compile(
+            sched, compile_config_basic_transmon_qblox_hardware
+        )
 
-    assert list(program) == list(exp_program)
+        cls.validate_assembly(compiled_schedule=compiled_allxy_sched, cluster=cluster)
+
+        qcm_name = f"{cluster.name}_module2"
+        test_name = request.node.name[len("test_") :]
+        cls.validate_seq_instructions(
+            seq_instructions=compiled_allxy_sched["compiled_instructions"][
+                cluster.name
+            ][qcm_name]["sequencers"]["seq0"]["sequence"],
+            filename=f"{test_name}_{qcm_name}_seq0_instr.json",
+        )
 
 
 def test_acq_declaration_dict_append_mode(
@@ -3373,11 +3391,14 @@ def test_too_long_waveform_raises(
 ):
     sched = Schedule("Too long waveform")
     sched.add(
-        SoftSquarePulse(
-            amp=0.5,
-            duration=(constants.MAX_SAMPLE_SIZE_WAVEFORMS // 2 + 4) * 1e-9,
+        DRAGPulse(
+            G_amp=0.5,
+            D_amp=-0.2,
+            phase=90,
             port="q0:res",
+            duration=(constants.MAX_SAMPLE_SIZE_WAVEFORMS // 2 + 4) * 1e-9,
             clock="q0.ro",
+            t0=4e-9,
         )
     )
     compiler = SerialCompiler(name="compiler")
@@ -3394,6 +3415,17 @@ def test_too_long_waveform_raises2(
     compile_config_basic_transmon_qblox_hardware_pulsar,
 ):
     sched = Schedule("Too long waveform")
+    sched.add(
+        DRAGPulse(
+            G_amp=0.5,
+            D_amp=-0.2,
+            phase=90,
+            port="q0:res",
+            duration=constants.MAX_SAMPLE_SIZE_WAVEFORMS // 4 * 1e-9,
+            clock="q0.ro",
+            t0=4e-9,
+        )
+    )
     sched.add(
         SoftSquarePulse(
             amp=0.5,
@@ -3437,6 +3469,56 @@ def test_set_reference_magnitude_raises(compile_config_basic_transmon_qblox_hard
         match="reference_magnitude parameter not implemented. This parameter will be ignored.",
     ):
         _ = compiler.compile(sched, config=compile_config_basic_transmon_qblox_hardware)
+
+
+def test_zero_pulse_skip_timing(
+    request,
+    dummy_cluster,
+    compile_config_basic_transmon_qblox_hardware,
+):
+    cluster = dummy_cluster
+
+    sched = Schedule("ZeroPulseSkip", repetitions=1)
+    sched.add(
+        DRAGPulse(
+            G_amp=0.0,
+            D_amp=0.0,
+            phase=90,
+            duration=20e-9,
+            port="q0:mw",
+            clock="q0.01",
+            t0=4e-9,
+        )
+    )
+    sched.add(
+        SoftSquarePulse(
+            amp=0.5,
+            duration=20e-9,
+            port="q0:mw",
+            clock="q0.01",
+        )
+    )
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        sched, compile_config_basic_transmon_qblox_hardware
+    )
+
+    qcm_name = f"{cluster.name}_module2"
+    compiled_instructions = compiled_sched["compiled_instructions"][cluster.name][
+        qcm_name
+    ]["sequencers"]["seq0"]["sequence"]
+
+    assert len(compiled_instructions["waveforms"]) == 1
+
+    idx = 0
+    seq_instructions = compiled_instructions["program"].splitlines()
+    for i, line in enumerate(seq_instructions):
+        if re.search(r"^\s*wait\s+20\s+", line):
+            idx = i
+            break
+
+    assert re.search(r"^\s*set_awg_gain\s+16383,0\s+", seq_instructions[idx + 1])
+    assert re.search(r"^\s*play\s+0,0,4\s+", seq_instructions[idx + 2])
 
 
 def test_set_thresholded_acquisition_via_hardware_config_raises(

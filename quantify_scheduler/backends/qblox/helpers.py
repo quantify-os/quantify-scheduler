@@ -147,6 +147,13 @@ def add_to_wf_dict_if_unique(
     def generate_entry(name: str, data: np.ndarray, idx: int) -> Dict[str, Any]:
         return {name: {"data": data.tolist(), "index": idx}}
 
+    def find_first_free_wf_index():
+        index = 0
+        reserved_indices = [wf_dict[uuid]["index"] for uuid in wf_dict]
+        while index in reserved_indices:
+            index += 1
+        return index
+
     if not np.isrealobj(waveform):
         raise RuntimeError("This function only accepts real arrays.")
 
@@ -154,9 +161,9 @@ def add_to_wf_dict_if_unique(
     if uuid in wf_dict:
         index: int = wf_dict[uuid]["index"]
     else:
-        index = len(wf_dict)
-        wf_dict.update(generate_entry(uuid, waveform, len(wf_dict)))
-    return wf_dict, uuid, index
+        index: int = find_first_free_wf_index()
+        wf_dict.update(generate_entry(uuid, waveform, index))
+    return index
 
 
 def output_name_to_outputs(name: str) -> Optional[Union[Tuple[int], Tuple[int, int]]]:

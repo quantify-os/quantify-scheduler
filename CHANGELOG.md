@@ -10,6 +10,7 @@
 - Schedulables - Store references to `Schedulables` in timing contraints as `string` rather than `Schedulable`. (!717)
 - Qblox backend - Fix weighted acquisition in append mode. (!725)
 - Instrument Coordinator - Improve error message for missing IC components (!718)
+- Qblox backend - Prevent uploading "null" (i.e. all-zero) waveforms (!711)
 
 ## 0.15.0 (2023-07-13)
 
@@ -51,7 +52,7 @@
 - Visualization - Large refactor of the pulse diagram, mostly in the matplotlib backend (!664).
   - The `matplotlib` backend no longer plots 0 V points in between pulses, leading to significant performance improvements in some cases.
   - In both the `matplotlib` and the plotly backend, lines are now shaded from the line to the x-axis.
-  - For the `matplotlib` backend, an extra keyword argument 'multiple_subplots' (bool) is added. If True, each port used in the schedule gets its own subplot, similar to how it's done in the `plotly` backend.
+  - For the `matplotlib` backend, an extra keyword argument `multiple_subplots` (bool) is added. If True, each port used in the schedule gets its own subplot, similar to how it's done in the `plotly` backend.
   - In the `plotly` backend, the time slider at the bottom of the figure has been removed. This was necessary to allow the y-axis of the bottom-most plot to be interactively re-scalable as well.
 - Waveforms - Fix `sudden_net_zero` waveform generation. Rounding of pulse times will now no longer lead to an incorrect SNZ pulse. I.e., the last sample of the first pulse and the first sample of the second pulse will remain correctly scaled, and the integral correction will have an amplitude such that the integral of the pulse is zero. (!581, #310)
 

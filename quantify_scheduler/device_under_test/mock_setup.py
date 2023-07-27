@@ -106,6 +106,7 @@ def set_standard_params_transmon(mock_setup):
 
     q0 = mock_setup["q0"]
     q0.rxy.amp180(0.115)
+    q0.rxy.motzoi(0.1)
     q0.clock_freqs.f01(7.3e9)
     q0.clock_freqs.f12(7.0e9)
     q0.clock_freqs.readout(8.0e9)
@@ -113,6 +114,7 @@ def set_standard_params_transmon(mock_setup):
 
     q1 = mock_setup["q1"]
     q1.rxy.amp180(0.325)
+    q1.rxy.motzoi(0.1)
     q1.clock_freqs.f01(7.25e9)
     q1.clock_freqs.f12(6.89e9)
     q1.clock_freqs.readout(8.3e9)
@@ -121,6 +123,7 @@ def set_standard_params_transmon(mock_setup):
     q2 = mock_setup["q2"]
     # controlled by a QCM-RF max output amp is 0.25V
     q2.rxy.amp180(0.213)
+    q2.rxy.motzoi(0.1)
     q2.clock_freqs.f01(6.33e9)
     q2.clock_freqs.f12(6.09e9)
     q2.clock_freqs.readout(8.5e9)
@@ -128,6 +131,7 @@ def set_standard_params_transmon(mock_setup):
 
     q3 = mock_setup["q3"]
     q3.rxy.amp180(0.215)
+    q3.rxy.motzoi(0.1)
     q3.clock_freqs.f01(5.71e9)
     q3.clock_freqs.f12(5.48e9)
     q3.clock_freqs.readout(8.7e9)
@@ -135,6 +139,7 @@ def set_standard_params_transmon(mock_setup):
 
     q4 = mock_setup["q4"]
     q4.rxy.amp180(0.208)
+    q4.rxy.motzoi(0.1)
     q4.clock_freqs.f01(5.68e9)
     q4.clock_freqs.f12(5.41e9)
     q4.clock_freqs.readout(9.1e9)
