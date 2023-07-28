@@ -74,7 +74,7 @@ def compile_circuit_to_device(
     if not isinstance(config, CompilationConfig):
         warnings.warn(
             f"`{compile_circuit_to_device.__name__}` will require a full "
-            f"CompilationConfig as input as of quantify-scheduler >= 0.16.0",
+            f"CompilationConfig as input as of quantify-scheduler >= 0.19.0",
             FutureWarning,
         )
     if isinstance(config, CompilationConfig):
@@ -203,7 +203,7 @@ def set_pulse_and_acquisition_clock(
     if not isinstance(config, CompilationConfig):
         warnings.warn(
             f"`{set_pulse_and_acquisition_clock.__name__}` will require a full "
-            f"CompilationConfig as input as of quantify-scheduler >= 0.16.0",
+            f"CompilationConfig as input as of quantify-scheduler >= 0.19.0",
             FutureWarning,
         )
     if isinstance(config, CompilationConfig):

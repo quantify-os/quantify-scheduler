@@ -37,7 +37,9 @@ def orjson_dumps(obj: Any, *, default: Callable[[Any], Any]) -> str:
     TypeError
         If value can't be serialized.
     """
-    return orjson.dumps(obj, default=default).decode()
+    # Use orjson.OPT_NON_STR_KEYS to allow for non-string keys in datastructures.
+    # For example: a module/channel index in the HardwareDescription.
+    return orjson.dumps(obj, default=default, option=orjson.OPT_NON_STR_KEYS).decode()
 
 
 class DataStructure(BaseModel):  # pylint: disable=too-few-public-methods

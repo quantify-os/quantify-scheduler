@@ -6,13 +6,21 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from dataclasses import field as dataclasses_field
-from typing import Any, Dict, Literal, Optional, Tuple, TypeVar, Union, List
+from typing import Any, Callable, Dict, Literal, Optional, Tuple, TypeVar, Union, List
 
 from dataclasses_json import DataClassJsonMixin
-from pydantic import Field
+from pydantic import Field, validator
 from typing_extensions import Annotated
 
-from quantify_scheduler.backends.qblox import constants, q1asm_instructions
+from quantify_scheduler.backends.types.common import (
+    HardwareDescription,
+    HardwareOptions,
+    LocalOscillatorDescription,
+)
+from quantify_scheduler.backends.qblox import (
+    constants,
+    q1asm_instructions,
+)
 from quantify_scheduler.structure.model import DataStructure
 
 
@@ -181,17 +189,17 @@ class LOSettings(DataClassJsonMixin):
 class BaseModuleSettings(DataClassJsonMixin):
     """Shared settings between all the Qblox modules."""
 
-    offset_ch0_path0: Union[float, None] = None
+    offset_ch0_path0: Optional[float] = None
     """The DC offset on the path 0 of channel 0."""
-    offset_ch0_path1: Union[float, None] = None
+    offset_ch0_path1: Optional[float] = None
     """The DC offset on the path 1 of channel 0."""
-    offset_ch1_path0: Union[float, None] = None
+    offset_ch1_path0: Optional[float] = None
     """The DC offset on path 0 of channel 1."""
-    offset_ch1_path1: Union[float, None] = None
+    offset_ch1_path1: Optional[float] = None
     """The DC offset on path 1 of channel 1."""
-    in0_gain: Union[int, None] = None
+    in0_gain: Optional[int] = None
     """The gain of input 0."""
-    in1_gain: Union[int, None] = None
+    in1_gain: Optional[int] = None
     """The gain of input 1."""
 
 
@@ -269,17 +277,17 @@ class RFModuleSettings(BaseModuleSettings):
     which are specified in :class:`~.SequencerSettings`.
     """
 
-    lo0_freq: Union[float, None] = None
+    lo0_freq: Optional[float] = None
     """The frequency of Output 0 (O0) LO. If left `None`, the parameter will not be set.
     """
-    lo1_freq: Union[float, None] = None
+    lo1_freq: Optional[float] = None
     """The frequency of Output 1 (O1) LO. If left `None`, the parameter will not be set.
     """
-    out0_att: Union[int, None] = None
+    out0_att: Optional[int] = None
     """The attenuation of Output 0."""
-    out1_att: Union[int, None] = None
+    out1_att: Optional[int] = None
     """The attenuation of Output 1."""
-    in0_att: Union[int, None] = None
+    in0_att: Optional[int] = None
     """The attenuation of Input 0."""
 
     @classmethod
@@ -544,26 +552,146 @@ class SequencerSettings(DataClassJsonMixin):
         return sequencer_settings
 
 
-class QbloxBaseDescription(DataStructure):
+class QbloxBaseDescription(HardwareDescription):
     """Base class for a Qblox hardware description."""
 
-    hardware_type: Literal["Qblox"]
-    """The hardware type, used to select this datastructure when parsing a :class:`~.CompilationConfig`."""
     ref: Union[Literal["internal"], Literal["external"]]
     """The reference source for the instrument."""
     sequence_to_file: bool = True
     """Write sequencer programs to files for (all modules in this) instrument."""
 
 
-class ClusterModuleDescription(DataStructure):
-    """Information needed to specify a Cluster module in the :class:`~.CompilationConfig`."""
+class ComplexChannelDescription(DataStructure):
+    """Information needed to specify an complex input/output in the :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`."""
 
-    module_type: Union[
-        Literal["QCM"], Literal["QRM"], Literal["QCM_RF"], Literal["QRM_RF"]
-    ]
-    """The module (instrument) type."""
+    marker_debug_mode_enable: bool = False
+    """
+    Setting to send 4 ns trigger pulse on the marker located next to the I/O port along with each operation.
+    The marker will be pulled high at the same time as the module starts playing or acquiring.
+    """
+    mix_lo: bool = True
+    """Whether IQ mixing with a local oscillator is enabled for this channel. Effectively always `True` for RF modules."""
+    downconverter_freq: Optional[float] = None
+    """
+    Downconverter frequency that should be taken into account when determining the modulation frequencies for this channel.
+    Only relevant for users with custom Qblox downconverter hardware.
+    """
+
+
+class RealChannelDescription(DataStructure):
+    """Information needed to specify a real input/output in the :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`."""
+
+    marker_debug_mode_enable: bool = False
+    """
+    Setting to send 4 ns trigger pulse on the marker located next to the I/O port along with each operation.
+    The marker will be pulled high at the same time as the module starts playing or acquiring.
+    """
+
+
+class DigitalChannelDescription(DataStructure):
+    """
+    Information needed to specify a digital (marker) output (for :class:`~.quantify_scheduler.operations.pulse_library.MarkerPulse`) in the :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`.
+
+    This datastructure is currently empty, since no extra settings are needed/allowed for a digital output.
+    """
+
+
+class QRMDescription(DataStructure):
+    """Information needed to specify a QRM in the :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`."""
+
+    instrument_type: Literal["QRM"]
+    """The instrument type of this module."""
     sequence_to_file: bool = True
     """Write sequencer programs to files, for this module."""
+    complex_output_0: Optional[ComplexChannelDescription] = None
+    """Description of the complex output channel on this QRM, corresponding to ports O1 and O2."""
+    complex_input_0: Optional[ComplexChannelDescription] = None
+    """Description of the complex input channel on this QRM, corresponding to ports I1 and I2."""
+    real_output_0: Optional[RealChannelDescription] = None
+    """Description of the real output channel on this QRM, corresponding to port O1."""
+    real_output_1: Optional[RealChannelDescription] = None
+    """Description of the real output channel on this QRM, corresponding to port O2."""
+    real_input_0: Optional[RealChannelDescription] = None
+    """Description of the real input channel on this QRM, corresponding to port I1."""
+    real_input_1: Optional[RealChannelDescription] = None
+    """Description of the real output channel on this QRM, corresponding to port I2."""
+    digital_output_0: Optional[DigitalChannelDescription] = None
+    """Description of the digital (marker) output channel on this QRM, corresponding to port M1."""
+    digital_output_1: Optional[DigitalChannelDescription] = None
+    """Description of the digital (marker) output channel on this QRM, corresponding to port M2."""
+    digital_output_2: Optional[DigitalChannelDescription] = None
+    """Description of the digital (marker) output channel on this QRM, corresponding to port M3."""
+    digital_output_3: Optional[DigitalChannelDescription] = None
+    """Description of the digital (marker) output channel on this QRM, corresponding to port M4."""
+
+
+class QCMDescription(DataStructure):
+    """Information needed to specify a QCM in the :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`."""
+
+    instrument_type: Literal["QCM"]
+    """The instrument type of this module."""
+    sequence_to_file: bool = True
+    """Write sequencer programs to files, for this module."""
+    complex_output_0: Optional[ComplexChannelDescription] = None
+    """Description of the complex output channel on this QRM, corresponding to ports O1 and O2."""
+    complex_output_1: Optional[ComplexChannelDescription] = None
+    """Description of the complex output channel on this QRM, corresponding to ports O3 and O4."""
+    real_output_0: Optional[RealChannelDescription] = None
+    """Description of the real output channel on this QRM, corresponding to port O1."""
+    real_output_1: Optional[RealChannelDescription] = None
+    """Description of the real output channel on this QRM, corresponding to port O2."""
+    real_output_2: Optional[RealChannelDescription] = None
+    """Description of the real output channel on this QRM, corresponding to port O3."""
+    real_output_3: Optional[RealChannelDescription] = None
+    """Description of the real output channel on this QRM, corresponding to port O4."""
+    digital_output_0: Optional[DigitalChannelDescription] = None
+    """Description of the digital (marker) output channel on this QRM, corresponding to port M1."""
+    digital_output_1: Optional[DigitalChannelDescription] = None
+    """Description of the digital (marker) output channel on this QRM, corresponding to port M2."""
+    digital_output_2: Optional[DigitalChannelDescription] = None
+    """Description of the digital (marker) output channel on this QRM, corresponding to port M3."""
+    digital_output_3: Optional[DigitalChannelDescription] = None
+    """Description of the digital (marker) output channel on this QRM, corresponding to port M4."""
+
+
+class QRMRFDescription(DataStructure):
+    """Information needed to specify a QRM-RF in the :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`."""
+
+    instrument_type: Literal["QRM_RF"]
+    """The instrument type of this module."""
+    sequence_to_file: bool = True
+    """Write sequencer programs to files, for this module."""
+    complex_output_0: Optional[ComplexChannelDescription] = None
+    """Description of the complex output channel on this QRM, corresponding to port O1."""
+    complex_input_0: Optional[ComplexChannelDescription] = None
+    """Description of the complex input channel on this QRM, corresponding to port I1."""
+    digital_output_0: Optional[DigitalChannelDescription] = None
+    """Description of the digital (marker) output channel on this QRM, corresponding to port M1."""
+    digital_output_1: Optional[DigitalChannelDescription] = None
+    """Description of the digital (marker) output channel on this QRM, corresponding to port M2."""
+
+
+class QCMRFDescription(DataStructure):
+    """Information needed to specify a QCM-RF in the :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`."""
+
+    instrument_type: Literal["QCM_RF"]
+    """The instrument type of this module."""
+    sequence_to_file: bool = True
+    """Write sequencer programs to files, for this module."""
+    complex_output_0: Optional[ComplexChannelDescription] = None
+    """Description of the complex output channel on this QRM, corresponding to port O1."""
+    complex_output_1: Optional[ComplexChannelDescription] = None
+    """Description of the complex output channel on this QRM, corresponding to port O2."""
+    digital_output_0: Optional[DigitalChannelDescription] = None
+    """Description of the digital (marker) output channel on this QRM, corresponding to port M1."""
+    digital_output_1: Optional[DigitalChannelDescription] = None
+    """Description of the digital (marker) output channel on this QRM, corresponding to port M2."""
+
+
+ClusterModuleDescription = Annotated[
+    Union[QRMDescription, QCMDescription, QRMRFDescription, QCMRFDescription],
+    Field(discriminator="instrument_type"),
+]
 
 
 class ClusterDescription(QbloxBaseDescription):
@@ -580,6 +708,26 @@ class PulsarQCMDescription(QbloxBaseDescription):
 
     instrument_type: Literal["Pulsar_QCM"]
     """The instrument type, used to select this datastructure when parsing a :class:`~.CompilationConfig`."""
+    complex_output_0: Optional[ComplexChannelDescription] = None
+    """Description of the complex output channel on this QRM, corresponding to ports O1 and O2."""
+    complex_output_1: Optional[ComplexChannelDescription] = None
+    """Description of the complex output channel on this QRM, corresponding to ports O3 and O4."""
+    real_output_0: Optional[RealChannelDescription] = None
+    """Description of the real output channel on this QRM, corresponding to port O1."""
+    real_output_1: Optional[RealChannelDescription] = None
+    """Description of the real output channel on this QRM, corresponding to port O2."""
+    real_output_2: Optional[RealChannelDescription] = None
+    """Description of the real output channel on this QRM, corresponding to port O3."""
+    real_output_3: Optional[RealChannelDescription] = None
+    """Description of the real output channel on this QRM, corresponding to port O4."""
+    digital_output_0: Optional[DigitalChannelDescription] = None
+    """Description of the digital (marker) output channel on this QRM, corresponding to port M1."""
+    digital_output_1: Optional[DigitalChannelDescription] = None
+    """Description of the digital (marker) output channel on this QRM, corresponding to port M2."""
+    digital_output_2: Optional[DigitalChannelDescription] = None
+    """Description of the digital (marker) output channel on this QRM, corresponding to port M3."""
+    digital_output_3: Optional[DigitalChannelDescription] = None
+    """Description of the digital (marker) output channel on this QRM, corresponding to port M4."""
 
 
 class PulsarQRMDescription(QbloxBaseDescription):
@@ -587,17 +735,239 @@ class PulsarQRMDescription(QbloxBaseDescription):
 
     instrument_type: Literal["Pulsar_QRM"]
     """The instrument type, used to select this datastructure when parsing a :class:`~.CompilationConfig`."""
+    complex_output_0: Optional[ComplexChannelDescription] = None
+    """Description of the complex output channel on this QRM, corresponding to ports O1 and O2."""
+    complex_input_0: Optional[ComplexChannelDescription] = None
+    """Description of the complex input channel on this QRM, corresponding to ports I1 and I2."""
+    real_output_0: Optional[RealChannelDescription] = None
+    """Description of the real output channel on this QRM, corresponding to port O1."""
+    real_output_1: Optional[RealChannelDescription] = None
+    """Description of the real output channel on this QRM, corresponding to port O2."""
+    real_input_0: Optional[RealChannelDescription] = None
+    """Description of the real input channel on this QRM, corresponding to port I1."""
+    real_input_1: Optional[RealChannelDescription] = None
+    """Description of the real output channel on this QRM, corresponding to port I2."""
+    digital_output_0: Optional[DigitalChannelDescription] = None
+    """Description of the digital (marker) output channel on this QRM, corresponding to port M1."""
+    digital_output_1: Optional[DigitalChannelDescription] = None
+    """Description of the digital (marker) output channel on this QRM, corresponding to port M2."""
+    digital_output_2: Optional[DigitalChannelDescription] = None
+    """Description of the digital (marker) output channel on this QRM, corresponding to port M3."""
+    digital_output_3: Optional[DigitalChannelDescription] = None
+    """Description of the digital (marker) output channel on this QRM, corresponding to port M4."""
 
 
 QbloxHardwareDescription = Annotated[
-    Union[ClusterDescription, PulsarQCMDescription, PulsarQRMDescription],
+    Union[
+        ClusterDescription,
+        PulsarQCMDescription,
+        PulsarQRMDescription,
+        LocalOscillatorDescription,
+    ],
     Field(discriminator="instrument_type"),
 ]
 """
 Specifies a piece of Qblox hardware and its instrument-specific settings.
-
-Currently, the supported instrument types are: 
-:class:`~.ClusterDescription`,
-:class:`~.PulsarQCMDescription`,
-:class:`~.PulsarQRMDescription`
 """
+
+
+class RealInputGain(int):
+    """
+    Input gain settings for a real input connected to a port-clock combination.
+
+    This gain value will be set on the QRM input ports
+    that are connected to this port-clock combination.
+
+    .. admonition:: Example
+        :class: dropdown
+
+        .. code-block:: python
+
+            hardware_compilation_config.hardware_options.input_gain = {
+                "q0:res-q0.ro": RealInputGain(2),
+            }
+    """
+
+
+class ComplexInputGain(DataStructure):
+    """
+    Input gain settings for a real input connected to a port-clock combination.
+
+    This gain value will be set on the QRM input ports
+    that are connected to this port-clock combination.
+
+    .. admonition:: Example
+        :class: dropdown
+
+        .. code-block:: python
+
+            hardware_compilation_config.hardware_options.input_gain = {
+                "q0:res-q0.ro": ComplexInputGain(
+                    gain_I=2,
+                    gain_Q=3
+                ),
+            }
+    """
+
+    gain_I: int
+    """Gain setting on the input receiving the I-component data for this port-clock combination."""
+    gain_Q: int
+    """Gain setting on the input receiving the Q-component data for this port-clock combination."""
+
+
+class OutputAttenuation(int):
+    """
+    Output attenuation setting for a port-clock combination.
+
+    This attenuation value will be set on each control-hardware output
+    port that is connected to this port-clock combination.
+
+    .. admonition:: Example
+        :class: dropdown
+
+        .. code-block:: python
+
+            hardware_compilation_config.hardware_options.output_att = {
+                "q0:res-q0.ro": OutputAttenuation(10),
+            }
+    """
+
+
+class InputAttenuation(int):
+    """
+    Input attenuation setting for a port-clock combination.
+
+    This attenuation value will be set on each control-hardware output
+    port that is connected to this port-clock combination.
+
+    .. admonition:: Example
+        :class: dropdown
+
+        .. code-block:: python
+
+            hardware_compilation_config.hardware_options.input_att = {
+                "q0:res-q0.ro": InputAttenuation(10),
+            }
+    """
+
+
+class SequencerOptions(DataStructure):
+    """
+    Configuration options for a sequencer.
+
+    .. admonition:: Example
+        :class: dropdown
+
+        .. code-block:: python
+
+            hardware_compilation_config.hardware_options.sequencer_options = {
+                "q0:res-q0.ro": {
+                    "init_offset_awg_path_0": 0.1,
+                    "init_offset_awg_path_1": -0.1,
+                    "init_gain_awg_path_0": 0.9,
+                    "init_gain_awg_path_1": 1.0,
+                    "ttl_acq_threshold": 0.5
+                    "qasm_hook_func": foo
+                }
+            }
+    """
+
+    init_offset_awg_path_0: float = 0.0
+    """Specifies what value the sequencer offset for AWG path 0 will be reset to
+    before the start of the experiment."""
+    init_offset_awg_path_1: float = 0.0
+    """Specifies what value the sequencer offset for AWG path 1 will be reset to
+    before the start of the experiment."""
+    init_gain_awg_path_0: float = 1.0
+    """Specifies what value the sequencer gain for AWG path 0 will be reset to
+    before the start of the experiment."""
+    init_gain_awg_path_1: float = 1.0
+    """Specifies what value the sequencer gain for AWG path 0 will be reset to
+    before the start of the experiment."""
+    ttl_acq_threshold: Optional[float] = None
+    """Threshold value with which to compare the input ADC values of the selected input path."""
+    qasm_hook_func: Optional[Callable] = None
+    """
+    Function to inject custom qasm instructions after the compiler inserts the 
+    footer and the stop instruction in the generated qasm program.
+    """
+    instruction_generated_pulses_enabled: bool = False
+    """
+    (deprecated) Generate certain specific waveforms from the pulse library using a more 
+    complicated series of sequencer instructions, which helps conserve waveform memory.
+
+    Note: this setting is deprecated and will be removed in a future version.
+    Long square pulses and staircase pulses can be generated with the newly introduced 
+    :class:`~quantify_scheduler.operations.stitched_pulse.StitchedPulseBuilder`
+    """
+
+    @validator(
+        "init_offset_awg_path_0",
+        "init_offset_awg_path_1",
+        "init_gain_awg_path_0",
+        "init_gain_awg_path_1",
+    )
+    def _init_setting_limits(cls, init_setting):  # noqa: N805
+        # if connectivity contains a hardware config with latency corrections
+        if init_setting < -1.0 or init_setting > 1.0:
+            raise ValueError(
+                f"Trying to set init gain/awg setting to {init_setting} "
+                f"in the SequencerOptions. Must be between -1.0 and 1.0."
+            )
+        return init_setting
+
+
+class QbloxHardwareOptions(HardwareOptions):
+    """
+    Datastructure containing the hardware options for each port-clock combination.
+
+    .. admonition:: Example
+        :class: dropdown
+
+        Here, the HardwareOptions datastructure is created by parsing a
+        dictionary containing the relevant information.
+
+        .. jupyter-execute::
+
+            import pprint
+            from quantify_scheduler.schemas.examples.utils import (
+                load_json_example_scheme
+            )
+
+        .. jupyter-execute::
+
+            from quantify_scheduler.backends.types.qblox import (
+                QbloxHardwareOptions
+            )
+            qblox_hw_options_dict = load_json_example_scheme(
+                "qblox_hardware_compilation_config.json")["hardware_options"]
+            pprint.pprint(qblox_hw_options_dict)
+
+        The dictionary can be parsed using the :code:`parse_obj` method.
+
+        .. jupyter-execute::
+
+            qblox_hw_options = QbloxHardwareOptions.parse_obj(qblox_hw_options_dict)
+            qblox_hw_options
+    """
+
+    input_gain: Optional[Dict[str, Union[RealInputGain, ComplexInputGain]]] = None
+    """
+    Dictionary containing the input gain settings (values) that should be applied
+    to the inputs that are connected to a certain port-clock combination (keys).
+    """
+    output_att: Optional[Dict[str, OutputAttenuation]] = None
+    """
+    Dictionary containing the attenuation settings (values) that should be applied
+    to the outputs that are connected to a certain port-clock combination (keys).
+    """
+    input_att: Optional[Dict[str, InputAttenuation]] = None
+    """
+    Dictionary containing the attenuation settings (values) that should be applied
+    to the inputs that are connected to a certain port-clock combination (keys).
+    """
+    sequencer_options: Optional[Dict[str, SequencerOptions]] = None
+    """
+    Dictionary containing the options (values) that should be set
+    on the sequencer that is used for a certain port-clock combination (keys).
+    """

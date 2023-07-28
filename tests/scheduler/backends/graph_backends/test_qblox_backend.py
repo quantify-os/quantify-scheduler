@@ -191,12 +191,11 @@ def test_compile_sequence_to_file(
     if isinstance(instrument, tuple):
         hardware_comp_cfg["hardware_description"] = {
             instrument[0]: {
-                "hardware_type": "Qblox",
                 "instrument_type": "Cluster",
                 "ref": "internal",
                 "sequence_to_file": sequence_to_file,
                 "modules": {
-                    instrument[1][-1]: {"module_type": "QRM"},
+                    instrument[1][-1]: {"instrument_type": "QRM"},
                 },
             }
         }
@@ -221,7 +220,6 @@ def test_compile_sequence_to_file(
     else:
         hardware_comp_cfg["hardware_description"] = {
             instrument: {
-                "hardware_type": "Qblox",
                 "instrument_type": "Pulsar_QRM",
                 "ref": "internal",
                 "sequence_to_file": sequence_to_file,

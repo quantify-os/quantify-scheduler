@@ -12,14 +12,15 @@ from qcodes.instrument.parameter import InstrumentRefParameter, ManualParameter
 from qcodes.utils import validators
 from quantify_scheduler.backends.circuit_to_device import compile_circuit_to_device
 from quantify_scheduler.backends.qblox_backend import hardware_compile as qblox_backend
+from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
 from quantify_scheduler.backends.zhinst_backend import compile_backend as zhinst_backend
+from quantify_scheduler.backends.zhinst_backend import ZIHardwareCompilationConfig
 from quantify_scheduler.backends.graph_compilation import (
-    HardwareOptions,
     SerialCompilationConfig,
     SimpleNodeConfig,
     DeviceCompilationConfig,
-    HardwareCompilationConfig,
 )
+from quantify_scheduler.backends.types.common import HardwareCompilationConfig
 from quantify_scheduler.backends.qblox_backend import (
     compile_long_square_pulses_to_awg_offsets,
 )
@@ -229,35 +230,39 @@ class QuantumDevice(Instrument):
         if hardware_config is None:
             return None
 
-        if any(
+        if not any(
             [
                 key in hardware_config
                 for key in ["hardware_description", "hardware_options", "connectivity"]
             ]
         ):
-            hardware_compilation_config = HardwareCompilationConfig.parse_obj(
-                hardware_config
-            )
-        else:
             # Legacy support for the old hardware config dict:
             hardware_compilation_config = HardwareCompilationConfig(
                 backend=hardware_config["backend"],
                 hardware_description={},
-                hardware_options={},
+                hardware_options=None,
                 connectivity=hardware_config,
+            )
+        elif (
+            hardware_config["backend"]
+            == "quantify_scheduler.backends.qblox_backend.hardware_compile"
+        ):
+            hardware_compilation_config = QbloxHardwareCompilationConfig.parse_obj(
+                hardware_config
+            )
+        elif (
+            hardware_config["backend"]
+            == "quantify_scheduler.backends.zhinst_backend.compile_backend"
+        ):
+            hardware_compilation_config = ZIHardwareCompilationConfig.parse_obj(
+                hardware_config
+            )
+        else:
+            hardware_compilation_config = HardwareCompilationConfig.parse_obj(
+                hardware_config
             )
 
         return hardware_compilation_config
-
-    def generate_hardware_options(self):
-        """
-        Generates the :class:`~quantify_scheduler.backends.graph_compilation.HardwareOptions`
-        datastructure used for compiling from the quantum-device layer to a hardware backend.
-        """
-
-        hardware_options = HardwareOptions.parse_obj(self.hardware_options())
-
-        return hardware_options
 
     def get_element(self, name: str) -> DeviceElement:
         """

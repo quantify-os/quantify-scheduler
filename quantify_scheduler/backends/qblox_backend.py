@@ -5,17 +5,22 @@ from __future__ import annotations
 from copy import deepcopy
 
 import warnings
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends.corrections import (
     apply_distortion_corrections,
     determine_relative_latency_corrections,
 )
-from quantify_scheduler.backends.graph_compilation import (
-    CompilationConfig,
+from quantify_scheduler.backends.types.common import (
     HardwareOptions,
+    HardwareCompilationConfig,
 )
+from quantify_scheduler.backends.types.qblox import (
+    QbloxHardwareDescription,
+    QbloxHardwareOptions,
+)
+from quantify_scheduler.backends.graph_compilation import CompilationConfig
 from quantify_scheduler.backends.qblox import compiler_container, constants, helpers
 from quantify_scheduler.helpers.collections import find_inner_dicts_containing_key
 from quantify_scheduler.operations.pulse_factories import long_square_pulse
@@ -194,7 +199,7 @@ def hardware_compile(
     if not isinstance(config, CompilationConfig):
         warnings.warn(
             f"Qblox `{hardware_compile.__name__}` will require a full "
-            f"CompilationConfig as input as of quantify-scheduler >= 0.16.0",
+            f"CompilationConfig as input as of quantify-scheduler >= 0.19.0",
             FutureWarning,
         )
     if isinstance(config, CompilationConfig):
@@ -243,3 +248,24 @@ def hardware_compile(
     schedule["compiled_instructions"] = compiled_instructions
     # Mark the schedule as a compiled schedule
     return CompiledSchedule(schedule)
+
+
+class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
+    """
+    Datastructure containing the information needed to compile to the Qblox backend.
+
+    This information is structured in the same way as in the generic
+    :class:`~quantify_scheduler.backends.types.common.HardwareCompilationConfig`, but
+    contains fields for hardware-specific settings.
+    """
+
+    backend: Callable[[Schedule, Any], Schedule] = hardware_compile
+    """The compilation backend this configuration is intended for."""
+    hardware_description: Dict[str, QbloxHardwareDescription]
+    """Description of the instruments in the physical setup."""
+    hardware_options: Optional[QbloxHardwareOptions]
+    """
+    Options that are used in compiling the instructions for the hardware, such as
+    :class:`~quantify_scheduler.backends.types.common.LatencyCorrection` or
+    :class:`~quantify_scheduler.backends.types.qblox.SequencerOptions`.
+    """

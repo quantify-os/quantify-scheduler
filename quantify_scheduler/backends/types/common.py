@@ -1,116 +1,173 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Common python dataclasses for multiple backends."""
+import warnings
+from typing import Dict, Literal, Optional, Union, List, Callable, Any
 
-from dataclasses import dataclass
-from typing import Literal, Optional
+from pydantic import validator
 
-from dataclasses_json import DataClassJsonMixin
-
-from quantify_scheduler import enums
-from quantify_scheduler.structure.model import DataStructure
+from quantify_scheduler.structure.model import DataStructure, deserialize_function
+from quantify_scheduler.schedules.schedule import Schedule
+from quantify_scheduler.structure.types import NDArray
 
 
-@dataclass
-class MixerCorrections(DataClassJsonMixin):
+class LatencyCorrection(float):
     """
-    The mixer corrections record type.
+    Latency correction in seconds for a port-clock combination.
 
-    Parameters
-    ----------
+    Positive values delay the operations on the corresponding port-clock combination,
+    while negative values shift the operation backwards in time with respect to other
+    operations in the schedule.
 
-    amp_ratio: float
-        The amplitude ratio between the real and imaginary
-        paths for correcting the imbalance
-        in the IQ mixer. (default = 1.0)
-    phase_error: float
-        The phase shift error used to compensate
-        for quadrature errors. (default = .0)
-    dc_offset_I: float
-        The DC offset off the real(I)
-        path for lo feed-through compensation
-        in Volts(V). (default = .0)
-    dc_offset_Q: float
-        The DC offset off the imaginary(Q)
-        path for lo feed-through compensation
-        in Volts(V). (default = .0)
+    .. note::
+
+        If the port-clock combination of a signal is not specified in the corrections,
+        it is set to zero in compilation. The minimum correction over all port-clock
+        combinations is then subtracted to allow for negative latency corrections and to
+        ensure minimal wait time (see
+        :meth:`~quantify_scheduler.backends.corrections.determine_relative_latency_corrections`).
+
+    .. admonition:: Example
+        :class: dropdown
+
+        Let's say we have specified two latency corrections in the CompilationConfig:
+
+        .. code-block:: python
+
+            compilation_config.hardware_options.latency_corrections = {
+                "q0:res-q0.ro": LatencyCorrection(-20e-9),
+                "q0:mw-q0.01": LatencyCorrection(120e9),
+            }
+
+        In this case, all operations on port ``"q0:mw"`` and clock ``"q0.01"`` will
+        be delayed by 140 ns with respect to operations on port ``"q0:res"`` and
+        clock ``"q0.ro"``.
     """
 
+
+class DistortionCorrection(DataStructure):
+    """Distortion correction information for a port-clock combination."""
+
+    filter_func: str
+    """The function applied to the waveforms."""
+    input_var_name: str
+    """The argument to which the waveforms will be passed in the filter_func."""
+    kwargs: Dict[str, Union[List, NDArray]]
+    """The keyword arguments that are passed to the filter_func."""
+    clipping_values: Optional[List]
+    """
+    The optional boundaries to which the corrected pulses will be clipped,
+    upon exceeding.
+
+
+    .. admonition:: Example
+        :class: dropdown
+
+        .. code-block:: python
+
+            compilation_config.hardware_options.distortion_corrections = {
+                "q0:fl-cl0.baseband": DistortionCorrection(
+                    filter_func = "scipy.signal.lfilter",
+                    input_var_name = "x",
+                    kwargs = {
+                        "b": [0, 0.25, 0.5],
+                        "a": [1]
+                    },
+                    clipping_values = [-2.5, 2.5]
+                )
+            }
+    """
+
+
+class ModulationFrequencies(DataStructure):
+    """
+    Modulation frequencies for a port-clock combination.
+
+    .. admonition:: Example
+        :class: dropdown
+
+        .. code-block:: python
+
+            compilation_config.hardware_options.modulation_frequencies = {
+                "q0:res-q0.ro": ModulationFrequencies(
+                    interm_freq = None,
+                    lo_freq = 6e9,
+                )
+            }
+    """
+
+    interm_freq: Optional[float]
+    """The intermodulation frequency (IF) used for this port-clock combination."""
+    lo_freq: Optional[float]
+    """The local oscillator frequency (LO) used for this port-clock combination."""
+
+
+class MixerCorrections(DataStructure):
+    """
+    Mixer corrections for a port-clock combination.
+
+    .. admonition:: Example
+        :class: dropdown
+
+        .. code-block:: python
+
+            compilation_config.hardware_options.mixer_corrections = {
+                "q0:mw-q0.01": MixerCorrections(
+                    dc_offset_i = -0.0542,
+                    dc_offset_q = -0.0328,
+                    amp_ratio = 0.95,
+                    phase_error_deg= 0.07,
+                )
+            }
+    """
+
+    dc_offset_i: float = 0.0
+    """The DC offset on the I channel used for this port-clock combination."""
+    dc_offset_q: float = 0.0
+    """The DC offset on the Q channel used for this port-clock combination."""
     amp_ratio: float = 1.0
+    """The mixer gain ratio used for this port-clock combination."""
     phase_error: float = 0.0
-    dc_offset_I: float = 0.0  # pylint: disable=invalid-name
-    dc_offset_Q: float = 0.0  # pylint: disable=invalid-name
+    """The mixer phase error used for this port-clock combination."""
 
 
-@dataclass
-class Modulation(DataClassJsonMixin):
+class HardwareOptions(DataStructure):
     """
-    The backend Modulation record type.
+    Datastructure containing the hardware options for each port-clock combination.
 
-    Parameters
-    ----------
-    type :
-        The modulation mode type select. Allows
-        to choose between. (default = ModulationModeType.NONE)
-
-        1. no modulation. ('none')
-        2. Software premodulation applied in the numerical waveforms. ('premod')
-        3. Hardware real-time modulation. ('modulate')
-    interm_freq :
-        The inter-modulation frequency (IF) in Hz. (default = 0.0).
-    phase_shift :
-        The IQ modulation phase shift in Degrees. (default = 0.0).
+    This datastructure contains the HardwareOptions that are currently shared among
+    the existing backends. Subclassing is required to add backend-specific options,
+    see e.g.,
+    :class:`~quantify_scheduler.backends.types.qblox.QbloxHardwareOptions`,
+    :class:`~quantify_scheduler.backends.types.zhinst.ZIHardwareOptions`.
     """
 
-    type: enums.ModulationModeType = enums.ModulationModeType.NONE
-    interm_freq: float = 0.0
-    phase_shift: float = 0.0
-
-
-@dataclass
-class LocalOscillator(DataClassJsonMixin):
+    latency_corrections: Optional[Dict[str, LatencyCorrection]]
     """
-    The backend LocalOscillator record type.
-
-    Parameters
-    ----------
-    unique_name :
-        The unique name identifying the combination of instrument and
-        channel/parameters.
-    instrument_name :
-        The QCodes name of the LocalOscillator.
-    generic_icc_name :
-        The name of the GenericInstrumentCoordinatorComponent attached to this device.
-    frequency :
-        A dict which tells the generic icc what parameter maps to the local oscillator
-        (LO) frequency in Hz.
-    frequency_param
-        The parameter on the LO instrument used to control the frequency.
-    power :
-        A dict which tells the generic icc what parameter maps to the local oscillator
-        (LO) power in dBm.
-    phase :
-        A dict which tells the generic icc what parameter maps to the local oscillator
-        (LO) phase in radians.
-    parameters :
-        A dict which allows setting of channel specific parameters of the device. Cannot
-        be used together with frequency and power.
+    Dictionary containing the latency corrections (values) that should be applied
+    to operations on a certain port-clock combination (keys).
     """
-
-    unique_name: str
-    instrument_name: str
-    generic_icc_name: Optional[str] = None
-    frequency: Optional[dict] = None
-    frequency_param: Optional[str] = None
-    power: Optional[dict] = None
-    phase: Optional[dict] = None
-    parameters: Optional[dict] = None
+    distortion_corrections: Optional[Dict[str, DistortionCorrection]]
+    """
+    Dictionary containing the distortion corrections (values) that should be applied
+    to waveforms on a certain port-clock combination (keys).
+    """
+    modulation_frequencies: Optional[Dict[str, ModulationFrequencies]]
+    """
+    Dictionary containing the modulation frequencies (values) that should be used
+    for signals on a certain port-clock combination (keys).
+    """
+    mixer_corrections: Optional[Dict[str, MixerCorrections]]
+    """
+    Dictionary containing the mixer corrections (values) that should be used
+    for signals on a certain port-clock combination (keys).
+    """
 
 
 class LocalOscillatorDescription(DataStructure):
     """Information needed to specify a Local Oscillator in the :class:`~.CompilationConfig`."""
 
-    hardware_type: Literal["LocalOscillator"]
+    instrument_type: Literal["LocalOscillator"]
     """The field discriminator for this HardwareDescription datastructure."""
     instrument_name: Optional[str]
     """The QCoDeS instrument name corresponding to this Local Oscillator."""
@@ -122,3 +179,85 @@ class LocalOscillatorDescription(DataStructure):
     """The QCoDeS parameter that is used to set the LO power."""
     power: Optional[int]
     """The power setting for this Local Oscillator."""
+
+
+class HardwareDescription(DataStructure):
+    """Specifies a piece of hardware and its instrument-specific settings."""
+
+    instrument_type: str
+    """The instrument type."""
+
+
+class Connectivity(DataStructure):
+    """Connectivity between ports on the quantum device and on the control hardware."""
+
+
+class HardwareCompilationConfig(DataStructure):
+    """
+    Information required to compile a schedule to the control-hardware layer.
+
+    From a point of view of :ref:`sec-compilation` this information is needed
+    to convert a schedule defined on a quantum-device layer to compiled instructions
+    that can be executed on the control hardware.
+
+    This datastructure defines the overall structure of a `HardwareCompilationConfig`.
+    Specific hardware backends may customize fields within this structure by inheriting
+    from this class, see e.g.,
+    :class:`~quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`,
+    :class:`~quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig`.
+    """
+
+    backend: Callable[[Schedule, Any], Schedule]
+    """
+    A . separated string specifying the location of the compilation backend this
+    configuration is intended for.
+    """
+    hardware_description: Dict[str, HardwareDescription]
+    """
+    Datastructure describing the control hardware instruments in the setup and their
+    high-level settings.
+    """
+    connectivity: Union[
+        Connectivity, Dict
+    ]  # Dict for legacy support for the old hardware config
+    """
+    Datastructure representing how ports on the quantum device are connected to ports
+    on the control hardware.
+    """
+    hardware_options: Optional[HardwareOptions]
+    """
+    The `HardwareOptions` used in the compilation from the quantum-device layer to
+    the control-hardware layer.
+    """
+
+    @validator("backend", pre=True)
+    def _import_backend_if_str(
+        cls, fun: Callable[[Schedule, Any], Schedule]  # noqa: N805
+    ) -> Callable[[Schedule, Any], Schedule]:
+        if isinstance(fun, str):
+            return deserialize_function(fun)
+        return fun  # type: ignore
+
+    @validator("connectivity")
+    def _latencies_in_hardware_config(cls, connectivity):  # noqa: N805
+        # if connectivity contains a hardware config with latency corrections
+        if isinstance(connectivity, Dict) and "latency_corrections" in connectivity:
+            warnings.warn(
+                "Latency corrections should be specified in the "
+                "`backends.types.common.HardwareOptions` instead of "
+                "the hardware configuration as of quantify-scheduler >= 0.19.0",
+                FutureWarning,
+            )
+        return connectivity
+
+    @validator("connectivity")
+    def _distortions_in_hardware_config(cls, connectivity):  # noqa: N805
+        # if connectivity contains a hardware config with distortion corrections
+        if isinstance(connectivity, Dict) and "distortion_corrections" in connectivity:
+            warnings.warn(
+                "Distortion corrections should be specified in the "
+                "`backends.types.common.HardwareOptions` instead of "
+                "the hardware configuration as of quantify-scheduler >= 0.19.0",
+                FutureWarning,
+            )
+        return connectivity

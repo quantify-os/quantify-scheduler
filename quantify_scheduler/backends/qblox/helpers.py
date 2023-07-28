@@ -6,7 +6,7 @@ import dataclasses
 import re
 import warnings
 from copy import deepcopy
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -15,6 +15,12 @@ from quantify_core.utilities.general import without
 
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.qblox.enums import IoMode
+from quantify_scheduler.backends.types.qblox import (
+    ComplexChannelDescription,
+    ComplexInputGain,
+    OpInfo,
+    RealInputGain,
+)
 from quantify_scheduler.helpers.waveforms import exec_waveform_function
 from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 from quantify_scheduler.helpers.collections import (
@@ -27,7 +33,6 @@ from quantify_scheduler.helpers.schedule import (
 )
 from quantify_scheduler import Schedule
 
-from quantify_scheduler.backends.types.qblox import OpInfo
 from quantify_scheduler.operations.pulse_library import WindowOperation
 from quantify_scheduler.backends.graph_compilation import CompilationConfig
 
@@ -952,8 +957,6 @@ def generate_hardware_config(compilation_config: CompilationConfig):
         If the CompilationConfig.connectivity does not contain a hardware config.
     ValueError
         If a value is specified in both the hardware options and the hardware config.
-    ValueError
-        If setting a power_scaling option is not supported in the given configuration.
     RuntimeError
         If no external local oscillator is found in the generated Qblox hardware configuration.
     """
@@ -966,6 +969,82 @@ def generate_hardware_config(compilation_config: CompilationConfig):
                 nested_dict[k]["portclock_configs"][0]["clock"] = "digital"
             elif isinstance(nested_dict[k], Dict):
                 _recursive_digital_io_search(nested_dict[k], max_depth - 1)
+
+    def _set_hardware_config_value(
+        hw_config_dict: dict, hw_config_key: str, hw_compilation_config_value: Any
+    ):
+        legacy_value = hw_config_dict.get(hw_config_key, "not_present")
+        # Using default="not_present" because None can also be a meaningful setting
+        if legacy_value == "not_present":
+            hw_config_dict[hw_config_key] = hw_compilation_config_value
+        elif (
+            hw_compilation_config_value is not None
+            and legacy_value != hw_compilation_config_value
+        ):
+            raise ValueError(
+                f"Trying to set '{hw_config_key}' to '{hw_compilation_config_value}' from the"
+                f" new hardware compilation config datastructure while"
+                f" it has previously been set to '{legacy_value}' in the old-style hardware"
+                f" config dict. To avoid conflicting settings, please make sure this"
+                f" value is only set in one place."
+            )
+
+    def _propagate_complex_channel_description_settings(
+        io_config: Dict[str, Any], io_description: ComplexChannelDescription
+    ):
+        # Set the marker_debug_mode_enable option in the io config:
+        _set_hardware_config_value(
+            hw_config_dict=io_config,
+            hw_config_key="marker_debug_mode_enable",
+            hw_compilation_config_value=io_description.marker_debug_mode_enable,
+        )
+        # Set the mix_lo option in the io config:
+        _set_hardware_config_value(
+            hw_config_dict=io_config,
+            hw_config_key="mix_lo",
+            hw_compilation_config_value=io_description.mix_lo,
+        )
+        # Set the downconverter_freq option in the io config:
+        _set_hardware_config_value(
+            hw_config_dict=io_config,
+            hw_config_key="downconverter_freq",
+            hw_compilation_config_value=io_description.downconverter_freq,
+        )
+
+    def _propagate_channel_description_settings(
+        config: dict,
+        description: Any,
+    ):
+        for key in [
+            "complex_output_0",
+            "complex_output_1",
+            "complex_input_0",
+            "real_output_0",
+            "real_output_1",
+            "real_output_2",
+            "real_output_3",
+            "real_input_0",
+            "real_input_1",
+        ]:
+            if (io_description := getattr(description, key, None)) is None:
+                # No channel description to set
+                continue
+            if key not in config:
+                # The channel is not present in the existing instrument config,
+                # most likely because it is not specified in the connectivity
+                continue
+
+            if "complex" in key:
+                _propagate_complex_channel_description_settings(
+                    io_config=config[key],
+                    io_description=io_description,
+                )
+            else:
+                _set_hardware_config_value(
+                    hw_config_dict=config[key],
+                    hw_config_key="marker_debug_mode_enable",
+                    hw_compilation_config_value=io_description.marker_debug_mode_enable,
+                )
 
     if not isinstance(
         compilation_config.hardware_compilation_config.connectivity, Dict
@@ -999,147 +1078,68 @@ def generate_hardware_config(compilation_config: CompilationConfig):
                 # Initialize instrument config dict
                 hardware_config[instr_name] = {}
             instr_config = hardware_config[instr_name]
-            if instr_description.hardware_type == "Qblox":
-                # Set the instrument_type in the instrument config:
-                legacy_instr_type = instr_config.get("instrument_type")
-                if instr_description.instrument_type is None:
-                    pass
-                elif legacy_instr_type is None:
-                    instr_config["instrument_type"] = instr_description.instrument_type
-                elif legacy_instr_type != instr_description.instrument_type:
-                    raise ValueError(
-                        f"Trying to set instrument type for instrument: {instr_name} to"
-                        f" {instr_description.instrument_type} from the hardware description while"
-                        f" it has previously been set to {legacy_instr_type} in the hardware"
-                        f" config. To avoid conflicting settings, please make sure this"
-                        f" value is only set in one place."
-                    )
-                # Set the instrument reference source in the instrument config:
-                legacy_ref = instr_config.get("ref")
-                if instr_description.ref is None:
-                    pass
-                elif legacy_ref is None:
-                    instr_config["ref"] = instr_description.ref
-                elif legacy_ref != instr_description.ref:
-                    raise ValueError(
-                        f"Trying to set reference source for instrument: {instr_name} to"
-                        f" {instr_description.ref} from the hardware description while"
-                        f" it has previously been set to {legacy_ref} in the hardware"
-                        f" config. To avoid conflicting settings, please make sure this"
-                        f" value is only set in one place."
-                    )
-                # Set the sequence_to_file option in the instrument config:
-                legacy_seq_to_file = instr_config.get("sequence_to_file")
-                if instr_description.sequence_to_file is None:
-                    pass
-                elif legacy_seq_to_file is None:
-                    instr_config[
-                        "sequence_to_file"
-                    ] = instr_description.sequence_to_file
-                elif legacy_seq_to_file != instr_description.sequence_to_file:
-                    raise ValueError(
-                        f"Trying to set `sequence_to_file` for instrument: {instr_name} to"
-                        f" {instr_description.sequence_to_file} from the hardware description while"
-                        f" it has previously been set to {legacy_seq_to_file} in the hardware"
-                        f" config. To avoid conflicting settings, please make sure this"
-                        f" value is only set in one place."
-                    )
-                if instr_description.instrument_type == "Cluster":
-                    for (
-                        module_slot_idx,
-                        module_description,
-                    ) in instr_description.modules.items():
-                        module_name = f"{instr_name}_module{module_slot_idx}"
-                        if instr_config.get(module_name) is None:
-                            # Initialize module config dict
-                            instr_config[module_name] = {}
-                        module_config = hardware_config[instr_name][module_name]
-                        # Set the instrument_type in the module config:
-                        legacy_mod_type = module_config.get("instrument_type")
-                        if instr_description.instrument_type is None:
-                            pass
-                        elif legacy_mod_type is None:
-                            module_config[
-                                "instrument_type"
-                            ] = module_description.module_type
-                        elif legacy_mod_type != module_description.module_type:
-                            raise ValueError(
-                                f"Trying to set instrument type for {module_name} to"
-                                f" {module_description.module_type} from the hardware description while "
-                                f" it has previously been set to {legacy_mod_type} in the hardware"
-                                f" config. To avoid conflicting settings, please make sure this"
-                                f" value is only set in one place."
-                            )
-                        # Set the sequence_to_file option in the module config:
-                        legacy_mod_seq_to_file = module_config.get("sequence_to_file")
-                        if module_description.sequence_to_file is None:
-                            pass
-                        elif legacy_mod_seq_to_file is None:
-                            module_config[
-                                "sequence_to_file"
-                            ] = module_description.sequence_to_file
-                        elif (
-                            legacy_mod_seq_to_file != instr_description.sequence_to_file
-                        ):
-                            raise ValueError(
-                                f"Trying to set `sequence_to_file` for instrument: {module_name} to"
-                                f" {module_description.sequence_to_file} from the hardware description while"
-                                f" it has previously been set to {legacy_mod_seq_to_file} in the hardware"
-                                f" config. To avoid conflicting settings, please make sure this"
-                                f" value is only set in one place."
-                            )
-            elif instr_description.hardware_type == "LocalOscillator":
-                instr_config["instrument_type"] = instr_description.hardware_type
 
-                # Set the lo power in the lo config:
-                legacy_lo_power = instr_config.get(instr_description.power_param)
-                if instr_description.power_param is None:
-                    pass
-                elif legacy_lo_power is None:
-                    instr_config[
-                        instr_description.power_param
-                    ] = instr_description.power
-                elif legacy_lo_power != instr_description.power:
-                    raise ValueError(
-                        f"Trying to set the power for Local Oscillator: {instr_name} to"
-                        f" {instr_description.power} from the hardware description while"
-                        f" it has previously been set to {legacy_lo_power} in the hardware"
-                        f" config. To avoid conflicting settings, please make sure this"
-                        f" value is only set in one place."
+            for key in ["instrument_type", "ref", "sequence_to_file"]:
+                try:
+                    _set_hardware_config_value(
+                        hw_config_dict=instr_config,
+                        hw_config_key=key,
+                        hw_compilation_config_value=getattr(instr_description, key),
                     )
+                except AttributeError:
+                    pass
+
+            # Propagate I/O channel description settings for Pulsars
+            _propagate_channel_description_settings(
+                config=instr_config, description=instr_description
+            )
+
+            if instr_description.instrument_type == "Cluster":
+                for (
+                    module_slot_idx,
+                    module_description,
+                ) in instr_description.modules.items():
+                    module_name = f"{instr_name}_module{module_slot_idx}"
+                    if instr_config.get(module_name) is None:
+                        # Initialize module config dict
+                        instr_config[module_name] = {}
+                    module_config = hardware_config[instr_name][module_name]
+
+                    for key in ["instrument_type", "sequence_to_file"]:
+                        try:
+                            _set_hardware_config_value(
+                                hw_config_dict=module_config,
+                                hw_config_key=key,
+                                hw_compilation_config_value=getattr(
+                                    module_description, key
+                                ),
+                            )
+                        except AttributeError:
+                            pass
+
+                    # Propagate I/O channel description settings for Cluster modules
+                    _propagate_channel_description_settings(
+                        config=module_config, description=module_description
+                    )
+
+            if instr_description.instrument_type == "LocalOscillator":
+                # Set the lo power in the lo config:
+                _set_hardware_config_value(
+                    hw_config_dict=instr_config,
+                    hw_config_key=instr_description.power_param,
+                    hw_compilation_config_value=instr_description.power,
+                )
 
     if hardware_options is not None:
-        # Add latency corrections from hardware options to hardware config
-        latency_corrections = hardware_options.dict()["latency_corrections"]
-        legacy_latency_corrections = hardware_config.get("latency_corrections")
-
-        if latency_corrections is None:
-            pass
-        elif legacy_latency_corrections is None:
-            hardware_config["latency_corrections"] = latency_corrections
-        elif legacy_latency_corrections != latency_corrections:
-            raise ValueError(
-                f"Trying to set latency corrections to {latency_corrections} from "
-                f"the hardware options while it has previously been set to "
-                f"{legacy_latency_corrections} in the hardware config. To avoid conflicting "
-                f"settings, please make sure these corrections are only set in one place."
-            )
-
-        # Add distortion corrections from hardware options to hardware config
-        distortion_corrections = hardware_options.dict()["distortion_corrections"]
-        legacy_distortion_corrections = hardware_config.get("distortion_corrections")
-
-        if distortion_corrections is None:
-            pass
-        elif legacy_distortion_corrections is None:
-            hardware_config["distortion_corrections"] = distortion_corrections
-        elif legacy_distortion_corrections != distortion_corrections:
-            raise ValueError(
-                f"Trying to set distortion corrections to {distortion_corrections} from "
-                f"the hardware options while it has previously been set to "
-                f"{legacy_distortion_corrections} in the hardware config. To avoid conflicting "
-                f"settings, please make sure these corrections are only set in one place."
-            )
+        for key in ["latency_corrections", "distortion_corrections"]:
+            try:
+                _set_hardware_config_value(
+                    hw_config_dict=hardware_config,
+                    hw_config_key=key,
+                    hw_compilation_config_value=hardware_options.dict()[key],
+                )
+            except KeyError:
+                pass
 
         if hardware_options.modulation_frequencies is not None:
             for port, clock in port_clocks:
@@ -1160,19 +1160,12 @@ def generate_hardware_config(compilation_config: CompilationConfig):
                 for key in pc_path:
                     pc_config = pc_config[key]
 
-                legacy_interm_freq = pc_config.get("interm_freq", "not_present")
-                # Using default="not_present" because IF=None is also a valid setting
-                if legacy_interm_freq == "not_present":
-                    # Set the interm_freq in the port-clock config.
-                    pc_config["interm_freq"] = pc_mod_freqs.interm_freq
-                elif legacy_interm_freq != pc_mod_freqs.interm_freq:
-                    raise ValueError(
-                        f"Trying to set IF for {port=}, {clock=} to"
-                        f" {pc_mod_freqs.interm_freq} from the hardware options while it"
-                        f" has previously been set to {legacy_interm_freq} in the hardware"
-                        f" config. To avoid conflicting settings, please make sure this"
-                        f" value is only set in one place."
-                    )
+                # Set the interm_freq in the portclock config:
+                _set_hardware_config_value(
+                    hw_config_dict=pc_config,
+                    hw_config_key="interm_freq",
+                    hw_compilation_config_value=pc_mod_freqs.interm_freq,
+                )
 
                 # Extract instrument config and I/O channel config dicts:
                 instr_config = hardware_config
@@ -1183,18 +1176,11 @@ def generate_hardware_config(compilation_config: CompilationConfig):
 
                 # If RF module, set the lo frequency in the I/O config:
                 if "RF" in instr_config["instrument_type"]:
-                    legacy_lo_freq = io_config.get("lo_freq", "not_present")
-                    # Using default="not_present" because lo_freq=None is also a valid setting
-                    if legacy_lo_freq == "not_present":
-                        io_config["lo_freq"] = pc_mod_freqs.lo_freq
-                    elif legacy_lo_freq != pc_mod_freqs.lo_freq:
-                        raise ValueError(
-                            f"Trying to set frequency for {lo_name} to"
-                            f" {pc_mod_freqs.lo_freq} from the hardware options while"
-                            f" it has previously been set to {legacy_lo_freq} in"
-                            f" the hardware config. To avoid conflicting settings,"
-                            f" please make sure this value is only set in one place."
-                        )
+                    _set_hardware_config_value(
+                        hw_config_dict=io_config,
+                        hw_config_key="lo_freq",
+                        hw_compilation_config_value=pc_mod_freqs.lo_freq,
+                    )
                 # Else, set the lo frequency in the external lo config:
                 else:
                     lo_name: str = io_config["lo_name"]
@@ -1204,18 +1190,11 @@ def generate_hardware_config(compilation_config: CompilationConfig):
                             f"be used for {port=} and {clock=} not found! Make "
                             f"sure it is present in the hardware configuration."
                         )
-                    legacy_lo_freq = lo_config.get("frequency", "not_present")
-                    # Using default="not_present" because lo_freq=None is also a valid setting
-                    if legacy_lo_freq == "not_present":
-                        lo_config["frequency"] = pc_mod_freqs.lo_freq
-                    elif legacy_lo_freq != pc_mod_freqs.lo_freq:
-                        raise ValueError(
-                            f"Trying to set frequency for {lo_name} to"
-                            f" {pc_mod_freqs.lo_freq} from the hardware options while"
-                            f" it has previously been set to {legacy_lo_freq} in"
-                            f" the hardware config. To avoid conflicting settings,"
-                            f" please make sure this value is only set in one place."
-                        )
+                    _set_hardware_config_value(
+                        hw_config_dict=lo_config,
+                        hw_config_key="frequency",
+                        hw_compilation_config_value=pc_mod_freqs.lo_freq,
+                    )
 
         mixer_corrections = hardware_options.mixer_corrections
         if mixer_corrections is not None:
@@ -1223,12 +1202,7 @@ def generate_hardware_config(compilation_config: CompilationConfig):
                 if (pc_mix_corr := mixer_corrections.get(f"{port}-{clock}")) is None:
                     # No mixer corrections to set for this port-clock.
                     continue
-                pc_mix_corr = {
-                    "mixer_amp_ratio": pc_mix_corr.amp_ratio,
-                    "mixer_phase_error_deg": pc_mix_corr.phase_error,
-                    "dc_mixer_offset_I": pc_mix_corr.dc_offset_i,
-                    "dc_mixer_offset_Q": pc_mix_corr.dc_offset_q,
-                }
+
                 # Find path to port-clock combination in the hardware config, e.g.,
                 # ["cluster0", "cluster0_module1", "complex_output_0", "portclock_configs", 1]
                 pc_path = find_port_clock_path(
@@ -1241,141 +1215,223 @@ def generate_hardware_config(compilation_config: CompilationConfig):
                     io_config = io_config[key]
                 pc_config = io_config["portclock_configs"][pc_path[-1]]
 
-                # Add mixer corrections from hardware options to I/O channel config
-                legacy_mix_corr = {
-                    "mixer_amp_ratio": pc_config.get("mixer_amp_ratio"),
-                    "mixer_phase_error_deg": pc_config.get("mixer_phase_error_deg"),
-                    "dc_mixer_offset_I": io_config.get("dc_mixer_offset_I"),
-                    "dc_mixer_offset_Q": io_config.get("dc_mixer_offset_Q"),
-                }
-                if all(v is None for v in legacy_mix_corr.values()):
-                    pc_config["mixer_amp_ratio"] = pc_mix_corr["mixer_amp_ratio"]
-                    pc_config["mixer_phase_error_deg"] = pc_mix_corr[
-                        "mixer_phase_error_deg"
-                    ]
-                    io_config["dc_mixer_offset_I"] = pc_mix_corr["dc_mixer_offset_I"]
-                    io_config["dc_mixer_offset_Q"] = pc_mix_corr["dc_mixer_offset_Q"]
-                elif legacy_mix_corr != pc_mix_corr:
-                    raise ValueError(
-                        f"Trying to set mixer corrections for channel={pc_path[:-2]} to "
-                        f"{pc_mix_corr} from the hardware options while it has previously "
-                        f"been set to {legacy_mix_corr} in the hardware config. To avoid "
-                        f"conflicting settings, please make sure these corrections are "
-                        f"only set in one place."
+                for config, hw_config_key, hw_compilation_config_value in [
+                    (pc_config, "mixer_amp_ratio", pc_mix_corr.amp_ratio),
+                    (pc_config, "mixer_phase_error_deg", pc_mix_corr.phase_error),
+                    (io_config, "dc_mixer_offset_I", pc_mix_corr.dc_offset_i),
+                    (io_config, "dc_mixer_offset_Q", pc_mix_corr.dc_offset_q),
+                ]:
+                    _set_hardware_config_value(
+                        hw_config_dict=config,
+                        hw_config_key=hw_config_key,
+                        hw_compilation_config_value=hw_compilation_config_value,
                     )
 
-        power_scaling = hardware_options.power_scaling
-        if power_scaling is not None:
+        input_gain = hardware_options.input_gain
+        if input_gain is not None:
             for port, clock in port_clocks:
-                if (pc_power_scaling := power_scaling.get(f"{port}-{clock}")) is None:
-                    # No power scaling parameters to set for this port-clock.
+                if (pc_input_gain := input_gain.get(f"{port}-{clock}")) is None:
+                    # No input gain parameters to set for this port-clock.
                     continue
+
                 # Find path to port-clock combination in the hardware config, e.g.,
                 # ["cluster0", "cluster0_module1", "complex_output_0", "portclock_configs", 1]
                 pc_path = find_port_clock_path(
                     hardware_config=hardware_config, port=port, clock=clock
                 )
-                # Extract instrument config and I/O channel config.
-                instr_config = hardware_config
-                # Exclude ["complex_output/input_X", "portclock_configs", i]:
-                for key in pc_path[:-3]:
-                    instr_config = instr_config[key]
+                # Extract I/O channel config:
+                io_config = hardware_config
+                # Exclude ["portclock_configs", i]:
+                for key in pc_path[:-2]:
+                    io_config = io_config[key]
                 io_name = pc_path[-3]
-                io_config = instr_config[io_name]
-                instr_type = instr_config["instrument_type"]
 
                 if not (io_name.startswith("complex") or io_name.startswith("real")):
                     raise KeyError(
                         f"The name of i/o channel {pc_path[:-2]} used for {port=} and {clock=} must start "
                         f"with either 'real' or 'complex'."
                     )
-                # Different modules/channels support different power scaling settings
-                supported_options = []
-                if instr_type in ["QRM_RF", "QCM_RF"]:
-                    if io_name.startswith("complex_output"):
-                        supported_options.append("output_att")
-                    if instr_type == "QRM_RF" and io_name.startswith("complex"):
-                        # Note: input_att might also be set for complex_outputs in some cases
-                        supported_options.append("input_att")
-                elif instr_type == "QRM":
-                    supported_options.append("input_gain")
 
-                for option, value in pc_power_scaling.dict().items():
-                    if (option not in supported_options) and (value is not None):
-                        raise ValueError(
-                            f"Setting the '{option}' for {io_name} of "
-                            f"{instr_type=} is not supported in the Qblox backend."
+                # Set the input_gain in the I/O channel config:
+                if isinstance(pc_input_gain, ComplexInputGain):
+                    # Set the input_gain_I in the I/O config:
+                    _set_hardware_config_value(
+                        hw_config_dict=io_config,
+                        hw_config_key="input_gain_I",
+                        hw_compilation_config_value=pc_input_gain.gain_I,
+                    )
+                    # Set the input_gain_Q in the I/O config:
+                    _set_hardware_config_value(
+                        hw_config_dict=io_config,
+                        hw_config_key="input_gain_Q",
+                        hw_compilation_config_value=pc_input_gain.gain_Q,
+                    )
+                elif isinstance(pc_input_gain, RealInputGain):
+                    if io_name == "real_output_0":
+                        # Set the input_gain_0 in the I/O config:
+                        _set_hardware_config_value(
+                            hw_config_dict=io_config,
+                            hw_config_key="input_gain_0",
+                            hw_compilation_config_value=pc_input_gain,
                         )
+                    elif io_name == "real_output_1":
+                        # Set the input_gain_1 in the I/O config:
+                        _set_hardware_config_value(
+                            hw_config_dict=io_config,
+                            hw_config_key="input_gain_1",
+                            hw_compilation_config_value=pc_input_gain,
+                        )
+
+        output_att = hardware_options.output_att
+        if output_att is not None:
+            for port, clock in port_clocks:
+                if (pc_output_att := output_att.get(f"{port}-{clock}")) is None:
+                    # No output attenuation parameters to set for this port-clock.
+                    continue
+
+                # Find path to port-clock combination in the hardware config, e.g.,
+                # ["cluster0", "cluster0_module1", "complex_output_0", "portclock_configs", 1]
+                pc_path = find_port_clock_path(
+                    hardware_config=hardware_config, port=port, clock=clock
+                )
+                # Extract I/O channel config:
+                io_config = hardware_config
+                # Exclude ["portclock_configs", i]:
+                for key in pc_path[:-2]:
+                    io_config = io_config[key]
 
                 # Set the output_att in the I/O channel config:
-                legacy_output_att = io_config.get("output_att")
-                if pc_power_scaling.output_att is None:
-                    pass
-                elif legacy_output_att is None:
-                    io_config["output_att"] = pc_power_scaling.output_att
-                elif legacy_output_att != pc_power_scaling.output_att:
-                    raise ValueError(
-                        f"Trying to set output attenuation for channel={pc_path[:-2]} to"
-                        f" {pc_power_scaling.output_att} from the hardware options while "
-                        f" it has previously been set to {legacy_output_att} in the hardware"
-                        f" config. To avoid conflicting settings, please make sure this"
-                        f" value is only set in one place."
-                    )
+                _set_hardware_config_value(
+                    hw_config_dict=io_config,
+                    hw_config_key="output_att",
+                    hw_compilation_config_value=pc_output_att,
+                )
+
+        input_att = hardware_options.input_att
+        if input_att is not None:
+            for port, clock in port_clocks:
+                if (pc_input_att := input_att.get(f"{port}-{clock}")) is None:
+                    # No input attenuation parameters to set for this port-clock.
+                    continue
+
+                # Find path to port-clock combination in the hardware config, e.g.,
+                # ["cluster0", "cluster0_module1", "complex_output_0", "portclock_configs", 1]
+                pc_path = find_port_clock_path(
+                    hardware_config=hardware_config, port=port, clock=clock
+                )
+                # Extract I/O channel config:
+                io_config = hardware_config
+                # Exclude ["portclock_configs", i]:
+                for key in pc_path[:-2]:
+                    io_config = io_config[key]
+
                 # Set the input_att in the I/O channel config:
-                legacy_input_att = io_config.get("input_att")
-                if pc_power_scaling.input_att is None:
+                _set_hardware_config_value(
+                    hw_config_dict=io_config,
+                    hw_config_key="input_att",
+                    hw_compilation_config_value=pc_input_att,
+                )
+
+        sequencer_options = hardware_options.sequencer_options
+        if sequencer_options is not None:
+            for port, clock in port_clocks:
+                if (
+                    pc_sequencer_options := sequencer_options.get(f"{port}-{clock}")
+                ) is None:
+                    # No sequencer_options to set for this port-clock.
+                    continue
+
+                # Find path to port-clock combination in the hardware config, e.g.,
+                # ["cluster0", "cluster0_module1", "complex_output_0", "portclock_configs", 1]
+                pc_path = find_port_clock_path(
+                    hardware_config=hardware_config, port=port, clock=clock
+                )
+                # Extract the port-clock config:
+                pc_config = hardware_config
+                for key in pc_path:
+                    pc_config = pc_config[key]
+
+                # Set the ttl_acq_threshold in the port-clock config:
+                _set_hardware_config_value(
+                    hw_config_dict=pc_config,
+                    hw_config_key="ttl_acq_threshold",
+                    hw_compilation_config_value=pc_sequencer_options.ttl_acq_threshold,
+                )
+
+                # Set the init_offsets in the port-clock config:
+                legacy_init_offsets = (
+                    pc_config.get("init_offset_awg_path_0"),
+                    pc_config.get("init_offset_awg_path_1"),
+                )
+
+                if (
+                    pc_sequencer_options.init_offset_awg_path_0,
+                    pc_sequencer_options.init_offset_awg_path_1,
+                ) == (None, None):
                     pass
-                elif legacy_input_att is None:
-                    io_config["input_att"] = pc_power_scaling.input_att
-                elif legacy_input_att != pc_power_scaling.input_att:
+                elif legacy_init_offsets == (None, None):
+                    pc_config[
+                        "init_offset_awg_path_0"
+                    ] = pc_sequencer_options.init_offset_awg_path_0
+                    pc_config[
+                        "init_offset_awg_path_1"
+                    ] = pc_sequencer_options.init_offset_awg_path_1
+                elif legacy_init_offsets != (
+                    pc_sequencer_options.init_offset_awg_path_0,
+                    pc_sequencer_options.init_offset_awg_path_1,
+                ):
                     raise ValueError(
-                        f"Trying to set input attenuation for channel={pc_path[:-2]} to"
-                        f" {pc_power_scaling.input_att} from the hardware options while "
-                        f" it has previously been set to {legacy_input_att} in the hardware"
-                        f" config. To avoid conflicting settings, please make sure this"
-                        f" value is only set in one place."
-                    )
-                # Set the input_gain in the I/O channel config:
-                if io_name.startswith("complex_output"):
-                    legacy_input_gain = (
-                        io_config.get("input_gain_I"),
-                        io_config.get("input_gain_Q"),
+                        f"Trying to set inital offsets for sequencer on {port=} and {clock=} to"
+                        f" ({pc_sequencer_options.init_offset_awg_path_0},{pc_sequencer_options.init_offset_awg_path_1})"
+                        f" from the hardware options while they have previously been set to"
+                        f" {legacy_init_offsets} in the hardware config. To avoid conflicting"
+                        f" settings, please make sure this value is only set in one place."
                     )
 
-                    if pc_power_scaling.input_gain is None:
-                        pass
-                    elif legacy_input_gain == (None, None):
-                        io_config["input_gain_I"] = pc_power_scaling.input_gain[0]
-                        io_config["input_gain_Q"] = pc_power_scaling.input_gain[1]
-                    elif legacy_input_gain != pc_power_scaling.input_gain:
-                        raise ValueError(
-                            f"Trying to set input gain for channel={pc_path[:-2]} to"
-                            f" {pc_power_scaling.input_gain} from the hardware options while "
-                            f" it has previously been set to {legacy_input_gain} in the hardware"
-                            f" config. To avoid conflicting settings, please make sure this"
-                            f" value is only set in one place."
-                        )
-                elif io_name.startswith("real_output"):
-                    if io_name == "real_output_0":
-                        legacy_input_gain = io_config.get("input_gain_0")
-                    elif io_name == "real_output_1":
-                        legacy_input_gain = io_config.get("input_gain_1")
+                # Set the init_gains in the port-clock config:
+                legacy_init_gains = (
+                    pc_config.get("init_gain_awg_path_0"),
+                    pc_config.get("init_gain_awg_path_1"),
+                )
 
-                    if pc_power_scaling.input_gain is None:
-                        pass
-                    elif legacy_input_gain is None:
-                        if io_name == "real_output_0":
-                            io_config["input_gain_0"] = pc_power_scaling.input_gain
-                        elif io_name == "real_output_1":
-                            io_config["input_gain_1"] = pc_power_scaling.input_gain
-                    elif legacy_input_gain != pc_power_scaling.input_gain:
-                        raise ValueError(
-                            f"Trying to set input gain for channel={pc_path[:-2]} to"
-                            f" {pc_power_scaling.input_gain} from the hardware options while "
-                            f" it has previously been set to {legacy_input_gain} in the hardware"
-                            f" config. To avoid conflicting settings, please make sure this"
-                            f" value is only set in one place."
-                        )
+                if (
+                    pc_sequencer_options.init_gain_awg_path_0,
+                    pc_sequencer_options.init_gain_awg_path_1,
+                ) == (None, None):
+                    pass
+                elif legacy_init_gains == (None, None):
+                    pc_config[
+                        "init_gain_awg_path_0"
+                    ] = pc_sequencer_options.init_gain_awg_path_0
+                    pc_config[
+                        "init_gain_awg_path_1"
+                    ] = pc_sequencer_options.init_gain_awg_path_1
+                elif legacy_init_gains != (
+                    pc_sequencer_options.init_gain_awg_path_0,
+                    pc_sequencer_options.init_gain_awg_path_1,
+                ):
+                    raise ValueError(
+                        f"Trying to set inital gain settings for sequencer on {port=} and {clock=} to"
+                        f" ({pc_sequencer_options.init_gain_awg_path_0},{pc_sequencer_options.init_gain_awg_path_1})"
+                        f" from the hardware options while they have previously been set to"
+                        f" {legacy_init_gains} in the hardware config. To avoid conflicting"
+                        f" settings, please make sure this value is only set in one place."
+                    )
+
+                # Set the qasm_hook_func in the port-clock config:
+                _set_hardware_config_value(
+                    hw_config_dict=pc_config,
+                    hw_config_key="qasm_hook_func",
+                    hw_compilation_config_value=pc_sequencer_options.qasm_hook_func,
+                )
+                # Set the (deprecated) instruction_generated_pulses_enabled in the port-clock config:
+                if pc_sequencer_options.instruction_generated_pulses_enabled is True:
+                    # only propagate if True to avoid deprecation warning if not set (default = False)
+                    _set_hardware_config_value(
+                        hw_config_dict=pc_config,
+                        hw_config_key="instruction_generated_pulses_enabled",
+                        hw_compilation_config_value=pc_sequencer_options.instruction_generated_pulses_enabled,
+                    )
 
     return hardware_config
 

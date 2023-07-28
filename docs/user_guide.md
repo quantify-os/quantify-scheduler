@@ -373,7 +373,7 @@ The hardware compilation configuration is used to compile from the quantum-devic
 Currently, this datastructure is parsed from a user-defined dict that should be passed to the `quantum_device.hardware_config` parameter. 
 
 ```{eval-rst}
-.. autoclass:: quantify_scheduler.backends.graph_compilation.HardwareCompilationConfig
+.. autoclass:: quantify_scheduler.backends.types.common.HardwareCompilationConfig
     :noindex:
     :members:
 
@@ -397,8 +397,8 @@ Currently, this datastructure is parsed from a user-defined dict that should be 
 
 (sec-hardware-description)=
 #### Hardware Description
-The {obj}`~.backends.graph_compilation.HardwareDescription` datastructure specifies a control hardware instrument in the setup, along with its instrument-specific settings.
-There is a specific {obj}`~.backends.graph_compilation.HardwareDescription` datastructure for each of the currently supported instrument types, which are discriminated through the `hardware_type` and `instrument_type` fields.
+The {obj}`~.backends.types.common.HardwareDescription` datastructure specifies a control hardware instrument in the setup, along with its instrument-specific settings.
+There is a specific {obj}`~.backends.types.common.HardwareDescription` datastructure for each of the currently supported instrument types, which are discriminated through the `instrument_type` field.
 
 (user-guide-qblox-cluster-hardware-description)=
 ````{admonition} Example: Qblox ClusterDescription datastructure
@@ -438,10 +438,10 @@ There is a specific {obj}`~.backends.graph_compilation.HardwareDescription` data
 (sec-hardware-options)=
 
 #### Hardware Options
-The {class}`~.backends.graph_compilation.HardwareOptions` datastructure contains the settings used in compiling from the quantum-device layer to a set of instructions for the control hardware. Most hardware options are structured as `Dict[str, HardwareOption]`, where the keys are the port-clock combinations on which these settings should be applied.
+The {class}`~.backends.types.common.HardwareOptions` datastructure contains the settings used in compiling from the quantum-device layer to a set of instructions for the control hardware. Most hardware options are structured as `Dict[str, HardwareOption]`, where the keys are the port-clock combinations on which these settings should be applied.
 
 ```{eval-rst}
-.. autoclass:: quantify_scheduler.backends.graph_compilation.HardwareOptions
+.. autoclass:: quantify_scheduler.backends.types.common.HardwareOptions
   :noindex:
   :members:
 
@@ -449,10 +449,10 @@ The {class}`~.backends.graph_compilation.HardwareOptions` datastructure contains
 
 (sec-connectivity)=
 #### Connectivity
-The {class}`~.backends.graph_compilation.Connectivity` datastructure describes how ports on the quantum device are connected to ports on the control hardware.
+The {class}`~.backends.types.common.Connectivity` datastructure describes how ports on the quantum device are connected to ports on the control hardware.
 
 ```{note}
-The {class}`~.backends.graph_compilation.Connectivity` datastructure is currently under development. Information on the connectivity between port-clock combinations on the quantum device and ports on the control hardware is currently included in the old-style hardware configuration file, which should be included in the `"connectivity"` field of the {class}`~.backends.graph_compilation.HardwareCompilationConfig`.
+The {class}`~.backends.types.common.Connectivity` datastructure is currently under development. Information on the connectivity between port-clock combinations on the quantum device and ports on the control hardware is currently included in the old-style hardware configuration file, which should be included in the `"connectivity"` field of the {class}`~.backends.types.common.HardwareCompilationConfig`.
 ```
 
 ## Execution

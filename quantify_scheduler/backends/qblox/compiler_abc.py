@@ -373,7 +373,7 @@ class Sequencer:
         if self.instruction_generated_pulses_enabled is not None:
             warnings.warn(
                 "Support for the instruction_generated_pulses_enabled configuration "
-                "field will be dropped in quantify-scheduler >= 0.16.0.\nFor long "
+                "field will be dropped in quantify-scheduler >= 0.19.0.\nFor long "
                 "square, ramp, or staircase pulses, please look at the pulse library "
                 "in quantify_scheduler.operations.pulse_factories.",
                 FutureWarning,

@@ -733,24 +733,24 @@ def test_prepare_cluster_rf(
     ic_cluster.instrument.reference_source.assert_called_once()
 
     for qcodes_param, hw_options_param in [
-        ("out0_att", ["q5:mw-q5.01", "output_att"]),
-        ("out1_att", ["q6:mw-q6.01", "output_att"]),
+        ("out0_att", ["output_att", "q5:mw-q5.01"]),
+        ("out1_att", ["output_att", "q6:mw-q6.01"]),
     ]:
         qcm_rf.parameters[qcodes_param].set.assert_any_call(
             hardware_compilation_config_qblox_example["hardware_options"][
-                "power_scaling"
-            ][hw_options_param[0]][hw_options_param[1]]
+                hw_options_param[0]
+            ][hw_options_param[1]]
         )
     qcm_rf["sequencer0"].parameters[f"sync_en"].set.assert_called_with(True)
 
     for qcodes_param, hw_options_param in [
-        ("out0_att", ["q0:res-q0.ro", "output_att"]),
-        ("in0_att", ["q5:res-q5.ro", "input_att"]),
+        ("out0_att", ["output_att", "q0:res-q0.ro"]),
+        ("in0_att", ["input_att", "q5:res-q5.ro"]),
     ]:
         qrm_rf.parameters[qcodes_param].set.assert_any_call(
             hardware_compilation_config_qblox_example["hardware_options"][
-                "power_scaling"
-            ][hw_options_param[0]][hw_options_param[1]]
+                hw_options_param[0]
+            ][hw_options_param[1]]
         )
     qrm_rf["sequencer0"].parameters[f"sync_en"].set.assert_called_with(True)
 

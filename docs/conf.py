@@ -120,13 +120,6 @@ pygments_style = "sphinx"
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
 
-# Document __init__ docstring together with class doctring (when __init__ is present)
-napoleon_include_init_with_doc = True
-# NB the line below could be used for a similar result
-# BUT the line below ALWAYS includes the __init__ docstring even if it come from the
-# parent class which is undesired for analysis subclasses, for example.
-# autoclass_content = "both"
-
 
 # -- Options for HTML output -------------------------------------------
 
@@ -413,7 +406,9 @@ nitpick_ignore = [
     ("py:obj", "quantify_scheduler.schedules.trace_schedule_circuit_layer"),
     ("py:obj", "quantify_scheduler.schedules.two_tone_trace_schedule"),
     ("py:class", "SUPPORTED_ACQ_PROTOCOLS"),
-    ("py:class", "HardwareDescription"),
+    ("py:class", "quantify_scheduler.backends.types.qblox.QbloxHardwareDescription"),
+    ("py:class", "quantify_scheduler.backends.types.zhinst.ZIHardwareDescription"),
+    ("py:class", "ClusterModuleDescription"),
     ("py:class", "Literal[Zurich Instruments]"),
     ("py:class", "typing.AnnotatedAlias"),
     ("py:obj", "quantify_scheduler.structure.NDArray"),

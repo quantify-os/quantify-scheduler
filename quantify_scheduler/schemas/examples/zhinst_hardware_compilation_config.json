@@ -2,68 +2,62 @@
     "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
     "hardware_description": {
         "ic_hdawg0": {
-            "hardware_type": "Zurich Instruments",
             "instrument_type": "HDAWG8",
             "ref": "int",
             "clock_select": 0,
             "channelgrouping": 0,
-            "channels": {
-                "0": {
-                    "mode": "complex",
-                    "markers": [
-                        "AWG_MARKER1",
-                        "AWG_MARKER2"
-                    ]
-                },
-                "1": {
-                    "mode": "complex",
-                    "markers": [
-                        "AWG_MARKER1",
-                        "AWG_MARKER2"
-                    ]
-                },
-                "2": {
-                    "mode": "complex",
-                    "markers": [
-                        "AWG_MARKER1",
-                        "AWG_MARKER2"
-                    ]
-                },
-                "3": {
-                    "mode": "complex",
-                    "markers": [
-                        "AWG_MARKER1",
-                        "AWG_MARKER2"
-                    ]
-                }
+            "channel_0": {
+                "mode": "complex",
+                "markers": [
+                    "AWG_MARKER1",
+                    "AWG_MARKER2"
+                ]
+            },
+            "channel_1": {
+                "mode": "complex",
+                "markers": [
+                    "AWG_MARKER1",
+                    "AWG_MARKER2"
+                ]
+            },
+            "channel_2": {
+                "mode": "complex",
+                "markers": [
+                    "AWG_MARKER1",
+                    "AWG_MARKER2"
+                ]
+            },
+            "channel_3": {
+                "mode": "complex",
+                "markers": [
+                    "AWG_MARKER1",
+                    "AWG_MARKER2"
+                ]
             }
         },
         "ic_uhfqa0": {
-            "hardware_type": "Zurich Instruments",
             "instrument_type": "UHFQA",
             "ref": "ext",
-            "channels": {
-                "0": {
-                    "mode": "real",
-                    "trigger": 2
-                }
+            "channel_0": {
+                "mode": "real",
+                "trigger": 2
             }
         },
         "mw_qubit_ch1": {
-            "hardware_type": "LocalOscillator",
+            "instrument_type": "LocalOscillator",
             "instrument_name": "mw_qubit",
             "frequency_param": "ch1.frequency",
             "power": 13
         },
         "mw_qubit_ch2": {
-            "hardware_type": "LocalOscillator",
+            "instrument_type": "LocalOscillator",
             "instrument_name": "mw_qubit",
             "frequency_param": "ch2.frequency",
             "power_param": "ch2.power",
             "power": 10
         },
         "mw_readout": {
-            "hardware_type": "LocalOscillator",
+            "instrument_type": "LocalOscillator",
             "instrument_name": "mw_readout",
             "frequency_param": "frequency",
             "power": 16
@@ -144,30 +138,22 @@
                 "dc_offset_q": 0.028
             }
         },
-        "power_scaling": {
+        "output_gain": {
             "q0:mw-q0.01": {
-                "output_gain": [
-                    1,
-                    1
-                ]
+                "gain_I": 1,
+                "gain_Q": 1
             },
             "q1:mw-q1.01": {
-                "output_gain": [
-                    1,
-                    1
-                ]
+                "gain_I": 1,
+                "gain_Q": 1
             },
             "q2:mw-q2.01": {
-                "output_gain": [
-                    1,
-                    1
-                ]
+                "gain_I": 1,
+                "gain_Q": 1
             },
             "q3:mw-q3.01": {
-                "output_gain": [
-                    1,
-                    1
-                ]
+                "gain_I": 1,
+                "gain_Q": 1
             }
         }
     },

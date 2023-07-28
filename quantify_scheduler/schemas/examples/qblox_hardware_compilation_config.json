@@ -2,36 +2,35 @@
     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
     "hardware_description": {
         "cluster0": {
-            "hardware_type": "Qblox",
             "instrument_type": "Cluster",
             "ref": "internal",
             "modules": {
                 "1": {
-                    "module_type": "QCM"
+                    "instrument_type": "QCM"
                 },
                 "2": {
-                    "module_type": "QCM_RF"
+                    "instrument_type": "QCM_RF"
                 },
                 "3": {
-                    "module_type": "QRM"
+                    "instrument_type": "QRM"
                 },
                 "4": {
-                    "module_type": "QRM_RF"
+                    "instrument_type": "QRM_RF"
                 },
                 "10": {
-                    "module_type": "QCM"
+                    "instrument_type": "QCM"
                 },
                 "12": {
-                    "module_type": "QCM"
+                    "instrument_type": "QCM"
                 }
             }
         },
         "lo0": {
-            "hardware_type": "LocalOscillator",
+            "instrument_type": "LocalOscillator",
             "power": 1
         },
         "lo1": {
-            "hardware_type": "LocalOscillator",
+            "instrument_type": "LocalOscillator",
             "power": 1
         }
     },
@@ -100,28 +99,20 @@
                 "phase_error": -4.0
             }
         },
-        "power_scaling": {
-            "q0:mw-q0.01": {
-                "output_att": 4
-            },
-            "q0:res-q0.ro": {
-                "output_att": 12
-            },
+        "output_att": {
+            "q0:mw-q0.01": 4,
+            "q0:res-q0.ro": 12,
+            "q5:mw-q5.01": 4,
+            "q6:mw-q6.01": 6
+        },
+        "input_gain": {
             "q4:res-q4.ro": {
-                "input_gain": [
-                    2,
-                    3
-                ]
-            },
-            "q5:mw-q5.01": {
-                "output_att": 4
-            },
-            "q5:res-q5.ro": {
-                "input_att": 10
-            },
-            "q6:mw-q6.01": {
-                "output_att": 6
+                "gain_I": 2,
+                "gain_Q": 3
             }
+        },
+        "input_att": {
+            "q5:res-q5.ro": 10
         }
     },
     "connectivity": {

@@ -6,6 +6,7 @@
 
 ### Merged branches and closed issues
 - Acquisition - New acquisition protocol for thresholded acquisitions: `ThresholdedAcquisition` (!617)
+- Compilation - Made the `HardwareCompilationConfig` datastructure backend-specific (!708)
 - Pin version of `dataclasses-json` due to breaking pipelines. (!727)
 - Schedulables - Store references to `Schedulables` in timing contraints as `string` rather than `Schedulable`. (!717)
 - Qblox backend - Fix weighted acquisition in append mode. (!725)

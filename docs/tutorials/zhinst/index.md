@@ -153,17 +153,25 @@ Local oscillators can also be included by using the following generic datastruct
 ```
 
 ### Connectivity
-The {class}`~.backends.graph_compilation.Connectivity` describes how the inputs/outputs of the Zurich Instruments devices are connected to ports on the {class}`~.device_under_test.quantum_device.QuantumDevice`.
+The {class}`~.backends.types.common.Connectivity` describes how the inputs/outputs of the Zurich Instruments devices are connected to ports on the {class}`~.device_under_test.quantum_device.QuantumDevice`.
 
 ```{note}
-The {class}`~.backends.graph_compilation.Connectivity` datastructure is currently under development. Information on the connectivity between port-clock combinations on the quantum device and ports on the control hardware is currently included in the old-style hardware configuration file, which should be included in the `"connectivity"` field of the {class}`~.backends.graph_compilation.HardwareCompilationConfig`.
+The {class}`~.backends.types.common.Connectivity` datastructure is currently under development. Information on the connectivity between port-clock combinations on the quantum device and ports on the control hardware is currently included in the old-style hardware configuration file, which should be included in the `"connectivity"` field of the {class}`~.backends.types.common.HardwareCompilationConfig`.
 ```
 
 ### Hardware Options
-The {ref}`Hardware Options <sec-hardware-options>` provide a way of specifying some specific settings used in compiling instructions for the Zurich Instruments hardware.
+The {class}`~.backends.types.zhinst.ZIHardwareOptions` datastructure contains the settings used in compiling from the quantum-device layer to a set of instructions for the control hardware.
+
+```{eval-rst}
+.. autoclass:: quantify_scheduler.backends.types.zhinst.ZIHardwareOptions
+    :noindex:
+    :members: 
+    :inherited-members: BaseModel
+
+```
 
 ```{note}
-In the Zurich Instruments backend, a {class}`~.backends.graph_compilation.LatencyCorrection` is implemented by incrementing the `abs_time` of all operations applied to the port-clock combination.
+In the Zurich Instruments backend, a {class}`~.backends.types.common.LatencyCorrection` is implemented by incrementing the `abs_time` of all operations applied to the port-clock combination.
 ```
 
 ## Tutorials

@@ -3,7 +3,6 @@
 """Graph compilation backend of quantify-scheduler."""
 from __future__ import annotations
 
-import warnings
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -19,12 +18,9 @@ from typing import (
 import matplotlib.pyplot as plt
 import networkx as nx
 from matplotlib.axes import Axes
-from pydantic import Field, validator
-from typing_extensions import Annotated
+from pydantic import validator
 
-from quantify_scheduler.backends.types.common import LocalOscillatorDescription
-from quantify_scheduler.backends.types.qblox import QbloxHardwareDescription
-from quantify_scheduler.backends.types.zhinst import ZIHardwareDescription
+from quantify_scheduler.backends.types.common import HardwareCompilationConfig
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 from quantify_scheduler.structure.model import (
@@ -32,7 +28,6 @@ from quantify_scheduler.structure.model import (
     deserialize_class,
     deserialize_function,
 )
-from quantify_scheduler.structure.types import NDArray
 
 if TYPE_CHECKING:
     from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
@@ -180,321 +175,6 @@ class DeviceCompilationConfig(DataStructure):
         return fun  # type: ignore
 
 
-class LatencyCorrection(float):
-    """
-    Latency correction in seconds for a port-clock combination.
-
-    Positive values delay the operations on the corresponding port-clock combination,
-    while negative values shift the operation backwards in time with respect to other
-    operations in the schedule.
-
-    .. note::
-
-        If the port-clock combination of a signal is not specified in the corrections,
-        it is set to zero in compilation. The minimum correction over all port-clock
-        combinations is then subtracted to allow for negative latency corrections and to
-        ensure minimal wait time (see
-        :meth:`~quantify_scheduler.backends.corrections.determine_relative_latency_corrections`).
-
-    .. admonition:: Example
-        :class: dropdown
-
-        Let's say we have specified two latency corrections in the CompilationConfig:
-
-        .. code-block:: python
-
-            compilation_config.hardware_options.latency_corrections = {
-                "q0:res-q0.ro": LatencyCorrection(-20e-9),
-                "q0:mw-q0.01": LatencyCorrection(120e9),
-            }
-
-        In this case, all operations on port ``"q0:mw"`` and clock ``"q0.01"`` will
-        be delayed by 140 ns with respect to operations on port ``"q0:res"`` and
-        clock ``"q0.ro"``.
-    """
-
-
-class DistortionCorrection(DataStructure):
-    """Distortion correction information for a port-clock combination."""
-
-    filter_func: str
-    """The function applied to the waveforms."""
-    input_var_name: str
-    """The argument to which the waveforms will be passed in the filter_func."""
-    kwargs: Dict[str, Union[List, NDArray]]
-    """The keyword arguments that are passed to the filter_func."""
-    clipping_values: Optional[List]
-    """
-    The optional boundaries to which the corrected pulses will be clipped,
-    upon exceeding.
-
-
-    .. admonition:: Example
-        :class: dropdown
-
-        .. code-block:: python
-
-            compilation_config.hardware_options.distortion_corrections = {
-                "q0:fl-cl0.baseband": DistortionCorrection(
-                    filter_func = "scipy.signal.lfilter",
-                    input_var_name = "x",
-                    kwargs = {
-                        "b": [0, 0.25, 0.5],
-                        "a": [1]
-                    },
-                    clipping_values = [-2.5, 2.5]
-                )
-            }
-    """
-
-
-class ModulationFrequencies(DataStructure):
-    """
-    Modulation frequencies for a port-clock combination.
-
-    .. admonition:: Example
-        :class: dropdown
-
-        .. code-block:: python
-
-            compilation_config.hardware_options.modulation_frequencies = {
-                "q0:res-q0.ro": ModulationFrequencies(
-                    interm_freq = None,
-                    lo_freq = 6e9,
-                )
-            }
-    """
-
-    interm_freq: Optional[float]
-    """The intermodulation frequency (IF) used for this port-clock combination."""
-    lo_freq: Optional[float]
-    """The local oscillator frequency (LO) used for this port-clock combination."""
-
-
-class MixerCorrections(DataStructure):
-    """
-    Mixer corrections for a port-clock combination.
-
-    .. admonition:: Example
-        :class: dropdown
-
-        .. code-block:: python
-
-            compilation_config.hardware_options.mixer_corrections = {
-                "q0:mw-q0.01": MixerCorrections(
-                    dc_offset_i = -0.0542,
-                    dc_offset_q = -0.0328,
-                    amp_ratio = 0.95,
-                    phase_error_deg= 0.07,
-                )
-            }
-    """
-
-    dc_offset_i: Optional[float]
-    """The DC offset on the I channel used for this port-clock combination."""
-    dc_offset_q: Optional[float]
-    """The DC offset on the Q channel used for this port-clock combination."""
-    amp_ratio: Optional[float]
-    """The mixer gain ratio used for this port-clock combination."""
-    phase_error: Optional[float]
-    """The mixer phase error used for this port-clock combination."""
-
-
-class PowerScaling(DataStructure):
-    """
-    Gain/attenuation settings for a port-clock combination.
-
-    These gain/attenuation values will be set on each control-hardware output/input
-    port that is used for this port-clock combination (if supported).
-
-    Different gain/attenuation settings for the I and Q channels of a complex output
-    or input can be specified by supplying a Tuple to the corresponding field.
-
-    .. admonition:: Example
-        :class: dropdown
-
-        .. code-block:: python
-
-            compilation_config.power_scaling = {
-                "q0:res-q0.ro": PowerScaling(
-                    output_att = 20,
-                    input_att = 10
-                ),
-                "q0:mw-q0.01": PowerScaling(
-                    output_gain = (1,1)
-                ),
-                "q1:res-q1.ro": PowerScaling(
-                    input_gain = (2,3)
-                ),
-            }
-    """
-
-    input_gain: Optional[Union[float, Tuple[float, float]]]
-    """The gain used on the input port(s) for this port-clock combination."""
-    output_gain: Optional[Union[float, Tuple[float, float]]]
-    """The gain used on the output port(s) for this port-clock combination."""
-    input_att: Optional[Union[float, Tuple[float, float]]]
-    """The attenuation used on the input port(s) for this port-clock combination."""
-    output_att: Optional[Union[float, Tuple[float, float]]]
-    """The attenuation used on the output port(s) for this port-clock combination."""
-
-
-class HardwareOptions(DataStructure):
-    """
-    Datastructure containing the hardware options for each port-clock combination.
-
-    .. admonition:: Examples
-        :class: dropdown
-
-        Here, the HardwareOptions datastructure is created by parsing a
-        dictionary containing the relevant information.
-
-        .. jupyter-execute::
-
-            import pprint
-            from quantify_scheduler.backends.graph_compilation import (
-                HardwareOptions
-            )
-            from quantify_scheduler.schemas.examples.utils import (
-                load_json_example_scheme
-            )
-
-        Example for the Qblox backend:
-
-        .. jupyter-execute::
-
-            qblox_hw_options_dict = load_json_example_scheme(
-                "qblox_hardware_compilation_config.json")["hardware_options"]
-            pprint.pprint(qblox_hw_options_dict)
-
-        The dictionary can be parsed using the :code:`parse_obj` method.
-
-        .. jupyter-execute::
-
-            qblox_hw_options = HardwareOptions.parse_obj(qblox_hw_options_dict)
-            qblox_hw_options
-
-        For the Zurich Instruments backend:
-
-        .. jupyter-execute::
-
-            zi_hw_options_dict = load_json_example_scheme(
-                "zhinst_hardware_compilation_config.json")["hardware_options"]
-            pprint.pprint(zi_hw_options_dict)
-            zi_hw_options = HardwareOptions.parse_obj(zi_hw_options_dict)
-            zi_hw_options
-    """
-
-    latency_corrections: Optional[Dict[str, LatencyCorrection]]
-    """
-    Dictionary containing the latency corrections (values) that should be applied
-    to operations on a certain port-clock combination (keys).
-    """
-    distortion_corrections: Optional[Dict[str, DistortionCorrection]]
-    """
-    Dictionary containing the distortion corrections (values) that should be applied
-    to waveforms on a certain port-clock combination (keys).
-    """
-    modulation_frequencies: Optional[Dict[str, ModulationFrequencies]]
-    """
-    Dictionary containing the modulation frequencies (values) that should be used
-    for signals on a certain port-clock combination (keys).
-    """
-    mixer_corrections: Optional[Dict[str, MixerCorrections]]
-    """
-    Dictionary containing the mixer corrections (values) that should be used
-    for signals on a certain port-clock combination (keys).
-    """
-    power_scaling: Optional[Dict[str, PowerScaling]]
-    """
-    Dictionary containing the gain/attenuation settings (values) that should be used
-    for signals on a certain port-clock combination (keys).
-    """
-
-
-HardwareDescription = Annotated[
-    Union[QbloxHardwareDescription, ZIHardwareDescription, LocalOscillatorDescription],
-    Field(discriminator="hardware_type"),
-]
-"""
-Specifies a control hardware instrument and its instrument-specific settings.
-
-Currently, the supported types of hardware are:
-:obj:`~.QbloxHardwareDescription`,
-:obj:`~.ZIHardwareDescription`,
-:class:`~.LocalOscillatorDescription`
-"""
-
-
-class Connectivity(DataStructure):
-    """Connectivity between ports on the quantum device and on the control hardware."""
-
-
-class HardwareCompilationConfig(DataStructure):
-    """
-    Information required to compile a schedule to the control-hardware layer.
-
-    From a point of view of :ref:`sec-compilation` this information is needed
-    to convert a schedule defined on a quantum-device layer to compiled instructions
-    that can be executed on the control hardware.
-    """
-
-    backend: Callable[[Schedule, Any], Schedule]
-    """
-    A . separated string specifying the location of the compilation backend this
-    configuration is intended for.
-    """
-    hardware_description: Dict[str, HardwareDescription]
-    """
-    Datastructure describing the control hardware instruments in the setup and their
-    high-level settings.
-    """
-    connectivity: Union[
-        Connectivity, Dict
-    ]  # Dict for legacy support for the old hardware config
-    """
-    Datastructure representing how ports on the quantum device are connected to ports
-    on the control hardware.
-    """
-    hardware_options: Optional[HardwareOptions]
-    """
-    The `HardwareOptions` used in the compilation from the quantum-device layer to
-    the control-hardware layer.
-    """
-
-    @validator("backend", pre=True)
-    def _import_backend_if_str(
-        cls, fun: Callable[[Schedule, Any], Schedule]  # noqa: N805
-    ) -> Callable[[Schedule, Any], Schedule]:
-        if isinstance(fun, str):
-            return deserialize_function(fun)
-        return fun  # type: ignore
-
-    @validator("connectivity")
-    def _latencies_in_hardware_config(cls, connectivity):  # noqa: N805
-        # if connectivity contains a hardware config with latency corrections
-        if isinstance(connectivity, Dict) and "latency_corrections" in connectivity:
-            warnings.warn(
-                "Latency corrections should be specified in the "
-                "`backends.graph_compilation.HardwareOptions` instead of "
-                "the hardware configuration as of quantify-scheduler >= 0.16.0",
-                FutureWarning,
-            )
-        return connectivity
-
-    @validator("connectivity")
-    def _distortions_in_hardware_config(cls, connectivity):  # noqa: N805
-        # if connectivity contains a hardware config with distortion corrections
-        if isinstance(connectivity, Dict) and "distortion_corrections" in connectivity:
-            warnings.warn(
-                "Distortion corrections should be specified in the "
-                "`backends.graph_compilation.HardwareOptions` instead of "
-                "the hardware configuration as of quantify-scheduler >= 0.16.0",
-                FutureWarning,
-            )
-        return connectivity
-
-
 # pylint: disable=too-few-public-methods
 class CompilationConfig(DataStructure):
     """
@@ -506,7 +186,7 @@ class CompilationConfig(DataStructure):
 
     name: str
     """The name of the compiler."""
-    version: str = "v0.5"
+    version: str = "v0.6"
     """The version of the `CompilationConfig` to facilitate backwards compatibility."""
     backend: Type[QuantifyCompiler]
     """A reference string to the `QuantifyCompiler` class used in the compilation."""

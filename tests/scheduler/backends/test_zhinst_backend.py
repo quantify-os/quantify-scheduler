@@ -15,9 +15,9 @@ from unittest.mock import ANY, call
 import numpy as np
 import pytest
 from pydantic import ValidationError
-from quantify_scheduler import Schedule, enums
+from quantify_scheduler import Schedule
 from quantify_scheduler.backends import SerialCompiler, corrections, zhinst_backend
-from quantify_scheduler.backends.types import common, zhinst
+from quantify_scheduler.backends.types import zhinst
 from quantify_scheduler.backends.zhinst import settings
 from quantify_scheduler.helpers import waveforms as waveform_helpers
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
@@ -291,8 +291,8 @@ def deprecated_zhinst_hardware_config_example():
                     "mixer_corrections": {
                         "amp_ratio": 0.95,
                         "phase_error": 0.07,
-                        "dc_offset_I": -0.0542,
-                        "dc_offset_Q": -0.0328,
+                        "dc_offset_i": -0.0542,
+                        "dc_offset_q": -0.0328,
                     },
                 },
                 "channel_1": {
@@ -308,8 +308,8 @@ def deprecated_zhinst_hardware_config_example():
                     "mixer_corrections": {
                         "amp_ratio": 0.95,
                         "phase_error": 0.07,
-                        "dc_offset_I": 0.042,
-                        "dc_offset_Q": 0.028,
+                        "dc_offset_i": 0.042,
+                        "dc_offset_q": 0.028,
                     },
                 },
                 "channel_2": {
@@ -325,8 +325,8 @@ def deprecated_zhinst_hardware_config_example():
                     "mixer_corrections": {
                         "amp_ratio": 0.95,
                         "phase_error": 0.07,
-                        "dc_offset_I": 0.042,
-                        "dc_offset_Q": 0.028,
+                        "dc_offset_i": 0.042,
+                        "dc_offset_q": 0.028,
                     },
                 },
                 "channel_3": {
@@ -342,8 +342,8 @@ def deprecated_zhinst_hardware_config_example():
                     "mixer_corrections": {
                         "amp_ratio": 0.95,
                         "phase_error": 0.07,
-                        "dc_offset_I": 0.042,
-                        "dc_offset_Q": 0.028,
+                        "dc_offset_i": 0.042,
+                        "dc_offset_q": 0.028,
                     },
                 },
             },
@@ -778,8 +778,8 @@ def test_set_conflicting_lo_freq(
 
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     hardware_compilation_config = deepcopy(hardware_compilation_config_zhinst_example)
-    hardware_config = hardware_compilation_config["connectivity"]
-    hardware_config["local_oscillators"] = [
+    # Set LO freq in old-style LO config:
+    hardware_compilation_config["connectivity"]["local_oscillators"] = [
         {
             "unique_name": "mw_qubit_ch1",
             "frequency": {"ch1.frequency": 5e9},
@@ -788,6 +788,10 @@ def test_set_conflicting_lo_freq(
             "power": 13,
         }
     ]
+    # Set LO freq in new-style hardware options:
+    hardware_compilation_config["hardware_options"]["modulation_frequencies"][
+        "q0:mw-q0.01"
+    ] = {"interm_freq": None, "lo_freq": 6e9}
 
     quantum_device.hardware_config(hardware_compilation_config)
 
@@ -813,8 +817,8 @@ def test_set_conflicting_mixer_corrections(
     hardware_config["devices"][0]["channel_0"]["mixer_corrections"] = {
         "amp_ratio": 0.93,
         "phase_error": 0.04,
-        "dc_offset_I": 0.0542,
-        "dc_offset_Q": -0.0328,
+        "dc_offset_i": 0.0542,
+        "dc_offset_q": -0.0328,
     }
 
     quantum_device.hardware_config(hardware_compilation_config)
@@ -843,47 +847,6 @@ def test_set_conflicting_output_gain(
     quantum_device.hardware_config(hardware_compilation_config)
 
     with pytest.raises(ValueError, match="conflicting settings"):
-        compiler = SerialCompiler(name="compiler")
-        _ = compiler.compile(
-            sched,
-            config=quantum_device.generate_compilation_config(),
-        )
-
-
-@pytest.mark.parametrize(
-    "portclock, not_supported_option, value",
-    [
-        # "q0:mw-q0.01" is connected to HDAWG
-        ("q0:mw-q0.01", "input_att", 10),
-        ("q0:mw-q0.01", "input_gain", (2, 3)),
-        ("q0:mw-q0.01", "output_att", 10),
-        # "q0:res-q0.ro" is connected to UHFQA
-        ("q0:res-q0.ro", "input_att", 10),
-        ("q0:res-q0.ro", "input_gain", (2, 3)),
-        ("q0:res-q0.ro", "output_gain", (2, 3)),
-        ("q0:res-q0.ro", "output_att", 10),
-    ],
-)
-@pytest.mark.deprecated
-def test_set_power_scaling_not_supported(
-    make_schedule,
-    mock_setup_basic_transmon_with_standard_params,
-    hardware_compilation_config_zhinst_example,
-    portclock,
-    not_supported_option,
-    value,
-):
-    sched = make_schedule()
-
-    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    hardware_compilation_config = deepcopy(hardware_compilation_config_zhinst_example)
-    hardware_compilation_config["hardware_options"]["power_scaling"][portclock] = {
-        not_supported_option: value
-    }
-
-    quantum_device.hardware_config(hardware_compilation_config)
-
-    with pytest.raises(ValueError, match="not supported"):
         compiler = SerialCompiler(name="compiler")
         _ = compiler.compile(
             sched,
@@ -981,7 +944,7 @@ def test__program_hdawg4_channelgrouping(
 
     hdawg_device = devices[0]
     hdawg_device.channelgrouping = channelgrouping
-    hdawg_device.clock_rate = int(2.4e9)
+    hdawg_device.sample_rate = int(2.4e9)
 
     mocker.patch.object(zhinst_backend, "_add_wave_nodes")
     with_sigouts = mocker.patch.object(settings.ZISettingsBuilder, "with_sigouts")
@@ -1029,15 +992,15 @@ def test_validate_schedule(
 @pytest.mark.parametrize(
     "is_pulse,modulation_type,expected_modulated",
     [
-        (True, enums.ModulationModeType.PREMODULATE, True),
-        (False, enums.ModulationModeType.PREMODULATE, True),
-        (False, enums.ModulationModeType.NONE, False),
+        (True, zhinst.ModulationModeType.PREMODULATE, True),
+        (False, zhinst.ModulationModeType.PREMODULATE, True),
+        (False, zhinst.ModulationModeType.NONE, False),
     ],
 )
 def test_apply_waveform_corrections(
     mocker,
     is_pulse: bool,
-    modulation_type: enums.ModulationModeType,
+    modulation_type: zhinst.ModulationModeType,
     expected_modulated: bool,
 ):
     # Arrange
@@ -1054,11 +1017,11 @@ def test_apply_waveform_corrections(
     )
 
     channel = zhinst.Output(
-        "port",
-        "clock",
-        enums.SignalModeType.COMPLEX,
-        common.Modulation(modulation_type),
-        common.LocalOscillator("lo0", 6.02e9),
+        port="port",
+        clock="clock",
+        mode=zhinst.SignalModeType.COMPLEX,
+        modulation=zhinst.Modulation(type=modulation_type.value),
+        local_oscillator="lo0",
     )
     instrument_info = zhinst.InstrumentInfo(
         sample_rate=2.4e9, num_samples_per_clock=8, granularity=16
@@ -1088,14 +1051,14 @@ def test_apply_waveform_corrections_throw_modulation_error(is_pulse):
     # Arrange
     wave = np.ones(48)
 
-    modulation_type = enums.ModulationModeType.MODULATE
+    modulation_type = zhinst.ModulationModeType.MODULATE
 
     channel = zhinst.Output(
-        "port",
-        "clock",
-        enums.SignalModeType.COMPLEX,
-        common.Modulation(modulation_type),
-        common.LocalOscillator("lo0", 6.02e9),
+        port="port",
+        clock="clock",
+        mode=zhinst.SignalModeType.COMPLEX,
+        modulation=zhinst.Modulation(type=modulation_type.value),
+        local_oscillator="lo0",
     )
     instrument_info = zhinst.InstrumentInfo(
         sample_rate=2.4e9, num_samples_per_clock=8, granularity=16

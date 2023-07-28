@@ -134,7 +134,7 @@ ic_cluster = ClusterComponent(cluster)
 instrument_coordinator.add_component(ic_cluster)
 ```
 
-The last part of setting up the hardware is to define the {class}`~.backends.graph_compilation.HardwareCompilationConfig`
+The last part of setting up the hardware is to define the {class}`~.backends.types.common.HardwareCompilationConfig`
 and attach it to our `single_qubit_device`. The hardware compilation configuration is a
 pydantic datastructure, parsed either from a file or from a Python
 dictionary. It contains all of the information about the instruments used to run
@@ -146,15 +146,14 @@ hardware_comp_cfg = {
     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
     "hardware_description": {
         f"{cluster.name}": {
-            "hardware_type": "Qblox",
             "instrument_type": "Cluster",
             "ref": "internal",
             "modules": {
                 "1": {
-                    "module_type": "QRM_RF"
+                    "instrument_type": "QRM_RF"
                 },
                 "2": {
-                    "module_type": "QCM_RF"
+                    "instrument_type": "QCM_RF"
                 },
             },
         },
@@ -198,7 +197,7 @@ single_qubit_device.hardware_config(hardware_comp_cfg)
 ```
 
 ```{note}
-The {class}`~.backends.graph_compilation.Connectivity` datastructure is currently under development. Information on the connectivity between port-clock combinations on the quantum device and ports on the control hardware is currently included in the old-style hardware configuration file, which should be included in the `"connectivity"` field of the {class}`~.backends.graph_compilation.HardwareCompilationConfig`.
+The {class}`~.backends.types.common.Connectivity` datastructure is currently under development. Information on the connectivity between port-clock combinations on the quantum device and ports on the control hardware is currently included in the old-style hardware configuration file, which should be included in the `"connectivity"` field of the {class}`~.backends.types.common.HardwareCompilationConfig`.
 ```
 
 (create_schedule)=

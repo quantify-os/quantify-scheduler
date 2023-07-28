@@ -67,12 +67,11 @@ hardware_comp_cfg = {
     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
     "hardware_description": {
         "cluster0": {
-            "hardware_type": "Qblox",
             "instrument_type": "Cluster",
             "ref": "internal",
             "modules": {
                 "2": {
-                    "module_type": "QCM_RF"
+                    "instrument_type": "QCM_RF"
                 },
             },
         },
@@ -108,7 +107,7 @@ hardware_comp_cfg = {
 ```
 
 ```{note}
-The {class}`~.backends.graph_compilation.Connectivity` datastructure is currently under development. Information on the connectivity between port-clock combinations on the quantum device and ports on the control hardware is currently included in the old-style hardware configuration file, which should be included in the `"connectivity"` field of the {class}`~.backends.graph_compilation.HardwareCompilationConfig`.
+The {class}`~.backends.types.common.Connectivity` datastructure is currently under development. Information on the connectivity between port-clock combinations on the quantum device and ports on the control hardware is currently included in the old-style hardware configuration file, which should be included in the `"connectivity"` field of the {class}`~.backends.types.common.HardwareCompilationConfig`.
 ```
 
 ``````
@@ -145,12 +144,11 @@ hardware_comp_cfg = {
     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
     "hardware_description": {
         "cluster0": {
-            "hardware_type": "Qblox",
             "instrument_type": "Cluster",
             "ref": "internal",
             "modules": {
                 "2": {
-                    "module_type": "QCM_RF"
+                    "instrument_type": "QCM_RF"
                 },
             },
         },

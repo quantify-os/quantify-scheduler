@@ -205,7 +205,7 @@ def apply_distortion_corrections(
     """
 
     distortion_corrections_key = "distortion_corrections"
-    if distortion_corrections_key not in hardware_cfg:
+    if hardware_cfg.get(distortion_corrections_key) is None:
         logging.debug(f'No key "{distortion_corrections_key}" supplied in hardware_cfg')
         return schedule
 
