@@ -37,7 +37,7 @@ dynamic = ["version", "readme"]
 requires-python = ">=3.8, <3.10"
 dependencies = [
     "columnar",
-    "dataclasses-json<0.5.12", # # Prevent breaking on marshmallow deprecated fields ('default' in args, metadata in kwargs) !727
+    "dataclasses-json",
     "fastjsonschema",
     "matplotlib",
     "networkx",
