@@ -5,6 +5,7 @@
 ### Breaking changes
 
 ### Merged branches and closed issues
+
 - Acquisition - New acquisition protocol for thresholded acquisitions: `ThresholdedAcquisition` (!617)
 - Compilation - Made the `HardwareCompilationConfig` datastructure backend-specific (!708)
 - Pin version of `dataclasses-json` due to breaking pipelines. (!727)
@@ -12,6 +13,7 @@
 - Qblox backend - Fix weighted acquisition in append mode. (!725)
 - Instrument Coordinator - Improve error message for missing IC components (!718)
 - Qblox backend - Prevent uploading "null" (i.e. all-zero) waveforms (!711)
+- Schedule, Schedulable - Refactor logic for checking schedulable uniqueness within schedule and reference schedulable existence within schedule out of `Schedulable` to `Schedule`. (!724)
 
 ## 0.15.0 (2023-07-13)
 

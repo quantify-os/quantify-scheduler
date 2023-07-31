@@ -2,29 +2,29 @@
 # Licensed according to the LICENCE file on the main branch
 """Module containing the core concepts of the scheduler."""
 from __future__ import annotations
-from itertools import chain
 
 import dataclasses
 import json
 import warnings
-import weakref
 from abc import ABC
 from collections import UserDict
 from copy import deepcopy
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Type, Union
+from itertools import chain
+from typing import TYPE_CHECKING, Any, Literal
 from uuid import uuid4
 
-import numpy as np
 import pandas as pd
-from matplotlib.axes import Axes
-from matplotlib.figure import Figure
 
 from quantify_scheduler import enums, json_utils, resources
 from quantify_scheduler.json_utils import JSONSchemaValMixin
 from quantify_scheduler.operations.operation import Operation
 
 if TYPE_CHECKING:
+    import numpy as np
     import plotly.graph_objects as go
+    from matplotlib.axes import Axes
+    from matplotlib.figure import Figure
+
     from quantify_scheduler.resources import Resource
 
 
@@ -32,6 +32,8 @@ if TYPE_CHECKING:
 class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
     # pylint: disable=line-too-long
     """
+    Interface to be used for :class:`~.Schedule`.
+
     The :class:`~.ScheduleBase` is a data structure that is at
     the core of the Quantify-scheduler and describes when what operations are applied
     where.
@@ -69,13 +71,13 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
     .. jsonschema:: https://gitlab.com/quantify-os/quantify-scheduler/-/raw/main/quantify_scheduler/schemas/schedule.json
 
-    """
+    """  # noqa: E501
 
     # pylint: enable=line-too-long
     @property
     def name(self) -> str:
         """Returns the name of the schedule."""
-        return self.data["name"]
+        return self["name"]
 
     @property
     def repetitions(self) -> int:
@@ -87,30 +89,31 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         :
             The repetitions count.
         """
-        return self.data["repetitions"]
+        return self["repetitions"]
 
     @repetitions.setter
-    def repetitions(self, value: int):
+    def repetitions(self, value: int) -> None:
         if value <= 0:
             raise ValueError(
                 f"Attempting to set repetitions for the schedule. "
                 f"Must be a positive number. Got {value}."
             )
-        self.data["repetitions"] = int(value)
+        self["repetitions"] = int(value)
 
     @property
-    def operations(self) -> Dict[str, Operation]:
+    def operations(self) -> dict[str, Operation]:
         """
         A dictionary of all unique operations used in the schedule.
+
         This specifies information on *what* operation to apply *where*.
 
         The keys correspond to the :attr:`~.Operation.hash` and values are instances
         of :class:`quantify_scheduler.operations.operation.Operation`.
         """
-        return self.data["operation_dict"]
+        return self["operation_dict"]
 
     @property
-    def schedulables(self) -> Dict[str, Any]:
+    def schedulables(self) -> dict[str, Any]:
         """
         A list of schedulables describing the timing of operations.
 
@@ -140,26 +143,29 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             Instead use the :meth:`~.Schedule.add`
 
         """
-        return self.data["schedulables"]
+        return self["schedulables"]
 
     @property
-    def resources(self) -> Dict[str, Resource]:
+    def resources(self) -> dict[str, Resource]:
         """
-        A dictionary containing resources. Keys are names (str),
-        values are instances of :class:`~quantify_scheduler.resources.Resource`.
+        A dictionary containing resources.
+
+        Keys are names (str), values are instances of
+        :class:`~quantify_scheduler.resources.Resource`.
         """
-        return self.data["resource_dict"]
+        return self["resource_dict"]
 
     def __repr__(self) -> str:
+        """Return a string representation of this instance."""
         return (
-            f'{self.__class__.__name__} "{self.data["name"]}" containing '
-            f'({len(self.data["operation_dict"])}) '
-            f'{len(self.data["schedulables"])}  (unique) operations.'
+            f'{self.__class__.__name__} "{self["name"]}" containing '
+            f'({len(self["operation_dict"])}) '
+            f"{len(self.schedulables)}  (unique) operations."
         )
 
     def to_json(self) -> str:
         """
-        Converts the Schedule data structure to a JSON string.
+        Convert the Schedule data structure to a JSON string.
 
         Returns
         -------
@@ -171,7 +177,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
     @classmethod
     def from_json(cls, data: str) -> Schedule:
         """
-        Converts the JSON data to a Schedule.
+        Convert the JSON data to a Schedule.
 
         Parameters
         ----------
@@ -191,14 +197,13 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
     def plot_circuit_diagram(
         self,
-        figsize: Tuple[int, int] = None,
-        ax: Optional[Axes] = None,
+        figsize: tuple[int, int] = None,
+        ax: Axes | None = None,
         plot_backend: Literal["mpl"] = "mpl",
-    ) -> Tuple[Figure, Union[Axes, List[Axes]]]:
+    ) -> tuple[Figure, Axes | list[Axes]]:
         # pylint: disable=line-too-long
         """
-        Creates a circuit diagram visualization of the schedule using the specified
-        plotting backend.
+        Create a circuit diagram visualization of the schedule using the specified plotting backend.
 
         The circuit diagram visualization depicts the schedule at the quantum circuit
         layer. Because quantify-scheduler uses a hybrid gate-pulse paradigm, operations
@@ -271,7 +276,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             If the pulse's port address was not found then the pulse will be plotted on the
             'other' timeline.
 
-        """
+        """  # noqa: E501
         # NB imported here to avoid circular import
         # pylint: disable=import-outside-toplevel
         if plot_backend == "mpl":
@@ -286,18 +291,17 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
     # pylint: disable=too-many-arguments
     def plot_pulse_diagram(
         self,
-        port_list: Optional[List[str]] = None,
+        port_list: list[str] | None = None,
         sampling_rate: float = 1e9,
         modulation: Literal["off", "if", "clock"] = "off",
         modulation_if: float = 0.0,
         plot_backend: Literal["mpl", "plotly"] = "mpl",
-        plot_kwargs: Optional[dict] = None,
-        **backend_kwargs: Any,
-    ) -> Union[Tuple[Figure, Axes], go.Figure]:
+        plot_kwargs: dict | None = None,
+        **backend_kwargs: Any,  # noqa: ANN401
+    ) -> tuple[Figure, Axes] | go.Figure:
         # pylint: disable=line-too-long
         """
-        Creates a visualization of all the pulses in a schedule using the specified
-        plotting backend.
+        Create a visualization of all the pulses in a schedule using the specified plotting backend.
 
         The pulse diagram visualizes the schedule at the quantum device layer.
         For this visualization to work, all operations need to have the information
@@ -306,7 +310,9 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         This information is typically added when the quantum-device level compilation is
         performed.
 
-        Alias of :func:`quantify_scheduler.schedules._visualization.pulse_diagram.pulse_diagram_matplotlib` and
+        Alias of
+        :func:`quantify_scheduler.schedules._visualization.pulse_diagram.pulse_diagram_matplotlib`
+        and
         :func:`quantify_scheduler.schedules._visualization.pulse_diagram.pulse_diagram_plotly`.
 
         Parameters
@@ -321,6 +327,12 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             The time resolution used to sample the schedule in Hz.
         plot_backend:
             Plotting library to use, can either be 'mpl' or 'plotly'.
+        plot_kwargs:
+            Keyword arguments to be passed on to the plotting backend. The arguments
+            that can be used for either backend can be found in the documentation of
+            :func:`quantify_scheduler.schedules._visualization.pulse_diagram.pulse_diagram_matplotlib`
+            and
+            :func:`quantify_scheduler.schedules._visualization.pulse_diagram.pulse_diagram_plotly`.
         backend_kwargs:
             Keyword arguments to be passed on to the plotting backend. The arguments
             that can be used for either backend can be found in the documentation of
@@ -368,7 +380,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
                 _ = schedule.plot_pulse_diagram(sampling_rate=20e6, multiple_subplots=True)
 
-        """
+        """  # noqa: E501
         if plot_kwargs is None:
             plot_kwargs = {}
         else:
@@ -419,8 +431,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
     @property
     def timing_table(self) -> pd.io.formats.style.Styler:
         """
-        A styled pandas dataframe containing the absolute timing of pulses and
-        acquisitions in a schedule.
+        A styled pandas dataframe containing the absolute timing of pulses and acquisitions in a schedule.
 
         This table is constructed based on the abs_time key in the
         :attr:`~quantify_scheduler.schedules.schedule.ScheduleBase.schedulables`.
@@ -443,8 +454,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         ------
         ValueError
             When the absolute timing has not been determined during compilation.
-        """
-
+        """  # noqa: E501
         timing_table = pd.DataFrame(
             columns=[
                 "waveform_op_id",  # a readable id based on the operation
@@ -494,9 +504,9 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         )
         return styled_timing_table
 
-    def get_schedule_duration(self):
+    def get_schedule_duration(self) -> float:
         """
-        Method to find the duration of the schedule.
+        Return the duration of the schedule.
 
         Returns
         -------
@@ -512,14 +522,14 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             operation_repr = schedulable["operation_repr"]
 
             # find duration of last operation
-            operation = self.data["operation_dict"][operation_repr]
+            operation = self["operation_dict"][operation_repr]
             pulses_end_times = [
                 pulse.get("duration") + pulse.get("t0")
-                for pulse in operation.data["pulse_info"]
+                for pulse in operation["pulse_info"]
             ]
             acquisitions_end_times = [
                 acquisition.get("duration") + acquisition.get("t0")
-                for acquisition in operation.data["acquisition_info"]
+                for acquisition in operation["acquisition_info"]
             ]
             final_op_len = max(pulses_end_times + acquisitions_end_times, default=0)
             tmp_time = timestamp + final_op_len
@@ -547,33 +557,30 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
     This allows the user to effortlessly mix the gate- and pulse-level descriptions as
     required for many (calibration) experiments.
 
+    Parameters
+    ----------
+    name
+        The name of the schedule
+    repetitions
+        The amount of times the schedule will be repeated, by default 1
+    data
+        A dictionary containing a pre-existing schedule, by default None
     """  # pylint: disable=line-too-long
 
     schema_filename = "schedule.json"
 
-    def __init__(self, name: str, repetitions: int = 1, data: dict = None) -> None:
-        """
-        Initialize a new instance of Schedule.
-
-        Parameters
-        ----------
-        name
-            The name of the schedule
-        repetitions
-            The amount of times the schedule will be repeated, by default 1
-        data
-            A dictionary containing a pre-existing schedule, by default None
-        """
-
+    def __init__(
+        self, name: str, repetitions: int = 1, data: dict = None
+    ) -> None:  # noqa: E501
         # validate the input data to ensure it is valid schedule data
         super().__init__()
 
         # ensure keys exist
-        self.data["operation_dict"] = {}
-        self.data["schedulables"] = {}
-        self.data["resource_dict"] = {}
-        self.data["name"] = "nameless"
-        self.data["repetitions"] = repetitions
+        self["operation_dict"] = {}
+        self["schedulables"] = {}
+        self["resource_dict"] = {}
+        self["name"] = "nameless"
+        self["repetitions"] = repetitions
 
         # This is used to define baseband pulses and is expected to always be present
         # in any schedule.
@@ -582,29 +589,27 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
         )
 
         if name is not None:
-            self.data["name"] = name
+            self["name"] = name
 
         if data is not None:
             self.data.update(data)
 
     def add_resources(self, resources_list: list) -> None:
-        """Add wrapper for adding multiple resources"""
+        """Add wrapper for adding multiple resources."""
         for resource in resources_list:
             self.add_resource(resource)
 
-    def add_resource(self, resource) -> None:
-        """
-        Add a resource such as a channel or qubit to the schedule.
-        """
+    def add_resource(self, resource: Resource) -> None:
+        """Add a resource such as a channel or qubit to the schedule."""
         if not resources.Resource.is_valid(resource):
             raise ValueError(
                 f"Attempting to add resource to schedule. "
                 f"Resource '{resource}' is not valid."
             )
-        if resource.name in self.data["resource_dict"]:
+        if resource.name in self["resource_dict"]:
             raise ValueError(f"Key {resource.name} is already present")
 
-        self.data["resource_dict"][resource.name] = resource
+        self["resource_dict"][resource.name] = resource
 
     # pylint: disable=too-many-arguments
     def add(
@@ -617,8 +622,7 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
         label: str = None,
     ) -> Schedulable:
         """
-        Add an :class:`quantify_scheduler.operations.operation.Operation` to the
-        schedule.
+        Add an :class:`quantify_scheduler.operations.operation.Operation` to the schedule.
 
         Parameters
         ----------
@@ -640,11 +644,12 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
         label
             a unique string that can be used as an identifier when adding operations.
             if set to None, a random hash will be generated instead.
+
         Returns
         -------
         :
             returns the schedulable created on the schedule
-        """
+        """  # noqa: E501
         if not isinstance(operation, Operation):
             raise ValueError(
                 f"Attempting to add operation to schedule. "
@@ -654,67 +659,80 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
         if label is None:
             label = str(uuid4())
 
+        # ensure the schedulable name is unique
+        if label in self.schedulables:
+            raise ValueError(f"Schedulable name '{label}' must be unique.")
+
+        # ensure that reference schedulable exists in current schedule
+        if ref_op is not None and (
+            (isinstance(ref_op, str) and ref_op not in self.schedulables)
+            # in case a user references a schedulable from another schedule
+            # that has a label that exists in this schedule:
+            or (
+                isinstance(ref_op, Schedulable)
+                and self.schedulables.get(str(ref_op)) is not ref_op
+            )
+        ):
+            raise ValueError(
+                f"Reference schedulable '{ref_op}' does not exists in "
+                f"schedule '{self.name}'."
+            )
+
         operation_id = str(operation)
-        self.data["operation_dict"][operation_id] = operation
-        element = Schedulable(name=label, operation_repr=operation_id, schedule=self)
-        element.add_timing_constraint(rel_time, ref_op, ref_pt, ref_pt_new)
-        self.data["schedulables"].update({label: element})
+        self["operation_dict"][operation_id] = operation
+        element = Schedulable(name=label, operation_repr=operation_id)
+        element.add_timing_constraint(
+            rel_time=rel_time,
+            ref_schedulable=ref_op,
+            ref_pt=ref_pt,
+            ref_pt_new=ref_pt_new,
+        )
+        self.schedulables.update({label: element})
 
         return element
 
-    def __getstate__(self):
+    def __getstate__(self) -> dict[str, Any]:
         return self.data
 
-    def __setstate__(self, state):
+    def __setstate__(self, state: dict[str, Any]) -> None:
         self.data = state
-        for schedulable in self.schedulables.values():
-            schedulable.schedule = weakref.proxy(self)
 
 
 class Schedulable(JSONSchemaValMixin, UserDict):
     """
-    This class represents an element on a schedule. All elements on a schedule are
-    schedulables. A schedulable contains all information regarding the timing of this
-    element as well as the operation being executed by this element.
-    This operation is currently represented by an operation ID.
+    A representation of an element on a schedule.
 
-    Schedulables can contain an arbitrary number of timing constraints to determine the
-    timing. Multiple different constraints are currently resolved by delaying the element
-    until after all timing constraints have been met, to aid compatibility.
-    To specify an exact timing between two schedulables, please ensure to only specify
-    exactly one timing constraint.
+    All elements on a schedule are schedulables. A schedulable contains all
+    information regarding the timing of this element as well as the operation
+    being executed by this element. This operation is currently represented by
+    an operation ID.
+
+    Schedulables can contain an arbitrary number of timing constraints to
+    determine the timing. Multiple different constraints are currently resolved
+    by delaying the element until after all timing constraints have been met, to
+    aid compatibility. To specify an exact timing between two schedulables,
+    please ensure to only specify exactly one timing constraint.
+
+    Parameters
+    ----------
+    name
+        The name of this schedulable, by which it can be referenced by other
+        schedulables. Separate schedulables cannot share the same name
+    operation_repr
+        The operation which is to be executed by this schedulable
     """
 
     schema_filename = "schedulable.json"
 
-    def __init__(self, name, operation_repr, schedule):
-        """
-
-        Parameters
-        ----------
-        name
-            The name of this schedulable, by which it can be referenced by other
-            schedulables. Separate schedulables cannot share the same name
-        operation_repr
-            The operation which is to be executed by this schedulable
-        schedule
-            The schedule to which the schedulable is added. This allows schedulable
-            to find other elements on the schedule
-        """
+    def __init__(self, name: str, operation_repr: str) -> None:
         super().__init__()
 
-        # assert the name is unique
-        if name in schedule["schedulables"]:
-            raise ValueError(f"Schedulable name '{name}' must be unique.")
-
-        self.data["name"] = name
-        self.data["operation_repr"] = operation_repr
-        self.data["timing_constraints"] = []
+        self["name"] = name
+        self["operation_repr"] = operation_repr
+        self["timing_constraints"] = []
 
         # the next lines are to prevent breaking the existing API
-        self.data["label"] = name
-
-        self.schedule = weakref.proxy(schedule)
+        self["label"] = name
 
     def add_timing_constraint(
         self,
@@ -722,8 +740,10 @@ class Schedulable(JSONSchemaValMixin, UserDict):
         ref_schedulable: Schedulable | str | None = None,
         ref_pt: Literal["start", "center", "end"] = "end",
         ref_pt_new: Literal["start", "center", "end"] = "start",
-    ):
+    ) -> None:
         """
+        Add timing constraint.
+
         A timing constraint constrains the operation in time by specifying the time
         (:code:`"rel_time"`) between a reference schedulable and the added schedulable.
         The time can be specified with respect to the "start", "center", or "end" of
@@ -748,24 +768,9 @@ class Schedulable(JSONSchemaValMixin, UserDict):
             reference point in added schedulable must be one of
             ('start', 'center', 'end').
         """
-
-        # Assert that the reference schedulable exists.
+        # Save as str to help serialization of schedules.
         if ref_schedulable is not None:
-            schedulables_dict = self.schedule.data["schedulables"]
-            schedulable_key = str(ref_schedulable)
-            if schedulable_key not in schedulables_dict.keys():
-                raise ValueError(
-                    f"Reference Schedulable '{schedulable_key}' does not exist in schedule."
-                )
-            elif (
-                isinstance(ref_schedulable, Schedulable)
-                and schedulables_dict.get(schedulable_key) is not ref_schedulable
-            ):
-                raise ValueError(
-                    f"Reference Schedulable object '{ref_schedulable}' does not exist in schedule."
-                )
-            else:
-                ref_schedulable = schedulable_key
+            ref_schedulable = str(ref_schedulable)
 
         timing_constr = {
             "rel_time": rel_time,
@@ -773,23 +778,22 @@ class Schedulable(JSONSchemaValMixin, UserDict):
             "ref_pt_new": ref_pt_new,
             "ref_pt": ref_pt,
         }
-        self.data["timing_constraints"].append(timing_constr)
+        self["timing_constraints"].append(timing_constr)
 
-    def __str__(self):
-        return str(self.data["name"])
+    def __str__(self) -> str:
+        return str(self["name"])
 
-    def __getstate__(self):
+    def __getstate__(self) -> dict[str, Any]:
         return {"deserialization_type": self.__class__.__name__, "data": self.data}
 
-    def __setstate__(self, state):
+    def __setstate__(self, state: dict[str, Any]) -> None:
         self.data = state["data"]
 
 
 # pylint: disable=too-many-ancestors
 class CompiledSchedule(ScheduleBase):
     """
-    A schedule that contains compiled instructions ready for execution using
-    the :class:`~.InstrumentCoordinator`.
+    A schedule that contains compiled instructions ready for execution using the :class:`~.InstrumentCoordinator`.
 
     The :class:`CompiledSchedule` differs from a :class:`.Schedule` in
     that it is considered immutable (no new operations or resources can be added), and
@@ -800,7 +804,7 @@ class CompiledSchedule(ScheduleBase):
         A :class:`~.CompiledSchedule` can be obtained by compiling a
         :class:`~.Schedule` using :meth:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler.compile`.
 
-    """  # pylint: disable=line-too-long
+    """  # pylint: disable=line-too-long  # noqa: E501
 
     schema_filename = "schedule.json"
 
@@ -815,19 +819,19 @@ class CompiledSchedule(ScheduleBase):
         if hasattr(schedule, "_hardware_timing_table"):
             self._hardware_timing_table = schedule._hardware_timing_table
 
-        self._hardware_waveform_dict: Dict[str, np.ndarray] = {}
+        self._hardware_waveform_dict: dict[str, np.ndarray] = {}
         if hasattr(schedule, "_hardware_waveform_dict"):
             self._hardware_waveform_dict = schedule._hardware_waveform_dict
 
         # ensure keys exist
-        self.data["compiled_instructions"] = {}
+        self["compiled_instructions"] = {}
 
         # deepcopy is used to prevent side effects when the
         # original (mutable) schedule is modified
         self.data.update(deepcopy(schedule.data))
 
     @property
-    def compiled_instructions(self) -> Dict[str, Resource]:
+    def compiled_instructions(self) -> dict[str, Resource]:
         """
         A dictionary containing compiled instructions.
 
@@ -840,14 +844,15 @@ class CompiledSchedule(ScheduleBase):
         These values typically contain a combination of sequence files, waveform
         definitions, and parameters to configure on the instrument.
         """  # pylint: disable=line-too-long
-        return self.data["compiled_instructions"]
+        return self["compiled_instructions"]
 
     @classmethod
-    def is_valid(cls, object_to_be_validated) -> bool:
+    def is_valid(cls, object_to_be_validated: Any) -> bool:  # noqa: ANN401
         """
-        Checks if the contents of the object_to_be_validated are valid
-        according to the schema. Additionally checks if the object_to_be_validated is
-        an instance of :class:`~.CompiledSchedule`
+        Check if the contents of the object_to_be_validated are valid.
+
+        Additionally checks if the object_to_be_validated is
+        an instance of :class:`~.CompiledSchedule`.
         """
         valid_schedule = super().is_valid(object_to_be_validated)
         if valid_schedule:
@@ -858,8 +863,7 @@ class CompiledSchedule(ScheduleBase):
     @property
     def hardware_timing_table(self) -> pd.io.formats.style.Styler:
         """
-        Returns a timing table representing all operations at the Control-hardware
-        layer.
+        Return a timing table representing all operations at the Control-hardware layer.
 
         Note that this timing table is typically different from the `.timing_table` in
         that it contains more hardware specific information such as channels, clock
@@ -883,49 +887,47 @@ class CompiledSchedule(ScheduleBase):
         return styled_hardware_timing_table
 
     @property
-    def hardware_waveform_dict(self) -> Dict[str, np.ndarray]:
+    def hardware_waveform_dict(self) -> dict[str, np.ndarray]:
         """
-        Returns a waveform dictionary representing all waveforms at the Control-hardware
-        layer.
+        Return a waveform dictionary representing all waveforms at the Control-hardware layer.
 
         Where the waveforms are represented as abstract waveforms in the Operations,
         this dictionary contains the numerical arrays that are uploaded to the hardware.
 
         This dictionary is constructed during compilation in the hardware back ends and
          optionally added to the schedule. Not all back ends support this feature.
-        """
+        """  # noqa: E501
         return self._hardware_waveform_dict
 
 
 @dataclasses.dataclass
 class AcquisitionMetadata:
     """
-    Class to provide a description of the shape and type of data that a schedule will
-    return when executed.
+    A description of the shape and type of data that a schedule will return when executed.
 
     .. note::
 
         The acquisition protocol, bin-mode and return types are assumed to be the same
         for all acquisitions in a schedule.
-    """
+    """  # noqa: E501
 
     acq_protocol: str
     """The acquisition protocol that is used for all acquisitions in the schedule."""
     bin_mode: enums.BinMode
     """How the data is stored in the bins indexed by acq_channel and acq_index."""
-    acq_return_type: Type
+    acq_return_type: type
     """The datatype returned by the individual acquisitions."""
-    acq_indices: Dict[int, List[int]]
+    acq_indices: dict[int, list[int]]
     """A dictionary containing the acquisition channel as key and a list of acquisition
     indices that are used for every channel."""
     repetitions: int
     """How many times the acquisition was repeated on this specific sequencer."""
 
-    def __getstate__(self):
+    def __getstate__(self) -> dict[str, Any]:
         data = dataclasses.asdict(self)
         return {"deserialization_type": self.__class__.__name__, "data": data}
 
-    def __setstate__(self, state):
+    def __setstate__(self, state: dict[str, Any]) -> dict[str, Any]:
         state["data"]["acq_indices"] = {
             int(k): v for k, v in state["data"]["acq_indices"].items()
         }

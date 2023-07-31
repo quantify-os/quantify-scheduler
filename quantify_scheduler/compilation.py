@@ -72,11 +72,12 @@ def determine_absolute_timing(
 
     last_schedulable["abs_time"] = 0
 
-    for schedulable in list(schedule.data["schedulables"].values())[1:]:
+    for schedulable in list(schedule.schedulables.values())[1:]:
         curr_op = schedule.operations[schedulable["operation_repr"]]
-        if len(schedulable.data["timing_constraints"]) == 0:
+
+        if len(schedulable["timing_constraints"]) == 0:
             schedulable.add_timing_constraint(ref_schedulable=last_schedulable)
-        for t_constr in schedulable.data["timing_constraints"]:
+        for t_constr in schedulable["timing_constraints"]:
             if t_constr["ref_schedulable"] is None:
                 ref_schedulable = last_schedulable
                 ref_op = last_op

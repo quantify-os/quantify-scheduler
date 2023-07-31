@@ -430,6 +430,7 @@ nitpick_ignore_regex = [
     ("py:class", r"matplotlib.*"),
     ("py:class", r"mpl.*"),
     ("py:class", r"\"[a-zA-Z]+\""),  # Ignore string literals
+    ("py:class", r".*\.Self"),
 ]
 
 with open("nitpick-exceptions.txt", encoding="utf-8") as nitpick_exceptions:
