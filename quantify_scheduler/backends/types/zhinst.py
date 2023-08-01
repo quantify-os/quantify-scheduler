@@ -200,6 +200,22 @@ class Output(DataStructure):
     markers: List[Union[str, int]] = []
     mixer_corrections: Optional[common.MixerCorrections] = None
 
+    @validator("mixer_corrections", pre=True, always=True)
+    def decapitalize_dc_mixer_offsets(cls, v):
+        """
+        Decapitalize the DC mixer offsets.
+
+        This is required because the old-style hardare config used capitalized
+        keys for the DC mixer offsets, while the new-style hardware config uses
+        lower-case keys.
+        """
+        if isinstance(v, dict):
+            if "dc_offset_I" in v:
+                v["dc_offset_i"] = v.pop("dc_offset_I")
+            if "dc_offset_Q" in v:
+                v["dc_offset_q"] = v.pop("dc_offset_Q")
+        return v
+
 
 class Device(DataStructure):
     """

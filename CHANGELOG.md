@@ -15,6 +15,7 @@
 - Instrument Coordinator - Improve error message for missing IC components (!718)
 - Qblox backend - Prevent uploading "null" (i.e. all-zero) waveforms (!711)
 - Schedule, Schedulable - Refactor logic for checking schedulable uniqueness within schedule and reference schedulable existence within schedule out of `Schedulable` to `Schedule`. (!724)
+- Zhinst backend - Decapitalize `"dc_mixer_offset_I"` and `"dc_mixer_offset_Q"` in `backends.types.zhinst.Output` validator to fix compatibility with old-style hardware config dicts. (!740)
 
 ## 0.15.0 (2023-07-13)
 
