@@ -2510,9 +2510,11 @@ def test_assign_attenuation_invalid_raises(
 def test_markers(
     mock_setup_basic_transmon, hardware_cfg_pulsar, hardware_cfg_pulsar_rf
 ):
-    def _confirm_correct_markers(device_program, default_marker, is_rf=False):
+    def _confirm_correct_markers(
+        device_program, default_marker, is_rf=False, sequencer=0
+    ):
         answer = default_marker
-        qasm = device_program["sequencers"]["seq0"]["sequence"]["program"]
+        qasm = device_program["sequencers"][f"seq{sequencer}"]["sequence"]["program"]
 
         matches = re.findall(r"set\_mrk +\d+", qasm)
         match = [int(m.replace("set_mrk", "").strip()) for m in matches][0]
@@ -2528,15 +2530,19 @@ def test_markers(
     quantum_device = mock_setup_basic_transmon["quantum_device"]
 
     q0 = quantum_device.get_element("q0")
+    q3 = quantum_device.get_element("q3")  # q3 uses the same module as q2
     q2 = quantum_device.get_element("q2")
 
     q0.rxy.amp180(0.213)
+    q3.rxy.amp180(0.211)
     q2.rxy.amp180(0.215)
 
     q0.clock_freqs.f01(7.3e9)
     q0.clock_freqs.f12(7.0e9)
     q0.clock_freqs.readout(8.0e9)
     q0.measure.acq_delay(100e-9)
+
+    q3.clock_freqs.f01(5.2e9)
 
     q2.clock_freqs.f01(6.33e9)
     q2.clock_freqs.f12(7.0e9)
@@ -2556,6 +2562,7 @@ def test_markers(
     # # Test for rf
     sched = Schedule("gate_experiment")
     sched.add(X("q2"))
+    sched.add(X("q3"))
     sched.add(Measure("q2"))
 
     quantum_device.hardware_config(hardware_cfg_pulsar_rf)
@@ -2564,11 +2571,8 @@ def test_markers(
         sched, quantum_device.generate_compilation_config()
     )
     program = compiled_schedule["compiled_instructions"]
-    _confirm_correct_markers(
-        program["qcm_rf0"],
-        0b0001,
-        is_rf=True,
-    )
+    _confirm_correct_markers(program["qcm_rf0"], 0b0001, is_rf=True, sequencer=0)
+    _confirm_correct_markers(program["qcm_rf0"], 0b0010, is_rf=True, sequencer=1)
     _confirm_correct_markers(
         program["qrm_rf0"],
         0b0011,

@@ -1261,30 +1261,11 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             Attempting to use more sequencers than available.
 
         """
-        # Figure out which outputs need to be turned on.
-        default_marker = self.static_hw_properties.default_marker
-        for io, io_cfg in self.instrument_cfg.items():
-            if (
-                not isinstance(io_cfg, dict)
-                or io not in self.static_hw_properties.valid_ios
-            ):
-                continue
-
-            portclock_configs: List[Dict[str, Any]] = io_cfg.get(
-                "portclock_configs", []
-            )
-            if not portclock_configs:
-                continue
-
-            for target in portclock_configs:
-                portclock = (target["port"], target["clock"])
-                if portclock in self._portclocks_with_pulses:
-                    if io in self.static_hw_properties.output_map:
-                        default_marker = self.static_hw_properties.output_map[io]
 
         # Setup each sequencer.
         sequencers: Dict[str, Sequencer] = {}
         portclock_io_map: Dict[Tuple, str] = {}
+        default_marker = self.static_hw_properties.default_marker
 
         for io, io_cfg in self.instrument_cfg.items():
             if not isinstance(io_cfg, dict):
@@ -1316,6 +1297,10 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 portclock = (target["port"], target["clock"])
 
                 if portclock in self._portclocks_with_data:
+                    # Figure out which outputs need to be turned on.
+                    if io in self.static_hw_properties.output_map:
+                        default_marker = self.static_hw_properties.output_map[io]
+
                     io_mode, connected_outputs, connected_inputs = helpers.get_io_info(
                         io
                     )
