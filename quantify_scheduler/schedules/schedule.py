@@ -617,8 +617,8 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
         operation: Operation,
         rel_time: float = 0,
         ref_op: Schedulable | str | None = None,
-        ref_pt: Literal["start", "center", "end"] = "end",
-        ref_pt_new: Literal["start", "center", "end"] = "start",
+        ref_pt: Literal["start", "center", "end"] | None = None,
+        ref_pt_new: Literal["start", "center", "end"] | None = None,
         label: str = None,
     ) -> Schedulable:
         """
@@ -637,10 +637,17 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
             to the last added operation.
         ref_pt
             reference point in reference operation must be one of
-            ('start', 'center', 'end').
+            :code:`"start"`, :code:`"center"`, :code:`"end"`, or :code:`None`; in case
+            of :code:`None`,
+            :func:`~quantify_scheduler.compilation.determine_absolute_timing` assumes
+            :code:`"end"`.
         ref_pt_new
             reference point in added operation must be one of
-            ('start', 'center', 'end').
+            :code:`"start"`, :code:`"center"`, :code:`"end"`, or :code:`None`; in case
+            of :code:`None`,
+            :func:`~quantify_scheduler.compilation.determine_absolute_timing` assumes
+            :code:`"start"`.
+
         label
             a unique string that can be used as an identifier when adding operations.
             if set to None, a random hash will be generated instead.
@@ -738,8 +745,8 @@ class Schedulable(JSONSchemaValMixin, UserDict):
         self,
         rel_time: float = 0,
         ref_schedulable: Schedulable | str | None = None,
-        ref_pt: Literal["start", "center", "end"] = "end",
-        ref_pt_new: Literal["start", "center", "end"] = "start",
+        ref_pt: Literal["start", "center", "end"] | None = None,
+        ref_pt_new: Literal["start", "center", "end"] | None = None,
     ) -> None:
         """
         Add timing constraint.
@@ -762,11 +769,17 @@ class Schedulable(JSONSchemaValMixin, UserDict):
             name of the reference schedulable. If set to :code:`None`, will default
             to the last added operation.
         ref_pt
-            reference point in reference schedulable must be one of
-            ('start', 'center', 'end').
+            reference point in reference operation must be one of
+            :code:`"start"`, :code:`"center"`, :code:`"end"`, or :code:`None`; in case
+            of :code:`None`,
+            :meth:`~quantify_scheduler.compilation.determine_absolute_timing` assumes
+            :code:`"end"`.
         ref_pt_new
-            reference point in added schedulable must be one of
-            ('start', 'center', 'end').
+            reference point in added operation must be one of
+            :code:`"start"`, :code:`"center"`, :code:`"end"`, or :code:`None`; in case
+            of :code:`None`,
+            :meth:`~quantify_scheduler.compilation.determine_absolute_timing` assumes
+            :code:`"start"`.
         """
         # Save as str to help serialization of schedules.
         if ref_schedulable is not None:

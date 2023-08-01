@@ -29,9 +29,12 @@ def determine_absolute_timing(
     :attr:`~.ScheduleBase.schedulables`. It does this by:
 
         1. iterating over all and elements in the :attr:`~.ScheduleBase.schedulables`.
-        2. determining the absolute time of the reference operation.
-        3. determining the start of the operation based on the `rel_time` and `duration`
-           of operations.
+        2. determining the absolute time of the reference operation
+           - reference point :code:`"ref_pt"` of the reference operation defaults to :code:`"end"` in case it is not set (i.e., is :code:`None`).
+        3. determining the start of the operation based on the :code:`rel_time` and :code:`duration`
+           of operations
+           - reference point :code:`"ref_pt_new"` of the added operation defaults to :code:`"start"` in case it is not set.
+
 
     Parameters
     ----------
@@ -91,11 +94,12 @@ def determine_absolute_timing(
             # duration = 1 is useful when e.g., drawing a circuit diagram.
             duration_ref_op = ref_op.duration if time_unit == "physical" else 1
 
-            if t_constr["ref_pt"] == "start":
+            ref_pt = t_constr["ref_pt"] or "end"
+            if ref_pt == "start":
                 t0 = ref_schedulable["abs_time"]
-            elif t_constr["ref_pt"] == "center":
+            elif ref_pt == "center":
                 t0 = ref_schedulable["abs_time"] + duration_ref_op / 2
-            elif t_constr["ref_pt"] == "end":
+            elif ref_pt == "end":
                 t0 = ref_schedulable["abs_time"] + duration_ref_op
             else:
                 raise NotImplementedError(
@@ -104,11 +108,12 @@ def determine_absolute_timing(
 
             duration_new_op = curr_op.duration if time_unit == "physical" else 1
 
-            if t_constr["ref_pt_new"] == "start":
+            ref_pt_new = t_constr["ref_pt_new"] or "start"
+            if ref_pt_new == "start":
                 abs_time = t0 + t_constr["rel_time"]
-            elif t_constr["ref_pt_new"] == "center":
+            elif ref_pt_new == "center":
                 abs_time = t0 + t_constr["rel_time"] - duration_new_op / 2
-            elif t_constr["ref_pt_new"] == "end":
+            elif ref_pt_new == "end":
                 abs_time = t0 + t_constr["rel_time"] - duration_new_op
             if "abs_time" not in schedulable or abs_time > schedulable["abs_time"]:
                 schedulable["abs_time"] = abs_time

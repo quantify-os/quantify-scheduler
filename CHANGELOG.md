@@ -8,6 +8,7 @@
 
 - Acquisition - New acquisition protocol for thresholded acquisitions: `ThresholdedAcquisition` (!617)
 - Compilation - Made the `HardwareCompilationConfig` datastructure backend-specific (!708)
+- Compilation - Change default `ref_pt` and `ref_pt_new` to `None` in `Schedule` and `Schedulable`; `compilation.determine_absolute_timing` will then assume `end` and `start` respectively, conserving previous behavior (!733)
 - Pin version of `dataclasses-json` due to breaking pipelines. (!727)
 - Schedulables - Store references to `Schedulables` in timing contraints as `string` rather than `Schedulable`. (!717)
 - Qblox backend - Fix weighted acquisition in append mode. (!725)
