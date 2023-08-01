@@ -528,7 +528,7 @@ def _validate_schedule(schedule: Schedule) -> None:
         raise ValueError(f"Undefined schedulables for schedule '{schedule.name}'!")
 
     for schedulable in schedule.schedulables.values():
-        if "abs_time" not in schedulable.keys():
+        if "abs_time" not in schedulable:
             raise ValueError(
                 "Absolute timing has not been determined "
                 + f"for the schedule '{schedule.name}'!"
@@ -951,7 +951,7 @@ def generate_hardware_config(  # noqa: PLR0912, PLR0915
                     hw_compilation_config_value=instr_description.frequency_param,
                 )
                 # Set the LO power in the LO config:
-                if "power" not in lo_config.keys():
+                if "power" not in lo_config:
                     lo_config["power"] = {}
                 elif isinstance(lo_config["power"], int):
                     lo_config["power"] = {"power": lo_config["power"]}
