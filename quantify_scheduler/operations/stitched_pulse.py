@@ -121,12 +121,12 @@ def convert_to_numerical_pulse(
     if not operation.valid_pulse:
         return operation
 
-    pulse_t0 = min(p_i["t0"] for p_i in operation["pulse_info"])
+    pulse_t0: float = min(p_i["t0"] for p_i in operation["pulse_info"])
     # Round to nanoseconds, to avoid rounding errors.
     timestamps = np.round(
-        np.arange(round(operation.duration * sampling_rate) + 1) / sampling_rate
-        + pulse_t0,
-        9,
+        pulse_t0
+        + np.arange(round(operation.duration * sampling_rate) + 1) / sampling_rate,
+        decimals=9,
     )
 
     waveform = np.zeros_like(timestamps).astype(complex)
@@ -386,7 +386,7 @@ class StitchedPulseBuilder:
 
     @property
     def operation_end(self) -> float:
-        max_from_pulses = (
+        max_from_pulses: float = (
             0.0
             if len(self._pulses) == 0
             else max(
@@ -395,7 +395,7 @@ class StitchedPulseBuilder:
                 for pulse_info in op.data["pulse_info"]
             )
         )
-        max_from_offsets = (
+        max_from_offsets: float = (
             0.0
             if len(self._offsets) == 0
             else max(offs.t0 + (offs.duration or 0.0) for offs in self._offsets)
