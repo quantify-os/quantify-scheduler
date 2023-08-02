@@ -66,10 +66,10 @@ class MockAcquisition(acquisitions.AcquisitionStrategyPartial):
     def generate_data(self, wf_dict: Dict[str, Any]):
         pass
 
-    def acquire_append(self, qasm_program: QASMProgram):
+    def _acquire_append(self, qasm_program: QASMProgram):
         pass
 
-    def acquire_average(self, qasm_program: QASMProgram):
+    def _acquire_average(self, qasm_program: QASMProgram):
         pass
 
 
@@ -81,7 +81,7 @@ class TestAcquisitionStrategyPartial:
 
     def test_operation_info_property(self):
         # arrange
-        data = {"bin_mode": BinMode.AVERAGE, "acq_channel": 0, "acq_index": 0}
+        data = {"bin_mode": None, "acq_channel": 0, "acq_index": 0}
         op_info = types.OpInfo(name="", data=data, timing=0)
         strategy = MockAcquisition(op_info)
 
@@ -97,8 +97,8 @@ class TestAcquisitionStrategyPartial:
         data = {"bin_mode": bin_mode, "acq_channel": 0, "acq_index": 0}
         op_info = types.OpInfo(name="", data=data, timing=0)
         strategy = MockAcquisition(op_info)
-        append_mock = mocker.patch.object(strategy, "acquire_append")
-        average_mock = mocker.patch.object(strategy, "acquire_average")
+        append_mock = mocker.patch.object(strategy, "_acquire_append")
+        average_mock = mocker.patch.object(strategy, "_acquire_average")
         # pylint: disable=attribute-defined-outside-init
         # what pylint claims here is simply not true
         strategy.bin_idx_register = "R0" if bin_mode == BinMode.APPEND else None
@@ -188,7 +188,7 @@ class TestSquareAcquisitionStrategy:
 
     def test_generate_data(self):
         # arrange
-        data = {"bin_mode": BinMode.AVERAGE, "acq_channel": 0, "acq_index": 0}
+        data = {"bin_mode": None, "acq_channel": 0, "acq_index": 0}
         strategy = acquisitions.SquareAcquisitionStrategy(
             types.OpInfo(name="", data=data, timing=0)
         )
@@ -204,7 +204,7 @@ class TestSquareAcquisitionStrategy:
         # arrange
         qasm = empty_qasm_program_qrm
         data = {
-            "bin_mode": BinMode.AVERAGE,
+            "bin_mode": None,
             "acq_channel": 0,
             "acq_index": 0,
             "duration": 1e-6,
@@ -215,7 +215,7 @@ class TestSquareAcquisitionStrategy:
         strategy.generate_data({})
 
         # act
-        strategy.acquire_average(qasm)
+        strategy._acquire_average(qasm)
 
         # assert
         assert qasm.instructions == [["", "acquire", "0,0,4", ""]]
@@ -224,7 +224,7 @@ class TestSquareAcquisitionStrategy:
         # arrange
         qasm = empty_qasm_program_qrm
         data = {
-            "bin_mode": BinMode.APPEND,
+            "bin_mode": None,
             "acq_channel": 0,
             "acq_index": 1,
             "duration": 1e-6,
@@ -236,7 +236,7 @@ class TestSquareAcquisitionStrategy:
         strategy.generate_data({})
 
         # act
-        strategy.acquire_append(qasm)
+        strategy._acquire_append(qasm)
 
         # assert
         assert qasm.instructions == [
@@ -272,7 +272,7 @@ class TestWeightedAcquisitionStrategy:
             },
         ]
         data = {
-            "bin_mode": BinMode.AVERAGE,
+            "bin_mode": None,
             "acq_channel": 0,
             "acq_index": 0,
             "waveforms": weights,
@@ -309,7 +309,7 @@ class TestWeightedAcquisitionStrategy:
             },
         ]
         data = {
-            "bin_mode": BinMode.AVERAGE,
+            "bin_mode": None,
             "acq_channel": 2,
             "acq_index": 12,
             "waveforms": weights,
@@ -320,7 +320,7 @@ class TestWeightedAcquisitionStrategy:
         strategy.generate_data({})
 
         # act
-        strategy.acquire_average(qasm)
+        strategy._acquire_average(qasm)
 
         # assert
         assert qasm.instructions == [
@@ -346,7 +346,7 @@ class TestWeightedAcquisitionStrategy:
             },
         ]
         data = {
-            "bin_mode": BinMode.AVERAGE,
+            "bin_mode": None,
             "acq_channel": 2,
             "acq_index": 12,
             "waveforms": weights,
@@ -374,7 +374,7 @@ class TestWeightedAcquisitionStrategy:
             },
         ]
         data = {
-            "bin_mode": BinMode.AVERAGE,  # FIXME: this is ignored
+            "bin_mode": None,
             "acq_channel": 2,
             "acq_index": 12,
             "waveforms": weights,
@@ -386,7 +386,7 @@ class TestWeightedAcquisitionStrategy:
         strategy.generate_data({})
 
         # act
-        strategy.acquire_append(qasm)
+        strategy._acquire_append(qasm)
 
         assert qasm.instructions == [
             ["", "", "", ""],
@@ -418,7 +418,7 @@ class TestWeightedAcquisitionStrategy:
             },
         ]
         data = {
-            "bin_mode": BinMode.AVERAGE,
+            "bin_mode": None,
             "acq_channel": 2,
             "acq_index": 12,
             "waveforms": weights,
@@ -441,7 +441,7 @@ class TestTriggerCountStrategy:
 
     def test_generate_data(self):
         # arrange
-        data = {"bin_mode": BinMode.AVERAGE, "acq_channel": 0, "acq_index": 0}
+        data = {"bin_mode": None, "acq_channel": 0, "acq_index": 0}
         strategy = acquisitions.TriggerCountAcquisitionStrategy(
             types.OpInfo(name="", data=data, timing=0)
         )
@@ -457,7 +457,7 @@ class TestTriggerCountStrategy:
         # arrange
         qasm = empty_qasm_program_qrm
         data = {
-            "bin_mode": BinMode.AVERAGE,
+            "bin_mode": None,
             "acq_channel": 0,
             "acq_index": 0,
             "duration": 100e-6,
@@ -468,7 +468,7 @@ class TestTriggerCountStrategy:
         strategy.generate_data({})
 
         # act
-        strategy.acquire_average(qasm)
+        strategy._acquire_average(qasm)
 
         # assert
         assert qasm.instructions == [
@@ -492,7 +492,7 @@ class TestTriggerCountStrategy:
         # arrange
         qasm = empty_qasm_program_qrm
         data = {
-            "bin_mode": BinMode.APPEND,
+            "bin_mode": None,
             "acq_channel": 0,
             "acq_index": 5,
             "duration": 100e-6,
@@ -504,7 +504,7 @@ class TestTriggerCountStrategy:
         strategy.generate_data({})
 
         # act
-        strategy.acquire_append(qasm)
+        strategy._acquire_append(qasm)
 
         # assert
         assert qasm.instructions == [

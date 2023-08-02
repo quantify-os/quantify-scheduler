@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Breaking changes
+- Qblox backend - Make q1asm generation functions `acquire_append` and `acquire_average` private. (!739)
 
 ### Merged branches and closed issues
 

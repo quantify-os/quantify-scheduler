@@ -4,18 +4,16 @@
 
 from __future__ import annotations
 
-from typing import Optional, Dict, Any, Union
-
 from abc import abstractmethod
+from typing import Any, Dict, Optional, Union
 
 import numpy as np
 
-from quantify_scheduler.enums import BinMode
-
+from quantify_scheduler.backends.qblox import constants, helpers, q1asm_instructions
 from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
-from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
-from quantify_scheduler.backends.qblox import helpers, constants, q1asm_instructions
+from quantify_scheduler.backends.types import qblox as types
+from quantify_scheduler.enums import BinMode
 
 
 class AcquisitionStrategyPartial(IOperationStrategy):
@@ -33,10 +31,10 @@ class AcquisitionStrategyPartial(IOperationStrategy):
     def insert_qasm(self, qasm_program: QASMProgram):
         """
         Add the assembly instructions for the Q1 sequence processor that corresponds to
-        this acquisition. This function calls either acquire_average or acquire_append,
+        this acquisition. This function calls either _acquire_average or _acquire_append,
         depending on the bin mode.
 
-        The acquire_average and acquire_append are to be implemented in the subclass.
+        The _acquire_average and _acquire_append are to be implemented in the subclass.
 
         Parameters
         ----------
@@ -66,14 +64,14 @@ class AcquisitionStrategyPartial(IOperationStrategy):
                     "Attempting to add acquisition with average binmode. "
                     "bin_idx_register must be None."
                 )
-            self.acquire_average(qasm_program)
+            self._acquire_average(qasm_program)
         elif self.bin_mode == BinMode.APPEND:
             if self.bin_idx_register is None:
                 raise ValueError(
                     "Attempting to add acquisition with append binmode. "
                     "bin_idx_register cannot be None."
                 )
-            self.acquire_append(qasm_program)
+            self._acquire_append(qasm_program)
         else:
             raise RuntimeError(
                 f"Attempting to process an acquisition with unknown bin "
@@ -81,11 +79,11 @@ class AcquisitionStrategyPartial(IOperationStrategy):
             )
 
     @abstractmethod
-    def acquire_average(self, qasm_program: QASMProgram):
+    def _acquire_average(self, qasm_program: QASMProgram):
         """Adds the assembly to the program for a bin_mode==AVERAGE acquisition."""
 
     @abstractmethod
-    def acquire_append(self, qasm_program: QASMProgram):
+    def _acquire_append(self, qasm_program: QASMProgram):
         """Adds the assembly to the program for a bin_mode==APPEND acquisition."""
 
     @property
@@ -103,7 +101,7 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
         """Returns None as no waveform is needed."""
         return None
 
-    def acquire_average(self, qasm_program: QASMProgram):
+    def _acquire_average(self, qasm_program: QASMProgram):
         """
         Add the assembly instructions for the Q1 sequence processor that corresponds to
         this acquisition, assuming averaging is used.
@@ -116,7 +114,7 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
         bin_idx = self.operation_info.data["acq_index"]
         self._acquire_square(qasm_program, bin_idx)
 
-    def acquire_append(self, qasm_program: QASMProgram):
+    def _acquire_append(self, qasm_program: QASMProgram):
         """
         Add the assembly instructions for the Q1 sequence processor that corresponds to
         this acquisition, assuming append is used.
@@ -267,7 +265,7 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
 
         self.waveform_index0, self.waveform_index1 = waveform_indices
 
-    def acquire_average(self, qasm_program: QASMProgram):
+    def _acquire_average(self, qasm_program: QASMProgram):
         """
         Add the assembly instructions for the Q1 sequence processor that corresponds to
         this acquisition, assuming averaging is used.
@@ -290,7 +288,7 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
         )
         qasm_program.elapsed_time += constants.GRID_TIME
 
-    def acquire_append(self, qasm_program: QASMProgram):
+    def _acquire_append(self, qasm_program: QASMProgram):
         """
         Add the assembly instructions for the Q1 sequence processor that corresponds to
         this acquisition, assuming append is used. Registers will be used for the weight
@@ -355,7 +353,7 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
         """Returns None as no waveform is needed."""
         return None
 
-    def acquire_average(self, qasm_program: QASMProgram):
+    def _acquire_average(self, qasm_program: QASMProgram):
         """
         Add the assembly instructions for the Q1 sequence processor that corresponds to
         this acquisition, assuming averaging is used.
@@ -395,7 +393,7 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
             f"bin_mode:{BinMode.AVERAGE}",
         )
 
-    def acquire_append(self, qasm_program: QASMProgram):
+    def _acquire_append(self, qasm_program: QASMProgram):
         """
         Add the assembly instructions for the Q1 sequence processor that corresponds to
         this acquisition, assuming append is used.
