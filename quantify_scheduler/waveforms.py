@@ -10,6 +10,7 @@ the flux sensitivity and interaction strengths and qubit frequencies.
 """
 from __future__ import annotations
 from typing import List, Literal, Optional, Union
+import warnings
 
 import numpy as np
 from scipy import signal, interpolate
@@ -320,8 +321,6 @@ def interpolated_complex_waveform(
     samples: np.ndarray,
     t_samples: np.ndarray,
     interpolation: str = "linear",
-    bounds_error: Optional[bool] = False,
-    fill_value: np.ndarray | float | Literal["extrapolate"] = 0.0,
     **kwargs,
 ) -> np.ndarray:
     """
@@ -338,14 +337,6 @@ def interpolated_complex_waveform(
     t_samples
         An array of values specifying the corresponding times at which the `samples`
         are evaluated.
-    bounds_error
-        This argument is passed directly to ``scipy.interpolate.interp1d``. If
-        True, an ValueError is ranged when this function tries to sample values
-        outside of the given `t` array.
-    fill_value
-        This argument is passed directly to ``scipy.interpolate.interp1d``. When
-        `bounds_error` is False, this argument controls what value is returned
-        when the function samples outside of the bounds of the `t` array.
     kwargs
         Optional keyword arguments to pass to ``scipy.interpolate.interp1d``.
 
@@ -354,8 +345,27 @@ def interpolated_complex_waveform(
     :
         An array containing the interpolated values.
     """
-    if isinstance(samples, list):
-        samples = np.array(samples)
+    samples = np.array(samples)
+
+    if ("bounds_error" in kwargs) or ("fill_value" in kwargs):
+        warnings.warn(
+            "Extrapolation should not be used, and the `bounds_error` and `fill_value` parameters can no longer be specified as of quantify-scheduler >= 0.19.0",
+            FutureWarning,
+        )
+    else:
+        # Allow extrapolation only when t starts less than one t_sample before the start
+        # of t_samples, and when t ends less than one t_sample after the end of t_samples.
+        delta_t_samples = t_samples[1] - t_samples[0]
+        if (
+            t[0] < t_samples[0] - delta_t_samples
+            or t[-1] > t_samples[-1] + delta_t_samples
+        ):
+            raise ValueError(
+                "Interpolation out of bounds: 't' should start at or after the first 't_sample' and end at or before the last 't_sample'"
+            )
+
+    bounds_error = kwargs.pop("bounds_error", False)
+    fill_value = kwargs.pop("fill_value", "extrapolate")
 
     real_interpolator = interpolate.interp1d(
         t_samples,

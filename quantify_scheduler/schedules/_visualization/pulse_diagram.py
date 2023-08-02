@@ -391,7 +391,7 @@ def sample_schedule(
 
             wf_func: Callable = import_python_object_from_string(pulse_info["wf_func"])
 
-            t = np.arange(t0, t1 + 1 / sampling_rate, 1 / sampling_rate)
+            t = np.arange(t0, t1 + 0.5 / sampling_rate, 1 / sampling_rate)
             if len(t) == 0:
                 continue
 

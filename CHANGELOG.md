@@ -17,6 +17,7 @@
 - Schedule, Schedulable - Refactor logic for checking schedulable uniqueness within schedule and reference schedulable existence within schedule out of `Schedulable` to `Schedule`. (!724)
 - Zhinst backend - Decapitalize `"dc_mixer_offset_I"` and `"dc_mixer_offset_Q"` in `backends.types.zhinst.Output` validator to fix compatibility with old-style hardware config dicts. (!740)
 - Qblox backend - Fix playback on both outputs of a QCM-RF (!742)
+- Waveforms - Fix such that `interpolated_complex_waveform` does not extrapolate except for rounding errors. (!710)
 - Docs - Fix broken list bullets on Read-the-Docs by enforcing `sphinx-rtd-theme>=1.2.2` (!743)
 
 ## 0.15.0 (2023-07-13)

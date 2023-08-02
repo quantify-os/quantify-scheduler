@@ -186,6 +186,12 @@ def test_interpolated_complex_waveform(test_wf, test_time, answer):
     )
     npt.assert_array_equal(answer, result)
 
+    with pytest.raises(ValueError):
+        # result should raise an error when t is out of interpolation bounds
+        result = interpolated_complex_waveform(
+            t=t_answer + 50e-6, samples=test_wf, t_samples=test_time
+        )
+
 
 def test_rotate_wave() -> None:
     I = np.ones(10)  # noqa # Q component is zero
