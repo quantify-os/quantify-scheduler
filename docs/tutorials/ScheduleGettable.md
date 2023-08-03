@@ -371,6 +371,7 @@ dataset
 
 The dataset coordinates and data variables are named as generic `x` and `y` parameters. You can click on the 'Show/Hide attributes' button next to the coordinates and variables to see what they refer to.
 
+(sec-tutorial-schedulegettable-repetitions)=
 ## Repetitions
 
 Repetition defines how many times the defined schedule will run on the hardware. Running the schedule multiple times can be useful for example if the user would like to reduce errors of acquisitions by averaging the result of multiple measurements.

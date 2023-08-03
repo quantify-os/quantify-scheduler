@@ -28,7 +28,7 @@ This tutorial assumes you are familiar with compiling schedules and running simp
 
 The basic structure of the returned acquisition data is that it is an {class}`xarray.Dataset`, which consists of multiple {class}`xarray.DataArray`. Each of these {class}`xarray.DataArray`s correspond to one acquisition channel.
 
-It is important to understand, that this tutorial is Qblox-specific with regards to setting up the hardware configuration, and setting up the physical wiring for the hardware, but the schedules and protocols and the return data formats are backend independent.
+Important to note, this tutorial is Qblox-specific with regard to setting up the hardware configuration and setting up the physical wiring for the hardware, but the schedules and protocols and the return data formats are backend independent.
 
 ### Initial setup
 
@@ -43,14 +43,14 @@ from quantify_core.data import handling as dh
 dh.set_datadir(dh.default_datadir())
 ```
 
-In this tutorial we will use the Qblox dummy device, but for a real hardware, the ip can be provided without the `dummy_cfg` argument.
+In this tutorial we will use the Qblox dummy device, but for real hardware, the ip address can be provided (without the `dummy_cfg` argument).
 
 ```{code-cell} ipython3
 from qblox_instruments import Cluster, ClusterType
 from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
 
 cluster = Cluster("cluster0",
-                  "<ip>",
+                  identifier="<ip address>",
                   dummy_cfg={1: ClusterType.CLUSTER_QRM},
           )
 cluster_component = ClusterComponent(cluster)
@@ -131,10 +131,12 @@ One of the simplest protocols is the trace (or scope) acquisition protocol. With
 
 #### Setting up the schedule
 
-Let's define the duration of the DRAG pulse using the parameter `pulse_duration`.
+Let's define the duration of the DRAG pulse using the parameter `pulse_duration`. We define a separate parameter `acq_duration`, allowing the acquisition duration to be larger than the duration of the pulse
+(e.g., in case the `time_of_flight` was not yet calibrated).
 
 ```{code-cell} ipython3
 pulse_duration = 1e-6
+acq_duration = pulse_duration
 ```
 
 The schedule is very simple, we transmit the pulse and then we start the trace acquisition which occurs `time_of_flight` seconds after the pulse.
@@ -149,18 +151,21 @@ from quantify_scheduler.operations.pulse_library import IdlePulse, DRAGPulse
 from quantify_scheduler.operations.acquisition_library import Trace
 
 schedule = Schedule("trace_acquisition_tutorial")
-
 schedule.add(IdlePulse(duration=1e-6))
 
 schedule.add(
     DRAGPulse(
-        G_amp=0.2, D_amp=0.2, duration=pulse_duration, phase=0,
-        port="q0:res", clock="q0.ro",
+        G_amp=0.2, 
+        D_amp=0.2, 
+        duration=pulse_duration, 
+        phase=0,
+        port="q0:res", 
+        clock="q0.ro",
     ),
 )
 schedule.add(
     Trace(
-        duration=pulse_duration,
+        duration=acq_duration,
         port="q0:res",
         clock="q0.ro",
         acq_channel=0,
@@ -253,10 +258,12 @@ Typically, different acquisition channels are usually set up to refer to differe
 
 #### Setting up the schedule
 
-Let's define how much time the pulse takes with `pulse_duration`.
+Let's define how much time the pulse takes with `pulse_duration`. We define a separate parameter `acq_duration`, allowing the integration time to be larger than the duration of the pulse
+(e.g., in case the `time_of_flight` was not yet calibrated).
 
 ```{code-cell} ipython3
 pulse_duration = 120e-9
+acq_duration = pulse_duration
 ```
 
 We define a simple helper function that sends out the square pulse with `pulse_level` complex amplitude, and then measures it after `time_of_flight` seconds.
@@ -272,7 +279,6 @@ from quantify_scheduler.operations.acquisition_library import SSBIntegrationComp
 from quantify_scheduler.enums import BinMode
 
 schedule = Schedule("ssb_acquisition_tutorial")
-
 schedule.add(IdlePulse(duration=1e-6))
 
 def pulse_and_acquisition(pulse_level, acq_channel, acq_index, schedule, bin_mode=BinMode.AVERAGE):
@@ -283,12 +289,12 @@ def pulse_and_acquisition(pulse_level, acq_channel, acq_index, schedule, bin_mod
             port="q0:res",
             clock="q0.ro",
         ),
-        rel_time=1e-6,
+        ref_pt="end",
+        rel_time=1e-6,  # Idle time before the pulse is played
     )
     schedule.add(
         SSBIntegrationComplex(
-            t0=time_of_flight,
-            duration=pulse_duration,
+            duration=acq_duration,
             port="q0:res",
             clock="q0.ro",
             acq_channel=acq_channel,
@@ -361,22 +367,22 @@ As expected, the single side band integration produced a single complex number i
 
 `quantify-scheduler` offers two kinds of bin modes, that deal with repeated schedules:
 
-- Average bin mode: Enables repeated measurements and averaging for reduced errors.
-- Append bin mode: Allows repeating measurements and retrieving data for each repetition individually.
+- **Average** bin mode: Enables repeated measurements and averaging for reduced errors.
+- **Append** bin mode: Allows repeating measurements and retrieving data for each repetition individually.
 
 ```{note}
-`QuantumDevice.cfg_sched_repetitions` has no effect on experiments running with {class}`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator` itself by the user. This parameter has only effect if you're using {class}`~quantify_scheduler.gettables.ScheduleGettable`.
+`QuantumDevice.cfg_sched_repetitions` has no effect in running via {class}`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator` directly;
+it only has effect when using {class}`~quantify_scheduler.gettables.ScheduleGettable` (also see {ref}`Tutorial: ScheduleGettable <sec-tutorial-schedulegettable-repetitions>`).
 ```
 
-To determine the number of times you want the `quantify-scheduler` to execute the schedule, you can set the `repetitions` argument or attribute for the `Schedule` object. By specifying a value for `repetitions`, you can control the number of times the schedule will run. For example, if you set `repetitions` to `8`, the following code snippet demonstrates a schedule that would execute eight times:
+```{note}
+Important: Mixing bin modes is not allowed, all bin modes must be the same for each acquisition in one schedule.
+```
 
+To determine the number of times you want `quantify-scheduler` to execute the schedule, you can set the `repetitions` argument or attribute for the `Schedule` object. By specifying a value for `repetitions`, you can control the number of times the schedule will run. For example, if you set `repetitions` to `8`, the following code snippet demonstrates a schedule that would execute eight times:
 
 ```{code-block} ipython3
 schedule = Schedule("Repeated schedule", repetitions=8)
-```
-
-```{note}
-Important: mixing bin modes is not allowed and all bin modes must be the same for each acquisition in one schedule!
 ```
 
 ##### Average bin mode
@@ -388,7 +394,7 @@ from quantify_scheduler.enums import BinMode
 
 schedule.add(
     SSBIntegrationComplex(
-        duration=pulse_duration,
+        duration=acq_duration,
         port="q0:res",
         clock="q0.ro",
         acq_channel=acq_channel,
@@ -399,7 +405,7 @@ schedule.add(
 ```
 
 ```{note}
-Trace acquisitions only work with average bin mode. Integration type acquisitions can be used with append bin mode too.
+Trace acquisitions only work with average bin mode. Integration-type acquisitions can be used with append bin mode too.
 ```
 
 ##### Append bin mode
@@ -413,7 +419,6 @@ from quantify_scheduler.operations.acquisition_library import SSBIntegrationComp
 from quantify_scheduler.enums import BinMode
 
 schedule = Schedule("append_tutorial", repetitions=3)
-
 schedule.add(IdlePulse(duration=1e-6))
 
 pulse_and_acquisition(pulse_level=0.125, acq_channel=0, acq_index=0, schedule=schedule, bin_mode=BinMode.APPEND)
@@ -468,7 +473,7 @@ acquisition[0].sel(repetition=1)
 As expected, it has only two values, and the value of `acq_index_<acq_channel>=1` is double that of `acq_index_<acq_channel>=0`.
 
 ### Thresholded acquisition
-With thresholded acquisition, we can map a complex input signal to either a 0 or a 1, by comparing the data to a threshold value. It is similar to the {ref}`single sideband integration protocol <sec-ssb>` described above, but after integration the I-Q data points are first rotated by an angle and then compared to a threshold value to assign the results to either a "0" or to a "1". See the illustration below.
+With thresholded acquisition, we can map a complex input signal to either a 0 or a 1, by comparing the data to a threshold value. It is similar to the {ref}`single-sideband integration protocol <sec-ssb>` described above, but after integration the I-Q data points are first rotated by an angle and then compared to a threshold value to assign the results to either a "0" or to a "1". See the illustration below.
 
 ```{figure} /images/thresholded_acquisition_explanation.svg
 :align: center
@@ -481,14 +486,14 @@ Here the threshold line is controlled by the qubit settings: `acq_rotation` and 
 ```{admonition} Note
 Thresholded acquisition is currently only supported by the Qblox backend.
 
-The `qblox-instruments` parameter `thresholded_acq_threshold` corresponds to a voltage obtained from an integrated acquisition, **before** normalizing with respect to the integration length.
-
-The `quantify-scheduler` parameter `acq_threshold` corresponds to an acquired voltage **after** normalizing with respect to the integration length (e.g. as obtained from a single side band integration).
+The `qblox-instruments` parameter `thresholded_acq_threshold` corresponds to a voltage obtained from an integrated acquisition, **before** normalizing with respect to the integration time.  
+The `quantify-scheduler` parameter `acq_threshold` corresponds to an acquired voltage **after** normalizing with respect to the integration time (e.g. as obtained from a single side band integration).
 ```
 
 #### Setting up the schedule
 
-Let's imagine a simple experiment where we prepare a qubit in the ground state, apply a {math}`\pi`-rotation and then measure the outcome. This experiment is then repeated 200 times. The corresponding schedule would look like:
+Let's imagine a simple experiment where we prepare a qubit in the ground state, apply a {math}`\pi`-rotation and then measure the outcome.
+This experiment is then repeated 200 times. The corresponding schedule would look like:
 
 ```{code-cell} ipython3
 :tags: [remove-output]
@@ -496,11 +501,14 @@ Let's imagine a simple experiment where we prepare a qubit in the ground state, 
 from quantify_scheduler.operations.gate_library import Reset, X
 
 pulse_duration = 1e-6
+acq_duration = pulse_duration
 pulse_level = 0.25
 
 schedule = Schedule("ssb_acquisition", repetitions=200)
+
 schedule.add(Reset("q0"))
 schedule.add(X("q0"))
+
 schedule.add(
     SquarePulse(
         duration=pulse_duration,
@@ -508,12 +516,12 @@ schedule.add(
         port="q0:res",
         clock="q0.ro",
     ),
-    rel_time=1e-6,
+    ref_pt="end",    
+    rel_time=1e-6,  # Idle time before the pulse is played
 )
 schedule.add(
     SSBIntegrationComplex(
-        t0=time_of_flight,
-        duration=pulse_duration,
+        duration=acq_duration,
         port="q0:res",
         clock="q0.ro",
         acq_channel=0,
@@ -605,6 +613,7 @@ transmon0.measure.acq_rotation(332.5)
 thres_acq_sched = Schedule("thresholded_acquisition", repetitions=200)
 thres_acq_sched.add(Reset("q0"))
 thres_acq_sched.add(X("q0"))
+
 thres_acq_sched.add(
     SquarePulse(
         duration=pulse_duration,
@@ -612,12 +621,12 @@ thres_acq_sched.add(
         port="q0:res",
         clock="q0.ro",
     ),
-    rel_time=1e-6,
+    ref_pt="end",    
+    rel_time=1e-6,  # Idle time before the pulse is played
 )
 thres_acq_sched.add(
     ThresholdedAcquisition(
-        t0=time_of_flight,
-        duration=pulse_duration,
+        duration=acq_duration,
         port="q0:res",
         clock="q0.ro",
         acq_channel=0,
@@ -661,38 +670,35 @@ The above schedule was run in the bin mode `BinMode.APPEND`, rerunning the sched
 
 ### Trigger count acquisition
 
-The trigger count acquisition protocol is used for measuring how many times the input signal goes over some limit. This protocol is used, for example, in the case of an NV center type of qubit, or other types of qubit, where counting the number of photons (indirectly as an electrical signal) is important.
+The trigger count acquisition protocol is used for measuring how many times the input signal goes over some limit.
+This protocol is used, for example, in the case of an NV center type of qubit, or other types of qubit, where counting the number of photons (indirectly as an electrical signal) is important.
 
-The Trigger Count protocol in `quantify-scheduler` offers two bin modes: average and append mode. These bin modes function differently compared to the Single Sideband Integration protocol.
+The {class}`~quantify_scheduler.operations.acquisition_library.TriggerCount` protocol offers two bin modes: **average** and **append** bin mode.
+These bin modes function differently here compared to in the {ref}`single-sideband integration protocol <sec-ssb>`.
 
-In the append bin mode, the resulting data will be a list of 1s, with the length of the list corresponding to the number of triggers that occurred during the acquisition. For example, if there were three triggers, the result would be a list with three 1s: `[1, 1, 1]`.
+In the **append** bin mode, the resulting data will be a _list_ of 1s, with the length of the list corresponding to the number of triggers that occurred during the acquisition.
+For example, if there were three triggers, the result would be a list with three 1s: `[1, 1, 1]`.
 
-In the average bin mode, the result is a distribution, mapping from the count numbers to the number of occurrences for each count number. It provides insights into the overall occurrence of triggers when running the acquisition multiple times. Let's consider an example where we execute a schedule three times:
+In the **average** bin mode, the result is a _distribution_ that maps the trigger count numbers to the number of occurrences of each trigger count number.
+This provides insights into the overall occurrence of triggers when running the acquisition multiple times. Let's consider an example where we execute a schedule three times:
 
 - during the 1st run, three triggers are acquired
 - during the 2nd run, one trigger is acquired,
 - during the 3rd run, one trigger is acquired.
 
-The overall distribution of triggers would be: 1 trigger occurred twice, and 3 triggers occurred once. Hence, the resulting dictionary would be: `{1: 2, 3: 1}`.
-
+The overall distribution of triggers would be: trigger count of 1 occurred twice, and trigger count of 3 occurred once. Hence, the resulting dictionary would be: `{1: 2, 3: 1}`.
 The dictionary notation shows the number of triggers as keys and their corresponding frequencies as values.
-
-In this tutorial we will try to see how average bin mode works.
-Let's create a schedule which consists of several acquisitions which measure how many times some input pulses occurred with `quantify-scheduler`. In this tutorial we assume input pulses are generated from an external source (we do not generate these sources from the hardware).
 
 The trigger count protocol is currently only implemented for the Qblox backend.
 
-
 #### Setting up the schedule
 
-Let's define how long time the pulse takes with `pulse_duration`.
+In this tutorial we will explain how **average bin mode** works in the {class}`~quantify_scheduler.operations.acquisition_library.TriggerCount` protocol (also see the introduction above).
+We create a schedule that consists of several acquisitions that measure how many times trigger signals occurred.
+In this tutorial we assume trigger signals are generated from an external source (we do not generate these from the control hardware).
 
-```{code-cell} ipython3
-pulse_duration = 120e-9
-```
-
-and create the schedule mentioned in the introduction: the hardware will run the trigger count acquisition overall 3 times, therefore `repetitions=3` for the schedule, and in each repetition we run the trigger count acquisition once.
-The input signals are the following: the first time the schedule runs there are 3 trigger signals and then 1 trigger signal, and there is again 1 trigger signal at the end.
+The hardware should run the trigger count acquisition 3 times, and the schedule contains one trigger count acquisition, we therefore set `repetitions=3` for the schedule.
+The input signals are the following: the first time the schedule runs there are 3 trigger signals, the second time there is 1 trigger signal, and third time there is again 1 trigger signal.
 
 ```{code-cell} ipython3
 ---
@@ -704,26 +710,26 @@ from quantify_scheduler.operations.pulse_library import IdlePulse, SquarePulse
 from quantify_scheduler.operations.acquisition_library import TriggerCount
 from quantify_scheduler.enums import BinMode
 
+acq_duration = 120e-9
+
 schedule = Schedule("trigger_count_acquisition_tutorial", repetitions=3)
-
 schedule.add(IdlePulse(duration=1e-6))
-
-pulse_duration = 120e-9
 
 schedule.add(
     TriggerCount(
         t0=time_of_flight,
-        duration=pulse_duration,
+        duration=acq_duration,
         port="q1:res",
         clock="q1.ro",
         acq_channel=0,
         bin_mode=BinMode.AVERAGE,
     )
 )
-
 ```
-
-The schedule consists of three parts. First 3 trigger pulses, then an acquisition. Then 1 trigger pulse and another acquisition, and finally again one trigger pulse and another acquisition. Notice, that the acquisitions align almost exactly with the pulses, but they are delayed by the delay time. It's also important, that the acquisition channels are the same for both acquisitions. If all of the acquisition channels were different, we would get 3 distributions (for the three acquisition channels).
+It's important in using {class}`~quantify_scheduler.operations.acquisition_library.TriggerCount` acquisitions that the acquisition channel is identical for all acquisitions in a schedule,
+leading to a single distribution in case of average bin mode (and a single list in case of append bin mode). 
+In this example, if instead there would be 3 acquisitions in the schedule, and all of the acquisition channels were different and then only running the schedule once,
+we would get 3 separate distributions (one per acquisition channel).
 
 ```{code-cell} ipython3
 ---
@@ -775,7 +781,8 @@ In the previous section the schedule was defined on the hardware level, in terms
 
 In this tutorial we will set up a simple single sideband integration acquisition on the gate-level. In the case of a transmon qubit, a {class}`~quantify_scheduler.operations.gate_library.Measure` gate first sends out an acquisition pulse, and then acquires the signal. The {class}`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` stores the parameters of how the measurement gate is translated to device level operations by `quantify-scheduler`.
 
-Let's see what is the effect of modifying the amplitude of the acquisition pulse on the acquisition result. Let's set up the delay time as before, but now on the {class}`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice`, and set up the amplitude of the acquisition pulse, which is a square pulse in this case.
+Let's see what is the effect of modifying the amplitude of the acquisition pulse on the acquisition result.
+Let's set up the time of flight as before, but now on the {class}`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice`, and set up the amplitude of the acquisition pulse, which is a square pulse in this case.
 
 ```{code-cell} ipython3
 ---
@@ -788,6 +795,7 @@ transmon0.close()
 ```{code-cell} ipython3
 time_of_flight = 148e-9
 pulse_duration = 120e-9
+acq_duration = pulse_duration
 ```
 
 ```{code-cell} ipython3
@@ -796,7 +804,7 @@ transmon0.clock_freqs.readout(6e9)
 transmon0.measure.pulse_amp(0.125)
 transmon0.measure.pulse_duration(pulse_duration)
 transmon0.measure.acq_delay(time_of_flight)
-transmon0.measure.integration_time(pulse_duration)
+transmon0.measure.integration_time(acq_duration)
 transmon0.measure.acq_channel(2)
 device.add_element(transmon0)
 ```

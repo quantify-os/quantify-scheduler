@@ -13,6 +13,7 @@
 - Pin version of `dataclasses-json` due to breaking pipelines. (!727)
 - Schedulables - Store references to `Schedulables` in timing contraints as `string` rather than `Schedulable`. (!717)
 - Qblox backend - Fix weighted acquisition in append mode. (!725)
+- Documentation - Fixes to acquisitions tutorial (!732)
 - Instrument Coordinator - Improve error message for missing IC components (!718)
 - Qblox backend - Prevent uploading "null" (i.e. all-zero) waveforms (!711)
 - Schedule, Schedulable - Refactor logic for checking schedulable uniqueness within schedule and reference schedulable existence within schedule out of `Schedulable` to `Schedule`. (!724)
