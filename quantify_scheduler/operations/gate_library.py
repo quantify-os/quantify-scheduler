@@ -49,9 +49,9 @@ class Rxy(Operation):
 
         # this solves an issue where different rotations with the same rotation angle
         # modulo a full period are treated as distinct operations in the OperationDict
-        theta = (theta + 180) % 360 - 180
+        theta = round((theta + 180) % 360 - 180, 8)
 
-        phi = phi % 360
+        phi = round(phi % 360, 8)
 
         tex = r"$R_{xy}^{" + f"{theta:.0f}, {phi:.0f}" + r"}$"
         plot_func = (

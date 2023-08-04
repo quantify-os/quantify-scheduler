@@ -3,6 +3,10 @@
 ## Unreleased
 
 ### Breaking changes
+- Operations - Prevent collisions by changing logic for checking Operation uniqueness to use `Operation.hash` instead of `str(Operation)`. (!738, #209)
+  - `Operation.hash` now returns `str` rather than `int`.
+  - `str(Operation)` is no longer required to be unique (except with the ZI backend).
+  - `schedule.operations.keys()` can no longer be used to get a repr of the Operations.
 - Qblox backend - Make q1asm generation functions `acquire_append` and `acquire_average` private. (!739)
 
 ### Merged branches and closed issues

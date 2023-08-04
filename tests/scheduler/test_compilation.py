@@ -183,10 +183,8 @@ def test_bad_gate(device_compile_config_basic_transmon):
 def test_pulse_and_clock(device_compile_config_basic_transmon):
     sched = Schedule("pulse_no_clock")
     mystery_clock = "BigBen"
-    op_label = sched.add(SquarePulse(0.5, 20e-9, "q0:mw_ch", clock=mystery_clock))
-    op_hash = next(
-        op for op in sched.schedulables.values() if op["label"] == str(op_label)
-    )["operation_repr"]
+    schedulable = sched.add(SquarePulse(0.5, 20e-9, "q0:mw_ch", clock=mystery_clock))
+    op = sched.operations[schedulable["operation_repr"]]
 
     compiler = SerialCompiler(name="compiler")
     with pytest.raises(ValueError) as execinfo:
@@ -195,7 +193,7 @@ def test_pulse_and_clock(device_compile_config_basic_transmon):
             config=device_compile_config_basic_transmon,
         )
     assert str(execinfo.value) == (
-        f"Operation '{op_hash}' contains an unknown clock '{mystery_clock}'; "
+        f"Operation '{str(op)}' contains an unknown clock '{mystery_clock}'; "
         f"ensure this resource has been added to the schedule "
         f"or to the device config."
     )
@@ -268,8 +266,8 @@ def test_measurement_specification_of_binmode(device_compile_config_basic_transm
         config=device_compile_config_basic_transmon,
     )
 
-    for key, value in comp_sched.data["operation_dict"].items():
-        if "Measure" in key:
+    for value in comp_sched.data["operation_dict"].values():
+        if "Measure" in str(value):
             assert value.data["acquisition_info"][0]["bin_mode"] == BinMode.APPEND
 
     ####################################################################################
@@ -287,8 +285,8 @@ def test_measurement_specification_of_binmode(device_compile_config_basic_transm
         config=device_compile_config_basic_transmon,
     )
 
-    for key, value in comp_sched.data["operation_dict"].items():
-        if "Measure" in key:
+    for value in comp_sched.data["operation_dict"].values():
+        if "Measure" in str(value):
             assert value.data["acquisition_info"][0]["bin_mode"] == BinMode.AVERAGE
 
     ####################################################################################
@@ -304,8 +302,8 @@ def test_measurement_specification_of_binmode(device_compile_config_basic_transm
         config=device_compile_config_basic_transmon,
     )
 
-    for key, value in comp_sched.data["operation_dict"].items():
-        if "Measure" in key:
+    for value in comp_sched.data["operation_dict"].values():
+        if "Measure" in str(value):
             assert value.data["acquisition_info"][0]["bin_mode"] == BinMode.AVERAGE
 
 

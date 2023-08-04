@@ -35,7 +35,10 @@ from quantify_scheduler.operations.gate_library import (
     Z,
     Z90,
 )
-from quantify_scheduler.operations.pulse_factories import rxy_drag_pulse
+from quantify_scheduler.operations.pulse_factories import (
+    rxy_drag_pulse,
+    composite_square_pulse,
+)
 from quantify_scheduler.operations.pulse_library import IdlePulse, ReferenceMagnitude
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schemas.examples.device_example_cfgs import (
@@ -656,18 +659,50 @@ def test_set_reference_magnitude(mock_setup_basic_transmon):
         sched, device_cfg=quantum_device.generate_device_config()
     )
 
-    assert compiled_schedule.operations["Rxy(theta=90, phi=0, qubit='q2')"][
+    operations_dict_with_repr_keys = {
+        str(op): op for op in compiled_schedule.operations.values()
+    }
+
+    assert operations_dict_with_repr_keys["Rxy(theta=90, phi=0, qubit='q2')"][
         "pulse_info"
     ][0]["reference_magnitude"] == ReferenceMagnitude(0.5, "V")
-    assert compiled_schedule.operations["Rxy(theta=12, phi=0, qubit='q3')"][
+    assert operations_dict_with_repr_keys["Rxy(theta=12, phi=0, qubit='q3')"][
         "pulse_info"
     ][0]["reference_magnitude"] == ReferenceMagnitude(1e-3, "A")
-    assert compiled_schedule.operations[
+    assert operations_dict_with_repr_keys[
         "Measure('q2','q3', acq_index=[0, 0], acq_protocol=\"None\", bin_mode=None)"
     ]["pulse_info"][1]["reference_magnitude"] == ReferenceMagnitude(20, "dBm")
     assert (
-        compiled_schedule.operations[
+        operations_dict_with_repr_keys[
             "Measure('q2','q3', acq_index=[0, 0], acq_protocol=\"None\", bin_mode=None)"
         ]["pulse_info"][3]["reference_magnitude"]
         is None
     )
+
+
+def test_operation_collision():
+    sched = Schedule("test")
+    cz1 = composite_square_pulse(
+        square_amp=0.1,
+        square_duration=40e-9,
+        square_port="q0.fl",
+        square_clock="q0.01",
+        virt_z_parent_qubit_phase=0,
+        virt_z_parent_qubit_clock="q0.01",
+        virt_z_child_qubit_phase=1,
+        virt_z_child_qubit_clock="q1.01",
+    )
+    cz2 = composite_square_pulse(
+        square_amp=0.1,
+        square_duration=40e-9,
+        square_port="q0.fl",
+        square_clock="q0.01",
+        virt_z_parent_qubit_phase=2,
+        virt_z_parent_qubit_clock="q0.01",
+        virt_z_child_qubit_phase=3,  # note the difference in phases
+        virt_z_child_qubit_clock="q1.01",
+    )
+    sched.add(cz1)
+    sched.add(cz2)
+
+    assert len(sched.operations) == 2

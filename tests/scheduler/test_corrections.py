@@ -168,24 +168,20 @@ def test_apply_distortion_corrections(  # pylint: disable=unused-argument disabl
 
     quantum_device.hardware_config(hardware_compilation_config)
 
+    operation_hash = list(two_qubit_gate_schedule.operations.keys())[0]
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
         schedule=two_qubit_gate_schedule,
         config=quantum_device.generate_compilation_config(),
     )
 
-    operations_pretty_repr = "".join(
-        f"\noperations:\n  key:  {operation_repr}\n  repr: {repr(operation)}\n"
-        for operation_repr, operation in compiled_sched.operations.items()
-    )
-
     assert (
-        list(compiled_sched.operations.keys())[0] == "CZ(qC='q2',qT='q3')"
-    ), f'Key of CZ operation is still "CZ(...)" {operations_pretty_repr}'
+        list(compiled_sched.operations.keys())[0] == operation_hash
+    ), f"Key of CZ operation remains identical"
 
     assert (  # pylint: disable=unidiomatic-typecheck
         type(list(compiled_sched.operations.values())[0]) is NumericalPulse
-    ), f"Type of CZ operation is now NumericalPulse {operations_pretty_repr}"
+    ), f"Type of CZ operation is now NumericalPulse"
 
     assert list(compiled_sched.operations.values())[0].data["pulse_info"][0][
         "samples"

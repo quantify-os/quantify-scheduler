@@ -147,8 +147,13 @@ def create_typical_timing_table(
         for dev in devices:
             device_dict[dev.name] = dev
 
+        operations_dict_with_repr_keys = {
+            str(op): op for op in schedule.operations.values()
+        }
         numerical_wf_dict = zhinst_backend.construct_waveform_table(
-            timing_table, operations_dict=schedule.operations, device_dict=device_dict
+            timing_table,
+            operations_dict=operations_dict_with_repr_keys,
+            device_dict=device_dict,
         )
 
         return {

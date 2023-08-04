@@ -107,7 +107,7 @@ class Operation(JSONSchemaValMixin, UserDict):
         self._update()
 
     def __hash__(self) -> int:
-        return self.hash
+        return make_hash(self.data)
 
     def _update(self) -> None:
         """Update the Operation's internals."""
@@ -142,11 +142,13 @@ class Operation(JSONSchemaValMixin, UserDict):
         return self._duration
 
     @property
-    def hash(self) -> int:
+    def hash(self) -> str:
         """
         A hash based on the contents of the Operation.
+
+        Needs to be a str for easy compatibility with json.
         """
-        return make_hash(self.data)
+        return str(hash(self))
 
     @classmethod
     def _get_signature(cls, parameters: dict) -> str:

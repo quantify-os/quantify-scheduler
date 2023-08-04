@@ -1089,6 +1089,25 @@ def generate_hardware_config(  # noqa: PLR0912, PLR0915
     return hardware_config
 
 
+def _get_operations_by_repr(schedule: Schedule) -> dict[str, Operation]:
+    operations_dict_with_repr_keys = {
+        str(op): op for op in schedule.operations.values()
+    }
+    if len(schedule.operations) != len(operations_dict_with_repr_keys):
+        all_reprs = set()
+        colliding_ops = []
+        for operation in schedule.operations.values():
+            repr_key = str(operation)
+            if repr_key in all_reprs:
+                colliding_ops.append(operation)
+            all_reprs.add(repr_key)
+        raise ValueError(
+            "Multiple operations with different content have the same repr."
+            f"Colliding operations are {colliding_ops}."
+        )
+    return operations_dict_with_repr_keys
+
+
 def compile_backend(
     schedule: Schedule,
     config: CompilationConfig | dict[str, Any] | None = None,
@@ -1217,8 +1236,12 @@ def compile_backend(
     for dev in devices:
         device_dict[dev.name] = dev
 
+    operations_dict_with_repr_keys = _get_operations_by_repr(schedule)
+
     numerical_wf_dict = construct_waveform_table(
-        timing_table, operations_dict=schedule.operations, device_dict=device_dict
+        timing_table,
+        operations_dict=operations_dict_with_repr_keys,
+        device_dict=device_dict,
     )
 
     ################################################
@@ -1260,7 +1283,7 @@ def compile_backend(
                 timing_table=timing_table,
                 numerical_wf_dict=numerical_wf_dict,
                 repetitions=schedule.repetitions,
-                operations=schedule.operations,
+                operations=operations_dict_with_repr_keys,
                 bin_mode=bin_mode,
             )
 

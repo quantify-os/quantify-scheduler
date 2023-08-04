@@ -353,6 +353,7 @@ def test_sched_timing_table(
         "waveform_op_id",
         "operation",
         "wf_idx",
+        "operation_hash",
     }
     assert len(timing_table_data) == 15 if reset_clock_phase else 12
 

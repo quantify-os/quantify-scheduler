@@ -26,10 +26,10 @@ def test_compilation_spectroscopy_operation_qblox_hardware(
 
     # SpectroscopyOperation is added to the operations.
     # It has "gate_info", but no "pulse_info" yet.
-    spec_pulse_str = str(SpectroscopyOperation("qe0"))
-    assert spec_pulse_str in schedule.operations
-    assert "gate_info" in schedule.operations[spec_pulse_str]
-    assert schedule.operations[spec_pulse_str]["pulse_info"] == []
+    spec_pulse_hash = SpectroscopyOperation("qe0").hash
+    assert spec_pulse_hash in schedule.operations
+    assert "gate_info" in schedule.operations[spec_pulse_hash]
+    assert schedule.operations[spec_pulse_hash]["pulse_info"] == []
 
     # Operation is added twice to schedulables and has no timing information yet.
     assert label1 in schedule.schedulables
@@ -57,19 +57,19 @@ def test_compilation_spectroscopy_operation_qblox_hardware(
     )
 
     # The gate_info remains unchanged, but the pulse info has been added
-    assert spec_pulse_str in compiled_sched.operations
-    assert "gate_info" in compiled_sched.operations[spec_pulse_str]
+    assert spec_pulse_hash in compiled_sched.operations
+    assert "gate_info" in compiled_sched.operations[spec_pulse_hash]
     assert (
-        compiled_sched.operations[spec_pulse_str]["gate_info"]
-        == schedule.operations[spec_pulse_str]["gate_info"]
+        compiled_sched.operations[spec_pulse_hash]["gate_info"]
+        == schedule.operations[spec_pulse_hash]["gate_info"]
     )
-    assert not compiled_sched.operations[spec_pulse_str]["pulse_info"] == []
+    assert not compiled_sched.operations[spec_pulse_hash]["pulse_info"] == []
 
     # Timing info has been added
     assert "abs_time" in compiled_sched.schedulables[label1].data.keys()
     assert "abs_time" in compiled_sched.schedulables[label2].data.keys()
     assert compiled_sched.schedulables[label1].data["abs_time"] == 0
-    duration_pulse_1 = compiled_sched.operations[spec_pulse_str].data["pulse_info"][0][
+    duration_pulse_1 = compiled_sched.operations[spec_pulse_hash].data["pulse_info"][0][
         "duration"
     ]
     assert compiled_sched.schedulables[label2].data["abs_time"] == pytest.approx(
@@ -98,7 +98,7 @@ def test_compilation_reset_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
     label = "reset pulse"
 
     _ = schedule.add(Reset("qe0"), label=label)
-    reset_str = str(Reset("qe0"))
+    reset_hash = Reset("qe0").hash
 
     # We can plot the circuit diagram
     schedule.plot_circuit_diagram()
@@ -112,13 +112,13 @@ def test_compilation_reset_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
     )
 
     # The gate_info remains unchanged, but the pulse info has been added
-    assert reset_str in compiled_sched.operations
-    assert "gate_info" in compiled_sched.operations[reset_str]
+    assert reset_hash in compiled_sched.operations
+    assert "gate_info" in compiled_sched.operations[reset_hash]
     assert (
-        compiled_sched.operations[reset_str]["gate_info"]
-        == schedule.operations[reset_str]["gate_info"]
+        compiled_sched.operations[reset_hash]["gate_info"]
+        == schedule.operations[reset_hash]["gate_info"]
     )
-    assert not compiled_sched.operations[reset_str]["pulse_info"] == []
+    assert not compiled_sched.operations[reset_hash]["pulse_info"] == []
 
     # Timing info has been added
     assert "abs_time" in compiled_sched.schedulables[label].data.keys()
@@ -142,7 +142,7 @@ def test_compilation_measure_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
     label = "measure pulse"
 
     _ = schedule.add(Measure("qe0"), label=label)
-    measure_str = str(Measure("qe0"))
+    measure_hash = Measure("qe0").hash
 
     # We can plot the circuit diagram
     schedule.plot_circuit_diagram()
@@ -160,18 +160,18 @@ def test_compilation_measure_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
 
     # The gate_info and acquisition_info remains unchanged, but the pulse info has been
     # added
-    assert measure_str in compiled_sched.operations
-    assert "gate_info" in compiled_sched.operations[measure_str]
+    assert measure_hash in compiled_sched.operations
+    assert "gate_info" in compiled_sched.operations[measure_hash]
     assert (
-        compiled_sched.operations[measure_str]["gate_info"]
-        == schedule.operations[measure_str]["gate_info"]
+        compiled_sched.operations[measure_hash]["gate_info"]
+        == schedule.operations[measure_hash]["gate_info"]
     )
-    assert "acquisition_info" in compiled_sched.operations[measure_str]
-    acquisition_info = compiled_sched.operations[measure_str]["acquisition_info"][0]
+    assert "acquisition_info" in compiled_sched.operations[measure_hash]
+    acquisition_info = compiled_sched.operations[measure_hash]["acquisition_info"][0]
     assert acquisition_info["t0"] == 1e-7
     assert acquisition_info["protocol"] == "TriggerCount"
 
-    assert len(compiled_sched.operations[measure_str]["pulse_info"]) > 0
+    assert len(compiled_sched.operations[measure_hash]["pulse_info"]) > 0
 
     # Timing info has been added
     assert "abs_time" in compiled_sched.schedulables[label].data.keys()
@@ -197,7 +197,7 @@ def test_compilation_charge_reset_qblox_hardware(mock_setup_basic_nv_qblox_hardw
     label = "charge reset pulse"
 
     _ = schedule.add(ChargeReset("qe0"), label=label)
-    charge_reset_str = str(ChargeReset("qe0"))
+    charge_reset_hash = ChargeReset("qe0").hash
 
     # We can plot the circuit diagram
     schedule.plot_circuit_diagram()
@@ -211,13 +211,13 @@ def test_compilation_charge_reset_qblox_hardware(mock_setup_basic_nv_qblox_hardw
     )
 
     # The gate_info remains unchanged, but the pulse info has been added
-    assert charge_reset_str in compiled_sched.operations
-    assert "gate_info" in compiled_sched.operations[charge_reset_str]
+    assert charge_reset_hash in compiled_sched.operations
+    assert "gate_info" in compiled_sched.operations[charge_reset_hash]
     assert (
-        compiled_sched.operations[charge_reset_str]["gate_info"]
-        == schedule.operations[charge_reset_str]["gate_info"]
+        compiled_sched.operations[charge_reset_hash]["gate_info"]
+        == schedule.operations[charge_reset_hash]["gate_info"]
     )
-    assert not compiled_sched.operations[charge_reset_str]["pulse_info"] == []
+    assert not compiled_sched.operations[charge_reset_hash]["pulse_info"] == []
 
     # Timing info has been added
     assert "abs_time" in compiled_sched.schedulables[label].data.keys()
@@ -241,7 +241,7 @@ def test_compilation_cr_count_qblox_hardware(mock_setup_basic_nv):
     label = "cr_count pulse"
 
     _ = schedule.add(CRCount("qe0"), label=label)
-    cr_count_str = str(CRCount("qe0"))
+    cr_count_hash = CRCount("qe0").hash
 
     # We can plot the circuit diagram
     schedule.plot_circuit_diagram()
@@ -259,18 +259,18 @@ def test_compilation_cr_count_qblox_hardware(mock_setup_basic_nv):
 
     # The gate_info and acquisition_info remains unchanged, but the pulse info has been
     # added
-    assert cr_count_str in compiled_sched.operations
-    assert "gate_info" in compiled_sched.operations[cr_count_str]
+    assert cr_count_hash in compiled_sched.operations
+    assert "gate_info" in compiled_sched.operations[cr_count_hash]
     assert (
-        compiled_sched.operations[cr_count_str]["gate_info"]
-        == schedule.operations[cr_count_str]["gate_info"]
+        compiled_sched.operations[cr_count_hash]["gate_info"]
+        == schedule.operations[cr_count_hash]["gate_info"]
     )
-    assert "acquisition_info" in compiled_sched.operations[cr_count_str]
-    acquisition_info = compiled_sched.operations[cr_count_str]["acquisition_info"][0]
+    assert "acquisition_info" in compiled_sched.operations[cr_count_hash]
+    acquisition_info = compiled_sched.operations[cr_count_hash]["acquisition_info"][0]
     assert acquisition_info["t0"] == 1e-8
     assert acquisition_info["protocol"] == "TriggerCount"
 
-    assert len(compiled_sched.operations[cr_count_str]["pulse_info"]) > 0
+    assert len(compiled_sched.operations[cr_count_hash]["pulse_info"]) > 0
 
     # Timing info has been added
     assert "abs_time" in compiled_sched.schedulables[label].data.keys()

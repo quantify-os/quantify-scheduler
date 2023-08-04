@@ -48,8 +48,8 @@ def test_acquisition_staircase_ops(gen_acquisition_staircase_sched):
 def test_acquisition_staircase_amps(gen_acquisition_staircase_sched):
     sched, sched_kwargs = gen_acquisition_staircase_sched
     amps = []
-    for operation_name, operation in sched.operations.items():
-        if "amp" in operation_name:
+    for operation in sched.operations.values():
+        if "amp" in str(operation):
             amp = operation.data["pulse_info"][0]["amp"]
             amps.append(amp)
 
@@ -116,8 +116,8 @@ def test_awg_staircase_sched(gen_awg_staircase_sched):
     assert len(sched.operations) == 2 * len(sched_kwargs["pulse_amps"]) + 1
 
     amps = []
-    for operation_name, operation in sched.operations.items():
-        if "amp" in operation_name:
+    for operation in sched.operations.values():
+        if "amp" in str(operation):
             amp = operation.data["pulse_info"][0]["amp"]
             amps.append(amp)
 

@@ -466,6 +466,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
                 "duration",  # duration of the operation in absolute time (s)
                 "operation",
                 "wf_idx",
+                "operation_hash",
             ]
         )
 
@@ -482,14 +483,17 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             ):
                 abs_time = op_info["t0"] + schedulable["abs_time"]
                 df_row = {
-                    "waveform_op_id": schedulable["operation_repr"] + f"_acq_{i}",
+                    "waveform_op_id": str(operation) + f"_acq_{i}",
                     "port": op_info["port"],
                     "clock": op_info["clock"],
                     "abs_time": abs_time,
                     "duration": op_info["duration"],
                     "is_acquisition": "acq_index" in op_info,
-                    "operation": schedulable["operation_repr"],
+                    "operation": str(
+                        operation
+                    ),  # this field is not the operation itself, but its repr
                     "wf_idx": i,
+                    "operation_hash": schedulable["operation_repr"],
                 }
                 timing_table_list.append(pd.DataFrame(df_row, index=range(1)))
         timing_table = pd.concat(timing_table_list, ignore_index=True)
@@ -685,7 +689,7 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
                 f"schedule '{self.name}'."
             )
 
-        operation_id = str(operation)
+        operation_id = operation.hash
         self["operation_dict"][operation_id] = operation
         element = Schedulable(name=label, operation_repr=operation_id)
         element.add_timing_constraint(

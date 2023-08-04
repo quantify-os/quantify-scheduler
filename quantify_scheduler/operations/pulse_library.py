@@ -42,6 +42,9 @@ class ReferenceMagnitude:
 
         return cls(value, unit)
 
+    def __hash__(self):
+        return hash((self.value, self.unit))
+
 
 class ShiftClockPhase(Operation):
     """
