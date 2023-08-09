@@ -364,13 +364,21 @@ def to_grid_time(time: float, grid_time_ns: int = constants.GRID_TIME) -> int:
     :
         The integer valued nanosecond time.
     """
-    time_ns = int(round(time * 1e9))
-    if time_ns % grid_time_ns != 0:
+    time_ns_float = time * 1e9
+    time_ns = int(round(time_ns_float))
+
+    tolerance = 1e-3
+    if (
+        not math.isclose(time_ns_float, time_ns, abs_tol=tolerance, rel_tol=0)
+        or time_ns % grid_time_ns != 0
+    ):
         raise ValueError(
-            f"Attempting to use a time interval of {time_ns} ns. "
-            f"Please ensure that the durations of operations and wait times between"
-            f" operations are multiples of {grid_time_ns} ns."
+            f"Attempting to use a time value of {time_ns_float} ns."
+            f" Please ensure that the durations of operations and wait times between"
+            f" operations are multiples of {grid_time_ns} ns"
+            f" (tolerance: {tolerance:.0e} ns)."
         )
+
     return time_ns
 
 
@@ -393,8 +401,18 @@ def is_multiple_of_grid_time(
     :
         If it the time is a multiple of the grid time.
     """
-    time_ns = int(round(time * 1e9))
-    return time_ns % grid_time_ns == 0
+
+    try:
+        _ = to_grid_time(time=time, grid_time_ns=grid_time_ns)
+    except ValueError:
+        return False
+
+    return True
+
+
+def is_within_grid_time(a, b):
+    tolerance = 0.5e-9 * constants.GRID_TIME
+    return math.isclose(a, b, abs_tol=tolerance, rel_tol=0)
 
 
 def get_nco_phase_arguments(phase_deg: float) -> int:
@@ -1434,8 +1452,3 @@ def generate_hardware_config(compilation_config: CompilationConfig):
                     )
 
     return hardware_config
-
-
-def is_within_grid_time(a, b):
-    tolerance = 0.5e-9 * constants.GRID_TIME
-    return math.isclose(a, b, abs_tol=tolerance, rel_tol=0)

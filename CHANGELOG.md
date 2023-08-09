@@ -25,6 +25,7 @@
 - Qblox backend - Fix playback on both outputs of a QCM-RF (!742)
 - Waveforms - Fix such that `interpolated_complex_waveform` does not extrapolate except for rounding errors. (!710)
 - Docs - Fix broken list bullets on Read-the-Docs by enforcing `sphinx-rtd-theme>=1.2.2` (!743)
+- Qblox backend - `to_grid_time` helper function extended to alert user in case of time value not an integer multiple of nanosecond (tolerance 1 picosecond) (!751)
 
 ## 0.15.0 (2023-07-13)
 

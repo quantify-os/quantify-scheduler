@@ -39,6 +39,7 @@ from quantify_scheduler.backends.qblox.helpers import (
     generate_port_clock_to_device_map,
     generate_uuid_from_wf_data,
     generate_waveform_data,
+    is_multiple_of_grid_time,
     is_within_grid_time,
     to_grid_time,
 )
@@ -1350,11 +1351,42 @@ def test_expand_from_normalised_range():
         )
 
 
-def test_to_grid_time():
-    time_ns = to_grid_time(8e-9)
-    assert time_ns == 8
-    with pytest.raises(ValueError):
-        to_grid_time(7e-9)
+@pytest.mark.parametrize(
+    "time, expected_time_ns",
+    [(4e-9, 4), (8.001e-9, 8), (4.0008e-9, 4)],
+)
+def test_to_grid_time(time, expected_time_ns):
+    assert to_grid_time(time) == expected_time_ns
+
+
+@pytest.mark.parametrize(
+    "time",
+    [7e-9, 10e-9, 8.01e-9, 4.009e-9],
+)
+def test_to_grid_time_raises(time):
+    with pytest.raises(ValueError) as error:
+        to_grid_time(time)
+
+    assert (
+        "Please ensure that the durations of operations"
+        " and wait times between operations are multiples of 4 ns" in str(error)
+    )
+
+
+@pytest.mark.parametrize(
+    "time, expected",
+    [
+        (5e-9, False),
+        (11e-9, False),
+        (8.002e-9, False),
+        (4.009e-9, False),
+        (12e-9, True),
+        (8.001e-9, True),
+        (4.0008e-9, True),
+    ],
+)
+def test_is_multiple_of_grid_time(time, expected):
+    assert is_multiple_of_grid_time(time) is expected
 
 
 def test_is_within_grid_time_even_if_floating_point_error():
