@@ -369,7 +369,7 @@ def to_grid_time(time: float, grid_time_ns: int = constants.GRID_TIME) -> int:
 
     tolerance = 1e-3
     if (
-        not math.isclose(time_ns_float, time_ns, abs_tol=tolerance, rel_tol=0)
+        not math.isclose(time_ns_float, time_ns, abs_tol=tolerance)
         or time_ns % grid_time_ns != 0
     ):
         raise ValueError(
@@ -412,7 +412,7 @@ def is_multiple_of_grid_time(
 
 def is_within_grid_time(a, b):
     tolerance = 0.5e-9 * constants.GRID_TIME
-    return math.isclose(a, b, abs_tol=tolerance, rel_tol=0)
+    return math.isclose(a, b, abs_tol=tolerance)
 
 
 def get_nco_phase_arguments(phase_deg: float) -> int:
