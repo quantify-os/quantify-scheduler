@@ -349,34 +349,46 @@ def generate_waveform_dict(waveforms_complex: Dict[str, np.ndarray]) -> Dict[str
 
 def to_grid_time(time: float, grid_time_ns: int = constants.GRID_TIME) -> int:
     """
+    Convert time value in s to time in ns, and verify that it is aligned with grid time.
+
     Takes a float value representing a time in seconds as used by the schedule, and
     returns the integer valued time in nanoseconds that the sequencer uses.
+
+    The time value needs to be aligned with grid time, i.e., needs to be a multiple
+    of :data:`~.constants.GRID_TIME`, within a tolerance of 1 picosecond.
 
     Parameters
     ----------
     time
-        The time to convert.
+        A time value in seconds.
     grid_time_ns
-        The grid time to use in ns.
+        The grid time to use in nanoseconds.
 
     Returns
     -------
     :
         The integer valued nanosecond time.
+
+    Raises
+    ------
+    ValueError
+        If `time` is not a multiple of :data:`~.constants.GRID_TIME` within the tolerance.
     """
     time_ns_float = time * 1e9
     time_ns = int(round(time_ns_float))
 
-    tolerance = 1e-3
+    tolerance = 1.1e-3  # Slightly more to compensate for float repr, allowing for 1 ps
     if (
-        not math.isclose(time_ns_float, time_ns, abs_tol=tolerance)
+        not math.isclose(
+            time_ns_float, time_ns, abs_tol=tolerance, rel_tol=0
+        )  # rel_tol=0 results in: abs(a-b) <= max(0, abs_tol)
         or time_ns % grid_time_ns != 0
     ):
         raise ValueError(
             f"Attempting to use a time value of {time_ns_float} ns."
             f" Please ensure that the durations of operations and wait times between"
             f" operations are multiples of {grid_time_ns} ns"
-            f" (tolerance: {tolerance:.0e} ns)."
+            f" (tolerance: {tolerance:.0e} ns)."  # Intentionally not showing digits
         )
 
     return time_ns
@@ -386,20 +398,22 @@ def is_multiple_of_grid_time(
     time: float, grid_time_ns: int = constants.GRID_TIME
 ) -> bool:
     """
-    Takes a time in seconds and converts it to the ns grid time that the Qblox hardware
-    expects.
+    Determine whether a time value in seconds is a multiple of the grid time.
+
+    Within a tolerance as defined by
+    :meth:`~quantify_scheduler.backends.qblox.helpers.to_grid_time`.
 
     Parameters
     ----------
-    time:
-        A time in seconds.
+    time
+        A time value in seconds.
     grid_time_ns
-        A grid time in ns.
+        The grid time to use in nanoseconds.
 
     Returns
     -------
     :
-        If it the time is a multiple of the grid time.
+        `True` if `time` is a multiple of the grid time, `False` otherwise.
     """
 
     try:
@@ -410,9 +424,31 @@ def is_multiple_of_grid_time(
     return True
 
 
-def is_within_grid_time(a, b):
-    tolerance = 0.5e-9 * constants.GRID_TIME
-    return math.isclose(a, b, abs_tol=tolerance)
+def is_within_half_grid_time(a, b, grid_time_ns: int = constants.GRID_TIME):
+    """
+    Determine whether two time values in seconds are within half grid time of each other.
+
+    Parameters
+    ----------
+    a
+        A time value in seconds.
+    b
+        A time value in seconds.
+    grid_time_ns
+        The grid time to use in nanoseconds.
+
+    Returns
+    -------
+    :
+        `True` if `a` and `b`  are less than half grid time apart, `False` otherwise.
+    """
+
+    tolerance = 0.5e-9 * grid_time_ns
+    within_half_grid_time = math.isclose(
+        a, b, abs_tol=tolerance, rel_tol=0
+    )  # rel_tol=0 results in: abs(a-b) <= max(0, abs_tol)
+
+    return within_half_grid_time
 
 
 def get_nco_phase_arguments(phase_deg: float) -> int:

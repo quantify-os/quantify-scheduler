@@ -41,7 +41,7 @@ from quantify_scheduler.backends.qblox.helpers import (
     generate_uuid_from_wf_data,
     generate_waveform_data,
     is_multiple_of_grid_time,
-    is_within_grid_time,
+    is_within_half_grid_time,
     to_grid_time,
 )
 from quantify_scheduler.backends.qblox.instrument_compilers import (
@@ -1354,7 +1354,7 @@ def test_expand_from_normalised_range():
 
 @pytest.mark.parametrize(
     "time, expected_time_ns",
-    [(4e-9, 4), (8.001e-9, 8), (4.0008e-9, 4)],
+    [(4e-9, 4), (8.001e-9, 8), (4.0008e-9, 4), (1, 1e9), (1 + 1e-12, 1e9)],
 )
 def test_to_grid_time(time, expected_time_ns):
     assert to_grid_time(time) == expected_time_ns
@@ -1362,7 +1362,7 @@ def test_to_grid_time(time, expected_time_ns):
 
 @pytest.mark.parametrize(
     "time",
-    [7e-9, 10e-9, 8.01e-9, 4.009e-9],
+    [7e-9, 10e-9, 8.01e-9, 4.009e-9, 1 + 2e-12],
 )
 def test_to_grid_time_raises(time):
     with pytest.raises(ValueError) as error:
@@ -1393,15 +1393,25 @@ def test_is_multiple_of_grid_time(time, expected):
 def test_is_within_grid_time_even_if_floating_point_error():
     time1, time2 = 8e-9, 12e-9
     assert abs(time1 - time2) < constants.GRID_TIME
-    assert not is_within_grid_time(time1, time2)
+    assert not is_within_half_grid_time(time1, time2)
 
 
 @pytest.mark.parametrize(
-    "time1, time2, within_grid_time",
-    [(8e-9, 8e-9, True), (12e-9, 16e-9, False), (20e-9, 21e-9, True)],
+    "time1, time2, within_half_grid_time",
+    [
+        (8e-9, 8e-9, True),
+        (12e-9, 16e-9, False),
+        (20e-9, 21e-9, True),
+        (1, 1 + 3e-9, False),
+        (
+            60,
+            60 + 2e-9 - 1e-12,
+            True,
+        ),  # Needs to be slightly smaller than half grid time
+    ],
 )
-def test_is_within_grid_time(time1, time2, within_grid_time):
-    assert is_within_grid_time(time1, time2) is within_grid_time
+def test_is_within_grid_time(time1, time2, within_half_grid_time):
+    assert is_within_half_grid_time(time1, time2) is within_half_grid_time
 
 
 def test_loop(empty_qasm_program_qcm):

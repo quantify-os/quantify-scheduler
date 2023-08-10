@@ -1666,7 +1666,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
     ) -> List[OpInfo]:
         def any_other_updating_instruction_at_timing(timing: float) -> bool:
             return any(
-                helpers.is_within_grid_time(op.timing, timing)
+                helpers.is_within_half_grid_time(op.timing, timing)
                 and op.is_real_time_io_operation
                 for op in pulses_and_acqs
             )
@@ -1676,7 +1676,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         upd_param_infos: Set[Tuple[str, str, float]] = set()
         for op in pulses_and_acqs:
             if op.is_offset_instruction and not (
-                helpers.is_within_grid_time(self.total_play_time, op.timing)
+                helpers.is_within_half_grid_time(self.total_play_time, op.timing)
                 or any_other_updating_instruction_at_timing(op.timing)
             ):
                 upd_param_infos.add(
