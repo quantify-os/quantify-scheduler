@@ -488,7 +488,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
                     "clock": op_info["clock"],
                     "abs_time": abs_time,
                     "duration": op_info["duration"],
-                    "is_acquisition": "acq_index" in op_info,
+                    "is_acquisition": "acq_channel" in op_info or "bin_mode" in op_info,
                     "operation": str(
                         operation
                     ),  # this field is not the operation itself, but its repr

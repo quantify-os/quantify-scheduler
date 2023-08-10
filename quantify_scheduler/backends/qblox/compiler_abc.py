@@ -863,20 +863,44 @@ class Sequencer:
         with qasm.loop(label=loop_label, repetitions=repetitions):
             qasm.emit(q1asm_instructions.RESET_PHASE)
             qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
+
+            last_operation_end = {True: 0, False: 0}
             op_queue = deque(op_list)
             while len(op_queue) > 0:
                 operation = op_queue.popleft()
-                valid_operation = (
-                    operation.operation_info.is_acquisition
-                    or operation.operation_info.data.get("wf_func") is not None
-                )
+
+                # Check if there is an overlapping pulse or overlapping acquisition
+                if operation.operation_info.is_real_time_io_operation:
+                    start_time = operation.operation_info.timing
+                    is_acquisition = operation.operation_info.is_acquisition
+                    if start_time < last_operation_end[is_acquisition]:
+                        warnings.warn(
+                            f"Operation is interrupting previous"
+                            f" {'Acquisition' if is_acquisition else 'Pulse'}"
+                            f" because it starts before the previous ends,"
+                            f" offending operation:"
+                            f" {str(operation.operation_info)}",
+                            RuntimeWarning,
+                        )
+                    last_operation_end[is_acquisition] = (
+                        start_time + operation.operation_info.duration
+                    )
+
                 qasm.wait_till_start_operation(operation.operation_info)
-                if self._marker_debug_mode_enable and valid_operation:
-                    qasm.set_marker(self._decide_markers(operation))
-                    operation.insert_qasm(qasm)
-                    qasm.set_marker(self.default_marker)
-                    qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
-                    qasm.elapsed_time += constants.GRID_TIME
+
+                if self._marker_debug_mode_enable:
+                    valid_operation = (
+                        operation.operation_info.is_acquisition
+                        or operation.operation_info.data.get("wf_func") is not None
+                    )
+                    if valid_operation:
+                        qasm.set_marker(self._decide_markers(operation))
+                        operation.insert_qasm(qasm)
+                        qasm.set_marker(self.default_marker)
+                        qasm.emit(
+                            q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME
+                        )
+                        qasm.elapsed_time += constants.GRID_TIME
                 else:
                     operation.insert_qasm(qasm)
 
@@ -889,7 +913,7 @@ class Sequencer:
                     f"schedule is {end_time} but {qasm.elapsed_time} ns "
                     f"already processed."
                 )
-            qasm.auto_wait(wait_time)
+            qasm.auto_wait(wait_time=wait_time)
 
         # program footer
         qasm.emit(q1asm_instructions.STOP)

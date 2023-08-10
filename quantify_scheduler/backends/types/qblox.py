@@ -88,7 +88,7 @@ class OpInfo(DataClassJsonMixin):
     @property
     def is_acquisition(self) -> bool:
         """Returns ``True`` if this is an acquisition, ``False`` otherwise."""
-        return "acq_index" in self.data
+        return "acq_channel" in self.data or "bin_mode" in self.data
 
     @property
     def is_real_time_io_operation(self) -> bool:

@@ -14,6 +14,7 @@ import json
 import logging
 import os
 import re
+import warnings
 from contextlib import nullcontext
 from typing import Dict, Generator, Optional
 
@@ -3804,3 +3805,78 @@ def test_set_thresholded_acquisition_via_hardware_config_raises(
 
     with pytest.raises(KeyError):
         compiler.compile(schedule)
+
+
+@pytest.mark.parametrize(
+    "pulse_offset, measure_offset, expected",
+    [
+        (40e-9, 1200e-9, None),
+        (20e-9, 1200e-9, "interrupting previous Pulse"),
+        (40e-9, 400e-9, "interrupting previous Acquisition"),
+        (
+            20e-9,
+            400e-9,
+            "interrupting previous Acquisition | interrupting previous Pulse",
+        ),
+    ],
+)
+def test_overlapping_operations_warn(
+    compile_config_basic_transmon_qblox_hardware, pulse_offset, measure_offset, expected
+):
+    sched = Schedule("Overlapping operations", repetitions=1)
+
+    pulse = DRAGPulse(
+        G_amp=1.0,
+        D_amp=0.0,
+        phase=90,
+        duration=40e-9,
+        port="q0:mw",
+        clock="q0.01",
+    )
+    pulse_ref = sched.add(pulse, label="pulse 1")
+    measure_ref = sched.add(
+        SSBIntegrationComplex(
+            duration=800e-9,
+            port="q0:res",
+            clock="q0.ro",
+            acq_channel=0,
+            acq_index=0,
+        ),
+        ref_op=pulse_ref,
+        ref_pt="start",
+        label="measure 1",
+    )
+
+    sched.add(
+        pulse, ref_op=pulse_ref, ref_pt="start", rel_time=pulse_offset, label="pulse 2"
+    )
+
+    sched.add(
+        pulse,
+        ref_op=measure_ref,
+        ref_pt="start",
+        rel_time=measure_offset,
+        label="pulse 3",
+    )
+    sched.add(
+        SSBIntegrationComplex(
+            duration=800e-9, port="q0:res", clock="q0.ro", acq_channel=0, acq_index=1
+        ),
+        ref_op=measure_ref,
+        ref_pt="start",
+        rel_time=measure_offset,
+        label="measure 2",
+    )
+
+    compiler = SerialCompiler(name="compiler")
+
+    # Test explicitly that no warning is raised if there is no overlap
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+
+        if expected is None:
+            context_mngr = nullcontext()
+        else:
+            context_mngr = pytest.raises(RuntimeWarning, match=expected)
+        with context_mngr:
+            compiler.compile(sched, compile_config_basic_transmon_qblox_hardware)
