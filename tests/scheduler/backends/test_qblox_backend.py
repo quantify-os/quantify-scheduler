@@ -631,9 +631,7 @@ def test_construct_sequencers_exceeds_seq__invalid_io(
 
     name = "cluster0_module1"
     module_type = QcmRfModule
-    valid_ios = [f"complex_output_{i}" for i in [0, 1]] + [
-        f"digital_output_{i}" for i in [0, 1]
-    ]
+    valid_ios = module_type.static_hw_properties.valid_ios
 
     assert (
         str(error.value.args[0])

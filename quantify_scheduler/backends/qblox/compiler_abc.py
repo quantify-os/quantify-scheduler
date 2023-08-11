@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import warnings
 from abc import ABC, ABCMeta, abstractmethod
 from collections import defaultdict, deque
@@ -24,7 +25,6 @@ from typing import (
     Union,
 )
 
-import math
 from pathvalidate import sanitize_filename
 from qcodes.utils.helpers import NumpyJSONEncoder
 from quantify_core.data.handling import gen_tuid, get_datadir
@@ -56,7 +56,6 @@ from quantify_scheduler.backends.types.qblox import (
     SequencerSettings,
     StaticHardwareProperties,
 )
-
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.pulse_library import SetClockFrequency
 
@@ -385,9 +384,8 @@ class Sequencer:
             sequencer_cfg=sequencer_cfg,
             connected_outputs=connected_outputs,
             connected_inputs=connected_inputs,
+            io_mode=io_mode,
         )
-
-        self._io_mode = io_mode
 
         self.qasm_hook_func: Optional[Callable] = sequencer_cfg.get(
             "qasm_hook_func", None
@@ -429,13 +427,13 @@ class Sequencer:
     @property
     def io_mode(self) -> enums.IoMode:
         """
-        Return :class:`~.enums.IoMode` used by this sequencer.
+        Return :class:`.enums.IoMode` used by this sequencer.
 
-        If real or imag, the sequencer is restricted to only using real valued data.
-        If complex, the sequencer may also use complex data.
-        If digital, the sequencer is restricted to only producing MarkerPulses.
+        If :attr:`.enums.IoMode.REAL` or :attr:`.enums.IoMode.IMAG`, the sequencer is restricted to only using real-valued data.
+        If :attr:`.enums.IoMode.COMPLEX`, the sequencer may also use complex data.
+        If :attr:`.enums.IoMode.DIGITAL`, the sequencer is restricted to only producing :class:`~.quantify_scheduler.operations.pulse_library.MarkerPulse` s.
         """
-        return self._io_mode
+        return self._settings.io_mode
 
     @property
     def portclock(self) -> Tuple[str, str]:
@@ -1234,14 +1232,16 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         portclocks = []
 
-        for io in self.static_hw_properties.valid_ios:
-            if io not in self.instrument_cfg:
+        for io_name in self.static_hw_properties.valid_ios:
+            if io_name not in self.instrument_cfg:
                 continue
 
-            portclock_configs = self.instrument_cfg[io].get("portclock_configs", [])
+            portclock_configs = self.instrument_cfg[io_name].get(
+                "portclock_configs", []
+            )
             if not portclock_configs:
                 raise KeyError(
-                    f"No 'portclock_configs' entry found in '{io}' of {self.name}."
+                    f"No 'portclock_configs' entry found in '{io_name}' of {self.name}."
                 )
 
             portclocks += [
@@ -1291,12 +1291,12 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         portclock_io_map: Dict[Tuple, str] = {}
         default_marker = self.static_hw_properties.default_marker
 
-        for io, io_cfg in self.instrument_cfg.items():
+        for io_name, io_cfg in self.instrument_cfg.items():
             if not isinstance(io_cfg, dict):
                 continue
-            if io not in self.static_hw_properties.valid_ios:
+            if io_name not in self.static_hw_properties.valid_ios:
                 raise ValueError(
-                    f"Invalid hardware config: '{io}' of "
+                    f"Invalid hardware config: '{io_name}' of "
                     f"{self.name} ({self.__class__.__name__}) "
                     f"is not a valid name of an input/output."
                     f"\n\nSupported names for {self.__class__.__name__}:\n"
@@ -1314,7 +1314,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
             if not portclock_configs:
                 raise KeyError(
-                    f"No 'portclock_configs' entry found in '{io}' of {self.name}."
+                    f"No 'portclock_configs' entry found in '{io_name}' of {self.name}."
                 )
 
             for target in portclock_configs:
@@ -1322,11 +1322,11 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
                 if portclock in self._portclocks_with_data:
                     # Figure out which outputs need to be turned on.
-                    if io in self.static_hw_properties.output_map:
-                        default_marker = self.static_hw_properties.output_map[io]
+                    if io_name in self.static_hw_properties.output_map:
+                        default_marker = self.static_hw_properties.output_map[io_name]
 
                     io_mode, connected_outputs, connected_inputs = helpers.get_io_info(
-                        io
+                        io_name
                     )
                     seq_idx = len(sequencers)
                     new_seq = Sequencer(
@@ -1352,13 +1352,13 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                         raise ValueError(
                             f"Portclock {portclock} was assigned to multiple "
                             f"portclock_configs of {self.name}. This portclock was "
-                            f"used in io '{io}' despite being already previously "
+                            f"used in io '{io_name}' despite being already previously "
                             f"used in io '{portclock_io_map[portclock]}'. When using "
                             f"the same portclock for output and input, assigning only "
                             f"the output suffices."
                         )
 
-                    portclock_io_map[portclock] = io
+                    portclock_io_map[portclock] = io_name
 
         # Check if more portclock_configs than sequencers are active
         if len(sequencers) > self.static_hw_properties.max_sequencers:

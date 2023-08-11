@@ -28,14 +28,16 @@ from qblox_instruments import (
     SequencerStatusFlags,
 )
 from qcodes.instrument import Instrument, InstrumentChannel, InstrumentModule
-from xarray import DataArray, Dataset
+from xarray import Dataset
 
+from quantify_scheduler import Schedule
 from quantify_scheduler.backends import SerialCompiler
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.instrument_coordinator.components import qblox
+from quantify_scheduler.operations.pulse_library import MarkerPulse, SquarePulse
 from quantify_scheduler.schedules.schedule import AcquisitionMetadata
-
 from tests.fixtures.mock_setup import close_instruments
 
 
@@ -1191,3 +1193,304 @@ def test_instrument_channel():
 
     # Assert
     assert component._instrument_module is instrument_channel
+
+
+@pytest.mark.parametrize(
+    ("module_type, io_name, channel_map_parameters"),
+    [
+        (
+            "QCM",
+            "complex_output_0",
+            {
+                "connect_out0": "I",
+                "connect_out1": "Q",
+                "connect_out2": "off",
+                "connect_out3": "off",
+            },
+        ),
+        (
+            "QCM",
+            "complex_output_1",
+            {
+                "connect_out0": "off",
+                "connect_out1": "off",
+                "connect_out2": "I",
+                "connect_out3": "Q",
+            },
+        ),
+        (
+            "QCM",
+            "real_output_0",
+            {
+                "connect_out0": "I",
+                "connect_out1": "off",
+                "connect_out2": "off",
+                "connect_out3": "off",
+            },
+        ),
+        (
+            "QCM",
+            "real_output_1",
+            {
+                "connect_out0": "off",
+                "connect_out1": "I",
+                "connect_out2": "off",
+                "connect_out3": "off",
+            },
+        ),
+        (
+            "QCM",
+            "real_output_2",
+            {
+                "connect_out0": "off",
+                "connect_out1": "off",
+                "connect_out2": "I",
+                "connect_out3": "off",
+            },
+        ),
+        (
+            "QCM",
+            "real_output_3",
+            {
+                "connect_out0": "off",
+                "connect_out1": "off",
+                "connect_out2": "off",
+                "connect_out3": "I",
+            },
+        ),
+        (
+            "QRM",
+            "complex_output_0",
+            {
+                "connect_out0": "I",
+                "connect_out1": "Q",
+                "connect_acq_I": "off",
+                "connect_acq_Q": "off",
+            },
+        ),
+        (
+            "QRM",
+            "complex_input_0",
+            {
+                "connect_out0": "off",
+                "connect_out1": "off",
+                "connect_acq_I": "in0",
+                "connect_acq_Q": "in1",
+            },
+        ),
+        (
+            "QRM",
+            "real_output_0",
+            {
+                "connect_out0": "I",
+                "connect_out1": "off",
+                "connect_acq_I": "off",
+                "connect_acq_Q": "off",
+            },
+        ),
+        (
+            "QRM",
+            "real_output_1",
+            {
+                "connect_out0": "off",
+                "connect_out1": "I",
+                "connect_acq_I": "off",
+                "connect_acq_Q": "off",
+            },
+        ),
+        (
+            "QRM",
+            "real_input_0",
+            {
+                "connect_out0": "off",
+                "connect_out1": "off",
+                "connect_acq_I": "in0",
+                "connect_acq_Q": "off",
+            },
+        ),
+        (
+            "QRM",
+            "real_input_1",
+            {
+                "connect_out0": "off",
+                "connect_out1": "off",
+                "connect_acq_I": "off",
+                "connect_acq_Q": "in1",
+            },
+        ),
+        (
+            "QCM_RF",
+            "complex_output_0",
+            {
+                "connect_out0": "IQ",
+                "connect_out1": "off",
+            },
+        ),
+        (
+            "QCM_RF",
+            "complex_output_1",
+            {
+                "connect_out0": "off",
+                "connect_out1": "IQ",
+            },
+        ),
+        (
+            "QRM_RF",
+            "complex_output_0",
+            {
+                "connect_out0": "IQ",
+                "connect_acq": "off",
+            },
+        ),
+        (
+            "QRM_RF",
+            "complex_input_0",
+            {
+                "connect_out0": "off",
+                "connect_acq": "in0",
+            },
+        ),
+    ],
+)
+def test_channel_map(
+    make_cluster_component,
+    module_type,
+    io_name,
+    channel_map_parameters,
+):
+    # Indices according to `make_cluster_component` instrument setup
+    module_idx = {"QCM": 1, "QCM_RF": 2, "QRM": 3, "QRM_RF": 4}
+    test_module_name = f"cluster0_module{module_idx[module_type]}"
+
+    hardware_config = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "instrument_type": "Cluster",
+            "ref": "internal",
+            test_module_name: {
+                "instrument_type": module_type,
+                io_name: {
+                    "portclock_configs": [{"port": "q5:mw", "clock": "q5.01"}],
+                },
+            },
+        },
+    }
+
+    if "RF" in module_type:
+        hardware_config["cluster0"][test_module_name][io_name]["portclock_configs"][0][
+            "interm_freq"
+        ] = 3e5
+        freq_01 = 5e9
+    else:
+        freq_01 = 4.33e8
+
+    q5 = BasicTransmonElement("q5")
+
+    q5.rxy.amp180(0.213)
+    q5.clock_freqs.f01(freq_01)
+    q5.clock_freqs.f12(6.09e9)
+    q5.clock_freqs.readout(8.5e9)
+    q5.measure.acq_delay(100e-9)
+
+    schedule = Schedule("test_channel_map")
+    schedule.add(SquarePulse(amp=0.5, duration=1e-6, port="q5:mw", clock="q5.01"))
+
+    quantum_device = QuantumDevice("basic_transmon_quantum_device")
+    quantum_device.add_element(q5)
+    quantum_device.hardware_config(hardware_config)
+
+    compiled_schedule = SerialCompiler(name="compiler").compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    prog = compiled_schedule["compiled_instructions"]
+
+    cluster: qblox.ClusterComponent = make_cluster_component("cluster0")
+    cluster.prepare(prog[cluster.instrument.name])
+
+    all_modules = {module.name: module for module in cluster.instrument.modules}
+    module = all_modules[test_module_name]
+
+    all_sequencers = {sequencer.name: sequencer for sequencer in module.sequencers}
+    sequencer = all_sequencers[f"{test_module_name}_sequencer0"]
+
+    for key, value in channel_map_parameters.items():
+        assert sequencer.parameters[key].get() == value
+
+
+@pytest.mark.parametrize(
+    ("slot_idx, module_type"),
+    [
+        (
+            1,
+            "QCM",
+        ),
+        (
+            2,
+            "QCM_RF",
+        ),
+        (
+            3,
+            "QRM",
+        ),
+        (
+            4,
+            "QRM_RF",
+        ),
+    ],
+)
+def test_channel_map_off_with_marker_pulse(
+    make_cluster_component, slot_idx, module_type
+):
+    cluster_name = "cluster0"
+    module_name = f"{cluster_name}_module{slot_idx}"
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        cluster_name: {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            module_name: {
+                "instrument_type": module_type,
+                "digital_output_0": {
+                    "portclock_configs": [
+                        {"port": "q0:switch"},
+                    ],
+                },
+            },
+        },
+    }
+
+    # Setup objects needed for experiment
+    quantum_device = QuantumDevice("quantum_device")
+    quantum_device.hardware_config(hardware_cfg)
+
+    # Define experiment schedule
+    schedule = Schedule("test MarkerPulse compilation")
+    schedule.add(
+        MarkerPulse(
+            duration=500e-9,
+            port="q0:switch",
+        ),
+    )
+
+    # Generate compiled schedule
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    prog = compiled_schedule["compiled_instructions"]
+
+    # Assert channel map parameters are still defaults
+    cluster: qblox.ClusterComponent = make_cluster_component(cluster_name)
+    cluster.prepare(prog[cluster_name])
+
+    all_modules = {module.name: module for module in cluster.instrument.modules}
+    module = all_modules[module_name]
+
+    all_sequencers = {sequencer.name: sequencer for sequencer in module.sequencers}
+    seq0 = all_sequencers[f"{module_name}_sequencer0"]
+
+    for param_name, param in seq0.parameters.items():
+        if "connect" in param_name:
+            assert param.get() == "off"

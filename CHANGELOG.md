@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Breaking changes
+
 - Operations - Prevent collisions by changing logic for checking Operation uniqueness to use `Operation.hash` instead of `str(Operation)`. (!738, #209)
   - `Operation.hash` now returns `str` rather than `int`.
   - `str(Operation)` is no longer required to be unique (except with the ZI backend).
@@ -10,6 +11,7 @@
 - Qblox backend - Make q1asm generation functions `acquire_append` and `acquire_average` private. (!739)
 - Qblox backend - `to_grid_time` helper function would raise `ValueError` if time supplied is not a multiple of grid time, now additionally checking that time is within tolerance of 1 picosecond of grid time instead of silently rounding to nanoseconds (!751)
 - Qblox backend - Rename `is_within_grid_time ` helper function to `is_within_half_grid_time` !(753)
+- Qblox backend - Strictly requires v0.11.x of the `qblox-instruments` package (!723)
 
 ### Merged branches and closed issues
 
@@ -28,6 +30,7 @@
 - Waveforms - Fix such that `interpolated_complex_waveform` does not extrapolate except for rounding errors. (!710)
 - Docs - Fix broken list bullets on Read-the-Docs by enforcing `sphinx-rtd-theme>=1.2.2` (!743)
 - Qblox backend - Added warning if waveform playback or acquisition is interrupted by another waveform or acquisition, respectively (!744, #436)
+- Qblox backend - Update setting of sequencer qcodes parameters responsible for connection with physical input and output parameters, due to new channel map setup in `qblox-instruments==0.11`. (!723)
 
 ## 0.15.0 (2023-07-13)
 

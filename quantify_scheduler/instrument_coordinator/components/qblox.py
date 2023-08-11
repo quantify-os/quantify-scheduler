@@ -21,6 +21,7 @@ from qcodes.instrument import Instrument, InstrumentModule
 from xarray import DataArray, Dataset
 
 from quantify_scheduler.backends.qblox import constants, driver_version_check
+from quantify_scheduler.backends.qblox.enums import IoMode
 from quantify_scheduler.backends.qblox.helpers import (
     single_scope_mode_acquisition_raise,
 )
@@ -120,39 +121,39 @@ class _StaticHardwareProperties:
     """Specifies if an internal lo source is available."""
     number_of_sequencers: int
     """The number of sequencers the hardware has available."""
-    number_of_output_paths: int
-    """The number of output paths that can be used."""
-    number_of_input_paths: int
-    """"The number of input paths that can be used."""
+    number_of_output_channels: int
+    """The number of physical output channels that can be used."""
+    number_of_input_channels: int
+    """"The number of physical input channels that can be used."""
 
 
 _QCM_BASEBAND_PROPERTIES = _StaticHardwareProperties(
     settings_type=BaseModuleSettings,
     has_internal_lo=False,
     number_of_sequencers=constants.NUMBER_OF_SEQUENCERS_QCM,
-    number_of_output_paths=4,
-    number_of_input_paths=0,
+    number_of_output_channels=4,
+    number_of_input_channels=0,
 )
 _QRM_BASEBAND_PROPERTIES = _StaticHardwareProperties(
     settings_type=BaseModuleSettings,
     has_internal_lo=False,
     number_of_sequencers=constants.NUMBER_OF_SEQUENCERS_QRM,
-    number_of_output_paths=2,
-    number_of_input_paths=2,
+    number_of_output_channels=2,
+    number_of_input_channels=2,
 )
 _QCM_RF_PROPERTIES = _StaticHardwareProperties(
     settings_type=RFModuleSettings,
     has_internal_lo=True,
     number_of_sequencers=constants.NUMBER_OF_SEQUENCERS_QCM,
-    number_of_output_paths=4,
-    number_of_input_paths=0,
+    number_of_output_channels=2,
+    number_of_input_channels=0,
 )
 _QRM_RF_PROPERTIES = _StaticHardwareProperties(
     settings_type=RFModuleSettings,
     has_internal_lo=True,
     number_of_sequencers=constants.NUMBER_OF_SEQUENCERS_QRM,
-    number_of_output_paths=2,
-    number_of_input_paths=2,
+    number_of_output_channels=1,
+    number_of_input_channels=1,
 )
 
 
@@ -359,23 +360,46 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
             settings.mixer_corr_gain_ratio,
         )
 
-        if settings.connected_outputs is not None:
-            for output_idx in range(self._hardware_properties.number_of_output_paths):
-                connected: bool = output_idx in settings.connected_outputs
-                self._set_parameter(
-                    self.instrument[f"sequencer{seq_idx}"],
-                    self._get_channel_map_parameter_name(output_index=output_idx),
-                    connected,
-                )
+        channel_map_parameters = self._determine_channel_map_parameters(settings)
+        for channel_param, channel_setting in channel_map_parameters.items():
+            self._set_parameter(
+                self.instrument[f"sequencer{seq_idx}"],
+                channel_param,
+                channel_setting,
+            )
 
         self._set_parameter(
             self.instrument[f"sequencer{seq_idx}"], "sequence", settings.sequence
         )
 
-    @staticmethod
-    def _get_channel_map_parameter_name(output_index: int) -> str:
-        path_idx = output_index % 2  # even or odd output
-        return f"channel_map_path{path_idx}_out{output_index}_en"
+    def _determine_channel_map_parameters(
+        self, settings: SequencerSettings
+    ) -> Dict[str, str]:
+        """Returns a dictionary with the channel map parameters for this module."""
+        channel_map_parameters = {}
+        self._determine_output_channel_map_parameters(settings, channel_map_parameters)
+
+        return channel_map_parameters
+
+    def _determine_output_channel_map_parameters(
+        self, settings: SequencerSettings, channel_map_parameters: Dict[str, str]
+    ) -> Dict[str, str]:
+        """Adds the outputs to the channel map parameters dict."""
+        for channel_idx in range(self._hardware_properties.number_of_output_channels):
+            param_setting = "off"
+            if (
+                settings.connected_outputs is not None
+                and channel_idx in settings.connected_outputs
+            ):  # For baseband, output indices map 1-to-1 to channel indices
+                if channel_idx in settings.connected_outputs:
+                    if settings.io_mode is IoMode.COMPLEX:
+                        param_setting = "I" if channel_idx in (0, 2) else "Q"
+                    elif settings.io_mode is not IoMode.DIGITAL:
+                        param_setting = "I"
+
+            channel_map_parameters[f"connect_out{channel_idx}"] = param_setting
+
+        return channel_map_parameters
 
     def _arm_all_sequencers_in_program(self, program: Dict[str, Any]):
         """Arms all the sequencers that are part of the program."""
@@ -680,6 +704,34 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
                 settings.thresholded_acq_threshold,
             )
 
+    def _determine_channel_map_parameters(
+        self, settings: SequencerSettings
+    ) -> Dict[str, str]:
+        """Returns a dictionary with the channel map parameters for this module."""
+        channel_map_parameters = {}
+        self._determine_output_channel_map_parameters(settings, channel_map_parameters)
+        self._determine_input_channel_map_parameters(settings, channel_map_parameters)
+
+        return channel_map_parameters
+
+    def _determine_input_channel_map_parameters(
+        self, settings: SequencerSettings, channel_map_parameters: Dict[str, str]
+    ) -> Dict[str, str]:
+        """Adds the inputs to the channel map parameters dict."""
+        param_name = {0: "connect_acq_I", 1: "connect_acq_Q"}
+
+        for channel_idx in range(self._hardware_properties.number_of_input_channels):
+            param_setting = "off"
+            if (
+                settings.connected_inputs is not None
+                and channel_idx in settings.connected_inputs
+            ):  # For baseband, input indices map 1-to-1 to channel indices
+                param_setting = f"in{channel_idx}"
+
+            channel_map_parameters[param_name[channel_idx]] = param_setting
+
+        return channel_map_parameters
+
     def _determine_scope_mode_acquisition_sequencer_and_channel(
         self, acquisition_metadata: Dict[str, AcquisitionMetadata]
     ) -> Optional[Tuple[int, int]]:
@@ -741,6 +793,24 @@ class QbloxRFComponent(QbloxInstrumentCoordinatorComponentBase):
             "marker_ovr_en",
             False,
         )
+
+    def _determine_output_channel_map_parameters(
+        self, settings: SequencerSettings, channel_map_parameters: Dict[str, str]
+    ) -> Dict[str, str]:
+        """Adds the outputs to the channel map parameters dict."""
+        expected_output_indices = {0: [0, 1], 1: [2, 3]}
+
+        for channel_idx in range(self._hardware_properties.number_of_output_channels):
+            param_setting = "off"
+            if (
+                settings.io_mode is not IoMode.DIGITAL
+                and settings.connected_outputs is not None
+                and settings.connected_outputs == expected_output_indices[channel_idx]
+            ):
+                param_setting = "IQ"
+
+            channel_map_parameters[f"connect_out{channel_idx}"] = param_setting
+        return channel_map_parameters
 
 
 class QCMRFComponent(QbloxRFComponent, QCMComponent):
@@ -822,6 +892,16 @@ class QRMRFComponent(QbloxRFComponent, QRMComponent):
             self._set_parameter(self.instrument, "out0_att", settings.out0_att)
         if settings.in0_att is not None:
             self._set_parameter(self.instrument, "in0_att", settings.in0_att)
+
+    def _determine_input_channel_map_parameters(
+        self, settings: SequencerSettings, channel_map_parameters: Dict[str, str]
+    ) -> Dict[str, str]:
+        """Adds the inputs to the channel map parameters dict."""
+        channel_map_parameters["connect_acq"] = (
+            "in0" if settings.connected_inputs == [0, 1] else "off"
+        )
+
+        return channel_map_parameters
 
 
 class PulsarQCMComponent(QCMComponent):

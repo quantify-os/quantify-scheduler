@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from quantify_scheduler.enums import BinMode
+from quantify_scheduler.backends.qblox.enums import IoMode
 from quantify_scheduler.backends.qblox.operation_handling import (
     acquisitions,
     base,
@@ -12,12 +12,13 @@ from quantify_scheduler.backends.qblox.operation_handling import (
     virtual,
 )
 from quantify_scheduler.backends.types.qblox import OpInfo
+from quantify_scheduler.enums import BinMode
 
 
 def get_operation_strategy(
     operation_info: OpInfo,
     instruction_generated_pulses_enabled: bool,
-    io_mode: str,
+    io_mode: IoMode,
 ) -> base.IOperationStrategy:
     """
     Determines and instantiates the correct strategy object.
@@ -30,8 +31,8 @@ def get_operation_strategy(
         Specifies if instruction generated pulses (e.g. staircase through offsets) are
         allowed. If set to False, only generically treated pulses are allowed.
     io_mode
-        Either "real", "imag" or complex depending on whether the signal affects only
-        path0, path1 or both.
+        Either :attr:`.IoMode.REAL`, :attr:`.IoMode.IMAG` or :attr:`.IoMode.COMPLEX`
+        depending on whether the signal affects only sequencer path0, path1 or both.
 
     Returns
     -------
@@ -77,7 +78,7 @@ def _get_acquisition_strategy(
 def _get_pulse_strategy(
     operation_info: OpInfo,
     instruction_generated_pulses_enabled: bool,
-    io_mode: str,
+    io_mode: IoMode,
 ) -> base.IOperationStrategy:
     """Handles the logic for determining the correct pulse type."""
     if operation_info.is_offset_instruction:

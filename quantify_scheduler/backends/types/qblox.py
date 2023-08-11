@@ -6,20 +6,17 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from dataclasses import field as dataclasses_field
-from typing import Any, Callable, Dict, Literal, Optional, Tuple, TypeVar, Union, List
+from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, TypeVar, Union
 
 from dataclasses_json import DataClassJsonMixin
 from pydantic import Field, validator
 from typing_extensions import Annotated
 
+from quantify_scheduler.backends.qblox import constants, enums, q1asm_instructions
 from quantify_scheduler.backends.types.common import (
     HardwareDescription,
     HardwareOptions,
     LocalOscillatorDescription,
-)
-from quantify_scheduler.backends.qblox import (
-    constants,
-    q1asm_instructions,
 )
 from quantify_scheduler.structure.model import DataStructure
 
@@ -377,6 +374,8 @@ class SequencerSettings(DataClassJsonMixin):
     """Specifies which physical outputs this sequencer produces waveform data for."""
     connected_inputs: Optional[Union[Tuple[int], Tuple[int, int]]]
     """Specifies which physical inputs this sequencer collects data for."""
+    io_mode: enums.IoMode
+    """Specifies the type of input/output this sequencer is handling."""
     init_offset_awg_path_0: float = 0.0
     """Specifies what value the sequencer offset for AWG path 0 will be reset to
     before the start of the experiment."""
@@ -421,6 +420,7 @@ class SequencerSettings(DataClassJsonMixin):
         sequencer_cfg: Dict[str, Any],
         connected_outputs: Optional[Union[Tuple[int], Tuple[int, int]]],
         connected_inputs: Optional[Union[Tuple[int], Tuple[int, int]]],
+        io_mode: enums.IoMode,
     ) -> SequencerSettings:
         """
         Instantiates an instance of this class, with initial parameters determined from
@@ -434,6 +434,8 @@ class SequencerSettings(DataClassJsonMixin):
             The outputs connected to the sequencer.
         connected_inputs
             The inputs connected to the sequencer.
+        io_mode
+            The type of input/output this sequencer is handling.
 
         Returns
         -------
@@ -538,6 +540,7 @@ class SequencerSettings(DataClassJsonMixin):
             sync_en=True,
             connected_outputs=connected_outputs,
             connected_inputs=connected_inputs,
+            io_mode=io_mode,
             init_offset_awg_path_0=init_offset_awg_path_0,
             init_offset_awg_path_1=init_offset_awg_path_1,
             init_gain_awg_path_0=init_gain_awg_path_0,

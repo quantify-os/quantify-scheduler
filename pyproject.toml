@@ -47,7 +47,7 @@ dependencies = [
     "pathvalidate",
     "plotly",
     "pydantic<2.0",
-    "qblox-instruments>=0.9,<0.11", # Allow installing 0.9.x and 0.10.x
+    "qblox-instruments~=0.11.0", # Prevent upgrade upon minor release while allowing for installing patch releases
     "quantify_core>=0.6.5", # For deprecation hints shown to end-users by default
     "qcodes>=0.32.0", # 0.32.0: introduces InstrumentModule
     "scipy",
@@ -98,10 +98,6 @@ dev = [
     "pytest-xdist", # run tests in parallel
     "ruff",  # linter
     "quantify-scheduler[docs,test]",
-    # This qblox-instruments is a temporary dependency here, which we need to remove later;
-    # It's here, because some tests require explicitly this version,
-    # but we allow older version of qblox-instruments for non-dev users
-    "qblox-instruments~=0.10.0",
 ]
 
 [project.urls]

@@ -15,6 +15,13 @@ from typing import Union
 import pytest
 
 from quantify_scheduler.backends.qblox import helpers
+from quantify_scheduler.backends.qblox.enums import IoMode
+from quantify_scheduler.backends.qblox.instrument_compilers import (
+    QcmModule,
+    QcmRfModule,
+    QrmModule,
+    QrmRfModule,
+)
 
 
 @pytest.mark.parametrize(
@@ -208,3 +215,60 @@ def test_Frequencies():
     for freq in invalid_freqs:
         with pytest.raises(ValueError):
             freq.validate()
+
+
+@pytest.mark.parametrize(
+    "module",
+    [
+        QcmModule,
+        QrmModule,
+        QcmRfModule,
+        QrmRfModule,
+    ],
+)
+def test_validate_io_indices(module):
+    def _validate_io_indices(io_name: str, io_indices: tuple) -> tuple:
+        assert (
+            len(io_indices) > 0
+        ), "No inputs or output indices were selected for this sequencer."
+
+        assert (
+            len(io_indices) <= 2
+        ), f"Too many ios specified for this channel. Given: {io_indices}"
+
+        if len(io_indices) == 2:
+            assert (
+                "complex" in io_name
+            ), f"Two io indices specified for {io_name}, but it must have one."
+            assert sorted(io_indices) in (
+                [0, 1],
+                [2, 3],
+            ), "Attempting to use two paths belonging to different sequencers."
+
+        elif len(io_indices) == 1:
+            assert (
+                "complex" not in io_name
+            ), f"Only one io index specified for {io_name}, but it must have two."
+
+        return
+
+    for io_name in module.static_hw_properties.valid_ios:
+        io_indices = (
+            helpers.output_name_to_output_indices(io_name)
+            if "output" in io_name
+            else helpers.input_name_to_input_indices(io_name)
+        )
+        _validate_io_indices(io_name, io_indices)
+
+
+@pytest.mark.parametrize(
+    "io_name, sequencer_mode",
+    [
+        ("complex_output_0", IoMode.COMPLEX),
+        ("real_output_0", IoMode.REAL),
+        ("real_output_1", IoMode.IMAG),
+        ("digital_output_0", IoMode.DIGITAL),
+    ],
+)
+def test_validate_sequencer_mode(io_name, sequencer_mode):
+    assert sequencer_mode == helpers.get_io_info(io_name)[0]
