@@ -32,6 +32,7 @@
 - Qblox backend - Added warning if waveform playback or acquisition is interrupted by another waveform or acquisition, respectively (!744, #436)
 - Qblox backend - Update setting of sequencer qcodes parameters responsible for connection with physical input and output parameters, due to new channel map setup in `qblox-instruments==0.11`. (!723)
 - Qblox backend - Hotfix for !723: turn on channel map parameters associated with inputs for the cases of output io names (e.g. `complex_output_0`) defined in readout modules. (!760)
+- Documentation - Restore Qblox documentation on using the old-style hardware config (!761)
 
 ## 0.15.0 (2023-07-13)
 

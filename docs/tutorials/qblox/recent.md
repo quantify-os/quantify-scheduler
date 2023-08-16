@@ -2,7 +2,9 @@
 
 ## 0.15.0: HardwareCompilationConfig structure
 
-The {class}`~.backends.types.common.HardwareCompilationConfig` datastructure was introduced to structure the information that was previously stored in the hardware configuration dict. The information is now divided into sub-datastructures for the `"hardware_description"`, `"hardware_options"` and `"connectivity"`. For more information, see {ref}`Hardware Compilation Configuration <sec-hardware-compilation-config>` and {ref}`Cluster <sec-qblox-cluster>`.
+The {class}`~.backends.types.common.HardwareCompilationConfig` datastructure was introduced to structure the information that was previously stored in the hardware configuration dict.
+The information is now divided into sub-datastructures for the `"hardware_description"`, `"hardware_options"` and `"connectivity"`.
+For more information, see {ref}`sec-hardware-compilation-config` and {ref}`Cluster (HardwareCompilationConfig) <sec-qblox-cluster-new>`.
 
 ## 0.13.0: Long waveform support
 
