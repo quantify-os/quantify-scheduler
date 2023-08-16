@@ -31,6 +31,7 @@
 - Docs - Fix broken list bullets on Read-the-Docs by enforcing `sphinx-rtd-theme>=1.2.2` (!743)
 - Qblox backend - Added warning if waveform playback or acquisition is interrupted by another waveform or acquisition, respectively (!744, #436)
 - Qblox backend - Update setting of sequencer qcodes parameters responsible for connection with physical input and output parameters, due to new channel map setup in `qblox-instruments==0.11`. (!723)
+- Qblox backend - Hotfix for !723: turn on channel map parameters associated with inputs for the cases of output io names (e.g. `complex_output_0`) defined in readout modules. (!760)
 
 ## 0.15.0 (2023-07-13)
 

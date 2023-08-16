@@ -370,6 +370,8 @@ class SequencerSettings(DataClassJsonMixin):
     """Specifies whether the NCO will be used or not."""
     sync_en: bool
     """Enables party-line synchronization."""
+    io_name: str
+    """Specifies the io identifier of the hardware config (e.g. `complex_output_0`)."""
     connected_outputs: Optional[Union[Tuple[int], Tuple[int, int]]]
     """Specifies which physical outputs this sequencer produces waveform data for."""
     connected_inputs: Optional[Union[Tuple[int], Tuple[int, int]]]
@@ -418,6 +420,7 @@ class SequencerSettings(DataClassJsonMixin):
     def initialize_from_config_dict(
         cls,
         sequencer_cfg: Dict[str, Any],
+        io_name: str,
         connected_outputs: Optional[Union[Tuple[int], Tuple[int, int]]],
         connected_inputs: Optional[Union[Tuple[int], Tuple[int, int]]],
         io_mode: enums.IoMode,
@@ -430,6 +433,8 @@ class SequencerSettings(DataClassJsonMixin):
         ----------
         sequencer_cfg : dict
             The sequencer configuration dict.
+        io_name
+            Specifies the io identifier of the hardware config (e.g. `complex_output_0`).
         connected_outputs
             The outputs connected to the sequencer.
         connected_inputs
@@ -538,6 +543,7 @@ class SequencerSettings(DataClassJsonMixin):
         sequencer_settings = cls(
             nco_en=nco_en,
             sync_en=True,
+            io_name=io_name,
             connected_outputs=connected_outputs,
             connected_inputs=connected_inputs,
             io_mode=io_mode,

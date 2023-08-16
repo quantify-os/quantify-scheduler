@@ -304,6 +304,7 @@ class Sequencer:
         index: int,
         portclock: Tuple[str, str],
         static_hw_properties: StaticHardwareProperties,
+        io_name: str,
         connected_outputs: Optional[Union[Tuple[int], Tuple[int, int]]],
         connected_inputs: Optional[Union[Tuple[int], Tuple[int, int]]],
         io_mode: enums.IoMode,
@@ -327,6 +328,12 @@ class Sequencer:
         portclock
             Tuple that specifies the unique port and clock combination for this
             sequencer. The first value is the port, second is the clock.
+        io_name
+            Specifies the io identifier of the hardware config (e.g. `complex_output_0`).
+        connected_outputs
+            The outputs connected to the sequencer.
+        connected_inputs
+            The inputs connected to the sequencer.
         sequencer_cfg
             Sequencer settings dictionary.
         latency_corrections
@@ -382,6 +389,7 @@ class Sequencer:
 
         self._settings = SequencerSettings.initialize_from_config_dict(
             sequencer_cfg=sequencer_cfg,
+            io_name=io_name,
             connected_outputs=connected_outputs,
             connected_inputs=connected_inputs,
             io_mode=io_mode,
@@ -1334,6 +1342,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                         index=seq_idx,
                         portclock=portclock,
                         static_hw_properties=self.static_hw_properties,
+                        io_name=io_name,
                         connected_outputs=connected_outputs,
                         connected_inputs=connected_inputs,
                         io_mode=io_mode,

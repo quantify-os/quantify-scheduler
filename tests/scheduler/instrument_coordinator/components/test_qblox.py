@@ -1264,8 +1264,8 @@ def test_instrument_channel():
             {
                 "connect_out0": "I",
                 "connect_out1": "Q",
-                "connect_acq_I": "off",
-                "connect_acq_Q": "off",
+                "connect_acq_I": "in0",
+                "connect_acq_Q": "in1",
             },
         ),
         (
@@ -1284,8 +1284,8 @@ def test_instrument_channel():
             {
                 "connect_out0": "I",
                 "connect_out1": "off",
-                "connect_acq_I": "off",
-                "connect_acq_Q": "off",
+                "connect_acq_I": "in0",
+                "connect_acq_Q": "in1",
             },
         ),
         (
@@ -1294,8 +1294,8 @@ def test_instrument_channel():
             {
                 "connect_out0": "off",
                 "connect_out1": "I",
-                "connect_acq_I": "off",
-                "connect_acq_Q": "off",
+                "connect_acq_I": "in0",
+                "connect_acq_Q": "in1",
             },
         ),
         (
@@ -1339,7 +1339,7 @@ def test_instrument_channel():
             "complex_output_0",
             {
                 "connect_out0": "IQ",
-                "connect_acq": "off",
+                "connect_acq": "in0",
             },
         ),
         (

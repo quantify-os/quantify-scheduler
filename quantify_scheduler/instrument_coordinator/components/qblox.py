@@ -721,7 +721,11 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
         param_name = {0: "connect_acq_I", 1: "connect_acq_Q"}
 
         for channel_idx in range(self._hardware_properties.number_of_input_channels):
-            param_setting = "off"
+            param_setting = (
+                f"in{channel_idx}"
+                if "output" in settings.io_name and "digital" not in settings.io_name
+                else "off"
+            )
             if (
                 settings.connected_inputs is not None
                 and channel_idx in settings.connected_inputs
@@ -900,6 +904,8 @@ class QRMRFComponent(QbloxRFComponent, QRMComponent):
         channel_map_parameters["connect_acq"] = (
             "in0" if settings.connected_inputs == [0, 1] else "off"
         )
+        if "output" in settings.io_name and "digital" not in settings.io_name:
+            channel_map_parameters["connect_acq"] = "in0"
 
         return channel_map_parameters
 
