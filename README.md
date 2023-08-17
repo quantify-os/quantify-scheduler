@@ -32,14 +32,15 @@ Also see the [latest documentation for quantify-core](https://quantify-quantify-
 
 **Qblox**
 
-| quantify |                      qblox-instruments                       | Cluster firmware |
-|----------|:------------------------------------------------------------:|:----------------:|
-| v0.15.0  | [0.10.x](https://pypi.org/project/qblox-instruments/0.10.0/) | [0.5.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.5.0) |
-|          |  [0.9.0](https://pypi.org/project/qblox-instruments/0.9.0/)  | [0.4.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.4.0) |
-| v0.14.0  | [0.10.x](https://pypi.org/project/qblox-instruments/0.10.0/) | [0.5.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.5.0) |
-|          |  [0.9.0](https://pypi.org/project/qblox-instruments/0.9.0/)  | [0.4.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.4.0) |
-| v0.13.0  | [0.10.x](https://pypi.org/project/qblox-instruments/0.10.0/) | [0.5.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.5.0) |
-|          |  [0.9.0](https://pypi.org/project/qblox-instruments/0.9.0/)  | [0.4.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.4.0) |
+| quantify-scheduler |                      qblox-instruments                       |                               Cluster firmware                                |
+|--------------------|:------------------------------------------------------------:|:-----------------------------------------------------------------------------:|
+| v0.16.0            | [0.11.x](https://pypi.org/project/qblox-instruments/0.11.0/) | [0.6.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.6.0) |
+| v0.15.0            | [0.10.x](https://pypi.org/project/qblox-instruments/0.10.0/) | [0.5.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.5.0) |
+|                    |  [0.9.0](https://pypi.org/project/qblox-instruments/0.9.0/)  | [0.4.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.4.0) |
+| v0.14.0            | [0.10.x](https://pypi.org/project/qblox-instruments/0.10.0/) | [0.5.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.5.0) |
+|                    |  [0.9.0](https://pypi.org/project/qblox-instruments/0.9.0/)  | [0.4.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.4.0) |
+| v0.13.0            | [0.10.x](https://pypi.org/project/qblox-instruments/0.10.0/) | [0.5.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.5.0) |
+|                    |  [0.9.0](https://pypi.org/project/qblox-instruments/0.9.0/)  | [0.4.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.4.0) |
 
 **Zurich Instruments**
 - `zhinst==21.8.20515`, `zhinst-qcodes==0.1.4`, `zhinst-toolkit==0.1.5`

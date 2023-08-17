@@ -1,15 +1,28 @@
 # Changelog
 
-## Unreleased
+## 0.16.0 (2023-08-17)
+
+### Release highlights
+
+- New features
+  - New acquisition protocol: [ThresholdedAcquisition](https://quantify-quantify-scheduler.readthedocs-hosted.com/en/latest/tutorials/Acquisitions.html#thresholded-acquisition)
+    - Currently only supported by the Qblox backend
+
+- Qblox backend improvements 
+  - All-zero waveforms are no longer stored in the waveform dictionary and no longer uploaded to the hardware
+  - Fixed accidentally changing multiple instances of same type of operation in a schedule
+  - Fixed append mode for weighted acquisitions doing average instead of append
+  - Fixed simultaneous playback on both outputs of a QCM-RF
+  - Compatibility with v0.11 of the `qblox-instruments` package
 
 ### Breaking changes
 
 - Operations - Prevent collisions by changing logic for checking Operation uniqueness to use `Operation.hash` instead of `str(Operation)`. (!738, #209)
   - `Operation.hash` now returns `str` rather than `int`.
   - `str(Operation)` is no longer required to be unique (except with the ZI backend).
-  - `schedule.operations.keys()` can no longer be used to get a repr of the Operations.
-- Qblox backend - Make q1asm generation functions `acquire_append` and `acquire_average` private. (!739)
-- Qblox backend - `to_grid_time` helper function would raise `ValueError` if time supplied is not a multiple of grid time, now additionally checking that time is within tolerance of 1 picosecond of grid time instead of silently rounding to nanoseconds (!751)
+  - `schedule.operations.keys()` can no longer be used to get a `repr` of the `Operation`s.
+- Qblox backend - Made Q1ASM generation functions `acquire_append` and `acquire_average` private. (!739)
+- Qblox backend - `to_grid_time` helper function would raise `ValueError` if time supplied is not a multiple of grid time, now additionally checking that time is within the tolerance of 1 picosecond of grid time instead of silently rounding to nanoseconds (!751)
 - Qblox backend - Rename `is_within_grid_time ` helper function to `is_within_half_grid_time` !(753)
 - Qblox backend - Strictly requires v0.11.x of the `qblox-instruments` package (!723)
 
@@ -17,23 +30,28 @@
 
 - Acquisition - New acquisition protocol for thresholded acquisitions: `ThresholdedAcquisition` (!617)
 - Compilation - Made the `HardwareCompilationConfig` datastructure backend-specific (!708)
-- Compilation - Change default `ref_pt` and `ref_pt_new` to `None` in `Schedule` and `Schedulable`; `compilation.determine_absolute_timing` will then assume `end` and `start` respectively, conserving previous behavior (!733)
-- Pin version of `dataclasses-json` due to breaking pipelines. (!727)
-- Schedulables - Store references to `Schedulables` in timing contraints as `string` rather than `Schedulable`. (!717)
-- Qblox backend - Fix weighted acquisition in append mode. (!725)
+- Compilation - Change default `ref_pt` and `ref_pt_new` to `None` in `Schedule` and `Schedulable`; `compilation.determine_absolute_timing` will then assume `end` and `start` respectively, preserving previous behavior (!733)
+- Documentation - Fix broken list bullets on Read-the-Docs by enforcing `sphinx-rtd-theme>=1.2.2` (!743)
 - Documentation - Fixes to acquisitions tutorial (!732)
+- Documentation - Restore Qblox documentation on using the old-style hardware config (!761)
+- Documentation - Fix broken xarray display in docs (propagate from quantify-core!470) (!762)
+- Infrastructure - Pin version of `dataclasses-json` due to breaking pipelines (!727) and unpin again (!735)
 - Instrument Coordinator - Improve error message for missing IC components (!718)
+- Qblox backend - Fix weighted acquisition in append mode. (!725)
 - Qblox backend - Prevent uploading "null" (i.e. all-zero) waveforms (!711)
-- Schedule, Schedulable - Refactor logic for checking schedulable uniqueness within schedule and reference schedulable existence within schedule out of `Schedulable` to `Schedule`. (!724)
-- Zhinst backend - Decapitalize `"dc_mixer_offset_I"` and `"dc_mixer_offset_Q"` in `backends.types.zhinst.Output` validator to fix compatibility with old-style hardware config dicts. (!740)
 - Qblox backend - Fix playback on both outputs of a QCM-RF (!742)
-- Waveforms - Fix such that `interpolated_complex_waveform` does not extrapolate except for rounding errors. (!710)
-- Docs - Fix broken list bullets on Read-the-Docs by enforcing `sphinx-rtd-theme>=1.2.2` (!743)
 - Qblox backend - Added warning if waveform playback or acquisition is interrupted by another waveform or acquisition, respectively (!744, #436)
 - Qblox backend - Update setting of sequencer qcodes parameters responsible for connection with physical input and output parameters, due to new channel map setup in `qblox-instruments==0.11`. (!723)
 - Qblox backend - Hotfix for !723: turn on channel map parameters associated with inputs for the cases of output io names (e.g. `complex_output_0`) defined in readout modules. (!760)
-- Documentation - Restore Qblox documentation on using the old-style hardware config (!761)
-- Documentation - Fix broken xarray display in docs (propagate from quantify-core!470) (!762)
+- Schedulables - Store references to `Schedulables` in timing constraints as `string` rather than `Schedulable`. (!717)
+- Schedule, Schedulable - Refactor logic for checking schedulable uniqueness within the schedule and reference schedulable existence within schedule out of `Schedulable` to `Schedule`. (!724)
+- Waveforms - Fix such that `interpolated_complex_waveform` does not extrapolate except for rounding errors. (!710)
+- Zhinst backend - Decapitalize `"dc_mixer_offset_I"` and `"dc_mixer_offset_Q"` in `backends.types.zhinst.Output` validator to fix compatibility with old-style hardware config dicts. (!740)
+
+### Compatibility info
+
+- Qblox: `qblox-instruments==0.11.x` ([Cluster firmware v0.6.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.6.0))
+- ZI:    `zhinst==21.8.20515` `zhinst-qcodes==0.1.4` `zhinst-toolkit==0.1.5`
 
 ## 0.15.0 (2023-07-13)
 
