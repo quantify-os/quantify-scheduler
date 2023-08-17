@@ -1,5 +1,7 @@
 # Changelog
 
+## Unreleased
+
 ## 0.16.0 (2023-08-17)
 
 ### Release highlights
