@@ -9,7 +9,7 @@ import subprocess as sp  # nosec B404
 import sys
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Type, Union
+from typing import Any, Dict, Type, Union
 
 
 def get_classes(*modules: ModuleType) -> Dict[str, Type[Any]]:
@@ -72,7 +72,8 @@ def make_uml_diagram(
     sp_args = {"stdout": sp.DEVNULL, "stderr": sp.STDOUT}
     sp_err = (
         f"Something went wrong in the plotting backend. "
-        f"Please make sure the provided options have the correct syntax: {options}"
+        f"Please make sure pylint is installed and the provided options have the "
+        f"correct syntax: {options}"
     )
     dot_err = "Error running 'dot': is 'graphviz' installed?"
 
@@ -88,9 +89,12 @@ def make_uml_diagram(
                     *options,
                     abs_module_path,
                 ],
+                check=True,
                 **sp_args,
             )
-        except Exception:
+        except (sp.CalledProcessError, FileNotFoundError):
+            # FileNotFoundError is raised, as opposed to CalledProcessError,
+            # when the executable is not found.
             print(sp_err)
 
         try:
@@ -100,7 +104,7 @@ def make_uml_diagram(
             )
             os.remove("classes.dot")
             os.remove("packages.dot")
-        except Exception:
+        except (sp.CalledProcessError, FileNotFoundError):
             print(dot_err)
             diagram_name = None
 
@@ -122,9 +126,10 @@ def make_uml_diagram(
                     class_path_str,
                     repo_path,
                 ],
+                check=True,
                 **sp_args,
             )
-        except Exception:
+        except (sp.CalledProcessError, FileNotFoundError):
             print(sp_err)
 
         try:
@@ -134,7 +139,7 @@ def make_uml_diagram(
                 check=True,
             )
             os.remove(f"{class_path_str}.dot")
-        except Exception:
+        except (sp.CalledProcessError, FileNotFoundError):
             print(dot_err)
             diagram_name = None
 
