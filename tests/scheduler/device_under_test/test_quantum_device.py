@@ -89,3 +89,10 @@ def test_invalid_device_element_name():
     invalid_name = "q_0"
     with pytest.raises(ValueError):
         DeviceElement(invalid_name)
+
+
+def test_wrong_scheduling_strategy(mock_setup_basic_transmon_with_standard_params):
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    # Assert that a validation error is raised for scheduling strategy other_strategy
+    with pytest.raises(ValueError):
+        quantum_device.scheduling_strategy("other_strategy")

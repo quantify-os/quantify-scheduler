@@ -2,11 +2,12 @@
 
 ## Unreleased
 
-### Breaking changes
 
+### Breaking changes
 
 ### Merged branches and closed issues
 
+- Compilation - Add a `scheduling_strategy` parameter to `QuantumDevice` and `DeviceCompilationConfig` classes to enable new strategies for calculating absolute timing in `compilation.determine_absolute_timing`  (!736)
 - Security - Add `check=True` flag to all subprocess calls (see also Ruff rule PLW1510). (!767)
 
 ## 0.16.0 (2023-08-17)

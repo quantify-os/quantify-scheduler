@@ -9,6 +9,7 @@ from typing import (
     Callable,
     Dict,
     List,
+    Literal,
     Optional,
     Tuple,
     Type,
@@ -164,6 +165,11 @@ class DeviceCompilationConfig(DataStructure):
     A dictionary specifying the edges, links between elements on the device to which
     operations can be applied, and the operations that can be applied to them and how
     to compile these.
+    """
+    scheduling_strategy: Literal["asap", "alap"] = "asap"
+    """
+    The scheduling strategy used when determining the absolute timing of each
+    operation of the schedule.
     """
 
     @validator("backend", pre=True)

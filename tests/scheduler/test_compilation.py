@@ -6,7 +6,6 @@ from copy import deepcopy
 
 import numpy as np
 import pytest
-
 from quantify_scheduler import Operation, Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.circuit_to_device import ConfigKeyError
@@ -90,6 +89,22 @@ def test_determine_absolute_timing_ideal_clock():
     bad_sched.add(Rxy(90, 0, qubit=q1), ref_pt="bad")
     with pytest.raises(NotImplementedError):
         determine_absolute_timing(bad_sched)
+
+
+def test_determine_absolute_timing_alap_raises(
+    mock_setup_basic_transmon_with_standard_params, basic_schedule
+):
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.scheduling_strategy("alap")
+    assert quantum_device.scheduling_strategy() == "alap"
+
+    # Assert that an implementation error is raised for alap scheduling_strategy
+    with pytest.raises(NotImplementedError):
+        determine_absolute_timing(
+            schedule=basic_schedule,
+            time_unit="ideal",
+            config=quantum_device.generate_compilation_config(),
+        )
 
 
 def test_missing_ref_op():

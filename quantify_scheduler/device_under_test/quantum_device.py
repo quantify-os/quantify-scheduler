@@ -103,6 +103,14 @@ class QuantumDevice(Instrument):
             initial_value=None,
         )
 
+        self.add_parameter(
+            "scheduling_strategy",
+            docstring=("Scheduling strategy used to calculate absolute timing."),
+            parameter_class=ManualParameter,
+            vals=validators.Enum("asap", "alap"),
+            initial_value="asap",
+        )
+
     def generate_compilation_config(self) -> SerialCompilationConfig:
         """
         Generates a compilation config for use with a
@@ -216,6 +224,7 @@ class QuantumDevice(Instrument):
             elements=elements_cfg,
             clocks=clocks,
             edges=edges_cfg,
+            scheduling_strategy=self.scheduling_strategy(),
         )
 
         return device_config

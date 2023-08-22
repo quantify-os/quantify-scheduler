@@ -56,7 +56,20 @@ def determine_absolute_timing(
     :
         a new schedule object where the absolute time for each operation has been
         determined.
+
+    Raises
+    ------
+    NotImplementedError
+        If the scheduling strategy is not "asap"
     """
+    scheduling_strategy = "asap"
+    if config is not None:
+        scheduling_strategy = config.device_compilation_config.scheduling_strategy
+    if scheduling_strategy != "asap":
+        raise NotImplementedError(
+            f"{determine_absolute_timing.__name__} does not currently support {scheduling_strategy=}."
+            "Please change to 'asap' scheduling strategy in the `DeviceCompilationConfig`."
+        )
 
     if len(schedule.schedulables) == 0:
         raise ValueError(f"schedule '{schedule.name}' contains no schedulables.")
