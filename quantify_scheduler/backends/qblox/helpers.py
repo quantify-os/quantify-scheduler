@@ -1116,7 +1116,12 @@ def generate_hardware_config(compilation_config: CompilationConfig):
                 hardware_config[instr_name] = {}
             instr_config = hardware_config[instr_name]
 
-            for key in ["instrument_type", "ref", "sequence_to_file"]:
+            for key in [
+                "instrument_type",
+                "ref",
+                "sequence_to_file",
+                "align_qasm_fields",
+            ]:
                 try:
                     _set_hardware_config_value(
                         hw_config_dict=instr_config,

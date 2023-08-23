@@ -57,7 +57,11 @@ from tests.scheduler.instrument_coordinator.components.test_qblox import (  # py
 
 @pytest.fixture(name="empty_qasm_program_qrm")
 def fixture_empty_qasm_program():
-    yield QASMProgram(QrmModule.static_hw_properties, RegisterManager())
+    yield QASMProgram(
+        static_hw_properties=QrmModule.static_hw_properties,
+        register_manager=RegisterManager(),
+        align_fields=True,
+    )
 
 
 class MockAcquisition(acquisitions.AcquisitionStrategyPartial):

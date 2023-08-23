@@ -779,6 +779,7 @@ class Sequencer:
     def generate_qasm_program(
         self,
         total_sequence_time: float,
+        align_qasm_fields: bool,
         repetitions: int = 1,
     ) -> str:
         """
@@ -808,6 +809,8 @@ class Sequencer:
         total_sequence_time
             Total time the program needs to play for. If the sequencer would be done
             before this time, a wait is added at the end to ensure synchronization.
+        align_qasm_fields
+            If True, make QASM program more human-readable by aligning its fields.
         repetitions
             Number of times to repeat execution of the schedule.
 
@@ -830,7 +833,11 @@ class Sequencer:
         """
         loop_label = "start"
 
-        qasm = QASMProgram(self.static_hw_properties, self.register_manager)
+        qasm = QASMProgram(
+            static_hw_properties=self.static_hw_properties,
+            register_manager=self.register_manager,
+            align_fields=align_qasm_fields,
+        )
         qasm.set_marker(self.default_marker)
         # program header
         qasm.emit(q1asm_instructions.WAIT_SYNC, constants.GRID_TIME)
@@ -1071,8 +1078,9 @@ class Sequencer:
 
     def compile(
         self,
+        sequence_to_file: bool,
+        align_qasm_fields: bool,
         repetitions: int = 1,
-        sequence_to_file: Optional[bool] = None,
     ) -> Optional[Dict[str, Any]]:
         """
         Performs the full sequencer level compilation based on the assigned data and
@@ -1081,11 +1089,13 @@ class Sequencer:
 
         Parameters
         ----------
-        repetitions
-            Number of times execution the schedule is repeated.
         sequence_to_file
             Dump waveforms and program dict to JSON file, filename stored in
             `Sequencer.settings.seq_fn`.
+        align_qasm_fields
+            If True, make QASM program more human-readable by aligning its fields.
+        repetitions
+            Number of times execution the schedule is repeated.
 
         Returns
         -------
@@ -1112,7 +1122,8 @@ class Sequencer:
                 )
 
         qasm_program = self.generate_qasm_program(
-            self.parent.total_play_time,
+            total_sequence_time=self.parent.total_play_time,
+            align_qasm_fields=align_qasm_fields,
             repetitions=repetitions,
         )
 
@@ -1711,6 +1722,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         self,
         repetitions: int = 1,
         sequence_to_file: Optional[bool] = None,
+        align_qasm_fields: Optional[bool] = None,
     ) -> Optional[Dict[str, Any]]:
         """
         Performs the actual compilation steps for this module, by calling the sequencer
@@ -1723,6 +1735,8 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         sequence_to_file
             Dump waveforms and program dict to JSON file, filename stored in
             `Sequencer.settings.seq_fn`.
+        align_qasm_fields
+            If True, make QASM program more human-readable by aligning its fields.
 
         Returns
         -------
@@ -1740,11 +1754,15 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         if sequence_to_file is None:
             sequence_to_file = self.instrument_cfg.get("sequence_to_file", True)
+        if align_qasm_fields is None:
+            align_qasm_fields = self.instrument_cfg.get("align_qasm_fields", False)
 
         program["sequencers"] = {}
         for seq_name, seq in self.sequencers.items():
             seq_program = seq.compile(
-                repetitions=repetitions, sequence_to_file=sequence_to_file
+                repetitions=repetitions,
+                sequence_to_file=sequence_to_file,
+                align_qasm_fields=align_qasm_fields,
             )
             if seq_program is not None:
                 program["sequencers"][seq_name] = seq_program

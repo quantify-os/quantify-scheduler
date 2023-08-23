@@ -32,6 +32,7 @@ class QASMProgram:
         self,
         static_hw_properties: StaticHardwareProperties,
         register_manager: RegisterManager,
+        align_fields: bool,
     ):
         """
         Instantiates the QASMProgram.
@@ -43,6 +44,8 @@ class QASMProgram:
             played on.
         register_manager
             The register manager that keeps track of the occupied/available registers.
+        align_fields
+            If True, make QASM program more human-readable by aligning its fields.
         """
         self.register_manager: RegisterManager = register_manager
         """The register manager that keeps track of the occupied/available registers."""
@@ -60,6 +63,10 @@ class QASMProgram:
         self.instructions: List[list] = list()
         """A list containing the instructions added to the program. The instructions
         added are in turn a list of the instruction string with arguments."""
+        self.align_fields: bool = align_fields
+        """If true, all labels, instructions, arguments and comments
+        in the string representation of the program are printed on the same indention level.
+        This worsens performance."""
 
     @staticmethod
     def get_instruction_as_list(
@@ -415,14 +422,22 @@ class QASMProgram:
         :
             The string representation of the program.
         """
-        try:
-            return columnar(
-                self.instructions, headers=None, no_borders=True, wrap_max=0
-            )
-        # running in a sphinx environment can trigger a TableOverFlowError
-        except TableOverflowError:
-            return columnar(
-                self.instructions, headers=None, no_borders=True, terminal_width=120
+        if self.align_fields:
+            try:
+                instructions_str = columnar(
+                    self.instructions, headers=None, no_borders=True, wrap_max=0
+                )
+            # running in a sphinx environment can trigger a TableOverFlowError
+            except TableOverflowError:
+                instructions_str = columnar(
+                    self.instructions, headers=None, no_borders=True, terminal_width=120
+                )
+            # columnar inserts a newline before all the the instruction rows
+            return instructions_str.split("\n", 1)[1]
+        else:
+            return (
+                "\n".join(" ".join(instruction) for instruction in self.instructions)
+                + "\n"
             )
 
     @contextmanager
@@ -466,7 +481,11 @@ class QASMProgram:
                 valid_ios=[f"complex_output_{i}" for i in [0, 1]]
                 + [f"real_output_{i}" for i in range(4)],
             )
-            qasm = QASMProgram(static_hw_properties, register_manager.RegisterManager())
+            qasm = QASMProgram(
+                static_hw_properties=static_hw_properties,
+                register_manager=register_manager.RegisterManager(),
+                align_fields=True,
+            )
 
             with qasm.loop(label="repeat", repetitions=10):
                 qasm.auto_wait(100)

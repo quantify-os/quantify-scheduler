@@ -506,6 +506,26 @@ hardware_compile(test_sched, mapping_config)
 
 ```
 
+### QASM program indentation
+
+By default, the fields of the compiled QASM program are separated by a space, but this formatting can be made more human-readable by adding indentation. If the `"align_qasm_fields"` key in the hardware configuration is set to `True` (`False` by default), then for the whole program, labels, instructions, argument lists and comments are aligned in columns (same indentation level). Note that adding indentation worsens performance and has no functional value besides making the program more human-readable.
+
+```{code-block} python
+---
+emphasize-lines: 6
+linenos: true
+---
+hardware_compilation_cfg = {
+    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "cluster0": {
+        "instrument_type": "Cluster",
+        "ref": "internal",
+        "align_qasm_fields": True,
+        ...
+    }
+}
+```
+
 ### Portclock configuration
 
 Each module can have at most 6 portclocks defined, and the name for each `"port"` and `"clock"` combination must be unique. Each of these portclocks is associated with one sequencer in the Qblox hardware.

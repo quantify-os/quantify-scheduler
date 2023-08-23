@@ -29,7 +29,11 @@ from quantify_scheduler.operations.pulse_library import SetClockFrequency
 
 @pytest.fixture(name="empty_qasm_program_qcm")
 def fixture_empty_qasm_program():
-    yield QASMProgram(QcmModule.static_hw_properties, RegisterManager())
+    yield QASMProgram(
+        static_hw_properties=QcmModule.static_hw_properties,
+        register_manager=RegisterManager(),
+        align_fields=True,
+    )
 
 
 def _assert_none_data(strategy: IOperationStrategy):

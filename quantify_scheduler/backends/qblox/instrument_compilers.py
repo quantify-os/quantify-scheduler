@@ -340,9 +340,13 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
         program["settings"] = {"reference_source": self.instrument_cfg["ref"]}
 
         sequence_to_file = self.instrument_cfg.get("sequence_to_file", None)
+        align_qasm_fields = self.instrument_cfg.get("align_qasm_fields", None)
+
         for compiler in self.instrument_compilers.values():
             instrument_program = compiler.compile(
-                repetitions=repetitions, sequence_to_file=sequence_to_file
+                repetitions=repetitions,
+                sequence_to_file=sequence_to_file,
+                align_qasm_fields=align_qasm_fields,
             )
             if instrument_program is not None and len(instrument_program) > 0:
                 program[compiler.name] = instrument_program

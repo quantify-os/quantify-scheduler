@@ -320,6 +320,31 @@ hardware_compilation_cfg = {
 }
 ```
 
+### QASM program indentation
+
+By default, the fields of the compiled QASM program are separated by a space, but this formatting can be made more human-readable by adding indentation. If the `"align_qasm_fields"` key in the hardware configuration is set to `True` (`False` by default), then for the whole program, labels, instructions, argument lists and comments are aligned in columns (same indentation level). Note that adding indentation worsens performance and has no functional value besides making the program more human-readable.
+
+```{code-block} python
+---
+emphasize-lines: 8
+linenos: true
+---
+hardware_compilation_cfg = {
+    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "hardware_description":
+    {
+        "cluster0": {
+            "instrument_type": "Cluster",
+            "ref": "internal",
+            "align_qasm_fields": True,
+            "modules": {...}
+        }
+    },
+    "hardware_options": {...},
+    "connectivity": {...}
+}
+```
+
 ### Local Oscillator description
 
 A local oscillator instrument can be used with baseband modules. After adding the instrument, we can reference it in a baseband-module output via the `"lo_name"` key.

@@ -52,6 +52,7 @@ from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.backends.types.qblox import BasebandModuleSettings
 from quantify_scheduler.compilation import determine_absolute_timing
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.helpers.collections import (
     find_all_port_clock_combinations,
     find_inner_dicts_containing_key,
@@ -381,7 +382,9 @@ def real_square_pulse_schedule():
 @pytest.fixture(name="empty_qasm_program_qcm")
 def fixture_empty_qasm_program():
     return QASMProgram(
-        QcmModule.static_hw_properties, register_manager.RegisterManager()
+        static_hw_properties=QcmModule.static_hw_properties,
+        register_manager=register_manager.RegisterManager(),
+        align_fields=True,
     )
 
 
@@ -840,17 +843,17 @@ def test_compile_measure(
     "operation, instruction_to_check, clock_freq_old, add_lo1",
     [
         [
-            (IdlePulse(duration=64e-9), f"{'wait':<9}  64", None, add_lo1),
-            (Reset("q1"), f"{'wait':<9}  65532", None, add_lo1),
+            (IdlePulse(duration=64e-9), rf"^\s*wait\s+64(\s+|$)", None, add_lo1),
+            (Reset("q1"), rf"^\s*wait\s+65532", None, add_lo1),
             (
                 ShiftClockPhase(clock=clock, phase_shift=180.0),
-                f"{'set_ph_delta'}  500000000",
+                rf"^\s*set_ph_delta\s+500000000(\s+|$)",
                 None,
                 add_lo1,
             ),
             (
                 SetClockFrequency(clock=clock, clock_freq_new=clock_freq_new),
-                f"{'set_freq':<9}  {round((2e8 + clock_freq_new - clock_freq_old)*4)}",
+                rf"^\s*set_freq\s+{round((2e8 + clock_freq_new - clock_freq_old)*4)}(\s+|$)",
                 clock_freq_old,
                 add_lo1,
             ),
@@ -907,9 +910,9 @@ def test_compile_clock_operations(
     program_lines = compiled_sched.compiled_instructions["qcm0"]["sequencers"]["seq0"][
         "sequence"
     ]["program"].splitlines()
-    assert any(instruction_to_check in line for line in program_lines), "\n".join(
-        line for line in program_lines
-    )
+    assert any(
+        re.search(instruction_to_check, line) for line in program_lines
+    ), "\n".join(line for line in program_lines)
 
 
 def test_compile_cz_gate(
@@ -937,15 +940,17 @@ def test_compile_cz_gate(
         ]["sequence"]["program"].splitlines()
 
     assert any(
-        "play          0,0,4" in line for line in program_lines["seq0"]
+        re.search(rf"^\s*play\s+0,0,4(\s|$)", line) for line in program_lines["seq0"]
     ), "\n".join(line for line in program_lines["seq0"])
 
     assert any(
-        "set_ph_delta  122222222" in line for line in program_lines["seq1"]
+        re.search(rf"^\s*set_ph_delta\s+122222222(\s|$)", line)
+        for line in program_lines["seq1"]
     ), "\n".join(line for line in program_lines["seq1"])
 
     assert any(
-        "set_ph_delta  175000000" in line for line in program_lines["seq2"]
+        re.search(rf"^\s*set_ph_delta\s+175000000(\s|$)", line)
+        for line in program_lines["seq2"]
     ), "\n".join(line for line in program_lines["seq2"])
 
 
@@ -1102,10 +1107,13 @@ def test_weighted_acquisition_end_to_end(
         sched,
         config=compile_config_transmon_weighted_integration_qblox_hardware_pulsar,
     )
-    assert " acquire_weighed  0,0,0,1,4 " in (
-        compiled_sched.compiled_instructions["qrm0"]["sequencers"]["seq0"]["sequence"][
-            "program"
-        ]
+    assert re.search(
+        rf"\n\s*acquire_weighed\s+0,0,0,1,4(\s|$)",
+        (
+            compiled_sched.compiled_instructions["qrm0"]["sequencers"]["seq0"][
+                "sequence"
+            ]["program"]
+        ),
     )
 
 
@@ -1170,11 +1178,8 @@ def test_compile_with_repetitions(
     program_from_json = full_program["compiled_instructions"]["qcm0"]["sequencers"][
         "seq0"
     ]["sequence"]["program"]
-    move_line = program_from_json.split("\n")[5]
-    move_items = move_line.split()  # splits on whitespace
-    args = move_items[1]
-    iterations = int(args.split(",")[0])
-    assert iterations == 10
+    assert re.search(rf"\n\s*move\s+10,R0", program_from_json)
+    assert re.search(rf"\n\s*loop\s+R0,@start", program_from_json)
 
 
 def _func_for_hook_test(qasm: QASMProgram):
@@ -1214,7 +1219,7 @@ def test_qasm_hook(
     ]["seq0"]["sequence"]["program"]
     program_lines = program.splitlines()
 
-    assert program_lines[1].strip() == q1asm_instructions.NOP
+    assert program_lines[0].strip() == q1asm_instructions.NOP
 
 
 @pytest.mark.deprecated
@@ -1256,7 +1261,7 @@ def test_qasm_hook_hardware_config(
     ]["program"]
     program_lines = program.splitlines()
 
-    assert program_lines[1].strip() == q1asm_instructions.NOP
+    assert q1asm_instructions.NOP == program_lines[0].strip()
 
 
 def test_qcm_acquisition_error(hardware_cfg_pulsar):
@@ -2643,6 +2648,24 @@ def test_cluster_settings(
 
 
 class TestAssemblyValid:
+    @staticmethod
+    def _strip_spaces_and_comments(program: str):
+        # helper function for comparing programs
+        stripped_program = []
+        for line in program.split("\n"):
+            if "#" in line:
+                line = line.split("#")[0]  # noqa: PLW2901
+            line = line.rstrip()  # remove trailing whitespace # noqa: PLW2901
+            line = re.sub(  # remove line starting spaces # noqa: PLW2901
+                r"^ +", "", line
+            )
+            line = re.sub(  # replace multiple spaces with one # noqa: PLW2901
+                r" +", " ", line
+            )
+            stripped_program.append(line)
+
+        return stripped_program
+
     @classmethod
     def validate_seq_instructions(cls, seq_instructions, filename):
         baseline_assembly = os.path.join(
@@ -2661,8 +2684,10 @@ class TestAssemblyValid:
         with open(baseline_assembly) as file:
             baseline_seq_instructions = json.load(file)
 
-        program = _strip_comments(seq_instructions["program"])
-        ref_program = _strip_comments(baseline_seq_instructions["program"])
+        program = cls._strip_spaces_and_comments(seq_instructions["program"])
+        ref_program = cls._strip_spaces_and_comments(
+            baseline_seq_instructions["program"]
+        )
 
         assert list(program) == list(ref_program)
 
@@ -3384,17 +3409,6 @@ def test_set_conflicting_sequencer_options(
         )
 
 
-def _strip_comments(program: str):
-    # helper function for comparing programs
-    stripped_program = []
-    for line in program.split("\n"):
-        if "#" in line:
-            line = line.split("#")[0]  # noqa: PLW2901
-        line = line.rstrip()  # remove trailing whitespace # noqa: PLW2901
-        stripped_program.append(line)
-    return stripped_program
-
-
 def test_overwrite_gain(mock_setup_basic_transmon_with_standard_params):
     hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
@@ -3888,3 +3902,149 @@ def test_overlapping_operations_warn(
             context_mngr = pytest.raises(RuntimeWarning, match=expected)
         with context_mngr:
             compiler.compile(sched, compile_config_basic_transmon_qblox_hardware)
+
+
+def _assert_align_qasm_fields(
+    set_align_qasm_fields: bool,
+    align_qasm_fields: bool,
+    hardware_cfg: dict,
+    quantum_device: QuantumDevice,
+):
+    """
+    Compiles a test schedule and asserts whether the compiled qasm program
+    format is correct by comparing the whole qasm string to the expected string.
+
+    Parameters
+    ----------
+    set_align_qasm_fields
+        If True, align_qasm_fields will be passed to the compiler,
+        otherwise it will not.
+    align_qasm_fields
+        This will be passed to the compiler if set_align_qasm_fields is True.
+    hardware_cfg
+        Hardware configuration.
+    quantum_device
+        Quantum device.
+    """
+    quantum_device.hardware_config(hardware_cfg)
+
+    compiler = SerialCompiler(name="compiler", quantum_device=quantum_device)
+
+    # Define experiment schedule
+    schedule = Schedule("test align qasm fields")
+    schedule.add(SquarePulse(amp=0.5, duration=1e-6, port="q0:res", clock="q0.ro"))
+
+    compiled_schedule = compiler.compile(schedule)
+    program = compiled_schedule.compiled_instructions["cluster0"]["cluster0_module4"][
+        "sequencers"
+    ]["seq0"]["sequence"]["program"]
+
+    # pylint: disable=trailing-whitespace
+    if not set_align_qasm_fields or not align_qasm_fields:
+        expected_program = """ set_mrk 3 # set markers to 3
+ wait_sync 4 
+ upd_param 4 
+ wait 4 # latency correction of 4 + 0 ns
+ move 1,R0 # iterator for loop with label start
+start:   
+ reset_ph  
+ upd_param 4 
+ set_awg_offs 16383,0 
+ upd_param 4 
+ wait 996 # auto generated wait (996 ns)
+ set_awg_offs 0,0 
+ loop R0,@start 
+ stop  
+"""
+    else:
+        expected_program = """          set_mrk       3          # set markers to 3                    
+          wait_sync     4                                                
+          upd_param     4                                                
+          wait          4          # latency correction of 4 + 0 ns      
+          move          1,R0       # iterator for loop with label start  
+  start:                                                                 
+          reset_ph                                                       
+          upd_param     4                                                
+          set_awg_offs  16383,0                                          
+          upd_param     4                                                
+          wait          996        # auto generated wait (996 ns)        
+          set_awg_offs  0,0                                              
+          loop          R0,@start                                        
+          stop                                                           
+"""
+    assert program == expected_program
+
+
+@pytest.mark.parametrize(
+    "set_align_qasm_fields, align_qasm_fields",
+    [
+        (True, True),
+        (True, False),
+        (False, True),
+        (False, False),
+    ],
+)
+def test_align_qasm_fields(
+    hardware_compilation_config_qblox_example,
+    mock_setup_basic_transmon_with_standard_params,
+    set_align_qasm_fields,
+    align_qasm_fields,
+):
+    hardware_compilation_config = copy.deepcopy(
+        hardware_compilation_config_qblox_example
+    )
+    if set_align_qasm_fields:
+        hardware_compilation_config["hardware_description"]["cluster0"][
+            "align_qasm_fields"
+        ] = align_qasm_fields
+
+    _assert_align_qasm_fields(
+        set_align_qasm_fields=set_align_qasm_fields,
+        align_qasm_fields=align_qasm_fields,
+        hardware_cfg=hardware_compilation_config,
+        quantum_device=mock_setup_basic_transmon_with_standard_params["quantum_device"],
+    )
+
+
+@pytest.mark.deprecated
+@pytest.mark.parametrize(
+    "set_align_qasm_fields, align_qasm_fields",
+    [
+        (True, True),
+        (True, False),
+        (False, True),
+        (False, False),
+    ],
+)
+def test_align_qasm_fields_deprecated_hardware_cfg(
+    hardware_compilation_config_qblox_example,
+    mock_setup_basic_transmon_with_standard_params,
+    set_align_qasm_fields,
+    align_qasm_fields,
+):
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module4": {
+                "instrument_type": "QRM_RF",
+                "complex_output_0": {
+                    "input_att": 10,
+                    "portclock_configs": [
+                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6},
+                    ],
+                },
+            },
+        },
+    }
+
+    if set_align_qasm_fields:
+        hardware_cfg["cluster0"]["align_qasm_fields"] = align_qasm_fields
+
+    _assert_align_qasm_fields(
+        set_align_qasm_fields=set_align_qasm_fields,
+        align_qasm_fields=align_qasm_fields,
+        hardware_cfg=hardware_cfg,
+        quantum_device=mock_setup_basic_transmon_with_standard_params["quantum_device"],
+    )

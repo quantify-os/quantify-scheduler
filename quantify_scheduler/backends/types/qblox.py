@@ -568,6 +568,8 @@ class QbloxBaseDescription(HardwareDescription):
     """The reference source for the instrument."""
     sequence_to_file: bool = True
     """Write sequencer programs to files for (all modules in this) instrument."""
+    align_qasm_fields: bool = False
+    """If True, make QASM program more human-readable by aligning its fields."""
 
 
 class ComplexChannelDescription(DataStructure):
