@@ -8,8 +8,9 @@ and use that to create an instance of the operation itself.
 """
 from __future__ import annotations
 
-from typing import List, Literal, Optional
+import math
 import warnings
+from typing import List, Literal, Optional
 
 import numpy as np
 
@@ -133,7 +134,7 @@ def dispersive_measurement(
                 f"configuration."
             )
         dur_from_weights = len(acq_weights_a) / acq_weights_sampling_rate
-        if not np.isclose(acq_duration, dur_from_weights):
+        if not math.isclose(acq_duration, dur_from_weights):
             warnings.warn(
                 f"The specified weights and sampling rate lead to a weighted "
                 f"integration duration of {dur_from_weights:0.1e} s, which is "

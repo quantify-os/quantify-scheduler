@@ -7,6 +7,7 @@ These factories are used to take a parametrized representation of on a operation
 and use that to create an instance of the operation itself.
 """
 import numpy as np
+import math
 
 from quantify_scheduler.backends.qblox import constants as qblox_constants
 from quantify_scheduler.backends.qblox import helpers as qblox_helpers
@@ -369,7 +370,7 @@ def long_ramp_pulse(
 
     cur_offset = offset
     for _ in range(num_whole_parts):
-        if not (np.isclose(offset, 0) and np.isclose(cur_offset, offset)):
+        if not (math.isclose(offset, 0) and math.isclose(cur_offset, offset)):
             builder.add_voltage_offset(path_0=cur_offset, path_1=0.0)
         builder.add_pulse(
             pulse_library.RampPulse(

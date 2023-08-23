@@ -43,11 +43,8 @@ def make_hash(obj: Any) -> int:
     if not isinstance(obj, dict):
         return hash(obj)
 
-    new_o = copy.deepcopy(obj)
-    for key, val in new_o.items():
-        new_o[key] = make_hash(val)
-
-    return hash(tuple(frozenset(sorted(new_o.items()))))
+    tuple_of_hashes = ((key, make_hash(val)) for key, val in obj.items())
+    return hash(frozenset(sorted(tuple_of_hashes)))
 
 
 def without(dict_in: dict, keys: list) -> dict:

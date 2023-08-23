@@ -7,8 +7,9 @@ from functools import partial
 from typing import Any, Dict, List, Protocol, Tuple
 
 import numpy as np
+import math
 
-from quantify_scheduler import math, waveforms
+from quantify_scheduler import math as math_helpers, waveforms
 from quantify_scheduler.schedules.schedule import Schedule
 from quantify_scheduler.helpers import schedule as schedule_helpers
 from quantify_scheduler.helpers.importers import import_python_object_from_string
@@ -51,7 +52,7 @@ def get_waveform_size(waveform: np.ndarray, granularity: int) -> int:
     """
     size: int = len(waveform)
     if size % granularity != 0:
-        size = math.closest_number_ceil(size, granularity)
+        size = math_helpers.closest_number_ceil(size, granularity)
 
     return max(size, granularity)
 
@@ -99,7 +100,7 @@ def resize_waveform(waveform: np.ndarray, granularity: int) -> np.ndarray:
     if size % granularity == 0:
         return waveform
 
-    remainder = math.closest_number_ceil(size, granularity) - size
+    remainder = math_helpers.closest_number_ceil(size, granularity) - size
 
     # Append the waveform with the remainder zeros
     return np.concatenate([waveform, np.zeros(remainder)])
@@ -454,10 +455,10 @@ def normalize_waveform_data(data: np.ndarray) -> Tuple[np.ndarray, float, float]
     amp_real, amp_imag = np.max(np.abs(data.real)), np.max(np.abs(data.imag))
     norm_data_re = (
         data.real / amp_real
-        if not np.isclose(amp_real, 0.0)
+        if not math.isclose(amp_real, 0.0)
         else np.zeros(data.real.shape)
     )
-    if np.isclose(amp_imag, 0.0):
+    if math.isclose(amp_imag, 0.0):
         rescaled_data = norm_data_re
     else:
         norm_data_im = data.imag / amp_imag

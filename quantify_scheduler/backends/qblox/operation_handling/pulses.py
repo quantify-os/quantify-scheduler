@@ -9,6 +9,7 @@ from collections import namedtuple
 from typing import Any, Dict, Optional
 
 import numpy as np
+import math
 
 from quantify_core.utilities import deprecated
 from quantify_scheduler.backends.qblox import constants, helpers, q1asm_instructions
@@ -152,14 +153,14 @@ class GenericPulseStrategy(PulseStrategyPartial):
             helpers.add_to_wf_dict_if_unique(
                 wf_dict=wf_dict, waveform=waveform_data.real
             )
-            if (not np.isclose(amp_real, 0.0))
+            if (not math.isclose(amp_real, 0.0))
             else None
         )
         idx_imag = (
             helpers.add_to_wf_dict_if_unique(
                 wf_dict=wf_dict, waveform=waveform_data.imag
             )
-            if (not np.isclose(amp_imag, 0.0))
+            if (not math.isclose(amp_imag, 0.0))
             else None
         )
 

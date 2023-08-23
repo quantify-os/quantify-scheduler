@@ -2,6 +2,7 @@
 # Licensed according to the LICENCE file on the main branch
 from __future__ import annotations
 
+import math
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, List
@@ -138,7 +139,7 @@ def convert_to_numerical_pulse(
 
         t0 = round(pulse_info["t0"], 9)
 
-        if np.isclose(pulse_info["duration"], 0, atol=5e-10):
+        if math.isclose(pulse_info["duration"], 0, abs_tol=5e-10):
             # Offset operations with "0" duration at the end of the pulse are
             # possible; we ignore these.
             if round(operation.duration, 9) == t0:
@@ -463,11 +464,11 @@ class StitchedPulseBuilder:
                 continue
 
             this_end = offset_info.t0 + (offset_info.duration or 0.0)
-            if np.isclose(this_end, self.operation_end):
+            if math.isclose(this_end, self.operation_end):
                 background = (0.0, 0.0)
             # Reset if the next offset's start does not overlap with the current
             # offset's end, or if the current offset is the last one
-            if i + 1 >= len(self._offsets) or not np.isclose(
+            if i + 1 >= len(self._offsets) or not math.isclose(
                 self._offsets[i + 1].t0, this_end
             ):
                 offset_ops.append(
@@ -477,7 +478,7 @@ class StitchedPulseBuilder:
                 )
 
         # If this wasn't done yet, add a reset to 0 at the end of the StitchedPulse
-        if not (np.isclose(background[0], 0) and np.isclose(background[1], 0)):
+        if not (math.isclose(background[0], 0) and math.isclose(background[1], 0)):
             offset_ops.append(
                 create_operation_from_info(
                     _VoltageOffsetInfo(0.0, 0.0, t0=self.operation_end)
