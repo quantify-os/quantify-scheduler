@@ -27,28 +27,30 @@ class MockLocalOscillator(Instrument):  # pylint: disable=too-few-public-methods
         """
         Used for faking communications
         """
-        self.add_parameter(
-            name="status",
+        self.status = ManualParameter(
+            "status",
             initial_value=False,
             vals=validators.Bool(),
             docstring="turns the output on/off",
-            parameter_class=ManualParameter,
+            instrument=self,
         )
-        self.add_parameter(
-            name="frequency",
+
+        self.frequency = ManualParameter(
+            "frequency",
             label="Frequency",
             unit="Hz",
             initial_value=7e9,
             docstring="The RF Frequency in Hz",
             vals=validators.Numbers(),
-            parameter_class=ManualParameter,
+            instrument=self,
         )
-        self.add_parameter(
-            name="power",
+
+        self.power = ManualParameter(
+            "power",
             label="Power",
             unit="dBm",
             initial_value=15.0,
             vals=validators.Numbers(min_value=-60.0, max_value=20.0),
             docstring="Signal power in dBm",
-            parameter_class=ManualParameter,
+            instrument=self,
         )

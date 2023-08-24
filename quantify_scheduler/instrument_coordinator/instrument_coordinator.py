@@ -86,24 +86,25 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             instrument coordinator with the default name.
         """
         super().__init__(name)
-        self.add_parameter(
+        self.components = parameter.ManualParameter(
             "components",
             initial_value=[],
-            parameter_class=parameter.ManualParameter,
             vals=validators.Lists(validators.Strings()),
             docstring="A list containing the names of all components that"
             " are part of this InstrumentCoordinator.",
+            instrument=self,
         )
 
-        self.add_parameter(
+        self.timeout = parameter.ManualParameter(
             "timeout",
             unit="s",
             initial_value=60,
             vals=validators.Numbers(min_value=0),
-            parameter_class=parameter.ManualParameter,
             docstring="The timeout used for waiting for the experiment to complete "
             "when retrieving acquisitions.",
+            instrument=self,
         )
+
         self._last_schedule = None
         if add_default_generic_icc:
             self.add_component(
@@ -357,23 +358,23 @@ class ZIInstrumentCoordinator(InstrumentCoordinator):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self.add_parameter(
+        self.timeout_reacquire = parameter.ManualParameter(
             "timeout_reacquire",
             unit="",
             initial_value=True,
             vals=validators.Bool(),
-            parameter_class=parameter.ManualParameter,
             docstring="Turns on reacquisition in case " "of timeouts.",
+            instrument=self,
         )
 
-        self.add_parameter(
+        self.max_num_reacquisitions = parameter.ManualParameter(
             "max_num_reacquisitions",
             unit="",
             initial_value=5,
             vals=validators.Numbers(min_value=0, max_value=50),
-            parameter_class=parameter.ManualParameter,
             docstring="The number of retries to retrieve acquisitions in case "
             "of timeouts.",
+            instrument=self,
         )
 
         self._last_acquisition = None

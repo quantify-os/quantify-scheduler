@@ -56,23 +56,23 @@ class InstrumentCoordinatorComponentBase(base.Instrument):
         """Instantiates the InstrumentCoordinatorComponentBase base class."""
         super().__init__(instrument_to_component_name(instrument.name), **kwargs)
 
-        self.add_parameter(
+        self.instrument_ref = parameter.InstrumentRefParameter(
             "instrument_ref",
             initial_value=instrument.name,
-            parameter_class=parameter.InstrumentRefParameter,
             docstring="A reference of an instrument associated to this component.",
             vals=validators.MultiType(validators.Strings(), validators.Enum(None)),
+            instrument=self,
         )
 
-        self.add_parameter(
+        self.force_set_parameters = parameter.ManualParameter(
             "force_set_parameters",
             initial_value=False,
-            parameter_class=parameter.ManualParameter,
             docstring=(
                 "A switch to force the setting of a parameter, "
                 + "bypassing the lazy_set utility."
             ),
             vals=validators.Bool(),
+            instrument=self,
         )
 
     @property

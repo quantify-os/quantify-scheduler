@@ -47,66 +47,65 @@ class QuantumDevice(Instrument):
     def __init__(self, name: str) -> None:
         super().__init__(name=name)
 
-        self.add_parameter(
+        self.elements = ManualParameter(
             "elements",
             initial_value=list(),
-            parameter_class=ManualParameter,
             vals=validators.Lists(validators.Strings()),
             docstring="A list containing the names of all elements that"
             " are located on this QuantumDevice.",
+            instrument=self,
         )
 
-        self.add_parameter(
+        self.edges = ManualParameter(
             "edges",
             initial_value=list(),
-            parameter_class=ManualParameter,
             vals=validators.Lists(validators.Strings()),
             docstring="A list containing the names of all the edges which connect the"
             " DeviceElements within this QuantumDevice",
+            instrument=self,
         )
 
-        self.add_parameter(
+        self.instr_measurement_control = InstrumentRefParameter(
             "instr_measurement_control",
             docstring="A reference to the measurement control instrument.",
-            parameter_class=InstrumentRefParameter,
             vals=validators.MultiType(validators.Strings(), validators.Enum(None)),
+            instrument=self,
         )
 
-        self.add_parameter(
+        self.instr_instrument_coordinator = InstrumentRefParameter(
             "instr_instrument_coordinator",
             docstring="A reference to the instrument_coordinator instrument.",
-            parameter_class=InstrumentRefParameter,
             vals=validators.MultiType(validators.Strings(), validators.Enum(None)),
+            instrument=self,
         )
 
-        self.add_parameter(
+        self.cfg_sched_repetitions = ManualParameter(
             "cfg_sched_repetitions",
             initial_value=1024,
-            parameter_class=ManualParameter,
             docstring=(
                 "The number of times execution of the schedule gets repeated when "
                 "performing experiments, i.e. used to set the repetitions attribute of "
                 "the Schedule objects generated."
             ),
             vals=validators.Ints(min_value=1),
+            instrument=self,
         )
 
-        self.add_parameter(
+        self.hardware_config = ManualParameter(
             "hardware_config",
             docstring=(
                 "The input dictionary used to generate a valid HardwareCompilationConfig "
                 "using quantum_device.generate_hardware_compilation_config(). This configures "
                 "the compilation from the quantum-device layer to the control-hardware layer."
             ),
-            parameter_class=ManualParameter,
             vals=validators.Dict(),
             initial_value=None,
+            instrument=self,
         )
 
-        self.add_parameter(
+        self.scheduling_strategy = ManualParameter(
             "scheduling_strategy",
             docstring=("Scheduling strategy used to calculate absolute timing."),
-            parameter_class=ManualParameter,
             vals=validators.Enum("asap", "alap"),
             initial_value="asap",
         )

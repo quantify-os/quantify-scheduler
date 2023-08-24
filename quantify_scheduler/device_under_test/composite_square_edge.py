@@ -21,22 +21,24 @@ class CZ(InstrumentChannel):
 
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
         super().__init__(parent=parent, name=name)
-        self.add_parameter(
-            name="square_amp",
+        self.square_amp = ManualParameter(
+            "square_amp",
             docstring=r"""Amplitude of the square envelope.""",
             unit="V",
-            parameter_class=ManualParameter,
             initial_value=0.5,
             vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
+            instrument=self,
         )
-        self.add_parameter(
-            name="square_duration",
+
+        self.square_duration = ManualParameter(
+            "square_duration",
             docstring=r"""The square pulse duration in seconds.""",
             unit="s",
-            parameter_class=ManualParameter,
             initial_value=2e-8,
             vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
+            instrument=self,
         )
+
         self.add_parameter(
             name=f"{parent._parent_element_name}_phase_correction",
             docstring=r"""The phase correction for the parent qubit after the"""

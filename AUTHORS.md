@@ -25,6 +25,7 @@
 - Luis Miguens Fernandez \<<mailto:lmiguens@qblox.com>>
 - Mafalda Jotta Garcia \<<mailto:mjotta@qblox.com>>
 - Michiel Dubbelman \<<mailto:michiel@orangeqs.com>>
+- Nicolas Piot \<<mailto:npiot@qblox.com>>
 - Pieter Eendebak \<<mailto:pieter.eendebak@tno.nl>>
 - Robert Sokolewicz \<<mailto:rsokolewicz@qblox.com>>
 - Rohit Navarathna \<<mailto:rnavarathna@qblox.com>>

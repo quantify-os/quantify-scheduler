@@ -32,8 +32,8 @@ def fixture_mock_instrument() -> Instrument:
     class DummyInstrumentChannel(InstrumentChannel):
         def __init__(self, parent: Instrument, name: str) -> None:
             super().__init__(parent, name)
-            self.add_parameter(
-                "bar", label="Test Child Parameter", parameter_class=ManualParameter
+            self.bar = ManualParameter(
+                "bar", label="Test Child Parameter", instrument=self
             )
 
     channel_name = "ch_foo"

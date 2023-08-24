@@ -12,6 +12,7 @@
 - Qblox backend - Make QASM fields aligning optional, disable by default (!741)
 - Documentation - Color change for code block emphasized lines (!741)
 - Infrastructure - Improve speed of `make_hash` (affecting `Schedule.add`) and some compilation steps (!770)
+- Infrastructure - Use new qcodes syntax for adding parameters. (!758)
 
 ## 0.16.0 (2023-08-17)
 
