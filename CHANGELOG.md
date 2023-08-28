@@ -2,7 +2,6 @@
 
 ## Unreleased
 
-
 ### Breaking changes
 
 ### Merged branches and closed issues
@@ -13,6 +12,7 @@
 - Documentation - Color change for code block emphasized lines (!741)
 - Infrastructure - Improve speed of `make_hash` (affecting `Schedule.add`) and some compilation steps (!770)
 - Infrastructure - Use new qcodes syntax for adding parameters. (!758)
+- Documentation - Fix missing images in Jupyter cell outputs in documentation deployed using Gitlab Pages. (!772, #404, counterpart of quantify-core!480)
 
 ## 0.16.0 (2023-08-17)
 

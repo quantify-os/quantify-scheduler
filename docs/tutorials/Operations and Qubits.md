@@ -142,7 +142,6 @@ We can directly visualize the created schedule on the
 This visualization shows every operation on a line representing the different qubits.
 
 ```{code-cell} ipython3
-%matplotlib inline
 import matplotlib.pyplot as plt
 
 _, ax = sched.plot_circuit_diagram()
