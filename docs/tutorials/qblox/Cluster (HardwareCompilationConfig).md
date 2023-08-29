@@ -505,21 +505,100 @@ The Qblox modules have six sequencers available, which sets the upper limit to o
 The backend requires that each _combination_ of a port and a clock is unique, that is, it is possible to use a certain port or clock multiple times but the combination of a port with a certain clock can only be used once in the hardware compilation config.
 ```
 
-### Real mode
+### Complex I/O
 
-To use real mode, the output/input name must start with "real_".
-When using real outputs, the backend automatically maps the signals to the correct output paths.
-We note that for real outputs, it is not allowed to use any pulses that have an imaginary component, i.e., only real valued pulses are allowed.
-If you were to use a complex pulse, the backend will produce an error, e.g., square and ramp pulses are allowed, but DRAG pulses not.
+A complex I/O is defined by adding a `"complex_{output, input}_<n>"` to the module configuration.
+Complex outputs (e.g. `complex_output_0`) are used for playbacks, while complex inputs (e.g. `complex_input_0`) are used for acquisitions.
+However, for readout modules it is possible to use the `complex_output_<n>` key for both playbacks and acquisitions.
+
+```{note}
+It is not possible to use the same port-clock combination multiple times in the hardware compilation config. In that case, it is required to use only the `complex_output_<n>` key.
+```
 
 ```{code-block} python
 ---
-emphasize-lines: 8,16,24
+emphasize-lines: 9,18,26,34
 linenos: true
 ---
 hardware_compilation_cfg = {
     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-    "hardware_description": {...},
+    "hardware_description": {
+        "cluster0": {
+            "instrument_type": "Cluster",
+            "ref": "internal",
+            "modules": {
+                "1": {
+                    "instrument_type": "QRM"
+                },
+            }
+        }
+    }
+    "hardware_options": {...},
+    "connectivity": {
+        "cluster0": {
+            "cluster0_module1": {
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "q0:mw",
+                            "clock": "q0.01",
+                        }
+                    ]
+                },
+                "complex_output_1": {
+                    "portclock_configs": [
+                        {
+                            "port": "q0:res",
+                            "clock": "q0.ro",
+                        }
+                    ]
+                },
+                "complex_input_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "q1:res",
+                            "clock": "q1.ro",
+                        }
+                    ]
+                }
+            }
+        },
+    }
+}
+```
+
+### Real I/O
+
+A real I/O is defined by adding a `real_{output, input}_<n>` to the module configuration.
+Real outputs (e.g. `real_output_0`) are used for playbacks, while real inputs (e.g. `real_input_0`) are used for acquisitions.
+However, for readout modules it is possible to use the `real_output_<n>` key for both playbacks and acquisitions.
+When using a real I/O, the backend automatically maps the signals to the correct output paths.
+
+```{note}
+It is not possible to use the same port-clock combination multiple times in the hardware compilation config. In that case, it is required to use only the `real_output_<n>` key.
+```
+
+For a real I/O, it is not allowed to use any pulses that have an imaginary component, i.e., only real valued pulses are allowed.
+If you were to use a complex pulse, the backend will produce an error, e.g., square and ramp pulses are allowed but DRAG pulses are not.
+
+```{code-block} python
+---
+emphasize-lines: 9,18,26,34
+linenos: true
+---
+hardware_compilation_cfg = {
+    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "hardware_description": {
+        "cluster0": {
+            "instrument_type": "Cluster",
+            "ref": "internal",
+            "modules": {
+                "1": {
+                    "instrument_type": "QRM"
+                },
+            }
+        }
+    }
     "hardware_options": {...},
     "connectivity": {
         "cluster0": {
@@ -535,16 +614,16 @@ hardware_compilation_cfg = {
                 "real_output_1": {
                     "portclock_configs": [
                         {
-                            "port": "q1:mw",
-                            "clock": "q1.01",
+                            "port": "q0:res",
+                            "clock": "q0.ro",
                         }
                     ]
                 },
-                "real_output_2": {
+                "real_input_0": {
                     "portclock_configs": [
                         {
-                            "port": "q2:mw",
-                            "clock": "q2.01",
+                            "port": "q1:res",
+                            "clock": "q1.ro",
                         }
                     ]
                 }
@@ -554,7 +633,7 @@ hardware_compilation_cfg = {
 }
 ```
 
-### Digital mode
+### Digital I/O
 
 The markers can be controlled by defining a digital I/O, and adding a `MarkerPulse` on this I/O.
 A digital I/O is defined by adding a `"digital_output_n"` to the module configuration. `n` is the number of the digital output port.

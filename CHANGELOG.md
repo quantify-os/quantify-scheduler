@@ -16,6 +16,7 @@
 - Infrastructure - Improve speed of `make_hash` (affecting `Schedule.add`) and some compilation steps (!770)
 - Infrastructure - Use new qcodes syntax for adding parameters. (!758)
 - Documentation - Fix missing images in Jupyter cell outputs in documentation deployed using Gitlab Pages. (!772, #404, counterpart of quantify-core!480)
+- Documentation - Explain in Qblox Cluster docs the possibility of using `"{complex,real}_output_<n>"` hardware config keys for both playback and acquisitions. (!763)
 
 ## 0.16.0 (2023-08-17)
 
