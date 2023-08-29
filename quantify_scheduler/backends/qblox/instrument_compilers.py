@@ -3,8 +3,8 @@
 """Compiler classes for Qblox backend."""
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Tuple
 from collections import abc
+from typing import Any, Dict, Optional, Tuple
 
 from quantify_scheduler.backends.qblox import compiler_abc, compiler_container
 from quantify_scheduler.backends.qblox.constants import (
@@ -359,8 +359,6 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
 COMPILER_MAPPING: Dict[str, type] = {
     "Pulsar_QCM": QcmModule,
     "Pulsar_QRM": QrmModule,
-    "Pulsar_QCM_RF": QcmRfModule,
-    "Pulsar_QRM_RF": QrmRfModule,
     "Cluster": Cluster,
     "LocalOscillator": LocalOscillator,
 }

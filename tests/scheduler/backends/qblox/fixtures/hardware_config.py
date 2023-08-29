@@ -341,63 +341,6 @@ def hardware_cfg_pulsar():
 
 
 @pytest.fixture
-def hardware_cfg_pulsar_rf():
-    yield {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "qcm_rf0": {
-            "instrument_type": "Pulsar_QCM_RF",
-            "ref": "internal",
-            "complex_output_0": {
-                "dc_mixer_offset_I": -0.045,
-                "dc_mixer_offset_Q": -0.035,
-                "portclock_configs": [
-                    {
-                        "mixer_amp_ratio": 0.9996,
-                        "mixer_phase_error_deg": -3.9,
-                        "port": "q2:mw",
-                        "clock": "q2.01",
-                        "interm_freq": 50e6,
-                    }
-                ],
-            },
-            "complex_output_1": {
-                "lo_freq": 5e9,
-                "portclock_configs": [
-                    {"port": "q3:mw", "clock": "q3.01", "interm_freq": None}
-                ],
-            },
-        },
-        "qrm_rf0": {
-            "instrument_type": "Pulsar_QRM_RF",
-            "ref": "external",
-            "complex_output_0": {
-                "lo_freq": 7.2e9,
-                "dc_mixer_offset_I": -0.046,
-                "dc_mixer_offset_Q": -0.036,
-                "portclock_configs": [
-                    {
-                        "mixer_amp_ratio": 0.9999,
-                        "mixer_phase_error_deg": -3.8,
-                        "port": "q2:res",
-                        "clock": "q2.ro",
-                        "interm_freq": None,
-                    }
-                ],
-            },
-        },
-        "qrm_rf1": {
-            "instrument_type": "Pulsar_QRM_RF",
-            "ref": "external",
-            "complex_output_0": {
-                "portclock_configs": [
-                    {"port": "q3:res", "clock": "q3.ro", "interm_freq": 100e6}
-                ]
-            },
-        },
-    }
-
-
-@pytest.fixture
 def hardware_cfg_pulsar_qcm(add_lo1):
     yield {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",

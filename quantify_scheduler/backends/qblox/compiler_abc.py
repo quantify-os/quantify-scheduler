@@ -50,7 +50,6 @@ from quantify_scheduler.backends.types.qblox import (
     BasebandModuleSettings,
     BaseModuleSettings,
     OpInfo,
-    PulsarRFSettings,
     PulsarSettings,
     RFModuleSettings,
     SequencerSettings,
@@ -1867,14 +1866,23 @@ class QbloxRFModule(QbloxBaseModule):
 
     @property
     def settings_type(self) -> type:
-        """The settings type used by RF-type devices"""
-        return PulsarRFSettings if self.is_pulsar else RFModuleSettings
+        """The settings type used by RF modules"""
+        if self.is_pulsar:
+            raise RuntimeError(
+                "Cannot return RFModule settings, RF pulsar components do not exist."
+            )
+        return RFModuleSettings
 
     def assign_frequencies(self, sequencer: Sequencer):
         """
         Determines LO/IF frequencies and assigns them for RF modules.
         """
-        compiler_container = self.parent if self.is_pulsar else self.parent.parent
+        if self.is_pulsar:
+            raise RuntimeError(
+                "Cannot determine LO/IF frequencies, RF pulsar components do not exist."
+            )
+
+        compiler_container = self.parent.parent
         if (
             sequencer.connected_outputs is None
             or sequencer.clock not in compiler_container.resources

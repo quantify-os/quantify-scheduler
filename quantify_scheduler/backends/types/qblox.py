@@ -317,39 +317,6 @@ class RFModuleSettings(BaseModuleSettings):
 
 
 @dataclass
-class PulsarRFSettings(RFModuleSettings, PulsarSettings):
-    """
-    Settings specific for a Pulsar RF. Effectively, combines the Pulsar specific
-    settings with the RF specific settings.
-    """
-
-    @classmethod
-    def extract_settings_from_mapping(
-        cls, mapping: Dict[str, Any], **kwargs: Optional[dict]
-    ) -> PulsarRFSettings:
-        """
-        Factory method that takes all the settings defined in the mapping and generates
-        a :class:`~.PulsarRFSettings` object from it.
-
-        Parameters
-        ----------
-        mapping
-            The mapping dict to extract the settings from
-        **kwargs
-            Additional keyword arguments passed to the constructor. Can be used to
-            override parts of the mapping dict.
-        """
-        rf_settings = RFModuleSettings.extract_settings_from_mapping(mapping)
-        pulsar_settings = PulsarSettings.extract_settings_from_mapping(mapping)
-        combined_settings = {
-            **rf_settings.to_dict(),
-            **pulsar_settings.to_dict(),
-            **kwargs,
-        }
-        return cls(**combined_settings)
-
-
-@dataclass
 class SequencerSettings(DataClassJsonMixin):
     # pylint: disable=too-many-instance-attributes
     """

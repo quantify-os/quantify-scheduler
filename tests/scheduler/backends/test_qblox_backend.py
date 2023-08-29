@@ -465,17 +465,18 @@ def test_find_inner_dicts_containing_key():
 def test_find_all_port_clock_combinations(
     hardware_compilation_config_qblox_example,
     hardware_cfg_pulsar,
-    hardware_cfg_pulsar_rf,
+    hardware_cfg_rf,
 ):
     all_hw_cfg = {
         **hardware_compilation_config_qblox_example["connectivity"],
         **hardware_cfg_pulsar,
-        **hardware_cfg_pulsar_rf,
+        **hardware_cfg_rf["cluster0"],
     }
 
     portclocks = find_all_port_clock_combinations(all_hw_cfg)
     portclocks = set(portclocks)
     portclocks.discard((None, None))
+
     answer = {
         ("q1:mw", "q1.01"),
         ("q0:mw", "q0.01"),
@@ -485,7 +486,6 @@ def test_find_all_port_clock_combinations(
         ("q3:mw", "q3.01"),
         ("q2:mw", "q2.01"),
         ("q2:res", "q2.ro"),
-        ("q3:res", "q3.ro"),
         ("q3:mw", "q3.01"),
         ("q4:mw", "q4.01"),
         ("q5:res", "q5.ro"),
@@ -504,16 +504,16 @@ def test_find_all_port_clock_combinations(
 def test_generate_port_clock_to_device_map(
     hardware_compilation_config_qblox_example,
     hardware_cfg_pulsar,
-    hardware_cfg_pulsar_rf,
+    hardware_cfg_rf,
 ):
     all_hw_cfg = {
         **hardware_compilation_config_qblox_example["connectivity"],
         **hardware_cfg_pulsar,
-        **hardware_cfg_pulsar_rf,
+        **hardware_cfg_rf["cluster0"],
     }
     portclock_map = generate_port_clock_to_device_map(all_hw_cfg)
     assert (None, None) not in portclock_map.keys()
-    assert len(portclock_map.keys()) == 19
+    assert len(portclock_map.keys()) == 18
 
 
 # --------- Test classes and member methods ---------
@@ -2044,21 +2044,25 @@ def test_assign_frequencies_baseband_downconverter(
 
 @pytest.mark.deprecated
 def test_assign_frequencies_rf_hardware_config(
-    mock_setup_basic_transmon, hardware_cfg_pulsar_rf
+    mock_setup_basic_transmon, hardware_cfg_rf
 ):
     sched = Schedule("two_gate_experiment")
     sched.add(X("q2"))
     sched.add(X("q3"))
 
-    hardware_cfg = hardware_cfg_pulsar_rf
-    if0 = hardware_cfg["qcm_rf0"]["complex_output_0"]["portclock_configs"][0].get(
-        "interm_freq"
+    hardware_cfg = copy.deepcopy(hardware_cfg_rf)
+    if0 = hardware_cfg["cluster0"]["cluster0_module2"]["complex_output_0"][
+        "portclock_configs"
+    ][0].get("interm_freq")
+    if1 = hardware_cfg["cluster0"]["cluster0_module2"]["complex_output_1"][
+        "portclock_configs"
+    ][0].get("interm_freq")
+    lo0 = hardware_cfg["cluster0"]["cluster0_module2"]["complex_output_0"].get(
+        "lo_freq"
     )
-    if1 = hardware_cfg["qcm_rf0"]["complex_output_1"]["portclock_configs"][0].get(
-        "interm_freq"
+    lo1 = hardware_cfg["cluster0"]["cluster0_module2"]["complex_output_1"].get(
+        "lo_freq"
     )
-    lo0 = hardware_cfg["qcm_rf0"]["complex_output_0"].get("lo_freq")
-    lo1 = hardware_cfg["qcm_rf0"]["complex_output_1"].get("lo_freq")
 
     assert if0 is not None
     assert if1 is None
@@ -2088,7 +2092,7 @@ def test_assign_frequencies_rf_hardware_config(
         sched, quantum_device.generate_compilation_config()
     )
     compiled_instructions = compiled_schedule["compiled_instructions"]
-    qcm_program = compiled_instructions["qcm_rf0"]
+    qcm_program = compiled_instructions["cluster0"]["cluster0_module2"]
 
     assert qcm_program["settings"]["lo0_freq"] == lo0
     assert qcm_program["settings"]["lo1_freq"] == lo1
@@ -2567,9 +2571,7 @@ def test_assign_attenuation_invalid_raises(
         )
 
 
-def test_markers(
-    mock_setup_basic_transmon, hardware_cfg_pulsar, hardware_cfg_pulsar_rf
-):
+def test_markers(mock_setup_basic_transmon, hardware_cfg_pulsar, hardware_cfg_rf):
     def _confirm_correct_markers(
         device_program, default_marker, is_rf=False, sequencer=0
     ):
@@ -2625,24 +2627,30 @@ def test_markers(
     sched.add(X("q3"))
     sched.add(Measure("q2"))
 
-    quantum_device.hardware_config(hardware_cfg_pulsar_rf)
+    quantum_device.hardware_config(hardware_cfg_rf)
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
         sched, quantum_device.generate_compilation_config()
     )
-    program = compiled_schedule["compiled_instructions"]
-    _confirm_correct_markers(program["qcm_rf0"], 0b0001, is_rf=True, sequencer=0)
-    _confirm_correct_markers(program["qcm_rf0"], 0b0010, is_rf=True, sequencer=1)
-    _confirm_correct_markers(
-        program["qrm_rf0"],
-        0b0011,
-        is_rf=True,
+
+    qcm_rf_program = compiled_schedule["compiled_instructions"]["cluster0"][
+        "cluster0_module2"
+    ]
+    qrm_rf_program = compiled_schedule["compiled_instructions"]["cluster0"][
+        "cluster0_module4"
+    ]
+
+    _confirm_correct_markers(qcm_rf_program, 0b0001, is_rf=True, sequencer=0)
+    _confirm_correct_markers(qcm_rf_program, 0b0010, is_rf=True, sequencer=1)
+    _confirm_correct_markers(qrm_rf_program, 0b0011, is_rf=True)
+
+
+def test_extract_settings_from_mapping(hardware_cfg_rf, hardware_cfg_pulsar):
+    types.BasebandModuleSettings.extract_settings_from_mapping(
+        hardware_cfg_rf["cluster0"]
     )
-
-
-def test_pulsar_rf_extract_from_mapping(hardware_cfg_pulsar_rf):
-    hw_map = hardware_cfg_pulsar_rf["qcm_rf0"]
-    types.PulsarRFSettings.extract_settings_from_mapping(hw_map)
+    types.RFModuleSettings.extract_settings_from_mapping(hardware_cfg_rf["cluster0"])
+    types.PulsarSettings.extract_settings_from_mapping(hardware_cfg_pulsar["qcm0"])
 
 
 def test_cluster_settings(
