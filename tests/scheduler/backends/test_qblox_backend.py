@@ -108,15 +108,26 @@ def dummy_pulsars() -> Generator[Dict[str, Pulsar], None, None]:
 
 
 @pytest.fixture
-def dummy_cluster() -> Cluster:
-    cluster_name = "cluster0"
+def dummy_cluster():
+    cluster: Optional[Cluster] = None
 
-    yield Cluster(
-        name=cluster_name,
-        dummy_cfg={"2": ClusterType.CLUSTER_QCM, "4": ClusterType.CLUSTER_QRM},
-    )
+    def _dummy_cluster(
+        name: str = "cluster0",
+        dummy_cfg: dict = None,
+    ) -> Cluster:
+        nonlocal cluster
+        cluster = Cluster(
+            name=name,
+            dummy_cfg=dummy_cfg
+            if dummy_cfg is not None
+            else {2: ClusterType.CLUSTER_QCM, 4: ClusterType.CLUSTER_QRM},
+        )
+        return cluster
 
-    close_instruments([cluster_name])
+    yield _dummy_cluster
+
+    if cluster is not None:
+        close_instruments([cluster.name])
 
 
 @pytest.fixture
@@ -988,6 +999,9 @@ def test_compile_acq_measurement_with_clock_phase_reset(
 ):
     schedule = Schedule("Test schedule")
 
+    hardware_cfg = copy.deepcopy(hardware_cfg_pulsar)
+    hardware_cfg["qrm0"]["sequence_to_file"] = True
+
     q0, q1 = "q0", "q1"
     times = np.arange(0, 60e-6, 3e-6)
     for i, tau in enumerate(times):
@@ -1004,7 +1018,7 @@ def test_compile_acq_measurement_with_clock_phase_reset(
 
     mock_setup = mock_setup_basic_transmon_with_standard_params
     mock_setup["q0"].measure.reset_clock_phase(reset_clock_phase)
-    mock_setup["quantum_device"].hardware_config(hardware_cfg_pulsar)
+    mock_setup["quantum_device"].hardware_config(hardware_cfg)
 
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
@@ -2718,7 +2732,7 @@ class TestAssemblyValid:
         dummy_cluster,
         compile_config_basic_transmon_qblox_hardware,
     ):
-        cluster = dummy_cluster
+        cluster = dummy_cluster()
 
         sched = readout_calibration_sched("q0", [0, 1], repetitions=256)
         compiler = SerialCompiler(name="compiler")
@@ -2744,7 +2758,7 @@ class TestAssemblyValid:
         dummy_cluster,
         compile_config_basic_transmon_qblox_hardware,
     ):
-        cluster = dummy_cluster
+        cluster = dummy_cluster()
 
         sched = allxy_sched("q0", element_select_idx=np.arange(21), repetitions=256)
         compiler = SerialCompiler(name="compiler")
@@ -2770,7 +2784,7 @@ class TestAssemblyValid:
         dummy_cluster,
         compile_config_basic_transmon_qblox_hardware,
     ):
-        cluster = dummy_cluster
+        cluster = dummy_cluster()
 
         sched = allxy_sched("q0", element_select_idx=np.arange(21), repetitions=256)
         compiler = SerialCompiler(name="compiler")
@@ -3735,7 +3749,7 @@ def test_zero_pulse_skip_timing(
     dummy_cluster,
     compile_config_basic_transmon_qblox_hardware,
 ):
-    cluster = dummy_cluster
+    cluster = dummy_cluster()
 
     sched = Schedule("ZeroPulseSkip", repetitions=1)
     sched.add(

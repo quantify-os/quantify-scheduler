@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 
     from quantify_scheduler.backends.zhinst.settings import ZISettings
     from quantify_scheduler.backends.zhinst_backend import ZIDeviceConfig
+    from quantify_scheduler.schedules.schedule import CompiledSchedule
 
 
 logger = logging.getLogger(__name__)
@@ -164,6 +165,12 @@ class HDAWGInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
     def wait_done(self, timeout_sec: int = 10) -> None:
         for awg_index in reversed(self.zi_settings.awg_indexes):
             self.get_awg(awg_index).wait_done(timeout_sec)
+
+    def get_hardware_log(
+        self,
+        compiled_schedule: CompiledSchedule,  # noqa: ARG002
+    ) -> dict | None:
+        pass
 
 
 class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
@@ -318,3 +325,9 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
 
     def wait_done(self, timeout_sec: int = 10) -> None:
         self.instrument.awg.wait_done(timeout_sec)
+
+    def get_hardware_log(
+        self,
+        compiled_schedule: CompiledSchedule,  # noqa: ARG002
+    ) -> dict | None:
+        pass

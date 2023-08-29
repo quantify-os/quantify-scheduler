@@ -18,6 +18,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import sys
 import time
 import warnings
 import zipfile
@@ -28,7 +29,9 @@ from qcodes.parameters import Parameter
 from qcodes.utils.json_utils import NumpyJSONEncoder
 
 from quantify_core.data.handling import gen_tuid, get_datadir, snapshot
+from quantify_core.utilities import deprecated
 from quantify_scheduler.enums import BinMode
+from quantify_scheduler.helpers.diagnostics_report import _generate_diagnostics_report
 from quantify_scheduler.helpers.schedule import (
     AcquisitionMetadata,
     extract_acquisition_metadata_from_schedule,
@@ -200,7 +203,7 @@ class ScheduleGettable:
         """Return the schedule used in this class"""
         return self._compiled_schedule
 
-    def get(self) -> tuple[float, ...] | tuple[np.ndarray, ...]:
+    def get(self) -> tuple[np.ndarray, ...]:
         """
         Start the experimental sequence and retrieve acquisition data.
 
@@ -311,7 +314,7 @@ class ScheduleGettable:
         acquired_data: Dataset,
         acq_metadata: AcquisitionMetadata,
         repetitions: int | None = None,
-    ) -> tuple[float, ...] | tuple[NDArray[np.float_], ...]:
+    ) -> tuple[NDArray[np.float_], ...]:
         """
         Reshapes the data as returned from the instrument coordinator into the form
         accepted by the measurement control.
@@ -336,7 +339,6 @@ class ScheduleGettable:
         # blocked by quantify-core#187, and quantify-core#233
 
         # retrieve the acquisition results
-        # FIXME: acq_metadata should be an attribute of the schedule, see also #192
         if repetitions is not None:
             warnings.warn(
                 "`repetitions` argument of `ScheduleGettable.process_acquired_data()`"
@@ -455,6 +457,105 @@ class ScheduleGettable:
         logger.debug(f"Returning {len(return_data)} values.")
         return tuple(return_data)
 
+    def initialize_and_get_with_report(self) -> str:
+        """
+        Create a report that saves all information from this experiment in a zipfile.
+
+        Run :meth:`~.ScheduleGettable.initialize` and :meth:`~.ScheduleGettable.get`
+        and capture all information from the experiment in a zipfile in the quantify
+        datadir.
+        The basic information in the report includes the schedule, device config and
+        hardware config. The method attempts to compile the schedule, and if it
+        succeeds, it runs the experiment and adds the compiled schedule, a snapshot of
+        the instruments, and logs from the actual hardware (only Qblox instruments
+        supported currently) to the zipfile.
+        A full error trace is also included if any of these steps fail.
+
+        Returns
+        -------
+        :
+            A path to the generated report. Directory name includes a flag indicating at
+            which state the experiment and report retrieval stopped.
+
+            Flags (defined in :func: `~._generate_diagnostics_report`):
+
+            - ``failed_initialization``: The experiment failed during \
+            :meth:`~.ScheduleGettable.initialize`.
+            - ``failed_exp``: The experiment initialized failed during \
+            :meth:`~.ScheduleGettable.get`.
+            - ``failed_connection_to_hw``: The experiment initialized but both \
+            :meth:`~.ScheduleGettable.get` and \
+            :meth:`~.InstrumentCoordinator.retrieve_hardware_logs` failed. Connection \
+            to hardware was likely interrupted during runtime.
+            - ``failed_hw_log_retrieval``: The experiment succeeded but \
+            :meth:`~.InstrumentCoordinator.retrieve_hardware_logs` failed.
+            - ``completed_exp``: The experiment succeeded.
+        """
+
+        if not self.quantum_device.instr_instrument_coordinator:
+            raise AttributeError(
+                "`InstrumentCoordinator` not found in the `QuantumDevice`, please\
+                add using\
+                `QuantumDevice.instr_instrument_coordinator(instrument_coordinator)`."
+            )
+        if not self.quantum_device.hardware_config():
+            raise AttributeError(
+                "Hardware configuration not found in the `QuantumDevice`, please add\
+                using `QuantumDevice.hardware_config(hardware_cfg)`."
+            )
+
+        exception = None
+        initialized = False
+        acquisition_data = None
+
+        # Make sure only a compiled schedule generated in the block below is included in
+        # the report
+        self._compiled_schedule = None
+        try:
+            self.initialize()
+            initialized = True
+            acquisition_data = self.get()
+        except:  # pylint: disable=bare-except  # noqa: E722
+            exception = sys.exc_info()
+
+        gettable_config = {
+            "repetitions": self.quantum_device.cfg_sched_repetitions(),
+            "evaluated_schedule_kwargs": self._evaluated_sched_kwargs,
+        }
+
+        try:
+            schedule = self.schedule_function(
+                **self._evaluated_sched_kwargs,
+                repetitions=self.quantum_device.cfg_sched_repetitions(),
+            )
+        except (
+            TypeError
+        ):  # Not tested, included for guiding users with common MeasurementControl mistake  # noqa: E501
+            raise TypeError(
+                f"One or more keyword arguments of the schedule function in "
+                f"schedule_kwargs are of unexpected type, please check the arguments "
+                f"and try again.\n{self._evaluated_sched_kwargs=}"
+            )
+
+        instrument_coordinator = (
+            self.quantum_device.instr_instrument_coordinator.get_instr()
+        )
+        return _generate_diagnostics_report(
+            quantum_device=self.quantum_device,
+            gettable_config=gettable_config,
+            schedule=schedule,
+            instrument_coordinator=instrument_coordinator,  # type: ignore
+            compiled_schedule=self.compiled_schedule,
+            acquisition_data=acquisition_data,
+            initialized=initialized,
+            experiment_exception=exception,
+        )
+
+    @deprecated(
+        "0.18.0",
+        "The method `generate_diagnostics_report` is deprecated. Please use "
+        "`initialize_and_get_with_report` directly instead.",
+    )
     def generate_diagnostics_report(
         self, execute_get: bool = False, update: bool = False
     ) -> str:
@@ -476,6 +577,12 @@ class ScheduleGettable:
         :
             The `tuid` of the generated report.
         """
+
+        if update is True:
+            raise RuntimeError(
+                "The `update` parameter is deprecated and may lead to race conditions"
+            )
+
         tuid = gen_tuid()
         if execute_get:
             self.get()

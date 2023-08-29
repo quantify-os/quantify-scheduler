@@ -1753,7 +1753,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         program = {}
 
         if sequence_to_file is None:
-            sequence_to_file = self.instrument_cfg.get("sequence_to_file", True)
+            sequence_to_file = self.instrument_cfg.get("sequence_to_file", False)
         if align_qasm_fields is None:
             align_qasm_fields = self.instrument_cfg.get("align_qasm_fields", False)
 

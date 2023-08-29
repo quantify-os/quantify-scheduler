@@ -3,9 +3,10 @@
 """Module containing the main InstrumentCoordinator Component."""
 from __future__ import annotations
 
-import warnings
-
 import copy
+import warnings
+from typing import Dict
+
 import numpy as np
 from qcodes.instrument import base as qcodes_base
 from qcodes.instrument import parameter
@@ -110,7 +111,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             self.add_component(
                 generic.GenericInstrumentCoordinatorComponent(generic.DEFAULT_NAME)
             )
-        self._compiled_schedule = {}
+        self._compiled_schedule = None
 
     @property
     def last_schedule(self) -> CompiledSchedule:
@@ -335,6 +336,34 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             instrument = self.find_instrument(instr_name)
             self.get_component(instrument.name).wait_done(timeout_sec)
 
+    def retrieve_hardware_logs(self) -> Dict[str, dict]:
+        """
+        Return the hardware logs of the instruments associated to
+        :class:`.InstrumentCoordinator` components.
+
+        The instruments must be referenced in the :class:`.CompiledSchedule`.
+
+        Returns
+        -------
+        :
+            A nested dict containing the components hardware logs
+
+        """
+        if not self._compiled_schedule:
+            raise RuntimeError(
+                "Compiled schedule not found. Please prepare the `InstrumentCoordinator`."
+            )
+
+        hardware_logs = {}
+        for instr_name in self.components():
+            component = self.get_component(instr_name)
+            if (
+                hardware_log := component.get_hardware_log(self._compiled_schedule)
+            ) is not None:
+                hardware_logs[component.instrument.name] = hardware_log
+
+        return hardware_logs
+
 
 def _convert_acquisition_data_format(raw_results):
     acquisition_dict = {}
@@ -396,7 +425,7 @@ class ZIInstrumentCoordinator(InstrumentCoordinator):
                 self._num_reacquisitions = 0
         return reacquire
 
-    def retrieve_acquisition(self):
+    def retrieve_acquisition(self) -> Dataset:
         """
         Retrieves the latest acquisition results of the components
         with acquisition capabilities.
@@ -404,10 +433,9 @@ class ZIInstrumentCoordinator(InstrumentCoordinator):
         Returns
         -------
         :
-            The acquisition data per component.
+            The acquisition data in an :code:`xarray.Dataset`.
+            For each acquisition channel it contains an :code:`xarray.DataArray`.
         """
-        # pylint: disable=fixme
-        # FIXME: update the description of the return type of the instrument coordinator
 
         raw_acq_results = super().retrieve_acquisition()
         if self.timeout_reacquire():

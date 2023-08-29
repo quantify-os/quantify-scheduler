@@ -10,9 +10,11 @@
 # Licensed according to the LICENCE file on the main branch
 """Tests for Qblox instrument coordinator components."""
 import logging
+import os
 from collections import defaultdict
 from copy import deepcopy
 from typing import List, Optional
+from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
@@ -28,6 +30,7 @@ from qblox_instruments import (
     SequencerStatusFlags,
 )
 from qcodes.instrument import Instrument, InstrumentChannel, InstrumentModule
+from quantify_core.data.handling import get_datadir
 from xarray import Dataset
 
 from quantify_scheduler import Schedule
@@ -36,6 +39,7 @@ from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.instrument_coordinator.components import qblox
+from quantify_scheduler.operations.gate_library import Reset
 from quantify_scheduler.operations.pulse_library import MarkerPulse, SquarePulse
 from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 from tests.fixtures.mock_setup import close_instruments
@@ -1164,8 +1168,9 @@ def test_get_integration_data(make_qrm_component, mock_acquisition_data):
 
 
 def test_instrument_module():
-    """InstrumentModule is treated like InstrumentChannel and added as
-    self._instrument_module
+    """
+    InstrumentModule is treated like InstrumentChannel and added as
+    self._instrument_module.
     """
     # Arrange
     instrument = Instrument("test_instr")
@@ -1181,7 +1186,7 @@ def test_instrument_module():
 
 
 def test_instrument_channel():
-    """InstrumentChannel is added as self._instrument_module"""
+    """InstrumentChannel is added as self._instrument_module."""
     # Arrange
     instrument = Instrument("test_instr")
     instrument_channel = InstrumentChannel(instrument, "test_instr_channel")
@@ -1193,6 +1198,159 @@ def test_instrument_channel():
 
     # Assert
     assert component._instrument_module is instrument_channel
+
+
+def test_get_hardware_log_component_base(
+    example_ip,
+    hardware_cfg_pulsar,
+    make_qcm_component,
+    mocker,
+    mock_qblox_instruments_config_manager,
+    mock_setup_basic_transmon_with_standard_params,
+):
+    pulsar_qcm0: qblox.PulsarQCMComponent = make_qcm_component("qcm0")
+    pulsar_qcm2: qblox.PulsarQCMComponent = make_qcm_component("qcm2")
+
+    pulsar_qcm0.instrument.get_ip_config = MagicMock(return_value=example_ip)
+    pulsar_qcm2.instrument.get_ip_config = MagicMock(return_value=example_ip)
+
+    # ConfigurationManager belongs to qblox-instruments, but was already imported
+    # in quantify_scheduler
+    mocker.patch(
+        "quantify_scheduler.instrument_coordinator.components.qblox.ConfigurationManager",
+        return_value=mock_qblox_instruments_config_manager,
+    )
+
+    hardware_cfg = hardware_cfg_pulsar
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+
+    sched = Schedule("sched")
+    sched.add(Reset("q1"))
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=sched, config=quantum_device.generate_compilation_config()
+    )
+
+    pulsar_qcm0_log = pulsar_qcm0.get_hardware_log(compiled_sched)
+    pulsar_qcm2_log = pulsar_qcm2.get_hardware_log(compiled_sched)
+
+    assert pulsar_qcm0_log["app_log.txt"] == f"Mock hardware log for app"
+
+    # Assert an instrument not included in the compiled schedule (pulsar_qcm2) does not
+    # produce a log.
+    assert pulsar_qcm2_log is None
+
+
+def test_get_hardware_log_cluster_component(
+    example_ip,
+    hardware_cfg_qcm_rf,
+    make_cluster_component,
+    mocker,
+    mock_qblox_instruments_config_manager,
+    mock_setup_basic_transmon_with_standard_params,
+):
+    cluster0: qblox.ClusterComponent = make_cluster_component("cluster0")
+    cluster1: qblox.ClusterComponent = make_cluster_component("cluster1")
+
+    cluster0.instrument.get_ip_config = MagicMock(return_value=example_ip)
+    cluster1.instrument.get_ip_config = MagicMock(return_value=example_ip)
+
+    # ConfigurationManager belongs to qblox-instruments, but was already imported
+    # in quantify_scheduler
+    mocker.patch(
+        "quantify_scheduler.instrument_coordinator.components.qblox.ConfigurationManager",
+        return_value=mock_qblox_instruments_config_manager,
+    )
+
+    hardware_cfg = hardware_cfg_qcm_rf
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+
+    sched = Schedule("sched")
+    sched.add(Reset("q1"))
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=sched, config=quantum_device.generate_compilation_config()
+    )
+
+    cluster0_log = cluster0.get_hardware_log(compiled_sched)
+    cluster1_log = cluster1.get_hardware_log(compiled_sched)
+
+    source = "app"
+    assert (
+        cluster0_log["cluster0_cmm"][f"{source}_log.txt"]
+        == f"Mock hardware log for {source}"
+    )
+    assert (
+        cluster0_log["cluster0_module1"][f"{source}_log.txt"]
+        == f"Mock hardware log for {source}"
+    )
+    assert "cluster0_module17" not in cluster0_log
+
+    assert cluster1_log is None
+
+
+def test_download_log(
+    example_ip,
+    make_cluster_component,
+    mocker,
+    mock_qblox_instruments_config_manager,
+):
+    # ConfigurationManager belongs to qblox-instruments, but was already imported
+    # in quantify_scheduler
+    mocker.patch(
+        "quantify_scheduler.instrument_coordinator.components.qblox.ConfigurationManager",
+        return_value=mock_qblox_instruments_config_manager,
+    )
+
+    config_manager = qblox._get_configuration_manager(example_ip)
+    cluster_logs = qblox._download_log(config_manager=config_manager, is_cluster=True)
+
+    for source in ["cfg_man", "app", "system"]:
+        assert cluster_logs[f"{source}_log.txt"] == f"Mock hardware log for {source}"
+
+    # Assert files are deleted after retrieving hardware logs
+    for source in ["app", "system", "cfg_man"]:
+        assert source not in os.listdir(get_datadir())
+
+    # Assert error is raised if download_log does not create to file
+    config_manager.download_log = MagicMock(return_value=None)
+    with pytest.raises(RuntimeError):
+        qblox._download_log(config_manager=config_manager, is_cluster=True)
+
+
+def test_get_instrument_ip(make_cluster_component, example_ip):
+    cluster0: qblox.ClusterComponent = make_cluster_component("cluster0")
+
+    with pytest.raises(ValueError):
+        qblox._get_instrument_ip(cluster0)
+
+    cluster0.instrument.get_ip_config = MagicMock(return_value=example_ip)
+    assert qblox._get_instrument_ip(cluster0) == example_ip
+
+    cluster0.instrument.get_ip_config = MagicMock(return_value=f"{example_ip}/23")
+    assert qblox._get_instrument_ip(cluster0) == example_ip
+
+
+def test_get_configuration_manager(
+    example_ip,
+    mocker,
+    mock_qblox_instruments_config_manager,
+):
+    with pytest.raises(RuntimeError) as error:
+        qblox._get_configuration_manager("bad_ip")
+    assert "Note: qblox-instruments" in str(error)
+
+    # ConfigurationManager belongs to qblox-instruments, but was already imported
+    # in quantify_scheduler
+    mocker.patch(
+        "quantify_scheduler.instrument_coordinator.components.qblox.ConfigurationManager",
+        return_value=mock_qblox_instruments_config_manager,
+    )
+    assert hasattr(qblox._get_configuration_manager(example_ip), "download_log")
 
 
 @pytest.mark.parametrize(

@@ -6,8 +6,8 @@ import os
 import pathlib
 import shutil
 from typing import Any, Dict, List, Union
-import numpy as np
 
+import numpy as np
 import pytest
 from qcodes import Instrument
 from quantify_core.data.handling import get_datadir, set_datadir

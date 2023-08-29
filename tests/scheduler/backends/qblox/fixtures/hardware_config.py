@@ -65,6 +65,120 @@ def hardware_cfg_qcm_rf():
 
 
 @pytest.fixture
+def hardware_cfg_rf():
+    yield {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "instrument_type": "Cluster",
+            "ref": "internal",
+            "cluster0_module2": {
+                "instrument_type": "QCM_RF",
+                "complex_output_0": {
+                    "dc_mixer_offset_I": -0.045,
+                    "dc_mixer_offset_Q": -0.035,
+                    "portclock_configs": [
+                        {
+                            "mixer_amp_ratio": 0.9996,
+                            "mixer_phase_error_deg": -3.9,
+                            "port": "q2:mw",
+                            "clock": "q2.01",
+                            "interm_freq": 50e6,
+                        }
+                    ],
+                },
+                "complex_output_1": {
+                    "lo_freq": 5e9,
+                    "portclock_configs": [
+                        {"port": "q3:mw", "clock": "q3.01", "interm_freq": None}
+                    ],
+                },
+            },
+            "cluster0_module4": {
+                "instrument_type": "QRM_RF",
+                "ref": "external",
+                "complex_output_0": {
+                    "lo_freq": 7.2e9,
+                    "dc_mixer_offset_I": -0.046,
+                    "dc_mixer_offset_Q": -0.036,
+                    "portclock_configs": [
+                        {
+                            "mixer_amp_ratio": 0.9999,
+                            "mixer_phase_error_deg": -3.8,
+                            "port": "q2:res",
+                            "clock": "q2.ro",
+                            "interm_freq": None,
+                        }
+                    ],
+                },
+            },
+        },
+    }
+
+
+@pytest.fixture
+def hardware_cfg_rf_two_clusters():
+    yield {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster1": {
+            "instrument_type": "Cluster",
+            "ref": "internal",
+            "cluster1_module1": {
+                "instrument_type": "QCM_RF",
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "q2:mw",
+                            "clock": "q2.01",
+                            "interm_freq": 50e6,
+                        },
+                    ],
+                },
+            },
+            "cluster1_module2": {
+                "instrument_type": "QRM_RF",
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "q2:res",
+                            "clock": "q2.ro",
+                            "interm_freq": 300e6,
+                        }
+                    ],
+                },
+            },
+        },
+        "cluster2": {
+            "instrument_type": "Cluster",
+            "ref": "internal",
+            "cluster2_module1": {
+                "instrument_type": "QCM_RF",
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "q3:mw",
+                            "clock": "q3.01",
+                            "interm_freq": 50e6,
+                        },
+                    ],
+                },
+            },
+            "cluster2_module2": {
+                "instrument_type": "QRM_RF",
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "q3:res",
+                            "clock": "q3.ro",
+                            "interm_freq": 300e6,
+                        }
+                    ],
+                },
+            },
+        },
+    }
+
+
+@pytest.fixture
 def hardware_cfg_cluster_and_pulsar_latency_corrections():
     yield {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",

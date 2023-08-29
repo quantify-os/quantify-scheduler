@@ -162,7 +162,7 @@ def test_compile_sequence_to_file_deprecated_hardware_config(
     seq_fn = compiled_data["sequencers"]["seq0"]["seq_fn"]
     assert len(seq0_json["program"]) > 0
 
-    if sequence_to_file is True or sequence_to_file is None:
+    if sequence_to_file is True:
         with open(seq_fn) as file:
             seq0_json_from_disk = json.load(file)
         assert seq0_json_from_disk == seq0_json
@@ -265,7 +265,7 @@ def test_compile_sequence_to_file(
     seq_fn = compiled_data["sequencers"]["seq0"]["seq_fn"]
     assert len(seq0_json["program"]) > 0
 
-    if sequence_to_file is True or sequence_to_file is None:
+    if sequence_to_file is True:
         with open(seq_fn) as file:
             seq0_json_from_disk = json.load(file)
         assert seq0_json_from_disk == seq0_json

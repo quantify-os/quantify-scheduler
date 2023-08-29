@@ -5,20 +5,25 @@ from __future__ import annotations
 
 import copy
 import logging
+import os
 from abc import abstractmethod
 from dataclasses import dataclass
 from math import isnan
 from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
+from uuid import uuid4
 
 import numpy as np
 from qblox_instruments import (
     Cluster,
+    ConfigurationManager,
     SequencerState,
     SequencerStatus,
     SequencerStatusFlags,
 )
 from qcodes.instrument import Instrument, InstrumentModule
 from xarray import DataArray, Dataset
+
+from quantify_core.data.handling import get_datadir
 
 from quantify_scheduler.backends.qblox import constants, driver_version_check
 from quantify_scheduler.backends.qblox.enums import IoMode
@@ -36,7 +41,7 @@ from quantify_scheduler.instrument_coordinator.utility import (
     check_already_existing_acquisition,
     lazy_set,
 )
-from quantify_scheduler.schedules.schedule import AcquisitionMetadata
+from quantify_scheduler.schedules.schedule import AcquisitionMetadata, CompiledSchedule
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
@@ -270,6 +275,30 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
                         flag_info = _SEQUENCER_STATE_FLAG_INFO[flag]
                         msg = f"[{self.name}|seq{idx}] {flag} - {flag_info.message}"
                         logger.log(level=flag_info.logging_level, msg=msg)
+
+    def get_hardware_log(
+        self,
+        compiled_schedule: CompiledSchedule,
+    ) -> dict | None:
+        """
+        Retrieve the hardware log of the Qblox instrument associated to this component.
+
+        Parameters
+        ----------
+        compiled_schedule
+            Compiled schedule to check if this component is referenced in.
+
+        Returns
+        -------
+        :
+            A dict containing the hardware log of the Qblox instrument, in case the
+            component was referenced; else None.
+        """
+
+        if self.instrument.name not in compiled_schedule.compiled_instructions.keys():
+            return None
+
+        return _download_log(_get_configuration_manager(_get_instrument_ip(self)))
 
     def start(self) -> None:
         """
@@ -1513,3 +1542,102 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         """
         for comp in self._cluster_modules.values():
             comp.wait_done(timeout_sec=timeout_sec)
+
+    def get_hardware_log(
+        self,
+        compiled_schedule: CompiledSchedule,
+    ) -> dict | None:
+        """
+        Retrieve the hardware log of the cluster CMM (Cluster Management Module) plus the
+        logs of its associated modules.
+
+        Parameters
+        ----------
+        compiled_schedule
+            Compiled schedule to check if this cluster is referenced in (and if so,
+            which specific modules are referenced in).
+
+        Returns
+        -------
+        :
+            A dict containing the hardware log of the cluster, in case the
+            component was referenced; else None.
+        """
+
+        cluster = self.instrument
+        if cluster.name not in compiled_schedule.compiled_instructions.keys():
+            return None
+
+        cluster_ip = _get_instrument_ip(self)
+        hardware_log = {
+            f"{cluster.name}_cmm": _download_log(
+                config_manager=_get_configuration_manager(cluster_ip),
+                is_cluster=True,
+            )
+        }
+
+        for module in cluster.modules:
+            if module.name in compiled_schedule.compiled_instructions[cluster.name]:
+                # Cannot fetch log from module.get_hardware_log here since modules are
+                # not InstrumentCoordinator components when using a cluster
+                module_ip = f"{cluster_ip}/{module.slot_idx}"
+                hardware_log[module.name] = _download_log(
+                    _get_configuration_manager(module_ip)
+                )
+
+        return hardware_log
+
+
+def _get_instrument_ip(component: base.InstrumentCoordinatorComponentBase) -> str:
+    ip_config = component.instrument.get_ip_config()
+
+    if ip_config == "0":
+        raise ValueError(
+            f"Instrument '{component.instrument.name}' returned {ip_config=}."
+            f"Please make sure the physical instrument is connected and has a valid ip."
+        )
+
+    instrument_ip = ip_config
+    if "/" in instrument_ip:
+        instrument_ip = instrument_ip.split("/")[0]
+
+    return instrument_ip
+
+
+def _get_configuration_manager(instrument_ip: str) -> ConfigurationManager:
+    try:
+        config_manager = ConfigurationManager(instrument_ip)
+    except RuntimeError as error:
+        new_message = (
+            f"{error}\nNote: qblox-instruments might have changed ip formatting."
+        )
+        raise type(error)(new_message)
+    return config_manager
+
+
+def _download_log(
+    config_manager: ConfigurationManager,
+    is_cluster: Optional[bool] = False,
+) -> dict:
+    hardware_log = {}
+
+    sources = ["app", "system"]
+    if is_cluster:
+        sources.append("cfg_man")
+
+    for source in sources:
+        # uuid prevents unwanted deletion if file already exists
+        temp_log_file_name = os.path.join(get_datadir(), f"{source}_{uuid4()}")
+        config_manager.download_log(source=source, fmt="txt", file=temp_log_file_name)
+        if os.path.isfile(temp_log_file_name):
+            with open(temp_log_file_name) as file:
+                log = file.read()
+            os.remove(temp_log_file_name)
+            hardware_log[f"{source}_log.txt"] = log
+        else:
+            raise RuntimeError(
+                f"`ConfigurationManager.download_log` did not create a `{source}`"
+                f" file."
+            )
+
+    return hardware_log

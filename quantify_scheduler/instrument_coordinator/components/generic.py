@@ -7,8 +7,10 @@ import logging
 from typing import Any, Dict, Union
 
 from qcodes.instrument.base import InstrumentBase
+
 import quantify_scheduler.instrument_coordinator.utility as util
 from quantify_scheduler.instrument_coordinator.components import base
+from quantify_scheduler.schedules.schedule import CompiledSchedule
 
 logger = logging.getLogger(__name__)
 
@@ -139,6 +141,12 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
 
     def retrieve_acquisition(self) -> Any:
         pass
+
+    def get_hardware_log(
+        self,
+        compiled_schedule: CompiledSchedule,
+    ) -> dict | None:
+        return None
 
     def wait_done(self, timeout_sec: int = 10) -> None:
         _ = timeout_sec  # Unused argument

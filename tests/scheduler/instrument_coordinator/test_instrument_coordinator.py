@@ -10,19 +10,26 @@ from __future__ import annotations
 import gc
 from dataclasses import dataclass
 from typing import List
-from unittest.mock import call
+from unittest.mock import MagicMock, call
 
 import pytest
 from qcodes import Instrument
 from xarray import DataArray, Dataset
 
 from quantify_scheduler import CompiledSchedule, Schedule
+from quantify_scheduler.backends import SerialCompiler
+from quantify_scheduler.gettables_profiled import ProfiledInstrumentCoordinator
 from quantify_scheduler.instrument_coordinator import (
     InstrumentCoordinator,
     ZIInstrumentCoordinator,
 )
 from quantify_scheduler.instrument_coordinator.components import base as base_component
-from quantify_scheduler.gettables_profiled import ProfiledInstrumentCoordinator
+from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
+from quantify_scheduler.operations.gate_library import Reset
+
+from tests.scheduler.backends.test_qblox_backend import (  # pylint: disable=unused-import
+    dummy_cluster,
+)
 
 
 class MyICC(base_component.InstrumentCoordinatorComponentBase):
@@ -43,6 +50,9 @@ class MyICC(base_component.InstrumentCoordinatorComponentBase):
         pass
 
     def wait_done(self, timeout_sec: int = 10):
+        pass
+
+    def get_hardware_log(self, compiled_schedule: CompiledSchedule):
         pass
 
 
@@ -442,3 +452,77 @@ def test_profiled_instrument_coordinator(mock_setup_basic_transmon, dummy_compon
     for key in verif_keys:
         assert key in instr_coordinator.profile
         assert (x > 0 for x in instr_coordinator.profile[key])
+
+
+def test_retrieve_hardware_logs__qblox_hardware(
+    example_ip,
+    dummy_cluster,
+    mock_setup_basic_transmon_with_standard_params,
+    mocker,
+    mock_qblox_instruments_config_manager,
+):
+    cluster_name = "cluster0"
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        f"{cluster_name}": {
+            "instrument_type": "Cluster",
+            "ref": "internal",
+            f"{cluster_name}_module2": {
+                "instrument_type": "QCM",
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "q3:res",
+                            "clock": "q3.ro",
+                            "interm_freq": 300e6,
+                        }
+                    ],
+                },
+            },
+            f"{cluster_name}_module4": {
+                "instrument_type": "QRM",
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "q3:mw",
+                            "clock": "q3.01",
+                            "interm_freq": 50e6,
+                        },
+                    ],
+                },
+            },
+        },
+    }
+
+    ic = InstrumentCoordinator("ic")
+    ic.add_component(ClusterComponent(dummy_cluster()))
+
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+
+    ic.get_component(f"ic_{cluster_name}").instrument.get_ip_config = MagicMock(
+        return_value=example_ip
+    )
+
+    # ConfigurationManager belongs to qblox-instruments, but was already imported
+    # in quantify_scheduler
+    mocker.patch(
+        "quantify_scheduler.instrument_coordinator.components.qblox.ConfigurationManager",
+        return_value=mock_qblox_instruments_config_manager,
+    )
+
+    sched = Schedule("sched")
+    sched.add(Reset("q3"))
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=sched, config=quantum_device.generate_compilation_config()
+    )
+
+    with pytest.raises(RuntimeError):
+        ic.retrieve_hardware_logs()
+
+    ic.prepare(compiled_sched)
+    hardware_logs = ic.retrieve_hardware_logs()
+
+    assert cluster_name in hardware_logs

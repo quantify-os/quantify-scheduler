@@ -7,16 +7,15 @@
 
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-from typing import Any, Dict, Tuple
 from unittest import TestCase
-from unittest.mock import Mock
+from unittest.mock import Mock, MagicMock
 
 import json
 import os
-import zipfile
-
 import numpy as np
 import pytest
+import zipfile
+from qblox_instruments import ClusterType
 from qcodes.instrument.parameter import ManualParameter
 from xarray import DataArray, Dataset
 
@@ -27,6 +26,11 @@ from quantify_scheduler.gettables_profiled import ProfiledScheduleGettable
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
 )
+from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
+from quantify_scheduler.instrument_coordinator.components.qblox import (
+    ClusterComponent,
+)
+from quantify_scheduler.operations.gate_library import Reset
 from quantify_scheduler.schedules.schedule import AcquisitionMetadata, Schedule
 from quantify_scheduler.schedules.spectroscopy_schedules import (
     heterodyne_spec_sched,
@@ -39,6 +43,10 @@ from quantify_scheduler.schedules.timedomain_schedules import (
     t1_sched,
 )
 from quantify_scheduler.schedules.trace_schedules import trace_schedule
+
+from tests.scheduler.backends.test_qblox_backend import (  # pylint: disable=unused-import
+    dummy_cluster,
+)
 
 
 @pytest.mark.parametrize("num_channels, real_imag", [(1, True), (2, False), (10, True)])
@@ -357,6 +365,7 @@ def test_schedule_gettable_trace_acquisition(
     np.testing.assert_array_equal(dset.y1, exp_trace.imag)
 
 
+@pytest.mark.deprecated
 def test_schedule_gettable_generate_diagnostic(
     mock_setup_basic_transmon_with_standard_params, mocker
 ):
@@ -388,6 +397,9 @@ def test_schedule_gettable_generate_diagnostic(
 
     with pytest.raises(RuntimeError):
         gettable.generate_diagnostics_report()
+
+    with pytest.raises(RuntimeError):
+        gettable.generate_diagnostics_report(update=True)
 
     filename = gettable.generate_diagnostics_report(execute_get=True)
 
@@ -565,3 +577,549 @@ def test_no_hardware_cfg_raises(mock_setup_basic_transmon):
         f"metadata in the compiled schedule: acq_metadata.acq_indices="
         in str(exc.value)
     )
+
+
+def test_initialize_and_get_with_report_failed_initialization__qblox(
+    mock_setup_basic_transmon_with_standard_params,
+    mocker,
+    hardware_cfg_rf,
+    mock_qblox_instruments_config_manager,
+    dummy_cluster,
+):
+    cluster_name = "cluster0"
+
+    ic = InstrumentCoordinator("ic")
+    ic.add_component(
+        ClusterComponent(
+            dummy_cluster(
+                name=cluster_name,
+                dummy_cfg={
+                    2: ClusterType.CLUSTER_QCM_RF,
+                    4: ClusterType.CLUSTER_QRM_RF,
+                },
+            )
+        )
+    )
+
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.get_element("q2").clock_freqs.readout(7.5e9)
+
+    # ConfigurationManager belongs to qblox-instruments, but was already imported
+    # in quantify_scheduler
+    mocker.patch(
+        "quantify_scheduler.instrument_coordinator.components.qblox.ConfigurationManager",
+        return_value=mock_qblox_instruments_config_manager,
+    )
+
+    # Test report with failing compilation
+    gettable = ScheduleGettable(
+        quantum_device=quantum_device,
+        schedule_function=t1_sched,
+        schedule_kwargs={"times": np.linspace(1e-6, 50e-6, 50), "qubit": "q17"},
+        batched=True,
+    )
+
+    with pytest.raises(AttributeError):
+        gettable.initialize_and_get_with_report()
+
+    quantum_device.instr_instrument_coordinator(ic.name)
+
+    with pytest.raises(AttributeError):
+        gettable.initialize_and_get_with_report()
+
+    quantum_device.hardware_config(hardware_cfg_rf)
+
+    report_zipfile = gettable.initialize_and_get_with_report()
+
+    assert "failed_initialization" in os.path.basename(report_zipfile)
+
+    with zipfile.ZipFile(report_zipfile, mode="r") as zf:
+        q2_cfg_report = json.loads(zf.read("device_elements/q2.json"))
+        gettable_cfg_report = json.loads(zf.read("gettable.json").decode())
+        hardware_cfg_report = json.loads(zf.read("hardware_cfg.json").decode())
+        schedule_report = Schedule.from_json(zf.read("schedule.json").decode())
+        report_error_trace = zf.read("error_trace.txt").decode()
+        with pytest.raises(KeyError):
+            Schedule.from_json(zf.read("compiled_schedule.json").decode())
+        with pytest.raises(KeyError):
+            json.loads(zf.read("snapshot.json").decode())
+        with pytest.raises(KeyError):
+            zf.read("acquisition_data.txt").decode()
+        with pytest.raises(KeyError):
+            zf.read(f"{cluster_name}/{cluster_name}_cmm_app_log.txt").decode()
+        with pytest.raises(KeyError):
+            zf.read("connection_error_trace.txt").decode()
+
+    assert q2_cfg_report["data"]["rxy"]["amp180"] == 0.213
+
+    assert (
+        gettable.quantum_device.cfg_sched_repetitions()
+        == gettable_cfg_report["repetitions"]
+    )
+
+    assert (
+        hardware_cfg_report[cluster_name][f"{cluster_name}_module2"]["instrument_type"]
+        == "QCM_RF"
+    )
+
+    assert schedule_report == gettable.schedule_function(
+        **gettable._evaluated_sched_kwargs,
+        repetitions=gettable.quantum_device.cfg_sched_repetitions(),
+    )
+
+    assert report_error_trace.split(" ")[0] == "Traceback"
+    assert (
+        report_error_trace.split(": ")[-1].rstrip()
+        == "[\\'q0\\', \\'q1\\', \\'q2\\', \\'q3\\', \\'q4\\']'"
+    )
+
+    # Test failing ic retrieval / preparation
+    gettable = ScheduleGettable(
+        quantum_device=quantum_device,
+        schedule_function=t1_sched,
+        schedule_kwargs={"times": np.linspace(1e-6, 50e-6, 50), "qubit": "q2"},
+        batched=True,
+    )
+
+    ic.prepare = MagicMock(side_effect=RuntimeError)
+    report_zipfile = gettable.initialize_and_get_with_report()
+
+    assert "failed_initialization" in os.path.basename(report_zipfile)
+
+    with zipfile.ZipFile(report_zipfile, mode="r") as zf:
+        compiled_schedule_report = Schedule.from_json(
+            zf.read("compiled_schedule.json").decode()
+        )
+
+    assert gettable.compiled_schedule == compiled_schedule_report
+
+
+def test_initialize_and_get_with_report_compiled_schedule_reset__qblox(
+    mock_setup_basic_transmon_with_standard_params,
+    mocker,
+    hardware_cfg_rf,
+    mock_qblox_instruments_config_manager,
+    dummy_cluster,
+):
+    ic = InstrumentCoordinator("ic")
+    ic.add_component(
+        ClusterComponent(
+            dummy_cluster(
+                dummy_cfg={
+                    2: ClusterType.CLUSTER_QCM_RF,
+                    4: ClusterType.CLUSTER_QRM_RF,
+                },
+            )
+        )
+    )
+
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.instr_instrument_coordinator(ic.name)
+    quantum_device.hardware_config(hardware_cfg_rf)
+    quantum_device.get_element("q2").clock_freqs.readout(7.5e9)
+
+    # ConfigurationManager belongs to qblox-instruments, but was already imported
+    # in quantify_scheduler
+    mocker.patch(
+        "quantify_scheduler.instrument_coordinator.components.qblox.ConfigurationManager",
+        return_value=mock_qblox_instruments_config_manager,
+    )
+
+    gettable = ScheduleGettable(
+        quantum_device=quantum_device,
+        schedule_function=t1_sched,
+        schedule_kwargs={"times": np.linspace(1e-6, 50e-6, 50), "qubit": "q2"},
+        batched=True,
+    )
+
+    _ = gettable.initialize_and_get_with_report()
+    assert gettable.compiled_schedule is not None
+
+    # Assert any old compiled schedule is reset when creating a report
+    gettable.initialize = MagicMock(side_effect=RuntimeError)
+    _ = gettable.initialize_and_get_with_report()
+    assert gettable.compiled_schedule is None
+
+
+def test_initialize_and_get_with_report_failed_exp__qblox(
+    example_ip,
+    mock_setup_basic_transmon_with_standard_params,
+    mocker,
+    hardware_cfg_rf,
+    mock_qblox_instruments_config_manager,
+    dummy_cluster,
+):
+    cluster_name = "cluster0"
+
+    ic = InstrumentCoordinator("ic")
+    ic.add_component(
+        ClusterComponent(
+            dummy_cluster(
+                name=cluster_name,
+                dummy_cfg={
+                    2: ClusterType.CLUSTER_QCM_RF,
+                    4: ClusterType.CLUSTER_QRM_RF,
+                },
+            )
+        )
+    )
+
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.instr_instrument_coordinator(ic.name)
+    quantum_device.hardware_config(hardware_cfg_rf)
+    quantum_device.get_element("q2").clock_freqs.readout(7.5e9)
+
+    ic.get_component(f"ic_{cluster_name}").instrument.get_ip_config = MagicMock(
+        return_value=example_ip
+    )
+
+    # ConfigurationManager belongs to qblox-instruments, but was already imported
+    # in quantify_scheduler
+    mocker.patch(
+        "quantify_scheduler.instrument_coordinator.components.qblox.ConfigurationManager",
+        return_value=mock_qblox_instruments_config_manager,
+    )
+
+    gettable = ScheduleGettable(
+        quantum_device=quantum_device,
+        schedule_function=t1_sched,
+        schedule_kwargs={"times": np.linspace(1e-6, 50e-6, 50), "qubit": "q2"},
+        batched=True,
+    )
+
+    failing_exp_trace = "Test failing exp error trace"
+    gettable.get = MagicMock(side_effect=RuntimeError(failing_exp_trace))
+
+    report_zipfile = gettable.initialize_and_get_with_report()
+
+    assert "failed_exp" in os.path.basename(report_zipfile)
+
+    with zipfile.ZipFile(report_zipfile, mode="r") as zf:
+        json.loads(zf.read("device_elements/q2.json"))
+        json.loads(zf.read("gettable.json").decode())
+        json.loads(zf.read("hardware_cfg.json").decode())
+        Schedule.from_json(zf.read("schedule.json").decode())
+        compiled_schedule_report = Schedule.from_json(
+            zf.read("compiled_schedule.json").decode()
+        )
+        snap_report = json.loads(zf.read("snapshot.json").decode())
+        with pytest.raises(KeyError):
+            zf.read("acquisition_data.txt").decode()
+        report_error_trace = zf.read("error_trace.txt").decode()
+        zf.read(f"{cluster_name}/{cluster_name}_cmm_app_log.txt").decode()
+        with pytest.raises(KeyError):
+            zf.read("connection_error_trace.txt").decode()
+
+    assert gettable.compiled_schedule == compiled_schedule_report
+
+    assert (
+        snap_report["instruments"]["q2"]["submodules"]["reset"]["parameters"][
+            "duration"
+        ]["value"]
+        == 0.0002
+    )
+
+    assert report_error_trace.split(" ")[0] == "Traceback"
+    assert report_error_trace.split(": ")[-1].rstrip() == failing_exp_trace
+
+
+def test_initialize_and_get_with_report_completed_exp__qblox(
+    example_ip,
+    mock_setup_basic_transmon_with_standard_params,
+    mocker,
+    hardware_cfg_rf,
+    mock_qblox_instruments_config_manager,
+    dummy_cluster,
+):
+    cluster_name = "cluster0"
+
+    ic = InstrumentCoordinator("ic")
+    ic.add_component(
+        ClusterComponent(
+            dummy_cluster(
+                name=cluster_name,
+                dummy_cfg={
+                    2: ClusterType.CLUSTER_QCM_RF,
+                    4: ClusterType.CLUSTER_QRM_RF,
+                },
+            )
+        )
+    )
+
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.instr_instrument_coordinator(ic.name)
+    quantum_device.hardware_config(hardware_cfg_rf)
+    quantum_device.get_element("q2").clock_freqs.readout(7.5e9)
+
+    ic.get_component(f"ic_{cluster_name}").instrument.get_ip_config = MagicMock(
+        return_value=example_ip
+    )
+
+    # ConfigurationManager belongs to qblox-instruments, but was already imported
+    # in quantify_scheduler
+    mocker.patch(
+        "quantify_scheduler.instrument_coordinator.components.qblox.ConfigurationManager",
+        return_value=mock_qblox_instruments_config_manager,
+    )
+
+    gettable = ScheduleGettable(
+        quantum_device=quantum_device,
+        schedule_function=t1_sched,
+        schedule_kwargs={"times": np.linspace(1e-6, 50e-6, 50), "qubit": "q2"},
+        batched=True,
+    )
+
+    # Prepare mock data
+    acquisition_channel = 0
+    data = (np.ones(50) * np.exp(1j * np.deg2rad(45))).astype(np.complex64)
+    expected_data = Dataset({acquisition_channel: (["acq_index"], data)})
+
+    mocker.patch.object(
+        ic,
+        "retrieve_acquisition",
+        return_value=expected_data,
+    )
+
+    report_zipfile = gettable.initialize_and_get_with_report()
+
+    assert "completed_exp" in os.path.basename(report_zipfile)
+
+    with zipfile.ZipFile(report_zipfile, mode="r") as zf:
+        json.loads(zf.read("device_elements/q2.json"))
+        json.loads(zf.read("gettable.json").decode())
+        json.loads(zf.read("hardware_cfg.json").decode())
+        Schedule.from_json(zf.read("schedule.json").decode())
+        Schedule.from_json(zf.read("compiled_schedule.json").decode())
+        json.loads(zf.read("snapshot.json").decode())
+        acquisition_data = zf.read("acquisition_data.txt").decode()
+        with pytest.raises(KeyError):
+            zf.read("error_trace.txt").decode()
+        hardware_log = zf.read(
+            f"{cluster_name}/{cluster_name}_cmm_app_log.txt"
+        ).decode()
+        with pytest.raises(KeyError):
+            zf.read("connection_error_trace.txt").decode()
+
+    assert acquisition_data.split(" ")[1] == "0.70710677"
+
+    # Test that hardware logs are correctly passed to the zipfile
+    assert hardware_log == "Mock hardware log for app"
+
+
+def test_initialize_and_get_with_report_failed_hw_log_retrieval__qblox(
+    mock_setup_basic_transmon_with_standard_params,
+    mocker,
+    hardware_cfg_rf,
+    mock_qblox_instruments_config_manager,
+    dummy_cluster,
+):
+    cluster_name = "cluster0"
+
+    ic = InstrumentCoordinator("ic")
+    ic.add_component(
+        ClusterComponent(
+            dummy_cluster(
+                name=cluster_name,
+                dummy_cfg={
+                    2: ClusterType.CLUSTER_QCM_RF,
+                    4: ClusterType.CLUSTER_QRM_RF,
+                },
+            )
+        )
+    )
+
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.instr_instrument_coordinator(ic.name)
+    quantum_device.hardware_config(hardware_cfg_rf)
+    quantum_device.get_element("q2").clock_freqs.readout(7.5e9)
+
+    # ConfigurationManager belongs to qblox-instruments, but was already imported
+    # in quantify_scheduler
+    mocker.patch(
+        "quantify_scheduler.instrument_coordinator.components.qblox.ConfigurationManager",
+        return_value=mock_qblox_instruments_config_manager,
+    )
+
+    gettable = ScheduleGettable(
+        quantum_device=quantum_device,
+        schedule_function=t1_sched,
+        schedule_kwargs={"times": np.linspace(1e-6, 50e-6, 50), "qubit": "q2"},
+        batched=True,
+    )
+
+    failing_connection_trace = "Test failing connection error trace"
+    ic.retrieve_hardware_logs = MagicMock(
+        side_effect=RuntimeError(failing_connection_trace)
+    )
+
+    report_zipfile = gettable.initialize_and_get_with_report()
+
+    assert "failed_hw_log_retrieval" in os.path.basename(report_zipfile)
+
+    with zipfile.ZipFile(report_zipfile, mode="r") as zf:
+        json.loads(zf.read("device_elements/q2.json"))
+        json.loads(zf.read("gettable.json").decode())
+        json.loads(zf.read("hardware_cfg.json").decode())
+        Schedule.from_json(zf.read("schedule.json").decode())
+        Schedule.from_json(zf.read("compiled_schedule.json").decode())
+        json.loads(zf.read("snapshot.json").decode())
+        zf.read("acquisition_data.txt").decode()
+        with pytest.raises(KeyError):
+            zf.read("error_trace.txt").decode()
+        with pytest.raises(KeyError):
+            zf.read(f"{cluster_name}/{cluster_name}_cmm_app_log.txt").decode()
+        report_connection_error_trace = zf.read("connection_error_trace.txt").decode()
+
+    assert report_connection_error_trace.split(" ")[0] == "Traceback"
+    assert (
+        report_connection_error_trace.split(": ")[-1].rstrip()
+        == failing_connection_trace
+    )
+
+
+def test_initialize_and_get_with_report_failed_connection_to_hw__qblox(
+    mock_setup_basic_transmon_with_standard_params,
+    mocker,
+    hardware_cfg_rf,
+    mock_qblox_instruments_config_manager,
+    dummy_cluster,
+):
+    cluster_name = "cluster0"
+
+    ic = InstrumentCoordinator("ic")
+    ic.add_component(
+        ClusterComponent(
+            dummy_cluster(
+                name=cluster_name,
+                dummy_cfg={
+                    2: ClusterType.CLUSTER_QCM_RF,
+                    4: ClusterType.CLUSTER_QRM_RF,
+                },
+            )
+        )
+    )
+
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.instr_instrument_coordinator(ic.name)
+    quantum_device.hardware_config(hardware_cfg_rf)
+    quantum_device.get_element("q2").clock_freqs.readout(7.5e9)
+
+    # ConfigurationManager belongs to qblox-instruments, but was already imported
+    # in quantify_scheduler
+    mocker.patch(
+        "quantify_scheduler.instrument_coordinator.components.qblox.ConfigurationManager",
+        return_value=mock_qblox_instruments_config_manager,
+    )
+
+    gettable = ScheduleGettable(
+        quantum_device=quantum_device,
+        schedule_function=t1_sched,
+        schedule_kwargs={"times": np.linspace(1e-6, 50e-6, 50), "qubit": "q2"},
+        batched=True,
+    )
+
+    gettable.get = MagicMock(side_effect=RuntimeError)
+    ic.retrieve_hardware_logs = MagicMock(side_effect=RuntimeError)
+
+    report_zipfile = gettable.initialize_and_get_with_report()
+
+    assert "failed_connection_to_hw" in os.path.basename(report_zipfile)
+
+    with zipfile.ZipFile(report_zipfile, mode="r") as zf:
+        json.loads(zf.read("device_elements/q2.json"))
+        json.loads(zf.read("gettable.json").decode())
+        json.loads(zf.read("hardware_cfg.json").decode())
+        Schedule.from_json(zf.read("schedule.json").decode())
+        Schedule.from_json(zf.read("compiled_schedule.json").decode())
+        json.loads(zf.read("snapshot.json").decode())
+        with pytest.raises(KeyError):
+            zf.read("acquisition_data.txt").decode()
+        zf.read("error_trace.txt").decode()
+        with pytest.raises(KeyError):
+            zf.read(f"{cluster_name}/{cluster_name}_cmm_app_log.txt").decode()
+        with pytest.raises(KeyError):
+            zf.read("connection_error_trace.txt").decode()
+
+
+def test_initialize_and_get_with_report__two_qblox_clusters(
+    example_ip,
+    mock_setup_basic_transmon_with_standard_params,
+    mocker,
+    hardware_cfg_rf_two_clusters,
+    mock_qblox_instruments_config_manager,
+    dummy_cluster,
+):
+    cluster1_name = "cluster1"
+    cluster2_name = "cluster2"
+
+    ic = InstrumentCoordinator("ic")
+    ic.add_component(
+        ClusterComponent(
+            dummy_cluster(
+                name=cluster1_name,
+                dummy_cfg={
+                    1: ClusterType.CLUSTER_QCM_RF,
+                    2: ClusterType.CLUSTER_QRM_RF,
+                },
+            )
+        )
+    )
+    ic.add_component(
+        ClusterComponent(
+            dummy_cluster(
+                name=cluster2_name,
+                dummy_cfg={
+                    1: ClusterType.CLUSTER_QCM_RF,
+                    2: ClusterType.CLUSTER_QRM_RF,
+                },
+            )
+        )
+    )
+
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg_rf_two_clusters)
+    quantum_device.instr_instrument_coordinator(ic.name)
+
+    ic.get_component(f"ic_{cluster1_name}").instrument.get_ip_config = MagicMock(
+        return_value=example_ip
+    )
+    ic.get_component(f"ic_{cluster2_name}").instrument.get_ip_config = MagicMock(
+        return_value=example_ip
+    )
+
+    # ConfigurationManager belongs to qblox-instruments, but was already imported
+    # in quantify_scheduler
+    mocker.patch(
+        "quantify_scheduler.instrument_coordinator.components.qblox.ConfigurationManager",
+        return_value=mock_qblox_instruments_config_manager,
+    )
+
+    def schedule_function(times, repetitions=1):  # noqa: ARG001
+        sched = Schedule("sched")
+        sched.add(Reset("q2"))
+        sched.add(Reset("q3"))
+        return sched
+
+    gettable = ScheduleGettable(
+        quantum_device=quantum_device,
+        schedule_function=schedule_function,
+        schedule_kwargs={"times": None},
+        batched=True,
+    )
+
+    report_zipfile = gettable.initialize_and_get_with_report()
+
+    logfiles = [
+        "cmm_app_log.txt",
+        "cmm_system_log.txt",
+        "cmm_cfg_man_log.txt",
+        "module1_app_log.txt",
+        "module1_system_log.txt",
+        "module2_app_log.txt",
+        "module2_system_log.txt",
+    ]
+
+    with zipfile.ZipFile(report_zipfile, mode="r") as zf:
+        for cluster_name in (cluster1_name, cluster2_name):
+            for logfile in logfiles:
+                zf.read(f"{cluster_name}/{cluster_name}_{logfile}").decode()

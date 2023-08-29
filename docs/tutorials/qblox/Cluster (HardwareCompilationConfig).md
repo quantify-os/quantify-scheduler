@@ -220,7 +220,7 @@ hardware_compilation_cfg = {
 ```
 ### Write sequencer program to files
 
-It is possible to optionally include the `"sequence_to_file"` key. If set to `True`, which is also the default value adopted if the key is not included, a file will be created for each sequencer with the program that's uploaded to the sequencer with the filename `<data_dir>/schedules/<year><month><day>-<hour><minute><seconds>-<milliseconds>-<random>_<port>_<clock>.json` in a JSON format, where `<random>` is 6 random characters in the range `0-9`, `a-f`.
+It is possible to optionally include the `"sequence_to_file"` key. If set to `True`, a file will be created for each sequencer with the program that's uploaded to the sequencer with the filename `<data_dir>/schedules/<year><month><day>-<hour><minute><seconds>-<milliseconds>-<random>_<port>_<clock>.json` in a JSON format, where `<random>` is 6 random characters in the range `0-9`, `a-f`. The value defaults to `False` in case `"sequence_to_file"` is not included.
 
 It is also possible to set this parameter per module via its module configuration.
 

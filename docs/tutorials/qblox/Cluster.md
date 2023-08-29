@@ -120,7 +120,7 @@ To add a new module mapping to the cluster, add a new key with a valid `"instrum
 
 ### Write sequencer program to files
 
-It is possible to optionally set `"sequence_to_file"` key to `True` or `False`. If it's not set Quantify will behave the same way as if it was set to `True`. If it is `True`, a file will be created for each sequencer with the program that's uploaded to the sequencer with the filename `<data_dir>/schedules/<year><month><day>-<hour><minute><seconds>-<milliseconds>-<random>_<port>_<clock>.json` in a JSON format, where `<random>` is 6 random characters in the range `0-9`, `a-f`.
+It is possible to optionally include the `"sequence_to_file"` key. If set to `True`, a file will be created for each sequencer with the program that's uploaded to the sequencer with the filename `<data_dir>/schedules/<year><month><day>-<hour><minute><seconds>-<milliseconds>-<random>_<port>_<clock>.json` in a JSON format, where `<random>` is 6 random characters in the range `0-9`, `a-f`. The value defaults to `False` in case `"sequence_to_file"` is not included.
 
 It is possible to overwrite this parameter to `"True"` in each module configuration for each module.
 

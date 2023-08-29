@@ -8,6 +8,8 @@
 
 - Compilation - Add a `scheduling_strategy` parameter to `QuantumDevice` and `DeviceCompilationConfig` classes to enable new strategies for calculating absolute timing in `compilation.determine_absolute_timing`  (!736)
 - Security - Add `check=True` flag to all subprocess calls (see also Ruff rule PLW1510). (!767)
+- Gettable - Add `ScheduleGettable.initialize_and_get_with_report` that saves information from an experiment in a report zipfile for diagnostics. 
+  - For Qblox instruments, this includes hardware logs, retrieved via `InstrumentCoordinator.retrieve_hardware_logs` from `qblox-instruments.ConfigurationManager`. (!672)
 - Qblox backend - Make QASM fields aligning optional, disable by default (!741)
 - Documentation - Color change for code block emphasized lines (!741)
 - Infrastructure - Improve speed of `make_hash` (affecting `Schedule.add`) and some compilation steps (!770)

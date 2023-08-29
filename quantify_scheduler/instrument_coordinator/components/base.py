@@ -10,6 +10,8 @@ from typing import Any, Dict
 from qcodes.instrument import base, parameter
 from qcodes.utils import validators
 
+from quantify_scheduler.schedules.schedule import CompiledSchedule
+
 
 def instrument_to_component_name(instrument_name: str) -> str:
     """
@@ -133,4 +135,13 @@ class InstrumentCoordinatorComponentBase(base.Instrument):
         ----------
         timeout_sec :
             The maximum amount of time in seconds before a timeout.
+        """
+
+    @abstractmethod
+    def get_hardware_log(
+        self,
+        compiled_schedule: CompiledSchedule,
+    ) -> dict | None:
+        """
+        Retrieve the hardware logs of the instrument associated to this component.
         """

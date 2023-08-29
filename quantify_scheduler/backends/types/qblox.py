@@ -566,7 +566,7 @@ class QbloxBaseDescription(HardwareDescription):
 
     ref: Union[Literal["internal"], Literal["external"]]
     """The reference source for the instrument."""
-    sequence_to_file: bool = True
+    sequence_to_file: bool = False
     """Write sequencer programs to files for (all modules in this) instrument."""
     align_qasm_fields: bool = False
     """If True, make QASM program more human-readable by aligning its fields."""
@@ -612,7 +612,7 @@ class QRMDescription(DataStructure):
 
     instrument_type: Literal["QRM"]
     """The instrument type of this module."""
-    sequence_to_file: bool = True
+    sequence_to_file: bool = False
     """Write sequencer programs to files, for this module."""
     complex_output_0: Optional[ComplexChannelDescription] = None
     """Description of the complex output channel on this QRM, corresponding to ports O1 and O2."""
@@ -641,7 +641,7 @@ class QCMDescription(DataStructure):
 
     instrument_type: Literal["QCM"]
     """The instrument type of this module."""
-    sequence_to_file: bool = True
+    sequence_to_file: bool = False
     """Write sequencer programs to files, for this module."""
     complex_output_0: Optional[ComplexChannelDescription] = None
     """Description of the complex output channel on this QRM, corresponding to ports O1 and O2."""
@@ -670,7 +670,7 @@ class QRMRFDescription(DataStructure):
 
     instrument_type: Literal["QRM_RF"]
     """The instrument type of this module."""
-    sequence_to_file: bool = True
+    sequence_to_file: bool = False
     """Write sequencer programs to files, for this module."""
     complex_output_0: Optional[ComplexChannelDescription] = None
     """Description of the complex output channel on this QRM, corresponding to port O1."""
@@ -687,7 +687,7 @@ class QCMRFDescription(DataStructure):
 
     instrument_type: Literal["QCM_RF"]
     """The instrument type of this module."""
-    sequence_to_file: bool = True
+    sequence_to_file: bool = False
     """Write sequencer programs to files, for this module."""
     complex_output_0: Optional[ComplexChannelDescription] = None
     """Description of the complex output channel on this QRM, corresponding to port O1."""
