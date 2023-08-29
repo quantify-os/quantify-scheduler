@@ -23,6 +23,8 @@
 - Jordy Gloudemans ([GitLab](https://gitlab.com/jgloudemans))
 - Jules van Oven ([GitLab](https://gitlab.com/jvoven))
 - Kelvin Loh ([GitLab](https://gitlab.com/kel85uk))
+- Koen Mesman ([GitLab](https://gitlab.com/koenmesman))
+- Konstantin Lehmann ([GitLab](https://gitlab.com/konstantin-orangeqs))
 - Luis Miguens Fernandez ([GitLab](https://gitlab.com/luis.miguens))
 - Mafalda Jotta Garcia ([GitLab](https://gitlab.com/mafaldajg))
 - Michiel Dubbelman ([GitLab](https://gitlab.com/MichielDubbelman))
