@@ -2,37 +2,38 @@
 
 ## Contributors
 
-- Adam Lawrence \<<mailto:adam@orangeqs.com>>
-- Adithyan Radhakrishnan \<<mailto:adithyan@qblox.com>>
-- Adriaan Rol \<<mailto:adriaan@orangeqs.com>>
-- Axel Andersson \<<mailto:aandersson@qblox.com>>
-- Callum Attryde \<<mailto:cattryde@qblox.com>>
-- Christian Dickel \<<mailto:christiandickel8@gmail.com>>
-- Damaz de Jong \<<mailto:ddejong@qblox.com>>
-- Damien Crielaard \<<mailto:dcrielaard@qblox.com>>
-- Daniel Jonathan Weigand \<<mailto:dweigand@qblox.com>>
-- David Quinn \<<mailto:dquinn@qblox.com>>
-- David Vos \<<mailto:dvos@qblox.com>>
-- Diogo Valada \<<mailto:dvalada@qblox.com>>
-- Edgar Reehuis \<<mailto:ereehuis@qblox.com>>
-- Fokko de Vries \<<mailto:fdvries@qblox.com>>
-- Gabor Oszkar Denes \<<mailto:gdenes@qblox.com>>
-- Gijs Vermarien \<<mailto:gijs@orangeqs.com>>
-- Hiresh Jadoenathmissier \<<mailto:hiresh@orangeqs.com>>
-- Jordy Gloudemans \<<mailto:jgloudemans@qblox.com>>
-- Jules van Oven \<<mailto:jules@qblox.com>>
-- Kelvin Loh \<<mailto:kelvin@orangeqs.com>>
-- Luis Miguens Fernandez \<<mailto:lmiguens@qblox.com>>
-- Mafalda Jotta Garcia \<<mailto:mjotta@qblox.com>>
-- Michiel Dubbelman \<<mailto:michiel@orangeqs.com>>
-- Nicolas Piot \<<mailto:npiot@qblox.com>>
-- Pieter Eendebak \<<mailto:pieter.eendebak@tno.nl>>
-- Robert Sokolewicz \<<mailto:rsokolewicz@qblox.com>>
-- Rohit Navarathna \<<mailto:rnavarathna@qblox.com>>
-- Thomas Middelburg \<<mailto:tmiddelburg@qblox.com>>
-- Thomas Reynders \<<mailto:thomas@orangeqs.com>>
-- Tobias Bonsen \<<mailto:tobias@orangeqs.com>>
-- Viacheslav Ostroukh \<<mailto:viacheslav@orangeqs.com>>
-- Victor Gervilla \<<mailto:vgervilla@qblox.com>>
-- Victor Negirneac \<<mailto:vnegirneac@qblox.com>>
-- Zhihao Wu \<<mailto:zhihaowu@quanta.org.cn>>
+- Adam Lawrence ([GitLab](https://gitlab.com/adamorangeqs))
+- Adilet Tuleuov ([GitLab](https://gitlab.com/adilnaut))
+- Adithyan Radhakrishnan ([GitLab](https://gitlab.com/adithyan2))
+- Adriaan Rol ([GitLab](https://gitlab.com/AdriaanRol))
+- Axel Andersson ([GitLab](https://gitlab.com/axean))
+- Callum Attryde ([GitLab](https://gitlab.com/CallumAttryde))
+- Christian Dickel ([GitLab](https://gitlab.com/christiandickel8))
+- Damaz de Jong ([GitLab](https://gitlab.com/damazdejong))
+- Damien Crielaard ([GitLab](https://gitlab.com/dcrielaard))
+- Daniel Jonathan Weigand ([GitLab](https://gitlab.com/djweigand))
+- David Quinn ([GitLab](https://gitlab.com/Davidrobertquinn))
+- David Vos ([GitLab](https://gitlab.com/dvos2))
+- Diogo Valada ([GitLab](https://gitlab.com/Astlan))
+- Edgar Reehuis ([GitLab](https://gitlab.com/ereehuis))
+- Fokko de Vries ([GitLab](https://gitlab.com/fdvries))
+- Gabor Oszkar Denes ([GitLab](https://gitlab.com/gdenes))
+- Gijs Vermarien ([GitLab](https://gitlab.com/gijsvermarien))
+- Hiresh Jadoenathmissier ([GitLab](https://gitlab.com/HireshJ1))
+- Jordy Gloudemans ([GitLab](https://gitlab.com/jgloudemans))
+- Jules van Oven ([GitLab](https://gitlab.com/jvoven))
+- Kelvin Loh ([GitLab](https://gitlab.com/kel85uk))
+- Luis Miguens Fernandez ([GitLab](https://gitlab.com/luis.miguens))
+- Mafalda Jotta Garcia ([GitLab](https://gitlab.com/mafaldajg))
+- Michiel Dubbelman ([GitLab](https://gitlab.com/MichielDubbelman))
+- Nicolas Piot ([GitLab](https://gitlab.com/npiot))
+- Pieter Eendebak ([GitLab](https://gitlab.com/peendebak))
+- Robert Sokolewicz ([GitLab](https://gitlab.com/rsokolewicz))
+- Rohit Navarathna ([GitLab](https://gitlab.com/rnavarathna))
+- Thomas Middelburg ([GitLab](https://gitlab.com/ThomasMiddelburg))
+- Thomas Reynders ([GitLab](https://gitlab.com/treynders))
+- Tobias Bonsen ([GitLab](https://gitlab.com/tobiasbonsen))
+- Viacheslav Ostroukh ([GitLab](https://gitlab.com/slavoutich))
+- Victor Gervilla ([GitLab](https://gitlab.com/v_palomar))
+- Victor Negirneac ([GitLab](https://gitlab.com/caenrigen))
+- Zhihao Wu ([GitLab](https://gitlab.com/r3b1r7h))
