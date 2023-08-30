@@ -5,7 +5,7 @@
 
 ## Stable release
 
-To install `quantify-scheduler` follow the {doc}`installation guide of quantify-core <quantify-core:installation>`.
+To install `quantify-scheduler` follow the {ref}`installation guide of quantify-core <quantify-core:installation>`.
 
 ## Update to latest version
 
@@ -41,7 +41,7 @@ In order to develop the code locally, the package can be installed in the "edita
 $ python -m pip install -e ".[dev]"
 ```
 
-Contributions are very welcome! To set up an environment for local development see the instructions in the {doc}`installation guide of quantify-core <quantify-core:installation>`. You only need to replace `quantify-core` with `quantify-scheduler` in the provided commands.
+Contributions are very welcome! To set up an environment for local development see the instructions in the {ref}`installation guide of quantify-core <quantify-core:installation>`. You only need to replace `quantify-core` with `quantify-scheduler` in the provided commands.
 
 If you need any help reach out to us by [creating a new issue](https://gitlab.com/quantify-os/quantify-scheduler/-/issues).
 
