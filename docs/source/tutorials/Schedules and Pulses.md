@@ -71,7 +71,7 @@ Note that these plots are interactive and modulation is not shown by default.
 from quantify_scheduler import compilation
 
 compilation.determine_absolute_timing(sched)
-sched.plot_pulse_diagram(plot_backend='plotly')
+sched.plot_pulse_diagram(plot_backend="plotly")
 
 
 ```
@@ -89,7 +89,7 @@ sched.add(
 )
 
 compilation.determine_absolute_timing(sched)
-sched.plot_pulse_diagram(plot_backend='plotly')
+sched.plot_pulse_diagram(plot_backend="plotly")
 
 
 ```
@@ -110,7 +110,7 @@ sched.add(
 sched.add_resource(ClockResource(name="q0.01", freq=7e9))
 
 compilation.determine_absolute_timing(sched)
-sched.plot_pulse_diagram(plot_backend='plotly')
+sched.plot_pulse_diagram(plot_backend="plotly")
 
 
 ```
@@ -157,9 +157,123 @@ def pulse_train_schedule(
 
 sched = pulse_train_schedule(1, 200e-9, 300e-9, 5)
 compilation.determine_absolute_timing(sched)
-sched.plot_pulse_diagram(plot_backend='plotly')
+sched.plot_pulse_diagram(plot_backend="plotly")
 
 
 ```
 
 Note that we used the {class}`~quantify_scheduler.resources.BasebandClockResource` as a clock, which is always at 0 Hz and was added automatically to the schedule for convenience. We can see that the pulses start every 500 ns and are 200 ns long.
+
+(sec-long-waveforms-via-stitchedpulse)=
+
+## Long waveforms via StitchedPulse
+
+```{note}
+This feature is only available for Qblox hardware. More information about this feature can also be found in section {ref}`Long waveform support <sec-qblox-cluster-long-waveform-support-new>`.
+```
+
+The sequencers in Qblox modules have a waveform sample limit of {class}`~quantify_scheduler.backends.qblox.constants.MAX_SAMPLE_SIZE_WAVEFORMS`. Trying to play many (long) waveforms might cause you to exceed this limit. For certain waveforms, however, it is possible to use the available memory more efficiently. This section explains how to do this with the {class}`~quantify_scheduler.operations.stitched_pulse.StitchedPulse`.
+
+For convenience, `quantify-scheduler` provides helper functions for the `square` ({func}`~quantify_scheduler.operations.pulse_factories.long_square_pulse`), `ramp` ({func}`~quantify_scheduler.operations.pulse_factories.long_ramp_pulse`) and `staircase` ({func}`~quantify_scheduler.operations.pulse_factories.staircase_pulse`) waveforms for when they become too long to fit into the waveform memory of the hardware.
+
+```{code-cell} ipython3
+from quantify_scheduler.operations.pulse_factories import (
+    long_ramp_pulse,
+    long_square_pulse,
+    staircase_pulse,
+)
+
+
+sched = Schedule("Basic long pulses")
+sched.add(
+    long_square_pulse(
+        amp=0.5,
+        duration=10e-6,
+        port="q0:fl",
+        clock=BasebandClockResource.IDENTITY,
+    ),
+)
+sched.add(
+    long_ramp_pulse(
+        amp=1.0,
+        duration=10e-6,
+        port="q0:fl",
+        offset=-0.5,
+        clock=BasebandClockResource.IDENTITY,
+    ),
+    rel_time=5e-7,
+)
+sched.add(
+    staircase_pulse(
+        start_amp=-0.5,
+        final_amp=0.5,
+        num_steps=20,
+        duration=10e-6,
+        port="q0:fl",
+        clock=BasebandClockResource.IDENTITY,
+    ),
+    rel_time=5e-7,
+)
+
+compilation.determine_absolute_timing(sched)
+sched.plot_pulse_diagram(plot_backend="plotly")
+```
+
+Using these factory functions, the resulting square and staircase pulses use no waveform memory at all. The ramp pulse uses waveform memory for a short section of the waveform, which is repeated multiple times.
+
+For more complicated shapes, the {class}`~quantify_scheduler.operations.stitched_pulse.StitchedPulseBuilder` makes it possible to stitch together pulse shapes yourself. In the following example, we create a long soft square pulse where the constant-voltage middle part is created with a voltage offset instruction, using no waveform memory.
+
+```{code-cell} ipython3
+import numpy as np
+
+from quantify_scheduler.operations.pulse_library import NumericalPulse
+from quantify_scheduler.operations.stitched_pulse import StitchedPulseBuilder
+
+
+# Define a few constants
+port = "q0:fl"
+clock = BasebandClockResource.IDENTITY
+ramp_duration = 4e-6
+constant_duration = 8e-6
+
+ramp_t = np.arange(0, round(ramp_duration * 1e9) + 1) * 1e-9
+
+# Define the waveforms for the up and down ramps
+hann_up = ramp_t / ramp_duration - 1 / 2 / np.pi * np.sin(
+    2 * np.pi / ramp_duration * ramp_t
+)
+hann_down = 1 - hann_up
+
+# Make the stitched pulse
+builder = StitchedPulseBuilder(port=port, clock=BasebandClockResource.IDENTITY)
+builder.add_pulse(
+    NumericalPulse(samples=hann_up, t_samples=ramp_t, port=port, clock=clock)
+)
+builder.add_voltage_offset(path_0=1.0, path_1=0.0, duration=constant_duration)
+builder.add_pulse(
+    NumericalPulse(samples=hann_down, t_samples=ramp_t, port=port, clock=clock)
+)
+pulse = builder.build()
+
+sched = Schedule("Long soft square pulse")
+sched.add(pulse)
+
+compilation.determine_absolute_timing(sched)
+sched.plot_pulse_diagram(plot_backend="plotly")
+```
+
+Alternatively, the building methods of the {class}`~quantify_scheduler.operations.stitched_pulse.StitchedPulseBuilder` can be conveniently **chained** to create a {class}`~quantify_scheduler.operations.stitched_pulse.StitchedPulse` via more elegant syntax:
+
+```{code-cell} ipython3
+pulse = (
+    StitchedPulseBuilder(port=port, clock=BasebandClockResource.IDENTITY)
+    .add_pulse(
+        NumericalPulse(samples=hann_up, t_samples=ramp_t, port=port, clock=clock)
+    )
+    .add_voltage_offset(path_0=1.0, path_1=0.0, duration=constant_duration)
+    .add_pulse(
+        NumericalPulse(samples=hann_up, t_samples=ramp_t, port=port, clock=clock)
+    )
+    .build()
+)
+```

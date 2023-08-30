@@ -1092,7 +1092,9 @@ hardware_compilation_cfg = {
 (sec-qblox-cluster-long-waveform-support-new)=
 ## Long waveform support
 
-It is possible to play waveforms that are too long to fit in the waveform memory of Qblox modules. For a few standard waveforms, the square pulse, ramp pulse and staircase pulse, the following helper functions create operations that can readily be added to schedules:
+The sequencers in Qblox modules have a sample limit of {class}`~quantify_scheduler.backends.qblox.constants.MAX_SAMPLE_SIZE_WAVEFORMS` per sequencer. For certain waveforms, however, it is possible to use the sequencers more efficiently and using less waveform memory, allowing for longer waveforms. This section explains how to do this, utilizing the {class}`~quantify_scheduler.operations.stitched_pulse.StitchedPulse`. Also see {ref}`sec-long-waveforms-via-stitchedpulse` of {ref}`sec-tutorial-sched-pulse`.
+
+- For a few standard waveforms, the square pulse, ramp pulse and staircase pulse, the following helper functions create a {class}`~quantify_scheduler.operations.stitched_pulse.StitchedPulse` that can readily be added to schedules:
 
 ```{code-cell} ipython3
 ---
@@ -1114,7 +1116,7 @@ staircase_pulse = staircase_pulse(
 )
 ```
 
-More complex waveforms can be created from the {class}`~quantify_scheduler.operations.stitched_pulse.StitchedPulseBuilder`. This class allows you to construct complex waveforms by stitching together available pulses, and adding voltage offsets in between. Voltage offsets can be specified with or without a duration. In the latter case, the offset will hold until the last operation in the {class}`~quantify_scheduler.operations.stitched_pulse.StitchedPulse` ends. For example,
+- More complex waveforms can be created from the {class}`~quantify_scheduler.operations.stitched_pulse.StitchedPulseBuilder`. This class allows you to construct complex waveforms by stitching together available pulses, and adding voltage offsets in between. Voltage offsets can be specified with or without a duration. In the latter case, the offset will hold until the last operation in the {class}`~quantify_scheduler.operations.stitched_pulse.StitchedPulse` ends. For example:
 
 ```{code-cell} ipython3
 ---
@@ -1143,7 +1145,7 @@ repeat_pulse_with_offset = (
 )
 ```
 
-Pulses and offsets are appended to the end of the last added operation by default. By specifying the `append=False` keyword argument in the `add_pulse` and `add_voltage_offset` methods, in combination with the `rel_time` argument, you can insert an operation at the specified time relative to the start of the {class}`~quantify_scheduler.operations.stitched_pulse.StitchedPulse`. The example below uses this to generate a series of square pulses of various durations and amplitudes.
+- Pulses and offsets are appended to the end of the last added operation by default. By specifying the `append=False` keyword argument in the `add_pulse` and `add_voltage_offset` methods, in combination with the `rel_time` argument, you can insert an operation at the specified time relative to the start of the {class}`~quantify_scheduler.operations.stitched_pulse.StitchedPulse`. The example below uses this to generate a series of square pulses of various durations and amplitudes:
 
 ```{code-cell} ipython3
 ---
