@@ -24,7 +24,7 @@ The complete source code of this tutorial can be found in
 In this tutorial we give examples of how to add acquisitions to schedules, and how to retrieve acquisition results using the {class}`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator`.
 More specifically, this tutorial only describes acquisitions with {class}`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator` with Qblox backend with transmon qubits (or Qblox backend with NV center in case of trigger count). See {ref}`sec-tutorial-schedulegettable` for a tutorial on how to perform acquisitions with {class}`~quantify_scheduler.gettables.ScheduleGettable`, and see {ref}`sec-backend-zhinst` for help on how to perform experiments with the Zurich Instruments backend.
 
-This tutorial assumes you are familiar with compiling schedules and running simple pulses on the Qblox hardware. We also assume, that you have basic familiarity with `xarray` (see [xarray introduction](https://quantify-quantify-core.readthedocs-hosted.com/en/latest/technical_notes/dataset_design/Xarray%20introduction.html) and the [official documentation](https://docs.xarray.dev/en/stable/user-guide/data-structures.html)).
+This tutorial assumes you are familiar with compiling schedules and running simple pulses on the Qblox hardware. We also assume, that you have basic familiarity with `xarray` (see [xarray introduction](https://quantify-quantify-core.readthedocs-hosted.com/en/latest/dev/design/dataset/Xarray%20introduction.html) and the [official documentation](https://docs.xarray.dev/en/stable/user-guide/data-structures.html)).
 
 The basic structure of the returned acquisition data is that it is an {class}`xarray.Dataset`, which consists of multiple {class}`xarray.DataArray`. Each of these {class}`xarray.DataArray`s correspond to one acquisition channel.
 
@@ -155,11 +155,11 @@ schedule.add(IdlePulse(duration=1e-6))
 
 schedule.add(
     DRAGPulse(
-        G_amp=0.2, 
-        D_amp=0.2, 
-        duration=pulse_duration, 
+        G_amp=0.2,
+        D_amp=0.2,
+        duration=pulse_duration,
         phase=0,
-        port="q0:res", 
+        port="q0:res",
         clock="q0.ro",
     ),
 )
@@ -486,7 +486,7 @@ Here the threshold line is controlled by the qubit settings: `acq_rotation` and 
 ```{admonition} Note
 Thresholded acquisition is currently only supported by the Qblox backend.
 
-The `qblox-instruments` parameter `thresholded_acq_threshold` corresponds to a voltage obtained from an integrated acquisition, **before** normalizing with respect to the integration time.  
+The `qblox-instruments` parameter `thresholded_acq_threshold` corresponds to a voltage obtained from an integrated acquisition, **before** normalizing with respect to the integration time.
 The `quantify-scheduler` parameter `acq_threshold` corresponds to an acquired voltage **after** normalizing with respect to the integration time (e.g. as obtained from a single side band integration).
 ```
 
@@ -516,7 +516,7 @@ schedule.add(
         port="q0:res",
         clock="q0.ro",
     ),
-    ref_pt="end",    
+    ref_pt="end",
     rel_time=1e-6,  # Idle time before the pulse is played
 )
 schedule.add(
@@ -596,7 +596,7 @@ plt.ylabel("Q(V)")
 plt.show()
 ```
 
-Where the two clusters of data correspond to the two qubit states of `q0`: {math}`|0\rangle` and {math}`|1\rangle`. The threshold line was chosen as the bisector of the centroids of the two clusters of data. 
+Where the two clusters of data correspond to the two qubit states of `q0`: {math}`|0\rangle` and {math}`|1\rangle`. The threshold line was chosen as the bisector of the centroids of the two clusters of data.
 
 To assign each cluster to one state, we can set the qubit parameters {attr}`BasicTransmonElement.measure.acq_threshold` and {attr}`BasicTransmonElement.measure.acq_rotation` and run the experiment with the `ThresholdedAcquisition` protocol.
 
@@ -621,7 +621,7 @@ thres_acq_sched.add(
         port="q0:res",
         clock="q0.ro",
     ),
-    ref_pt="end",    
+    ref_pt="end",
     rel_time=1e-6,  # Idle time before the pulse is played
 )
 thres_acq_sched.add(
@@ -727,7 +727,7 @@ schedule.add(
 )
 ```
 It's important in using {class}`~quantify_scheduler.operations.acquisition_library.TriggerCount` acquisitions that the acquisition channel is identical for all acquisitions in a schedule,
-leading to a single distribution in case of average bin mode (and a single list in case of append bin mode). 
+leading to a single distribution in case of average bin mode (and a single list in case of append bin mode).
 In this example, if instead there would be 3 acquisitions in the schedule, and all of the acquisition channels were different and then only running the schedule once,
 we would get 3 separate distributions (one per acquisition channel).
 

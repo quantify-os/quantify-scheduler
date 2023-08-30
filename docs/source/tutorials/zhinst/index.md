@@ -93,7 +93,7 @@ See {ref}`the hardware verification tutorial <hardware-verfication-tutorial>` fo
 
 ````{admonition} Example Zurich Instruments hardware compilation configuration file
 :class: dropdown
-```{literalinclude} ../../../quantify_scheduler/schemas/examples/zhinst_hardware_compilation_config.json
+```{literalinclude} ../../../../quantify_scheduler/schemas/examples/zhinst_hardware_compilation_config.json
 :language: JSON
 ```
 ````
@@ -127,7 +127,7 @@ The {ref}`Hardware Description <sec-hardware-description>` describes the instrum
 ```
 
 ```{warning}
-In order for the backend to find the QCodes Instrument it is required that the keys of the 
+In order for the backend to find the QCodes Instrument it is required that the keys of the
 HardwareDescription map 1-to-1 to the names given to the QCodes Instrument during instantiation, with an `ic` prepend.
 
 > - Example: If the hdawg QCodes Instrument name is "hdawg_dev8831" then the {class}`~quantify_scheduler.backends.types.zhinst.Device`'s `name` is "ic_hdawg_dev8831"
@@ -148,7 +148,7 @@ Local oscillators can also be included by using the following generic datastruct
 ```{eval-rst}
 .. autoclass:: quantify_scheduler.backends.types.common.LocalOscillatorDescription
     :noindex:
-    :members: 
+    :members:
 
 ```
 
@@ -165,7 +165,7 @@ The {class}`~.backends.types.zhinst.ZIHardwareOptions` datastructure contains th
 ```{eval-rst}
 .. autoclass:: quantify_scheduler.backends.types.zhinst.ZIHardwareOptions
     :noindex:
-    :members: 
+    :members:
     :inherited-members: BaseModel
 
 ```

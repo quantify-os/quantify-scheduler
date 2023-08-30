@@ -168,7 +168,7 @@ extend-exclude = [
 # - E402: Module level import not at top of file
 # - F401: Multiple imports on one line
 
-"*/docs/conf.py" = ["E402", "F401"]
+"*/docs/source/conf.py" = ["E402", "F401"]
 "__init__.py" = ["F401"]
 "tests/**/*.py" = ["D", "ANN"]
 

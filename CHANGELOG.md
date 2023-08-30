@@ -18,6 +18,7 @@
 - Documentation - Fix missing images in Jupyter cell outputs in documentation deployed using Gitlab Pages. (!772, #404, counterpart of quantify-core!480)
 - Documentation - Explain in Qblox Cluster docs the possibility of using `"{complex,real}_output_<n>"` hardware config keys for both playback and acquisitions. (!763)
 - Infrastructure - Add `jinja2` as dependency to quantify-scheduler (needed for `pandas.DataFrame`) (!777)
+- Documentation - Split source and build folders to simplify using [`sphinx-autobuild`](https://github.com/executablebooks/sphinx-autobuild) for its editing. (!774)
 
 ## 0.16.0 (2023-08-17)
 
@@ -27,7 +28,7 @@
   - New acquisition protocol: [ThresholdedAcquisition](https://quantify-quantify-scheduler.readthedocs-hosted.com/en/latest/tutorials/Acquisitions.html#thresholded-acquisition)
     - Currently only supported by the Qblox backend
 
-- Qblox backend improvements 
+- Qblox backend improvements
   - All-zero waveforms are no longer stored in the waveform dictionary and no longer uploaded to the hardware
   - Fixed accidentally changing multiple instances of same type of operation in a schedule
   - Fixed append mode for weighted acquisitions doing average instead of append

@@ -230,7 +230,7 @@ texinfo_documents = [
 
 autoapi_type = "python"
 autoapi_generate_api_docs = True
-autoapi_dirs = ["../quantify_scheduler"]
+autoapi_dirs = ["../../quantify_scheduler"]
 ignore_module_all = True
 autoapi_add_toctree_entry = False
 autoapi_options = [
@@ -336,6 +336,25 @@ import pydantic
 #     from my_expensive_to_import_module import BlaClass # Potential circular import
 
 set_type_checking_flag = True  # this will run `typing.TYPE_CHECKING = True`
+
+# Automatically generate anchors for MyST headers
+myst_heading_anchors = 3
+
+# By default execution mode is set to "cache": that allowes to store execution result
+# to local cache. However, for a purpose of faster editing we allow to override it
+# locally using MYSTNB_EXECUTION_MODE environment variable. That is useful if
+# documentation author uses `sphinx-autobuild`: setting it to "off" will disable
+# automated execution completely, and documentation author will be able to edit
+# documentation in JupyterLab or VSCode and see live changes in a browser with
+# minimal delay possible.
+nb_execution_mode = os.environ.get("MYSTNB_EXECUTION_MODE") or "cache"
+
+# The following fails the build when one of the notebooks has an execution error,
+# and this error is not allowed explicitly.
+nb_execution_raise_on_error = True
+
+# Default cell execution timeout.
+nb_execution_timeout = 120
 
 # The following fails the build when one of the notebooks has an execution error.
 nb_execution_raise_on_error = True

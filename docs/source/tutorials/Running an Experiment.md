@@ -21,7 +21,7 @@ combination of `quantify-scheduler` and `quantify-core`. `quantify-scheduler`
 provides a high-level interface with the hardware, allowing users to abstract
 hardware-specific nuances. `quantify-core`, on the other hand, serves as an
 experiment management tool, using `quantify-scheduler` as its hardware
-interface. This allows users to manage, execute, and analyze experiments easily. 
+interface. This allows users to manage, execute, and analyze experiments easily.
 
 The following is a general workflow for using Quantify
 
@@ -44,12 +44,12 @@ The following is a general workflow for using Quantify
 - **{ref}`run_experiment`**
   - Setup {class}`~quantify_core.measurement.control.MeasurementControl` to run the experiment
   - *Run* the experiment
-  - *Analyze* the results 
+  - *Analyze* the results
 
 
 (initial_setup)=
 ## 1. Initial Setup
-We first set up the directory in which all experimental data will be stored and managed. 
+We first set up the directory in which all experimental data will be stored and managed.
 
 ```{code-cell} ipython3
 from quantify_core.data import handling as dh
@@ -99,7 +99,7 @@ single_qubit_device.add_element(q0)
 
 # Assign device parameters to transmon element
 q0.measure.pulse_amp(READOUT_AMP)
-q0.clock_freqs.readout(READOUT_FREQ)  
+q0.clock_freqs.readout(READOUT_FREQ)
 q0.clock_freqs.f01(FREQ_01)
 q0.measure.acq_delay(ACQ_DELAY)
 q0.rxy.amp180(PI_PULSE_AMP)
@@ -107,7 +107,7 @@ q0.rxy.amp180(PI_PULSE_AMP)
 
 ```{admonition} Quantum Devices and Elements
 More information on quantum devices and elements can be found in
-{ref}`sec-tutorial-ops-qubits`. 
+{ref}`sec-tutorial-ops-qubits`.
 ```
 
 (hardware_setup)=
@@ -138,7 +138,7 @@ The last part of setting up the hardware is to define the {class}`~.backends.typ
 and attach it to our `single_qubit_device`. The hardware compilation configuration is a
 pydantic datastructure, parsed either from a file or from a Python
 dictionary. It contains all of the information about the instruments used to run
-the experiment and is used to compile the schedule to hardware. 
+the experiment and is used to compile the schedule to hardware.
 For more information on this datastructure, please refer to the explanation in the {ref}`User Guide <sec-hardware-compilation-config>`.
 
 ```{code-cell} ipython3
@@ -208,7 +208,7 @@ the hardware configuration and rely on Quantify's ability to compile a schedule
 to hardware for converting it to hardware-level commands. For this tutorial, we
 will define a simple schedule that will run a *T1 experiment* to determine the
 relaxation time of our qubit. For various delay times `tau`, we repeatedly
-excite the qubit, wait `tau` seconds and then measure the qubit. 
+excite the qubit, wait `tau` seconds and then measure the qubit.
 
 ```{code-cell} ipython3
 from quantify_scheduler import Schedule
@@ -253,7 +253,7 @@ t1_schedule.plot_circuit_diagram();
 For displaying the pulse diagram and timing table, the schedule first needs to get timing information for each operation in the schedule. This is achieved by compiling the schedule using {class}`~quantify_scheduler.backends.graph_compilation.SerialCompiler`. Please note that below in section {ref}`run_experiment`, the compilation is handled by {class}`~quantify_core.measurement.control.MeasurementControl` internally; it is done here only to enable displaying the timing table and pulse diagram.
 
 ```{admonition} Compiling to Hardware
-More information on compilation can be found in {ref}`sec-tutorial-compiling`. 
+More information on compilation can be found in {ref}`sec-tutorial-compiling`.
 ```
 
 ```{code-cell} ipython3
@@ -280,7 +280,7 @@ compiled_schedule.timing_table
 ```
 
 ```{admonition} Device-layer Schedules (Pulses)
-More information on defining schedules using pulses can be found in {ref}`sec-tutorial-sched-pulse`. 
+More information on defining schedules using pulses can be found in {ref}`sec-tutorial-sched-pulse`.
 ```
 
 ```{admonition} Circuit-layer Schedules (Gates and Measurements)
@@ -325,11 +325,11 @@ In the above example, we use
 {meth}`~quantify_core.measurement.control.MeasurementControl.gettables` together
 with `batched=True` to instruct `measurement_control` how to execute the
 experiment. Instead of iteratively processing each value in the `times` array, all are
-processed in one batch. 
+processed in one batch.
 
 ```{admonition} Configuring MeasurementControl
 More information on configuring {class}`~quantify_core.measurement.control.MeasurementControl` can be found in the
-[user guide](https://quantify-quantify-core.readthedocs-hosted.com/en/latest/usage.html#measurement-control)
+[user guide](https://quantify-quantify-core.readthedocs-hosted.com/en/latest/user/concepts.html#measurement-control)
 of `quantify-core`.
 ```
 
@@ -345,7 +345,7 @@ mystnb:
 dataset = measurement_control.run()
 ```
 
-The result of the experiment is assigned to the variable `dataset`, but also saved to disk (as set by {func}`~quantify_core.data.handling.set_datadir` at the start of this tutorial). 
+The result of the experiment is assigned to the variable `dataset`, but also saved to disk (as set by {func}`~quantify_core.data.handling.set_datadir` at the start of this tutorial).
 
 To analyze the experiment results, we can choose from the variety of classes from the {mod}`quantify_core.analysis`
 package. For a T1 experiment, we use the
@@ -371,6 +371,6 @@ T1Analysis(dataset=dataset).run().display_figs_mpl()
 
 ```{admonition} Analyzing Datasets
 More information on analyzing datasets can be found in the [user guide](
-<https://quantify-quantify-core.readthedocs-hosted.com/en/latest/usage.html#analysis>)
-of `quantify-core`. 
+<https://quantify-quantify-core.readthedocs-hosted.com/en/latest/user/concepts.html#analysis>)
+of `quantify-core`.
 ```

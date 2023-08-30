@@ -55,7 +55,7 @@ Improvements to this tutorial will include adding instructions on how to connect
 
 In this tutorial we make use of the example configuration that contains an HDAWG, a UHFQA and a few local oscillators. This configuration is fully described by the hardware compilation config file below, which contains the `"hardware_description"`, `"connectivity"`, and `"hardware_options"` information. These same files are also used for testing purposes in the CI.
 
-```{literalinclude} ../../../quantify_scheduler/schemas/examples/zhinst_hardware_compilation_config.json
+```{literalinclude} ../../../../quantify_scheduler/schemas/examples/zhinst_hardware_compilation_config.json
 :language: JSON
 ```
 ``````
