@@ -13,7 +13,7 @@ from functools import partial
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Literal, Optional, get_args
 
 import numpy as np
-from pydantic import parse_obj_as
+from pydantic.v1 import parse_obj_as
 from zhinst.toolkit.helpers import Waveform
 
 from quantify_scheduler import enums

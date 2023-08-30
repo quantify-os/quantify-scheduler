@@ -5,7 +5,7 @@ import pytest
 
 from typing import Any, Callable, Type, Union
 
-from pydantic import validator
+from pydantic.v1 import validator
 from quantify_scheduler.helpers.importers import import_python_object_from_string
 from quantify_scheduler.structure.model import (
     DataStructure,

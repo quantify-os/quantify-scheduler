@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from enum import Enum, unique
 from typing import Dict, List, Literal, Optional, Union
 
-from pydantic import Field, validator
+from pydantic.v1 import Field, validator
 from typing_extensions import Annotated
 
 from quantify_scheduler.backends.types import common
@@ -89,66 +89,45 @@ class InstrumentOperationMode(str, Enum):
 
 
 class Modulation(DataStructure):
-    """
-    The backend Modulation record type.
-
-    Parameters
-    ----------
-    type :
-        The modulation mode type select. Allows
-        to choose between. (default = ModulationModeType.NONE)
-
-        1. no modulation. ('none')
-        2. Software premodulation applied in the numerical waveforms. ('premod')
-        3. Hardware real-time modulation. ('modulate')
-    interm_freq :
-        The inter-modulation frequency (IF) in Hz. (default = 0.0).
-    phase_shift :
-        The IQ modulation phase shift in Degrees. (default = 0.0).
-    """
+    """The backend Modulation record type."""
 
     type: ModulationModeType = ModulationModeType.NONE
+    """
+    The modulation mode type select. Allows
+    to choose between. (default = ModulationModeType.NONE)
+
+    1. no modulation. ('none')
+    2. Software premodulation applied in the numerical waveforms. ('premod')
+    3. Hardware real-time modulation. ('modulate')
+    """
     interm_freq: float = 0.0
+    """The inter-modulation frequency (IF) in Hz. (default = 0.0)."""
     phase_shift: float = 0.0
+    """The IQ modulation phase shift in Degrees. (default = 0.0)."""
 
 
 class LocalOscillator(DataStructure):
-    """
-    The backend LocalOscillator record type.
-
-    Parameters
-    ----------
-    unique_name :
-        The unique name identifying the combination of instrument and
-        channel/parameters.
-    instrument_name :
-        The QCodes name of the LocalOscillator.
-    generic_icc_name :
-        The name of the GenericInstrumentCoordinatorComponent attached to this device.
-    frequency :
-        A dict which tells the generic icc what parameter maps to the local oscillator
-        (LO) frequency in Hz.
-    frequency_param
-        The parameter on the LO instrument used to control the frequency.
-    power :
-        A dict which tells the generic icc what parameter maps to the local oscillator
-        (LO) power in dBm.
-    phase :
-        A dict which tells the generic icc what parameter maps to the local oscillator
-        (LO) phase in radians.
-    parameters :
-        A dict which allows setting of channel specific parameters of the device. Cannot
-        be used together with frequency and power.
-    """
+    """The backend LocalOscillator record type."""
 
     unique_name: str
+    """The unique name identifying the combination of instrument and channel/parameters."""
     instrument_name: str
+    """The QCodes name of the LocalOscillator."""
     generic_icc_name: Optional[str] = None
+    """The name of the GenericInstrumentCoordinatorComponent attached to this device."""
     frequency: Optional[dict] = None
+    """A dict which tells the generic icc what parameter maps to the local oscillator (LO) frequency in Hz."""
     frequency_param: Optional[str] = None
+    """The parameter on the LO instrument used to control the frequency."""
     power: Optional[dict] = None
+    """A dict which tells the generic icc what parameter maps to the local oscillator (LO) power in dBm."""
     phase: Optional[dict] = None
+    """A dict which tells the generic icc what parameter maps to the local oscillator (LO) phase in radians."""
     parameters: Optional[dict] = None
+    """
+    A dict which allows setting of channel specific parameters of the device. Cannot
+    be used together with frequency and power.
+    """
 
 
 class Output(DataStructure):
@@ -157,48 +136,33 @@ class Output(DataStructure):
 
     This class maps to the zhinst backend JSON "channel"
     properties defined in the hardware mapping.
-
-    Parameters
-    ----------
-    port :
-        The port resource.
-    clock :
-        The Clock resource.
-    clock_frequency:
-        The frequency for the clock resource
-        (AKA RF/signal frequency).
-    mode :
-        The output mode type.
-    modulation :
-        The modulation settings.
-    local_oscillator :
-        The LocalOscillator name.
-    gain1 :
-        The output1 IQ modulation gain.
-        Accepted value between -1 and + 1. (default = 1.0)
-    gain2 :
-        The output2 IQ modulation gain.
-        Accepted value between -1 and + 1. (default = 1.0)
-    trigger :
-        The ZI Instrument input trigger. (default = None)
-        Setting this will declare the device secondary
-    markers :
-        The ZI Instrument output triggers. (default = [])
-    mixer_corrections :
-        The output mixer corrections.
     """
 
     port: str
+    """The port resource."""
     clock: str
+    """The Clock resource."""
     mode: SignalModeType
+    """The output mode type."""
     modulation: Modulation
+    """The modulation settings."""
     local_oscillator: str
+    """The LocalOscillator name."""
     clock_frequency: Optional[float] = None
+    """The frequency for the clock resource (AKA RF/signal frequency)."""
     gain1: int = 0
+    """The output1 IQ modulation gain. Accepted value between -1 and + 1. (default = 1.0)"""
     gain2: int = 0
+    """The output2 IQ modulation gain. Accepted value between -1 and + 1. (default = 1.0)"""
     trigger: Optional[int] = None
+    """
+    The ZI Instrument input trigger. (default = None)
+    Setting this will declare the device secondary.
+    """
     markers: List[Union[str, int]] = []
+    """The ZI Instrument output triggers. (default = [])"""
     mixer_corrections: Optional[common.MixerCorrections] = None
+    """The output mixer corrections."""
 
     @validator("mixer_corrections", pre=True, always=True)
     def decapitalize_dc_mixer_offsets(cls, v):
@@ -223,64 +187,58 @@ class Device(DataStructure):
 
     This class maps to the zhinst backend JSON "devices"
     properties defined in the hardware mapping.
-
-    Parameters
-    ----------
-    name :
-        The QCodes Instrument name.
-    type :
-        The instrument model type.
-        For example: 'UHFQA', 'HDAWG4', 'HDAWG8'
-    ref :
-        The reference source type.
-    channel_0 :
-        The first physical channel properties.
-    channel_1 :
-        The second physical channel properties.
-    channel_2 :
-        The third physical channel properties.
-    channel_3 :
-        The fourth physical channel properties.
-    channels :
-        The list of channels. (auto generated)
-    channelgrouping :
-        The HDAWG channelgrouping property. (default = 0) corresponding to a single
-        sequencer controlling a pair (2) awg outputs.
-    clock_select :
-        The clock rate divisor which will be used to get
-        the instruments clock rate from the lookup dictionary in
-        quantify_scheduler.backends.zhinst_backend.DEVICE_CLOCK_RATES.
-
-        For information see zhinst User manuals, section /DEV..../AWGS/n/TIME
-        Examples: base sampling rate (1.8 GHz) divided by 2^clock_select. (default = 0)
-    mode :
-        The Instruments operation mode.
-        (default = zhinst.InstrumentOperationMode.OPERATING)
-    device_type :
-        The Zurich Instruments hardware type. (default = DeviceType.NONE)
-        This field is automatically populated.
-    sample_rate :
-        The Instruments sampling clock rate.
-        This field is automatically populated.
-    n_channels :
-        The number of physical channels of this ZI Instrument.
-        This field is automatically populated.
     """
 
     name: str
+    """The QCodes Instrument name."""
     type: str
+    """The instrument model type. For example, 'UHFQA', 'HDAWG4', 'HDAWG8'."""
     ref: ReferenceSourceType
+    """The reference source type."""
     channel_0: Output
+    """The first physical channel properties."""
     channel_1: Optional[Output] = None
+    """The second physical channel properties."""
     channel_2: Optional[Output] = None
+    """The third physical channel properties."""
     channel_3: Optional[Output] = None
+    """The fourth physical channel properties."""
     channels: Optional[List[Output]]
+    """The list of channels. (auto generated)"""
     clock_select: Optional[int] = 0
+    """
+    The clock rate divisor which will be used to get
+    the instruments clock rate from the lookup dictionary in
+    quantify_scheduler.backends.zhinst_backend.DEVICE_CLOCK_RATES.
+
+    For information see zhinst User manuals, section /DEV..../AWGS/n/TIME
+    Examples: base sampling rate (1.8 GHz) divided by 2^clock_select. (default = 0)
+    """
     channelgrouping: int = 0
+    """
+    The HDAWG channelgrouping property. (default = 0) corresponding to a single
+    sequencer controlling a pair (2) awg outputs.
+    """
     mode: InstrumentOperationMode = InstrumentOperationMode.OPERATING
+    """
+    The Instruments operation mode.
+    (default = zhinst.InstrumentOperationMode.OPERATING)
+    """
     device_type: DeviceType = DeviceType.NONE
+    """
+    The Zurich Instruments hardware type. (default = DeviceType.NONE)
+    This field is automatically populated.
+    """
     sample_rate: Optional[int]
+    """
+    The Instruments sampling clock rate.
+    This field is automatically populated.
+    """
     n_channels: Optional[int]
+    """
+    The number of physical channels of this ZI Instrument.
+    This field is automatically populated.
+    """
 
     @validator("channels", pre=True, always=True)
     def generate_channel_list(cls, v, values):

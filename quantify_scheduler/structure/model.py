@@ -6,7 +6,7 @@ import types
 from typing import Any, Callable
 
 import orjson
-from pydantic import BaseModel, Extra
+from pydantic.v1 import BaseModel, Extra
 
 from quantify_scheduler.structure import types as qs_types
 from quantify_scheduler.helpers.importers import (

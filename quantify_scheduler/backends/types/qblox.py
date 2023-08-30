@@ -9,7 +9,7 @@ from dataclasses import field as dataclasses_field
 from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, TypeVar, Union
 
 from dataclasses_json import DataClassJsonMixin
-from pydantic import Field, validator
+from pydantic.v1 import Field, validator
 from typing_extensions import Annotated
 
 from quantify_scheduler.backends.qblox import constants, enums, q1asm_instructions

@@ -155,20 +155,18 @@ To compile to a Cluster, one should include a valid {class}`~.backends.types.qbl
 The name of the Cluster (the key of the structure, `"cluster0"` in the example) can be chosen freely.
 
 ```{eval-rst}
-.. autoclass:: quantify_scheduler.backends.types.qblox.ClusterDescription
+.. autoapiclass:: quantify_scheduler.backends.types.qblox.ClusterDescription
     :noindex:
-    :members:
-    :inherited-members: BaseModel
+    :members: ref, sequence_to_file, instrument_type, modules
 
 ```
 
 Here the modules are described by their respective {obj}`~.backends.types.qblox.ClusterModuleDescription`. For example, a QRM-RF module is described by
 
 ```{eval-rst}
-.. autoclass:: quantify_scheduler.backends.types.qblox.QRMRFDescription
+.. autoapiclass:: quantify_scheduler.backends.types.qblox.QRMRFDescription
     :noindex:
     :members:
-    :inherited-members: BaseModel
 
 ```
 
@@ -179,10 +177,9 @@ To use the default settings,  one can omit the channel description from the {obj
 For a complex input/output, this datastructure is:
 
 ```{eval-rst}
-.. autoclass:: quantify_scheduler.backends.types.qblox.ComplexChannelDescription
+.. autoapiclass:: quantify_scheduler.backends.types.qblox.ComplexChannelDescription
     :noindex:
-    :members:
-    :inherited-members: BaseModel
+    :members: 
 
 ```
 
@@ -675,10 +672,9 @@ schedule.add(MarkerPulse(duration=52e-9, port="q0:switch"))
 The {class}`~.backends.types.qblox.QbloxHardwareOptions` datastructure contains the settings used in compiling from the quantum-device layer to a set of instructions for the control hardware.
 
 ```{eval-rst}
-.. autoclass:: quantify_scheduler.backends.types.qblox.QbloxHardwareOptions
+.. autoapiclass:: quantify_scheduler.backends.types.qblox.QbloxHardwareOptions
     :noindex:
-    :members: 
-    :inherited-members: BaseModel
+    :members: latency_corrections, distortion_corrections, modulation_frequencies, mixer_corrections, input_gain, output_att, input_att, sequencer_options
 
 ```
 
@@ -1058,7 +1054,7 @@ Several options are available that are set on the sequencer that is assigned to 
 These can be set by adding `"sequencer_options"` to the hardware options.
 
 ```{eval-rst}
-.. autoclass:: quantify_scheduler.backends.types.qblox.SequencerOptions
+.. autoapiclass:: quantify_scheduler.backends.types.qblox.SequencerOptions
     :noindex:
     :members:
 

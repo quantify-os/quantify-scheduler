@@ -103,26 +103,23 @@ See {ref}`the hardware verification tutorial <hardware-verfication-tutorial>` fo
 The {ref}`Hardware Description <sec-hardware-description>` describes the instruments that are used in the setup, along with some instrument-specific settings. The currently supported instruments are:
 
 ```{eval-rst}
-.. autoclass:: quantify_scheduler.backends.types.zhinst.ZIHDAWG4Description
+.. autoapiclass:: quantify_scheduler.backends.types.zhinst.ZIHDAWG4Description
     :noindex:
-    :members:
-    :inherited-members: Datastructure, BaseModel
+    :members: ref, instrument_type, channelgrouping, clock_select, channel_0, channel_1
 
 ```
 
 ```{eval-rst}
-.. autoclass:: quantify_scheduler.backends.types.zhinst.ZIHDAWG8Description
+.. autoapiclass:: quantify_scheduler.backends.types.zhinst.ZIHDAWG8Description
     :noindex:
-    :members:
-    :inherited-members: BaseModel
+    :members: ref, instrument_type, channelgrouping, clock_select, channel_0, channel_1, channel_2, channel_3
 
 ```
 
 ```{eval-rst}
-.. autoclass:: quantify_scheduler.backends.types.zhinst.ZIUHFQADescription
+.. autoapiclass:: quantify_scheduler.backends.types.zhinst.ZIUHFQADescription
     :noindex:
-    :members:
-    :inherited-members: BaseModel
+    :members: ref, instrument_type, channel_0
 
 ```
 
@@ -136,17 +133,16 @@ HardwareDescription map 1-to-1 to the names given to the QCodes Instrument durin
 The channels of these instruments are described by
 
 ```{eval-rst}
-.. autoclass:: quantify_scheduler.backends.types.zhinst.ZIChannelDescription
+.. autoapiclass:: quantify_scheduler.backends.types.zhinst.ZIChannelDescription
     :noindex:
     :members:
-    :inherited-members: BaseModel
 
 ```
 
 Local oscillators can also be included by using the following generic datastructure.
 
 ```{eval-rst}
-.. autoclass:: quantify_scheduler.backends.types.common.LocalOscillatorDescription
+.. autoapiclass:: quantify_scheduler.backends.types.common.LocalOscillatorDescription
     :noindex:
     :members:
 
@@ -163,10 +159,9 @@ The {class}`~.backends.types.common.Connectivity` datastructure is currently und
 The {class}`~.backends.types.zhinst.ZIHardwareOptions` datastructure contains the settings used in compiling from the quantum-device layer to a set of instructions for the control hardware.
 
 ```{eval-rst}
-.. autoclass:: quantify_scheduler.backends.types.zhinst.ZIHardwareOptions
+.. autoapiclass:: quantify_scheduler.backends.types.zhinst.ZIHardwareOptions
     :noindex:
-    :members:
-    :inherited-members: BaseModel
+    :members: latency_corrections, distortion_corrections, modulation_frequencies, mixer_corrections, output_gain
 
 ```
 

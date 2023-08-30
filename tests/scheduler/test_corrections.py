@@ -9,7 +9,7 @@
 import numpy as np
 import pytest
 
-from pydantic import ValidationError
+from pydantic.v1 import ValidationError
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.corrections import (
     distortion_correct_pulse,

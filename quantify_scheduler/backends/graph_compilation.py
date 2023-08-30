@@ -19,7 +19,7 @@ from typing import (
 import matplotlib.pyplot as plt
 import networkx as nx
 from matplotlib.axes import Axes
-from pydantic import validator
+from pydantic.v1 import validator
 
 from quantify_scheduler.backends.types.common import HardwareCompilationConfig
 from quantify_scheduler.operations.operation import Operation

@@ -85,7 +85,7 @@ User may implement custom validators:
 .. jupyter-execute::
     :raises:
 
-    from pydantic import validator
+    from pydantic.v1 import validator
 
 
     class ScheduledExamplePulse(DataStructure):

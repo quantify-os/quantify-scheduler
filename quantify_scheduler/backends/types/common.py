@@ -4,7 +4,7 @@
 import warnings
 from typing import Dict, Literal, Optional, Union, List, Callable, Any
 
-from pydantic import validator
+from pydantic.v1 import validator
 
 from quantify_scheduler.structure.model import DataStructure, deserialize_function
 from quantify_scheduler.schedules.schedule import Schedule
