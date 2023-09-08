@@ -350,7 +350,7 @@ And we employ the term "**hardware**" to refer to the instruments (electronics) 
 :hidden: true
 :maxdepth: 2
 
-quantify_compilers
+../tutorials/quantify_compilers
 
 ```
 
@@ -389,7 +389,7 @@ Currently, this datastructure is parsed from a user-defined dict that should be 
 (user-guide-qblox-hardware-compilation-config)=
 ````{admonition} Example Qblox hardware compilation configuration file
 :class: dropdown
-```{literalinclude} ../../quantify_scheduler/schemas/examples/qblox_hardware_compilation_config.json
+```{literalinclude} ../../../quantify_scheduler/schemas/examples/qblox_hardware_compilation_config.json
 :language: JSON
 ```
 ````
@@ -397,7 +397,7 @@ Currently, this datastructure is parsed from a user-defined dict that should be 
 (user-guide-zhinst-hardware-compilation-config)=
 ````{admonition} Example Zurich Instruments hardware compilation configuration file
 :class: dropdown
-```{literalinclude} ../../quantify_scheduler/schemas/examples/zhinst_hardware_compilation_config.json
+```{literalinclude} ../../../quantify_scheduler/schemas/examples/zhinst_hardware_compilation_config.json
 :language: JSON
 ```
 ````

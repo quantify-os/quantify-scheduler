@@ -6,6 +6,7 @@
 
 ### Merged branches and closed issues
 
+- Documentation - Switch to `pydata-sphinx-theme`. (!778)
 - Compilation - Add a `scheduling_strategy` parameter to `QuantumDevice` and `DeviceCompilationConfig` classes to enable new strategies for calculating absolute timing in `compilation.determine_absolute_timing`  (!736)
 - Security - Add `check=True` flag to all subprocess calls (see also Ruff rule PLW1510). (!767)
 - Gettable - Add `ScheduleGettable.initialize_and_get_with_report` that saves information from an experiment in a report zipfile for diagnostics. (!672)
@@ -275,7 +276,7 @@
 
 ## 0.11.0 (2023-02-03)
 
-For help in migrating from deprecated methods, see [Quantify Deprecated Code Suggestions](examples/deprecated.md).
+For help in migrating from deprecated methods, see [Quantify Deprecated Code Suggestions](../examples/deprecated.md).
 
 ### Breaking changes
 

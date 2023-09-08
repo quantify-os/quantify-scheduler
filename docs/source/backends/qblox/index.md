@@ -1,6 +1,5 @@
 (sec-backend-qblox)=
-
-# Backend: Qblox
+# Qblox
 
 `quantify-scheduler` provides the {mod}`~quantify_scheduler.backends.qblox_backend`,
 that simplifies setting up experiments using [Qblox](https://www.qblox.com) control hardware.
@@ -24,7 +23,7 @@ for information on how to set this up.
 After a schedule is compiled into a program, uploading to the control hardware can be done using the usual
 [qblox-instruments](https://pypi.org/project/qblox-instruments/) driver under the hood. The driver is automatically included in installing `quantify-scheduler`.
 Please visit the [Qblox Instruments setup documentation](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/getting_started/setup.html)
-for detailed setup instructions. 
+for detailed setup instructions.
 
 Supported instruments:
 

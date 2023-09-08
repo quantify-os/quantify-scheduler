@@ -1,6 +1,5 @@
 (sec-backend-zhinst)=
-
-# Backend: Zurich Instruments
+# Zurich Instruments
 
 ## Introduction
 

@@ -21,6 +21,8 @@
 import os
 import sys
 
+from typing import Any, Dict
+
 package_path = os.path.abspath("..")
 sys.path.insert(0, package_path)
 
@@ -44,7 +46,6 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.autosectionlabel",
     "sphinx-jsonschema",
-    "sphinx_rtd_theme",
     "sphinx.ext.mathjax",
     "sphinx.ext.todo",
     "jupyter_sphinx",
@@ -55,11 +56,17 @@ extensions = [
     "scanpydoc.elegant_typehints",
     "sphinxcontrib.bibtex",
     "autoapi.extension",
+    "sphinx_design",
 ]
 
 
+# required to use sphinx_design in combination with myst
+myst_enable_extensions = ["colon_fence"]
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
+
+autoapi_template_dir = "_templates"
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
@@ -126,16 +133,14 @@ todo_include_todos = True
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "sphinx_rtd_theme"
-
+html_theme = "pydata_sphinx_theme"
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
 
 # the white text fits better with the current sphinx theme
 # both files are in the repository
-# html_logo = "images/QUANTIFY-LOGO.svg"
-html_logo = "images/QUANTIFY-LOGO-WHITE-TEXT.svg"
+html_logo = "images/QUANTIFY_LANDSCAPE.svg"
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
@@ -147,14 +152,16 @@ html_favicon = "images/QUANTIFY-FAVICON_16.png"
 # theme further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
+html_theme_options: Dict[str, Any] = {
+    "header_links_before_dropdown": 6,
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
 html_css_files = [
-    "quantify_scheduler.css",
+    "css/custom.css",
 ]
 
 
@@ -282,6 +289,7 @@ autodoc_default_options = {
     # See also qualname_overrides above, which has to be used for external packages.
     "ignore-module-all": True,
 }
+
 
 # For debugging the CI just add `or True` on the line below
 if os.environ.get("GITLAB_CI", "false") == "true":

@@ -13,6 +13,10 @@ Initializing a custom data structure:
 
     from quantify_scheduler.structure import DataStructure
 
+    import warnings
+
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 
 
 .. jupyter-execute::
@@ -85,7 +89,7 @@ User may implement custom validators:
 .. jupyter-execute::
     :raises:
 
-    from pydantic.v1 import validator
+    from pydantic import validator
 
 
     class ScheduledExamplePulse(DataStructure):
