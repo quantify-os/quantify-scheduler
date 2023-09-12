@@ -1,6 +1,4 @@
-# Examples
-
-
+# Examples and how-to guides 
 
 ```{toctree}
 :maxdepth: 1

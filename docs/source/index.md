@@ -7,7 +7,7 @@
 :img-top: images/index_getting_started.svg
 :img-alt: getting started image
 
-**Getting started and User guide**
+**Getting started and user guide**
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 First steps to hit the ground running, quick installation instructions
@@ -108,7 +108,7 @@ tutorials/index
 examples/index
 backends/index
 dev/index
-API Reference <autoapi/quantify_scheduler/index.rst>
+API reference <autoapi/quantify_scheduler/index.rst>
 
 ```
 

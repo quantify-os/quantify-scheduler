@@ -10,5 +10,4 @@ Operations and Qubits
 Acquisitions
 ScheduleGettable
 acquisition_protocols
-quantify_compilers
 ```

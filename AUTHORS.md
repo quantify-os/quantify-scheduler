@@ -1,6 +1,4 @@
-# Credits
-
-## Contributors
+# Contributors
 
 - Adam Lawrence ([GitLab](https://gitlab.com/adamorangeqs))
 - Adilet Tuleuov ([GitLab](https://gitlab.com/adilnaut))

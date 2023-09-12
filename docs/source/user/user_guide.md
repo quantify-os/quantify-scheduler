@@ -4,8 +4,6 @@ kernelspec:
     name: python3
 
 ---
-(sec-user-guide)=
-# User guide
 
 ```{code-cell} ipython3
 ---
@@ -19,7 +17,7 @@ pretty.install()
 
 ```
 
-## Introduction
+# Overview
 
 `quantify-scheduler` is a python module for writing quantum programs featuring a hybrid gate-pulse control model with explicit timing control.
 It extends the circuit model from quantum information processing by adding a pulse-level representation to operations defined at the gate-level, and the ability to specify timing constraints between operations.
@@ -35,7 +33,7 @@ We support similar flexibility in the timing constraints, one can either explici
 
 (sec-user-guide-creating-a-schedule)=
 
-## Creating a schedule
+# Creating a schedule
 
 The most convenient way to interact with a {class}`.Schedule` is through the {mod}`quantify_scheduler` API.
 In the following example, we will create a function to generate a {class}`.Schedule` for a [Bell experiment](https://en.wikipedia.org/wiki/Bell%27s_theorem) and visualize one instance of such a circuit.
@@ -89,7 +87,7 @@ f, ax = sched.plot_circuit_diagram()
 Creating schedule generating functions is a convenient design pattern when creating measurement code. See {ref}`the section on execution <sec-user-guide-execution>` for an example of how this is used in practice.
 ```
 
-## Concepts and terminology
+# Concepts and terminology
 
 `quantify-scheduler` can be understood by understanding the following concepts.
 
@@ -125,13 +123,13 @@ The following table shows an overview of the different concepts and how these ar
 
 (sec-user-guide-quantum-circuit)=
 
-### Quantum-circuit layer
+## Quantum-circuit layer
 
 The Quantum-circuit description is an idealized mathematical description of a schedule.
 
 (sec-user-guide-gates-measurement)=
 
-#### Gates and measurements
+### Gates and measurements
 
 In this description operations are
 [quantum gates](https://en.wikipedia.org/wiki/Quantum_logic_gate) that act on idealized qubits as part of a [quantum circuit](https://en.wikipedia.org/wiki/Quantum_circuit).
@@ -143,13 +141,13 @@ In addition to the qubit it acts on, one also needs to specify where to store th
 
 (sec-user-guide-qubits)=
 
-#### Qubits
+### Qubits
 
 At the gate-level description, operations are applied to qubits.
 Qubits are represented by strings corresponding to the name of a qubit (e.g., {code}`q0`, {code}`q1`, {code}`A1`, {code}`QL`, {code}`qubit_1`, etc.).
 Valid qubits are strings that appear in the {ref}`device configuration file<sec-device-config>` used when compiling the schedule.
 
-#### Visualization
+### Visualization
 
 A {class}`.Schedule` containing operations can be visualized using a circuit diagram by calling its method {meth}`.plot_circuit_diagram`.
 
@@ -171,7 +169,7 @@ _ = schedule.plot_pulse_diagram(sampling_rate=20e6)
 
 ```
 
-#### Summary
+### Summary
 
 - Gates are described by unitaries.
 - Gates are applied to qubits.
@@ -179,7 +177,7 @@ _ = schedule.plot_pulse_diagram(sampling_rate=20e6)
 - Qubits are represented by strings.
 
 (sec-user-guide-quantum-device)=
-### Quantum-device layer
+## Quantum-device layer
 
 The quantum-device layer describes waveforms and acquisition protocols applied
 to a device. These waveforms can be used to implement the idealized operations
@@ -188,7 +186,7 @@ a corresponding representation at the quantum-circuit layer.
 
 
 (sec-user-guide-pulses-acq-operations)=
-#### Pulses and acquisition operations
+### Pulses and acquisition operations
 
 
 The pulse-level description typically contains parameterization information,
@@ -204,7 +202,7 @@ and correspondent {ref}`acquisition protocols <sec-user-guide-acquisition-protoc
 a collection of commonly used acquisition operations.
 
 (sec-user-guide-ports-clocks)=
-#### Ports and clocks
+### Ports and clocks
 
 To specify *where* an operation is applied, the quantum-device layer description needs to specify both the location in physical space as well as in frequency space.
 
@@ -242,7 +240,7 @@ Device image from [Dickel (2018)](https://doi.org/10.4233/uuid:78155c28-3204-413
 ```
 
 (sec-user-guide-acquisition-protocols)=
-#### Acquisition protocols
+### Acquisition protocols
 
 When we define an acquisition, we must specify how to acquire data and how to process it
 to provide a meaningful result.
@@ -271,7 +269,7 @@ and supported by at least some of the backends consult
 the {ref}`acquisition protocols reference section <sec-acquisition-protocols>`.
 
 (sec-user-guide-acquisition-channel-index)=
-#### Acquisition channel and acquisition index
+### Acquisition channel and acquisition index
 
 `quantify-scheduler` identifies each acquisition in a resulting dataset with
 two integer numbers: *acquisition channel* and *acquisition index*.
@@ -296,7 +294,7 @@ submodule of a
 {class}`~quantify_scheduler.device_under_test.transmon_element.BasicTransmonElement`}).
 Acquisition index should be specified at the instantiation of a measurement operation.
 
-#### Summary
+### Summary
 
 - Pulses are described as parameterized waveforms.
 - Pulses are applied to *ports* at a frequency specified by a *clock*.
@@ -307,7 +305,7 @@ Acquisition index should be specified at the instantiation of a measurement oper
   in a dataset.
 
 (sec-compilation)=
-## Compilation
+# Compilation
 
 Different compilation steps are required to go from a high-level description of a schedule to something that can be executed on hardware.
 The scheduler supports multiple compilation steps, the most important ones are the step from the quantum-circuit layer (gates) to the quantum-device layer (pulses), and the one from the quantum-device layer into instructions suitable for execution on physical hardware.
@@ -345,18 +343,8 @@ We use the term "**device**" to refer to the physical object(s) on the receiving
 And we employ the term "**hardware**" to refer to the instruments (electronics) that are involved in the pulse generations / signal digitization.
 ```
 
-```{toctree}
-:glob: true
-:hidden: true
-:maxdepth: 2
-
-../tutorials/quantify_compilers
-
-```
-
 (sec-device-config)=
-
-### Device compilation configuration
+## Device compilation configuration
 
 The device compilation configuration is used to compile from the quantum-circuit layer to the quantum-device layer.
 This datastructure is auto-generated by the {class}`~.device_under_test.quantum_device.QuantumDevice` using the parameters stored in the {class}`~.device_under_test.device_element.DeviceElement`s.
@@ -368,7 +356,7 @@ This datastructure is auto-generated by the {class}`~.device_under_test.quantum_
 ```
 
 (sec-hardware-compilation-config)=
-### Hardware compilation configuration
+## Hardware compilation configuration
 
 ```{admonition} Under construction
 The {class}`~.backends.types.common.HardwareCompilationConfig` replaces the the old-style unvalidated json/dict hardware configuration, adding validation of the contents
@@ -403,7 +391,7 @@ Currently, this datastructure is parsed from a user-defined dict that should be 
 ````
 
 (sec-hardware-description)=
-#### Hardware Description
+### Hardware Description
 The {obj}`~.backends.types.common.HardwareDescription` datastructure specifies a control hardware instrument in the setup, along with its instrument-specific settings.
 There is a specific {obj}`~.backends.types.common.HardwareDescription` datastructure for each of the currently supported instrument types, which are discriminated through the `instrument_type` field.
 
@@ -442,7 +430,7 @@ There is a specific {obj}`~.backends.types.common.HardwareDescription` datastruc
 
 (sec-hardware-options)=
 
-#### Hardware Options
+### Hardware Options
 The {class}`~.backends.types.common.HardwareOptions` datastructure contains the settings used in compiling from the quantum-device layer to a set of instructions for the control hardware. Most hardware options are structured as `Dict[str, HardwareOption]`, where the keys are the port-clock combinations on which these settings should be applied.
 
 ```{eval-rst}
@@ -453,14 +441,14 @@ The {class}`~.backends.types.common.HardwareOptions` datastructure contains the 
 ```
 
 (sec-connectivity)=
-#### Connectivity
+### Connectivity
 The {class}`~.backends.types.common.Connectivity` datastructure describes how ports on the quantum device are connected to ports on the control hardware.
 
 ```{note}
 The {class}`~.backends.types.common.Connectivity` datastructure is currently under development. Information on the connectivity between port-clock combinations on the quantum device and ports on the control hardware is currently included in the old-style hardware configuration file, which should be included in the `"connectivity"` field of the {class}`~.backends.types.common.HardwareCompilationConfig`.
 ```
 
-## Execution
+# Execution
 
 (sec-user-guide-execution)=
 
@@ -469,7 +457,7 @@ This section describes functionality that is not fully implemented yet.
 The documentation describes the intended design and may change as the functionality is added.
 ```
 
-### Different kinds of instruments
+## Different kinds of instruments
 
 In order to execute a schedule, one needs both physical instruments to execute the compiled instructions as well as a way to manage the calibration parameters used to compile the schedule.
 Although one could use manually written configuration files and send the compiled files directly to the hardware, the Quantify framework provides different kinds of {class}`~qcodes.instrument.base.Instrument`s to control the experiments and the management of the configuration files ({numref}`instruments_overview`).
@@ -487,7 +475,7 @@ The knowledge about the system that is required to generate the configuration fi
 Several utility instruments are used to control the flow of the experiments.
 ```
 
-#### Physical instruments
+### Physical instruments
 
 [QCoDeS instrument drivers](https://qcodes.github.io/Qcodes/drivers_api/index.html) are used to represent the physical hardware.
 For the purpose of quantify-scheduler, these instruments are treated as stateless, the desired configurations for an experiment being described by the compiled instructions.
@@ -495,14 +483,14 @@ Because the instruments correspond to physical hardware, there is a significant 
 As such, the state of the instruments in the software is intended to track the state of the physical hardware to facilitate lazy configuration and logging purposes.
 
 (sec-user-guide-hal)=
-#### Hardware abstraction layer
+### Hardware abstraction layer
 
 Because different physical instruments have different interfaces, a hardware abstraction layer serves to provide a uniform interface.
 This hardware abstraction layer is implemented as the {class}`~.InstrumentCoordinator` to which individual {class}`InstrumentCoordinatorComponent <.InstrumentCoordinatorComponentBase>`s are added that provide the uniform interface to the individual instruments.
 
 (sec-user-guide-quantum-device-elements)=
 
-#### The quantum device and the device elements
+### The quantum device and the device elements
 
 The knowledge of the system is described by the {class}`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` and {code}`DeviceElement`s.
 The {class}`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` directly represents the device under test (DUT) and contains a description of the connectivity to the control hardware as well as parameters specifying quantities like cross talk, attenuation and calibrated cable-delays.
@@ -510,7 +498,7 @@ The {class}`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` 
 
 Because the {class}`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` and the {code}`DeviceElement`s are an {class}`~qcodes.instrument.base.Instrument`, the parameters used to generate the configuration files can be easily managed and are stored in the snapshot containing the experiment's metadata.
 
-### Experiment flow
+## Experiment flow
 
 To use schedules in an experimental setting, in which the parameters used for compilation as well as the schedules themselves routinely change, we provide a framework for performing experiments making use of the concepts of `quantify-core`.
 Central in this framework are the schedule {mod}`quantify_scheduler.gettables` that can be used by the `quantify_core.measurement.control.MeasurementControl` and are responsible for the experiment flow.
@@ -609,7 +597,7 @@ and the resulting dataset can be analyzed using
 ```
 
 (sec-user-guide-acq-data-format)=
-## Acquisition data format
+# Acquisition data format
 
 `quantify-scheduler` has two primary interfaces for retrieving acquisition results: using
 {class}`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator`
@@ -652,7 +640,7 @@ submodule of
 {class}`~quantify_scheduler.operations.gate_library.Measure` (or another specialised
 measurement operation supported by the device element).
 
-### Retrieve acquisitions through `InstrumentCoordinator`
+## Retrieve acquisitions through `InstrumentCoordinator`
 
 {meth}`InstrumentCoordinator.retrieve_acquisition() <quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator.retrieve_acquisition>`
 method returns an `xarray.Dataset`:
@@ -706,7 +694,7 @@ the processing of the dataset.
 
 (sec-user-guide-acquisition-data-schedulegettable)=
 
-### Retrieve acquisition through `ScheduleGettable`
+## Retrieve acquisition through `ScheduleGettable`
 
 {class}`~quantify_scheduler.gettables.ScheduleGettable` proxies the instrument-coordinator format to a format that can be used with
 {class}`~quantify_core.measurement.control.MeasurementControl`.

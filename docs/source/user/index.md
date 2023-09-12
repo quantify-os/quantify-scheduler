@@ -1,11 +1,20 @@
+(sec-user-guide)=
 # User guide
 
 ```{toctree}
 :caption: Getting started
 :maxdepth: 1
 
-user_guide
+about
 installation
+```
+
+```{toctree}
+:caption: Basic concepts
+:maxdepth: 1
+
+user_guide
+quantify_compilers
 ```
 
 

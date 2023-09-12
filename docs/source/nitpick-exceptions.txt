@@ -41,3 +41,10 @@ py:class module
 # py:obj List
 # py:obj ModuleType
 py:class UserDict
+
+# Can't find external refs to matplotlib
+py:class Axes
+py:class Figure
+
+# Can't find external refs to plotly
+py:class go.Figure

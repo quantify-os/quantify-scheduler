@@ -5,7 +5,7 @@ kernelspec:
 
 ---
 
-# Deprecated Code Suggestions
+# Deprecated code suggestions
 
 ```{seealso}
 Download the notebook: {nb-download}`deprecated.ipynb`
