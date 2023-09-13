@@ -21,6 +21,7 @@
 - Documentation - Add a short explanation and examples of the `StitchedPulse` and `StitchedPulseBuilder` to the Schedules and Pulses tutorial. (!766)
 - Infrastructure - Add `jinja2` as dependency to quantify-scheduler (needed for `pandas.DataFrame`) (!777)
 - Documentation - Split source and build folders to simplify using [`sphinx-autobuild`](https://github.com/executablebooks/sphinx-autobuild) for its editing. (!774)
+- Schedules - Added two-qubit schedule generating function `two_qubit_transmon_schedules.chevron_cz_sched` for CZ tuneup (!700).
 
 ## 0.16.0 (2023-08-17)
 
