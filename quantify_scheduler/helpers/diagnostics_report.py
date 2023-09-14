@@ -152,7 +152,8 @@ def _generate_diagnostics_report(  # noqa: PLR0915
                         hw_logs=component_hardware_logs, extracted_hw_logs={}
                     ).items():
                         zip_file.writestr(
-                            os.path.join(component_name, log_name), hardware_log
+                            os.path.join(component_name, f"{log_name}.txt"),
+                            hardware_log,
                         )
 
         if experiment_exception is not None:

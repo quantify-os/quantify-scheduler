@@ -282,6 +282,7 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
     ) -> dict | None:
         """
         Retrieve the hardware log of the Qblox instrument associated to this component.
+        This log includes the instrument serial number and firmware version.
 
         Parameters
         ----------
@@ -298,7 +299,12 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         if self.instrument.name not in compiled_schedule.compiled_instructions.keys():
             return None
 
-        return _download_log(_get_configuration_manager(_get_instrument_ip(self)))
+        return {
+            f"{self.instrument.name}_log": _download_log(
+                _get_configuration_manager(_get_instrument_ip(self))
+            ),
+            f"{self.instrument.name}_idn": str(self.instrument.get_idn()),
+        }
 
     def start(self) -> None:
         """
@@ -1549,7 +1555,8 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
     ) -> dict | None:
         """
         Retrieve the hardware log of the cluster CMM (Cluster Management Module) plus the
-        logs of its associated modules.
+        logs of its associated modules. This log includes the module serial numbers and
+        firmware version.
 
         Parameters
         ----------
@@ -1573,7 +1580,9 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
             f"{cluster.name}_cmm": _download_log(
                 config_manager=_get_configuration_manager(cluster_ip),
                 is_cluster=True,
-            )
+            ),
+            f"{cluster.name}_idn": str(cluster.get_idn()),
+            f"{cluster.name}_mods_info": str(cluster._get_mods_info()),
         }
 
         for module in cluster.modules:
@@ -1633,7 +1642,7 @@ def _download_log(
             with open(temp_log_file_name) as file:
                 log = file.read()
             os.remove(temp_log_file_name)
-            hardware_log[f"{source}_log.txt"] = log
+            hardware_log[f"{source}_log"] = log
         else:
             raise RuntimeError(
                 f"`ConfigurationManager.download_log` did not create a `{source}`"

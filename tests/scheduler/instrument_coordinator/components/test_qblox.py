@@ -1037,7 +1037,8 @@ def test_get_hardware_log_component_base(
     pulsar_qcm0_log = pulsar_qcm0.get_hardware_log(compiled_sched)
     pulsar_qcm2_log = pulsar_qcm2.get_hardware_log(compiled_sched)
 
-    assert pulsar_qcm0_log["app_log.txt"] == f"Mock hardware log for app"
+    assert pulsar_qcm0_log["qcm0_log"]["app_log"] == f"Mock hardware log for app"
+    assert "serial_number" in pulsar_qcm0_log["qcm0_idn"]
 
     # Assert an instrument not included in the compiled schedule (pulsar_qcm2) does not
     # produce a log.
@@ -1056,7 +1057,6 @@ def test_get_hardware_log_cluster_component(
     cluster1: qblox.ClusterComponent = make_cluster_component("cluster1")
 
     cluster0.instrument.get_ip_config = MagicMock(return_value=example_ip)
-    cluster1.instrument.get_ip_config = MagicMock(return_value=example_ip)
 
     # ConfigurationManager belongs to qblox-instruments, but was already imported
     # in quantify_scheduler
@@ -1082,21 +1082,22 @@ def test_get_hardware_log_cluster_component(
 
     source = "app"
     assert (
-        cluster0_log["cluster0_cmm"][f"{source}_log.txt"]
+        cluster0_log["cluster0_cmm"][f"{source}_log"]
         == f"Mock hardware log for {source}"
     )
     assert (
-        cluster0_log["cluster0_module1"][f"{source}_log.txt"]
+        cluster0_log["cluster0_module1"][f"{source}_log"]
         == f"Mock hardware log for {source}"
     )
     assert "cluster0_module17" not in cluster0_log
+    assert "serial_number" in cluster0_log["cluster0_idn"]
+    assert "IDN" in cluster0_log["cluster0_mods_info"]
 
     assert cluster1_log is None
 
 
 def test_download_log(
     example_ip,
-    make_cluster_component,
     mocker,
     mock_qblox_instruments_config_manager,
 ):
@@ -1111,7 +1112,7 @@ def test_download_log(
     cluster_logs = qblox._download_log(config_manager=config_manager, is_cluster=True)
 
     for source in ["cfg_man", "app", "system"]:
-        assert cluster_logs[f"{source}_log.txt"] == f"Mock hardware log for {source}"
+        assert cluster_logs[f"{source}_log"] == f"Mock hardware log for {source}"
 
     # Assert files are deleted after retrieving hardware logs
     for source in ["app", "system", "cfg_man"]:

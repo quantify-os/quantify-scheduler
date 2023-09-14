@@ -897,6 +897,10 @@ def test_initialize_and_get_with_report_completed_exp__qblox(
         hardware_log = zf.read(
             f"{cluster_name}/{cluster_name}_cmm_app_log.txt"
         ).decode()
+        hardware_log_idn = zf.read(f"{cluster_name}/{cluster_name}_idn.txt").decode()
+        hardware_log_mods_info = zf.read(
+            f"{cluster_name}/{cluster_name}_mods_info.txt"
+        ).decode()
         with pytest.raises(KeyError):
             zf.read("connection_error_trace.txt").decode()
 
@@ -904,6 +908,8 @@ def test_initialize_and_get_with_report_completed_exp__qblox(
 
     # Test that hardware logs are correctly passed to the zipfile
     assert hardware_log == "Mock hardware log for app"
+    assert "serial_number" in hardware_log_idn
+    assert "IDN" in hardware_log_mods_info
 
 
 def test_initialize_and_get_with_report_failed_hw_log_retrieval__qblox(
