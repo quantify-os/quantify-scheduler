@@ -37,7 +37,8 @@ and explanation of Quantify-scheduler basics.
 **Tutorials**
 ^^^^^^^^^^^^^
 
-Interactive lessons to allow you easily define, manage, execute and analyze complex experiments, using a combination of Quantify-scheduler and Quantify core.
+Interactive lessons to allow you easily define, manage, execute and analyze complex
+experiments, using a combination of Quantify-scheduler and Quantify-core.
 
 +++
 
@@ -63,7 +64,8 @@ Interactive lessons to allow you easily define, manage, execute and analyze comp
 **API reference**
 ^^^^^^^^^^^^^^^^^
 
-A detailed description of the functions, modules, and objects included in Quantify-scheduler
+A detailed description of the functions, modules, and objects included in
+Quantify-scheduler.
 
 +++
 
@@ -106,10 +108,9 @@ code conventions, and get some idea about our future plans and proposed features
 user/index
 tutorials/index
 examples/index
-backends/index
+reference/index
 dev/index
 API reference <autoapi/quantify_scheduler/index.rst>
-
 ```
 
 

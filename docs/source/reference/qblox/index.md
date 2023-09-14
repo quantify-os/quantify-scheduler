@@ -1,8 +1,8 @@
 (sec-backend-qblox)=
 # Qblox
 
-`quantify-scheduler` provides the {mod}`~quantify_scheduler.backends.qblox_backend`,
-that simplifies setting up experiments using [Qblox](https://www.qblox.com) control hardware.
+`quantify-scheduler` provides the {mod}`~quantify_scheduler.backends.qblox_backend`
+that facilitates setting up experiments using [Qblox](https://www.qblox.com) control hardware.
 
 Functionality included in this backend:
 

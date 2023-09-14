@@ -380,6 +380,7 @@ linkcheck_ignore = [
     "https://doi.org/10.1063/1.5089550",
     "https://doi.org/10.1063/1.5133894",
     "https://doi.org/10.1109/TQE.2020.2965810",
+    "https://doi.org/10.4233/uuid:78155c28-3204-4130-a645-a47e89c46bc5",
     "https://www.sciencedirect.com/science/article/pii/S0370157313000562",
     "dot",  # To not require graphviz in linkcheck image
 ]

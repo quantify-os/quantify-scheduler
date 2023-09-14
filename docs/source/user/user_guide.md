@@ -236,7 +236,7 @@ By prefixing the name of a qubit in a port name (separated by a colon {code}`:`)
 (b) Clocks (blue) denote the frequency and phase of a signal.
 They can be set to track the phase of a known transition.
 By prefixing the name of a qubit in a clock name (separated by a colon {code}`:`) a clock can be associated with a qubit (red), but this is not required.
-Device image from [Dickel (2018)](https://doi.org/10.4233/uuid:78155c28-3204-4130-a645-a47e89c46bc5) .
+Device image from {cite:t}`Dickel2018`).
 ```
 
 (sec-user-guide-acquisition-protocols)=

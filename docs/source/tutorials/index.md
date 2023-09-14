@@ -9,5 +9,4 @@ Compiling to Hardware
 Operations and Qubits
 Acquisitions
 ScheduleGettable
-acquisition_protocols
 ```
