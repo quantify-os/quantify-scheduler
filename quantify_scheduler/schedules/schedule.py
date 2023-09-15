@@ -8,7 +8,6 @@ import json
 import warnings
 from abc import ABC
 from collections import UserDict
-from copy import deepcopy
 from itertools import chain
 from typing import TYPE_CHECKING, Any, Literal
 from uuid import uuid4
@@ -360,7 +359,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
                 schedule.add(DRAGPulse(G_amp=0.2, D_amp=0.2, phase=0, duration=4e-6, port="P", clock="C"))
                 schedule.add(RampPulse(amp=0.2, offset=0.0, duration=6e-6, port="P"))
                 schedule.add(SquarePulse(amp=0.1, duration=4e-6, port="Q"), ref_pt='start')
-                determine_absolute_timing(schedule)
+                schedule = determine_absolute_timing(schedule)
 
                 _ = schedule.plot_pulse_diagram(sampling_rate=20e6)
 
@@ -843,9 +842,7 @@ class CompiledSchedule(ScheduleBase):
         # ensure keys exist
         self["compiled_instructions"] = {}
 
-        # deepcopy is used to prevent side effects when the
-        # original (mutable) schedule is modified
-        self.data.update(deepcopy(schedule.data))
+        self.data.update(schedule.data)
 
     @property
     def compiled_instructions(self) -> dict[str, Resource]:

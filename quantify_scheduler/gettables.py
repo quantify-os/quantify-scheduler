@@ -175,7 +175,7 @@ class ScheduleGettable:
         # made into a private variable for debugging and future caching functionality
         self._backend = compilation_config.backend(name=compilation_config.name)
         self._compiled_schedule = self._backend.compile(
-            schedule=sched, config=compilation_config
+            schedule=sched, config=compilation_config, keep_original_schedule=False
         )
 
     def initialize(self) -> None:
@@ -187,11 +187,12 @@ class ScheduleGettable:
         self._evaluated_sched_kwargs = _evaluate_parameter_dict(self.schedule_kwargs)
 
         # generate a schedule using the evaluated keyword arguments dict
-        sched = self.schedule_function(
-            **self._evaluated_sched_kwargs,
-            repetitions=self.quantum_device.cfg_sched_repetitions(),
+        self._compile(
+            sched=self.schedule_function(
+                **self._evaluated_sched_kwargs,
+                repetitions=self.quantum_device.cfg_sched_repetitions(),
+            )
         )
-        self._compile(sched)
 
         instr_coordinator = self.quantum_device.instr_instrument_coordinator.get_instr()
         instr_coordinator.prepare(self._compiled_schedule)

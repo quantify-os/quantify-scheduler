@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import logging
 from typing import Literal, Optional
+from copy import deepcopy
 
 from quantify_scheduler.backends.graph_compilation import (
     CompilationConfig,
@@ -21,6 +22,7 @@ def determine_absolute_timing(
         "physical", "ideal", None
     ] = "physical",  # should be included in CompilationConfig
     config: Optional[CompilationConfig] = None,
+    keep_original_schedule=True,
 ) -> Schedule:
     """
     Determines the absolute timing of a schedule based on the timing constraints.
@@ -50,11 +52,18 @@ def determine_absolute_timing(
         When :code:`time_unit == "ideal"` the duration attribute is ignored and treated
         as if it is :code:`1`.
         When :code:`time_unit == None` it will revert to :code:`"physical"`.
+    keep_original_schedule
+        If `True`, this function will not modify the schedule argument.
+        If `False`, the compilation modifies the schedule, thereby
+        making the original schedule unusable for further usage; this
+        improves compilation time. Warning: if `False`, the returned schedule
+        references objects from the original schedule, please refrain from modifying
+        the original schedule after compilation in this case!
 
     Returns
     -------
     :
-        a new schedule object where the absolute time for each operation has been
+        The modified `schedule` where the absolute time for each operation has been
         determined.
 
     Raises
@@ -62,6 +71,9 @@ def determine_absolute_timing(
     NotImplementedError
         If the scheduling strategy is not "asap"
     """
+    if keep_original_schedule:
+        schedule = deepcopy(schedule)
+
     scheduling_strategy = "asap"
     if config is not None:
         scheduling_strategy = config.device_compilation_config.scheduling_strategy

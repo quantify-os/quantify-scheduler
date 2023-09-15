@@ -163,7 +163,7 @@ schedule = Schedule("waveforms")
 schedule.add(SquarePulse(amp=0.2, duration=4e-6, port="P"))
 schedule.add(RampPulse(amp=-0.1, offset=.2, duration=6e-6, port="P"))
 schedule.add(SquarePulse(amp=0.1, duration=4e-6, port="Q"), ref_pt='start')
-determine_absolute_timing(schedule)
+schedule = determine_absolute_timing(schedule)
 
 _ = schedule.plot_pulse_diagram(sampling_rate=20e6)
 

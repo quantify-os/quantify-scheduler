@@ -16,7 +16,7 @@ from quantify_scheduler.resources import ClockResource
 def test_schedule_plotting() -> None:
     sched = Schedule("test")
     sched.add(SquarePulse(amp=0.2, duration=4e-6, port="SDP"))
-    determine_absolute_timing(schedule=sched)
+    sched = determine_absolute_timing(schedule=sched, keep_original_schedule=True)
 
     circuit_fig_mpl, _ = sched.plot_circuit_diagram()
     pulse_fig_mpl, _ = sched.plot_pulse_diagram()

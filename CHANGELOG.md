@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Breaking changes
+- Qblox backend - `QuantifyCompiler.compile`, `determine_absolute_timing` and `compile_circuit_to_device` restandardized: returned schedule is the transformed schedule; and added `keep_original_schedule` argument (!771)
 
 ### Merged branches and closed issues
 
@@ -23,6 +24,7 @@
 - Infrastructure - Add `jinja2` as dependency to quantify-scheduler (needed for `pandas.DataFrame`) (!777)
 - Documentation - Split source and build folders to simplify using [`sphinx-autobuild`](https://github.com/executablebooks/sphinx-autobuild) for its editing. (!774)
 - Schedules - Added two-qubit schedule generating function `two_qubit_transmon_schedules.chevron_cz_sched` for CZ tuneup (!700).
+- Qblox backend - Remove unnecessary deepcopies from schedule for 30-75% performance improvement (!771)
 
 ## 0.16.0 (2023-08-17)
 

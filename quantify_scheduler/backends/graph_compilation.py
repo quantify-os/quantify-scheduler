@@ -3,6 +3,7 @@
 """Graph compilation backend of quantify-scheduler."""
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -355,7 +356,10 @@ class QuantifyCompiler(CompilationNode):
         self.quantum_device = quantum_device
 
     def compile(
-        self, schedule: Schedule, config: Optional[CompilationConfig] = None
+        self,
+        schedule: Schedule,
+        config: Optional[CompilationConfig] = None,
+        keep_original_schedule: bool = True,
     ) -> CompiledSchedule:
         """
         Compile a :class:`~.Schedule` using the information provided in the config.
@@ -368,6 +372,13 @@ class QuantifyCompiler(CompilationNode):
             describing the information required to compile the schedule.
             If not specified, self.quantum_device will be used to generate
             the config.
+        keep_original_schedule
+            If `True`, this function will not modify the schedule argument.
+            If `False`, the compilation modifies the schedule, thereby
+            making the original schedule unusable for further usage; this
+            improves compilation time. Warning: if `False`, the returned schedule
+            references objects from the original schedule, please refrain from modifying
+            the original schedule after compilation in this case!
 
         Returns
         -------
@@ -379,6 +390,9 @@ class QuantifyCompiler(CompilationNode):
         # this is the public facing compile method.
         # it wraps around the self._compilation_func, but also contains the common logic
         # to support (planned) features like caching and parallel evaluation.
+
+        if keep_original_schedule:
+            schedule = deepcopy(schedule)
 
         # classes inheriting from this node should overwrite the _compilation_func and
         # not the public facing compile.

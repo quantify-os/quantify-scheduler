@@ -1607,7 +1607,9 @@ def test_container_prepare_no_lo(
 
 
 def test_container_add_from_type(pulse_only_schedule, hardware_cfg_pulsar):
-    determine_absolute_timing(pulse_only_schedule)
+    pulse_only_schedule = determine_absolute_timing(
+        pulse_only_schedule, keep_original_schedule=False
+    )
     container = compiler_container.CompilerContainer(pulse_only_schedule)
     container.add_instrument_compiler("qcm0", QcmModule, hardware_cfg_pulsar["qcm0"])
     assert "qcm0" in container.instrument_compilers
@@ -1615,7 +1617,9 @@ def test_container_add_from_type(pulse_only_schedule, hardware_cfg_pulsar):
 
 
 def test_container_add_from_str(pulse_only_schedule, hardware_cfg_pulsar):
-    determine_absolute_timing(pulse_only_schedule)
+    pulse_only_schedule = determine_absolute_timing(
+        pulse_only_schedule, keep_original_schedule=False
+    )
     container = compiler_container.CompilerContainer(pulse_only_schedule)
     container.add_instrument_compiler("qcm0", "Pulsar_QCM", hardware_cfg_pulsar["qcm0"])
     assert "qcm0" in container.instrument_compilers
@@ -1623,7 +1627,9 @@ def test_container_add_from_str(pulse_only_schedule, hardware_cfg_pulsar):
 
 
 def test_container_add_from_path(pulse_only_schedule, hardware_cfg_pulsar):
-    determine_absolute_timing(pulse_only_schedule)
+    pulse_only_schedule = determine_absolute_timing(
+        pulse_only_schedule, keep_original_schedule=False
+    )
     container = compiler_container.CompilerContainer(pulse_only_schedule)
     container.add_instrument_compiler(
         "qcm0",
@@ -1637,7 +1643,9 @@ def test_container_add_from_path(pulse_only_schedule, hardware_cfg_pulsar):
 def test_from_mapping(
     pulse_only_schedule, compile_config_basic_transmon_qblox_hardware
 ):
-    determine_absolute_timing(pulse_only_schedule)
+    pulse_only_schedule = determine_absolute_timing(
+        pulse_only_schedule, keep_original_schedule=False
+    )
     hardware_cfg = generate_hardware_config(
         compilation_config=compile_config_basic_transmon_qblox_hardware
     )
@@ -1671,7 +1679,9 @@ def test_real_mode_container(
     mock_setup_basic_transmon,
     instruction_generated_pulses_enabled,  # pylint: disable=unused-argument
 ):
-    determine_absolute_timing(real_square_pulse_schedule)
+    real_square_pulse_schedule = determine_absolute_timing(
+        real_square_pulse_schedule, keep_original_schedule=False
+    )
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         real_square_pulse_schedule, hardware_cfg_pulsar_qcm_real_mode
     )
@@ -2656,7 +2666,9 @@ def test_extract_settings_from_mapping(hardware_cfg_rf, hardware_cfg_pulsar):
 def test_cluster_settings(
     pulse_only_schedule, compile_config_basic_transmon_qblox_hardware
 ):
-    determine_absolute_timing(pulse_only_schedule)
+    pulse_only_schedule = determine_absolute_timing(
+        pulse_only_schedule, keep_original_schedule=False
+    )
     hardware_cfg = generate_hardware_config(
         compilation_config=compile_config_basic_transmon_qblox_hardware
     )

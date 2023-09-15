@@ -60,8 +60,12 @@ def create_schedule_with_pulse_info(
         _device_config = (
             device_config if device_config is not None else device_cfg_transmon_example
         )
-        _schedule = compile_circuit_to_device(_schedule, _device_config)
-        _schedule = determine_absolute_timing(schedule=_schedule, time_unit="physical")
+        _schedule = compile_circuit_to_device(
+            schedule=_schedule, device_cfg=_device_config, keep_original_schedule=True
+        )
+        _schedule = determine_absolute_timing(
+            schedule=_schedule, time_unit="physical", keep_original_schedule=True
+        )
         return _schedule
 
     yield _create_schedule_with_pulse_info

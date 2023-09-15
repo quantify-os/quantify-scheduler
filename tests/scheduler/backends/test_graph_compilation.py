@@ -7,6 +7,7 @@ This test style covers the classes and functions in the backends/graph_compilati
 file.
 """
 
+from copy import deepcopy
 import pytest
 import networkx as nx
 from matplotlib.axes import Axes
@@ -97,3 +98,36 @@ def test_compiled_schedule_invariance(mock_setup_basic_transmon_with_standard_pa
     )
     assert isinstance(compiled_schedule, CompiledSchedule)
     assert isinstance(compiled_schedule, InheritedFromCompiledSchedule)
+
+
+def test_schedule_invariance_after_compilation(
+    mock_setup_basic_transmon_with_standard_params,
+):
+    mock_setup = mock_setup_basic_transmon_with_standard_params
+    original_schedule = Schedule("test_schedule")
+    original_schedule.add(Reset("q0"))
+
+    schedule = deepcopy(original_schedule)
+    _ = SerialCompiler("test", mock_setup["quantum_device"]).compile(
+        schedule=schedule, keep_original_schedule=True
+    )
+
+    assert schedule == original_schedule
+
+
+def test_do_not_keep_original_schedule(
+    mock_setup_basic_transmon_with_standard_params,
+):
+    mock_setup = mock_setup_basic_transmon_with_standard_params
+    schedule = Schedule("test_schedule")
+    schedule.add(Reset("q0"))
+
+    compiled_schedule_kept_schedule = SerialCompiler(
+        "test", mock_setup["quantum_device"]
+    ).compile(schedule=schedule, keep_original_schedule=True)
+
+    compiled_schedule_not_kept_schedule = SerialCompiler(
+        "test", mock_setup["quantum_device"]
+    ).compile(schedule=schedule, keep_original_schedule=False)
+
+    assert compiled_schedule_kept_schedule == compiled_schedule_not_kept_schedule

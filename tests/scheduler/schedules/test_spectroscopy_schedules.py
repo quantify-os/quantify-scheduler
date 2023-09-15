@@ -44,7 +44,9 @@ class TestHeterodyneSpecSchedule(_CompilesAllBackends):
 
     def test_timing(self):
         """Test that the right operations are added and timing is as expected."""
-        sched = determine_absolute_timing(self.uncomp_sched)
+        sched = determine_absolute_timing(
+            self.uncomp_sched, keep_original_schedule=True
+        )
 
         labels = ["buffer", "spec_pulse", "acquisition"]
         abs_times = [
@@ -83,7 +85,9 @@ class TestHeterodyneSpecScheduleNCO(TestHeterodyneSpecSchedule):
 
     def test_timing(self):
         """Test that the right operations are added and timing is as expected."""
-        sched = determine_absolute_timing(self.uncomp_sched)
+        sched = determine_absolute_timing(
+            self.uncomp_sched, keep_original_schedule=True
+        )
 
         labels = ["buffer", "set_freq", "spec_pulse", "acquisition"]
         labels *= len(self.sched_kwargs["frequencies"])
@@ -223,7 +227,9 @@ class TestTwoToneSpecSchedule(_CompilesAllBackends):
 
     def test_timing(self):
         """Test that the right operations are added and timing is as expected."""
-        sched = determine_absolute_timing(self.uncomp_sched)
+        sched = determine_absolute_timing(
+            self.uncomp_sched, keep_original_schedule=True
+        )
 
         labels = ["buffer", "spec_pulse", "readout_pulse", "acquisition"]
 
@@ -271,7 +277,9 @@ class TestTwoToneSpecScheduleNCO(TestTwoToneSpecSchedule):
 
     def test_timing(self):
         """Test that the right operations are added and timing is as expected."""
-        sched = determine_absolute_timing(self.uncomp_sched)
+        sched = determine_absolute_timing(
+            self.uncomp_sched, keep_original_schedule=True
+        )
 
         labels = ["buffer", "set_freq", "spec_pulse", "readout_pulse", "acquisition"]
         labels *= len(self.sched_kwargs["spec_pulse_frequencies"])

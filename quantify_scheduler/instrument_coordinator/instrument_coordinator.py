@@ -236,7 +236,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         TypeError
             If the schedule provided is not a valid :class:`.CompiledSchedule`.
         """
-        self._compiled_schedule = copy.deepcopy(compiled_schedule)
+        self._compiled_schedule = compiled_schedule
         if not CompiledSchedule.is_valid(self._compiled_schedule):
             raise TypeError(
                 f"{self._compiled_schedule} is not a valid {CompiledSchedule.__name__}"

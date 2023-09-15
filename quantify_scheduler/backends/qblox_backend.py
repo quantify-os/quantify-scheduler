@@ -85,7 +85,6 @@ def _replace_long_square_pulses(
         :func:`~quantify_scheduler.operations.pulse_factories.long_square_pulse`. If no
         replacements were done, this is the original unmodified schedule.
     """
-    schedule = deepcopy(schedule)
     for ref, square_pulse_idx_to_replace in pulse_idx_map.items():
         # Below, we replace entries in-place in a list that we loop over. The
         # indices here are the entries to be replaced. We sort such that popping

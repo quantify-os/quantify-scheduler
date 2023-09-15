@@ -56,7 +56,7 @@ def test_pulse_diagram_matplotlib() -> None:
         WindowOperation(window_name="second pulse", duration=6e-6), ref_pt="start"
     )
     schedule.add(SquarePulse(amp=0.25, duration=6e-6, port="SDP"))
-    determine_absolute_timing(schedule=schedule)
+    schedule = determine_absolute_timing(schedule=schedule, keep_original_schedule=True)
 
     plt.figure(1)
     plt.clf()
@@ -79,7 +79,7 @@ def test_pulse_diagram_matplotlib_multiple_subplots() -> None:
     schedule.add(SquarePulse(amp=0.2, duration=4e-9, port="SDP"))
     schedule.add(SquarePulse(amp=-0.2, duration=6e-9, port="T"), ref_pt="start")
     schedule.add(SquarePulse(amp=0.3, duration=6e-9, port="SDP"))
-    determine_absolute_timing(schedule=schedule)
+    schedule = determine_absolute_timing(schedule=schedule, keep_original_schedule=True)
 
     plt.figure(1)
     plt.clf()
@@ -115,13 +115,18 @@ def test_pulse_diagram_matplotlib_multiple_subplots() -> None:
 def test_plot_acquisition_operations() -> None:
     schedule = Schedule("test")
     schedule.add(SquarePulse(amp=0.2, duration=4e-6, port="SDP"))
-    determine_absolute_timing(schedule=schedule)
-    handles = plot_acquisition_operations(schedule)
+
+    schedule_with_timing = determine_absolute_timing(
+        schedule, keep_original_schedule=True
+    )
+    handles = plot_acquisition_operations(schedule_with_timing)
     assert len(handles) == 0
 
     schedule.add(SSBIntegrationComplex("P", clock="cl0.baseband", duration=2e-6))
-    determine_absolute_timing(schedule=schedule)
-    handles = plot_acquisition_operations(schedule)
+    schedule_with_timing = determine_absolute_timing(
+        schedule, keep_original_schedule=True
+    )
+    handles = plot_acquisition_operations(schedule_with_timing)
     assert len(handles) == 1
 
 
@@ -130,7 +135,7 @@ def test_sample_schedule() -> None:
     schedule.add(SquarePulse(amp=0.2, duration=4e-9, port="SDP"))
     schedule.add(SquarePulse(amp=-0.2, duration=6e-9, port="T"), ref_pt="start")
     schedule.add(SquarePulse(amp=0.3, duration=6e-9, port="SDP"))
-    determine_absolute_timing(schedule=schedule)
+    schedule = determine_absolute_timing(schedule=schedule, keep_original_schedule=True)
 
     waveforms = sample_schedule(schedule, sampling_rate=0.5e9, x_range=(0, 1.21e-8))
 
@@ -176,7 +181,7 @@ def test_sample_modulated_waveform() -> None:
     schedule.add(square_pulse_op)
     square_pulse_op = SquarePulse(amp=0.2, duration=3e-9, port="T")
     schedule.add(square_pulse_op, ref_pt="start")
-    determine_absolute_timing(schedule=schedule)
+    schedule = determine_absolute_timing(schedule=schedule, keep_original_schedule=True)
 
     waveforms = sample_schedule(
         schedule,
@@ -205,7 +210,7 @@ def test_sample_custom_port_list() -> None:
     schedule = Schedule("test")
     r = SquarePulse(amp=0.2, duration=4e-9, port="SDP")
     schedule.add(r)
-    determine_absolute_timing(schedule=schedule)
+    schedule = determine_absolute_timing(schedule=schedule, keep_original_schedule=True)
 
     waveforms = sample_schedule(schedule, sampling_rate=0.5e9, port_list=["SDP"])
     assert list(waveforms.keys()) == ["SDP"]

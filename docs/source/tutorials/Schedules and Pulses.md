@@ -70,8 +70,8 @@ Note that these plots are interactive and modulation is not shown by default.
 
 from quantify_scheduler import compilation
 
-compilation.determine_absolute_timing(sched)
-sched.plot_pulse_diagram(plot_backend="plotly")
+timed_sched = compilation.determine_absolute_timing(sched)
+timed_sched.plot_pulse_diagram(plot_backend="plotly")
 
 
 ```
@@ -88,8 +88,8 @@ sched.add(
     rel_time=500e-9,
 )
 
-compilation.determine_absolute_timing(sched)
-sched.plot_pulse_diagram(plot_backend="plotly")
+timed_sched = compilation.determine_absolute_timing(sched)
+timed_sched.plot_pulse_diagram(plot_backend="plotly")
 
 
 ```
@@ -109,8 +109,8 @@ sched.add(
 )
 sched.add_resource(ClockResource(name="q0.01", freq=7e9))
 
-compilation.determine_absolute_timing(sched)
-sched.plot_pulse_diagram(plot_backend="plotly")
+timed_sched = compilation.determine_absolute_timing(sched)
+timed_sched.plot_pulse_diagram(plot_backend="plotly")
 
 
 ```
@@ -156,8 +156,8 @@ def pulse_train_schedule(
 
 
 sched = pulse_train_schedule(1, 200e-9, 300e-9, 5)
-compilation.determine_absolute_timing(sched)
-sched.plot_pulse_diagram(plot_backend="plotly")
+timed_sched = compilation.determine_absolute_timing(sched)
+timed_sched.plot_pulse_diagram(plot_backend="plotly")
 
 
 ```
@@ -215,8 +215,8 @@ sched.add(
     rel_time=5e-7,
 )
 
-compilation.determine_absolute_timing(sched)
-sched.plot_pulse_diagram(plot_backend="plotly")
+timed_sched = compilation.determine_absolute_timing(sched)
+timed_sched.plot_pulse_diagram(plot_backend="plotly")
 ```
 
 Using these factory functions, the resulting square and staircase pulses use no waveform memory at all. The ramp pulse uses waveform memory for a short section of the waveform, which is repeated multiple times.
@@ -258,8 +258,8 @@ pulse = builder.build()
 sched = Schedule("Long soft square pulse")
 sched.add(pulse)
 
-compilation.determine_absolute_timing(sched)
-sched.plot_pulse_diagram(plot_backend="plotly")
+timed_sched = compilation.determine_absolute_timing(sched)
+timed_sched.plot_pulse_diagram(plot_backend="plotly")
 ```
 
 Alternatively, the building methods of the {class}`~quantify_scheduler.operations.stitched_pulse.StitchedPulseBuilder` can be conveniently **chained** to create a {class}`~quantify_scheduler.operations.stitched_pulse.StitchedPulse` via more elegant syntax:

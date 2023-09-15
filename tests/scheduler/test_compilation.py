@@ -40,7 +40,9 @@ def test_determine_absolute_timing_ideal_clock():
         assert "abs_time" not in schedulable.keys()
         assert schedulable["timing_constraints"][0]["rel_time"] == 0
 
-    timed_sched = determine_absolute_timing(sched, time_unit="ideal")
+    timed_sched = determine_absolute_timing(
+        deepcopy(sched), time_unit="ideal", keep_original_schedule=False
+    )
 
     abs_times = [
         schedulable["abs_time"]
@@ -50,7 +52,9 @@ def test_determine_absolute_timing_ideal_clock():
 
     # add a pulse and schedule simultaneous with the second pulse
     sched.add(Rxy(90, 0, qubit=q1), ref_pt="start", ref_op=ref_label_1)
-    timed_sched = determine_absolute_timing(sched, time_unit="ideal")
+    timed_sched = determine_absolute_timing(
+        deepcopy(sched), time_unit="ideal", keep_original_schedule=False
+    )
 
     abs_times = [
         constr["abs_time"] for constr in timed_sched.data["schedulables"].values()
@@ -58,7 +62,9 @@ def test_determine_absolute_timing_ideal_clock():
     assert abs_times == [0, 1, 2, 3, 4, 1]
 
     sched.add(Rxy(90, 0, qubit=q1), ref_pt="start", ref_op="M0")
-    timed_sched = determine_absolute_timing(sched, time_unit="ideal")
+    timed_sched = determine_absolute_timing(
+        deepcopy(sched), time_unit="ideal", keep_original_schedule=False
+    )
 
     abs_times = [
         schedulable["abs_time"]
@@ -67,7 +73,9 @@ def test_determine_absolute_timing_ideal_clock():
     assert abs_times == [0, 1, 2, 3, 4, 1, 4]
 
     sched.add(Rxy(90, 0, qubit=q1), ref_pt="end", ref_op=ref_label_1)
-    timed_sched = determine_absolute_timing(sched, time_unit="ideal")
+    timed_sched = determine_absolute_timing(
+        deepcopy(sched), time_unit="ideal", keep_original_schedule=False
+    )
 
     abs_times = [
         schedulable["abs_time"]
@@ -76,7 +84,9 @@ def test_determine_absolute_timing_ideal_clock():
     assert abs_times == [0, 1, 2, 3, 4, 1, 4, 2]
 
     sched.add(Rxy(90, 0, qubit=q1), ref_pt="center", ref_op=ref_label_1)
-    timed_sched = determine_absolute_timing(sched, time_unit="ideal")
+    timed_sched = determine_absolute_timing(
+        deepcopy(sched), time_unit="ideal", keep_original_schedule=False
+    )
 
     abs_times = [
         schedulable["abs_time"]
@@ -88,7 +98,7 @@ def test_determine_absolute_timing_ideal_clock():
     bad_sched.add(Rxy(180, 0, qubit=q1))
     bad_sched.add(Rxy(90, 0, qubit=q1), ref_pt="bad")
     with pytest.raises(NotImplementedError):
-        determine_absolute_timing(bad_sched)
+        _ = determine_absolute_timing(schedule=bad_sched, keep_original_schedule=False)
 
 
 def test_determine_absolute_timing_alap_raises(
@@ -104,6 +114,7 @@ def test_determine_absolute_timing_alap_raises(
             schedule=basic_schedule,
             time_unit="ideal",
             config=quantum_device.generate_compilation_config(),
+            keep_original_schedule=False,
         )
 
 
@@ -158,7 +169,7 @@ def test_missing_edge(mock_setup_basic_transmon):
 def test_empty_sched():
     sched = Schedule("empty")
     with pytest.raises(ValueError, match="schedule 'empty' contains no schedulables"):
-        determine_absolute_timing(sched)
+        _ = determine_absolute_timing(schedule=sched, keep_original_schedule=False)
 
 
 def test_bad_gate(device_compile_config_basic_transmon):

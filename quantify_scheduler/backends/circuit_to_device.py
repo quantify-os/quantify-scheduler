@@ -29,6 +29,7 @@ def compile_circuit_to_device(
     # with device_cfg as positional argument.
     *,  # Support for (deprecated) calling with device_cfg as keyword argument:
     device_cfg: DeviceCompilationConfig | Dict | None = None,
+    keep_original_schedule=True,
 ) -> Schedule:
     """
     Add pulse information to all gates in the schedule.
@@ -54,11 +55,18 @@ def compile_circuit_to_device(
         (deprecated) Device compilation config. Pass a full compilation config instead
         using `config` argument. Note, if a dictionary is passed, it will be parsed to a
         :class:`~.DeviceCompilationConfig`.
+    keep_original_schedule
+        If `True`, this function will not modify the schedule argument.
+        If `False`, the compilation modifies the schedule, thereby
+        making the original schedule unusable for further usage; this
+        improves compilation time. Warning: if `False`, the returned schedule
+        references objects from the original schedule, please refrain from modifying
+        the original schedule after compilation in this case!
 
     Returns
     -------
     :
-        A copy of `schedule` with pulse information added to all gates.
+        The modified `schedule` with pulse information added to all gates.
 
     Raises
     ------
@@ -93,8 +101,8 @@ def compile_circuit_to_device(
     elif not isinstance(device_cfg, DeviceCompilationConfig):
         device_cfg = DeviceCompilationConfig.parse_obj(device_cfg)
 
-    # to prevent the original input schedule from being modified.
-    schedule = deepcopy(schedule)
+    if keep_original_schedule:
+        schedule = deepcopy(schedule)
 
     for operation in schedule.operations.values():
         # If operation is a valid pulse or acquisition it will not attempt to
@@ -176,7 +184,7 @@ def set_pulse_and_acquisition_clock(
     Returns
     -------
     :
-        A copy of `schedule` with all clock resources added.
+        The modified `schedule` with all clock resources added.
 
     Warns
     -----
@@ -222,9 +230,6 @@ def set_pulse_and_acquisition_clock(
     elif not isinstance(device_cfg, DeviceCompilationConfig):
         device_cfg = DeviceCompilationConfig.parse_obj(device_cfg)
     assert isinstance(device_cfg, DeviceCompilationConfig)
-
-    # to prevent the original input schedule from being modified.
-    schedule = deepcopy(schedule)
 
     # verify that required clocks are present; print warning if they are inconsistent
     verified_clocks = []

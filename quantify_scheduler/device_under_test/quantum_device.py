@@ -6,6 +6,7 @@ Module containing the QuantumDevice object.
 from __future__ import annotations
 
 from typing import Any, Dict
+from functools import partial
 
 from qcodes.instrument.base import Instrument
 from qcodes.instrument.parameter import InstrumentRefParameter, ManualParameter
@@ -130,7 +131,9 @@ class QuantumDevice(Instrument):
             ),
             SimpleNodeConfig(
                 name="determine_absolute_timing",
-                compilation_func=determine_absolute_timing,
+                compilation_func=partial(
+                    determine_absolute_timing, keep_original_schedule=False
+                ),
             ),
         ]
 
@@ -219,7 +222,7 @@ class QuantumDevice(Instrument):
             edges_cfg.update(edge_cfg)
 
         device_config = DeviceCompilationConfig(
-            backend=compile_circuit_to_device,
+            backend=partial(compile_circuit_to_device, keep_original_schedule=False),
             elements=elements_cfg,
             clocks=clocks,
             edges=edges_cfg,
