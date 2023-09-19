@@ -211,3 +211,73 @@ The dataset format is also the same.
 
 Integration weights should normally be calibrated in a separate experiment
 (see, for example, {cite:t}`magesan2015machine`).
+
+(sec-acquisition-protocols-trigger-count)=
+## Trigger Count
+
+- Referred to as `"TriggerCount"`.
+- Supported by the {mod}`Qblox <quantify_scheduler.backends.qblox>` backend.
+
+This acquisition protocol measures how many times a predefined voltage threshold has been
+passed. The threshold is set via {class}`~quantify_scheduler.backends.types.qblox.SequencerOptions.ttl_acq_threshold` (see also {ref}`sec-qblox-sequencer-options-new`).
+
+First, let's see an example when the bin mode is `BinMode.APPEND` and the schedule repeats once (`repetitions=1`).
+The returned data for the acquisition channel is a list, with as many elements as the number of times the trigger was activated. For each element, the value is `1`. In the following example, the threshold was passed 5 times for acquisition channel 0, and therefore `acq_index_0` goes from `0` to `4`, with values `1`.
+```{code-cell} ipython3
+---
+tags: [hide-input]
+---
+trigger_data = [1, 1, 1, 1, 1]
+xr.Dataset(
+    {0: xr.DataArray([trigger_data],
+            dims=["repetition", "acq_index_0"],
+            coords={"repetition": [0], "acq_index_0": range(len(trigger_data))},
+        )
+    }
+)
+```
+
+If there are multiple repetitions of the schedule, the acquisition data is still a list for each channel.
+The list's first element is a number that counts how many times the threshold was passed **at least** once.
+The second element counts how many times the threshold was passed **at least** twice, and so on for the other elements.
+Don't be confused by the `repetition` dimension: for trigger count, this dimension has one coordinate, namely `0`.
+See an example below.
+```{code-cell} ipython3
+---
+tags: [hide-input]
+---
+trigger_data = [8, 6, 3, 3, 1]
+xr.Dataset(
+    {0: xr.DataArray([trigger_data],
+            dims=["repetition", "acq_index_0"],
+            coords={"repetition": [0], "acq_index_0": range(len(trigger_data))},
+        )
+    }
+)
+```
+
+In `BinMode.AVERAGE` mode, the data is very similar. Each element in the list shows how many times the threshold was passed in each repetition **exactly** as many times as it's shown in the `"count"` dimension.
+For example, in the example below, the schedule ran 8 times. From these 8 runs,
+- in 1 run, the trigger was counted 5 times,
+- in 2 runs, the trigger was counted 4 times,
+- in 3 runs, the trigger was counted 2 times,
+- in 2 runs, the trigger was counted once.
+
+Note: 0 counts are removed from the returned data, so there will be no entry for "3 times".
+
+You can think of the append mode values as the cumulative distribution of the average mode values.
+See an example below.
+```{code-cell} ipython3
+---
+tags: [hide-input]
+---
+trigger_data = [1, 2, 3, 2]
+counts = [5, 4, 2, 1]
+xr.Dataset(
+    {0: xr.DataArray([trigger_data],
+            dims=["repetition", "counts"],
+            coords={"repetition": [0], "counts": counts},
+        )
+    }
+)
+```

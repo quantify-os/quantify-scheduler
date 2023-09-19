@@ -322,11 +322,12 @@ class SequencerSettings(DataClassJsonMixin):
     """
     Sequencer level settings.
 
-    In the drivers these settings are typically recognized by parameter names of
-    the form ``"sequencer_{index}_{setting}"``. These settings are set once at
-    the start and will remain unchanged after. Meaning that these correspond to
-    the "slow" QCoDeS parameters and not settings that are changed dynamically
-    by the sequencer.
+    In the Qblox driver these settings are typically recognized by parameter names of
+    the form ``"{module}.sequencer{index}.{setting}"`` (for allowed values see
+    https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/sequencer.html).
+    These settings are set once and will remain unchanged after, meaning that these
+    correspond to the "slow" QCoDeS parameters and not settings that are changed
+    dynamically by the sequencer.
 
     These settings are mostly defined in the hardware configuration under each
     port-clock key combination or in some cases through the device configuration

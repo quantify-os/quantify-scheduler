@@ -691,10 +691,12 @@ The dictionary notation shows the number of triggers as keys and their correspon
 
 The trigger count protocol is currently only implemented for the Qblox backend.
 
+Note, the threshold is set via {class}`~quantify_scheduler.backends.types.qblox.SequencerOptions.ttl_acq_threshold` (see also {ref}`sec-qblox-sequencer-options-new`).
+
 #### Setting up the schedule
 
 In this tutorial we will explain how **average bin mode** works in the {class}`~quantify_scheduler.operations.acquisition_library.TriggerCount` protocol (also see the introduction above).
-We create a schedule that consists of several acquisitions that measure how many times trigger signals occurred.
+We create a schedule that consists of an acquisition operation that measures the trigger signals.
 In this tutorial we assume trigger signals are generated from an external source (we do not generate these from the control hardware).
 
 The hardware should run the trigger count acquisition 3 times, and the schedule contains one trigger count acquisition, we therefore set `repetitions=3` for the schedule.

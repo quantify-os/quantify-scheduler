@@ -1048,6 +1048,8 @@ upon exceeding, these are optional to supply.
 
 The `"filter_func"` is a python function that we apply with `"kwargs"` arguments. The waveform to be modified will be passed to this function in the argument name specified by `"input_var_name"`. The waveform will be passed as a `np.ndarray`.
 
+
+(sec-qblox-sequencer-options-new)=
 ### Sequencer options
 
 Several options are available that are set on the sequencer that is assigned to a certain port-clock combination.

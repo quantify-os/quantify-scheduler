@@ -113,6 +113,11 @@
         },
         "input_att": {
             "q5:res-q5.ro": 10
+        },
+        "sequencer_options": {
+            "q0:res-q0.ro": {
+                "ttl_acq_threshold": 0.5
+            }
         }
     },
     "connectivity": {
