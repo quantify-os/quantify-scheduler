@@ -112,6 +112,14 @@ class OpInfo(DataClassJsonMixin):
         """
         return self.data.get("instruction", "") == q1asm_instructions.UPDATE_PARAMETERS
 
+    @property
+    def is_loop(self) -> bool:
+        return self.data.get("repetitions", None) is not None
+
+    @property
+    def is_return_stack(self) -> bool:
+        return self.data.get("return_stack", None) is not None
+
     def __str__(self):
         type_label: str = "Acquisition" if self.is_acquisition else "Pulse"
         return (

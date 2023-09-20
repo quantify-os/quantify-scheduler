@@ -9,12 +9,10 @@ import pytest
 from quantify_scheduler import Operation, Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.circuit_to_device import ConfigKeyError
-from quantify_scheduler.compilation import (
-    determine_absolute_timing,
-)
+from quantify_scheduler.compilation import determine_absolute_timing, flatten_schedule
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.gate_library import CNOT, CZ, Measure, Reset, Rxy
-from quantify_scheduler.operations.pulse_library import SquarePulse
+from quantify_scheduler.operations.pulse_library import SquarePulse, SetClockFrequency
 from quantify_scheduler.resources import BasebandClockResource, ClockResource, Resource
 
 
@@ -388,3 +386,77 @@ def test_compile_no_device_cfg_determine_absolute_timing(
     compiler = SerialCompiler(name="compile")
     compiler.compile(schedule=sched, config=device_compile_config_basic_transmon)
     assert mock.is_called()
+
+
+def test_determine_absolute_timing_subschedule():
+    sched = Schedule("Outer")
+    inner_sched = Schedule("Inner")
+
+    # define the resources
+    # q0, q1 = Qubits(n=2) # assumes all to all connectivity
+    q0, q1 = ("q0", "q1")
+
+    ref_label_1 = "ref0_2"
+
+    inner_sched.add(Reset(q0, q1), label="ref1_0")
+    inner_sched.add(Rxy(90, 0, qubit=q0), label="ref1_1")
+
+    sched.add(operation=CNOT(qC=q0, qT=q1), label="ref0_0")
+    sched.add(inner_sched, label="ref0_1")
+    sched.add(Measure(q0), label="ref0_2")
+
+    assert len(sched.data["operation_dict"]) == 3
+    assert len(sched.data["schedulables"]) == 3
+
+    for schedulable in sched.data["schedulables"].values():
+        assert "abs_time" not in schedulable.keys()
+        assert schedulable["timing_constraints"][0]["rel_time"] == 0
+
+    timed_sched = determine_absolute_timing(sched, time_unit="ideal")
+
+    abs_times = [
+        schedulable["abs_time"]
+        for schedulable in timed_sched.data["schedulables"].values()
+    ]
+    assert abs_times == [0, 1, 3]
+    inner_sched_schedulable = timed_sched.data["schedulables"]["ref0_1"]
+    timed_inner = timed_sched.operations[inner_sched_schedulable["operation_repr"]]
+    abs_times = [
+        schedulable["abs_time"]
+        for schedulable in timed_inner.data["schedulables"].values()
+    ]
+    assert abs_times == [0, 1]
+
+    # add a pulse and schedule simultaneous with the second pulse
+    sched.add(Rxy(90, 0, qubit=q1), ref_pt="start", ref_op=ref_label_1)
+    timed_sched = determine_absolute_timing(sched, time_unit="ideal")
+
+    abs_times = [
+        constr["abs_time"] for constr in timed_sched.data["schedulables"].values()
+    ]
+    assert abs_times == [0, 1, 3, 3]
+
+    flatten_schedule(timed_sched)
+    abs_times = [
+        constr["abs_time"] for constr in timed_sched.data["schedulables"].values()
+    ]
+    assert abs_times == [0, 3, 3, 1, 2]
+
+
+def test_flatten_schedule():
+    inner = Schedule("inner")
+    inner.add(SetClockFrequency(clock="q0.01", clock_freq_new=7.501e9))
+
+    inner2 = Schedule("inner2")
+    inner2.add(SetClockFrequency(clock="q0.01", clock_freq_new=7.502e9))
+
+    inner.add(inner2)
+
+    outer = Schedule("outer")
+    outer.add(SetClockFrequency(clock="q0.01", clock_freq_new=7.5e9))
+
+    outer.add(inner)
+    outer.add(inner2)
+    timed_sched = determine_absolute_timing(outer, time_unit="ideal")
+    flat = flatten_schedule(timed_sched)
+    assert len(flat.data["schedulables"]) == 4

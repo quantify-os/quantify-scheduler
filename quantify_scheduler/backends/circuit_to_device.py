@@ -104,13 +104,15 @@ def compile_circuit_to_device(
     if keep_original_schedule:
         schedule = deepcopy(schedule)
 
-    for operation in schedule.operations.values():
+    for key, operation in schedule.operations.items():
         # If operation is a valid pulse or acquisition it will not attempt to
         # add pulse/acquisition info in the lines below (if operation.valid_gate
         # will not work here for e.g. Measure, which is also a valid
         # acquisition)
-
-        if not (operation.valid_pulse or operation.valid_acquisition):
+        if isinstance(operation, Schedule):
+            schedule.operations[key] = compile_circuit_to_device(operation, device_cfg)
+            continue
+        elif not (operation.valid_pulse or operation.valid_acquisition):
             qubits = operation.data["gate_info"]["qubits"]
             operation_type = operation.data["gate_info"]["operation_type"]
 
@@ -233,26 +235,31 @@ def set_pulse_and_acquisition_clock(
 
     # verify that required clocks are present; print warning if they are inconsistent
     verified_clocks = []
-    for operation in schedule.operations.values():
+    for key, operation in schedule.operations.items():
         # Only if we have a valid device-level operation, we can assign clocks
-        _assert_operation_valid_device_level(operation)
+        if isinstance(operation, Schedule):
+            schedule.operations[key] = set_pulse_and_acquisition_clock(
+                operation, config
+            )
+        else:
+            _assert_operation_valid_device_level(operation)
 
-        operation_info = operation["pulse_info"] + operation["acquisition_info"]
-        clocks_used = set([info["clock"] for info in operation_info])
-        for clock in clocks_used:
-            # In digital IO's clocks are non-existant, so we skip them.
-            if clock == "digital":
-                continue
-            if clock in verified_clocks:
-                continue
-            # raises ValueError if no clock found;
-            # enters if condition if clock only in device config
-            if not _valid_clock_in_schedule(clock, device_cfg, schedule, operation):
-                clock_resource = ClockResource(
-                    name=clock, freq=device_cfg.clocks[clock]
-                )
-                schedule.add_resource(clock_resource)
-            verified_clocks.append(clock)
+            operation_info = operation["pulse_info"] + operation["acquisition_info"]
+            clocks_used = set([info["clock"] for info in operation_info])
+            for clock in clocks_used:
+                # In digital IO's clocks are non-existant, so we skip them.
+                if clock == "digital":
+                    continue
+                if clock in verified_clocks:
+                    continue
+                # raises ValueError if no clock found;
+                # enters if condition if clock only in device config
+                if not _valid_clock_in_schedule(clock, device_cfg, schedule, operation):
+                    clock_resource = ClockResource(
+                        name=clock, freq=device_cfg.clocks[clock]
+                    )
+                    schedule.add_resource(clock_resource)
+                verified_clocks.append(clock)
 
     return schedule
 

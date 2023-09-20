@@ -25,6 +25,8 @@
 - Documentation - Split source and build folders to simplify using [`sphinx-autobuild`](https://github.com/executablebooks/sphinx-autobuild) for its editing. (!774)
 - Schedules - Added two-qubit schedule generating function `two_qubit_transmon_schedules.chevron_cz_sched` for CZ tuneup (!700).
 - Qblox backend - Remove unnecessary deepcopies from schedule for 30-75% performance improvement (!771)
+- Schedule - A schedule can now be added to another schedule. It will be treated as one big operation (!709).
+- Schedule - Added looping: An inner schedule can be repeated inside of the schedule (!709).
 
 ## 0.16.0 (2023-08-17)
 

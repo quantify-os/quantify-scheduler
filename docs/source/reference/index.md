@@ -13,4 +13,5 @@ zhinst/index
 :maxdepth: 1
 
 acquisition_protocols
+control_flow
 ```

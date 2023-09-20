@@ -205,3 +205,19 @@ class UpdateParameterStrategy(IdleStrategy):
             constants.GRID_TIME,
         )
         qasm_program.elapsed_time += constants.GRID_TIME
+
+
+class LoopStrategy(IdleStrategy):
+    """
+    Strategy for compiling a "Loop" control flow instruction.
+
+    Empty as it is used for isinstance.
+    """
+
+
+class ControlFlowReturnStrategy(IdleStrategy):
+    """
+    Strategy for compiling "ControlFlowReturn" control flow instruction.
+
+    Empty as it is used for isinstance.
+    """

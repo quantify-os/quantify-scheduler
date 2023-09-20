@@ -85,6 +85,10 @@ def _get_pulse_strategy(
         return virtual.AwgOffsetStrategy(operation_info)
     elif operation_info.is_parameter_update:
         return virtual.UpdateParameterStrategy(operation_info)
+    elif operation_info.is_loop:
+        return virtual.LoopStrategy(operation_info)
+    elif operation_info.is_return_stack:
+        return virtual.ControlFlowReturnStrategy(operation_info)
 
     elif operation_info.data["port"] is None:
         if "phase_shift" in operation_info.data:

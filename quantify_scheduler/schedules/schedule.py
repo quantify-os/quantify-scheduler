@@ -15,7 +15,9 @@ from uuid import uuid4
 import pandas as pd
 
 from quantify_scheduler import enums, json_utils, resources
+from quantify_scheduler.helpers.collections import make_hash
 from quantify_scheduler.json_utils import JSONSchemaValMixin
+from quantify_scheduler.operations.control_flow_library import Loop
 from quantify_scheduler.operations.operation import Operation
 
 if TYPE_CHECKING:
@@ -100,7 +102,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         self["repetitions"] = int(value)
 
     @property
-    def operations(self) -> dict[str, Operation]:
+    def operations(self) -> dict[str, Operation | Schedule]:
         """
         A dictionary of all unique operations used in the schedule.
 
@@ -153,6 +155,14 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         :class:`~quantify_scheduler.resources.Resource`.
         """
         return self["resource_dict"]
+
+    def __hash__(self) -> int:
+        return make_hash(self.data)
+
+    @property
+    def hash(self) -> str:
+        """A hash based on the contents of the Schedule."""
+        return str(hash(self))
 
     def __repr__(self) -> str:
         """Return a string representation of this instance."""
@@ -526,15 +536,18 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
             # find duration of last operation
             operation = self["operation_dict"][operation_repr]
-            pulses_end_times = [
-                pulse.get("duration") + pulse.get("t0")
-                for pulse in operation["pulse_info"]
-            ]
-            acquisitions_end_times = [
-                acquisition.get("duration") + acquisition.get("t0")
-                for acquisition in operation["acquisition_info"]
-            ]
-            final_op_len = max(pulses_end_times + acquisitions_end_times, default=0)
+            if isinstance(operation, Schedule):
+                final_op_len = operation.duration
+            else:
+                pulses_end_times = [
+                    pulse.get("duration") + pulse.get("t0")
+                    for pulse in operation["pulse_info"]
+                ]
+                acquisitions_end_times = [
+                    acquisition.get("duration") + acquisition.get("t0")
+                    for acquisition in operation["acquisition_info"]
+                ]
+                final_op_len = max(pulses_end_times + acquisitions_end_times, default=0)
             tmp_time = timestamp + final_op_len
 
             # keep track of longest found schedule
@@ -543,6 +556,15 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
         schedule_duration *= self.repetitions
         return schedule_duration
+
+    @property
+    def duration(self) -> float | None:
+        """
+        Determine the cached duration of the schedule.
+
+        Will return None if get_schedule_duration() has not been called before.
+        """
+        return self.get("duration", None)
 
 
 class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
@@ -617,20 +639,23 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
     # pylint: disable=too-many-arguments
     def add(
         self,
-        operation: Operation,
+        operation: Operation | Schedule,
         rel_time: float = 0,
         ref_op: Schedulable | str | None = None,
         ref_pt: Literal["start", "center", "end"] | None = None,
         ref_pt_new: Literal["start", "center", "end"] | None = None,
-        label: str = None,
+        label: str | None = None,
+        control_flow: Loop | None = None,
+        validate: bool = True,
     ) -> Schedulable:
         """
-        Add an :class:`quantify_scheduler.operations.operation.Operation` to the schedule.
+        Add an operation or a subschedule to the schedule.
 
         Parameters
         ----------
         operation
-            The operation to add to the schedule
+            The operation to add to the schedule, or another schedule to add
+            as a subschedule.
         rel_time
             relative time between the reference operation and the added operation.
             the time is the time between the "ref_pt" in the reference operation and
@@ -650,24 +675,28 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
             of :code:`None`,
             :func:`~quantify_scheduler.compilation.determine_absolute_timing` assumes
             :code:`"start"`.
-
         label
             a unique string that can be used as an identifier when adding operations.
-            if set to None, a random hash will be generated instead.
+            if set to `None`, a random hash will be generated instead.
+        control_flow
+            Virtual operation describing if the operation should be subject to control
+            flow (loop, conditional, ...). See
+            :ref:`control flow reference documentation <sec-control-flow>`
+            for a detailed explanation.
+        validate
+            Whether to validate arguments, used by the compiler. There is no benefit
+            to disable validation for users. USE AT OWN RISK.
 
         Returns
         -------
         :
-            returns the schedulable created on the schedule
-        """  # noqa: E501
-        if not isinstance(operation, Operation):
-            raise ValueError(
-                f"Attempting to add operation to schedule. "
-                f"The provided object '{operation}' is not an instance of Operation"
-            )
-
+            Returns the schedulable created in the schedule.
+        """
         if label is None:
             label = str(uuid4())
+
+        if validate:
+            self._validate_add_arguments(operation, label, control_flow)
 
         # ensure the schedulable name is unique
         if label in self.schedulables:
@@ -690,7 +719,10 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
 
         operation_id = operation.hash
         self["operation_dict"][operation_id] = operation
-        element = Schedulable(name=label, operation_repr=operation_id)
+
+        element = Schedulable(
+            name=label, operation_repr=operation_id, control_flow=control_flow
+        )
         element.add_timing_constraint(
             rel_time=rel_time,
             ref_schedulable=ref_op,
@@ -700,6 +732,32 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
         self.schedulables.update({label: element})
 
         return element
+
+    def _validate_add_arguments(
+        self,
+        operation: Operation | Schedule,
+        label: str,
+        control_flow: Operation | None,
+    ) -> None:
+        if not isinstance(operation, (Operation, Schedule)):
+            raise ValueError(
+                f"Attempting to add operation to schedule. "
+                f"The provided object '{operation=}' is not"
+                " an instance of Operation or Schedule"
+            )
+        if isinstance(operation, Loop):
+            raise ValueError(
+                "Attempting to manually add control flow operation. "
+                "Use the 'control_flow' kwarg instead."
+            )
+        if control_flow is not None and not isinstance(control_flow, Loop):
+            raise ValueError(
+                "Attempting to add operation other than control flow"
+                f" as control flow. Valid are {Loop=}, None."
+            )
+        # ensure the schedulable name is unique
+        if label in self.schedulables:
+            raise ValueError(f"Schedulable name '{label}' must be unique.")
 
     def __getstate__(self) -> dict[str, Any]:
         return self.data
@@ -734,7 +792,9 @@ class Schedulable(JSONSchemaValMixin, UserDict):
 
     schema_filename = "schedulable.json"
 
-    def __init__(self, name: str, operation_repr: str) -> None:
+    def __init__(
+        self, name: str, operation_repr: str, control_flow: Operation | None = None
+    ) -> None:
         super().__init__()
 
         self["name"] = name
@@ -743,6 +803,8 @@ class Schedulable(JSONSchemaValMixin, UserDict):
 
         # the next lines are to prevent breaking the existing API
         self["label"] = name
+        if control_flow is not None:
+            self["control_flow"] = control_flow
 
     def add_timing_constraint(
         self,
@@ -795,6 +857,14 @@ class Schedulable(JSONSchemaValMixin, UserDict):
             "ref_pt": ref_pt,
         }
         self["timing_constraints"].append(timing_constr)
+
+    def __hash__(self) -> int:
+        return make_hash(self.data)
+
+    @property
+    def hash(self) -> str:
+        """A hash based on the contents of the Operation."""
+        return str(hash(self))
 
     def __str__(self) -> str:
         return str(self["name"])

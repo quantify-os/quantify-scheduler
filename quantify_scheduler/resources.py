@@ -7,6 +7,7 @@ from __future__ import annotations
 from collections import UserDict
 
 from quantify_scheduler.json_utils import load_json_schema, validate_json
+from quantify_scheduler.helpers.collections import make_hash
 
 
 class Resource(UserDict):
@@ -98,6 +99,16 @@ class Resource(UserDict):
 
     def __setstate__(self, state):
         self.data = state["data"]
+
+    def __hash__(self) -> int:
+        return make_hash(self.data)
+
+    @property
+    def hash(self) -> str:
+        """
+        A hash based on the contents of the Operation.
+        """
+        return str(hash(self))
 
 
 class ClockResource(Resource):

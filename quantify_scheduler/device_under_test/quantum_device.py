@@ -25,7 +25,11 @@ from quantify_scheduler.backends.types.common import HardwareCompilationConfig
 from quantify_scheduler.backends.qblox_backend import (
     compile_long_square_pulses_to_awg_offsets,
 )
-from quantify_scheduler.compilation import determine_absolute_timing
+from quantify_scheduler.compilation import (
+    determine_absolute_timing,
+    flatten_schedule,
+    resolve_control_flow,
+)
 from quantify_scheduler.device_under_test.device_element import DeviceElement
 from quantify_scheduler.device_under_test.edge import Edge
 
@@ -130,10 +134,18 @@ class QuantumDevice(Instrument):
                 + "set_pulse_and_acquisition_clock",
             ),
             SimpleNodeConfig(
+                name="resolve_control_flow",
+                compilation_func=resolve_control_flow,
+            ),
+            SimpleNodeConfig(
                 name="determine_absolute_timing",
                 compilation_func=partial(
                     determine_absolute_timing, keep_original_schedule=False
                 ),
+            ),
+            SimpleNodeConfig(
+                name="flatten",
+                compilation_func=flatten_schedule,
             ),
         ]
 

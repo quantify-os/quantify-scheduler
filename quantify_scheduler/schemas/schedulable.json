@@ -41,6 +41,10 @@
           "description": "reference point in added operation must be one of ('start', 'center', 'end')."
         }
       }
+    },
+    "control_flow": {
+      "type": "string",
+      "description": "Reference to a control flow Operation."
     }
   }
 }

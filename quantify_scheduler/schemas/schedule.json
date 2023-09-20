@@ -34,6 +34,10 @@
         "compiled_instructions": {
             "type": "object",
             "description": "A containing compiled instructions."
+        },
+        "duration": {
+            "type": "number",
+            "description": "Duration of the schedule."
         }
     }
 }

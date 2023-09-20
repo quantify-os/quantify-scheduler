@@ -62,7 +62,11 @@ from quantify_scheduler.operations.acquisition_library import (
     ThresholdedAcquisition,
     Trace,
 )
-from quantify_scheduler.operations.gate_library import Measure, Reset, X
+from quantify_scheduler.operations.pulse_factories import long_square_pulse
+from quantify_scheduler.operations.stitched_pulse import (
+    StitchedPulseBuilder,
+)
+from quantify_scheduler.operations.gate_library import Measure, Reset, X, X90, Y
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_factories import long_square_pulse
 from quantify_scheduler.operations.pulse_library import (
@@ -75,6 +79,7 @@ from quantify_scheduler.operations.pulse_library import (
     SoftSquarePulse,
     SquarePulse,
 )
+from quantify_scheduler.operations.control_flow_library import Loop
 from quantify_scheduler.operations.stitched_pulse import StitchedPulseBuilder
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.schedules.timedomain_schedules import (
@@ -2829,10 +2834,12 @@ def test_acq_declaration_dict_append_mode(
 ):
     repetitions = 256
 
-    ssro_sched = readout_calibration_sched("q0", [0, 1], repetitions=repetitions)
+    ssro_sched = readout_calibration_sched("q0", [0, 1], repetitions=1)
+    outer_sched = Schedule("outer", repetitions=repetitions)
+    outer_sched.add(ssro_sched, control_flow=Loop(3))
     compiler = SerialCompiler(name="compiler")
     compiled_ssro_sched = compiler.compile(
-        ssro_sched, compile_config_basic_transmon_qblox_hardware_pulsar
+        outer_sched, compile_config_basic_transmon_qblox_hardware_pulsar
     )
 
     qrm0_seq_instructions = compiled_ssro_sched["compiled_instructions"]["qrm0"][
@@ -2842,7 +2849,7 @@ def test_acq_declaration_dict_append_mode(
     acquisitions = qrm0_seq_instructions["acquisitions"]
     # the only key corresponds to channel 0
     assert set(acquisitions.keys()) == {"0"}
-    assert acquisitions["0"] == {"num_bins": 2 * 256, "index": 0}
+    assert acquisitions["0"] == {"num_bins": 3 * 2 * 256, "index": 0}
 
 
 def test_acq_declaration_dict_bin_avg_mode(
@@ -4082,3 +4089,195 @@ def test_align_qasm_fields_deprecated_hardware_cfg(
         hardware_cfg=hardware_cfg,
         quantum_device=mock_setup_basic_transmon_with_standard_params["quantum_device"],
     )
+
+
+class TestControlFlow:
+    def compare_sequence(self, compiled, reference, module):
+        if module == "qcm":
+            mod = "cluster0_module2"
+        elif module == "qrm":
+            mod = "cluster0_module4"
+        program = compiled.compiled_instructions["cluster0"][mod]["sequencers"]["seq0"][
+            "sequence"
+        ]["program"].replace(" ", "")
+        reference = reference.replace(" ", "")
+        assert reference == program
+
+    def test_subschedule(self, compile_config_basic_transmon_qblox_hardware):
+        """
+        outer:
+          - 7.5
+          - inner:
+            - 7.501
+            - inner2:
+              - 7.502
+          - inner2:
+            - 7.502
+        """
+        inner = Schedule("inner")
+        inner.add(SetClockFrequency(clock="q0.01", clock_freq_new=7.501e9))
+        inner2 = Schedule("inner2")
+        inner2.add(SetClockFrequency(clock="q0.01", clock_freq_new=7.502e9))
+        inner.add(inner2)
+
+        outer = Schedule("outer")
+        outer.add(SetClockFrequency(clock="q0.01", clock_freq_new=7.5e9))
+        outer.add(inner)
+        outer.add(inner2)
+
+        compiler = SerialCompiler(name="compiler")
+
+        compiled_subschedule = compiler.compile(
+            outer, config=compile_config_basic_transmon_qblox_hardware
+        )
+
+        outer = Schedule("outer")
+        outer.add(SetClockFrequency(clock="q0.01", clock_freq_new=7.5e9))
+        outer.add(SetClockFrequency(clock="q0.01", clock_freq_new=7.501e9))
+        outer.add(SetClockFrequency(clock="q0.01", clock_freq_new=7.502e9))
+        outer.add(SetClockFrequency(clock="q0.01", clock_freq_new=7.502e9))
+
+        compiled_ref = compiler.compile(
+            outer, config=compile_config_basic_transmon_qblox_hardware
+        )
+
+        program_subschedule = compiled_subschedule.compiled_instructions["cluster0"][
+            "cluster0_module2"
+        ]["sequencers"]["seq0"]["sequence"]["program"]
+        program_ref = compiled_ref.compiled_instructions["cluster0"][
+            "cluster0_module2"
+        ]["sequencers"]["seq0"]["sequence"]["program"]
+
+        assert program_ref == program_subschedule
+
+    def test_loop(self, compile_config_basic_transmon_qblox_hardware):
+        """
+        - Sched
+          - X90
+          - Loop 3
+            - Inner
+              - X
+              - Loop 2
+                - Inner2
+                  - Y
+              - Measure
+          - X90
+          - Loop 4
+            - Inner2
+              -Y
+          - X90
+          - Loop 2
+            -X
+        """
+
+        inner = Schedule("inner")
+        inner.add(X("q0"))
+
+        inner2 = Schedule("inner2")
+        inner2.add(Y("q0"))
+
+        inner.add(
+            inner2,
+            control_flow=Loop(repetitions=2),
+        )
+        inner.add(Measure("q0"))
+
+        sched = Schedule("amp_ref")
+        sched.add(X90("q0"))
+        sched.add(inner, control_flow=Loop(repetitions=3))
+        sched.add(X90("q0"))
+        sched.add(inner2, control_flow=Loop(repetitions=4))
+        sched.add(X90("q0"))
+        sched.add(X("q0"), control_flow=Loop(repetitions=2))
+
+        compiler = SerialCompiler(name="compiler")
+
+        compiled = compiler.compile(
+            sched, config=compile_config_basic_transmon_qblox_hardware
+        )
+
+        reference_sequence_qcm = """ set_mrk 1 # set markers to 1
+ wait_sync 4 
+ upd_param 4 
+ wait 4 # latency correction of 4 + 0 ns
+ move 1,R0 # iterator for loop with label start
+start:   
+ reset_ph  
+ upd_param 4 
+ set_awg_gain 1882,110 # setting gain for X_90 q0
+ play 0,1,4 # play X_90 q0 (20 ns)
+ wait 16 # auto generated wait (16 ns)
+ move 3,R1 # iterator for loop with label loop11
+loop11:   
+ set_awg_gain 3764,220 # setting gain for X q0
+ play 2,3,4 # play X q0 (20 ns)
+ wait 16 # auto generated wait (16 ns)
+ move 2,R10 # iterator for loop with label loop16
+loop16:   
+ set_awg_gain 220,3764 # setting gain for Y q0
+ play 1,2,4 # play Y q0 (20 ns)
+ wait 16 # auto generated wait (16 ns)
+ loop R10,@loop16 
+ wait 1100 # auto generated wait (1100 ns)
+ loop R1,@loop11 
+ set_awg_gain 1882,110 # setting gain for X_90 q0
+ play 0,1,4 # play X_90 q0 (20 ns)
+ wait 16 # auto generated wait (16 ns)
+ move 4,R1 # iterator for loop with label loop27
+loop27:   
+ set_awg_gain 220,3764 # setting gain for Y q0
+ play 1,2,4 # play Y q0 (20 ns)
+ wait 16 # auto generated wait (16 ns)
+ loop R1,@loop27 
+ set_awg_gain 1882,110 # setting gain for X_90 q0
+ play 0,1,4 # play X_90 q0 (20 ns)
+ wait 16 # auto generated wait (16 ns)
+ move 2,R1 # iterator for loop with label loop36
+loop36:   
+ set_awg_gain 3764,220 # setting gain for X q0
+ play 2,3,4 # play X q0 (20 ns)
+ wait 16 # auto generated wait (16 ns)
+ loop R1,@loop36 
+ loop R0,@start 
+ stop 
+ """
+
+        reference_sequence_qrm = """ set_mrk 3 # set markers to 3
+ wait_sync 4 
+ upd_param 4 
+ wait 4 # latency correction of 4 + 0 ns
+ move 1,R0 # iterator for loop with label start
+start:   
+ reset_ph  
+ upd_param 4 
+ wait 20 # auto generated wait (20 ns)
+ move 3,R1 # iterator for loop with label loop9
+loop9:   
+ wait 20 # auto generated wait (20 ns)
+ move 2,R10 # iterator for loop with label loop12
+loop12:   
+ wait 20 # auto generated wait (20 ns)
+ reset_ph  
+ loop R10,@loop12 
+ set_awg_gain 8191,0 # setting gain for Measure q0
+ play 0,0,4 # play Measure q0 (300 ns)
+ wait 96 # auto generated wait (96 ns)
+ acquire 0,0,4 
+ wait 996 # auto generated wait (996 ns)
+ loop R1,@loop9 
+ wait 20 # auto generated wait (20 ns)
+ move 4,R1 # iterator for loop with label loop24
+loop24:   
+ wait 20 # auto generated wait (20 ns)
+ loop R1,@loop24 
+ wait 20 # auto generated wait (20 ns)
+ move 2,R1 # iterator for loop with label loop29
+loop29:   
+ wait 20 # auto generated wait (20 ns)
+ loop R1,@loop29 
+ loop R0,@start 
+ stop
+ """
+
+        self.compare_sequence(compiled, reference_sequence_qcm, "qcm")
+        self.compare_sequence(compiled, reference_sequence_qrm, "qrm")

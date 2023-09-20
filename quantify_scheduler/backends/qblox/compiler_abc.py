@@ -10,6 +10,7 @@ import math
 import warnings
 from abc import ABC, ABCMeta, abstractmethod
 from collections import defaultdict, deque
+from collections.abc import Iterator
 from functools import partial
 from os import makedirs, path
 from typing import (
@@ -42,6 +43,10 @@ from quantify_scheduler.backends.qblox.operation_handling.acquisitions import (
     AcquisitionStrategyPartial,
 )
 from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
+from quantify_scheduler.backends.qblox.operation_handling.virtual import (
+    LoopStrategy,
+    ControlFlowReturnStrategy,
+)
 from quantify_scheduler.backends.qblox.operation_handling.factory import (
     get_operation_strategy,
 )
@@ -367,6 +372,7 @@ class Sequencer:
         self.mix_lo: bool = mix_lo
         self._marker_debug_mode_enable: bool = marker_debug_mode_enable
         self.default_marker = default_marker
+        self._num_acquisitions = 0
 
         self.static_hw_properties: StaticHardwareProperties = static_hw_properties
 
@@ -749,7 +755,7 @@ class Sequencer:
 
             # Add the acquisition metadata to the acquisition declaration dict
             if acq_metadata.bin_mode == BinMode.APPEND:
-                num_bins = repetitions * (max(acq_indices) + 1)
+                num_bins = repetitions * self._num_acquisitions
             elif acq_metadata.bin_mode == BinMode.AVERAGE:
                 if acq_metadata.acq_protocol == "TriggerCount":
                     num_bins = constants.MAX_NUMBER_OF_BINS
@@ -877,10 +883,7 @@ class Sequencer:
             qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
 
             last_operation_end = {True: 0, False: 0}
-            op_queue = deque(op_list)
-            while len(op_queue) > 0:
-                operation = op_queue.popleft()
-
+            for operation in op_list:
                 # Check if there is an overlapping pulse or overlapping acquisition
                 if operation.operation_info.is_real_time_io_operation:
                     start_time = operation.operation_info.timing
@@ -898,23 +901,7 @@ class Sequencer:
                         start_time + operation.operation_info.duration
                     )
 
-                qasm.wait_till_start_operation(operation.operation_info)
-
-                if self._marker_debug_mode_enable:
-                    valid_operation = (
-                        operation.operation_info.is_acquisition
-                        or operation.operation_info.data.get("wf_func") is not None
-                    )
-                    if valid_operation:
-                        qasm.set_marker(self._decide_markers(operation))
-                        operation.insert_qasm(qasm)
-                        qasm.set_marker(self.default_marker)
-                        qasm.emit(
-                            q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME
-                        )
-                        qasm.elapsed_time += constants.GRID_TIME
-                else:
-                    operation.insert_qasm(qasm)
+            self._parse_operations(iter(op_list), qasm, 1)
 
             end_time = helpers.to_grid_time(total_sequence_time)
             wait_time = end_time - qasm.elapsed_time
@@ -952,6 +939,48 @@ class Sequencer:
             )
 
         return str(qasm)
+
+    def _parse_operations(
+        self,
+        operations_iter: Iterator[IOperationStrategy],
+        qasm: QASMProgram,
+        acquisition_multiplier: int,
+    ) -> bool:
+        """Handle control flow and insert Q1ASM"""
+        while (operation := next(operations_iter, None)) is not None:
+            qasm.wait_till_start_operation(operation.operation_info)
+            if isinstance(operation, LoopStrategy):
+                loop_label = f"loop{len(qasm.instructions)}"
+                repetitions = operation.operation_info.data["repetitions"]
+                with qasm.loop(label=loop_label, repetitions=repetitions):
+                    returned_from_return_stack = self._parse_operations(
+                        operations_iter, qasm, acquisition_multiplier * repetitions
+                    )
+                    assert returned_from_return_stack
+            elif isinstance(operation, ControlFlowReturnStrategy):
+                return True
+            else:
+                if operation.operation_info.is_acquisition:
+                    self._num_acquisitions += acquisition_multiplier
+                self._insert_qasm_marker_debug_wrapped(operation, qasm)
+        return False
+
+    def _insert_qasm_marker_debug_wrapped(
+        self, operation: IOperationStrategy, qasm: QASMProgram
+    ):
+        if self._marker_debug_mode_enable:
+            valid_operation = (
+                operation.operation_info.is_acquisition
+                or operation.operation_info.data.get("wf_func") is not None
+            )
+            if valid_operation:
+                qasm.set_marker(self._decide_markers(operation))
+                operation.insert_qasm(qasm)
+                qasm.set_marker(self.default_marker)
+                qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
+                qasm.elapsed_time += constants.GRID_TIME
+        else:
+            operation.insert_qasm(qasm)
 
     def _initialize_append_mode_registers(
         self, qasm: QASMProgram, acquisitions: List[AcquisitionStrategyPartial]
@@ -1108,23 +1137,29 @@ class Sequencer:
         awg_dict = self._generate_awg_dict()
         weights_dict = None
         acq_declaration_dict = None
+
+        # the program needs _generate_weights_dict for the waveform indices
         if self.parent.supports_acquisition:
             weights_dict = {}
-            acq_declaration_dict = {}
             if len(self.acquisitions) > 0:
                 self._prepare_acq_settings(
                     acquisitions=self.acquisitions, repetitions=repetitions
                 )
                 weights_dict = self._generate_weights_dict()
-                acq_declaration_dict = self._generate_acq_declaration_dict(
-                    acquisitions=self.acquisitions, repetitions=repetitions
-                )
 
+        # acq_declaration_dict needs to count number of acquires in the program
         qasm_program = self.generate_qasm_program(
             total_sequence_time=self.parent.total_play_time,
             align_qasm_fields=align_qasm_fields,
             repetitions=repetitions,
         )
+
+        if self.parent.supports_acquisition:
+            acq_declaration_dict = {}
+            if len(self.acquisitions) > 0:
+                acq_declaration_dict = self._generate_acq_declaration_dict(
+                    acquisitions=self.acquisitions, repetitions=repetitions
+                )
 
         wf_and_prog = self._generate_waveforms_and_program_dict(
             qasm_program, awg_dict, weights_dict, acq_declaration_dict
