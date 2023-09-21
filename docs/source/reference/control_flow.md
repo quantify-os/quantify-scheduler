@@ -28,11 +28,13 @@ This is useful e.g. to define a custom composite gate:
 ```{code-cell} ipython3
 from quantify_scheduler.operations.gate_library import X, Y90
 from quantify_scheduler import Schedule
+
 def hadamard(qubit: str) -> Schedule:
     hadamard_sched = Schedule("hadamard")
     hadamard_sched.add(X(qubit))
     hadamard_sched.add(Y90(qubit))
     return hadamard_sched
+
 my_schedule = Schedule("nice_experiment")
 my_schedule.add(X("q1"))
 my_schedule.add(hadamard("q1"))
