@@ -19,6 +19,7 @@
 # absolute, like shown here.
 #
 import os
+import re
 import sys
 
 from typing import Any, Dict
@@ -154,6 +155,7 @@ html_favicon = "images/QUANTIFY-FAVICON_16.png"
 #
 html_theme_options: Dict[str, Any] = {
     "header_links_before_dropdown": 6,
+    "navbar_align": "left",
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
@@ -363,6 +365,28 @@ nb_execution_raise_on_error = True
 
 # Default cell execution timeout.
 nb_execution_timeout = 120
+
+# Configure pydata-sphinx-theme version switcher based on detected CI environment
+# variables.
+if (git_tag := os.environ.get("CI_COMMIT_TAG")) is not None and re.match(
+    r"^v([0-9]+)\.([0-9]+)\.([0-9]+)((rc|a|b)([0-9]+))?$", git_tag
+):
+    switcher_version = git_tag
+elif (
+    (branch := os.environ.get("CI_COMMIT_BRANCH"))
+    and (default_branch := os.environ.get("CI_DEFAULT_BRANCH"))
+    and branch == default_branch
+):
+    switcher_version = "latest"
+else:
+    switcher_version = None
+
+if switcher_version is not None:
+    html_theme_options["switcher"] = {
+        "json_url": "https://quantify-os.org/docs/quantify-scheduler/switcher.json",
+        "version_match": switcher_version,
+    }
+    html_theme_options["navbar_center"] = ["version-switcher", "navbar-nav"]
 
 # The following fails the build when one of the notebooks has an execution error.
 nb_execution_raise_on_error = True

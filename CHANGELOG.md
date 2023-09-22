@@ -29,6 +29,7 @@
 - Schedule - A schedule can now be added to another schedule. It will be treated as one big operation (!709).
 - Schedule - Added looping: An inner schedule can be repeated inside of the schedule (!709).
 - Infrastructure - Bump `quantify_core` version dependency to 0.7.1 to include the fix to `without()` in quantify-core!438. (!795)
+- Documentation - Deploy documentation to quantify-os.org. (!796)
 
 ## 0.16.0 (2023-08-17)
 
