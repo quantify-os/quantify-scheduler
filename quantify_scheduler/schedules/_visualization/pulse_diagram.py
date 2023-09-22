@@ -21,9 +21,7 @@ import quantify_scheduler.operations.pulse_library as pl
 from quantify_scheduler.helpers.importers import import_python_object_from_string
 from quantify_scheduler.helpers.waveforms import modulate_waveform
 from quantify_scheduler.operations.acquisition_library import AcquisitionOperation
-from quantify_scheduler.operations.stitched_pulse import (
-    convert_to_numerical_pulse,
-)
+from quantify_scheduler.operations.stitched_pulse import convert_to_numerical_pulse
 
 if TYPE_CHECKING:
     from quantify_scheduler import CompiledSchedule, Operation, Schedule
@@ -166,7 +164,15 @@ def pulse_diagram_plotly(
                 if kwargs in pulse_info.keys():
                     wf_kwargs[kwargs] = pulse_info[kwargs]
 
-            waveform = wf_func(t=t, **wf_kwargs)
+            # check for reference equality in case import alias is used
+            if wf_func == import_python_object_from_string(
+                "quantify_scheduler.waveforms.interpolated_complex_waveform"
+            ):
+                wf_kwargs["t_samples"] = (
+                    np.asarray(wf_kwargs["t_samples"]) - wf_kwargs["t_samples"][0]
+                )
+
+            waveform = wf_func(t=t - t[0], **wf_kwargs)
 
             if modulation == "clock":
                 waveform = modulate_waveform(
@@ -401,7 +407,15 @@ def sample_schedule(
                 if kwargs in pulse_info.keys():
                     wf_kwargs[kwargs] = pulse_info[kwargs]
 
-            waveform = wf_func(t=t, **wf_kwargs)
+            # check for reference equality in case import alias is used
+            if wf_func == import_python_object_from_string(
+                "quantify_scheduler.waveforms.interpolated_complex_waveform"
+            ):
+                wf_kwargs["t_samples"] = (
+                    np.asarray(wf_kwargs["t_samples"]) - wf_kwargs["t_samples"][0]
+                )
+
+            waveform = wf_func(t=t - t[0], **wf_kwargs)
 
             if modulation == "clock":
                 waveform = modulate_waveform(

@@ -23,6 +23,7 @@
 - Documentation - Add a short explanation and examples of the `StitchedPulse` and `StitchedPulseBuilder` to the Schedules and Pulses tutorial. (!766)
 - Infrastructure - Add `jinja2` as dependency to quantify-scheduler (needed for `pandas.DataFrame`) (!777)
 - Documentation - Split source and build folders to simplify using [`sphinx-autobuild`](https://github.com/executablebooks/sphinx-autobuild) for its editing. (!774)
+- Plotting - Fix error while plotting numerical pulses with non-zero rel_time (!783)
 - Schedules - Added two-qubit schedule generating function `two_qubit_transmon_schedules.chevron_cz_sched` for CZ tuneup (!700).
 - Qblox backend - Remove unnecessary deepcopies from schedule for 30-75% performance improvement (!771)
 - Schedule - A schedule can now be added to another schedule. It will be treated as one big operation (!709).
