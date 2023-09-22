@@ -383,7 +383,7 @@ else:
 
 if switcher_version is not None:
     html_theme_options["switcher"] = {
-        "json_url": "https://quantify-os.org/docs/quantify-core/switcher.json",
+        "json_url": "https://quantify-os.org/docs/quantify-scheduler/switcher.json",
         "version_match": switcher_version,
     }
     html_theme_options["navbar_center"] = ["version-switcher", "navbar-nav"]
