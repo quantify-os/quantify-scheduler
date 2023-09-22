@@ -8,6 +8,7 @@ workflow:
 variables:
   COV_MODULE: quantify_scheduler
   GIT_DEPTH: 0  # Disable shallow clone that breaks `miniver`
+  WEBSITE_DEPLOY_PATH: "docs/quantify-scheduler"
 
 include:
   - project: "quantify-os/ci"
@@ -22,3 +23,6 @@ include:
   - project: "quantify-os/ci"
     ref: main
     file: "/python-packaging-pypi.yml"
+  - project: "quantify-os/ci"
+    ref: main
+    file: "/python-docs-pages-vanilla.yml"
