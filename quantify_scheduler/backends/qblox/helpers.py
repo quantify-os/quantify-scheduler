@@ -780,13 +780,7 @@ def assign_pulse_and_acq_info_to_devices(
             hashed_dict = without(acq_data, ["t0", "waveforms"])
             hashed_dict["waveforms"] = []
             for acq in acq_data["waveforms"]:
-                if "t0" in acq:
-                    # TODO 'without' will raise a KeyError if the key is not already
-                    # present. Keep only the else-part and update the requirements when
-                    # quantify-core!438 is in the latest release.
-                    hashed_dict["waveforms"].append(without(acq, ["t0"]))
-                else:
-                    hashed_dict["waveforms"].append(acq)
+                hashed_dict["waveforms"].append(acq)
 
             combined_data = OpInfo(
                 name=op_data.data["name"],
