@@ -17,7 +17,7 @@ patch release to fix a bug where no output is measured on O2 and O4 outputs of b
   - New acquisition protocol: [ThresholdedAcquisition](https://quantify-quantify-scheduler.readthedocs-hosted.com/en/latest/tutorials/Acquisitions.html#thresholded-acquisition)
     - Currently only supported by the Qblox backend
 
-- Qblox backend improvements 
+- Qblox backend improvements
   - All-zero waveforms are no longer stored in the waveform dictionary and no longer uploaded to the hardware
   - Fixed accidentally changing multiple instances of same type of operation in a schedule
   - Fixed append mode for weighted acquisitions doing average instead of append
@@ -119,7 +119,7 @@ patch release to fix a bug where no output is measured on O2 and O4 outputs of b
   - **Introducing** `ReferenceMagnitude`. A new parameter called has been introduced for pulses, enabling the flexible specification of amplitudes and powers across various orders of magnitude. This parameter allows users to utilize variable attenuations, among other techniques, to precisely control the amplitudes and powers of the pulses. **Important note** this parameter is not yet implemented for any of the available backends. Future updates are expected to include support for ReferenceMagnitude in the compilation backends.
 
 - Qblox backend improvements
-  - **Introducing the** `MarkerPulse`. This feature simplifies the specification of digital pulses with precise timing, facilitating the control of third-party electronics. For more information, refer to the [Digital mode tutorial](https://quantify-quantify-scheduler.readthedocs-hosted.com/en/latest/tutorials/qblox/Cluster.html#digital-mode).
+  - **Introducing the** `MarkerPulse`. This feature simplifies the specification of digital pulses with precise timing, facilitating the control of third-party electronics. For more information, see [Digital I/O](https://quantify-quantify-scheduler.readthedocs-hosted.com/en/latest/reference/qblox/Cluster.html#digital-i-o).
   - **Improved Compilation Time**. The compilation time has been significantly improved, achieving approximately 10 times faster execution. Notably, a 32 times speedup has been observed when running 2-qubit Chevron schedules.
   - **Reduced Acquisition Time**. The minimum time between acquisitions has been lowered from 1000 ns to 300 ns, enhancing the efficiency of data acquisition.
 
@@ -263,7 +263,7 @@ patch release to fix a bug where no output is measured on O2 and O4 outputs of b
 
 ## 0.11.0 (2023-02-03)
 
-For help in migrating from deprecated methods, see [Quantify Deprecated Code Suggestions](examples/deprecated.md).
+For help in migrating from deprecated methods, see [Quantify Deprecated Code Suggestions](../examples/deprecated.md).
 
 ### Breaking changes
 

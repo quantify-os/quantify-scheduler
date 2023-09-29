@@ -1,0 +1,50 @@
+# sphinx warnings to be ignored, see `nitpick_ignore` in conf.py for details
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-nitpicky
+
+# Please always add comments justifying the warning ignore
+
+# numpy inherited docstrings
+# py:obj dtype
+# py:obj a
+# py:obj a.size == 1
+# py:obj n
+# py:obj ndarray
+# py:obj args
+py:class NDArray
+py:class np.float_
+
+# other classes and functions that cannot be linked to
+# py:class numpy.ma.core.MaskedArray
+# py:class numpy.core.records.recarray
+# py:class xmlrpclib.Fault
+# py:class xmlrpclib.Error
+# py:class xmlrpc.client.Fault
+# py:class xmlrpc.client.Error
+# py:obj distutils.version.LooseVersion
+# py:obj pkg_resources.parse_version
+
+
+# Pending on python docs links issue #11975
+# py:class list
+# py:obj list.append
+# py:obj list.append
+# py:obj list.count
+# py:obj list.extend
+# py:obj list.index
+# py:obj list.insert
+# py:meth list.pop
+# py:obj list.remove
+# py:class classmethod
+
+# exceptions added for quantify that are assumed to be because of #11975
+py:class module
+# py:obj List
+# py:obj ModuleType
+py:class UserDict
+
+# Can't find external refs to matplotlib
+py:class Axes
+py:class Figure
+
+# Can't find external refs to plotly
+py:class go.Figure

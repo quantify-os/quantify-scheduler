@@ -7,7 +7,7 @@ Contributions are welcome and greatly appreciated! Every little bit helps, and c
 
 You can contribute in many ways!
 
-This repository follows the same contribution guidelines as the [quantify-core](https://gitlab.com/quantify-os/quantify-core) repository. Please see [these contribution guidelines](https://quantify-quantify-core.readthedocs-hosted.com/en/latest/contributing.html) if you wish to contribute.
+This repository follows the same contribution guidelines as the [quantify-core](https://gitlab.com/quantify-os/quantify-core) repository. Please see [these contribution guidelines](https://quantify-os.org/docs/quantify-core/latest/dev/guide.html#contributing) if you wish to contribute.
 
 ## Useful links
 

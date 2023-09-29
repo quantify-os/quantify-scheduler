@@ -1,0 +1,36 @@
+html[data-theme=light] {
+    --pst-color-secondary: #449eba;
+}
+
+html[data-theme=dark] {
+    --pst-color-secondary: #449eba;
+}
+
+html[data-theme=dark] .bd-content img:not(.only-dark):not(.dark-light) {
+    background: unset;
+}
+
+.wy-nav-content {
+    max-width: 81% !important;
+}
+
+/* add horizontal scroll bar to pandas tables */
+.output.text_html {
+    overflow-x: auto;
+}
+
+dl.xr-attrs {
+    grid-template-columns: auto auto !important;
+}
+
+/* Code color highlights */
+.highlight .hll {
+    background-color: #d6ecaa
+}
+
+.sd-card-img-top {
+    margin-top: 10px !important;
+    height: 140px !important;
+    margin-left: auto;
+    margin-right: auto;
+}

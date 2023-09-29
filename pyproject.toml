@@ -39,6 +39,7 @@ dependencies = [
     "columnar",
     "dataclasses-json",
     "fastjsonschema",
+    "jinja2>=3.1.2", # pandas requires version 3.1.2 or newer
     "matplotlib",
     "networkx",
     "numpy",
@@ -71,18 +72,18 @@ test = [
 docs = [
     "jupyter_sphinx>=0.4.0",
     "jupytext",
+    "sphinx",
+    "pydata-sphinx-theme",
     "myst-nb",
     "hvplot",
     "pylint",
     "rich[jupyter]",
     "scanpydoc",
     "sphinx-autoapi",
-    "sphinx-autobuild",
     "sphinx-autodoc-typehints", # required by either sphinx.ext.autodoc or sphinx.ext.napoleon
+    "sphinx-design",
     "sphinx-jsonschema",
-    "sphinx-rtd-theme>=1.2.2",
     "sphinx-togglebutton",
-    "sphinx>=5.1.1",
     "sphinxcontrib-bibtex",
 ]
 
@@ -98,6 +99,8 @@ dev = [
     "pytest-xdist", # run tests in parallel
     "ruff",  # linter
     "quantify-scheduler[docs,test]",
+    # Live rebuild of Documentation
+    "sphinx-autobuild",
 ]
 
 [project.urls]
@@ -167,7 +170,7 @@ extend-exclude = [
 # - E402: Module level import not at top of file
 # - F401: Multiple imports on one line
 
-"*/docs/conf.py" = ["E402", "F401"]
+"*/docs/source/conf.py" = ["E402", "F401"]
 "__init__.py" = ["F401"]
 "tests/**/*.py" = ["D", "ANN"]
 
@@ -215,7 +218,7 @@ extend-exclude = [
 "quantify_scheduler/frontends.py" = ["I", "F", "E", "W", "D", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
 "quantify_scheduler/helpers/__init__.py" = ["I", "F", "E", "W", "D", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
 "quantify_scheduler/helpers/collections.py" = ["I", "F", "E", "W", "D", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/helpers/inspect.py" = ["I", "F", "E", "W", "D", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
+"quantify_scheduler/helpers/inspect.py" = ["I", "F", "E", "W", "D", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR", "PLW"]
 "quantify_scheduler/helpers/time.py" = ["I", "F", "E", "W", "D", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
 "quantify_scheduler/helpers/mock_instruments.py" = ["I", "F", "E", "W", "D", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
 "quantify_scheduler/helpers/validators.py" = ["I", "F", "E", "W", "D", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
