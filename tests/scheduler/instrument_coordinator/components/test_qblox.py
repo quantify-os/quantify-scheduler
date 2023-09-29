@@ -1233,7 +1233,7 @@ def test_instrument_channel():
             "real_output_1",
             {
                 "connect_out0": "off",
-                "connect_out1": "I",
+                "connect_out1": "Q",
                 "connect_out2": "off",
                 "connect_out3": "off",
             },
@@ -1255,7 +1255,7 @@ def test_instrument_channel():
                 "connect_out0": "off",
                 "connect_out1": "off",
                 "connect_out2": "off",
-                "connect_out3": "I",
+                "connect_out3": "Q",
             },
         ),
         (
@@ -1293,7 +1293,7 @@ def test_instrument_channel():
             "real_output_1",
             {
                 "connect_out0": "off",
-                "connect_out1": "I",
+                "connect_out1": "Q",
                 "connect_acq_I": "in0",
                 "connect_acq_Q": "in1",
             },
