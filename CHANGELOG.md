@@ -1,6 +1,13 @@
 # Changelog
 
 =======
+
+## Unreleased
+
+### Merged branches and closed issues
+
+### Breaking changes
+
 ## 0.16.1 (2023-09-29)
 
 patch release to fix a bug where no output is measured on O2 and O4 outputs of baseband modules when the io-mode in the hardware configuration is set to `real_output_{1,3}`.
