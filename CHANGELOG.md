@@ -30,7 +30,21 @@
 - Schedule - Added looping: An inner schedule can be repeated inside of the schedule (!709).
 - Infrastructure - Bump `quantify_core` version dependency to 0.7.1 to include the fix to `without()` in quantify-core!438. (!795)
 - Documentation - Deploy documentation to quantify-os.org. (!796)
+
+## 0.16.1 (2023-09-29)
+
+### Release highlights
+- Urgent Qblox hotfix
+  - Fixes a bug on Qblox baseband modules where no output is measured on O2 and O4 outputs when the io-mode in the hardware configuration is set to `real_output_{1,3}`.
+
+### Merged branches and closed issues
+
 - Qblox backend - Fix missing signal on O2 and O4 outputs of baseband modules. (!803)
+
+### Compatibility info
+
+- Qblox: `qblox-instruments==0.11.x` ([Cluster firmware v0.6.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.6.0)) and ([Cluster firmware v0.6.1](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.6.1)) 
+- ZI:    `zhinst==21.8.20515` `zhinst-qcodes==0.1.4` `zhinst-toolkit==0.1.5`
 
 ## 0.16.0 (2023-08-17)
 
