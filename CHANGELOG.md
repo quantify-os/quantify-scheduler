@@ -4,7 +4,6 @@
 
 ### Breaking changes
 - Qblox backend - `QuantifyCompiler.compile`, `determine_absolute_timing` and `compile_circuit_to_device` restandardized: returned schedule is the transformed schedule; and added `keep_original_schedule` argument (!771)
-- Acquisition - `WeightedIntegratedComplex` and `NumericalWeightedIntegratedComplex` now return normalized integrations, similar to `SSBIntegrationComplex` (!801)
 
 ### Merged branches and closed issues
 

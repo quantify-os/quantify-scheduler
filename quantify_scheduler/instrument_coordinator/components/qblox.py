@@ -1025,7 +1025,7 @@ class _QRMAcquisitionManager:
         """
 
         protocol_to_function_mapping = {
-            "WeightedIntegratedComplex": self._get_integration_amplitude_data,
+            "WeightedIntegratedComplex": self._get_integration_data,
             "SSBIntegrationComplex": self._get_integration_amplitude_data,
             "ThresholdedAcquisition": self._get_threshold_data,
             "Trace": self._get_scope_data,
