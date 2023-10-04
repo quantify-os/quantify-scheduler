@@ -12,12 +12,12 @@ kernelspec:
 ---
 
 (sec-control-flow)=
-# Control Flow
+# Control flow
 
 Complex schedules can be constructed from pulses, gates and schedules using control flow. When adding an Operation or Schedule to another Schedule, a `control_flow` argument can be specified.
 
 (sec-control-flow-subschedule)=
-## Adding Schedules to a Schedule
+## Adding schedules to a schedule
 
 - Supported by {mod}`Qblox <quantify_scheduler.backends.qblox>` and
   {mod}`Zurich Instruments <quantify_scheduler.backends.zhinst>` backends.
@@ -43,7 +43,7 @@ my_schedule.add(hadamard("q1"))
 Note: The `repetitions` argument of all but the outermost Schedules is ignored. Schedules can be nested arbitrarily. Timing constraints relative to an inner schedule interpret the inner schedule as one continuous operation. It is not possible to use an operation within a subschedule from outside as reference operation.
 
 (sec-control-flow-loops)=
-## Repetition Loops
+## Repetition loops
 
 - Supported by {mod}`Qblox <quantify_scheduler.backends.qblox>` backend.
 
