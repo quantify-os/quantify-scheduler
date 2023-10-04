@@ -81,7 +81,7 @@ intersphinx_mapping = {
     "dateutil": ("https://dateutil.readthedocs.io/en/stable/", None),
     "fastjsonschema": ("https://horejsek.github.io/python-fastjsonschema/", None),
     "quantify-core": (
-        "https://quantify-quantify-core.readthedocs-hosted.com/en/latest/",
+        "https://quantify-os.org/docs/quantify-core/latest/",
         None,
     ),
     "scipy": ("https://docs.scipy.org/doc/scipy/reference/", None),

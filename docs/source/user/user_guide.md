@@ -448,9 +448,9 @@ The {class}`~.backends.types.common.Connectivity` datastructure describes how po
 The {class}`~.backends.types.common.Connectivity` datastructure is currently under development. Information on the connectivity between port-clock combinations on the quantum device and ports on the control hardware is currently included in the old-style hardware configuration file, which should be included in the `"connectivity"` field of the {class}`~.backends.types.common.HardwareCompilationConfig`.
 ```
 
+(sec-user-guide-execution)=
 # Execution
 
-(sec-user-guide-execution)=
 
 ```{warning}
 This section describes functionality that is not fully implemented yet.

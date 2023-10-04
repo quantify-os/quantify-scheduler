@@ -43,7 +43,7 @@
 
 ### Compatibility info
 
-- Qblox: `qblox-instruments==0.11.x` ([Cluster firmware v0.6.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.6.0)) and ([Cluster firmware v0.6.1](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.6.1)) 
+- Qblox: `qblox-instruments==0.11.x` ([Cluster firmware v0.6.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.6.0)) and ([Cluster firmware v0.6.1](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.6.1))
 - ZI:    `zhinst==21.8.20515` `zhinst-qcodes==0.1.4` `zhinst-toolkit==0.1.5`
 
 ## 0.16.0 (2023-08-17)
@@ -51,7 +51,7 @@
 ### Release highlights
 
 - New features
-  - New acquisition protocol: [ThresholdedAcquisition](https://quantify-quantify-scheduler.readthedocs-hosted.com/en/latest/tutorials/Acquisitions.html#thresholded-acquisition)
+  - New acquisition protocol: [ThresholdedAcquisition](https://quantify-os.org/docs/quantify-scheduler/latest/tutorials/Acquisitions.html#thresholded-acquisition)
     - Currently only supported by the Qblox backend
 
 - Qblox backend improvements
@@ -156,7 +156,7 @@
   - **Introducing** `ReferenceMagnitude`. A new parameter called has been introduced for pulses, enabling the flexible specification of amplitudes and powers across various orders of magnitude. This parameter allows users to utilize variable attenuations, among other techniques, to precisely control the amplitudes and powers of the pulses. **Important note** this parameter is not yet implemented for any of the available backends. Future updates are expected to include support for ReferenceMagnitude in the compilation backends.
 
 - Qblox backend improvements
-  - **Introducing the** `MarkerPulse`. This feature simplifies the specification of digital pulses with precise timing, facilitating the control of third-party electronics. For more information, see [Digital I/O](https://quantify-quantify-scheduler.readthedocs-hosted.com/en/latest/reference/qblox/Cluster.html#digital-i-o).
+  - **Introducing the** `MarkerPulse`. This feature simplifies the specification of digital pulses with precise timing, facilitating the control of third-party electronics. For more information, see [Digital I/O](https://quantify-os.org/docs/quantify-scheduler/latest/reference/qblox/Cluster.html#digital-i-o).
   - **Improved Compilation Time**. The compilation time has been significantly improved, achieving approximately 10 times faster execution. Notably, a 32 times speedup has been observed when running 2-qubit Chevron schedules.
   - **Reduced Acquisition Time**. The minimum time between acquisitions has been lowered from 1000 ns to 300 ns, enhancing the efficiency of data acquisition.
 
@@ -196,7 +196,7 @@
 
 - This release introduces a new acquisition protocol: `NumericalWeightedIntegrationComplex`, that allows users perform a weighted integration acquisition.
 - The schedule library now has a new schedule that performs an NCO frequency sweep in a dark ESR experiment on an NV-center.
-- A lot of code that was marked as deprecated has been removed. Please checkout our [deprecated code suggestions](https://quantify-quantify-scheduler.readthedocs-hosted.com/en/latest/examples/deprecated.html) on how to modify you code to ammend any problems caused by this removal.
+- A lot of code that was marked as deprecated has been removed. Please checkout our [deprecated code suggestions](https://quantify-os.org/docs/quantify-scheduler/latest/examples/deprecated.html) on how to modify you code to ammend any problems caused by this removal.
 - Many improvements and small bug fixes.
 
 ### Breaking changes
@@ -426,7 +426,6 @@ For help in migrating from deprecated methods, see [Quantify Deprecated Code Sug
 - Operations - Pin `qcodes` package to \<0.34.0 due to breaking `Edge` naming (#300, !409)
 - Qblox backend - Sequencers are now dynamically allocated. The hardware config file schema was changed. (!328)
     - For each instrument, the config now contains a `portclock_configs` entry, a list with a dictionary of settings per port-clock combination
-    - See <https://quantify-quantify-scheduler.readthedocs-hosted.com/en/0.8.0/tutorials/qblox/recent.html>
 - Qblox backend - Strictly requires v0.7.x of the `qblox-instruments` package (!449)
 - Zhinst backend - Strictly requires v21.8.20515 of the `zhinst` package (!387)
 

@@ -329,7 +329,7 @@ processed in one batch.
 
 ```{admonition} Configuring MeasurementControl
 More information on configuring {class}`~quantify_core.measurement.control.MeasurementControl` can be found in the
-[user guide](https://quantify-quantify-core.readthedocs-hosted.com/en/latest/user/concepts.html#measurement-control)
+[user guide](https://quantify-os.org/docs/quantify-core/latest/user/concepts.html#measurement-control)
 of `quantify-core`.
 ```
 
@@ -371,6 +371,6 @@ T1Analysis(dataset=dataset).run().display_figs_mpl()
 
 ```{admonition} Analyzing Datasets
 More information on analyzing datasets can be found in the [user guide](
-<https://quantify-quantify-core.readthedocs-hosted.com/en/latest/user/concepts.html#analysis>)
+<https://quantify-os.org/docs/quantify-core/latest/user/concepts.html#analysis>)
 of `quantify-core`.
 ```

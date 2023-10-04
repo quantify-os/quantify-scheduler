@@ -104,7 +104,7 @@ dev = [
 ]
 
 [project.urls]
-"Documentation" = "https://quantify-quantify-scheduler.readthedocs-hosted.com"
+"Documentation" = "https://quantify-os.org/docs/quantify-scheduler/"
 "Source" = "https://gitlab.com/quantify-os/quantify-scheduler"
 "Issue tracker" = "https://gitlab.com/quantify-os/quantify-scheduler/-/issues"
 "Changelog" = "https://gitlab.com/quantify-os/quantify-scheduler/-/blob/main/CHANGELOG.md"

@@ -122,7 +122,7 @@ Now we are ready to proceed to the compilation stage. For each of the control st
 
 We perform the compilation via {func}`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler.compile`.
 
-We start by setting the directory where the compiled schedule files will be stored, via [set_datadir](https://quantify-quantify-core.readthedocs-hosted.com/en/latest/user/concepts.html#data-directory).
+We start by setting the directory where the compiled schedule files will be stored, via [set_datadir](https://quantify-os.org/docs/quantify-core/latest/user/concepts.html#data-directory).
 
 ```{code-cell} ipython3
 
@@ -234,7 +234,7 @@ cluster0 = Cluster("cluster0", dummy_cfg={"2": ClusterType.CLUSTER_QCM_RF})
 ```
 Here, {code}`dummy_cfg={"2": ClusterType.CLUSTER_QCM_RF}` initializes a dummy cluster instrument that contains an RF control module in slot 2, as specified by the example hardware config.
 
-We attach these instruments to the {class}`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator` via the appropriate {class}`~quantify_scheduler.instrument_coordinator.components.base.InstrumentCoordinatorComponentBase` component wrapper class. More information on the scheduler execution can be found in the [User Guide](https://quantify-quantify-scheduler.readthedocs-hosted.com/en/0.10.1/user_guide.html#execution).
+We attach these instruments to the {class}`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator` via the appropriate {class}`~quantify_scheduler.instrument_coordinator.components.base.InstrumentCoordinatorComponentBase` component wrapper class. More information on the scheduler execution can be found in the {ref}`Execution section of User guide <sec-user-guide-execution>`.
 
 ```{code-cell} ipython3
 
