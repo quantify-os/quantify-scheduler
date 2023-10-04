@@ -372,7 +372,7 @@ class ScheduleGettable:
                         " acquisition index and trace index. This is not the case for"
                         f" acquisition channel {acq_channel}, that has data"
                         f" type {channel_data.dtype} and {num_dims} dimensions:"
-                        f" {', '.join((str(dim) for dim in channel_data.dims))}."
+                        f" {', '.join(str(dim) for dim in channel_data.dims)}."
                     )
                 if channel_data.shape[0] != 1:
                     raise AcquisitionProtocolNotSupportedError(
@@ -401,7 +401,7 @@ class ScheduleGettable:
                         " index. This is not the case for acquisition channel"
                         f" {acq_channel}, that has data type {channel_data.dtype} and"
                         f" {num_dims} dimensions:"
-                        f" {', '.join((str(dim) for dim in channel_data.dims))}."
+                        f" {', '.join(str(dim) for dim in channel_data.dims)}."
                     )
                 dataset[acq_channel] = channel_data.to_numpy()
 
@@ -424,7 +424,7 @@ class ScheduleGettable:
                         " index and acquisition index. This is not the case for"
                         f" acquisition channel {acq_channel}, that has data type"
                         f" {channel_data.dtype} and {num_dims} dimensions:"
-                        f" {', '.join((str(dim) for dim in channel_data.dims))}."
+                        f" {', '.join(str(dim) for dim in channel_data.dims)}."
                     )
                 dataset[acq_channel] = channel_data.to_numpy().reshape((-1,))
 
