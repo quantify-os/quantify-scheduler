@@ -16,7 +16,7 @@ See also [merge request guidelines](https://quantify-os.org/docs/quantify-core/l
 - [ ] New code is covered by unit tests (or N/A).
 - [ ] New code is documented and docstrings use [numpydoc format](https://numpydoc.readthedocs.io/en/latest/format.html) (or N/A).
 - [ ] New functionality: considered making private instead of extending public API (or N/A).
-- [ ] Public API changed: added `@deprecated` (or N/A).
+- [ ] Public API changed: added `@deprecated` and entry in [deprecated code suggestions](https://quantify-os.org/docs/quantify-scheduler/latest/examples/deprecated.html) (or N/A).
 - [ ] Newly added/adjusted documentation and docstrings render properly (or N/A).
 - [ ] Pipeline fix or dependency update: post in `#software-for-developers` channel to merge `main` back in or [update local packages](https://quantify-os.org/docs/quantify-scheduler/latest/user/installation.html#setting-up-for-local-development) (or N/A).
 - [ ] Tested on hardware (or N/A).
