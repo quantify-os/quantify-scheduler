@@ -632,9 +632,10 @@ def generate_port_clock_to_device_map(
     Generates a mapping that specifies which port-clock combinations belong to which
     device.
 
-    .. note::
-        The same device may contain multiple port-clock combinations, but each
-        port-clock combination may only occur once.
+    Here, device means a top-level entry in the hardware config, e.g. a Cluster,
+    not which module within the Cluster.
+
+    Each port-clock combination may only occur once.
 
     Parameters
     ----------
@@ -647,6 +648,11 @@ def generate_port_clock_to_device_map(
         A dictionary with as key a tuple representing a port-clock combination, and
         as value the name of the device. Note that multiple port-clocks may point to
         the same device.
+
+    Raises
+    ------
+    ValueError
+        If a port-clock combination occurs multiple times in the hardware configuration.
     """
 
     portclock_map = {}
@@ -654,9 +660,15 @@ def generate_port_clock_to_device_map(
         if not isinstance(device_info, dict):
             continue
 
-        portclocks = find_all_port_clock_combinations(device_info)
-
-        for portclock in portclocks:
+        for portclock in find_all_port_clock_combinations(device_info):
+            if portclock in portclock_map:
+                raise ValueError(
+                    f"Port-clock combination '{portclock[0]}-{portclock[1]}'"
+                    f" occurs multiple times in the hardware configuration;"
+                    f" each port-clock combination may only occur once. When using"
+                    f" the same port-clock combination for output and input, assigning"
+                    f" only the output suffices."
+                )
             portclock_map[portclock] = device_name
 
     return portclock_map

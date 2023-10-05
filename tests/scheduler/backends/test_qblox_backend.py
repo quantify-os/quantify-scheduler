@@ -47,6 +47,7 @@ from quantify_scheduler.backends.qblox.helpers import (
 from quantify_scheduler.backends.qblox.instrument_compilers import (
     QcmModule,
     QcmRfModule,
+    QrmModule,
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.types import qblox as types
@@ -472,17 +473,13 @@ def test_find_all_port_clock_combinations(
     hardware_cfg_pulsar,
     hardware_cfg_rf,
 ):
-    all_hw_cfg = {
+    combined_hw_cfg = {
         **hardware_compilation_config_qblox_example["connectivity"],
         **hardware_cfg_pulsar,
         **hardware_cfg_rf["cluster0"],
     }
 
-    portclocks = find_all_port_clock_combinations(all_hw_cfg)
-    portclocks = set(portclocks)
-    portclocks.discard((None, None))
-
-    answer = {
+    assert set(find_all_port_clock_combinations(combined_hw_cfg)) == {
         ("q1:mw", "q1.01"),
         ("q0:mw", "q0.01"),
         ("q0:res", "q0.ro"),
@@ -503,22 +500,50 @@ def test_find_all_port_clock_combinations(
         ("q3:fl", "cl0.baseband"),
         ("q4:fl", "cl0.baseband"),
     }
-    assert portclocks == answer
 
 
 def test_generate_port_clock_to_device_map(
     hardware_compilation_config_qblox_example,
-    hardware_cfg_pulsar,
-    hardware_cfg_rf,
 ):
-    all_hw_cfg = {
-        **hardware_compilation_config_qblox_example["connectivity"],
-        **hardware_cfg_pulsar,
-        **hardware_cfg_rf["cluster0"],
+    portclock_map = generate_port_clock_to_device_map(
+        hardware_compilation_config_qblox_example["connectivity"]
+    )
+
+    assert set(portclock_map.keys()) == {
+        ("q4:mw", "q4.01"),
+        ("q0:mw", "q0.01"),
+        ("q5:mw", "q5.01"),
+        ("q6:mw", "q6.01"),
+        ("q4:res", "q4.ro"),
+        ("q5:res", "q5.ro"),
+        ("q0:res", "q0.ro"),
+        ("q0:fl", "cl0.baseband"),
+        ("q1:fl", "cl0.baseband"),
+        ("q2:fl", "cl0.baseband"),
+        ("q3:fl", "cl0.baseband"),
+        ("q4:fl", "cl0.baseband"),
     }
-    portclock_map = generate_port_clock_to_device_map(all_hw_cfg)
-    assert (None, None) not in portclock_map.keys()
-    assert len(portclock_map.keys()) == 18
+
+
+@pytest.mark.parametrize(
+    "duplicating_module_name",
+    ["cluster1_module1", "cluster1_module2", "cluster2_module1"],
+)
+def test_generate_port_clock_to_device_map_repeated_port_clock_raises(
+    hardware_cfg_rf_two_clusters, duplicating_module_name
+):
+    hardware_cfg = copy.deepcopy(hardware_cfg_rf_two_clusters)
+    portclock_configs = hardware_cfg["cluster1"]["cluster1_module1"][
+        "complex_output_0"
+    ]["portclock_configs"]
+
+    hardware_cfg[duplicating_module_name.split("_")[0]][duplicating_module_name][
+        "complex_output_0"
+    ]["portclock_configs"].extend(portclock_configs)
+
+    with pytest.raises(ValueError) as error:
+        _ = generate_port_clock_to_device_map(hardware_cfg)
+    assert "each port-clock combination may only occur once" in str(error.value)
 
 
 # --------- Test classes and member methods ---------
@@ -556,46 +581,40 @@ def test_construct_sequencers(
 
 
 def test_construct_sequencers_repeated_portclocks_error(
-    make_basic_multi_qubit_schedule,
-    hardware_cfg_pulsar,
-    compile_config_basic_transmon_qblox_hardware_pulsar,
+    hardware_cfg_rf,
+    mocker,
 ):
-    hardware_cfg = copy.deepcopy(hardware_cfg_pulsar)
-
-    hardware_cfg["qcm0"]["complex_output_0"]["portclock_configs"] = [
+    port, clock = "q0:mw", "q0.01"
+    instrument_cfg = hardware_cfg_rf["cluster0"]["cluster0_module2"]
+    instrument_cfg["complex_output_0"]["portclock_configs"] = [
         {
-            "port": "q0:mw",
-            "clock": "q0.01",
-            "interm_freq": 50e6,
+            "port": port,
+            "clock": clock,
         },
         {
-            "port": "q0:mw",
-            "clock": "q0.01",
-            "interm_freq": 100e6,
+            "port": port,
+            "clock": clock,
         },
     ]
-
-    test_module = QcmModule(
+    test_module = QcmRfModule(
         parent=None,
         name="tester",
         total_play_time=1,
-        instrument_cfg=hardware_cfg["qcm0"],
+        instrument_cfg=instrument_cfg,
     )
-    sched = make_basic_multi_qubit_schedule(["q0", "q1"])  # Schedule with two qubits
-
-    compiler = SerialCompiler(name="compiler")
-    sched = compiler.compile(
-        schedule=sched,
-        config=compile_config_basic_transmon_qblox_hardware_pulsar,
-    )
-    assign_pulse_and_acq_info_to_devices(
-        schedule=sched,
-        hardware_cfg=hardware_cfg,
-        device_compilers={"qcm0": test_module},
+    mocker.patch(
+        "quantify_scheduler.backends.qblox.instrument_compilers.QcmRfModule._portclocks_with_data",
+        new_callable=mocker.PropertyMock,
+        return_value={(port, clock)},
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError) as error:
         test_module.sequencers = test_module._construct_sequencers()
+
+    assert (
+        f"Portclock {(port, clock)} was assigned to multiple portclock_configs"
+        in str(error.value)
+    )
 
 
 @pytest.mark.parametrize(
@@ -3450,49 +3469,41 @@ def test_set_conflicting_sequencer_options(
         )
 
 
-def test_overwrite_gain(mock_setup_basic_transmon_with_standard_params):
-    hardware_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            "ref": "internal",
-            "instrument_type": "Cluster",
-            "cluster0_module1": {
-                "instrument_type": "QCM",
-                "real_output_0": {
-                    "input_gain": 5,
-                    "portclock_configs": [
-                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6},
-                    ],
-                },
-                "real_output_1": {
-                    "input_gain": 10,
-                    "portclock_configs": [
-                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6},
-                    ],
-                },
-            },
+def test_configure_input_gains_overwrite_gain():
+    # Partial test of overwriting gain setting. Note: In using the new
+    # QbloxHardwareOptions collisions like these are no longer possible,
+    # so after migrating to the new-style hardware compilation config
+    # this test can be removed
+
+    instrument_cfg = {
+        "instrument_type": "QRM",
+        "real_output_1": {
+            "input_gain_1": 10,
+            "portclock_configs": [
+                {"port": "q0:res", "clock": "q0.ro"},
+            ],
         },
     }
 
-    # Setup objects needed for experiment
-    mock_setup = mock_setup_basic_transmon_with_standard_params
-    quantum_device = mock_setup["quantum_device"]
-    quantum_device.hardware_config(hardware_cfg)
+    test_module = QrmModule(
+        parent=None,
+        name="tester",
+        total_play_time=1,
+        instrument_cfg=instrument_cfg,
+    )
 
-    # Define experiment schedule
-    schedule = Schedule("test overwrite gain")
-    schedule.add(SquarePulse(amp=0.5, duration=1e-6, port="q0:res", clock="q0.ro"))
+    test_module._settings = types.BasebandModuleSettings.extract_settings_from_mapping(
+        instrument_cfg
+    )
+    test_module._settings.in1_gain = 5
 
-    # Generate compiled schedule
-    compiler = SerialCompiler(name="compiler", quantum_device=quantum_device)
-    with pytest.raises(ValueError) as exc:
-        compiler.compile(schedule=schedule)
+    with pytest.raises(ValueError) as error:
+        test_module._configure_input_gains()
 
-    # assert exception was raised with correct message.
     assert (
-        exc.value.args[0]
-        == "Overwriting gain of real_output_1 of module cluster0_module1 to in0_gain: 10."
-        "\nIt was previously set to in0_gain: 5."
+        str(error.value)
+        == "Overwriting gain of real_output_1 of module tester to in1_gain: 10."
+        "\nIt was previously set to in1_gain: 5."
     )
 
 

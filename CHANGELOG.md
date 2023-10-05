@@ -30,6 +30,7 @@
 - Schedule - Added looping: An inner schedule can be repeated inside of the schedule (!709).
 - Infrastructure - Bump `quantify_core` version dependency to 0.7.1 to include the fix to `without()` in quantify-core!438. (!795)
 - Documentation - Deploy documentation to quantify-os.org. (!796)
+- Qblox backend - Prevent repeated port-clock combinations (!799)
 
 ## 0.16.1 (2023-09-29)
 
