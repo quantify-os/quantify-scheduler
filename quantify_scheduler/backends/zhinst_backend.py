@@ -10,7 +10,7 @@ import warnings
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import partial
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Literal, Optional, get_args
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Literal, get_args
 
 import numpy as np
 from pydantic.v1 import parse_obj_as
@@ -1322,7 +1322,7 @@ class ZIHardwareCompilationConfig(common.HardwareCompilationConfig):
     """The compilation backend this configuration is intended for."""
     hardware_description: Dict[str, zhinst.ZIHardwareDescription]  # noqa: UP006
     """Description of the instruments in the physical setup."""
-    hardware_options: Optional[zhinst.ZIHardwareOptions] = None  # noqa: UP007
+    hardware_options: zhinst.ZIHardwareOptions
     """
     Options that are used in compiling the instructions for the hardware, such as
     :class:`~quantify_scheduler.backends.types.common.LatencyCorrection` or

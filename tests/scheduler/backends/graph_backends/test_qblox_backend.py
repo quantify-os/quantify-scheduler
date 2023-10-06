@@ -186,7 +186,8 @@ def test_compile_sequence_to_file(
     # Arrange
 
     hardware_comp_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile"
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "hardware_options": {},
     }
     if isinstance(instrument, tuple):
         hardware_comp_cfg["hardware_description"] = {

@@ -224,7 +224,7 @@ class HardwareCompilationConfig(DataStructure):
     Datastructure representing how ports on the quantum device are connected to ports
     on the control hardware.
     """
-    hardware_options: Optional[HardwareOptions]
+    hardware_options: HardwareOptions
     """
     The `HardwareOptions` used in the compilation from the quantum-device layer to
     the control-hardware layer.

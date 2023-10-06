@@ -262,7 +262,7 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
     """The compilation backend this configuration is intended for."""
     hardware_description: Dict[str, QbloxHardwareDescription]
     """Description of the instruments in the physical setup."""
-    hardware_options: Optional[QbloxHardwareOptions]
+    hardware_options: QbloxHardwareOptions
     """
     Options that are used in compiling the instructions for the hardware, such as
     :class:`~quantify_scheduler.backends.types.common.LatencyCorrection` or

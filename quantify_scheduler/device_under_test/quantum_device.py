@@ -253,33 +253,56 @@ class QuantumDevice(Instrument):
         if hardware_config is None:
             return None
 
-        if not any(
-            [
-                key in hardware_config
-                for key in ["hardware_description", "hardware_options", "connectivity"]
-            ]
-        ):
-            # Legacy support for the old hardware config dict:
-            hardware_compilation_config = HardwareCompilationConfig(
-                backend=hardware_config["backend"],
-                hardware_description={},
-                hardware_options=None,
-                connectivity=hardware_config,
-            )
-        elif (
+        if (
             hardware_config["backend"]
             == "quantify_scheduler.backends.qblox_backend.hardware_compile"
         ):
-            hardware_compilation_config = QbloxHardwareCompilationConfig.parse_obj(
-                hardware_config
-            )
+            if not any(
+                [
+                    key in hardware_config
+                    for key in [
+                        "hardware_description",
+                        "hardware_options",
+                        "connectivity",
+                    ]
+                ]
+            ):
+                # Legacy support for the old hardware config dict:
+                hardware_compilation_config = QbloxHardwareCompilationConfig(
+                    backend=hardware_config["backend"],
+                    hardware_description={},
+                    hardware_options={},
+                    connectivity=hardware_config,
+                )
+            else:
+                hardware_compilation_config = QbloxHardwareCompilationConfig.parse_obj(
+                    hardware_config
+                )
         elif (
             hardware_config["backend"]
             == "quantify_scheduler.backends.zhinst_backend.compile_backend"
         ):
-            hardware_compilation_config = ZIHardwareCompilationConfig.parse_obj(
-                hardware_config
-            )
+            if not any(
+                [
+                    key in hardware_config
+                    for key in [
+                        "hardware_description",
+                        "hardware_options",
+                        "connectivity",
+                    ]
+                ]
+            ):
+                # Legacy support for the old hardware config dict:
+                hardware_compilation_config = ZIHardwareCompilationConfig(
+                    backend=hardware_config["backend"],
+                    hardware_description={},
+                    hardware_options={},
+                    connectivity=hardware_config,
+                )
+            else:
+                hardware_compilation_config = ZIHardwareCompilationConfig.parse_obj(
+                    hardware_config
+                )
         else:
             hardware_compilation_config = HardwareCompilationConfig.parse_obj(
                 hardware_config

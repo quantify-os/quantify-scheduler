@@ -183,7 +183,7 @@ class LOSettings(DataClassJsonMixin):
         power_entry: Union[float, Dict[str, float]] = mapping["power"]
         if not isinstance(power_entry, dict):  # floats allowed for convenience
             power_entry = {"power": power_entry}
-        freq_entry: Union[float, Dict[str, Optional[float]]] = mapping["frequency"]
+        freq_entry: float | None | Dict[str, float | None] = mapping.get("frequency")
         if not isinstance(freq_entry, dict):
             freq_entry = {"frequency": freq_entry}
 

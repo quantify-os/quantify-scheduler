@@ -446,6 +446,7 @@ hardware_compilation_cfg = {
             }
         },
     },
+    "hardware_options": {},
     "connectivity": {
         "cluster0": {
             "cluster0_module1": {
