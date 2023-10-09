@@ -6,7 +6,57 @@ from quantify_scheduler.operations.pulse_factories import (
     long_ramp_pulse,
     long_square_pulse,
     staircase_pulse,
+    rxy_gauss_pulse,
+    rxy_drag_pulse,
 )
+
+
+def test_rxy_drag_pulse():
+    """Test a long_ramp_pulse that is composed of one part."""
+    pulse = rxy_drag_pulse(
+        amp180=0.6,
+        motzoi=0.2,
+        theta=200,
+        phi=19,
+        port="q0:res",
+        duration=1e-7,
+        clock="q0.ro",
+    )
+    assert pulse.data["pulse_info"] == [
+        {
+            "wf_func": "quantify_scheduler.waveforms.drag",
+            "G_amp": 0.6 * 200 / 180,
+            "D_amp": 0.2,
+            "reference_magnitude": None,
+            "duration": 1e-7,
+            "phase": 19,
+            "nr_sigma": 4,
+            "clock": "q0.ro",
+            "port": "q0:res",
+            "t0": 0,
+        }
+    ]
+
+
+def test_rxy_gauss_pulse():
+    """Test a long_ramp_pulse that is composed of one part."""
+    pulse = rxy_gauss_pulse(
+        amp180=0.8, theta=180, phi=10, port="q0:res", duration=1e-7, clock="q0.ro"
+    )
+    assert pulse.data["pulse_info"] == [
+        {
+            "wf_func": "quantify_scheduler.waveforms.drag",
+            "G_amp": 0.8,
+            "D_amp": 0,
+            "reference_magnitude": None,
+            "duration": 1e-7,
+            "phase": 10,
+            "nr_sigma": 4,
+            "clock": "q0.ro",
+            "port": "q0:res",
+            "t0": 0,
+        }
+    ]
 
 
 def test_short_long_ramp_pulse():

@@ -37,7 +37,7 @@ def rxy_drag_pulse(
     # G_amp is the gaussian amplitude introduced in
     # https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.103.110501
     # 180 refers to the normalization, theta is in degrees, and
-    # mw_amp180 is the amplitude necessary to get the
+    # amp180 is the amplitude necessary to get the
     # maximum 180 degree theta (experimentally)
     G_amp = amp180 * theta / 180
     D_amp = motzoi
@@ -45,6 +45,34 @@ def rxy_drag_pulse(
     return pulse_library.DRAGPulse(
         G_amp=G_amp,
         D_amp=D_amp,
+        phase=phi,
+        port=port,
+        duration=duration,
+        clock=clock,
+        reference_magnitude=reference_magnitude,
+    )
+
+
+def rxy_gauss_pulse(
+    amp180,
+    theta,
+    phi,
+    port,
+    duration,
+    clock,
+    reference_magnitude=None,
+) -> pulse_library.GaussPulse:
+    """
+    Generate a Gaussian drive with :class:`~.operations.pulse_library.GaussPulse` that achieves the right
+    rotation angle `theta` based on a calibrated pi-pulse amplitude.
+    """
+    # theta is in degrees, and
+    # amp180 is the amplitude necessary to get the
+    # maximum 180 degree theta (experimentally)
+    G_amp = amp180 * theta / 180
+
+    return pulse_library.GaussPulse(
+        G_amp=G_amp,
         phase=phi,
         port=port,
         duration=duration,

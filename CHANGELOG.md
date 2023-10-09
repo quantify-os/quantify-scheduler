@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Breaking changes
+
 - Qblox backend - `QuantifyCompiler.compile`, `determine_absolute_timing` and `compile_circuit_to_device` restandardized: returned schedule is the transformed schedule; and added `keep_original_schedule` argument (!771)
 
 ### Merged branches and closed issues
@@ -31,18 +32,20 @@
 - Schedule - Added looping: An inner schedule can be repeated inside of the schedule (!709).
 - Infrastructure - Bump `quantify_core` version dependency to 0.7.1 to include the fix to `without()` in quantify-core!438. (!795)
 - Documentation - Deploy documentation to quantify-os.org. (!796)
+- Operations - Introduce the `GaussPulse`, an operation equivalent to the `DRAGPulse` but with zero derived amplitude, as well as its factory function `rxy_gauss_pulse`. (!793)
 - Qblox backend - Prevent repeated port-clock combinations (!799)
+- Operations - Adjust pulse info and acquisition info definitions to take class name (!809)
 
 ## 0.16.1 (2023-09-29)
 
 ### Release highlights
+
 - Urgent Qblox hotfix
   - Fixes a bug on Qblox baseband modules where no output is measured on O2 and O4 outputs when the io-mode in the hardware configuration is set to `real_output_{1,3}`.
 
 ### Merged branches and closed issues
 
 - Qblox backend - Fix missing signal on O2 and O4 outputs of baseband modules. (!803)
-- Operations - Adjust pulse info and acquisition info definitions to take class name (!809)
 
 ### Compatibility info
 

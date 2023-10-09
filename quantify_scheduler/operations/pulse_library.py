@@ -813,6 +813,66 @@ class DRAGPulse(Operation):
         return self._get_signature(pulse_info)
 
 
+class GaussPulse(Operation):
+    # pylint: disable=line-too-long, too-many-ancestors
+    r"""
+    The GaussPulse Operation is a real-valued pulse with the specified
+    amplitude and width 4 sigma.
+
+    The waveform is generated using :func:`.waveforms.drag` whith a D_amp set to zero, corresponding to a Gaussian pulse.
+
+    Parameters
+    ----------
+    G_amp
+        Unitless amplitude of the Gaussian envelope.
+    duration
+        The pulse duration in seconds.
+    phase
+        Phase of the pulse in degrees.
+    clock
+        Clock used to modulate the pulse.
+    port
+        Port of the pulse, must be capable of carrying a complex waveform.
+    reference_magnitude
+        Scaling value and unit for the unitless amplitude. Uses settings in
+        hardware config if not provided.
+    t0
+        Time in seconds when to start the pulses relative to the start time
+        of the Operation in the Schedule.
+    """
+
+    def __init__(
+        self,
+        G_amp: float,
+        phase: float,
+        duration: float,
+        port: str,
+        clock: str,
+        reference_magnitude: Optional[ReferenceMagnitude] = None,
+        t0: float = 0,
+    ):
+        super().__init__(name=self.__class__.__name__)
+        self.data["pulse_info"] = [
+            {
+                "wf_func": "quantify_scheduler.waveforms.drag",
+                "G_amp": G_amp,
+                "D_amp": 0,
+                "reference_magnitude": reference_magnitude,
+                "duration": duration,
+                "phase": phase,
+                "nr_sigma": 4,
+                "clock": clock,
+                "port": port,
+                "t0": t0,
+            }
+        ]
+        self._update()
+
+    def __str__(self) -> str:
+        pulse_info = self.data["pulse_info"][0]
+        return self._get_signature(pulse_info)
+
+
 def create_dc_compensation_pulse(
     pulses: List[Operation],
     sampling_rate: float,

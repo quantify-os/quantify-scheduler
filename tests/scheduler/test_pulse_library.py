@@ -15,6 +15,7 @@ from quantify_scheduler.operations.gate_library import X90, X
 from quantify_scheduler.operations.pulse_library import (
     ChirpPulse,
     DRAGPulse,
+    GaussPulse,
     IdlePulse,
     NumericalPulse,
     RampPulse,
@@ -42,6 +43,9 @@ def test_operation_duration_single_pulse() -> None:
     idle = IdlePulse(50e-9)
     assert idle.duration == pytest.approx(50e-9)
 
+    gauss = GaussPulse(G_amp=0.2, phase=27, duration=200e-9, clock="cl:01", port="p.01")
+    assert gauss.duration == pytest.approx(200e-9)
+
 
 def test_operation_duration_single_pulse_delayed() -> None:
     dgp = DRAGPulse(
@@ -54,6 +58,16 @@ def test_operation_duration_single_pulse_delayed() -> None:
         t0=3.4e-9,
     )
     assert dgp.duration == pytest.approx(13.4e-9)
+
+    gp = GaussPulse(
+        G_amp=0.5,
+        phase=21.3,
+        duration=17e-9,
+        clock="cl:01",
+        port="p.01",
+        t0=8.4e-9,
+    )
+    assert gp.duration == pytest.approx(25.4e-9)
 
 
 def test_operation_add_pulse() -> None:
@@ -71,6 +85,10 @@ def test_operation_add_pulse() -> None:
     )
     x90.add_pulse(dgp)
     assert len(x90["pulse_info"]) == 1
+
+    gauss = GaussPulse(G_amp=0.2, phase=27, duration=200e-9, clock="cl:01", port="p.01")
+    x90.add_pulse(gauss)
+    assert len(x90["pulse_info"]) == 2
 
 
 def test_operation_duration_composite_pulse() -> None:
@@ -195,6 +213,13 @@ def test_decompose_long_square_pulse() -> None:
                 G_amp=0.8,
                 D_amp=0.83,
                 phase=1.0,
+                duration=duration,
+                port=port,
+                clock=clock,
+            ),
+            GaussPulse(
+                G_amp=0.2,
+                phase=0.1,
                 duration=duration,
                 port=port,
                 clock=clock,
