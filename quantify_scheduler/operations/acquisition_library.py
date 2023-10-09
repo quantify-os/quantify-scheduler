@@ -75,26 +75,21 @@ class Trace(AcquisitionOperation):  # pylint: disable=too-many-ancestors
         if isinstance(bin_mode, str):
             bin_mode = BinMode(bin_mode)
 
-        super().__init__(name="Trace")
-        self.data.update(
+        super().__init__(name=self.__class__.__name__)
+        self.data["acquisition_info"] = [
             {
-                "name": "Trace",
-                "acquisition_info": [
-                    {
-                        "waveforms": [],
-                        "duration": duration,
-                        "t0": t0,
-                        "port": port,
-                        "clock": clock,
-                        "acq_channel": acq_channel,
-                        "acq_index": acq_index,
-                        "bin_mode": bin_mode,
-                        "protocol": "Trace",
-                        "acq_return_type": np.ndarray,
-                    }
-                ],
+                "waveforms": [],
+                "duration": duration,
+                "t0": t0,
+                "port": port,
+                "clock": clock,
+                "acq_channel": acq_channel,
+                "acq_index": acq_index,
+                "bin_mode": bin_mode,
+                "protocol": "Trace",
+                "acq_return_type": np.ndarray,
             }
-        )
+        ]
         self._update()
 
     def __str__(self) -> str:
@@ -181,27 +176,22 @@ class WeightedIntegratedComplex(
         if phase != 0:
             raise NotImplementedError("Non-zero phase not yet implemented")
 
-        super().__init__(name="WeightedIntegratedComplex")
-        self.data.update(
+        super().__init__(name=self.__class__.__name__)
+        self.data["acquisition_info"] = [
             {
-                "name": "WeightedIntegratedComplex",
-                "acquisition_info": [
-                    {
-                        "waveforms": [waveform_a, waveform_b],
-                        "t0": t0,
-                        "clock": clock,
-                        "port": port,
-                        "duration": duration,
-                        "phase": phase,
-                        "acq_channel": acq_channel,
-                        "acq_index": acq_index,
-                        "bin_mode": bin_mode,
-                        "protocol": "WeightedIntegratedComplex",
-                        "acq_return_type": complex,
-                    }
-                ],
+                "waveforms": [waveform_a, waveform_b],
+                "t0": t0,
+                "clock": clock,
+                "port": port,
+                "duration": duration,
+                "phase": phase,
+                "acq_channel": acq_channel,
+                "acq_index": acq_index,
+                "bin_mode": bin_mode,
+                "protocol": "WeightedIntegratedComplex",
+                "acq_return_type": complex,
             }
-        )
+        ]
         self._update()
         # certain fields are required in the acquisition data
         if "acq_return_type" not in self.data["acquisition_info"][0]:
@@ -288,27 +278,22 @@ class SSBIntegrationComplex(AcquisitionOperation):  # pylint: disable=too-many-a
         if phase != 0:
             raise NotImplementedError("Non-zero phase not yet implemented")
 
-        super().__init__(name="SSBIntegrationComplex")
-        self.data.update(
+        super().__init__(name=self.__class__.__name__)
+        self.data["acquisition_info"] = [
             {
-                "name": "SSBIntegrationComplex",
-                "acquisition_info": [
-                    {
-                        "waveforms": [waveform_i, waveform_q],
-                        "t0": t0,
-                        "clock": clock,
-                        "port": port,
-                        "duration": duration,
-                        "phase": phase,
-                        "acq_channel": acq_channel,
-                        "acq_index": acq_index,
-                        "bin_mode": bin_mode,
-                        "acq_return_type": complex,
-                        "protocol": "SSBIntegrationComplex",
-                    }
-                ],
+                "waveforms": [waveform_i, waveform_q],
+                "t0": t0,
+                "clock": clock,
+                "port": port,
+                "duration": duration,
+                "phase": phase,
+                "acq_channel": acq_channel,
+                "acq_index": acq_index,
+                "bin_mode": bin_mode,
+                "acq_return_type": complex,
+                "protocol": "SSBIntegrationComplex",
             }
-        )
+        ]
         self._update()
         # certain fields are required in the acquisition data
         if "acq_return_type" not in self.data["acquisition_info"][0]:
@@ -455,7 +440,7 @@ class ThresholdedAcquisition(AcquisitionOperation):
         if phase != 0:
             raise NotImplementedError("Non-zero phase not yet implemented")
 
-        super().__init__(name="ThresholdedAcquisition")
+        super().__init__(name=self.__class__.__name__)
         self.data["acquisition_info"] = [
             {
                 "waveforms": [waveform_i, waveform_q],
@@ -601,19 +586,19 @@ class NumericalWeightedIntegrationComplex(
         duration = len(t_samples) / weights_sampling_rate
 
         super().__init__(
-            waveforms_a,
-            waveforms_b,
-            port,
-            clock,
-            duration,
-            acq_channel,
-            acq_index,
-            bin_mode,
-            phase,
-            t0,
+            waveform_a=waveforms_a,
+            waveform_b=waveforms_b,
+            port=port,
+            clock=clock,
+            duration=duration,
+            acq_channel=acq_channel,
+            acq_index=acq_index,
+            bin_mode=bin_mode,
+            phase=phase,
+            t0=t0,
         )
+        self.data["name"] = self.__class__.__name__
         self._update()
-        self.data["name"] = "NumericalWeightedIntegrationComplex"
 
     def __str__(self) -> str:
         acq_info = self.data["acquisition_info"][0]
@@ -700,26 +685,21 @@ class TriggerCount(AcquisitionOperation):  # pylint: disable=too-many-ancestors
                 "the trigger count protocol"
             )
 
-        super().__init__(name="TriggerCount")
-        self.data.update(
+        super().__init__(name=self.__class__.__name__)
+        self.data["acquisition_info"] = [
             {
-                "name": "TriggerCount",
-                "acquisition_info": [
-                    {
-                        "waveforms": [],
-                        "t0": t0,
-                        "clock": clock,
-                        "port": port,
-                        "duration": duration,
-                        "acq_channel": acq_channel,
-                        "acq_index": acq_index,
-                        "bin_mode": bin_mode,
-                        "acq_return_type": int,
-                        "protocol": "TriggerCount",
-                    }
-                ],
+                "waveforms": [],
+                "t0": t0,
+                "clock": clock,
+                "port": port,
+                "duration": duration,
+                "acq_channel": acq_channel,
+                "acq_index": acq_index,
+                "bin_mode": bin_mode,
+                "acq_return_type": int,
+                "protocol": "TriggerCount",
             }
-        )
+        ]
         self._update()
 
     def __str__(self) -> str:

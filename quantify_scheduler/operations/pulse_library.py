@@ -105,22 +105,17 @@ class ResetClockPhase(Operation):
         clock
             The clock of which to reset the phase.
         """
-        super().__init__(name="ResetClockPhase")
-        self.data.update(
+        super().__init__(name=self.__class__.__name__)
+        self.data["pulse_info"] = [
             {
-                "name": "ResetClockPhase",
-                "pulse_info": [
-                    {
-                        "wf_func": None,
-                        "clock": clock,
-                        "t0": t0,
-                        "duration": 0,
-                        "port": None,
-                        "reset_clock_phase": True,
-                    }
-                ],
+                "wf_func": None,
+                "clock": clock,
+                "t0": t0,
+                "duration": 0,
+                "port": None,
+                "reset_clock_phase": True,
             }
-        )
+        ]
         self._update()
 
     def __str__(self) -> str:
@@ -250,21 +245,16 @@ class IdlePulse(Operation):
         duration
             The duration of idle time in seconds.
         """
-        super().__init__(name="Idle")
-        self.data.update(
+        super().__init__(name=self.__class__.__name__)
+        self.data["pulse_info"] = [
             {
-                "name": "Idle",
-                "pulse_info": [
-                    {
-                        "wf_func": None,
-                        "t0": 0,
-                        "duration": duration,
-                        "clock": BasebandClockResource.IDENTITY,
-                        "port": None,
-                    }
-                ],
+                "wf_func": None,
+                "t0": 0,
+                "duration": duration,
+                "clock": BasebandClockResource.IDENTITY,
+                "port": None,
             }
-        )
+        ]
         self._update()
 
     def __str__(self) -> str:
@@ -322,24 +312,19 @@ class RampPulse(Operation):
             to the start time
             of the Operation in the Schedule.
         """
-        super().__init__(name="RampPulse")
-        self.data.update(
+        super().__init__(name=self.__class__.__name__)
+        self.data["pulse_info"] = [
             {
-                "name": "RampPulse",
-                "pulse_info": [
-                    {
-                        "wf_func": "quantify_scheduler.waveforms.ramp",
-                        "amp": amp,
-                        "reference_magnitude": reference_magnitude,
-                        "duration": duration,
-                        "offset": offset,
-                        "t0": t0,
-                        "clock": clock,
-                        "port": port,
-                    }
-                ],
+                "wf_func": "quantify_scheduler.waveforms.ramp",
+                "amp": amp,
+                "reference_magnitude": reference_magnitude,
+                "duration": duration,
+                "offset": offset,
+                "t0": t0,
+                "clock": clock,
+                "port": port,
             }
-        )
+        ]
         self._update()
 
     def __str__(self) -> str:
@@ -388,26 +373,20 @@ class StaircasePulse(Operation):  # pylint: disable=too-many-ancestors
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule.
         """
-        super().__init__(name="StaircasePulse")
-
-        self.data.update(
+        super().__init__(name=self.__class__.__name__)
+        self.data["pulse_info"] = [
             {
-                "name": "StaircasePulse",
-                "pulse_info": [
-                    {
-                        "wf_func": "quantify_scheduler.waveforms.staircase",
-                        "start_amp": start_amp,
-                        "final_amp": final_amp,
-                        "reference_magnitude": reference_magnitude,
-                        "num_steps": num_steps,
-                        "duration": duration,
-                        "t0": t0,
-                        "clock": clock,
-                        "port": port,
-                    }
-                ],
+                "wf_func": "quantify_scheduler.waveforms.staircase",
+                "start_amp": start_amp,
+                "final_amp": final_amp,
+                "reference_magnitude": reference_magnitude,
+                "num_steps": num_steps,
+                "duration": duration,
+                "t0": t0,
+                "clock": clock,
+                "port": port,
             }
-        )
+        ]
         self._update()
 
     def __str__(self) -> str:
@@ -445,7 +424,7 @@ class MarkerPulse(Operation):
                 "clock": clock,
                 "port": port,
                 "duration": duration
-                + qblox_constants.GRID_TIME  # add grid time for upd_param at end of pulse
+                + qblox_constants.GRID_TIME  # Add grid time for upd_param at end of pulse
                 * 1e-9,
             }
         ]
@@ -503,24 +482,19 @@ class SquarePulse(Operation):
             # the waveform separate from the clock.
             raise NotImplementedError
 
-        super().__init__(name="ModSquarePulse")
-        self.data.update(
+        super().__init__(name=self.__class__.__name__)
+        self.data["pulse_info"] = [
             {
-                "name": "ModSquarePulse",
-                "pulse_info": [
-                    {
-                        "wf_func": "quantify_scheduler.waveforms.square",
-                        "amp": amp,
-                        "reference_magnitude": reference_magnitude,
-                        "duration": duration,
-                        "phase": phase,
-                        "t0": t0,
-                        "clock": clock,
-                        "port": port,
-                    }
-                ],
+                "wf_func": "quantify_scheduler.waveforms.square",
+                "amp": amp,
+                "reference_magnitude": reference_magnitude,
+                "duration": duration,
+                "phase": phase,
+                "t0": t0,
+                "clock": clock,
+                "port": port,
             }
-        )
+        ]
         self._update()
 
     def __str__(self) -> str:
@@ -579,29 +553,24 @@ class SuddenNetZeroPulse(Operation):
         """
         duration = t_pulse + t_phi + t_integral_correction
 
-        super().__init__(name="SuddenNetZeroPulse")
-        self.data.update(
+        super().__init__(name=self.__class__.__name__)
+        self.data["pulse_info"] = [
             {
-                "name": "SuddenNetZeroPulse",
-                "pulse_info": [
-                    {
-                        "wf_func": "quantify_scheduler.waveforms.sudden_net_zero",
-                        "amp_A": amp_A,
-                        "amp_B": amp_B,
-                        "reference_magnitude": reference_magnitude,
-                        "net_zero_A_scale": net_zero_A_scale,
-                        "t_pulse": t_pulse,
-                        "t_phi": t_phi,
-                        "t_integral_correction": t_integral_correction,
-                        "duration": duration,
-                        "phase": 0,
-                        "t0": t0,
-                        "clock": clock,
-                        "port": port,
-                    }
-                ],
+                "wf_func": "quantify_scheduler.waveforms.sudden_net_zero",
+                "amp_A": amp_A,
+                "amp_B": amp_B,
+                "reference_magnitude": reference_magnitude,
+                "net_zero_A_scale": net_zero_A_scale,
+                "t_pulse": t_pulse,
+                "t_phi": t_phi,
+                "t_integral_correction": t_integral_correction,
+                "duration": duration,
+                "phase": 0,
+                "t0": t0,
+                "clock": clock,
+                "port": port,
             }
-        )
+        ]
         self._update()
 
     def __str__(self) -> str:
@@ -694,23 +663,18 @@ class SoftSquarePulse(Operation):
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule.
         """
-        super().__init__(name="SoftSquarePulse")
-        self.data.update(
+        super().__init__(name=self.__class__.__name__)
+        self.data["pulse_info"] = [
             {
-                "name": "SoftSquarePulse",
-                "pulse_info": [
-                    {
-                        "wf_func": "quantify_scheduler.waveforms.soft_square",
-                        "amp": amp,
-                        "reference_magnitude": reference_magnitude,
-                        "duration": duration,
-                        "t0": t0,
-                        "clock": clock,
-                        "port": port,
-                    }
-                ],
+                "wf_func": "quantify_scheduler.waveforms.soft_square",
+                "amp": amp,
+                "reference_magnitude": reference_magnitude,
+                "duration": duration,
+                "t0": t0,
+                "clock": clock,
+                "port": port,
             }
-        )
+        ]
         self._update()
 
     def __str__(self) -> str:
@@ -758,25 +722,20 @@ class ChirpPulse(Operation):  # pylint: disable=too-many-ancestors
         t0
             Shift of the start time with respect to the start of the operation.
         """
-        super().__init__(name="ChirpPulse")
-        self.data.update(
+        super().__init__(name=self.__class__.__name__)
+        self.data["pulse_info"] = [
             {
-                "name": "ChirpPulse",
-                "pulse_info": [
-                    {
-                        "wf_func": "quantify_scheduler.waveforms.chirp",
-                        "amp": amp,
-                        "reference_magnitude": reference_magnitude,
-                        "duration": duration,
-                        "start_freq": start_freq,
-                        "end_freq": end_freq,
-                        "t0": t0,
-                        "clock": clock,
-                        "port": port,
-                    }
-                ],
+                "wf_func": "quantify_scheduler.waveforms.chirp",
+                "amp": amp,
+                "reference_magnitude": reference_magnitude,
+                "duration": duration,
+                "start_freq": start_freq,
+                "end_freq": end_freq,
+                "t0": t0,
+                "clock": clock,
+                "port": port,
             }
-        )
+        ]
         self._update()
 
     def __str__(self) -> str:
@@ -832,26 +791,21 @@ class DRAGPulse(Operation):
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule.
         """
-        super().__init__(name="DRAG")
-        self.data.update(
+        super().__init__(name=self.__class__.__name__)
+        self.data["pulse_info"] = [
             {
-                "name": "DRAG",
-                "pulse_info": [
-                    {
-                        "wf_func": "quantify_scheduler.waveforms.drag",
-                        "G_amp": G_amp,
-                        "D_amp": D_amp,
-                        "reference_magnitude": reference_magnitude,
-                        "duration": duration,
-                        "phase": phase,
-                        "nr_sigma": 4,
-                        "clock": clock,
-                        "port": port,
-                        "t0": t0,
-                    }
-                ],
+                "wf_func": "quantify_scheduler.waveforms.drag",
+                "G_amp": G_amp,
+                "D_amp": D_amp,
+                "reference_magnitude": reference_magnitude,
+                "duration": duration,
+                "phase": phase,
+                "nr_sigma": 4,
+                "clock": clock,
+                "port": port,
+                "t0": t0,
             }
-        )
+        ]
         self._update()
 
     def __str__(self) -> str:
@@ -915,6 +869,21 @@ def create_dc_compensation_pulse(
     :
         Returns a SquarePulse object that compensates all pulses passed as argument.
     """
+
+    def _extract_pulses(pulses: List[Operation], port: str) -> List[Dict[str, Any]]:
+        # Collect all pulses for the given port
+        pulse_info_list: List[Dict[str, Any]] = []
+
+        for pulse in pulses:
+            for pulse_info in pulse["pulse_info"]:
+                if (
+                    pulse_info["port"] == port
+                    and pulse_info["clock"] == BasebandClockResource.IDENTITY
+                ):
+                    pulse_info_list.append(pulse_info)
+
+        return pulse_info_list
+
     # Make sure that the list contains at least one element
     if len(pulses) == 0:
         raise ValueError(
@@ -960,21 +929,6 @@ def create_dc_compensation_pulse(
     )
 
 
-def _extract_pulses(pulses: List[Operation], port: str) -> List[Dict[str, Any]]:
-    # Collect all pulses for the given port
-    pulse_info_list: List[Dict[str, Any]] = []
-
-    for pulse in pulses:
-        for pulse_info in pulse["pulse_info"]:
-            if (
-                pulse_info["port"] == port
-                and pulse_info["clock"] == BasebandClockResource.IDENTITY
-            ):
-                pulse_info_list.append(pulse_info)
-
-    return pulse_info_list
-
-
 class WindowOperation(Operation):
     """
     The WindowOperation is an operation for visualization purposes.
@@ -992,21 +946,16 @@ class WindowOperation(Operation):
         Create a new instance of WindowOperation.
 
         """
-        super().__init__(name="WindowOperation")
-        self.data.update(
+        super().__init__(name=self.__class__.__name__)
+        self.data["pulse_info"] = [
             {
-                "name": "WindowOperation",
-                "pulse_info": [
-                    {
-                        "wf_func": None,
-                        "window_name": window_name,
-                        "duration": duration,
-                        "t0": t0,
-                        "port": None,
-                    }
-                ],
+                "wf_func": None,
+                "window_name": window_name,
+                "duration": duration,
+                "t0": t0,
+                "port": None,
             }
-        )
+        ]
         self._update()
 
     @property
@@ -1075,25 +1024,20 @@ class NumericalPulse(Operation):
         duration = t_samples[-1] - t_samples[0]
         samples, t_samples = map(make_list_from_array, [samples, t_samples])
 
-        super().__init__(name="NumericalPulse")
-        self.data.update(
-            {
-                "name": "NumericalPulse",
-                "pulse_info": [
-                    {  # pylint: disable=line-too-long
-                        "wf_func": "quantify_scheduler.waveforms.interpolated_complex_waveform",
-                        "samples": samples,
-                        "t_samples": t_samples,
-                        "reference_magnitude": reference_magnitude,
-                        "duration": duration,
-                        "interpolation": interpolation,
-                        "clock": clock,
-                        "port": port,
-                        "t0": t0,
-                    }
-                ],
+        super().__init__(name=self.__class__.__name__)
+        self.data["pulse_info"] = [
+            {  # pylint: disable=line-too-long
+                "wf_func": "quantify_scheduler.waveforms.interpolated_complex_waveform",
+                "samples": samples,
+                "t_samples": t_samples,
+                "reference_magnitude": reference_magnitude,
+                "duration": duration,
+                "interpolation": interpolation,
+                "clock": clock,
+                "port": port,
+                "t0": t0,
             }
-        )
+        ]
         self._update()
 
     def __str__(self) -> str:
@@ -1145,24 +1089,20 @@ class SkewedHermitePulse(Operation):
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule. By default 0.
         """
-        super().__init__(name="hermite")
-        self.data.update(
+        super().__init__(name=self.__class__.__name__)
+        self.data["pulse_info"] = [
             {
-                "pulse_info": [
-                    {
-                        "wf_func": "quantify_scheduler.waveforms.skewed_hermite",
-                        "duration": duration,
-                        "amplitude": amplitude,
-                        "reference_magnitude": reference_magnitude,
-                        "skewness": skewness,
-                        "phase": phase,
-                        "clock": clock,
-                        "port": port,
-                        "t0": t0,
-                    }
-                ],
+                "wf_func": "quantify_scheduler.waveforms.skewed_hermite",
+                "duration": duration,
+                "amplitude": amplitude,
+                "reference_magnitude": reference_magnitude,
+                "skewness": skewness,
+                "phase": phase,
+                "clock": clock,
+                "port": port,
+                "t0": t0,
             }
-        )
+        ]
         self._update()
 
     def __str__(self) -> str:

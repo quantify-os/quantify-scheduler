@@ -42,6 +42,7 @@
 ### Merged branches and closed issues
 
 - Qblox backend - Fix missing signal on O2 and O4 outputs of baseband modules. (!803)
+- Operations - Adjust pulse info and acquisition info definitions to take class name (!809)
 
 ### Compatibility info
 
