@@ -11,6 +11,7 @@
 - Documentation - Switch to `pydata-sphinx-theme`. (!778)
 - Compilation - Add a `scheduling_strategy` parameter to `QuantumDevice` and `DeviceCompilationConfig` classes to enable new strategies for calculating absolute timing in `compilation.determine_absolute_timing`  (!736)
 - Compilation - Enforce always adding (possibly empty) `HardwareOptions` to the `HardwareCompilationConfig` (!812)
+- Compilation - Hotfix for !812: Fix backwards compatibility old-style hardware config for custom backend (!818)
 - Security - Add `check=True` flag to all subprocess calls (see also Ruff rule PLW1510). (!767)
 - Gettable - Add `ScheduleGettable.initialize_and_get_with_report` that saves information from an experiment in a report zipfile for diagnostics. (!672)
   - For Qblox instruments, this includes hardware logs, retrieved via `InstrumentCoordinator.retrieve_hardware_logs` from `qblox-instruments.ConfigurationManager`.

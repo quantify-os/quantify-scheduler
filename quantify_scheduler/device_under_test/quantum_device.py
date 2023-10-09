@@ -304,9 +304,27 @@ class QuantumDevice(Instrument):
                     hardware_config
                 )
         else:
-            hardware_compilation_config = HardwareCompilationConfig.parse_obj(
-                hardware_config
-            )
+            if not any(
+                [
+                    key in hardware_config
+                    for key in [
+                        "hardware_description",
+                        "hardware_options",
+                        "connectivity",
+                    ]
+                ]
+            ):
+                # Legacy support for the old hardware config dict:
+                hardware_compilation_config = HardwareCompilationConfig(
+                    backend=hardware_config["backend"],
+                    hardware_description={},
+                    hardware_options={},
+                    connectivity=hardware_config,
+                )
+            else:
+                hardware_compilation_config = HardwareCompilationConfig.parse_obj(
+                    hardware_config
+                )
 
         return hardware_compilation_config
 
