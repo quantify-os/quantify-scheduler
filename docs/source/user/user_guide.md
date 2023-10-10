@@ -451,12 +451,6 @@ The {class}`~.backends.types.common.Connectivity` datastructure is currently und
 (sec-user-guide-execution)=
 # Execution
 
-
-```{warning}
-This section describes functionality that is not fully implemented yet.
-The documentation describes the intended design and may change as the functionality is added.
-```
-
 ## Different kinds of instruments
 
 In order to execute a schedule, one needs both physical instruments to execute the compiled instructions as well as a way to manage the calibration parameters used to compile the schedule.
