@@ -135,7 +135,7 @@ def dummy_cluster():
 @pytest.fixture
 def pulse_only_schedule():
     sched = Schedule("pulse_only_experiment")
-    sched.add(Reset("q0"))
+    sched.add(IdlePulse(duration=200e-6))
     sched.add(
         DRAGPulse(
             G_amp=0.5,
@@ -184,7 +184,7 @@ def cluster_only_schedule():
 @pytest.fixture
 def pulse_only_schedule_multiplexed():
     sched = Schedule("pulse_only_experiment")
-    sched.add(Reset("q0"))
+    sched.add(IdlePulse(duration=200e-6))
     operation = sched.add(
         DRAGPulse(
             G_amp=0.7,
@@ -218,7 +218,7 @@ def pulse_only_schedule_multiplexed():
 @pytest.fixture
 def pulse_only_schedule_no_lo():
     sched = Schedule("pulse_only_schedule_no_lo")
-    sched.add(Reset("q1"))
+    sched.add(IdlePulse(duration=200e-6))
     sched.add(
         SquarePulse(
             amp=0.5,
@@ -235,7 +235,7 @@ def pulse_only_schedule_no_lo():
 @pytest.fixture
 def identical_pulses_schedule():
     sched = Schedule("identical_pulses_schedule")
-    sched.add(Reset("q0"))
+    sched.add(IdlePulse(duration=200e-6))
     sched.add(
         DRAGPulse(
             G_amp=0.7,
@@ -264,7 +264,7 @@ def identical_pulses_schedule():
 @pytest.fixture
 def pulse_only_schedule_with_operation_timing():
     sched = Schedule("pulse_only_schedule_with_operation_timing")
-    sched.add(Reset("q0"))
+    sched.add(IdlePulse(duration=200e-6))
     first_op = sched.add(
         DRAGPulse(
             G_amp=0.7,
@@ -352,7 +352,7 @@ def baseband_square_pulse_schedule():
 @pytest.fixture
 def real_square_pulse_schedule():
     sched = Schedule("real_square_pulse_schedule")
-    sched.add(Reset("q0"))
+    sched.add(IdlePulse(duration=200e-6))
     sched.add(
         SquarePulse(
             amp=1.0,

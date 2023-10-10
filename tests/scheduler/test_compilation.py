@@ -96,7 +96,9 @@ def test_determine_absolute_timing_ideal_clock():
     bad_sched.add(Rxy(180, 0, qubit=q1))
     bad_sched.add(Rxy(90, 0, qubit=q1), ref_pt="bad")
     with pytest.raises(NotImplementedError):
-        _ = determine_absolute_timing(schedule=bad_sched, keep_original_schedule=False)
+        _ = determine_absolute_timing(
+            schedule=bad_sched, time_unit="ideal", keep_original_schedule=False
+        )
 
 
 def test_determine_absolute_timing_alap_raises(

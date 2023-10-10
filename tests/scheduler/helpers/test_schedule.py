@@ -22,9 +22,11 @@ from quantify_scheduler.helpers.schedule import (
     get_pulse_info_by_uuid,
     get_pulse_uuid,
     get_total_duration,
+    _extract_port_clocks_used,
 )
 from quantify_scheduler.helpers.collections import make_hash
 from quantify_scheduler.operations.gate_library import X90, Measure, Reset
+from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.schedules import spectroscopy_schedules
 
 
@@ -499,3 +501,32 @@ def test_extract_acquisition_metadata_from_schedule(compiled_two_qubit_t1_schedu
     assert set(acq_metadata.acq_indices.keys()) == {0, 1}
     assert acq_metadata.acq_indices[0] == acq_metadata.acq_indices[1]
     assert acq_metadata.acq_indices[0] == list(np.arange(20))
+
+
+def test_extract_port_clocks_used(create_schedule_with_pulse_info):
+    schedule0 = Schedule("my-schedule")
+    schedule0.add(X90("q0"))
+    schedule0 = create_schedule_with_pulse_info(schedule0)
+    assert _extract_port_clocks_used(schedule0) == {("q0:mw", "q0.01")}
+
+    schedule1 = Schedule("my-schedule")
+    schedule1.add(
+        SSBIntegrationComplex(
+            duration=1e-6,
+            port="q0:ro",
+            clock="q0.res",
+            acq_index=0,
+            acq_channel=0,
+        )
+    )
+    schedule1 = create_schedule_with_pulse_info(schedule1)
+    assert _extract_port_clocks_used(schedule1) == {("q0:ro", "q0.res")}
+
+    schedule2 = Schedule("my-schedule")
+    schedule2.add(schedule0)
+    schedule2.add(schedule1)
+    schedule2 = create_schedule_with_pulse_info(schedule2)
+    assert _extract_port_clocks_used(schedule2) == {
+        ("q0:mw", "q0.01"),
+        ("q0:ro", "q0.res"),
+    }

@@ -14,8 +14,8 @@ from quantify_scheduler.schedules.schedule import (
     ScheduleBase,
 )
 
-if TYPE_CHECKING:
-    from quantify_scheduler import Operation
+from quantify_scheduler.operations.operation import Operation
+from quantify_scheduler.schedules.schedule import Schedule
 
 
 def get_pulse_uuid(pulse_info: Dict[str, Any], excludes: List[str] = None) -> int:
@@ -435,3 +435,26 @@ def extract_acquisition_metadata_from_acquisition_protocols(
         repetitions=repetitions,
     )
     return acq_metadata
+
+
+def _extract_port_clocks_used(schedule: ScheduleBase) -> set[tuple]:
+    """Extracts which port-clock combinations are used in a schedule."""
+
+    port_clocks_used = set()
+    for op_data in schedule.operations.values():
+        if isinstance(op_data, Schedule):
+            port_clocks_used |= _extract_port_clocks_used(op_data)
+            continue
+        if not op_data.valid_pulse and not op_data.valid_acquisition:
+            raise RuntimeError(
+                f"Operation {op_data.name} is not a valid pulse or acquisition."
+                f" Please check whether the device compilation has been performed successfully."
+                f" Operation data: {repr(op_data)}"
+            )
+
+        for op_info in op_data["pulse_info"] + op_data["acquisition_info"]:
+            if (port := op_info["port"]) is None or (clock := op_info["clock"]) is None:
+                continue
+            port_clocks_used.add((port, clock))
+
+    return port_clocks_used

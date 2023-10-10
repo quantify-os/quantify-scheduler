@@ -8,6 +8,7 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, Literal
 from uuid import uuid4
 
+from quantify_scheduler.helpers.schedule import _extract_port_clocks_used
 from quantify_scheduler.json_utils import load_json_schema, validate_json
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.schedules.schedule import Schedulable, Schedule
@@ -49,7 +50,7 @@ class _ControlFlowReturn(Operation):
         return self._get_signature(self.data["control_flow_info"])
 
 
-def determine_absolute_timing(
+def determine_absolute_timing(  # noqa: PLR0912
     schedule: Schedule,
     time_unit: Literal[
         "physical", "ideal", None
@@ -108,14 +109,34 @@ def determine_absolute_timing(
     if keep_original_schedule:
         schedule = deepcopy(schedule)
 
+    time_unit = time_unit or "physical"
+    if time_unit not in (valid_time_units := ("physical", "ideal")):
+        raise ValueError(
+            f"Undefined time_unit '{time_unit}'! Must be one of {valid_time_units}"
+        )
+
     for op in schedule.operations.values():
-        if isinstance(op, Schedule) and op.get("duration", None) is None:
-            determine_absolute_timing(
-                op, time_unit, config, keep_original_schedule=False
+        if isinstance(op, Schedule):
+            if op.get("duration", None) is None:
+                determine_absolute_timing(
+                    schedule=op,
+                    time_unit=time_unit,
+                    config=config,
+                    keep_original_schedule=False,
+                )
+
+        elif (
+            time_unit == "physical" and not op.valid_pulse and not op.valid_acquisition
+        ):
+            # Gates do not have a defined duration, so only ideal timing is defined
+            raise RuntimeError(
+                f"Operation {op.name} is not a valid pulse or acquisition."
+                f" Please check whether the device compilation has been performed."
+                f" Operation data: {repr(op)}"
             )
 
     # If called directly and not by the compiler, ensure control flow is resolved
-    if config is None:
+    if config is None and time_unit == "physical":
         resolve_control_flow(schedule)
 
     scheduling_strategy = "asap"
@@ -130,13 +151,6 @@ def determine_absolute_timing(
 
     if not schedule.schedulables:
         raise ValueError(f"schedule '{schedule.name}' contains no schedulables.")
-
-    time_unit = time_unit or "physical"
-    valid_time_units = ("physical", "ideal")
-    if time_unit not in valid_time_units:
-        raise ValueError(
-            f"Undefined time_unit '{time_unit}'! Must be one of {valid_time_units}"
-        )
 
     schedulable_iterator = iter(schedule.schedulables.values())
 
@@ -204,21 +218,6 @@ def _get_start_time(
     return abs_time
 
 
-def _get_port_clocks(schedule: Schedule) -> set:
-    """Recursively collect all port-clock combinations in a Schedule."""
-    port_clocks: set = set()
-    for op in schedule.operations.values():
-        if isinstance(op, Schedule):
-            port_clocks |= _get_port_clocks(op)
-        elif isinstance(op, Operation):
-            for pulse in op["pulse_info"]:
-                port = pulse.get("port", None)
-                clock = pulse.get("clock", None)
-                if port and clock:
-                    port_clocks.add((port, clock))
-    return port_clocks
-
-
 def resolve_control_flow(
     schedule: Schedule,
     config: CompilationConfig | None = None,
@@ -246,7 +245,7 @@ def resolve_control_flow(
         been determined.
     """
     if not port_clocks:
-        port_clocks = _get_port_clocks(schedule)
+        port_clocks = _extract_port_clocks_used(schedule)
     for op in schedule.operations.values():
         if isinstance(op, Schedule):
             resolve_control_flow(op, config, port_clocks)
@@ -259,7 +258,6 @@ def resolve_control_flow(
     for schedulable in schedulables:
         cf = schedulable.get("control_flow", None)
         if cf is not None:
-            op = schedule.operations[schedulable["operation_repr"]]
             cf["pulse_info"] = [
                 {
                     "wf_func": None,
@@ -326,8 +324,8 @@ def flatten_schedule(
         Equivalent schedule without subschedules
     """
     # If called directly and not by the compiler, ensure timings are filled
-    if config is None:
-        resolve_control_flow(schedule)
+    if config is None and schedule.get("duration", None) is None:
+        determine_absolute_timing(schedule)
 
     for op in schedule.operations.values():
         if isinstance(op, Schedule):
