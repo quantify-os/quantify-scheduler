@@ -40,13 +40,11 @@ from quantify_scheduler.instrument_coordinator.components.generic import (
 )
 from quantify_scheduler.instrument_coordinator.components.qblox import (
     QbloxInstrumentCoordinatorComponentBase,
-    _QRMAcquisitionManager,
 )
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.gate_library import Measure
 from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import ClockResource
-from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 from quantify_scheduler.schedules.trace_schedules import trace_schedule_circuit_layer
 from tests.fixtures.mock_setup import close_instruments
 from tests.scheduler.instrument_coordinator.components.test_qblox import (  # pylint: disable=unused-import
@@ -775,7 +773,6 @@ def test_trigger_count_append(
                             "port": "qe0:optical_readout",
                             "clock": "qe0.ge0",
                             "interm_freq": 50e6,
-                            "instruction_generated_pulses_enabled": True,
                         },
                     ],
                 },
@@ -785,7 +782,6 @@ def test_trigger_count_append(
                             "port": "qe0:optical_control",
                             "clock": "qe0.ge0",
                             "interm_freq": 0,
-                            "instruction_generated_pulses_enabled": True,
                         }
                     ],
                 },
@@ -875,7 +871,6 @@ def test_trigger_count_append_gettables(
                             "port": "qe0:optical_readout",
                             "clock": "qe0.ge0",
                             "interm_freq": 50e6,
-                            "instruction_generated_pulses_enabled": True,
                         },
                     ],
                 },
@@ -885,7 +880,6 @@ def test_trigger_count_append_gettables(
                             "port": "qe0:optical_control",
                             "clock": "qe0.ge0",
                             "interm_freq": 0,
-                            "instruction_generated_pulses_enabled": True,
                         }
                     ],
                 },

@@ -355,7 +355,6 @@ def hardware_cfg_pulsar_qcm(add_lo1):
                     {
                         "port": "q0:mw",
                         "clock": "cl0.baseband",
-                        "instruction_generated_pulses_enabled": True,
                         "interm_freq": 50e6,
                     }
                 ],
@@ -371,9 +370,7 @@ def hardware_cfg_pulsar_qcm(add_lo1):
 
 
 @pytest.fixture
-def hardware_cfg_pulsar_qcm_real_mode(
-    instruction_generated_pulses_enabled,
-):  # pylint: disable=line-too-long
+def hardware_cfg_pulsar_qcm_real_mode():
     yield {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "qcm0": {
@@ -385,7 +382,6 @@ def hardware_cfg_pulsar_qcm_real_mode(
                     {
                         "port": "dummy_port_1",
                         "clock": "cl0.baseband",
-                        "instruction_generated_pulses_enabled": instruction_generated_pulses_enabled,  # noqa: E501
                     },
                 ],
             },
@@ -394,7 +390,6 @@ def hardware_cfg_pulsar_qcm_real_mode(
                     {
                         "port": "dummy_port_2",
                         "clock": "cl0.baseband",
-                        "instruction_generated_pulses_enabled": instruction_generated_pulses_enabled,  # noqa: E501
                     }
                 ],
             },
@@ -403,7 +398,6 @@ def hardware_cfg_pulsar_qcm_real_mode(
                     {
                         "port": "dummy_port_3",
                         "clock": "cl0.baseband",
-                        "instruction_generated_pulses_enabled": instruction_generated_pulses_enabled,  # noqa: E501
                     }
                 ],
             },
@@ -412,7 +406,6 @@ def hardware_cfg_pulsar_qcm_real_mode(
                     {
                         "port": "dummy_port_4",
                         "clock": "cl0.baseband",
-                        "instruction_generated_pulses_enabled": instruction_generated_pulses_enabled,  # noqa: E501
                     }
                 ],
             },

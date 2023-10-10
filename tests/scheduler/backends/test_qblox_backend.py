@@ -64,12 +64,9 @@ from quantify_scheduler.operations.acquisition_library import (
     Trace,
 )
 from quantify_scheduler.operations.pulse_factories import long_square_pulse
-from quantify_scheduler.operations.stitched_pulse import (
-    StitchedPulseBuilder,
-)
+from quantify_scheduler.operations.stitched_pulse import StitchedPulseBuilder
 from quantify_scheduler.operations.gate_library import Measure, Reset, X, X90, Y
 from quantify_scheduler.operations.operation import Operation
-from quantify_scheduler.operations.pulse_factories import long_square_pulse
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     IdlePulse,
@@ -81,7 +78,6 @@ from quantify_scheduler.operations.pulse_library import (
     SquarePulse,
 )
 from quantify_scheduler.operations.control_flow_library import Loop
-from quantify_scheduler.operations.stitched_pulse import StitchedPulseBuilder
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.schedules.timedomain_schedules import (
     allxy_sched,
@@ -1315,13 +1311,10 @@ def test_qcm_acquisition_error(hardware_cfg_pulsar):
         qcm.distribute_data()
 
 
-@pytest.mark.filterwarnings("ignore::FutureWarning")
-@pytest.mark.parametrize("instruction_generated_pulses_enabled", [False])
 def test_real_mode_pulses(
     real_square_pulse_schedule,
     hardware_cfg_pulsar_qcm_real_mode,
     mock_setup_basic_transmon,
-    instruction_generated_pulses_enabled,  # pylint: disable=unused-argument
 ):
     real_square_pulse_schedule.repetitions = 10
     mock_setup_basic_transmon["quantum_device"].hardware_config(
@@ -1695,13 +1688,10 @@ def test_generate_uuid_from_wf_data():
     assert hash1 != hash2
 
 
-@pytest.mark.filterwarnings("ignore::FutureWarning")
-@pytest.mark.parametrize("instruction_generated_pulses_enabled", [False])
 def test_real_mode_container(
     real_square_pulse_schedule,
     hardware_cfg_pulsar_qcm_real_mode,
     mock_setup_basic_transmon,
-    instruction_generated_pulses_enabled,  # pylint: disable=unused-argument
 ):
     real_square_pulse_schedule = determine_absolute_timing(
         real_square_pulse_schedule, keep_original_schedule=False

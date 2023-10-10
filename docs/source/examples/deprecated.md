@@ -435,7 +435,7 @@ pprint.pprint(device_config_basic_transmon)
 
 ## Instruction-generated pulses (Qblox only)
 
-Instead of using the ``instruction_generated_pulses_enabled: True`` field in the port-clock configuration for generating long square and staircase pulses (see {ref}`Instruction generated pulses <sec-qblox-instruction-generated-pulses>`), you can now create long square, staircase and ramp waveforms (that would otherwise not fit in memory), by creating these operations with the following helper functions.
+Instead of using the ``instruction_generated_pulses_enabled: True`` field in the port-clock configuration for generating long square and staircase pulses, you can now create long square, staircase and ramp waveforms (that would otherwise not fit in memory), by creating these operations with the following helper functions.
 
 ```{code-cell} ipython3
 from quantify_scheduler.operations.pulse_factories import (

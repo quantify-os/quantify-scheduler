@@ -55,7 +55,7 @@ def offset_instruction(
     return OpInfo(
         name="VoltageOffset",
         data={
-            "instruction": q1asm_instructions.SET_AWG_OFFSET,
+            "wf_func": None,
             "offset_path_0": 0.5,
             "offset_path_1": 0.0,
             "port": port,

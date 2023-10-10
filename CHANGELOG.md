@@ -5,6 +5,7 @@
 ### Breaking changes
 
 - Qblox backend - `QuantifyCompiler.compile`, `determine_absolute_timing` and `compile_circuit_to_device` restandardized: returned schedule is the transformed schedule; and added `keep_original_schedule` argument (!771)
+- Deprecation - The deprecated `instruction_generated_pulses_enabled` Qblox hardware configuration parameter, and the two classes related to it (`StitchedSquarePulseStrategy` and `StaircasePulseStrategy`) have been removed. The deprecated code suggestions have been updated (!811).
 
 ### Merged branches and closed issues
 

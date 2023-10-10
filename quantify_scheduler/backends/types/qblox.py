@@ -878,15 +878,6 @@ class SequencerOptions(DataStructure):
     Function to inject custom qasm instructions after the compiler inserts the 
     footer and the stop instruction in the generated qasm program.
     """
-    instruction_generated_pulses_enabled: bool = False
-    """
-    (deprecated) Generate certain specific waveforms from the pulse library using a more 
-    complicated series of sequencer instructions, which helps conserve waveform memory.
-
-    Note: this setting is deprecated and will be removed in a future version.
-    Long square pulses and staircase pulses can be generated with the newly introduced 
-    :class:`~quantify_scheduler.operations.stitched_pulse.StitchedPulseBuilder`
-    """
 
     @validator(
         "init_offset_awg_path_0",

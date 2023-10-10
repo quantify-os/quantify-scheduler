@@ -608,7 +608,6 @@ The following parameters are available.
 - `"init_gain_awg_path_0"` by default `1.0`, must be between `-1.0` and `1.0`,
 - `"init_gain_awg_path_1"` by default `1.0`, must be between `-1.0` and `1.0`,
 - `"qasm_hook_func"`, see {ref}`QASM hook <sec-qblox-qasm-hook>`,
-- `"instruction_generated_pulses_enabled"`, see {ref}`Instruction generated pulses (deprecated) <sec-qblox-instruction-generated-pulses>`.
 
 ```{note}
 We note that it is a requirement of the backend that each combination of a port and a clock is unique, i.e. it is possible to use the same port or clock multiple times in the hardware config but the combination of a port with a certain clock can only occur once.
@@ -646,45 +645,6 @@ hw_config = {
     }
 }
 ```
-
-(sec-qblox-instruction-generated-pulses)=
-### Instruction generated pulses
-
-```{warning}
-The {code}`instruction_generated_pulses_enabled` option is deprecated and will be removed in a future version. Long square pulses and staircase pulses can be generated with the newly introduced {class}`~quantify_scheduler.operations.stitched_pulse.StitchedPulseBuilder`. More information can be found in {ref}`Long waveform support <sec-qblox-cluster-long-waveform-support>`.
-```
-
-The Qblox backend contains some intelligence that allows it to generate certain specific waveforms from the pulse library using a more complicated series of sequencer instructions, which helps conserve waveform memory. Though in order to keep the backend fully transparent, all such advanced capabilities are disabled by default.
-
-In order to enable the advanced capabilities we need to add line {code}`"instruction_generated_pulses_enabled": True` to the port-clock configuration.
-
-```{code-block} python
----
-  emphasize-lines: 12
----
-hw_config = {
-    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-    "cluster0_module1": {
-          "instrument_type": "QCM_RF",
-          "ref": "internal",
-          "complex_output_0": {
-              "downconverter_freq": 9000000000,
-              "portclock_configs": [
-                  {
-                      "port": "q0:mw",
-                      "clock": "q0.01",
-                      "instruction_generated_pulses_enabled": True,
-                  }
-              ]
-          }
-    }
-}
-```
-
-Currently, this has the following effects:
-
-- Long square pulses get broken up into separate pulses with durations \<= 1 us, which allows the modules to play square pulses longer than the waveform memory normally allows.
-- Staircase pulses are generated using offset instructions instead of using waveform memory
 
 ## Local Oscillator configuration
 

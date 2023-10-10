@@ -101,7 +101,7 @@ TEST_OP_INFO_MAPPING = {
     "offset": OpInfo(
         name="",
         data={
-            "instruction": q1asm_instructions.SET_AWG_OFFSET,
+            "wf_func": None,
             "offset_path_0": 0.5,
             "offset_path_1": 0.5,
             "port": "some_port",
@@ -121,13 +121,12 @@ TEST_OP_INFO_MAPPING = {
 }
 
 
-@pytest.mark.filterwarnings("ignore::FutureWarning")
 @pytest.mark.parametrize(
     "op_info, answer",
     [
         (TEST_OP_INFO_MAPPING["other"], pulses.GenericPulseStrategy),
-        (TEST_OP_INFO_MAPPING["square"], pulses.StitchedSquarePulseStrategy),
-        (TEST_OP_INFO_MAPPING["staircase"], pulses.StaircasePulseStrategy),
+        (TEST_OP_INFO_MAPPING["square"], pulses.GenericPulseStrategy),
+        (TEST_OP_INFO_MAPPING["staircase"], pulses.GenericPulseStrategy),
         (TEST_OP_INFO_MAPPING["ssb"], acquisitions.SquareAcquisitionStrategy),
         (TEST_OP_INFO_MAPPING["weighted"], acquisitions.WeightedAcquisitionStrategy),
         (TEST_OP_INFO_MAPPING["trace"], acquisitions.SquareAcquisitionStrategy),
@@ -144,47 +143,17 @@ def test_get_operation_strategy(
     answer: Type[base.IOperationStrategy],
 ):
     # arrange
-    instruction_generated_pulses_enabled = True
     io_mode = "complex"
 
     # act
-    obj = factory.get_operation_strategy(
-        op_info, instruction_generated_pulses_enabled, io_mode
-    )
+    obj = factory.get_operation_strategy(op_info, io_mode)
 
     # assert
     assert isinstance(obj, answer)
 
 
-@pytest.mark.filterwarnings("ignore::FutureWarning")
-@pytest.mark.parametrize(
-    "op_info",
-    [
-        TEST_OP_INFO_MAPPING["other"],
-        TEST_OP_INFO_MAPPING["square"],
-        TEST_OP_INFO_MAPPING["staircase"],
-    ],
-)
-def test_get_operation_strategy_no_instr_gen(
-    op_info: OpInfo,
-):
-    # arrange
-    instruction_generated_pulses_enabled = False
-    io_mode = "complex"
-
-    # act
-    obj = factory.get_operation_strategy(
-        op_info, instruction_generated_pulses_enabled, io_mode
-    )
-
-    # assert
-    assert isinstance(obj, pulses.GenericPulseStrategy)
-
-
-@pytest.mark.filterwarnings("ignore::FutureWarning")
 def test_invalid_protocol_exception():
     # arrange
-    instruction_generated_pulses_enabled = True
     io_mode = "complex"
     op_info = OpInfo(
         name="",
@@ -202,9 +171,7 @@ def test_invalid_protocol_exception():
 
     # act
     with pytest.raises(ValueError) as exc:
-        factory.get_operation_strategy(
-            op_info, instruction_generated_pulses_enabled, io_mode
-        )
+        factory.get_operation_strategy(op_info, io_mode)
 
     # assert
     assert (
@@ -217,10 +184,8 @@ def test_invalid_protocol_exception():
     )
 
 
-@pytest.mark.filterwarnings("ignore::FutureWarning")
 def test_trace_append_exception():
     # arrange
-    instruction_generated_pulses_enabled = True
     io_mode = "complex"
     op_info = OpInfo(
         name="",
@@ -238,9 +203,7 @@ def test_trace_append_exception():
 
     # act
     with pytest.raises(ValueError) as exc:
-        factory.get_operation_strategy(
-            op_info, instruction_generated_pulses_enabled, io_mode
-        )
+        factory.get_operation_strategy(op_info, io_mode)
 
     # assert
     assert (

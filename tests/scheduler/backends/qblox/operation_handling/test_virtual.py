@@ -149,7 +149,7 @@ class TestAwgOffsetStrategy:
     def test_insert_qasm(self, empty_qasm_program_qcm):
         # arrange
         op_info = {
-            "instruction": q1asm_instructions.SET_AWG_OFFSET,
+            "wf_func": None,
             "offset_path_0": 0.4,
             "offset_path_1": 0,
         }

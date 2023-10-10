@@ -9,7 +9,7 @@ import logging
 import math
 import warnings
 from abc import ABC, ABCMeta, abstractmethod
-from collections import defaultdict, deque
+from collections import defaultdict
 from collections.abc import Iterator
 from functools import partial
 from os import makedirs, path
@@ -377,20 +377,6 @@ class Sequencer:
         self.static_hw_properties: StaticHardwareProperties = static_hw_properties
 
         self.register_manager = register_manager.RegisterManager()
-
-        self.instruction_generated_pulses_enabled = sequencer_cfg.get(
-            "instruction_generated_pulses_enabled", None
-        )
-        if self.instruction_generated_pulses_enabled is not None:
-            warnings.warn(
-                "Support for the instruction_generated_pulses_enabled configuration "
-                "field will be dropped in quantify-scheduler >= 0.19.0.\nFor long "
-                "square, ramp, or staircase pulses, please look at the pulse library "
-                "in quantify_scheduler.operations.pulse_factories.",
-                FutureWarning,
-            )
-        else:
-            self.instruction_generated_pulses_enabled = False
 
         self._settings = SequencerSettings.initialize_from_config_dict(
             sequencer_cfg=sequencer_cfg,
@@ -1466,7 +1452,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
                     op_info_to_op_strategy_func = partial(
                         get_operation_strategy,
-                        instruction_generated_pulses_enabled=seq.instruction_generated_pulses_enabled,
                         io_mode=seq.io_mode,
                     )
                     strategies_for_pulses = map(
@@ -1490,7 +1475,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 if seq.portclock == portclock:
                     op_info_to_op_strategy_func = partial(
                         get_operation_strategy,
-                        instruction_generated_pulses_enabled=seq.instruction_generated_pulses_enabled,
                         io_mode=seq.io_mode,
                     )
                     strategies_for_acquisitions = map(

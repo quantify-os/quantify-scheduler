@@ -1472,13 +1472,5 @@ def generate_hardware_config(compilation_config: CompilationConfig):
                     hw_config_key="qasm_hook_func",
                     hw_compilation_config_value=pc_sequencer_options.qasm_hook_func,
                 )
-                # Set the (deprecated) instruction_generated_pulses_enabled in the port-clock config:
-                if pc_sequencer_options.instruction_generated_pulses_enabled is True:
-                    # only propagate if True to avoid deprecation warning if not set (default = False)
-                    _set_hardware_config_value(
-                        hw_config_dict=pc_config,
-                        hw_config_key="instruction_generated_pulses_enabled",
-                        hw_compilation_config_value=pc_sequencer_options.instruction_generated_pulses_enabled,
-                    )
 
     return hardware_config
