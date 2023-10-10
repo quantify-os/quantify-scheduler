@@ -11,19 +11,23 @@ kernelspec:
 Download the notebook: {nb-download}`deprecated.ipynb`
 ```
 
-| **Target** | **Deprecated** | **Removed** | **Alternatives** |
+| **Target** | **Depr** | **Remv** | **Alternatives** |
 |---|---|---|---|
-| `convert_hw_config_to_portclock_configs_spec` | 0.13 | - | See {ref}`Qblox Hardware Configuration` |
-| `instruction_generated_pulses_enabled` hardware configuration setting | 0.13 | - | See {ref}`Instruction-generated pulses (Qblox only)` |
+| `ScheduleGettable.generate_diagnostics_report()` | 0.17 | - | See {ref}`ScheduleGettable.generate_diagnostics_report()` |
+| `plot_kwargs` parameter in `ScheduleBase.plot_pulse_diagram()` | 0.15 | - | See {ref}`plot_kwargs parameter in ScheduleBase.plot_pulse_diagram()` |
+| `repetitions` parameter in `ScheduleGettable.process_acquired_data()` | 0.15 | - | See {ref}`repetitions parameter in ScheduleGettable.process_acquired_data()` |
+| `t` parameter in `NumericalWeightedIntegrationComplex` | 0.13 | - | See {ref}`t parameter in NumericalWeightedIntegrationComplex` |
+| Qblox `convert_hw_config_to_portclock_configs_spec()` | 0.13 | - | See {ref}`Qblox Hardware Configuration` |
+| Qblox `instruction_generated_pulses_enabled` hardware config setting | 0.13 | 0.17 | See {ref}`Instruction-generated pulses (Qblox only)` |
 | `quantify_scheduler.visualization` | 0.12 | 0.15 | See {ref}`Circuit diagrams and pulse diagrams` |
-| `acq_channel` (in {class}`~quantify_scheduler.operations.gate_library.Measure` and {class}`~quantify_scheduler.operations.nv_native_library.CRCount`) | 0.10 | 0.12 | See {ref}`acq_channel` |
-| `quantify_scheduler.compilation.qcompile`<br>`quantify_scheduler.compilation.device_compile`<br>`quantify_scheduler.compilation.hardware_compile` | 0.10 | 0.12 | See {ref}`Qcompile => SerialCompiler` |
+| `acq_channel` (in {class}`~quantify_scheduler.operations.gate_library.Measure` and {class}`~quantify_scheduler.operations.nv_native_library.CRCount`) | 0.10 | 0.13 | See {ref}`acq_channel` |
+| `quantify_scheduler.compilation.qcompile()`<br>`quantify_scheduler.compilation.device_compile()`<br>`quantify_scheduler.compilation.hardware_compile()` | 0.10 | 0.13 | See {ref}`qcompile() => SerialCompiler` |
 | The `data` parameter in `Operation` subclasses | 0.9 | 0.15 | - |
-| Old Qblox hardware configuration | 0.8 | 0.12 | See {ref}`Qblox Hardware Configuration` |
-| `TransmonElement` | 0.7 | 0.12 | See {ref}`TransmonElement => BasicTransmonElement` |
-| `add_pulse_information_transmon` | 0.6 | 0.12 | See {ref}`add_pulse_information_transmon => compile_circuit_to_device` |
-| `plot_circuit_diagram_mpl` | 0.6 | 0.9 | {meth}`~quantify_scheduler.schedules.schedule.ScheduleBase.plot_circuit_diagram` |
-| `plot_pulse_diagram_mpl` | 0.6 | 0.9 | {meth}`~quantify_scheduler.schedules.schedule.ScheduleBase.plot_pulse_diagram` |
+| Old Qblox hardware configuration | 0.8 | 0.13 | See {ref}`Qblox Hardware Configuration` |
+| `TransmonElement` | 0.7 | 0.13 | See {ref}`TransmonElement => BasicTransmonElement` |
+| `add_pulse_information_transmon()` | 0.6 | 0.13 | See {ref}`add_pulse_information_transmon() => compile_circuit_to_device()` |
+| `plot_circuit_diagram_mpl()` | 0.6 | 0.9 | {meth}`~quantify_scheduler.schedules.schedule.ScheduleBase.plot_circuit_diagram` |
+| `plot_pulse_diagram_mpl()` | 0.6 | 0.9 | {meth}`~quantify_scheduler.schedules.schedule.ScheduleBase.plot_pulse_diagram` |
 
 As of `quantify-scheduler==0.10.0`, deprecation warnings are shown by default (as `FutureWarning`).
 
@@ -176,35 +180,9 @@ def simple_trace_sched(
 sched = simple_trace_sched(repetitions=1)
 ```
 
-## Circuit diagrams and pulse diagrams
+## qcompile() => SerialCompiler
 
-The functions to plot circuit and pulse diagrams have moved to a private module in version 0.12.0.
-
-Instead, to plot circuit and pulse diagrams, call, directly on the schedule,  {meth}`~quantify_scheduler.schedules.schedule.ScheduleBase.plot_circuit_diagram` and {meth}`~quantify_scheduler.schedules.schedule.ScheduleBase.plot_pulse_diagram`. 
-
-For example, the line
-
-```python
-pulse_diagram_plotly(schedule)
-pulse_diagram_matplotlib(schedule)
-```
-
-should now be written as
-
-```python
-schedule.plot_pulse_diagram(plot_backend="plotly")
-schedule.plot_pulse_diagram(plot_backend="mpl")
-```
-
-More examples can be found in the {ref}`Schedules and Pulses<sec-tutorial-sched-pulse>` and {ref}`Operations and Qubits<sec-tutorial-ops-qubits-vis>` tutorials.
-
-## acq_channel
-
-In the {class}`~quantify_scheduler.operations.gate_library.Measure` and {class}`~quantify_scheduler.operations.nv_native_library.CRCount` classes, the `acq_channel` parameter has been removed from the initializers. For gate-level operations, the acquisition channel can be set in the {class}`~quantify_scheduler.device_under_test.device_element.DeviceElement` subclasses, such as {class}`~quantify_scheduler.device_under_test.transmon_element.BasicTransmonElement`, instead. See, for example, `q0.measure.acq_channel(0)` in the {ref}`Compilation Setup`.
-
-## Qcompile => SerialCompiler
-
-The `qcompile`, `device_compile` and `hardware_compile` compilation functions have been replaced by the {class}`~quantify_scheduler.backends.graph_compilation.SerialCompiler`. For step-by-step guides on how to perform compilation to the device level and hardware, please see {ref}`Compiling to Hardware<sec-tutorial-compiling>` and {ref}`Operations and Qubits<sec-tutorial-ops-qubits>`. A brief example is shown below.
+The `qcompile()`, `device_compile()` and `hardware_compile()` compilation functions have been replaced by the {class}`~quantify_scheduler.backends.graph_compilation.SerialCompiler`. For step-by-step guides on how to perform compilation to the device level and hardware, please see {ref}`Compiling to Hardware<sec-tutorial-compiling>` and {ref}`Operations and Qubits<sec-tutorial-ops-qubits>`. A brief example is shown below.
 
 First, run {ref}`Compilation Setup`.
 
@@ -230,7 +208,91 @@ compiled_schedule = compiler.compile(
 compiled_schedule.timing_table
 ```
 
-## add_pulse_information_transmon => compile_circuit_to_device
+## ScheduleGettable.generate_diagnostics_report()
+
+In version 0.17, the {meth}`.ScheduleGettable.generate_diagnostics_report` method received a major update. This method should no longer be called directly. Instead, the experiment should be run via the {meth}`.ScheduleGettable.initialize_and_get_with_report` method, which executes the experiment and generates a diagnostics report for debugging.
+
+## plot_kwargs parameter in ScheduleBase.plot_pulse_diagram()
+
+In version 0.15, the `plot_kwargs` parameter of the {meth}`.ScheduleBase.plot_pulse_diagram` method was replaced by variable keyword arguments (`**kwargs`). This means that the dictionary provided to `plot_kwargs` can be unpacked and passed to the method directly. For example,
+
+```python
+schedule.plot_pulse_diagram(plot_kwargs={"x_range": (201e-6, 201.5e-6)})
+```
+
+can now be written as
+
+```{code-cell} ipython3
+compiled_schedule.plot_pulse_diagram(x_range=(201e-6, 201.5e-6))
+```
+
+## repetitions parameter in ScheduleGettable.process_acquired_data()
+
+In version 0.15, the `repetitions` parameter of the {meth}`.ScheduleGettable.process_acquired_data` method was deprecated. This parameter has no effect, and can simply be omitted. The {ref}`sec-tutorial-schedulegettable-repetitions` section of {ref}`sec-tutorial-schedulegettable` contains more information on how to set the number of repetitions in an experiment.
+
+## t parameter in NumericalWeightedIntegrationComplex
+
+In version 0.13.0, the `t` parameter in the {class}`~quantify_scheduler.operations.acquisition_library.NumericalWeightedIntegrationComplex` initializer was replaced by the `weights_sampling_rate` parameter, which takes a sampling rate in Hz.
+
+This means that creating a class instance as
+
+```python
+NumericalWeightedIntegrationComplex(
+    weights_a=[0.1, 0.2, 0.3],
+    weight_b=[0.4, 0.5, 0.6],
+    t=[0.0, 1e-9, 2e-9],
+    port="some_port",
+    clock="some_clock",
+    # other args
+)
+```
+
+should now be done as
+
+```{code-cell} ipython3
+from quantify_scheduler.operations.acquisition_library import NumericalWeightedIntegrationComplex
+
+
+NumericalWeightedIntegrationComplex(
+    weights_a=[0.1, 0.2, 0.3],
+    weights_b=[0.4, 0.5, 0.6],
+    weights_sampling_rate=1e9,
+    port="some_port",
+    clock="some_clock",
+    # other args
+)
+```
+
+
+## Circuit diagrams and pulse diagrams
+
+The functions to plot circuit and pulse diagrams have moved to a private module in version 0.12.0.
+
+Instead, to plot circuit and pulse diagrams, call, directly on the schedule,  {meth}`~quantify_scheduler.schedules.schedule.ScheduleBase.plot_circuit_diagram` and {meth}`~quantify_scheduler.schedules.schedule.ScheduleBase.plot_pulse_diagram`. 
+
+For example, the line
+
+```python
+pulse_diagram_plotly(schedule)
+pulse_diagram_matplotlib(schedule)
+```
+
+should now be written as
+
+```{code-cell} ipython3
+compiled_schedule.plot_pulse_diagram(plot_backend="plotly")
+compiled_schedule.plot_pulse_diagram(plot_backend="mpl")
+```
+
+More examples can be found in the {ref}`Schedules and Pulses<sec-tutorial-sched-pulse>` and {ref}`Operations and Qubits<sec-tutorial-ops-qubits-vis>` tutorials.
+
+## acq_channel
+
+In the {class}`~quantify_scheduler.operations.gate_library.Measure` and {class}`~quantify_scheduler.operations.nv_native_library.CRCount` classes, the `acq_channel` parameter has been removed from the initializers. For gate-level operations, the acquisition channel can be set in the {class}`~quantify_scheduler.device_under_test.device_element.DeviceElement` subclasses, such as {class}`~quantify_scheduler.device_under_test.transmon_element.BasicTransmonElement`, instead. See, for example, `q0.measure.acq_channel(0)` in the {ref}`Compilation Setup`.
+
+
+
+## add_pulse_information_transmon() => compile_circuit_to_device()
 
 The compilation step `add_pulse_information_transmon` has been replaced by `compile_circuit_to_device`. For steps on how to add device configuration to your compilation steps, please see {ref}`Operations and Qubits<sec-tutorial-ops-qubits>`.
 

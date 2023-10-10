@@ -36,6 +36,7 @@
 - Operations - Introduce the `GaussPulse`, an operation equivalent to the `DRAGPulse` but with zero derived amplitude, as well as its factory function `rxy_gauss_pulse`. (!793)
 - Qblox backend - Prevent repeated port-clock combinations (!799)
 - Operations - Adjust pulse info and acquisition info definitions to take class name (!809)
+- Documentation - Update the deprecated code suggestions table (!815)
 
 ## 0.16.1 (2023-09-29)
 
