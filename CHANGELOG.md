@@ -38,6 +38,11 @@
 - Qblox backend - Prevent repeated port-clock combinations (!799)
 - Operations - Adjust pulse info and acquisition info definitions to take class name (!809)
 - Documentation - Update the deprecated code suggestions table (!815)
+- QuantumDevice - `ManualParameter` `elements` and `edges` have been changed from `list` to `dict` (!813)
+  - Before, these were lists with instrument names
+  - Now, these are dicts with instrument names as keys and and the `DeviceElement` and `Edge` instances as values
+  - Not a breaking change however as `qcodes` already presented these `ManualParameter` as dicts with instrument names mapping to the instrument, also see [Tutorial: Operations and Qubits - Device configuration](https://quantify-os.org/docs/quantify-scheduler/latest/tutorials/Operations%20and%20Qubits.html#device-configuration)
+
 
 ## 0.16.1 (2023-09-29)
 

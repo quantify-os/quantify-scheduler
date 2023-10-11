@@ -3,6 +3,7 @@
 
 import pytest
 from quantify_scheduler.device_under_test.device_element import DeviceElement
+from quantify_scheduler.device_under_test.edge import Edge
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 
 
@@ -96,3 +97,45 @@ def test_wrong_scheduling_strategy(mock_setup_basic_transmon_with_standard_param
     # Assert that a validation error is raised for scheduling strategy other_strategy
     with pytest.raises(ValueError):
         quantum_device.scheduling_strategy("other_strategy")
+
+
+def test_add_and_get_unreferenced_device_elements(dev):
+    for i in range(50):
+        dev.add_element(DeviceElement(f"elem{i}"))
+
+    for i in range(50):
+        dev.get_element(f"elem{i}")
+
+
+def test_get_and_re_add_closed_device_element(dev):
+    # Create and add a new device element
+    element = DeviceElement("elem")
+    dev.add_element(element)
+
+    # Close the element
+    element.close()
+
+    # Try to get the element
+    with pytest.raises(ValueError, match="not a valid device element."):
+        dev.get_element("elem")
+
+    # Re-create and re-add the element
+    element = DeviceElement("elem")
+    dev.add_element(element)
+
+
+def test_get_and_re_add_closed_edge(dev):
+    # Create and add a new edge
+    edge = Edge("e1", "e2")
+    dev.add_edge(edge)
+
+    # Close the edge
+    edge.close()
+
+    # Try to get the edge
+    with pytest.raises(ValueError, match="not a valid edge."):
+        dev.get_edge("e1_e2")
+
+    # Re-create and re-add the edge
+    edge = Edge("e1", "e2")
+    dev.add_edge(edge)

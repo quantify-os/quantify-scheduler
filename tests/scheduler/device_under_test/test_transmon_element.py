@@ -172,6 +172,7 @@ def test_basic_transmon_deserialization(q0: BasicTransmonElement, dev: QuantumDe
 
     deserialized_q0 = json.loads(q0_as_str, cls=ScheduleJSONDecoder)
     assert deserialized_q0.__class__ is BasicTransmonElement
+    dev.add_element(deserialized_q0)
 
     compiled_sched_deserialized_q0 = compiler.compile(
         schedule=sched, config=dev.generate_compilation_config()
