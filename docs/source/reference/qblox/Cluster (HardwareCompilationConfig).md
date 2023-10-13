@@ -27,7 +27,7 @@ from tempfile import TemporaryDirectory
 from quantify_scheduler import Schedule
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.operations.pulse_library import SquarePulse
-from quantify_scheduler.compilation import determine_absolute_timing
+from quantify_scheduler.compilation import _determine_absolute_timing
 from quantify_scheduler.backends.qblox_backend import hardware_compile
 from quantify_scheduler.resources import ClockResource
 
@@ -134,7 +134,7 @@ test_sched.add(
 )
 test_sched.add_resource(ClockResource(name="q4.01", freq=7e9))
 test_sched.add_resource(ClockResource(name="q5.01", freq=8e9))
-test_sched = determine_absolute_timing(test_sched)
+test_sched = _determine_absolute_timing(test_sched)
 
 quantum_device = QuantumDevice("DUT")
 quantum_device.hardware_config(hardware_compilation_cfg)
@@ -490,7 +490,7 @@ test_sched.add(
 test_sched.add_resource(ClockResource(name="q0.01", freq=200e6))
 test_sched.add_resource(ClockResource(name="some_other_clock", freq=100e6))
 
-test_sched = determine_absolute_timing(test_sched)
+test_sched = _determine_absolute_timing(test_sched)
 
 quantum_device.hardware_config(hardware_compilation_cfg)
 hardware_compile(schedule=test_sched, config=quantum_device.generate_compilation_config())

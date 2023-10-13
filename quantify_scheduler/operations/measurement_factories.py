@@ -61,7 +61,7 @@ def dispersive_measurement(
     acq_weights_a: List[complex] | np.ndarray | None = None,
     acq_weights_b: List[complex] | np.ndarray | None = None,
     acq_weights_sampling_rate: float | None = None,
-    # The following are set during compile_circuit_to_device
+    # The following are set during _compile_circuit_to_device
     acq_rotation: float | None = None,
     acq_threshold: float | None = None,
 ) -> Operation:

@@ -19,7 +19,7 @@ from tempfile import TemporaryDirectory
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.operations.pulse_library import SquarePulse
-from quantify_scheduler.compilation import determine_absolute_timing
+from quantify_scheduler.compilation import _determine_absolute_timing
 from quantify_scheduler.backends.qblox_backend import hardware_compile
 from quantify_scheduler.resources import ClockResource
 
@@ -99,7 +99,7 @@ test_sched.add(
 )
 test_sched.add_resource(ClockResource(name="q4.01", freq=7e9))
 test_sched.add_resource(ClockResource(name="q5.01", freq=8e9))
-test_sched = determine_absolute_timing(test_sched)
+test_sched = _determine_absolute_timing(test_sched)
 
 hardware_compile(test_sched, mapping_config)
 ```
@@ -505,7 +505,7 @@ test_sched.add(SquarePulse(amp=1, duration=1e-6, port="q0:mw", clock="q0.01"))
 test_sched.add(SquarePulse(amp=0.25, duration=1e-6, port="q1:mw", clock="q1.01"))
 test_sched.add(SquarePulse(amp=0.25, duration=1e-6, port="q2:mw", clock="q2.01"))
 test_sched.add(SquarePulse(amp=0.25, duration=1e-6, port="q3:mw", clock="q3.01"))
-test_sched = determine_absolute_timing(test_sched)
+test_sched = _determine_absolute_timing(test_sched)
 hardware_compile(test_sched, mapping_config)
 ```
 

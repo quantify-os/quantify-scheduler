@@ -362,16 +362,22 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
             .. jupyter-execute::
 
+                from quantify_scheduler.backends.graph_compilation import SerialCompiler
+                from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
                 from quantify_scheduler.operations.pulse_library import DRAGPulse, SquarePulse, RampPulse
-                from quantify_scheduler.compilation import determine_absolute_timing
+                from quantify_scheduler.resources import ClockResource
 
                 schedule = Schedule("Multiple waveforms")
                 schedule.add(DRAGPulse(G_amp=0.2, D_amp=0.2, phase=0, duration=4e-6, port="P", clock="C"))
                 schedule.add(RampPulse(amp=0.2, offset=0.0, duration=6e-6, port="P"))
                 schedule.add(SquarePulse(amp=0.1, duration=4e-6, port="Q"), ref_pt='start')
-                schedule = determine_absolute_timing(schedule)
+                schedule.add_resource(ClockResource(name="C", freq=4e9))
 
-                _ = schedule.plot_pulse_diagram(sampling_rate=20e6)
+                quantum_device = QuantumDevice("quantum_device")
+                device_compiler = SerialCompiler("Device compiler", quantum_device)
+                compiled_schedule = device_compiler.compile(schedule)
+
+                _ = compiled_schedule.plot_pulse_diagram(sampling_rate=20e6)
 
             The backend can be changed to the plotly backend by specifying the
             ``plot_backend=plotly`` argument. With the plotly backend, pulse
@@ -380,14 +386,14 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
             .. jupyter-execute::
 
-                schedule.plot_pulse_diagram(sampling_rate=20e6, plot_backend='plotly')
+                compiled_schedule.plot_pulse_diagram(sampling_rate=20e6, plot_backend='plotly')
 
             The same can be achieved in the default ``plot_backend`` (``matplotlib``)
             by passing the keyword argument ``multiple_subplots=True``:
 
             .. jupyter-execute::
 
-                _ = schedule.plot_pulse_diagram(sampling_rate=20e6, multiple_subplots=True)
+                _ = compiled_schedule.plot_pulse_diagram(sampling_rate=20e6, multiple_subplots=True)
 
         """  # noqa: E501
         if plot_kwargs is None:

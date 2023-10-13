@@ -130,17 +130,17 @@ axs[2].set_title("Zhinst Backend");
 
 ## Performance optimization by not preserving the original schedule
 
-There is a way to potentially decrease the compilation time by about 20-40 % depending on the schedule if you do not need to keep the original, uncompiled schedule after the compilation. Using `keep_original_schedule=False` in `compiler.compile` modifies parts of the original schedule, making the original schedule potentially unusable after the function call.
+There is a way to potentially decrease the compilation time by about 20-40 % depending on the schedule if you do not need to keep the original, uncompiled schedule after the compilation. Using `keep_original_schedule = False` in the {class}`~.CompilationConfig` modifies parts of the original schedule, making the original schedule potentially unusable after the function call.
 
 ```{note}
-The returned schedule references objects from the original schedule if `keep_original_schedule=False` is used. Refrain from modifying the original schedule after compilation in this case!
+The returned schedule references objects from the original schedule if `CompilationConfig.keep_original_schedule = False` is used. Refrain from modifying the original schedule after compilation in this case!
 ```
 
 ```{code-cell}
-from quantify_scheduler.backends.graph_compilation import SerialCompiler
+config.keep_original_schedule = False
 
 compiler = SerialCompiler(name="Device compile")
-comp_sched = compiler.compile(schedule=echo_schedule, config=config, keep_original_schedule=False)
+comp_sched = compiler.compile(schedule=echo_schedule, config=config)
 
 comp_sched
 ```

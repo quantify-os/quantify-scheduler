@@ -149,23 +149,18 @@ Valid qubits are strings that appear in the {ref}`device configuration file<sec-
 
 ### Visualization
 
-A {class}`.Schedule` containing operations can be visualized using a circuit diagram by calling its method {meth}`.plot_circuit_diagram`.
-
-Alternatively, one can plot the waveforms in schedules using {meth}`.plot_pulse_diagram` (the default plotting backend is `matplotlib`, but it is possible
-to use `plotly` by adding the argument {code}`plot_backend='plotly'`):
+A {class}`.Schedule` containing operations can be visualized as a circuit diagram by calling its method {meth}`.plot_circuit_diagram`.
+Alternatively, one can plot the waveforms in schedules using {meth}`.plot_pulse_diagram`, which requires that the absolute timing of the schedule has been determined (see {ref}`sec-tutorial-sched-pulse` for an example).
 
 ```{code-cell} ipython3
 
-from quantify_scheduler.operations.pulse_library import SquarePulse, RampPulse
-from quantify_scheduler.compilation import determine_absolute_timing
+from quantify_scheduler.operations.gate_library import X90, Measure
 
-schedule = Schedule("waveforms")
-schedule.add(SquarePulse(amp=0.2, duration=4e-6, port="P"))
-schedule.add(RampPulse(amp=-0.1, offset=.2, duration=6e-6, port="P"))
-schedule.add(SquarePulse(amp=0.1, duration=4e-6, port="Q"), ref_pt='start')
-schedule = determine_absolute_timing(schedule)
+schedule = Schedule("X90 schedule")
+schedule.add(X90("q0"))
+schedule.add(Measure("q0"))
 
-_ = schedule.plot_pulse_diagram(sampling_rate=20e6)
+_ = schedule.plot_circuit_diagram()
 
 ```
 
@@ -182,7 +177,17 @@ _ = schedule.plot_pulse_diagram(sampling_rate=20e6)
 The quantum-device layer describes waveforms and acquisition protocols applied
 to a device. These waveforms can be used to implement the idealized operations
 expressed on the quantum-circuit layer, or can be used without specifying
-a corresponding representation at the quantum-circuit layer.
+a corresponding representation at the quantum-circuit layer:
+
+```{code-cell} ipython3
+
+from quantify_scheduler.operations.pulse_library import SquarePulse, RampPulse
+
+schedule = Schedule("waveforms")
+schedule.add(SquarePulse(amp=0.2, duration=4e-6, port="P"))
+schedule.add(RampPulse(amp=-0.1, offset=.2, duration=6e-6, port="P"))
+schedule.add(SquarePulse(amp=0.1, duration=4e-6, port="Q"), ref_pt='start')
+```
 
 
 (sec-user-guide-pulses-acq-operations)=

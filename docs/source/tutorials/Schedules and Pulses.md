@@ -62,17 +62,27 @@ sched
 
 ```
 
-`quantify-scheduler` provides several visualization tools to show a visual representation of the schedule we made. First, however, we need to instruct the scheduler to calculate the pulse timings. We can accomplish this using the {func}`~quantify_scheduler.compilation.determine_absolute_timing` function. In the cell below we call this function, and draw the schedule using a {meth}`pulse diagram <.plot_pulse_diagram>`.
+We now perform the compilation of the schedule onto the {ref}`sec-user-guide-quantum-device`. This step is necessary to, among other things, determine the absolute timing of the pulses. The compilation step is described in more detail in {ref}`sec-compilation`. 
+
+```{code-cell} ipython3
+
+from quantify_scheduler.backends.graph_compilation import SerialCompiler
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+
+quantum_device = QuantumDevice("quantum_device")
+device_compiler = SerialCompiler("Device compiler", quantum_device)
+
+comp_sched = device_compiler.compile(sched)
+
+```
+
+`quantify-scheduler` provides several visualization tools to show a visual representation of the schedule we made. In the cell below, we draw the schedule using a {meth}`pulse diagram <.plot_pulse_diagram>`.
 
 Note that these plots are interactive and modulation is not shown by default.
 
 ```{code-cell} ipython3
 
-from quantify_scheduler import compilation
-
-timed_sched = compilation.determine_absolute_timing(sched)
-timed_sched.plot_pulse_diagram(plot_backend="plotly")
-
+comp_sched.plot_pulse_diagram(plot_backend="plotly")
 
 ```
 
@@ -88,8 +98,8 @@ sched.add(
     rel_time=500e-9,
 )
 
-timed_sched = compilation.determine_absolute_timing(sched)
-timed_sched.plot_pulse_diagram(plot_backend="plotly")
+comp_sched = device_compiler.compile(sched)
+comp_sched.plot_pulse_diagram(plot_backend="plotly")
 
 
 ```
@@ -109,8 +119,8 @@ sched.add(
 )
 sched.add_resource(ClockResource(name="q0.01", freq=7e9))
 
-timed_sched = compilation.determine_absolute_timing(sched)
-timed_sched.plot_pulse_diagram(plot_backend="plotly")
+comp_sched = device_compiler.compile(sched)
+comp_sched.plot_pulse_diagram(plot_backend="plotly")
 
 
 ```
@@ -156,8 +166,8 @@ def pulse_train_schedule(
 
 
 sched = pulse_train_schedule(1, 200e-9, 300e-9, 5)
-timed_sched = compilation.determine_absolute_timing(sched)
-timed_sched.plot_pulse_diagram(plot_backend="plotly")
+comp_sched = device_compiler.compile(sched)
+comp_sched.plot_pulse_diagram(plot_backend="plotly")
 
 
 ```
@@ -215,8 +225,8 @@ sched.add(
     rel_time=5e-7,
 )
 
-timed_sched = compilation.determine_absolute_timing(sched)
-timed_sched.plot_pulse_diagram(plot_backend="plotly")
+comp_sched = device_compiler.compile(sched)
+comp_sched.plot_pulse_diagram(plot_backend="plotly")
 ```
 
 Using these factory functions, the resulting square and staircase pulses use no waveform memory at all. The ramp pulse uses waveform memory for a short section of the waveform, which is repeated multiple times.
@@ -258,8 +268,8 @@ pulse = builder.build()
 sched = Schedule("Long soft square pulse")
 sched.add(pulse)
 
-timed_sched = compilation.determine_absolute_timing(sched)
-timed_sched.plot_pulse_diagram(plot_backend="plotly")
+comp_sched = device_compiler.compile(sched)
+comp_sched.plot_pulse_diagram(plot_backend="plotly")
 ```
 
 Alternatively, the building methods of the {class}`~quantify_scheduler.operations.stitched_pulse.StitchedPulseBuilder` can be conveniently **chained** to create a {class}`~quantify_scheduler.operations.stitched_pulse.StitchedPulse` via more elegant syntax:

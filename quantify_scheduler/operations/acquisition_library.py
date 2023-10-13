@@ -454,7 +454,7 @@ class ThresholdedAcquisition(AcquisitionOperation):
                 "bin_mode": bin_mode,
                 "acq_return_type": int,
                 "protocol": "ThresholdedAcquisition",
-                # The following are set during compile_circuit_to_device
+                # The following are set during _compile_circuit_to_device
                 "acq_threshold": None,
                 "acq_rotation": None,
                 "integration_length": None,

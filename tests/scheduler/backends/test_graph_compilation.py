@@ -107,10 +107,12 @@ def test_schedule_invariance_after_compilation(
     original_schedule = Schedule("test_schedule")
     original_schedule.add(Reset("q0"))
 
+    quantum_device = mock_setup["quantum_device"]
+    quantum_device.keep_original_schedule(True)
+    config = quantum_device.generate_compilation_config()
+
     schedule = deepcopy(original_schedule)
-    _ = SerialCompiler("test", mock_setup["quantum_device"]).compile(
-        schedule=schedule, keep_original_schedule=True
-    )
+    _ = SerialCompiler("test").compile(schedule=schedule, config=config)
 
     assert schedule == original_schedule
 
@@ -118,16 +120,18 @@ def test_schedule_invariance_after_compilation(
 def test_do_not_keep_original_schedule(
     mock_setup_basic_transmon_with_standard_params,
 ):
-    mock_setup = mock_setup_basic_transmon_with_standard_params
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     schedule = Schedule("test_schedule")
     schedule.add(Reset("q0"))
 
-    compiled_schedule_kept_schedule = SerialCompiler(
-        "test", mock_setup["quantum_device"]
-    ).compile(schedule=schedule, keep_original_schedule=True)
+    quantum_device.keep_original_schedule(True)
+    compiled_schedule_kept_schedule = SerialCompiler("test", quantum_device).compile(
+        schedule=schedule
+    )
 
+    quantum_device.keep_original_schedule(False)
     compiled_schedule_not_kept_schedule = SerialCompiler(
-        "test", mock_setup["quantum_device"]
-    ).compile(schedule=schedule, keep_original_schedule=False)
+        "test", quantum_device
+    ).compile(schedule=schedule)
 
     assert compiled_schedule_kept_schedule == compiled_schedule_not_kept_schedule

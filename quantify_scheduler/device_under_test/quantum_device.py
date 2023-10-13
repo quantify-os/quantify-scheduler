@@ -11,7 +11,7 @@ from functools import partial
 from qcodes.instrument.base import Instrument
 from qcodes.instrument.parameter import InstrumentRefParameter, ManualParameter
 from qcodes.utils import validators
-from quantify_scheduler.backends.circuit_to_device import compile_circuit_to_device
+from quantify_scheduler.backends.circuit_to_device import _compile_circuit_to_device
 from quantify_scheduler.backends.qblox_backend import hardware_compile as qblox_backend
 from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
 from quantify_scheduler.backends.zhinst_backend import compile_backend as zhinst_backend
@@ -26,7 +26,7 @@ from quantify_scheduler.backends.qblox_backend import (
     compile_long_square_pulses_to_awg_offsets,
 )
 from quantify_scheduler.compilation import (
-    determine_absolute_timing,
+    _determine_absolute_timing,
     flatten_schedule,
     resolve_control_flow,
 )
@@ -97,6 +97,21 @@ class QuantumDevice(Instrument):
             instrument=self,
         )
 
+        self.keep_original_schedule = ManualParameter(
+            "keep_original_schedule",
+            initial_value=True,
+            docstring=(
+                "If `True`, the compiler will not modify the schedule argument. "
+                "If `False`, the compilation modifies the schedule, thereby "
+                "making the original schedule unusable for further usage; this "
+                "improves compilation time. Warning: if `False`, the returned schedule "
+                "references objects from the original schedule, please refrain from modifying "
+                "the original schedule after compilation in this case!"
+            ),
+            vals=validators.Bool(),
+            instrument=self,
+        )
+
         self.hardware_config = ManualParameter(
             "hardware_config",
             docstring=(
@@ -140,9 +155,7 @@ class QuantumDevice(Instrument):
             ),
             SimpleNodeConfig(
                 name="determine_absolute_timing",
-                compilation_func=partial(
-                    determine_absolute_timing, keep_original_schedule=False
-                ),
+                compilation_func=_determine_absolute_timing,
             ),
             SimpleNodeConfig(
                 name="flatten",
@@ -188,6 +201,7 @@ class QuantumDevice(Instrument):
 
         compilation_config = SerialCompilationConfig(
             name=backend_name,
+            keep_original_schedule=self.keep_original_schedule(),
             device_compilation_config=dev_cfg,
             hardware_compilation_config=hw_comp_cfg,
             compilation_passes=compilation_passes,
@@ -235,7 +249,7 @@ class QuantumDevice(Instrument):
             edges_cfg.update(edge_cfg)
 
         device_config = DeviceCompilationConfig(
-            backend=partial(compile_circuit_to_device, keep_original_schedule=False),
+            backend=_compile_circuit_to_device,
             elements=elements_cfg,
             clocks=clocks,
             edges=edges_cfg,

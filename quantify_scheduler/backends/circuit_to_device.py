@@ -22,14 +22,13 @@ from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.schedule import Schedule
 
 
-def compile_circuit_to_device(
+def _compile_circuit_to_device(
     schedule: Schedule,
     config: CompilationConfig | DeviceCompilationConfig | Dict | None = None,
     # config can be DeviceCompilationConfig and Dict to support (deprecated) calling
     # with device_cfg as positional argument.
     *,  # Support for (deprecated) calling with device_cfg as keyword argument:
     device_cfg: DeviceCompilationConfig | Dict | None = None,
-    keep_original_schedule=True,
 ) -> Schedule:
     """
     Add pulse information to all gates in the schedule.
@@ -55,13 +54,6 @@ def compile_circuit_to_device(
         (deprecated) Device compilation config. Pass a full compilation config instead
         using `config` argument. Note, if a dictionary is passed, it will be parsed to a
         :class:`~.DeviceCompilationConfig`.
-    keep_original_schedule
-        If `True`, this function will not modify the schedule argument.
-        If `False`, the compilation modifies the schedule, thereby
-        making the original schedule unusable for further usage; this
-        improves compilation time. Warning: if `False`, the returned schedule
-        references objects from the original schedule, please refrain from modifying
-        the original schedule after compilation in this case!
 
     Returns
     -------
@@ -75,13 +67,13 @@ def compile_circuit_to_device(
     """
     if (config is not None) and (device_cfg is not None):
         raise ValueError(
-            f"`{compile_circuit_to_device.__name__}` was called with {config=} "
+            f"`{_compile_circuit_to_device.__name__}` was called with {config=} "
             f"and {device_cfg=}. Please make sure this function is called with "
             f"only one of the two (CompilationConfig recommended)."
         )
     if not isinstance(config, CompilationConfig):
         warnings.warn(
-            f"`{compile_circuit_to_device.__name__}` will require a full "
+            f"`{_compile_circuit_to_device.__name__}` will require a full "
             f"CompilationConfig as input as of quantify-scheduler >= 0.19.0",
             FutureWarning,
         )
@@ -101,16 +93,13 @@ def compile_circuit_to_device(
     elif not isinstance(device_cfg, DeviceCompilationConfig):
         device_cfg = DeviceCompilationConfig.parse_obj(device_cfg)
 
-    if keep_original_schedule:
-        schedule = deepcopy(schedule)
-
     for key, operation in schedule.operations.items():
         # If operation is a valid pulse or acquisition it will not attempt to
         # add pulse/acquisition info in the lines below (if operation.valid_gate
         # will not work here for e.g. Measure, which is also a valid
         # acquisition)
         if isinstance(operation, Schedule):
-            schedule.operations[key] = compile_circuit_to_device(operation, device_cfg)
+            schedule.operations[key] = _compile_circuit_to_device(operation, device_cfg)
             continue
         elif not (operation.valid_pulse or operation.valid_acquisition):
             qubits = operation.data["gate_info"]["qubits"]
@@ -151,6 +140,27 @@ def compile_circuit_to_device(
             operation=operation, device_compilation_config=device_cfg
         )
     return schedule
+
+
+def compile_circuit_to_device(
+    schedule: Schedule,
+    config: CompilationConfig | DeviceCompilationConfig | Dict | None = None,
+    # config can be DeviceCompilationConfig and Dict to support (deprecated) calling
+    # with device_cfg as positional argument.
+    *,  # Support for (deprecated) calling with device_cfg as keyword argument:
+    device_cfg: DeviceCompilationConfig | Dict | None = None,
+) -> Schedule:
+    """Add pulse information to all gates in the schedule."""
+    warnings.warn(
+        f"Calling {compile_circuit_to_device.__name__} directly is deprecated "
+        f"and will be removed from the public interface in quantify-scheduler "
+        f">= 0.21.0. Please use `QuantifyCompiler` instead, which calls "
+        f"{_compile_circuit_to_device.__name__} as a compilation node.",
+        FutureWarning,
+    )
+    return _compile_circuit_to_device(
+        schedule=deepcopy(schedule), config=config, device_cfg=device_cfg
+    )
 
 
 def set_pulse_and_acquisition_clock(

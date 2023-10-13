@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import logging
+import warnings
 from copy import deepcopy
 from typing import TYPE_CHECKING, Literal
 from uuid import uuid4
@@ -50,13 +51,12 @@ class _ControlFlowReturn(Operation):
         return self._get_signature(self.data["control_flow_info"])
 
 
-def determine_absolute_timing(  # noqa: PLR0912
+def _determine_absolute_timing(  # noqa: PLR0912
     schedule: Schedule,
     time_unit: Literal[
         "physical", "ideal", None
     ] = "physical",  # should be included in CompilationConfig
     config: CompilationConfig | None = None,
-    keep_original_schedule: bool = True,
 ) -> Schedule:
     """
     Determine the absolute timing of a schedule based on the timing constraints.
@@ -87,13 +87,6 @@ def determine_absolute_timing(  # noqa: PLR0912
         When :code:`time_unit == "ideal"` the duration attribute is ignored and treated
         as if it is :code:`1`.
         When :code:`time_unit == None` it will revert to :code:`"physical"`.
-    keep_original_schedule
-        If `True`, this function will not modify the schedule argument.
-        If `False`, the compilation modifies the schedule, thereby
-        making the original schedule unusable for further usage; this
-        improves compilation time. Warning: if `False`, the returned schedule
-        references objects from the original schedule, please refrain from modifying
-        the original schedule after compilation in this case!
 
     Returns
     -------
@@ -106,9 +99,6 @@ def determine_absolute_timing(  # noqa: PLR0912
     NotImplementedError
         If the scheduling strategy is not "asap"
     """
-    if keep_original_schedule:
-        schedule = deepcopy(schedule)
-
     time_unit = time_unit or "physical"
     if time_unit not in (valid_time_units := ("physical", "ideal")):
         raise ValueError(
@@ -118,11 +108,10 @@ def determine_absolute_timing(  # noqa: PLR0912
     for op in schedule.operations.values():
         if isinstance(op, Schedule):
             if op.get("duration", None) is None:
-                determine_absolute_timing(
+                _determine_absolute_timing(
                     schedule=op,
                     time_unit=time_unit,
                     config=config,
-                    keep_original_schedule=False,
                 )
 
         elif (
@@ -142,9 +131,10 @@ def determine_absolute_timing(  # noqa: PLR0912
     scheduling_strategy = "asap"
     if config is not None:
         scheduling_strategy = config.device_compilation_config.scheduling_strategy
+
     if scheduling_strategy != "asap":
         raise NotImplementedError(
-            f"{determine_absolute_timing.__name__} does not currently support "
+            f"{_determine_absolute_timing.__name__} does not currently support "
             f"{scheduling_strategy=}. Please change to 'asap' scheduling strategy "
             "in the `DeviceCompilationConfig`."
         )
@@ -175,6 +165,26 @@ def determine_absolute_timing(  # noqa: PLR0912
     if time_unit == "ideal":
         schedule["depth"] = schedule["duration"] + 1
     return schedule
+
+
+def determine_absolute_timing(  # noqa: PLR0912
+    schedule: Schedule,
+    time_unit: Literal[
+        "physical", "ideal", None
+    ] = "physical",  # should be included in CompilationConfig
+    config: CompilationConfig | None = None,
+) -> Schedule:
+    """Determine the absolute timing of a schedule based on the timing constraints."""
+    warnings.warn(
+        f"Calling {determine_absolute_timing.__name__} directly is deprecated "
+        f"and will be removed from the public interface in quantify-scheduler "
+        f">= 0.21.0. Please use `QuantifyCompiler` instead, which calls "
+        f"{_determine_absolute_timing.__name__} as a compilation node.",
+        FutureWarning,
+    )
+    return _determine_absolute_timing(
+        schedule=deepcopy(schedule), time_unit=time_unit, config=config
+    )
 
 
 def _get_start_time(
@@ -325,7 +335,7 @@ def flatten_schedule(
     """
     # If called directly and not by the compiler, ensure timings are filled
     if config is None and schedule.get("duration", None) is None:
-        determine_absolute_timing(schedule)
+        _determine_absolute_timing(schedule)
 
     for op in schedule.operations.values():
         if isinstance(op, Schedule):

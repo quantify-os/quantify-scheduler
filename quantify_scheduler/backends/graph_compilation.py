@@ -149,7 +149,7 @@ class DeviceCompilationConfig(DataStructure):
     """
     A . separated string specifying the location of the compilation backend this
     configuration is intended for e.g.,
-    :code:`"quantify_scheduler.backends.circuit_to_device.compile_circuit_to_device"`.
+    :code:`"quantify_scheduler.backends.circuit_to_device._compile_circuit_to_device"`.
     """
     clocks: Dict[str, float]
     """
@@ -195,6 +195,15 @@ class CompilationConfig(DataStructure):
     """The name of the compiler."""
     version: str = "v0.6"
     """The version of the `CompilationConfig` to facilitate backwards compatibility."""
+    keep_original_schedule: bool = True
+    """
+    If `True`, the compiler will not modify the schedule argument.
+    If `False`, the compilation modifies the schedule, thereby
+    making the original schedule unusable for further usage; this
+    improves compilation time. Warning: if `False`, the returned schedule
+    references objects from the original schedule, please refrain from modifying
+    the original schedule after compilation in this case!
+    """
     backend: Type[QuantifyCompiler]
     """A reference string to the `QuantifyCompiler` class used in the compilation."""
     device_compilation_config: Optional[Union[DeviceCompilationConfig, Dict]]
@@ -359,7 +368,6 @@ class QuantifyCompiler(CompilationNode):
         self,
         schedule: Schedule,
         config: Optional[CompilationConfig] = None,
-        keep_original_schedule: bool = True,
     ) -> CompiledSchedule:
         """
         Compile a :class:`~.Schedule` using the information provided in the config.
@@ -372,13 +380,6 @@ class QuantifyCompiler(CompilationNode):
             describing the information required to compile the schedule.
             If not specified, self.quantum_device will be used to generate
             the config.
-        keep_original_schedule
-            If `True`, this function will not modify the schedule argument.
-            If `False`, the compilation modifies the schedule, thereby
-            making the original schedule unusable for further usage; this
-            improves compilation time. Warning: if `False`, the returned schedule
-            references objects from the original schedule, please refrain from modifying
-            the original schedule after compilation in this case!
 
         Returns
         -------
@@ -391,15 +392,14 @@ class QuantifyCompiler(CompilationNode):
         # it wraps around the self._compilation_func, but also contains the common logic
         # to support (planned) features like caching and parallel evaluation.
 
-        if keep_original_schedule:
-            schedule = deepcopy(schedule)
-
         # classes inheriting from this node should overwrite the _compilation_func and
         # not the public facing compile.
         if config is None:
             if self.quantum_device is None:
                 raise RuntimeError("Either quantum_device or config must be specified")
             config = self.quantum_device.generate_compilation_config()
+        if config.keep_original_schedule:
+            schedule = deepcopy(schedule)
         return self._compilation_func(schedule=schedule, config=config)
 
     @property

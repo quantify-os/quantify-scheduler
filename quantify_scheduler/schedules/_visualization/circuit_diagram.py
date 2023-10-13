@@ -266,9 +266,9 @@ def circuit_diagram_matplotlib(
 
     # pylint: disable=import-outside-toplevel
     # importing inside function scope to prevent circular import
-    from quantify_scheduler.compilation import determine_absolute_timing
+    from quantify_scheduler.compilation import _determine_absolute_timing
 
-    schedule = determine_absolute_timing(schedule, "ideal")
+    schedule = _determine_absolute_timing(schedule, "ideal")
 
     qubit_map: Dict[str, int] = {}
     qubits: List[str] = set()

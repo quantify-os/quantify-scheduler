@@ -18,9 +18,9 @@ from quantify_scheduler import Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.circuit_to_device import (
     DeviceCompilationConfig,
-    compile_circuit_to_device,
+    _compile_circuit_to_device,
 )
-from quantify_scheduler.compilation import determine_absolute_timing, flatten_schedule
+from quantify_scheduler.compilation import _determine_absolute_timing, flatten_schedule
 from quantify_scheduler.operations.gate_library import CZ, Measure, Reset, X, X90
 from quantify_scheduler.schemas.examples import utils
 from quantify_scheduler.schemas.examples.device_example_cfgs import (
@@ -36,7 +36,7 @@ ZHINST_HARDWARE_COMPILATION_CONFIG = utils.load_json_example_scheme(
 @pytest.fixture
 def device_cfg_transmon_example() -> Generator[DeviceCompilationConfig, None, None]:
     """
-    Circuit to device level compilation for the compile_circuit_to_device
+    Circuit to device level compilation for the _compile_circuit_to_device
     compilation backend.
     """
     yield DeviceCompilationConfig.parse_obj(example_transmon_cfg)
@@ -60,12 +60,10 @@ def create_schedule_with_pulse_info(
         _device_config = (
             device_config if device_config is not None else device_cfg_transmon_example
         )
-        _schedule = compile_circuit_to_device(
-            schedule=_schedule, device_cfg=_device_config, keep_original_schedule=True
+        _schedule = _compile_circuit_to_device(
+            schedule=_schedule, device_cfg=_device_config
         )
-        _schedule = determine_absolute_timing(
-            schedule=_schedule, time_unit="physical", keep_original_schedule=True
-        )
+        _schedule = _determine_absolute_timing(schedule=_schedule, time_unit="physical")
         _schedule = flatten_schedule(schedule=_schedule)
         return _schedule
 

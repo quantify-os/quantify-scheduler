@@ -7,7 +7,7 @@ import pytest
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends import SerialCompiler
-from quantify_scheduler.compilation import determine_absolute_timing
+from quantify_scheduler.compilation import _determine_absolute_timing
 from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.operations.stitched_pulse import StitchedPulseBuilder
 from quantify_scheduler.resources import ClockResource
@@ -16,7 +16,7 @@ from quantify_scheduler.resources import ClockResource
 def test_schedule_plotting() -> None:
     sched = Schedule("test")
     sched.add(SquarePulse(amp=0.2, duration=4e-6, port="SDP"))
-    sched = determine_absolute_timing(schedule=sched, keep_original_schedule=True)
+    sched = _determine_absolute_timing(schedule=sched)
 
     circuit_fig_mpl, _ = sched.plot_circuit_diagram()
     pulse_fig_mpl, _ = sched.plot_pulse_diagram()

@@ -9,7 +9,7 @@ from qcodes.instrument.parameter import ManualParameter
 from xarray import Dataset
 
 from quantify_scheduler.backends import SerialCompiler
-from quantify_scheduler.compilation import determine_absolute_timing
+from quantify_scheduler.compilation import _determine_absolute_timing
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
 from quantify_scheduler.enums import BinMode
@@ -44,9 +44,7 @@ class TestHeterodyneSpecSchedule(_CompilesAllBackends):
 
     def test_timing(self):
         """Test that the right operations are added and timing is as expected."""
-        sched = determine_absolute_timing(
-            self.uncomp_sched, keep_original_schedule=True
-        )
+        sched = _determine_absolute_timing(self.uncomp_sched)
 
         labels = ["buffer", "spec_pulse", "acquisition"]
         abs_times = [
@@ -85,9 +83,7 @@ class TestHeterodyneSpecScheduleNCO(TestHeterodyneSpecSchedule):
 
     def test_timing(self):
         """Test that the right operations are added and timing is as expected."""
-        sched = determine_absolute_timing(
-            self.uncomp_sched, keep_original_schedule=True
-        )
+        sched = _determine_absolute_timing(self.uncomp_sched)
 
         labels = ["buffer", "set_freq", "spec_pulse", "acquisition"]
         labels *= len(self.sched_kwargs["frequencies"])
@@ -227,9 +223,7 @@ class TestTwoToneSpecSchedule(_CompilesAllBackends):
 
     def test_timing(self):
         """Test that the right operations are added and timing is as expected."""
-        sched = determine_absolute_timing(
-            self.uncomp_sched, keep_original_schedule=True
-        )
+        sched = _determine_absolute_timing(self.uncomp_sched)
 
         labels = ["buffer", "spec_pulse", "readout_pulse", "acquisition"]
 
@@ -277,9 +271,7 @@ class TestTwoToneSpecScheduleNCO(TestTwoToneSpecSchedule):
 
     def test_timing(self):
         """Test that the right operations are added and timing is as expected."""
-        sched = determine_absolute_timing(
-            self.uncomp_sched, keep_original_schedule=True
-        )
+        sched = _determine_absolute_timing(self.uncomp_sched)
 
         labels = ["buffer", "set_freq", "spec_pulse", "readout_pulse", "acquisition"]
         labels *= len(self.sched_kwargs["spec_pulse_frequencies"])

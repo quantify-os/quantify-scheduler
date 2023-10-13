@@ -3,8 +3,6 @@
 ## Unreleased
 
 ### Breaking changes
-
-- Qblox backend - `QuantifyCompiler.compile`, `determine_absolute_timing` and `compile_circuit_to_device` restandardized: returned schedule is the transformed schedule; and added `keep_original_schedule` argument (!771)
 - Deprecation - The deprecated `instruction_generated_pulses_enabled` Qblox hardware configuration parameter, and the two classes related to it (`StitchedSquarePulseStrategy` and `StaircasePulseStrategy`) have been removed. The deprecated code suggestions have been updated (!811).
 
 ### Merged branches and closed issues
@@ -13,6 +11,9 @@
 - Compilation - Add a `scheduling_strategy` parameter to `QuantumDevice` and `DeviceCompilationConfig` classes to enable new strategies for calculating absolute timing in `compilation.determine_absolute_timing`  (!736)
 - Compilation - Enforce always adding (possibly empty) `HardwareOptions` to the `HardwareCompilationConfig` (!812)
 - Compilation - Hotfix for !812: Fix backwards compatibility old-style hardware config for custom backend (!818)
+- Compilation - Add `keep_original_schedule` compilation option into the `CompilationConfig`, controlling whether a copy of the schedule is made at the start of compilation (!816)
+  - As an intermediate step, `keep_original_schedule` was added as an argument to several compilation functions (!771), but this was later moved to the `CompilationConfig` (!816)
+  - Also, directly calling `determine_absolute_timing` or `compile_circuit_to_device` (instead of from the compiler) is now deprecated.
 - Security - Add `check=True` flag to all subprocess calls (see also Ruff rule PLW1510). (!767)
 - Gettable - Add `ScheduleGettable.initialize_and_get_with_report` that saves information from an experiment in a report zipfile for diagnostics. (!672)
   - For Qblox instruments, this includes hardware logs, retrieved via `InstrumentCoordinator.retrieve_hardware_logs` from `qblox-instruments.ConfigurationManager`.

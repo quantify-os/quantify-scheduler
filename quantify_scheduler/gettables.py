@@ -171,11 +171,12 @@ class ScheduleGettable:
     def _compile(self, sched: Schedule) -> None:
         """Compile schedule, separated to allow for profiling compilation duration."""
         compilation_config = self.quantum_device.generate_compilation_config()
+        compilation_config.keep_original_schedule = False
 
         # made into a private variable for debugging and future caching functionality
         self._backend = compilation_config.backend(name=compilation_config.name)
         self._compiled_schedule = self._backend.compile(
-            schedule=sched, config=compilation_config, keep_original_schedule=False
+            schedule=sched, config=compilation_config
         )
 
     def initialize(self) -> None:

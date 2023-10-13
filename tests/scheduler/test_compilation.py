@@ -9,7 +9,7 @@ import pytest
 from quantify_scheduler import Operation, Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.circuit_to_device import ConfigKeyError
-from quantify_scheduler.compilation import determine_absolute_timing, flatten_schedule
+from quantify_scheduler.compilation import _determine_absolute_timing, flatten_schedule
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.gate_library import CNOT, CZ, Measure, Reset, Rxy
 from quantify_scheduler.operations.pulse_library import SquarePulse, SetClockFrequency
@@ -38,9 +38,7 @@ def test_determine_absolute_timing_ideal_clock():
         assert "abs_time" not in schedulable.keys()
         assert schedulable["timing_constraints"][0]["rel_time"] == 0
 
-    timed_sched = determine_absolute_timing(
-        deepcopy(sched), time_unit="ideal", keep_original_schedule=False
-    )
+    timed_sched = _determine_absolute_timing(sched, time_unit="ideal")
 
     abs_times = [
         schedulable["abs_time"]
@@ -50,9 +48,7 @@ def test_determine_absolute_timing_ideal_clock():
 
     # add a pulse and schedule simultaneous with the second pulse
     sched.add(Rxy(90, 0, qubit=q1), ref_pt="start", ref_op=ref_label_1)
-    timed_sched = determine_absolute_timing(
-        deepcopy(sched), time_unit="ideal", keep_original_schedule=False
-    )
+    timed_sched = _determine_absolute_timing(sched, time_unit="ideal")
 
     abs_times = [
         constr["abs_time"] for constr in timed_sched.data["schedulables"].values()
@@ -60,9 +56,7 @@ def test_determine_absolute_timing_ideal_clock():
     assert abs_times == [0, 1, 2, 3, 4, 1]
 
     sched.add(Rxy(90, 0, qubit=q1), ref_pt="start", ref_op="M0")
-    timed_sched = determine_absolute_timing(
-        deepcopy(sched), time_unit="ideal", keep_original_schedule=False
-    )
+    timed_sched = _determine_absolute_timing(sched, time_unit="ideal")
 
     abs_times = [
         schedulable["abs_time"]
@@ -71,9 +65,7 @@ def test_determine_absolute_timing_ideal_clock():
     assert abs_times == [0, 1, 2, 3, 4, 1, 4]
 
     sched.add(Rxy(90, 0, qubit=q1), ref_pt="end", ref_op=ref_label_1)
-    timed_sched = determine_absolute_timing(
-        deepcopy(sched), time_unit="ideal", keep_original_schedule=False
-    )
+    timed_sched = _determine_absolute_timing(sched, time_unit="ideal")
 
     abs_times = [
         schedulable["abs_time"]
@@ -82,9 +74,7 @@ def test_determine_absolute_timing_ideal_clock():
     assert abs_times == [0, 1, 2, 3, 4, 1, 4, 2]
 
     sched.add(Rxy(90, 0, qubit=q1), ref_pt="center", ref_op=ref_label_1)
-    timed_sched = determine_absolute_timing(
-        deepcopy(sched), time_unit="ideal", keep_original_schedule=False
-    )
+    timed_sched = _determine_absolute_timing(sched, time_unit="ideal")
 
     abs_times = [
         schedulable["abs_time"]
@@ -96,9 +86,7 @@ def test_determine_absolute_timing_ideal_clock():
     bad_sched.add(Rxy(180, 0, qubit=q1))
     bad_sched.add(Rxy(90, 0, qubit=q1), ref_pt="bad")
     with pytest.raises(NotImplementedError):
-        _ = determine_absolute_timing(
-            schedule=bad_sched, time_unit="ideal", keep_original_schedule=False
-        )
+        _ = _determine_absolute_timing(schedule=bad_sched, time_unit="ideal")
 
 
 def test_determine_absolute_timing_alap_raises(
@@ -110,11 +98,10 @@ def test_determine_absolute_timing_alap_raises(
 
     # Assert that an implementation error is raised for alap scheduling_strategy
     with pytest.raises(NotImplementedError):
-        determine_absolute_timing(
+        _determine_absolute_timing(
             schedule=basic_schedule,
             time_unit="ideal",
             config=quantum_device.generate_compilation_config(),
-            keep_original_schedule=False,
         )
 
 
@@ -169,7 +156,7 @@ def test_missing_edge(mock_setup_basic_transmon):
 def test_empty_sched():
     sched = Schedule("empty")
     with pytest.raises(ValueError, match="schedule 'empty' contains no schedulables"):
-        _ = determine_absolute_timing(schedule=sched, keep_original_schedule=False)
+        _ = _determine_absolute_timing(schedule=sched)
 
 
 def test_bad_gate(device_compile_config_basic_transmon):
@@ -263,6 +250,9 @@ def test_schedule_modified(device_compile_config_basic_transmon):
     copy_of_sched = deepcopy(sched)
     # to verify equality of schedule object works
     assert copy_of_sched == sched
+
+    config = device_compile_config_basic_transmon
+    config.keep_original_schedule = True
 
     compiler = SerialCompiler(name="compiler")
     _ = compiler.compile(
@@ -383,7 +373,7 @@ def test_compile_no_device_cfg_determine_absolute_timing(
     # quantum_device. The import makes a copy, therefore this is the path that
     # is patched by mocker.
     mock = mocker.patch(
-        "quantify_scheduler.device_under_test.quantum_device.determine_absolute_timing"
+        "quantify_scheduler.device_under_test.quantum_device._determine_absolute_timing"
     )
     compiler = SerialCompiler(name="compile")
     compiler.compile(schedule=sched, config=device_compile_config_basic_transmon)
@@ -414,7 +404,7 @@ def test_determine_absolute_timing_subschedule():
         assert "abs_time" not in schedulable.keys()
         assert schedulable["timing_constraints"][0]["rel_time"] == 0
 
-    timed_sched = determine_absolute_timing(sched, time_unit="ideal")
+    timed_sched = _determine_absolute_timing(sched, time_unit="ideal")
 
     abs_times = [
         schedulable["abs_time"]
@@ -431,7 +421,7 @@ def test_determine_absolute_timing_subschedule():
 
     # add a pulse and schedule simultaneous with the second pulse
     sched.add(Rxy(90, 0, qubit=q1), ref_pt="start", ref_op=ref_label_1)
-    timed_sched = determine_absolute_timing(sched, time_unit="ideal")
+    timed_sched = _determine_absolute_timing(sched, time_unit="ideal")
 
     abs_times = [
         constr["abs_time"] for constr in timed_sched.data["schedulables"].values()
@@ -459,6 +449,6 @@ def test_flatten_schedule():
 
     outer.add(inner)
     outer.add(inner2)
-    timed_sched = determine_absolute_timing(outer, time_unit="ideal")
+    timed_sched = _determine_absolute_timing(outer, time_unit="ideal")
     flat = flatten_schedule(timed_sched)
     assert len(flat.data["schedulables"]) == 4
