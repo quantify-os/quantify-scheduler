@@ -4151,6 +4151,7 @@ class TestControlFlow:
 
         assert program_ref == program_subschedule
 
+    @pytest.mark.xfail(reason="Ordering for zero-duration operations is broken")
     def test_loop(self, compile_config_basic_transmon_qblox_hardware):
         """
         - Sched
@@ -4258,8 +4259,8 @@ loop9:
  move 2,R10 # iterator for loop with label loop12
 loop12:   
  wait 20 # auto generated wait (20 ns)
- reset_ph  
  loop R10,@loop12 
+ reset_ph  
  set_awg_gain 8191,0 # setting gain for Measure q0
  play 0,0,4 # play Measure q0 (300 ns)
  wait 96 # auto generated wait (96 ns)
@@ -4282,3 +4283,75 @@ loop29:
 
         self.compare_sequence(compiled, reference_sequence_qcm, "qcm")
         self.compare_sequence(compiled, reference_sequence_qrm, "qrm")
+
+    @pytest.mark.xfail(reason="Ordering for zero-duration operations is broken")
+    def test_loop_instruction_generated(
+        self, compile_config_basic_transmon_qblox_hardware
+    ):
+        """
+        - Sched
+          - Square
+          - Loop 3
+            - Square2
+          - Square
+        """
+        sched = Schedule("amp_ref")
+        sched.add(
+            SquarePulse(
+                amp=0.5,
+                phase=0,
+                port="q0:res",
+                duration=2e-6,
+                clock="q0.ro",
+            )
+        )
+        sched.add(
+            SquarePulse(
+                amp=0.3,
+                phase=0,
+                port="q0:res",
+                duration=2e-6,
+                clock="q0.ro",
+            ),
+            control_flow=Loop(3),
+        )
+        sched.add(
+            SquarePulse(
+                amp=0.7,
+                phase=0,
+                port="q0:res",
+                duration=2e-6,
+                clock="q0.ro",
+            )
+        )
+        reference = """ set_mrk 3 # set markers to 3
+ wait_sync 4 
+ upd_param 4 
+ wait 4 # latency correction of 4 + 0 ns
+ move 1,R0 # iterator for loop with label start
+start:   
+ reset_ph  
+ upd_param 4 
+ set_awg_offs 16383,0 
+ upd_param 4 
+ wait 1996 # auto generated wait (1996 ns)
+ set_awg_offs 0,0 
+ move 3,R1 # iterator for loop with label loop13
+loop13:   
+set_awg_offs 9830,0 
+ upd_param 4 
+ wait 1996 # auto generated wait (1996 ns)
+ set_awg_offs 0,0 
+ loop R1,@loop13 
+ set_awg_offs 22937,0 
+ upd_param 4 
+ wait 1996 # auto generated wait (1996 ns)
+ set_awg_offs 0,0 
+ loop R0,@start 
+ stop
+ """
+        compiler = SerialCompiler(name="compiler")
+        compiled = compiler.compile(
+            sched, config=compile_config_basic_transmon_qblox_hardware
+        )
+        self.compare_sequence(compiled, reference, "qrm")

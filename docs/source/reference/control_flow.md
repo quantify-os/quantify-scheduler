@@ -80,9 +80,30 @@ def t1_sched_sequential(
 ```
 Hardware averaging works as expected. In `BinMode.APPEND` binning mode, the data is returned in chronological order.
 
-Note: to ensure that all port-clock operations are synchronous, repetition loops act on all port-clock combinations present in the circuit. This means that both `X("q0")` and `Y90("q1")` in the following circuit are repeated three times:
+```{note}
+Loops are an experimental feature and come with several limitations at this time, see below.
+```
+
+Limitations:
+1. The time order for zero-duration assembly instructions may be incorrect, so verify the compiled schedule (via the generated assembly code). Using loops to implement sequential averaging for qubit spectroscopy is verified to work as expected. Known issues occur in using `SetClockFrequency` and `SquarePulse` with duration > 1us at the beginning or end of a loop, for example:
+```{code-cell} ipython3
+from quantify_scheduler.operations.pulse_library import SquarePulse
+schedule = Schedule("T1")
+schedule.add(
+    SquarePulse(
+        amp=0.3,
+        phase=0,
+        port="q0:res",
+        duration=2e-6,
+        clock="q0.ro",
+    ),
+    control_flow=Loop(3),
+)
+```
+2. Repetition loops act on all port-clock combinations present in the circuit. This means that both `X("q0")` and `Y90("q1")` in the following circuit are repeated three times:
 ```{code-cell} ipython3
 schedule = Schedule("T1")
 x = schedule.add(X("q0"), control_flow=Loop(3))
 schedule.add(Y90("q1"), ref_op=x, ref_pt="start", rel_time=0)
 ```
+3. To avoid unexpected timing issues, it is strongly recommended to use loops only with subschedules, with no operations overlapping with the subschedule.

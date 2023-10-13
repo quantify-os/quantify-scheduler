@@ -31,7 +31,7 @@
 - Schedules - Added two-qubit schedule generating function `two_qubit_transmon_schedules.chevron_cz_sched` for CZ tuneup (!700).
 - Qblox backend - Remove unnecessary deepcopies from schedule for 30-75% performance improvement (!771)
 - Schedule - A schedule can now be added to another schedule. It will be treated as one big operation (!709).
-- Schedule - Added looping: An inner schedule can be repeated inside of the schedule (!709, !819).
+- Schedule - Added looping: An inner schedule can be repeated inside of the schedule. This feature has limitations, please refer to the [control flow documentation](https://quantify-os.org/docs/quantify-scheduler/latest/reference/control_flow.html) (!709, !819).
 - Infrastructure - Bump `quantify_core` version dependency to 0.7.1 to include the fix to `without()` in quantify-core!438. (!795)
 - Documentation - Deploy documentation to quantify-os.org. (!796)
 - Operations - Introduce the `GaussPulse`, an operation equivalent to the `DRAGPulse` but with zero derived amplitude, as well as its factory function `rxy_gauss_pulse`. (!793)

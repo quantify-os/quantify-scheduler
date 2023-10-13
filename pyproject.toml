@@ -125,7 +125,7 @@ include = ["quantify_scheduler", "quantify_scheduler.*"]
 readme = { file = ["README.md"], content-type = "text/markdown" }
 
 [tool.ruff]
-line-length = 88
+line-length = 100 # Needs to be >=88 for compat with black, increasing to prevent ruffness
 select = [
     "F",  # pyflakes
     "E",  # pycodestyle
