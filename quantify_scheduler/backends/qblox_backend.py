@@ -2,9 +2,9 @@
 # Licensed according to the LICENCE file on the main branch
 """Compiler backend for Qblox hardware."""
 from __future__ import annotations
-from copy import deepcopy
 
 import warnings
+from copy import deepcopy
 from typing import Any, Callable, Dict, List, Optional
 
 from quantify_scheduler import CompiledSchedule, Schedule
@@ -12,16 +12,16 @@ from quantify_scheduler.backends.corrections import (
     apply_distortion_corrections,
     determine_relative_latency_corrections,
 )
+from quantify_scheduler.backends.graph_compilation import CompilationConfig
+from quantify_scheduler.backends.qblox import compiler_container, constants, helpers
 from quantify_scheduler.backends.types.common import (
-    HardwareOptions,
     HardwareCompilationConfig,
+    HardwareOptions,
 )
 from quantify_scheduler.backends.types.qblox import (
     QbloxHardwareDescription,
     QbloxHardwareOptions,
 )
-from quantify_scheduler.backends.graph_compilation import CompilationConfig
-from quantify_scheduler.backends.qblox import compiler_container, constants, helpers
 from quantify_scheduler.helpers.collections import find_inner_dicts_containing_key
 from quantify_scheduler.operations.pulse_factories import long_square_pulse
 from quantify_scheduler.operations.stitched_pulse import StitchedPulse
@@ -102,6 +102,7 @@ def _replace_long_square_pulses(
                 port=pulse_info["port"],
                 clock=pulse_info["clock"],
                 t0=pulse_info["t0"],
+                reference_magnitude=pulse_info["reference_magnitude"],
             )
             operation.add_pulse(new_square_pulse)
 

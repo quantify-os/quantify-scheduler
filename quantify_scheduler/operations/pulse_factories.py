@@ -6,8 +6,11 @@ A module containing factory functions for pulses on the quantum-device layer.
 These factories are used to take a parametrized representation of on a operation
 and use that to create an instance of the operation itself.
 """
-import numpy as np
+from __future__ import annotations
+
 import math
+
+import numpy as np
 
 from quantify_scheduler.backends.qblox import constants as qblox_constants
 from quantify_scheduler.backends.qblox import helpers as qblox_helpers
@@ -20,19 +23,44 @@ from quantify_scheduler.resources import BasebandClockResource
 
 
 def rxy_drag_pulse(
-    amp180,
-    motzoi,
-    theta,
-    phi,
-    port,
-    duration,
-    clock,
-    reference_magnitude=None,
+    amp180: float,
+    motzoi: float,
+    theta: float,
+    phi: float,
+    port: str,
+    duration: float,
+    clock: str,
+    reference_magnitude: pulse_library.ReferenceMagnitude | None = None,
 ) -> pulse_library.DRAGPulse:
     """
     Generate a :class:`~.operations.pulse_library.DRAGPulse` that achieves the right
     rotation angle `theta` based on a calibrated pi-pulse amplitude and motzoi
     parameter based on linear interpolation of the pulse amplitudes.
+
+    Parameters
+    ----------
+    amp180
+        Unitless amplitude of excitation pulse to get the maximum 180 degree theta.
+    motzoi
+        Unitless amplitude of the derivative component, the DRAG-pulse parameter.
+    theta
+        Angle in degrees to rotate around an equatorial axis on the Bloch sphere.
+    phi
+        Phase of the pulse in degrees.
+    port
+        Name of the port where the pulse is played.
+    duration
+        Duration of the pulse in seconds.
+    clock
+        Name of the clock used to modulate the pulse.
+    reference_magnitude : :class:`~quantify_scheduler.operations.pulse_library.ReferenceMagnitude`, optional
+        Optional scaling value and unit for the unitless amplitude. Uses settings in
+        hardware config if not provided.
+
+    Returns
+    -------
+    :
+        DRAGPulse operation.
     """
     # G_amp is the gaussian amplitude introduced in
     # https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.103.110501
@@ -54,17 +82,40 @@ def rxy_drag_pulse(
 
 
 def rxy_gauss_pulse(
-    amp180,
-    theta,
-    phi,
-    port,
-    duration,
-    clock,
-    reference_magnitude=None,
+    amp180: float,
+    theta: float,
+    phi: float,
+    port: str,
+    duration: float,
+    clock: str,
+    reference_magnitude: pulse_library.ReferenceMagnitude | None = None,
 ) -> pulse_library.GaussPulse:
     """
     Generate a Gaussian drive with :class:`~.operations.pulse_library.GaussPulse` that achieves the right
     rotation angle `theta` based on a calibrated pi-pulse amplitude.
+
+    Parameters
+    ----------
+    amp180
+        Unitless amplitude of excitation pulse to get the maximum 180 degree theta.
+    theta
+        Angle in degrees to rotate around an equatorial axis on the Bloch sphere.
+    phi
+        Phase of the pulse in degrees.
+    port
+        Name of the port where the pulse is played.
+    duration
+        Duration of the pulse in seconds.
+    clock
+        Name of the clock used to modulate the pulse.
+    reference_magnitude : :class:`~quantify_scheduler.operations.pulse_library.ReferenceMagnitude`, optional
+        Optional scaling value and unit for the unitless amplitude. Uses settings in
+        hardware config if not provided.
+
+    Returns
+    -------
+    :
+        GaussPulse operation.
     """
     # theta is in degrees, and
     # amp180 is the amplitude necessary to get the
@@ -87,6 +138,18 @@ def phase_shift(
 ) -> pulse_library.ShiftClockPhase:
     """
     Generate a :class:`~.operations.pulse_library.ShiftClockPhase` that shifts the phase of the `clock` by an angle `theta`.
+
+    Parameters
+    ----------
+    theta
+        Angle to shift the clock by, in degrees.
+    clock
+        Name of the clock to shift.
+
+    Returns
+    -------
+    :
+        ShiftClockPhase operation.
     """
     return pulse_library.ShiftClockPhase(
         phase_shift=theta,
@@ -103,7 +166,7 @@ def composite_square_pulse(  # pylint: disable=too-many-arguments
     virt_z_parent_qubit_clock: str,
     virt_z_child_qubit_phase: float,
     virt_z_child_qubit_clock: str,
-    reference_magnitude: float = None,
+    reference_magnitude: pulse_library.ReferenceMagnitude | None = None,
     t0: float = 0,
 ) -> pulse_library.SquarePulse:
     """
@@ -128,12 +191,17 @@ def composite_square_pulse(  # pylint: disable=too-many-arguments
         The phase shift in degrees applied to the child qubit.
     virt_z_child_qubit_clock
         The clock of which to shift the phase applied to the child qubit.
-    reference_magnitude
+    reference_magnitude : :class:`~quantify_scheduler.operations.pulse_library.ReferenceMagnitude`, optional
         Scaling value and unit for the unitless amplitude. Uses settings in
         hardware config if not provided.
     t0
         Time in seconds when to start the pulses relative to the start time
         of the Operation in the Schedule.
+
+    Returns
+    -------
+    :
+        SquarePulse operation.
     """
 
     # Start the flux pulse
@@ -170,7 +238,7 @@ def nv_spec_pulse_mw(
     amplitude: float,
     clock: str,
     port: str,
-    reference_magnitude: float = None,
+    reference_magnitude: pulse_library.ReferenceMagnitude | None = None,
 ) -> pulse_library.SkewedHermitePulse:
     """Generate hermite pulse for spectroscopy experiment.
 
@@ -190,7 +258,7 @@ def nv_spec_pulse_mw(
         Name of clock for frequency modulation of hermite pulse
     port
         Name of port where hermite pulse is applied
-    reference_magnitude
+    reference_magnitude : :class:`~quantify_scheduler.operations.pulse_library.ReferenceMagnitude`, optional
         Scaling value and unit for the unitless amplitude. Uses settings in
         hardware config if not provided.
 
@@ -217,6 +285,7 @@ def long_square_pulse(
     clock: str = BasebandClockResource.IDENTITY,
     t0: float = 0,
     grid_time_ns: int = qblox_constants.GRID_TIME,
+    reference_magnitude: pulse_library.ReferenceMagnitude | None = None,
 ) -> StitchedPulse:
     """Create a long square pulse using DC voltage offsets.
 
@@ -242,6 +311,9 @@ def long_square_pulse(
     grid_time_ns : int, optional
         Grid time in ns. The duration of the long_square_pulse must be a multiple
         of this. By default equal to the grid time of Qblox modules.
+    reference_magnitude : :class:`~quantify_scheduler.operations.pulse_library.ReferenceMagnitude`, optional
+        Scaling value and unit for the unitless amplitude. Uses settings in
+        hardware config if not provided.
 
     Returns
     -------
@@ -264,7 +336,12 @@ def long_square_pulse(
 
     pulse = (
         StitchedPulseBuilder(port=port, clock=clock, t0=t0)
-        .add_voltage_offset(path_0=amp, path_1=0.0, duration=duration)
+        .add_voltage_offset(
+            path_0=amp,
+            path_1=0.0,
+            duration=duration,
+            reference_magnitude=reference_magnitude,
+        )
         .build()
     )
     return pulse
@@ -279,6 +356,7 @@ def staircase_pulse(
     clock: str = BasebandClockResource.IDENTITY,
     t0: float = 0,
     grid_time_ns: int = qblox_constants.GRID_TIME,
+    reference_magnitude: pulse_library.ReferenceMagnitude | None = None,
 ) -> StitchedPulse:
     """Create a staircase-shaped pulse using DC voltage offsets.
 
@@ -311,6 +389,9 @@ def staircase_pulse(
     grid_time_ns : int, optional
         Grid time in ns. The duration of each step of the staircase must be a multiple
         of this. By default equal to the grid time of Qblox modules.
+    reference_magnitude : :class:`~quantify_scheduler.operations.pulse_library.ReferenceMagnitude`, optional
+        Scaling value and unit for the unitless amplitude. Uses settings in
+        hardware config if not provided.
 
     Returns
     -------
@@ -337,7 +418,12 @@ def staircase_pulse(
         ) from err
     amps = np.linspace(start_amp, final_amp, num_steps)
     for amp in amps:
-        builder.add_voltage_offset(path_0=amp, path_1=0.0, duration=step_duration)
+        builder.add_voltage_offset(
+            path_0=amp,
+            path_1=0.0,
+            duration=step_duration,
+            reference_magnitude=reference_magnitude,
+        )
     pulse = builder.build()
     return pulse
 
@@ -350,6 +436,7 @@ def long_ramp_pulse(
     clock: str = BasebandClockResource.IDENTITY,
     t0: float = 0,
     part_duration_ns: int = qblox_constants.STITCHED_PULSE_PART_DURATION_NS,
+    reference_magnitude: pulse_library.ReferenceMagnitude | None = None,
 ) -> StitchedPulse:
     """Creates a long ramp pulse by stitching together shorter ramps.
 
@@ -381,6 +468,9 @@ def long_ramp_pulse(
     part_duration_ns : int, optional
         Duration of each partial ramp in nanoseconds, by default
         :class:`~quantify_scheduler.backends.qblox.constants.STITCHED_PULSE_PART_DURATION_NS`.
+    reference_magnitude : :class:`~quantify_scheduler.operations.pulse_library.ReferenceMagnitude`, optional
+        Scaling value and unit for the unitless amplitude. Uses settings in
+        hardware config if not provided.
 
     Returns
     -------
@@ -399,17 +489,29 @@ def long_ramp_pulse(
     cur_offset = offset
     for _ in range(num_whole_parts):
         if not (math.isclose(offset, 0) and math.isclose(cur_offset, offset)):
-            builder.add_voltage_offset(path_0=cur_offset, path_1=0.0)
+            builder.add_voltage_offset(
+                path_0=cur_offset, path_1=0.0, reference_magnitude=reference_magnitude
+            )
         builder.add_pulse(
             pulse_library.RampPulse(
-                amp=amp_part, duration=part_duration_ns * 1e-9, port=port
+                amp=amp_part,
+                duration=part_duration_ns * 1e-9,
+                port=port,
+                reference_magnitude=reference_magnitude,
             )
         )
         cur_offset += amp_part
     if cur_offset != offset:
-        builder.add_voltage_offset(path_0=cur_offset, path_1=0.0)
+        builder.add_voltage_offset(
+            path_0=cur_offset, path_1=0.0, reference_magnitude=reference_magnitude
+        )
     builder.add_pulse(
-        pulse_library.RampPulse(amp=amp_left, duration=dur_left, port=port)
+        pulse_library.RampPulse(
+            amp=amp_left,
+            duration=dur_left,
+            port=port,
+            reference_magnitude=reference_magnitude,
+        )
     )
 
     pulse = builder.build()

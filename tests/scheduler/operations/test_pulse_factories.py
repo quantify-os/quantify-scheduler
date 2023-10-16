@@ -1,14 +1,17 @@
 """Tests for pulse factory functions."""
+from functools import partial
+
 import numpy as np
 import pytest
 
 from quantify_scheduler.operations.pulse_factories import (
     long_ramp_pulse,
     long_square_pulse,
-    staircase_pulse,
-    rxy_gauss_pulse,
     rxy_drag_pulse,
+    rxy_gauss_pulse,
+    staircase_pulse,
 )
+from quantify_scheduler.operations.pulse_library import ReferenceMagnitude
 
 
 def test_rxy_drag_pulse():
@@ -98,10 +101,13 @@ def test_long_long_ramp_pulse():
 def test_long_square_pulse():
     """Test a long square pulse."""
     pulse = long_square_pulse(amp=0.8, duration=1e-3, port="q0:res", clock="q0.ro")
+    assert len(pulse["pulse_info"]) == 2
     assert pulse["pulse_info"][0]["offset_path_0"] == 0.8
     assert pulse["pulse_info"][0]["duration"] == 1e-3
+    assert pulse["pulse_info"][0]["reference_magnitude"] is None
     assert pulse["pulse_info"][1]["offset_path_0"] == 0.0
     assert pulse["pulse_info"][1]["t0"] == 1e-3
+    assert pulse["pulse_info"][1]["reference_magnitude"] is None
 
 
 def test_staircase():
@@ -143,3 +149,29 @@ def test_bad_duration_raises():
             amp=0.5, duration=2.5e-6 + 1e-9, port="r0:res", clock="q0.ro"
         )
     assert "The duration of a long_square_pulse must be a multiple of" in str(err.value)
+
+
+@pytest.mark.parametrize(
+    "pulse",
+    [
+        partial(
+            long_square_pulse, amp=0.8, duration=1e-3, port="q0:res", clock="q0.ro"
+        ),
+        partial(
+            staircase_pulse,
+            start_amp=0.1,
+            final_amp=0.9,
+            num_steps=20,
+            duration=1e-3,
+            port="q0:res",
+            clock="q0.ro",
+        ),
+        partial(long_ramp_pulse, amp=0.8, duration=1e-7, port="q0:res"),
+    ],
+)
+def test_voltage_offset_operations_reference_magnitude(pulse):
+    reference_magnitude = ReferenceMagnitude(20, "dBm")
+
+    pulse = pulse(reference_magnitude=reference_magnitude)
+
+    assert pulse["pulse_info"][0]["reference_magnitude"] == reference_magnitude

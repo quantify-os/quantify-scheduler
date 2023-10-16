@@ -8,6 +8,7 @@ from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_factories import long_ramp_pulse
 from quantify_scheduler.operations.pulse_library import (
     RampPulse,
+    ReferenceMagnitude,
     SquarePulse,
     VoltageOffset,
 )
@@ -117,7 +118,12 @@ def test_add_operations():
         StitchedPulseBuilder(port="q0:mw", clock="q0.01")
         .add_pulse(SquarePulse(amp=0.2, duration=1e-6, port="q0:mw", clock="q0.01"))
         .add_pulse(RampPulse(amp=0.5, duration=28e-9, port="q0:mw", clock="q0.01"))
-        .add_voltage_offset(path_0=0.5, path_1=0.0, duration=1e-7)
+        .add_voltage_offset(
+            path_0=0.5,
+            path_1=0.0,
+            duration=1e-7,
+            reference_magnitude=ReferenceMagnitude(1, "V"),
+        )
         .build()
     )
     assert len(pulse.data["pulse_info"]) == 4
@@ -149,6 +155,7 @@ def test_add_operations():
         "port": "q0:mw",
         "t0": 1.028e-06,
         "wf_func": None,
+        "reference_magnitude": ReferenceMagnitude(1, "V"),
     }
     assert pulse.data["pulse_info"][3] == {
         "clock": "q0.01",
@@ -158,6 +165,7 @@ def test_add_operations():
         "port": "q0:mw",
         "t0": 1.128e-06,
         "wf_func": None,
+        "reference_magnitude": ReferenceMagnitude(1, "V"),
     }
 
 
@@ -201,6 +209,7 @@ def test_add_operations_insert_timing():
         "port": "q0:mw",
         "t0": 5e-7,
         "wf_func": None,
+        "reference_magnitude": None,
     }
     assert pulse.data["pulse_info"][3] == {
         "clock": "q0.01",
@@ -210,6 +219,7 @@ def test_add_operations_insert_timing():
         "port": "q0:mw",
         "t0": 6e-7,
         "wf_func": None,
+        "reference_magnitude": None,
     }
 
 

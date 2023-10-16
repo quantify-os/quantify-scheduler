@@ -43,7 +43,7 @@
   - Before, these were lists with instrument names
   - Now, these are dicts with instrument names as keys and and the `DeviceElement` and `Edge` instances as values
   - Not a breaking change however as `qcodes` already presented these `ManualParameter` as dicts with instrument names mapping to the instrument, also see [Tutorial: Operations and Qubits - Device configuration](https://quantify-os.org/docs/quantify-scheduler/latest/tutorials/Operations%20and%20Qubits.html#device-configuration)
-
+- Compilation - Added an optional `reference_magnitude` parameter to `VoltageOffset` operations (!797)
 
 ## 0.16.1 (2023-09-29)
 

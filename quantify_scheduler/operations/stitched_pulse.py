@@ -12,7 +12,11 @@ import numpy as np
 from quantify_scheduler.backends.qblox import constants as qblox_constants
 from quantify_scheduler.backends.qblox.helpers import generate_waveform_data
 from quantify_scheduler.operations.operation import Operation
-from quantify_scheduler.operations.pulse_library import NumericalPulse, VoltageOffset
+from quantify_scheduler.operations.pulse_library import (
+    NumericalPulse,
+    ReferenceMagnitude,
+    VoltageOffset,
+)
 
 
 class StitchedPulse(Operation):
@@ -187,6 +191,7 @@ class _VoltageOffsetInfo:
     path_1: float
     t0: float
     duration: float | None = None
+    reference_magnitude: ReferenceMagnitude | None = None
 
 
 class StitchedPulseBuilder:
@@ -329,6 +334,7 @@ class StitchedPulseBuilder:
         rel_time: float = 0.0,
         append: bool = True,
         min_duration: float = qblox_constants.GRID_TIME * 1e-9,
+        reference_magnitude: ReferenceMagnitude | None = None,
     ) -> StitchedPulseBuilder:
         """
         Add a DC voltage offset to the StitchedPulse.
@@ -353,6 +359,9 @@ class StitchedPulseBuilder:
         min_duration : float, optional
             The minimal duration of the voltage offset. By default equal to the grid
             time of Qblox modules.
+        reference_magnitude : :class:`~quantify_scheduler.operations.pulse_library.ReferenceMagnitude`, optional
+            Scaling value and unit for the unitless amplitude. Uses settings in
+            hardware config if not provided.
 
         Returns
         -------
@@ -374,7 +383,11 @@ class StitchedPulseBuilder:
             )
 
         offset = _VoltageOffsetInfo(
-            path_0=path_0, path_1=path_1, t0=rel_time, duration=duration
+            path_0=path_0,
+            path_1=path_1,
+            t0=rel_time,
+            duration=duration,
+            reference_magnitude=reference_magnitude,
         )
         if self._overlaps_with_existing_offsets(offset):
             raise RuntimeError(
@@ -443,6 +456,7 @@ class StitchedPulseBuilder:
                 port=self._port,
                 clock=self._clock,
                 t0=info.t0,
+                reference_magnitude=info.reference_magnitude,
             )
 
         offset_ops: List[VoltageOffset] = []
@@ -473,7 +487,12 @@ class StitchedPulseBuilder:
             ):
                 offset_ops.append(
                     create_operation_from_info(
-                        _VoltageOffsetInfo(background[0], background[1], t0=this_end)
+                        _VoltageOffsetInfo(
+                            background[0],
+                            background[1],
+                            t0=this_end,
+                            reference_magnitude=offset_info.reference_magnitude,
+                        )
                     )
                 )
 

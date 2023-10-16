@@ -4,13 +4,12 @@
 # pylint: disable= too-many-arguments, too-many-ancestors
 from __future__ import annotations
 
-from typing import List, Optional, Dict, Any, Union, Literal
 from dataclasses import dataclass
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import numpy as np
 from numpy.typing import NDArray
-from qcodes import validators, InstrumentChannel
-
+from qcodes import InstrumentChannel, validators
 from quantify_scheduler import Operation
 from quantify_scheduler.backends.qblox import constants as qblox_constants
 from quantify_scheduler.helpers.waveforms import area_pulses
@@ -191,6 +190,7 @@ class VoltageOffset(Operation):
         port: Optional[str] = None,
         clock: Optional[str] = None,
         t0: float = 0,
+        reference_magnitude: ReferenceMagnitude | None = None,
     ):
         """
         Parameters
@@ -208,6 +208,10 @@ class VoltageOffset(Operation):
         t0 : float, optional
             Time in seconds when to start the pulses relative to the start time
             of the Operation in the Schedule.
+        reference_magnitude : ReferenceMagnitude, optional
+            Scaling value and unit for the unitless amplitude. Uses settings in
+            hardware config if not provided.
+
         """
         super().__init__(name=self.__class__.__name__)
         self.data["pulse_info"] = [
@@ -219,6 +223,7 @@ class VoltageOffset(Operation):
                 "clock": clock,
                 "port": port,
                 "duration": duration,
+                "reference_magnitude": reference_magnitude,
             }
         ]
         self._update()
