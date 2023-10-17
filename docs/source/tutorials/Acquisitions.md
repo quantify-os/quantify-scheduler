@@ -472,6 +472,149 @@ acquisition[0].sel(repetition=1)
 
 As expected, it has only two values, and the value of `acq_index_<acq_channel>=1` is double that of `acq_index_<acq_channel>=0`.
 
+(sec-weighted-ssb)=
+### Weighted single-sideband integration acquisition
+
+_Weighted_ single-sideband (SBB) integration works almost the same as regular SSB integration. In weighted SSB integration, the acquired (demodulated) data points are multiplied together with points of a _weight_ waveform. The relevant acquisition class is {class}`~quantify_scheduler.operations.acquisition_library.NumericalWeightedIntegrationComplex`.
+
+The weights can be provided in the form of two numerical arrays, `weights_a` for the I-path and `weights_b` for the Q-path of the acquisition signal, together with the sampling rate (`weights_sampling_rate`) of these arrays. The `quantify-scheduler` hardware backends will resample the weights if needed to match the hardware sampling rate. Note that the length of the weights arrays determines the integration time of the acquisition. All values in the weight arrays must be in the range `[-1, 1]`.
+
+As an example, we create a simple schedule using weighted integration below. The setup is the same as in the {ref}`sec-ssb` section. To show the effect of weighted integration, we will measure a square pulse three times with different weights:
+
+* an array with all values `1.0` (which is the same as a normal SSB integration),
+* an array with all values `0.5`,
+* a sine function with amplitude `1.0` and an average of `0.0`.
+
+```{code-cell} ipython3
+---
+mystnb:
+    remove_code_outputs: true
+---
+from quantify_scheduler.operations.acquisition_library import (
+    NumericalWeightedIntegrationComplex,
+)
+
+
+schedule = Schedule("weighted_acquisition_tutorial")
+schedule.add(IdlePulse(duration=1e-6))
+
+
+def add_pulse_and_weighted_acquisition_to_schedule(
+    weights_a,
+    weights_b,
+    acq_index,
+    schedule,
+    acq_channel=0,
+    weights_sampling_rate=1e9,
+    bin_mode=BinMode.APPEND,
+):
+    schedule.add(
+        SquarePulse(
+            duration=1000,
+            amp=0.5,
+            port="q0:res",
+            clock="q0.ro",
+        ),
+        ref_pt="end",
+        rel_time=1e-6,  # Idle time before the pulse is played
+    )
+    schedule.add(
+        NumericalWeightedIntegrationComplex(
+            port="q0:res",
+            clock="q0.ro",
+            weights_a=weights_a,
+            weights_b=weights_b,
+            weights_sampling_rate=weights_sampling_rate,
+            acq_channel=acq_channel,
+            acq_index=acq_index,
+            bin_mode=bin_mode,
+        ),
+        ref_pt="start",
+        rel_time=time_of_flight,
+    )
+    return schedule
+
+
+square_weights = np.ones(1000)
+add_pulse_and_weighted_acquisition_to_schedule(
+    weights_a=square_weights,
+    weights_b=square_weights,
+    weights_sampling_rate=1e9,
+    acq_channel=0,
+    acq_index=0,
+    schedule=schedule,
+)
+
+half_value_weights = square_weights / 2
+add_pulse_and_weighted_acquisition_to_schedule(
+    weights_a=half_value_weights,
+    weights_b=square_weights,
+    acq_index=1,
+    schedule=schedule,
+)
+
+sine_weights = np.sin(2 * np.pi * np.linspace(0, 1, 1000))
+add_pulse_and_weighted_acquisition_to_schedule(
+    weights_a=sine_weights,
+    weights_b=square_weights,
+    acq_index=2,
+    schedule=schedule,
+)
+```
+
+Note that the lengths of the arrays are all 1000. With the specified sampling rate, this corresponds to an acquisition duration of 1 μs.
+
+```{code-cell} ipython3
+---
+tags: [remove-cell]
+---
+dummy_slot_idx = 1
+cluster.delete_dummy_binned_acquisition_data(slot_idx=dummy_slot_idx, sequencer=0)
+cluster.delete_dummy_binned_acquisition_data(slot_idx=dummy_slot_idx, sequencer=1)
+dummy_data_0 = [
+    DummyBinnedAcquisitionData(data=(0.5, 0), thres=0, avg_cnt=0),
+    DummyBinnedAcquisitionData(data=(0.25, 0), thres=0, avg_cnt=0),
+    DummyBinnedAcquisitionData(data=(0, 0), thres=0, avg_cnt=0),
+]
+cluster.set_dummy_binned_acquisition_data(
+    slot_idx=dummy_slot_idx, sequencer=0, acq_index_name="0", data=dummy_data_0
+)
+```
+
+Let's compile the schedule.
+
+```{code-cell} ipython3
+from quantify_scheduler.backends import SerialCompiler
+
+compiler = SerialCompiler(name="compiler")
+compiled_schedule = compiler.compile(
+    schedule=schedule, config=device.generate_compilation_config()
+)
+```
+
+And retrieve the acquisitions
+
+```{code-cell} ipython3
+instrument_coordinator.prepare(compiled_schedule)
+instrument_coordinator.start()
+instrument_coordinator.wait_done(timeout_sec=10)
+
+acquisition = instrument_coordinator.retrieve_acquisition()
+```
+
+```{code-cell} ipython3
+acquisition
+```
+
+The data set contains three data points corresponding to the acquisitions we scheduled. The first acquisition with the maximum amplitude (1.0) square weights shows the highest voltage, the second one with the weights halved also shows half the voltage. The third, corresponding to the sinusoidal weights with an average of 0, shows 0 as expected.
+
+As a final note, weighted integration can also be scheduled at the {ref}`gate-level <Gate-level acquisitions>` by specifying `"NumericalWeightedIntegrationComplex"` as the acquisition protocol and providing the weights in the quantum device element {attr}`.BasicTransmonElement.measure`, for example:
+
+```
+<qubit>.measure.acq_weights_a(sine_weights)
+<qubit>.measure.acq_weights_b(square_weights)
+```
+
 ### Thresholded acquisition
 With thresholded acquisition, we can map a complex input signal to either a 0 or a 1, by comparing the data to a threshold value. It is similar to the {ref}`single-sideband integration protocol <sec-ssb>` described above, but after integration the I-Q data points are first rotated by an angle and then compared to a threshold value to assign the results to either a "0" or to a "1". See the illustration below.
 

@@ -26,6 +26,7 @@
 - Documentation - Fix missing images in Jupyter cell outputs in documentation deployed using Gitlab Pages. (!772, #404, counterpart of quantify-core!480)
 - Documentation - Explain in Qblox Cluster docs the possibility of using `"{complex,real}_output_<n>"` hardware config keys for both playback and acquisitions. (!763)
 - Documentation - Add a short explanation and examples of the `StitchedPulse` and `StitchedPulseBuilder` to the Schedules and Pulses tutorial. (!766)
+- Documentation - Add a short explanation and example of the `NumericalWeightedIntegrationComplex` protocol to the Acquisitions tutorial. (!791)
 - Infrastructure - Add `jinja2` as dependency to quantify-scheduler (needed for `pandas.DataFrame`) (!777)
 - Documentation - Split source and build folders to simplify using [`sphinx-autobuild`](https://github.com/executablebooks/sphinx-autobuild) for its editing. (!774)
 - Plotting - Fix error while plotting numerical pulses with non-zero rel_time (!783)
