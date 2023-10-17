@@ -3,7 +3,12 @@
 ## Unreleased
 
 ### Breaking changes
+
 - Deprecation - The deprecated `instruction_generated_pulses_enabled` Qblox hardware configuration parameter, and the two classes related to it (`StitchedSquarePulseStrategy` and `StaircasePulseStrategy`) have been removed. The deprecated code suggestions have been updated (!811).
+- QuantumDevice - `ManualParameter` `elements` and `edges` have been changed from `list` to `dict` (!813)
+  - Before, these were lists with instrument names, so one could do `element_name = quantum_device.elements()[0]` and `edge_name = quantum_device.edges()[0]`
+  - Now, these are dicts with instrument names as keys and the `DeviceElement` and `Edge` instances as values, so one would need to change to `element_name = list(quantum_device.elements())[0]` and `edge_name = list(quantum_device.edges())[0]`
+  - Also see [Tutorial: Operations and Qubits - Device configuration](https://quantify-os.org/docs/quantify-scheduler/latest/tutorials/Operations%20and%20Qubits.html#device-configuration)
 
 ### Merged branches and closed issues
 
@@ -40,10 +45,6 @@
 - Qblox backend - Prevent repeated port-clock combinations (!799)
 - Operations - Adjust pulse info and acquisition info definitions to take class name (!809)
 - Documentation - Update the deprecated code suggestions table (!815)
-- QuantumDevice - `ManualParameter` `elements` and `edges` have been changed from `list` to `dict` (!813)
-  - Before, these were lists with instrument names
-  - Now, these are dicts with instrument names as keys and and the `DeviceElement` and `Edge` instances as values
-  - Not a breaking change however as `qcodes` already presented these `ManualParameter` as dicts with instrument names mapping to the instrument, also see [Tutorial: Operations and Qubits - Device configuration](https://quantify-os.org/docs/quantify-scheduler/latest/tutorials/Operations%20and%20Qubits.html#device-configuration)
 - Compilation - Added an optional `reference_magnitude` parameter to `VoltageOffset` operations (!797)
 
 ## 0.16.1 (2023-09-29)
@@ -229,7 +230,6 @@
 - Compilation - Move `LatencyCorrections` to `CompilationConfig.hardware_options` and use field name `corrections` instead of `latencies` (!633).
 - Compilation - `CompilationNode`s take the full `CompilationConfig` as input (!615, #405)
 - Deprecation - Replace `device_compile` and `hardware_compile` by `SerialCompiler`  in NV center tests (!651)
-
 - Documentation - Fix documentation generation warnings and errors (!658)
 - Documentation - Acquisition data format in user guide (!646)
 - Gettables - Clean up code syntax (!638)
