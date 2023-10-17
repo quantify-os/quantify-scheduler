@@ -756,20 +756,11 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
                 "Attempting to manually add control flow operation. "
                 "Use the 'control_flow' kwarg instead."
             )
-        if control_flow is not None:
-            if isinstance(control_flow, Loop):
-                warnings.warn(
-                    "Loops are an experimental feature."
-                    " Please refer to the documentation:"
-                    " https://quantify-os.org/docs/quantify-scheduler/latest/reference/control_flow.html"
-                )
-            else:
-                raise ValueError(
-                    f"Attempting to add operation other than control flow as control flow."
-                    f" Supplied: '{control_flow=}' of type '{type(control_flow)}'\n"
-                    f" Valid: '{type(Loop)}' (or value 'None')."
-                )
-
+        if control_flow is not None and not isinstance(control_flow, Loop):
+            raise ValueError(
+                "Attempting to add operation other than control flow"
+                f" as control flow. Valid are {Loop=}, None."
+            )
         # ensure the schedulable name is unique
         if label in self.schedulables:
             raise ValueError(f"Schedulable name '{label}' must be unique.")
