@@ -136,13 +136,6 @@ todo_include_todos = True
 #
 html_theme = "pydata_sphinx_theme"
 
-# The name of an image file (relative to this directory) to place at the top
-# of the sidebar.
-
-# the white text fits better with the current sphinx theme
-# both files are in the repository
-html_logo = "images/QUANTIFY_LANDSCAPE.svg"
-
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
@@ -156,6 +149,10 @@ html_favicon = "images/QUANTIFY-FAVICON_16.png"
 html_theme_options: Dict[str, Any] = {
     "header_links_before_dropdown": 6,
     "navbar_align": "left",
+    "logo": {
+        "image_light": "QUANTIFY_SCHEDULER_FLAT.svg",
+        "image_dark": "QUANTIFY_SCHEDULER_FLAT_DM.svg",
+    },
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
