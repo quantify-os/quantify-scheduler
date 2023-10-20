@@ -127,7 +127,7 @@ class InstrumentCompiler(ABC):
         """
 
     @abstractmethod
-    def compile(self, repetitions: int) -> Any:
+    def compile(self, debug_mode: bool, repetitions: int) -> Any:
         """
         An abstract method that should be overridden in a subclass to implement the
         actual compilation. It should turn the pulses and acquisitions added to the
@@ -135,6 +135,9 @@ class InstrumentCompiler(ABC):
 
         Parameters
         ----------
+        debug_mode
+            Debug mode can modify the compilation process,
+            so that debugging of the compilation process is easier.
         repetitions
             Number of times execution of the schedule is repeated.
 
@@ -277,7 +280,7 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
         return portclocks_used
 
     @abstractmethod
-    def compile(self, repetitions: int = 1) -> Dict[str, Any]:
+    def compile(self, debug_mode: bool, repetitions: int = 1) -> Dict[str, Any]:
         """
         An abstract method that should be overridden by a subclass to implement the
         actual compilation. Method turns the pulses and acquisitions added to the device
@@ -285,6 +288,9 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
 
         Parameters
         ----------
+        debug_mode
+            Debug mode can modify the compilation process,
+            so that debugging of the compilation process is easier.
         repetitions
             Number of times execution the schedule is repeated.
 
@@ -1764,9 +1770,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
     def compile(
         self,
+        debug_mode: bool,
         repetitions: int = 1,
         sequence_to_file: Optional[bool] = None,
-        align_qasm_fields: Optional[bool] = None,
     ) -> Optional[Dict[str, Any]]:
         """
         Performs the actual compilation steps for this module, by calling the sequencer
@@ -1774,13 +1780,14 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         Parameters
         ----------
+        debug_mode
+            Debug mode can modify the compilation process,
+            so that debugging of the compilation process is easier.
         repetitions
             Number of times execution the schedule is repeated.
         sequence_to_file
             Dump waveforms and program dict to JSON file, filename stored in
             `Sequencer.settings.seq_fn`.
-        align_qasm_fields
-            If True, make QASM program more human-readable by aligning its fields.
 
         Returns
         -------
@@ -1798,8 +1805,8 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         if sequence_to_file is None:
             sequence_to_file = self.instrument_cfg.get("sequence_to_file", False)
-        if align_qasm_fields is None:
-            align_qasm_fields = self.instrument_cfg.get("align_qasm_fields", False)
+
+        align_qasm_fields = debug_mode
 
         program["sequencers"] = {}
         for seq_name, seq in self.sequencers.items():

@@ -1126,7 +1126,6 @@ def generate_hardware_config(compilation_config: CompilationConfig):
                 "instrument_type",
                 "ref",
                 "sequence_to_file",
-                "align_qasm_fields",
             ]:
                 try:
                     _set_hardware_config_value(

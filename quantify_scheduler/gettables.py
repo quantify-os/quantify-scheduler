@@ -164,6 +164,10 @@ class ScheduleGettable:
         # to facilitate debugging. Will be assigned upon compilation in self.initialize
         self._backend = None
 
+        # Indicates whether compilation is done using the debug mode.
+        # When using with diagnostics report, its value is set to `True`.
+        self._debug_mode: bool = False
+
     def __call__(self) -> tuple[float, ...] | tuple[np.ndarray, ...]:
         """Acquire and return data"""
         return self.get()
@@ -171,7 +175,7 @@ class ScheduleGettable:
     def _compile(self, sched: Schedule) -> None:
         """Compile schedule, separated to allow for profiling compilation duration."""
         compilation_config = self.quantum_device.generate_compilation_config()
-        compilation_config.keep_original_schedule = False
+        compilation_config.debug_mode = self._debug_mode
 
         # made into a private variable for debugging and future caching functionality
         self._backend = compilation_config.backend(name=compilation_config.name)
@@ -509,6 +513,7 @@ class ScheduleGettable:
         exception = None
         initialized = False
         acquisition_data = None
+        self._debug_mode = True
 
         # Make sure only a compiled schedule generated in the block below is included in
         # the report

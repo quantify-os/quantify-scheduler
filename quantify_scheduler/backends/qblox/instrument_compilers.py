@@ -107,12 +107,15 @@ class LocalOscillator(compiler_abc.InstrumentCompiler):
                 )
         self._frequency = value
 
-    def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
+    def compile(self, debug_mode, repetitions: int = 1) -> Optional[Dict[str, Any]]:
         """
         Compiles the program for the LO InstrumentCoordinator component.
 
         Parameters
         ----------
+        debug_mode
+            Debug mode can modify the compilation process,
+            so that debugging of the compilation process is easier.
         repetitions
             Number of times execution the schedule is repeated.
 
@@ -322,12 +325,17 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
                     for acq in self._acquisitions[portclock]:
                         compiler.add_acquisition(port, clock, acq)
 
-    def compile(self, repetitions: int = 1) -> Optional[Dict[str, Any]]:
+    def compile(
+        self, debug_mode: bool, repetitions: int = 1
+    ) -> Optional[Dict[str, Any]]:
         """
         Performs the compilation.
 
         Parameters
         ----------
+        debug_mode
+            Debug mode can modify the compilation process,
+            so that debugging of the compilation process is easier.
         repetitions
             Amount of times to repeat execution of the schedule.
 
@@ -340,13 +348,12 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
         program["settings"] = {"reference_source": self.instrument_cfg["ref"]}
 
         sequence_to_file = self.instrument_cfg.get("sequence_to_file", None)
-        align_qasm_fields = self.instrument_cfg.get("align_qasm_fields", None)
 
         for compiler in self.instrument_compilers.values():
             instrument_program = compiler.compile(
                 repetitions=repetitions,
                 sequence_to_file=sequence_to_file,
-                align_qasm_fields=align_qasm_fields,
+                debug_mode=debug_mode,
             )
             if instrument_program is not None and len(instrument_program) > 0:
                 program[compiler.name] = instrument_program

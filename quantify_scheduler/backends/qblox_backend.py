@@ -196,12 +196,17 @@ def hardware_compile(
             f"{hardware_cfg=}. Please make sure this function is called with "
             f"one of the two (CompilationConfig recommended)."
         )
+
     if not isinstance(config, CompilationConfig):
         warnings.warn(
             f"Qblox `{hardware_compile.__name__}` will require a full "
             f"CompilationConfig as input as of quantify-scheduler >= 0.19.0",
             FutureWarning,
         )
+        debug_mode = False
+    else:
+        debug_mode = config.debug_mode
+
     if isinstance(config, CompilationConfig):
         # Extract the hardware config from the CompilationConfig
         hardware_cfg = helpers.generate_hardware_config(compilation_config=config)
@@ -243,7 +248,10 @@ def hardware_compile(
     )
 
     container.prepare()
-    compiled_instructions = container.compile(repetitions=schedule.repetitions)
+
+    compiled_instructions = container.compile(
+        debug_mode=debug_mode, repetitions=schedule.repetitions
+    )
     # add the compiled instructions to the schedule data structure
     schedule["compiled_instructions"] = compiled_instructions
     # Mark the schedule as a compiled schedule

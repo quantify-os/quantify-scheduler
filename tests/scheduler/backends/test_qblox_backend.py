@@ -3934,43 +3934,33 @@ def test_overlapping_operations_warn(
             compiler.compile(sched, compile_config_basic_transmon_qblox_hardware)
 
 
-def _assert_align_qasm_fields(
-    set_align_qasm_fields: bool,
-    align_qasm_fields: bool,
-    hardware_cfg: dict,
-    quantum_device: QuantumDevice,
+@pytest.mark.parametrize("debug_mode", [True, False])
+def test_debug_mode_qasm_aligning(
+    hardware_compilation_config_qblox_example,
+    mock_setup_basic_transmon_with_standard_params,
+    debug_mode,
 ):
     """
-    Compiles a test schedule and asserts whether the compiled qasm program
-    format is correct by comparing the whole qasm string to the expected string.
-
-    Parameters
-    ----------
-    set_align_qasm_fields
-        If True, align_qasm_fields will be passed to the compiler,
-        otherwise it will not.
-    align_qasm_fields
-        This will be passed to the compiler if set_align_qasm_fields is True.
-    hardware_cfg
-        Hardware configuration.
-    quantum_device
-        Quantum device.
+    Test how the `debug_mode` compilation configuration option
+    affects the compiled Q1ASM code. It should add proper aligning.
     """
-    quantum_device.hardware_config(hardware_cfg)
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.hardware_config(hardware_compilation_config_qblox_example)
+    compilation_config = quantum_device.generate_compilation_config()
+    compilation_config.debug_mode = debug_mode
 
-    compiler = SerialCompiler(name="compiler", quantum_device=quantum_device)
+    compiler = SerialCompiler(name="compiler")
 
     # Define experiment schedule
     schedule = Schedule("test align qasm fields")
     schedule.add(SquarePulse(amp=0.5, duration=1e-6, port="q0:res", clock="q0.ro"))
 
-    compiled_schedule = compiler.compile(schedule)
+    compiled_schedule = compiler.compile(schedule=schedule, config=compilation_config)
     program = compiled_schedule.compiled_instructions["cluster0"]["cluster0_module4"][
         "sequencers"
     ]["seq0"]["sequence"]["program"]
 
-    # pylint: disable=trailing-whitespace
-    if not set_align_qasm_fields or not align_qasm_fields:
+    if not debug_mode:
         expected_program = """ set_mrk 3 # set markers to 3
  wait_sync 4 
  upd_param 4 
@@ -4003,81 +3993,6 @@ start:
           stop                                                           
 """
     assert program == expected_program
-
-
-@pytest.mark.parametrize(
-    "set_align_qasm_fields, align_qasm_fields",
-    [
-        (True, True),
-        (True, False),
-        (False, True),
-        (False, False),
-    ],
-)
-def test_align_qasm_fields(
-    hardware_compilation_config_qblox_example,
-    mock_setup_basic_transmon_with_standard_params,
-    set_align_qasm_fields,
-    align_qasm_fields,
-):
-    hardware_compilation_config = copy.deepcopy(
-        hardware_compilation_config_qblox_example
-    )
-    if set_align_qasm_fields:
-        hardware_compilation_config["hardware_description"]["cluster0"][
-            "align_qasm_fields"
-        ] = align_qasm_fields
-
-    _assert_align_qasm_fields(
-        set_align_qasm_fields=set_align_qasm_fields,
-        align_qasm_fields=align_qasm_fields,
-        hardware_cfg=hardware_compilation_config,
-        quantum_device=mock_setup_basic_transmon_with_standard_params["quantum_device"],
-    )
-
-
-@pytest.mark.deprecated
-@pytest.mark.parametrize(
-    "set_align_qasm_fields, align_qasm_fields",
-    [
-        (True, True),
-        (True, False),
-        (False, True),
-        (False, False),
-    ],
-)
-def test_align_qasm_fields_deprecated_hardware_cfg(
-    hardware_compilation_config_qblox_example,
-    mock_setup_basic_transmon_with_standard_params,
-    set_align_qasm_fields,
-    align_qasm_fields,
-):
-    hardware_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            "ref": "internal",
-            "instrument_type": "Cluster",
-            "cluster0_module4": {
-                "instrument_type": "QRM_RF",
-                "complex_output_0": {
-                    "input_att": 10,
-                    "portclock_configs": [
-                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6},
-                    ],
-                },
-            },
-        },
-    }
-
-    if set_align_qasm_fields:
-        hardware_cfg["cluster0"]["align_qasm_fields"] = align_qasm_fields
-
-    _assert_align_qasm_fields(
-        set_align_qasm_fields=set_align_qasm_fields,
-        align_qasm_fields=align_qasm_fields,
-        hardware_cfg=hardware_cfg,
-        quantum_device=mock_setup_basic_transmon_with_standard_params["quantum_device"],
-    )
 
 
 class TestControlFlow:

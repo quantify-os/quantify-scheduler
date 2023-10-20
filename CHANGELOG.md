@@ -46,6 +46,7 @@
 - Qblox backend - Prevent repeated port-clock combinations (!799)
 - Operations - Adjust pulse info and acquisition info definitions to take class name (!809)
 - Documentation - Update the deprecated code suggestions table (!815)
+- Compilation, Qblox backend - Add `debug_mode` compilation config parameter to align the q1asm program (replaces the `align_qasm_fields` setting); set to `True` for diagnostic report (!822)
 - Compilation - Added an optional `reference_magnitude` parameter to `VoltageOffset` operations (!797)
 - Qblox backend - Improve compilation time for updating ports and clocks (!830)
 

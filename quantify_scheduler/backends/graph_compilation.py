@@ -229,6 +229,11 @@ class CompilationConfig(DataStructure):
     The `HardwareCompilationConfig` used in the compilation from the quantum-device
     layer to the control-hardware layer.
     """
+    debug_mode: bool = False
+    """
+    Debug mode can modify the compilation process,
+    so that debugging of the compilation process is easier.
+    """
 
     @field_serializer("backend")
     def _serialize_backend_func(self, v):

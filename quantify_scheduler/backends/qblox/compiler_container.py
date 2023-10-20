@@ -58,12 +58,15 @@ class CompilerContainer:
         for compiler in self.instrument_compilers.values():
             compiler.prepare()
 
-    def compile(self, repetitions: int) -> Dict[str, Any]:
+    def compile(self, debug_mode: bool, repetitions: int) -> Dict[str, Any]:
         """
         Performs the compilation for all the individual instruments.
 
         Parameters
         ----------
+        debug_mode
+            Debug mode can modify the compilation process,
+            so that debugging of the compilation process is easier.
         repetitions
             Amount of times to perform execution of the schedule.
 
@@ -77,7 +80,9 @@ class CompilerContainer:
         # for now name is hardcoded, but should be read from config.
         compiled_schedule = {}
         for name, compiler in self.instrument_compilers.items():
-            compiled_instrument_program = compiler.compile(repetitions=repetitions)
+            compiled_instrument_program = compiler.compile(
+                debug_mode=debug_mode, repetitions=repetitions
+            )
 
             if compiled_instrument_program is not None:
                 if name in self.generics:

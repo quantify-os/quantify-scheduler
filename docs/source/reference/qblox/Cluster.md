@@ -566,26 +566,6 @@ hardware_compile(test_sched, mapping_config)
 
 ```
 
-### QASM program indentation
-
-By default, the fields of the compiled QASM program are separated by a space, but this formatting can be made more human-readable by adding indentation. If the `"align_qasm_fields"` key in the hardware configuration is set to `True` (`False` by default), then for the whole program, labels, instructions, argument lists and comments are aligned in columns (same indentation level). Note that adding indentation worsens performance and has no functional value besides making the program more human-readable.
-
-```{code-block} python
----
-emphasize-lines: 6
-linenos: true
----
-hardware_compilation_cfg = {
-    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-    "cluster0": {
-        "instrument_type": "Cluster",
-        "ref": "internal",
-        "align_qasm_fields": True,
-        ...
-    }
-}
-```
-
 ### Portclock configuration
 
 Each module can have at most 6 portclocks defined, and the name for each `"port"` and `"clock"` combination must be unique. Each of these portclocks is associated with one sequencer in the Qblox hardware.
@@ -795,4 +775,31 @@ for offset, duration, t_start in zip(offsets, durations, start_times):
     )
 
 pulse = builder.build()
+```
+
+## Debug mode compilation
+
+Debug mode can help with debugging by modifying the compilation process slightly.
+
+If `"debug_mode"` key in the compilation configuration is set to `True` (`False` by default), the formatting of the compiled QASM program is made more human-readable by aligning all labels, instructions, argument lists and comments in the program in columns (same indentation level).
+
+Note that adding indentation worsens performance and has no functional value besides aiding the debugging process.
+
+```{code-cell} ipython3
+---
+mystnb:
+    remove_code_outputs: true
+---
+from quantify_scheduler.backends import SerialCompiler
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+
+quantum_device = QuantumDevice("DUT")
+quantum_device.hardware_config(mapping_config)
+
+compiler = SerialCompiler(name="compiler")
+compilation_config = quantum_device.generate_compilation_config()
+compilation_config.debug_mode = True
+_ = compiler.compile(
+    schedule=test_sched, config=compilation_config
+)
 ```
