@@ -23,7 +23,7 @@ class _CompilesAllBackends:
         try:
             compiler.compile(schedule=self.uncomp_sched, config=compilation_config)
         except ValueError:
-            pprint.pprint(compilation_config.dict())
+            pprint.pprint(compilation_config.model_dump())
             raise
 
     def test_compiles_zi_backend(

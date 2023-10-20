@@ -74,9 +74,9 @@ Serialization, deserialization and comparison are provided from scratch:
 
 .. jupyter-execute::
 
-    pulse_json = pulse.json()
+    pulse_json = pulse.model_dump_json()
     print(pulse_json)
-    pulse2 = ExamplePulse.parse_raw(pulse_json)
+    pulse2 = ExamplePulse.model_validate_json(pulse_json)
     assert pulse == pulse2
 
 
@@ -89,7 +89,7 @@ User may implement custom validators:
 .. jupyter-execute::
     :raises:
 
-    from pydantic import validator
+    from pydantic import field_validator
 
 
     class ScheduledExamplePulse(DataStructure):
@@ -98,7 +98,7 @@ User may implement custom validators:
         pulse: ExamplePulse
         start: float
 
-        @validator("start")
+        @field_validator("start")
         def _ensure_4ns_grid(cls, value):  # pylint: disable=no-self-argument,no-self-use
             if value % 4e-9 > 1e-12:
                 raise ValueError("Start must be on a 4 ns grid due to hardware limitations")

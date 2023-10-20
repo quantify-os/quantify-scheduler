@@ -7,17 +7,18 @@ Pydantic recognizes magic method ``__get_validators__`` to receive additional
 validators, that can be used, i.e., for custom serialization and deserialization.
 We implement several custom types here to tune behavior of our models.
 
-See `Pydantic docs`_ for more information about implementing new types.
+See `Pydantic documentation`_ for more information about implementing new types.
 
-.. _Pydantic docs: https://docs.pydantic.dev/1.10/usage/types/#custom-data-types
+.. _Pydantic documentation: https://docs.pydantic.dev/latest/usage/types/custom/
 """
 from __future__ import annotations
 
 import base64
-from collections.abc import Callable, Iterator, Mapping
+from collections.abc import Callable, Mapping
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
+from pydantic_core import core_schema
 
 if TYPE_CHECKING:
     from numpy.typing import ArrayLike
@@ -35,9 +36,25 @@ class NDArray(np.ndarray):
         return np.asarray(array_like).view(cls)
 
     @classmethod
-    def __get_validators__(cls: type[NDArray]) -> Iterator[Callable[..., Any]]:
-        """Pass ``pydantic`` validators."""
-        yield cls.validate
+    def __get_pydantic_core_schema__(  # noqa: D105
+        cls: type[NDArray],
+        _source_type: Any,  # noqa: ANN401
+        _handler: Callable[[Any], core_schema.CoreSchema],
+    ) -> core_schema.CoreSchema:
+        def to_dict(v: NDArray) -> dict[str, Any]:
+            """Convert the array to JSON-compatible dictionary."""
+            return {
+                "data": base64.b64encode(v.tobytes()).decode("ascii"),
+                "shape": v.shape,
+                "dtype": str(v.dtype),
+            }
+
+        return core_schema.no_info_plain_validator_function(
+            cls.validate,
+            serialization=core_schema.plain_serializer_function_ser_schema(
+                to_dict, when_used="json"
+            ),
+        )
 
     def to_dict(self) -> dict[str, Any]:
         """Convert the array to JSON-compatible dictionary."""

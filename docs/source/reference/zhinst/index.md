@@ -165,7 +165,7 @@ The {class}`~.backends.types.zhinst.ZIHardwareOptions` datastructure contains th
 ```
 
 ```{note}
-In the Zurich Instruments backend, a {class}`~.backends.types.common.LatencyCorrection` is implemented by incrementing the `abs_time` of all operations applied to the port-clock combination.
+In the Zurich Instruments backend, a `LatencyCorrection` is implemented by incrementing the `abs_time` of all operations applied to the port-clock combination.
 ```
 
 ## Tutorials

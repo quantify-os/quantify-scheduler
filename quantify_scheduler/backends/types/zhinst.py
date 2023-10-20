@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from enum import Enum, unique
 from typing import Dict, List, Literal, Optional, Union
 
-from pydantic.v1 import Field, validator
+from pydantic import Field, field_validator
 from typing_extensions import Annotated
 
 from quantify_scheduler.backends.types import common
@@ -164,7 +164,7 @@ class Output(DataStructure):
     mixer_corrections: Optional[common.MixerCorrections] = None
     """The output mixer corrections."""
 
-    @validator("mixer_corrections", pre=True, always=True)
+    @field_validator("mixer_corrections", mode="before")
     def decapitalize_dc_mixer_offsets(cls, v):
         """
         Decapitalize the DC mixer offsets.
@@ -203,7 +203,7 @@ class Device(DataStructure):
     """The third physical channel properties."""
     channel_3: Optional[Output] = None
     """The fourth physical channel properties."""
-    channels: Optional[List[Output]]
+    channels: List[Output] = Field(default=[], validate_default=True)
     """The list of channels. (auto generated)"""
     clock_select: Optional[int] = 0
     """
@@ -224,60 +224,60 @@ class Device(DataStructure):
     The Instruments operation mode.
     (default = zhinst.InstrumentOperationMode.OPERATING)
     """
-    device_type: DeviceType = DeviceType.NONE
+    device_type: DeviceType = Field(default=DeviceType.NONE, validate_default=True)
     """
     The Zurich Instruments hardware type. (default = DeviceType.NONE)
     This field is automatically populated.
     """
-    sample_rate: Optional[int]
+    sample_rate: Optional[int] = None
     """
     The Instruments sampling clock rate.
     This field is automatically populated.
     """
-    n_channels: Optional[int]
+    n_channels: Optional[int] = Field(default=None, validate_default=True)
     """
     The number of physical channels of this ZI Instrument.
     This field is automatically populated.
     """
 
-    @validator("channels", pre=True, always=True)
-    def generate_channel_list(cls, v, values):
-        if v is not None:
+    @field_validator("channels")
+    def generate_channel_list(cls, v, info):
+        if v != []:
             raise ValueError(
                 f"Trying to set 'channels' to {v}, while it is an auto-generated field."
             )
-        v = [values["channel_0"]]
-        if values["channel_1"] is not None:
-            v.append(values["channel_1"])
-        if values["channel_2"] is not None:
-            v.append(values["channel_2"])
-        if values["channel_3"] is not None:
-            v.append(values["channel_3"])
+        v = [info.data["channel_0"]]
+        if info.data["channel_1"] is not None:
+            v.append(info.data["channel_1"])
+        if info.data["channel_2"] is not None:
+            v.append(info.data["channel_2"])
+        if info.data["channel_3"] is not None:
+            v.append(info.data["channel_3"])
         return v
 
-    @validator("n_channels", pre=True, always=True)
-    def calculate_n_channels(cls, v, values):
+    @field_validator("n_channels")
+    def calculate_n_channels(cls, v, info):
         if v is not None:
             raise ValueError(
                 f"Trying to set 'n_channels' to {v}, while it is an auto-generated field."
             )
-        if values["type"][-1].isdigit():
-            digit = int(values["type"][-1])
+        if info.data["type"][-1].isdigit():
+            digit = int(info.data["type"][-1])
             v = digit
         else:
             v = 1
         return v
 
-    @validator("device_type", pre=True, always=True)
-    def determine_device_type(cls, v, values):
+    @field_validator("device_type")
+    def determine_device_type(cls, v, info):
         if v is not DeviceType.NONE:
             raise ValueError(
                 f"Trying to set 'device_type' to {v}, while it is an auto-generated field."
             )
-        if values["type"][-1].isdigit():
-            v = DeviceType(values["type"][:-1])
+        if info.data["type"][-1].isdigit():
+            v = DeviceType(info.data["type"][:-1])
         else:
-            v = DeviceType(values["type"])
+            v = DeviceType(info.data["type"])
         return v
 
 
@@ -321,10 +321,10 @@ class CommandTable(DataStructure):
     The CommandTable definition for ZI HDAWG.
     """
 
-    header: Optional["CommandTableHeader"]
+    header: Optional["CommandTableHeader"] = Field(default=None, validate_default=True)
     table: List["CommandTableEntry"]
 
-    @validator("header", pre=True, always=True)
+    @field_validator("header", mode="before")
     def generate_command_table_header(cls, v, values):
         if v is not None:
             raise ValueError(
@@ -461,7 +461,7 @@ class ZIChannelDescription(DataStructure):
     Property that specifies which markers to trigger on each sequencer iteration.
     The values are used as input for the `setTrigger` sequencer instruction.
     """
-    trigger: Optional[int]
+    trigger: Optional[int] = None
     """
     The `trigger` property specifies for a sequencer which digital trigger to wait for.
     This value is used as the input parameter for the `waitDigTrigger` sequencer instruction.
@@ -501,9 +501,9 @@ class ZIHDAWG4Description(ZIBaseDescription):
     For information see zhinst User manuals, section /DEV..../AWGS/n/TIME
     Examples: base sampling rate (1.8 GHz) divided by 2^clock_select. (default = 0)
     """
-    channel_0: Optional[ZIChannelDescription]
+    channel_0: Optional[ZIChannelDescription] = None
     """Description of the first channel on this HDAWG (corresponding to 1 or 2 physical output ports)."""
-    channel_1: Optional[ZIChannelDescription]
+    channel_1: Optional[ZIChannelDescription] = None
     """Description of the second channel on this HDAWG (corresponding to 1 or 2 physical output ports)."""
 
 
@@ -512,9 +512,9 @@ class ZIHDAWG8Description(ZIHDAWG4Description):
 
     instrument_type: Literal["HDAWG8"]
     """The instrument type, used to select this datastructure when parsing a :class:`~.CompilationConfig`."""
-    channel_2: Optional[ZIChannelDescription]
+    channel_2: Optional[ZIChannelDescription] = None
     """Description of the third channel on this HDAWG (corresponding to 1 or 2 physical output ports)."""
-    channel_3: Optional[ZIChannelDescription]
+    channel_3: Optional[ZIChannelDescription] = None
     """Description of the fourth channel on this HDAWG (corresponding to 1 or 2 physical output ports)."""
 
 
@@ -523,7 +523,7 @@ class ZIUHFQADescription(ZIBaseDescription):
 
     instrument_type: Literal["UHFQA"]
     """The instrument type, used to select this datastructure when parsing a :class:`~.CompilationConfig`."""
-    channel_0: Optional[ZIChannelDescription]
+    channel_0: Optional[ZIChannelDescription] = None
     """Description of the readout channel on this UHFQA."""
 
 
@@ -597,11 +597,11 @@ class ZIHardwareOptions(common.HardwareOptions):
             zi_hw_options_dict = load_json_example_scheme(
                 "zhinst_hardware_compilation_config.json")["hardware_options"]
             pprint.pprint(zi_hw_options_dict)
-            zi_hw_options = ZIHardwareOptions.parse_obj(zi_hw_options_dict)
+            zi_hw_options = ZIHardwareOptions.model_validate(zi_hw_options_dict)
             zi_hw_options
     """
 
-    output_gain: Optional[Dict[str, OutputGain]]
+    output_gain: Optional[Dict[str, OutputGain]] = None
     """
     Dictionary containing the gain settings (values) that should be applied
     to the outputs that are connected to a certain port-clock combination (keys).

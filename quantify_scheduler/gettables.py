@@ -595,7 +595,7 @@ class ScheduleGettable:
                 "`execute_get=True`"
             )
 
-        device_cfg = self.quantum_device.generate_device_config().dict()
+        device_cfg = self.quantum_device.generate_device_config().model_dump()
         hardware_cfg = self.quantum_device.generate_hardware_config()
 
         gettable_config = {

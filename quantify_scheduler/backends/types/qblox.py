@@ -9,7 +9,7 @@ from dataclasses import field as dataclasses_field
 from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, TypeVar, Union
 
 from dataclasses_json import DataClassJsonMixin
-from pydantic.v1 import Field, validator
+from pydantic import Field, field_validator
 from typing_extensions import Annotated
 
 from quantify_scheduler.backends.qblox import constants, enums, q1asm_instructions
@@ -758,22 +758,22 @@ Specifies a piece of Qblox hardware and its instrument-specific settings.
 """
 
 
-class RealInputGain(int):
-    """
-    Input gain settings for a real input connected to a port-clock combination.
+RealInputGain = int
+"""
+Input gain settings for a real input connected to a port-clock combination.
 
-    This gain value will be set on the QRM input ports
-    that are connected to this port-clock combination.
+This gain value will be set on the QRM input ports
+that are connected to this port-clock combination.
 
-    .. admonition:: Example
-        :class: dropdown
+.. admonition:: Example
+    :class: dropdown
 
-        .. code-block:: python
+    .. code-block:: python
 
-            hardware_compilation_config.hardware_options.input_gain = {
-                "q0:res-q0.ro": RealInputGain(2),
-            }
-    """
+        hardware_compilation_config.hardware_options.input_gain = {
+            "q0:res-q0.ro": RealInputGain(2),
+        }
+"""
 
 
 class ComplexInputGain(DataStructure):
@@ -802,40 +802,40 @@ class ComplexInputGain(DataStructure):
     """Gain setting on the input receiving the Q-component data for this port-clock combination."""
 
 
-class OutputAttenuation(int):
-    """
-    Output attenuation setting for a port-clock combination.
+OutputAttenuation = int
+"""
+Output attenuation setting for a port-clock combination.
 
-    This attenuation value will be set on each control-hardware output
-    port that is connected to this port-clock combination.
+This attenuation value will be set on each control-hardware output
+port that is connected to this port-clock combination.
 
-    .. admonition:: Example
-        :class: dropdown
+.. admonition:: Example
+    :class: dropdown
 
-        .. code-block:: python
+    .. code-block:: python
 
-            hardware_compilation_config.hardware_options.output_att = {
-                "q0:res-q0.ro": OutputAttenuation(10),
-            }
-    """
+        hardware_compilation_config.hardware_options.output_att = {
+            "q0:res-q0.ro": OutputAttenuation(10),
+        }
+"""
 
 
-class InputAttenuation(int):
-    """
-    Input attenuation setting for a port-clock combination.
+InputAttenuation = int
+"""
+Input attenuation setting for a port-clock combination.
 
-    This attenuation value will be set on each control-hardware output
-    port that is connected to this port-clock combination.
+This attenuation value will be set on each control-hardware output
+port that is connected to this port-clock combination.
 
-    .. admonition:: Example
-        :class: dropdown
+.. admonition:: Example
+    :class: dropdown
 
-        .. code-block:: python
+    .. code-block:: python
 
-            hardware_compilation_config.hardware_options.input_att = {
-                "q0:res-q0.ro": InputAttenuation(10),
-            }
-    """
+        hardware_compilation_config.hardware_options.input_att = {
+            "q0:res-q0.ro": InputAttenuation(10),
+        }
+"""
 
 
 class SequencerOptions(DataStructure):
@@ -879,7 +879,7 @@ class SequencerOptions(DataStructure):
     footer and the stop instruction in the generated qasm program.
     """
 
-    @validator(
+    @field_validator(
         "init_offset_awg_path_0",
         "init_offset_awg_path_1",
         "init_gain_awg_path_0",
@@ -921,11 +921,11 @@ class QbloxHardwareOptions(HardwareOptions):
                 "qblox_hardware_compilation_config.json")["hardware_options"]
             pprint.pprint(qblox_hw_options_dict)
 
-        The dictionary can be parsed using the :code:`parse_obj` method.
+        The dictionary can be parsed using the :code:`model_validate` method.
 
         .. jupyter-execute::
 
-            qblox_hw_options = QbloxHardwareOptions.parse_obj(qblox_hw_options_dict)
+            qblox_hw_options = QbloxHardwareOptions.model_validate(qblox_hw_options_dict)
             qblox_hw_options
     """
 

@@ -16,6 +16,6 @@ def test_serializable():
         a_param: str
 
     a_device_set = ADeviceSet(a_device=ADevice(a_field=42), a_param="towel")
-    serialized = a_device_set.json()
-    deserialzed = a_device_set.parse_raw(serialized)
+    serialized = a_device_set.model_dump_json()
+    deserialzed = a_device_set.model_validate_json(serialized)
     assert a_device_set == deserialzed

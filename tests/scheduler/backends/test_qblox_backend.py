@@ -20,7 +20,7 @@ from typing import Dict, Generator, Optional
 
 import numpy as np
 import pytest
-from pydantic.v1 import ValidationError
+from pydantic import ValidationError
 from qblox_instruments import Cluster, ClusterType, Pulsar, PulsarType
 
 import quantify_scheduler

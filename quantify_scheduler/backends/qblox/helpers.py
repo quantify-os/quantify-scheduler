@@ -1184,7 +1184,7 @@ def generate_hardware_config(compilation_config: CompilationConfig):
                 _set_hardware_config_value(
                     hw_config_dict=hardware_config,
                     hw_config_key=key,
-                    hw_compilation_config_value=hardware_options.dict()[key],
+                    hw_compilation_config_value=hardware_options.model_dump()[key],
                 )
             except KeyError:
                 pass

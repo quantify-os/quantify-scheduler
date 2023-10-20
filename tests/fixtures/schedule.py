@@ -39,7 +39,7 @@ def device_cfg_transmon_example() -> Generator[DeviceCompilationConfig, None, No
     Circuit to device level compilation for the _compile_circuit_to_device
     compilation backend.
     """
-    yield DeviceCompilationConfig.parse_obj(example_transmon_cfg)
+    yield DeviceCompilationConfig.model_validate(example_transmon_cfg)
 
 
 @pytest.fixture

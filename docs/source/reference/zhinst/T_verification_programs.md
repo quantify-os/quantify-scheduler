@@ -172,7 +172,7 @@ from quantify_scheduler.schemas.examples.device_example_cfgs import (
 
 quantum_device = QuantumDevice("DUT")
 
-transmon_device_cfg = DeviceCompilationConfig.parse_obj(example_transmon_cfg)
+transmon_device_cfg = DeviceCompilationConfig.model_validate(example_transmon_cfg)
 quantum_device.hardware_config(utils.load_json_example_scheme("zhinst_hardware_compilation_config.json"))
 
 compiler = SerialCompiler(name="compiler")

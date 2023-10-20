@@ -33,6 +33,7 @@
 - Documentation - Add a short explanation and examples of the `StitchedPulse` and `StitchedPulseBuilder` to the Schedules and Pulses tutorial. (!766)
 - Documentation - Add a short explanation and example of the `NumericalWeightedIntegrationComplex` protocol to the Acquisitions tutorial. (!791)
 - Infrastructure - Add `jinja2` as dependency to quantify-scheduler (needed for `pandas.DataFrame`) (!777)
+- Infrastructure - Upgrade to `pydantic` V2 functionality (instead of importing from legacy V1 module) (!714) 
 - Documentation - Split source and build folders to simplify using [`sphinx-autobuild`](https://github.com/executablebooks/sphinx-autobuild) for its editing. (!774)
 - Plotting - Fix error while plotting numerical pulses with non-zero rel_time (!783)
 - Schedules - Added two-qubit schedule generating function `two_qubit_transmon_schedules.chevron_cz_sched` for CZ tuneup (!700).

@@ -12,7 +12,7 @@ def test_ndarray():
     assert isinstance(instance.an_array, NDArray)
     assert instance.an_array.dtype == np.complex_
 
-    serialized = instance.json()
-    deserialized = Model.parse_raw(serialized)
+    serialized = instance.model_dump_json()
+    deserialized = Model.model_validate_json(serialized)
 
     np.testing.assert_equal(instance.an_array, deserialized.an_array)

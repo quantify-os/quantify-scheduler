@@ -191,9 +191,9 @@ from quantify_scheduler.schemas.examples.device_example_cfgs import (
     example_transmon_cfg,
 )
 
-device_cfg = DeviceCompilationConfig.parse_obj(example_transmon_cfg)
+device_cfg = DeviceCompilationConfig.model_validate(example_transmon_cfg)
 
-list(device_cfg.dict())
+list(device_cfg.model_dump())
 ```
 
 Before explaining how this can be used to compile schedules, let us first investigate

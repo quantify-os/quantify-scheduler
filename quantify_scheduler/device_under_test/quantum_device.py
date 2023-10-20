@@ -290,8 +290,8 @@ class QuantumDevice(Instrument):
                     connectivity=hardware_config,
                 )
             else:
-                hardware_compilation_config = QbloxHardwareCompilationConfig.parse_obj(
-                    hardware_config
+                hardware_compilation_config = (
+                    QbloxHardwareCompilationConfig.model_validate(hardware_config)
                 )
         elif (
             hardware_config["backend"]
@@ -315,8 +315,8 @@ class QuantumDevice(Instrument):
                     connectivity=hardware_config,
                 )
             else:
-                hardware_compilation_config = ZIHardwareCompilationConfig.parse_obj(
-                    hardware_config
+                hardware_compilation_config = (
+                    ZIHardwareCompilationConfig.model_validate(hardware_config)
                 )
         else:
             if not any(
@@ -337,7 +337,7 @@ class QuantumDevice(Instrument):
                     connectivity=hardware_config,
                 )
             else:
-                hardware_compilation_config = HardwareCompilationConfig.parse_obj(
+                hardware_compilation_config = HardwareCompilationConfig.model_validate(
                     hardware_config
                 )
 

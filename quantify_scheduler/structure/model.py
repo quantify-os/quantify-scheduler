@@ -6,9 +6,8 @@ import types
 from typing import Any, Callable
 
 import orjson
-from pydantic.v1 import BaseModel, Extra
+from pydantic import BaseModel, ConfigDict
 
-from quantify_scheduler.structure import types as qs_types
 from quantify_scheduler.helpers.importers import (
     import_python_object_from_string,
     export_python_object_to_path_string,
@@ -63,23 +62,13 @@ class DataStructure(BaseModel):  # pylint: disable=too-few-public-methods
         .. include:: ../../../../examples/structure.DataStructure.rst
     """
 
-    class Config:  # pylint: disable=too-few-public-methods,missing-class-docstring
-        json_loads = orjson.loads
-        json_dumps = orjson_dumps
-        # Support serialization of function and class pointers, turning them
-        # into dotted import strings:
-        json_encoders = {
-            types.FunctionType: export_python_object_to_path_string,
-            type: export_python_object_to_path_string,
-            qs_types.NDArray: qs_types.NDArray.to_dict,
-        }
-
+    model_config = ConfigDict(
+        extra="forbid",
         # ensures exceptions are raised when passing extra argument that are not
         # part of a model when initializing.
-        extra = Extra.forbid
-
+        validate_assignment=True,
         # run validation when assigning attributes
-        validate_assignment = True
+    )
 
 
 def deserialize_function(fun: str) -> Callable[..., Any]:

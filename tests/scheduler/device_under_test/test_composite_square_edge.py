@@ -49,7 +49,7 @@ def test_generate_edge_config(edge_q2b_q3b):
         }
     }
 
-    expected_cz_dict = expected_edge_cfg["q2b_q3b"]["CZ"].dict()
+    expected_cz_dict = expected_edge_cfg["q2b_q3b"]["CZ"].model_dump()
 
     edge_q2b_q3b.cz.square_amp(expected_cz_dict["factory_kwargs"]["square_amp"])
     edge_q2b_q3b.cz.square_duration(

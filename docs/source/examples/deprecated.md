@@ -426,10 +426,10 @@ Both classes will generate the same device configuration.
 ```{code-cell} ipython3
 import pprint
 
-# device_config_transmon = transmon.generate_device_config().dict()
+# device_config_transmon = transmon.generate_device_config().model_dump()
 # pprint.pprint(device_config_transmon)
 
-device_config_basic_transmon = basic.generate_device_config().dict()
+device_config_basic_transmon = basic.generate_device_config().model_dump()
 pprint.pprint(device_config_basic_transmon)
 ```
 

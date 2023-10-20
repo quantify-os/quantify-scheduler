@@ -13,7 +13,7 @@ from functools import partial
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Literal, get_args
 
 import numpy as np
-from pydantic.v1 import parse_obj_as
+from pydantic import TypeAdapter
 from zhinst.toolkit.helpers import Waveform
 
 from quantify_scheduler import enums
@@ -477,7 +477,8 @@ def _parse_local_oscillators(data: dict[str, Any]) -> dict[str, zhinst.LocalOsci
         If duplicate LocalOscillators have been found.
     """
     local_oscillators: dict[str, zhinst.LocalOscillator] = dict()
-    lo_list = parse_obj_as(List[zhinst.LocalOscillator], data)
+    lo_list_validator = TypeAdapter(List[zhinst.LocalOscillator])
+    lo_list = lo_list_validator.validate_python(data)
     for local_oscillator in lo_list:
         if local_oscillator.unique_name in local_oscillators:
             raise RuntimeError(
@@ -491,7 +492,8 @@ def _parse_local_oscillators(data: dict[str, Any]) -> dict[str, zhinst.LocalOsci
 
 
 def _parse_devices(data: dict[str, Any]) -> list[zhinst.Device]:
-    device_list = parse_obj_as(List[zhinst.Device], data)
+    device_list_validator = TypeAdapter(List[zhinst.Device])
+    device_list = device_list_validator.validate_python(data)
 
     for device in device_list:
         if device.device_type.value not in SUPPORTED_DEVICE_TYPES:
@@ -966,18 +968,19 @@ def generate_hardware_config(  # noqa: PLR0912, PLR0915
         _set_hardware_config_value(
             hw_config_dict=hardware_config,
             hw_config_key="latency_corrections",
-            hw_compilation_config_value=hardware_options.dict()["latency_corrections"],
+            hw_compilation_config_value=hardware_options.model_dump()[
+                "latency_corrections"
+            ],
         )
 
         # Add distortion corrections from hardware options to hardware config
         _set_hardware_config_value(
             hw_config_dict=hardware_config,
             hw_config_key="distortion_corrections",
-            hw_compilation_config_value=hardware_options.dict()[
+            hw_compilation_config_value=hardware_options.model_dump()[
                 "distortion_corrections"
             ],
         )
-
         modulation_frequencies = hardware_options.modulation_frequencies
         if modulation_frequencies is not None:
             for port, clock in port_clocks:
@@ -1053,7 +1056,7 @@ def generate_hardware_config(  # noqa: PLR0912, PLR0915
                 _set_hardware_config_value(
                     hw_config_dict=ch_config,
                     hw_config_key="mixer_corrections",
-                    hw_compilation_config_value=pc_mix_corr.dict(),
+                    hw_compilation_config_value=pc_mix_corr.model_dump(),
                 )
 
         output_gain = hardware_options.output_gain

@@ -4,45 +4,49 @@
 import warnings
 from typing import Dict, Literal, Optional, Union, List, Callable, Any
 
-from pydantic.v1 import validator
+from pydantic import field_validator, field_serializer
 
-from quantify_scheduler.structure.model import DataStructure, deserialize_function
+from quantify_scheduler.structure.model import (
+    DataStructure,
+    deserialize_function,
+    export_python_object_to_path_string,
+)
 from quantify_scheduler.schedules.schedule import Schedule
 from quantify_scheduler.structure.types import NDArray
 
 
-class LatencyCorrection(float):
-    """
-    Latency correction in seconds for a port-clock combination.
+LatencyCorrection = float
+"""
+Latency correction in seconds for a port-clock combination.
 
-    Positive values delay the operations on the corresponding port-clock combination,
-    while negative values shift the operation backwards in time with respect to other
-    operations in the schedule.
+Positive values delay the operations on the corresponding port-clock combination,
+while negative values shift the operation backwards in time with respect to other
+operations in the schedule.
 
-    .. note::
+.. note::
 
-        If the port-clock combination of a signal is not specified in the corrections,
-        it is set to zero in compilation. The minimum correction over all port-clock
-        combinations is then subtracted to allow for negative latency corrections and to
-        ensure minimal wait time (see
-        :meth:`~quantify_scheduler.backends.corrections.determine_relative_latency_corrections`).
+    If the port-clock combination of a signal is not specified in the corrections,
+    it is set to zero in compilation. The minimum correction over all port-clock
+    combinations is then subtracted to allow for negative latency corrections and to
+    ensure minimal wait time (see
+    :meth:`~quantify_scheduler.backends.corrections.determine_relative_latency_corrections`).
 
-    .. admonition:: Example
-        :class: dropdown
+.. admonition:: Example
+    :class: dropdown
 
-        Let's say we have specified two latency corrections in the CompilationConfig:
+    Let's say we have specified two latency corrections in the CompilationConfig:
 
-        .. code-block:: python
+    .. code-block:: python
 
-            compilation_config.hardware_options.latency_corrections = {
-                "q0:res-q0.ro": LatencyCorrection(-20e-9),
-                "q0:mw-q0.01": LatencyCorrection(120e9),
-            }
+        compilation_config.hardware_options.latency_corrections = {
+            "q0:res-q0.ro": LatencyCorrection(-20e-9),
+            "q0:mw-q0.01": LatencyCorrection(120e9),
+        }
 
-        In this case, all operations on port ``"q0:mw"`` and clock ``"q0.01"`` will
-        be delayed by 140 ns with respect to operations on port ``"q0:res"`` and
-        clock ``"q0.ro"``.
-    """
+    In this case, all operations on port ``"q0:mw"`` and clock ``"q0.01"`` will
+    be delayed by 140 ns with respect to operations on port ``"q0:res"`` and
+    clock ``"q0.ro"``.
+"""
 
 
 class DistortionCorrection(DataStructure):
@@ -54,7 +58,7 @@ class DistortionCorrection(DataStructure):
     """The argument to which the waveforms will be passed in the filter_func."""
     kwargs: Dict[str, Union[List, NDArray]]
     """The keyword arguments that are passed to the filter_func."""
-    clipping_values: Optional[List]
+    clipping_values: Optional[List] = None
     """
     The optional boundaries to which the corrected pulses will be clipped,
     upon exceeding.
@@ -96,9 +100,9 @@ class ModulationFrequencies(DataStructure):
             }
     """
 
-    interm_freq: Optional[float]
+    interm_freq: Optional[float] = None
     """The intermodulation frequency (IF) used for this port-clock combination."""
-    lo_freq: Optional[float]
+    lo_freq: Optional[float] = None
     """The local oscillator frequency (LO) used for this port-clock combination."""
 
 
@@ -142,22 +146,22 @@ class HardwareOptions(DataStructure):
     :class:`~quantify_scheduler.backends.types.zhinst.ZIHardwareOptions`.
     """
 
-    latency_corrections: Optional[Dict[str, LatencyCorrection]]
+    latency_corrections: Optional[Dict[str, LatencyCorrection]] = None
     """
     Dictionary containing the latency corrections (values) that should be applied
     to operations on a certain port-clock combination (keys).
     """
-    distortion_corrections: Optional[Dict[str, DistortionCorrection]]
+    distortion_corrections: Optional[Dict[str, DistortionCorrection]] = None
     """
     Dictionary containing the distortion corrections (values) that should be applied
     to waveforms on a certain port-clock combination (keys).
     """
-    modulation_frequencies: Optional[Dict[str, ModulationFrequencies]]
+    modulation_frequencies: Optional[Dict[str, ModulationFrequencies]] = None
     """
     Dictionary containing the modulation frequencies (values) that should be used
     for signals on a certain port-clock combination (keys).
     """
-    mixer_corrections: Optional[Dict[str, MixerCorrections]]
+    mixer_corrections: Optional[Dict[str, MixerCorrections]] = None
     """
     Dictionary containing the mixer corrections (values) that should be used
     for signals on a certain port-clock combination (keys).
@@ -169,15 +173,15 @@ class LocalOscillatorDescription(DataStructure):
 
     instrument_type: Literal["LocalOscillator"]
     """The field discriminator for this HardwareDescription datastructure."""
-    instrument_name: Optional[str]
+    instrument_name: Optional[str] = None
     """The QCoDeS instrument name corresponding to this Local Oscillator."""
-    generic_icc_name: Optional[str]
+    generic_icc_name: Optional[str] = None
     """The name of the :class:`~.GenericInstrumentCoordinatorComponent` corresponding to this Local Oscillator."""
     frequency_param: str = "frequency"
     """The QCoDeS parameter that is used to set the LO frequency."""
     power_param: str = "power"
     """The QCoDeS parameter that is used to set the LO power."""
-    power: Optional[int]
+    power: Optional[int] = None
     """The power setting for this Local Oscillator."""
 
 
@@ -230,7 +234,11 @@ class HardwareCompilationConfig(DataStructure):
     the control-hardware layer.
     """
 
-    @validator("backend", pre=True)
+    @field_serializer("backend")
+    def _serialize_backend_func(self, v):
+        return export_python_object_to_path_string(v)
+
+    @field_validator("backend", mode="before")
     def _import_backend_if_str(
         cls, fun: Callable[[Schedule, Any], Schedule]  # noqa: N805
     ) -> Callable[[Schedule, Any], Schedule]:
@@ -238,7 +246,7 @@ class HardwareCompilationConfig(DataStructure):
             return deserialize_function(fun)
         return fun  # type: ignore
 
-    @validator("connectivity")
+    @field_validator("connectivity")
     def _latencies_in_hardware_config(cls, connectivity):  # noqa: N805
         # if connectivity contains a hardware config with latency corrections
         if isinstance(connectivity, Dict) and "latency_corrections" in connectivity:
@@ -250,7 +258,7 @@ class HardwareCompilationConfig(DataStructure):
             )
         return connectivity
 
-    @validator("connectivity")
+    @field_validator("connectivity")
     def _distortions_in_hardware_config(cls, connectivity):  # noqa: N805
         # if connectivity contains a hardware config with distortion corrections
         if isinstance(connectivity, Dict) and "distortion_corrections" in connectivity:

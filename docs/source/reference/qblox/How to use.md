@@ -44,7 +44,7 @@ with open(cfg_f, "r") as file:
 
 compilation_config = SerialCompilationConfig(
     name="Qblox compiler",
-    hardware_compilation_config=QbloxHardwareCompilationConfig.parse_obj(
+    hardware_compilation_config=QbloxHardwareCompilationConfig.model_validate(
         qblox_hardware_compilation_config
     ),
     compilation_passes=[],

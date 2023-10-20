@@ -513,6 +513,6 @@ class BasicElectronicNVElement(DeviceElement):
             },
             "edges": {},
         }
-        dev_cfg = DeviceCompilationConfig.parse_obj(cfg_dict)
+        dev_cfg = DeviceCompilationConfig.model_validate(cfg_dict)
 
         return dev_cfg

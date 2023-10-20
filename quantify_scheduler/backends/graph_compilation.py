@@ -20,7 +20,7 @@ from typing import (
 import matplotlib.pyplot as plt
 import networkx as nx
 from matplotlib.axes import Axes
-from pydantic.v1 import validator
+from pydantic import field_serializer, field_validator
 
 from quantify_scheduler.backends.types.common import HardwareCompilationConfig
 from quantify_scheduler.operations.operation import Operation
@@ -29,6 +29,7 @@ from quantify_scheduler.structure.model import (
     DataStructure,
     deserialize_class,
     deserialize_function,
+    export_python_object_to_path_string,
 )
 
 if TYPE_CHECKING:
@@ -55,7 +56,11 @@ class SimpleNodeConfig(DataStructure):
     importable string (e.g., "package_name.my_module.function_name").
     """
 
-    @validator("compilation_func", pre=True)
+    @field_serializer("compilation_func")
+    def _serialize_compilation_func(self, v):
+        return export_python_object_to_path_string(v)
+
+    @field_validator("compilation_func", mode="before")
     def _import_compilation_func_if_str(
         cls, fun: Callable[[Schedule, Any], Schedule]  # noqa: N805
     ) -> Callable[[Schedule, Any], Schedule]:
@@ -83,13 +88,17 @@ class OperationCompilationConfig(DataStructure):
     A dictionary containing the keyword arguments and corresponding values to use
     when creating the operation by evaluating the factory function.
     """
-    gate_info_factory_kwargs: Optional[List[str]]
+    gate_info_factory_kwargs: Optional[List[str]] = None
     """
     A list of keyword arguments of the factory function for which the value must
     be retrieved from the `gate_info` of the operation.
     """
 
-    @validator("factory_func", pre=True)
+    @field_serializer("factory_func")
+    def _serialize_factory_func(self, v):
+        return export_python_object_to_path_string(v)
+
+    @field_validator("factory_func", mode="before")
     def _import_factory_func_if_str(
         cls, fun: Union[str, Callable[..., Operation]]  # noqa: N805
     ) -> Callable[..., Operation]:
@@ -137,11 +146,11 @@ class DeviceCompilationConfig(DataStructure):
             pprint.pprint(example_transmon_cfg)
 
 
-        The dictionary can be parsed using the :code:`parse_obj` method.
+        The dictionary can be parsed using the :code:`model_validate` method.
 
         .. jupyter-execute::
 
-            device_cfg = DeviceCompilationConfig.parse_obj(example_transmon_cfg)
+            device_cfg = DeviceCompilationConfig.model_validate(example_transmon_cfg)
             device_cfg
     """
 
@@ -173,7 +182,11 @@ class DeviceCompilationConfig(DataStructure):
     operation of the schedule.
     """
 
-    @validator("backend", pre=True)
+    @field_serializer("backend")
+    def _serialize_backend_func(self, v):
+        return export_python_object_to_path_string(v)
+
+    @field_validator("backend", mode="before")
     def _import_backend_if_str(
         cls, fun: Callable[[Schedule, Any], Schedule]  # noqa: N805
     ) -> Callable[[Schedule, Any], Schedule]:
@@ -206,18 +219,22 @@ class CompilationConfig(DataStructure):
     """
     backend: Type[QuantifyCompiler]
     """A reference string to the `QuantifyCompiler` class used in the compilation."""
-    device_compilation_config: Optional[Union[DeviceCompilationConfig, Dict]]
+    device_compilation_config: Optional[Union[DeviceCompilationConfig, Dict]] = None
     """
     The `DeviceCompilationConfig` used in the compilation from the quantum-circuit
     layer to the quantum-device layer.
     """
-    hardware_compilation_config: Optional[HardwareCompilationConfig]
+    hardware_compilation_config: Optional[HardwareCompilationConfig] = None
     """
     The `HardwareCompilationConfig` used in the compilation from the quantum-device
     layer to the control-hardware layer.
     """
 
-    @validator("backend", pre=True)
+    @field_serializer("backend")
+    def _serialize_backend_func(self, v):
+        return export_python_object_to_path_string(v)
+
+    @field_validator("backend", mode="before")
     def _import_backend_if_str(
         cls, class_: Union[Type[QuantifyCompiler], str]  # noqa: N805
     ) -> Type[QuantifyCompiler]:
@@ -567,7 +584,11 @@ class SerialCompilationConfig(CompilationConfig):
     backend: Type[SerialCompiler] = SerialCompiler
     compilation_passes: List[SimpleNodeConfig]
 
-    @validator("backend", pre=True)
+    @field_serializer("backend")
+    def _serialize_backend_func(self, v):
+        return export_python_object_to_path_string(v)
+
+    @field_validator("backend", mode="before")
     def _import_backend_if_str(
         cls, class_: Union[Type[SerialCompiler], str]  # noqa: N805
     ) -> Type[SerialCompiler]:

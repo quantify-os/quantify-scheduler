@@ -91,7 +91,7 @@ def _compile_circuit_to_device(
         # but this is supported for backwards compatibility reasons.
         return schedule
     elif not isinstance(device_cfg, DeviceCompilationConfig):
-        device_cfg = DeviceCompilationConfig.parse_obj(device_cfg)
+        device_cfg = DeviceCompilationConfig.model_validate(device_cfg)
 
     for key, operation in schedule.operations.items():
         # If operation is a valid pulse or acquisition it will not attempt to
@@ -240,7 +240,7 @@ def set_pulse_and_acquisition_clock(
         # but this is supported for backwards compatibility reasons.
         return schedule
     elif not isinstance(device_cfg, DeviceCompilationConfig):
-        device_cfg = DeviceCompilationConfig.parse_obj(device_cfg)
+        device_cfg = DeviceCompilationConfig.model_validate(device_cfg)
     assert isinstance(device_cfg, DeviceCompilationConfig)
 
     # verify that required clocks are present; print warning if they are inconsistent

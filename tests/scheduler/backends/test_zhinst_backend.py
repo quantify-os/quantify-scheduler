@@ -14,7 +14,7 @@ from unittest.mock import ANY, call
 
 import numpy as np
 import pytest
-from pydantic.v1 import ValidationError
+from pydantic import ValidationError
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends import SerialCompiler, corrections, zhinst_backend
 from quantify_scheduler.backends.types import zhinst
