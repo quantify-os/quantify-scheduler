@@ -1,55 +1,97 @@
 # Changelog
 
-## Unreleased
+## 0.17.0 (2023-10-20)
+
+### Release highlights
+
+- New features
+  - Subschedules & repetition loops
+    - A schedule can now be added to a schedule just like an operation.
+    - Looping of an operation via new `control_flow` argument in `Schedule.add`.
+    - Various limitations apply, please consult the documentation: [Reference guide: Control flow] (https://quantify-os.org/docs/quantify-scheduler/latest/reference/control_flow.html).
+    - Also, currently plotting and timing table is not working:
+      - Subschedules: circuit diagram does not work,
+      - Repetition loops: not shown in circuit diagram, timing table does not work.
+  - Diagnostics report: `ScheduleGettable.initialize_and_get_with_report` saves information from an experiment in a report zipfile.
+    - For Qblox instruments, this includes hardware logs.
+  - New operation: `GaussPulse`, an operation equivalent to the `DRAGPulse` but with derived amplitude zero.
+  - New schedule: `two_qubit_transmon_schedules.chevron_cz_sched`, two-qubit schedule-generating function for CZ tuneup.
+- Qblox backend improvements
+  - Schedule compilation time decreased by 30-75%!
+- Documentation
+  -  We have moved to: https://quantify-os.org/docs/quantify-scheduler
+  - https://quantify-quantify-scheduler.readthedocs-hosted.com will be permanently redirected to the new location.
 
 ### Breaking changes
 
-- Deprecation - The deprecated `instruction_generated_pulses_enabled` Qblox hardware configuration parameter, and the two classes related to it (`StitchedSquarePulseStrategy` and `StaircasePulseStrategy`) have been removed. The deprecated code suggestions have been updated (!811).
-- QuantumDevice - `ManualParameter` `elements` and `edges` have been changed from `list` to `dict` (!813)
-  - Before, these were lists with instrument names, so one could do `element_name = quantum_device.elements()[0]` and `edge_name = quantum_device.edges()[0]`
-  - Now, these are dicts with instrument names as keys and the `DeviceElement` and `Edge` instances as values, so one would need to change to `element_name = list(quantum_device.elements())[0]` and `edge_name = list(quantum_device.edges())[0]`
-  - Also see [Tutorial: Operations and Qubits - Device configuration](https://quantify-os.org/docs/quantify-scheduler/latest/tutorials/Operations%20and%20Qubits.html#device-configuration)
+- Deprecation - The deprecated `instruction_generated_pulses_enabled` Qblox hardware configuration parameter, and the two classes related to it (`StitchedSquarePulseStrategy` and `StaircasePulseStrategy`) have been removed. The deprecated code suggestions have been updated. (!811)
+- QuantumDevice - `ManualParameter` `elements` and `edges` have been changed from `list` to `dict`. (!813)
+  - Before, these were lists with instrument names, so one could do `element_name = quantum_device.elements()[0]` and `edge_name = quantum_device.edges()[0]`.
+  - Now, these are dicts with instrument names as keys and the `DeviceElement` and `Edge` instances as values, so one would need to change to `element_name = list(quantum_device.elements())[0]` and `edge_name = list(quantum_device.edges())[0]`.
+  - Also see [Tutorial: Operations and Qubits - Device configuration](https://quantify-os.org/docs/quantify-scheduler/latest/tutorials/Operations%20and%20Qubits.html#device-configuration).
 
 ### Merged branches and closed issues
 
-- Documentation - Switch to `pydata-sphinx-theme`. (!778)
-- Compilation - Add a `scheduling_strategy` parameter to `QuantumDevice` and `DeviceCompilationConfig` classes to enable new strategies for calculating absolute timing in `compilation.determine_absolute_timing`  (!736)
-- Compilation - Enforce always adding (possibly empty) `HardwareOptions` to the `HardwareCompilationConfig` (!812)
-- Compilation - Hotfix for !812: Fix backwards compatibility old-style hardware config for custom backend (!818)
-- Compilation - Add `keep_original_schedule` compilation option into the `CompilationConfig`, controlling whether a copy of the schedule is made at the start of compilation (!816)
-  - As an intermediate step, `keep_original_schedule` was added as an argument to several compilation functions (!771), but this was later moved to the `CompilationConfig` (!816)
-  - Also, directly calling `determine_absolute_timing` or `compile_circuit_to_device` (instead of from the compiler) is now deprecated.
-- Security - Add `check=True` flag to all subprocess calls (see also Ruff rule PLW1510). (!767)
-- Gettable - Add `ScheduleGettable.initialize_and_get_with_report` that saves information from an experiment in a report zipfile for diagnostics. (!672)
-  - For Qblox instruments, this includes hardware logs, retrieved via `InstrumentCoordinator.retrieve_hardware_logs` from `qblox-instruments.ConfigurationManager`.
-- Gettable - For Qblox instruments, add serial numbers and version info (via `get_idn` and `_get_mods_info`) to the report zipfile for diagnostics. (!787)
-- Qblox backend - Make QASM fields aligning optional, disable by default (!741)
-- Qblox backend - Remove code referencing RF pulsars (these devices do not exist) (!748).
-- Documentation - Color change for code block emphasized lines (!741)
-- Infrastructure - Improve speed of `make_hash` (affecting `Schedule.add`) and some compilation steps (!770)
-- Infrastructure - Use new qcodes syntax for adding parameters. (!758)
-- Documentation - Fix missing images in Jupyter cell outputs in documentation deployed using Gitlab Pages. (!772, #404, counterpart of quantify-core!480)
-- Documentation - Explain in Qblox Cluster docs the possibility of using `"{complex,real}_output_<n>"` hardware config keys for both playback and acquisitions. (!763)
-- Documentation - Add a short explanation and examples of the `StitchedPulse` and `StitchedPulseBuilder` to the Schedules and Pulses tutorial. (!766)
-- Documentation - Add a short explanation and example of the `NumericalWeightedIntegrationComplex` protocol to the Acquisitions tutorial. (!791)
-- Infrastructure - Add `jinja2` as dependency to quantify-scheduler (needed for `pandas.DataFrame`) (!777)
-- Infrastructure - Upgrade to `pydantic` V2 functionality (instead of importing from legacy V1 module) (!714) 
-- Documentation - Split source and build folders to simplify using [`sphinx-autobuild`](https://github.com/executablebooks/sphinx-autobuild) for its editing. (!774)
-- Plotting - Fix error while plotting numerical pulses with non-zero rel_time (!783)
-- Schedules - Added two-qubit schedule generating function `two_qubit_transmon_schedules.chevron_cz_sched` for CZ tuneup (!700).
-- Qblox backend - Remove unnecessary deepcopies from schedule for 30-75% performance improvement (!771)
-- Schedule - A schedule can now be added to another schedule. It will be treated as one big operation (!709).
-- Schedule - Added looping: An inner schedule can be repeated inside of the schedule. This feature has limitations, please refer to the [control flow documentation](https://quantify-os.org/docs/quantify-scheduler/latest/reference/control_flow.html) (!709, !819, !833).
-- Infrastructure - Bump `quantify_core` version dependency to 0.7.1 to include the fix to `without()` in quantify-core!438. (!795)
-- Documentation - Deploy documentation to quantify-os.org. (!796)
-- Operations - Introduce the `GaussPulse`, an operation equivalent to the `DRAGPulse` but with zero derived amplitude, as well as its factory function `rxy_gauss_pulse`. (!793)
-- Qblox backend - Prevent repeated port-clock combinations (!799)
-- Operations - Adjust pulse info and acquisition info definitions to take class name (!809)
-- Documentation - Update the deprecated code suggestions table (!815)
-- Compilation, Qblox backend - Add `debug_mode` compilation config parameter to align the q1asm program (replaces the `align_qasm_fields` setting); set to `True` for diagnostic report (!822)
-- Compilation - Added an optional `reference_magnitude` parameter to `VoltageOffset` operations (!797)
-- Qblox backend - Improve compilation time for updating ports and clocks (!830)
-- Documentation - Use NV center context for Trigger count example in Tutorial: Acquisitions (!829)
+- Compilation:
+  - Add `keep_original_schedule` compilation option into the `CompilationConfig`, controlling whether a copy of the schedule is made at the start of compilation. (!816)
+    - As an intermediate step, `keep_original_schedule` was added as an argument to several compilation functions (!771), but this was later moved to the `CompilationConfig`.
+    - Also, directly calling `determine_absolute_timing` or `compile_circuit_to_device` (instead of from the compiler) is now deprecated.
+  - Add a `scheduling_strategy` parameter to `QuantumDevice` and `DeviceCompilationConfig` classes to enable new strategies for calculating absolute timing in `compilation.determine_absolute_timing`.  (!736)
+  - Added an optional `reference_magnitude` parameter to `VoltageOffset` operations. (!797)
+  - Enforce always adding (possibly empty) `HardwareOptions` to the `HardwareCompilationConfig`. (!812)
+  - Hotfix for !812: Fix backwards compatibility old-style hardware config for custom backend. (!818)
+  
+- Documentation:
+  - Add a short explanation and example of the `NumericalWeightedIntegrationComplex` protocol to the Acquisitions tutorial. (!791)
+  - Add a short explanation and examples of the `StitchedPulse` and `StitchedPulseBuilder` to the Schedules and Pulses tutorial. (!766)
+  - Color change for code block emphasized lines. (!741)
+  - Deploy documentation to quantify-os.org. (!796)
+  - Explain in Qblox Cluster docs the possibility of using `"{complex,real}_output_<n>"` hardware config keys for both playback and acquisitions. (!763)
+  - Fix missing images in Jupyter cell outputs in documentation deployed using Gitlab Pages. (!772, #404, counterpart of quantify-core!480)
+  - Split source and build folders to simplify using [`sphinx-autobuild`](https://github.com/executablebooks/sphinx-autobuild) for its editing. (!774)
+  - Update the deprecated code suggestions table. (!815)
+  
+- Gettable:
+  - Add `ScheduleGettable.initialize_and_get_with_report` that saves information from an experiment in a report zipfile for diagnostics. (!672)
+    - For Qblox instruments, this includes hardware logs, retrieved via `InstrumentCoordinator.retrieve_hardware_logs` from `qblox-instruments.ConfigurationManager`.
+    - For Qblox instruments, add serial numbers and version info (via `get_idn` and `_get_mods_info`) to the report zipfile for diagnostics. (!787)
+  
+- Infrastructure:
+  - Add `jinja2` as a dependency to quantify-scheduler (needed for `pandas.DataFrame`). (!777)
+  - Bump `quantify_core` version dependency to 0.7.1 to include the fix to `without()` in quantify-core!438. (!795)
+  - Improve the speed of `make_hash` (affecting `Schedule.add`) and some compilation steps. (!770)
+  - Upgrade to `pydantic` V2 functionality (instead of importing from the legacy V1 module). (!714) 
+  - Use new qcodes syntax for adding parameters. (!758)
+  
+- Operations:
+  - Adjust pulse info and acquisition info definitions to take the class name. (!809)
+  - Introduce the `GaussPulse`, an operation equivalent to the `DRAGPulse` but with zero derived amplitude, as well as its factory function `rxy_gauss_pulse`. (!793)
+  
+- Plotting:
+  - Fix error while plotting numerical pulses with non-zero `rel_time`. (!783)
+  
+- Qblox backend:
+  - Remove unnecessary deep copies from the schedule for a 30-75% performance improvement. (!771)
+  - Improve compilation time for updating ports and clocks. (!830)
+  - Make QASM fields aligning optional, disable by default. (!741)
+  - Prevent repeated port-clock combinations. (!799)
+  - Remove code referencing RF pulsars (these devices do not exist). (!748)
+  - Add `debug_mode` compilation config parameter to align the q1asm program (replaces the `align_qasm_fields` setting); set to `True` for diagnostic report. (!822)
+  
+- Schedule:
+  - A schedule can now be added to another schedule. It will be treated as one big operation. (!709)
+  - Added looping: An inner schedule can be repeated inside of the schedule. This feature has limitations, please refer to the [control flow documentation](https://quantify-os.org/docs/quantify-scheduler/latest/reference/control_flow.html). (!709, !819)
+  
+- Schedules:
+  - Added two-qubit schedule-generating function `two_qubit_transmon_schedules.chevron_cz_sched` for CZ tuneup. (!700).
+  
+- Security:
+  - Add `check=True` flag to all subprocess calls (see also Ruff rule PLW1510). (!767)
+
+### Compatibility info
+
+- Qblox: `qblox-instruments==0.11.x` ([Cluster firmware v0.6.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.6.0)) and ([Cluster firmware v0.6.1](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.6.1))
+- ZI:    `zhinst==21.8.20515` `zhinst-qcodes==0.1.4` `zhinst-toolkit==0.1.5`
 
 ## 0.16.1 (2023-09-29)
 
@@ -61,6 +103,7 @@
 ### Merged branches and closed issues
 
 - Qblox backend - Fix missing signal on O2 and O4 outputs of baseband modules. (!803)
+- Documentation - Switch to `pydata-sphinx-theme`. (!778)
 
 ### Compatibility info
 

@@ -4,7 +4,7 @@
 
 1. Update `CHANGELOG.md`, `docs/tutorials/qblox/recent.md` and `README.md`:
     - [ ] Update `Unreleased` chapter title in `CHANGELOG.md` to `X.Y.Z (YYYY-MM-DD)`.
-       - Also update `Unreleased` title in `docs/tutorials/qblox/recent.md` (if present).
+      - Also update `Unreleased` title in `docs/source/reference/qblox/recent.md` (if present).
     - [ ] Order changelog alphabetically based on the key (secondary order of entries with same key can be kept as is): Key - Description
     - [ ] Add compatibility info, extract the versions from `pyproject.toml` and https://pypi.org/project/qblox-instruments/ (Qblox Cluster firmware):
       ```
