@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Release highlights
+
+### Breaking changes
+
+### Merged branches and closed issues
+
 ## 0.17.0 (2023-10-20)
 
 ### Release highlights
