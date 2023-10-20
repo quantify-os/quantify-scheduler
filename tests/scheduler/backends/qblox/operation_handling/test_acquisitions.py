@@ -3,6 +3,7 @@
 # pylint: disable=missing-module-docstring
 # pylint: disable=no-name-in-module
 # pylint: disable=redefined-outer-name
+# pylint: disable=too-many-lines
 # pylint: disable=unused-argument
 
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
@@ -599,7 +600,7 @@ def test_trace_acquisition_measurement_control(
     sched_gettable = ScheduleGettable(
         quantum_device=quantum_device,
         schedule_function=trace_schedule_circuit_layer,
-        schedule_kwargs=dict(qubit_name=q2.name),
+        schedule_kwargs={"qubit_name": q2.name},
         batched=True,
     )
 
@@ -758,45 +759,21 @@ def test_thresholded_acquisition_multiplex(
 
 
 def test_trigger_count_append(
-    mock_setup_basic_nv, make_cluster_component
-):  # pylint: disable=too-many-locals
-    hardware_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            "ref": "internal",
-            "instrument_type": "Cluster",
-            "cluster0_module3": {
-                "instrument_type": "QRM",
-                "real_input_0": {
-                    "portclock_configs": [
-                        {
-                            "port": "qe0:optical_readout",
-                            "clock": "qe0.ge0",
-                            "interm_freq": 50e6,
-                        },
-                    ],
-                },
-                "real_output_0": {
-                    "portclock_configs": [
-                        {
-                            "port": "qe0:optical_control",
-                            "clock": "qe0.ge0",
-                            "interm_freq": 0,
-                        }
-                    ],
-                },
-            },
-        },
-    }
-
+    mock_setup_basic_nv, make_cluster_component, hardware_cfg_trigger_count
+):
     # Setup objects needed for experiment
-    mock_setup = mock_setup_basic_nv
     ic_cluster0 = make_cluster_component("cluster0")
-    instr_coordinator = mock_setup["instrument_coordinator"]
-    instr_coordinator.add_component(ic_cluster0)
+    laser_red = MockLocalOscillator("laser_red")
+    ic_laser_red = GenericInstrumentCoordinatorComponent(laser_red)
+    ic_generic = GenericInstrumentCoordinatorComponent("generic")
 
-    quantum_device = mock_setup["quantum_device"]
-    quantum_device.hardware_config(hardware_cfg)
+    instr_coordinator = mock_setup_basic_nv["instrument_coordinator"]
+    instr_coordinator.add_component(ic_cluster0)
+    instr_coordinator.add_component(ic_laser_red)
+    instr_coordinator.add_component(ic_generic)
+
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg_trigger_count)
 
     # Define experiment schedule
     schedule = Schedule("test multiple measurements")
@@ -815,9 +792,6 @@ def test_trigger_count_append(
             "qe0", acq_index=2, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND
         )
     )
-
-    readout_clock0 = ClockResource(name="qe0.ge0", freq=50e6)
-    schedule.add_resource(readout_clock0)
 
     # Setup dummy acquisition data
     ic_cluster0.instrument.set_dummy_binned_acquisition_data(
@@ -856,46 +830,21 @@ def test_trigger_count_append(
 
 
 def test_trigger_count_append_gettables(
-    mock_setup_basic_nv, make_cluster_component
-):  # pylint: disable=too-many-locals
-    hardware_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            "ref": "internal",
-            "instrument_type": "Cluster",
-            "cluster0_module3": {
-                "instrument_type": "QRM",
-                "real_input_0": {
-                    "portclock_configs": [
-                        {
-                            "port": "qe0:optical_readout",
-                            "clock": "qe0.ge0",
-                            "interm_freq": 50e6,
-                        },
-                    ],
-                },
-                "real_output_0": {
-                    "portclock_configs": [
-                        {
-                            "port": "qe0:optical_control",
-                            "clock": "qe0.ge0",
-                            "interm_freq": 0,
-                        }
-                    ],
-                },
-            },
-        },
-    }
-
+    mock_setup_basic_nv, make_cluster_component, hardware_cfg_trigger_count
+):
     # Setup objects needed for experiment
-    mock_setup = mock_setup_basic_nv
     ic_cluster0 = make_cluster_component("cluster0")
-    instr_coordinator = mock_setup["instrument_coordinator"]
-    instr_coordinator.add_component(ic_cluster0)
+    laser_red = MockLocalOscillator("laser_red")
+    ic_laser_red = GenericInstrumentCoordinatorComponent(laser_red)
+    ic_generic = GenericInstrumentCoordinatorComponent("generic")
 
-    quantum_device = mock_setup["quantum_device"]
-    quantum_device.hardware_config(hardware_cfg)
-    quantum_device.instr_measurement_control("instrument_coordinator")
+    instr_coordinator = mock_setup_basic_nv["instrument_coordinator"]
+    instr_coordinator.add_component(ic_cluster0)
+    instr_coordinator.add_component(ic_laser_red)
+    instr_coordinator.add_component(ic_generic)
+
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg_trigger_count)
 
     # Define experiment schedule
     def _schedule_function(repetitions):
@@ -915,8 +864,6 @@ def test_trigger_count_append_gettables(
                 "qe0", acq_index=2, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND
             )
         )
-        readout_clock0 = ClockResource(name="qe0.ge0", freq=50e6)
-        schedule.add_resource(readout_clock0)
         return schedule
 
     # Setup dummy acquisition data
@@ -945,52 +892,27 @@ def test_trigger_count_append_gettables(
     instr_coordinator.remove_component("ic_cluster0")
 
 
-def test_trigger_count_average(mock_setup_basic_nv, make_cluster_component):
-    hardware_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            "ref": "internal",
-            "instrument_type": "Cluster",
-            "cluster0_module3": {
-                "instrument_type": "QRM",
-                "real_input_0": {
-                    "portclock_configs": [
-                        {
-                            "port": "qe0:optical_readout",
-                            "clock": "qe0.ge0",
-                            "interm_freq": 50e6,
-                        },
-                    ],
-                },
-                "real_output_0": {
-                    "portclock_configs": [
-                        {
-                            "port": "qe0:optical_control",
-                            "clock": "qe0.ge0",
-                            "interm_freq": 0,
-                        }
-                    ],
-                },
-            },
-        },
-    }
-
+def test_trigger_count_average(
+    mock_setup_basic_nv, make_cluster_component, hardware_cfg_trigger_count
+):  # pylint: disable=too-many-locals
     # Setup objects needed for experiment
-    mock_setup = mock_setup_basic_nv
     ic_cluster0 = make_cluster_component("cluster0")
-    instr_coordinator = mock_setup["instrument_coordinator"]
-    instr_coordinator.add_component(ic_cluster0)
+    laser_red = MockLocalOscillator("laser_red")
+    ic_laser_red = GenericInstrumentCoordinatorComponent(laser_red)
+    ic_generic = GenericInstrumentCoordinatorComponent("generic")
 
-    quantum_device = mock_setup["quantum_device"]
-    quantum_device.hardware_config(hardware_cfg)
+    instr_coordinator = mock_setup_basic_nv["instrument_coordinator"]
+    instr_coordinator.add_component(ic_cluster0)
+    instr_coordinator.add_component(ic_laser_red)
+    instr_coordinator.add_component(ic_generic)
+
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg_trigger_count)
 
     # Define experiment schedule
     schedule = Schedule("test multiple measurements")
     meas0 = Measure("qe0", acq_protocol="TriggerCount", bin_mode=BinMode.AVERAGE)
     schedule.add(meas0)
-
-    readout_clock0 = ClockResource(name="qe0.ge0", freq=50e6)
-    schedule.add_resource(readout_clock0)
 
     # Setup dummy acquisition data
     ic_cluster0.instrument.set_dummy_binned_acquisition_data(
@@ -1034,54 +956,28 @@ def test_trigger_count_average(mock_setup_basic_nv, make_cluster_component):
     instr_coordinator.remove_component("ic_cluster0")
 
 
-def test_trigger_count_average_gettables(mock_setup_basic_nv, make_cluster_component):
-    hardware_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            "ref": "internal",
-            "instrument_type": "Cluster",
-            "cluster0_module3": {
-                "instrument_type": "QRM",
-                "real_input_0": {
-                    "portclock_configs": [
-                        {
-                            "port": "qe0:optical_readout",
-                            "clock": "qe0.ge0",
-                            "interm_freq": 50e6,
-                        },
-                    ],
-                },
-                "real_output_0": {
-                    "portclock_configs": [
-                        {
-                            "port": "qe0:optical_control",
-                            "clock": "qe0.ge0",
-                            "interm_freq": 0,
-                        }
-                    ],
-                },
-            },
-        },
-    }
-
+def test_trigger_count_average_gettables(
+    mock_setup_basic_nv, make_cluster_component, hardware_cfg_trigger_count
+):
     # Setup objects needed for experiment
-    mock_setup = mock_setup_basic_nv
     ic_cluster0 = make_cluster_component("cluster0")
-    instr_coordinator = mock_setup["instrument_coordinator"]
-    instr_coordinator.add_component(ic_cluster0)
+    laser_red = MockLocalOscillator("laser_red")
+    ic_laser_red = GenericInstrumentCoordinatorComponent(laser_red)
+    ic_generic = GenericInstrumentCoordinatorComponent("generic")
 
-    quantum_device = mock_setup["quantum_device"]
-    quantum_device.hardware_config(hardware_cfg)
-    quantum_device.instr_measurement_control("instrument_coordinator")
+    instr_coordinator = mock_setup_basic_nv["instrument_coordinator"]
+    instr_coordinator.add_component(ic_cluster0)
+    instr_coordinator.add_component(ic_laser_red)
+    instr_coordinator.add_component(ic_generic)
+
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg_trigger_count)
 
     # Define experiment schedule
     def _schedule_function(repetitions):
         schedule = Schedule("test multiple measurements", repetitions=repetitions)
         meas0 = Measure("qe0", acq_protocol="TriggerCount", bin_mode=BinMode.AVERAGE)
         schedule.add(meas0)
-
-        readout_clock0 = ClockResource(name="qe0.ge0", freq=50e6)
-        schedule.add_resource(readout_clock0)
         return schedule
 
     # Setup dummy acquisition data
@@ -1274,12 +1170,12 @@ def test_multiple_trace_raises(
 
     # assert
     assert exc.value.args[0] == (
-        f"Both sequencer '1' and '0' "
-        f"of 'ic_cluster0_module3' attempts to perform scope mode acquisitions. "
-        f"Only one sequencer per device can "
-        f"trigger raw trace capture.\n\nPlease ensure that "
-        f"only one port-clock combination performs "
-        f"raw trace acquisition per instrument."
+        "Both sequencer '1' and '0' "
+        "of 'ic_cluster0_module3' attempts to perform scope mode acquisitions. "
+        "Only one sequencer per device can "
+        "trigger raw trace capture.\n\nPlease ensure that "
+        "only one port-clock combination performs "
+        "raw trace acquisition per instrument."
     )
 
     instr_coordinator.remove_component("ic_cluster0")
@@ -1388,109 +1284,6 @@ def test_same_index_in_module_and_cluster_measurement_error(
     instr_coordinator.remove_component("ic_cluster0")
 
 
-def test_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_nv):
-    hardware_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            "ref": "internal",
-            "instrument_type": "Cluster",
-            "cluster0_module3": {
-                "instrument_type": "QRM",
-                "real_output_0": {
-                    "lo_name": "laser_red",
-                    "mix_lo": False,
-                    "portclock_configs": [
-                        {
-                            "port": "qe0:optical_control",
-                            "clock": "qe0.ge0",
-                            "interm_freq": 200e6,
-                        },
-                    ],
-                },
-                "real_input_0": {
-                    "portclock_configs": [
-                        {
-                            "port": "qe0:optical_readout",
-                            "clock": "qe0.ge0",
-                            "interm_freq": 0,
-                        },  # todo add TTL params
-                    ],
-                },
-            },
-        },
-        "laser_red": {
-            "instrument_type": "LocalOscillator",
-            "frequency": None,
-            "power": 1,
-        },
-    }
-
-    # Setup objects needed for experiment
-    ic_cluster0 = make_cluster_component("cluster0")
-    laser_red = MockLocalOscillator("laser_red")
-    ic_laser_red = GenericInstrumentCoordinatorComponent(laser_red)
-    ic_generic = GenericInstrumentCoordinatorComponent("generic")
-    instr_coordinator = mock_setup_basic_nv["instrument_coordinator"]
-    instr_coordinator.add_component(ic_cluster0)
-    instr_coordinator.add_component(ic_laser_red)
-    instr_coordinator.add_component(ic_generic)
-
-    quantum_device = mock_setup_basic_nv["quantum_device"]
-    quantum_device.hardware_config(hardware_cfg)
-
-    qe0 = quantum_device.get_element("qe0")
-    qe0.measure.acq_delay(0)
-    qe0.measure.acq_duration(15e-6)
-    qe0.measure.pulse_duration(50e-6)
-
-    # Define experiment schedule
-    schedule = Schedule("test NV measurement with real output and input")
-    schedule.add(
-        Measure("qe0", acq_protocol="Trace")
-    )  # should be replaced by TriggerCount later.
-
-    # Generate compiled schedule
-    compiler = SerialCompiler(name="compiler")
-    compiled_sched = compiler.compile(
-        schedule=schedule, config=quantum_device.generate_compilation_config()
-    )
-
-    # Setup dummy acquisition data
-    dummy_scope_acquisition_data = DummyScopeAcquisitionData(
-        data=[(0, 1)] * 15000, out_of_range=(False, False), avg_cnt=(0, 0)
-    )
-    ic_cluster0.instrument.set_dummy_scope_acquisition_data(
-        slot_idx=3, sequencer=None, data=dummy_scope_acquisition_data
-    )
-
-    # Upload schedule and run experiment
-    instr_coordinator.prepare(compiled_sched)
-    instr_coordinator.start()
-    data = instr_coordinator.retrieve_acquisition()
-    instr_coordinator.stop()
-
-    # Assert intended behaviour
-    assert isinstance(data, Dataset)
-    expected_dataarray = DataArray(
-        [[1j] * 15000],
-        coords=[[0], range(15000)],
-        dims=["acq_index_0", "trace_index_0"],
-    )
-    expected_dataset = Dataset({0: expected_dataarray})
-    xr.testing.assert_equal(data, expected_dataset)
-    assert compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"][
-        "sequencers"
-    ]["seq1"]["connected_inputs"] == [0]
-    assert (
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"][
-            "sequencers"
-        ]["seq1"]["nco_en"]
-        == False
-    )
-
-    instr_coordinator.remove_component("ic_cluster0")
-
-
 def test_complex_input_hardware_cfg(make_cluster_component, mock_setup_basic_transmon):
     # for a transmon measurement now both input and output can be used to run it.
     # if we like to take these apart, dispersive_measurement should be adjusted.
@@ -1581,7 +1374,9 @@ def test_complex_input_hardware_cfg(make_cluster_component, mock_setup_basic_tra
     instr_coordinator.remove_component("ic_cluster0")
 
 
-def test_multi_real_input_hardware_cfg(make_cluster_component, mock_setup_basic_nv):
+def test_multi_real_input_hardware_cfg_trigger_count(
+    make_cluster_component, mock_setup_basic_nv
+):
     hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "cluster0": {

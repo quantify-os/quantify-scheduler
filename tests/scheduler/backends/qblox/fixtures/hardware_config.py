@@ -179,6 +179,46 @@ def hardware_cfg_rf_two_clusters():
 
 
 @pytest.fixture
+def hardware_cfg_trigger_count():
+    yield {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module3": {
+                "instrument_type": "QRM",
+                "real_input_0": {
+                    "lo_name": "laser_red",
+                    "mix_lo": False,
+                    "portclock_configs": [
+                        {
+                            "port": "qe0:optical_readout",
+                            "clock": "qe0.ge0",
+                            "interm_freq": 50e6,
+                            "ttl_acq_threshold": 0.5,
+                        },
+                    ],
+                },
+                "real_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "qe0:optical_control",
+                            "clock": "qe0.ge0",
+                            "interm_freq": 0,
+                        }
+                    ],
+                },
+            },
+        },
+        "laser_red": {
+            "instrument_type": "LocalOscillator",
+            "frequency": None,
+            "power": 1,
+        },
+    }
+
+
+@pytest.fixture
 def hardware_cfg_cluster_and_pulsar_latency_corrections():
     yield {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",

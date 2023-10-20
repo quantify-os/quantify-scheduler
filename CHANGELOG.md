@@ -49,7 +49,7 @@
 - Compilation, Qblox backend - Add `debug_mode` compilation config parameter to align the q1asm program (replaces the `align_qasm_fields` setting); set to `True` for diagnostic report (!822)
 - Compilation - Added an optional `reference_magnitude` parameter to `VoltageOffset` operations (!797)
 - Qblox backend - Improve compilation time for updating ports and clocks (!830)
-
+- Documentation - Use NV center context for Trigger count example in Tutorial: Acquisitions (!829)
 
 ## 0.16.1 (2023-09-29)
 

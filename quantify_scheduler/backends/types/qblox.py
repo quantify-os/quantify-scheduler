@@ -332,7 +332,8 @@ class SequencerSettings(DataClassJsonMixin):
 
     In the Qblox driver these settings are typically recognized by parameter names of
     the form ``"{module}.sequencer{index}.{setting}"`` (for allowed values see
-    https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/sequencer.html).
+    `Cluster QCoDeS parameters
+    <https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/sequencer.html#cluster-qcodes-parameters>`__).
     These settings are set once and will remain unchanged after, meaning that these
     correspond to the "slow" QCoDeS parameters and not settings that are changed
     dynamically by the sequencer.
@@ -388,7 +389,7 @@ class SequencerSettings(DataClassJsonMixin):
     ttl_acq_input_select: Optional[int] = None
     """Selects the input used to compare against the threshold value in the TTL trigger acquisition path."""
     ttl_acq_threshold: Optional[float] = None
-    """"Sets the threshold value with which to compare the input ADC values of the selected input path."""
+    """Sets the threshold value with which to compare the input ADC values of the selected input path."""
     ttl_acq_auto_bin_incr_en: Optional[bool] = None
     """Selects if the bin index is automatically incremented when acquiring multiple triggers."""
 
@@ -839,6 +840,9 @@ port that is connected to this port-clock combination.
 class SequencerOptions(DataStructure):
     """
     Configuration options for a sequencer.
+
+    For allowed values, also see `Cluster QCoDeS parameters
+    <https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/sequencer.html#cluster-qcodes-parameters>`__.
 
     .. admonition:: Example
         :class: dropdown

@@ -115,7 +115,7 @@
             "q5:res-q5.ro": 10
         },
         "sequencer_options": {
-            "q0:res-q0.ro": {
+            "qe0:optical_readout-qe0.ge0": {
                 "ttl_acq_threshold": 0.5
             }
         }

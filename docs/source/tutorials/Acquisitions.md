@@ -37,7 +37,7 @@ First, we set up the connection to the cluster and hardware configuration.
 ```{code-cell} ipython3
 ---
 mystnb:
-    remove_code_outputs: true
+  remove_code_outputs: true
 ---
 from quantify_core.data import handling as dh
 dh.set_datadir(dh.default_datadir())
@@ -144,7 +144,7 @@ The schedule is very simple, we transmit the pulse and then we start the trace a
 ```{code-cell} ipython3
 ---
 mystnb:
-    remove_code_outputs: true
+  remove_code_outputs: true
 ---
 from quantify_scheduler import Schedule
 from quantify_scheduler.operations.pulse_library import IdlePulse, DRAGPulse
@@ -177,9 +177,8 @@ schedule.add(
 ```
 
 ```{code-cell} ipython3
----
-tags: [remove-cell]
----
+:tags: [remove-cell]
+
 from qblox_instruments import DummyBinnedAcquisitionData, DummyScopeAcquisitionData
 import numpy as np
 from quantify_scheduler.waveforms import drag
@@ -271,7 +270,7 @@ We define a simple helper function that sends out the square pulse with `pulse_l
 ```{code-cell} ipython3
 ---
 mystnb:
-    remove_code_outputs: true
+  remove_code_outputs: true
 ---
 from quantify_scheduler import Schedule
 from quantify_scheduler.operations.pulse_library import IdlePulse, SquarePulse
@@ -314,9 +313,8 @@ pulse_and_acquisition(pulse_level=0.25j,  acq_channel=1, acq_index=1, schedule=s
 Notice, that the amplitude is double in the case of `acq_channel=1` compared to `acq_channel=0`. Also, the amplitude is complex: in case `acq_index_<acq_channel>=0` the amplitude is real, and in case `acq_index_<acq_channel>=1` the amplitude is imaginary.
 
 ```{code-cell} ipython3
----
-tags: [remove-cell]
----
+:tags: [remove-cell]
+
 from qblox_instruments import DummyBinnedAcquisitionData, DummyScopeAcquisitionData
 
 dummy_slot_idx = 1
@@ -426,9 +424,8 @@ pulse_and_acquisition(pulse_level=0.25,  acq_channel=0, acq_index=1, schedule=sc
 ```
 
 ```{code-cell} ipython3
----
-tags: [remove-cell]
----
+:tags: [remove-cell]
+
 from qblox_instruments import DummyBinnedAcquisitionData, DummyScopeAcquisitionData
 
 dummy_slot_idx = 1
@@ -488,7 +485,7 @@ As an example, we create a simple schedule using weighted integration below. The
 ```{code-cell} ipython3
 ---
 mystnb:
-    remove_code_outputs: true
+  remove_code_outputs: true
 ---
 from quantify_scheduler.operations.acquisition_library import (
     NumericalWeightedIntegrationComplex,
@@ -565,9 +562,8 @@ add_pulse_and_weighted_acquisition_to_schedule(
 Note that the lengths of the arrays are all 1000. With the specified sampling rate, this corresponds to an acquisition duration of 1 μs.
 
 ```{code-cell} ipython3
----
-tags: [remove-cell]
----
+:tags: [remove-cell]
+
 dummy_slot_idx = 1
 cluster.delete_dummy_binned_acquisition_data(slot_idx=dummy_slot_idx, sequencer=0)
 cluster.delete_dummy_binned_acquisition_data(slot_idx=dummy_slot_idx, sequencer=1)
@@ -677,9 +673,7 @@ schedule.add(
 ```
 
 ```{code-cell} ipython3
----
-tags: [remove-cell]
----
+:tags: [remove-cell]
 
 from scipy.stats import norm
 import numpy as np
@@ -711,13 +705,11 @@ dummy_data_0 = [
         for a, b in zip(i,q)
 ]
 cluster.set_dummy_binned_acquisition_data(slot_idx=dummy_slot_idx, sequencer=0, acq_index_name="0", data=dummy_data_0)
-
 ```
 
 Next, after compiling the schedule and retrieving the acquisitions from the hardware,
 
 ```{code-cell} ipython3
-
 compiler = SerialCompiler(name="compiler")
 compiled_schedule = compiler.compile(schedule=schedule, config=device.generate_compilation_config())
 
@@ -744,9 +736,8 @@ Where the two clusters of data correspond to the two qubit states of `q0`: {math
 To assign each cluster to one state, we can set the qubit parameters {attr}`BasicTransmonElement.measure.acq_threshold` and {attr}`BasicTransmonElement.measure.acq_rotation` and run the experiment with the `ThresholdedAcquisition` protocol.
 
 ```{code-cell} ipython3
----
-tags: ['remove-output']
----
+:tags: [remove-output]
+
 from quantify_scheduler.operations.acquisition_library import ThresholdedAcquisition
 
 # Set the threshold values
@@ -792,9 +783,8 @@ acquisition
 ```
 
 ```{code-cell} ipython3
----
-tags: ['remove-input']
----
+:tags: [remove-input]
+
 # qblox-instruments doesn't support retrieving dummy thresholded data yet.
 import xarray as xr
 array = np.concatenate((np.ones(100), np.zeros(100)))
@@ -802,6 +792,7 @@ np.random.shuffle(array)
 acquisition[0] = xr.DataArray(array.reshape((200,1)), dims=['repetitions', 'acq_index_0'])
 acquisition
 ```
+
 The retrieved dataset contains the integrated acquired results and contains in this case equal amounts of 0s and 1s (corresponding to the two clusters).
 
 ```{code-cell} ipython3
@@ -836,11 +827,61 @@ The trigger count protocol is currently only implemented for the Qblox backend.
 
 Note, the threshold is set via {class}`~quantify_scheduler.backends.types.qblox.SequencerOptions.ttl_acq_threshold` (see also {ref}`sec-qblox-sequencer-options-new`).
 
-#### Setting up the schedule
+#### Setup and schedule
 
 In this tutorial we will explain how **average bin mode** works in the {class}`~quantify_scheduler.operations.acquisition_library.TriggerCount` protocol (also see the introduction above).
 We create a schedule that consists of an acquisition operation that measures the trigger signals.
 In this tutorial we assume trigger signals are generated from an external source (we do not generate these from the control hardware).
+
+```{code-cell} ipython3
+---
+mystnb:
+  remove_code_outputs: true
+---
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
+from quantify_scheduler.helpers.mock_instruments import MockLocalOscillator
+from quantify_scheduler.instrument_coordinator.components.generic import GenericInstrumentCoordinatorComponent
+
+nv_device = QuantumDevice(name="nv_device")
+qe0 = BasicElectronicNVElement("qe0")
+qe0.clock_freqs.ge0.set(470.4e12)
+nv_device.add_element(qe0)
+nv_device.instr_instrument_coordinator("instrument_coordinator")
+
+laser_red = MockLocalOscillator("laser_red")
+ic_laser_red = GenericInstrumentCoordinatorComponent(laser_red)
+instrument_coordinator.add_component(ic_laser_red)
+
+hardware_cfg_trigger_count = {
+    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "cluster0": {
+        "ref": "internal",
+        "instrument_type": "Cluster",
+        "cluster0_module1": {
+            "instrument_type": "QRM",
+            "real_input_0": {
+                "lo_name": "laser_red",
+                "mix_lo": False,
+                "portclock_configs": [
+                    {
+                        "port": "qe0:optical_readout",
+                        "clock": "qe0.ge0",
+                        "interm_freq": 50e6,
+                        "ttl_acq_threshold": 0.5,
+                    },
+                ],
+            },
+        },
+    },
+    "laser_red": {
+        "instrument_type": "LocalOscillator",
+        "frequency": None,
+        "power": 1,
+    },
+}
+nv_device.hardware_config(hardware_cfg_trigger_count)
+```
 
 The hardware should run the trigger count acquisition 3 times, and the schedule contains one trigger count acquisition, we therefore set `repetitions=3` for the schedule.
 The input signals are the following: the first time the schedule runs there are 3 trigger signals, the second time there is 1 trigger signal, and third time there is again 1 trigger signal.
@@ -848,7 +889,7 @@ The input signals are the following: the first time the schedule runs there are 
 ```{code-cell} ipython3
 ---
 mystnb:
-    remove_code_outputs: true
+  remove_code_outputs: true
 ---
 from quantify_scheduler import Schedule
 from quantify_scheduler.operations.pulse_library import IdlePulse, SquarePulse
@@ -862,24 +903,24 @@ schedule.add(IdlePulse(duration=1e-6))
 
 schedule.add(
     TriggerCount(
-        t0=time_of_flight,
+        t0=0,
         duration=acq_duration,
-        port="q1:res",
-        clock="q1.ro",
+        port="qe0:optical_readout",
+        clock="qe0.ge0",
         acq_channel=0,
         bin_mode=BinMode.AVERAGE,
     )
 )
 ```
+
 It's important in using {class}`~quantify_scheduler.operations.acquisition_library.TriggerCount` acquisitions that the acquisition channel is identical for all acquisitions in a schedule,
 leading to a single distribution in case of average bin mode (and a single list in case of append bin mode).
 In this example, if instead there would be 3 acquisitions in the schedule, and all of the acquisition channels were different and then only running the schedule once,
 we would get 3 separate distributions (one per acquisition channel).
 
 ```{code-cell} ipython3
----
-tags: [remove-cell]
----
+:tags: [remove-cell]
+
 from qblox_instruments import DummyBinnedAcquisitionData, DummyScopeAcquisitionData
 
 dummy_slot_idx = 1
@@ -899,7 +940,7 @@ Let's compile the schedule.
 from quantify_scheduler.backends import SerialCompiler
 
 compiler = SerialCompiler(name="compiler")
-compiled_schedule = compiler.compile(schedule=schedule, config=device.generate_compilation_config())
+compiled_schedule = compiler.compile(schedule=schedule, config=nv_device.generate_compilation_config())
 ```
 
 #### Running the schedule, retrieving acquisition
@@ -930,9 +971,8 @@ Let's see what is the effect of modifying the amplitude of the acquisition pulse
 Let's set up the time of flight as before, but now on the {class}`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice`, and set up the amplitude of the acquisition pulse, which is a square pulse in this case.
 
 ```{code-cell} ipython3
----
-tags: [remove-cell]
----
+:tags: [remove-cell]
+
 device.remove_element("q0")
 transmon0.close()
 ```
@@ -971,7 +1011,7 @@ The qubit is now set up, and we can create the schedule.
 ```{code-cell} ipython3
 ---
 mystnb:
-    remove_code_outputs: true
+  remove_code_outputs: true
 ---
 from quantify_scheduler import Schedule
 from quantify_scheduler.operations.pulse_library import IdlePulse
@@ -988,9 +1028,8 @@ schedule.add(
 ```
 
 ```{code-cell} ipython3
----
-tags: [remove-cell]
----
+:tags: [remove-cell]
+
 from qblox_instruments import DummyBinnedAcquisitionData, DummyScopeAcquisitionData
 
 dummy_slot_idx = 1
@@ -1034,9 +1073,8 @@ Notice, that the result is only one number at `acq_channel=2`.
 Let's see what the effect on the measurement is if we double the pulse amplitude of the readout pulse
 
 ```{code-cell} ipython3
----
-tags: [remove-cell]
----
+:tags: [remove-cell]
+
 device.remove_element("q0")
 ```
 
@@ -1048,9 +1086,8 @@ device.add_element(transmon0)
 The amplitude of the read-out pulse is now `0.25`, double what it was.
 
 ```{code-cell} ipython3
----
-tags: [remove-cell]
----
+:tags: [remove-cell]
+
 from qblox_instruments import DummyBinnedAcquisitionData, DummyScopeAcquisitionData
 
 dummy_slot_idx = 1
