@@ -17,7 +17,7 @@ kernelspec:
 Complex schedules can be constructed from pulses, gates and schedules using control flow. When adding an Operation or Schedule to another Schedule, a `control_flow` argument can be specified.
 
 (sec-control-flow-subschedule)=
-## Adding schedules to a schedule
+## Adding schedules to a schedule ("subschedules")
 
 - Supported by {mod}`Qblox <quantify_scheduler.backends.qblox>` and
   {mod}`Zurich Instruments <quantify_scheduler.backends.zhinst>` backends.
@@ -84,10 +84,11 @@ Hardware averaging works as expected. In `BinMode.APPEND` binning mode, the data
 Loops are an experimental feature and come with several limitations at this time, see below.
 ```
 
-Limitations:
-1. The time order for zero-duration assembly instructions may be incorrect, so verify the compiled schedule (via the generated assembly code). Using loops to implement sequential averaging for qubit spectroscopy is verified to work as expected. Known issues occur in using `SetClockFrequency` and `SquarePulse` with duration > 1us at the beginning or end of a loop, for example:
+### Limitations
+1. The time order for zero-duration assembly instructions with the same timing may be incorrect, so verify the compiled schedule (via the generated assembly code). Using loops to implement sequential averaging for qubit spectroscopy is verified to work as expected. Known issues occur in using `SetClockFrequency` and `SquarePulse` with duration > 1us at the beginning or end of a loop, for example:
 ```{code-cell} ipython3
 from quantify_scheduler.operations.pulse_library import SquarePulse
+
 schedule = Schedule("T1")
 schedule.add(
     SquarePulse(
@@ -106,4 +107,30 @@ schedule = Schedule("T1")
 x = schedule.add(X("q0"), control_flow=Loop(3))
 schedule.add(Y90("q1"), ref_op=x, ref_pt="start", rel_time=0)
 ```
-3. To avoid unexpected timing issues, it is strongly recommended to use loops only with subschedules, with no operations overlapping with the subschedule.
+### Safe use with the limitations
+To avoid the limitations mentioned above, it is strongly recommended to use loops only with subschedules, with no operations overlapping with the subschedule. Adding wait times before and after loops ensures that everything works as expected:
+```{code-cell} ipython3
+from quantify_scheduler.operations.pulse_library import IdlePulse, SquarePulse
+
+inner_schedule = Schedule("inner")
+inner_schedule.add(IdlePulse(16e-9))
+# anything can go here
+inner_schedule.add(
+    SquarePulse(
+        amp=0.3,
+        phase=0,
+        port="q0:res",
+        duration=2e-6,
+        clock="q0.ro",
+    )
+)
+# End the inner schedule with a wait time
+inner_schedule.add(IdlePulse(16e-9))
+
+outer_schedule = Schedule("outer")
+# anything can go here
+outer_schedule.add(IdlePulse(16e-9))
+outer_schedule.add(inner_schedule, control_flow = Loop(5))
+outer_schedule.add(IdlePulse(16e-9))
+# anything can go here
+```
