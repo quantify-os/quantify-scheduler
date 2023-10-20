@@ -47,6 +47,8 @@
 - Operations - Adjust pulse info and acquisition info definitions to take class name (!809)
 - Documentation - Update the deprecated code suggestions table (!815)
 - Compilation - Added an optional `reference_magnitude` parameter to `VoltageOffset` operations (!797)
+- Qblox backend - Improve compilation time for updating ports and clocks (!830)
+
 
 ## 0.16.1 (2023-09-29)
 

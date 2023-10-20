@@ -9,6 +9,7 @@ import pytest
 from quantify_scheduler.backends.qblox import q1asm_instructions
 from quantify_scheduler.backends.qblox.instrument_compilers import QrmRfModule
 from quantify_scheduler.backends.types.qblox import OpInfo
+from quantify_scheduler.backends.qblox.compiler_abc import QbloxBaseModule
 
 
 DEFAULT_PORT = "q0:res"
@@ -166,3 +167,59 @@ def test_no_parameter_update(op_list: List[OpInfo]):
     assert len(component._pulses[(DEFAULT_PORT, DEFAULT_CLOCK)]) == 3
     for op in component._pulses[(DEFAULT_PORT, DEFAULT_CLOCK)]:
         assert op.name != "UpdateParameters"
+
+
+@pytest.mark.parametrize(
+    "sorted_pulses_and_acqs, op_index, expected",
+    [
+        (
+            [
+                OpInfo(name="", data={}, timing=1 - 1e-9),
+                OpInfo(name="", data={}, timing=1),
+                OpInfo(name="", data={}, timing=1 + 1e-9),
+                OpInfo(name="", data={}, timing=1 + 1.5e-9),
+            ],
+            1,
+            False,
+        ),
+        (
+            [
+                OpInfo(name="", data={}, timing=1 - 1e-9),
+                OpInfo(name="", data={}, timing=1),
+                OpInfo(name="", data={}, timing=1 + 1e-9),
+                OpInfo(name="", data={"acq_channel": 0}, timing=1 + 1.5e-9),
+            ],
+            1,
+            True,
+        ),
+        (
+            [
+                OpInfo(name="", data={"acq_channel": 0}, timing=1 - 1.5e-9),
+                OpInfo(name="", data={}, timing=1 - 1e-9),
+                OpInfo(name="", data={}, timing=1),
+                OpInfo(name="", data={}, timing=1 + 1e-9),
+            ],
+            2,
+            True,
+        ),
+        (
+            [
+                OpInfo(name="", data={}, timing=1 - 1e-9),
+                OpInfo(name="", data={}, timing=1),
+                OpInfo(name="", data={}, timing=1 + 1e-9),
+                OpInfo(name="", data={"acq_channel": 0}, timing=1 + 2.5e-9),
+            ],
+            1,
+            False,
+        ),
+    ],
+)
+def test_any_other_updating_instruction_at_timing(
+    sorted_pulses_and_acqs: List[OpInfo], op_index: int, expected: bool
+):
+    assert (
+        QbloxBaseModule._any_other_updating_instruction_at_timing(
+            op_index=op_index, sorted_pulses_and_acqs=sorted_pulses_and_acqs
+        )
+        == expected
+    )

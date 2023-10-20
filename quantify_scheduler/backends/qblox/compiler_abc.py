@@ -1698,24 +1698,50 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             )
             self._pulses[portclock] += upd_params
 
+    @staticmethod
+    def _any_other_updating_instruction_at_timing(
+        op_index: int, sorted_pulses_and_acqs: List[OpInfo]
+    ) -> bool:
+        op = sorted_pulses_and_acqs[op_index]
+
+        def iterate_other_ops(iterate_range) -> bool:
+            for other_op_index in iterate_range:
+                other_op = sorted_pulses_and_acqs[other_op_index]
+                if not helpers.is_within_half_grid_time(other_op.timing, op.timing):
+                    break
+                if other_op.is_real_time_io_operation:
+                    return True
+            return False
+
+        # Check all other operations behind the operation with op_index
+        # whether they're within half grid time
+        if iterate_other_ops(iterate_range=range(op_index - 1, -1, -1)):
+            return True
+        # Check all other operations in front of the operation with op_index
+        # whether they're within half grid time
+        if iterate_other_ops(
+            iterate_range=range(op_index + 1, len(sorted_pulses_and_acqs))
+        ):
+            return True
+
+        return False
+
     def _new_update_parameters_for_port_clock(
         self,
         pulses_and_acqs: List[OpInfo],
     ) -> List[OpInfo]:
-        def any_other_updating_instruction_at_timing(timing: float) -> bool:
-            return any(
-                helpers.is_within_half_grid_time(op.timing, timing)
-                and op.is_real_time_io_operation
-                for op in pulses_and_acqs
-            )
+        pulses_and_acqs.sort(key=lambda op: op.timing)
 
         # Collect all (port, clock, time) triples where an upd_param needs to be
         # inserted
         upd_param_infos: Set[Tuple[str, str, float]] = set()
-        for op in pulses_and_acqs:
+        for op_index, op in enumerate(pulses_and_acqs):
             if op.is_offset_instruction and not (
+                # Due to the repetition loop, do not insert at the end of the schedule
                 helpers.is_within_half_grid_time(self.total_play_time, op.timing)
-                or any_other_updating_instruction_at_timing(op.timing)
+                or self._any_other_updating_instruction_at_timing(
+                    op_index=op_index, sorted_pulses_and_acqs=pulses_and_acqs
+                )
             ):
                 upd_param_infos.add(
                     (op.data["port"], op.data["clock"], round(op.timing, ndigits=9))
