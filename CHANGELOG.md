@@ -16,7 +16,7 @@
   - Subschedules & repetition loops
     - A schedule can now be added to a schedule just like an operation.
     - Looping of an operation via new `control_flow` argument in `Schedule.add`.
-    - Various limitations apply, please consult the documentation: [Reference guide: Control flow] (https://quantify-os.org/docs/quantify-scheduler/latest/reference/control_flow.html).
+    - Various limitations apply, please consult the documentation: [Reference guide: Control flow](https://quantify-os.org/docs/quantify-scheduler/latest/reference/control_flow.html).
     - Also, currently plotting and timing table is not working:
       - Subschedules: circuit diagram does not work,
       - Repetition loops: not shown in circuit diagram, timing table does not work.
@@ -27,7 +27,7 @@
 - Qblox backend improvements
   - Schedule compilation time decreased by 30-75%!
 - Documentation
-  -  We have moved to: https://quantify-os.org/docs/quantify-scheduler
+  -  We have moved to: https://quantify-os.org/docs/quantify-scheduler.
   - https://quantify-quantify-scheduler.readthedocs-hosted.com will be permanently redirected to the new location.
 
 ### Breaking changes
@@ -98,8 +98,15 @@
 
 ### Compatibility info
 
-- Qblox: `qblox-instruments==0.11.x` ([Cluster firmware v0.6.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.6.0)) and ([Cluster firmware v0.6.1](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.6.1))
-- ZI:    `zhinst==21.8.20515` `zhinst-qcodes==0.1.4` `zhinst-toolkit==0.1.5`
+**Qblox**
+
+| quantify-scheduler |                      qblox-instruments                       |                               Cluster firmware                                |
+|--------------------|:------------------------------------------------------------:|:-----------------------------------------------------------------------------:|
+| v0.17.0            | [0.11.1](https://pypi.org/project/qblox-instruments/0.11.1/) | [0.6.1](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.6.1) |
+|                    | [0.11.0](https://pypi.org/project/qblox-instruments/0.11.0/) | [0.6.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.6.0) |
+
+**Zurich Instruments**
+- `zhinst==21.8.20515`, `zhinst-qcodes==0.1.4`, `zhinst-toolkit==0.1.5`
 
 ## 0.16.1 (2023-09-29)
 
