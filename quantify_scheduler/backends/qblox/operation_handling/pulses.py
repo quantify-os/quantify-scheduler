@@ -8,7 +8,6 @@ import logging
 from typing import Any, Dict, Optional
 
 import numpy as np
-import math
 
 from quantify_scheduler.backends.qblox import constants, helpers, q1asm_instructions
 from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
@@ -147,18 +146,20 @@ class GenericPulseStrategy(PulseStrategyPartial):
                 f" marked as real.\n\nException caused by {repr(op_info)}."
             )
 
+        non_null = lambda amp: abs(amp) >= 2 / constants.IMMEDIATE_SZ_GAIN
+
         idx_real = (
             helpers.add_to_wf_dict_if_unique(
                 wf_dict=wf_dict, waveform=waveform_data.real
             )
-            if (not math.isclose(amp_real, 0.0))
+            if non_null(amp_real)
             else None
         )
         idx_imag = (
             helpers.add_to_wf_dict_if_unique(
                 wf_dict=wf_dict, waveform=waveform_data.imag
             )
-            if (not math.isclose(amp_imag, 0.0))
+            if non_null(amp_imag)
             else None
         )
 

@@ -12,6 +12,7 @@ import copy
 import itertools
 import json
 import logging
+import math
 import os
 import re
 import warnings
@@ -63,13 +64,14 @@ from quantify_scheduler.operations.acquisition_library import (
     ThresholdedAcquisition,
     Trace,
 )
-from quantify_scheduler.operations.pulse_factories import long_square_pulse
-from quantify_scheduler.operations.stitched_pulse import StitchedPulseBuilder
-from quantify_scheduler.operations.gate_library import Measure, Reset, X, X90, Y
+from quantify_scheduler.operations.control_flow_library import Loop
+from quantify_scheduler.operations.gate_library import X90, Measure, Reset, X, Y
 from quantify_scheduler.operations.operation import Operation
+from quantify_scheduler.operations.pulse_factories import long_square_pulse
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     IdlePulse,
+    NumericalPulse,
     RampPulse,
     ReferenceMagnitude,
     SetClockFrequency,
@@ -77,7 +79,7 @@ from quantify_scheduler.operations.pulse_library import (
     SoftSquarePulse,
     SquarePulse,
 )
-from quantify_scheduler.operations.control_flow_library import Loop
+from quantify_scheduler.operations.stitched_pulse import StitchedPulseBuilder
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.schedules.timedomain_schedules import (
     allxy_sched,
@@ -4258,3 +4260,71 @@ set_awg_offs 9830,0
             sched, config=compile_config_basic_transmon_qblox_hardware
         )
         self.compare_sequence(compiled, reference, "qrm")
+
+
+@pytest.mark.parametrize("scaling_factor", [0.999, 1])
+@pytest.mark.parametrize("low_amp_path", ("I", "Q"))
+@pytest.mark.parametrize("gain", [-11, -2, 0, 1, 2, 14])
+def test_very_low_amp_paths(
+    scaling_factor,
+    low_amp_path,
+    gain,
+    dummy_cluster,
+    compile_config_basic_transmon_qblox_hardware,
+):
+    # ------------------------ build schedule
+    sched = Schedule("Low_amp_test", repetitions=1)
+    dur = 201
+    y = np.linspace(0, 1, dur)
+    m = 2 / (pow(2, 16) - 1)  # absolute tolerance (threshold)
+    t = np.arange(dur) * 1e-9
+
+    if low_amp_path == "Q":
+        sched.add(
+            NumericalPulse(
+                samples=y + np.asarray([scaling_factor * gain * m] * dur) * 1j,
+                t_samples=t,
+                port="q0:mw",
+                clock="q0.01",
+            )
+        )
+    elif low_amp_path == "I":
+        sched.add(
+            NumericalPulse(
+                samples=y * 1j + np.asarray([scaling_factor * gain * m] * dur),
+                t_samples=t,
+                port="q0:mw",
+                clock="q0.01",
+            )
+        )
+    # ------------------------ compile schedule
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        sched, compile_config_basic_transmon_qblox_hardware
+    )
+    cluster = dummy_cluster()
+    qcm_name = f"{cluster.name}_module2"
+    compiled_instructions = compiled_sched["compiled_instructions"][cluster.name][
+        qcm_name
+    ]["sequencers"]["seq0"]["sequence"]
+
+    seq_instructions = compiled_instructions["program"].splitlines()
+
+    # ------------------------ test
+    low_amp_path_gain = math.floor(scaling_factor * abs(gain))
+    suppressed_waveform = low_amp_path_gain == 0
+    assert len(compiled_instructions["waveforms"]) == (1 if suppressed_waveform else 2)
+
+    if low_amp_path == "Q":
+        assert re.search(
+            rf"^\s*set_awg_gain\s+32603,{low_amp_path_gain}\s*", seq_instructions[8]
+        )
+
+    elif low_amp_path == "I":
+        assert re.search(
+            rf"^\s*set_awg_gain\s+{low_amp_path_gain},32603\s*", seq_instructions[8]
+        )
+
+    assert re.search(
+        rf"^\s*play\s+0,{0 if suppressed_waveform else 1},4\s*", seq_instructions[9]
+    )

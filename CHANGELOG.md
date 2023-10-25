@@ -8,6 +8,8 @@
 
 ### Merged branches and closed issues
 
+- Qblox backend - Absolute amplitude tolerance of waveform index suppression set to `2/constants.IMMEDIATE_SZ_GAIN` which prevents uploading of all gain-zero waveforms. (!842)
+
 ## 0.17.0 (2023-10-20)
 
 ### Release highlights
