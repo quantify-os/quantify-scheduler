@@ -153,6 +153,7 @@ html_theme_options: Dict[str, Any] = {
         "image_light": "QUANTIFY_SCHEDULER_FLAT.svg",
         "image_dark": "QUANTIFY_SCHEDULER_FLAT_DM.svg",
     },
+    "navigation_with_keys": False,
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
