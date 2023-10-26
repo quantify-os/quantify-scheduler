@@ -9,6 +9,7 @@ import sys
 import traceback
 import zipfile
 from datetime import datetime
+from os.path import dirname
 from types import TracebackType
 from typing import Any, Dict, Optional, Tuple, Type, Union
 from uuid import uuid4
@@ -17,8 +18,18 @@ import numpy as np
 import pytz
 from qcodes.utils.json_utils import NumpyJSONEncoder
 
+try:
+    import tomllib  # type: ignore[reportMissingImports]
+except ModuleNotFoundError:
+    import tomli as tomllib
+
+import pkg_resources
+from packaging.specifiers import SpecifierSet
+
+from quantify_core._version import __version__ as __core_version__
 from quantify_core.data.handling import get_datadir, snapshot
 from quantify_scheduler import CompiledSchedule, Schedule
+from quantify_scheduler._version import __version__ as __scheduler_version__
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
@@ -66,6 +77,30 @@ def _generate_diagnostics_report(  # noqa: PLR0915
                 ] = value
         return extracted_hw_logs
 
+    def _get_dependency_versions() -> list:
+        package_root = dirname(dirname(os.path.realpath(__file__)))
+        pyproject_path = os.path.join(dirname(package_root), "pyproject.toml")
+
+        with open(pyproject_path, "rb") as pyproject_file:
+            pyproject_data = tomllib.load(pyproject_file)
+
+        all_dependency_versions = []
+        for dependency in pyproject_data["project"]["dependencies"]:
+            version = (
+                __core_version__
+                if dependency == "quantify-core"
+                else pkg_resources.get_distribution(dependency).version
+            )
+            all_dependency_versions.append(f"{dependency}: {version}")
+
+        python_specs = SpecifierSet(pyproject_data["project"]["requires-python"])
+        python_version = sys.version.split(" ")[0]
+        all_dependency_versions.append(f"python{python_specs}: {python_version}")
+
+        all_dependency_versions.append(f"quantify-scheduler: {__scheduler_version__}")
+
+        return sorted(all_dependency_versions)
+
     report_type = "failed_initialization"
 
     connection_exception = None
@@ -100,6 +135,9 @@ def _generate_diagnostics_report(  # noqa: PLR0915
         zip_file.writestr(
             "timestamp.txt",
             timestamp.strftime("%Y-%m-%d %H:%M:%S %Z%z"),
+        )
+        zip_file.writestr(
+            "dependency_versions.json", json.dumps(_get_dependency_versions())
         )
         zip_file.writestr(
             "gettable.json", json.dumps(gettable_config, cls=NumpyJSONEncoder, indent=4)

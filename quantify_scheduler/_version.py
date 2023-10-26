@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
-# This file is part of 'miniver': https://github.com/jbweston/miniver
+# Code in this file based on 'miniver': https://github.com/jbweston/miniver
 #
-from collections import namedtuple
 import os
+from collections import namedtuple
 
 Version = namedtuple("Version", ("release", "dev", "labels"))
 

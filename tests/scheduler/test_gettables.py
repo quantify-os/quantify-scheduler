@@ -7,14 +7,15 @@
 
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
+import json
+import os
+import zipfile
 from unittest import TestCase
 from unittest.mock import Mock, MagicMock
 
-import json
-import os
 import numpy as np
 import pytest
-import zipfile
+from packaging.requirements import Requirement
 from qblox_instruments import ClusterType
 from qcodes.instrument.parameter import ManualParameter
 from xarray import DataArray, Dataset
@@ -634,6 +635,7 @@ def test_initialize_and_get_with_report_failed_initialization__qblox(
     assert "failed_initialization" in os.path.basename(report_zipfile)
 
     with zipfile.ZipFile(report_zipfile, mode="r") as zf:
+        dependency_versions = json.loads(zf.read("dependency_versions.json").decode())
         q2_cfg_report = json.loads(zf.read("device_elements/q2.json"))
         gettable_cfg_report = json.loads(zf.read("gettable.json").decode())
         hardware_cfg_report = json.loads(zf.read("hardware_cfg.json").decode())
@@ -649,6 +651,19 @@ def test_initialize_and_get_with_report_failed_initialization__qblox(
             zf.read(f"{cluster_name}/{cluster_name}_cmm_app_log.txt").decode()
         with pytest.raises(KeyError):
             zf.read("connection_error_trace.txt").decode()
+
+    parsed_dependencies = [
+        Requirement(line.split(":")[0]).name for line in dependency_versions
+    ]
+
+    for dependency in [
+        "python",
+        "quantify-scheduler",
+        "quantify-core",
+        "qblox-instruments",
+        "numpy",
+    ]:
+        assert dependency in parsed_dependencies
 
     assert q2_cfg_report["data"]["rxy"]["amp180"] == 0.213
 
@@ -795,6 +810,7 @@ def test_initialize_and_get_with_report_failed_exp__qblox(
     assert "failed_exp" in os.path.basename(report_zipfile)
 
     with zipfile.ZipFile(report_zipfile, mode="r") as zf:
+        json.loads(zf.read("dependency_versions.json").decode())
         json.loads(zf.read("device_elements/q2.json"))
         json.loads(zf.read("gettable.json").decode())
         json.loads(zf.read("hardware_cfg.json").decode())
@@ -885,6 +901,7 @@ def test_initialize_and_get_with_report_completed_exp__qblox(
     assert "completed_exp" in os.path.basename(report_zipfile)
 
     with zipfile.ZipFile(report_zipfile, mode="r") as zf:
+        json.loads(zf.read("dependency_versions.json").decode())
         json.loads(zf.read("device_elements/q2.json"))
         json.loads(zf.read("gettable.json").decode())
         json.loads(zf.read("hardware_cfg.json").decode())
@@ -963,6 +980,7 @@ def test_initialize_and_get_with_report_failed_hw_log_retrieval__qblox(
     assert "failed_hw_log_retrieval" in os.path.basename(report_zipfile)
 
     with zipfile.ZipFile(report_zipfile, mode="r") as zf:
+        json.loads(zf.read("dependency_versions.json").decode())
         json.loads(zf.read("device_elements/q2.json"))
         json.loads(zf.read("gettable.json").decode())
         json.loads(zf.read("hardware_cfg.json").decode())
@@ -1032,6 +1050,7 @@ def test_initialize_and_get_with_report_failed_connection_to_hw__qblox(
     assert "failed_connection_to_hw" in os.path.basename(report_zipfile)
 
     with zipfile.ZipFile(report_zipfile, mode="r") as zf:
+        json.loads(zf.read("dependency_versions.json").decode())
         json.loads(zf.read("device_elements/q2.json"))
         json.loads(zf.read("gettable.json").decode())
         json.loads(zf.read("hardware_cfg.json").decode())
