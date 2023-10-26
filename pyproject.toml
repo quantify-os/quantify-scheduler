@@ -73,6 +73,9 @@ test = [
 ]
 
 docs = [
+    # astroid only added to prevent to sphinx-autoapi error AttributeError: 'Module' object has no attribute 'doc' (!838)
+    # (solvable by sphinx-autoapi>=3, see https://stackoverflow.com/q/77257145, but requires sphinx>=6.2 while latest myst-nb-0.17.2 requires sphinx<6)
+    "astroid<3.0",
     "jupyter_sphinx>=0.4.0",
     "jupytext",
     "sphinx",
