@@ -6,6 +6,9 @@
 
 ### Breaking changes
 
+- QuantumDevice - Revert !813: `ManualParameter` `elements` and `edges` have been changed back from `dict` to `list` (!846)
+  - The change broke serialization/deserialization of QuantumDevice via snapshot, see #452
+
 ### Merged branches and closed issues
 
 - Gettable - Include quantify dependency versions in the diagnostics report (`ScheduleGettable.initialize_and_get_with_report`). (!832)

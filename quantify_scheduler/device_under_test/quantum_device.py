@@ -54,20 +54,19 @@ class QuantumDevice(Instrument):
 
         self.elements = ManualParameter(
             "elements",
-            initial_value=dict(),
-            vals=validators.Dict(),
-            docstring="A dictionary with the names of all elements located on this"
-            "QuantumDevice as keys and the corresponding `DeviceElement` objects as values.",
+            initial_value=list(),
+            vals=validators.Lists(validators.Strings()),
+            docstring="A list containing the names of all elements that"
+            " are located on this QuantumDevice.",
             instrument=self,
         )
 
         self.edges = ManualParameter(
             "edges",
-            initial_value=dict(),
-            vals=validators.Dict(),
-            docstring="A dictionary with the names of all the edges which connect the"
-            " `DeviceElement`s within this QuantumDevice as keys and the corresponding"
-            " `Edge` objects as values.",
+            initial_value=list(),
+            vals=validators.Lists(validators.Strings()),
+            docstring="A list containing the names of all the edges which connect the"
+            " DeviceElements within this QuantumDevice",
             instrument=self,
         )
 
@@ -365,14 +364,8 @@ class QuantumDevice(Instrument):
             If key `name` is not present in `self.elements`.
         """
         if name in self.elements():
-            element = self.elements()[name]
-            if not Instrument.is_valid(element):
-                raise ValueError(
-                    f"{element} of {self.name} is not a valid device element."
-                    f" Please re-create and re-add it."
-                )
-            return element
-        raise KeyError(f"'{name}' is not an element of {self.name}.")
+            return self.find_instrument(name)
+        raise KeyError(f"'{name}' is not a element of {self.name}.")
 
     def add_element(
         self,
@@ -394,14 +387,12 @@ class QuantumDevice(Instrument):
             If :code:`element` is not an instance of the base element.
         """
         if element.name in self.elements():
-            if Instrument.is_valid(self.elements()[element.name]):
-                # Only raise an error if the element is still valid
-                raise ValueError(f"'{element.name}' has already been added.")
+            raise ValueError(f"'{element.name}' has already been added.")
 
         if not isinstance(element, DeviceElement):
             raise TypeError(f"{repr(element)} is not a DeviceElement.")
 
-        self.elements()[element.name] = element  # dict gets updated in place
+        self.elements().append(element.name)  # list gets updated in place
 
     def remove_element(self, name: str) -> None:
         """
@@ -413,7 +404,7 @@ class QuantumDevice(Instrument):
             The element name.
         """
 
-        self.elements().pop(name)  # dict gets updated in place
+        self.elements().remove(name)  # list gets updated in place
 
     def get_edge(self, name: str) -> Instrument:
         """
@@ -435,14 +426,8 @@ class QuantumDevice(Instrument):
             If key `name` is not present in `self.edges`.
         """
         if name in self.edges():
-            edge = self.edges()[name]
-            if not Instrument.is_valid(edge):
-                raise ValueError(
-                    f"{edge} of {self.name} is not a valid edge."
-                    f" Please re-create and re-add it."
-                )
-            return edge
-        raise KeyError(f"'{name}' is not an edge of {self.name}.")
+            return self.find_instrument(name)
+        raise KeyError(f"'{name}' is not a edge of {self.name}.")
 
     def add_edge(self, edge: Edge) -> None:
         """
@@ -455,14 +440,12 @@ class QuantumDevice(Instrument):
             'element_0'-'element_1'
         """
         if edge.name in self.edges():
-            if Instrument.is_valid(self.edges()[edge.name]):
-                # Only raise an error if the edge is still valid
-                raise ValueError(f"'{edge.name}' has already been added.")
+            raise ValueError(f"'{edge.name}' has already been added.")
 
         if not isinstance(edge, Edge):
             raise TypeError(f"{repr(edge)} is not a Edge.")
 
-        self.edges()[edge.name] = edge  # dict gets updated in place
+        self.edges().append(edge.name)
 
     def remove_edge(self, edge_name: str) -> None:
         """
@@ -474,4 +457,4 @@ class QuantumDevice(Instrument):
             The edge name.
         """
 
-        self.edges().pop(edge_name)  # dict gets updated in place
+        self.edges().remove(edge_name)  # list gets updated in place
