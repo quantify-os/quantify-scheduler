@@ -4,14 +4,15 @@
 Module containing schedules for common time domain experiments such as a Rabi and
 T1 measurement.
 """
-from typing import List, Union
+from typing import List, Union, Literal
 
 import numpy as np
 
 from quantify_scheduler.schedules.schedule import Schedule
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
-from quantify_scheduler.operations.gate_library import X90, Measure, Reset, Rxy, X
+from quantify_scheduler.operations.control_flow_library import Loop
+from quantify_scheduler.operations.gate_library import X90, Measure, Reset, Rxy, X, Y
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     IdlePulse,
@@ -108,7 +109,6 @@ def t1_sched(
     qubit: str,
     repetitions: int = 1,
 ) -> Schedule:
-    # pylint: disable=line-too-long
     """
     Generate a schedule for performing a :math:`T_1` experiment to measure the qubit
     relaxation time.
@@ -157,7 +157,6 @@ def ramsey_sched(
     artificial_detuning: float = 0,
     repetitions: int = 1,
 ) -> Schedule:
-    # pylint: disable=line-too-long
     r"""
     Generate a schedule for performing a Ramsey experiment to measure the
     dephasing time :math:`T_2^{\star}`.
@@ -216,7 +215,6 @@ def echo_sched(
     qubit: str,
     repetitions: int = 1,
 ) -> Schedule:
-    # pylint: disable=line-too-long
     """
     Generate a schedule for performing an Echo experiment to measure the qubit
     echo-dephasing time :math:`T_2^{E}`.
@@ -242,7 +240,7 @@ def echo_sched(
         An experiment schedule.
 
 
-    """  # pylint: disable=line-too-long
+    """
 
     # ensure times is an iterable when passing floats.
     times = np.asarray(times)
@@ -258,12 +256,109 @@ def echo_sched(
     return schedule
 
 
+def cpmg_sched(
+    n_gates: int,
+    times: Union[np.ndarray, float],
+    qubit: str,
+    variant: Literal["X", "Y", "XY"] = "X",
+    repetitions: int = 1,
+) -> Schedule:
+    """
+    Generate a schedule for performing a CPMG (n gates) experiment to measure the qubit
+    dephasing time :math:`T_2^{CPMG}` with dynamical decoupling.
+
+    Schedule sequence
+        .. centered:: Reset -- pi/2 -- [Idle(tau/(2n)) -- pi -- Idle(tau/2n)]*n -- pi/2 -- Measure
+        .. Idle time includes the pi pulse duration!
+
+
+    Parameters
+    ----------
+    n_gates
+        Number of CPMG Gates. Note that `n_gates=1` corresponds to an Echo experiment (:func:`~.echo_sched`).
+    qubit
+        The name of the qubit, e.g., "q0", to perform the echo experiment on.
+    times
+        An array of wait times between the pi/2 pulses. The wait times are
+        subdivided into multiple IdlePulse(time/(2n)) operations. Be aware that
+        time/(2n) must be an integer multiple of your hardware backend grid
+        time.
+    variant
+        CPMG using either pi_x ("X"), pi_y ("Y") or interleaved pi_x/pi_y ("XY") gates, default is "X".
+    repetitions
+        The amount of times the Schedule will be repeated, default is 1.
+
+    Returns
+    -------
+    :
+        An experiment schedule.
+    """
+
+    if variant not in ["X", "Y", "XY"]:
+        raise ValueError(
+            f"Unknown variant '{variant}'. Variant must be one of ('X', 'Y', 'XY')."
+        )
+
+    # ensure times is an iterable when passing floats.
+    times = np.asarray(times)
+    times = times.reshape(times.shape or (1,))
+
+    if np.log2(n_gates) % 1 != 0:
+        raise ValueError(f"{n_gates=} is not a power of 2.")
+
+    schedule = Schedule("CPMG", repetitions)
+    for i, tau in enumerate(times):
+        idle_time = tau / (2 * n_gates)
+
+        schedule.add(Reset(qubit), label=f"Reset {i}")
+        schedule.add(X90(qubit))
+        inner = Schedule("inner")
+
+        if variant != "XY":
+            inner.add(IdlePulse(duration=idle_time))
+            if variant == "X":
+                echo_gate = X(qubit)
+            elif variant == "Y":
+                echo_gate = Y(qubit)
+            inner.add(echo_gate, label=f"pi {i}")
+            inner.add(IdlePulse(duration=idle_time), ref_pt="start")
+            n_reps = n_gates
+
+        else:
+            if n_gates < 2:
+                raise ValueError(
+                    f"{n_gates=}, but the minimum number of gates "
+                    "for an XY interleaved schedule is 2."
+                )
+
+            inner.add(IdlePulse(duration=idle_time))
+            inner.add(X(qubit), label=f"pi_x {i}")
+            inner.add(IdlePulse(duration=2 * idle_time), ref_pt="start")
+            inner.add(Y(qubit), label=f"pi_y {i}")
+            inner.add(IdlePulse(duration=idle_time), ref_pt="start")
+            n_reps = int(n_gates / 2)
+
+        schedule.add(
+            inner,
+            control_flow=Loop(n_reps),
+            label=f"loop {i}",
+            ref_pt="start",
+            # 4ns has to be added to not include the first X90 in the inner_loop,
+            # otherwise inner schedule and X90 would begin at the same time.
+            rel_time=4e-9,
+        )
+
+        schedule.add(X90(qubit))
+        schedule.add(Measure(qubit, acq_index=i), label=f"Measurement {i}")
+
+    return schedule
+
+
 def allxy_sched(
     qubit: str,
     element_select_idx: Union[np.ndarray, int] = np.arange(21),
     repetitions: int = 1,
 ) -> Schedule:
-    # pylint: disable=line-too-long
     """
     Generate a schedule for performing an AllXY experiment.
 

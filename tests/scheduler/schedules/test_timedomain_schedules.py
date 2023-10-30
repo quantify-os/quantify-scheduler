@@ -3,11 +3,14 @@
 # pylint: disable=missing-function-docstring
 # pylint: disable=no-self-use
 
+from math import isclose
+
 import numpy as np
 import pytest
 
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.schedules import timedomain_schedules as ts
+from quantify_scheduler.schedules.schedule import Schedule
 
 from .compiles_all_backends import _CompilesAllBackends
 
@@ -262,6 +265,109 @@ class TestT1Sched(_CompilesAllBackends):
 
     def test_operations(self):
         assert len(self.uncomp_sched.operations) == 2 + 21  # init, pi and 21*measure
+
+
+class TestCPMGSched(_CompilesAllBackends):
+    @classmethod
+    def setup_class(cls):
+        n_gates = 8
+        cls.sched_kwargs = {
+            "n_gates": n_gates,
+            "times": np.arange(
+                4e-9 * n_gates * 10, 4e-9 * n_gates * 100, 4e-9 * n_gates * 10
+            ),
+            "qubit": "q0",
+            "variant": "X",
+            "repetitions": 1,
+        }
+        cls.uncomp_sched = ts.cpmg_sched(**cls.sched_kwargs)
+
+    def test_operations(self):
+        assert len(self.uncomp_sched.operations) == 2 + 2 * len(
+            self.sched_kwargs["times"]
+        )  # 2 for (init + X90) and then 2*(number of loop and measure)
+
+    def test_repetitions(self):
+        assert self.uncomp_sched.repetitions == self.sched_kwargs["repetitions"]
+
+    def test_number_of_n_gates(self):
+        for key in self.uncomp_sched.schedulables.keys():
+            if "loop" in key:
+                if self.sched_kwargs["variant"] == "XY":
+                    assert (
+                        self.uncomp_sched.schedulables[key]["control_flow"][
+                            "control_flow_info"
+                        ]["repetitions"]
+                        == int(self.sched_kwargs["n_gates"]) / 2
+                    )
+                else:
+                    assert (
+                        self.uncomp_sched.schedulables[key]["control_flow"][
+                            "control_flow_info"
+                        ]["repetitions"]
+                        == self.sched_kwargs["n_gates"]
+                    )
+
+    def test_timing(self):
+        i = 0
+        times = self.sched_kwargs["times"]
+        for key in self.uncomp_sched.operations.keys():
+            if isinstance(self.uncomp_sched.operations[key], Schedule):
+                sub_sched = self.uncomp_sched.operations[key]
+                sub_sched_duration = 0
+                for sub_schedulable in sub_sched.schedulables.values():
+                    operation = sub_sched.operations[sub_schedulable["operation_repr"]]
+                    if operation["name"] == "IdlePulse":
+                        sub_sched_duration += operation["pulse_info"][0]["duration"]
+                n_reps = self.sched_kwargs["n_gates"]
+                if self.sched_kwargs["variant"] == "XY":
+                    n_reps /= 2
+                assert isclose(
+                    sub_sched_duration * n_reps,
+                    times[i],
+                    rel_tol=1e-10,
+                )
+                i += 1
+
+    @pytest.mark.xfail(reason="control_flow not supported in Zhinst backend")
+    def test_compiles_zi_backend(
+        self, compile_config_basic_transmon_zhinst_hardware
+    ) -> None:
+        _CompilesAllBackends.test_compiles_zi_backend(
+            self, compile_config_basic_transmon_zhinst_hardware
+        )
+
+
+class TestCPMGSched_y(TestCPMGSched):
+    @classmethod
+    def setup_class(cls):
+        n_gates = 16
+        cls.sched_kwargs = {
+            "n_gates": n_gates,
+            "times": np.arange(
+                4e-9 * n_gates * 10, 4e-9 * n_gates * 100, 4e-9 * n_gates * 20
+            ),
+            "qubit": "q0",
+            "variant": "Y",
+            "repetitions": 7,
+        }
+        cls.uncomp_sched = ts.cpmg_sched(**cls.sched_kwargs)
+
+
+class TestCPMGSched_xy(TestCPMGSched):
+    @classmethod
+    def setup_class(cls):
+        n_gates = 32
+        cls.sched_kwargs = {
+            "n_gates": n_gates,
+            "times": np.arange(
+                4e-9 * n_gates * 10, 4e-9 * n_gates * 100, 4e-9 * n_gates * 20
+            ),
+            "qubit": "q0",
+            "variant": "XY",
+            "repetitions": 10,
+        }
+        cls.uncomp_sched = ts.cpmg_sched(**cls.sched_kwargs)
 
 
 class TestRamseySchedDetuning(_CompilesAllBackends):
