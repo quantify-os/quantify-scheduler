@@ -10,6 +10,7 @@
 import json
 import os
 import zipfile
+from datetime import datetime
 from unittest import TestCase
 from unittest.mock import Mock, MagicMock
 
@@ -636,6 +637,7 @@ def test_initialize_and_get_with_report_failed_initialization__qblox(
 
     with zipfile.ZipFile(report_zipfile, mode="r") as zf:
         dependency_versions = json.loads(zf.read("dependency_versions.json").decode())
+        timestamp = zf.read("timestamp.txt").decode()
         q2_cfg_report = json.loads(zf.read("device_elements/q2.json"))
         gettable_cfg_report = json.loads(zf.read("gettable.json").decode())
         hardware_cfg_report = json.loads(zf.read("hardware_cfg.json").decode())
@@ -664,6 +666,8 @@ def test_initialize_and_get_with_report_failed_initialization__qblox(
         "numpy",
     ]:
         assert dependency in parsed_dependencies
+
+    assert datetime.strptime(timestamp, "%Y-%m-%d_%H-%M-%S_%Z")
 
     assert q2_cfg_report["data"]["rxy"]["amp180"] == 0.213
 

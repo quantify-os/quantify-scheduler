@@ -131,10 +131,9 @@ def _generate_diagnostics_report(  # noqa: PLR0915
     with zipfile.ZipFile(
         report_zipfile, mode="w", compression=zipfile.ZIP_DEFLATED, compresslevel=9
     ) as zip_file:
-        timestamp = datetime.now(pytz.utc).astimezone(pytz.timezone("Europe/Amsterdam"))
         zip_file.writestr(
             "timestamp.txt",
-            timestamp.strftime("%Y-%m-%d %H:%M:%S %Z%z"),
+            datetime.now(pytz.utc).strftime("%Y-%m-%d_%H-%M-%S_%Z"),
         )
         zip_file.writestr(
             "dependency_versions.json", json.dumps(_get_dependency_versions())
