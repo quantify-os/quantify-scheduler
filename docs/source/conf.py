@@ -120,7 +120,14 @@ language = "en"
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    "dev/profiling/random_gates.ipynb",
+    "dev/profiling/resonator_spectroscopy.ipynb",
+    "dev/profiling/simple_binned_acquisition.ipynb",
+]
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = "sphinx"
@@ -363,6 +370,9 @@ nb_execution_raise_on_error = True
 
 # Default cell execution timeout.
 nb_execution_timeout = 120
+
+# Exclude notebooks from execution
+nb_execution_excludepatterns = ["source/dev/profiling/*.ipynb"]
 
 # Configure pydata-sphinx-theme version switcher based on detected CI environment
 # variables.
