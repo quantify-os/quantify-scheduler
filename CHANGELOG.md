@@ -1,22 +1,37 @@
 # Changelog
 
-## Unreleased
+## 0.17.1 (2023-10-23)
 
 ### Release highlights
 
+- QuantumDevice hotfix
+  - Fixes a bug in serialization/deserialization via snapshot of QuantumDevice.
+
+- QuantumDevice
+  - Include custom QuantumDevice-to-json serialization/deserialization methods.
+
 ### Breaking changes
 
-- QuantumDevice - Revert !813: `ManualParameter` `elements` and `edges` have been changed back from `dict` to `list` (!846)
-  - The change broke serialization/deserialization of QuantumDevice via snapshot, see #452
+- QuantumDevice - Revert !813: `ManualParameter` `elements` and `edges` have been changed back from `dict` to `list`. (!846)
+  - The change broke serialization/deserialization of QuantumDevice via snapshot, see #452.
 
 ### Merged branches and closed issues
 
-- Gettable - Include quantify dependency versions in the diagnostics report (`ScheduleGettable.initialize_and_get_with_report`). (!832)
-- Qblox backend - Absolute amplitude tolerance of waveform index suppression set to `2/constants.IMMEDIATE_SZ_GAIN` which prevents uploading of all gain-zero waveforms. (!842)
-- QuantumDevice - Serialize by adding `__getstate__` and `__setstate__` methods to the class, includes `DeviceElement`, `Edge` and `cfg_sched_repetitions`. (!802)
-- Utilities - Add profiling notebooks to Developer guide (!845)
-- Gettable - Change reference timezone included in the diagnostics report from "Europe/Amsterdam" to UTC. (!849)
-- Schedules - Add CPMG schedule function `timedomain_schedules.cpmg_sched` for dynamical decoupling experiments. (!805).
+- Gettable 
+  - Change reference timezone included in the diagnostics report from "Europe/Amsterdam" to UTC. (!849)
+  - Include quantify dependency versions in the diagnostics report (`ScheduleGettable.initialize_and_get_with_report`). (!832)
+
+- Qblox backend 
+  - Absolute amplitude tolerance of waveform index suppression set to `2/constants.IMMEDIATE_SZ_GAIN` which prevents uploading of all gain-zero waveforms. (!842)
+
+- QuantumDevice 
+  - Serialize by adding `__getstate__` and `__setstate__` methods to the class, includes `DeviceElement`, `Edge` and `cfg_sched_repetitions`. (!802)
+
+- Schedules 
+  - Add CPMG schedule function `timedomain_schedules.cpmg_sched` for dynamical decoupling experiments. (!805)
+
+- Utilities 
+  - Add profiling notebooks to Developer guide. (!845)
 
 ## 0.17.0 (2023-10-20)
 
