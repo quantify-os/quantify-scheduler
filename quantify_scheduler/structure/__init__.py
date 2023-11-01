@@ -9,6 +9,6 @@ that we frequently use in ``quantify-scheduler``, like functions and arrays.
 """
 
 from .model import DataStructure
-from .types import NDArray
+from .types import Graph, NDArray
 
-__all__ = ["DataStructure", "NDArray"]
+__all__ = ["DataStructure", "Graph", "NDArray"]

@@ -16,6 +16,7 @@ from quantify_scheduler.backends.qblox import constants, enums, q1asm_instructio
 from quantify_scheduler.backends.types.common import (
     HardwareDescription,
     HardwareOptions,
+    IQMixerDescription,
     LocalOscillatorDescription,
 )
 from quantify_scheduler.structure.model import DataStructure
@@ -678,6 +679,15 @@ ClusterModuleDescription = Annotated[
     Union[QRMDescription, QCMDescription, QRMRFDescription, QCMRFDescription],
     Field(discriminator="instrument_type"),
 ]
+"""
+Specifies a Cluster module and its instrument-specific settings.
+
+The supported instrument types are:
+:class:`~.QRMDescription`,
+:class:`~.QCMDescription`,
+:class:`~.QRMRFDescription`,
+:class:`~.QCMRFDescription`,
+"""
 
 
 class ClusterDescription(QbloxBaseDescription):
@@ -749,6 +759,7 @@ QbloxHardwareDescription = Annotated[
         PulsarQCMDescription,
         PulsarQRMDescription,
         LocalOscillatorDescription,
+        IQMixerDescription,
     ],
     Field(discriminator="instrument_type"),
 ]

@@ -19,6 +19,7 @@ import pytest
 from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.operations.pulse_library import SetClockFrequency
 from quantify_scheduler.resources import ClockResource
 
 from .standard_schedules import (
@@ -31,6 +32,13 @@ from .standard_schedules import (
 )
 
 
+def clock_only_schedule() -> Schedule:
+    sched = Schedule("Clock only schedule")
+    sched.add(SetClockFrequency(clock="q0.01", clock_freq_new=7.501e9))
+
+    return sched
+
+
 @pytest.mark.parametrize(
     "schedule",
     [
@@ -40,6 +48,7 @@ from .standard_schedules import (
         pulse_only_schedule(),
         parametrized_operation_schedule(),
         hybrid_schedule_rabi(),
+        clock_only_schedule(),
     ],
 )
 def test_compiles_standard_schedules(
@@ -176,7 +185,7 @@ def test_compile_sequence_to_file_deprecated_hardware_config(
     "instrument, sequence_to_file",
     [
         (instrument, sequence_to_file)
-        for instrument in ["qrm0", ("cluster0", "cluster0_module1")]
+        for instrument in ["qrm0", ("cluster0", "module1")]
         for sequence_to_file in [True, False, None]
     ],
 )
@@ -201,18 +210,7 @@ def test_compile_sequence_to_file(
             }
         }
         hardware_comp_cfg["connectivity"] = {
-            instrument[0]: {
-                instrument[1]: {
-                    "complex_output_0": {
-                        "portclock_configs": [
-                            {
-                                "port": "q0:res",
-                                "clock": "q0.ro",
-                            }
-                        ],
-                    },
-                },
-            }
+            "graph": [(f"{instrument[0]}.{instrument[1]}.complex_output_0", "q0:res")]
         }
         if sequence_to_file is None:
             del hardware_comp_cfg["hardware_description"][instrument[0]][
@@ -227,16 +225,7 @@ def test_compile_sequence_to_file(
             }
         }
         hardware_comp_cfg["connectivity"] = {
-            instrument: {
-                "complex_output_0": {
-                    "portclock_configs": [
-                        {
-                            "port": "q0:res",
-                            "clock": "q0.ro",
-                        }
-                    ],
-                },
-            }
+            "graph": [(f"{instrument}.complex_output_0", "q0:res")]
         }
         if sequence_to_file is None:
             del hardware_comp_cfg["hardware_description"][instrument][
@@ -257,10 +246,9 @@ def test_compile_sequence_to_file(
     # Assert
     compiled_data = compiled_sched.compiled_instructions
     if isinstance(instrument, tuple):
-        for key in instrument:
-            compiled_data = compiled_data.get(key)
+        compiled_data = compiled_data[instrument[0]][f"{instrument[0]}_{instrument[1]}"]
     else:
-        compiled_data = compiled_data.get(instrument)
+        compiled_data = compiled_data[instrument]
 
     seq0_json = compiled_data["sequencers"]["seq0"]["sequence"]
     seq_fn = compiled_data["sequencers"]["seq0"]["seq_fn"]

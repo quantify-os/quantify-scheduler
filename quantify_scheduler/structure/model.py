@@ -10,7 +10,6 @@ from pydantic import BaseModel, ConfigDict
 
 from quantify_scheduler.helpers.importers import (
     import_python_object_from_string,
-    export_python_object_to_path_string,
 )
 
 

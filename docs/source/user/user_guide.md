@@ -400,38 +400,12 @@ Currently, this datastructure is parsed from a user-defined dict that should be 
 The {obj}`~.backends.types.common.HardwareDescription` datastructure specifies a control hardware instrument in the setup, along with its instrument-specific settings.
 There is a specific {obj}`~.backends.types.common.HardwareDescription` datastructure for each of the currently supported instrument types, which are discriminated through the `instrument_type` field.
 
-(user-guide-qblox-cluster-hardware-description)=
-````{admonition} Example: Qblox ClusterDescription datastructure
-:class: dropdown
 ```{eval-rst}
-.. autoapiclass:: quantify_scheduler.backends.types.qblox.ClusterDescription
-    :noindex:
-    :members: ref, sequence_to_file, instrument_type, modules
+.. autoapiclass:: quantify_scheduler.backends.types.common.HardwareDescription
+  :noindex:
+  :members:
 
 ```
-````
-
-(user-guide-zhinst-hdawg8-hardware-description)=
-````{admonition} Example: ZIHDAWG8Description datastructure
-:class: dropdown
-```{eval-rst}
-.. autoapiclass:: quantify_scheduler.backends.types.zhinst.ZIHDAWG8Description
-    :noindex:
-    :members: ref, instrument_type, channelgrouping, clock_select, channel_0, channel_1, channel_2, channel_3
-
-```
-````
-
-(user-guide-local-oscillator-hardware-description)=
-````{admonition} Example: LocalOscillatorDescription datastructure
-:class: dropdown
-```{eval-rst}
-.. autoapiclass:: quantify_scheduler.backends.types.common.LocalOscillatorDescription
-    :noindex:
-    :members:
-
-```
-````
 
 (sec-hardware-options)=
 
@@ -447,11 +421,31 @@ The {class}`~.backends.types.common.HardwareOptions` datastructure contains the 
 
 (sec-connectivity)=
 ### Connectivity
-The {class}`~.backends.types.common.Connectivity` datastructure describes how ports on the quantum device are connected to ports on the control hardware.
+The {class}`~.backends.types.common.Connectivity` datastructure describes how ports on the quantum device are connected to the control hardware. The connectivity is represented as an undirected graph, where the nodes are the ports on the quantum device and the control hardware inputs/outputs, and the edges are the connections between them.
 
-```{note}
-The {class}`~.backends.types.common.Connectivity` datastructure is currently under development. Information on the connectivity between port-clock combinations on the quantum device and ports on the control hardware is currently included in the old-style hardware configuration file, which should be included in the `"connectivity"` field of the {class}`~.backends.types.common.HardwareCompilationConfig`.
+```{eval-rst}
+.. autoapiclass:: quantify_scheduler.backends.types.common.Connectivity
+  :noindex:
+  :members: graph
+
 ```
+
+This information is used in the compilation backends to assign the pulses and acquisitions in the schedule to ports on the control hardware. To achieve this, the nodes in the connectivity graph should be consistent with the inputs/outputs in the {ref}`sec-hardware-description` and the schedule (see the note below). Each backend has its own requirements on the connectivity graph, which are described in the documentation of the backends themselves (see the sections on Connectivity for {ref}`Qblox  <sec-qblox-connectivity>` and {ref}`Zurich Instruments <sec-zhinst-connectivity>`). For example, a backend can support adding one or more components (such as attenuators or IQ mixers) between a control-hardware output and a quantum-device port.
+
+```{important}
+  Nodes that correspond to an input/output of an instrument should be named
+  ``"instrument_name.io_name"``, where the ``instrument_name`` should correspond
+  to a {class}`~quantify_scheduler.backends.types.common.HardwareDescription` in 
+  the {class}`~quantify_scheduler.backends.types.common.HardwareCompilationConfig`.
+
+  Nodes that correspond to a port on the quantum device should be identical
+  to a port that is used in the {class}`~quantify_scheduler.schedules.schedule.Schedule`. 
+  If you use gate-level operations, you should use:
+
+  - `"device_element_name:mw"` for `Rxy` operation (and its derived operations),
+  - `"device_element_name:res"` for any measure operation,
+  - `"device_element_name:fl"` for the flux port.
+  ```
 
 (sec-user-guide-execution)=
 # Execution

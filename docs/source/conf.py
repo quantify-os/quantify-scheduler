@@ -73,6 +73,7 @@ intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "qcodes": ("https://qcodes.github.io/Qcodes/", None),
     "xarray": ("https://xarray.pydata.org/en/stable/", None),
+    "networkx": ("https://networkx.org/documentation/stable/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
     "pandas": ("https://pandas.pydata.org/pandas-docs/dev/", None),
     "plotly": ("https://plotly.com/python-api-reference/", None),
@@ -478,6 +479,7 @@ nitpick_ignore = [
     ("py:class", "InputAttenuation"),
     ("py:class", "typing.AnnotatedAlias"),
     ("py:obj", "quantify_scheduler.structure.NDArray"),
+    ("py:obj", "quantify_scheduler.structure.Graph"),
     ("py:attr", "BasicTransmonElement.measure.acq_threshold"),
     ("py:attr", "BasicTransmonElement.measure.acq_rotation"),
 ]  # Tuple[str, str], ignore certain warnings

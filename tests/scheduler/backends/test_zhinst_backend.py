@@ -9,9 +9,10 @@ from __future__ import annotations
 import json
 from copy import deepcopy
 from textwrap import dedent
-from typing import Any, Dict, List
+from typing import Any, Dict, Generator, List
 from unittest.mock import ANY, call
 
+from networkx import relabel_nodes
 import numpy as np
 import pytest
 from pydantic import ValidationError
@@ -19,16 +20,35 @@ from quantify_scheduler import Schedule
 from quantify_scheduler.backends import SerialCompiler, corrections, zhinst_backend
 from quantify_scheduler.backends.types import zhinst
 from quantify_scheduler.backends.zhinst import settings
+from quantify_scheduler.backends.zhinst.zhinst_hardware_config_old_style import (
+    hardware_config as zhinst_hardware_config_old_style,
+)
+from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.helpers import waveforms as waveform_helpers
+from quantify_scheduler.helpers.collections import find_all_port_clock_combinations
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.operations.gate_library import X90, Measure, Reset
 from quantify_scheduler.operations.stitched_pulse import StitchedPulseBuilder
+from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules import spectroscopy_schedules, trace_schedules
 from quantify_scheduler.schedules.schedule import CompiledSchedule
 from quantify_scheduler.schedules.verification import acquisition_staircase_sched
+from quantify_scheduler.schemas.examples import utils
 
 ARRAY_DECIMAL_PRECISION = 16
+
+ZHINST_HARDWARE_COMPILATION_CONFIG = utils.load_json_example_scheme(
+    "zhinst_hardware_compilation_config.json"
+)
+
+
+@pytest.fixture
+def hardware_compilation_config_zhinst_example() -> (
+    Generator[Dict[str, Any], None, None]
+):
+    yield dict(ZHINST_HARDWARE_COMPILATION_CONFIG)
 
 
 @pytest.fixture
@@ -56,14 +76,6 @@ def test__determine_measurement_fixpoint_correction():
 
 
 @pytest.fixture
-def create_device():
-    def _create_device(hardware_cfg: Dict[str, Any], index: int = 0) -> zhinst.Device:
-        return zhinst.Device.schema().load(hardware_cfg["devices"][index])
-
-    yield _create_device
-
-
-@pytest.fixture
 def make_schedule(create_schedule_with_pulse_info):
     def _make_schedule() -> Schedule:
         q0 = "q0"
@@ -83,7 +95,8 @@ def create_typical_timing_table(
     def _create_test_compile_datastructure():
         schedule = make_schedule()
         hardware_config = zhinst_backend.generate_hardware_config(
-            compilation_config=compile_config_basic_transmon_zhinst_hardware
+            schedule=schedule,
+            compilation_config=compile_config_basic_transmon_zhinst_hardware,
         )
         timing_table = schedule.timing_table.data
 
@@ -168,47 +181,6 @@ def create_typical_timing_table(
     yield _create_test_compile_datastructure
 
 
-@pytest.fixture
-def hardware_cfg_distortion_corrections():
-    return {
-        "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
-        "local_oscillators": [
-            {
-                "unique_name": "lo0",
-                "instrument_name": "lo0",
-                "frequency": {"frequency": 4.8e9},
-            }
-        ],
-        "devices": [
-            {
-                "name": "hdawg_1234",
-                "type": "HDAWG4",
-                "ref": "none",
-                "channel_0": {
-                    "port": "q2:fl",
-                    "clock": "cl0.baseband",
-                    "mode": "real",
-                    "modulation": {
-                        "type": "none",
-                    },
-                    "trigger": 1,
-                    "local_oscillator": "lo0",
-                },
-                "channel_1": {
-                    "port": "q2:mw",
-                    "clock": "q2.01",
-                    "mode": "real",
-                    "modulation": {
-                        "type": "none",
-                    },
-                    "markers": ["AWG_MARKER1", "AWG_MARKER2"],
-                    "local_oscillator": "lo0",
-                },
-            }
-        ],
-    }
-
-
 @pytest.mark.parametrize(
     "unsupported_device_type", [(zhinst.DeviceType.UHFLI), (zhinst.DeviceType.MFLI)]
 )
@@ -258,20 +230,20 @@ def deprecated_zhinst_hardware_config_example():
         },
         "local_oscillators": [
             {
-                "unique_name": "mw_qubit_ch1",
-                "instrument_name": "mw_qubit",
+                "unique_name": "lo0_ch1",
+                "instrument_name": "lo0",
                 "frequency": {"ch_1.frequency": None},
                 "power": {"power": 13},
             },
             {
-                "unique_name": "mw_qubit_ch2",
-                "instrument_name": "mw_qubit",
+                "unique_name": "lo0_ch2",
+                "instrument_name": "lo0",
                 "frequency": {"ch_2.frequency": None},
                 "power": {"ch_2.power": 10},
             },
             {
-                "unique_name": "mw_readout",
-                "instrument_name": "mw_readout",
+                "unique_name": "lo1",
+                "instrument_name": "lo1",
                 "frequency": {"frequency": None},
                 "power": {"power": 16},
             },
@@ -288,7 +260,7 @@ def deprecated_zhinst_hardware_config_example():
                     "clock": "q0.01",
                     "mode": "complex",
                     "modulation": {"type": "premod", "interm_freq": -100000000.0},
-                    "local_oscillator": "mw_qubit_ch1",
+                    "local_oscillator": "lo0_ch1",
                     "clock_frequency": 6000000000.0,
                     "markers": ["AWG_MARKER1", "AWG_MARKER2"],
                     "gain1": 1,
@@ -305,7 +277,7 @@ def deprecated_zhinst_hardware_config_example():
                     "clock": "q1.01",
                     "mode": "complex",
                     "modulation": {"type": "premod", "interm_freq": -100000000.0},
-                    "local_oscillator": "mw_qubit_ch2",
+                    "local_oscillator": "lo0_ch2",
                     "clock_frequency": 6000000000.0,
                     "markers": ["AWG_MARKER1", "AWG_MARKER2"],
                     "gain1": 1,
@@ -322,7 +294,7 @@ def deprecated_zhinst_hardware_config_example():
                     "clock": "q2.01",
                     "mode": "complex",
                     "modulation": {"type": "premod", "interm_freq": -100000000.0},
-                    "local_oscillator": "mw_qubit_ch2",
+                    "local_oscillator": "lo0_ch2",
                     "clock_frequency": 6000000000.0,
                     "markers": ["AWG_MARKER1", "AWG_MARKER2"],
                     "gain1": 1,
@@ -339,7 +311,7 @@ def deprecated_zhinst_hardware_config_example():
                     "clock": "q3.01",
                     "mode": "complex",
                     "modulation": {"type": "premod", "interm_freq": -100000000.0},
-                    "local_oscillator": "mw_qubit_ch2",
+                    "local_oscillator": "lo0_ch2",
                     "clock_frequency": 6000000000.0,
                     "markers": ["AWG_MARKER1", "AWG_MARKER2"],
                     "gain1": 1,
@@ -361,7 +333,7 @@ def deprecated_zhinst_hardware_config_example():
                     "clock": "q0.ro",
                     "mode": "real",
                     "modulation": {"type": "premod", "interm_freq": 200000000.0},
-                    "local_oscillator": "mw_readout",
+                    "local_oscillator": "lo1",
                     "clock_frequency": 6000000000.0,
                     "trigger": 2,
                 },
@@ -514,9 +486,10 @@ def test_compile_hardware_hdawg4_successfully(
 
     assert "generic" in device_configs
 
-    assert device_configs["generic"]["mw_qubit.ch1.frequency"] == q0_mw_rf - q0_mw_if
+    assert device_configs["generic"]["lo0.ch1.frequency"] == q0_mw_rf - q0_mw_if
 
 
+@pytest.mark.deprecated
 def test_compile_hardware_uhfqa_successfully_deprecated_hardware_config(
     mocker,
     make_schedule,
@@ -593,8 +566,6 @@ def test_compile_hardware_uhfqa_successfully(
 ) -> None:
     # Arrange
     schedule = make_schedule()
-    settings_builder = mocker.Mock(wraps=settings.ZISettingsBuilder())
-    mocker.patch.object(settings, "ZISettingsBuilder", return_value=settings_builder)
 
     q0_ro_rf = (
         compile_config_basic_transmon_zhinst_hardware.device_compilation_config.clocks[
@@ -667,7 +638,7 @@ def test_compile_hardware_uhfqa_successfully(
 
     assert "generic" in device_configs
 
-    assert device_configs["generic"]["mw_readout.frequency"] == q0_ro_rf - q0_ro_if
+    assert device_configs["generic"]["lo1.frequency"] == q0_ro_rf - q0_ro_if
 
 
 @pytest.mark.deprecated
@@ -684,181 +655,6 @@ def test_compile_invalid_latency_corrections_hardware_config_raises(
         _ = zhinst_backend.compile_backend(schedule, hardware_cfg)
 
 
-@pytest.mark.deprecated
-def test_set_conflicting_latency_corrections(
-    make_schedule,
-    mock_setup_basic_transmon_with_standard_params,
-    hardware_compilation_config_zhinst_example,
-):
-    sched = make_schedule()
-
-    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    hardware_compilation_config = deepcopy(
-        hardware_compilation_config_zhinst_example,
-    )
-    hardware_compilation_config["connectivity"]["latency_corrections"] = {
-        "q0:mw-q0.01": 20e-9,
-        "q0:mw-q0.01": 4e-9,
-    }
-
-    quantum_device.hardware_config(hardware_compilation_config)
-
-    with pytest.raises(ValueError, match="conflicting"):
-        compiler = SerialCompiler(name="compiler")
-        _ = compiler.compile(
-            sched,
-            config=quantum_device.generate_compilation_config(),
-        )
-
-
-@pytest.mark.deprecated
-def test_set_conflicting_distortion_corrections(
-    make_schedule,
-    mock_setup_basic_transmon_with_standard_params,
-    hardware_compilation_config_zhinst_example,
-):
-    sched = make_schedule()
-
-    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    hardware_compilation_config = deepcopy(
-        hardware_compilation_config_zhinst_example,
-    )
-    hardware_compilation_config["connectivity"]["distortion_corrections"] = (
-        {
-            "q0:fl-cl0.baseband": {
-                "filter_func": "scipy.signal.lfilter",
-                "input_var_name": "x",
-                "kwargs": {"b": [0, 0.1, 0.2], "a": [1]},
-                "clipping_values": [-2.1, 2.1],
-            }
-        },
-    )
-
-    quantum_device.hardware_config(hardware_compilation_config)
-
-    with pytest.raises(ValueError, match="conflicting settings"):
-        compiler = SerialCompiler(name="compiler")
-        _ = compiler.compile(
-            sched,
-            config=quantum_device.generate_compilation_config(),
-        )
-
-
-@pytest.mark.deprecated
-def test_set_conflicting_interm_freq(
-    make_schedule,
-    mock_setup_basic_transmon_with_standard_params,
-    hardware_compilation_config_zhinst_example,
-):
-    sched = make_schedule()
-
-    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    hardware_compilation_config = deepcopy(
-        hardware_compilation_config_zhinst_example,
-    )
-    hardware_compilation_config["connectivity"]["devices"][0]["channel_0"][
-        "modulation"
-    ] = {
-        "type": "premod",
-        "interm_freq": 123e6,
-    }
-
-    quantum_device.hardware_config(hardware_compilation_config)
-
-    with pytest.raises(ValueError, match="conflicting settings"):
-        compiler = SerialCompiler(name="compiler")
-        _ = compiler.compile(
-            sched,
-            config=quantum_device.generate_compilation_config(),
-        )
-
-
-@pytest.mark.deprecated
-def test_set_conflicting_lo_freq(
-    make_schedule,
-    mock_setup_basic_transmon_with_standard_params,
-    hardware_compilation_config_zhinst_example,
-):
-    sched = make_schedule()
-
-    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    hardware_compilation_config = deepcopy(hardware_compilation_config_zhinst_example)
-    # Set LO freq in old-style LO config:
-    hardware_compilation_config["connectivity"]["local_oscillators"] = [
-        {
-            "unique_name": "mw_qubit_ch1",
-            "frequency": {"ch1.frequency": 5e9},
-            "instrument_name": "mw_qubit",
-            "frequency_param": "ch1.frequency",
-            "power": 13,
-        }
-    ]
-    # Set LO freq in new-style hardware options:
-    hardware_compilation_config["hardware_options"]["modulation_frequencies"][
-        "q0:mw-q0.01"
-    ] = {"interm_freq": None, "lo_freq": 6e9}
-
-    quantum_device.hardware_config(hardware_compilation_config)
-
-    with pytest.raises(ValueError, match="conflicting settings"):
-        compiler = SerialCompiler(name="compiler")
-        _ = compiler.compile(
-            sched,
-            config=quantum_device.generate_compilation_config(),
-        )
-
-
-@pytest.mark.deprecated
-def test_set_conflicting_mixer_corrections(
-    make_schedule,
-    mock_setup_basic_transmon_with_standard_params,
-    hardware_compilation_config_zhinst_example,
-):
-    sched = make_schedule()
-
-    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    hardware_compilation_config = deepcopy(hardware_compilation_config_zhinst_example)
-    hardware_config = hardware_compilation_config["connectivity"]
-    hardware_config["devices"][0]["channel_0"]["mixer_corrections"] = {
-        "amp_ratio": 0.93,
-        "phase_error": 0.04,
-        "dc_offset_i": 0.0542,
-        "dc_offset_q": -0.0328,
-    }
-
-    quantum_device.hardware_config(hardware_compilation_config)
-
-    with pytest.raises(ValueError, match="conflicting settings"):
-        compiler = SerialCompiler(name="compiler")
-        _ = compiler.compile(
-            sched,
-            config=quantum_device.generate_compilation_config(),
-        )
-
-
-@pytest.mark.deprecated
-def test_set_conflicting_output_gain(
-    make_schedule,
-    mock_setup_basic_transmon_with_standard_params,
-    hardware_compilation_config_zhinst_example,
-):
-    sched = make_schedule()
-
-    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    hardware_compilation_config = deepcopy(hardware_compilation_config_zhinst_example)
-    hardware_config = hardware_compilation_config["connectivity"]
-    hardware_config["devices"][0]["channel_0"]["gain1"] = 0.5
-
-    quantum_device.hardware_config(hardware_compilation_config)
-
-    with pytest.raises(ValueError, match="conflicting settings"):
-        compiler = SerialCompiler(name="compiler")
-        _ = compiler.compile(
-            sched,
-            config=quantum_device.generate_compilation_config(),
-        )
-
-
 def test_external_lo_not_present_raises(
     make_schedule, compile_config_basic_transmon_zhinst_hardware
 ):
@@ -867,9 +663,11 @@ def test_external_lo_not_present_raises(
     compile_config = deepcopy(compile_config_basic_transmon_zhinst_hardware)
 
     # Change to non-existent LO:
-    compile_config.hardware_compilation_config.connectivity["devices"][0]["channel_0"][
-        "local_oscillator"
-    ] = "non_existent_lo"
+    relabel_nodes(
+        compile_config.hardware_compilation_config.connectivity.graph,
+        {"lo0_ch1.output": "non_existent_lo.output"},
+        copy=False,
+    )
 
     with pytest.raises(
         RuntimeError,
@@ -932,9 +730,7 @@ def test_hdawg4_sequence(
 
 
 # pylint: disable=too-many-arguments
-@pytest.mark.parametrize(
-    "channelgrouping,enabled_channels", [(0, [0, 1, 2, 3]), (1, [0])]
-)
+@pytest.mark.parametrize("channelgrouping,enabled_channels", [(0, [0]), (1, [0])])
 def test__program_hdawg4_channelgrouping(
     mocker,
     create_typical_timing_table,
@@ -947,7 +743,7 @@ def test__program_hdawg4_channelgrouping(
     devices = test_config_dict["devices"]
     numerical_wf_dict = test_config_dict["numerical_wf_dict"]
 
-    hdawg_device = devices[0]
+    hdawg_device = [device for device in devices if device.name == "ic_hdawg0"][0]
     hdawg_device.channelgrouping = channelgrouping
     hdawg_device.sample_rate = int(2.4e9)
 
@@ -1306,10 +1102,8 @@ def test_uhfqa_sequence3_spectroscopy(
     assert zi_setting[1].value == expected_seqc
 
 
-def test__extract_port_clock_channelmapping_hdawg(
-    hardware_compilation_config_zhinst_example,
-) -> None:
-    hardware_config = hardware_compilation_config_zhinst_example["connectivity"]
+def test__extract_port_clock_channelmapping_hdawg() -> None:
+    hardware_config = zhinst_hardware_config_old_style
 
     expected_dict = {
         "q0:mw-q0.01": "ic_hdawg0.awg0",
@@ -1324,16 +1118,8 @@ def test__extract_port_clock_channelmapping_hdawg(
     assert generated_dict == expected_dict
 
 
-def test_determine_relative_latency_corrections(
-    compile_config_basic_transmon_zhinst_hardware,
-) -> None:
-    compilation_config = compile_config_basic_transmon_zhinst_hardware
-    hardware_config = compilation_config.hardware_compilation_config.connectivity
-    hardware_config[
-        "latency_corrections"
-    ] = (
-        compilation_config.hardware_compilation_config.hardware_options.latency_corrections
-    )
+def test_determine_relative_latency_corrections() -> None:
+    hardware_config = zhinst_hardware_config_old_style
 
     expected_latency_dict = {
         "q0:mw-q0.01": 190e-9,
@@ -1805,3 +1591,31 @@ def test_stitched_pulse_compilation(
         .as_dict()["compiler/sourcestring"][0]
         == '// Generated by quantify-scheduler.\n// Variables\nvar __repetitions__ = 1;\nwave w0 = "ic_uhfqa0_awg0_wave0";\nwave w1 = "ic_uhfqa0_awg0_wave1";\nwave w2 = "ic_uhfqa0_awg0_wave2";\nwave w3 = "ic_uhfqa0_awg0_wave3";\n\n// Operations\nrepeat(__repetitions__)\n{\n  waitDigTrigger(2, 1);\t// \t// clock=0\n  wait(0);\t\t// clock=0\t n_instr=0\n  playWave(w0);\t// \t// clock=0\t n_instr=0\n  wait(225);\t\t// clock=0\t n_instr=225\n  playWave(w1);\t// \t// clock=225\t n_instr=0\n  wait(9);\t\t// clock=225\t n_instr=9\n  startQA(QA_INT_ALL, true);\t// clock=234 n_instr=7\n  wait(209);\t\t// clock=241\t n_instr=209\n  playWave(w3);\t// \t// clock=450\t n_instr=0\n}\n'
     )
+
+
+def test_generate_hardware_config(hardware_compilation_config_zhinst_example):
+    sched = Schedule("All portclocks schedule")
+    quantum_device = QuantumDevice("All_portclocks_device")
+    quantum_device.hardware_config(hardware_compilation_config_zhinst_example)
+
+    qubits = {}
+    for port, clock in find_all_port_clock_combinations(
+        zhinst_hardware_config_old_style
+    ):
+        sched.add(SquarePulse(port=port, clock=clock, amp=0.25, duration=12e-9))
+        if clock not in sched.resources:
+            clock_resource = ClockResource(name=clock, freq=7e9)
+            sched.add_resource(clock_resource)
+        qubit_name = port.split(":")[0]
+        if qubit_name not in quantum_device.elements():
+            qubit = BasicTransmonElement(qubit_name)
+            quantum_device.add_element(qubit)
+            qubits[qubit_name] = qubit
+
+    generated_hw_config = zhinst_backend.generate_hardware_config(
+        schedule=sched, compilation_config=quantum_device.generate_compilation_config()
+    )
+
+    quantum_device.close()
+
+    assert generated_hw_config == zhinst_hardware_config_old_style

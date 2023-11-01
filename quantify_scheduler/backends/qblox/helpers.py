@@ -16,6 +16,7 @@ from quantify_scheduler import Schedule
 from quantify_scheduler.backends.graph_compilation import CompilationConfig
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.qblox.enums import IoMode
+from quantify_scheduler.backends.types.common import Connectivity
 from quantify_scheduler.backends.types.qblox import (
     ComplexChannelDescription,
     ComplexInputGain,
@@ -29,6 +30,7 @@ from quantify_scheduler.helpers.collections import (
 from quantify_scheduler.helpers.importers import export_python_object_to_path_string
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_acquisition_protocols,
+    _extract_port_clocks_used,
 )
 from quantify_scheduler.helpers.waveforms import exec_waveform_function
 from quantify_scheduler.operations.pulse_library import WindowOperation
@@ -980,13 +982,18 @@ def single_scope_mode_acquisition_raise(sequencer_0, sequencer_1, module_name):
     )
 
 
-def generate_hardware_config(compilation_config: CompilationConfig):
+def generate_hardware_config(schedule: Schedule, compilation_config: CompilationConfig):
     """
     Extract the old-style Qblox hardware config from the CompilationConfig.
 
+    Only the port-clok combinations that are used in the schedule are included in the
+    old-style hardware config.
+
     Parameters
     ----------
-    config: CompilationConfig
+    schedule: Schedule
+        Schedule from which the port-clock combinations are extracted.
+    config : CompilationConfig
         CompilationConfig from which hardware config is extracted.
 
     Returns
@@ -1013,47 +1020,6 @@ def generate_hardware_config(compilation_config: CompilationConfig):
             elif isinstance(nested_dict[k], Dict):
                 _recursive_digital_io_search(nested_dict[k], max_depth - 1)
 
-    def _set_hardware_config_value(
-        hw_config_dict: dict, hw_config_key: str, hw_compilation_config_value: Any
-    ):
-        legacy_value = hw_config_dict.get(hw_config_key, "not_present")
-        # Using default="not_present" because None can also be a meaningful setting
-        if legacy_value == "not_present":
-            hw_config_dict[hw_config_key] = hw_compilation_config_value
-        elif (
-            hw_compilation_config_value is not None
-            and legacy_value != hw_compilation_config_value
-        ):
-            raise ValueError(
-                f"Trying to set '{hw_config_key}' to '{hw_compilation_config_value}' from the"
-                f" new hardware compilation config datastructure while"
-                f" it has previously been set to '{legacy_value}' in the old-style hardware"
-                f" config dict. To avoid conflicting settings, please make sure this"
-                f" value is only set in one place."
-            )
-
-    def _propagate_complex_channel_description_settings(
-        io_config: Dict[str, Any], io_description: ComplexChannelDescription
-    ):
-        # Set the marker_debug_mode_enable option in the io config:
-        _set_hardware_config_value(
-            hw_config_dict=io_config,
-            hw_config_key="marker_debug_mode_enable",
-            hw_compilation_config_value=io_description.marker_debug_mode_enable,
-        )
-        # Set the mix_lo option in the io config:
-        _set_hardware_config_value(
-            hw_config_dict=io_config,
-            hw_config_key="mix_lo",
-            hw_compilation_config_value=io_description.mix_lo,
-        )
-        # Set the downconverter_freq option in the io config:
-        _set_hardware_config_value(
-            hw_config_dict=io_config,
-            hw_config_key="downconverter_freq",
-            hw_compilation_config_value=io_description.downconverter_freq,
-        )
-
     def _propagate_channel_description_settings(
         config: dict,
         description: Any,
@@ -1077,46 +1043,86 @@ def generate_hardware_config(compilation_config: CompilationConfig):
                 # most likely because it is not specified in the connectivity
                 continue
 
+            config[key][
+                "marker_debug_mode_enable"
+            ] = io_description.marker_debug_mode_enable
             if "complex" in key:
-                _propagate_complex_channel_description_settings(
-                    io_config=config[key],
-                    io_description=io_description,
-                )
-            else:
-                _set_hardware_config_value(
-                    hw_config_dict=config[key],
-                    hw_config_key="marker_debug_mode_enable",
-                    hw_compilation_config_value=io_description.marker_debug_mode_enable,
-                )
+                config[key]["mix_lo"] = io_description.mix_lo
+                config[key]["downconverter_freq"] = io_description.downconverter_freq
 
-    if not isinstance(
-        compilation_config.hardware_compilation_config.connectivity, Dict
-    ):
-        raise KeyError(
-            f"CompilationConfig.connectivity does not contain a "
-            f"hardware config dict:\n {compilation_config.hardware_compilation_config.connectivity=}"
-        )
-
-    hardware_config = deepcopy(
-        compilation_config.hardware_compilation_config.connectivity
-    )
     hardware_description = (
         compilation_config.hardware_compilation_config.hardware_description
     )
     hardware_options = compilation_config.hardware_compilation_config.hardware_options
+    connectivity = compilation_config.hardware_compilation_config.connectivity
 
-    # Add digital clock to digital IO's, so that users don't have to specify it.
-    _recursive_digital_io_search(hardware_config)
-
-    port_clocks = find_all_port_clock_combinations(hardware_config)
+    hardware_config = {}
+    if isinstance(connectivity, dict):
+        hardware_config = connectivity
 
     hardware_config["backend"] = export_python_object_to_path_string(
         compilation_config.hardware_compilation_config.backend
     )
 
+    port_clocks = _extract_port_clocks_used(schedule=schedule)
+
+    # Add connectivity information to the hardware config:
+    if isinstance(connectivity, Connectivity):
+        connectivity_graph = (
+            compilation_config.hardware_compilation_config.connectivity.graph
+        )
+        for port, clock in port_clocks:
+            # Find all nodes connected to quantum device port
+            connected_nodes = {}
+            for node in connectivity_graph:
+                if port in node:
+                    connected_nodes = connectivity_graph[node]
+                    break
+
+            for connected_node in connected_nodes:
+                io_path = connected_node.split(sep=".")
+                instrument = io_path[0]
+
+                lo_name = None
+                if hardware_description[instrument].instrument_type == "IQMixer":
+                    # Find which lo is used for this IQ mixer
+                    lo_name = list(connectivity_graph[instrument + ".lo"])[0].split(
+                        sep="."
+                    )[0]
+                    # Find which instrument is connected to if port
+                    io_path = list(connectivity_graph[instrument + ".if"])[0].split(
+                        sep="."
+                    )
+
+                if hardware_description[io_path[0]].instrument_type == "Cluster":
+                    # Format the io_path to match the hardware config:
+                    # e.g., ["cluster0", "cluster0_module1", "complex_output_0"]
+                    io_path[1] = f"{io_path[0]}_{io_path[1]}"
+
+                # Set port-clock combination in io config:
+                instr_config: dict = hardware_config
+                for key in io_path[:-1]:
+                    if key not in instr_config:
+                        instr_config[key] = {}
+                    instr_config = instr_config[key]
+
+                instrument_io = io_path[-1]
+                if instrument_io not in instr_config:
+                    instr_config[instrument_io] = {"portclock_configs": []}
+                instr_config[instrument_io]["portclock_configs"].append(
+                    {"port": port, "clock": clock}
+                )
+                if lo_name is not None:
+                    instr_config[instrument_io]["lo_name"] = lo_name
+
+    # Add info from hardware description to hardware config:
     if hardware_description is not None:
-        # Add info from hardware description to hardware config
         for instr_name, instr_description in hardware_description.items():
+            if instr_description.instrument_type == "IQMixer":
+                # Skip IQMixer instruments, as they are not present in the old-style
+                # hardware config
+                continue
+
             if hardware_config.get(instr_name) is None:
                 # Initialize instrument config dict
                 hardware_config[instr_name] = {}
@@ -1128,11 +1134,7 @@ def generate_hardware_config(compilation_config: CompilationConfig):
                 "sequence_to_file",
             ]:
                 try:
-                    _set_hardware_config_value(
-                        hw_config_dict=instr_config,
-                        hw_config_key=key,
-                        hw_compilation_config_value=getattr(instr_description, key),
-                    )
+                    instr_config[key] = getattr(instr_description, key)
                 except AttributeError:
                     pass
 
@@ -1154,13 +1156,7 @@ def generate_hardware_config(compilation_config: CompilationConfig):
 
                     for key in ["instrument_type", "sequence_to_file"]:
                         try:
-                            _set_hardware_config_value(
-                                hw_config_dict=module_config,
-                                hw_config_key=key,
-                                hw_compilation_config_value=getattr(
-                                    module_description, key
-                                ),
-                            )
+                            module_config[key] = getattr(module_description, key)
                         except AttributeError:
                             pass
 
@@ -1170,24 +1166,19 @@ def generate_hardware_config(compilation_config: CompilationConfig):
                     )
 
             if instr_description.instrument_type == "LocalOscillator":
-                # Set the lo power in the lo config:
-                _set_hardware_config_value(
-                    hw_config_dict=instr_config,
-                    hw_config_key=instr_description.power_param,
-                    hw_compilation_config_value=instr_description.power,
-                )
+                instr_config[instr_description.power_param] = instr_description.power
 
     if hardware_options is not None:
-        for key in ["latency_corrections", "distortion_corrections"]:
-            try:
-                _set_hardware_config_value(
-                    hw_config_dict=hardware_config,
-                    hw_config_key=key,
-                    hw_compilation_config_value=hardware_options.model_dump()[key],
-                )
-            except KeyError:
-                pass
+        if hardware_options.latency_corrections is not None:
+            hardware_config["latency_corrections"] = hardware_options.model_dump()[
+                "latency_corrections"
+            ]
+        if hardware_options.distortion_corrections is not None:
+            hardware_config["distortion_corrections"] = hardware_options.model_dump()[
+                "distortion_corrections"
+            ]
 
+        # Set Hardware Options for all port-clock combinations in the Schedule:
         if hardware_options.modulation_frequencies is not None:
             for port, clock in port_clocks:
                 if (
@@ -1208,11 +1199,7 @@ def generate_hardware_config(compilation_config: CompilationConfig):
                     pc_config = pc_config[key]
 
                 # Set the interm_freq in the portclock config:
-                _set_hardware_config_value(
-                    hw_config_dict=pc_config,
-                    hw_config_key="interm_freq",
-                    hw_compilation_config_value=pc_mod_freqs.interm_freq,
-                )
+                pc_config["interm_freq"] = pc_mod_freqs.interm_freq
 
                 # Extract instrument config and I/O channel config dicts:
                 instr_config = hardware_config
@@ -1223,11 +1210,7 @@ def generate_hardware_config(compilation_config: CompilationConfig):
 
                 # If RF module, set the lo frequency in the I/O config:
                 if "RF" in instr_config["instrument_type"]:
-                    _set_hardware_config_value(
-                        hw_config_dict=io_config,
-                        hw_config_key="lo_freq",
-                        hw_compilation_config_value=pc_mod_freqs.lo_freq,
-                    )
+                    io_config["lo_freq"] = pc_mod_freqs.lo_freq
                 # Else, set the lo frequency in the external lo config:
                 else:
                     lo_name: str = io_config["lo_name"]
@@ -1237,11 +1220,7 @@ def generate_hardware_config(compilation_config: CompilationConfig):
                             f"be used for {port=} and {clock=} not found! Make "
                             f"sure it is present in the hardware configuration."
                         )
-                    _set_hardware_config_value(
-                        hw_config_dict=lo_config,
-                        hw_config_key="frequency",
-                        hw_compilation_config_value=pc_mod_freqs.lo_freq,
-                    )
+                    lo_config["frequency"] = pc_mod_freqs.lo_freq
 
         mixer_corrections = hardware_options.mixer_corrections
         if mixer_corrections is not None:
@@ -1268,11 +1247,7 @@ def generate_hardware_config(compilation_config: CompilationConfig):
                     (io_config, "dc_mixer_offset_I", pc_mix_corr.dc_offset_i),
                     (io_config, "dc_mixer_offset_Q", pc_mix_corr.dc_offset_q),
                 ]:
-                    _set_hardware_config_value(
-                        hw_config_dict=config,
-                        hw_config_key=hw_config_key,
-                        hw_compilation_config_value=hw_compilation_config_value,
-                    )
+                    config[hw_config_key] = hw_compilation_config_value
 
         input_gain = hardware_options.input_gain
         if input_gain is not None:
@@ -1301,33 +1276,13 @@ def generate_hardware_config(compilation_config: CompilationConfig):
 
                 # Set the input_gain in the I/O channel config:
                 if isinstance(pc_input_gain, ComplexInputGain):
-                    # Set the input_gain_I in the I/O config:
-                    _set_hardware_config_value(
-                        hw_config_dict=io_config,
-                        hw_config_key="input_gain_I",
-                        hw_compilation_config_value=pc_input_gain.gain_I,
-                    )
-                    # Set the input_gain_Q in the I/O config:
-                    _set_hardware_config_value(
-                        hw_config_dict=io_config,
-                        hw_config_key="input_gain_Q",
-                        hw_compilation_config_value=pc_input_gain.gain_Q,
-                    )
+                    io_config["input_gain_I"] = pc_input_gain.gain_I
+                    io_config["input_gain_Q"] = pc_input_gain.gain_Q
                 elif isinstance(pc_input_gain, RealInputGain):
                     if io_name == "real_output_0":
-                        # Set the input_gain_0 in the I/O config:
-                        _set_hardware_config_value(
-                            hw_config_dict=io_config,
-                            hw_config_key="input_gain_0",
-                            hw_compilation_config_value=pc_input_gain,
-                        )
+                        io_config["input_gain_0"] = pc_input_gain.gain
                     elif io_name == "real_output_1":
-                        # Set the input_gain_1 in the I/O config:
-                        _set_hardware_config_value(
-                            hw_config_dict=io_config,
-                            hw_config_key="input_gain_1",
-                            hw_compilation_config_value=pc_input_gain,
-                        )
+                        io_config["input_gain_1"] = pc_input_gain.gain
 
         output_att = hardware_options.output_att
         if output_att is not None:
@@ -1348,11 +1303,7 @@ def generate_hardware_config(compilation_config: CompilationConfig):
                     io_config = io_config[key]
 
                 # Set the output_att in the I/O channel config:
-                _set_hardware_config_value(
-                    hw_config_dict=io_config,
-                    hw_config_key="output_att",
-                    hw_compilation_config_value=pc_output_att,
-                )
+                io_config["output_att"] = pc_output_att
 
         input_att = hardware_options.input_att
         if input_att is not None:
@@ -1373,11 +1324,7 @@ def generate_hardware_config(compilation_config: CompilationConfig):
                     io_config = io_config[key]
 
                 # Set the input_att in the I/O channel config:
-                _set_hardware_config_value(
-                    hw_config_dict=io_config,
-                    hw_config_key="input_att",
-                    hw_compilation_config_value=pc_input_att,
-                )
+                io_config["input_att"] = pc_input_att
 
         sequencer_options = hardware_options.sequencer_options
         if sequencer_options is not None:
@@ -1398,78 +1345,22 @@ def generate_hardware_config(compilation_config: CompilationConfig):
                 for key in pc_path:
                     pc_config = pc_config[key]
 
-                # Set the ttl_acq_threshold in the port-clock config:
-                _set_hardware_config_value(
-                    hw_config_dict=pc_config,
-                    hw_config_key="ttl_acq_threshold",
-                    hw_compilation_config_value=pc_sequencer_options.ttl_acq_threshold,
-                )
+                pc_config["ttl_acq_threshold"] = pc_sequencer_options.ttl_acq_threshold
+                pc_config[
+                    "init_offset_awg_path_0"
+                ] = pc_sequencer_options.init_offset_awg_path_0
+                pc_config[
+                    "init_offset_awg_path_1"
+                ] = pc_sequencer_options.init_offset_awg_path_1
+                pc_config[
+                    "init_gain_awg_path_0"
+                ] = pc_sequencer_options.init_gain_awg_path_0
+                pc_config[
+                    "init_gain_awg_path_1"
+                ] = pc_sequencer_options.init_gain_awg_path_1
+                pc_config["qasm_hook_func"] = pc_sequencer_options.qasm_hook_func
 
-                # Set the init_offsets in the port-clock config:
-                legacy_init_offsets = (
-                    pc_config.get("init_offset_awg_path_0"),
-                    pc_config.get("init_offset_awg_path_1"),
-                )
-
-                if (
-                    pc_sequencer_options.init_offset_awg_path_0,
-                    pc_sequencer_options.init_offset_awg_path_1,
-                ) == (None, None):
-                    pass
-                elif legacy_init_offsets == (None, None):
-                    pc_config[
-                        "init_offset_awg_path_0"
-                    ] = pc_sequencer_options.init_offset_awg_path_0
-                    pc_config[
-                        "init_offset_awg_path_1"
-                    ] = pc_sequencer_options.init_offset_awg_path_1
-                elif legacy_init_offsets != (
-                    pc_sequencer_options.init_offset_awg_path_0,
-                    pc_sequencer_options.init_offset_awg_path_1,
-                ):
-                    raise ValueError(
-                        f"Trying to set inital offsets for sequencer on {port=} and {clock=} to"
-                        f" ({pc_sequencer_options.init_offset_awg_path_0},{pc_sequencer_options.init_offset_awg_path_1})"
-                        f" from the hardware options while they have previously been set to"
-                        f" {legacy_init_offsets} in the hardware config. To avoid conflicting"
-                        f" settings, please make sure this value is only set in one place."
-                    )
-
-                # Set the init_gains in the port-clock config:
-                legacy_init_gains = (
-                    pc_config.get("init_gain_awg_path_0"),
-                    pc_config.get("init_gain_awg_path_1"),
-                )
-
-                if (
-                    pc_sequencer_options.init_gain_awg_path_0,
-                    pc_sequencer_options.init_gain_awg_path_1,
-                ) == (None, None):
-                    pass
-                elif legacy_init_gains == (None, None):
-                    pc_config[
-                        "init_gain_awg_path_0"
-                    ] = pc_sequencer_options.init_gain_awg_path_0
-                    pc_config[
-                        "init_gain_awg_path_1"
-                    ] = pc_sequencer_options.init_gain_awg_path_1
-                elif legacy_init_gains != (
-                    pc_sequencer_options.init_gain_awg_path_0,
-                    pc_sequencer_options.init_gain_awg_path_1,
-                ):
-                    raise ValueError(
-                        f"Trying to set inital gain settings for sequencer on {port=} and {clock=} to"
-                        f" ({pc_sequencer_options.init_gain_awg_path_0},{pc_sequencer_options.init_gain_awg_path_1})"
-                        f" from the hardware options while they have previously been set to"
-                        f" {legacy_init_gains} in the hardware config. To avoid conflicting"
-                        f" settings, please make sure this value is only set in one place."
-                    )
-
-                # Set the qasm_hook_func in the port-clock config:
-                _set_hardware_config_value(
-                    hw_config_dict=pc_config,
-                    hw_config_key="qasm_hook_func",
-                    hw_compilation_config_value=pc_sequencer_options.qasm_hook_func,
-                )
+    # Add digital clock to digital IO's, so that users don't have to specify it.
+    _recursive_digital_io_search(hardware_config)
 
     return hardware_config

@@ -14,6 +14,13 @@ from typing import Union
 
 import pytest
 
+from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.helpers.collections import find_all_port_clock_combinations
+from quantify_scheduler.operations.pulse_library import SquarePulse
+from quantify_scheduler.schedules.schedule import Schedule
+
+from quantify_scheduler.backends.types.qblox import BasebandModuleSettings
 from quantify_scheduler.backends.qblox import helpers
 from quantify_scheduler.backends.qblox.enums import IoMode
 from quantify_scheduler.backends.qblox.instrument_compilers import (
@@ -21,6 +28,9 @@ from quantify_scheduler.backends.qblox.instrument_compilers import (
     QcmRfModule,
     QrmModule,
     QrmRfModule,
+)
+from quantify_scheduler.backends.qblox.qblox_hardware_config_old_style import (
+    hardware_config as qblox_hardware_config_old_style,
 )
 
 
@@ -272,3 +282,63 @@ def test_validate_io_indices(module):
 )
 def test_validate_sequencer_mode(io_name, sequencer_mode):
     assert sequencer_mode == helpers.get_io_info(io_name)[0]
+
+
+def test_generate_hardware_config(hardware_compilation_config_qblox_example):
+    sched = Schedule("All portclocks schedule")
+    quantum_device = QuantumDevice("All_portclocks_device")
+    quantum_device.hardware_config(hardware_compilation_config_qblox_example)
+
+    qubits = {}
+    sched = Schedule("All portclocks schedule")
+    for port, clock in find_all_port_clock_combinations(
+        qblox_hardware_config_old_style
+    ):
+        sched.add(SquarePulse(port=port, clock=clock, amp=0.25, duration=12e-9))
+        if (qubit_name := port.split(":")[0]) not in quantum_device.elements():
+            qubits[qubit_name] = BasicTransmonElement(qubit_name)
+            quantum_device.add_element(qubits[qubit_name])
+
+    generated_hw_config = helpers.generate_hardware_config(
+        schedule=sched, compilation_config=quantum_device.generate_compilation_config()
+    )
+
+    assert generated_hw_config == qblox_hardware_config_old_style
+
+
+def test_configure_input_gains_overwrite_gain():
+    # Partial test of overwriting gain setting. Note: In using the new
+    # QbloxHardwareOptions collisions like these are no longer possible,
+    # so after migrating to the new-style hardware compilation config
+    # this test can be removed
+
+    instrument_cfg = {
+        "instrument_type": "QRM",
+        "real_output_1": {
+            "input_gain_1": 10,
+            "portclock_configs": [
+                {"port": "q0:res", "clock": "q0.ro"},
+            ],
+        },
+    }
+
+    test_module = QrmModule(
+        parent=None,
+        name="tester",
+        total_play_time=1,
+        instrument_cfg=instrument_cfg,
+    )
+
+    test_module._settings = BasebandModuleSettings.extract_settings_from_mapping(
+        instrument_cfg
+    )
+    test_module._settings.in1_gain = 5
+
+    with pytest.raises(ValueError) as error:
+        test_module._configure_input_gains()
+
+    assert (
+        str(error.value)
+        == "Overwriting gain of real_output_1 of module tester to in1_gain: 10."
+        "\nIt was previously set to in1_gain: 5."
+    )

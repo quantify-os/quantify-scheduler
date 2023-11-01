@@ -165,28 +165,10 @@ hardware_comp_cfg = {
         },
     },
     "connectivity": {
-        f"{cluster.name}": {
-            f"{cluster.module1.name}": {
-                "complex_output_0": {
-                    "portclock_configs": [
-                        {
-                            "port": "q0:res",
-                            "clock": "q0.ro",
-                        }
-                    ],
-                },
-            },
-            f"{cluster.module2.name}": {
-                "complex_output_0": {
-                    "portclock_configs": [
-                        {
-                            "port": "q0:mw",
-                            "clock": "q0.01",
-                        }
-                    ],
-                },
-            },
-        },
+        "graph": [
+            (f"{cluster.name}.{cluster.module1.name.split('_')[-1]}.complex_output_0", "q0:res"),
+            (f"{cluster.name}.{cluster.module2.name.split('_')[-1]}.complex_output_0", "q0:mw")
+        ]
     },
 }
 ```

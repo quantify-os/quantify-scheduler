@@ -19,6 +19,7 @@ import warnings
 from contextlib import nullcontext
 from typing import Dict, Generator, Optional
 
+import networkx as nx
 import numpy as np
 import pytest
 from pydantic import ValidationError
@@ -48,13 +49,14 @@ from quantify_scheduler.backends.qblox.helpers import (
 from quantify_scheduler.backends.qblox.instrument_compilers import (
     QcmModule,
     QcmRfModule,
-    QrmModule,
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
+from quantify_scheduler.backends.qblox.qblox_hardware_config_old_style import (
+    hardware_config as qblox_hardware_config_old_style,
+)
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.backends.types.qblox import BasebandModuleSettings
 from quantify_scheduler.compilation import _determine_absolute_timing
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.helpers.collections import (
     find_all_port_clock_combinations,
     find_inner_dicts_containing_key,
@@ -85,6 +87,7 @@ from quantify_scheduler.schedules.timedomain_schedules import (
     allxy_sched,
     readout_calibration_sched,
 )
+
 from tests.fixtures.mock_setup import close_instruments
 
 REGENERATE_REF_FILES: bool = False  # Set flag to true to regenerate the reference files
@@ -467,14 +470,13 @@ def test_find_inner_dicts_containing_key():
 
 
 def test_find_all_port_clock_combinations(
-    hardware_compilation_config_qblox_example,
     hardware_cfg_pulsar,
     hardware_cfg_rf,
 ):
     combined_hw_cfg = {
-        **hardware_compilation_config_qblox_example["connectivity"],
         **hardware_cfg_pulsar,
         **hardware_cfg_rf["cluster0"],
+        **qblox_hardware_config_old_style,
     }
 
     assert set(find_all_port_clock_combinations(combined_hw_cfg)) == {
@@ -500,16 +502,34 @@ def test_find_all_port_clock_combinations(
     }
 
 
-def test_generate_port_clock_to_device_map(
-    hardware_compilation_config_qblox_example,
+def test_find_all_port_clock_combinations_generated_hardware_config(
+    make_schedule_with_measurement, compile_config_basic_transmon_qblox_hardware
 ):
-    portclock_map = generate_port_clock_to_device_map(
-        hardware_compilation_config_qblox_example["connectivity"]
+    sched = make_schedule_with_measurement("q0")
+    sched.add(SquarePulse(amp=0.5, duration=1e-6, port="q0:fl", clock="cl0.baseband"))
+    compiler = SerialCompiler("compiler")
+    compiled_sched = compiler.compile(
+        sched, compile_config_basic_transmon_qblox_hardware
     )
+
+    hardware_config = generate_hardware_config(
+        compiled_sched, compile_config_basic_transmon_qblox_hardware
+    )
+
+    portclocks = find_all_port_clock_combinations(hardware_config)
+    portclocks = set(portclocks)
+    assert portclocks == {
+        ("q0:mw", "q0.01"),
+        ("q0:res", "q0.ro"),
+        ("q0:fl", "cl0.baseband"),
+    }
+
+
+def test_generate_port_clock_to_device_map():
+    portclock_map = generate_port_clock_to_device_map(qblox_hardware_config_old_style)
 
     assert set(portclock_map.keys()) == {
         ("q4:mw", "q4.01"),
-        ("q0:mw", "q0.01"),
         ("q5:mw", "q5.01"),
         ("q6:mw", "q6.01"),
         ("q4:res", "q4.ro"),
@@ -520,6 +540,29 @@ def test_generate_port_clock_to_device_map(
         ("q2:fl", "cl0.baseband"),
         ("q3:fl", "cl0.baseband"),
         ("q4:fl", "cl0.baseband"),
+    }
+
+
+def test_generate_port_clock_to_device_map_generated_hardware_config(
+    make_schedule_with_measurement, compile_config_basic_transmon_qblox_hardware
+):
+    sched = make_schedule_with_measurement("q0")
+    sched.add(SquarePulse(amp=0.5, duration=1e-6, port="q0:fl", clock="cl0.baseband"))
+    compiler = SerialCompiler("compiler")
+    compiled_sched = compiler.compile(
+        sched, compile_config_basic_transmon_qblox_hardware
+    )
+
+    hardware_config = generate_hardware_config(
+        compiled_sched, compile_config_basic_transmon_qblox_hardware
+    )
+
+    portclock_map = generate_port_clock_to_device_map(hardware_config)
+    assert (None, None) not in portclock_map.keys()
+    assert set(portclock_map.keys()) == {
+        ("q0:fl", "cl0.baseband"),
+        ("q0:mw", "q0.01"),
+        ("q0:res", "q0.ro"),
     }
 
 
@@ -684,7 +727,7 @@ def test_portclocks(
     make_basic_multi_qubit_schedule,
     compile_config_basic_transmon_qblox_hardware,
 ):
-    sched = make_basic_multi_qubit_schedule(["q4"])
+    sched = make_basic_multi_qubit_schedule(["q0", "q4"])
 
     compiler = SerialCompiler(name="compiler")
     sched = compiler.compile(
@@ -692,7 +735,7 @@ def test_portclocks(
     )
 
     hardware_cfg = generate_hardware_config(
-        compilation_config=compile_config_basic_transmon_qblox_hardware
+        schedule=sched, compilation_config=compile_config_basic_transmon_qblox_hardware
     )
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         sched, hardware_cfg
@@ -706,11 +749,7 @@ def test_portclocks(
 
     compilers = container.instrument_compilers["cluster0"].instrument_compilers
     assert compilers["cluster0_module1"].portclocks == [("q4:mw", "q4.01")]
-    assert compilers["cluster0_module2"].portclocks == [
-        ("q0:mw", "q0.01"),
-        ("q5:mw", "q5.01"),
-        ("q6:mw", "q6.01"),
-    ]
+    assert compilers["cluster0_module2"].portclocks == [("q0:mw", "q0.01")]
 
 
 def test_compile_simple(
@@ -967,7 +1006,7 @@ def test_compile_cz_gate(
     )
 
     program_lines = {}
-    for seq in ["seq0", "seq1", "seq2"]:
+    for seq in ["seq0", "seq1", "seq2", "seq3"]:
         program_lines[seq] = compiled_sched.compiled_instructions["qcm0"]["sequencers"][
             seq
         ]["sequence"]["program"].splitlines()
@@ -983,8 +1022,8 @@ def test_compile_cz_gate(
 
     assert any(
         re.search(rf"^\s*set_ph_delta\s+175000000(\s|$)", line)
-        for line in program_lines["seq2"]
-    ), "\n".join(line for line in program_lines["seq2"])
+        for line in program_lines["seq3"]
+    ), "\n".join(line for line in program_lines["seq3"])
 
 
 def test_compile_simple_with_acq(
@@ -1658,7 +1697,8 @@ def test_from_mapping(
 ):
     pulse_only_schedule = _determine_absolute_timing(pulse_only_schedule)
     hardware_cfg = generate_hardware_config(
-        compilation_config=compile_config_basic_transmon_qblox_hardware
+        schedule=pulse_only_schedule,
+        compilation_config=compile_config_basic_transmon_qblox_hardware,
     )
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         pulse_only_schedule, hardware_cfg
@@ -1706,48 +1746,6 @@ def test_real_mode_container(
     for output, seq_name in enumerate(f"seq{i}" for i in range(3)):
         seq_settings = qcm0.sequencers[seq_name].settings
         assert seq_settings.connected_outputs[0] == output
-
-
-@pytest.mark.parametrize(
-    "instr_path, setting_key, setting_value",
-    [
-        (["cluster0"], "instrument_type", "Pulsar_QRM"),
-        (["cluster0"], "ref", "external"),
-        (["cluster0", "cluster0_module1"], "instrument_type", "QRM"),
-        (["lo0"], "power", "2"),
-    ],
-)
-@pytest.mark.deprecated
-def test_set_conflicting_cluster_description(
-    mock_setup_basic_transmon_with_standard_params,
-    hardware_compilation_config_qblox_example,
-    instr_path,
-    setting_key,
-    setting_value,
-):
-    sched = Schedule("single_gate_experiment")
-    sched.add(X("q4"))
-
-    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    hardware_compilation_config = copy.deepcopy(
-        hardware_compilation_config_qblox_example
-    )
-    hardware_config = hardware_compilation_config["connectivity"]
-    instr_config = hardware_config
-    for key in instr_path:
-        if instr_config.get(key) is None:
-            instr_config[key] = {}
-        instr_config = instr_config[key]
-    instr_config[setting_key] = setting_value
-
-    quantum_device.hardware_config(hardware_compilation_config)
-
-    with pytest.raises(ValueError, match="conflicting settings"):
-        compiler = SerialCompiler(name="compiler")
-        _ = compiler.compile(
-            sched,
-            config=quantum_device.generate_compilation_config(),
-        )
 
 
 @pytest.mark.deprecated
@@ -1798,90 +1796,6 @@ def test_assign_frequencies_baseband_hardware_config(
     assert compiled_instructions["qcm0"]["sequencers"]["seq1"]["modulation_freq"] == if1
 
 
-@pytest.mark.deprecated
-def test_set_conflicting_interm_freq_baseband(
-    mock_setup_basic_transmon_with_standard_params,
-    hardware_compilation_config_qblox_example,
-):
-    sched = Schedule("single_gate_experiment")
-    sched.add(X("q4"))
-
-    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    hardware_compilation_config = copy.deepcopy(
-        hardware_compilation_config_qblox_example
-    )
-    hardware_config = hardware_compilation_config["connectivity"]
-    hardware_config["cluster0"]["cluster0_module1"]["complex_output_0"][
-        "portclock_configs"
-    ] = {"port": "q4:mw", "clock": "q4.01", "interm_freq": 123e6}
-
-    quantum_device.hardware_config(hardware_compilation_config)
-
-    with pytest.raises(ValueError, match="conflicting settings"):
-        compiler = SerialCompiler(name="compiler")
-        _ = compiler.compile(
-            sched,
-            config=quantum_device.generate_compilation_config(),
-        )
-
-
-@pytest.mark.deprecated
-def test_set_conflicting_lo_freq_baseband(
-    mock_setup_basic_transmon_with_standard_params,
-    hardware_compilation_config_qblox_example,
-):
-    sched = Schedule("single_gate_experiment")
-    sched.add(X("q4"))
-
-    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    hardware_compilation_config = copy.deepcopy(
-        hardware_compilation_config_qblox_example
-    )
-    hardware_config = hardware_compilation_config["connectivity"]
-    hardware_config["lo0"] = {"frequency": 5.4e9}
-    hardware_compilation_config["hardware_options"]["modulation_frequencies"][
-        "q4:mw-q4.01"
-    ]["lo_freq"] = 5.3e9
-
-    quantum_device.hardware_config(hardware_compilation_config)
-
-    with pytest.raises(ValueError, match="conflicting settings"):
-        compiler = SerialCompiler(name="compiler")
-        _ = compiler.compile(
-            sched,
-            config=quantum_device.generate_compilation_config(),
-        )
-
-
-@pytest.mark.deprecated
-def test_set_conflicting_downconverter_freq(
-    mock_setup_basic_transmon_with_standard_params,
-    hardware_compilation_config_qblox_example,
-):
-    sched = Schedule("single_gate_experiment")
-    sched.add(X("q4"))
-
-    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    hardware_compilation_config = copy.deepcopy(
-        hardware_compilation_config_qblox_example
-    )
-    hardware_compilation_config["connectivity"]["cluster0"]["cluster0_module1"][
-        "complex_output_0"
-    ]["downconverter_freq"] = 9e9
-    hardware_compilation_config["hardware_description"]["cluster0"]["modules"]["1"][
-        "complex_output_0"
-    ] = {"downconverter_freq": 8e9}
-
-    quantum_device.hardware_config(hardware_compilation_config)
-
-    with pytest.raises(ValueError, match="conflicting settings"):
-        compiler = SerialCompiler(name="compiler")
-        _ = compiler.compile(
-            sched,
-            config=quantum_device.generate_compilation_config(),
-        )
-
-
 def test_external_lo_not_present_raises(compile_config_basic_transmon_qblox_hardware):
     sched = Schedule("two_gate_experiment")
     sched.add(X("q4"))
@@ -1890,9 +1804,10 @@ def test_external_lo_not_present_raises(compile_config_basic_transmon_qblox_hard
     compile_config = copy.deepcopy(compile_config_basic_transmon_qblox_hardware)
 
     # Change to non-existent LO:
-    compile_config.hardware_compilation_config.connectivity["cluster0"][
-        "cluster0_module1"
-    ]["complex_output_0"]["lo_name"] = "non_existent_lo"
+    compile_config.hardware_compilation_config.connectivity.graph = nx.relabel_nodes(
+        compile_config.hardware_compilation_config.connectivity.graph,
+        {"lo0.output": "non_existent_lo.output"},
+    )
 
     with pytest.raises(
         RuntimeError,
@@ -1938,12 +1853,15 @@ def test_assign_frequencies_baseband(compile_config_basic_transmon_qblox_hardwar
     connectivity = (
         compile_config_basic_transmon_qblox_hardware.hardware_compilation_config.connectivity
     )
-    mw_lo_name = connectivity["cluster0"]["cluster0_module1"]["complex_output_0"][
-        "lo_name"
-    ]
-    ro_lo_name = connectivity["cluster0"]["cluster0_module3"]["complex_output_0"][
-        "lo_name"
-    ]
+    mw_iq_mixer_name = [n for n in connectivity.graph["q4:mw"]][0].split(".")[0]
+    mw_lo_name = [n for n in connectivity.graph[mw_iq_mixer_name + ".lo"]][0].split(
+        "."
+    )[0]
+
+    ro_iq_mixer_name = [n for n in connectivity.graph["q4:res"]][0].split(".")[0]
+    ro_lo_name = [n for n in connectivity.graph[ro_iq_mixer_name + ".lo"]][0].split(
+        "."
+    )[0]
 
     generic_icc = constants.GENERIC_IC_COMPONENT_NAME
     assert compiled_instructions[generic_icc][f"{mw_lo_name}.frequency"] == lo_mw
@@ -2115,36 +2033,6 @@ def test_assign_frequencies_rf_hardware_config(
     assert qcm_program["sequencers"]["seq1"]["modulation_freq"] == if1
 
 
-@pytest.mark.deprecated
-def test_set_conflicting_lo_freq_rf(
-    mock_setup_basic_transmon_with_standard_params,
-    hardware_compilation_config_qblox_example,
-):
-    sched = Schedule("single_gate_experiment")
-    sched.add(X("q0"))
-
-    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    hardware_compilation_config = copy.deepcopy(
-        hardware_compilation_config_qblox_example
-    )
-    hardware_config = hardware_compilation_config["connectivity"]
-    hardware_config["cluster0"]["cluster0_module2"]["complex_output_0"][
-        "lo_freq"
-    ] = 5.4e9
-    hardware_compilation_config["hardware_options"]["modulation_frequencies"][
-        "q0:mw-q0.01"
-    ]["lo_freq"] = 5.3e9
-
-    quantum_device.hardware_config(hardware_compilation_config)
-
-    with pytest.raises(ValueError, match="conflicting settings"):
-        compiler = SerialCompiler(name="compiler")
-        _ = compiler.compile(
-            sched,
-            config=quantum_device.generate_compilation_config(),
-        )
-
-
 def test_assign_frequencies_rf(compile_config_basic_transmon_qblox_hardware):
     sched = Schedule("two_gate_experiment")
     sched.add(X("q0"))
@@ -2214,13 +2102,12 @@ def test_assign_frequencies_rf_downconverter(
     hardware_compilation_config = copy.deepcopy(
         hardware_compilation_config_qblox_example
     )
-    hardware_cfg = hardware_compilation_config["connectivity"]
-    hardware_cfg["cluster0"]["cluster0_module2"]["complex_output_0"][
-        "downconverter_freq"
-    ] = downconverter_freq0
-    hardware_cfg["cluster0"]["cluster0_module2"]["complex_output_1"][
-        "downconverter_freq"
-    ] = downconverter_freq1
+    hardware_compilation_config["hardware_description"]["cluster0"]["modules"]["2"][
+        "complex_output_0"
+    ] = {"downconverter_freq": downconverter_freq0}
+    hardware_compilation_config["hardware_description"]["cluster0"]["modules"]["2"][
+        "complex_output_1"
+    ] = {"downconverter_freq": downconverter_freq1}
 
     mock_setup = mock_setup_basic_transmon_elements
     quantum_device = mock_setup["quantum_device"]
@@ -2253,16 +2140,13 @@ def test_assign_frequencies_rf_downconverter(
         )
     if error is not None:
         if downconverter_freq0 is not None:
-            portclock_config = hardware_cfg["cluster0"]["cluster0_module2"][
-                "complex_output_0"
-            ]["portclock_configs"][1]
             if downconverter_freq0 < 0:
                 assert (
                     str(error.value) == f"Downconverter frequency must be positive "
                     f"(downconverter_freq={downconverter_freq0:e}) "
                     f"(for 'seq0' of 'cluster0_module2' with "
-                    f"port '{portclock_config['port']}' and "
-                    f"clock '{portclock_config['clock']}')"
+                    f"port '{qubit0.name}:mw' and "
+                    f"clock '{qubit0.name}.01')"
                 )
             elif downconverter_freq0 < qubit0_clock_freq:
                 assert (
@@ -2271,8 +2155,8 @@ def test_assign_frequencies_rf_downconverter(
                     f"(downconverter_freq={downconverter_freq0:e}, "
                     f"clock_freq={qubit0_clock_freq:e}) "
                     f"(for 'seq0' of 'cluster0_module2' with "
-                    f"port '{portclock_config['port']}' and "
-                    f"clock '{portclock_config['clock']}')"
+                    f"port '{qubit0.name}:mw' and "
+                    f"clock '{qubit0.name}.01')"
                 )
         return
 
@@ -2321,64 +2205,52 @@ def test_assign_frequencies_rf_downconverter(
 
 @pytest.mark.deprecated
 @pytest.mark.parametrize(
-    "element_names, input_att_output",
-    [
-        (["q5"], True),
-        (["q5"], False),
-    ],
+    "use_output, element_names", ([use_output, ["q0"]] for use_output in [True, False])
 )
-def test_assign_attenuation_hardware_config(
+def test_assign_attenuation_old_style_hardware_config(
     mock_setup_basic_transmon_elements,
-    hardware_compilation_config_qblox_example,
+    use_output,
     element_names,
-    input_att_output,
 ):
     """
     Test function that checks if attenuation settings on a QRM-RF compile correctly.
     Also checks if floats are correctly converted to ints (if they are close to ints).
     """
-    sched = Schedule("readout_experiment")
-    sched.add(Measure(element_names[0]))
+    hardware_cfg = copy.deepcopy(qblox_hardware_config_old_style)
 
-    quantum_device = mock_setup_basic_transmon_elements["quantum_device"]
-
-    quantum_device.hardware_config(hardware_compilation_config_qblox_example)
-    hardware_cfg = generate_hardware_config(
-        compilation_config=quantum_device.generate_compilation_config()
-    )
-
-    input_att = 10
     complex_input = hardware_cfg["cluster0"]["cluster0_module4"]["complex_input_0"]
     complex_output = hardware_cfg["cluster0"]["cluster0_module4"]["complex_output_0"]
-    if input_att_output:
-        complex_output["input_att"] = input_att
+    if use_output:
+        input_att = complex_output["input_att"]
         complex_input.pop("input_att", None)
     else:
-        complex_input["input_att"] = input_att
+        input_att = complex_input["input_att"]
         complex_output.pop("input_att", None)
 
-    output_att = hardware_cfg["cluster0"]["cluster0_module4"]["complex_output_0"].get(
-        "output_att"
-    )
+    output_att = complex_output.get("output_att")
 
     assert input_att is not None
     assert output_att is not None
 
-    qubit = quantum_device.get_element(element_names[0])
+    quantum_device = mock_setup_basic_transmon_elements["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
 
+    qubit_name = element_names[0]
+    qubit = quantum_device.get_element(qubit_name)
     qubit.clock_freqs.readout(5e9)
     qubit.measure.pulse_amp(0.2)
     qubit.measure.acq_delay(40e-9)
 
-    quantum_device.hardware_config(hardware_cfg)
+    sched = Schedule("Measurement")
+    sched.add(Measure(qubit_name))
 
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
         schedule=sched, config=quantum_device.generate_compilation_config()
     )
-    compiled_instructions = compiled_schedule["compiled_instructions"]
-    qrm_rf_program = compiled_instructions["cluster0"]["cluster0_module4"]
-
+    qrm_rf_program = compiled_schedule["compiled_instructions"]["cluster0"][
+        "cluster0_module4"
+    ]
     compiled_in0_att = qrm_rf_program["settings"]["in0_att"]
     compiled_out0_att = qrm_rf_program["settings"]["out0_att"]
 
@@ -2390,6 +2262,10 @@ def test_assign_attenuation_hardware_config(
 
 
 def test_assign_attenuation(compile_config_basic_transmon_qblox_hardware):
+    """
+    Test function that checks that attenuation settings on a QRM-RF compile correctly.
+    Also checks if floats are correctly converted to ints (if they are close to ints).
+    """
     sched = Schedule("Measurement")
     sched.add(Measure("q0"))
 
@@ -2399,120 +2275,18 @@ def test_assign_attenuation(compile_config_basic_transmon_qblox_hardware):
     )
     compiled_instructions = compiled_schedule["compiled_instructions"]
 
-    assert (
-        compiled_instructions["cluster0"]["cluster0_module4"]["settings"]["in0_att"]
-        == 10
-    )
-    assert (
-        compiled_instructions["cluster0"]["cluster0_module4"]["settings"]["out0_att"]
-        == 12
-    )
+    in0_att = compiled_instructions["cluster0"]["cluster0_module4"]["settings"][
+        "in0_att"
+    ]
+    out0_att = compiled_instructions["cluster0"]["cluster0_module4"]["settings"][
+        "out0_att"
+    ]
 
+    assert in0_att == 4
+    assert out0_att == 12
 
-def test_assign_gain(compile_config_basic_transmon_qblox_hardware):
-    sched = Schedule("Measurement")
-    sched.add(Measure("q4"))
-
-    compiler = SerialCompiler(name="compiler")
-    compiled_schedule = compiler.compile(
-        sched, config=compile_config_basic_transmon_qblox_hardware
-    )
-    compiled_instructions = compiled_schedule["compiled_instructions"]
-
-    assert (
-        compiled_instructions["cluster0"]["cluster0_module3"]["settings"]["in0_gain"]
-        == 2
-    )
-    assert (
-        compiled_instructions["cluster0"]["cluster0_module3"]["settings"]["in1_gain"]
-        == 3
-    )
-
-
-@pytest.mark.xfail(
-    reason="This should be checked in validators of the QBloxHardwareCompilationConfig datastructure."
-)
-@pytest.mark.parametrize(
-    "portclock, not_supported_option, value",
-    [
-        # "q4:res-q4.ro" is connected to complex_output of QRM
-        ("q4:res-q4.ro", "input_att", 10),
-        ("q4:res-q4.ro", "output_att", 10),
-        ("q4:res-q4.ro", "output_gain", (2, 3)),
-        # "q4:mw-q4.01" is connected to complex_output of QCM
-        ("q4:mw-q4.01", "input_att", 10),
-        ("q4:mw-q4.01", "output_att", 10),
-        ("q4:mw-q4.01", "input_gain", (2, 3)),
-        ("q4:mw-q4.01", "output_gain", (2, 3)),
-        # "q0:res-q0.ro" is connected to complex_output of QRM-RF
-        ("q0:res-q0.ro", "input_gain", (2, 3)),
-        ("q0:res-q0.ro", "output_gain", (2, 3)),
-        # "q0:mw-q0.01" is connected to complex_output of QCM-RF
-        ("q0:mw-q0.01", "input_att", 10),
-        ("q0:mw-q0.01", "input_gain", (2, 3)),
-        ("q0:mw-q0.01", "output_gain", (2, 3)),
-    ],
-)
-def test_set_power_scaling_invalid(
-    mock_setup_basic_transmon_with_standard_params,
-    hardware_compilation_config_qblox_example,
-    portclock,
-    not_supported_option,
-    value,
-):
-    sched = Schedule("single_gate_experiment")
-    sched.add(Measure("q0"))
-
-    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    hardware_compilation_config = copy.deepcopy(
-        hardware_compilation_config_qblox_example
-    )
-    hardware_compilation_config["hardware_options"]["power_scaling"][portclock] = {
-        not_supported_option: value
-    }
-
-    quantum_device.hardware_config(hardware_compilation_config)
-
-    with pytest.raises(ValueError, match="not supported"):
-        compiler = SerialCompiler(name="compiler")
-        _ = compiler.compile(
-            sched,
-            config=quantum_device.generate_compilation_config(),
-        )
-
-
-@pytest.mark.deprecated
-@pytest.mark.parametrize("conflicting_setting", ["output_att", "input_att"])
-def test_set_conflicting_attenuation(
-    mock_setup_basic_transmon_with_standard_params,
-    hardware_compilation_config_qblox_example,
-    conflicting_setting,
-):
-    sched = Schedule("single_gate_experiment")
-    sched.add(Measure("q0"))
-
-    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    hardware_compilation_config = copy.deepcopy(
-        hardware_compilation_config_qblox_example
-    )
-    hardware_config = hardware_compilation_config["connectivity"]
-    if conflicting_setting == "output_att":
-        hardware_config["cluster0"]["cluster0_module4"]["complex_output_0"][
-            "output_att"
-        ] = 6
-    elif conflicting_setting == "input_att":
-        hardware_config["cluster0"]["cluster0_module4"]["complex_input_0"][
-            "input_att"
-        ] = 6
-
-    quantum_device.hardware_config(hardware_compilation_config)
-
-    with pytest.raises(ValueError, match="conflicting settings"):
-        compiler = SerialCompiler(name="compiler")
-        _ = compiler.compile(
-            sched,
-            config=quantum_device.generate_compilation_config(),
-        )
+    assert isinstance(in0_att, int)
+    assert isinstance(out0_att, int)
 
 
 def test_assign_input_att_both_output_input_raises(
@@ -2584,6 +2358,78 @@ def test_assign_attenuation_invalid_raises(
             config=mock_setup_basic_transmon_with_standard_params[
                 "quantum_device"
             ].generate_compilation_config(),
+        )
+
+
+def test_assign_gain(compile_config_basic_transmon_qblox_hardware):
+    sched = Schedule("Measurement")
+    sched.add(Measure("q4"))
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        sched, config=compile_config_basic_transmon_qblox_hardware
+    )
+    compiled_instructions = compiled_schedule["compiled_instructions"]
+
+    assert (
+        compiled_instructions["cluster0"]["cluster0_module3"]["settings"]["in0_gain"]
+        == 2
+    )
+    assert (
+        compiled_instructions["cluster0"]["cluster0_module3"]["settings"]["in1_gain"]
+        == 3
+    )
+
+
+@pytest.mark.xfail(
+    reason="This should be checked in validators of the QBloxHardwareCompilationConfig datastructure."
+)
+@pytest.mark.parametrize(
+    "portclock, not_supported_option, value",
+    [
+        # "q4:res-q4.ro" is connected to complex_output of QRM
+        ("q4:res-q4.ro", "input_att", 10),
+        ("q4:res-q4.ro", "output_att", 10),
+        ("q4:res-q4.ro", "output_gain", (2, 3)),
+        # "q4:mw-q4.01" is connected to complex_output of QCM
+        ("q4:mw-q4.01", "input_att", 10),
+        ("q4:mw-q4.01", "output_att", 10),
+        ("q4:mw-q4.01", "input_gain", (2, 3)),
+        ("q4:mw-q4.01", "output_gain", (2, 3)),
+        # "q0:res-q0.ro" is connected to complex_output of QRM-RF
+        ("q0:res-q0.ro", "input_gain", (2, 3)),
+        ("q0:res-q0.ro", "output_gain", (2, 3)),
+        # "q0:mw-q0.01" is connected to complex_output of QCM-RF
+        ("q0:mw-q0.01", "input_att", 10),
+        ("q0:mw-q0.01", "input_gain", (2, 3)),
+        ("q0:mw-q0.01", "output_gain", (2, 3)),
+    ],
+)
+def test_set_power_scaling_invalid(
+    mock_setup_basic_transmon_with_standard_params,
+    hardware_compilation_config_qblox_example,
+    portclock,
+    not_supported_option,
+    value,
+):
+    sched = Schedule("single_gate_experiment")
+    sched.add(Measure("q0"))
+
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    hardware_compilation_config = copy.deepcopy(
+        hardware_compilation_config_qblox_example
+    )
+    hardware_compilation_config["hardware_options"]["power_scaling"][portclock] = {
+        not_supported_option: value
+    }
+
+    quantum_device.hardware_config(hardware_compilation_config)
+
+    with pytest.raises(ValueError, match="not supported"):
+        compiler = SerialCompiler(name="compiler")
+        _ = compiler.compile(
+            sched,
+            config=quantum_device.generate_compilation_config(),
         )
 
 
@@ -2674,7 +2520,8 @@ def test_cluster_settings(
 ):
     pulse_only_schedule = _determine_absolute_timing(pulse_only_schedule)
     hardware_cfg = generate_hardware_config(
-        compilation_config=compile_config_basic_transmon_qblox_hardware
+        schedule=pulse_only_schedule,
+        compilation_config=compile_config_basic_transmon_qblox_hardware,
     )
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         pulse_only_schedule, hardware_cfg
@@ -3012,72 +2859,6 @@ def test_apply_latency_corrections_hardware_config_invalid_raises(
         )
 
 
-@pytest.mark.deprecated
-def test_set_conflicting_latency_corrections(
-    mock_setup_basic_transmon_with_standard_params,
-    hardware_compilation_config_qblox_example,
-):
-    sched = Schedule("Latency experiment")
-    sched.add(X("q4"))
-    sched.add(
-        SquarePulse(port="q4:res", clock="q4.ro", amp=0.25, duration=12e-9),
-        ref_pt="start",
-    )
-
-    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    hardware_compilation_config = copy.deepcopy(
-        hardware_compilation_config_qblox_example
-    )
-    hardware_config = hardware_compilation_config["connectivity"]
-    hardware_config["latency_corrections"] = {"q4:mw-q4.01": 20e-9, "q5:mw-q5.01": 4e-9}
-
-    quantum_device.hardware_config(hardware_compilation_config)
-
-    with pytest.raises(ValueError, match="conflicting settings"):
-        compiler = SerialCompiler(name="compiler")
-        _ = compiler.compile(
-            sched,
-            config=quantum_device.generate_compilation_config(),
-        )
-
-
-@pytest.mark.deprecated
-def test_set_conflicting_distortion_corrections(
-    mock_setup_basic_transmon_with_standard_params,
-    hardware_compilation_config_qblox_example,
-):
-    sched = Schedule("Distortion experiment")
-    sched.add(
-        SquarePulse(port="q0:fl", clock="cl0.baseband", amp=0.25, duration=12e-9),
-        ref_pt="start",
-    )
-
-    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    hardware_compilation_config = copy.deepcopy(
-        hardware_compilation_config_qblox_example
-    )
-    hardware_config = hardware_compilation_config["connectivity"]
-    hardware_config["distortion_corrections"] = (
-        {
-            "q0:fl-cl0.baseband": {
-                "filter_func": "scipy.signal.lfilter",
-                "input_var_name": "x",
-                "kwargs": {"b": [0, 0.1, 0.2], "a": [1]},
-                "clipping_values": [-2.1, 2.1],
-            }
-        },
-    )
-
-    quantum_device.hardware_config(hardware_compilation_config)
-
-    with pytest.raises(ValueError, match="conflicting settings"):
-        compiler = SerialCompiler(name="compiler")
-        _ = compiler.compile(
-            sched,
-            config=quantum_device.generate_compilation_config(),
-        )
-
-
 # Setting latency corrections in the hardware config is deprecated
 @pytest.mark.deprecated
 def test_apply_latency_corrections_hardware_config_valid(
@@ -3201,12 +2982,23 @@ def test_apply_latency_corrections_warning(
         "q4:mw-q4.01": 5e-9
     }
 
-    sched = Schedule("Single Gate Experiment")
+    sched = Schedule("Two Pulses Experiment")
     sched.add(
         SquarePulse(port="q4:mw", clock="q4.01", amp=0.25, duration=12e-9),
         ref_pt="start",
     )
+    # Add a second pulse on a different port to make sure the compiled latency correction will not be 0.
+    # This is because `determine_relative_latency_corrections` will subtract the minimal latency correction
+    # from all port-clock combinations that are used in the schedule (since only these are added to the
+    # generated old-style hardware config). In this case, the latency correction for q4:res-q4.ro
+    # is not specified in the config so will default to 0, such that the latency correction
+    # for q4:mw-q4.01 will be 5 ns and a warning will be raised.
+    sched.add(
+        SquarePulse(port="q4:res", clock="q4.ro", amp=0.25, duration=12e-9),
+        ref_pt="start",
+    )
     sched.add_resource(ClockResource("q4.01", freq=5e9))
+    sched.add_resource(ClockResource("q4.ro", freq=6e9))
 
     warning = f"not a multiple of {constants.GRID_TIME}"
     with caplog.at_level(
@@ -3269,61 +3061,6 @@ def test_apply_mixer_corrections(
     )
 
 
-@pytest.mark.deprecated
-@pytest.mark.parametrize(
-    "dc_offset_i, dc_offset_q, amp_ratio, phase_error",
-    [
-        (0.0123, None, None, None),
-        (None, 0.0321, None, None),
-        (None, None, 1.0123, None),
-        (None, None, None, 1.0321),
-    ],
-)
-def test_set_conflicting_mixer_corrections(
-    mock_setup_basic_transmon_with_standard_params,
-    hardware_compilation_config_qblox_example,
-    dc_offset_i,
-    dc_offset_q,
-    amp_ratio,
-    phase_error,
-):
-    sched = Schedule("Simple experiment")
-    sched.add(
-        SquarePulse(port="q4:res", clock="q4.ro", amp=0.25, duration=12e-9),
-        ref_pt="start",
-    )
-
-    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    hardware_compilation_config = copy.deepcopy(
-        hardware_compilation_config_qblox_example
-    )
-    hardware_config = hardware_compilation_config["connectivity"]
-    if dc_offset_i is not None:
-        hardware_config["cluster0"]["cluster0_module3"]["complex_output_0"][
-            "dc_mixer_offset_I"
-        ] = dc_offset_i
-    if dc_offset_q is not None:
-        hardware_config["cluster0"]["cluster0_module3"]["complex_output_0"][
-            "dc_mixer_offset_Q"
-        ] = dc_offset_q
-    if amp_ratio is not None:
-        hardware_config["cluster0"]["cluster0_module3"]["complex_output_0"][
-            "portclock_configs"
-        ][0]["mixer_amp_ratio"] = amp_ratio
-    if phase_error is not None:
-        hardware_config["cluster0"]["cluster0_module3"]["complex_output_0"][
-            "portclock_configs"
-        ][0]["mixer_phase_error_deg"] = phase_error
-    quantum_device.hardware_config(hardware_compilation_config)
-
-    with pytest.raises(ValueError, match="conflicting settings"):
-        compiler = SerialCompiler(name="compiler")
-        _ = compiler.compile(
-            sched,
-            config=quantum_device.generate_compilation_config(),
-        )
-
-
 def test_compile_sequencer_options(
     mock_setup_basic_transmon_with_standard_params,
     hardware_compilation_config_qblox_example,
@@ -3364,127 +3101,6 @@ def test_compile_sequencer_options(
     assert sequencer_instructions["init_offset_awg_path_1"] == -0.1
     assert sequencer_instructions["init_gain_awg_path_0"] == 0.55
     assert sequencer_instructions["init_gain_awg_path_1"] == 0.66
-
-
-def _conflicting_qasm_hook_func(qasm: QASMProgram):
-    pass
-
-
-@pytest.mark.deprecated
-@pytest.mark.parametrize(
-    "ttl_acq_threshold, init_offset_awg_path_0, init_offset_awg_path_1, init_gain_awg_path_0, init_gain_awg_path_1, qasm_hook_func",
-    [
-        (0.1, None, None, None, None, None),
-        (None, 0.2, None, None, None, None),
-        (None, None, 0.1, None, None, None),
-        (None, None, None, 1.0, None, None),
-        (None, None, None, None, 0.1, None),
-        (None, None, None, None, None, _conflicting_qasm_hook_func),
-    ],
-)
-def test_set_conflicting_sequencer_options(
-    mock_setup_basic_transmon_with_standard_params,
-    hardware_compilation_config_qblox_example,
-    ttl_acq_threshold,
-    init_offset_awg_path_0,
-    init_offset_awg_path_1,
-    init_gain_awg_path_0,
-    init_gain_awg_path_1,
-    qasm_hook_func,
-):
-    sched = Schedule("Simple experiment")
-    sched.add(
-        SquarePulse(port="q4:res", clock="q4.ro", amp=0.25, duration=12e-9),
-        ref_pt="start",
-    )
-
-    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    hardware_compilation_config = copy.deepcopy(
-        hardware_compilation_config_qblox_example
-    )
-    # Set sequencer options in hardware options:
-    hardware_compilation_config["hardware_options"]["sequencer_options"] = {
-        "q4:res-q4.ro": {
-            "ttl_acq_threshold": 0.2,
-            "init_offset_awg_path_0": 0.1,
-            "init_offset_awg_path_1": -0.1,
-            "init_gain_awg_path_0": 0.55,
-            "init_gain_awg_path_1": 0.66,
-            "qasm_hook_func": _func_for_hook_test,
-        }
-    }
-
-    # Set sequencer options in old-style portclock config:
-    if ttl_acq_threshold is not None:
-        hardware_compilation_config["connectivity"]["cluster0"]["cluster0_module3"][
-            "complex_output_0"
-        ]["portclock_configs"][0]["ttl_acq_threshold"] = ttl_acq_threshold
-    if init_offset_awg_path_0 is not None:
-        hardware_compilation_config["connectivity"]["cluster0"]["cluster0_module3"][
-            "complex_output_0"
-        ]["portclock_configs"][0]["init_offset_awg_path_0"] = init_offset_awg_path_0
-    if init_offset_awg_path_1 is not None:
-        hardware_compilation_config["connectivity"]["cluster0"]["cluster0_module3"][
-            "complex_output_0"
-        ]["portclock_configs"][0]["init_offset_awg_path_1"] = init_offset_awg_path_1
-    if init_gain_awg_path_0 is not None:
-        hardware_compilation_config["connectivity"]["cluster0"]["cluster0_module3"][
-            "complex_output_0"
-        ]["portclock_configs"][0]["init_gain_awg_path_0"] = init_gain_awg_path_0
-    if init_gain_awg_path_1 is not None:
-        hardware_compilation_config["connectivity"]["cluster0"]["cluster0_module3"][
-            "complex_output_0"
-        ]["portclock_configs"][0]["init_gain_awg_path_1"] = init_gain_awg_path_1
-    if qasm_hook_func is not None:
-        hardware_compilation_config["connectivity"]["cluster0"]["cluster0_module3"][
-            "complex_output_0"
-        ]["portclock_configs"][0]["qasm_hook_func"] = qasm_hook_func
-    quantum_device.hardware_config(hardware_compilation_config)
-
-    with pytest.raises(ValueError, match="conflicting settings"):
-        compiler = SerialCompiler(name="compiler")
-        _ = compiler.compile(
-            sched,
-            config=quantum_device.generate_compilation_config(),
-        )
-
-
-def test_configure_input_gains_overwrite_gain():
-    # Partial test of overwriting gain setting. Note: In using the new
-    # QbloxHardwareOptions collisions like these are no longer possible,
-    # so after migrating to the new-style hardware compilation config
-    # this test can be removed
-
-    instrument_cfg = {
-        "instrument_type": "QRM",
-        "real_output_1": {
-            "input_gain_1": 10,
-            "portclock_configs": [
-                {"port": "q0:res", "clock": "q0.ro"},
-            ],
-        },
-    }
-
-    test_module = QrmModule(
-        parent=None,
-        name="tester",
-        total_play_time=1,
-        instrument_cfg=instrument_cfg,
-    )
-
-    test_module._settings = types.BasebandModuleSettings.extract_settings_from_mapping(
-        instrument_cfg
-    )
-    test_module._settings.in1_gain = 5
-
-    with pytest.raises(ValueError) as error:
-        test_module._configure_input_gains()
-
-    assert (
-        str(error.value)
-        == "Overwriting gain of real_output_1 of module tester to in1_gain: 10."
-        "\nIt was previously set to in1_gain: 5."
-    )
 
 
 def test_stitched_pulse_compilation_smoke_test(mock_setup_basic_nv_qblox_hardware):
@@ -4012,22 +3628,22 @@ class TestControlFlow:
     def test_subschedule(self, compile_config_basic_transmon_qblox_hardware):
         """
         outer:
-          - 7.5
+          - X
           - inner:
-            - 7.501
+            - X90
             - inner2:
-              - 7.502
+              - Y
           - inner2:
-            - 7.502
+            - Y
         """
         inner = Schedule("inner")
-        inner.add(SetClockFrequency(clock="q0.01", clock_freq_new=7.501e9))
+        inner.add(X90("q0"))
         inner2 = Schedule("inner2")
-        inner2.add(SetClockFrequency(clock="q0.01", clock_freq_new=7.502e9))
+        inner2.add(Y("q0"))
         inner.add(inner2)
 
         outer = Schedule("outer")
-        outer.add(SetClockFrequency(clock="q0.01", clock_freq_new=7.5e9))
+        outer.add(X("q0"))
         outer.add(inner)
         outer.add(inner2)
 
@@ -4038,10 +3654,10 @@ class TestControlFlow:
         )
 
         outer = Schedule("outer")
-        outer.add(SetClockFrequency(clock="q0.01", clock_freq_new=7.5e9))
-        outer.add(SetClockFrequency(clock="q0.01", clock_freq_new=7.501e9))
-        outer.add(SetClockFrequency(clock="q0.01", clock_freq_new=7.502e9))
-        outer.add(SetClockFrequency(clock="q0.01", clock_freq_new=7.502e9))
+        outer.add(X("q0"))
+        outer.add(X90("q0"))
+        outer.add(Y("q0"))
+        outer.add(Y("q0"))
 
         compiled_ref = compiler.compile(
             outer, config=compile_config_basic_transmon_qblox_hardware

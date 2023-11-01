@@ -20,13 +20,6 @@ from quantify_scheduler.operations.pulse_library import NumericalPulse, SquarePu
 from quantify_scheduler.operations.gate_library import X
 from quantify_scheduler.schedules.schedule import Schedule
 
-from tests.scheduler.backends.qblox.fixtures.hardware_config import (  # pylint: disable=unused-import, line-too-long
-    hardware_cfg_pulsar_qcm_two_qubit_gate as qblox_hardware_cfg_pulsar_qcm_two_qubit_gate,
-)
-from tests.scheduler.backends.test_zhinst_backend import (  # pylint: disable=unused-import
-    hardware_cfg_distortion_corrections as zhinst_hardware_cfg_distortion_corrections,
-)
-
 
 # --------- Test fixtures ---------
 @pytest.fixture
@@ -35,9 +28,6 @@ def hardware_options_distortion_corrections(
     use_numpy_array,
 ):
     return {
-        # Latency corrections are needed to avoid error in compilation of two-qubit
-        # gate schedule in test_apply_distortion_corrections with the zhinst backend
-        "latency_corrections": {"q2:fl-cl0.baseband": 100e-9, "q2:mw-q2.01": 0},
         "distortion_corrections": {
             "q2:fl-cl0.baseband": {
                 "filter_func": "scipy.signal.lfilter",
@@ -142,33 +132,61 @@ def test_distortion_correct_pulse(
         for use_numpy in [True, False]
     ],
 )
-def test_apply_distortion_corrections(  # pylint: disable=unused-argument disable=too-many-arguments
+def test_apply_distortion_corrections(
     mock_setup_basic_transmon_with_standard_params,
     hardware_options_distortion_corrections,
     two_qubit_gate_schedule,
     backend,
-    qblox_hardware_cfg_pulsar_qcm_two_qubit_gate,
-    zhinst_hardware_cfg_distortion_corrections,
 ):
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     if "qblox" in backend:
         hardware_compilation_config = {
             "backend": backend,
-            "hardware_description": {},
-            "connectivity": qblox_hardware_cfg_pulsar_qcm_two_qubit_gate,
+            "hardware_description": {
+                "cluster0": {
+                    "instrument_type": "Cluster",
+                    "ref": "internal",
+                    "modules": {
+                        "1": {
+                            "instrument_type": "QCM",
+                        },
+                    },
+                }
+            },
+            "connectivity": {
+                "graph": [
+                    ("cluster0.module1.complex_output_0", "q2:fl"),
+                    ("cluster0.module1.complex_output_0", "q3:fl"),
+                ]
+            },
             "hardware_options": hardware_options_distortion_corrections,
         }
     elif "zhinst" in backend:
         hardware_compilation_config = {
             "backend": backend,
-            "hardware_description": {},
-            "connectivity": zhinst_hardware_cfg_distortion_corrections,
+            "hardware_description": {
+                "hdawg_1234": {
+                    "instrument_type": "HDAWG4",
+                    "ref": "none",
+                    "clock_select": 0,
+                    "channelgrouping": 0,
+                    "channel_0": {
+                        "mode": "real",
+                        "trigger": 1,
+                    },
+                },
+            },
+            "connectivity": {
+                "graph": [
+                    ("hdawg_1234.channel_0", "q2:fl"),
+                ]
+            },
             "hardware_options": hardware_options_distortion_corrections,
         }
 
     quantum_device.hardware_config(hardware_compilation_config)
 
-    operation_hash = list(two_qubit_gate_schedule.operations.keys())[0]
+    operation_hash = list(two_qubit_gate_schedule.operations.keys())[1]
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
         schedule=two_qubit_gate_schedule,
@@ -176,14 +194,14 @@ def test_apply_distortion_corrections(  # pylint: disable=unused-argument disabl
     )
 
     assert (
-        list(compiled_sched.operations.keys())[0] == operation_hash
+        list(compiled_sched.operations.keys())[1] == operation_hash
     ), f"Key of CZ operation remains identical"
 
     assert (  # pylint: disable=unidiomatic-typecheck
-        type(list(compiled_sched.operations.values())[0]) is NumericalPulse
+        type(list(compiled_sched.operations.values())[1]) is NumericalPulse
     ), f"Type of CZ operation is now NumericalPulse"
 
-    assert list(compiled_sched.operations.values())[0].data["pulse_info"][0][
+    assert list(compiled_sched.operations.values())[1].data["pulse_info"][0][
         "samples"
     ] == pytest.approx(
         [
@@ -248,30 +266,43 @@ def test_apply_latency_corrections_hardware_options_invalid_raises(
 
 @pytest.mark.parametrize("use_numpy_array", (True, False))
 def test_apply_distortion_corrections_stitched_pulse_warns(
-    qblox_hardware_cfg_pulsar_qcm_two_qubit_gate,
     mock_setup_basic_transmon,
     hardware_options_distortion_corrections,
     use_numpy_array,  # pylint: disable=unused-argument
 ):
-    sched = Schedule("Test schedule")
     port = "q2:fl"
     clock = "cl0.baseband"
-
     builder = StitchedPulseBuilder(port=port, clock=clock)
     stitched_pulse = (
-        builder.add_pulse(SquarePulse(0.4, 20e-9, port, clock=clock))
+        builder.add_pulse(SquarePulse(0.4, 20e-9, port=port, clock=clock))
         .add_voltage_offset(0.4, 0.0, duration=20e-9)
         .build()
     )
 
+    sched = Schedule("Test schedule")
     sched.add(stitched_pulse)
 
     quantum_device = mock_setup_basic_transmon["quantum_device"]
 
     hardware_compilation_config = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "hardware_description": {},
-        "connectivity": qblox_hardware_cfg_pulsar_qcm_two_qubit_gate,
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "ref": "internal",
+                "modules": {
+                    "1": {
+                        "instrument_type": "QCM",
+                    },
+                },
+            }
+        },
+        "connectivity": {
+            "graph": [
+                ("cluster0.module1.complex_output_0", "q2:fl"),
+                ("cluster0.module1.complex_output_0", "q3:fl"),
+            ]
+        },
         "hardware_options": hardware_options_distortion_corrections,
     }
     quantum_device.hardware_config(hardware_compilation_config)

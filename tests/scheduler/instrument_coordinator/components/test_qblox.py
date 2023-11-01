@@ -33,15 +33,17 @@ from qcodes.instrument import Instrument, InstrumentChannel, InstrumentModule
 from quantify_core.data.handling import get_datadir
 from xarray import Dataset
 
-from quantify_scheduler import Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.instrument_coordinator.components import qblox
+from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.gate_library import Reset
 from quantify_scheduler.operations.pulse_library import MarkerPulse, SquarePulse
-from quantify_scheduler.schedules.schedule import AcquisitionMetadata
+from quantify_scheduler.resources import ClockResource
+from quantify_scheduler.schedules.schedule import AcquisitionMetadata, Schedule
+
 from tests.fixtures.mock_setup import close_instruments
 
 
@@ -594,7 +596,6 @@ def test_prepare_qcm_qrm(
 def test_prepare_cluster_rf(
     mocker,
     mock_setup_basic_transmon,
-    make_schedule_with_measurement,
     hardware_compilation_config_qblox_example,
     make_cluster_component,
     force_set_parameters,
@@ -616,17 +617,23 @@ def test_prepare_cluster_rf(
     ic_cluster.force_set_parameters(force_set_parameters)
     ic_cluster.instrument.reference_source("internal")  # Put it in a known state
 
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
-    q5 = BasicTransmonElement("q5")
-    quantum_device.add_element(q5)
-
-    q5.rxy.amp180(0.213)
-    q5.clock_freqs.f01(6.33e9)
-    q5.clock_freqs.f12(6.09e9)
-    q5.clock_freqs.readout(8.5e9)
-    q5.measure.acq_delay(100e-9)
-
-    sched = make_schedule_with_measurement("q5")
+    sched = Schedule("pulse_sequence")
+    sched.add(
+        SquarePulse(port="q5:mw", clock="q5.01", amp=0.25, duration=12e-9),
+        ref_pt="start",
+    )
+    sched.add(
+        SquarePulse(port="q6:mw", clock="q6.01", amp=0.25, duration=12e-9),
+        ref_pt="start",
+    )
+    sched.add(
+        SquarePulse(port="q0:res", clock="q0.ro", amp=0.25, duration=12e-9),
+        ref_pt="start",
+    )
+    sched.add(SSBIntegrationComplex(duration=1e-6, port="q0:res", clock="q0.ro"))
+    sched.add_resource(ClockResource("q5.01", freq=5e9))
+    sched.add_resource(ClockResource("q6.01", freq=5.3e9))
+    sched.add_resource(ClockResource("q0.ro", freq=8e9))
 
     quantum_device = mock_setup_basic_transmon["quantum_device"]
     quantum_device.hardware_config(hardware_compilation_config_qblox_example)
@@ -644,7 +651,7 @@ def test_prepare_cluster_rf(
     # Assert
     assert compiled_schedule == compiled_schedule_before_prepare
 
-    qcm_rf.arm_sequencer.assert_called_with(sequencer=0)
+    qcm_rf.arm_sequencer.assert_called_with(sequencer=1)
     qrm_rf.arm_sequencer.assert_called_with(sequencer=0)
 
     # Assert it's only set in initialization
@@ -663,7 +670,7 @@ def test_prepare_cluster_rf(
 
     for qcodes_param, hw_options_param in [
         ("out0_att", ["output_att", "q0:res-q0.ro"]),
-        ("in0_att", ["input_att", "q5:res-q5.ro"]),
+        ("in0_att", ["input_att", "q0:res-q0.ro"]),
     ]:
         qrm_rf.parameters[qcodes_param].set.assert_any_call(
             hardware_compilation_config_qblox_example["hardware_options"][

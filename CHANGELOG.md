@@ -11,6 +11,7 @@
 
 ### Merged branches and closed issues
 
+- Compilation - Implement Connectivity datastructure for specifying connections between ports on the quantum device and on the control hardware in the `HardwareCompilationConfig`. (!734)
 - Gettable - Include quantify dependency versions in the diagnostics report (`ScheduleGettable.initialize_and_get_with_report`). (!832)
 - Qblox backend - Absolute amplitude tolerance of waveform index suppression set to `2/constants.IMMEDIATE_SZ_GAIN` which prevents uploading of all gain-zero waveforms. (!842)
 - QuantumDevice - Serialize by adding `__getstate__` and `__setstate__` methods to the class, includes `DeviceElement`, `Edge` and `cfg_sched_repetitions`. (!802)
