@@ -107,27 +107,25 @@ class JSONSchemaValMixin:  # pylint: disable=too-few-public-methods
         return True  # if no exception was raised during validation
 
 
-class ScheduleJSONDecoder(json.JSONDecoder):
+class SchedulerJSONDecoder(json.JSONDecoder):
     """
-    The Quantify Schedule JSONDecoder.
+    The Quantify Scheduler JSONDecoder.
 
-    The ScheduleJSONDecoder is used to convert a string with JSON content into a
-    :class:`quantify_scheduler.schedules.schedule.Schedule`.
+    The SchedulerJSONDecoder is used to convert a string with JSON content into
+    instances of classes in quantify-scheduler.
 
-    To avoid the execution of malicious code ScheduleJSONDecoder uses
-    :func:`ast.literal_eval` instead of :func:`eval` to convert the data to an instance
-    of Schedule.
+    To avoid the execution of malicious code SchedulerJSONDecoder uses
+    :func:`ast.literal_eval` instead of :func:`eval` to convert the data to an instance.
     """
 
     classes: Dict[str, Type[Any]]
 
     def __init__(self, *args, **kwargs) -> None:
         """
-        Create new instance of ScheduleJSONDecoder to decode a string into a Schedule.
+        Create new instance of SchedulerJSONDecoder to decode a string into an object.
 
         The list of serializable classes can be extended with custom classes by
-        providing the `modules` keyword argument. These classes have to implement
-        :class:`quantify_scheduler.operations.operation.Operation` and overload the
+        providing the `modules` keyword argument. These classes have overload the
         :code:`__str__` and :code:`__repr__` methods in order to serialize and
         deserialize domain objects into a valid JSON-format.
 
@@ -142,7 +140,7 @@ class ScheduleJSONDecoder(json.JSONDecoder):
         )
         if invalid_modules:
             raise ValueError(
-                f"Attempting to create a Schedule decoder class ScheduleJSONDecoder. "
+                f"Attempting to create a Schedule decoder class SchedulerJSONDecoder. "
                 f"The following modules provided are not an instance of the ModuleType:"
                 f" {invalid_modules} ."
             )
@@ -157,6 +155,10 @@ class ScheduleJSONDecoder(json.JSONDecoder):
         # 'quantify_scheduler')
         # pylint: disable=import-outside-toplevel
         from quantify_scheduler import resources
+        from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+        from quantify_scheduler.device_under_test.composite_square_edge import (
+            CompositeSquareEdge,
+        )
         from quantify_scheduler.schedules.schedule import (
             AcquisitionMetadata,
             Schedulable,
@@ -183,7 +185,17 @@ class ScheduleJSONDecoder(json.JSONDecoder):
             resources,
         ] + extended_modules
         self.classes = inspect_helpers.get_classes(*self._modules)
-        self.classes.update({c.__name__: c for c in [AcquisitionMetadata, Schedulable]})
+        self.classes.update(
+            {
+                c.__name__: c
+                for c in [
+                    AcquisitionMetadata,
+                    Schedulable,
+                    QuantumDevice,
+                    CompositeSquareEdge,
+                ]
+            }
+        )
         self.classes.update(
             {
                 t.__name__: t
@@ -259,9 +271,9 @@ class ScheduleJSONDecoder(json.JSONDecoder):
         return obj
 
 
-class ScheduleJSONEncoder(json.JSONEncoder):
+class SchedulerJSONEncoder(json.JSONEncoder):
     """
-    Custom JSONEncoder which encodes the quantify Schedule into a JSON file format
+    Custom JSONEncoder which encodes a Quantify Scheduler object into a JSON file format
     string.
     """
 

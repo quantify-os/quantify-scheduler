@@ -12,7 +12,7 @@ from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfi
 from quantify_scheduler.backends.graph_compilation import SerialCompiler
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.json_utils import ScheduleJSONEncoder, ScheduleJSONDecoder
+from quantify_scheduler.json_utils import SchedulerJSONEncoder, SchedulerJSONDecoder
 from quantify_scheduler.operations.gate_library import Measure
 
 
@@ -83,7 +83,7 @@ def test_basic_transmon_serialization(
     q0.rxy.reference_magnitude.dBm(-10)
     q0.measure.reference_magnitude.dBm(-10)
 
-    q0_as_dict = json.loads(json.dumps(q0, cls=ScheduleJSONEncoder))
+    q0_as_dict = json.loads(json.dumps(q0, cls=SchedulerJSONEncoder))
     assert q0_as_dict.__class__ is dict
     assert q0_as_dict["deserialization_type"] == "BasicTransmonElement"
 
@@ -165,12 +165,12 @@ def test_basic_transmon_deserialization(q0: BasicTransmonElement, dev: QuantumDe
         schedule=sched, config=dev.generate_compilation_config()
     )
 
-    q0_as_str = json.dumps(q0, cls=ScheduleJSONEncoder)
+    q0_as_str = json.dumps(q0, cls=SchedulerJSONEncoder)
     assert q0_as_str.__class__ is str
 
     q0.close()
 
-    deserialized_q0 = json.loads(q0_as_str, cls=ScheduleJSONDecoder)
+    deserialized_q0 = json.loads(q0_as_str, cls=SchedulerJSONDecoder)
     assert deserialized_q0.__class__ is BasicTransmonElement
 
     compiled_sched_deserialized_q0 = compiler.compile(

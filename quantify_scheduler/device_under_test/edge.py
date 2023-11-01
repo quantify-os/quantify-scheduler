@@ -15,11 +15,38 @@ class Edge(Instrument):
     edge implementation.
     """
 
-    def __init__(self, parent_element_name: str, child_element_name: str):
-        edge_name = f"{parent_element_name}_{child_element_name}"
+    def __init__(self, parent_element_name: str, child_element_name: str, **kwargs):
         self._parent_element_name = parent_element_name
         self._child_element_name = child_element_name
-        super().__init__(name=edge_name)
+
+        super().__init__(name=f"{parent_element_name}_{child_element_name}", **kwargs)
+
+    def __getstate__(self):
+        """
+        Serializes `Edge` into a dict containing the parent and child element names of
+        this edge and a dict for each submodule containing its parameter names
+        and corresponding values.
+        """
+
+        snapshot = self.snapshot()
+
+        edge_data = {
+            "parent_element_name": self._parent_element_name,
+            "child_element_name": self._child_element_name,
+        }
+
+        for submodule_name, submodule_data in snapshot["submodules"].items():
+            edge_data[submodule_name] = {
+                name: data["value"]
+                for name, data in submodule_data["parameters"].items()
+            }
+
+        state = {
+            "deserialization_type": self.__class__.__name__,  # Will return derived class name
+            "mode": "__init__",
+            "data": edge_data,
+        }
+        return state
 
     @property
     def parent_device_element(self):

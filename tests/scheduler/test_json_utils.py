@@ -9,7 +9,7 @@ import types
 
 import pytest
 
-from quantify_scheduler.json_utils import ScheduleJSONEncoder, ScheduleJSONDecoder
+from quantify_scheduler.json_utils import SchedulerJSONEncoder, SchedulerJSONDecoder
 
 
 def test_getsetstate_json_serialization():
@@ -33,18 +33,18 @@ def test_getsetstate_json_serialization():
     mockinstance1 = MockClass()
     # Check that for the test class, it works as expected
     assert mockinstance1.__dict__ == copy.copy(mockinstance1).__dict__
-    serialized = json.dumps(mockinstance1, cls=ScheduleJSONEncoder)
+    serialized = json.dumps(mockinstance1, cls=SchedulerJSONEncoder)
     assert serialized == json.dumps(
         {"deserialization_type": "MockClass", "data": {"value": 0}}
     )
 
     # Try to decode an unknown class should fail with a keyerror
     with pytest.raises(KeyError):
-        assert json.loads(serialized, cls=ScheduleJSONDecoder)
+        assert json.loads(serialized, cls=SchedulerJSONDecoder)
 
     # We can tell the decoder about non-standard modules that it should be able to
     # decode
-    mockinstance2 = ScheduleJSONDecoder(modules=[test_module]).decode(serialized)
+    mockinstance2 = SchedulerJSONDecoder(modules=[test_module]).decode(serialized)
     assert mockinstance2.__dict__ == mockinstance1.__dict__
 
     # Clear the test_module from sys.modules

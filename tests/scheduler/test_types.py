@@ -12,7 +12,7 @@ import pytest
 
 from quantify_scheduler import enums, json_utils, Operation
 from quantify_scheduler.backends import SerialCompiler
-from quantify_scheduler.json_utils import ScheduleJSONDecoder
+from quantify_scheduler.json_utils import SchedulerJSONDecoder
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.gate_library import (
     CNOT,
@@ -224,7 +224,7 @@ def test_operation_duration():
 def test___repr__():
     operation = Operation("test")
     operation["gate_info"] = {"clock": "q0.01"}
-    obj = ScheduleJSONDecoder().decode_dict(operation.__getstate__())
+    obj = SchedulerJSONDecoder().decode_dict(operation.__getstate__())
     assert obj == operation
 
 
@@ -471,9 +471,9 @@ def test_acquisition_metadata():
         assert isinstance(metadata_copy.acq_return_type, type)
 
     # Test that json serialization works correctly
-    serialized = json.dumps(metadata, cls=json_utils.ScheduleJSONEncoder)
+    serialized = json.dumps(metadata, cls=json_utils.SchedulerJSONEncoder)
     # Test that json deserialization works correctly
-    metadata_copy = json.loads(serialized, cls=json_utils.ScheduleJSONDecoder)
+    metadata_copy = json.loads(serialized, cls=json_utils.SchedulerJSONDecoder)
     assert metadata_copy == metadata
     assert isinstance(metadata_copy.bin_mode, enums.BinMode)
     assert isinstance(metadata_copy.acq_return_type, type)

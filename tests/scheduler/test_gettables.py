@@ -21,6 +21,7 @@ from qblox_instruments import ClusterType
 from qcodes.instrument.parameter import ManualParameter
 from xarray import DataArray, Dataset
 
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.gettables import ScheduleGettable
@@ -408,7 +409,7 @@ def test_schedule_gettable_generate_diagnostic(
     assert gettable.is_initialized is True
 
     with zipfile.ZipFile(filename, mode="r") as zf:
-        _ = json.loads(zf.read("device_cfg.json").decode())
+        _ = QuantumDevice.from_json(zf.read("device_cfg.json").decode())
         _ = json.loads(zf.read("hardware_cfg.json").decode())
         get_cfg = json.loads(zf.read("gettable.json").decode())
         sched = Schedule.from_json(zf.read("schedule.json").decode())
@@ -635,10 +636,19 @@ def test_initialize_and_get_with_report_failed_initialization__qblox(
 
     assert "failed_initialization" in os.path.basename(report_zipfile)
 
+    # Close instruments, necessary for deserializing QuantumDevice
+    for element_name in list(quantum_device.elements()):
+        quantum_device.get_element(element_name).close()
+
+    for edge_name in list(quantum_device.edges()):
+        quantum_device.get_edge(edge_name).close()
+
     with zipfile.ZipFile(report_zipfile, mode="r") as zf:
+        quantum_device_report = QuantumDevice.from_json(
+            zf.read("quantum_device.json").decode()
+        )
         dependency_versions = json.loads(zf.read("dependency_versions.json").decode())
         timestamp = zf.read("timestamp.txt").decode()
-        q2_cfg_report = json.loads(zf.read("device_elements/q2.json"))
         gettable_cfg_report = json.loads(zf.read("gettable.json").decode())
         hardware_cfg_report = json.loads(zf.read("hardware_cfg.json").decode())
         schedule_report = Schedule.from_json(zf.read("schedule.json").decode())
@@ -667,9 +677,8 @@ def test_initialize_and_get_with_report_failed_initialization__qblox(
     ]:
         assert dependency in parsed_dependencies
 
+    assert quantum_device_report.get_element("q2").rxy.parameters["amp180"]() == 0.213
     assert datetime.strptime(timestamp, "%Y-%m-%d_%H-%M-%S_%Z")
-
-    assert q2_cfg_report["data"]["rxy"]["amp180"] == 0.213
 
     assert (
         gettable.quantum_device.cfg_sched_repetitions()
@@ -693,8 +702,11 @@ def test_initialize_and_get_with_report_failed_initialization__qblox(
     )
 
     # Test failing ic retrieval / preparation
+    quantum_device_report.hardware_config(hardware_cfg_rf)
+    quantum_device_report.instr_instrument_coordinator(ic.name)
+
     gettable = ScheduleGettable(
-        quantum_device=quantum_device,
+        quantum_device=quantum_device_report,
         schedule_function=t1_sched,
         schedule_kwargs={"times": np.linspace(1e-6, 50e-6, 50), "qubit": "q2"},
         batched=True,
@@ -813,9 +825,16 @@ def test_initialize_and_get_with_report_failed_exp__qblox(
 
     assert "failed_exp" in os.path.basename(report_zipfile)
 
+    # Close instruments, necessary for deserializing QuantumDevice
+    for element_name in quantum_device.snapshot()["parameters"]["elements"]["value"]:
+        quantum_device.get_element(element_name).close()
+
+    for edge_name in quantum_device.snapshot()["parameters"]["edges"]["value"]:
+        quantum_device.get_edge(edge_name).close()
+
     with zipfile.ZipFile(report_zipfile, mode="r") as zf:
+        QuantumDevice.from_json(zf.read("quantum_device.json"))
         json.loads(zf.read("dependency_versions.json").decode())
-        json.loads(zf.read("device_elements/q2.json"))
         json.loads(zf.read("gettable.json").decode())
         json.loads(zf.read("hardware_cfg.json").decode())
         Schedule.from_json(zf.read("schedule.json").decode())
@@ -904,9 +923,16 @@ def test_initialize_and_get_with_report_completed_exp__qblox(
 
     assert "completed_exp" in os.path.basename(report_zipfile)
 
+    # Close instruments, necessary for deserializing QuantumDevice
+    for element_name in quantum_device.snapshot()["parameters"]["elements"]["value"]:
+        quantum_device.get_element(element_name).close()
+
+    for edge_name in quantum_device.snapshot()["parameters"]["edges"]["value"]:
+        quantum_device.get_edge(edge_name).close()
+
     with zipfile.ZipFile(report_zipfile, mode="r") as zf:
+        QuantumDevice.from_json(zf.read("quantum_device.json"))
         json.loads(zf.read("dependency_versions.json").decode())
-        json.loads(zf.read("device_elements/q2.json"))
         json.loads(zf.read("gettable.json").decode())
         json.loads(zf.read("hardware_cfg.json").decode())
         Schedule.from_json(zf.read("schedule.json").decode())
@@ -983,9 +1009,16 @@ def test_initialize_and_get_with_report_failed_hw_log_retrieval__qblox(
 
     assert "failed_hw_log_retrieval" in os.path.basename(report_zipfile)
 
+    # Close instruments, necessary for deserializing QuantumDevice
+    for element_name in quantum_device.snapshot()["parameters"]["elements"]["value"]:
+        quantum_device.get_element(element_name).close()
+
+    for edge_name in quantum_device.snapshot()["parameters"]["edges"]["value"]:
+        quantum_device.get_edge(edge_name).close()
+
     with zipfile.ZipFile(report_zipfile, mode="r") as zf:
+        QuantumDevice.from_json(zf.read("quantum_device.json"))
         json.loads(zf.read("dependency_versions.json").decode())
-        json.loads(zf.read("device_elements/q2.json"))
         json.loads(zf.read("gettable.json").decode())
         json.loads(zf.read("hardware_cfg.json").decode())
         Schedule.from_json(zf.read("schedule.json").decode())
@@ -1053,9 +1086,16 @@ def test_initialize_and_get_with_report_failed_connection_to_hw__qblox(
 
     assert "failed_connection_to_hw" in os.path.basename(report_zipfile)
 
+    # Close instruments, necessary for deserializing QuantumDevice
+    for element_name in quantum_device.snapshot()["parameters"]["elements"]["value"]:
+        quantum_device.get_element(element_name).close()
+
+    for edge_name in quantum_device.snapshot()["parameters"]["edges"]["value"]:
+        quantum_device.get_edge(edge_name).close()
+
     with zipfile.ZipFile(report_zipfile, mode="r") as zf:
+        QuantumDevice.from_json(zf.read("quantum_device.json"))
         json.loads(zf.read("dependency_versions.json").decode())
-        json.loads(zf.read("device_elements/q2.json"))
         json.loads(zf.read("gettable.json").decode())
         json.loads(zf.read("hardware_cfg.json").decode())
         Schedule.from_json(zf.read("schedule.json").decode())

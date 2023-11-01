@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 
 from quantify_scheduler import Operation, Schedule, Schedulable
-from quantify_scheduler.json_utils import ScheduleJSONEncoder, ScheduleJSONDecoder
+from quantify_scheduler.json_utils import SchedulerJSONEncoder, SchedulerJSONDecoder
 from quantify_scheduler.operations.gate_library import (
     CNOT,
     CZ,
@@ -110,10 +110,10 @@ class TestGateLevelOperation:
         itself.
         """
         # Arrange
-        operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
+        operation_state: str = json.dumps(operation, cls=SchedulerJSONEncoder)
 
         # Act
-        obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
+        obj = json.loads(operation_state, cls=SchedulerJSONDecoder)
         assert obj == operation
 
     def test__str__(self, operation: Operation) -> None:
@@ -125,10 +125,10 @@ class TestGateLevelOperation:
 
     def test_deserialize(self, operation: Operation) -> None:
         # Arrange
-        operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
+        operation_state: str = json.dumps(operation, cls=SchedulerJSONEncoder)
 
         # Act
-        obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
+        obj = json.loads(operation_state, cls=SchedulerJSONDecoder)
 
         # Assert
         if (
@@ -153,10 +153,10 @@ class TestGateLevelOperation:
 
     def test__repr__modify_not_equal(self, operation: Operation) -> None:
         # Arrange
-        operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
+        operation_state: str = json.dumps(operation, cls=SchedulerJSONEncoder)
 
         # Act
-        obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
+        obj = json.loads(operation_state, cls=SchedulerJSONDecoder)
         assert obj == operation
 
         # Act

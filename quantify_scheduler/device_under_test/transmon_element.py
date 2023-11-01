@@ -432,29 +432,6 @@ class BasicTransmonElement(DeviceElement):
         self.clock_freqs: ClocksFrequencies
         """Submodule :class:`~.ClocksFrequencies`."""
 
-    def __getstate__(self):
-        """
-        Serializes `BasicTransmonElement` by obtaining relevant information from
-        :func:`~Instrument.snapshot()`. The relevant information consists of the name
-        of the transmon element and a dictionary for each submodule containing its
-        parameter names and corresponding values.
-        """
-        snapshot = self.snapshot()
-
-        data = {"name": snapshot["name"]}
-        for submodule_name, submodule_data in snapshot["submodules"].items():
-            parameter_dict = {}
-            for parameter_name, parameter_data in submodule_data["parameters"].items():
-                parameter_dict[parameter_name] = parameter_data["value"]
-            data[submodule_name] = parameter_dict
-
-        state = {
-            "deserialization_type": self.__class__.__name__,
-            "mode": "__init__",
-            "data": data,
-        }
-        return state
-
     def _generate_config(self) -> Dict[str, Dict[str, OperationCompilationConfig]]:
         """
         Generates part of the device configuration specific to a single qubit.

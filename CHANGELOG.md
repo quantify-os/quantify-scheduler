@@ -13,6 +13,7 @@
 
 - Gettable - Include quantify dependency versions in the diagnostics report (`ScheduleGettable.initialize_and_get_with_report`). (!832)
 - Qblox backend - Absolute amplitude tolerance of waveform index suppression set to `2/constants.IMMEDIATE_SZ_GAIN` which prevents uploading of all gain-zero waveforms. (!842)
+- QuantumDevice - Serialize by adding `__getstate__` and `__setstate__` methods to the class, includes `DeviceElement`, `Edge` and `cfg_sched_repetitions`. (!802)
 - Utilities - Add profiling notebooks to Developer guide (!845)
 - Gettable - Change reference timezone included in the diagnostics report from "Europe/Amsterdam" to UTC. (!849)
 - Schedules - Add CPMG schedule function `timedomain_schedules.cpmg_sched` for dynamical decoupling experiments. (!805).

@@ -22,7 +22,7 @@ from quantify_scheduler.operations.acquisition_library import (
 )
 from quantify_scheduler.operations.gate_library import X90
 from quantify_scheduler.operations.pulse_library import DRAGPulse
-from quantify_scheduler.json_utils import ScheduleJSONEncoder, ScheduleJSONDecoder
+from quantify_scheduler.json_utils import SchedulerJSONEncoder, SchedulerJSONDecoder
 
 
 def test_ssb_integration_complex():
@@ -223,10 +223,10 @@ def test_weighted_acquisition_deprecated():
 )
 def test__repr__(operation: Operation):
     # Arrange
-    operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
+    operation_state: str = json.dumps(operation, cls=SchedulerJSONEncoder)
 
     # Act
-    obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
+    obj = json.loads(operation_state, cls=SchedulerJSONDecoder)
     assert obj == operation
 
 
@@ -300,10 +300,10 @@ def test__str__(operation: Operation):
 )
 def test_deserialize(operation: Operation):
     # Arrange
-    operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
+    operation_state: str = json.dumps(operation, cls=SchedulerJSONEncoder)
 
     # Act
-    obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
+    obj = json.loads(operation_state, cls=SchedulerJSONDecoder)
 
     # Assert
     if isinstance(operation, NumericalWeightedIntegrationComplex):
@@ -359,10 +359,10 @@ def test_deserialize(operation: Operation):
 )
 def test__repr__modify_not_equal(operation: Operation):
     # Arrange
-    operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
+    operation_state: str = json.dumps(operation, cls=SchedulerJSONEncoder)
 
     # Act
-    obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
+    obj = json.loads(operation_state, cls=SchedulerJSONDecoder)
     assert obj == operation
 
     # Act

@@ -31,11 +31,9 @@ from quantify_core.data.handling import get_datadir, snapshot
 from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler._version import __version__ as __scheduler_version__
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
     InstrumentCoordinator,
 )
-from quantify_scheduler.json_utils import ScheduleJSONEncoder
 
 
 def _generate_diagnostics_report(  # noqa: PLR0915
@@ -142,17 +140,7 @@ def _generate_diagnostics_report(  # noqa: PLR0915
             "gettable.json", json.dumps(gettable_config, cls=NumpyJSONEncoder, indent=4)
         )
 
-        for element_name in quantum_device.elements():
-            element = quantum_device.get_element(element_name)
-            if isinstance(element, BasicTransmonElement):
-                element_str = json.dumps(element, cls=ScheduleJSONEncoder)
-            else:
-                element_str = json.dumps(
-                    element.generate_device_config(), cls=NumpyJSONEncoder, indent=4
-                )
-            zip_file.writestr(
-                os.path.join("device_elements", f"{element_name}.json"), element_str
-            )
+        zip_file.writestr("quantum_device.json", quantum_device.to_json())
 
         zip_file.writestr(
             "hardware_cfg.json",

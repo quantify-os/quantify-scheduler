@@ -1,4 +1,5 @@
 # pylint: disable=redefined-outer-name
+import json
 import pytest
 from qcodes import Instrument
 from qcodes.instrument.channel import InstrumentModule
@@ -6,7 +7,7 @@ from qcodes.instrument.parameter import Parameter
 
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler.device_under_test.mock_setup import (
-    set_up_basic_mock_nv_setup,
+    set_up_mock_basic_nv_setup,
     set_standard_params_basic_nv,
 )
 from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
@@ -20,6 +21,7 @@ from quantify_scheduler.helpers.validators import (
 from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
     InstrumentCoordinator,
 )
+from quantify_scheduler.json_utils import SchedulerJSONEncoder, SchedulerJSONDecoder
 
 
 @pytest.fixture
@@ -159,14 +161,14 @@ def test_generate_device_config(electronic_q0: BasicElectronicNVElement):
 def test_mock_nv_setup():
     """Can use mock setup multiple times after closing it."""
     # test that everything works once
-    mock_nv_setup = set_up_basic_mock_nv_setup()
+    mock_nv_setup = set_up_mock_basic_nv_setup()
     assert isinstance(mock_nv_setup, dict)
     set_standard_params_basic_nv(mock_nv_setup)
     for key in mock_nv_setup:
         Instrument.find_instrument(key).close()
 
     # test that tear-down closes all instruments by re-executing
-    mock_nv_setup = set_up_basic_mock_nv_setup()
+    mock_nv_setup = set_up_mock_basic_nv_setup()
     assert isinstance(mock_nv_setup, dict)
     set_standard_params_basic_nv(mock_nv_setup)
     for key in mock_nv_setup:
@@ -258,3 +260,70 @@ def test_parameter_validators(electronic_q0: BasicElectronicNVElement):
                 f"skip this parameter by adding it explitly to the skip_list in this "
                 f"test."
             )
+
+
+def test_nv_center_serialization(electronic_q0):
+    """
+    Tests the serialization process of :class:`~BasicElectronicNVElement` by comparing the
+    parameter values of the submodules of the original `BasicElectronicNVElement` object and
+    the serialized counterpart.
+    """
+
+    # Set values to params with initial_value = nan
+    electronic_q0.spectroscopy_operation.amplitude(1.0)
+    electronic_q0.clock_freqs.f01(470.4e12)
+    electronic_q0.clock_freqs.ionization(564e12)
+    electronic_q0.clock_freqs.spec.set(2.2e9)
+    electronic_q0.clock_freqs.ge0.set(470.4e12)
+    electronic_q0.clock_freqs.ge1.set(470.4e12 - 5e9)
+    electronic_q0.reset.amplitude(1.0)
+    electronic_q0.charge_reset.amplitude(1.0)
+    electronic_q0.measure.pulse_amplitude(1.0)
+    electronic_q0.cr_count.readout_pulse_amplitude(0.2)
+    electronic_q0.cr_count.spinpump_pulse_amplitude(1.6)
+
+    electronic_q0_as_dict = json.loads(
+        json.dumps(electronic_q0, cls=SchedulerJSONEncoder)
+    )
+    assert electronic_q0_as_dict.__class__ is dict
+    assert electronic_q0_as_dict["deserialization_type"] == "BasicElectronicNVElement"
+
+    # Check that all original submodule params match their serialized counterpart
+    for submodule_name, submodule in electronic_q0.submodules.items():
+        for parameter_name in submodule.parameters:
+            assert (
+                electronic_q0_as_dict["data"][submodule_name][parameter_name]
+                == electronic_q0.submodules[submodule_name][parameter_name]()
+            ), (
+                f"Expected value {electronic_q0.submodules[submodule_name][parameter_name]()} for "
+                f"{submodule_name}.{parameter_name} but got "
+                f"{electronic_q0_as_dict['data'][submodule_name][parameter_name]}"
+            )
+
+    # Check that all serialized submodule params match the original
+    for submodule_name, submodule_data in electronic_q0_as_dict["data"].items():
+        if submodule_name == "name":
+            continue
+        for parameter_name, parameter_val in submodule_data.items():
+            assert (
+                parameter_val
+                == electronic_q0.submodules[submodule_name][parameter_name]()
+            ), (
+                f"Expected value {electronic_q0.submodules[submodule_name][parameter_name]()} for "
+                f"{submodule_name}.{parameter_name} but got {parameter_val}"
+            )
+
+
+@pytest.mark.xfail(
+    reason="SchedulerJSONDecoder needs to be adapted to include BasicElectronicNVElement deserialization."
+)
+def test_nv_center_deserialization(mock_setup_basic_nv_with_standard_params):
+    electronic_q0 = mock_setup_basic_nv_with_standard_params["qe0"]
+
+    electronic_q0_serialized = json.dumps(electronic_q0, cls=SchedulerJSONEncoder)
+
+    assert electronic_q0_serialized.__class__ is str
+
+    electronic_q0.close()
+
+    json.loads(electronic_q0_serialized, cls=SchedulerJSONDecoder)

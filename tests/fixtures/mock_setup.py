@@ -15,7 +15,7 @@ from quantify_core.data.handling import get_datadir, set_datadir
 from quantify_scheduler.device_under_test.mock_setup import (
     set_standard_params_basic_nv,
     set_standard_params_transmon,
-    set_up_basic_mock_nv_setup,
+    set_up_mock_basic_nv_setup,
     set_up_mock_transmon_setup,
 )
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
@@ -136,12 +136,13 @@ def mock_setup_basic_transmon_with_weighted_integration(mock_setup_basic_transmo
     yield mock_setup_basic_transmon
 
 
+# pylint: disable=redefined-outer-name
 @pytest.fixture(scope="function", autouse=False)
 def mock_setup_basic_nv():
     """
     Returns a mock setup for a basic 1-qubit NV-center device.
     """
-    mock_setup = set_up_basic_mock_nv_setup()
+    mock_setup = set_up_mock_basic_nv_setup()
     set_standard_params_basic_nv(mock_setup)
     yield mock_setup
     close_instruments(mock_setup)

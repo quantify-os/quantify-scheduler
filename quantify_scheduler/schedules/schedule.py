@@ -181,7 +181,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         :
             The json string result.
         """
-        return json.dumps(self.data, cls=json_utils.ScheduleJSONEncoder)
+        return json.dumps(self.data, cls=json_utils.SchedulerJSONEncoder)
 
     @classmethod
     def from_json(cls, data: str) -> Schedule:
@@ -198,7 +198,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         :
             The Schedule object.
         """
-        schedule_data = json_utils.ScheduleJSONDecoder().decode(data)
+        schedule_data = json_utils.SchedulerJSONDecoder().decode(data)
         sched = Schedule.__new__(Schedule)
         sched.__setstate__(schedule_data)
 

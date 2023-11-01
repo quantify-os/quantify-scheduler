@@ -5,26 +5,32 @@ Module containing the QuantumDevice object.
 """
 from __future__ import annotations
 
-from typing import Any, Dict
+import json
+import os
+import pytz
+from datetime import datetime
 from functools import partial
+from typing import Any, Dict, Optional
 
 from qcodes.instrument.base import Instrument
 from qcodes.instrument.parameter import InstrumentRefParameter, ManualParameter
 from qcodes.utils import validators
+from quantify_core.data.handling import get_datadir
+
 from quantify_scheduler.backends.circuit_to_device import _compile_circuit_to_device
-from quantify_scheduler.backends.qblox_backend import hardware_compile as qblox_backend
-from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
-from quantify_scheduler.backends.zhinst_backend import compile_backend as zhinst_backend
-from quantify_scheduler.backends.zhinst_backend import ZIHardwareCompilationConfig
 from quantify_scheduler.backends.graph_compilation import (
     SerialCompilationConfig,
     SimpleNodeConfig,
     DeviceCompilationConfig,
 )
-from quantify_scheduler.backends.types.common import HardwareCompilationConfig
+from quantify_scheduler.backends.qblox_backend import hardware_compile as qblox_backend
 from quantify_scheduler.backends.qblox_backend import (
     compile_long_square_pulses_to_awg_offsets,
+    QbloxHardwareCompilationConfig,
 )
+from quantify_scheduler.backends.types.common import HardwareCompilationConfig
+from quantify_scheduler.backends.zhinst_backend import compile_backend as zhinst_backend
+from quantify_scheduler.backends.zhinst_backend import ZIHardwareCompilationConfig
 from quantify_scheduler.compilation import (
     _determine_absolute_timing,
     flatten_schedule,
@@ -32,14 +38,15 @@ from quantify_scheduler.compilation import (
 )
 from quantify_scheduler.device_under_test.device_element import DeviceElement
 from quantify_scheduler.device_under_test.edge import Edge
+from quantify_scheduler.json_utils import SchedulerJSONEncoder, SchedulerJSONDecoder
 
 
 class QuantumDevice(Instrument):
     """
-    The QuantumDevice directly represents the device under test (DUT) and contains a
+    The `QuantumDevice` directly represents the device under test (DUT) and contains a
     description of the connectivity to the control hardware as well as parameters
     specifying quantities like cross talk, attenuation and calibrated cable-delays.
-    The QuantumDevice also contains references to individual DeviceElements,
+    The `QuantumDevice` also contains references to individual DeviceElements,
     representations of elements on a device (e.g, a transmon qubit) containing
     the (calibrated) control-pulse parameters.
 
@@ -129,6 +136,160 @@ class QuantumDevice(Instrument):
             vals=validators.Enum("asap", "alap"),
             initial_value="asap",
         )
+
+        self._deserialized_instruments = {"elements": {}, "edges": {}}
+
+    def __getstate__(self) -> Dict[str, Any]:
+        """
+        Serializes `QuantumDevice` into a dict containing serialized `DeviceElement`
+        and `Edge` objects plus `cfg_sched_repetitions`.
+        """
+
+        data = {"name": self.name}
+
+        data["elements"] = {
+            element_name: json.dumps(
+                self.get_element(element_name), cls=SchedulerJSONEncoder
+            )
+            for element_name in self.elements()
+        }
+
+        data["edges"] = {
+            edge_name: json.dumps(self.get_edge(edge_name), cls=SchedulerJSONEncoder)
+            for edge_name in self.edges()
+        }
+
+        data["cfg_sched_repetitions"] = str(self.cfg_sched_repetitions())
+
+        state = {
+            "deserialization_type": self.__class__.__name__,
+            "data": data,
+        }
+
+        return state
+
+    def __setstate__(self, state: Dict[str, Any]):
+        """
+        Deserializes a dict of serialized `DeviceElement` and `Edge` objects
+        into a `QuantumDevice`.
+        """
+
+        self.__init__(state["data"]["name"])
+
+        for element_name, serialized_element in state["data"]["elements"].items():
+            self._deserialized_instruments["elements"][element_name] = json.loads(
+                serialized_element, cls=SchedulerJSONDecoder
+            )
+            self.add_element(self._deserialized_instruments["elements"][element_name])
+
+        for edge_name, serialized_edge in state["data"]["edges"].items():
+            self._deserialized_instruments["edges"][edge_name] = json.loads(
+                serialized_edge, cls=SchedulerJSONDecoder
+            )
+            self.add_edge(self._deserialized_instruments["edges"][edge_name])
+
+        self.cfg_sched_repetitions(int(state["data"]["cfg_sched_repetitions"]))
+
+    def to_json(self) -> str:
+        """
+        Convert the `QuantumDevice` data structure to a JSON string.
+
+        Returns
+        -------
+        :
+            The json string containing the serialized `QuantumDevice`.
+        """
+        device_instruments = []
+        if hasattr(self, "elements"):
+            device_instruments += self.elements()
+        if hasattr(self, "edges"):
+            device_instruments += self.edges()
+        if not device_instruments:
+            raise RuntimeError(
+                f"Cannot serialize '{self.name}'. All attached instruments have been "
+                f"closed and their information cannot be retrieved any longer."
+            )
+
+        closed_instruments = []
+        for device_name in device_instruments:
+            try:
+                Instrument.find_instrument(device_name)
+            except KeyError:
+                closed_instruments.append(device_name)
+        if closed_instruments:
+            raise RuntimeError(
+                f"Cannot serialize '{self.name}'. Instruments '{closed_instruments}' have "
+                f"been closed and their information cannot be retrieved any longer. "
+                f"If you do not wish to include these in the "
+                f"serialization, please remove using `QuantumDevice.remove_element` or "
+                f"`QuantumDevice.remove_edge`."
+            )
+
+        return json.dumps(self, cls=SchedulerJSONEncoder)
+
+    def to_json_file(self, path: Optional[str] = None) -> str:
+        """
+        Convert the `QuantumDevice` data structure to a JSON string and store it in a file.
+
+        Parameters
+        ----------
+        path
+            The path to the directory where the file is created.
+
+        Returns
+        -------
+        :
+            The name of the file containing the serialized `QuantumDevice`.
+        """
+
+        if path is None:
+            path = get_datadir()
+
+        timestamp = datetime.now(pytz.utc).strftime("%Y-%m-%d_%H-%M-%S_%Z")
+
+        filename = os.path.join(path, f"{self.name}_{timestamp}.json")
+        with open(filename, "w") as file:
+            file.write(self.to_json())
+
+        return filename
+
+    @classmethod
+    def from_json(cls, data: str) -> QuantumDevice:
+        """
+        Convert the JSON data to a `QuantumDevice`.
+
+        Parameters
+        ----------
+        data
+            The JSON data in str format.
+
+        Returns
+        -------
+        :
+            The deserialized `QuantumDevice` object.
+        """
+
+        return json.loads(data, cls=SchedulerJSONDecoder)
+
+    @classmethod
+    def from_json_file(cls, filename: str) -> QuantumDevice:
+        """
+        Read JSON data from a file and convert it to a `QuantumDevice`.
+
+        Parameters
+        ----------
+        filename
+            The name of the file containing the serialized `QuantumDevice`.
+
+        Returns
+        -------
+        :
+            The deserialized `QuantumDevice` object.
+        """
+
+        with open(filename, "r") as file:
+            deserialized_device = cls.from_json(file.read())
+        return deserialized_device
 
     def generate_compilation_config(self) -> SerialCompilationConfig:
         """

@@ -10,7 +10,7 @@ import pytest
 
 from quantify_scheduler import Operation, Schedule
 from quantify_scheduler.backends import SerialCompiler
-from quantify_scheduler.json_utils import ScheduleJSONDecoder, ScheduleJSONEncoder
+from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEncoder
 from quantify_scheduler.operations.gate_library import X90, X
 from quantify_scheduler.operations.pulse_library import (
     ChirpPulse,
@@ -254,10 +254,10 @@ def test_decompose_long_square_pulse() -> None:
 class TestPulseLevelOperation:
     def test__repr__(self, operation: Operation) -> None:
         # Arrange
-        operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
+        operation_state: str = json.dumps(operation, cls=SchedulerJSONEncoder)
 
         # Act
-        obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
+        obj = json.loads(operation_state, cls=SchedulerJSONDecoder)
         assert obj == operation
 
     def test__str__(self, operation: Operation) -> None:
@@ -289,20 +289,20 @@ class TestPulseLevelOperation:
 
     def test_deserialize(self, operation: Operation) -> None:
         # Arrange
-        operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
+        operation_state: str = json.dumps(operation, cls=SchedulerJSONEncoder)
 
         # Act
-        obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
+        obj = json.loads(operation_state, cls=SchedulerJSONDecoder)
 
         # Assert
         TestCase().assertDictEqual(obj.data, operation.data)
 
     def test__repr__modify_not_equal(self, operation: Operation) -> None:
         # Arrange
-        operation_state: str = json.dumps(operation, cls=ScheduleJSONEncoder)
+        operation_state: str = json.dumps(operation, cls=SchedulerJSONEncoder)
 
         # Act
-        obj = json.loads(operation_state, cls=ScheduleJSONDecoder)
+        obj = json.loads(operation_state, cls=SchedulerJSONDecoder)
         assert obj == operation
 
         # Act

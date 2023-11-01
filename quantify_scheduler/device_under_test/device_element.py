@@ -20,6 +20,28 @@ class DeviceElement(Instrument):
             )
         super().__init__(name, **kwargs)
 
+    def __getstate__(self):
+        """
+        Serializes `DeviceElement` and derived classes into a dict containing the name
+        of the device element and a dict for each submodule containing its
+        parameter names and corresponding values.
+        """
+        snapshot = self.snapshot()
+
+        element_data = {"name": self.name}
+        for submodule_name, submodule_data in snapshot["submodules"].items():
+            element_data[submodule_name] = {
+                name: data["value"]
+                for name, data in submodule_data["parameters"].items()
+            }
+
+        state = {
+            "deserialization_type": self.__class__.__name__,  # Will return derived class name
+            "mode": "__init__",
+            "data": element_data,
+        }
+        return state
+
     def generate_device_config(self) -> DeviceCompilationConfig:
         """
         Generates the device configuration

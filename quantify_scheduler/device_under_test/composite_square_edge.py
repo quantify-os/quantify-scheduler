@@ -25,7 +25,7 @@ class CZ(InstrumentChannel):
             "square_amp",
             docstring=r"""Amplitude of the square envelope.""",
             unit="V",
-            initial_value=0.5,
+            initial_value=kwargs.get("square_amp", 0.5),
             vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
             instrument=self,
         )
@@ -34,7 +34,7 @@ class CZ(InstrumentChannel):
             "square_duration",
             docstring=r"""The square pulse duration in seconds.""",
             unit="s",
-            initial_value=2e-8,
+            initial_value=kwargs.get("square_duration", 2e-8),
             vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
             instrument=self,
         )
@@ -45,7 +45,9 @@ class CZ(InstrumentChannel):
             r""" square pulse operation has been performed.""",
             unit="degrees",
             parameter_class=ManualParameter,
-            initial_value=0,
+            initial_value=kwargs.get(
+                f"{parent._parent_element_name}_phase_correction", 0
+            ),
             vals=Numbers(min_value=-1e12, max_value=1e12, allow_nan=True),
         )
         self.add_parameter(
@@ -54,7 +56,9 @@ class CZ(InstrumentChannel):
             r""" Square pulse operation has been performed.""",
             unit="degrees",
             parameter_class=ManualParameter,
-            initial_value=0,
+            initial_value=kwargs.get(
+                f"{parent._child_element_name}_phase_correction", 0
+            ),
             vals=Numbers(min_value=-1e12, max_value=1e12, allow_nan=True),
         )
 
@@ -72,13 +76,15 @@ class CompositeSquareEdge(Edge):
         child_element_name: str,
         **kwargs,
     ):
+        cz_data = kwargs.pop("cz", {})
+
         super().__init__(
             parent_element_name=parent_element_name,
             child_element_name=child_element_name,
             **kwargs,
         )
 
-        self.add_submodule("cz", CZ(self, "cz"))
+        self.add_submodule("cz", CZ(parent=self, name="cz", **cz_data))
 
     def generate_edge_config(self) -> Dict[str, Dict[str, OperationCompilationConfig]]:
         """
