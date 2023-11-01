@@ -33,6 +33,18 @@
 - Utilities 
   - Add profiling notebooks to Developer guide. (!845)
 
+### Compatibility info
+
+**Qblox**
+
+| quantify-scheduler |                      qblox-instruments                       |                               Cluster firmware                                |
+|--------------------|:------------------------------------------------------------:|:-----------------------------------------------------------------------------:|
+| v0.17.1            | [0.11.1](https://pypi.org/project/qblox-instruments/0.11.1/) | [0.6.1](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.6.1) |
+|                    | [0.11.0](https://pypi.org/project/qblox-instruments/0.11.0/) | [0.6.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.6.0) |
+
+**Zurich Instruments**
+- `zhinst==21.8.20515`, `zhinst-qcodes==0.1.4`, `zhinst-toolkit==0.1.5`
+
 ## 0.17.0 (2023-10-20)
 
 ### Release highlights
