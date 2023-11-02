@@ -1637,7 +1637,9 @@ def _download_log(
         temp_log_file_name = os.path.join(get_datadir(), f"{source}_{uuid4()}")
         config_manager.download_log(source=source, fmt="txt", file=temp_log_file_name)
         if os.path.isfile(temp_log_file_name):
-            with open(temp_log_file_name) as file:
+            with open(
+                temp_log_file_name, "r", encoding="utf-8", errors="replace"
+            ) as file:
                 log = file.read()
             os.remove(temp_log_file_name)
             hardware_log[f"{source}_log"] = log
