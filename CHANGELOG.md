@@ -4,23 +4,24 @@
 
 ### Release highlights
 
-- QuantumDevice hotfix
-  - Fixes a bug in serialization/deserialization via snapshot of QuantumDevice.
-
-- QuantumDevice
-  - Include custom QuantumDevice-to-json serialization/deserialization methods.
+- Hotfix
+  - Reverted change in QuantumDevice that broke serialization/deserialization using a `quantify_core.data.handling.snapshot`. 
+- New features
+  - QuantumDevice: User-friendly QuantumDevice json serialization/deserialization methods.
+    - `QuantumDevice.to_json()`/`QuantumDevice.to_json_file()` and `QuantumDevice.from_json()`/`QuantumDevice.from_json_file()`. 
+  - New schedule: `timedomain_schedules.cpmg_sched`, CPMG schedule-generating function for dynamical decoupling experiments.
 
 ### Breaking changes
 
 - QuantumDevice - Revert !813: `ManualParameter` `elements` and `edges` have been changed back from `dict` to `list`. (!846)
-  - The change broke serialization/deserialization of QuantumDevice via snapshot, see #452.
+  - The change broke serialization/deserialization of QuantumDevice using a `quantify_core.data.handling.snapshot`, see #452, via `quantify_core.utilities.experiment_helpers.load_settings_onto_instrument`.
 
 ### Merged branches and closed issues
 
 - Gettable 
   - Change reference timezone included in the diagnostics report from "Europe/Amsterdam" to UTC. (!849)
-  - Include quantify dependency versions in the diagnostics report (`ScheduleGettable.initialize_and_get_with_report`). (!832)
-  - Replace invalid utf-8 characters with "?" in qblox hardware logs. (!853)
+  - Include versions of the installed dependency packages of quantify-scheduler in the diagnostics report (`ScheduleGettable.initialize_and_get_with_report`). (!832)
+  - Replace invalid utf-8 characters with "?" in Qblox hardware logs included in the diagnostics report. (!853)
 
 - Qblox backend 
   - Absolute amplitude tolerance of waveform index suppression set to `2/constants.IMMEDIATE_SZ_GAIN` which prevents uploading of all gain-zero waveforms. (!842)
