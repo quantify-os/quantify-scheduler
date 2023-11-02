@@ -20,6 +20,7 @@
 - Gettable 
   - Change reference timezone included in the diagnostics report from "Europe/Amsterdam" to UTC. (!849)
   - Include quantify dependency versions in the diagnostics report (`ScheduleGettable.initialize_and_get_with_report`). (!832)
+  - Replace invalid utf-8 characters with "?" in qblox hardware logs. (!853)
 
 - Qblox backend 
   - Absolute amplitude tolerance of waveform index suppression set to `2/constants.IMMEDIATE_SZ_GAIN` which prevents uploading of all gain-zero waveforms. (!842)
