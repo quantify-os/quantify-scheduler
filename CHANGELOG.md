@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Breaking changes
+
+### Merged branches and closed issues
+
+- Compilation - Implement Connectivity datastructure for specifying connections between ports on the quantum device and on the control hardware in the `HardwareCompilationConfig`. (!734)
+
 ## 0.17.1 (2023-10-23)
 
 ### Release highlights

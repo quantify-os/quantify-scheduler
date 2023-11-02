@@ -43,24 +43,39 @@
                 "trigger": 2
             }
         },
-        "mw_qubit_ch1": {
+        "lo0_ch1": {
             "instrument_type": "LocalOscillator",
-            "instrument_name": "mw_qubit",
+            "instrument_name": "lo0",
             "frequency_param": "ch1.frequency",
             "power": 13
         },
-        "mw_qubit_ch2": {
+        "lo0_ch2": {
             "instrument_type": "LocalOscillator",
-            "instrument_name": "mw_qubit",
+            "instrument_name": "lo0",
             "frequency_param": "ch2.frequency",
             "power_param": "ch2.power",
             "power": 10
         },
-        "mw_readout": {
+        "lo1": {
             "instrument_type": "LocalOscillator",
-            "instrument_name": "mw_readout",
+            "instrument_name": "lo1",
             "frequency_param": "frequency",
             "power": 16
+        },
+        "iq_mixer0": {
+            "instrument_type": "IQMixer"
+        },
+        "iq_mixer1": {
+            "instrument_type": "IQMixer"
+        },
+        "iq_mixer2": {
+            "instrument_type": "IQMixer"
+        },
+        "iq_mixer3": {
+            "instrument_type": "IQMixer"
+        },
+        "iq_mixer_readout": {
+            "instrument_type": "IQMixer"
         }
     },
     "hardware_options": {
@@ -158,39 +173,67 @@
         }
     },
     "connectivity": {
-        "devices": [
-            {
-                "name": "ic_hdawg0",
-                "channel_0": {
-                    "port": "q0:mw",
-                    "clock": "q0.01",
-                    "mode": "complex",
-                    "local_oscillator": "mw_qubit_ch1"
-                },
-                "channel_1": {
-                    "port": "q1:mw",
-                    "clock": "q1.01",
-                    "local_oscillator": "mw_qubit_ch2"
-                },
-                "channel_2": {
-                    "port": "q2:mw",
-                    "clock": "q2.01",
-                    "local_oscillator": "mw_qubit_ch2"
-                },
-                "channel_3": {
-                    "port": "q3:mw",
-                    "clock": "q3.01",
-                    "local_oscillator": "mw_qubit_ch2"
-                }
-            },
-            {
-                "name": "ic_uhfqa0",
-                "channel_0": {
-                    "port": "q0:res",
-                    "clock": "q0.ro",
-                    "local_oscillator": "mw_readout"
-                }
-            }
+        "graph": [
+            [
+                "ic_hdawg0.channel_0",
+                "iq_mixer0.if"
+            ],
+            [
+                "lo0_ch1.output",
+                "iq_mixer0.lo"
+            ],
+            [
+                "iq_mixer0.rf",
+                "q0:mw"
+            ],
+            [
+                "ic_hdawg0.channel_1",
+                "iq_mixer1.if"
+            ],
+            [
+                "lo0_ch2.output",
+                "iq_mixer1.lo"
+            ],
+            [
+                "iq_mixer1.rf",
+                "q1:mw"
+            ],
+            [
+                "ic_hdawg0.channel_2",
+                "iq_mixer2.if"
+            ],
+            [
+                "lo0_ch2.output",
+                "iq_mixer2.lo"
+            ],
+            [
+                "iq_mixer2.rf",
+                "q2:mw"
+            ],
+            [
+                "ic_hdawg0.channel_3",
+                "iq_mixer3.if"
+            ],
+            [
+                "lo0_ch2.output",
+                "iq_mixer3.lo"
+            ],
+            [
+                "iq_mixer3.rf",
+                "q3:mw"
+            ],
+            [
+                "ic_uhfqa0.channel_0",
+                "iq_mixer_readout.if"
+            ],
+            [
+                "lo1.output",
+                "iq_mixer_readout.lo"
+            ],
+            [
+                "iq_mixer_readout.rf",
+                "q0:res"
+            ]
         ]
     }
 }

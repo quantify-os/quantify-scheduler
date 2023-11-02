@@ -144,9 +144,9 @@ class Output(DataStructure):
     """The Clock resource."""
     mode: SignalModeType
     """The output mode type."""
-    modulation: Modulation
+    modulation: Modulation = Modulation()
     """The modulation settings."""
-    local_oscillator: str
+    local_oscillator: Optional[str] = None
     """The LocalOscillator name."""
     clock_frequency: Optional[float] = None
     """The frequency for the clock resource (AKA RF/signal frequency)."""
@@ -472,7 +472,7 @@ class ZIChannelDescription(DataStructure):
 class ZIBaseDescription(common.HardwareDescription):
     """Base class for a Zurich Instrument hardware description."""
 
-    ref: Union[Literal["int"], Literal["ext"], None]
+    ref: Union[Literal["int"], Literal["ext"], Literal["none"]]
     """
     Property that describes if the instrument uses Markers or Triggers.
     - `int` Enables sending Marker
@@ -533,6 +533,7 @@ ZIHardwareDescription = Annotated[
         ZIHDAWG8Description,
         ZIUHFQADescription,
         common.LocalOscillatorDescription,
+        common.IQMixerDescription,
     ],
     Field(discriminator="instrument_type"),
 ]

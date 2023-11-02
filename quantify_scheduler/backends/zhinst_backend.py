@@ -7,7 +7,6 @@ from __future__ import annotations
 import logging
 import re
 import warnings
-from copy import deepcopy
 from dataclasses import dataclass
 from functools import partial
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Literal, get_args
@@ -33,6 +32,7 @@ from quantify_scheduler.helpers.collections import (
     find_port_clock_path,
 )
 from quantify_scheduler.helpers.importers import export_python_object_to_path_string
+from quantify_scheduler.helpers.schedule import _extract_port_clocks_used
 from quantify_scheduler.instrument_coordinator.components.generic import (
     DEFAULT_NAME as GENERIC_ICC_DEFAULT_NAME,
 )
@@ -706,13 +706,19 @@ class ZIDeviceConfig:
 
 
 def generate_hardware_config(  # noqa: PLR0912, PLR0915
+    schedule: Schedule,
     compilation_config: CompilationConfig,
 ) -> dict:
     """
     Extract the old-style Zhinst hardware config from the CompilationConfig.
 
+    Only the port-clok combinations that are used in the schedule are included in the
+    old-style hardware config.
+
     Parameters
     ----------
+    schedule: Schedule
+        Schedule from which the port-clock combinations are extracted.
     config: CompilationConfig
         CompilationConfig from which hardware config is extracted.
 
@@ -734,51 +740,85 @@ def generate_hardware_config(  # noqa: PLR0912, PLR0915
         hardware configuration.
     """
 
-    def _set_hardware_config_value(
-        hw_config_dict: dict,
-        hw_config_key: str,
-        hw_compilation_config_value: Any,  # noqa: ANN401
-    ) -> None:
-        legacy_value = hw_config_dict.get(hw_config_key, "not_present")
-        # Using default="not_present" because None can also be a meaningful setting
-        if legacy_value == "not_present":
-            hw_config_dict[hw_config_key] = hw_compilation_config_value
-        elif (
-            hw_compilation_config_value is not None
-            and legacy_value != hw_compilation_config_value
-        ):
-            raise ValueError(
-                f"Trying to set {hw_config_key} to {hw_compilation_config_value} from"
-                f" the new hardware compilation config datastructure while it"
-                f" has previously been set to {legacy_value} in the old-style hardware"
-                f" config dict. To avoid conflicting settings, please make sure this"
-                f" value is only set in one place."
-            )
-
-    if not isinstance(
-        compilation_config.hardware_compilation_config.connectivity, dict
-    ):
-        raise KeyError(
-            f"CompilationConfig.connectivity does not contain a "
-            f"hardware config dict:\n"
-            f"{compilation_config.hardware_compilation_config.connectivity=}"
-        )
-
-    hardware_config = deepcopy(
-        compilation_config.hardware_compilation_config.connectivity
-    )
     hardware_description = (
         compilation_config.hardware_compilation_config.hardware_description
     )
     hardware_options = compilation_config.hardware_compilation_config.hardware_options
-    port_clocks = find_all_port_clock_combinations(hardware_config)
+    connectivity = compilation_config.hardware_compilation_config.connectivity
+
+    hardware_config = {"devices": [], "local_oscillators": []}
+    if isinstance(connectivity, dict):
+        if "graph" in connectivity:
+            raise KeyError("Connectivity graph was not parsed correctly.")
+        hardware_config = connectivity
+
+    port_clocks = _extract_port_clocks_used(schedule=schedule)
 
     hardware_config["backend"] = export_python_object_to_path_string(
         compilation_config.hardware_compilation_config.backend
     )
 
+    # Add connectivity information to the hardware config:
+    if isinstance(connectivity, common.Connectivity):
+        connectivity_graph = (
+            compilation_config.hardware_compilation_config.connectivity.graph
+        )
+        for port, clock in port_clocks:
+            connected_nodes = {}
+            for node in connectivity_graph:
+                if port in node:
+                    connected_nodes = connectivity_graph[node]
+                    break
+
+            for connected_node in connected_nodes:
+                io_path = connected_node.split(sep=".")
+                instrument = io_path[0]
+
+                lo_name = None
+                if hardware_description[instrument].instrument_type == "IQMixer":
+                    # Find which lo is used for this IQ mixer
+                    lo_name = list(connectivity_graph[instrument + ".lo"])[0].split(
+                        sep="."
+                    )[0]
+                    # Find which instrument is connected to if port
+                    io_path = list(connectivity_graph[instrument + ".if"])[0].split(
+                        sep="."
+                    )
+
+                # Set port-clock combination in io config:
+                instr_indices = [
+                    i
+                    for i, v in enumerate(hardware_config["devices"])
+                    if v["name"] == io_path[0]
+                ]
+                if len(instr_indices) == 0:
+                    hardware_config["devices"].append({"name": io_path[0]})
+                    instr_indices = [-1]
+                instr_config = hardware_config["devices"][instr_indices[0]]
+
+                instrument_io = io_path[-1]
+                if instrument_io not in instr_config:
+                    instr_config[instrument_io] = {}
+                if (old_port := instr_config[instrument_io].get("port")) or (
+                    old_clock := instr_config[instrument_io].get("clock")
+                ):
+                    raise ValueError(
+                        f"Trying to set port-clock combination {port}-{clock} for "
+                        f"instrument channel {io_path} in the hardware config, while "
+                        f"it has previously been set to {old_port}-{old_clock}."
+                    )
+                instr_config[instrument_io]["port"] = port
+                instr_config[instrument_io]["clock"] = clock
+                if lo_name is not None:
+                    instr_config[instrument_io]["local_oscillator"] = lo_name
+
+    # Sort the devices to ensure deterministic behaviour:
+    hardware_config["devices"] = sorted(
+        hardware_config["devices"], key=lambda x: x["name"]
+    )
+
+    # Add info from hardware description to hardware config
     if hardware_description is not None:
-        # Add info from hardware description to hardware config
         if hardware_config.get("local_oscillators") is None:
             hardware_config["local_oscillators"] = []
         if hardware_config.get("devices") is None:
@@ -790,134 +830,77 @@ def generate_hardware_config(  # noqa: PLR0912, PLR0915
                     for i, v in enumerate(hardware_config["devices"])
                     if v["name"] == instr_name
                 ]
-                if len(instr_indices) != 1:
+                if len(instr_indices) > 1:
                     raise ValueError(
-                        f"Device with name {instr_name} should appear exactly once in "
+                        f"Device with name {instr_name} can only appear once in "
                         f"the hardware_config['devices'] list."
                     )
+                if len(instr_indices) == 0:
+                    # Instrument is not in the hardware config, because it is not
+                    # used in the schedule.
+                    continue
                 instr_config = hardware_config["devices"][instr_indices[0]]
-                # Set the instrument_type in the instrument config:
-                _set_hardware_config_value(
-                    hw_config_dict=instr_config,
-                    hw_config_key="type",
-                    hw_compilation_config_value=instr_description.instrument_type,
-                )
-                # Set the reference source in the instrument config:
-                _set_hardware_config_value(
-                    hw_config_dict=instr_config,
-                    hw_config_key="ref",
-                    hw_compilation_config_value=instr_description.ref,
-                )
+                instr_config["type"] = instr_description.instrument_type
+                instr_config["ref"] = instr_description.ref
                 if instr_description.instrument_type in ["HDAWG4", "HDAWG8"]:
-                    # Set the channelgrouping in the instrument config:
-                    _set_hardware_config_value(
-                        hw_config_dict=instr_config,
-                        hw_config_key="channelgrouping",
-                        hw_compilation_config_value=instr_description.channelgrouping,
-                    )
-                    # Set the clock_select in the instrument config:
-                    _set_hardware_config_value(
-                        hw_config_dict=instr_config,
-                        hw_config_key="clock_select",
-                        hw_compilation_config_value=instr_description.clock_select,
-                    )
-                if instr_description.channel_0 is not None:
-                    if instr_config.get("channel_0") is None:
-                        instr_config["channel_0"] = {}
-                    ch_config = instr_config["channel_0"]
-                    # Set the i/o mode in the channel config:
-                    _set_hardware_config_value(
-                        hw_config_dict=ch_config,
-                        hw_config_key="mode",
-                        hw_compilation_config_value=instr_description.channel_0.mode,
-                    )
-                    # Set the markers in the channel config:
-                    _set_hardware_config_value(
-                        hw_config_dict=ch_config,
-                        hw_config_key="markers",
-                        hw_compilation_config_value=instr_description.channel_0.markers,
-                    )
-                    # Set the trigger in the channel config:
-                    _set_hardware_config_value(
-                        hw_config_dict=ch_config,
-                        hw_config_key="trigger",
-                        hw_compilation_config_value=instr_description.channel_0.trigger,
-                    )
+                    instr_config["channelgrouping"] = instr_description.channelgrouping
+                    instr_config["clock_select"] = instr_description.clock_select
+                if (
+                    instr_description.channel_0 is not None
+                    and "channel_0" in instr_config
+                ):
+                    # Only propagate channel description settings if it was already
+                    # added based on the Connectivity and the Schedule.
+                    instr_config["channel_0"]["mode"] = instr_description.channel_0.mode
+                    instr_config["channel_0"][
+                        "markers"
+                    ] = instr_description.channel_0.markers
+                    instr_config["channel_0"][
+                        "trigger"
+                    ] = instr_description.channel_0.trigger
+
                 if (
                     instr_description.instrument_type in ["HDAWG4", "HDAWG8"]
                     and instr_description.channel_1 is not None
+                    and "channel_1" in instr_config
                 ):
-                    if instr_config.get("channel_1") is None:
-                        instr_config["channel_1"] = {}
-                    ch_config = instr_config["channel_1"]
-                    # Set the i/o mode in the channel config:
-                    _set_hardware_config_value(
-                        hw_config_dict=ch_config,
-                        hw_config_key="mode",
-                        hw_compilation_config_value=instr_description.channel_1.mode,
-                    )
-                    # Set the markers in the channel config:
-                    _set_hardware_config_value(
-                        hw_config_dict=ch_config,
-                        hw_config_key="markers",
-                        hw_compilation_config_value=instr_description.channel_1.markers,
-                    )
-                    # Set the trigger in the channel config:
-                    _set_hardware_config_value(
-                        hw_config_dict=ch_config,
-                        hw_config_key="trigger",
-                        hw_compilation_config_value=instr_description.channel_1.trigger,
-                    )
+                    # Only propagate channel description settings if it was already
+                    # added based on the Connectivity and the Schedule.
+                    instr_config["channel_1"]["mode"] = instr_description.channel_1.mode
+                    instr_config["channel_1"][
+                        "markers"
+                    ] = instr_description.channel_1.markers
+                    instr_config["channel_1"][
+                        "trigger"
+                    ] = instr_description.channel_1.trigger
                 if (
                     instr_description.instrument_type == "HDAWG8"
                     and instr_description.channel_2 is not None
+                    and "channel_2" in instr_config
                 ):
-                    if instr_config.get("channel_2") is None:
-                        instr_config["channel_2"] = {}
-                    ch_config = instr_config["channel_2"]
-                    # Set the i/o mode in the channel config:
-                    _set_hardware_config_value(
-                        hw_config_dict=ch_config,
-                        hw_config_key="mode",
-                        hw_compilation_config_value=instr_description.channel_2.mode,
-                    )
-                    # Set the markers in the channel config:
-                    _set_hardware_config_value(
-                        hw_config_dict=ch_config,
-                        hw_config_key="markers",
-                        hw_compilation_config_value=instr_description.channel_2.markers,
-                    )
-                    # Set the trigger in the channel config:
-                    _set_hardware_config_value(
-                        hw_config_dict=ch_config,
-                        hw_config_key="trigger",
-                        hw_compilation_config_value=instr_description.channel_2.trigger,
-                    )
+                    # Only propagate channel description settings if it was already
+                    # added based on the Connectivity and the Schedule.
+                    instr_config["channel_2"]["mode"] = instr_description.channel_2.mode
+                    instr_config["channel_2"][
+                        "markers"
+                    ] = instr_description.channel_2.markers
+                    instr_config["channel_2"][
+                        "trigger"
+                    ] = instr_description.channel_2.trigger
                 if (
                     instr_description.instrument_type == "HDAWG8"
                     and instr_description.channel_3 is not None
+                    and "channel_3" in instr_config
                 ):
-                    if instr_config.get("channel_3") is None:
-                        instr_config["channel_3"] = {}
-                    ch_config = instr_config["channel_3"]
-                    # Set the i/o mode in the channel config:
-                    _set_hardware_config_value(
-                        hw_config_dict=ch_config,
-                        hw_config_key="mode",
-                        hw_compilation_config_value=instr_description.channel_3.mode,
-                    )
-                    # Set the markers in the channel config:
-                    _set_hardware_config_value(
-                        hw_config_dict=ch_config,
-                        hw_config_key="markers",
-                        hw_compilation_config_value=instr_description.channel_3.markers,
-                    )
-                    # Set the trigger in the channel config:
-                    _set_hardware_config_value(
-                        hw_config_dict=ch_config,
-                        hw_config_key="trigger",
-                        hw_compilation_config_value=instr_description.channel_3.trigger,
-                    )
+                    # Only propagate channel description settings if it was already
+                    # added based on the Connectivity and the Schedule.
+                    instr_config["channel_3"]["mode"] = instr_description.channel_3.mode
+                    instr_config["channel_3"][
+                        "markers"
+                    ] = instr_description.channel_3.markers
+                    instr_config["channel_3"][
+                        "trigger"
+                    ] = instr_description.channel_3.trigger
 
             elif instr_description.instrument_type == "LocalOscillator":
                 lo_indices = [
@@ -934,53 +917,28 @@ def generate_hardware_config(  # noqa: PLR0912, PLR0915
                     hardware_config["local_oscillators"].append({})
                     lo_indices = [len(hardware_config["local_oscillators"]) - 1]
                 lo_config = hardware_config["local_oscillators"][lo_indices[0]]
-                # Set the instrument_type in the LO config:
-                _set_hardware_config_value(
-                    hw_config_dict=lo_config,
-                    hw_config_key="unique_name",
-                    hw_compilation_config_value=instr_name,
-                )
-                # Set the instrument_name in the LO config:
-                _set_hardware_config_value(
-                    hw_config_dict=lo_config,
-                    hw_config_key="instrument_name",
-                    hw_compilation_config_value=instr_description.instrument_name,
-                )
-                # Set the frequency_param in the LO config:
-                _set_hardware_config_value(
-                    hw_config_dict=lo_config,
-                    hw_config_key="frequency_param",
-                    hw_compilation_config_value=instr_description.frequency_param,
-                )
+                lo_config["unique_name"] = instr_name
+                lo_config["instrument_name"] = instr_description.instrument_name
+                lo_config["frequency_param"] = instr_description.frequency_param
                 # Set the LO power in the LO config:
                 if "power" not in lo_config:
                     lo_config["power"] = {}
                 elif isinstance(lo_config["power"], int):
                     lo_config["power"] = {"power": lo_config["power"]}
-                _set_hardware_config_value(
-                    hw_config_dict=lo_config["power"],
-                    hw_config_key=instr_description.power_param,
-                    hw_compilation_config_value=instr_description.power,
-                )
+                lo_config["power"][
+                    instr_description.power_param
+                ] = instr_description.power
 
     if hardware_options is not None:
-        # Add latency corrections from hardware options to hardware config
-        _set_hardware_config_value(
-            hw_config_dict=hardware_config,
-            hw_config_key="latency_corrections",
-            hw_compilation_config_value=hardware_options.model_dump()[
+        if hardware_options.latency_corrections is not None:
+            hardware_config["latency_corrections"] = hardware_options.model_dump()[
                 "latency_corrections"
-            ],
-        )
-
-        # Add distortion corrections from hardware options to hardware config
-        _set_hardware_config_value(
-            hw_config_dict=hardware_config,
-            hw_config_key="distortion_corrections",
-            hw_compilation_config_value=hardware_options.model_dump()[
+            ]
+        if hardware_options.distortion_corrections is not None:
+            hardware_config["distortion_corrections"] = hardware_options.model_dump()[
                 "distortion_corrections"
-            ],
-        )
+            ]
+
         modulation_frequencies = hardware_options.modulation_frequencies
         if modulation_frequencies is not None:
             for port, clock in port_clocks:
@@ -1002,11 +960,7 @@ def generate_hardware_config(  # noqa: PLR0912, PLR0915
                     # Initialize modulation config:
                     ch_config["modulation"] = {"type": "premod"}
                 # Set the interm_freq in the modulation config:
-                _set_hardware_config_value(
-                    hw_config_dict=ch_config["modulation"],
-                    hw_config_key="interm_freq",
-                    hw_compilation_config_value=pc_mod_freqs.interm_freq,
-                )
+                ch_config["modulation"]["interm_freq"] = pc_mod_freqs.interm_freq
                 # Find the LO config and add the frequency config:
                 lo_name: str = ch_config["local_oscillator"]
                 lo_configs: list = hardware_config.get("local_oscillators", [])
@@ -1025,11 +979,7 @@ def generate_hardware_config(  # noqa: PLR0912, PLR0915
                             lo_config["frequency"] = {}
                         lo_freq_key = lo_config.get("frequency_param")
                         # Set the LO freq in the LO config:
-                        _set_hardware_config_value(
-                            hw_config_dict=lo_config["frequency"],
-                            hw_config_key=lo_freq_key,
-                            hw_compilation_config_value=pc_mod_freqs.lo_freq,
-                        )
+                        lo_config["frequency"][lo_freq_key] = pc_mod_freqs.lo_freq
                 if not lo_config_found:
                     raise RuntimeError(
                         f"External local oscillator '{lo_name}' set to "
@@ -1053,11 +1003,7 @@ def generate_hardware_config(  # noqa: PLR0912, PLR0915
                 for key in ch_path:
                     ch_config = ch_config[key]
                 # Set mixer corrections from hw options in channel config dict:
-                _set_hardware_config_value(
-                    hw_config_dict=ch_config,
-                    hw_config_key="mixer_corrections",
-                    hw_compilation_config_value=pc_mix_corr.model_dump(),
-                )
+                ch_config["mixer_corrections"] = pc_mix_corr.model_dump()
 
         output_gain = hardware_options.output_gain
         if output_gain is not None:
@@ -1078,16 +1024,8 @@ def generate_hardware_config(  # noqa: PLR0912, PLR0915
                 ch_config = instr_config[ch_name]
 
                 # Set the output gain in the channel config:
-                _set_hardware_config_value(
-                    hw_config_dict=ch_config,
-                    hw_config_key="gain1",
-                    hw_compilation_config_value=pc_output_gain.gain_I,
-                )
-                _set_hardware_config_value(
-                    hw_config_dict=ch_config,
-                    hw_config_key="gain2",
-                    hw_compilation_config_value=pc_output_gain.gain_Q,
-                )
+                ch_config["gain1"] = pc_output_gain.gain_I
+                ch_config["gain2"] = pc_output_gain.gain_Q
 
     return hardware_config
 
@@ -1164,7 +1102,9 @@ def compile_backend(
         )
     if isinstance(config, CompilationConfig):
         # Extract the hardware config from the CompilationConfig
-        hardware_cfg = generate_hardware_config(compilation_config=config)
+        hardware_cfg = generate_hardware_config(
+            schedule=schedule, compilation_config=config
+        )
     elif config is not None:
         # Support for (deprecated) calling with hardware_cfg as positional argument.
         hardware_cfg = config
@@ -1343,8 +1283,9 @@ def _add_lo_config(  # noqa: PLR0912
     Adds configuration for a local oscillator required for a specific output channel to
     the device configs.
     """
-    # N.B. when using baseband pulses no LO will be associated to the channel.
-    # this case is caught in the case where the channel.clock is not specified.
+    if channel.local_oscillator is None:
+        # no local oscillator is associated to this channel.
+        return
     unique_name = channel.local_oscillator
 
     if unique_name not in local_oscillators:
@@ -1716,7 +1657,7 @@ def _assemble_hdawg_sequence(
     seqc_gen.emit_end_repeat()
 
     seqc_instructions = seqc_gen.generate()
-    commandtable_json = command_table.json()
+    commandtable_json = command_table.model_dump_json()
     return seqc_instructions, commandtable_json
 
 

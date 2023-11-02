@@ -63,7 +63,7 @@ def determine_relative_latency_corrections(
     # Subtract lowest value to ensure minimal latency is used and offset the latency
     # corrections to be relative to the minimum. Note that this supports negative delays
     # (which is useful for calibrating)
-    minimum_of_latency_corrections = min(latency_dict.values())
+    minimum_of_latency_corrections = min(latency_dict.values(), default=0)
     for port_clock, latency_at_port_clock in latency_dict.items():
         latency_dict[port_clock] = (
             latency_at_port_clock - minimum_of_latency_corrections

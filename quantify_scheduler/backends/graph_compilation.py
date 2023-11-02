@@ -23,13 +23,13 @@ from matplotlib.axes import Axes
 from pydantic import field_serializer, field_validator
 
 from quantify_scheduler.backends.types.common import HardwareCompilationConfig
+from quantify_scheduler.helpers.importers import export_python_object_to_path_string
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 from quantify_scheduler.structure.model import (
     DataStructure,
     deserialize_class,
     deserialize_function,
-    export_python_object_to_path_string,
 )
 
 if TYPE_CHECKING:

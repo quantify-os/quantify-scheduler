@@ -1294,12 +1294,12 @@ def test_complex_input_hardware_cfg(make_cluster_component, mock_setup_basic_tra
             "instrument_type": "Cluster",
             "cluster0_module3": {
                 "instrument_type": "QRM",
-                "complex_output_0": {
+                "complex_input_0": {
                     "portclock_configs": [
                         {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6},
                     ],
                 },
-                "complex_input_0": {
+                "complex_output_0": {
                     "portclock_configs": [
                         {"port": "q1:res", "clock": "q1.ro", "interm_freq": 50e6},
                     ],
@@ -1369,7 +1369,7 @@ def test_complex_input_hardware_cfg(make_cluster_component, mock_setup_basic_tra
     xr.testing.assert_equal(data, expected_dataset)
     assert compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"][
         "sequencers"
-    ]["seq1"]["connected_inputs"] == [0, 1]
+    ]["seq0"]["connected_inputs"] == [0, 1]
 
     instr_coordinator.remove_component("ic_cluster0")
 
@@ -1474,14 +1474,14 @@ def test_multi_real_input_hardware_cfg_trigger_count(
         "sequencers"
     ]["seq3"]
 
-    assert seq_0["connected_outputs"] == [0]
-    assert seq_0["nco_en"] is True
-    assert seq_1["connected_outputs"] == [1]
-    assert seq_1["nco_en"] is True
-    assert seq_2["connected_inputs"] == [0]
-    assert seq_2["ttl_acq_auto_bin_incr_en"] is False
-    assert seq_3["connected_inputs"] == [1]
-    assert seq_3["ttl_acq_auto_bin_incr_en"] is True
+    assert seq_0["connected_inputs"] == [0]
+    assert seq_0["ttl_acq_auto_bin_incr_en"] is False
+    assert seq_1["connected_inputs"] == [1]
+    assert seq_1["ttl_acq_auto_bin_incr_en"] is True
+    assert seq_2["connected_outputs"] == [0]
+    assert seq_2["nco_en"] is True
+    assert seq_3["connected_outputs"] == [1]
+    assert seq_3["nco_en"] is True
 
     instr_coordinator.remove_component("ic_cluster0")
 

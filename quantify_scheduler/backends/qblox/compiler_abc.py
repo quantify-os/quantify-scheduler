@@ -1336,7 +1336,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         portclock_io_map: Dict[Tuple, str] = {}
         default_marker = self.static_hw_properties.default_marker
 
-        for io_name, io_cfg in self.instrument_cfg.items():
+        for io_name, io_cfg in sorted(
+            self.instrument_cfg.items()
+        ):  # Sort to ensure deterministic sequencer order
             if not isinstance(io_cfg, dict):
                 continue
             if io_name not in self.static_hw_properties.valid_ios:

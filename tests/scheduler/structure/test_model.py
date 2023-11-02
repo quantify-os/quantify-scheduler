@@ -6,12 +6,14 @@ import pytest
 from typing import Any, Callable, Type, Union
 
 from pydantic import field_serializer, field_validator
-from quantify_scheduler.helpers.importers import import_python_object_from_string
+from quantify_scheduler.helpers.importers import (
+    import_python_object_from_string,
+    export_python_object_to_path_string,
+)
 from quantify_scheduler.structure.model import (
     DataStructure,
     deserialize_class,
     deserialize_function,
-    export_python_object_to_path_string,
 )
 
 

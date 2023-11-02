@@ -1,3 +1,9 @@
+---
+file_format: mystnb
+kernelspec:
+    name: python3
+
+---
 (sec-backend-zhinst)=
 # Zurich Instruments
 
@@ -79,6 +85,26 @@ Keep these in mind when operating the hardware.
 (zhinst-hardware)=
 ## Hardware compilation configuration
 
+````{admonition} Old-style hardware config dictionary
+:class: dropdown
+The {class}`~quantify_scheduler.backends.types.common.HardwareCompilationConfig` is a {class}`~quantify_scheduler.structure.model.DataStructure` that adds validation and structure to the information that was previously stored in the hardware configuration dictionary. The old-style hardware configuration dictionary is still supported, but will be deprecated in the future.
+````
+
+```{code-cell} ipython3
+---
+tags: [hide-cell]
+mystnb:
+  code_prompt_show: "Example old-style hardware configuration"
+  remove_code_source: true  
+---
+
+import json
+
+from quantify_scheduler.backends.zhinst.zhinst_hardware_config_old_style import hardware_config as old_style_hardware_config
+
+print(json.dumps(old_style_hardware_config, indent=4, sort_keys=False))
+```
+
 The {mod}`~quantify_scheduler.backends.zhinst_backend` allows Zurich Instruments to be
 configured individually or collectively by enabling master/slave configurations via
 Triggers and Markers.
@@ -89,13 +115,21 @@ The configuration file contains parameters about the Instruments, their connecti
 To use the Zurich Instruments backend in compilation, one should pass a valid hardware compilation configuration to the `quantum_device.hardware_config` parameter, such that it can be used to generate a full `CompilationConfig` using `quantum_device.generate_compilation_config()`, which can finally be used to compile a {class}`~.Schedule` using {meth}`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler.compile`. The entry {code}`"backend": "quantify_scheduler.backends.zhinst_backend.compile_backend"` specifies to the scheduler that we are using the Zurich Instruments backend (specifically the {func}`~quantify_scheduler.backends.zhinst_backend.compile_backend` function).
 See {ref}`the hardware verification tutorial <hardware-verfication-tutorial>` for an example.
 
+```{code-cell} ipython3
+---
+tags: [hide-cell]
+mystnb:
+  code_prompt_show: "Example hardware compilation configuration"  
+---
+import json
+from quantify_scheduler.schemas.examples.utils import load_json_example_scheme
+from quantify_scheduler.backends.zhinst_backend import ZIHardwareCompilationConfig
 
-````{admonition} Example Zurich Instruments hardware compilation configuration file
-:class: dropdown
-```{literalinclude} ../../../../quantify_scheduler/schemas/examples/zhinst_hardware_compilation_config.json
-:language: JSON
+hardware_compilation_config = load_json_example_scheme("zhinst_hardware_compilation_config.json")
+print(json.dumps(hardware_compilation_config, indent=4, sort_keys=False))
+
+ZIHardwareCompilationConfig.model_validate(hardware_compilation_config)
 ```
-````
 
 ### Hardware Description
 
@@ -146,12 +180,60 @@ Local oscillators can also be included by using the following generic datastruct
     :members:
 
 ```
-
+(sec-zhinst-connectivity)=
 ### Connectivity
-The {class}`~.backends.types.common.Connectivity` describes how the inputs/outputs of the Zurich Instruments devices are connected to ports on the {class}`~.device_under_test.quantum_device.QuantumDevice`.
+The {class}`~.backends.types.common.Connectivity` describes how the inputs/outputs of the Zurich Instruments devices are connected to ports on the {class}`~.device_under_test.quantum_device.QuantumDevice`. As described in {ref}`sec-connectivity`, the connectivity datastructure can be parsed from a list of edges, which are described by a pair of strings that each specify a port on the quantum device, on a HDAWG/UHFQA, or on other auxiliary instruments (like external IQ mixers).
+
+Each input/output node of the HDAWG/UHFQA should be specified in the connectivity as `"{instrument_name}.{channel_name}"`. The possible channel names are the same as the allowed fields in the corresponding {obj}`~.backends.types.zhinst.ZIHardwareDescription` datastructure:
+- for `"HDAWG4"`: `"channel_{0,1}"`,
+- for `"HDAWG8"`: `"channel_{0,1,2,3}"`, 
+- for `"UHFQA"`: `"channel_0"`.
 
 ```{note}
-The {class}`~.backends.types.common.Connectivity` datastructure is currently under development. Information on the connectivity between port-clock combinations on the quantum device and ports on the control hardware is currently included in the old-style hardware configuration file, which should be included in the `"connectivity"` field of the {class}`~.backends.types.common.HardwareCompilationConfig`.
+The UHFQA has both an output and an input channel. However, this is currently represented in the connectivity as a single channel that is connected (through IQ mixers) to a port on the quantum device. Both pulses and acquisitions will be assigned to this channel.
+```
+
+The connectivity can be visualized using:
+
+```{code-cell} ipython3
+from quantify_scheduler.backends.types.common import Connectivity
+connectivity = Connectivity.model_validate(hardware_compilation_config["connectivity"])
+connectivity.draw()
+```
+
+#### External IQ mixers and local oscillators
+HDAWG/UHFQA channels can be connected to external IQ mixers and local oscillators. To achieve this, you should add a {class}`~.quantify_scheduler.backends.types.common.IQMixerDescription` and {class}`~.quantify_scheduler.backends.types.common.LocalOscillatorDescription` to the `"hardware_description"` part of the hardware compilation config, and specify the connections of the `"if"`, `"lo"` and `"rf"` ports on the IQ mixer in the `"connectivity"` part of the hardware compilation config. The compiler will then use this information to assign the pulses and acquisitions to the port on the HDAWG/UHFQA that is connected to the `"if"` port on the IQ mixer, and set the local oscillator and intermodulation frequencies accordingly.
+
+```{code-block} python
+---
+  emphasize-lines: 5,6,7,8,14,20,21,22
+  linenos: true
+---
+hardware_compilation_cfg = {
+    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "hardware_description": {
+        "ic_hdawg0": {...},
+        "lo1": {
+            "instrument_type": "LocalOscillator",
+            "power": 20
+        },
+        "iq_mixer1": {"instrument_type": "IQMixer"},
+    },
+    "hardware_options": {
+        "modulation_frequencies": {
+            "q1:mw-q1.01": {
+                "lo_freq": 5e9
+            }
+        }
+    },
+    "connectivity": {
+        "graph": [
+            ("ic_hdawg0.channel_0", "iq_mixer1.if"),
+            ("lo1.output", "iq_mixer1.lo"),
+            ("iq_mixer1.rf", "q1:mw"),
+        ]
+    }
+}
 ```
 
 ### Hardware Options

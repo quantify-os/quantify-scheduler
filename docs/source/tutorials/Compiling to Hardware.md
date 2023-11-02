@@ -167,18 +167,9 @@ hardware_comp_cfg = {
         }
     },
     "connectivity": {
-        "cluster0": {
-            "cluster0_module2": {
-                "complex_output_0": {
-                    "portclock_configs": [
-                        {
-                            "port": "q0:res",
-                            "clock": "q0.ro",
-                        }
-                    ],
-                },
-            },
-        },
+        "graph": [
+            ("cluster0.module2.complex_output_0", "q0:res"),
+        ]
     },
 }
 ```

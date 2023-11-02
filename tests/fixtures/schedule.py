@@ -136,6 +136,7 @@ def make_schedule_with_measurement() -> Callable[[str], Schedule]:
 @pytest.fixture
 def two_qubit_gate_schedule():
     sched = Schedule("two_qubit_gate_schedule")
+    sched.add(Reset("q2", "q3"))
     sched.add(CZ(qC="q2", qT="q3"))
     return sched
 

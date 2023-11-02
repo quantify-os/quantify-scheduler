@@ -17,6 +17,7 @@ import base64
 from collections.abc import Callable, Mapping
 from typing import TYPE_CHECKING, Any
 
+import networkx as nx
 import numpy as np
 from pydantic_core import core_schema
 
@@ -89,4 +90,35 @@ class NDArray(np.ndarray):
         """Validate the data and cast from all known representations."""
         if isinstance(v, Mapping):
             return cls.from_dict(v)  # type: ignore
+        return cls(v)
+
+
+class Graph(nx.Graph):
+    """Pydantic-compatible version of :class:`networkx.Graph`."""
+
+    # Avoid showing inherited init docstring (which leads to cross-reference issues)
+    def __init__(
+        self, incoming_graph_data=None, **attr  # noqa: ANN001, ANN003
+    ) -> None:
+        """"""  # noqa: D419
+        super().__init__(incoming_graph_data, **attr)
+
+    @classmethod
+    def __get_pydantic_core_schema__(  # noqa: D105
+        cls: type[Graph],
+        _source_type: Any,  # noqa: ANN401
+        _handler: Callable[[Any], core_schema.CoreSchema],
+    ) -> core_schema.CoreSchema:
+        return core_schema.no_info_plain_validator_function(
+            cls.validate,
+            serialization=core_schema.plain_serializer_function_ser_schema(
+                nx.node_link_data, when_used="json"
+            ),
+        )
+
+    @classmethod
+    def validate(cls: type[Graph], v: Any) -> Graph:  # noqa: ANN401
+        """Validate the data and cast from all known representations."""
+        if isinstance(v, dict):
+            return cls(nx.node_link_graph(v))
         return cls(v)
