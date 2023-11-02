@@ -63,15 +63,6 @@
     next commit version v0.6.5 (which is less than v0.7.0.devN, which should not be the case) we must bump a bugfix version (the most minor version we bump in main)
     and later we may decide that we are releasing a minor instad of a bugfix.-->
 
-1. Read-the-Docs setup:
-   - [ ] Enable docs build for the new tag [over here](https://readthedocs.com/projects/quantify-quantify-scheduler/versions/).
-      - Configuration:
-        - `Active`=True
-        - `Hidden`=False
-        - `Privacy Level`=Public
-   - [ ] Make sure the docs build and check on RTD.
-      - Check the new version on RTD via the Changelog.
-
 1. [ ] Create new release vX.Y.Z on [GitLab](https://gitlab.com/quantify-os/quantify-scheduler/-/releases).
     - Copy/paste the changelog of the release
 
