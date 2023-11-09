@@ -17,20 +17,14 @@ class Resource(UserDict):
 
     .. jsonschema:: https://gitlab.com/quantify-os/quantify-scheduler/-/raw/main/quantify_scheduler/schemas/resource.json
 
+    Parameters
+    ----------
+    name :
+        The resource name.
     """
 
     # pylint: enable=line-too-long
     def __init__(self, name: str) -> None:
-        """
-        Create a new instance of Resource.
-
-        A resource corresponds to a physical resource such as a port or a clock.
-
-        Parameters
-        ----------
-        name :
-            The resource name.
-        """
         super().__init__()
         self.data["name"] = name
 
@@ -42,6 +36,7 @@ class Resource(UserDict):
         Parameters
         ----------
         operation :
+            The operation to validate.
 
         Raises
         ------
@@ -77,6 +72,7 @@ class Resource(UserDict):
         Parameters
         ----------
         other :
+            The other instance to compare.
 
         Returns
         -------
@@ -105,15 +101,22 @@ class Resource(UserDict):
 
     @property
     def hash(self) -> str:
-        """
-        A hash based on the contents of the Operation.
-        """
+        """A hash based on the contents of the Operation."""
         return str(hash(self))
 
 
 class ClockResource(Resource):
     """
     The ClockResource corresponds to a physical clock used to modulate pulses.
+
+    Parameters
+    ----------
+    name :
+        the name of this clock
+    freq :
+        the frequency of the clock in Hz
+    phase :
+        the starting phase of the clock in deg
     """
 
     def __init__(
@@ -122,18 +125,6 @@ class ClockResource(Resource):
         freq: float,
         phase: float = 0,
     ) -> None:
-        """
-        A clock resource used to modulate pulses.
-
-        Parameters
-        ----------
-        name :
-            the name of this clock
-        freq :
-            the frequency of the clock in Hz
-        phase :
-            the starting phase of the clock in deg
-        """
         super().__init__(name)
 
         self.data = {
@@ -151,22 +142,19 @@ class ClockResource(Resource):
 
 class BasebandClockResource(Resource):
     """
-    Global identity for a virtual baseband clock
+    Global identity for a virtual baseband clock.
+
+    Baseband signals are assumed to be real-valued and will not be modulated.
+
+    Parameters
+    ----------
+    name :
+        the name of this clock
     """
 
     IDENTITY = "cl0.baseband"
 
     def __init__(self, name: str) -> None:
-        """
-        A clock resource for pulses that operate at baseband.
-
-        Baseband signals are assumed to be real-valued and will not be modulated.
-
-        Parameters
-        ----------
-        name :
-            the name of this clock
-        """
         super().__init__(name)
 
         self.data = {

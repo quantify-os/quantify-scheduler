@@ -1,5 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
+"""Module containing definitions related to stitched pulses."""
 from __future__ import annotations
 
 import math
@@ -26,19 +27,18 @@ class StitchedPulse(Operation):
     This class can be used to construct arbitrarily long
     waveforms by stitching together pulses with optional changes in offset in
     between.
+
+    Parameters
+    ----------
+    pulse_info : List[Any] or None, optional
+        A list containing the pulses that are part of the StitchedPulse. By default
+        None.
     """
 
     def __init__(
         self,
         pulse_info: List[Any] | None = None,
     ) -> None:
-        """
-        Parameters
-        ----------
-        pulse_info : List[Any] or None, optional
-            A list containing the pulses that are part of the StitchedPulse. By default
-            None.
-        """
         pulse_info = pulse_info or []
         super().__init__(name=self.__class__.__name__)
         self.data["pulse_info"] = pulse_info
@@ -71,11 +71,7 @@ class StitchedPulse(Operation):
         super().add_pulse(pulse_operation)
 
     def _pulse_and_clock_match(self, operation_info: List[dict[str, Any]]) -> bool:
-        """
-        Check if the port and clock of an operation match the ports and clocks of the
-        operations already present in the StitchedPulse. Returns True if the
-        StitchedPulse is still empty.
-        """
+        """Check operation's port and clock match with StitchedPulse or if it's empty."""
         if len(self.data["pulse_info"]) == 0:
             return True
 
@@ -93,8 +89,10 @@ def convert_to_numerical_pulse(
     scheduled_at: float = 0.0,
     sampling_rate: float = 1e9,
 ) -> Operation:
-    """Convert an operation with pulses and voltage offsets to a
-    :class:`~.NumericalPulse`. If the operation also contains gate_info and/or
+    """
+    Convert an operation with pulses and voltage offsets to a :class:`~.NumericalPulse`.
+
+    If the operation also contains gate_info and/or
     acquisition_info, the original operation type is returned with only the
     pulse_info replaced by that of a NumericalPulse.
 
@@ -196,27 +194,25 @@ class _VoltageOffsetInfo:
 
 class StitchedPulseBuilder:
     """
-    The StitchedPulseBuilder can be used to create a StitchedPulse incrementally by
-    adding pulse and offset operations.
+    Incrementally construct a StitchedPulse using pulse and offset operations.
+
+    Parameters
+    ----------
+    port : str or None, optional
+        Port of the stitched pulse. This can also be added later through
+        :meth:`~.set_port`. By default None.
+    clock : str or None, optional
+        Clock used to modulate the stitched pulse. This can also be added later
+        through :meth:`~.set_clock`. By default None.
+    t0 : float, optional
+        Time in seconds when to start the pulses relative to the start time
+        of the Operation in the Schedule. This can also be added later through
+        :meth:`~.set_t0`. By default None.
     """
 
     def __init__(
         self, port: str | None = None, clock: str | None = None, t0: float = 0.0
     ) -> None:
-        """
-        Parameters
-        ----------
-        port : str or None, optional
-            Port of the stitched pulse. This can also be added later through
-            :meth:`~.set_port`. By default None.
-        clock : str or None, optional
-            Clock used to modulate the stitched pulse. This can also be added later
-            through :meth:`~.set_clock`. By default None.
-        t0 : float, optional
-            Time in seconds when to start the pulses relative to the start time
-            of the Operation in the Schedule. This can also be added later through
-            :meth:`~.set_t0`. By default None.
-        """
         self._port = port
         self._clock = clock
         self._t0 = t0
@@ -400,6 +396,19 @@ class StitchedPulseBuilder:
 
     @property
     def operation_end(self) -> float:
+        """
+        Determine the end time of an operation based on its pulses and offsets.
+
+        For pulses, the end time is calculated as the start time (`t0`) plus the pulse
+        duration. For offsets, it uses the start time (`t0`) and, if provided, adds the
+        duration. If no duration is specified for an offset, it assumes a default value
+        of 0.0.
+
+        Returns
+        -------
+        :
+            The maximum end time considering all pulses and offsets.
+        """
         max_from_pulses: float = (
             0.0
             if len(self._pulses) == 0

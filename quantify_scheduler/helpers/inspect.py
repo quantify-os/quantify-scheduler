@@ -14,8 +14,7 @@ from typing import Any, Dict, Type, Union
 
 def get_classes(*modules: ModuleType) -> Dict[str, Type[Any]]:
     """
-    Returns a dictionary of class names by class types of the
-    modules given as arguments.
+    Return a dictionary of class names by class types.
 
     .. code-block::
 
@@ -52,7 +51,8 @@ def make_uml_diagram(
     options: list[str],
 ) -> str:
     """
-    Generates a UML diagram of a given module or class.
+    Generate a UML diagram of a given module or class.
+
     This function is a wrapper of `pylint.pyreverse`.
 
     Parameters

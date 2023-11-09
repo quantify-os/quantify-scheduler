@@ -1,6 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-
+"""The module contains definitions for edges."""
 from qcodes.instrument.base import Instrument
 from quantify_scheduler.backends.graph_compilation import DeviceCompilationConfig
 from quantify_scheduler.device_under_test.device_element import DeviceElement
@@ -8,6 +8,8 @@ from quantify_scheduler.device_under_test.device_element import DeviceElement
 
 class Edge(Instrument):
     """
+    Create an Edge.
+
     This class encapsulates the connection information between DeviceElements in the
     QuantumDevice. It provides an interface for the QuantumDevice to generate the
     edge information for use in the device compilation step. See
@@ -23,11 +25,13 @@ class Edge(Instrument):
 
     def __getstate__(self):
         """
-        Serializes `Edge` into a dict containing the parent and child element names of
+        Serialize `Edge` into a dictionary.
+
+        Serialization is performed by converting submodules of the object into
+        the dictionary containing the parent and child element names of
         this edge and a dict for each submodule containing its parameter names
         and corresponding values.
         """
-
         snapshot = self.snapshot()
 
         edge_data = {
@@ -50,9 +54,7 @@ class Edge(Instrument):
 
     @property
     def parent_device_element(self):
-        """
-        The parent DeviceElement connected by the edge.
-        """
+        """The parent DeviceElement connected by the edge."""
         found_parent_element = self.find_instrument(
             name=self._parent_element_name, instrument_class=DeviceElement
         )
@@ -60,9 +62,7 @@ class Edge(Instrument):
 
     @property
     def child_device_element(self):
-        """
-        The child DeviceElement connected by the edge.
-        """
+        """The child DeviceElement connected by the edge."""
         found_child_element = self.find_instrument(
             name=self._child_element_name, instrument_class=DeviceElement
         )
@@ -70,8 +70,7 @@ class Edge(Instrument):
 
     def generate_edge_config(self) -> DeviceCompilationConfig:
         """
-        Generates part of the device configuration specific to an edge connecting
-        different device elements.
+        Generate the device configuration for an edge.
 
         This method is intended to be used when this object is part of a
         device object containing multiple elements.

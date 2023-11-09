@@ -13,9 +13,7 @@ import xxhash
 
 def make_hash(obj: Any) -> int:
     """
-    Makes a hash from a dictionary, list, tuple or set to any level, that contains
-    only other hashable types (including any lists, tuples, sets, and
-    dictionaries).
+    Make a hash from a dictionary, list, tuple or set to any level.
 
     From: https://stackoverflow.com/questions/5884066/hashing-a-dictionary
 
@@ -49,7 +47,7 @@ def make_hash(obj: Any) -> int:
 
 def without(dict_in: dict, keys: list) -> dict:
     """
-    Utility that copies a dictionary excluding a specific list of keys.
+    Copy a dictionary excluding a specific list of keys.
 
     Parameters
     ----------
@@ -74,8 +72,7 @@ def without(dict_in: dict, keys: list) -> dict:
 # pylint: disable=invalid-name
 def find_inner_dicts_containing_key(d: dict, key: Any) -> List[dict]:
     """
-    Generates a list of the first dictionaries encountered that contain a certain key,
-    in a complicated dictionary with nested dictionaries or Iterables.
+    Generate a list of the first dictionaries encountered that contain a certain key.
 
     This is achieved by recursively traversing the nested structures until the key is
     found, which is then appended to a list.
@@ -115,8 +112,9 @@ def find_inner_dicts_containing_key(d: dict, key: Any) -> List[dict]:
 # pylint: disable=invalid-name
 def find_all_port_clock_combinations(d: dict) -> List[Tuple[str, str]]:
     """
-    Generates a list with all port and clock combinations found in a dictionary with
-    nested structures. Traversing the dictionary is done using the
+    Generate a list with all port-clock combinations found in a nested dictionary.
+
+    Traversing the dictionary is done using the
     `find_inner_dicts_containing_key` function.
 
     Parameters
@@ -146,7 +144,7 @@ def find_all_port_clock_combinations(d: dict) -> List[Tuple[str, str]]:
 
 def find_port_clock_path(hardware_config: dict, port: str, clock: str) -> list | None:
     """
-    Finds the path to a port-clock combination in a nested dictionary.
+    Find the path to a port-clock combination in a nested dictionary.
 
     Parameters
     ----------

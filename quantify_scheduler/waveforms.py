@@ -9,7 +9,7 @@ Examples of waveforms that are too advanced are flux pulses that require knowled
 the flux sensitivity and interaction strengths and qubit frequencies.
 """
 from __future__ import annotations
-from typing import List, Literal, Optional, Union
+from typing import List, Optional, Union
 import warnings
 
 import numpy as np
@@ -17,16 +17,19 @@ from scipy import signal, interpolate
 
 
 def square(t: Union[np.ndarray, List[float]], amp: Union[float, complex]) -> np.ndarray:
+    """Generate a square pulse."""
     return amp * np.ones(len(t))
 
 
 def square_imaginary(
     t: Union[np.ndarray, List[float]], amp: Union[float, complex]
 ) -> np.ndarray:
+    """Generate a square pulse with imaginary amplitude."""
     return square(t, 1j * amp)
 
 
 def ramp(t, amp, offset=0) -> np.ndarray:
+    """Generate a ramp pulse."""
     return np.linspace(offset, amp + offset, len(t), endpoint=False)
 
 
@@ -75,13 +78,16 @@ def staircase(
 
 
 def soft_square(t, amp):
-    """A softened square pulse.
+    """
+    A softened square pulse.
 
     Parameters
     ----------
-    t
+    t :
+        Times at which to evaluate the function.
 
-    amp
+    amp :
+        Amplitude of the pulse.
 
     """
     data = square(t, amp)
@@ -93,7 +99,9 @@ def soft_square(t, amp):
 
 def chirp(t: np.ndarray, amp: float, start_freq: float, end_freq: float) -> np.ndarray:
     r"""
-    Produces a linear chirp signal. The frequency is determined according to the
+    Produces a linear chirp signal.
+
+    The frequency is determined according to the
     relation:
 
     .. math:
@@ -337,6 +345,8 @@ def interpolated_complex_waveform(
     t_samples
         An array of values specifying the corresponding times at which the `samples`
         are evaluated.
+    interpolation:
+        The interpolation method to use, by default "linear".
     kwargs
         Optional keyword arguments to pass to ``scipy.interpolate.interp1d``.
 
@@ -429,7 +439,8 @@ def skewed_hermite(
     center: Optional[float] = None,
     duration_over_char_time: float = 6.0,
 ) -> np.ndarray:
-    """Generates a skewed hermite pulse for single qubit rotations in NV centers.
+    """
+    Generates a skewed hermite pulse for single qubit rotations in NV centers.
 
     A Hermite pulse is a Gaussian multiplied by a second degree Hermite polynomial.
     See :cite:t:`Beukers_MSc_2019`, Appendix A.2.

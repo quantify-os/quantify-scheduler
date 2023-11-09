@@ -8,13 +8,15 @@ import warnings
 
 import numpy as np
 
-from quantify_scheduler import Operation
 import quantify_scheduler.backends.qblox.constants as qblox_constants
+from quantify_scheduler import Operation
 from quantify_scheduler.enums import BinMode
 
 
 class AcquisitionOperation(Operation):  # pylint: disable=too-many-ancestors
     """
+    Acquisition operations for highlighting in pulse diagrams.
+
     This class is used to help differentiate an acquisition operation from the regular
     operations. This enables us to use
     :func:`~.quantify_scheduler.schedules._visualization.pulse_diagram.plot_acquisition_operations`
@@ -23,7 +25,40 @@ class AcquisitionOperation(Operation):  # pylint: disable=too-many-ancestors
 
 
 class Trace(AcquisitionOperation):  # pylint: disable=too-many-ancestors
-    """The Trace acquisition protocol measures a signal s(t)."""
+    """
+    The Trace acquisition protocol measures a signal s(t).
+
+    Only processing performed is rescaling and adding
+    units based on a calibrated scale. Values are returned
+    as a raw trace (numpy array of float datatype). Length of
+    this array depends on the sampling rate of the acquisition
+    device.
+
+    Parameters
+    ----------
+    port
+        The acquisition port.
+    clock
+        The clock used to demodulate the acquisition.
+    duration
+        The acquisition duration in seconds.
+    acq_channel
+        The data channel in which the acquisition is stored, is by default 0.
+        Describes the "where" information of the  measurement, which typically
+        corresponds to a qubit idx.
+    acq_index
+        The data register in which the acquisition is stored, by default 0.
+        Describes the "when" information of the measurement, used to label or
+        tag individual measurements in a large circuit. Typically corresponds
+        to the setpoints of a schedule (e.g., tau in a T1 experiment).
+    bin_mode
+        Describes what is done when data is written to a register that already
+        contains a value. Options are "append" which appends the result to the
+        list or "average" which stores the weighted average value of the
+        new result and the old register value, by default BinMode.APPEND.
+    t0
+        The acquisition start time in seconds, by default 0.
+    """
 
     def __init__(
         self,
@@ -35,41 +70,6 @@ class Trace(AcquisitionOperation):  # pylint: disable=too-many-ancestors
         bin_mode: Union[BinMode, str] = BinMode.AVERAGE,
         t0: float = 0,
     ) -> None:
-        """
-        Creates a new instance of Trace.
-        The Trace acquisition protocol measures a signal s(t).
-
-        Only processing performed is rescaling and adding
-        units based on a calibrated scale. Values are returned
-        as a raw trace (numpy array of float datatype). Length of
-        this array depends on the sampling rate of the acquisition
-        device.
-
-        Parameters
-        ----------
-        port :
-            The acquisition port.
-        clock :
-            The clock used to demodulate the acquisition.
-        duration :
-            The acquisition duration in seconds.
-        acq_channel :
-            The data channel in which the acquisition is stored, is by default 0.
-            Describes the "where" information of the  measurement, which typically
-            corresponds to a qubit idx.
-        acq_index :
-            The data register in which the acquisition is stored, by default 0.
-            Describes the "when" information of the measurement, used to label or
-            tag individual measurements in a large circuit. Typically corresponds
-            to the setpoints of a schedule (e.g., tau in a T1 experiment).
-        bin_mode :
-            Describes what is done when data is written to a register that already
-            contains a value. Options are "append" which appends the result to the
-            list or "average" which stores the weighted average value of the
-            new result and the old register value, by default BinMode.APPEND
-        t0 :
-            The acquisition start time in seconds, by default 0
-        """
         if not isinstance(duration, float):
             duration = float(duration)
         if isinstance(bin_mode, str):
@@ -100,9 +100,55 @@ class Trace(AcquisitionOperation):  # pylint: disable=too-many-ancestors
 class WeightedIntegratedComplex(
     AcquisitionOperation
 ):  # pylint: disable=too-many-ancestors
-    """
-    Weighted integration acquisition protocol on a
-    complex signal in a custom complex window.
+    r"""
+    Weighted integration acquisition protocol on a complex signal.
+
+    Weights are applied as:
+
+    .. math::
+
+        \widetilde{A} = \int ( \mathrm{Re}(S(t))\cdot \mathrm{Re}(W_A(t)) +
+        \mathrm{Im}(S(t))\cdot \mathrm{Im}(W_A(t)) ) \mathrm{d}t
+
+    .. math::
+
+        \widetilde{B} = \int ( \mathrm{Re}(S(t))\cdot \mathrm{Re}(W_B(t)) +
+        \mathrm{Im}(S(t))\cdot \mathrm{Im}(W_B(t)) ) \mathrm{d}t
+
+    Parameters
+    ----------
+    waveform_a
+        The complex waveform used as integration weights :math:`A(t)`.
+    waveform_b
+        The complex waveform used as integration weights :math:`B(t)`.
+    port
+        The acquisition port.
+    clock
+        The clock used to demodulate the acquisition.
+    duration
+        The acquisition duration in seconds.
+    acq_channel
+        The data channel in which the acquisition is stored, by default 0.
+        Describes the "where" information of the  measurement, which typically
+        corresponds to a qubit idx.
+    acq_index
+        The data register in which the acquisition is stored, by default 0.
+        Describes the "when" information of the measurement, used to label or
+        tag individual measurements in a large circuit. Typically corresponds
+        to the setpoints of a schedule (e.g., tau in a T1 experiment).
+    bin_mode
+        Describes what is done when data is written to a register that already
+        contains a value. Options are "append" which appends the result to the
+        list or "average" which stores the weighted average value of the
+        new result and the old register value, by default BinMode.APPEND.
+    phase
+        The phase of the pulse and acquisition in degrees, by default 0.
+    t0
+        The acquisition start time in seconds, by default 0.
+
+    Raises
+    ------
+    NotImplementedError
     """
 
     def __init__(
@@ -118,61 +164,6 @@ class WeightedIntegratedComplex(
         phase: float = 0,
         t0: float = 0,
     ) -> None:
-        r"""
-        Creates a new instance of WeightedIntegratedComplex.
-        Weighted integration acquisition protocol on a
-        complex signal in a custom complex window.
-
-        A weighted integrated acquisition on a complex
-        signal using custom complex windows.
-
-        Weights are applied as:
-
-        .. math::
-
-            \widetilde{A} = \int ( \mathrm{Re}(S(t))\cdot \mathrm{Re}(W_A(t)) +
-            \mathrm{Im}(S(t))\cdot \mathrm{Im}(W_A(t)) ) \mathrm{d}t
-
-        .. math::
-
-            \widetilde{B} = \int ( \mathrm{Re}(S(t))\cdot \mathrm{Re}(W_B(t)) +
-            \mathrm{Im}(S(t))\cdot \mathrm{Im}(W_B(t)) ) \mathrm{d}t
-
-        Parameters
-        ----------
-        waveform_a :
-            The complex waveform used as integration weights :math:`A(t)`.
-        waveform_b :
-            The complex waveform used as integration weights :math:`B(t)`.
-        port :
-            The acquisition port.
-        clock :
-            The clock used to demodulate the acquisition.
-        duration :
-            The acquisition duration in seconds.
-        acq_channel :
-            The data channel in which the acquisition is stored, by default 0.
-            Describes the "where" information of the  measurement, which typically
-            corresponds to a qubit idx.
-        acq_index :
-            The data register in which the acquisition is stored, by default 0.
-            Describes the "when" information of the measurement, used to label or
-            tag individual measurements in a large circuit. Typically corresponds
-            to the setpoints of a schedule (e.g., tau in a T1 experiment).
-        bin_mode :
-            Describes what is done when data is written to a register that already
-            contains a value. Options are "append" which appends the result to the
-            list or "average" which stores the weighted average value of the
-            new result and the old register value, by default BinMode.APPEND
-        phase :
-            The phase of the pulse and acquisition in degrees, by default 0
-        t0 :
-            The acquisition start time in seconds, by default 0
-
-        Raises
-        ------
-        NotImplementedError
-        """
         if phase != 0:
             raise NotImplementedError("Non-zero phase not yet implemented")
 
@@ -205,8 +196,40 @@ class WeightedIntegratedComplex(
 
 class SSBIntegrationComplex(AcquisitionOperation):  # pylint: disable=too-many-ancestors
     """
-    This class implements a SingleSideBand Integration acquisition protocol with
-    complex results.
+    Single sideband integration acquisition protocol with complex results.
+
+    A weighted integrated acquisition on a complex signal using a
+    square window for the acquisition weights.
+
+    The signal is demodulated using the specified clock, and the
+    square window then effectively specifies an integration window.
+
+    Parameters
+    ----------
+    port
+        The acquisition port.
+    clock
+        The clock used to demodulate the acquisition.
+    duration
+        The acquisition duration in seconds.
+    acq_channel
+        The data channel in which the acquisition is stored, by default 0.
+        Describes the "where" information of the  measurement, which typically
+        corresponds to a qubit idx.
+    acq_index
+        The data register in which the acquisition is stored, by default 0.
+        Describes the "when" information of the measurement, used to label or
+        tag individual measurements in a large circuit. Typically corresponds
+        to the setpoints of a schedule (e.g., tau in a T1 experiment).
+    bin_mode
+        Describes what is done when data is written to a register that already
+        contains a value. Options are "append" which appends the result to the
+        list or "average" which stores the weighted average value of the
+        new result and the old register value, by default BinMode.AVERAGE.
+    phase
+        The phase of the pulse and acquisition in degrees, by default 0.
+    t0
+        The acquisition start time in seconds, by default 0.
     """
 
     def __init__(
@@ -220,43 +243,6 @@ class SSBIntegrationComplex(AcquisitionOperation):  # pylint: disable=too-many-a
         phase: float = 0,
         t0: float = 0,
     ) -> None:
-        """
-        Creates a new instance of SSBIntegrationComplex. Single Sideband
-        Integration acquisition protocol with complex results.
-
-        A weighted integrated acquisition on a complex signal using a
-        square window for the acquisition weights.
-
-        The signal is demodulated using the specified clock, and the
-        square window then effectively specifies an integration window.
-
-        Parameters
-        ----------
-        port :
-            The acquisition port.
-        clock :
-            The clock used to demodulate the acquisition.
-        duration :
-            The acquisition duration in seconds.
-        acq_channel :
-            The data channel in which the acquisition is stored, by default 0.
-            Describes the "where" information of the  measurement, which typically
-            corresponds to a qubit idx.
-        acq_index :
-            The data register in which the acquisition is stored, by default 0.
-            Describes the "when" information of the measurement, used to label or
-            tag individual measurements in a large circuit. Typically corresponds
-            to the setpoints of a schedule (e.g., tau in a T1 experiment).
-        bin_mode :
-            Describes what is done when data is written to a register that already
-            contains a value. Options are "append" which appends the result to the
-            list or "average" which stores the weighted average value of the
-            new result and the old register value, by default BinMode.AVERAGE
-        phase :
-            The phase of the pulse and acquisition in degrees, by default 0
-        t0 :
-            The acquisition start time in seconds, by default 0
-        """
         waveform_i = {
             "port": port,
             "clock": clock,
@@ -305,40 +291,9 @@ class SSBIntegrationComplex(AcquisitionOperation):  # pylint: disable=too-many-a
         return self._get_signature(acq_info)
 
 
-def _is_increasing_at_constant_rate(array: Sequence[float]) -> bool:
-    """Checks whether the array is increasing at a constant rate.
-
-    An array with size 2 is assumed to be increasing at a constant rate.
-
-    .. admonition:: Examples
-
-        .. jupyter-execute::
-            :hide-code:
-
-            from quantify_scheduler.operations.acquisition_library import (
-                _is_increasing_at_constant_rate
-            )
-
-        .. jupyter-execute::
-
-            assert _is_increasing_at_constant_rate([1,2,3,4]) is True
-            assert _is_increasing_at_constant_rate([1,2,4]) is False
-            assert _is_increasing_at_constant_rate([4,3,2,1]) is False
-            assert _is_increasing_at_constant_rate([1,1,1]) is False
-            assert _is_increasing_at_constant_rate([2,1]) is False
-            assert _is_increasing_at_constant_rate([1]) is False
-    """
-    if len(array) < 2:
-        return False
-    diff = np.diff(array)
-    is_constant_rate = np.all(np.isclose(diff, diff[0], atol=1e-10))
-    is_increasing = diff[0] > 0
-    return bool(is_constant_rate and is_increasing)
-
-
 class ThresholdedAcquisition(AcquisitionOperation):
     """
-    Create a new instance of ThresholdedAcquisition.
+    Acquisition protocol allowing to control rotation and threshold.
 
     This acquisition protocol is similar to the :class:`~.SSBIntegrationComplex`
     acquisition protocol, but the complex result is now rotated and thresholded
@@ -347,9 +302,8 @@ class ThresholdedAcquisition(AcquisitionOperation):
     `<qubit>.measure.acq_threshold` in the device configuration (see example
     below).
 
-
     The rotation angle and threshold value for each qubit can be set through
-    the device configuration
+    the device configuration.
 
     .. admonition:: Note
 
@@ -470,9 +424,66 @@ class ThresholdedAcquisition(AcquisitionOperation):
 class NumericalWeightedIntegrationComplex(
     WeightedIntegratedComplex
 ):  # pylint: disable=too-many-ancestors
-    """
-    Implements a WeightedIntegratedComplex class using parameterized waveforms and
+    r"""
+    Subclass of WeightedIntegratedComplex with parameterized waveforms as weights.
+
+    A WeightedIntegratedComplex class using parameterized waveforms and
     interpolation as the integration weights.
+
+    Weights are applied as:
+
+    .. math::
+
+        \widetilde{A} = \int ( \mathrm{Re}(S(t))\cdot \mathrm{Re}(W_A(t)) +
+        \mathrm{Im}(S(t))\cdot \mathrm{Im}(W_A(t)) ) \mathrm{d}t
+
+    .. math::
+
+        \widetilde{B} = \int ( \mathrm{Re}(S(t))\cdot \mathrm{Re}(W_B(t)) +
+        \mathrm{Im}(S(t))\cdot \mathrm{Im}(W_B(t)) ) \mathrm{d}t
+
+    Parameters
+    ----------
+    port
+        The acquisition port.
+    clock
+        The clock used to demodulate the acquisition.
+    weights_a
+        The list of complex values used as weights :math:`A(t)` on
+        the incoming complex signal.
+    weights_b
+        The list of complex values used as weights :math:`B(t)` on
+        the incoming complex signal.
+    weights_sampling_rate
+        The rate with which the weights have been sampled, in Hz. By default equal
+        to the Qblox backend sampling rate. Note that during hardware compilation,
+        the weights will be resampled with the sampling rate supported by the target
+        hardware.
+    t
+        The time values of each weight. This parameter is deprecated in favor of
+        ``weights_sampling_rate``. If a value is provided for ``t``, the
+        ``weights_sampling_rate`` parameter will be ignored.
+    interpolation
+        The type of interpolation to use, by default "linear". This argument is
+        passed to :obj:`~scipy.interpolate.interp1d`.
+    acq_channel
+        The data channel in which the acquisition is stored, by default 0.
+        Describes the "where" information of the  measurement, which typically
+        corresponds to a qubit idx.
+    acq_index
+        The data register in which the acquisition is stored, by default 0.
+        Describes the "when" information of the measurement, used to label or
+        tag individual measurements in a large circuit. Typically corresponds
+        to the setpoints of a schedule (e.g., tau in a T1 experiment).
+    bin_mode
+        Describes what is done when data is written to a register that already
+        contains a value. Options are "append" which appends the result to the
+        list or "average" which stores the weighted average value of the
+        new result and the old register value, by default BinMode.APPEND.
+    phase
+        The phase of the pulse and acquisition in degrees, by default 0.
+    t0
+        The acquisition start time in seconds, by default 0.
     """
 
     def __init__(
@@ -490,67 +501,6 @@ class NumericalWeightedIntegrationComplex(
         phase: float = 0,
         t0: float = 0,
     ) -> None:
-        r"""
-        Creates a new instance of NumericalWeightedIntegrationComplex.
-        NumericalWeightedIntegrationComplex inherits from
-        :class:`WeightedIntegratedComplex` that uses parameterized
-        waveforms and interpolation as integration weights.
-
-        Weights are applied as:
-
-        .. math::
-
-            \widetilde{A} = \int ( \mathrm{Re}(S(t))\cdot \mathrm{Re}(W_A(t)) +
-            \mathrm{Im}(S(t))\cdot \mathrm{Im}(W_A(t)) ) \mathrm{d}t
-
-        .. math::
-
-            \widetilde{B} = \int ( \mathrm{Re}(S(t))\cdot \mathrm{Re}(W_B(t)) +
-            \mathrm{Im}(S(t))\cdot \mathrm{Im}(W_B(t)) ) \mathrm{d}t
-
-        Parameters
-        ----------
-        port :
-            The acquisition port.
-        clock :
-            The clock used to demodulate the acquisition.
-        weights_a :
-            The list of complex values used as weights :math:`A(t)` on
-            the incoming complex signal.
-        weights_b :
-            The list of complex values used as weights :math:`B(t)` on
-            the incoming complex signal.
-        weights_sampling_rate :
-            The rate with which the weights have been sampled, in Hz. By default equal
-            to the Qblox backend sampling rate. Note that during hardware compilation,
-            the weights will be resampled with the sampling rate supported by the target
-            hardware.
-        t :
-            The time values of each weight. This parameter is deprecated in favor of
-            ``weights_sampling_rate``. If a value is provided for ``t``, the
-            ``weights_sampling_rate`` parameter will be ignored.
-        interpolation :
-            The type of interpolation to use, by default "linear". This argument is
-            passed to :obj:`~scipy.interpolate.interp1d`.
-        acq_channel :
-            The data channel in which the acquisition is stored, by default 0.
-            Describes the "where" information of the  measurement, which typically
-            corresponds to a qubit idx.
-        acq_index :
-            The data register in which the acquisition is stored, by default 0.
-            Describes the "when" information of the measurement, used to label or
-            tag individual measurements in a large circuit. Typically corresponds
-            to the setpoints of a schedule (e.g., tau in a T1 experiment).
-        bin_mode :
-            Describes what is done when data is written to a register that already
-            contains a value. Options are "append" which appends the result to the
-            list or "average" which stores the weighted average value of the
-            new result and the old register value, by default BinMode.APPEND
-        phase :
-            The phase of the pulse and acquisition in degrees, by default 0
-        t0 :
-            The acquisition start time in seconds, by default 0
-        """
         if t is not None:
             warnings.warn(
                 "Support for the 't' argument will be dropped in quantify-scheduler >= "
@@ -629,8 +579,71 @@ class NumericalWeightedIntegrationComplex(
         return str(self)
 
 
+def _is_increasing_at_constant_rate(array: Sequence[float]) -> bool:
+    """
+    Checks whether the array is increasing at a constant rate.
+
+    An array with size 2 is assumed to be increasing at a constant rate.
+
+    .. admonition:: Examples
+
+        .. jupyter-execute::
+            :hide-code:
+
+            from quantify_scheduler.operations.acquisition_library import (
+                _is_increasing_at_constant_rate
+            )
+
+        .. jupyter-execute::
+
+            assert _is_increasing_at_constant_rate([1,2,3,4]) is True
+            assert _is_increasing_at_constant_rate([1,2,4]) is False
+            assert _is_increasing_at_constant_rate([4,3,2,1]) is False
+            assert _is_increasing_at_constant_rate([1,1,1]) is False
+            assert _is_increasing_at_constant_rate([2,1]) is False
+            assert _is_increasing_at_constant_rate([1]) is False
+    """
+    if len(array) < 2:
+        return False
+    diff = np.diff(array)
+    is_constant_rate = np.all(np.isclose(diff, diff[0], atol=1e-10))
+    is_increasing = diff[0] > 0
+    return bool(is_constant_rate and is_increasing)
+
+
 class TriggerCount(AcquisitionOperation):  # pylint: disable=too-many-ancestors
-    """Trigger counting acquisition protocol returning an integer."""
+    """
+    Trigger counting acquisition protocol returning an integer.
+
+    The trigger acquisition mode is used to measure how
+    many times the trigger level is surpassed. The level is set
+    in the hardware configuration.
+
+    Parameters
+    ----------
+    port
+        The acquisition port.
+    clock
+        The clock used to demodulate the acquisition.
+    duration
+        The acquisition duration in seconds.
+    acq_channel
+        The data channel in which the acquisition is stored, by default 0.
+        Describes the "where" information of the measurement, which typically
+        corresponds to a qubit idx.
+    acq_index
+        The data register in which the acquisition is stored, by default 0.
+        Describes the "when" information of the measurement, used to label or
+        tag individual measurements in a large circuit. Typically corresponds
+        to the setpoints of a schedule (e.g., tau in a T1 experiment).
+    bin_mode
+        Describes what is done when data is written to a register that already
+        contains a value. Options are "append" which appends the result to the
+        list or "average" which stores the count value of the
+        new result and the old register value, by default BinMode.APPEND.
+    t0
+        The acquisition start time in seconds, by default 0.
+    """
 
     def __init__(
         self,
@@ -642,40 +655,6 @@ class TriggerCount(AcquisitionOperation):  # pylint: disable=too-many-ancestors
         bin_mode: Union[BinMode, str] = BinMode.APPEND,
         t0: float = 0,
     ) -> None:
-        """
-        Creates a new instance of TriggerCount, trigger counting
-        acquisition protocol, returning an integer.
-
-        The trigger acquisition mode is used to measure how
-        many times the trigger level is surpassed. The level is set
-        in the hardware configuration.
-
-        Parameters
-        ----------
-        port
-            The acquisition port.
-        clock
-            The clock used to demodulate the acquisition.
-        duration
-            The acquisition duration in seconds.
-        acq_channel
-            The data channel in which the acquisition is stored, by default 0.
-            Describes the "where" information of the measurement, which typically
-            corresponds to a qubit idx.
-        acq_index
-            The data register in which the acquisition is stored, by default 0.
-            Describes the "when" information of the measurement, used to label or
-            tag individual measurements in a large circuit. Typically corresponds
-            to the setpoints of a schedule (e.g., tau in a T1 experiment).
-        bin_mode
-            Describes what is done when data is written to a register that already
-            contains a value. Options are "append" which appends the result to the
-            list or "average" which stores the count value of the
-            new result and the old register value, by default BinMode.APPEND
-        t0
-            The acquisition start time in seconds, by default 0
-        """
-
         if bin_mode == BinMode.AVERAGE and acq_index != 0:
             # In average mode the count distribution is measured,
             # and currently we do not support multiple indices for this,

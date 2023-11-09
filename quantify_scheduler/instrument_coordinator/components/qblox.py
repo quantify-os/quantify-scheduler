@@ -117,8 +117,7 @@ logging level."""
 
 @dataclass(frozen=True)
 class _StaticHardwareProperties:
-    """Dataclass that holds all the static differences between the different Qblox
-    devices that are relevant for configuring them correctly."""
+    """Dataclass for storing configuration differences across Qblox devices."""
 
     settings_type: Type[BaseModuleSettings]
     """The settings dataclass to use that the hardware needs to configure to."""
@@ -168,9 +167,6 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
     def __init__(
         self, instrument: Union[Instrument, InstrumentModule], **kwargs
     ) -> None:
-        """
-        Create a new instance of QbloxInstrumentCoordinatorComponentBase base class.
-        """
         super().__init__(instrument, **kwargs)
 
         self._instrument_module = (
@@ -193,6 +189,8 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
     @property
     def instrument(self) -> Union[Instrument, InstrumentModule]:
         """
+        Return a reference to the instrument of instrument module.
+
         If the instrument behind this instance of
         `QbloxInstrumentCoordinatorComponentBase` is an `InstrumentModule` (e.g. the
         module within the `qblox_instrument.Cluster`), it is returned. Otherwise, the
@@ -211,8 +209,7 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         val: Any,
     ) -> None:
         """
-        Sets the parameter directly or using the lazy set, depending on the value of
-        `force_set_parameters`.
+        Set the parameter directly or using the lazy set.
 
         Parameters
         ----------
@@ -282,6 +279,7 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
     ) -> dict | None:
         """
         Retrieve the hardware log of the Qblox instrument associated to this component.
+
         This log includes the instrument serial number and firmware version.
 
         Parameters
@@ -295,7 +293,6 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
             A dict containing the hardware log of the Qblox instrument, in case the
             component was referenced; else None.
         """
-
         if self.instrument.name not in compiled_schedule.compiled_instructions.keys():
             return None
 
@@ -307,18 +304,14 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         }
 
     def start(self) -> None:
-        """
-        Starts execution of the schedule.
-        """
+        """Starts execution of the schedule."""
         for idx in range(self._hardware_properties.number_of_sequencers):
             state = self.instrument.get_sequencer_state(idx)
             if state.status is SequencerStatus.ARMED:
                 self.instrument.start_sequencer(idx)
 
     def stop(self) -> None:
-        """
-        Stops all execution.
-        """
+        """Stops all execution."""
         for idx in range(self._hardware_properties.number_of_sequencers):
             # disable sync to prevent hanging on next run if instrument is not used.
             self._set_parameter(self.instrument[f"sequencer{idx}"], "sync_en", False)
@@ -455,14 +448,11 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
 
 
 class QCMComponent(QbloxInstrumentCoordinatorComponentBase):
-    """
-    QCM specific InstrumentCoordinator component.
-    """
+    """QCM specific InstrumentCoordinator component."""
 
     _hardware_properties = _QCM_BASEBAND_PROPERTIES
 
     def __init__(self, instrument: Instrument, **kwargs) -> None:
-        """Create a new instance of QCMComponent."""
         if not instrument.is_qcm_type:
             raise TypeError(
                 f"Trying to create QCMComponent from non-QCM instrument "
@@ -483,10 +473,12 @@ class QCMComponent(QbloxInstrumentCoordinatorComponentBase):
 
     def prepare(self, program: Dict[str, dict]) -> None:
         """
-        Uploads the waveforms and programs to the sequencers and
-        configures all the settings required. Keep in mind that values set directly
-        through the driver may be overridden (e.g. the offsets will be set according to
-        the specified mixer calibration parameters).
+        Uploads the waveforms and programs to the sequencers.
+
+        All the settings that are required are configured. Keep in mind that
+        values set directly through the driver may be overridden (e.g. the
+        offsets will be set according to the specified mixer calibration
+        parameters).
 
         Parameters
         ----------
@@ -496,7 +488,6 @@ class QCMComponent(QbloxInstrumentCoordinatorComponentBase):
             options for each sequencer, e.g. :code:`"seq0"`.
             For global settings, the options are under different keys, e.g. :code:`"settings"`.
         """
-
         if (settings_entry := program.get("settings")) is not None:
             module_settings = self._hardware_properties.settings_type.from_dict(
                 settings_entry
@@ -552,14 +543,11 @@ class QCMComponent(QbloxInstrumentCoordinatorComponentBase):
 
 
 class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
-    """
-    QRM specific InstrumentCoordinator component.
-    """
+    """QRM specific InstrumentCoordinator component."""
 
     _hardware_properties = _QRM_BASEBAND_PROPERTIES
 
     def __init__(self, instrument: Instrument, **kwargs) -> None:
-        """Create a new instance of QRMComponent."""
         if not instrument.is_qrm_type:
             raise TypeError(
                 f"Trying to create QRMComponent from non-QRM instrument "
@@ -586,10 +574,12 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
 
     def prepare(self, program: Dict[str, dict]) -> None:
         """
-        Uploads the waveforms and programs to the sequencers and
-        configures all the settings required. Keep in mind that values set directly
-        through the driver may be overridden (e.g. the offsets will be set according to
-        the specified mixer calibration parameters).
+        Uploads the waveforms and programs to the sequencers.
+
+        All the settings that are required are configured. Keep in mind that
+        values set directly through the driver may be overridden (e.g. the
+        offsets will be set according to the specified mixer calibration
+        parameters).
 
         Parameters
         ----------
@@ -599,7 +589,6 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
             options for each sequencer, e.g. :code:`"seq0"`.
             For global settings, the options are under different keys, e.g. :code:`"settings"`.
         """
-
         for seq_idx in range(self._hardware_properties.number_of_sequencers):
             self._set_parameter(
                 self.instrument[f"sequencer{seq_idx}"], "sync_en", False
@@ -675,7 +664,6 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
         settings
             The settings to configure it to.
         """
-
         # configure mixer correction offsets
         if settings.offset_ch0_path0 is not None:
             self._set_parameter(
@@ -774,6 +762,7 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
     ) -> Optional[Tuple[int, int]]:
         """
         Finds which sequencer, channel has to perform raw trace acquisitions.
+
         Raises an error if multiple scope mode acquisitions are present per sequencer.
         Note, that compiler ensures there is at most one scope mode acquisition,
         however the user is able to freely modify the compiler program,
@@ -790,7 +779,6 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
         :
             The sequencer and channel for the trace acquisition, if there is any, otherwise None, None.
         """
-
         sequencer_and_channel = None
         for (
             sequencer_name,
@@ -816,9 +804,7 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
 
 
 class QbloxRFComponent(QbloxInstrumentCoordinatorComponentBase):
-    """
-    Mix-in for RF-module-specific InstrumentCoordinatorComponent behaviour.
-    """
+    """Mix-in for RF-module-specific InstrumentCoordinatorComponent behaviour."""
 
     def _configure_sequencer_settings(
         self, seq_idx: int, settings: SequencerSettings
@@ -851,9 +837,7 @@ class QbloxRFComponent(QbloxInstrumentCoordinatorComponentBase):
 
 
 class QCMRFComponent(QbloxRFComponent, QCMComponent):
-    """
-    QCM-RF specific InstrumentCoordinator component.
-    """
+    """QCM-RF specific InstrumentCoordinator component."""
 
     _hardware_properties = _QCM_RF_PROPERTIES
 
@@ -896,9 +880,7 @@ class QCMRFComponent(QbloxRFComponent, QCMComponent):
 
 
 class QRMRFComponent(QbloxRFComponent, QRMComponent):
-    """
-    QRM-RF specific InstrumentCoordinator component.
-    """
+    """QRM-RF specific InstrumentCoordinator component."""
 
     _hardware_properties = _QRM_RF_PROPERTIES
 
@@ -911,7 +893,6 @@ class QRMRFComponent(QbloxRFComponent, QRMComponent):
         settings
             The settings to configure it to.
         """
-
         if settings.lo0_freq is not None:
             self._set_parameter(self.instrument, "out0_in0_lo_freq", settings.lo0_freq)
 
@@ -947,6 +928,14 @@ class PulsarQCMComponent(QCMComponent):
     """A component for a baseband Pulsar QCM."""
 
     def prepare(self, options: Dict[str, dict]) -> None:
+        """
+        Uploads the waveforms and programs to the sequencers.
+
+        All the settings that are required are configured. Keep in mind that
+        values set directly through the driver may be overridden (e.g. the
+        offsets will be set according to the specified mixer calibration
+        parameters).
+        """
         super().prepare(options)
         reference_source: str = options["settings"]["ref"]
         self._set_parameter(self.instrument, "reference_source", reference_source)
@@ -956,6 +945,14 @@ class PulsarQRMComponent(QRMComponent):
     """A component for a baseband Pulsar QRM."""
 
     def prepare(self, options: Dict[str, dict]) -> None:
+        """
+        Uploads the waveforms and programs to the sequencers.
+
+        All the settings that are required are configured. Keep in mind that
+        values set directly through the driver may be overridden (e.g. the
+        offsets will be set according to the specified mixer calibration
+        parameters).
+        """
         super().prepare(options)
         reference_source: str = options["settings"]["ref"]
         self._set_parameter(self.instrument, "reference_source", reference_source)
@@ -967,6 +964,20 @@ class _QRMAcquisitionManager:
 
     An instance of this class is meant to exist only for a single prepare-start-
     retrieve_acquisition cycle to prevent stateful behavior.
+
+    Parameters
+    ----------
+    parent
+        Reference to the parent QRM IC component.
+    acquisition_metadata
+        Provides a summary of the used acquisition protocol, bin mode, acquisition channels,
+        acquisition indices per channel, and repetitions, for each sequencer.
+    scope_mode_sequencer_and_channel
+        The sequencer and channel of the scope mode acquisition if there's any.
+    acquisition_duration
+        The duration of each acquisition for each sequencer.
+    seq_name_to_idx_map
+        All available sequencer names to their ids in a dict.
     """
 
     def __init__(
@@ -977,23 +988,6 @@ class _QRMAcquisitionManager:
         acquisition_duration: Dict[int, int],
         seq_name_to_idx_map: Dict[str, int],
     ):
-        """
-        Constructor for `_QRMAcquisitionManager`.
-
-        Parameters
-        ----------
-        parent
-            Reference to the parent QRM IC component.
-        acquisition_metadata
-            Provides a summary of the used acquisition protocol, bin mode, acquisition channels,
-            acquisition indices per channel, and repetitions, for each sequencer.
-        scope_mode_sequencer_and_channel
-            The sequencer and channel of the scope mode acquisition if there's any.
-        acquisition_duration
-            The duration of each acquisition for each sequencer.
-        seq_name_to_idx_map
-            All available sequencer names to their ids in a dict.
-        """
         self.parent: QRMComponent = parent
         self._acquisition_metadata: Dict[
             str, AcquisitionMetadata
@@ -1023,7 +1017,6 @@ class _QRMAcquisitionManager:
             Each `xarray.DataArray` is a two-dimensional array, with `acq_index` and `repetition` as
             dimensions.
         """
-
         protocol_to_function_mapping = {
             "WeightedIntegratedComplex": self._get_integration_data,
             "SSBIntegrationComplex": self._get_integration_amplitude_data,
@@ -1067,6 +1060,7 @@ class _QRMAcquisitionManager:
     def _store_scope_acquisition(self):
         """
         Calls :code:`store_scope_acquisition` function on the Qblox instrument.
+
         This will ensure that the correct sequencer will store the scope acquisition
         data on the hardware, so it will be filled out when we call :code:`get_acquisitions`
         on the Qblox instrument's sequencer corresponding to the scope acquisition.
@@ -1182,7 +1176,6 @@ class _QRMAcquisitionManager:
         :
             The integrated data.
         """
-
         bin_data = self._get_bin_data(acquisitions, acq_channel)
         i_data = np.array(bin_data["integration"]["path0"])
         q_data = np.array(bin_data["integration"]["path1"])
@@ -1219,8 +1212,9 @@ class _QRMAcquisitionManager:
         acq_channel: int = 0,
     ) -> DataArray:
         """
-        Gets the integration data but normalized to the integration time (number of
-        samples summed). The return value is thus the amplitude of the demodulated
+        Gets the integration data but normalized to the integration time.
+
+        The return value is thus the amplitude of the demodulated
         signal directly and has volt units (i.e. same units as a single sample of the
         integrated signal).
 
@@ -1266,8 +1260,7 @@ class _QRMAcquisitionManager:
         acq_channel: int = 0,
     ) -> DataArray:
         """
-        Retrieves the thresholded acquisition data associated with `acq_channel` and
-        `acq_index`.
+        Retrieve the thresholded acquisition data associated with `acq_channel` and `acq_index`.
 
         Parameters
         ----------
@@ -1349,11 +1342,10 @@ class _QRMAcquisitionManager:
         :
         count
             A list of integers indicating the amount of triggers counted.
-        occurence
-            For BinMode.AVERAGE a list of integers with the occurence of each trigger count,
+        occurrence
+            For BinMode.AVERAGE a list of integers with the occurrence of each trigger count,
             for BinMode.APPEND a list of 1's.
         """
-
         bin_data = self._get_bin_data(acquisitions, acq_channel)
         acq_name = self._channel_index_to_channel_name(acq_channel)
         acq_index_dim_name = f"acq_index_{acq_name}"
@@ -1362,7 +1354,8 @@ class _QRMAcquisitionManager:
 
             def _convert_from_cumulative(cumulative_values):
                 """
-                Returns the distribution of counts from a cumulative distribution.
+                Return the distribution of counts from a cumulative distribution.
+
                 Note, the cumulative distribution is in reverse order.
                 The cumulative_values list can contain any number of integers and NaNs.
                 """
@@ -1426,20 +1419,19 @@ ClusterModule = Union[QCMComponent, QRMComponent, QCMRFComponent, QRMRFComponent
 class ClusterComponent(base.InstrumentCoordinatorComponentBase):
     """
     Class that represents an instrument coordinator component for a Qblox cluster.
+
+    New instances of the ClusterComponent will automatically add installed
+    modules using name `"<cluster_name>_module<slot>"`.
+
+    Parameters
+    ----------
+    instrument
+        Reference to the cluster driver object.
+    **kwargs
+        Keyword arguments passed to the parent class.
     """
 
     def __init__(self, instrument: Cluster, **kwargs) -> None:
-        """
-        Create a new instance of the ClusterComponent. Automatically adds installed
-        modules using name `"<cluster_name>_module<slot>"`.
-
-        Parameters
-        ----------
-        instrument
-            Reference to the cluster driver object.
-        **kwargs
-            Keyword arguments passed to the parent class.
-        """
         super().__init__(instrument, **kwargs)
         self._cluster_modules: Dict[str, ClusterModule] = {}
         self._program = {}
@@ -1474,7 +1466,9 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
 
     def _configure_cmm_settings(self, settings: Dict[str, Any]):
         """
-        Sets all the settings of the CMM (Cluster Management Module) that have been
+        Set all the settings of the Cluster Management Module.
+
+        These setting have been
         provided by the backend.
 
         Parameters
@@ -1552,8 +1546,9 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         compiled_schedule: CompiledSchedule,
     ) -> dict | None:
         """
-        Retrieve the hardware log of the cluster CMM (Cluster Management Module) plus the
-        logs of its associated modules. This log includes the module serial numbers and
+        Retrieve the hardware log of the Cluster Management Module and associated modules.
+
+        This log includes the module serial numbers and
         firmware version.
 
         Parameters
@@ -1568,7 +1563,6 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
             A dict containing the hardware log of the cluster, in case the
             component was referenced; else None.
         """
-
         cluster = self.instrument
         if cluster.name not in compiled_schedule.compiled_instructions.keys():
             return None

@@ -21,14 +21,14 @@ class TestChevronCZSched:
     @classmethod
     def setup_class(cls: Type) -> None:
         """Configure an example sweep for a single flux pulse duration."""
-        cls.sched_kwargs = {
+        cls.sched_kwargs = {  # type: ignore
             "lf_qubit": "q0",
             "hf_qubit": "q4",
             "amplitudes": np.linspace(0, 80e-6, 21),
             "duration": 100e-9,
             "repetitions": 10,
         }
-        cls.uncomp_sched = ts.chevron_cz_sched(**cls.sched_kwargs)
+        cls.uncomp_sched = ts.chevron_cz_sched(**cls.sched_kwargs)  # type: ignore
 
     def test_repetitions(self) -> None:
         """Test that the number of repetitions is correct."""
@@ -70,7 +70,7 @@ class TestChevronCZSched:
             "amplitudes": 0.25,
             "duration": 100e-9,
             "repetitions": 10,
-        }
+        }  # type: ignore
         sched = ts.chevron_cz_sched(**sched_kwargs)
         compiler = SerialCompiler(name="compiler")
         _ = compiler.compile(

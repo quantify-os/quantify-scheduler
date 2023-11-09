@@ -19,20 +19,19 @@ logger = logging.getLogger(__name__)
 
 
 class PulseStrategyPartial(IOperationStrategy):
-    """Contains the logic shared between all the pulses."""
+    """
+    Contains the logic shared between all the pulses.
+
+    Parameters
+    ----------
+    operation_info
+        The operation info that corresponds to this pulse.
+    io_mode
+        Either "real", "imag" or complex depending on whether the signal affects
+        only path0, path1 or both.
+    """
 
     def __init__(self, operation_info: types.OpInfo, io_mode: str):
-        """
-        Constructor.
-
-        Parameters
-        ----------
-        operation_info
-            The operation info that corresponds to this pulse.
-        io_mode
-            Either "real", "imag" or complex depending on whether the signal affects
-            only path0, path1 or both.
-        """
         self._pulse_info: types.OpInfo = operation_info
         self.io_mode = io_mode
 
@@ -50,22 +49,21 @@ class PulseStrategyPartial(IOperationStrategy):
 
 class GenericPulseStrategy(PulseStrategyPartial):
     """
-    Default class for handling pulses. No assumptions are made with regards to the
-    pulse shape and no optimizations are done.
+    Default class for handling pulses.
+
+    No assumptions are made with regards to the pulse shape and no optimizations
+    are done.
+
+    Parameters
+    ----------
+    operation_info
+        The operation info that corresponds to this pulse.
+    io_mode
+        Either "real", "imag" or "complex" depending on whether the signal affects
+        only path0, path1 or both, respectively.
     """
 
     def __init__(self, operation_info: types.OpInfo, io_mode: str):
-        """
-        Constructor for this strategy.
-
-        Parameters
-        ----------
-        operation_info
-            The operation info that corresponds to this pulse.
-        io_mode
-            Either "real", "imag" or "complex" depending on whether the signal affects
-            only path0, path1 or both, respectively.
-        """
         super().__init__(operation_info, io_mode)
 
         self._amplitude_path0: Optional[float] = None
@@ -130,7 +128,7 @@ class GenericPulseStrategy(PulseStrategyPartial):
         ValueError
             Data is complex (has an imaginary component), but the io_mode is not set
             to "complex".
-        """  # pylint: disable=line-too-long
+        """  # pylint: disable=line-too-long  # noqa: D301
         op_info = self.operation_info
         waveform_data = helpers.generate_waveform_data(
             op_info.data, sampling_rate=constants.SAMPLING_RATE
@@ -210,9 +208,7 @@ class GenericPulseStrategy(PulseStrategyPartial):
 
 
 class MarkerPulseStrategy(PulseStrategyPartial):
-    """
-    If this strategy is used a digital pulse is played on the corresponding marker.
-    """
+    """If this strategy is used a digital pulse is played on the corresponding marker."""
 
     def generate_data(self, wf_dict: Dict[str, Any]):
         """Returns None as no waveforms are generated in this strategy."""
@@ -256,7 +252,7 @@ class MarkerPulseStrategy(PulseStrategyPartial):
     def _fix_output_addressing(output):
         """
         Temporary fix for the marker output addressing of the QRM-RF.
-        QRM-RF has swapped addressing of outputs. TODO: change when fixed in firmware
+        QRM-RF has swapped addressing of outputs. TODO: change when fixed in firmware.
         """
         if output == 3:
             output = 4

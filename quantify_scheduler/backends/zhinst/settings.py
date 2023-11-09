@@ -26,7 +26,8 @@ NUM_UHFQA_READOUT_CHANNELS = 10
 
 @dataclasses.dataclass(frozen=True)
 class ZISerializeSettings:
-    """Serialization data container to decouple filenames from
+    """
+    Serialization data container to decouple filenames from
     instrument names during the serialization.
     """
 
@@ -65,24 +66,22 @@ class ZISetting:
 
 
 class ZISettings:
-    """Zurich Instruments settings result class."""
+    """
+    A collection of AWG and DAQ settings for a Zurich Instruments device.
+
+    Parameters
+    ----------
+    daq_settings :
+        The data acquisition node settings.
+    awg_settings :
+        The AWG(s) node settings.
+    """
 
     def __init__(
         self,
         daq_settings: List[ZISetting],
         awg_settings: Dict[int, ZISetting],
     ):
-        """
-        Create a new instance of ZISettings which is a collection of AWG and DAQ
-        settings for a Zurich Instruments device.
-
-        Parameters
-        ----------
-        daq_settings :
-            The data acquisition node settings.
-        awg_settings :
-            The AWG(s) node settings.
-        """
         self._daq_settings: List[ZISetting] = daq_settings
         self._awg_settings: Dict[int, ZISetting] = awg_settings
         self._awg_indexes = list(self._awg_settings.keys())
@@ -338,7 +337,6 @@ class ZISettingsBuilder:
     _awg_settings: List[Tuple[str, Tuple[int, ZISetting]]]
 
     def __init__(self):
-        """Creates a new instance of ZISettingsBuilder"""
         self._daq_settings = list()
         self._awg_settings = list()
 

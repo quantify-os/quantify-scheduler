@@ -1,8 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-"""
-Module containing example schedule utility functions.
-"""
+"""Module containing example schedule utility functions."""
 
 import json
 from pathlib import Path

@@ -1,5 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
+"""Module containing helper functions related to waveforms."""
 from __future__ import annotations
 
 import inspect
@@ -17,10 +18,7 @@ from quantify_scheduler.helpers.importers import import_python_object_from_strin
 
 # pylint: disable=too-few-public-methods
 class GetWaveformPartial(Protocol):  # typing.Protocol
-    """
-    Protocol type definition class for the get_waveform
-    partial function.
-    """
+    """Protocol type definition class for the get_waveform partial function."""
 
     def __call__(self, sampling_rate: int) -> np.ndarray:
         """
@@ -40,14 +38,14 @@ class GetWaveformPartial(Protocol):  # typing.Protocol
 
 def get_waveform_size(waveform: np.ndarray, granularity: int) -> int:
     """
-    Returns the number of samples required to
-    respect the granularity.
+    Return the number of samples required to respect the granularity.
 
     Parameters
     ----------
     waveform
-
+        Numerical waveform.
     granularity
+        The granularity.
 
     """
     size: int = len(waveform)
@@ -59,8 +57,7 @@ def get_waveform_size(waveform: np.ndarray, granularity: int) -> int:
 
 def resize_waveforms(waveforms_dict: Dict[int, np.ndarray], granularity: int) -> None:
     """
-    Resizes the waveforms to a multiple of the given
-    granularity.
+    Resizes the waveforms to a multiple of the given granularity.
 
     Parameters
     ----------
@@ -78,7 +75,7 @@ def resize_waveforms(waveforms_dict: Dict[int, np.ndarray], granularity: int) ->
 
 def resize_waveform(waveform: np.ndarray, granularity: int) -> np.ndarray:
     """
-    Returns the waveform in a size that is a modulo of the given granularity.
+    Return the waveform in a size that is a modulo of the given granularity.
 
     Parameters
     ----------
@@ -110,8 +107,9 @@ def shift_waveform(
     waveform: np.ndarray, start_in_seconds: float, sampling_rate: int, resolution: int
 ) -> Tuple[int, np.ndarray]:
     """
-    Returns the waveform shifted with a number of samples
-    to compensate for rounding errors that cause misalignment
+    Return the waveform shifted with a number of samples.
+
+    This compensates for rounding errors that cause misalignment
     of the waveform in the clock time domain.
 
     .. Note::
@@ -133,12 +131,14 @@ def shift_waveform(
     Parameters
     ----------
     waveform
+        The waveform.
     start_in_seconds
+        The start time (in seconds).
     sampling_rate
+        The sampling rate
     resolution
         The sequencer resolution.
     """
-
     start_in_samples_count = round(start_in_seconds * sampling_rate)
     samples_shift = start_in_samples_count % resolution
     start_in_sequencer_count = start_in_samples_count // resolution
@@ -154,7 +154,7 @@ def get_waveform(
     sampling_rate: float,
 ) -> np.ndarray:
     """
-    Returns the waveform of a pulse_info dictionary.
+    Return the waveform of a pulse_info dictionary.
 
     Parameters
     ----------
@@ -179,8 +179,7 @@ def get_waveform_by_pulseid(
     schedule: Schedule,
 ) -> Dict[int, GetWaveformPartial]:
     """
-    Returns a lookup dictionary of pulse_id and
-    respectively its partial waveform function.
+    Return a lookup dictionary of pulse_id and its partial waveform function.
 
     The keys are pulse info ids while the values are partial functions. Executing
     the waveform will return a :class:`numpy.ndarray`.
@@ -219,7 +218,7 @@ def exec_waveform_partial(
     sampling_rate: int,
 ) -> np.ndarray:
     """
-    Returns the result of the partial waveform function.
+    Return the result of the partial waveform function.
 
     Parameters
     ----------
@@ -248,7 +247,7 @@ def exec_waveform_partial(
 
 def exec_waveform_function(wf_func: str, t: np.ndarray, pulse_info: dict) -> np.ndarray:
     """
-    Returns the result of the pulse's waveform function.
+    Return the result of the pulse's waveform function.
 
     If the wf_func is defined outside quantify-scheduler then the
     wf_func is dynamically loaded and executed using
@@ -341,8 +340,9 @@ def apply_mixer_skewness_corrections(
     waveform: np.ndarray, amplitude_ratio: float, phase_shift: float
 ) -> np.ndarray:
     r"""
-    Takes a waveform and applies a correction for amplitude imbalances and
-    phase errors when using an IQ mixer from previously calibrated values.
+    Apply a correction for amplitude imbalances and phase errors.
+
+    Using an IQ mixer from previously calibrated values.
 
     Phase correction is done using:
 
@@ -404,8 +404,9 @@ def modulate_waveform(
     t: np.ndarray, envelope: np.ndarray, freq: float, t0: float = 0
 ) -> np.ndarray:
     r"""
-    Generates a (single sideband) modulated waveform from a given envelope by
-    multiplying it with a complex exponential.
+    Generate a (single sideband) modulated waveform from a given envelope.
+
+    This is done by multiplying it with a complex exponential.
 
     .. math::
 
@@ -468,7 +469,7 @@ def normalize_waveform_data(data: np.ndarray) -> Tuple[np.ndarray, float, float]
 
 def area_pulses(pulses: List[Dict[str, Any]], sampling_rate: float) -> float:
     """
-    Calculates the area of a set of pulses.
+    Calculate the area of a set of pulses.
 
     For details of the calculation see `area_pulse`.
 
@@ -492,7 +493,7 @@ def area_pulses(pulses: List[Dict[str, Any]], sampling_rate: float) -> float:
 
 def area_pulse(pulse: Dict[str, Any], sampling_rate: float) -> float:
     """
-    Calculates the area of a single pulse.
+    Calculate the area of a single pulse.
 
     The sampled area is calculated, which means that the area calculated is
     based on the sampled waveform. This can differ slightly from the ideal area of
@@ -511,7 +512,6 @@ def area_pulse(pulse: Dict[str, Any], sampling_rate: float) -> float:
 
     Returns
     -------
-
     :
         The area defined by the pulse
     """

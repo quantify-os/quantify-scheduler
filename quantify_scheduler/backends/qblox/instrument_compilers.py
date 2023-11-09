@@ -23,6 +23,21 @@ class LocalOscillator(compiler_abc.InstrumentCompiler):
     Implementation of an `InstrumentCompiler` that compiles for a generic LO. The main
     difference between this class and the other compiler classes is that it doesn't take
     pulses and acquisitions.
+
+
+    Parameters
+    ----------
+    parent
+        Reference to the parent container object.
+    name
+        QCoDeS name of the device it compiles for.
+    total_play_time
+        Total time execution of the schedule should go on for. This parameter is
+        used to ensure that the different devices, potentially with different clock
+        rates, can work in a synchronized way when performing multiple executions of
+        the schedule.
+    instrument_cfg
+        The part of the hardware mapping dict referring to this instrument.
     """
 
     def __init__(
@@ -32,24 +47,6 @@ class LocalOscillator(compiler_abc.InstrumentCompiler):
         total_play_time: float,
         instrument_cfg: Dict[str, Any],
     ):
-        """
-        Constructor for a local oscillator compiler.
-
-        Parameters
-        ----------
-        parent
-            Reference to the parent container object.
-        name
-            QCoDeS name of the device it compiles for.
-        total_play_time
-            Total time execution of the schedule should go on for. This parameter is
-            used to ensure that the different devices, potentially with different clock
-            rates, can work in a synchronized way when performing multiple executions of
-            the schedule.
-        instrument_cfg
-            The part of the hardware mapping dict referring to this instrument.
-        """
-
         def _extract_parameter(
             parameter_dict: Dict[str, Optional[float]]
         ) -> Tuple[str, Optional[float]]:
@@ -92,7 +89,7 @@ class LocalOscillator(compiler_abc.InstrumentCompiler):
             The frequency to set it to.
 
         Raises
-        -------
+        ------
         ValueError
             Occurs when a frequency has been previously set and attempting to set the
             frequency to a different value than what it is currently set to. This would
@@ -134,9 +131,7 @@ class LocalOscillator(compiler_abc.InstrumentCompiler):
 
 
 class QcmModule(compiler_abc.QbloxBasebandModule):
-    """
-    QCM specific implementation of the qblox compiler.
-    """
+    """QCM specific implementation of the qblox compiler."""
 
     supports_acquisition: bool = False
     static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
@@ -152,9 +147,7 @@ class QcmModule(compiler_abc.QbloxBasebandModule):
 
 # pylint: disable=invalid-name
 class QrmModule(compiler_abc.QbloxBasebandModule):
-    """
-    QRM specific implementation of the qblox compiler.
-    """
+    """QRM specific implementation of the qblox compiler."""
 
     supports_acquisition: bool = True
     static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
@@ -171,9 +164,7 @@ class QrmModule(compiler_abc.QbloxBasebandModule):
 
 
 class QcmRfModule(compiler_abc.QbloxRFModule):
-    """
-    QCM-RF specific implementation of the qblox compiler.
-    """
+    """QCM-RF specific implementation of the qblox compiler."""
 
     supports_acquisition: bool = False
     static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
@@ -192,9 +183,7 @@ class QcmRfModule(compiler_abc.QbloxRFModule):
 
 
 class QrmRfModule(compiler_abc.QbloxRFModule):
-    """
-    QRM-RF specific implementation of the qblox compiler.
-    """
+    """QRM-RF specific implementation of the qblox compiler."""
 
     supports_acquisition: bool = True
     static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
@@ -212,6 +201,21 @@ class QrmRfModule(compiler_abc.QbloxRFModule):
 class Cluster(compiler_abc.ControlDeviceCompiler):
     """
     Compiler class for a Qblox cluster.
+
+    Parameters
+    ----------
+    parent
+        Reference to the parent object.
+    name
+        Name of the `QCoDeS` instrument this compiler object corresponds to.
+    total_play_time
+        Total time execution of the schedule should go on for.
+    instrument_cfg
+        The part of the hardware configuration dictionary referring to this device. This is one
+        of the inner dictionaries of the overall hardware config.
+    latency_corrections
+        Dict containing the delays for each port-clock combination. This is
+        specified in the top layer of hardware config.
     """
 
     compiler_classes: Dict[str, type] = {
@@ -233,24 +237,6 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
         instrument_cfg: Dict[str, Any],
         latency_corrections: Optional[Dict[str, float]] = None,
     ):
-        """
-        Constructor for a Cluster compiler object.
-
-        Parameters
-        ----------
-        parent
-            Reference to the parent object.
-        name
-            Name of the `QCoDeS` instrument this compiler object corresponds to.
-        total_play_time
-            Total time execution of the schedule should go on for.
-        instrument_cfg
-            The part of the hardware configuration dictionary referring to this device. This is one
-            of the inner dictionaries of the overall hardware config.
-        latency_corrections
-            Dict containing the delays for each port-clock combination. This is
-            specified in the top layer of hardware config.
-        """
         super().__init__(
             parent=parent,
             name=name,
@@ -303,9 +289,7 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
         return instrument_compilers
 
     def prepare(self) -> None:
-        """
-        Prepares the instrument compiler for compilation by assigning the data.
-        """
+        """Prepares the instrument compiler for compilation by assigning the data."""
         self.distribute_data()
         for compiler in self.instrument_compilers.values():
             compiler.prepare()

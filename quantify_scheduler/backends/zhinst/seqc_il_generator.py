@@ -59,9 +59,6 @@ class SeqcILGenerator(object):
     _program: List[Tuple[int, str]]
 
     def __init__(self) -> None:
-        """
-        Creates a new instance of SeqcILGenerator.
-        """
         self._level = 0
         self._variables = dict()
         self._program = list()
@@ -72,10 +69,10 @@ class SeqcILGenerator(object):
 
         Parameters
         ----------
-            type_def :
-                The variable type definition.
-            name :
-                The variable name.
+        type_def :
+            The variable type definition.
+        name :
+            The variable name.
 
         Raises
         ------
@@ -92,10 +89,10 @@ class SeqcILGenerator(object):
 
         Parameters
         ----------
-            name :
-                The variable name.
-            value :
-                The new variable value.
+        name :
+            The variable name.
+        value :
+            The new variable value.
 
         Raises
         ------
@@ -114,15 +111,13 @@ class SeqcILGenerator(object):
 
         Parameters
         ----------
-            operation :
-                The operation to append.
+        operation :
+            The operation to append.
         """
         self._program.append((self._level, operation))
 
     def _begin_scope(self) -> None:
-        """
-        Indent a new scope level.
-        """
+        """Indent a new scope level."""
         self._level += 1
 
     def _end_scope(self) -> None:
@@ -145,10 +140,10 @@ class SeqcILGenerator(object):
 
         Parameters
         ----------
-            name :
-                The variable name.
-            value: Optional[str]
-                The variable value. (optional)
+        name :
+            The variable name.
+        value: Optional[str]
+            The variable value. (optional)
         """
         self._declare_local("var", name)
         if value is not None:
@@ -165,10 +160,10 @@ class SeqcILGenerator(object):
 
         Parameters
         ----------
-            name :
-                The variable name.
-            value:
-                The variable value. (optional)
+        name :
+            The variable name.
+        value:
+            The variable value. (optional)
         """
         self._declare_local("wave", name)
         if value is not None:
@@ -193,10 +188,10 @@ class SeqcILGenerator(object):
 
         Parameters
         ----------
-            name :
-                The variable name.
-            size :
-                The size of the placeholder.
+        name :
+            The variable name.
+        size :
+            The size of the placeholder.
         """
         self._assign_local(name, f"placeholder({size});")
 
@@ -215,10 +210,10 @@ class SeqcILGenerator(object):
 
         Parameters
         ----------
-            name :
-                The variable name.
-            value :
-                The new value.
+        name :
+            The variable name.
+        value :
+            The new value.
         """
         if isinstance(value, (int, list)):
             self._assign_local(name, f"{value};")
@@ -240,6 +235,7 @@ class SeqcILGenerator(object):
         Parameters
         ----------
         text :
+            The comment text.
         """
         self._emit(f"// {text}")
 
@@ -251,8 +247,8 @@ class SeqcILGenerator(object):
 
         Parameters
         ----------
-            index :
-                The waveform table index.
+        index :
+            The waveform table index.
         """
         variables: str = ", ".join(args)
         self._emit(f"assignWaveIndex({variables}, {index});")
@@ -279,12 +275,12 @@ class SeqcILGenerator(object):
 
         Parameters
         ----------
-            names :
-                The wave names to be played. This should refer to the wave variable name
-                as defined in the seqc, or the wave index in the commandtable
-                to be played.
-            comment :
-                The inline comment to be emitted in the seqc.
+        names :
+            The wave names to be played. This should refer to the wave variable name
+            as defined in the seqc, or the wave index in the commandtable
+            to be played.
+        comment :
+            The inline comment to be emitted in the seqc.
 
         Examples
         --------
@@ -310,9 +306,7 @@ class SeqcILGenerator(object):
         self._emit(f"playWave({_names});{comment}")
 
     def emit_wait_wave(self, comment: str = "") -> None:
-        """
-        Emit waitWave to the program.
-        """
+        """Emit waitWave to the program."""
         self._emit(f"waitWave();{comment}")
 
     def emit_start_qa(self, comment: str = "") -> None:
@@ -335,7 +329,6 @@ class SeqcILGenerator(object):
         - weighted_integrator_mask: Integration unit enable mask, default: QA_INT_ALL
 
         """
-
         # using default arguments to start all channels for acquisition.
         # example based on the UHFQA manual.
 
@@ -350,8 +343,10 @@ class SeqcILGenerator(object):
 
         Parameters
         ----------
-            cycles :
-                The number of cycles to wait.
+        cycles :
+            The number of cycles to wait.
+        comment :
+            The inline comment to be emitted in the seqc.
         """
         self._emit(f"wait({cycles});{comment}")
 
@@ -377,10 +372,9 @@ class SeqcILGenerator(object):
 
         Parameters
         ----------
-            index :
-                The trigger to wait on, by default 0
+        index :
+            The trigger to wait on, by default 0
         """
-
         if comment:
             comment = f"\t// {comment}"
 
@@ -438,16 +432,14 @@ class SeqcILGenerator(object):
 
         Parameters
         ----------
-            predicate :
-                The while condition, by default "true"
+        predicate :
+            The while condition, by default "true"
         """
         self._emit(f"while({predicate})")
         self._begin_scope()
 
     def emit_end_while(self) -> None:
-        """
-        Emit ending the while loop.
-        """
+        """Emit ending the while loop."""
         self._end_scope()
 
     def emit_begin_repeat(self, repetitions: Union[int, str] = 1) -> None:
@@ -456,16 +448,14 @@ class SeqcILGenerator(object):
 
         Parameters
         ----------
-            repetitions :
-                The repeat condition, by default 1
+        repetitions :
+            The repeat condition, by default 1
         """
         self._emit(f"repeat({repetitions})")
         self._begin_scope()
 
     def emit_end_repeat(self) -> None:
-        """
-        Emit ending the repeat loop.
-        """
+        """Emit ending the repeat loop."""
         self._end_scope()
 
     def generate(self) -> str:
@@ -525,9 +515,11 @@ def add_wait(
     Parameters
     ----------
     seqc_gen :
+        The SeqcILGenerator to add the wait instruction to.
     delay :
         The delay in clocks.
     device_type :
+        The device type.
     comment :
         An optional comment to the instruction, by default ""
 
@@ -583,9 +575,13 @@ def add_play_wave(
     Parameters
     ----------
     seqc_gen :
+        The SeqcILGenerator to add the playWave instruction to.
     variable :
+        The variable to play.
     device_type :
+        The device type.
     comment :
+        An optional comment to the instruction, by default "".
 
     Returns
     -------
@@ -617,8 +613,11 @@ def add_start_qa(
     Parameters
     ----------
     seqc_gen :
+        The SeqcILGenerator to add the startQA instruction to.
     device_type :
+        The device type.
     comment :
+        An optional comment to the instruction, by default "".
 
     Returns
     -------
@@ -646,9 +645,14 @@ def add_execute_table_entry(
     Parameters
     ----------
     seqc_gen :
+        The SeqcILGenerator to add the executeTableEntry instruction to.
     index :
+        The index of the table entry to execute.
     device_type :
+        The device type.
     comment :
+        An optional comment to the instruction, by default "".
+
 
     Returns
     -------
@@ -691,9 +695,13 @@ def add_set_trigger(
     Parameters
     ----------
     seqc_gen :
+        The SeqcILGenerator to add the setTrigger instruction to.
     value :
+        The trigger to set.
     device_type :
+        The device type.
     comment :
+        An optional comment to the instruction, by default "".
 
     Returns
     -------
@@ -748,9 +756,13 @@ def add_csv_waveform_variables(
     Parameters
     ----------
     seqc_gen :
+        The SeqcILGenerator to add the setTrigger instruction to.
     device_serial :
+        The device serial number.
     awg_index :
+        The AWG index.
     commandtable_map :
+        The commandtable map.
     """
     for waveform_index in commandtable_map.values():
         # Declare new placeholder and assign wave index

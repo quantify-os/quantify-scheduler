@@ -22,8 +22,9 @@ from quantify_scheduler.instrument_coordinator.utility import (
 
 class InstrumentCoordinator(qcodes_base.Instrument):
     """
-    The :class:`~.InstrumentCoordinator` serves as the central interface of the hardware
-    abstraction layer. It provides a standardized interface to execute Schedules on
+    The :class:`~.InstrumentCoordinator` serves as the central interface of the hardware abstraction layer.
+
+    It provides a standardized interface to execute Schedules on
     control hardware.
 
     The :class:`~.InstrumentCoordinator` has two main functionalities exposed to the
@@ -72,20 +73,16 @@ class InstrumentCoordinator(qcodes_base.Instrument):
 
             instrument_coordinator.add_component(qcm_component)
 
+    Parameters
+    ----------
+    name
+        The name for the instrument coordinator instance.
+    add_default_generic_icc
+        If True, automatically adds a GenericInstrumentCoordinatorComponent to this
+        instrument coordinator with the default name.
     """  # pylint: disable=line-too-long
 
     def __init__(self, name: str, add_default_generic_icc: bool = True) -> None:
-        """
-        Instantiates a new instrument coordinator.
-
-        Parameters
-        ----------
-        name
-            The name for the instrument coordinator instance.
-        add_default_generic_icc
-            If True, automatically adds a GenericInstrumentCoordinatorComponent to this
-            instrument coordinator with the default name.
-        """
         super().__init__(name)
         self.components = parameter.ManualParameter(
             "components",
@@ -207,7 +204,6 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         name
             The component name.
         """
-
         self.components().remove(name)  # list gets updated in place
 
     def prepare(
@@ -294,8 +290,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
 
     def retrieve_acquisition(self) -> Dataset:
         """
-        Retrieves the latest acquisition results of the components
-        with acquisition capabilities.
+        Retrieves the latest acquisition results of the components with acquisition capabilities.
 
         Returns
         -------
@@ -303,7 +298,6 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             The acquisition data in an :code:`xarray.Dataset`.
             For each acquisition channel it contains an :code:`xarray.DataArray`.
         """
-
         self.wait_done(timeout_sec=self.timeout())
 
         acquisitions: Dataset = Dataset()
@@ -321,8 +315,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
 
     def wait_done(self, timeout_sec: int = 10) -> None:
         """
-        Awaits each component until it has stopped running or
-        until it has exceeded the amount of time to run.
+        Awaits each component until it is done.
 
         The timeout in seconds specifies the allowed amount of time to run before
         it times out.
@@ -338,8 +331,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
 
     def retrieve_hardware_logs(self) -> Dict[str, dict]:
         """
-        Return the hardware logs of the instruments associated to
-        :class:`.InstrumentCoordinator` components.
+        Return the hardware logs of the instruments of each component.
 
         The instruments must be referenced in the :class:`.CompiledSchedule`.
 
@@ -379,6 +371,8 @@ def _convert_acquisition_data_format(raw_results):
 
 class ZIInstrumentCoordinator(InstrumentCoordinator):
     """
+    Support ZI backend.
+
     This class is a hack and extension to the :class:`.InstrumentCoordinator`, which is
     introduced to support the quirks when using the ZI backend
     during the acquisition of results.
@@ -427,8 +421,7 @@ class ZIInstrumentCoordinator(InstrumentCoordinator):
 
     def retrieve_acquisition(self) -> Dataset:
         """
-        Retrieves the latest acquisition results of the components
-        with acquisition capabilities.
+        Retrieves the latest acquisition results of the components.
 
         Returns
         -------
@@ -436,7 +429,6 @@ class ZIInstrumentCoordinator(InstrumentCoordinator):
             The acquisition data in an :code:`xarray.Dataset`.
             For each acquisition channel it contains an :code:`xarray.DataArray`.
         """
-
         raw_acq_results = super().retrieve_acquisition()
         if self.timeout_reacquire():
             reacquire = self._compare_reacquire(raw_acq_results)

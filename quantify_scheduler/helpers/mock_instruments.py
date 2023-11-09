@@ -9,24 +9,20 @@ from qcodes.utils import validators
 
 class MockLocalOscillator(Instrument):  # pylint: disable=too-few-public-methods
     """
-    A class representing a dummy Local Oscillator,
-    for development and testing purposes.
+    A class representing a dummy Local Oscillator.
+
+    Parameters
+    ----------
+    name
+        QCoDeS name of the intstrument.
     """
 
     def __init__(self, name: str):
-        """
-        Create an instance of the Generic instrument.
-
-        Args:
-            name: QCoDeS'name
-        """
         super().__init__(name)
         self._add_qcodes_parameters_dummy()
 
     def _add_qcodes_parameters_dummy(self):
-        """
-        Used for faking communications
-        """
+        """Use to fake communications."""
         self.status = ManualParameter(
             "status",
             initial_value=False,

@@ -18,8 +18,9 @@ def search_settable_param(
     instrument: InstrumentBase, nested_parameter_name: str
 ) -> Parameter:
     """
-    Searches for a settable parameter of an instrument when it is in a nested
-    hierarchical form such as instrument.submodule_1.channel_1.parameter
+    Searches for a settable parameter in nested instrument hierarchies.
+
+    For example `instrument.submodule_1.channel_1.parameter.`
 
     Parameters
     ----------
@@ -68,8 +69,7 @@ def search_settable_param(
 
 def lazy_set(instrument: InstrumentBase, parameter_name: str, val: Any) -> None:
     """
-    Sets the value of a QCoDeS parameter only if it is different from the value in
-    cache.
+    Set the value of a QCoDeS parameter only if it is different from the value in cache.
 
     Parameters
     ----------
@@ -96,8 +96,9 @@ def check_already_existing_acquisition(
     new_dataset: xarray.Dataset, current_dataset: xarray.Dataset
 ):
     """
-    Checks whether there is any data which is at the same coordinate in
-    `new_dataset` and `current_dataset`. If there is, it will raise an error.
+    Verifies non-overlapping data in new_dataset and current_dataset.
+
+    If there is, it will raise an error.
 
     Parameters
     ----------

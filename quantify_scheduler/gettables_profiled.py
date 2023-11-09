@@ -75,18 +75,15 @@ class ProfiledInstrumentCoordinator(InstrumentCoordinator):
             profiled_gettable.quantum_device.instr_instrument_coordinator.get_instr()
         )
 
+    Parameters
+    ----------
+    name: str
+        Name of :class:`ProfiledInstrumentCoordinator` instance.
+    parent_ic: InstrumentCoordinator
+        Original :class:`~.InstrumentCoordinator`.
     """
 
     def __init__(self, name: str, parent_ic: InstrumentCoordinator):
-        """
-
-        Parameters
-        ----------
-        name: str
-            Name of :class:`ProfiledInstrumentCoordinator` instance.
-        parent_ic: InstrumentCoordinator
-            Original :class:`~.InstrumentCoordinator`.
-        """
         self.profile = {"schedule": []}
         super().__init__(name, add_default_generic_icc=False)
         self.parent_ic = parent_ic
@@ -132,7 +129,6 @@ class ProfiledScheduleGettable(ScheduleGettable):
     """
 
     def __init__(self, *args, **kwargs):
-        """"""  # Intentionally left blank
         super().__init__(*args, **kwargs)
 
         self.profile = {}

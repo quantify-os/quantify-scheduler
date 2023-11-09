@@ -72,13 +72,34 @@ logger.setLevel(logging.WARNING)
 
 class InstrumentCompiler(ABC):
     """
-    Abstract base class that defines a generic instrument compiler. The subclasses that
-    inherit from this are meant to implement the compilation steps needed to compile the
-    lists of :class:`quantify_scheduler.backends.types.qblox.OpInfo` representing the
+    Abstract base class that defines a generic instrument compiler.
+
+    The subclasses that inherit from this are meant to implement the compilation
+    steps needed to compile the lists of
+    :class:`quantify_scheduler.backends.types.qblox.OpInfo` representing the
     pulse and acquisition information to device-specific instructions.
 
-    Each device that needs to be part of the compilation process requires an associated
-    `InstrumentCompiler`.
+    Each device that needs to be part of the compilation process requires an
+    associated `InstrumentCompiler`.
+
+    Parameters
+    ----------
+    parent: :class:`~quantify_scheduler.backends.qblox.compiler_container.CompilerContainer`
+        Reference to the parent object.
+    name
+        Name of the `QCoDeS` instrument this compiler object corresponds to.
+    total_play_time
+        Total time execution of the schedule should go on for. This parameter is
+        used to ensure that the different devices, potentially with different clock
+        rates, can work in a synchronized way when performing multiple executions of
+        the schedule.
+    instrument_cfg
+        The part of the hardware configuration dictionary referring to this device. This is one
+        of the inner dictionaries of the overall hardware config.
+    latency_corrections
+        Dict containing the delays for each port-clock combination. This is specified in
+        the top layer of hardware config.
+
     """
 
     def __init__(
@@ -89,29 +110,6 @@ class InstrumentCompiler(ABC):
         instrument_cfg: Dict[str, Any],
         latency_corrections: Optional[Dict[str, float]] = None,
     ):
-        # pylint: disable=line-too-long
-        """
-        Constructor for an InstrumentCompiler object.
-
-        Parameters
-        ----------
-        parent: :class:`~quantify_scheduler.backends.qblox.compiler_container.CompilerContainer`
-            Reference to the parent object.
-        name
-            Name of the `QCoDeS` instrument this compiler object corresponds to.
-        total_play_time
-            Total time execution of the schedule should go on for. This parameter is
-            used to ensure that the different devices, potentially with different clock
-            rates, can work in a synchronized way when performing multiple executions of
-            the schedule.
-        instrument_cfg
-            The part of the hardware configuration dictionary referring to this device. This is one
-            of the inner dictionaries of the overall hardware config.
-        latency_corrections
-            Dict containing the delays for each port-clock combination. This is specified in
-            the top layer of hardware config.
-
-        """
         self.parent = parent
         self.name = name
         self.total_play_time = total_play_time
@@ -151,8 +149,25 @@ class InstrumentCompiler(ABC):
 
 class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
     """
-    Abstract class for any device requiring logic for acquisition and playback of
-    pulses.
+    Abstract class for devices requiring logic for acquisition and playback of pulses.
+
+    Parameters
+    ----------
+    parent: :class:`~quantify_scheduler.backends.qblox.compiler_container.CompilerContainer`
+        Reference to the parent object.
+    name
+        Name of the `QCoDeS` instrument this compiler object corresponds to.
+    total_play_time
+        Total time execution of the schedule should go on for. This parameter is
+        used to ensure that the different devices, potentially with different clock
+        rates, can work in a synchronized way when performing multiple executions of
+        the schedule.
+    instrument_cfg
+        The part of the hardware configuration dictionary referring to this device. This is one
+        of the inner dictionaries of the overall hardware config.
+    latency_corrections
+        Dict containing the delays for each port-clock combination. This is specified in
+        the top layer of hardware config.
     """
 
     def __init__(
@@ -163,28 +178,6 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
         instrument_cfg: Dict[str, Any],
         latency_corrections: Optional[Dict[str, float]] = None,
     ):
-        # pylint: disable=line-too-long
-        """
-        Constructor for a ControlDeviceCompiler object.
-
-        Parameters
-        ----------
-        parent: :class:`~quantify_scheduler.backends.qblox.compiler_container.CompilerContainer`
-            Reference to the parent object.
-        name
-            Name of the `QCoDeS` instrument this compiler object corresponds to.
-        total_play_time
-            Total time execution of the schedule should go on for. This parameter is
-            used to ensure that the different devices, potentially with different clock
-            rates, can work in a synchronized way when performing multiple executions of
-            the schedule.
-        instrument_cfg
-            The part of the hardware configuration dictionary referring to this device. This is one
-            of the inner dictionaries of the overall hardware config.
-        latency_corrections
-            Dict containing the delays for each port-clock combination. This is specified in
-            the top layer of hardware config.
-        """
         super().__init__(
             parent=parent,
             name=name,
@@ -237,7 +230,6 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
             Data structure containing all the information regarding this specific
             acquisition operation.
         """
-
         if not self.supports_acquisition:
             raise RuntimeError(
                 f"{self.__class__.__name__} {self.name} does not support acquisitions. "
@@ -305,6 +297,44 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
 class Sequencer:
     """
     Class that performs the compilation steps on the sequencer level.
+
+    Parameters
+    ----------
+    parent
+        A reference to the parent instrument this sequencer belongs to.
+    index
+        Index of the sequencer.
+    portclock
+        Tuple that specifies the unique port and clock combination for this
+        sequencer. The first value is the port, second is the clock.
+    io_name
+        Specifies the io identifier of the hardware config (e.g. `complex_output_0`).
+    connected_outputs
+        The outputs connected to the sequencer.
+    connected_inputs
+        The inputs connected to the sequencer.
+    sequencer_cfg
+        Sequencer settings dictionary.
+    latency_corrections
+        Dict containing the delays for each port-clock combination.
+    lo_name
+        The name of the local oscillator instrument connected to the same output via
+        an IQ mixer. This is used for frequency calculations.
+    downconverter_freq
+        .. warning::
+            Using `downconverter_freq` requires custom Qblox hardware, do not use otherwise.
+
+        Frequency of the external downconverter if one is being used.
+        Defaults to ``None``, in which case the downconverter is inactive.
+    mix_lo
+        Boolean flag for IQ mixing with LO.
+        Defaults to ``True`` meaning IQ mixing is applied.
+    marker_debug_mode_enable
+        Boolean flag to indicate if markers should be pulled high at the start of operations.
+        Defaults to False, which means the markers will not be used during the sequence.
+    default_marker
+        The default marker value to use, will be set in the beginning of program.
+        Especially important for RF where the set_mrk command is used to enable/disable the RF path.
     """
 
     # pylint: disable=too-many-arguments
@@ -326,47 +356,6 @@ class Sequencer:
         marker_debug_mode_enable: bool = False,
         default_marker: int = 0,
     ):
-        """
-        Constructor for the sequencer compiler.
-
-        Parameters
-        ----------
-        parent
-            A reference to the parent instrument this sequencer belongs to.
-        index
-            Index of the sequencer.
-        portclock
-            Tuple that specifies the unique port and clock combination for this
-            sequencer. The first value is the port, second is the clock.
-        io_name
-            Specifies the io identifier of the hardware config (e.g. `complex_output_0`).
-        connected_outputs
-            The outputs connected to the sequencer.
-        connected_inputs
-            The inputs connected to the sequencer.
-        sequencer_cfg
-            Sequencer settings dictionary.
-        latency_corrections
-            Dict containing the delays for each port-clock combination.
-        lo_name
-            The name of the local oscillator instrument connected to the same output via
-            an IQ mixer. This is used for frequency calculations.
-        downconverter_freq
-            .. warning::
-                Using `downconverter_freq` requires custom Qblox hardware, do not use otherwise.
-
-            Frequency of the external downconverter if one is being used.
-            Defaults to ``None``, in which case the downconverter is inactive.
-        mix_lo
-            Boolean flag for IQ mixing with LO.
-            Defaults to ``True`` meaning IQ mixing is applied.
-        marker_debug_mode_enable
-            Boolean flag to indicate if markers should be pulled high at the start of operations.
-            Defaults to False, which means the markers will not be used during the sequence.
-        default_marker
-            The default marker value to use, will be set in the beginning of program.
-            Especially important for RF where the set_mrk command is used to enable/disable the RF path.
-        """
         self.parent = parent
         self.index = index
         self.port = portclock[0]
@@ -938,7 +927,7 @@ class Sequencer:
         qasm: QASMProgram,
         acquisition_multiplier: int,
     ) -> bool:
-        """Handle control flow and insert Q1ASM"""
+        """Handle control flow and insert Q1ASM."""
         while (operation := next(operations_iter, None)) is not None:
             qasm.wait_till_start_operation(operation.operation_info)
             if isinstance(operation, LoopStrategy):
@@ -1047,6 +1036,9 @@ class Sequencer:
         weights_dict
             The dictionary containing all the acq data and indices. This is expected to
             be of the form generated by the `generate_acq_dict` method.
+        acq_decl_dict
+            The dictionary containing all the acq declarations. This is expected to be
+            of the form generated by the `generate_acq_decl_dict` method.
 
         Returns
         -------
@@ -1187,7 +1179,6 @@ class Sequencer:
         -------
             A bit string passed on to the set_mrk function of the Q1ASM object.
         """
-
         marker_bit_string = 0
         instrument_type = self.static_hw_properties.instrument_type
         if instrument_type == "QCM":
@@ -1222,6 +1213,25 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
     different devices are defined in subclasses.
     Effectively, this base class contains the functionality shared by all Qblox
     devices and serves to avoid repeated code between them.
+
+
+    Parameters
+    ----------
+    parent: :class:`quantify_scheduler.backends.qblox.compiler_container.CompilerContainer`
+        Reference to the parent object.
+    name
+        Name of the `QCoDeS` instrument this compiler object corresponds to.
+    total_play_time
+        Total time execution of the schedule should go on for. This parameter is
+        used to ensure that the different devices, potentially with different clock
+        rates, can work in a synchronized way when performing multiple executions of
+        the schedule.
+    instrument_cfg
+        The part of the hardware configuration dictionary referring to this device. This is one
+        of the inner dictionaries of the overall hardware config.
+    latency_corrections
+        Dict containing the delays for each port-clock combination. This is specified in
+        the top layer of hardware config.
     """
 
     def __init__(
@@ -1232,28 +1242,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         instrument_cfg: Dict[str, Any],
         latency_corrections: Optional[Dict[str, float]] = None,
     ):
-        # pylint: disable=line-too-long
-        """
-        Constructor function.
-
-        Parameters
-        ----------
-        parent: :class:`quantify_scheduler.backends.qblox.compiler_container.CompilerContainer`
-            Reference to the parent object.
-        name
-            Name of the `QCoDeS` instrument this compiler object corresponds to.
-        total_play_time
-            Total time execution of the schedule should go on for. This parameter is
-            used to ensure that the different devices, potentially with different clock
-            rates, can work in a synchronized way when performing multiple executions of
-            the schedule.
-        instrument_cfg
-            The part of the hardware configuration dictionary referring to this device. This is one
-            of the inner dictionaries of the overall hardware config.
-        latency_corrections
-            Dict containing the delays for each port-clock combination. This is specified in
-            the top layer of hardware config.
-        """
         super().__init__(
             parent=parent,
             name=name,
@@ -1274,7 +1262,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
     @property
     def portclocks(self) -> List[Tuple[str, str]]:
         """Returns all the port-clock combinations that this device can target."""
-
         portclocks = []
 
         for io_name in self.static_hw_properties.valid_ios:
@@ -1298,9 +1285,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
     @property
     @abstractmethod
     def settings_type(self) -> PulsarSettings:
-        """
-        Specifies the PulsarSettings class used by the instrument.
-        """
+        """Specifies the PulsarSettings class used by the instrument."""
 
     @property
     @abstractmethod
@@ -1330,7 +1315,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             Attempting to use more sequencers than available.
 
         """
-
         # Setup each sequencer.
         sequencers: Dict[str, Sequencer] = {}
         portclock_io_map: Dict[Tuple, str] = {}
@@ -1425,7 +1409,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         different sequencers based on their portclocks. Raises an exception in case
         the device does not support acquisitions.
         """
-
         if (
             any(len(acq) > 0 for acq in self._acquisitions.values())
             and not self.supports_acquisition
@@ -1920,7 +1903,7 @@ class QbloxRFModule(QbloxBaseModule):
 
     @property
     def settings_type(self) -> type:
-        """The settings type used by RF modules"""
+        """The settings type used by RF modules."""
         if self.is_pulsar:
             raise RuntimeError(
                 "Cannot return RFModule settings, RF pulsar components do not exist."
@@ -1928,9 +1911,7 @@ class QbloxRFModule(QbloxBaseModule):
         return RFModuleSettings
 
     def assign_frequencies(self, sequencer: Sequencer):
-        """
-        Determines LO/IF frequencies and assigns them for RF modules.
-        """
+        """Determines LO/IF frequencies and assigns them for RF modules."""
         if self.is_pulsar:
             raise RuntimeError(
                 "Cannot determine LO/IF frequencies, RF pulsar components do not exist."

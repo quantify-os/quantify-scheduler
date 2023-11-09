@@ -7,14 +7,9 @@ from quantify_scheduler.backends.qblox import constants
 
 
 class RegisterManager:
-    """
-    Utility class that keeps track of all the registers that are still available.
-    """
+    """Utility class that keeps track of all the registers that are still available."""
 
     def __init__(self) -> None:
-        """
-        Instantiates the `RegisterManager`.
-        """
         self._available_registers: Set[str] = {
             f"R{idx}" for idx in range(constants.NUMBER_OF_REGISTERS)
         }
@@ -84,8 +79,9 @@ class RegisterManager:
 
 def _verify_valid_register(register_name: str) -> None:
     """
-    Verifies whether the passed name is a valid register name. Raises on any of the
-    conditions:
+    Verifies whether the passed name is a valid register name.
+
+    Raises on any of the conditions:
 
     1. `register_name` does not start with "R" or
     2. `register_name` does not have an integer next
@@ -98,7 +94,7 @@ def _verify_valid_register(register_name: str) -> None:
         The register to verify.
 
     Raises
-    -------
+    ------
     ValueError
         Invalid register name passed.
     """

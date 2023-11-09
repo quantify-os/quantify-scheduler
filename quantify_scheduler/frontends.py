@@ -4,7 +4,5 @@
 
 
 def openql_sequencer_frontend(filename: str) -> None:
-    """
-    Reads an OpenQL cQASM file and converts
-    """
+    """Reads an OpenQL cQASM file and converts."""
     raise NotImplementedError

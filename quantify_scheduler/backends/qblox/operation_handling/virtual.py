@@ -12,15 +12,16 @@ from quantify_scheduler.backends.types import qblox as types
 
 
 class IdleStrategy(IOperationStrategy):
-    """Defines the behavior for an operation that does not produce any output."""
+    """
+    Defines the behavior for an operation that does not produce any output.
+
+    Parameters
+    ----------
+    operation_info : quantify_scheduler.backends.types.qblox.OpInfo
+        The operation info that corresponds to this operation.
+    """
 
     def __init__(self, operation_info: types.OpInfo):
-        """
-        Parameters
-        ----------
-        operation_info : quantify_scheduler.backends.types.qblox.OpInfo
-            The operation info that corresponds to this operation.
-        """
         self._op_info = operation_info
 
     @property
@@ -81,8 +82,10 @@ class NcoPhaseShiftStrategy(IdleStrategy):
 
 
 class NcoResetClockPhaseStrategy(IdleStrategy):
-    """Strategy for operation that does not produce any output, but rather resets
-    the phase of the NCO."""
+    """
+    Strategy for operation that does not produce any output, but rather resets
+    the phase of the NCO.
+    """
 
     def insert_qasm(self, qasm_program: QASMProgram):
         """
@@ -159,7 +162,8 @@ class AwgOffsetStrategy(IdleStrategy):
     """
 
     def insert_qasm(self, qasm_program: QASMProgram):
-        """Add the Q1ASM instruction for a DC voltage offset.
+        """
+        Add the Q1ASM instruction for a DC voltage offset.
 
         Parameters
         ----------
@@ -187,9 +191,7 @@ class AwgOffsetStrategy(IdleStrategy):
 
 
 class UpdateParameterStrategy(IdleStrategy):
-    """
-    Strategy for compiling an "update parameters" real-time instruction.
-    """
+    """Strategy for compiling an "update parameters" real-time instruction."""
 
     def insert_qasm(self, qasm_program: QASMProgram):
         """

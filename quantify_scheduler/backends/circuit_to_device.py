@@ -1,8 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-"""
-Compilation backend for quantum-circuit to quantum-device layer.
-"""
+"""Compilation backend for quantum-circuit to quantum-device layer."""
 from __future__ import annotations
 
 import warnings
@@ -193,6 +191,7 @@ def set_pulse_and_acquisition_clock(
         (deprecated) Device compilation config. Pass a full compilation config instead
         using `config` argument. Note, if a dictionary is passed, it will be parsed to a
         :class:`~.DeviceCompilationConfig`.
+
     Returns
     -------
     :
@@ -306,7 +305,8 @@ def _update_acquisition_info_from_device_config(
 
 
 def _valid_clock_in_schedule(clock, device_cfg, schedule, operation) -> bool:
-    """Asserts that valid clock is present. Returns whether clock is already in schedule.
+    """
+    Asserts that valid clock is present. Returns whether clock is already in schedule.
 
     Parameters
     ----------
@@ -325,7 +325,6 @@ def _valid_clock_in_schedule(clock, device_cfg, schedule, operation) -> bool:
         Returns ValueError if (i) the device config is the only defined clock and
         contains nan values or (ii) no clock is defined.
     """
-
     if clock in schedule.resources:
         if clock in device_cfg.clocks:
             # Test if clocks are compatible (emits a warning if not)
@@ -351,7 +350,8 @@ def _valid_clock_in_schedule(clock, device_cfg, schedule, operation) -> bool:
 
 
 def _clocks_compatible(clock, device_cfg: DeviceCompilationConfig, schedule) -> bool:
-    """Compare device config and schedule resources for compatibility of their clocks.
+    """
+    Compare device config and schedule resources for compatibility of their clocks.
 
     Clocks can be defined in the device_cfg and in the schedule. They are consistent if
 
@@ -406,7 +406,8 @@ def _clocks_compatible(clock, device_cfg: DeviceCompilationConfig, schedule) -> 
 
 
 def _assert_operation_valid_device_level(operation: Operation) -> None:
-    """Verifies that the operation has been compiled to device level.
+    """
+    Verifies that the operation has been compiled to device level.
 
     Parameters
     ----------
@@ -558,9 +559,7 @@ def _add_device_repr_from_cfg_multiplexed(
 
 # pylint: disable=super-init-not-called
 class ConfigKeyError(KeyError):
-    """
-    Custom exception for when a key is missing in a configuration file.
-    """
+    """Custom exception for when a key is missing in a configuration file."""
 
     def __init__(self, kind, missing, allowed):
         self.value = (
@@ -574,9 +573,7 @@ class ConfigKeyError(KeyError):
 
 # pylint: disable=super-init-not-called
 class MultipleKeysError(KeyError):
-    """
-    Custom exception for when symmetric keys are found in a configuration file.
-    """
+    """Custom exception for when symmetric keys are found in a configuration file."""
 
     def __init__(self, operation, matches):
         self.value = (

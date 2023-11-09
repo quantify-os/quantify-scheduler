@@ -58,7 +58,6 @@ def rabi_sched(
     repetitions
         The amount of times the Schedule will be repeated.
     """
-
     # ensure pulse_amplitude and pulse_duration are iterable.
     amps = np.asarray(pulse_amp)
     amps = amps.reshape(amps.shape or (1,))
@@ -238,10 +237,7 @@ def echo_sched(
     -------
     :
         An experiment schedule.
-
-
     """
-
     # ensure times is an iterable when passing floats.
     times = np.asarray(times)
     times = times.reshape(times.shape or (1,))
@@ -293,7 +289,6 @@ def cpmg_sched(
     :
         An experiment schedule.
     """
-
     if variant not in ["X", "Y", "XY"]:
         raise ValueError(
             f"Unknown variant '{variant}'. Variant must be one of ('X', 'Y', 'XY')."
@@ -386,7 +381,6 @@ def allxy_sched(
         An experiment schedule.
 
     """
-
     element_idxs = np.asarray(element_select_idx)
     element_idxs = element_idxs.reshape(element_idxs.shape or (1,))
 
@@ -466,7 +460,6 @@ def readout_calibration_sched(
     NotImplementedError
         If the prepared state is 2.
     """
-
     schedule = Schedule(f"Readout calibration {qubit}, {prepared_states}", repetitions)
 
     for i, prep_state in enumerate(prepared_states):

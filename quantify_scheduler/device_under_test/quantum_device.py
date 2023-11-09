@@ -39,17 +39,19 @@ from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEnc
 
 class QuantumDevice(Instrument):
     """
-    The `QuantumDevice` directly represents the device under test (DUT) and contains a
-    description of the connectivity to the control hardware as well as parameters
-    specifying quantities like cross talk, attenuation and calibrated cable-delays.
-    The `QuantumDevice` also contains references to individual DeviceElements,
-    representations of elements on a device (e.g, a transmon qubit) containing
-    the (calibrated) control-pulse parameters.
+    The QuantumDevice directly represents the device under test (DUT).
+
+    This contains a description of the connectivity to the control hardware as
+    well as parameters specifying quantities like cross talk, attenuation and
+    calibrated cable-delays. The QuantumDevice also contains references to
+    individual DeviceElements, representations of elements on a device (e.g, a
+    transmon qubit) containing the (calibrated) control-pulse parameters.
 
     This object can be used to generate configuration files for the compilation step
     from the gate-level to the pulse level description.
     These configuration files should be compatible with the
-    :meth:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler.compile` function.
+    :meth:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler.compile`
+    function.
     """
 
     def __init__(self, name: str) -> None:
@@ -283,10 +285,7 @@ class QuantumDevice(Instrument):
         return deserialized_device
 
     def generate_compilation_config(self) -> SerialCompilationConfig:
-        """
-        Generates a compilation config for use with a
-        :class:`~.graph_compilation.QuantifyCompiler`.
-        """
+        """Generate a config for use with a :class:`~.graph_compilation.QuantifyCompiler`."""
         # Part that is always the same
         dev_cfg = self.generate_device_config()
         compilation_passes = [
@@ -361,7 +360,7 @@ class QuantumDevice(Instrument):
 
     def generate_hardware_config(self) -> dict[str, Any]:
         """
-        Generates a valid hardware configuration describing the quantum device.
+        Generate a valid hardware configuration describing the quantum device.
 
         Returns
         -------
@@ -377,7 +376,9 @@ class QuantumDevice(Instrument):
 
     def generate_device_config(self) -> DeviceCompilationConfig:
         """
-        Generates a device config to compile from the quantum-circuit to the
+        Generate a device config.
+
+        This config is used to compile from the quantum-circuit to the
         quantum-device layer.
         """
         clocks = {}
@@ -409,7 +410,9 @@ class QuantumDevice(Instrument):
 
     def generate_hardware_compilation_config(self) -> HardwareCompilationConfig | None:
         """
-        Generates a hardware compilation config to compile from the quantum-device to the
+        Generate a hardware compilation config.
+
+        The compilation config is used to compile from the quantum-device to the
         control-hardware layer.
         """
         hardware_config = self.hardware_config()
@@ -493,8 +496,7 @@ class QuantumDevice(Instrument):
 
     def get_element(self, name: str) -> DeviceElement:
         """
-        Returns a
-        :class:`~quantify_scheduler.device_under_test.device_element.DeviceElement`
+        Return a :class:`~quantify_scheduler.device_under_test.device_element.DeviceElement`
         by name.
 
         Parameters
@@ -521,7 +523,7 @@ class QuantumDevice(Instrument):
         element: DeviceElement,
     ) -> None:
         """
-        Adds an element to the elements collection.
+        Add an element to the elements collection.
 
         Parameters
         ----------
@@ -580,7 +582,7 @@ class QuantumDevice(Instrument):
 
     def add_edge(self, edge: Edge) -> None:
         """
-        Adds the edges.
+        Add the edges.
 
         Parameters
         ----------
@@ -599,7 +601,7 @@ class QuantumDevice(Instrument):
 
     def remove_edge(self, edge_name: str) -> None:
         """
-        Removes an edge by name.
+        Remove an edge by name.
 
         Parameters
         ----------

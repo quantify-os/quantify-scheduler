@@ -260,7 +260,7 @@ autoapi_options = [
     # "imported-members",
 ]
 # displays docstrings inside __init__
-autoapi_python_class_content = "both"
+autoapi_python_class_content = "class"
 
 # avoid duplicate label warning even when manual label has been used;
 suppress_warnings = [

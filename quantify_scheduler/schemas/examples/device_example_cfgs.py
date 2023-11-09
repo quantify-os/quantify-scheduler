@@ -1,5 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
+"""Contains example device config for transmons."""
 
 example_transmon_cfg = {
     "backend": "quantify_scheduler.backends.circuit_to_device"

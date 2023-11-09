@@ -117,7 +117,6 @@ def ensure_no_operations_overlap(timing_table: pandas.DataFrame) -> None:
     ValueError
         If there is overlap between operations.
     """
-
     for output_ch in timing_table.hardware_channel.unique():
         if output_ch is None:
             continue
@@ -176,7 +175,6 @@ def _determine_clock_sample_start(
     the sample is returned as a float to preserve information of incorrect rounding to
     full samples if present.
     """
-
     if "uhfqa" in hardware_channel:
         hw_sample_rate = DEVICE_SAMPLING_RATES[zhinst.DeviceType.UHFQA][
             0
@@ -282,7 +280,6 @@ def _apply_latency_corrections(
     dict. The corrections are added to the abs_time elements fulfilling the
     specific port-clock combination.
     """
-
     for port_clock_combination_key in latency_dict:
         port, clock = port_clock_combination_key.split("-")
         port_mask = timing_table["port"] == port
@@ -312,7 +309,7 @@ def _determine_measurement_fixpoint_correction(
         is 600 MHz.
 
     Returns
-    --------
+    -------
     :
         The time correction to be applied in seconds
     :
@@ -398,7 +395,7 @@ def _apply_measurement_fixpoint_correction(
 def _add_clock_sample_starts(timing_table: pandas.DataFrame) -> pandas.DataFrame:
     """
     Adds the sequence clock cycle start and sampling start of each operation for each
-    channel
+    channel.
     """
     timing_table["clock_cycle_start"] = timing_table.apply(
         lambda row: _determine_clock_start(
@@ -542,9 +539,11 @@ def _validate_schedule(schedule: Schedule) -> None:
 
 
 def _convert_stitched_pulses(schedule: Schedule) -> None:
-    """Convert any :class:`~quantify_scheduler.operations.stitched_pulse.StitchedPulse`
+    """
+    Convert any :class:`~quantify_scheduler.operations.stitched_pulse.StitchedPulse`
     in the Schedule to a
-    :class:`~quantify_scheduler.operations.pulse_library.NumericalPulse`"""
+    :class:`~quantify_scheduler.operations.pulse_library.NumericalPulse`.
+    """
     for ref, op in schedule.operations.items():
         if op.has_voltage_offset:
             schedule.operations[ref] = convert_to_numerical_pulse(op)
@@ -575,7 +574,6 @@ def apply_waveform_corrections(
     -------
     :
     """
-
     (start_in_seconds, duration_in_seconds) = start_and_duration_in_seconds
 
     if output.modulation.type == zhinst.ModulationModeType.MODULATE:
@@ -656,7 +654,8 @@ def _get_instruction_list(
 
 @dataclass(frozen=True)
 class ZIAcquisitionConfig:
-    """Zurich Instruments acquisition configuration.
+    """
+    Zurich Instruments acquisition configuration.
 
     Parameters
     ----------
@@ -1406,7 +1405,6 @@ def _compile_for_hdawg(
     ------
     ValueError
     """
-
     # calculating duration over all operations instead of only the last ensures a
     # long operation near the end does not get overlooked.
     schedule_duration = (timing_table.abs_time + timing_table.duration).max()
@@ -1687,7 +1685,6 @@ def _compile_for_uhfqa(  # noqa: PLR0915
     -------
     :
     """
-
     ########################################
     # Add standard settings to builder
     ########################################
@@ -2065,7 +2062,6 @@ def construct_waveform_table(
         that will be uploaded to the control hardware.
 
     """
-
     # remove all entries for which the port is missing such as a Reset operation.
     filtered_df = timing_table.drop_duplicates(subset="waveform_id").dropna(
         axis=0, subset=["port"]

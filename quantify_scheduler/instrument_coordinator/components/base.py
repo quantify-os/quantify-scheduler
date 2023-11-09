@@ -15,7 +15,7 @@ from quantify_scheduler.schedules.schedule import CompiledSchedule
 
 def instrument_to_component_name(instrument_name: str) -> str:
     """
-    Gives the name of the instrument coordinator component.
+    Give the name of the instrument coordinator component.
 
     Parameters
     ----------
@@ -39,7 +39,8 @@ class InstrumentCoordinatorComponentBase(base.Instrument):
     def __new__(
         cls, instrument: base.InstrumentBase
     ) -> InstrumentCoordinatorComponentBase:
-        """Keeps track of the instances of this class.
+        """
+        Keeps track of the instances of this class.
 
         NB This is done intentionally to prevent the instances from being garbage
         collected.
@@ -49,13 +50,11 @@ class InstrumentCoordinatorComponentBase(base.Instrument):
         return instance
 
     def close(self) -> None:
-        """Makes sure the instances reference is released so that garbage collector can
-        claim the object"""
+        """Release instance so that garbage collector can claim the object."""
         _ = self._no_gc_instances.pop(self.instrument_ref())
         super().close()
 
     def __init__(self, instrument: base.InstrumentBase, **kwargs: Any) -> None:
-        """Instantiates the InstrumentCoordinatorComponentBase base class."""
         super().__init__(instrument_to_component_name(instrument.name), **kwargs)
 
         self.instrument_ref = parameter.InstrumentRefParameter(
@@ -125,7 +124,9 @@ class InstrumentCoordinatorComponentBase(base.Instrument):
     @abstractmethod
     def wait_done(self, timeout_sec: int = 10) -> None:
         """
-        Waits until the InstrumentCoordinator component has stopped running or until it
+        Wait until the InstrumentCoordinator is done.
+
+        The coordinator is ready when it has stopped running or until it
         has exceeded the amount of time to run.
 
         The maximum amount of time, in seconds, before it times out is set via the
@@ -142,6 +143,4 @@ class InstrumentCoordinatorComponentBase(base.Instrument):
         self,
         compiled_schedule: CompiledSchedule,
     ) -> dict | None:
-        """
-        Retrieve the hardware logs of the instrument associated to this component.
-        """
+        """Retrieve the hardware logs of the instrument associated to this component."""

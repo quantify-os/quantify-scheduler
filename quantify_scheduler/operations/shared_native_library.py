@@ -1,27 +1,27 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-
+"""Module containing shared native operations."""
 from .operation import Operation
 
 
 class SpectroscopyOperation(Operation):
-    """Spectroscopy operation to find energy between computational basis states.
+    """
+    Spectroscopy operation to find energy between computational basis states.
 
     Spectroscopy operations can be supported by various qubit types, but not all of
     them. They are typically translated into a spectroscopy pulse by the quantum
     device. The frequency is taken from a clock of the device element.
+
+    Parameters
+    ----------
+    qubit
+        The target qubit.
     """
 
     def __init__(
         self,
         qubit: str,
     ):
-        """
-        Parameters
-        ----------
-        qubit
-            The target qubit.
-        """
         super().__init__(name=f"Spectroscopy operation {qubit}")
         self.data.update(
             {

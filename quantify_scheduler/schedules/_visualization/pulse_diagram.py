@@ -1,6 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-"""Functions for drawing pulse diagrams"""
+"""Functions for drawing pulse diagrams."""
 from __future__ import annotations
 
 import inspect
@@ -30,9 +30,7 @@ logger = logging.getLogger(__name__)
 
 
 def _populate_port_mapping(schedule, portmap: Dict[str, int], ports_length) -> None:
-    """
-    Dynamically add up to 8 ports to the port_map dictionary.
-    """
+    """Dynamically add up to 8 ports to the port_map dictionary."""
     offset_idx: int = 0
 
     for schedulable in schedule.schedulables.values():
@@ -91,7 +89,7 @@ def pulse_diagram_plotly(
     Produce a plotly visualization of the pulses used in the schedule.
 
     Parameters
-    ------------
+    ----------
     schedule :
         The schedule to render.
     port_list :
@@ -113,7 +111,6 @@ def pulse_diagram_plotly(
     :class:`plotly.graph_objects.Figure` :
         the plot
     """
-
     port_map: Dict[str, int] = {}
     ports_length: int = 8
 
@@ -436,7 +433,8 @@ def sample_schedule(
 
 
 def deduplicate_legend_handles_labels(ax: mpl.axes.Axes) -> None:
-    """Remove duplicate legend entries.
+    """
+    Remove duplicate legend entries.
 
     See also: https://stackoverflow.com/a/13589144
     """
@@ -449,7 +447,8 @@ def plot_single_subplot_mpl(
     sampled_schedule: Dict[str, List[SampledPulse]],
     ax: Optional[mpl.axes.Axes] = None,
 ) -> Tuple[mpl.figure.Figure, mpl.axes.Axes]:
-    """Plot all pulses for all ports in the schedule in the same subplot.
+    """
+    Plot all pulses for all ports in the schedule in the same subplot.
 
     Pulses in the same port have the same color and legend entry, and each port
     has its own legend entry.
@@ -499,7 +498,8 @@ def plot_single_subplot_mpl(
 def plot_multiple_subplots_mpl(
     sampled_schedule: Dict[str, List[SampledPulse]]
 ) -> Tuple[mpl.figure.Figure, List[mpl.axes.Axes]]:
-    """Plot pulses in a different subplot for each port in the sampled schedule.
+    """
+    Plot pulses in a different subplot for each port in the sampled schedule.
 
     For each subplot, each different type of pulse gets its own color and legend
     entry.
@@ -637,6 +637,7 @@ def get_window_operations(
     ----------
     schedule:
         Schedule to use.
+
     Returns
     -------
     :
@@ -716,6 +717,7 @@ def plot_acquisition_operations(
         Axis handle to use for plotting.
     kwargs:
         Passed to matplotlib plotting routine
+
     Returns
     -------
     :

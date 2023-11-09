@@ -6,10 +6,7 @@ from enum import Enum, unique
 
 
 class StrEnum(Enum):
-    """
-    This class functions to include explicit string serialization without adding `str`
-    as a base class.
-    """
+    """Enum that can be directly serialized to string."""
 
     def __str__(self):
         return self.value
@@ -17,7 +14,6 @@ class StrEnum(Enum):
 
 @unique
 class BinMode(StrEnum):
-
     """
     The acquisition protocol bin mode enum type.
 

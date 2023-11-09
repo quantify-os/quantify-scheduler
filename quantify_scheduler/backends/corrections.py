@@ -31,9 +31,8 @@ def determine_relative_latency_corrections(
     def _extract_port_clocks(hardware_cfg: Dict[str, Any]) -> Generator:
         """
         Extracts all port-clock combinations that are present in a hardware configuration.
-        Based on: https://stackoverflow.com/questions/9807634/find-all-occurrences-of-a-key-in-nested-dictionaries-and-lists
+        Based on: https://stackoverflow.com/questions/9807634/find-all-occurrences-of-a-key-in-nested-dictionaries-and-lists.
         """
-
         if hasattr(hardware_cfg, "items"):
             for k, v in hardware_cfg.items():
                 if k == "port":
@@ -107,7 +106,6 @@ def distortion_correct_pulse(  # pylint: disable=too-many-arguments
     :
         The sampled, distortion corrected pulse wrapped in a ``NumericalPulse``.
     """
-
     waveform_data = generate_waveform_data(
         data_dict=pulse_data,
         sampling_rate=sampling_rate,
@@ -150,6 +148,7 @@ def apply_distortion_corrections(
 ) -> Schedule:
     """
     Apply distortion corrections to operations in the schedule.
+
     Defined via the hardware configuration file, example:
 
     .. code-block::
@@ -203,7 +202,6 @@ def apply_distortion_corrections(
     KeyError
         when clipping values are supplied but not two values exactly, min and max.
     """
-
     distortion_corrections_key = "distortion_corrections"
     if hardware_cfg.get(distortion_corrections_key) is None:
         logging.debug(f'No key "{distortion_corrections_key}" supplied in hardware_cfg')

@@ -24,7 +24,7 @@ lru_cache = functools.lru_cache(maxsize=200)
 
 
 def validate_json(data, schema):
-    """Validate schema using jsonschema-rs"""
+    """Validate schema using jsonschema-rs."""
     return fastjsonschema.validate(schema, data)
 
 
@@ -44,6 +44,7 @@ def load_json_schema(relative_to: Union[str, pathlib.Path], filename: str):
         the file to begin searching from
     filename
         the JSON file to load
+
     Returns
     -------
     dict
@@ -69,6 +70,7 @@ def load_json_validator(
         the file to begin searching from
     filename
         the JSON file to load
+
     Returns
     -------
     Callable
@@ -89,7 +91,8 @@ class JSONSchemaValMixin:  # pylint: disable=too-few-public-methods
 
     @classmethod
     def is_valid(cls, object_to_be_validated) -> bool:
-        """Checks if the object is valid according to its schema
+        """
+        Checks if the object is valid according to its schema.
 
         Raises
         ------
@@ -101,7 +104,6 @@ class JSONSchemaValMixin:  # pylint: disable=too-few-public-methods
         :
 
         """
-
         validator_method = load_json_validator(__file__, cls.schema_filename)
         validator_method(object_to_be_validated.data)
         return True  # if no exception was raised during validation
@@ -114,26 +116,25 @@ class SchedulerJSONDecoder(json.JSONDecoder):
     The SchedulerJSONDecoder is used to convert a string with JSON content into
     instances of classes in quantify-scheduler.
 
-    To avoid the execution of malicious code SchedulerJSONDecoder uses
-    :func:`ast.literal_eval` instead of :func:`eval` to convert the data to an instance.
-    """
+    To avoid the execution of malicious code ScheduleJSONDecoder uses
+    :func:`ast.literal_eval` instead of :func:`eval` to convert the data to an instance
+    of Schedule.
+
+    The list of serializable classes can be extended with custom classes by
+    providing the `modules` keyword argument. These classes have to implement
+    :class:`quantify_scheduler.operations.operation.Operation` and overload the
+    :code:`__str__` and :code:`__repr__` methods in order to serialize and
+    deserialize domain objects into a valid JSON-format.
+
+    Keyword Arguments
+    -----------------
+    modules : List[ModuleType], *optional*
+        A list of custom modules containing serializable classes, by default []
+    """  # noqa: D416
 
     classes: Dict[str, Type[Any]]
 
     def __init__(self, *args, **kwargs) -> None:
-        """
-        Create new instance of SchedulerJSONDecoder to decode a string into an object.
-
-        The list of serializable classes can be extended with custom classes by
-        providing the `modules` keyword argument. These classes have overload the
-        :code:`__str__` and :code:`__repr__` methods in order to serialize and
-        deserialize domain objects into a valid JSON-format.
-
-        Keyword Arguments
-        -----------------
-        modules : List[ModuleType], *optional*
-            A list of custom modules containing serializable classes, by default []
-        """
         extended_modules: List[ModuleType] = kwargs.pop("modules", [])
         invalid_modules = list(
             filter(lambda o: not isinstance(o, ModuleType), extended_modules)

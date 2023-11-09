@@ -31,7 +31,8 @@ def new_pulse_fig(
 
     Parameters
     ----------
-    figsize
+    figsize :
+        Size of the figure.
     ax
         Axis to use for plotting. If ``None``, then creates a new one.
 
@@ -67,6 +68,11 @@ def new_pulse_subplot(fig: Figure, *args, **kwargs) -> Axes:
     Parameters
     ----------
     fig :
+        Figure to add the subplot to.
+    *args
+        Positional arguments to pass to fig.add_subplot.
+    **kwargs
+        Keyword arguments to pass to fig.add_subplot.
 
     Returns
     -------
@@ -99,24 +105,32 @@ def mwPulse(
 
     Parameters
     ----------
-
     ax :
+        Axis to plot on.
 
     pos :
+        Position of the pulse.
 
     y_offs :
+        Vertical offset of the pulse.
 
     width :
+        Width of the pulse.
 
     amp :
+        Amplitude
 
     label :
+        Label to add to the pulse.
 
     label_height :
+        Height of the label.
 
     color :
+        Color of the pulse.
 
     modulation :
+        Modulation
 
     Returns
     -------
@@ -169,22 +183,30 @@ def fluxPulse(
     Parameters
     ----------
     ax :
+        Axis to plot on.
 
     pos :
+        Position of the pulse.
 
     y_offs :
+        Vertical offset of the pulse.
 
     width :
+        Width of the pulse.
 
     s :
         smoothness of edge
     amp :
+        Amplitude
 
     label :
+        Label to add to the pulse.
 
     label_height :
+        Height of the label.
 
     color :
+        Color of the pulse.
 
     Returns
     -------
@@ -229,20 +251,26 @@ def ramZPulse(
     Parameters
     ----------
     ax :
-
+        Axis to plot on.
     pos :
+        Position of the pulse.
 
     y_offs :
+        Vertical offset of the pulse.
 
     width :
+        Width of the pulse.
 
     s :
-
+        smoothness of edge
     amp :
+        Amplitude
 
     sep :
+        Separation between pulses.
 
     color :
+        Color of the pulse.
 
     Returns
     -------
@@ -285,24 +313,23 @@ def interval(
     Parameters
     ----------
     ax :
-
-    start :
-
-    stop :
-
+        Axis to plot on.
+    pos :
+        Position of the pulse.
     y_offs :
-
-    height :
-
-    label :
-
-    label_height :
-
-    vlines :
-
+        Vertical offset of the pulse.
+    width :
+        Width of the pulse.
+    s :
+        smoothness of edge
+    amp :
+        Amplitude
+    sep :
+        Separation between pulses.
     color :
+        Color of the pulse.
+    arrow_style :
 
-    arrowstyle :
 
     Returns
     -------

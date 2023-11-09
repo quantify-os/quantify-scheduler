@@ -98,7 +98,6 @@ class X(Rxy):
     r"""
     A single qubit rotation of 180 degrees around the X-axis.
 
-
     This operation can be represented by the following unitary:
 
     .. math::
@@ -214,6 +213,8 @@ class Y90(Rxy):
 
     def __str__(self) -> str:
         """
+        Returns a unique, evaluable string for unchanged data.
+
         Returns a concise string representation
         which can be evaluated into a new instance
         using :code:`eval(str(operation))` only when the
@@ -291,7 +292,6 @@ class Z(Rz):
     r"""
     A single qubit rotation of 180 degrees around the Z-axis.
 
-
     Note that the gate implements :math:`R_z(\pi) = -iZ`, adding a global phase of :math:`-\pi/2`.
     This operation can be represented by the following unitary:
 
@@ -322,7 +322,6 @@ class Z(Rz):
 class Z90(Rz):
     r"""
     A single qubit rotation of 90 degrees around the Z-axis.
-
 
     This operation can be represented by the following unitary:
 

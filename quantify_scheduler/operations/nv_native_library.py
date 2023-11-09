@@ -10,20 +10,18 @@ from ..enums import BinMode
 class ChargeReset(Operation):
     r"""
     Prepare a NV to its negative charge state NV$^-$.
+
+    Create a new instance of ChargeReset operation that is used to initialize the
+    charge state of an NV center.
+
+    Parameters
+    ----------
+    qubit
+        The qubit to charge-reset. NB one or more qubits can be specified, e.g.,
+        :code:`ChargeReset("qe0")`, :code:`ChargeReset("qe0", "qe1", "qe2")`, etc..
     """
 
     def __init__(self, *qubits: str):
-        """
-        Create a new instance of ChargeReset operation that is used to initialize the
-        charge state of an NV center.
-
-        Parameters
-        ----------
-        qubit
-            The qubit to charge-reset. NB one or more qubits can be specified, e.g.,
-            :code:`ChargeReset("qe0")`, :code:`ChargeReset("qe0", "qe1", "qe2")`, etc..
-        """
-
         super().__init__(name=f"ChargeReset {', '.join(qubits)}")
         self.data.update(
             {
@@ -47,8 +45,28 @@ class ChargeReset(Operation):
 
 class CRCount(Operation):
     r"""
-    run the ionization laser and the spin pump laser with a photon count to perform a
-    charge and resonance count.
+    Operate ionization and spin pump lasers for charge and resonance counting.
+
+    Gate level description for an optical CR count measurement.
+
+    The measurement is compiled according to the type of acquisition specified
+    in the device configuration.
+
+    Parameters
+    ----------
+    qubits
+        The qubits you want to measure
+    acq_index
+        Index of the register where the measurement is stored.
+        If None specified, it will default to a list of zeros of len(qubits)
+    acq_protocol
+        Acquisition protocol (currently ``"TriggerCount"`` and ``"Trace"``)
+        are supported. If ``None`` is specified, the default protocol is chosen
+        based on the device and backend configuration.
+    bin_mode
+        The binning mode that is to be used. If not None, it will overwrite
+        the binning mode used for Measurements in the quantum-circuit to
+        quantum-device compilation step.
     """
 
     def __init__(
@@ -63,29 +81,6 @@ class CRCount(Operation):
         ] = None,
         bin_mode: BinMode = None,
     ):
-        """
-        Gate level description for an optical CR count measurement.
-
-        The measurement is compiled according to the type of acquisition specified
-        in the device configuration.
-
-        Parameters
-        ----------
-        qubits
-            The qubits you want to measure
-        acq_index
-            Index of the register where the measurement is stored.
-            If None specified, it will default to a list of zeros of len(qubits)
-        acq_protocol
-            Acquisition protocol (currently ``"TriggerCount"`` and ``"Trace"``)
-            are supported. If ``None`` is specified, the default protocol is chosen
-            based on the device and backend configuration.
-        bin_mode
-            The binning mode that is to be used. If not None, it will overwrite
-            the binning mode used for Measurements in the quantum-circuit to
-            quantum-device compilation step.
-        """
-
         # this if else statement a workaround to support multiplexed measurements (#262)
 
         # this snippet has some automatic behaviour that is error prone.

@@ -36,7 +36,8 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
     def __new__(
         cls, instrument_reference: Union[str, InstrumentBase] = DEFAULT_NAME
     ) -> base.InstrumentCoordinatorComponentBase:
-        """Keeps track of the instances of this class.
+        """
+        Keeps track of the instances of this class.
 
         NB This is done intentionally to prevent the instances from being garbage
         collected.
@@ -63,7 +64,9 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
     @property
     def instrument(self):
         """
-        Overwrite the instrument method. There is no instrument for the
+        Overwrite the instrument method.
+
+        There is no instrument for the
         GenericInstrumentCoordinatorComponent class.
         """
         raise NotImplementedError
@@ -71,25 +74,30 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
     @property
     def is_running(self) -> bool:
         """
-        The is_running state refers to a state whether an instrument is capable of
-        running in a program. Not to be confused with the on/off state of an
+        A state whether an instrument is capable of running in a program.
+
+        Not to be confused with the on/off state of an
         instrument.
         """
         return True
 
     def start(self) -> None:
+        """Start the instrument."""
         pass
 
     def stop(self) -> None:
+        """Stop the instrument."""
         pass
 
     # pylint: disable=arguments-differ
     def prepare(self, params_config: Dict[str, Any]) -> None:
         """
+        Prepare the instrument.
+
         params_config has keys which should correspond to parameter names of the
         instrument and the corresponding values to be set. Always ensure that the
         key to the params_config is in the format 'instrument_name.parameter_name'
-        For example,
+        See example below.
 
         .. code-block:: python
 
@@ -106,9 +114,10 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
 
     def _set_params_to_devices(self, params_config) -> None:
         """
-        This function sets the parameters in the params_config dict to the generic
-        devices set in the hardware_config. The bool force_set_parameters is used to
-        change the lazy_set behaviour.
+        Set the parameters in the params_config dict to the generic devices set in the hardware_config.
+
+        The bool force_set_parameters is used to
+        change the lazy_set behavior.
         """
         for key, value in params_config.items():
             if "." not in key:
@@ -140,13 +149,16 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
                     ) from e
 
     def retrieve_acquisition(self) -> Any:
+        """Retrieve acquisition."""
         pass
 
     def get_hardware_log(
         self,
         compiled_schedule: CompiledSchedule,
     ) -> dict | None:
+        """Get the hardware log."""
         return None
 
     def wait_done(self, timeout_sec: int = 10) -> None:
+        """Wait till done."""
         _ = timeout_sec  # Unused argument

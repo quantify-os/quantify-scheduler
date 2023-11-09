@@ -24,10 +24,17 @@ def gate_box(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
 
     Parameters
     ----------
-    ax
-    time
-    qubit_idxs
-    text
+    ax :
+        The matplotlib Axes.
+    time :
+        The time of the gate.
+    qubit_idxs :
+        The qubit indices.
+    text :
+        The gate name.
+    kw :
+        Additional keyword arguments to be passed to drawing the gate box.
+
     """
     for qubit_idx in qubit_idxs:
         ps.box_text(
@@ -49,10 +56,17 @@ def pulse_baseband(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw
 
     Parameters
     ----------
-    ax
-    time
-    qubit_idxs
-    text
+    ax :
+        The matplotlib Axes.
+    time :
+        The time of the pulse.
+    qubit_idxs :
+        The qubit indices.
+    text :
+        The pulse name.
+    kw :
+        Additional keyword arguments to be passed to drawing the pulse.
+
     """
     cartoon_width = 0.6
     for qubit_idx in qubit_idxs:
@@ -75,10 +89,16 @@ def pulse_modulated(ax: Axes, time: float, qubit_idxs: List[int], text: str, **k
 
     Parameters
     ----------
-    ax
-    time
-    qubit_idxs
-    text
+    ax :
+        The matplotlib Axes.
+    time :
+        The time of the pulse.
+    qubit_idxs :
+        The qubit indices.
+    text :
+        The pulse name.
+    kw :
+        Additional keyword arguments to be passed to drawing the pulse.
     """
     cartoon_width = 0.6
     for qubit_idx in qubit_idxs:
@@ -100,10 +120,16 @@ def meter(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
 
     Parameters
     ----------
-    ax
-    time
-    qubit_idxs
-    text
+    ax :
+        The matplotlib Axes.
+    time :
+        The time of the measurement.
+    qubit_idxs :
+        The qubit indices.
+    text :
+        The measurement name.
+    kw :
+        Additional keyword arguments to be passed to drawing the meter.
     """
     for qubit_idx in qubit_idxs:
         ps.meter(
@@ -125,10 +151,16 @@ def acq_meter(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
 
     Parameters
     ----------
-    ax
-    time
-    qubit_idxs
-    text
+    ax :
+        The matplotlib Axes.
+    time :
+        The time of the measurement.
+    qubit_idxs :
+        The qubit indices.
+    text :
+        The measurement name.
+    kw :
+        Additional keyword arguments to be passed to drawing the acq meter.
     """
     for qubit_idx in qubit_idxs:
         ps.meter(
@@ -150,10 +182,16 @@ def acq_meter_text(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw
 
     Parameters
     ----------
-    ax
-    time
-    qubit_idxs
-    text
+    ax :
+        The matplotlib Axes.
+    time :
+        The time of the measurement.
+    qubit_idxs :
+        The qubit indices.
+    text :
+        The measurement name.
+    kw :
+        Additional keyword arguments to be passed to drawing the acq meter.
     """
     acq_meter(ax, time, qubit_idxs, text, **kw)
     ax.text(time, max(qubit_idxs) + 0.45, text, ha="center", va="center", zorder=6)
@@ -166,10 +204,16 @@ def cnot(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
 
     Parameters
     ----------
-    ax
-    time
-    qubit_idxs
-    text
+    ax :
+        The matplotlib Axes.
+    time :
+        The time of the CNOT.
+    qubit_idxs :
+        The qubit indices.
+    text :
+        The CNOT name.
+    kw :
+        Additional keyword arguments to be passed to drawing the CNOT.
     """
     ax.plot(
         [time, time], qubit_idxs, marker="o", markersize=15, color=constants.COLOR_BLUE
@@ -184,10 +228,16 @@ def cz(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
 
     Parameters
     ----------
-    ax
-    time
-    qubit_idxs
-    text
+    ax :
+        The matplotlib Axes.
+    time :
+        The time of the CZ.
+    qubit_idxs :
+        The qubit indices.
+    text :
+        The CZ name.
+    kw :
+        Additional keyword arguments to be passed to drawing the CZ.
     """
     ax.plot(
         [time, time], qubit_idxs, marker="o", markersize=15, color=constants.COLOR_BLUE
@@ -206,7 +256,10 @@ def reset(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
         x position to draw the reset on
     qubit_idxs
         indices of the qubits that the reset is performed on.
-    text
+    text :
+        The reset name.
+    kw :
+        Additional keyword arguments to be passed to drawing the reset.
     """
     for qubit_idx in qubit_idxs:
         ps.box_text(
@@ -223,9 +276,7 @@ def reset(ax: Axes, time: float, qubit_idxs: List[int], text: str, **kw):
 
 
 def _locate_qubit_in_address(qubit_map, address):
-    """
-    Returns the name of a qubit in  a pulse address.
-    """
+    """Returns the name of a qubit in  a pulse address."""
     if address is None:
         raise ValueError(f"Could not resolve address '{address}'")
     for sub_addr in address.split(":"):

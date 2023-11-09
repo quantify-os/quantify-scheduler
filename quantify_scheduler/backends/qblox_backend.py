@@ -28,7 +28,8 @@ from quantify_scheduler.operations.stitched_pulse import StitchedPulse
 
 
 def _get_square_pulses_to_replace(schedule: Schedule) -> Dict[str, List[int]]:
-    """Generate a dict referring to long square pulses to replace in the schedule.
+    """
+    Generate a dict referring to long square pulses to replace in the schedule.
 
     This function generates a mapping (dict) from the keys in the
     :meth:`~quantify_scheduler.schedules.schedule.ScheduleBase.operations` dict to a
@@ -63,7 +64,8 @@ def _get_square_pulses_to_replace(schedule: Schedule) -> Dict[str, List[int]]:
 def _replace_long_square_pulses(
     schedule: Schedule, pulse_idx_map: Dict[str, List[int]]
 ) -> Schedule:
-    """Replace any square pulses indicated by pulse_idx_map by a `long_square_pulse`.
+    """
+    Replace any square pulses indicated by pulse_idx_map by a `long_square_pulse`.
 
     Parameters
     ----------
@@ -114,7 +116,8 @@ def _replace_long_square_pulses(
 
 
 def compile_long_square_pulses_to_awg_offsets(schedule: Schedule, **_: Any) -> Schedule:
-    """Replace square pulses in the schedule with long square pulses.
+    """
+    Replace square pulses in the schedule with long square pulses.
 
     Introspects operations in the schedule to find square pulses with a duration
     longer than

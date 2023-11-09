@@ -40,7 +40,8 @@ from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 def generate_waveform_data(
     data_dict: dict, sampling_rate: float, duration: Optional[float] = None
 ) -> np.ndarray:
-    """Generates an array using the parameters specified in ``data_dict``.
+    """
+    Generates an array using the parameters specified in ``data_dict``.
 
     Parameters
     ----------
@@ -191,7 +192,6 @@ def output_name_to_output_indices(
     :
         A tuple containing output indices corresponding to certain physical module outputs.
     """
-
     return {
         "complex_output_0": (0, 1),
         "complex_output_1": (2, 3),
@@ -225,7 +225,6 @@ def input_name_to_input_indices(input_name: str) -> Union[Tuple[int], Tuple[int,
     :
         A tuple containing input indices corresponding to certain physical module inputs.
     """
-
     return {
         "complex_input_0": (0, 1),
         "real_input_0": (0,),
@@ -400,7 +399,6 @@ def is_multiple_of_grid_time(
     :
         `True` if `time` is a multiple of the grid time, `False` otherwise.
     """
-
     try:
         _ = to_grid_time(time=time, grid_time_ns=grid_time_ns)
     except ValueError:
@@ -427,7 +425,6 @@ def is_within_half_grid_time(a, b, grid_time_ns: int = constants.GRID_TIME):
     :
         `True` if `a` and `b`  are less than half grid time apart, `False` otherwise.
     """
-
     tolerance = 0.5e-9 * grid_time_ns
     within_half_grid_time = math.isclose(
         a, b, abs_tol=tolerance, rel_tol=0
@@ -496,6 +493,8 @@ def get_nco_set_frequency_arguments(frequency_hz: float) -> int:
 
 @dataclasses.dataclass
 class Frequencies:
+    """Holds and validates frequencies."""
+
     clock: float
     LO: Optional[float] = None
     IF: Optional[float] = None
@@ -507,6 +506,7 @@ class Frequencies:
             self.IF = None
 
     def validate(self):
+        """Validates frequencies."""
         if self.clock is None or math.isnan(self.clock):
             raise ValueError(f"Clock frequency must be specified ({self.clock=}).")
         for freq in [self.LO, self.IF]:
@@ -521,7 +521,7 @@ def determine_clock_lo_interm_freqs(
     downconverter_freq: Optional[float] = None,
     mix_lo: bool = True,
 ) -> Frequencies:
-    """
+    r"""
     From known frequency for the local oscillator or known intermodulation frequency,
     determine any missing frequency, after optionally applying `downconverter_freq` to
     the clock frequency.
@@ -559,6 +559,7 @@ def determine_clock_lo_interm_freqs(
         ``null``/``None`` instead.
     RuntimeWarning
         In case LO is overridden to clock due to `mix_lo` being `False`
+
     Raises
     ------
     ValueError
@@ -656,7 +657,6 @@ def generate_port_clock_to_device_map(
     ValueError
         If a port-clock combination occurs multiple times in the hardware configuration.
     """
-
     portclock_map = {}
     for device_name, device_info in hardware_cfg.items():
         if not isinstance(device_info, dict):
@@ -708,7 +708,6 @@ def assign_pulse_and_acq_info_to_devices(
         This exception is raised when attempting to assign an acquisition with a
         port-clock combination that is not defined in the hardware configuration.
     """
-
     portclock_mapping = generate_port_clock_to_device_map(hardware_cfg)
 
     for schedulable in schedule.schedulables.values():
@@ -986,14 +985,14 @@ def generate_hardware_config(schedule: Schedule, compilation_config: Compilation
     """
     Extract the old-style Qblox hardware config from the CompilationConfig.
 
-    Only the port-clok combinations that are used in the schedule are included in the
+    Only the port-clock combinations that are used in the schedule are included in the
     old-style hardware config.
 
     Parameters
     ----------
     schedule: Schedule
         Schedule from which the port-clock combinations are extracted.
-    config : CompilationConfig
+    compilation_config : CompilationConfig
         CompilationConfig from which hardware config is extracted.
 
     Returns

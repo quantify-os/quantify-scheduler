@@ -24,17 +24,15 @@ class CompilerContainer:
 
     It is recommended to construct this object using the ``from_hardware_cfg`` factory
     method.
+
+
+    Parameters
+    ----------
+    schedule
+        The schedule to be compiled.
     """
 
     def __init__(self, schedule: Schedule):
-        """
-        Constructor for the instrument container.
-
-        Parameters
-        ----------
-        schedule
-            The schedule to be compiled.
-        """
         self.total_play_time = get_total_duration(schedule)
         """
         The total duration of the schedule in absolute time this class will be
@@ -76,7 +74,6 @@ class CompilerContainer:
             Dictionary containing all the compiled programs for each instrument. The key
             refers to the name of the instrument that the program belongs to.
         """
-
         # for now name is hardcoded, but should be read from config.
         compiled_schedule = {}
         for name, compiler in self.instrument_compilers.items():

@@ -1,6 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-
+"""The module provides classes related CZ operations."""
 from typing import Dict, Any
 
 from qcodes.instrument import InstrumentChannel
@@ -15,9 +15,7 @@ from quantify_scheduler.resources import BasebandClockResource
 
 
 class CZ(InstrumentChannel):
-    """
-    Submodule containing parameters for performing a CZ operation
-    """
+    """Submodule containing parameters for performing a CZ operation."""
 
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
         super().__init__(parent=parent, name=name)
@@ -65,8 +63,9 @@ class CZ(InstrumentChannel):
 
 class CompositeSquareEdge(Edge):
     """
-    An example Edge implementation which connects two BasicTransmonElements within a
-    QuantumDevice. This edge implements a square flux pulse and two virtual z
+    An example Edge implementation which connects two BasicTransmonElements.
+
+    This edge implements a square flux pulse and two virtual z
     phase corrections for the CZ operation between the two BasicTransmonElements.
     """
 
@@ -88,6 +87,8 @@ class CompositeSquareEdge(Edge):
 
     def generate_edge_config(self) -> Dict[str, Dict[str, OperationCompilationConfig]]:
         """
+        Generate valid device config.
+
         Fills in the edges information to produce a valid device config for the
         quantify-scheduler making use of the
         :func:`~.circuit_to_device._compile_circuit_to_device` function.

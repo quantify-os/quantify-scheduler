@@ -19,9 +19,7 @@ raise_on_version_mismatch: bool = True
 
 
 class DriverVersionError(Exception):
-    """
-    Raise when the installed driver version is not supported
-    """
+    """Raise when the installed driver version is not supported."""
 
 
 def verify_qblox_instruments_version(version: str = driver_version):

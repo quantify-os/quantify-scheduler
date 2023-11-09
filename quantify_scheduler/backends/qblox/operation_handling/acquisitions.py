@@ -17,10 +17,16 @@ from quantify_scheduler.enums import BinMode
 
 
 class AcquisitionStrategyPartial(IOperationStrategy):
-    """Contains the logic shared between all the acquisitions."""
+    """
+    Contains the logic shared between all the acquisitions.
+
+    Parameters
+    ----------
+    operation_info
+        The operation info that corresponds to this operation.
+    """
 
     def __init__(self, operation_info: types.OpInfo):
-        """Constructor of superclass."""
         self._acq_info: types.OpInfo = operation_info
         self.bin_mode: BinMode = operation_info.data["bin_mode"]
         self.acq_channel = operation_info.data["acq_channel"]
@@ -93,9 +99,7 @@ class AcquisitionStrategyPartial(IOperationStrategy):
 
 
 class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
-    """
-    Performs a square acquisition (i.e. without acquisition weights).
-    """
+    """Performs a square acquisition (i.e. without acquisition weights)."""
 
     def generate_data(self, wf_dict: Dict[str, Any]) -> None:
         """Returns None as no waveform is needed."""
@@ -124,7 +128,6 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
         qasm_program
             The QASMProgram to add the assembly instructions to.
         """
-
         if self.bin_idx_register is None:
             raise ValueError(
                 "Attempting to add acquisition with append binmode. "
@@ -176,17 +179,14 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
 class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
     """
     Performs a weighted acquisition.
+
+    Parameters
+    ----------
+    operation_info
+        The operation info that corresponds to this acquisition.
     """
 
     def __init__(self, operation_info: types.OpInfo):
-        """
-        Constructor for this strategy.
-
-        Parameters
-        ----------
-        operation_info
-            The operation info that corresponds to this acquisition.
-        """
         super().__init__(operation_info)
         self.waveform_index0: Optional[int] = None
         self.waveform_index1: Optional[int] = None
@@ -299,7 +299,6 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
         qasm_program
             The QASMProgram to add the assembly instructions to.
         """
-
         if self.bin_idx_register is None:
             raise ValueError(
                 "Attempting to add acquisition with append binmode. "
@@ -345,9 +344,7 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
 
 
 class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
-    """
-    Performs a trigger count acquisition.
-    """
+    """Performs a trigger count acquisition."""
 
     def generate_data(self, wf_dict: Dict[str, Any]) -> None:
         """Returns None as no waveform is needed."""
@@ -363,7 +360,6 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
         qasm_program
             The QASMProgram to add the assembly instructions to.
         """
-
         bin_idx = self.operation_info.data["acq_index"]
 
         qasm_program.emit(
@@ -403,7 +399,6 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
         qasm_program
             The QASMProgram to add the assembly instructions to.
         """
-
         if self.bin_idx_register is None:
             raise ValueError(
                 "Attempting to add acquisition with append binmode. "

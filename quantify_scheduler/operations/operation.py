@@ -56,6 +56,7 @@ class Operation(JSONSchemaValMixin, UserDict):
         Two different Operations containing the same information generate the
         same hash and are considered identical.
     """
+
     # pylint: enable=line-too-long
 
     schema_filename = "operation.json"
@@ -79,6 +80,7 @@ class Operation(JSONSchemaValMixin, UserDict):
         Parameters
         ----------
         other
+            The other operation to compare to.
 
         Returns
         -------
@@ -88,6 +90,8 @@ class Operation(JSONSchemaValMixin, UserDict):
 
     def __str__(self) -> str:
         """
+        Returns a unique, evaluable string for unchanged data.
+
         Returns a concise string representation which can be evaluated into a new
         instance using :code:`eval(str(operation))` only when the data dictionary has
         not been modified.
@@ -133,8 +137,7 @@ class Operation(JSONSchemaValMixin, UserDict):
     @property
     def duration(self) -> float:
         """
-        Determine the duration of the operation based on the pulses described in
-        pulse_info.
+        Determine operation duration from pulse_info.
 
         If the operation contains no pulse info, it is assumed to be ideal and
         have zero duration.
@@ -179,6 +182,7 @@ class Operation(JSONSchemaValMixin, UserDict):
             Parameters
             ----------
             key
+                The parameter key
 
             Returns
             -------
@@ -209,8 +213,7 @@ class Operation(JSONSchemaValMixin, UserDict):
 
     def add_device_representation(self, device_operation: Operation) -> None:
         """
-        Takes the information that specifies how to represent an operation at the
-        quantum-device abstraction layer and adds it to the current operation.
+        Adds device-level representation details to the current operation.
 
         Parameters
         ----------
@@ -248,8 +251,8 @@ class Operation(JSONSchemaValMixin, UserDict):
     @classmethod
     def is_valid(cls, object_to_be_validated) -> bool:
         """
-        Checks if the contents of the object_to_be_validated are valid
-        according to the schema.
+        Validates the object's contents against the schema.
+
         Additionally checks if the hash property of the object evaluates correctly.
         """
         valid_operation = super().is_valid(object_to_be_validated)
@@ -261,39 +264,28 @@ class Operation(JSONSchemaValMixin, UserDict):
 
     @property
     def valid_gate(self) -> bool:
-        """
-        An operation is a valid gate if it contains information on how to represent
-        the operation on the gate level.
-        """
+        """An operation is a valid gate if it has gate-level representation details."""
         if self.data["gate_info"]:
             return True
         return False
 
     @property
     def valid_pulse(self) -> bool:
-        """
-        An operation is a valid pulse if it contains information on how to represent
-        the operation on the pulse level.
-        """
+        """An operation is a valid pulse if it has pulse-level representation details."""
         if self.data["pulse_info"]:
             return True
         return False
 
     @property
     def valid_acquisition(self) -> bool:
-        """
-        An operation is a valid acquisition if it contains information on how to
-        represent the operation as a acquisition on the pulse level.
-        """
+        """An operation is a valid acquisition if it has pulse-level acquisition representation details."""
         if len(self.data["acquisition_info"]) > 0:
             return True
         return False
 
     @property
     def has_voltage_offset(self) -> bool:
-        """
-        Checks if the operation contains information for a voltage offset.
-        """
+        """Checks if the operation contains information for a voltage offset."""
         if any(
             "offset_path_0" in pulse_info or "offset_path_1" in pulse_info
             for pulse_info in self.data["pulse_info"]

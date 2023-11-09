@@ -1,8 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-"""
-Schedules intended to verify (test) functionality of the system.
-"""
+"""Schedules intended to verify (test) functionality of the system."""
 
 from __future__ import annotations
 

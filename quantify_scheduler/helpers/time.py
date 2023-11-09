@@ -2,6 +2,7 @@
 # Licensed according to the LICENCE file on the main branch
 """
 Python time wrapper functions.
+
 These function help to make time dependent modules testable.
 """
 
@@ -25,7 +26,9 @@ def get_time() -> float:
 
 def sleep(seconds: float) -> None:
     """
-    Delay execution for a given number of seconds. The argument may be a floating point
+    Delay execution for a given number of seconds.
+
+    The argument may be a floating point
     number for subsecond precision.
 
     Parameters

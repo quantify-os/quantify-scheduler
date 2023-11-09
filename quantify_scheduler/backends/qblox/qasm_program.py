@@ -26,6 +26,16 @@ class QASMProgram:
 
     Apart from this the class holds some convenience functions that auto generate
     certain instructions with parameters, as well as update the elapsed time.
+
+    Parameters
+    ----------
+    static_hw_properties
+        Dataclass holding the properties of the hardware that this program is to be
+        played on.
+    register_manager
+        The register manager that keeps track of the occupied/available registers.
+    align_fields
+        If True, make QASM program more human-readable by aligning its fields.
     """
 
     def __init__(
@@ -34,19 +44,6 @@ class QASMProgram:
         register_manager: RegisterManager,
         align_fields: bool,
     ):
-        """
-        Instantiates the QASMProgram.
-
-        Parameters
-        ----------
-        static_hw_properties
-            Dataclass holding the properties of the hardware that this program is to be
-            played on.
-        register_manager
-            The register manager that keeps track of the occupied/available registers.
-        align_fields
-            If True, make QASM program more human-readable by aligning its fields.
-        """
         self.register_manager: RegisterManager = register_manager
         """The register manager that keeps track of the occupied/available registers."""
         self.static_hw_properties: StaticHardwareProperties = static_hw_properties
@@ -347,7 +344,6 @@ class QASMProgram:
         operation
             The operation for which this is done. Used for the exception messages.
         """
-
         awg_gain_path0_immediate = self.expand_from_normalised_range(
             amplitude_path0,
             constants.IMMEDIATE_SZ_GAIN,
@@ -461,7 +457,6 @@ class QASMProgram:
 
         Examples
         --------
-
         This adds a loop to the program that loops 10 times over a wait of 100 ns.
 
         .. jupyter-execute::

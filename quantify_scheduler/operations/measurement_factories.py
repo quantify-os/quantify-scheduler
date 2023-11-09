@@ -202,7 +202,8 @@ def optical_measurement(
     pulse_type: Literal["SquarePulse"],
 ) -> Operation:
     # pylint: disable=too-many-locals
-    """Generator function for an optical measurement with multiple excitation pulses.
+    """
+    Generator function for an optical measurement with multiple excitation pulses.
 
     An optical measurement generates a square pulse in the optical range and uses
     either the Trace acquisition to return the output of a photon detector as a
@@ -263,7 +264,6 @@ def optical_measurement(
     NotImplementedError
         If an unknown ``pulse_type`` or ``acq_protocol`` are used.
     """
-
     # ensures default argument is used if not specified at gate level.
     # ideally, this input would not be accepted, but this is a workaround for #267
     if bin_mode is None:

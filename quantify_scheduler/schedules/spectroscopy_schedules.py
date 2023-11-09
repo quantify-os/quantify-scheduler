@@ -1,8 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-"""
-Module containing schedules for common spectroscopy experiments.
-"""
+"""Module containing schedules for common spectroscopy experiments."""
 from __future__ import annotations
 
 from typing import Optional
@@ -520,7 +518,8 @@ def nv_dark_esr_sched(
     qubit: str,
     repetitions: int = 1,
 ) -> Schedule:
-    """Generates a schedule for a dark ESR experiment on an NV-center.
+    """
+    Generates a schedule for a dark ESR experiment on an NV-center.
 
     The spectroscopy frequency is taken from the device element. Please use the clock
     specified in the `spectroscopy_operation` entry of the device config.
@@ -556,7 +555,8 @@ def nv_dark_esr_sched_nco(
     spec_frequencies: np.ndarray,
     repetitions: int = 1,
 ) -> Schedule:
-    """Generates a schedule for a dark ESR experiment on an NV-center, in which
+    """
+    Generates a schedule for a dark ESR experiment on an NV-center, in which
     the NCO frequency is swept.
 
     .. note::

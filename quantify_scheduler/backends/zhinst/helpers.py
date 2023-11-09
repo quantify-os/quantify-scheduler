@@ -152,7 +152,6 @@ def set_and_compile_awg_seqc(
     waveforms_dict:
         The new waveforms for comparison.
     """
-
     awgs = [instrument.awg] if not hasattr(instrument, "awgs") else instrument.awgs
     awg = awgs[awg_index]
 
@@ -382,12 +381,13 @@ def get_readout_channel_bitmask(readout_channels_count: int) -> str:
 def get_sampling_rates(base_sampling_rate: float) -> Dict[int, int]:
     """
     Returns the allowed sampling rate values.
-    See zhinst User manuals, section /DEV..../AWGS/n/TIME
+    See zhinst User manuals, section /DEV..../AWGS/n/TIME.
 
     Parameters
     ----------
     base_sampling_rate :
         The Instruments base sampling rate.
+
     Returns
     -------
     Dict[int, int]

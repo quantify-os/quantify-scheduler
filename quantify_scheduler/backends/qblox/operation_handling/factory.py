@@ -48,7 +48,6 @@ def _get_acquisition_strategy(
     operation_info: OpInfo,
 ) -> acquisitions.AcquisitionStrategyPartial:
     """Handles the logic for determining the correct acquisition type."""
-
     protocol = operation_info.data["protocol"]
     if protocol in ("Trace", "SSBIntegrationComplex", "ThresholdedAcquisition"):
         if protocol == "Trace" and operation_info.data["bin_mode"] == BinMode.APPEND:

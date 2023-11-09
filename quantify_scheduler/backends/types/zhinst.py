@@ -26,7 +26,6 @@ class DeviceType(str, Enum):
 
 @unique
 class ModulationModeType(str, Enum):
-
     """
     The modulation mode enum type.
 
@@ -46,7 +45,6 @@ class ModulationModeType(str, Enum):
 
 @unique
 class SignalModeType(str, Enum):
-
     """
     The signal output enum type.
 
@@ -60,7 +58,6 @@ class SignalModeType(str, Enum):
 
 @unique
 class ReferenceSourceType(str, Enum):
-
     """
     The reference source enum type.
 
@@ -242,6 +239,7 @@ class Device(DataStructure):
 
     @field_validator("channels")
     def generate_channel_list(cls, v, info):
+        """Generate the channel list."""
         if v != []:
             raise ValueError(
                 f"Trying to set 'channels' to {v}, while it is an auto-generated field."
@@ -257,6 +255,7 @@ class Device(DataStructure):
 
     @field_validator("n_channels")
     def calculate_n_channels(cls, v, info):
+        """Calculate the number of channels."""
         if v is not None:
             raise ValueError(
                 f"Trying to set 'n_channels' to {v}, while it is an auto-generated field."
@@ -270,6 +269,7 @@ class Device(DataStructure):
 
     @field_validator("device_type")
     def determine_device_type(cls, v, info):
+        """Determine the device type."""
         if v is not DeviceType.NONE:
             raise ValueError(
                 f"Trying to set 'device_type' to {v}, while it is an auto-generated field."
@@ -282,50 +282,41 @@ class Device(DataStructure):
 
 
 class CommandTableHeader(DataStructure):
-    """
-    The CommandTable header definition.
-    """
+    """The CommandTable header definition."""
 
     version: str = "0.2"
     partial: bool = False
 
 
 class CommandTableEntryValue(DataStructure):
-    """
-    A CommandTable entry definition with a value.
-    """
+    """A CommandTable entry definition with a value."""
 
     value: int
 
 
 class CommandTableWaveform(DataStructure):
-    """
-    The command table waveform properties.
-    """
+    """The command table waveform properties."""
 
     index: int
     length: int
 
 
 class CommandTableEntry(DataStructure):
-    """
-    The definition of a single CommandTable entry.
-    """
+    """The definition of a single CommandTable entry."""
 
     index: int
     waveform: "CommandTableWaveform"
 
 
 class CommandTable(DataStructure):
-    """
-    The CommandTable definition for ZI HDAWG.
-    """
+    """The CommandTable definition for ZI HDAWG."""
 
     header: Optional["CommandTableHeader"] = Field(default=None, validate_default=True)
     table: List["CommandTableEntry"]
 
     @field_validator("header", mode="before")
     def generate_command_table_header(cls, v, values):
+        """Generates command table header."""
         if v is not None:
             raise ValueError(
                 f"Trying to set 'header' to {v}, while it is an auto-generated field."
@@ -420,7 +411,7 @@ class Acquisition(Instruction):
     """
     This instruction indicates that an acquisition is to be triggered in the UHFQA.
     If a waveform_id is specified, this waveform will be used as the integration weight.
-    """
+    """  # noqa: D404
 
     def __repr__(self):
         return (
@@ -433,9 +424,7 @@ class Acquisition(Instruction):
 
 @dataclass(frozen=True)
 class Wave(Instruction):
-    """
-    This instruction indicates that a waveform  should be played.
-    """
+    """This instruction indicates that a waveform should be played."""  # noqa: D404
 
     def __repr__(self):
         return (

@@ -1,13 +1,13 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-
+"""Module containing methods to import and export objects by string."""
 import importlib
 from typing import Any
 
 
 def import_python_object_from_string(function_string: str) -> Any:
     """
-    Import a python object from a string
+    Import a python object from a string.
 
     This function does the inverse operation of
     :func:`export_python_object_to_path_string`.
@@ -21,7 +21,8 @@ def import_python_object_from_string(function_string: str) -> Any:
 
 
 def export_python_object_to_path_string(obj: Any) -> str:
-    """Get the absolute path (dot-separated) to a python object.
+    """
+    Get the absolute path (dot-separated) to a python object.
 
     This function does the inverse operation of
     :func:`import_python_object_from_string`.

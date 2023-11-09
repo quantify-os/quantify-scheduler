@@ -1,3 +1,1 @@
-"""
-Module containing helpers for quantify scheduler.
-"""
+"""Module containing helpers for quantify scheduler."""

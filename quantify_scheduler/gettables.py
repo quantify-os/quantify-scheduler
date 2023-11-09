@@ -57,13 +57,50 @@ class AcquisitionProtocolNotSupportedError(NotImplementedError):
 
 class ScheduleGettable:
     """
-    Generic gettable for a quantify schedule using vector (I,Q) acquisition. Can be
-    set to return either static (demodulated) I and Q values or magnitude and phase.
+    Generic gettable for a quantify schedule using vector (I,Q) acquisition.
 
     The gettable evaluates the parameters passed as `schedule_kwargs`, then generates
     the :class:`quantify_scheduler.schedules.schedule.Schedule` using the
     `schedule_function`, this is then compiled and finally executed by the
     :class:`~.InstrumentCoordinator`.
+
+    ``ScheduleGettable`` can be set to return either static (demodulated) I and Q
+    values or magnitude and phase.
+
+    Parameters
+    ----------
+    quantum_device
+        The qcodes instrument representing the quantum device under test (DUT)
+        containing quantum device properties and setup configuration information.
+    schedule_function
+        A function which returns a
+        :class:`quantify_scheduler.schedules.schedule.Schedule`. The
+        function is required to have the `repetitions` keyword argument.
+    schedule_kwargs
+        The schedule function keyword arguments, when a value in this dictionary is
+        a :class:`~qcodes.instrument.parameter.Parameter`, this parameter will be
+        evaluated every time :code:`.get()` is called before being passed to the
+        :code:`schedule_function`.
+    num_channels
+        The number of channels to expect in the acquisition data.
+    data_labels
+        Allows to specify custom labels. Needs to be precisely 2*num_channels if
+        specified. The order is [Voltage I 0, Voltage Q 0, Voltage I 1, Voltage Q 1,
+        ...], in case real_imag==True, otherwise [Magnitude 0, Phase 0, Magnitude 1,
+        Phase 1, ...].
+    real_imag
+        If true, the gettable returns I, Q values. Otherwise, magnitude and phase
+        (degrees) are returned.
+    batched
+        Used to indicate if the experiment is performed in batches or in an
+        iterative fashion.
+    max_batch_size:
+        Determines the maximum number of points to acquire when acquiring in batched
+        mode. Can be used to split up a program in parts if required due to hardware
+        constraints.
+    always_initialize:
+        If True, then reinitialize the schedule on each invocation of `get`. If
+        False, then only initialize the first invocation of `get`.
     """
 
     def __init__(
@@ -78,45 +115,6 @@ class ScheduleGettable:
         max_batch_size: int = 1024,
         always_initialize: bool = True,
     ) -> None:
-        """
-        Create a new instance of ScheduleGettable which is used to do I and Q
-        acquisition or alternatively magnitude and phase.
-
-        Parameters
-        ----------
-        quantum_device
-            The qcodes instrument representing the quantum device under test (DUT)
-            containing quantum device properties and setup configuration information.
-        schedule_function
-            A function which returns a
-            :class:`quantify_scheduler.schedules.schedule.Schedule`. The
-            function is required to have the `repetitions` keyword argument.
-        schedule_kwargs
-            The schedule function keyword arguments, when a value in this dictionary is
-            a :class:`~qcodes.instrument.parameter.Parameter`, this parameter will be
-            evaluated every time :code:`.get()` is called before being passed to the
-            :code:`schedule_function`.
-        num_channels
-            The number of channels to expect in the acquisition data.
-        data_labels
-            Allows to specify custom labels. Needs to be precisely 2*num_channels if
-            specified. The order is [Voltage I 0, Voltage Q 0, Voltage I 1, Voltage Q 1,
-            ...], in case real_imag==True, otherwise [Magnitude 0, Phase 0, Magnitude 1,
-            Phase 1, ...].
-        real_imag
-            If true, the gettable returns I, Q values. Otherwise, magnitude and phase
-            (degrees) are returned.
-        batched
-            Used to indicate if the experiment is performed in batches or in an
-            iterative fashion.
-        max_batch_size:
-            Determines the maximum number of points to acquire when acquiring in batched
-            mode. Can be used to split up a program in parts if required due to hardware
-            constraints.
-        always_initialize:
-            If True, then reinitialize the schedule on each invocation of `get`. If
-            False, then only initialize the first invocation of `get`.
-        """
         self._data_labels_specified = data_labels is not None
 
         self.always_initialize = always_initialize

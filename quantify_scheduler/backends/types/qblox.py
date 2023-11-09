@@ -36,9 +36,7 @@ class BoundedParameter:
 
 @dataclass(frozen=True)
 class StaticHardwareProperties:
-    """
-    Specifies the fixed hardware properties needed in the backend.
-    """
+    """Specifies the fixed hardware properties needed in the backend."""
 
     instrument_type: str
     """The type of instrument."""
@@ -90,7 +88,8 @@ class OpInfo(DataClassJsonMixin):
 
     @property
     def is_real_time_io_operation(self) -> bool:
-        """Returns ``True`` if the operation is a non-idle pulse (i.e., it has a
+        """
+        Returns ``True`` if the operation is a non-idle pulse (i.e., it has a
         waveform), ``False`` otherwise.
         """
         return (
@@ -101,24 +100,34 @@ class OpInfo(DataClassJsonMixin):
 
     @property
     def is_offset_instruction(self) -> bool:
-        """Returns ``True`` if the operation describes a DC offset operation,
+        """
+        Returns ``True`` if the operation describes a DC offset operation,
         corresponding to the Q1ASM instruction ``set_awg_offset``.
         """
         return "offset_path_0" in self.data or "offset_path_1" in self.data
 
     @property
     def is_parameter_update(self) -> bool:
-        """Return ``True`` if the operation is a parameter update, corresponding to the
+        """
+        Return ``True`` if the operation is a parameter update, corresponding to the
         Q1ASM instruction ``upd_param``.
         """
         return self.data.get("instruction", "") == q1asm_instructions.UPDATE_PARAMETERS
 
     @property
     def is_loop(self) -> bool:
+        """
+        Return ``True`` if the operation is a loop, corresponding to the Q1ASM
+        instruction ``loop``.
+        """
         return self.data.get("repetitions", None) is not None
 
     @property
     def is_return_stack(self) -> bool:
+        """
+        Return ``True`` if the operation is a return stack, corresponding to the Q1ASM
+        instruction ``return_stack``.
+        """
         return self.data.get("return_stack", None) is not None
 
     def __str__(self):
@@ -138,9 +147,7 @@ class OpInfo(DataClassJsonMixin):
 
 @dataclass(frozen=True)
 class LOSettings(DataClassJsonMixin):
-    """
-    Dataclass containing all the settings for a generic LO instrument.
-    """
+    """Dataclass containing all the settings for a generic LO instrument."""
 
     power: Dict[str, float]
     """Power of the LO source."""
@@ -164,7 +171,6 @@ class LOSettings(DataClassJsonMixin):
         :
             Instantiated LOSettings from the mapping dict.
         """
-
         if "power" not in mapping:
             raise KeyError(
                 "Attempting to compile settings for a local oscillator but 'power' is "
@@ -425,7 +431,6 @@ class SequencerSettings(DataClassJsonMixin):
         : SequencerSettings
             A SequencerSettings instance with initial values.
         """
-
         T = TypeVar("T", int, float)
 
         def extract_and_verify_range(

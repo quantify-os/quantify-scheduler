@@ -1,9 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 # pylint: disable=(invalid-name)
-"""
-Code to set up a mock setup for use in tutorials and testing.
-"""
+"""Code to set up a mock setup for use in tutorials and testing."""
 
 from typing import Any, Dict
 
@@ -20,7 +18,7 @@ from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 
 def set_up_mock_transmon_setup() -> Dict:
     """
-    Sets up a system containing 5 transmon qubits connected in a star shape.
+    Set up a system containing 5 transmon qubits connected in a star shape.
 
     .. code-block::
 
@@ -32,8 +30,7 @@ def set_up_mock_transmon_setup() -> Dict:
 
     Returns a dictionary containing the instruments that are instantiated as part of
     this setup. The keys corresponds to the names of the instruments.
-    """
-
+    """  # noqa: D301
     meas_ctrl = MeasurementControl("meas_ctrl")
     instrument_coordinator = InstrumentCoordinator(
         name="instrument_coordinator", add_default_generic_icc=False
@@ -94,7 +91,8 @@ def set_up_mock_transmon_setup() -> Dict:
 
 def set_standard_params_transmon(mock_setup):
     """
-    Sets somewhat standard parameters to the mock setup generated above.
+    Set somewhat standard parameters to the mock setup generated above.
+
     These parameters serve so that the quantum-device is capable of generating
     a configuration that can be used for compiling schedules.
 
@@ -103,7 +101,6 @@ def set_standard_params_transmon(mock_setup):
     values. The values here are chosen to reflect typical values as used in practical
     experiments.
     """
-
     q0 = mock_setup["q0"]
     q0.rxy.amp180(0.115)
     q0.rxy.motzoi(0.1)
@@ -147,7 +144,8 @@ def set_standard_params_transmon(mock_setup):
 
 
 def set_up_mock_basic_nv_setup() -> Dict:
-    """Sets up a system containing 1 electronic qubit in an NV center.
+    """
+    Set up a system containing 1 electronic qubit in an NV center.
 
     After usage, close all instruments.
 
@@ -156,7 +154,6 @@ def set_up_mock_basic_nv_setup() -> Dict:
         All instruments created. Containing a "quantum_device", electronic qubit "qe0",
         "meas_ctrl" and "instrument_coordinator".
     """
-
     meas_ctrl = MeasurementControl("meas_ctrl")
     instrument_coordinator = InstrumentCoordinator(
         name="instrument_coordinator", add_default_generic_icc=False
@@ -185,7 +182,8 @@ def set_up_mock_basic_nv_setup() -> Dict:
 
 def set_standard_params_basic_nv(mock_nv_device: Dict[str, Any]) -> None:
     """
-    Sets somewhat standard parameters to the mock setup generated above.
+    Set somewhat standard parameters to the mock setup generated above.
+
     These parameters serve so that the quantum-device is capable of generating
     a configuration that can be used for compiling schedules.
 
@@ -194,7 +192,6 @@ def set_standard_params_basic_nv(mock_nv_device: Dict[str, Any]) -> None:
     values. The values here are chosen to reflect typical values as used in practical
     experiments. All amplitudes for pulses are set to 1e-3.
     """
-
     quantum_device = mock_nv_device["quantum_device"]
     qe0: BasicElectronicNVElement = quantum_device.get_element("qe0")
     qe0.clock_freqs.f01.set(3.592e9)

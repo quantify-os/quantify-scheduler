@@ -170,7 +170,9 @@ def composite_square_pulse(  # pylint: disable=too-many-arguments
     t0: float = 0,
 ) -> pulse_library.SquarePulse:
     """
-    This is an example composite pulse to implement a CZ gate. It applies the
+    An example composite pulse to implement a CZ gate.
+
+    It applies the
     square pulse and then corrects for the phase shifts on both the qubits.
 
     Parameters
@@ -203,7 +205,6 @@ def composite_square_pulse(  # pylint: disable=too-many-arguments
     :
         SquarePulse operation.
     """
-
     # Start the flux pulse
     composite_pulse = pulse_library.SquarePulse(
         amp=square_amp,
@@ -240,7 +241,8 @@ def nv_spec_pulse_mw(
     port: str,
     reference_magnitude: pulse_library.ReferenceMagnitude | None = None,
 ) -> pulse_library.SkewedHermitePulse:
-    """Generate hermite pulse for spectroscopy experiment.
+    """
+    Generate hermite pulse for spectroscopy experiment.
 
     This is a simplified version of the SkewedHermitePulse. It is not skewed. It also
     sets the phase to 0. This means that no rotation about the z-axis is applied on the
@@ -287,7 +289,8 @@ def long_square_pulse(
     grid_time_ns: int = qblox_constants.GRID_TIME,
     reference_magnitude: pulse_library.ReferenceMagnitude | None = None,
 ) -> StitchedPulse:
-    """Create a long square pulse using DC voltage offsets.
+    """
+    Create a long square pulse using DC voltage offsets.
 
     .. note::
 
@@ -358,7 +361,8 @@ def staircase_pulse(
     grid_time_ns: int = qblox_constants.GRID_TIME,
     reference_magnitude: pulse_library.ReferenceMagnitude | None = None,
 ) -> StitchedPulse:
-    """Create a staircase-shaped pulse using DC voltage offsets.
+    """
+    Create a staircase-shaped pulse using DC voltage offsets.
 
     This function generates a real valued staircase pulse, which reaches its final
     amplitude in discrete steps. In between it will maintain a plateau.
@@ -404,7 +408,6 @@ def staircase_pulse(
     ValueError
         When the duration of a step is not a multiple of ``grid_time_ns``.
     """
-
     builder = StitchedPulseBuilder(port=port, clock=clock, t0=t0)
 
     try:
@@ -438,7 +441,8 @@ def long_ramp_pulse(
     part_duration_ns: int = qblox_constants.STITCHED_PULSE_PART_DURATION_NS,
     reference_magnitude: pulse_library.ReferenceMagnitude | None = None,
 ) -> StitchedPulse:
-    """Creates a long ramp pulse by stitching together shorter ramps.
+    """
+    Creates a long ramp pulse by stitching together shorter ramps.
 
     This function creates a long ramp pulse by stitching together ramp pulses of the
     specified duration ``part_duration_ns``, with DC voltage offset instructions placed

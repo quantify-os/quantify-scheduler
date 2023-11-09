@@ -1,24 +1,23 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Math utility functions module."""
+from __future__ import annotations
 
-from typing import Union
 
-
-def closest_number_ceil(number: Union[int, float], multiple: Union[int, float]) -> int:
+def closest_number_ceil(number: int | float, multiple: int | float) -> int:
     """
     Returns the closest next value that is a multiple of M.
 
     Parameters
     ----------
-    number :
+    number:
         The number.
-    multiple :
+    multiple:
         The modulo or granularity level.
 
     Returns
     -------
-    int
+    :
         The closest next number.
     """
     if not number > 0:

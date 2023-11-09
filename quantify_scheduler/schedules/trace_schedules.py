@@ -1,5 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
+"""Contains various examples of trace schedules."""
 from quantify_scheduler.schedules.schedule import Schedule
 from quantify_scheduler.operations.acquisition_library import Trace
 from quantify_scheduler.operations.gate_library import Measure
@@ -143,7 +144,7 @@ def two_tone_trace_schedule(
     qubit_pulse_port
         The location on the device where the
         qubit pulse should be applied.
-    spec_pulse_clock
+    qubit_pulse_clock
         The reference clock used to track the
         pulse frequency.
     ro_pulse_amp

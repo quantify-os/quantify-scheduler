@@ -1,6 +1,5 @@
 """
-Module containing instruments that represent quantum devices and elements on
-those devices.
+Module containing instruments that represent quantum devices and elements.
 
 The elements and their components are intended to generate valid
 :ref:`device configuration <sec-device-config>` files for compilation from the

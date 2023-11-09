@@ -249,23 +249,22 @@ class CompilationConfig(DataStructure):
 
 
 class CompilationNode:
-    """A node representing a compiler pass."""
+    """
+    A node representing a compiler pass.
+
+    .. note::
+
+        To compile, the :meth:`~.CompilationNode.compile` method should be used.
+
+    Parameters
+    ----------
+    name
+        The name of the node. Should be unique if it is added to a (larger)
+        compilation
+        graph.
+    """
 
     def __init__(self, name: str):
-        """
-        Initialize a node representing a compiler pass.
-
-        .. note::
-
-            To compile, the :meth:`~.CompilationNode.compile` method should be used.
-
-        Parameters
-        ----------
-        name
-            The name of the node. Should be unique if it is added to a (larger)
-            compilation
-            graph.
-        """
         self.name = name
 
     # used as the key in a networkx graph so we like this to be a simple string.
@@ -314,27 +313,26 @@ class CompilationNode:
 
 # pylint: disable=too-few-public-methods
 class SimpleNode(CompilationNode):
-    """A node representing a single compilation pass."""
+    """
+    A node representing a single compilation pass.
+
+    .. note::
+
+        To compile, the :meth:`~.CompilationNode.compile` method should be used.
+
+    Parameters
+    ----------
+    name
+        The name of the node. Should be unique if it is added to a (larger)
+        compilation graph.
+    compilation_func
+        A Callable that will be wrapped in this object. A compilation function
+        should take the intermediate representation (commonly :class:`~.Schedule`)
+        and a config as inputs and returns a new (modified) intermediate
+        representation.
+    """
 
     def __init__(self, name: str, compilation_func: Callable):
-        """
-        Initialize a node representing a single compilation pass.
-
-        .. note::
-
-            To compile, the :meth:`~.CompilationNode.compile` method should be used.
-
-        Parameters
-        ----------
-        name
-            The name of the node. Should be unique if it is added to a (larger)
-            compilation graph.
-        compilation_func
-            A Callable that will be wrapped in this object. A compilation function
-            should take the intermediate representation (commonly :class:`~.Schedule`)
-            and a config as inputs and returns a new (modified) intermediate
-            representation.
-        """
         super().__init__(name=name)
         self.compilation_func = compilation_func
 
@@ -359,20 +357,17 @@ class QuantifyCompiler(CompilationNode):
     The compiler defines a directed acyclic graph containing
     :class:`~.CompilationNode` s. In this graph, nodes represent
     modular compilation passes.
+
+    Parameters
+    ----------
+    name
+        name of the compiler instance
+    quantum_device
+        quantum_device from which a :class:`~.CompilationConfig` will be generated
+        if None is provided for the compile step
     """
 
     def __init__(self, name, quantum_device: Optional[QuantumDevice] = None) -> None:
-        """
-        Initialize a QuantifyCompiler for quantify :class:`~.Schedule` s.
-
-        Parameters
-        ----------
-        name
-            name of the compiler instance
-        quantum_device
-            quantum_device from which a :class:`~.CompilationConfig` will be generated
-            if None is provided for the compile step
-        """
         super().__init__(name=name)
 
         # current implementations use networkx directed graph to store the task graph
