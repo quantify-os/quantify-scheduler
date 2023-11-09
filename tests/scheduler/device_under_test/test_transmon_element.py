@@ -110,41 +110,6 @@ def test_basic_transmon_serialization(
             )
 
 
-def test_reference_magnitude_overwrite_units(q0: BasicTransmonElement):
-    """
-    Tests that the amplitude reference parameters get correctly ovewritten when you
-    call the set method of a different unit parameter
-    """
-    # All units should initially be nan
-    assert math.isnan(q0.rxy.reference_magnitude.dBm())
-    assert math.isnan(q0.rxy.reference_magnitude.V())
-
-    # Set dBm unit
-    q0.rxy.reference_magnitude.dBm(-10)
-    assert q0.rxy.reference_magnitude.dBm() == -10
-    assert math.isnan(q0.rxy.reference_magnitude.V())
-
-    # Set V unit
-    q0.rxy.reference_magnitude.V(10e-3)
-    assert q0.rxy.reference_magnitude.V() == 10e-3
-    assert math.isnan(q0.rxy.reference_magnitude.dBm())
-
-    assert q0.rxy.reference_magnitude.get_val_unit() == (10e-3, "V")
-
-    # Set A unit
-    q0.rxy.reference_magnitude.A(1e-3)
-    assert q0.rxy.reference_magnitude.A() == 1e-3
-    assert math.isnan(q0.rxy.reference_magnitude.V())
-
-    assert q0.rxy.reference_magnitude.get_val_unit() == (1e-3, "A")
-
-    # Set nan
-    q0.rxy.reference_magnitude.V(float("nan"))
-
-    assert math.isnan(q0.rxy.reference_magnitude.V())
-    assert q0.rxy.reference_magnitude.A() == 1e-3
-
-
 def test_basic_transmon_deserialization(q0: BasicTransmonElement, dev: QuantumDevice):
     """
     Tests the deserialization process of :class:`~BasicTransmonElement` by comparing the
@@ -182,6 +147,41 @@ def test_basic_transmon_deserialization(q0: BasicTransmonElement, dev: QuantumDe
     )
 
     deserialized_q0.close()
+
+
+def test_reference_magnitude_overwrite_units(q0: BasicTransmonElement):
+    """
+    Tests that the amplitude reference parameters get correctly ovewritten when you
+    call the set method of a different unit parameter
+    """
+    # All units should initially be nan
+    assert math.isnan(q0.rxy.reference_magnitude.dBm())
+    assert math.isnan(q0.rxy.reference_magnitude.V())
+
+    # Set dBm unit
+    q0.rxy.reference_magnitude.dBm(-10)
+    assert q0.rxy.reference_magnitude.dBm() == -10
+    assert math.isnan(q0.rxy.reference_magnitude.V())
+
+    # Set V unit
+    q0.rxy.reference_magnitude.V(10e-3)
+    assert q0.rxy.reference_magnitude.V() == 10e-3
+    assert math.isnan(q0.rxy.reference_magnitude.dBm())
+
+    assert q0.rxy.reference_magnitude.get_val_unit() == (10e-3, "V")
+
+    # Set A unit
+    q0.rxy.reference_magnitude.A(1e-3)
+    assert q0.rxy.reference_magnitude.A() == 1e-3
+    assert math.isnan(q0.rxy.reference_magnitude.V())
+
+    assert q0.rxy.reference_magnitude.get_val_unit() == (1e-3, "A")
+
+    # Set nan
+    q0.rxy.reference_magnitude.V(float("nan"))
+
+    assert math.isnan(q0.rxy.reference_magnitude.V())
+    assert q0.rxy.reference_magnitude.A() == 1e-3
 
 
 def test_generate_config_measure(q0: BasicTransmonElement):

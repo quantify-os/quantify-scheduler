@@ -1,36 +1,32 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-"""
-Module containing the QuantumDevice object.
-"""
+"""Module containing the QuantumDevice object."""
 from __future__ import annotations
 
 import json
 import os
-import pytz
-from datetime import datetime
-from functools import partial
-from typing import Any, Dict, Optional
+from datetime import datetime, timezone
+from typing import Any
 
 from qcodes.instrument.base import Instrument
 from qcodes.instrument.parameter import InstrumentRefParameter, ManualParameter
 from qcodes.utils import validators
-from quantify_core.data.handling import get_datadir
 
+from quantify_core.data.handling import get_datadir
 from quantify_scheduler.backends.circuit_to_device import _compile_circuit_to_device
 from quantify_scheduler.backends.graph_compilation import (
+    DeviceCompilationConfig,
     SerialCompilationConfig,
     SimpleNodeConfig,
-    DeviceCompilationConfig,
+)
+from quantify_scheduler.backends.qblox_backend import (
+    QbloxHardwareCompilationConfig,
+    compile_long_square_pulses_to_awg_offsets,
 )
 from quantify_scheduler.backends.qblox_backend import hardware_compile as qblox_backend
-from quantify_scheduler.backends.qblox_backend import (
-    compile_long_square_pulses_to_awg_offsets,
-    QbloxHardwareCompilationConfig,
-)
 from quantify_scheduler.backends.types.common import HardwareCompilationConfig
-from quantify_scheduler.backends.zhinst_backend import compile_backend as zhinst_backend
 from quantify_scheduler.backends.zhinst_backend import ZIHardwareCompilationConfig
+from quantify_scheduler.backends.zhinst_backend import compile_backend as zhinst_backend
 from quantify_scheduler.compilation import (
     _determine_absolute_timing,
     flatten_schedule,
@@ -38,7 +34,7 @@ from quantify_scheduler.compilation import (
 )
 from quantify_scheduler.device_under_test.device_element import DeviceElement
 from quantify_scheduler.device_under_test.edge import Edge
-from quantify_scheduler.json_utils import SchedulerJSONEncoder, SchedulerJSONDecoder
+from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEncoder
 
 
 class QuantumDevice(Instrument):
@@ -137,14 +133,13 @@ class QuantumDevice(Instrument):
             initial_value="asap",
         )
 
-        self._deserialized_instruments = {"elements": {}, "edges": {}}
+        self._instrument_references = {}
 
-    def __getstate__(self) -> Dict[str, Any]:
+    def __getstate__(self) -> dict[str, Any]:
         """
         Serializes `QuantumDevice` into a dict containing serialized `DeviceElement`
         and `Edge` objects plus `cfg_sched_repetitions`.
         """
-
         data = {"name": self.name}
 
         data["elements"] = {
@@ -168,25 +163,24 @@ class QuantumDevice(Instrument):
 
         return state
 
-    def __setstate__(self, state: Dict[str, Any]):
+    def __setstate__(self, state: dict[str, Any]) -> None:
         """
         Deserializes a dict of serialized `DeviceElement` and `Edge` objects
         into a `QuantumDevice`.
         """
-
         self.__init__(state["data"]["name"])
 
         for element_name, serialized_element in state["data"]["elements"].items():
-            self._deserialized_instruments["elements"][element_name] = json.loads(
+            self._instrument_references[element_name] = json.loads(
                 serialized_element, cls=SchedulerJSONDecoder
             )
-            self.add_element(self._deserialized_instruments["elements"][element_name])
+            self.add_element(self._instrument_references[element_name])
 
         for edge_name, serialized_edge in state["data"]["edges"].items():
-            self._deserialized_instruments["edges"][edge_name] = json.loads(
+            self._instrument_references[edge_name] = json.loads(
                 serialized_edge, cls=SchedulerJSONDecoder
             )
-            self.add_edge(self._deserialized_instruments["edges"][edge_name])
+            self.add_edge(self._instrument_references[edge_name])
 
         self.cfg_sched_repetitions(int(state["data"]["cfg_sched_repetitions"]))
 
@@ -227,7 +221,7 @@ class QuantumDevice(Instrument):
 
         return json.dumps(self, cls=SchedulerJSONEncoder)
 
-    def to_json_file(self, path: Optional[str] = None) -> str:
+    def to_json_file(self, path: str | None = None) -> str:
         """
         Convert the `QuantumDevice` data structure to a JSON string and store it in a file.
 
@@ -241,11 +235,10 @@ class QuantumDevice(Instrument):
         :
             The name of the file containing the serialized `QuantumDevice`.
         """
-
         if path is None:
             path = get_datadir()
 
-        timestamp = datetime.now(pytz.utc).strftime("%Y-%m-%d_%H-%M-%S_%Z")
+        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S_%Z")
 
         filename = os.path.join(path, f"{self.name}_{timestamp}.json")
         with open(filename, "w") as file:
@@ -268,7 +261,6 @@ class QuantumDevice(Instrument):
         :
             The deserialized `QuantumDevice` object.
         """
-
         return json.loads(data, cls=SchedulerJSONDecoder)
 
     @classmethod
@@ -286,8 +278,7 @@ class QuantumDevice(Instrument):
         :
             The deserialized `QuantumDevice` object.
         """
-
-        with open(filename, "r") as file:
+        with open(filename) as file:
             deserialized_device = cls.from_json(file.read())
         return deserialized_device
 
@@ -296,7 +287,6 @@ class QuantumDevice(Instrument):
         Generates a compilation config for use with a
         :class:`~.graph_compilation.QuantifyCompiler`.
         """
-
         # Part that is always the same
         dev_cfg = self.generate_device_config()
         compilation_passes = [
@@ -369,7 +359,7 @@ class QuantumDevice(Instrument):
 
         return compilation_config
 
-    def generate_hardware_config(self) -> Dict[str, Any]:
+    def generate_hardware_config(self) -> dict[str, Any]:
         """
         Generates a valid hardware configuration describing the quantum device.
 
@@ -390,7 +380,6 @@ class QuantumDevice(Instrument):
         Generates a device config to compile from the quantum-circuit to the
         quantum-device layer.
         """
-
         clocks = {}
         elements_cfg = {}
         edges_cfg = {}
@@ -423,7 +412,6 @@ class QuantumDevice(Instrument):
         Generates a hardware compilation config to compile from the quantum-device to the
         control-hardware layer.
         """
-
         hardware_config = self.hardware_config()
         if hardware_config is None:
             return None
@@ -526,7 +514,7 @@ class QuantumDevice(Instrument):
         """
         if name in self.elements():
             return self.find_instrument(name)
-        raise KeyError(f"'{name}' is not a element of {self.name}.")
+        raise KeyError(f"'{name}' is not an element of {self.name}.")
 
     def add_element(
         self,
@@ -554,22 +542,22 @@ class QuantumDevice(Instrument):
             raise TypeError(f"{repr(element)} is not a DeviceElement.")
 
         self.elements().append(element.name)  # list gets updated in place
+        self._instrument_references[element.name] = element
 
     def remove_element(self, name: str) -> None:
         """
-        Removes a element by name.
+        Removes an element by name.
 
         Parameters
         ----------
         name
             The element name.
         """
-
         self.elements().remove(name)  # list gets updated in place
 
     def get_edge(self, name: str) -> Instrument:
         """
-        Returns a edge by name.
+        Returns an edge by name.
 
         Parameters
         ----------
@@ -588,7 +576,7 @@ class QuantumDevice(Instrument):
         """
         if name in self.edges():
             return self.find_instrument(name)
-        raise KeyError(f"'{name}' is not a edge of {self.name}.")
+        raise KeyError(f"'{name}' is not an edge of {self.name}.")
 
     def add_edge(self, edge: Edge) -> None:
         """
@@ -604,9 +592,10 @@ class QuantumDevice(Instrument):
             raise ValueError(f"'{edge.name}' has already been added.")
 
         if not isinstance(edge, Edge):
-            raise TypeError(f"{repr(edge)} is not a Edge.")
+            raise TypeError(f"{repr(edge)} is not an Edge.")
 
         self.edges().append(edge.name)
+        self._instrument_references[edge.name] = edge
 
     def remove_edge(self, edge_name: str) -> None:
         """
@@ -617,5 +606,4 @@ class QuantumDevice(Instrument):
         edge_name
             The edge name.
         """
-
         self.edges().remove(edge_name)  # list gets updated in place

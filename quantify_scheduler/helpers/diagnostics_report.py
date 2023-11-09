@@ -8,14 +8,13 @@ import os
 import sys
 import traceback
 import zipfile
-from datetime import datetime
+from datetime import datetime, timezone
 from os.path import dirname
 from types import TracebackType
 from typing import Any, Dict, Optional, Tuple, Type, Union
 from uuid import uuid4
 
 import numpy as np
-import pytz
 from qcodes.utils.json_utils import NumpyJSONEncoder
 
 try:
@@ -131,7 +130,7 @@ def _generate_diagnostics_report(  # noqa: PLR0915
     ) as zip_file:
         zip_file.writestr(
             "timestamp.txt",
-            datetime.now(pytz.utc).strftime("%Y-%m-%d_%H-%M-%S_%Z"),
+            datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S_%Z"),
         )
         zip_file.writestr(
             "dependency_versions.json", json.dumps(_get_dependency_versions())
