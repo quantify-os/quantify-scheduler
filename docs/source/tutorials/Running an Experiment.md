@@ -178,10 +178,6 @@ hardware_comp_cfg = {
 single_qubit_device.hardware_config(hardware_comp_cfg)
 ```
 
-```{note}
-The {class}`~.backends.types.common.Connectivity` datastructure is currently under development. Information on the connectivity between port-clock combinations on the quantum device and ports on the control hardware is currently included in the old-style hardware configuration file, which should be included in the `"connectivity"` field of the {class}`~.backends.types.common.HardwareCompilationConfig`.
-```
-
 (create_schedule)=
 ## 4. Schedule Definition and Compilation
 Now we must create a schedule, where we define the set of operations that we

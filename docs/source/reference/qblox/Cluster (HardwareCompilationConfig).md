@@ -291,53 +291,6 @@ hardware_compilation_cfg = {
 }
 ```
 
-### Local Oscillator description
-
-A local oscillator instrument can be used with baseband modules. After adding the instrument, we can reference it in a baseband-module output via the `"lo_name"` key.
-
-The two mandatory parameters are the `"instrument_type"` (which should be `"LocalOscillator"`), and `"power"`. The local oscillator frequency is then controlled through the `"modulation_frequencies"` hardware option (see {ref}`sec-qblox-modulation-frequencies`), under the key of the port-clock combination associated with the baseband-module output.
-
-Note that it is possible to add `"generic_icc_name"` as an optional parameter to the local oscillator hardware description, but only the default name `"generic"` is supported currently with the Qblox backend.
-
-```{code-block} python
----
-  emphasize-lines: 5,6,7,8,13,21
-  linenos: true
----
-hardware_compilation_cfg = {
-    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-    "hardware_description": {
-        "cluster0": {...},
-        "lo1": {
-            "instrument_type": "LocalOscillator",
-            "power": 20
-        },
-    },
-    "hardware_options": {
-        "modulation_frequencies": {
-            "q1:mw-q1.01": {
-                "lo_freq": 5e9
-            }
-        }
-    },
-    "connectivity": {
-        "cluster0": {
-            "cluster0_module1": {
-                "complex_output_1": {
-                    "lo_name": "lo1",
-                    "portclock_configs": [
-                        {
-                            "clock": "q1.01",
-                            "port": "q1:mw"
-                        }
-                    ]
-                },
-            },
-        },
-    }
-}
-```
-
 (sec-qblox-connectivity)=
 
 ## Connectivity

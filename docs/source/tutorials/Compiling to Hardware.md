@@ -49,7 +49,7 @@ Please check the documentation on how to properly create such a configuration fo
 - {ref}`sec-backend-qblox`
 - {ref}`sec-backend-zhinst`
 
-``````{admonition} Creating an example Qblox hardware compilation configuration
+```{admonition} Creating an example Qblox hardware compilation configuration
 :class: dropdown
 
 Below we create an example hardware configuration dictionary, for the Qblox backend.
@@ -60,86 +60,14 @@ In this configuration, we include:
     - A Cluster containing a QCM-RF module (in the 2nd slot).
 - The hardware options we want to use in the compilation.
 - The connectivity between the control hardware and the quantum device.
-
-```{code-block} python
-
-hardware_comp_cfg = {
-    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-    "hardware_description": {
-        "cluster0": {
-            "instrument_type": "Cluster",
-            "ref": "internal",
-            "modules": {
-                "2": {
-                    "instrument_type": "QCM_RF"
-                },
-            },
-        },
-    },
-    "hardware_options": {
-        "modulation_frequencies": {
-            "q0:res-q0.ro": {"interm_freq": 50e6},
-        },
-        "mixer_corrections": {
-            "q0:res-q0.ro": {
-                "dc_offset_i": -0.00552,
-                "dc_offset_q": -0.00556,
-                "amp_ratio": 0.9998,
-                "phase_error": -4.1
-            }
-        }
-    },
-    "connectivity": {
-        "cluster0": {
-            "cluster0_module2": {
-                "complex_output_0": {
-                    "portclock_configs": [
-                        {
-                            "port": "q0:res",
-                            "clock": "q0.ro",
-                        }
-                    ],
-                },
-            },
-        },
-    },
-}
 ```
-
-```{note}
-The {class}`~.backends.types.common.Connectivity` datastructure is currently under development. Information on the connectivity between port-clock combinations on the quantum device and ports on the control hardware is currently included in the old-style hardware configuration file, which should be included in the `"connectivity"` field of the {class}`~.backends.types.common.HardwareCompilationConfig`.
-```
-
-``````
-
-## Compilation
-
-Now we are ready to proceed to the compilation stage. For each of the control stack's instruments, the compilation generates:
-
-- The schedule's absolute timing. During the schedule's definition, we didn't assign absolute times to the operations. Instead, only the duration was defined. For the instruments to know how to execute the schedule, the absolute timing of the operations is calculated.
-- A set of parameters that are used to properly configure each instrument for the execution of the schedule. These parameters typically don't change during the execution of the schedule.
-- A compiled program that contains instructions on what the instrument must do in order for the schedule to be executed.
-
-We perform the compilation via {func}`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler.compile`.
-
-We start by setting the directory where the compiled schedule files will be stored, via [set_datadir](https://quantify-os.org/docs/quantify-core/latest/user/concepts.html#data-directory).
 
 ```{code-cell} ipython3
-
-from quantify_core.data import handling as dh
-
-dh.set_datadir(dh.default_datadir())
-
-
-```
-
-```{code-cell} python
 ---
+tags: [hide-cell]
 mystnb:
-  remove_code_source: true
-  remove_code_outputs: true
+  code_prompt_show: "Example hardware configuration"
 ---
-
 hardware_comp_cfg = {
     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
     "hardware_description": {
@@ -172,6 +100,27 @@ hardware_comp_cfg = {
         ]
     },
 }
+```
+
+## Compilation
+
+Now we are ready to proceed to the compilation stage. For each of the control stack's instruments, the compilation generates:
+
+- The schedule's absolute timing. During the schedule's definition, we didn't assign absolute times to the operations. Instead, only the duration was defined. For the instruments to know how to execute the schedule, the absolute timing of the operations is calculated.
+- A set of parameters that are used to properly configure each instrument for the execution of the schedule. These parameters typically don't change during the execution of the schedule.
+- A compiled program that contains instructions on what the instrument must do in order for the schedule to be executed.
+
+We perform the compilation via {func}`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler.compile`.
+
+We start by setting the directory where the compiled schedule files will be stored, via [set_datadir](https://quantify-os.org/docs/quantify-core/latest/user/concepts.html#data-directory).
+
+```{code-cell} ipython3
+
+from quantify_core.data import handling as dh
+
+dh.set_datadir(dh.default_datadir())
+
+
 ```
 
 Next, we create a device configuration that contains all knowledge of the physical device under test (DUT). To generate it we use the {class}`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` class.

@@ -100,7 +100,7 @@ class Graph(nx.Graph):
     def __init__(
         self, incoming_graph_data=None, **attr  # noqa: ANN001, ANN003
     ) -> None:
-        """"""  # noqa: D419
+        """Create a new graph instance."""
         super().__init__(incoming_graph_data, **attr)
 
     @classmethod
