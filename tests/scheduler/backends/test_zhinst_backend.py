@@ -18,7 +18,11 @@ import pytest
 from pydantic import ValidationError
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends import SerialCompiler, corrections, zhinst_backend
-from quantify_scheduler.backends.types import zhinst
+from quantify_scheduler.backends.graph_compilation import (
+    CompilationConfig,
+    SimpleNodeConfig,
+)
+from quantify_scheduler.backends.types import common, zhinst
 from quantify_scheduler.backends.zhinst import settings
 from quantify_scheduler.backends.zhinst.zhinst_hardware_config_old_style import (
     hardware_config as zhinst_hardware_config_old_style,
@@ -653,6 +657,44 @@ def test_compile_invalid_latency_corrections_hardware_config_raises(
     # should raise a pydantic validation error
     with pytest.raises(ValidationError):
         _ = zhinst_backend.compile_backend(schedule, hardware_cfg)
+
+
+def test_compile_with_third_party_instrument(
+    make_schedule, compile_config_basic_transmon_zhinst_hardware
+):
+    def _third_party_compilation_node(
+        schedule: Schedule, config: CompilationConfig
+    ) -> Schedule:
+        schedule["compiled_instructions"]["third_party_instrument"] = {
+            "setting": "test"
+        }
+        return schedule
+
+    config = deepcopy(compile_config_basic_transmon_zhinst_hardware)
+    config.hardware_compilation_config.hardware_description[
+        "third_party_instrument"
+    ] = common.HardwareDescription(instrument_type="ThirdPartyInstrument")
+    config.hardware_compilation_config.connectivity.graph.add_edge(
+        "third_party_instrument.output", "some_qubit:some_port"
+    )
+    config.compilation_passes.insert(
+        -1,
+        SimpleNodeConfig(
+            name="third_party_instrument_compilation",
+            compilation_func=_third_party_compilation_node,
+        ),
+    )
+
+    compiler = SerialCompiler(name="compiler")
+    comp_sched = compiler.compile(
+        make_schedule(),
+        config=config,
+    )
+
+    assert (
+        comp_sched["compiled_instructions"]["third_party_instrument"]["setting"]
+        == "test"
+    )
 
 
 def test_external_lo_not_present_raises(

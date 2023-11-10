@@ -9,7 +9,7 @@ import re
 import warnings
 from dataclasses import dataclass
 from functools import partial
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Literal, get_args
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Literal, Union, get_args
 
 import numpy as np
 from pydantic import TypeAdapter
@@ -1244,7 +1244,11 @@ def compile_backend(
                 resources=schedule.resources,
             )
 
-    schedule["compiled_instructions"] = device_configs
+    # Create compiled instructions key if not already present. This can happen if this
+    # compilation function is called directly instead of through a `QuantifyCompiler`.
+    if "compiled_instructions" not in schedule:
+        schedule["compiled_instructions"] = {}
+    schedule["compiled_instructions"].update(device_configs)
     schedule._hardware_timing_table = timing_table
     schedule._hardware_waveform_dict = numerical_wf_dict
     compiled_schedule = CompiledSchedule(schedule)
@@ -1262,7 +1266,10 @@ class ZIHardwareCompilationConfig(common.HardwareCompilationConfig):
 
     backend: Callable[[Schedule, Any], Schedule] = compile_backend
     """The compilation backend this configuration is intended for."""
-    hardware_description: Dict[str, zhinst.ZIHardwareDescription]  # noqa: UP006
+    hardware_description: Dict[  # noqa: UP006
+        str,
+        Union[zhinst.ZIHardwareDescription, common.HardwareDescription],  # noqa: UP007
+    ]
     """Description of the instruments in the physical setup."""
     hardware_options: zhinst.ZIHardwareOptions
     """

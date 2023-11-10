@@ -761,7 +761,7 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
                 warnings.warn(
                     "Loops are an experimental feature."
                     " Please refer to the documentation:"
-                    " https://quantify-os.org/docs/quantify-scheduler/latest/reference/control_flow.html"
+                    " https://quantify-os.org/docs/quantify-scheduler/latest/reference/control_flow.html"  # noqa: E501
                 )
             else:
                 raise ValueError(

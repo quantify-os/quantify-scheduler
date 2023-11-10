@@ -1117,9 +1117,15 @@ def generate_hardware_config(schedule: Schedule, compilation_config: Compilation
     # Add info from hardware description to hardware config:
     if hardware_description is not None:
         for instr_name, instr_description in hardware_description.items():
-            if instr_description.instrument_type == "IQMixer":
-                # Skip IQMixer instruments, as they are not present in the old-style
-                # hardware config
+            if instr_description.instrument_type not in [
+                "Cluster",
+                "Pulsar_QCM",
+                "Pulsar_QRM",
+                "LocalOscillator",
+            ]:
+                # Only generate hardware config entries for supported instruments,
+                # while allowing them in the HardwareCompilationConfig to be used by
+                # different compilation nodes.
                 continue
 
             if hardware_config.get(instr_name) is None:

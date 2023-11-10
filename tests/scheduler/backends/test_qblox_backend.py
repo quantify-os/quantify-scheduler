@@ -28,6 +28,10 @@ from qblox_instruments import Cluster, ClusterType, Pulsar, PulsarType
 import quantify_scheduler
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends import SerialCompiler, corrections
+from quantify_scheduler.backends.graph_compilation import (
+    CompilationConfig,
+    SimpleNodeConfig,
+)
 from quantify_scheduler.backends.qblox import (
     compiler_container,
     constants,
@@ -54,6 +58,7 @@ from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox.qblox_hardware_config_old_style import (
     hardware_config as qblox_hardware_config_old_style,
 )
+from quantify_scheduler.backends.types.common import HardwareDescription
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.backends.types.qblox import BasebandModuleSettings
 from quantify_scheduler.compilation import _determine_absolute_timing
@@ -761,6 +766,44 @@ def test_compile_simple(
     compiler.compile(
         pulse_only_schedule,
         config=compile_config_basic_transmon_qblox_hardware_pulsar,
+    )
+
+
+def test_compile_with_third_party_instrument(
+    pulse_only_schedule, compile_config_basic_transmon_qblox_hardware
+):
+    def _third_party_compilation_node(
+        schedule: Schedule, config: CompilationConfig
+    ) -> Schedule:
+        schedule["compiled_instructions"]["third_party_instrument"] = {
+            "setting": "test"
+        }
+        return schedule
+
+    config = copy.deepcopy(compile_config_basic_transmon_qblox_hardware)
+    config.hardware_compilation_config.hardware_description[
+        "third_party_instrument"
+    ] = HardwareDescription(instrument_type="ThirdPartyInstrument")
+    config.hardware_compilation_config.connectivity.graph.add_edge(
+        "third_party_instrument.output", "some_qubit:some_port"
+    )
+    config.compilation_passes.insert(
+        -1,
+        SimpleNodeConfig(
+            name="third_party_instrument_compilation",
+            compilation_func=_third_party_compilation_node,
+        ),
+    )
+
+    compiler = SerialCompiler(name="compiler")
+    comp_sched = compiler.compile(
+        pulse_only_schedule,
+        config=config,
+    )
+
+    assert (
+        comp_sched["compiled_instructions"]["third_party_instrument"]["setting"]
+        == "test"
     )
 
 

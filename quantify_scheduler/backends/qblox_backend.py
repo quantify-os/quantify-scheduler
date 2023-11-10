@@ -4,8 +4,7 @@
 from __future__ import annotations
 
 import warnings
-from copy import deepcopy
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends.corrections import (
@@ -16,6 +15,7 @@ from quantify_scheduler.backends.graph_compilation import CompilationConfig
 from quantify_scheduler.backends.qblox import compiler_container, constants, helpers
 from quantify_scheduler.backends.types.common import (
     HardwareCompilationConfig,
+    HardwareDescription,
     HardwareOptions,
 )
 from quantify_scheduler.backends.types.qblox import (
@@ -257,8 +257,12 @@ def hardware_compile(
     compiled_instructions = container.compile(
         debug_mode=debug_mode, repetitions=schedule.repetitions
     )
+    # Create compiled instructions key if not already present. This can happen if this
+    # compilation function is called directly instead of through a `QuantifyCompiler`.
+    if "compiled_instructions" not in schedule:
+        schedule["compiled_instructions"] = {}
     # add the compiled instructions to the schedule data structure
-    schedule["compiled_instructions"] = compiled_instructions
+    schedule["compiled_instructions"].update(compiled_instructions)
     # Mark the schedule as a compiled schedule
     return CompiledSchedule(schedule)
 
@@ -274,7 +278,9 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
 
     backend: Callable[[Schedule, Any], Schedule] = hardware_compile
     """The compilation backend this configuration is intended for."""
-    hardware_description: Dict[str, QbloxHardwareDescription]
+    hardware_description: Dict[
+        str, Union[QbloxHardwareDescription, HardwareDescription]
+    ]
     """Description of the instruments in the physical setup."""
     hardware_options: QbloxHardwareOptions
     """

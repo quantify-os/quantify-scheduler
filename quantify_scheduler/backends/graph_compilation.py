@@ -417,6 +417,8 @@ class QuantifyCompiler(CompilationNode):
             config = self.quantum_device.generate_compilation_config()
         if config.keep_original_schedule:
             schedule = deepcopy(schedule)
+        # Reset schedule compiled instructions
+        schedule["compiled_instructions"] = {}
         return self._compilation_func(schedule=schedule, config=config)
 
     @property
