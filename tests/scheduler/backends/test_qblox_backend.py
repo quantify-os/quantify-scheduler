@@ -2594,8 +2594,8 @@ class TestAssemblyValid:
 
         return stripped_program
 
-    @classmethod
-    def validate_seq_instructions(cls, seq_instructions, filename):
+    @staticmethod
+    def _validate_seq_instructions(seq_instructions, filename):
         baseline_assembly = os.path.join(
             quantify_scheduler.__path__[0],
             "..",
@@ -2612,15 +2612,17 @@ class TestAssemblyValid:
         with open(baseline_assembly) as file:
             baseline_seq_instructions = json.load(file)
 
-        program = cls._strip_spaces_and_comments(seq_instructions["program"])
-        ref_program = cls._strip_spaces_and_comments(
+        program = TestAssemblyValid._strip_spaces_and_comments(
+            seq_instructions["program"]
+        )
+        ref_program = TestAssemblyValid._strip_spaces_and_comments(
             baseline_seq_instructions["program"]
         )
 
         assert list(program) == list(ref_program)
 
-    @classmethod
-    def validate_assembly(cls, compiled_schedule, cluster):
+    @staticmethod
+    def _validate_assembly(compiled_schedule, cluster):
         """
         Test helper that takes a compiled schedule and verifies if the assembly is valid
         by passing it to a cluster. Only QCM (module2) and QRM (module4) modules are
@@ -2639,9 +2641,8 @@ class TestAssemblyValid:
             uploaded_waveforms = module.get_waveforms(0)
             assert uploaded_waveforms is not None
 
-    @classmethod
     def test_acq_protocol_append_mode_ssro(
-        cls,
+        self,
         request,
         dummy_cluster,
         compile_config_basic_transmon_qblox_hardware,
@@ -2654,20 +2655,19 @@ class TestAssemblyValid:
             sched, compile_config_basic_transmon_qblox_hardware
         )
 
-        cls.validate_assembly(compiled_schedule=compiled_ssro_sched, cluster=cluster)
+        self._validate_assembly(compiled_schedule=compiled_ssro_sched, cluster=cluster)
 
         qrm_name = f"{cluster.name}_module4"
         test_name = request.node.name[len("test_") :]
-        cls.validate_seq_instructions(
+        self._validate_seq_instructions(
             seq_instructions=compiled_ssro_sched["compiled_instructions"][cluster.name][
                 qrm_name
             ]["sequencers"]["seq0"]["sequence"],
             filename=f"{test_name}_{qrm_name}_seq0_instr.json",
         )
 
-    @classmethod
     def test_acq_protocol_average_mode_allxy(
-        cls,
+        self,
         request,
         dummy_cluster,
         compile_config_basic_transmon_qblox_hardware,
@@ -2680,20 +2680,19 @@ class TestAssemblyValid:
             sched, compile_config_basic_transmon_qblox_hardware
         )
 
-        cls.validate_assembly(compiled_schedule=compiled_allxy_sched, cluster=cluster)
+        self._validate_assembly(compiled_schedule=compiled_allxy_sched, cluster=cluster)
 
         qrm_name = f"{cluster.name}_module4"
         test_name = request.node.name[len("test_") :]
-        cls.validate_seq_instructions(
+        self._validate_seq_instructions(
             seq_instructions=compiled_allxy_sched["compiled_instructions"][
                 cluster.name
             ][qrm_name]["sequencers"]["seq0"]["sequence"],
             filename=f"{test_name}_{qrm_name}_seq0_instr.json",
         )
 
-    @classmethod
     def test_assigning_waveform_indices(
-        cls,
+        self,
         request,
         dummy_cluster,
         compile_config_basic_transmon_qblox_hardware,
@@ -2706,11 +2705,11 @@ class TestAssemblyValid:
             sched, compile_config_basic_transmon_qblox_hardware
         )
 
-        cls.validate_assembly(compiled_schedule=compiled_allxy_sched, cluster=cluster)
+        self._validate_assembly(compiled_schedule=compiled_allxy_sched, cluster=cluster)
 
         qcm_name = f"{cluster.name}_module2"
         test_name = request.node.name[len("test_") :]
-        cls.validate_seq_instructions(
+        self._validate_seq_instructions(
             seq_instructions=compiled_allxy_sched["compiled_instructions"][
                 cluster.name
             ][qcm_name]["sequencers"]["seq0"]["sequence"],
