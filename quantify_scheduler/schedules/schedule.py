@@ -448,9 +448,75 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         """
         A styled pandas dataframe containing the absolute timing of pulses and acquisitions in a schedule.
 
-        This table is constructed based on the abs_time key in the
+        This table is constructed based on the `abs_time` key in the
         :attr:`~quantify_scheduler.schedules.schedule.ScheduleBase.schedulables`.
         This requires the timing to have been determined.
+
+        The table consists of the following columns:
+
+        - `operation`: a `repr` of :class:`~quantify_scheduler.operations.operation.Operation` corresponding to the pulse/acquisition.
+        - `waveform_op_id`: an id corresponding to each pulse/acquisition inside an :class:`~quantify_scheduler.operations.operation.Operation`.
+        - `port`: the port the pulse/acquisition is to be played/acquired on.
+        - `clock`: the clock used to (de)modulate the pulse/acquisition.
+        - `abs_time`: the absolute time the pulse/acquisition is scheduled to start.
+        - `duration`: the duration of the pulse/acquisition that is scheduled.
+        - `is_acquisition`: whether the pulse/acquisition is an acquisition or not (type ``numpy.bool_``).
+        - `wf_idx`: the waveform index of the pulse/acquisition belonging to the Operation.
+        - `operation_hash`: the unique hash corresponding to the :class:`~.Schedulable` that the pulse/acquisition belongs to.
+
+        .. admonition:: Example
+
+            .. jupyter-execute::
+                :hide-code:
+
+                from quantify_scheduler.backends import SerialCompiler
+                from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+                from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
+                from quantify_scheduler.operations.gate_library import (
+                    Measure,
+                    Reset,
+                    X,
+                    Y,
+                )
+                from quantify_scheduler.schedules.schedule import Schedule
+                from quantify_scheduler.schemas.examples import utils
+
+                compiler = SerialCompiler("compiler")
+                q0 = BasicTransmonElement("q0")
+                q4 = BasicTransmonElement("q4")
+
+                for qubit in [q0, q4]:
+                    qubit.rxy.amp180(0.115)
+                    qubit.rxy.motzoi(0.1)
+                    qubit.clock_freqs.f01(7.3e9)
+                    qubit.clock_freqs.f12(7.0e9)
+                    qubit.clock_freqs.readout(8.0e9)
+                    qubit.measure.acq_delay(100e-9)
+
+                quantum_device = QuantumDevice(name="quantum_device0")
+                quantum_device.add_element(q0)
+                quantum_device.add_element(q4)
+
+                device_config = quantum_device.generate_device_config()
+                hardware_config = utils.load_json_example_scheme(
+                    "qblox_hardware_compilation_config.json"
+                )
+                quantum_device.hardware_config(hardware_config)
+
+                compiler = SerialCompiler("compiler")
+                compiler.quantum_device = quantum_device
+
+            .. jupyter-execute::
+
+                schedule = Schedule("demo timing table")
+                schedule.add(Reset("q0", "q4"))
+                schedule.add(X("q0"))
+                schedule.add(Y("q4"))
+                schedule.add(Measure("q0", acq_index=0))
+                schedule.add(Measure("q4", acq_index=0))
+
+                compiled_schedule = compiler.compile(schedule)
+                compiled_schedule.timing_table
 
         Parameters
         ----------
@@ -462,34 +528,22 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         :
             styled_timing_table, a pandas Styler containing a dataframe with
             an overview of the timing of the pulses and acquisitions present in the
-            schedule. The data frame can be accessed through the .data attribute of
+            schedule. The dataframe can be accessed through the .data attribute of
             the Styler.
 
         Raises
         ------
         ValueError
             When the absolute timing has not been determined during compilation.
-        """  # noqa: E501
-        timing_table = pd.DataFrame(
-            columns=[
-                "waveform_op_id",  # a readable id based on the operation
-                "port",
-                "clock",
-                "is_acquisition",  # a bool which helps determine if an operation is
-                # an acquisition or not. (True is it is an acquisition operation)
-                "abs_time",  # start of the operation in absolute time (s)
-                "duration",  # duration of the operation in absolute time (s)
-                "operation",
-                "wf_idx",
-                "operation_hash",
-            ]
-        )
-
-        timing_table_list = [timing_table]
+        """  # noqa: E501 # pylint: disable=line-too-long
+        timing_table_list = []
         for schedulable in self.schedulables.values():
             if "abs_time" not in schedulable:
                 # when this exception is encountered
-                raise ValueError("Absolute time has not been determined yet.")
+                raise ValueError(
+                    "Absolute time has not been determined yet. "
+                    "Please compile your schedule."
+                )
             operation = self.operations[schedulable["operation_repr"]]
 
             for i, op_info in chain(
@@ -504,14 +558,13 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
                     "abs_time": abs_time,
                     "duration": op_info["duration"],
                     "is_acquisition": "acq_channel" in op_info or "bin_mode" in op_info,
-                    "operation": str(
-                        operation
-                    ),  # this field is not the operation itself, but its repr
+                    "operation": str(operation),
                     "wf_idx": i,
                     "operation_hash": schedulable["operation_repr"],
                 }
                 timing_table_list.append(pd.DataFrame(df_row, index=range(1)))
         timing_table = pd.concat(timing_table_list, ignore_index=True)
+        timing_table = timing_table.sort_values(by="abs_time")
         # apply a style so that time is easy to read.
         # this works under the assumption that we are using timings on the order of
         # nanoseconds.

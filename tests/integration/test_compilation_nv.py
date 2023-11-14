@@ -1,3 +1,4 @@
+import numpy
 import pytest
 
 from quantify_scheduler import Schedule
@@ -35,11 +36,11 @@ def test_compilation_spectroscopy_operation_qblox_hardware(
     assert label1 in schedule.schedulables
     assert label2 in schedule.schedulables
     assert (
-        "abs_time" not in schedule.schedulables[label1].data.keys()
+        "abs_time" not in schedule.schedulables[label1].data
         or schedule.schedulables[label1].data["abs_time"] is None
     )
     assert (
-        "abs_time" not in schedule.schedulables[label2].data.keys()
+        "abs_time" not in schedule.schedulables[label2].data
         or schedule.schedulables[label2].data["abs_time"] is None
     )
 
@@ -63,11 +64,11 @@ def test_compilation_spectroscopy_operation_qblox_hardware(
         compiled_sched.operations[spec_pulse_hash]["gate_info"]
         == schedule.operations[spec_pulse_hash]["gate_info"]
     )
-    assert not compiled_sched.operations[spec_pulse_hash]["pulse_info"] == []
+    assert compiled_sched.operations[spec_pulse_hash]["pulse_info"] != []
 
     # Timing info has been added
-    assert "abs_time" in compiled_sched.schedulables[label1].data.keys()
-    assert "abs_time" in compiled_sched.schedulables[label2].data.keys()
+    assert "abs_time" in compiled_sched.schedulables[label1].data
+    assert "abs_time" in compiled_sched.schedulables[label2].data
     assert compiled_sched.schedulables[label1].data["abs_time"] == 0
     duration_pulse_1 = compiled_sched.operations[spec_pulse_hash].data["pulse_info"][0][
         "duration"
@@ -83,8 +84,12 @@ def test_compilation_spectroscopy_operation_qblox_hardware(
     assert compiled_sched.timing_table.data.loc[1, "duration"] == pulse_duration
     assert compiled_sched.timing_table.data.loc[1, "abs_time"] == pulse_duration
 
-    assert compiled_sched.timing_table.data.loc[0, "is_acquisition"] is False
-    assert compiled_sched.timing_table.data.loc[1, "is_acquisition"] is False
+    assert compiled_sched.timing_table.data.loc[0, "is_acquisition"] is numpy.bool_(
+        False
+    )
+    assert compiled_sched.timing_table.data.loc[1, "is_acquisition"] is numpy.bool_(
+        False
+    )
 
 
 def test_compilation_reset_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
@@ -118,17 +123,19 @@ def test_compilation_reset_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
         compiled_sched.operations[reset_hash]["gate_info"]
         == schedule.operations[reset_hash]["gate_info"]
     )
-    assert not compiled_sched.operations[reset_hash]["pulse_info"] == []
+    assert compiled_sched.operations[reset_hash]["pulse_info"] != []
 
     # Timing info has been added
-    assert "abs_time" in compiled_sched.schedulables[label].data.keys()
+    assert "abs_time" in compiled_sched.schedulables[label].data
     assert compiled_sched.schedulables[label].data["abs_time"] == 0
 
     assert isinstance(compiled_sched, CompiledSchedule)
     assert "compiled_instructions" in compiled_sched.data
 
     assert compiled_sched.timing_table.data.loc[0, "duration"] == pulse_duration
-    assert compiled_sched.timing_table.data.loc[0, "is_acquisition"] is False
+    assert compiled_sched.timing_table.data.loc[0, "is_acquisition"] is numpy.bool_(
+        False
+    )
 
 
 def test_compilation_measure_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
@@ -174,16 +181,20 @@ def test_compilation_measure_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
     assert len(compiled_sched.operations[measure_hash]["pulse_info"]) > 0
 
     # Timing info has been added
-    assert "abs_time" in compiled_sched.schedulables[label].data.keys()
+    assert "abs_time" in compiled_sched.schedulables[label].data
     assert compiled_sched.schedulables[label].data["abs_time"] == 0
 
     assert isinstance(compiled_sched, CompiledSchedule)
     assert "compiled_instructions" in compiled_sched.data
 
     assert compiled_sched.timing_table.data.loc[0, "duration"] == pulse_duration
-    assert compiled_sched.timing_table.data.loc[0, "is_acquisition"] is False
+    assert compiled_sched.timing_table.data.loc[0, "is_acquisition"] is numpy.bool_(
+        False
+    )
     assert compiled_sched.timing_table.data.loc[2, "duration"] == acq_duration
-    assert compiled_sched.timing_table.data.loc[2, "is_acquisition"] is True
+    assert compiled_sched.timing_table.data.loc[2, "is_acquisition"] is numpy.bool_(
+        True
+    )
 
 
 def test_compilation_charge_reset_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
@@ -217,17 +228,19 @@ def test_compilation_charge_reset_qblox_hardware(mock_setup_basic_nv_qblox_hardw
         compiled_sched.operations[charge_reset_hash]["gate_info"]
         == schedule.operations[charge_reset_hash]["gate_info"]
     )
-    assert not compiled_sched.operations[charge_reset_hash]["pulse_info"] == []
+    assert compiled_sched.operations[charge_reset_hash]["pulse_info"] != []
 
     # Timing info has been added
-    assert "abs_time" in compiled_sched.schedulables[label].data.keys()
+    assert "abs_time" in compiled_sched.schedulables[label].data
     assert compiled_sched.schedulables[label].data["abs_time"] == 0
 
     assert isinstance(compiled_sched, CompiledSchedule)
     assert "compiled_instructions" in compiled_sched.data
 
     assert compiled_sched.timing_table.data.loc[0, "duration"] == pulse_duration
-    assert compiled_sched.timing_table.data.loc[0, "is_acquisition"] is False
+    assert compiled_sched.timing_table.data.loc[0, "is_acquisition"] is numpy.bool_(
+        False
+    )
 
 
 def test_compilation_cr_count_qblox_hardware(mock_setup_basic_nv):
@@ -273,12 +286,16 @@ def test_compilation_cr_count_qblox_hardware(mock_setup_basic_nv):
     assert len(compiled_sched.operations[cr_count_hash]["pulse_info"]) > 0
 
     # Timing info has been added
-    assert "abs_time" in compiled_sched.schedulables[label].data.keys()
+    assert "abs_time" in compiled_sched.schedulables[label].data
     assert compiled_sched.schedulables[label].data["abs_time"] == 0
 
     assert isinstance(compiled_sched, CompiledSchedule)
     assert "compiled_instructions" in compiled_sched.data
     assert compiled_sched.timing_table.data.loc[0, "duration"] == pulse_duration
-    assert compiled_sched.timing_table.data.loc[0, "is_acquisition"] is False
+    assert compiled_sched.timing_table.data.loc[0, "is_acquisition"] is numpy.bool_(
+        False
+    )
     assert compiled_sched.timing_table.data.loc[2, "duration"] == acq_duration
-    assert compiled_sched.timing_table.data.loc[2, "is_acquisition"] is True
+    assert compiled_sched.timing_table.data.loc[2, "is_acquisition"] is numpy.bool_(
+        True
+    )

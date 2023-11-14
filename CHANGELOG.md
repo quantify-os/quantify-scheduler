@@ -7,6 +7,7 @@
 ### Merged branches and closed issues
 
 - Compilation - Implement Connectivity datastructure for specifying connections between ports on the quantum device and on the control hardware in the `HardwareCompilationConfig`. (!734)
+- Schedules - Prevent FutureWarning when creating `Schedule.timing_table` and sort by `abs_time`. (!852) 
 - Compilation - Allow additional third-party instruments with custom complilation nodes in hardware backends. (!837)
 - Documentation - Moved all `__init__` docstrings to class description and minor docstring changes. (!785)
 - QuantumDevice - Store element and edge instrument references in quantum device. (!855, #442)
