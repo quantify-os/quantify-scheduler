@@ -230,16 +230,17 @@ class MarkerPulseStrategy(PulseStrategyPartial):
                 f"Operation causing exception: {self.operation_info}"
             )
         duration = round(self.operation_info.duration * 1e9)
-        output = int(self.operation_info.data["output"])
+        marker_bit_index = int(self.operation_info.data["output"])
         default_marker = qasm_program.static_hw_properties.default_marker
-        # RF modules use first 2 bits of marker string as output/input switch.
+        # RF modules use first 2 bits of marker bitstring as output/input switch.
         if qasm_program.static_hw_properties.instrument_type in ("QRM-RF", "QCM-RF"):
-            output += 2
-        # QRM-RF has swapped addressing of outputs, TODO: change when fixed in firmware
-        if qasm_program.static_hw_properties.instrument_type == "QRM-RF":
-            output = self._fix_output_addressing(output)
+            marker_bit_index += 2
+        # QCM-RF has swapped addressing of outputs
+        marker_bit_index = self._fix_marker_bit_output_addressing_qcm_rf(
+            qasm_program=qasm_program, marker_bit_index=marker_bit_index
+        )
 
-        qasm_program.set_marker((1 << output) | default_marker)
+        qasm_program.set_marker((1 << marker_bit_index) | default_marker)
         qasm_program.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
         qasm_program.elapsed_time += constants.GRID_TIME
         # Wait for the duration of the pulse minus 2 times grid time, one for each upd_param.
@@ -249,13 +250,13 @@ class MarkerPulseStrategy(PulseStrategyPartial):
         qasm_program.elapsed_time += constants.GRID_TIME
 
     @staticmethod
-    def _fix_output_addressing(output):
-        """
-        Temporary fix for the marker output addressing of the QRM-RF.
-        QRM-RF has swapped addressing of outputs. TODO: change when fixed in firmware.
-        """
-        if output == 3:
-            output = 4
-        elif output == 4:
-            output = 3
-        return output
+    def _fix_marker_bit_output_addressing_qcm_rf(
+        qasm_program: QASMProgram, marker_bit_index: int
+    ):
+        """Fix for the swapped marker bit output addressing of the QCM-RF."""
+        if qasm_program.static_hw_properties.instrument_type == "QCM-RF":
+            if marker_bit_index == 2:
+                marker_bit_index = 3
+            elif marker_bit_index == 3:
+                marker_bit_index = 2
+        return marker_bit_index

@@ -391,7 +391,7 @@ class TestMarkerPulseStrategy:
             ref_pt="start",
         )
         schedule.add_resource(ClockResource(name="q0.res", freq=50e6))
-        # Generate compiled schedule for QRM
+        # Generate compiled schedule for QCM
         compiler = SerialCompiler(name="compiler")
         compiled_sched = compiler.compile(
             schedule=schedule, config=quantum_device.generate_compilation_config()
@@ -412,7 +412,7 @@ class TestMarkerPulseStrategy:
         assert re.search(r"^\s*wait\s+300\s*($|#)", seq0_analog[idx + 2])
         idx = 0
         for i, string in enumerate(seq1_digital):
-            if re.search(r"^\s*set_mrk\s+11\s*($|#)", string):
+            if re.search(r"^\s*set_mrk\s+7\s*($|#)", string):
                 idx = i
                 break
         assert re.search(r"^\s*upd_param\s+4\s*($|#)", seq1_digital[idx + 1])
