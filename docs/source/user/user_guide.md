@@ -430,6 +430,10 @@ The {class}`~.backends.types.common.Connectivity` datastructure describes how po
 
 ```
 
+```{admonition} One-to-many, many-to-one, many-to-many
+See {ref}`sec-connectivity-examples` for different ways of specifying connectivity graphs.
+```
+
 This information is used in the compilation backends to assign the pulses and acquisitions in the schedule to ports on the control hardware. To achieve this, the nodes in the connectivity graph should be consistent with the inputs/outputs in the {ref}`sec-hardware-description` and the schedule (see the note below). Each backend has its own requirements on the connectivity graph, which are described in the documentation of the backends themselves (see the sections on Connectivity for {ref}`Qblox  <sec-qblox-connectivity>` and {ref}`Zurich Instruments <sec-zhinst-connectivity>`). For example, a backend can support adding one or more components (such as attenuators or IQ mixers) between a control-hardware output and a quantum-device port.
 
 ```{important}

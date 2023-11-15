@@ -233,6 +233,11 @@ class Connectivity(DataStructure):
     set of two strings that each correspond to an input/output on an instrument or a port
     on the quantum device.
 
+    .. note::
+        To specify connections between more than one pair of ports at once, one can
+        also specify a list of ports within the edge input (see example below, and also
+        see :ref:`sec-connectivity-examples`).
+
     The connectivity graph can be drawn using :meth:`~.draw`, which groups the nodes
     according to the instrument name (specified by the string before the first ``"."``
     in the node name; the name is omitted for the quantum device).
@@ -250,8 +255,7 @@ class Connectivity(DataStructure):
                 "graph": [
                     ("awg0.channel_0", "q0:mw"),
                     ("awg0.channel_1", "q1:mw"),
-                    ("rom0.channel_0", "q0:res"),
-                    ("rom0.channel_0", "q1:res"),
+                    ("rom0.channel_0", ["q0:res", "q1:res"]),
                 ]
             }
 
@@ -264,6 +268,21 @@ class Connectivity(DataStructure):
     The connectivity graph consisting of i/o ports (nodes) on the quantum device and on
     the control hardware, and their connections (edges).
     """
+
+    @field_validator("graph", mode="before")
+    def _unroll_lists_of_ports_in_edges_input(cls, graph):
+        if isinstance(graph, list):
+            list_of_edges = []
+            for edge_input in graph:
+                ports_0 = edge_input[0]
+                ports_1 = edge_input[1]
+                if not isinstance(ports_0, list):
+                    ports_0 = [ports_0]
+                if not isinstance(ports_1, list):
+                    ports_1 = [ports_1]
+                list_of_edges.extend([(p0, p1) for p0 in ports_0 for p1 in ports_1])
+            graph = list_of_edges
+        return graph
 
     def draw(
         self,

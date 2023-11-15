@@ -146,11 +146,10 @@
             ],
             [
                 "cluster0.module2.complex_output_0",
-                "q0:mw"
-            ],
-            [
-                "cluster0.module2.complex_output_0",
-                "q5:mw"
+                [
+                    "q0:mw",
+                    "q5:mw"
+                ]
             ],
             [
                 "cluster0.module2.complex_output_1",

@@ -9,8 +9,9 @@
 - Qblox backend - Fix `MarkerPulse` playback on QRM-RF and QCM-RF. (!828)
   - Marker bit index values for addressing outputs need to be swapped on QCM-RF, not QRM-RF (done via `MarkerPulseStrategy._fix_marker_bit_output_addressing_qcm_rf`).
 - Compilation - Implement Connectivity datastructure for specifying connections between ports on the quantum device and on the control hardware in the `HardwareCompilationConfig`. (!734)
-- Schedules - Prevent FutureWarning when creating `Schedule.timing_table` and sort by `abs_time`. (!852) 
 - Compilation - Allow additional third-party instruments with custom complilation nodes in hardware backends. (!837)
+- Compilation - Allow specifying one-to-many, many-to-one, and many-to-many connections in the `Connectivity`. (!841)
+- Schedules - Prevent FutureWarning when creating `Schedule.timing_table` and sort by `abs_time`. (!852) 
 - Documentation - Moved all `__init__` docstrings to class description and minor docstring changes. (!785)
 - QuantumDevice - Store element and edge instrument references in quantum device. (!855, #442)
 
