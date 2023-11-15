@@ -4,6 +4,17 @@
 
 ### Breaking changes
 
+- Compilation - Changes to the `CompilationConfig` generation in the `QuantumDevice` to support parsing custom (backend-specific) `HardwareCompilationConfig` datastructures. (!840)
+  - The `backend` field in the `HardwareCompilationConfig` was replaced by the `config_type` field, which contains a (string) reference to the backend-specific `HardwareCompilationConfig` datastructure.
+  - The `backend` field was removed from the `DeviceCompilationConfig`.
+  - The `compilation_passes` field was moved from the `SerialCompilationConfig` into the `DeviceCompilationConfig` and `HardwareCompilationConfig` datastructures.
+  - Migration:
+    - `DeviceCompilationConfig`: If you are loading a stored `DeviceCompilationConfig` (instead of relying on the device config generation of the `QuantumDevice`), remove the `"backend"` key.
+    - `HardwareCompilatonConfig`: If you are already using the new-style `HardwareCompilatonConfig`, change the `"backend"` key to `"config_type"`.
+      - For Qblox: `"config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig"`,
+      - For Zurich Instruments: `"config_type": 
+ "quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig"`.
+
 ### Merged branches and closed issues
 
 - Qblox backend - Fix `MarkerPulse` playback on QRM-RF and QCM-RF. (!828)

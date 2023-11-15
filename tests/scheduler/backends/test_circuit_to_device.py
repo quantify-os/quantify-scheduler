@@ -281,8 +281,6 @@ def test_set_device_cfg_clock(
 
 def test_clock_not_defined_raises():
     simple_config = DeviceCompilationConfig(
-        backend="quantify_scheduler.backends.circuit_to_device"
-        + "._compile_circuit_to_device",
         clocks={
             "q0.01": 6020000000.0,
         },
@@ -370,8 +368,6 @@ def test_operation_not_in_config_raises():
 
 def test_compile_schedule_with_trace_acq_protocol():
     simple_config = DeviceCompilationConfig(
-        backend="quantify_scheduler.backends.circuit_to_device"
-        + "._compile_circuit_to_device",
         clocks={
             "q0.01": 6020000000.0,
             "q0.ro": 7040000000.0,
@@ -410,8 +406,6 @@ def test_compile_schedule_with_trace_acq_protocol():
 
 def test_compile_schedule_with_invalid_pulse_type_raises():
     simple_config = DeviceCompilationConfig(
-        backend="quantify_scheduler.backends.circuit_to_device"
-        + "._compile_circuit_to_device",
         clocks={
             "q0.01": 6020000000.0,
             "q0.ro": 7040000000.0,
@@ -451,8 +445,6 @@ def test_compile_schedule_with_invalid_pulse_type_raises():
 
 def test_operation_not_in_config_raises_custom():
     simple_config = DeviceCompilationConfig(
-        backend="quantify_scheduler.backends.circuit_to_device"
-        + "._compile_circuit_to_device",
         clocks={
             "q0.01": 6020000000.0,
             "q0.ro": 7040000000.0,
@@ -481,8 +473,6 @@ def test_operation_not_in_config_raises_custom():
 
 def test_config_with_callables():
     simple_config = DeviceCompilationConfig(
-        backend="quantify_scheduler.backends.circuit_to_device"
-        + "._compile_circuit_to_device",
         clocks={
             "q0.01": 6020000000.0,
             "q0.ro": 7040000000.0,

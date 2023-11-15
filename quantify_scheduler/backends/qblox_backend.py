@@ -4,14 +4,18 @@
 from __future__ import annotations
 
 import warnings
-from typing import Any, Callable, Dict, List, Optional, Union
+from pydantic import Field
+from typing import Any, Dict, List, Optional, Type, Union
 
 from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends.corrections import (
     apply_distortion_corrections,
     determine_relative_latency_corrections,
 )
-from quantify_scheduler.backends.graph_compilation import CompilationConfig
+from quantify_scheduler.backends.graph_compilation import (
+    CompilationConfig,
+    SimpleNodeConfig,
+)
 from quantify_scheduler.backends.qblox import compiler_container, constants, helpers
 from quantify_scheduler.backends.types.common import (
     HardwareCompilationConfig,
@@ -276,8 +280,13 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
     contains fields for hardware-specific settings.
     """
 
-    backend: Callable[[Schedule, Any], Schedule] = hardware_compile
-    """The compilation backend this configuration is intended for."""
+    config_type: Type[QbloxHardwareCompilationConfig] = Field(
+        default="quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        validate_default=True,
+    )
+    """
+    A reference to the `HardwareCompilationConfig` DataStructure for the Qblox backend.
+    """
     hardware_description: Dict[
         str, Union[QbloxHardwareDescription, HardwareDescription]
     ]
@@ -287,4 +296,18 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
     Options that are used in compiling the instructions for the hardware, such as
     :class:`~quantify_scheduler.backends.types.common.LatencyCorrection` or
     :class:`~quantify_scheduler.backends.types.qblox.SequencerOptions`.
+    """
+    compilation_passes: List[SimpleNodeConfig] = [
+        SimpleNodeConfig(
+            name="compile_long_square_pulses_to_awg_offsets",
+            compilation_func=compile_long_square_pulses_to_awg_offsets,
+        ),
+        SimpleNodeConfig(
+            name="qblox_hardware_compile",
+            compilation_func=hardware_compile,
+        ),
+    ]
+    """
+    The list of compilation nodes that should be called in succession to compile a 
+    schedule to instructions for the Qblox hardware.
     """

@@ -154,12 +154,6 @@ class DeviceCompilationConfig(DataStructure):
             device_cfg
     """
 
-    backend: Callable[[Schedule, Any], Schedule]
-    """
-    A . separated string specifying the location of the compilation backend this
-    configuration is intended for e.g.,
-    :code:`"quantify_scheduler.backends.circuit_to_device._compile_circuit_to_device"`.
-    """
     clocks: Dict[str, float]
     """
     A dictionary specifying the clock frequencies available on the device e.g.,
@@ -181,18 +175,11 @@ class DeviceCompilationConfig(DataStructure):
     The scheduling strategy used when determining the absolute timing of each
     operation of the schedule.
     """
-
-    @field_serializer("backend")
-    def _serialize_backend_func(self, v):
-        return export_python_object_to_path_string(v)
-
-    @field_validator("backend", mode="before")
-    def _import_backend_if_str(
-        cls, fun: Callable[[Schedule, Any], Schedule]  # noqa: N805
-    ) -> Callable[[Schedule, Any], Schedule]:
-        if isinstance(fun, str):
-            return deserialize_function(fun)
-        return fun  # type: ignore
+    compilation_passes: List[SimpleNodeConfig] = []
+    """
+    The list of compilation nodes that should be called in succession to compile a
+    schedule to the quantum-device layer.
+    """
 
 
 # pylint: disable=too-few-public-methods
@@ -516,7 +503,17 @@ class SerialCompiler(QuantifyCompiler):
         # like caching and visualization of compilation errors.
         self._task_graph.clear()
 
-        for i, compilation_pass in enumerate(config.compilation_passes):
+        compilation_passes = []
+        if config.device_compilation_config is not None:
+            compilation_passes.extend(
+                config.device_compilation_config.compilation_passes
+            )
+        if config.hardware_compilation_config is not None:
+            compilation_passes.extend(
+                config.hardware_compilation_config.compilation_passes
+            )
+
+        for i, compilation_pass in enumerate(compilation_passes):
             node = SimpleNode(
                 name=compilation_pass.name,
                 compilation_func=compilation_pass.compilation_func,
@@ -584,7 +581,6 @@ class SerialCompilationConfig(CompilationConfig):
     """
 
     backend: Type[SerialCompiler] = SerialCompiler
-    compilation_passes: List[SimpleNodeConfig]
 
     @field_serializer("backend")
     def _serialize_backend_func(self, v):

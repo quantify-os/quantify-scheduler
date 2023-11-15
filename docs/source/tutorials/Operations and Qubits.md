@@ -200,17 +200,17 @@ Before explaining how this can be used to compile schedules, let us first invest
 the contents of the device configuration.
 
 ```{code-cell} ipython3
-device_cfg.backend
+device_cfg.compilation_passes
 
 ```
 
-The backend of the device configuration specifies what function will be used to add
-pulse information to the gates. In other words, it specifies how to interpret the
-qubit parameters present in the device configuration and achieve the required gates.
-Let us briefly investigate the backend function:
+The compilation passes of the device configuration specifies which function(s) will be used to 
+compile the {class}`~.Schedule` to the {ref}`sec-user-guide-quantum-device`. In other words, 
+it specifies how to interpret the qubit parameters present in the device configuration and achieve
+the required gates. Let us briefly investigate the compilation function:
 
 ```{code-cell} ipython3
-help(device_cfg.backend)
+help(device_cfg.compilation_passes[0].compilation_func)
 
 ```
 

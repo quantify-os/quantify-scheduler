@@ -60,7 +60,7 @@ def test_compiles_standard_schedules(
     """
 
     config = compile_config_basic_transmon_qblox_hardware_pulsar
-    assert config.name == "Qblox compiler"
+    assert config.name == "QuantumDevice-generated SerialCompilationConfig"
     assert config.backend == SerialCompiler
 
     backend = SerialCompiler(config.name)
@@ -195,7 +195,7 @@ def test_compile_sequence_to_file(
     # Arrange
 
     hardware_comp_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
         "hardware_options": {},
     }
     if isinstance(instrument, tuple):

@@ -19,14 +19,7 @@ from quantify_scheduler.backends.graph_compilation import (
     SerialCompilationConfig,
     SimpleNodeConfig,
 )
-from quantify_scheduler.backends.qblox_backend import (
-    QbloxHardwareCompilationConfig,
-    compile_long_square_pulses_to_awg_offsets,
-)
-from quantify_scheduler.backends.qblox_backend import hardware_compile as qblox_backend
 from quantify_scheduler.backends.types.common import HardwareCompilationConfig
-from quantify_scheduler.backends.zhinst_backend import ZIHardwareCompilationConfig
-from quantify_scheduler.backends.zhinst_backend import compile_backend as zhinst_backend
 from quantify_scheduler.compilation import (
     _determine_absolute_timing,
     flatten_schedule,
@@ -34,6 +27,7 @@ from quantify_scheduler.compilation import (
 )
 from quantify_scheduler.device_under_test.device_element import DeviceElement
 from quantify_scheduler.device_under_test.edge import Edge
+from quantify_scheduler.helpers.importers import import_python_object_from_string
 from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEncoder
 
 
@@ -286,77 +280,12 @@ class QuantumDevice(Instrument):
 
     def generate_compilation_config(self) -> SerialCompilationConfig:
         """Generate a config for use with a :class:`~.graph_compilation.QuantifyCompiler`."""
-        # Part that is always the same
-        dev_cfg = self.generate_device_config()
-        compilation_passes = [
-            SimpleNodeConfig(
-                name="circuit_to_device",
-                compilation_func=dev_cfg.backend,
-            ),
-            SimpleNodeConfig(
-                name="set_pulse_and_acquisition_clock",
-                compilation_func="quantify_scheduler.backends.circuit_to_device."
-                + "set_pulse_and_acquisition_clock",
-            ),
-            SimpleNodeConfig(
-                name="resolve_control_flow",
-                compilation_func=resolve_control_flow,
-            ),
-            SimpleNodeConfig(
-                name="determine_absolute_timing",
-                compilation_func=_determine_absolute_timing,
-            ),
-            SimpleNodeConfig(
-                name="flatten",
-                compilation_func=flatten_schedule,
-            ),
-        ]
-
-        # If statements to support the different hardware compilation configs.
-        hw_comp_cfg = self.generate_hardware_compilation_config()
-        if hw_comp_cfg is None:
-            backend_name = "Device compiler"
-        elif hw_comp_cfg.backend == qblox_backend:
-            backend_name = "Qblox compiler"
-            compilation_passes.append(
-                SimpleNodeConfig(
-                    name="compile_long_square_pulses_to_awg_offsets",
-                    compilation_func=compile_long_square_pulses_to_awg_offsets,
-                )
-            )
-            compilation_passes.append(
-                SimpleNodeConfig(
-                    name="qblox_hardware_compile",
-                    compilation_func=hw_comp_cfg.backend,
-                )
-            )
-        elif hw_comp_cfg.backend == zhinst_backend:
-            backend_name = "Zhinst compiler"
-            compilation_passes.append(
-                SimpleNodeConfig(
-                    name="zhinst_hardware_compile",
-                    compilation_func=hw_comp_cfg.backend,
-                )
-            )
-
-        else:
-            backend_name = "Custom compiler"
-            compilation_passes.append(
-                SimpleNodeConfig(
-                    name="custom_hardware_compile",
-                    compilation_func=hw_comp_cfg.backend,
-                )
-            )
-
-        compilation_config = SerialCompilationConfig(
-            name=backend_name,
+        return SerialCompilationConfig(
+            name="QuantumDevice-generated SerialCompilationConfig",
             keep_original_schedule=self.keep_original_schedule(),
-            device_compilation_config=dev_cfg,
-            hardware_compilation_config=hw_comp_cfg,
-            compilation_passes=compilation_passes,
+            device_compilation_config=self.generate_device_config(),
+            hardware_compilation_config=self.generate_hardware_compilation_config(),
         )
-
-        return compilation_config
 
     def generate_hardware_config(self) -> dict[str, Any]:
         """
@@ -398,12 +327,36 @@ class QuantumDevice(Instrument):
             edge_cfg = edge.generate_edge_config()
             edges_cfg.update(edge_cfg)
 
+        compilation_passes = [
+            SimpleNodeConfig(
+                name="circuit_to_device",
+                compilation_func=_compile_circuit_to_device,
+            ),
+            SimpleNodeConfig(
+                name="set_pulse_and_acquisition_clock",
+                compilation_func="quantify_scheduler.backends.circuit_to_device."
+                + "set_pulse_and_acquisition_clock",
+            ),
+            SimpleNodeConfig(
+                name="resolve_control_flow",
+                compilation_func=resolve_control_flow,
+            ),
+            SimpleNodeConfig(
+                name="determine_absolute_timing",
+                compilation_func=_determine_absolute_timing,
+            ),
+            SimpleNodeConfig(
+                name="flatten",
+                compilation_func=flatten_schedule,
+            ),
+        ]
+
         device_config = DeviceCompilationConfig(
-            backend=_compile_circuit_to_device,
             elements=elements_cfg,
             clocks=clocks,
             edges=edges_cfg,
             scheduling_strategy=self.scheduling_strategy(),
+            compilation_passes=compilation_passes,
         )
 
         return device_config
@@ -419,78 +372,71 @@ class QuantumDevice(Instrument):
         if hardware_config is None:
             return None
 
-        if (
-            hardware_config["backend"]
-            == "quantify_scheduler.backends.qblox_backend.hardware_compile"
-        ):
-            if not any(
-                [
-                    key in hardware_config
-                    for key in [
-                        "hardware_description",
-                        "hardware_options",
-                        "connectivity",
-                    ]
+        if not any(
+            [
+                key in hardware_config
+                for key in [
+                    "config_type",
+                    "hardware_description",
+                    "hardware_options",
+                    "connectivity",
                 ]
-            ):
-                # Legacy support for the old hardware config dict:
-                hardware_compilation_config = QbloxHardwareCompilationConfig(
-                    backend=hardware_config["backend"],
-                    hardware_description={},
-                    hardware_options={},
-                    connectivity=hardware_config,
-                )
-            else:
-                hardware_compilation_config = (
-                    QbloxHardwareCompilationConfig.model_validate(hardware_config)
-                )
-        elif (
-            hardware_config["backend"]
-            == "quantify_scheduler.backends.zhinst_backend.compile_backend"
+            ]
         ):
-            if not any(
-                [
-                    key in hardware_config
-                    for key in [
-                        "hardware_description",
-                        "hardware_options",
-                        "connectivity",
-                    ]
-                ]
+            # Legacy support for the old hardware config dict:
+            if (
+                hardware_config["backend"]
+                == "quantify_scheduler.backends.qblox_backend.hardware_compile"
             ):
-                # Legacy support for the old hardware config dict:
-                hardware_compilation_config = ZIHardwareCompilationConfig(
-                    backend=hardware_config["backend"],
-                    hardware_description={},
-                    hardware_options={},
-                    connectivity=hardware_config,
-                )
+                compilation_passes = [
+                    SimpleNodeConfig(
+                        name="compile_long_square_pulses_to_awg_offsets",
+                        compilation_func="quantify_scheduler.backends.qblox_backend"
+                        + ".compile_long_square_pulses_to_awg_offsets",
+                    ),
+                    SimpleNodeConfig(
+                        name="qblox_hardware_compile",
+                        compilation_func=hardware_config["backend"],
+                    ),
+                ]
+            elif (
+                hardware_config["backend"]
+                == "quantify_scheduler.backends.zhinst_backend.compile_backend"
+            ):
+                compilation_passes = [
+                    SimpleNodeConfig(
+                        name="zhinst_compile_backend",
+                        compilation_func=hardware_config["backend"],
+                    ),
+                ]
             else:
-                hardware_compilation_config = (
-                    ZIHardwareCompilationConfig.model_validate(hardware_config)
-                )
+                compilation_passes = [
+                    SimpleNodeConfig(
+                        name="custom_hardware_backend",
+                        compilation_func=hardware_config["backend"],
+                    ),
+                ]
+            hardware_compilation_config = HardwareCompilationConfig(
+                hardware_description={},
+                hardware_options={},
+                connectivity=hardware_config,
+                compilation_passes=compilation_passes,
+            )
         else:
-            if not any(
-                [
-                    key in hardware_config
-                    for key in [
-                        "hardware_description",
-                        "hardware_options",
-                        "connectivity",
-                    ]
-                ]
-            ):
-                # Legacy support for the old hardware config dict:
-                hardware_compilation_config = HardwareCompilationConfig(
-                    backend=hardware_config["backend"],
-                    hardware_description={},
-                    hardware_options={},
-                    connectivity=hardware_config,
+            # Parse a (backend-specific) HardwareCompilationConfig
+            if "backend" in hardware_config:
+                raise ValueError(
+                    f"`{HardwareCompilationConfig.__name__}` no longer takes a"
+                    f" 'backend' field; instead, specify the 'config_type', which should"
+                    " contain a string reference to the backend-specific datastructure"
+                    " that should be parsed."
                 )
-            else:
-                hardware_compilation_config = HardwareCompilationConfig.model_validate(
-                    hardware_config
-                )
+            hardware_compilation_config_model = import_python_object_from_string(
+                hardware_config["config_type"]
+            )
+            hardware_compilation_config = (
+                hardware_compilation_config_model.model_validate(hardware_config)
+            )
 
         return hardware_compilation_config
 

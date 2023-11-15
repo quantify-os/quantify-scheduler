@@ -11,9 +11,6 @@ kernelspec:
 Configuring the backend is done by specifying a Python dictionary (or loading it from a JSON file)
 that describes your experimental setup. An example of such a hardware configuration is shown below.
 
-The entry {code}`"backend": "quantify_scheduler.backends.qblox_backend.hardware_compile"` specifies to the scheduler
-that we are using the Qblox backend (specifically the {func}`~quantify_scheduler.backends.qblox_backend.hardware_compile` function).
-
 Two variants of the same hardware configuration are shown: 
 - The current old-style unvalidated json/dict hardware configuration (see {ref}`sec-qblox-cluster`).
 - The new {class}`~.backends.types.common.HardwareCompilationConfig` variant that adds validation of the contents and divides into `"hardware_description"`, `"hardware_options"` and `"connectivity"` (see {ref}`Cluster (HardwareCompilationConfig) <sec-qblox-cluster-new>`,  and the {ref}`sec-hardware-compilation-config` section of the User guide). 

@@ -787,7 +787,7 @@ def test_compile_with_third_party_instrument(
     config.hardware_compilation_config.connectivity.graph.add_edge(
         "third_party_instrument.output", "some_qubit:some_port"
     )
-    config.compilation_passes.insert(
+    config.hardware_compilation_config.compilation_passes.insert(
         -1,
         SimpleNodeConfig(
             name="third_party_instrument_compilation",

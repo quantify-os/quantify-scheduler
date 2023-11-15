@@ -143,7 +143,7 @@ For more information on this datastructure, please refer to the explanation in t
 
 ```{code-cell} ipython3
 hardware_comp_cfg = {
-    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
     "hardware_description": {
         f"{cluster.name}": {
             "instrument_type": "Cluster",

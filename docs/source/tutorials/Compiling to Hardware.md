@@ -55,7 +55,7 @@ Please check the documentation on how to properly create such a configuration fo
 Below we create an example hardware configuration dictionary, for the Qblox backend.
 In this configuration, we include:
 
-- The backend that we want to use (the Qblox backend, in this case).
+- The `"config_type"`, which points to the specific {class}`~quantify_scheduler.backends.types.common.HardwareCompilationConfig` datastructure for the backend we want to use (the Qblox backend, in this case).
 - The description of the setup, including:
     - A Cluster containing a QCM-RF module (in the 2nd slot).
 - The hardware options we want to use in the compilation.
@@ -69,7 +69,7 @@ mystnb:
   code_prompt_show: "Example hardware configuration"
 ---
 hardware_comp_cfg = {
-    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
     "hardware_description": {
         "cluster0": {
             "instrument_type": "Cluster",

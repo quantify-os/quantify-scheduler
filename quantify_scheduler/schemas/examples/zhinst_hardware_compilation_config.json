@@ -1,5 +1,5 @@
 {
-    "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",
+    "config_type": "quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig",
     "hardware_description": {
         "ic_hdawg0": {
             "instrument_type": "HDAWG8",

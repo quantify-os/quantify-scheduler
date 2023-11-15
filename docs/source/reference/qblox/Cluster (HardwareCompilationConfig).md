@@ -53,7 +53,7 @@ mystnb:
   remove_code_outputs: true
 ---
 hardware_compilation_cfg = {
-    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
     "hardware_description": {
         "cluster0": {
             "instrument_type": "Cluster",
@@ -128,7 +128,7 @@ quantum_device.hardware_config(hardware_compilation_cfg)
 hardware_compile(schedule=test_sched, config=quantum_device.generate_compilation_config())
 ```
 
-Notice the {code}`"quantify_scheduler.backends.qblox_backend.hardware_compile"` backend is used. 
+Notice the {class}`quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig` config type is used.
 In the example, the Cluster is specified using an instrument with {code}`"instrument_type": "Cluster"`. In the backend, the Cluster instrument functions as a collection of modules.
 
 The only instrument types that can be at the top level are:
@@ -182,7 +182,7 @@ linenos: true
 ---
 
 hardware_compilation_cfg = {
-    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
     "hardware_description": {
         "cluster0": {
             "instrument_type": "Cluster",
@@ -213,7 +213,7 @@ emphasize-lines: 7
 linenos: true
 ---
 hardware_compilation_cfg = {
-    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
     "hardware_description": {
         "cluster0": {
             "instrument_type": "Cluster",
@@ -246,7 +246,7 @@ linenos: true
 ---
 
 hardware_compilation_cfg = {
-    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
     "hardware_description": {
         "cluster0": {
             "instrument_type": "Cluster",
@@ -325,7 +325,7 @@ mystnb:
   remove_code_outputs: true
 ---
 hardware_compilation_cfg = {
-    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
     "hardware_description": {
         "cluster0": {
             "instrument_type": "Cluster",
@@ -387,7 +387,7 @@ emphasize-lines: 17,18
 linenos: true
 ---
 hardware_compilation_cfg = {
-    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
     "hardware_description": {
         "cluster0": {
             "instrument_type": "Cluster",
@@ -429,7 +429,7 @@ emphasize-lines: 17,18,19
 linenos: true
 ---
 hardware_compilation_cfg = {
-    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
     "hardware_description": {
         "cluster0": {
             "instrument_type": "Cluster",
@@ -464,7 +464,7 @@ emphasize-lines: 7
 linenos: true
 ---
 hardware_compilation_cfg = {
-    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
     "hardware_description": {...},
     "hardware_options": {...},
     "connectivity": {
@@ -494,7 +494,7 @@ It is possible to add `"generic_icc_name"` as an optional parameter to the local
   linenos: true
 ---
 hardware_compilation_cfg = {
-    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
     "hardware_description": {
         "cluster0": {...},
         "lo0": {
@@ -531,7 +531,7 @@ mystnb:
   remove_code_outputs: true
 ---
 hardware_compilation_cfg = {
-    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
     "hardware_description": {
         "cluster0": {
             "instrument_type": "Cluster",
@@ -640,7 +640,7 @@ from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import ClockResource
 
 hardware_compilation_cfg = {
-    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
     "hardware_description": {
         "cluster0": {
             "instrument_type": "Cluster",
@@ -715,7 +715,7 @@ emphasize-lines: 8,9,10,11
 linenos: true
 ---
 hardware_compilation_cfg = {
-    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
     "hardware_description": {...},
     "connectivity": {...},
     "hardware_options": {
@@ -748,7 +748,7 @@ emphasize-lines: 18-24
 linenos: true
 ---
 hardware_compilation_cfg = {
-    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
     "hardware_description": {
         "cluster0": {
             "instrument_type": "Cluster",
@@ -795,7 +795,7 @@ emphasize-lines: 18-24
 linenos: true
 ---
 hardware_compilation_cfg = {
-    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
     "hardware_description": {
         "cluster0": {
             "instrument_type": "Cluster",
@@ -844,7 +844,7 @@ emphasize-lines: 6
 linenos: true
 ---
 hardware_compilation_cfg = {
-    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
     "hardware_description": {...},
     "connectivity": {...},
     "hardware_options": {
@@ -868,7 +868,7 @@ emphasize-lines: 6
 linenos: true
 ---
 hardware_compilation_cfg = {
-    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
     "hardware_description": {...},
     "connectivity": {...},
     "hardware_options": {
@@ -884,6 +884,7 @@ hardware_compilation_cfg = {
             }
         }
     }
+}
 ```
 
 If `"distortion_corrections"` are set, then `"filter_func"`, `"input_var_name"` and `"kwargs"` are required. If `"clipping_values"` are set, its value must be a list with exactly 2 floats.
@@ -923,7 +924,7 @@ def _func_for_hook_test(qasm: QASMProgram):
     )
 
 hardware_compilation_cfg = {
-    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
     "hardware_description": {...},
     "hardware_options": {
         "sequencer_options": {

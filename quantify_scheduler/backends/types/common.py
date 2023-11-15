@@ -1,23 +1,38 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Common python dataclasses for multiple backends."""
+from __future__ import annotations
+
 import warnings
-from typing import Dict, Literal, Optional, Union, List, Callable, Any, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+)
 
 import matplotlib.pyplot as plt
 import networkx as nx
 from matplotlib.axes import Axes
 from matplotlib.patches import Rectangle
-from pydantic import field_validator, field_serializer
+from pydantic import Field, field_serializer, field_validator, model_validator
 
 from quantify_scheduler.helpers.importers import export_python_object_to_path_string
+from quantify_scheduler.schedules.schedule import Schedule
 from quantify_scheduler.structure.model import (
     DataStructure,
     deserialize_function,
 )
-from quantify_scheduler.schedules.schedule import Schedule
 from quantify_scheduler.structure.types import Graph, NDArray
 
+if TYPE_CHECKING:
+    from quantify_scheduler.backends.graph_compilation import SimpleNodeConfig
 
 LatencyCorrection = float
 """
@@ -378,16 +393,19 @@ class HardwareCompilationConfig(DataStructure):
     that can be executed on the control hardware.
 
     This datastructure defines the overall structure of a `HardwareCompilationConfig`.
-    Specific hardware backends may customize fields within this structure by inheriting
-    from this class, see e.g.,
+    Specific hardware backends should customize fields within this structure by inheriting
+    from this class and specifying their own `"config_type"`, see e.g.,
     :class:`~quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`,
     :class:`~quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig`.
     """
 
-    backend: Callable[[Schedule, Any], Schedule]
+    config_type: Type[HardwareCompilationConfig] = Field(
+        default="quantify_scheduler.backends.types.common.HardwareCompilationConfig",
+        validate_default=True,
+    )
     """
-    A . separated string specifying the location of the compilation backend this
-    configuration is intended for.
+    A reference to the `HardwareCompilationConfig` DataStructure for the backend 
+    that is used.
     """
     hardware_description: Dict[str, HardwareDescription]
     """
@@ -406,18 +424,23 @@ class HardwareCompilationConfig(DataStructure):
     Datastructure representing how ports on the quantum device are connected to ports
     on the control hardware.
     """
+    compilation_passes: List["SimpleNodeConfig"] = []
+    """
+    The list of compilation nodes that should be called in succession to compile a 
+    schedule to instructions for the control hardware.
+    """
 
-    @field_serializer("backend")
+    @field_serializer("config_type")
     def _serialize_backend_func(self, v):
         return export_python_object_to_path_string(v)
 
-    @field_validator("backend", mode="before")
-    def _import_backend_if_str(
-        cls, fun: Callable[[Schedule, Any], Schedule]  # noqa: N805
+    @field_validator("config_type", mode="before")
+    def _import_config_type_if_str(
+        cls, config_type: Type[HardwareCompilationConfig]  # noqa: N805
     ) -> Callable[[Schedule, Any], Schedule]:
-        if isinstance(fun, str):
-            return deserialize_function(fun)
-        return fun  # type: ignore
+        if isinstance(config_type, str):
+            return deserialize_function(config_type)
+        return config_type  # type: ignore
 
     @field_validator("connectivity")
     def _latencies_in_hardware_config(cls, connectivity):  # noqa: N805
@@ -443,41 +466,40 @@ class HardwareCompilationConfig(DataStructure):
             )
         return connectivity
 
-    @field_validator("connectivity")
-    def _check_connectivity_graph_nodes_format(cls, connectivity, info):  # noqa: N805
-        # Doing the validation here instead of in the Connectivity class because
-        # the connectivity can also contain an old-style hardware config dict,
-        # causing this validator to fail silently (by converting to dict).
-        if isinstance(connectivity, Connectivity):
-            for node in connectivity.graph:
+    @model_validator(mode="after")
+    def _check_connectivity_graph_nodes_format(self):
+        if isinstance(self.connectivity, Connectivity):
+            for node in self.connectivity.graph:
                 if "." in node:
                     instrument_name = node.split(sep=".")[0]
-                    if instrument_name not in info.data["hardware_description"]:
+                    if instrument_name not in self.hardware_description:
                         raise ValueError(
                             f"Invalid node. Instrument '{instrument_name}'"
                             f" not found in hardware description."
                         )
-                    connectivity.graph.nodes[node]["instrument_name"] = instrument_name
+                    self.connectivity.graph.nodes[node][
+                        "instrument_name"
+                    ] = instrument_name
                 elif ":" in node:
-                    connectivity.graph.nodes[node]["instrument_name"] = "QuantumDevice"
+                    self.connectivity.graph.nodes[node][
+                        "instrument_name"
+                    ] = "QuantumDevice"
                 else:
                     raise ValueError(
                         "Invalid node format. Must be 'instrument.port' or 'qubit_name:port'."
                     )
-        return connectivity
+        return self
 
-    @field_validator("connectivity")
-    def _connectivity_old_style_hw_cfg_empty_hw_options_and_descriptions(
-        cls, connectivity, info
-    ):
-        if isinstance(connectivity, dict):
-            if info.data["hardware_description"] != {}:
+    @model_validator(mode="after")
+    def _connectivity_old_style_hw_cfg_empty_hw_options_and_descriptions(self):
+        if isinstance(self.connectivity, dict):
+            if self.hardware_description != {}:
                 raise ValueError(
                     "Hardware description must be empty when using old-style hardware config dictionary."
                 )
-            for _, hw_option in info.data["hardware_options"]:
+            for _, hw_option in self.hardware_options:
                 if hw_option is not None:
                     raise ValueError(
                         "Hardware options must be empty when using old-style hardware config dictionary."
                     )
-        return connectivity
+        return self

@@ -508,8 +508,6 @@ class BasicElectronicNVElement(DeviceElement):
             This config is only valid for single qubit experiments.
         """
         cfg_dict = {
-            "backend": "quantify_scheduler.backends"
-            ".circuit_to_device._compile_circuit_to_device",
             "elements": self._generate_config(),
             "clocks": {
                 f"{self.name}.f01": self.clock_freqs.f01(),

@@ -112,7 +112,7 @@ Triggers and Markers.
 The compilation onto Zurich Instruments hardware is configured by the {ref}`Hardware Compilation Config <sec-hardware-compilation-config>`.
 The configuration file contains parameters about the Instruments, their connectivity to the quantum device, and options used in mapping {class}`quantify_scheduler.operations.operation.Operation`s, which act on qubits, onto physical properties of the instruments.
 
-To use the Zurich Instruments backend in compilation, one should pass a valid hardware compilation configuration to the `quantum_device.hardware_config` parameter, such that it can be used to generate a full `CompilationConfig` using `quantum_device.generate_compilation_config()`, which can finally be used to compile a {class}`~.Schedule` using {meth}`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler.compile`. The entry {code}`"backend": "quantify_scheduler.backends.zhinst_backend.compile_backend"` specifies to the scheduler that we are using the Zurich Instruments backend (specifically the {func}`~quantify_scheduler.backends.zhinst_backend.compile_backend` function).
+To use the Zurich Instruments backend in compilation, one should pass a valid hardware compilation configuration to the `quantum_device.hardware_config` parameter, such that it can be used to generate a full `CompilationConfig` using `quantum_device.generate_compilation_config()`, which can finally be used to compile a {class}`~.Schedule` using {meth}`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler.compile`. The `"config_type"` entry specifies to the scheduler that we are using the Zurich Instruments backend (specifically, the {class}`quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig` DataStructure will be parsed).
 See {ref}`the hardware verification tutorial <hardware-verfication-tutorial>` for an example.
 
 ```{code-cell} ipython3
@@ -210,7 +210,7 @@ HDAWG/UHFQA channels can be connected to external IQ mixers and local oscillator
   linenos: true
 ---
 hardware_compilation_cfg = {
-    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "config_type": "quantify_scheduler.backends.qblox_backend.ZIHardwareCompilationConfig",
     "hardware_description": {
         "ic_hdawg0": {...},
         "lo1": {

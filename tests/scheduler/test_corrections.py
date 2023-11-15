@@ -122,12 +122,12 @@ def test_distortion_correct_pulse(
 
 
 @pytest.mark.parametrize(
-    "backend, use_numpy_array",
+    "config_type, use_numpy_array",
     [
-        (backend, use_numpy)
-        for backend in [
-            "quantify_scheduler.backends.qblox_backend.hardware_compile",
-            "quantify_scheduler.backends.zhinst_backend.compile_backend",
+        (config_type, use_numpy)
+        for config_type in [
+            "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+            "quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig",
         ]
         for use_numpy in [True, False]
     ],
@@ -136,12 +136,12 @@ def test_apply_distortion_corrections(
     mock_setup_basic_transmon_with_standard_params,
     hardware_options_distortion_corrections,
     two_qubit_gate_schedule,
-    backend,
+    config_type,
 ):
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    if "qblox" in backend:
+    if "Qblox" in config_type:
         hardware_compilation_config = {
-            "backend": backend,
+            "config_type": config_type,
             "hardware_description": {
                 "cluster0": {
                     "instrument_type": "Cluster",
@@ -161,9 +161,9 @@ def test_apply_distortion_corrections(
             },
             "hardware_options": hardware_options_distortion_corrections,
         }
-    elif "zhinst" in backend:
+    elif "ZI" in config_type:
         hardware_compilation_config = {
-            "backend": backend,
+            "config_type": config_type,
             "hardware_description": {
                 "hdawg_1234": {
                     "instrument_type": "HDAWG4",
@@ -247,14 +247,16 @@ def test_apply_latency_corrections_hardware_options_invalid_raises(
 
     mock_setup_basic_transmon["quantum_device"].hardware_config(
         {
-            "backend": "mock",
+            "config_type": "quantify_scheduler.backends.types.common.HardwareCompilationConfig",
+            "hardware_description": {},
             "hardware_options": {
                 "latency_corrections": {"q4:mw-q4.01": 2e-8, "q4:res-q4.ro": None}
             },
+            "connectivity": {},
         }
     )
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError, match="Input should be a valid number"):
         compiler = SerialCompiler(name="compiler")
         _ = compiler.compile(
             sched,
@@ -285,7 +287,7 @@ def test_apply_distortion_corrections_stitched_pulse_warns(
     quantum_device = mock_setup_basic_transmon["quantum_device"]
 
     hardware_compilation_config = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
         "hardware_description": {
             "cluster0": {
                 "instrument_type": "Cluster",

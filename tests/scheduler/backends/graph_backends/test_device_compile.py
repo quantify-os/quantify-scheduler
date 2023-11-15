@@ -44,7 +44,7 @@ def test_compiles_standard_schedules(
     """
 
     config = device_compile_config_basic_transmon
-    assert config.name == "Device compiler"
+    assert config.name == "QuantumDevice-generated SerialCompilationConfig"
     assert config.backend == SerialCompiler
 
     backend = SerialCompiler(name=config.name)  # assert that no exception is raised.

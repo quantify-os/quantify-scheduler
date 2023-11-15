@@ -13,6 +13,11 @@ from contextlib import nullcontext
 from typing import Union
 
 import pytest
+from quantify_scheduler.schedules.schedule import Schedule
+from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.operations.pulse_library import SquarePulse
+from quantify_scheduler.helpers.collections import find_all_port_clock_combinations
 
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
@@ -23,6 +28,9 @@ from quantify_scheduler.schedules.schedule import Schedule
 from quantify_scheduler.backends.types.qblox import BasebandModuleSettings
 from quantify_scheduler.backends.qblox import helpers
 from quantify_scheduler.backends.qblox.enums import IoMode
+from quantify_scheduler.backends.qblox.qblox_hardware_config_old_style import (
+    hardware_config as qblox_hardware_config_old_style,
+)
 from quantify_scheduler.backends.qblox.instrument_compilers import (
     QcmModule,
     QcmRfModule,
