@@ -39,6 +39,7 @@ from quantify_scheduler.backends.qblox import (
     register_manager,
 )
 from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
+from quantify_scheduler.backends.qblox.enums import IoMode
 from quantify_scheduler.backends.qblox.helpers import (
     assign_pulse_and_acq_info_to_devices,
     convert_hw_config_to_portclock_configs_spec,
@@ -53,6 +54,8 @@ from quantify_scheduler.backends.qblox.helpers import (
 from quantify_scheduler.backends.qblox.instrument_compilers import (
     QcmModule,
     QcmRfModule,
+    QrmModule,
+    QrmRfModule,
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox.qblox_hardware_config_old_style import (
@@ -755,6 +758,87 @@ def test_portclocks(
     compilers = container.instrument_compilers["cluster0"].instrument_compilers
     assert compilers["cluster0_module1"].portclocks == [("q4:mw", "q4.01")]
     assert compilers["cluster0_module2"].portclocks == [("q0:mw", "q0.01")]
+
+
+@pytest.mark.parametrize(
+    "module, io_name_to_connected_io_indices",
+    [
+        (
+            QcmModule,
+            {
+                "complex_output_0": (0, 1),
+                "complex_output_1": (2, 3),
+                "real_output_0": (0,),
+                "real_output_1": (1,),
+                "real_output_2": (2,),
+                "real_output_3": (3,),
+                "digital_output_0": (0,),
+                "digital_output_1": (1,),
+                "digital_output_2": (2,),
+                "digital_output_3": (3,),
+            },
+        ),
+        (
+            QrmModule,
+            {
+                "complex_output_0": (0, 1),
+                "complex_input_0": (0, 1),
+                "real_output_0": (0,),
+                "real_output_1": (1,),
+                "real_input_0": (0,),
+                "real_input_1": (1,),
+                "digital_output_0": (0,),
+                "digital_output_1": (1,),
+                "digital_output_2": (2,),
+                "digital_output_3": (3,),
+            },
+        ),
+        (
+            QcmRfModule,
+            {
+                "complex_output_0": (0, 1),
+                "complex_output_1": (2, 3),
+                "digital_output_0": (0,),
+                "digital_output_1": (1,),
+            },
+        ),
+        (
+            QrmRfModule,
+            {
+                "complex_output_0": (0, 1),
+                "complex_input_0": (0, 1),
+                "digital_output_0": (0,),
+                "digital_output_1": (1,),
+            },
+        ),
+    ],
+)
+def test_validate_io_name_to_connected_io_indices(
+    module, io_name_to_connected_io_indices
+):
+    assert (
+        module.static_hw_properties.io_name_to_connected_io_indices
+        == io_name_to_connected_io_indices
+    )
+
+
+@pytest.mark.parametrize(
+    "io_name, io_mode",
+    [
+        ("complex_output_0", IoMode.COMPLEX),
+        ("real_output_0", IoMode.REAL),
+        ("real_output_1", IoMode.IMAG),
+        ("digital_output_0", IoMode.DIGITAL),
+    ],
+)
+def test_io_mode(io_name, io_mode):
+    test_module = QcmModule(
+        parent=None,
+        name="tester",
+        total_play_time=1,
+        instrument_cfg={},
+    )
+    assert io_mode == test_module.static_hw_properties._get_io_mode(io_name)
 
 
 def test_compile_simple(
@@ -1788,7 +1872,7 @@ def test_real_mode_container(
     qcm0 = container.instrument_compilers["qcm0"]
     for output, seq_name in enumerate(f"seq{i}" for i in range(3)):
         seq_settings = qcm0.sequencers[seq_name].settings
-        assert seq_settings.connected_outputs[0] == output
+        assert seq_settings.connected_output_indices[0] == output
 
 
 @pytest.mark.deprecated

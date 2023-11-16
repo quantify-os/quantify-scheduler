@@ -416,10 +416,10 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         for channel_idx in range(self._hardware_properties.number_of_output_channels):
             param_setting = "off"
             if (
-                settings.connected_outputs is not None
-                and channel_idx in settings.connected_outputs
-            ):  # For baseband, output indices map 1-to-1 to channel indices
-                if channel_idx in settings.connected_outputs:
+                settings.connected_output_indices is not None
+                and channel_idx in settings.connected_output_indices
+            ):  # For baseband, output indices map 1-to-1 to channel map indices
+                if channel_idx in settings.connected_output_indices:
                     if settings.io_mode is not IoMode.DIGITAL:
                         param_setting = "I" if channel_idx in (0, 2) else "Q"
 
@@ -748,9 +748,9 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
                 else "off"
             )
             if (
-                settings.connected_inputs is not None
-                and channel_idx in settings.connected_inputs
-            ):  # For baseband, input indices map 1-to-1 to channel indices
+                settings.connected_input_indices is not None
+                and channel_idx in settings.connected_input_indices
+            ):  # For baseband, input indices map 1-to-1 to channel map indices
                 param_setting = f"in{channel_idx}"
 
             channel_map_parameters[param_name[channel_idx]] = param_setting
@@ -827,8 +827,9 @@ class QbloxRFComponent(QbloxInstrumentCoordinatorComponentBase):
             param_setting = "off"
             if (
                 settings.io_mode is not IoMode.DIGITAL
-                and settings.connected_outputs is not None
-                and settings.connected_outputs == expected_output_indices[channel_idx]
+                and settings.connected_output_indices is not None
+                and settings.connected_output_indices
+                == expected_output_indices[channel_idx]
             ):
                 param_setting = "IQ"
 
@@ -916,7 +917,7 @@ class QRMRFComponent(QbloxRFComponent, QRMComponent):
     ) -> Dict[str, str]:
         """Adds the inputs to the channel map parameters dict."""
         channel_map_parameters["connect_acq"] = (
-            "in0" if settings.connected_inputs == [0, 1] else "off"
+            "in0" if settings.connected_input_indices == [0, 1] else "off"
         )
         if "output" in settings.io_name and "digital" not in settings.io_name:
             channel_map_parameters["connect_acq"] = "in0"

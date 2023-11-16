@@ -1369,7 +1369,7 @@ def test_complex_input_hardware_cfg(make_cluster_component, mock_setup_basic_tra
     xr.testing.assert_equal(data, expected_dataset)
     assert compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"][
         "sequencers"
-    ]["seq0"]["connected_inputs"] == [0, 1]
+    ]["seq0"]["connected_input_indices"] == [0, 1]
 
     instr_coordinator.remove_component("ic_cluster0")
 
@@ -1474,13 +1474,13 @@ def test_multi_real_input_hardware_cfg_trigger_count(
         "sequencers"
     ]["seq3"]
 
-    assert seq_0["connected_inputs"] == [0]
+    assert seq_0["connected_input_indices"] == [0]
     assert seq_0["ttl_acq_auto_bin_incr_en"] is False
-    assert seq_1["connected_inputs"] == [1]
+    assert seq_1["connected_input_indices"] == [1]
     assert seq_1["ttl_acq_auto_bin_incr_en"] is True
-    assert seq_2["connected_outputs"] == [0]
+    assert seq_2["connected_output_indices"] == [0]
     assert seq_2["nco_en"] is True
-    assert seq_3["connected_outputs"] == [1]
+    assert seq_3["connected_output_indices"] == [1]
     assert seq_3["nco_en"] is True
 
     instr_coordinator.remove_component("ic_cluster0")

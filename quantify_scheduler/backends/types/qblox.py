@@ -6,13 +6,24 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from dataclasses import field as dataclasses_field
-from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, TypeVar, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Literal,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
+    Iterable,
+)
 
 from dataclasses_json import DataClassJsonMixin
 from pydantic import Field, field_validator
 from typing_extensions import Annotated
 
-from quantify_scheduler.backends.qblox import constants, enums, q1asm_instructions
+from quantify_scheduler.backends.qblox import constants, q1asm_instructions
+from quantify_scheduler.backends.qblox.enums import IoMode
 from quantify_scheduler.backends.types.common import (
     HardwareDescription,
     HardwareOptions,
@@ -47,15 +58,69 @@ class StaticHardwareProperties:
     mixer_dc_offset_range: BoundedParameter
     """Specifies the range over which the dc offsets can be set that are used for mixer
     calibration."""
-    valid_ios: List[str]
-    """Specifies the complex/real output identifiers supported by this device."""
+    io_name_to_connected_io_indices: Dict[str, Union[Tuple[int], Tuple[int, int]]]
+    """Specifies the connected io indices per io_name identifier."""
     default_marker: int = 0
     """The default marker value to set at the beginning of programs.
-    Important for RF instruments that use the marker to enable the RF output."""
-    output_map: Dict[str, int] = dataclasses_field(default_factory=dict)
-    """A mapping from output name to marker setting.
+    Important for RF instruments that use the set_mrk command to enable/disable the RF output."""
+    io_name_to_digital_marker: Dict[str, int] = dataclasses_field(default_factory=dict)
+    """A mapping from io_name to digital marker setting.
     Specifies which marker bit needs to be set at start if the
     output (as a string ex. `complex_output_0`) contains a pulse."""
+
+    @property
+    def valid_ios(self) -> Iterable[str]:
+        """Specifies the io_name identifiers supported by this instrument."""
+        return self.io_name_to_connected_io_indices.keys()
+
+    def _get_connected_output_indices(
+        self, io_name
+    ) -> Optional[Union[Tuple[int], Tuple[int, int], None]]:
+        """
+        Return the connected output indices associated with the output name
+        specified in the hardware config.
+        """
+        return (
+            self.io_name_to_connected_io_indices[io_name]
+            if "output" in io_name
+            else None
+        )
+
+    def _get_connected_input_indices(
+        self, io_name
+    ) -> Optional[Union[Tuple[int], Tuple[int, int], None]]:
+        """
+        Return the connected input indices associated with the input name
+        specified in the hardware config.
+        """
+        return (
+            self.io_name_to_connected_io_indices[io_name]
+            if "input" in io_name
+            else None
+        )
+
+    def _get_io_mode(
+        self,
+        io_name: str,
+    ) -> IoMode:
+        """Return :class:`.enums.IoMode` used by the sequencer."""
+        if "digital" in io_name:
+            io_mode = IoMode.DIGITAL
+        elif "complex" in io_name:
+            io_mode = IoMode.COMPLEX
+        elif "real" in io_name:
+            io_idx = (
+                self._get_connected_output_indices(io_name)
+                if self._get_connected_output_indices(io_name) is not None
+                else self._get_connected_input_indices(io_name)
+            )[0]
+
+            if io_idx in (0, 2):
+                io_mode = IoMode.REAL
+            else:
+                io_mode = IoMode.IMAG
+
+        return io_mode
 
 
 @dataclass(frozen=True)
@@ -356,11 +421,11 @@ class SequencerSettings(DataClassJsonMixin):
     """Enables party-line synchronization."""
     io_name: str
     """Specifies the io identifier of the hardware config (e.g. `complex_output_0`)."""
-    connected_outputs: Optional[Union[Tuple[int], Tuple[int, int]]]
-    """Specifies which physical outputs this sequencer produces waveform data for."""
-    connected_inputs: Optional[Union[Tuple[int], Tuple[int, int]]]
-    """Specifies which physical inputs this sequencer collects data for."""
-    io_mode: enums.IoMode
+    connected_output_indices: Optional[Union[Tuple[int], Tuple[int, int]]]
+    """Specifies the indices of the outputs this sequencer produces waveforms for."""
+    connected_input_indices: Optional[Union[Tuple[int], Tuple[int, int]]]
+    """Specifies the indices of the inputs this sequencer collects data for."""
+    io_mode: IoMode
     """Specifies the type of input/output this sequencer is handling."""
     init_offset_awg_path_0: float = 0.0
     """Specifies what value the sequencer offset for AWG path 0 will be reset to
@@ -405,9 +470,9 @@ class SequencerSettings(DataClassJsonMixin):
         cls,
         sequencer_cfg: Dict[str, Any],
         io_name: str,
-        connected_outputs: Optional[Union[Tuple[int], Tuple[int, int]]],
-        connected_inputs: Optional[Union[Tuple[int], Tuple[int, int]]],
-        io_mode: enums.IoMode,
+        connected_output_indices: Optional[Union[Tuple[int], Tuple[int, int]]],
+        connected_input_indices: Optional[Union[Tuple[int], Tuple[int, int]]],
+        io_mode: IoMode,
     ) -> SequencerSettings:
         """
         Instantiates an instance of this class, with initial parameters determined from
@@ -419,10 +484,10 @@ class SequencerSettings(DataClassJsonMixin):
             The sequencer configuration dict.
         io_name
             Specifies the io identifier of the hardware config (e.g. `complex_output_0`).
-        connected_outputs
-            The outputs connected to the sequencer.
-        connected_inputs
-            The inputs connected to the sequencer.
+        connected_output_indices
+            Specifies the indices of the outputs this sequencer produces waveforms for.
+        connected_input_indices
+            Specifies the indices of the inputs this sequencer collects data for.
         io_mode
             The type of input/output this sequencer is handling.
 
@@ -527,8 +592,8 @@ class SequencerSettings(DataClassJsonMixin):
             nco_en=nco_en,
             sync_en=True,
             io_name=io_name,
-            connected_outputs=connected_outputs,
-            connected_inputs=connected_inputs,
+            connected_output_indices=connected_output_indices,
+            connected_input_indices=connected_input_indices,
             io_mode=io_mode,
             init_offset_awg_path_0=init_offset_awg_path_0,
             init_offset_awg_path_1=init_offset_awg_path_1,

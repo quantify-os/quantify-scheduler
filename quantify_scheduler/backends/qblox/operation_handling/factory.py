@@ -94,6 +94,12 @@ def _get_pulse_strategy(
             return virtual.IdleStrategy(operation_info)
 
     elif operation_info.name == "MarkerPulse":
-        return pulses.MarkerPulseStrategy(operation_info, io_mode)
+        return pulses.MarkerPulseStrategy(
+            operation_info=operation_info,
+            io_mode=io_mode,
+        )
 
-    return pulses.GenericPulseStrategy(operation_info, io_mode)
+    return pulses.GenericPulseStrategy(
+        operation_info=operation_info,
+        io_mode=io_mode,
+    )

@@ -309,10 +309,6 @@ class Sequencer:
         sequencer. The first value is the port, second is the clock.
     io_name
         Specifies the io identifier of the hardware config (e.g. `complex_output_0`).
-    connected_outputs
-        The outputs connected to the sequencer.
-    connected_inputs
-        The inputs connected to the sequencer.
     sequencer_cfg
         Sequencer settings dictionary.
     latency_corrections
@@ -332,9 +328,6 @@ class Sequencer:
     marker_debug_mode_enable
         Boolean flag to indicate if markers should be pulled high at the start of operations.
         Defaults to False, which means the markers will not be used during the sequence.
-    default_marker
-        The default marker value to use, will be set in the beginning of program.
-        Especially important for RF where the set_mrk command is used to enable/disable the RF path.
     """
 
     # pylint: disable=too-many-arguments
@@ -345,16 +338,12 @@ class Sequencer:
         portclock: Tuple[str, str],
         static_hw_properties: StaticHardwareProperties,
         io_name: str,
-        connected_outputs: Optional[Union[Tuple[int], Tuple[int, int]]],
-        connected_inputs: Optional[Union[Tuple[int], Tuple[int, int]]],
-        io_mode: enums.IoMode,
         sequencer_cfg: Dict[str, Any],
         latency_corrections: Dict[str, float],
         lo_name: Optional[str] = None,
         downconverter_freq: Optional[float] = None,
         mix_lo: bool = True,
         marker_debug_mode_enable: bool = False,
-        default_marker: int = 0,
     ):
         self.parent = parent
         self.index = index
@@ -366,7 +355,6 @@ class Sequencer:
         self.downconverter_freq: float = downconverter_freq
         self.mix_lo: bool = mix_lo
         self._marker_debug_mode_enable: bool = marker_debug_mode_enable
-        self.default_marker = default_marker
         self._num_acquisitions = 0
 
         self.static_hw_properties: StaticHardwareProperties = static_hw_properties
@@ -376,9 +364,17 @@ class Sequencer:
         self._settings = SequencerSettings.initialize_from_config_dict(
             sequencer_cfg=sequencer_cfg,
             io_name=io_name,
-            connected_outputs=connected_outputs,
-            connected_inputs=connected_inputs,
-            io_mode=io_mode,
+            connected_output_indices=self.static_hw_properties._get_connected_output_indices(
+                io_name
+            ),
+            connected_input_indices=self.static_hw_properties._get_connected_input_indices(
+                io_name
+            ),
+            io_mode=self.static_hw_properties._get_io_mode(io_name),
+        )
+
+        self._default_marker = self.static_hw_properties.io_name_to_digital_marker.get(
+            io_name, self.static_hw_properties.default_marker
         )
 
         self.qasm_hook_func: Optional[Callable] = sequencer_cfg.get(
@@ -392,31 +388,33 @@ class Sequencer:
         """Latency correction accounted for by delaying the start of the program."""
 
     @property
-    def connected_outputs(self) -> Optional[Union[Tuple[int], Tuple[int, int]]]:
+    def connected_output_indices(self) -> Optional[Union[Tuple[int], Tuple[int, int]]]:
         """
-        The indices of the output paths that this sequencer is producing awg
-        data for.
+        Return the connected output indices associated with the output name
+        specified in the hardware config.
 
-        For the baseband modules, these indices correspond directly to a physical output
-        (e.g. index 0 corresponds to output 1 etc.).
+        For the baseband modules, output index 'n' corresponds to physical module
+        output 'n+1'.
 
-        For the RF modules, indexes 0 and 1 correspond to path0 and path1 of output 1,
-        respectively, while indexes 2 and 3 correspond to path0 and path1 of output 2.
+        For RF modules, output indices '0' and '1' (or: '2' and '3') correspond to
+        'path0' and 'path1' of some sequencer, and both these paths are routed to the
+        **same** physical module output '1' (or: '2').
         """
-        return self._settings.connected_outputs
+        return self._settings.connected_output_indices
 
     @property
-    def connected_inputs(self) -> Optional[Union[Tuple[int], Tuple[int, int]]]:
+    def connected_input_indices(self) -> Optional[Union[Tuple[int], Tuple[int, int]]]:
         """
-        The indices of the input paths that this sequencer is collecting
-        data for.
+        Return the connected input indices associated with the input name specified
+        in the hardware config.
 
-        For the baseband modules, these indices correspond directly to a physical input
-        (e.g. index 0 corresponds to output 1 etc.).
+        For the baseband modules, input index 'n' corresponds to physical module input
+        'n+1'.
 
-        For the RF modules, indexes 0 and 1 correspond to path0 and path1 of input 1.
+        For RF modules, input indices '0' and '1' correspond to 'path0' and 'path1' of
+        some sequencer, and both paths are connected to physical module input '1'.
         """
-        return self._settings.connected_inputs
+        return self._settings.connected_input_indices
 
     @property
     def io_mode(self) -> enums.IoMode:
@@ -641,14 +639,16 @@ class Sequencer:
             self._settings.ttl_acq_auto_bin_incr_en = (
                 acq_metadata.bin_mode == BinMode.AVERAGE
             )
-            if self.connected_inputs is not None:
-                if len(self.connected_inputs) == 1:
-                    self._settings.ttl_acq_input_select = self.connected_inputs[0]
+            if self.connected_input_indices is not None:
+                if len(self.connected_input_indices) == 1:
+                    self._settings.ttl_acq_input_select = self.connected_input_indices[
+                        0
+                    ]
                 else:
                     raise ValueError(
                         f"Please make sure you use a single real input for this "
                         f"portclock combination. "
-                        f"Found: {len(self.connected_inputs)} connected. "
+                        f"Found: {len(self.connected_input_indices)} connected. "
                         f"TTL acquisition does not support multiple inputs."
                         f"Problem occurred for port {self.port} with"
                         f"clock {self.clock}, which corresponds to {self.name} of "
@@ -824,7 +824,8 @@ class Sequencer:
             register_manager=self.register_manager,
             align_fields=align_qasm_fields,
         )
-        qasm.set_marker(self.default_marker)
+        qasm.set_marker(self._default_marker)
+
         # program header
         qasm.emit(q1asm_instructions.WAIT_SYNC, constants.GRID_TIME)
         qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
@@ -957,7 +958,7 @@ class Sequencer:
             if valid_operation:
                 qasm.set_marker(self._decide_markers(operation))
                 operation.insert_qasm(qasm)
-                qasm.set_marker(self.default_marker)
+                qasm.set_marker(self._default_marker)
                 qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
                 qasm.elapsed_time += constants.GRID_TIME
         else:
@@ -1182,7 +1183,7 @@ class Sequencer:
         marker_bit_string = 0
         instrument_type = self.static_hw_properties.instrument_type
         if instrument_type == "QCM":
-            for output in self.connected_outputs:
+            for output in self.connected_output_indices:
                 marker_bit_string |= 1 << output
         elif instrument_type == "QRM":
             if operation.operation_info.is_acquisition:
@@ -1193,9 +1194,9 @@ class Sequencer:
         # For RF modules, the first two indices correspond to path enable/disable.
         # Therefore, the index of the output is shifted by 2.
         elif instrument_type == "QCM-RF":
-            for output in self.connected_outputs:
+            for output in self.connected_output_indices:
                 marker_bit_string |= 1 << (output + 2)
-                marker_bit_string |= self.default_marker
+                marker_bit_string |= self._default_marker
         elif instrument_type == "QRM-RF":
             if operation.operation_info.is_acquisition:
                 marker_bit_string = 0b1011
@@ -1318,7 +1319,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         # Setup each sequencer.
         sequencers: Dict[str, Sequencer] = {}
         portclock_io_map: Dict[Tuple, str] = {}
-        default_marker = self.static_hw_properties.default_marker
 
         for io_name, io_cfg in sorted(
             self.instrument_cfg.items()
@@ -1352,30 +1352,18 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 portclock = (target["port"], target["clock"])
 
                 if portclock in self._portclocks_with_data:
-                    # Figure out which outputs need to be turned on.
-                    if io_name in self.static_hw_properties.output_map:
-                        default_marker = self.static_hw_properties.output_map[io_name]
-
-                    io_mode, connected_outputs, connected_inputs = helpers.get_io_info(
-                        io_name
-                    )
-                    seq_idx = len(sequencers)
                     new_seq = Sequencer(
                         parent=self,
-                        index=seq_idx,
+                        index=len(sequencers),
                         portclock=portclock,
                         static_hw_properties=self.static_hw_properties,
                         io_name=io_name,
-                        connected_outputs=connected_outputs,
-                        connected_inputs=connected_inputs,
-                        io_mode=io_mode,
                         sequencer_cfg=target,
                         latency_corrections=self.latency_corrections,
                         lo_name=lo_name,
                         mix_lo=mix_lo,
                         marker_debug_mode_enable=marker_debug_mode_enable,
                         downconverter_freq=downconverter_freq,
-                        default_marker=default_marker,
                     )
                     sequencers[new_seq.name] = new_seq
 
@@ -1457,7 +1445,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                             # Digital mode always has one output.
                             pulse_strategy.operation_info.data[
                                 "output"
-                            ] = seq.connected_outputs[0]
+                            ] = seq.connected_output_indices[0]
                         seq.pulses.append(pulse_strategy)
 
         acq_data_list: List[OpInfo]
@@ -1919,7 +1907,7 @@ class QbloxRFModule(QbloxBaseModule):
 
         compiler_container = self.parent.parent
         if (
-            sequencer.connected_outputs is None
+            sequencer.connected_output_indices is None
             or sequencer.clock not in compiler_container.resources
         ):
             return
@@ -1954,7 +1942,7 @@ class QbloxRFModule(QbloxBaseModule):
         Use the sequencer output to module output correspondence, and then
         use the fact that LOX is connected to module output X.
         """
-        for sequencer_output_index in sequencer.connected_outputs:
+        for sequencer_output_index in sequencer.connected_output_indices:
             if sequencer_output_index % 2 != 0:
                 # We will only use real output 0 and 2, as they are part of the same
                 # complex outputs as real output 1 and 3

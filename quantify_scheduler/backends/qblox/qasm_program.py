@@ -5,17 +5,13 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
-from typing import List, Optional, Union, Iterator
+from typing import Iterator, List, Optional, Union
 
 import numpy as np
 from columnar import columnar
 from columnar.exceptions import TableOverflowError
 
-from quantify_scheduler.backends.qblox import (
-    constants,
-    helpers,
-    q1asm_instructions,
-)
+from quantify_scheduler.backends.qblox import constants, helpers, q1asm_instructions
 from quantify_scheduler.backends.qblox.register_manager import RegisterManager
 from quantify_scheduler.backends.types.qblox import OpInfo, StaticHardwareProperties
 
@@ -462,22 +458,15 @@ class QASMProgram:
         .. jupyter-execute::
 
             from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
+            from quantify_scheduler.backends.qblox.instrument_compilers import QcmModule
             from quantify_scheduler.backends.qblox import register_manager, constants
             from quantify_scheduler.backends.types.qblox import (
                 StaticHardwareProperties,
                 BoundedParameter
             )
 
-            static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
-                instrument_type="QCM",
-                max_sequencers=constants.NUMBER_OF_SEQUENCERS_QCM,
-                max_awg_output_voltage=2.5,
-                mixer_dc_offset_range=BoundedParameter(min_val=-2.5, max_val=2.5, units="V"),
-                valid_ios=[f"complex_output_{i}" for i in [0, 1]]
-                + [f"real_output_{i}" for i in range(4)],
-            )
             qasm = QASMProgram(
-                static_hw_properties=static_hw_properties,
+                static_hw_properties=QcmModule.static_hw_properties,
                 register_manager=register_manager.RegisterManager(),
                 align_fields=True,
             )

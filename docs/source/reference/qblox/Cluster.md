@@ -162,9 +162,6 @@ A complex I/O is defined by adding a `"complex_{output, input}_<n>"` to the modu
 Complex outputs (e.g. `complex_output_0`) are used for playbacks, while complex inputs (e.g. `complex_input_0`) are used for acquisitions.
 However, for readout modules it is possible to use the `complex_output_<n>` key for both playbacks and acquisitions.
 
-```{note}
-It is not possible to use the same port-clock combination multiple times in the hardware config. In that case, it is required to use only the `complex_output_<n>` key.
-```
 
 ```{code-block} python
 ---
@@ -204,6 +201,10 @@ linenos: true
 },
 ```
 
+```{note}
+When using a port and clock combination for both playback and acquisition, only set up the `complex_output_<n>`.
+```
+
 ### Real I/O
 
 A real I/O is defined by adding a `real_{output, input}_<n>` to the module configuration.
@@ -211,12 +212,12 @@ Real outputs (e.g. `real_output_0`) are used for playbacks, while real inputs (e
 However, for readout modules it is possible to use the `real_output_<n>` key for both playbacks and acquisitions.
 When using a real I/O, the backend automatically maps the signals to the correct output paths.
 
+Note that the backend throws an error when using a real I/O for pulses with an imaginary component. For example, square and ramp pulses are allowed, but DRAG pulses are not.
+
 ```{note}
-It is not possible to use the same port-clock combination multiple times in the hardware config. In that case, it is required to use only the `real_output_<n>` key.
+When using a port and clock combination for both playback and acquisition, only set up the `real_output_<n>`.
 ```
 
-For a real I/O, it is not allowed to use any pulses that have an imaginary component, i.e., only real valued pulses are allowed.
-If you were to use a complex pulse, the backend will produce an error, e.g., square and ramp pulses are allowed but DRAG pulses are not.
 
 ```{code-block} python
 ---

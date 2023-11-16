@@ -17,6 +17,15 @@
 
 ### Merged branches and closed issues
 
+- Qblox backend - Refactor (no functional changes) of I/O related logic. (!759)
+  - Move to/rename helpers in `StaticHardwareProperties`:
+    - `get_io_info` => `_get_io_mode`,
+    - `output_name_to_output_indices` + `input_name_to_input_indices` => `io_name_to_connected_io_indices`,
+    - `output_map` => `io_name_to_digital_marker`.
+  - Rename properties in `Sequencer`:
+    - `connected_outputs` => `connected_output_indices`,
+    - `connected_inputs` => `connected_input_indices`.
+  - Substitute `io_mode` string literals by `IoMode` enums.
 - Qblox backend - Fix `MarkerPulse` playback on QRM-RF and QCM-RF. (!828)
   - Marker bit index values for addressing outputs need to be swapped on QCM-RF, not QRM-RF (done via `MarkerPulseStrategy._fix_marker_bit_output_addressing_qcm_rf`).
 - Compilation - Implement Connectivity datastructure for specifying connections between ports on the quantum device and on the control hardware in the `HardwareCompilationConfig`. (!734)

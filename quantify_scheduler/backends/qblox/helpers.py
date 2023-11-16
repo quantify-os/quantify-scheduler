@@ -15,7 +15,6 @@ from quantify_core.utilities.general import without
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends.graph_compilation import CompilationConfig
 from quantify_scheduler.backends.qblox import constants
-from quantify_scheduler.backends.qblox.enums import IoMode
 from quantify_scheduler.backends.types.common import Connectivity
 from quantify_scheduler.backends.types.qblox import (
     ComplexInputGain,
@@ -168,121 +167,6 @@ def add_to_wf_dict_if_unique(
         index: int = find_first_free_wf_index()
         wf_dict.update(generate_entry(uuid, waveform, index))
     return index
-
-
-def output_name_to_output_indices(
-    output_name: str,
-) -> Optional[Union[Tuple[int], Tuple[int, int]]]:
-    """
-    Return the output indices associated with the output name specified in the hardware config.
-
-    For the baseband modules, output index 'n' corresponds to physical module output 'n+1'.
-
-    For RF modules, output indices '0' and '1' (or: '2' and '3') correspond to 'path0' and 'path1' of some sequencer, and both these paths are routed to the **same** physical module output '1' (or: '2').
-
-    Parameters
-    ----------
-    output_name
-        Hardware config output name (e.g. 'complex_output_0').
-
-    Returns
-    -------
-    :
-        A tuple containing output indices corresponding to certain physical module outputs.
-    """
-    return {
-        "complex_output_0": (0, 1),
-        "complex_output_1": (2, 3),
-        "real_output_0": (0,),
-        "real_output_1": (1,),
-        "real_output_2": (2,),
-        "real_output_3": (3,),
-        "digital_output_0": (0,),
-        "digital_output_1": (1,),
-        "digital_output_2": (2,),
-        "digital_output_3": (3,),
-    }[output_name]
-
-
-def input_name_to_input_indices(input_name: str) -> Union[Tuple[int], Tuple[int, int]]:
-    """
-    Return the input indices associated with the input name specified in the
-    hardware config.
-
-    For the baseband modules, input index 'n' corresponds to physical module input 'n+1'.
-
-    For RF modules, input indices '0' and '1' correspond to 'path0' and 'path1' of some sequencer, and both paths are connected to physical module input '1'.
-
-    Parameters
-    ----------
-    input_name
-        Hardware config input name (e.g. 'complex_input_0').
-
-    Returns
-    -------
-    :
-        A tuple containing input indices corresponding to certain physical module inputs.
-    """
-    return {
-        "complex_input_0": (0, 1),
-        "real_input_0": (0,),
-        "real_input_1": (1,),
-    }[input_name]
-
-
-def get_io_info(
-    io_name: str,
-) -> Tuple[
-    IoMode, Union[Tuple[int], Tuple[int, int]], Union[Tuple[int], Tuple[int, int]]
-]:
-    """
-    Return a "sequencer mode" based on the paths used by the sequencer, as well as the
-    input or output indices associated to the io name the sequencer is supposed to use.
-
-    Sequencer modes:
-
-    - :attr:`.IoMode.REAL`: only path0 is used.
-    - :attr:`.IoMode.IMAG`: only path1 is used.
-    - :attr:`.IoMode.COMPLEX`: both path0 and path1 paths are used.
-    - :attr:`.IoMode.DIGITAL`: the digital outputs are used.
-
-    Parameters
-    ----------
-    io_name
-        The io name from the hardware config that the sequencer is supposed to use.
-
-    Returns
-    -------
-    :
-        The sequencer mode
-    :
-        The output indices
-    :
-        The input indices
-
-    """
-    connected_outputs, connected_inputs = None, None
-
-    if "output" in io_name:
-        connected_outputs = output_name_to_output_indices(io_name)
-    elif "input" in io_name:
-        connected_inputs = input_name_to_input_indices(io_name)
-    else:
-        raise ValueError(f"Input/output name '{io_name}' is not valid")
-
-    if "digital" in io_name:
-        sequencer_mode = IoMode.DIGITAL
-    elif "complex" in io_name:
-        sequencer_mode = IoMode.COMPLEX
-    elif "real" in io_name:
-        io_idx = (
-            connected_outputs[0]
-            if connected_outputs is not None
-            else connected_inputs[0]
-        )
-        sequencer_mode = IoMode.REAL if io_idx in (0, 2) else IoMode.IMAG
-
-    return sequencer_mode, connected_outputs, connected_inputs
 
 
 def generate_waveform_dict(waveforms_complex: Dict[str, np.ndarray]) -> Dict[str, dict]:
