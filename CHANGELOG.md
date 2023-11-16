@@ -14,6 +14,7 @@
       - For Qblox: `"config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig"`,
       - For Zurich Instruments: `"config_type": 
  "quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig"`.
+- Schedulables - Rename `Schedulable["operation_repr"]` to `Schedulable["operation_id"]` (!775, #438)
 
 ### Merged branches and closed issues
 

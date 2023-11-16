@@ -334,7 +334,7 @@ def circuit_diagram_matplotlib(
     # Note: needs to be done before creating figure and axhline
     # in order to avoid unnecessary redraws.
     for schedulable in schedule.schedulables.values():
-        operation = schedule.operations[schedulable["operation_repr"]]
+        operation = schedule.operations[schedulable["operation_id"]]
         if operation.valid_pulse:
             try:
                 for pulse_info in operation["pulse_info"]:
@@ -374,7 +374,7 @@ def circuit_diagram_matplotlib(
     for schedulable in sorted(
         schedule.schedulables.values(), key=lambda sch: sch["abs_time"]
     ):
-        operation = schedule.operations[schedulable["operation_repr"]]
+        operation = schedule.operations[schedulable["operation_id"]]
 
         tf = schedulable["abs_time"]
         time += 1 if tf != t0 else 0

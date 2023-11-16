@@ -49,7 +49,7 @@ def _get_square_pulses_to_replace(schedule: Schedule) -> Dict[str, List[int]]:
     Returns
     -------
     square_pulse_idx_map : Dict[str, List[int]]
-        The mapping from ``operation_repr`` to ``"pulse_info"`` indices to be replaced.
+        The mapping from ``operation_id`` to ``"pulse_info"`` indices to be replaced.
     """
     square_pulse_idx_map: Dict[str, List[int]] = {}
     for ref, operation in schedule.operations.items():

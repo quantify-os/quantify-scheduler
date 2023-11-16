@@ -4,7 +4,7 @@
   "additionalProperties": false,
   "required": [
     "name",
-    "operation_repr",
+    "operation_id",
     "timing_constraints"
   ],
   "properties": {
@@ -16,7 +16,7 @@
       "type": "string",
       "description": "Alias for name."
     },
-    "operation_repr": {
+    "operation_id": {
       "type": "string",
       "description": "string representation of the operation in the operation dict."
     },

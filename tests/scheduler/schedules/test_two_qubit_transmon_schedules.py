@@ -55,7 +55,7 @@ class TestChevronCZSched:
 
             # Test that the amplitude of the flux pulse is unchanged
             if schedulable["label"].startswith("SquarePulse"):
-                op_hash = schedulable["operation_repr"]
+                op_hash = schedulable["operation_id"]
                 pulse = self.uncomp_sched.operations[op_hash]["pulse_info"][0]
                 assert pulse["amp"] == self.sched_kwargs["amplitudes"][sq_pulse_idx]
                 sq_pulse_idx += 1
@@ -97,7 +97,7 @@ class TestChevronCZSched:
 
         for schedulable in compiled_sched.schedulables.values():
             if schedulable["label"].startswith("SquarePulse"):
-                operation = compiled_sched.operations[schedulable["operation_repr"]]
+                operation = compiled_sched.operations[schedulable["operation_id"]]
                 assert operation["pulse_info"][0]["port"] == "q1:fl"
 
     def test_sched_compile(

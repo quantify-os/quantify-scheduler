@@ -118,7 +118,7 @@ def get_operation_start(
         return 0.0
 
     schedulable = list(schedule.schedulables.values())[timeslot_index]
-    operation = schedule.operations[schedulable["operation_repr"]]
+    operation = schedule.operations[schedulable["operation_id"]]
 
     t0: float = schedulable["abs_time"]
 
@@ -164,7 +164,7 @@ def get_operation_end(
         return 0.0
 
     schedulable = list(schedule.schedulables.values())[timeslot_index]
-    operation: Operation = schedule.operations[schedulable["operation_repr"]]
+    operation: Operation = schedule.operations[schedulable["operation_id"]]
     t0: float = schedulable["abs_time"]
 
     return t0 + operation.duration
@@ -206,7 +206,7 @@ def get_port_timeline(
     )
 
     for timeslot_index, schedulable in schedulables_map.items():
-        operation = schedule.operations[schedulable["operation_repr"]]
+        operation = schedule.operations[schedulable["operation_id"]]
         abs_time = schedulable["abs_time"]
 
         pulse_info_iter = map(
@@ -284,7 +284,7 @@ def get_pulse_info_by_uuid(
     """
     pulseid_pulseinfo_dict: dict[int, dict[str, Any]] = {}
     for schedulable in schedule.schedulables.values():
-        operation = schedule.operations[schedulable["operation_repr"]]
+        operation = schedule.operations[schedulable["operation_id"]]
         for pulse_info in operation["pulse_info"]:
             pulse_id = get_pulse_uuid(pulse_info)
             if pulse_id in pulseid_pulseinfo_dict:
@@ -316,7 +316,7 @@ def get_acq_info_by_uuid(schedule: CompiledSchedule) -> dict[int, dict[str, Any]
     """
     acqid_acqinfo_dict: dict[int, dict[str, Any]] = {}
     for schedulable in schedule.schedulables.values():
-        operation = schedule.operations[schedulable["operation_repr"]]
+        operation = schedule.operations[schedulable["operation_id"]]
 
         for acq_info in operation["acquisition_info"]:
             acq_id = get_acq_uuid(acq_info)

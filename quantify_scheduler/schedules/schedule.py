@@ -132,10 +132,10 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
         .. code-block::
 
-            ['label', 'rel_time', 'ref_op', 'ref_pt_new', 'ref_pt', 'operation_repr']
+            ['label', 'rel_time', 'ref_op', 'ref_pt_new', 'ref_pt', 'operation_id']
 
         The label is used as a unique identifier that can be used as a reference for
-        other operations, the operation_repr refers to the string representation of a
+        other operations, the operation_id refers to the hash of an
         operation in :attr:`~.ScheduleBase.operations`.
 
         .. note::
@@ -544,7 +544,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
                     "Absolute time has not been determined yet. "
                     "Please compile your schedule."
                 )
-            operation = self.operations[schedulable["operation_repr"]]
+            operation = self.operations[schedulable["operation_id"]]
 
             for i, op_info in chain(
                 enumerate(operation["pulse_info"]),
@@ -560,7 +560,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
                     "is_acquisition": "acq_channel" in op_info or "bin_mode" in op_info,
                     "operation": str(operation),
                     "wf_idx": i,
-                    "operation_hash": schedulable["operation_repr"],
+                    "operation_hash": schedulable["operation_id"],
                 }
                 timing_table_list.append(pd.DataFrame(df_row, index=range(1)))
         timing_table = pd.concat(timing_table_list, ignore_index=True)
@@ -591,10 +591,10 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         # find last timestamp
         for schedulable in self.schedulables.values():
             timestamp = schedulable["abs_time"]
-            operation_repr = schedulable["operation_repr"]
+            operation_id = schedulable["operation_id"]
 
             # find duration of last operation
-            operation = self["operation_dict"][operation_repr]
+            operation = self["operation_dict"][operation_id]
             if isinstance(operation, Schedule):
                 final_op_len = operation.duration
             else:
@@ -778,9 +778,8 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
 
         operation_id = operation.hash
         self["operation_dict"][operation_id] = operation
-
         element = Schedulable(
-            name=label, operation_repr=operation_id, control_flow=control_flow
+            name=label, operation_id=operation_id, control_flow=control_flow
         )
         element.add_timing_constraint(
             rel_time=rel_time,
@@ -853,20 +852,20 @@ class Schedulable(JSONSchemaValMixin, UserDict):
     ----------
     name
         The name of this schedulable, by which it can be referenced by other
-        schedulables. Separate schedulables cannot share the same name
-    operation_repr
-        The operation which is to be executed by this schedulable
+        schedulables. Separate schedulables cannot share the same name.
+    operation_id
+        Reference to the operation which is to be executed by this schedulable.
     """
 
     schema_filename = "schedulable.json"
 
     def __init__(
-        self, name: str, operation_repr: str, control_flow: Operation | None = None
+        self, name: str, operation_id: str, control_flow: Operation | None = None
     ) -> None:
         super().__init__()
 
         self["name"] = name
-        self["operation_repr"] = operation_repr
+        self["operation_id"] = operation_id
         self["timing_constraints"] = []
 
         # the next lines are to prevent breaking the existing API

@@ -593,7 +593,7 @@ def assign_pulse_and_acq_info_to_devices(
     portclock_mapping = generate_port_clock_to_device_map(hardware_cfg)
 
     for schedulable in schedule.schedulables.values():
-        op_hash = schedulable["operation_repr"]
+        op_hash = schedulable["operation_id"]
         op_data = schedule.operations[op_hash]
 
         if isinstance(op_data, WindowOperation):

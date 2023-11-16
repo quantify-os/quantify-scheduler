@@ -191,7 +191,7 @@ def get_waveform_by_pulseid(
     """
     pulseid_waveformfn_dict: Dict[int, GetWaveformPartial] = {}
     for schedulable in schedule.schedulables.values():
-        operation = schedule.operations[schedulable["operation_repr"]]
+        operation = schedule.operations[schedulable["operation_id"]]
         for pulse_info in operation["pulse_info"]:
             pulse_id = schedule_helpers.get_pulse_uuid(pulse_info)
             if pulse_id in pulseid_waveformfn_dict:

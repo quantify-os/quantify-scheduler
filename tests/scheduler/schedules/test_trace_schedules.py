@@ -38,13 +38,13 @@ def test_trace_schedule() -> None:
     assert len(schedule.schedulables) == 3
     # IdlePulse
     idle_pulse_op = schedule.operations[
-        list(schedule.schedulables.values())[0]["operation_repr"]
+        list(schedule.schedulables.values())[0]["operation_id"]
     ]
     assert idle_pulse_op["pulse_info"][0]["duration"] == init_duration
 
     # SquarePulse
     square_pulse_op = schedule.operations[
-        list(schedule.schedulables.values())[1]["operation_repr"]
+        list(schedule.schedulables.values())[1]["operation_id"]
     ]
     assert square_pulse_op["pulse_info"][0]["duration"] == pulse_duration
     assert (
@@ -54,7 +54,7 @@ def test_trace_schedule() -> None:
 
     # Trace
     trace_acq_op = schedule.operations[
-        list(schedule.schedulables.values())[2]["operation_repr"]
+        list(schedule.schedulables.values())[2]["operation_id"]
     ]
     assert trace_acq_op["acquisition_info"][0]["duration"] == integration_time
     assert (
@@ -98,13 +98,13 @@ def test_two_tone_trace_schedule() -> None:
 
     # IdlePulse
     schedulable = list(schedule.schedulables.values())[0]
-    idle_pulse_op = schedule.operations[schedulable["operation_repr"]]
+    idle_pulse_op = schedule.operations[schedulable["operation_id"]]
     assert schedulable["label"] == "Reset"
     assert idle_pulse_op["pulse_info"][0]["duration"] == init_duration
 
     # Qubit pulse
     schedulable = list(schedule.schedulables.values())[1]
-    square_pulse_op = schedule.operations[schedulable["operation_repr"]]
+    square_pulse_op = schedule.operations[schedulable["operation_id"]]
     pulse_info = square_pulse_op["pulse_info"][0]
     assert schedulable["label"] == "qubit_pulse"
     assert pulse_info["port"] == "q0:mw"
@@ -112,7 +112,7 @@ def test_two_tone_trace_schedule() -> None:
 
     # Readout pulse
     schedulable = list(schedule.schedulables.values())[2]
-    square_pulse_op = schedule.operations[schedulable["operation_repr"]]
+    square_pulse_op = schedule.operations[schedulable["operation_id"]]
     pulse_info = square_pulse_op["pulse_info"][0]
     assert schedulable["label"] == "readout_pulse"
     assert schedulable["timing_constraints"][0]["rel_time"] == 2e-9
@@ -121,7 +121,7 @@ def test_two_tone_trace_schedule() -> None:
 
     # Trace Acquisition
     schedulable = list(schedule.schedulables.values())[3]
-    trace_op = schedule.operations[schedulable["operation_repr"]]
+    trace_op = schedule.operations[schedulable["operation_id"]]
     acq_info = trace_op["acquisition_info"][0]
     assert schedulable["label"] == "acquisition"
     assert schedulable["timing_constraints"][0]["rel_time"] == -20e-9

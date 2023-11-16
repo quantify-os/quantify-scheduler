@@ -34,7 +34,7 @@ def _populate_port_mapping(schedule, portmap: Dict[str, int], ports_length) -> N
     offset_idx: int = 0
 
     for schedulable in schedule.schedulables.values():
-        operation = schedule.operations[schedulable["operation_repr"]]
+        operation = schedule.operations[schedulable["operation_id"]]
         for operation_info in operation["pulse_info"] + operation["acquisition_info"]:
             if offset_idx == ports_length:
                 return
@@ -58,7 +58,7 @@ def validate_operation_data(operation_data, port_map, schedulable, operation):
         logger.warning(
             "Unable to sample waveform for operation_data due to missing 'port' for "
             f"operation name={operation['name']} "
-            f"id={schedulable['operation_repr']} operation_data={operation_data}"
+            f"id={schedulable['operation_id']} operation_data={operation_data}"
         )
         return False
 
@@ -67,7 +67,7 @@ def validate_operation_data(operation_data, port_map, schedulable, operation):
             logger.warning(
                 "Unable to sample pulse for pulse_info due to missing 'wf_func' for "
                 f"operation name={operation['name']} "
-                f"id={schedulable['operation_repr']} operation_data={operation_data}"
+                f"id={schedulable['operation_id']} operation_data={operation_data}"
             )
             return False
     return True
@@ -134,7 +134,7 @@ def pulse_diagram_plotly(
     col_idx: int = 0
 
     for pulse_idx, schedulable in enumerate(schedule.schedulables.values()):
-        operation = schedule.operations[schedulable["operation_repr"]]
+        operation = schedule.operations[schedulable["operation_id"]]
 
         if operation.has_voltage_offset:
             operation = convert_to_numerical_pulse(
@@ -367,7 +367,7 @@ def sample_schedule(
 
     min_x, max_x = x_range
     for schedulable in schedule.schedulables.values():
-        operation = schedule.operations[schedulable["operation_repr"]]
+        operation = schedule.operations[schedulable["operation_id"]]
 
         if operation.has_voltage_offset:
             operation = convert_to_numerical_pulse(
@@ -645,7 +645,7 @@ def get_window_operations(
     """
     window_operations = []
     for _, schedulable in enumerate(schedule.schedulables.values()):
-        operation = schedule.operations[schedulable["operation_repr"]]
+        operation = schedule.operations[schedulable["operation_id"]]
         if isinstance(operation, pl.WindowOperation):
             for pulse_info in operation["pulse_info"]:
                 t0 = schedulable["abs_time"] + pulse_info["t0"]
@@ -729,7 +729,7 @@ def plot_acquisition_operations(
     handles_list = []
     for idx, schedulable in enumerate(schedule.schedulables.values()):
         _ = idx  # unused variable
-        operation = schedule.operations[schedulable["operation_repr"]]
+        operation = schedule.operations[schedulable["operation_id"]]
         if isinstance(operation, AcquisitionOperation):
             t0 = schedulable["abs_time"] + operation.data["acquisition_info"][0]["t0"]
             t1 = t0 + operation.duration

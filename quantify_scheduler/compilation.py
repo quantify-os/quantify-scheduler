@@ -149,7 +149,7 @@ def _determine_absolute_timing(  # noqa: PLR0912
     last_schedulable["abs_time"] = 0
 
     for schedulable in schedulable_iterator:
-        curr_op = schedule.operations[schedulable["operation_repr"]]
+        curr_op = schedule.operations[schedulable["operation_id"]]
 
         for t_constr in schedulable["timing_constraints"]:
             t_constr["ref_schedulable"] = t_constr["ref_schedulable"] or str(
@@ -195,7 +195,7 @@ def _get_start_time(
 ) -> float:
     # this assumes the reference op exists. This is ensured in schedule.add
     ref_schedulable = schedule.schedulables[str(t_constr["ref_schedulable"])]
-    ref_op = schedule.operations[ref_schedulable["operation_repr"]]
+    ref_op = schedule.operations[ref_schedulable["operation_id"]]
 
     # duration = 1 is useful when e.g., drawing a circuit diagram.
     duration_ref_op = (
@@ -346,14 +346,14 @@ def flatten_schedule(
     # we cannot use .items() directly since we modify schedule.schedulables in the loop
     schedulable_iter = tuple(schedule.schedulables.items())
     for schedulable_key, schedulable in schedulable_iter:
-        op_key = schedulable["operation_repr"]
+        op_key = schedulable["operation_id"]
         op = schedule.operations[op_key]
         if isinstance(op, Schedule):
             offset = schedulable["abs_time"]
 
             # insert new schedulables shifted by the correct offset
             for inner_schedulable in op.schedulables.values():
-                inner_op = op.operations[inner_schedulable["operation_repr"]]
+                inner_op = op.operations[inner_schedulable["operation_id"]]
                 _insert_op_at_time(
                     schedule, inner_op, inner_schedulable["abs_time"] + offset
                 )
@@ -376,7 +376,7 @@ def _insert_op_at_time(
     new_key = str(uuid4())
     new_schedulable = Schedulable(
         name=new_key,
-        operation_repr=operation.hash,
+        operation_id=operation.hash,
     )
     # Timing constraints in the new schedulable are meaningless, so remove the list
     new_schedulable["timing_constraints"] = None

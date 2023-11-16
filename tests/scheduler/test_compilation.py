@@ -197,7 +197,7 @@ def test_pulse_and_clock(device_compile_config_basic_transmon):
     sched = Schedule("pulse_no_clock")
     mystery_clock = "BigBen"
     schedulable = sched.add(SquarePulse(0.5, 20e-9, "q0:mw_ch", clock=mystery_clock))
-    op = sched.operations[schedulable["operation_repr"]]
+    op = sched.operations[schedulable["operation_id"]]
 
     compiler = SerialCompiler(name="compiler")
     with pytest.raises(ValueError) as execinfo:
@@ -335,7 +335,7 @@ def test_compile_trace_acquisition(device_compile_config_basic_transmon):
         schedule=sched, config=device_compile_config_basic_transmon
     )
 
-    measure_repr = list(sched.schedulables.values())[-1]["operation_repr"]
+    measure_repr = list(sched.schedulables.values())[-1]["operation_id"]
     assert sched.operations[measure_repr]["acquisition_info"][0]["protocol"] == "Trace"
 
 
@@ -356,7 +356,7 @@ def test_compile_weighted_acquisition(
         config=device_compile_config_basic_transmon_with_weighted_integration,
     )
 
-    measure_repr = list(sched.schedulables.values())[-1]["operation_repr"]
+    measure_repr = list(sched.schedulables.values())[-1]["operation_id"]
     assert (
         sched.operations[measure_repr]["acquisition_info"][0]["protocol"]
         == "WeightedIntegratedComplex"
@@ -412,7 +412,7 @@ def test_determine_absolute_timing_subschedule():
     ]
     assert abs_times == [0, 1, 3]
     inner_sched_schedulable = timed_sched.data["schedulables"]["ref0_1"]
-    timed_inner = timed_sched.operations[inner_sched_schedulable["operation_repr"]]
+    timed_inner = timed_sched.operations[inner_sched_schedulable["operation_id"]]
     abs_times = [
         schedulable["abs_time"]
         for schedulable in timed_inner.data["schedulables"].values()
