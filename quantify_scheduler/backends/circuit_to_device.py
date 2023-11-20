@@ -102,7 +102,9 @@ def _compile_circuit_to_device(
         # will not work here for e.g. Measure, which is also a valid
         # acquisition)
         if isinstance(operation, Schedule):
-            schedule.operations[key] = _compile_circuit_to_device(operation, device_cfg)
+            schedule.operations[key] = _compile_circuit_to_device(
+                schedule=operation, config=config
+            )
             continue
         elif not (operation.valid_pulse or operation.valid_acquisition):
             qubits = operation.data["gate_info"]["qubits"]

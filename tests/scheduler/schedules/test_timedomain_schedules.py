@@ -325,13 +325,15 @@ class TestCPMGSched(_CompilesAllBackends):
                 )
                 i += 1
 
-    @pytest.mark.xfail(reason="control_flow not supported in Zhinst backend")
     def test_compiles_zi_backend(
         self, compile_config_basic_transmon_zhinst_hardware
     ) -> None:
-        _CompilesAllBackends.test_compiles_zi_backend(
-            self, compile_config_basic_transmon_zhinst_hardware
-        )
+        with pytest.raises(
+            NotImplementedError, match="not supported by the zhinst backend"
+        ):
+            _CompilesAllBackends.test_compiles_zi_backend(
+                self, compile_config_basic_transmon_zhinst_hardware
+            )
 
 
 class TestCPMGSched_y(TestCPMGSched):

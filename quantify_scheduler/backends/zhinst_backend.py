@@ -48,6 +48,7 @@ from quantify_scheduler.helpers.schedule import _extract_port_clocks_used
 from quantify_scheduler.instrument_coordinator.components.generic import (
     DEFAULT_NAME as GENERIC_ICC_DEFAULT_NAME,
 )
+from quantify_scheduler.operations.control_flow_library import Loop
 from quantify_scheduler.operations.stitched_pulse import (
     convert_to_numerical_pulse,
 )
@@ -548,6 +549,10 @@ def _validate_schedule(schedule: Schedule) -> None:
         for pulse_data in op.data["pulse_info"]:
             if pulse_data.get("reference_magnitude", None) is not None:
                 raise NotImplementedError
+        if isinstance(op, Loop):
+            raise NotImplementedError(
+                f"Operation '{op}' is not supported by the zhinst backend."
+            )
 
 
 def _convert_stitched_pulses(schedule: Schedule) -> None:
