@@ -36,6 +36,7 @@
 - Schedules - Prevent FutureWarning when creating `Schedule.timing_table` and sort by `abs_time`. (!852) 
 - Documentation - Moved all `__init__` docstrings to class description and minor docstring changes. (!785)
 - QuantumDevice - Store element and edge instrument references in quantum device. (!855, #442)
+- Infrastructure - Performance profiling: ability to run profiling via the CI pipeline and manually in a notebook. (!854)
 
 ## 0.17.1 (2023-11-02)
 

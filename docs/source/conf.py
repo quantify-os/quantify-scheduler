@@ -125,9 +125,10 @@ exclude_patterns = [
     "_build",
     "Thumbs.db",
     ".DS_Store",
-    "dev/profiling/random_gates.ipynb",
-    "dev/profiling/resonator_spectroscopy.ipynb",
-    "dev/profiling/simple_binned_acquisition.ipynb",
+    "dev/profiling/metrics.py",
+    "dev/profiling/random_gates.py",
+    "dev/profiling/resonator_spectroscopy.py",
+    "dev/profiling/simple_binned_acquisition.py",
 ]
 
 # The name of the Pygments (syntax highlighting) style to use.
