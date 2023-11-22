@@ -37,6 +37,8 @@
 - Documentation - Moved all `__init__` docstrings to class description and minor docstring changes. (!785)
 - QuantumDevice - Store element and edge instrument references in quantum device. (!855, #442)
 - Infrastructure - Performance profiling: ability to run profiling via the CI pipeline and manually in a notebook. (!854)
+- Operations - Make `staircase_pulse`, `long_square_pulse` and `long_ramp_pulse` compatible with use in control flow on Qblox hardware. (!857)
+  - End on a pulse with 0 voltage offset, to remove 4ns timing mismatch when they are used in control flow.
 
 ## 0.17.1 (2023-11-02)
 

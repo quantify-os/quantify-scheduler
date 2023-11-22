@@ -3,8 +3,10 @@ import pytest
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends import SerialCompiler
+from quantify_scheduler.operations.acquisition_library import TriggerCount
 from quantify_scheduler.operations.gate_library import Measure, Reset
 from quantify_scheduler.operations.nv_native_library import ChargeReset, CRCount
+from quantify_scheduler.operations.pulse_factories import long_square_pulse
 from quantify_scheduler.operations.shared_native_library import SpectroscopyOperation
 from quantify_scheduler.schedules.schedule import CompiledSchedule
 
@@ -110,6 +112,7 @@ def test_compilation_reset_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
 
     quantum_device = mock_setup_basic_nv_qblox_hardware["quantum_device"]
     pulse_duration = quantum_device.get_element("qe0").reset.duration.get()
+    pulse_amplitude = quantum_device.get_element("qe0").reset.amplitude.get()
 
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
@@ -132,10 +135,21 @@ def test_compilation_reset_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
     assert isinstance(compiled_sched, CompiledSchedule)
     assert "compiled_instructions" in compiled_sched.data
 
-    assert compiled_sched.timing_table.data.loc[0, "duration"] == pulse_duration
-    assert compiled_sched.timing_table.data.loc[0, "is_acquisition"] is numpy.bool_(
-        False
+    operation_id = list(compiled_sched.schedulables.values())[0]["operation_id"]
+    # We make the assumption here that the reset pulse is done with a
+    # 'long_square_pulse', since the pulse is too long for a regular square
+    # pulse.
+    assert (
+        compiled_sched.operations[operation_id]["pulse_info"]
+        == long_square_pulse(
+            amp=pulse_amplitude,
+            duration=pulse_duration,
+            port="qe0:optical_control",
+            clock="qe0.ge1",
+        )["pulse_info"]
     )
+
+    assert not compiled_sched.operations[operation_id]["acquisition_info"]
 
 
 def test_compilation_measure_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
@@ -158,6 +172,7 @@ def test_compilation_measure_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
     quantum_device.get_element("qe0").measure.acq_delay(1e-7)
 
     pulse_duration = quantum_device.get_element("qe0").measure.pulse_duration()
+    pulse_amplitude = quantum_device.get_element("qe0").measure.pulse_amplitude()
     acq_duration = quantum_device.get_element("qe0").measure.acq_duration()
 
     compiler = SerialCompiler(name="compiler")
@@ -187,13 +202,26 @@ def test_compilation_measure_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
     assert isinstance(compiled_sched, CompiledSchedule)
     assert "compiled_instructions" in compiled_sched.data
 
-    assert compiled_sched.timing_table.data.loc[0, "duration"] == pulse_duration
-    assert compiled_sched.timing_table.data.loc[0, "is_acquisition"] is numpy.bool_(
-        False
+    schedulables = list(compiled_sched.schedulables.values())
+    assert len(schedulables) == 1
+    operation_id = schedulables[0]["operation_id"]
+    # We make the assumption here that the measure pulse is done with a
+    # 'long_square_pulse', since the pulse is too long for a regular square
+    # pulse.
+    assert (
+        compiled_sched.operations[operation_id]["pulse_info"]
+        == long_square_pulse(
+            amp=pulse_amplitude,
+            duration=pulse_duration,
+            port="qe0:optical_control",
+            clock="qe0.ge0",
+        )["pulse_info"]
     )
-    assert compiled_sched.timing_table.data.loc[2, "duration"] == acq_duration
-    assert compiled_sched.timing_table.data.loc[2, "is_acquisition"] is numpy.bool_(
-        True
+    assert (
+        TriggerCount(
+            port="qe0:optical_readout", clock="qe0.ge0", duration=acq_duration, t0=1e-7
+        )["acquisition_info"]
+        == compiled_sched.operations[operation_id]["acquisition_info"]
     )
 
 
@@ -215,6 +243,7 @@ def test_compilation_charge_reset_qblox_hardware(mock_setup_basic_nv_qblox_hardw
 
     quantum_device = mock_setup_basic_nv_qblox_hardware["quantum_device"]
     pulse_duration = quantum_device.get_element("qe0").charge_reset.duration.get()
+    pulse_amplitude = quantum_device.get_element("qe0").charge_reset.amplitude.get()
 
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
@@ -237,10 +266,22 @@ def test_compilation_charge_reset_qblox_hardware(mock_setup_basic_nv_qblox_hardw
     assert isinstance(compiled_sched, CompiledSchedule)
     assert "compiled_instructions" in compiled_sched.data
 
-    assert compiled_sched.timing_table.data.loc[0, "duration"] == pulse_duration
-    assert compiled_sched.timing_table.data.loc[0, "is_acquisition"] is numpy.bool_(
-        False
+    schedulables = list(compiled_sched.schedulables.values())
+    assert len(schedulables) == 1
+    operation_id = schedulables[0]["operation_id"]
+    # We make the assumption here that the reset pulse is done with a
+    # 'long_square_pulse', since the pulse is too long for a regular square
+    # pulse.
+    assert (
+        compiled_sched.operations[operation_id]["pulse_info"]
+        == long_square_pulse(
+            amp=pulse_amplitude,
+            duration=pulse_duration,
+            port="qe0:optical_control",
+            clock="qe0.ionization",
+        )["pulse_info"]
     )
+    assert not compiled_sched.operations[operation_id]["acquisition_info"]
 
 
 def test_compilation_cr_count_qblox_hardware(mock_setup_basic_nv):

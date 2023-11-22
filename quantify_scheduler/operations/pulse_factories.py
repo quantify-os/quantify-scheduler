@@ -342,8 +342,23 @@ def long_square_pulse(
         .add_voltage_offset(
             path_0=amp,
             path_1=0.0,
-            duration=duration,
             reference_magnitude=reference_magnitude,
+        )
+        # The last bit, with duration 'grid time' ns, is replaced by a normal pulse. The
+        # offset is set back to 0 before this pulse, because the Qblox backend might
+        # otherwise lengthen the full operation by adding an 'UpdateParameters'
+        # instruction at the end.
+        .add_voltage_offset(
+            path_0=0.0, path_1=0.0, rel_time=duration - grid_time_ns * 1e-9
+        )
+        .add_pulse(
+            pulse_library.SquarePulse(
+                amp=amp,
+                duration=grid_time_ns * 1e-9,
+                port=port,
+                clock=clock,
+                reference_magnitude=reference_magnitude,
+            )
         )
         .build()
     )
@@ -419,15 +434,43 @@ def staircase_pulse(
             f"The duration of each step of the staircase must be a multiple of"
             f" {grid_time_ns} ns."
         ) from err
+
     amps = np.linspace(start_amp, final_amp, num_steps)
-    for amp in amps:
+
+    # The final step is a special case, see below.
+    for amp in amps[:-1]:
         builder.add_voltage_offset(
             path_0=amp,
             path_1=0.0,
             duration=step_duration,
+            min_duration=grid_time_ns * 1e-9,
             reference_magnitude=reference_magnitude,
         )
+
+    # The final step is an offset with the last part (of duration 'grid time' ns)
+    # replaced by a pulse. The offset is set back to 0 before the pulse, because the
+    # Qblox backend might otherwise lengthen the full operation by adding an
+    # 'UpdateParameters' instruction at the end.
+    builder.add_voltage_offset(
+        path_0=amps[-1],
+        path_1=0.0,
+        duration=step_duration - grid_time_ns * 1e-9,
+        min_duration=grid_time_ns * 1e-9,
+        reference_magnitude=reference_magnitude,
+    )
+    builder.add_voltage_offset(path_0=0.0, path_1=0.0)
+    builder.add_pulse(
+        pulse_library.SquarePulse(
+            amp=amps[-1],
+            duration=grid_time_ns * 1e-9,
+            port=port,
+            clock=clock,
+            reference_magnitude=reference_magnitude,
+        )
+    )
+
     pulse = builder.build()
+
     return pulse
 
 
@@ -490,11 +533,15 @@ def long_ramp_pulse(
 
     builder = StitchedPulseBuilder(port=port, clock=clock, t0=t0)
 
-    cur_offset = offset
+    last_sample_voltage = offset
     for _ in range(num_whole_parts):
-        if not (math.isclose(offset, 0) and math.isclose(cur_offset, offset)):
+        # Add an offset for each ramp part, except for the first one if the overall ramp
+        # offset is 0.
+        if not (last_sample_voltage == offset and math.isclose(offset, 0.0)):
             builder.add_voltage_offset(
-                path_0=cur_offset, path_1=0.0, reference_magnitude=reference_magnitude
+                path_0=last_sample_voltage,
+                path_1=0.0,
+                reference_magnitude=reference_magnitude,
             )
         builder.add_pulse(
             pulse_library.RampPulse(
@@ -504,14 +551,21 @@ def long_ramp_pulse(
                 reference_magnitude=reference_magnitude,
             )
         )
-        cur_offset += amp_part
-    if cur_offset != offset:
-        builder.add_voltage_offset(
-            path_0=cur_offset, path_1=0.0, reference_magnitude=reference_magnitude
-        )
+        last_sample_voltage += amp_part
+
+    # For the final part, the voltage offset is set to 0, because the Qblox
+    # backend might otherwise lengthen the full operation by adding an
+    # 'UpdateParameters' instruction at the end.
+
+    # Insert a 0 offset if offsets were inserted above and the last offset is not 0.
+    if not math.isclose(last_sample_voltage, offset) and not math.isclose(
+        last_sample_voltage - amp_part, 0.0
+    ):
+        builder.add_voltage_offset(path_0=0.0, path_1=0.0)
     builder.add_pulse(
         pulse_library.RampPulse(
             amp=amp_left,
+            offset=last_sample_voltage,
             duration=dur_left,
             port=port,
             reference_magnitude=reference_magnitude,

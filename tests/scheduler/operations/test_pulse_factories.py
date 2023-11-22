@@ -11,7 +11,11 @@ from quantify_scheduler.operations.pulse_factories import (
     rxy_gauss_pulse,
     staircase_pulse,
 )
-from quantify_scheduler.operations.pulse_library import ReferenceMagnitude
+from quantify_scheduler.operations.pulse_library import (
+    ReferenceMagnitude,
+    SquarePulse,
+    VoltageOffset,
+)
 
 
 def test_rxy_drag_pulse():
@@ -81,7 +85,7 @@ def test_short_long_ramp_pulse():
 
 def test_long_long_ramp_pulse():
     """Test a long_ramp_pulse that is composed of multiple parts."""
-    pulse = long_ramp_pulse(amp=0.8, duration=3e-5, offset=0.2, port="q0:res")
+    pulse = long_ramp_pulse(amp=0.5, duration=2.5e-6, offset=-0.2, port="q0:res")
 
     ramp_parts = []
     offsets = []
@@ -91,23 +95,42 @@ def test_long_long_ramp_pulse():
         else:
             ramp_parts.append(pulse_info)
 
-    assert offsets[0]["offset_path_0"] == pytest.approx(0.2)
-    assert sum(pul_inf["amp"] for pul_inf in ramp_parts) == pytest.approx(0.8)
-    assert sum(pul_inf["duration"] for pul_inf in ramp_parts) == pytest.approx(3e-5)
-    assert offsets[-2]["offset_path_0"] + ramp_parts[-1]["amp"] == pytest.approx(1.0)
+    assert offsets[0]["offset_path_0"] == pytest.approx(-0.2)
+    assert sum(pul_inf["amp"] for pul_inf in ramp_parts) == pytest.approx(0.5)
+    assert sum(pul_inf["duration"] for pul_inf in ramp_parts) == pytest.approx(2.5e-6)
+    assert ramp_parts[-1]["offset"] + ramp_parts[-1]["amp"] == pytest.approx(0.3)
     assert offsets[-1]["offset_path_0"] == pytest.approx(0.0)
 
 
 def test_long_square_pulse():
     """Test a long square pulse."""
-    pulse = long_square_pulse(amp=0.8, duration=1e-3, port="q0:res", clock="q0.ro")
-    assert len(pulse["pulse_info"]) == 2
-    assert pulse["pulse_info"][0]["offset_path_0"] == 0.8
-    assert pulse["pulse_info"][0]["duration"] == 1e-3
-    assert pulse["pulse_info"][0]["reference_magnitude"] is None
-    assert pulse["pulse_info"][1]["offset_path_0"] == 0.0
-    assert pulse["pulse_info"][1]["t0"] == 1e-3
-    assert pulse["pulse_info"][1]["reference_magnitude"] is None
+    port = "q0:res"
+    clock = "q0.ro"
+    pulse = long_square_pulse(amp=0.8, duration=1e-3, port=port, clock=clock)
+    assert len(pulse["pulse_info"]) == 3
+    assert (
+        pulse["pulse_info"][1]
+        == VoltageOffset(
+            offset_path_0=0.8, offset_path_1=0.0, duration=0.0, port=port, clock=clock
+        )["pulse_info"][0]
+    )
+    assert (
+        pulse["pulse_info"][2]
+        == VoltageOffset(
+            offset_path_0=0.0,
+            offset_path_1=0.0,
+            duration=0.0,
+            port=port,
+            clock=clock,
+            t0=1e-3 - 4e-9,
+        )["pulse_info"][0]
+    )
+    assert (
+        pulse["pulse_info"][0]
+        == SquarePulse(amp=0.8, duration=4e-9, port=port, clock=clock, t0=1e-3 - 4e-9)[
+            "pulse_info"
+        ][0]
+    )
 
 
 def test_staircase():
@@ -121,20 +144,42 @@ def test_staircase():
         clock="q0.ro",
     )
     amps = np.linspace(0.1, 0.9, 20)
-    for amp, pulse_inf in zip(amps, pulse["pulse_info"][:-1]):
+    assert pulse["pulse_info"][0]["amp"] == 0.9
+    assert pulse["pulse_info"][0]["duration"] == 4e-9
+    assert pulse["pulse_info"][0]["t0"] == pytest.approx(1e-3 - 4e-9)
+    for amp, pulse_inf in zip(amps, pulse["pulse_info"][1:-2]):
         assert pulse_inf["offset_path_0"] == pytest.approx(amp)
         assert pulse_inf["duration"] == pytest.approx(5e-5)
+    assert pulse["pulse_info"][-2]["offset_path_0"] == 0.9
+    assert pulse["pulse_info"][-2]["duration"] == pytest.approx(5e-5 - 4e-9)
     assert pulse["pulse_info"][-1]["offset_path_0"] == 0.0
 
 
-def test_staircase_raises():
+def test_staircase_raises_not_multiple_of_grid_time():
     """Test that an error is raised if step duration is not a multiple of grid time."""
     with pytest.raises(ValueError) as err:
         _ = staircase_pulse(
             start_amp=0.1,
             final_amp=0.9,
-            num_steps=19,
-            duration=1e-4,
+            num_steps=20,
+            duration=20 * 9e-9,
+            grid_time_ns=4,
+            port="q0:res",
+            clock="q0.ro",
+        )
+    # Exact phrasing is not important, but should be about staircase
+    assert "step" in str(err.value) and "staircase" in str(err.value)
+
+
+def test_staircase_raises_step_duration_too_short():
+    """Test that an error is raised if step duration is shorter than the grid time."""
+    with pytest.raises(ValueError) as err:
+        _ = staircase_pulse(
+            start_amp=0.1,
+            final_amp=0.9,
+            num_steps=20,
+            duration=20 * 4e-9,
+            grid_time_ns=8,
             port="q0:res",
             clock="q0.ro",
         )

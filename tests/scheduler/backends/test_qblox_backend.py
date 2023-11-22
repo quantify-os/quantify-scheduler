@@ -77,7 +77,11 @@ from quantify_scheduler.operations.acquisition_library import (
 from quantify_scheduler.operations.control_flow_library import Loop
 from quantify_scheduler.operations.gate_library import X90, Measure, Reset, X, Y
 from quantify_scheduler.operations.operation import Operation
-from quantify_scheduler.operations.pulse_factories import long_square_pulse
+from quantify_scheduler.operations.pulse_factories import (
+    long_square_pulse,
+    long_ramp_pulse,
+    staircase_pulse,
+)
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     IdlePulse,
@@ -3269,7 +3273,13 @@ def test_stitched_pulse_compilation_upd_param_at_end(
     clock = "qe0.ge0"
     sched.add_resource(ClockResource(name=clock, freq=470.4e12))
 
-    sched.add(long_square_pulse(amp=0.5, duration=1e-5, port=port, clock=clock))
+    only_offsets_pulse = (
+        StitchedPulseBuilder(port=port, clock=clock)
+        .add_voltage_offset(path_0=0.5, path_1=0.0)
+        .add_voltage_offset(path_0=0.0, path_1=0.0, rel_time=1e-5)
+        .build()
+    )
+    sched.add(only_offsets_pulse)
     # Add a pulse on a different port to ensure a wait is inserted for the
     # sequencer that plays the above pulse
     sched.add(SquarePulse(amp=0.5, duration=1e-7, port=port2, clock=clock))
@@ -3292,6 +3302,91 @@ def test_stitched_pulse_compilation_upd_param_at_end(
     assert re.search(r"^\s*set_awg_offs\s+0,0\s+", program_with_long_square[i + 3])
     assert re.search(r"^\s*upd_param\s+4\s+", program_with_long_square[i + 4])
     assert re.search(r"^\s*wait\s+96\s+", program_with_long_square[i + 5])
+
+
+def test_q1asm_stitched_pulses(mock_setup_basic_nv_qblox_hardware):
+    sched = Schedule("stitched_pulses")
+    port = "qe0:optical_readout"
+    clock = "qe0.ge0"
+    sched.add_resource(ClockResource(name=clock, freq=470.4e12))
+
+    sched.add(
+        long_square_pulse(
+            amp=0.5,
+            duration=4e-6,
+            port=port,
+            clock=clock,
+        ),
+        rel_time=4e-9,
+        ref_pt="start",
+    )
+    sched.add(
+        long_ramp_pulse(
+            amp=1.0,
+            duration=4e-6,
+            port=port,
+            offset=-0.5,
+            clock=clock,
+        ),
+        rel_time=5e-7,
+    )
+    sched.add(
+        staircase_pulse(
+            start_amp=-0.5,
+            final_amp=0.5,
+            num_steps=5,
+            duration=4e-6,
+            port=port,
+            clock=clock,
+        ),
+        rel_time=5e-7,
+    )
+
+    quantum_device = mock_setup_basic_nv_qblox_hardware["quantum_device"]
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        sched,
+        config=quantum_device.generate_compilation_config(),
+    )
+
+    assert (
+        """ set_awg_offs 16383,0 
+ upd_param 4 
+ wait 3992 # auto generated wait (3992 ns)
+ set_awg_offs 0,0 
+ set_awg_gain 16383,0 # setting gain for StitchedPulse
+ play 0,0,4 # play StitchedPulse (4 ns)
+ wait 500 # auto generated wait (500 ns)
+ set_awg_offs -16384,0 
+ set_awg_gain 16375,0 # setting gain for StitchedPulse
+ play 1,1,4 # play StitchedPulse (2000 ns)
+ wait 1996 # auto generated wait (1996 ns)
+ set_awg_offs 0,0 
+ set_awg_gain 16375,0 # setting gain for StitchedPulse
+ play 1,1,4 # play StitchedPulse (2000 ns)
+ wait 2496 # auto generated wait (2496 ns)
+ set_awg_offs -16384,0 
+ upd_param 4 
+ wait 796 # auto generated wait (796 ns)
+ set_awg_offs -8192,0 
+ upd_param 4 
+ wait 796 # auto generated wait (796 ns)
+ set_awg_offs 0,0 
+ upd_param 4 
+ wait 796 # auto generated wait (796 ns)
+ set_awg_offs 8191,0 
+ upd_param 4 
+ wait 796 # auto generated wait (796 ns)
+ set_awg_offs 16383,0 
+ upd_param 4 
+ wait 792 # auto generated wait (792 ns)
+ set_awg_offs 0,0 
+ set_awg_gain 16383,0 # setting gain for StitchedPulse
+ play 0,0,4 # play StitchedPulse (4 ns)"""
+        in compiled_sched.compiled_instructions["cluster0"]["cluster0_module4"][
+            "sequencers"
+        ]["seq0"]["sequence"]["program"]
+    )
 
 
 def test_auto_compile_long_square_pulses(
@@ -3318,19 +3413,14 @@ def test_auto_compile_long_square_pulses(
         config=quantum_device.generate_compilation_config(),
     )
 
-    seq_instructions = compiled_sched.compiled_instructions["cluster0"][
-        "cluster0_module4"
-    ]["sequencers"]["seq0"]["sequence"]["program"].splitlines()
+    assert list(compiled_sched.operations.values())[0] == long_square_pulse(
+        amp=0.2,
+        duration=2.5e-6,
+        port=port,
+        clock=clock,
+        t0=1e-6,
+    )
 
-    idx = 0
-    for i, string in enumerate(seq_instructions):
-        if "set_awg_offs" in string:
-            idx = i
-            break
-    assert re.search(r"^\s*set_awg_offs\s+6553,0\s+", seq_instructions[idx])
-    assert re.search(r"^\s*upd_param\s+4\s+", seq_instructions[idx + 1])
-    assert re.search(r"^\s*wait\s+2496\s+", seq_instructions[idx + 2])
-    assert re.search(r"^\s*set_awg_offs\s+0,0\s+", seq_instructions[idx + 3])
     assert square_pulse == saved_pulse
 
 
@@ -3377,20 +3467,23 @@ def test_long_acquisition(
         mixed_schedule_with_acquisition,
         config=compile_config_basic_transmon_qblox_hardware_pulsar,
     )
-    seq_instructions = compiled_sched.compiled_instructions["qrm0"]["sequencers"][
-        "seq0"
-    ]["sequence"]["program"].splitlines()
-    idx = 0
-    for i, string in enumerate(seq_instructions):
-        if "set_awg_offs" in string:
-            idx = i
-            break
-    assert re.search(r"^\s*set_awg_offs\s+8191,0\s+", seq_instructions[idx])
-    assert re.search(r"^\s*upd_param\s+4\s+", seq_instructions[idx + 1])
-    assert re.search(r"^\s*wait\s+96\s+", seq_instructions[idx + 2])
-    assert re.search(r"^\s*acquire\s+0,0,4\s+", seq_instructions[idx + 3])
-    assert re.search(r"^\s*wait\s+2896\s+", seq_instructions[idx + 4])
-    assert re.search(r"^\s*set_awg_offs\s+0,0\s+", seq_instructions[idx + 5])
+
+    measure_op = next(
+        filter(
+            lambda op: op["name"] == "Measure q0", compiled_sched.operations.values()
+        )
+    )
+    pulse_info_without_reset_ph = list(
+        filter(
+            lambda x: not x.get("reset_clock_phase", False), measure_op["pulse_info"]
+        )
+    )
+    assert (
+        pulse_info_without_reset_ph
+        == long_square_pulse(amp=0.25, duration=3e-6, port="q0:res", clock="q0.ro")[
+            "pulse_info"
+        ]
+    )
 
 
 def test_too_long_waveform_doesnt_raise(
@@ -3715,8 +3808,10 @@ start:
  upd_param 4 
  set_awg_offs 16383,0 
  upd_param 4 
- wait 996 # auto generated wait (996 ns)
+ wait 992 # auto generated wait (992 ns)
  set_awg_offs 0,0 
+ set_awg_gain 16383,0 # setting gain for StitchedPulse
+ play 0,0,4 # play StitchedPulse (4 ns)
  loop R0,@start 
  stop  
 """
@@ -3731,12 +3826,14 @@ start:
           upd_param     4                                                
           set_awg_offs  16383,0                                          
           upd_param     4                                                
-          wait          996        # auto generated wait (996 ns)        
+          wait          992        # auto generated wait (992 ns)        
           set_awg_offs  0,0                                              
+          set_awg_gain  16383,0    # setting gain for StitchedPulse      
+          play          0,0,4      # play StitchedPulse (4 ns)           
           loop          R0,@start                                        
           stop                                                           
 """
-    assert program == expected_program
+    assert program == expected_program, program
 
 
 class TestControlFlow:
