@@ -93,7 +93,7 @@
   - Subschedules & repetition loops
     - A schedule can now be added to a schedule just like an operation.
     - Looping of an operation via new `control_flow` argument in `Schedule.add`.
-    - Various limitations apply, please consult the documentation: [Reference guide: Control flow](https://quantify-os.org/docs/quantify-scheduler/latest/reference/control_flow.html).
+    - Various limitations apply, please consult the documentation: [Reference guide: Control flow](https://quantify-os.org/docs/quantify-scheduler/reference/control_flow.html).
     - Also, currently plotting and timing table is not working:
       - Subschedules: circuit diagram does not work,
       - Repetition loops: not shown in circuit diagram, timing table does not work.
@@ -113,7 +113,7 @@
 - QuantumDevice - `ManualParameter` `elements` and `edges` have been changed from `list` to `dict`. (!813)
   - Before, these were lists with instrument names, so one could do `element_name = quantum_device.elements()[0]` and `edge_name = quantum_device.edges()[0]`.
   - Now, these are dicts with instrument names as keys and the `DeviceElement` and `Edge` instances as values, so one would need to change to `element_name = list(quantum_device.elements())[0]` and `edge_name = list(quantum_device.edges())[0]`.
-  - Also see [Tutorial: Operations and Qubits - Device configuration](https://quantify-os.org/docs/quantify-scheduler/latest/tutorials/Operations%20and%20Qubits.html#device-configuration).
+  - Also see [Tutorial: Operations and Qubits - Device configuration](https://quantify-os.org/docs/quantify-scheduler/tutorials/Operations%20and%20Qubits.html#device-configuration).
 
 ### Merged branches and closed issues
 
@@ -165,7 +165,7 @@
   
 - Schedule:
   - A schedule can now be added to another schedule. It will be treated as one big operation. (!709)
-  - Added looping: An inner schedule can be repeated inside of the schedule. This feature has limitations, please refer to the [control flow documentation](https://quantify-os.org/docs/quantify-scheduler/latest/reference/control_flow.html). (!709, !819)
+  - Added looping: An inner schedule can be repeated inside of the schedule. This feature has limitations, please refer to the [control flow documentation](https://quantify-os.org/docs/quantify-scheduler/reference/control_flow.html). (!709, !819)
   
 - Schedules:
   - Added two-qubit schedule-generating function `two_qubit_transmon_schedules.chevron_cz_sched` for CZ tuneup. (!700).
@@ -207,7 +207,7 @@
 ### Release highlights
 
 - New features
-  - New acquisition protocol: [ThresholdedAcquisition](https://quantify-os.org/docs/quantify-scheduler/latest/tutorials/Acquisitions.html#thresholded-acquisition)
+  - New acquisition protocol: [ThresholdedAcquisition](https://quantify-os.org/docs/quantify-scheduler/tutorials/Acquisitions.html#thresholded-acquisition)
     - Currently only supported by the Qblox backend
 
 - Qblox backend improvements
@@ -312,7 +312,7 @@
   - **Introducing** `ReferenceMagnitude`. A new parameter called has been introduced for pulses, enabling the flexible specification of amplitudes and powers across various orders of magnitude. This parameter allows users to utilize variable attenuations, among other techniques, to precisely control the amplitudes and powers of the pulses. **Important note** this parameter is not yet implemented for any of the available backends. Future updates are expected to include support for ReferenceMagnitude in the compilation backends.
 
 - Qblox backend improvements
-  - **Introducing the** `MarkerPulse`. This feature simplifies the specification of digital pulses with precise timing, facilitating the control of third-party electronics. For more information, see [Digital I/O](https://quantify-os.org/docs/quantify-scheduler/latest/reference/qblox/Cluster.html#digital-i-o).
+  - **Introducing the** `MarkerPulse`. This feature simplifies the specification of digital pulses with precise timing, facilitating the control of third-party electronics. For more information, see [Digital I/O](https://quantify-os.org/docs/quantify-scheduler/reference/qblox/Cluster.html#digital-i-o).
   - **Improved Compilation Time**. The compilation time has been significantly improved, achieving approximately 10 times faster execution. Notably, a 32 times speedup has been observed when running 2-qubit Chevron schedules.
   - **Reduced Acquisition Time**. The minimum time between acquisitions has been lowered from 1000 ns to 300 ns, enhancing the efficiency of data acquisition.
 
@@ -352,7 +352,7 @@
 
 - This release introduces a new acquisition protocol: `NumericalWeightedIntegrationComplex`, that allows users perform a weighted integration acquisition.
 - The schedule library now has a new schedule that performs an NCO frequency sweep in a dark ESR experiment on an NV-center.
-- A lot of code that was marked as deprecated has been removed. Please checkout our [deprecated code suggestions](https://quantify-os.org/docs/quantify-scheduler/latest/examples/deprecated.html) on how to modify you code to ammend any problems caused by this removal.
+- A lot of code that was marked as deprecated has been removed. Please checkout our [deprecated code suggestions](https://quantify-os.org/docs/quantify-scheduler/v0.13.0/examples/deprecated.html) on how to modify you code to ammend any problems caused by this removal.
 - Many improvements and small bug fixes.
 
 ### Breaking changes

@@ -112,7 +112,7 @@ Now we are ready to proceed to the compilation stage. For each of the control st
 
 We perform the compilation via {func}`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler.compile`.
 
-We start by setting the directory where the compiled schedule files will be stored, via [set_datadir](https://quantify-os.org/docs/quantify-core/latest/user/concepts.html#data-directory).
+We start by setting the directory where the compiled schedule files will be stored, via [set_datadir](https://quantify-os.org/docs/quantify-core/dev/user/concepts.html#data-directory).
 
 ```{code-cell} ipython3
 

@@ -18,7 +18,7 @@ This tutorial covers the {class}`~quantify_scheduler.gettables.ScheduleGettable`
 
 The {class}`~quantify_scheduler.gettables.ScheduleGettable` forms the top-level interface to {mod}`quantify_scheduler`. Under the hood, it uses `quantify-scheduler` modules to compile {ref}`Schedules <sec-user-guide-creating-a-schedule>`, run them on your hardware and retrieve measurement data from the hardware. As the {class}`~quantify_scheduler.gettables.ScheduleGettable` uses functions that return {class}`~quantify_scheduler.schedules.schedule.Schedule`s, you can dynamically set function parameters during experiments.
 
-For those familiar with [quantify-core](https://quantify-os.org/docs/quantify-core/latest/index.html), the interface of the {class}`~quantify_scheduler.gettables.ScheduleGettable` is also designed to be used as a [gettable](https://quantify-os.org/docs/quantify-core/latest/user/concepts.html#settables-and-gettables) for [MeasurementControl](https://quantify-os.org/docs/quantify-core/latest/user/concepts.html#measurement-control). This is convenient for large, possibly multi-dimensional measurement loops, as is demonstrated in {ref}`2D (and ND) measurement loops`.
+For those familiar with [quantify-core](https://quantify-os.org/docs/quantify-core), the interface of the {class}`~quantify_scheduler.gettables.ScheduleGettable` is also designed to be used as a [gettable](https://quantify-os.org/docs/quantify-core/dev/user/concepts.html#settables-and-gettables) for [MeasurementControl](https://quantify-os.org/docs/quantify-core/dev/user/concepts.html#measurement-control). This is convenient for large, possibly multi-dimensional measurement loops, as is demonstrated in {ref}`2D (and ND) measurement loops`.
 
 Two things are always required when using a {class}`~quantify_scheduler.gettables.ScheduleGettable`: a {ref}`QuantumDevice <sec-user-guide-quantum-device-elements>` and a function that returns a {class}`~quantify_scheduler.schedules.schedule.Schedule`. We will set these up in a few example scenarios below and show how to use the {class}`~quantify_scheduler.gettables.ScheduleGettable`. More commonly used schedule functions are also included in `quantify-scheduler` out of the box. You can find them in {mod}`~.quantify_scheduler.schedules.spectroscopy_schedules`, {mod}`~.quantify_scheduler.schedules.timedomain_schedules` and {mod}`~.quantify_scheduler.schedules.trace_schedules`.
 
@@ -350,7 +350,7 @@ measurement_control.setpoints(times)
 measurement_control.gettables(gettable)
 ```
 
-The experiment is set to run fully in _batched_ mode. When using {class}`~quantify_core.measurement.control.MeasurementControl`, settables and gettables can be either batched (an array of points is set for each measurement iteration) or iterative (only one point is set per iteration). Combinations of batched and iterative settables are possible, as explained in detail in the [quantify-core documentation](https://quantify-os.org/docs/quantify-core/latest/user/concepts.html#mixing-iterative-and-batched-settables).
+The experiment is set to run fully in _batched_ mode. When using {class}`~quantify_core.measurement.control.MeasurementControl`, settables and gettables can be either batched (an array of points is set for each measurement iteration) or iterative (only one point is set per iteration). Combinations of batched and iterative settables are possible, as explained in detail in the [quantify-core documentation](https://quantify-os.org/docs/quantify-core/dev/user/concepts.html#mixing-iterative-and-batched-settables).
 
 Settables and gettables are batched if they have the attribute `batched=True`. In {class}`~quantify_scheduler.gettables.ScheduleGettable`, this can be controlled through the `batched` argument when creating the class. For other classes, the attribute can be added dynamically if needed, as shown above for the `time` parameter.
 
@@ -363,7 +363,7 @@ tags: [hide-output]
 dataset = measurement_control.run()
 ```
 
-The {class}`~quantify_core.measurement.control.MeasurementControl` class processes the data returned by the {class}`~quantify_scheduler.gettables.ScheduleGettable`, and turns it into a {class}`~xarray.Dataset`. More information on the format of this dataset can be found in the [quantify-core documentation](https://quantify-os.org/docs/quantify-core/latest/user/concepts.html#dataset).
+The {class}`~quantify_core.measurement.control.MeasurementControl` class processes the data returned by the {class}`~quantify_scheduler.gettables.ScheduleGettable`, and turns it into a {class}`~xarray.Dataset`. More information on the format of this dataset can be found in the [quantify-core documentation](https://quantify-os.org/docs/quantify-core/dev/user/concepts.html#dataset).
 
 ```{code-cell} ipython3
 dataset
