@@ -253,7 +253,7 @@ class TestGenericPulseStrategy:
         strategy.insert_qasm(empty_qasm_program_qcm)
 
         # assert
-        line0 = ["", "set_awg_gain", "32212,20355", "# setting gain for test_pulse"]
+        line0 = ["", "set_awg_gain", "32213,20356", "# setting gain for test_pulse"]
         line1 = ["", "play", "0,1,4", "# play test_pulse (24 ns)"]
         assert empty_qasm_program_qcm.instructions[0] == line0
         assert empty_qasm_program_qcm.instructions[1] == line1

@@ -437,7 +437,12 @@ def modulate_waveform(
 
 def normalize_waveform_data(data: np.ndarray) -> Tuple[np.ndarray, float, float]:
     """
-    Rescales the waveform data so that the maximum amplitude is abs(amp) == 1.
+    Normalize waveform data, such that the value is +1.0 where the absolute value is
+    maximal.
+
+    This means that two waveforms where waveform_1 = c * waveform_2 (c can be any real
+    number) will be normalized to the same normalized waveform data; this holds
+    separately for the real and imaginary parts.
 
     Parameters
     ----------
@@ -453,7 +458,12 @@ def normalize_waveform_data(data: np.ndarray) -> Tuple[np.ndarray, float, float]
     amp_imag
         The original amplitude of the imaginary part.
     """
-    amp_real, amp_imag = np.max(np.abs(data.real)), np.max(np.abs(data.imag))
+    amp_real_index = np.argmax(np.abs(data.real))
+    amp_imag_index = np.argmax(np.abs(data.imag))
+
+    amp_real = data.real[amp_real_index]
+    amp_imag = data.imag[amp_imag_index]
+
     norm_data_re = (
         data.real / amp_real
         if not math.isclose(amp_real, 0.0)

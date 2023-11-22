@@ -340,13 +340,13 @@ class QASMProgram:
         operation
             The operation for which this is done. Used for the exception messages.
         """
-        awg_gain_path0_immediate = self.expand_from_normalised_range(
+        awg_gain_path0_immediate = self.expand_awg_from_normalised_range(
             amplitude_path0,
             constants.IMMEDIATE_SZ_GAIN,
             "awg_gain_0",
             operation,
         )
-        awg_gain_path1_immediate = self.expand_from_normalised_range(
+        awg_gain_path1_immediate = self.expand_awg_from_normalised_range(
             amplitude_path1,
             constants.IMMEDIATE_SZ_GAIN,
             "awg_gain_1",
@@ -361,14 +361,14 @@ class QASMProgram:
         )
 
     @staticmethod
-    def expand_from_normalised_range(
+    def expand_awg_from_normalised_range(
         val: float,
         immediate_size: int,
         param: Optional[str] = None,
         operation: Optional[OpInfo] = None,
     ):
         """
-        Takes the value of a parameter in normalized form (abs(param) <= 1.0), and
+        Takes the value of an awg gain or offset parameter in normalized form (abs(param) <= 1.0), and
         expands it to an integer in the appropriate range required by the sequencer.
 
         Parameters
@@ -399,7 +399,8 @@ class QASMProgram:
                 f"{param} is set to {val}. Parameter must be in the range "
                 f"-1.0 <= {param} <= 1.0 for {repr(operation)}."
             )
-        return int(val * immediate_size // 2)
+        max_gain = immediate_size // 2
+        return max(-max_gain, min(round(val * max_gain), max_gain - 1))
 
     def __str__(self) -> str:
         """

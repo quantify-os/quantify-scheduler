@@ -7,12 +7,12 @@ MAX_NUMBER_OF_INSTRUCTIONS_QCM: int = 16384
 """Maximum supported number of instructions in Q1ASM programs for QCM/QCM-RF."""
 MAX_NUMBER_OF_INSTRUCTIONS_QRM: int = 12288
 """Maximum supported number of instructions in Q1ASM programs for QRM/QRM-RF."""
-IMMEDIATE_SZ_GAIN = pow(2, 16) - 1
+IMMEDIATE_SZ_GAIN = pow(2, 16)
 """Size of gain instruction immediates in Q1ASM programs."""
 IMMEDIATE_MAX_WAIT_TIME = pow(2, 16) - 4
 """Max size of wait instruction immediates in Q1ASM programs. Max value allowed by
 assembler is 2**16-1, but this is the largest that is a multiple of 4 ns."""
-IMMEDIATE_SZ_OFFSET = pow(2, 16) - 1
+IMMEDIATE_SZ_OFFSET = pow(2, 16)
 """Size of offset instruction immediates in Q1ASM programs."""
 REGISTER_SIZE = pow(2, 32) - 1
 """Size of registers in Q1ASM programs."""

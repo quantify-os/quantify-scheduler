@@ -1545,16 +1545,38 @@ def test_auto_wait(empty_qasm_program_qcm):
         qasm.auto_wait(-120)
 
 
-def test_expand_from_normalised_range():
+@pytest.mark.parametrize(
+    "val, expected_expanded_val",
+    [
+        (-1, -constants.IMMEDIATE_SZ_GAIN // 2),
+        (-0.5, -constants.IMMEDIATE_SZ_GAIN // 4),
+        (0.0, 0),
+        (0.5, constants.IMMEDIATE_SZ_GAIN // 4),
+        (1.0, constants.IMMEDIATE_SZ_GAIN // 2 - 1),
+    ],
+)
+def test_expand_awg_gain_from_normalised_range(val, expected_expanded_val):
     minimal_pulse_data = {"duration": 20e-9}
     acq = types.OpInfo(name="test_acq", data=minimal_pulse_data, timing=4e-9)
-    expanded_val = QASMProgram.expand_from_normalised_range(
-        1, constants.IMMEDIATE_MAX_WAIT_TIME, "test_param", acq
+
+    expanded_val = QASMProgram.expand_awg_from_normalised_range(
+        val=val,
+        immediate_size=constants.IMMEDIATE_SZ_GAIN,
+        param="test_param",
+        operation=acq,
     )
-    assert expanded_val == constants.IMMEDIATE_MAX_WAIT_TIME // 2
+    assert expanded_val == expected_expanded_val
+
+
+def test_out_of_range_expand_awg_gain_from_normalised_range():
+    minimal_pulse_data = {"duration": 20e-9}
+    acq = types.OpInfo(name="test_acq", data=minimal_pulse_data, timing=4e-9)
     with pytest.raises(ValueError):
-        QASMProgram.expand_from_normalised_range(
-            10, constants.IMMEDIATE_MAX_WAIT_TIME, "test_param", acq
+        QASMProgram.expand_awg_from_normalised_range(
+            val=10,
+            immediate_size=constants.IMMEDIATE_SZ_GAIN,
+            param="test_param",
+            operation=acq,
         )
 
 
@@ -3296,7 +3318,7 @@ def test_stitched_pulse_compilation_upd_param_at_end(
     for i, string in enumerate(program_with_long_square):
         if "set_awg_offs" in string:
             break
-    assert re.search(r"^\s*set_awg_offs\s+16383,0\s+", program_with_long_square[i])
+    assert re.search(r"^\s*set_awg_offs\s+16384,0\s+", program_with_long_square[i])
     assert re.search(r"^\s*upd_param\s+4\s+", program_with_long_square[i + 1])
     assert re.search(r"^\s*wait\s+9996\s+", program_with_long_square[i + 2])
     assert re.search(r"^\s*set_awg_offs\s+0,0\s+", program_with_long_square[i + 3])
@@ -3350,19 +3372,19 @@ def test_q1asm_stitched_pulses(mock_setup_basic_nv_qblox_hardware):
     )
 
     assert (
-        """ set_awg_offs 16383,0 
+        """ set_awg_offs 16384,0 
  upd_param 4 
  wait 3992 # auto generated wait (3992 ns)
  set_awg_offs 0,0 
- set_awg_gain 16383,0 # setting gain for StitchedPulse
+ set_awg_gain 16384,0 # setting gain for StitchedPulse
  play 0,0,4 # play StitchedPulse (4 ns)
  wait 500 # auto generated wait (500 ns)
  set_awg_offs -16384,0 
- set_awg_gain 16375,0 # setting gain for StitchedPulse
+ set_awg_gain 16376,0 # setting gain for StitchedPulse
  play 1,1,4 # play StitchedPulse (2000 ns)
  wait 1996 # auto generated wait (1996 ns)
  set_awg_offs 0,0 
- set_awg_gain 16375,0 # setting gain for StitchedPulse
+ set_awg_gain 16376,0 # setting gain for StitchedPulse
  play 1,1,4 # play StitchedPulse (2000 ns)
  wait 2496 # auto generated wait (2496 ns)
  set_awg_offs -16384,0 
@@ -3374,14 +3396,14 @@ def test_q1asm_stitched_pulses(mock_setup_basic_nv_qblox_hardware):
  set_awg_offs 0,0 
  upd_param 4 
  wait 796 # auto generated wait (796 ns)
- set_awg_offs 8191,0 
+ set_awg_offs 8192,0 
  upd_param 4 
  wait 796 # auto generated wait (796 ns)
- set_awg_offs 16383,0 
+ set_awg_offs 16384,0 
  upd_param 4 
  wait 792 # auto generated wait (792 ns)
  set_awg_offs 0,0 
- set_awg_gain 16383,0 # setting gain for StitchedPulse
+ set_awg_gain 16384,0 # setting gain for StitchedPulse
  play 0,0,4 # play StitchedPulse (4 ns)"""
         in compiled_sched.compiled_instructions["cluster0"]["cluster0_module4"][
             "sequencers"
@@ -3643,7 +3665,7 @@ def test_zero_pulse_skip_timing(
             idx = i
             break
 
-    assert re.search(r"^\s*set_awg_gain\s+16383,0\s+", seq_instructions[idx + 1])
+    assert re.search(r"^\s*set_awg_gain\s+16384,0\s+", seq_instructions[idx + 1])
     assert re.search(r"^\s*play\s+0,0,4\s+", seq_instructions[idx + 2])
 
 
@@ -3806,11 +3828,11 @@ def test_debug_mode_qasm_aligning(
 start:   
  reset_ph  
  upd_param 4 
- set_awg_offs 16383,0 
+ set_awg_offs 16384,0 
  upd_param 4 
  wait 992 # auto generated wait (992 ns)
  set_awg_offs 0,0 
- set_awg_gain 16383,0 # setting gain for StitchedPulse
+ set_awg_gain 16384,0 # setting gain for StitchedPulse
  play 0,0,4 # play StitchedPulse (4 ns)
  loop R0,@start 
  stop  
@@ -3824,11 +3846,11 @@ start:
   start:                                                                 
           reset_ph                                                       
           upd_param     4                                                
-          set_awg_offs  16383,0                                          
+          set_awg_offs  16384,0                                          
           upd_param     4                                                
           wait          992        # auto generated wait (992 ns)        
           set_awg_offs  0,0                                              
-          set_awg_gain  16383,0    # setting gain for StitchedPulse      
+          set_awg_gain  16384,0    # setting gain for StitchedPulse      
           play          0,0,4      # play StitchedPulse (4 ns)           
           loop          R0,@start                                        
           stop                                                           
@@ -4115,7 +4137,7 @@ def test_very_low_amp_paths(
     sched = Schedule("Low_amp_test", repetitions=1)
     dur = 201
     y = np.linspace(0, 1, dur)
-    m = 2 / (pow(2, 16) - 1)  # absolute tolerance (threshold)
+    m = 2 / pow(2, 16)  # absolute tolerance (threshold)
     t = np.arange(dur) * 1e-9
 
     if low_amp_path == "Q":
@@ -4150,18 +4172,18 @@ def test_very_low_amp_paths(
     seq_instructions = compiled_instructions["program"].splitlines()
 
     # ------------------------ test
-    low_amp_path_gain = math.floor(scaling_factor * abs(gain))
-    suppressed_waveform = low_amp_path_gain == 0
+    low_amp_path_gain = round(scaling_factor * gain)
+    suppressed_waveform = math.floor(scaling_factor * abs(gain)) == 0
     assert len(compiled_instructions["waveforms"]) == (1 if suppressed_waveform else 2)
 
     if low_amp_path == "Q":
         assert re.search(
-            rf"^\s*set_awg_gain\s+32603,{low_amp_path_gain}\s*", seq_instructions[8]
+            rf"^\s*set_awg_gain\s+32604,{low_amp_path_gain}\s*", seq_instructions[8]
         )
 
     elif low_amp_path == "I":
         assert re.search(
-            rf"^\s*set_awg_gain\s+{low_amp_path_gain},32603\s*", seq_instructions[8]
+            rf"^\s*set_awg_gain\s+{low_amp_path_gain},32604\s*", seq_instructions[8]
         )
 
     assert re.search(
