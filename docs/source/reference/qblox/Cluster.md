@@ -29,7 +29,7 @@ temp_dir = TemporaryDirectory()
 set_datadir(temp_dir.name)
 ```
 
-In this section we introduce how to configure [Qblox Clusters](https://www.qblox.com/cluster) and the options available for them via Quantify.
+In this section we introduce how to configure [Qblox Clusters](https://www.qblox.com/products#cluster) and the options available for them via Quantify.
 For information about their lower-level functionality, you can consult the [Qblox Instruments documentation](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/).
 For information on the process of compilation to hardware, see {ref}`sec-tutorial-compiling`.
 
