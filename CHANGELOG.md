@@ -40,6 +40,7 @@
 - Operations - Make `staircase_pulse`, `long_square_pulse` and `long_ramp_pulse` compatible with use in control flow on Qblox hardware. (!857)
   - End on a pulse with 0 voltage offset, to remove 4ns timing mismatch when they are used in control flow.
 - Qblox backend - Fixes for waveform gain/offset instructions and optimization with waveform uploading. (!860)
+- Documentation - Add a warning banner to documentation when on an old or development version of quantify. (!864)
 
 ## 0.17.1 (2023-11-02)
 
