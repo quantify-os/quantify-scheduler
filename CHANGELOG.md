@@ -41,6 +41,7 @@
   - End on a pulse with 0 voltage offset, to remove 4ns timing mismatch when they are used in control flow.
 - Qblox backend - Fixes for waveform gain/offset instructions and optimization with waveform uploading. (!860)
 - Documentation - Add a warning banner to documentation when on an old or development version of quantify. (!864)
+- Qblox backend - Temporary fix for reshaping of acquisition data of looped measurements in `BinMode.APPEND`. (!850)
 
 ## 0.17.1 (2023-11-02)
 

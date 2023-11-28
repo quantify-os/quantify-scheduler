@@ -6,6 +6,7 @@ from __future__ import annotations
 import copy
 import logging
 import os
+import warnings
 from abc import abstractmethod
 from dataclasses import dataclass
 from math import isnan
@@ -21,9 +22,8 @@ from qblox_instruments import (
     SequencerStatusFlags,
 )
 from qcodes.instrument import Instrument, InstrumentModule
-from xarray import DataArray, Dataset
-
 from quantify_core.data.handling import get_datadir
+from xarray import DataArray, Dataset
 
 from quantify_scheduler.backends.qblox import constants, driver_version_check
 from quantify_scheduler.backends.qblox.enums import IoMode
@@ -1191,13 +1191,32 @@ class _QRMAcquisitionManager:
                 coords={acq_index_dim_name: acq_indices},
             )
         elif acquisition_metadata.bin_mode == BinMode.APPEND:
-            return DataArray(
-                acquisitions_data.reshape(
+            if (
+                acquisition_metadata.repetitions * len(acq_indices)
+                == acquisitions_data.size
+            ):
+                acq_data = acquisitions_data.reshape(
                     (acquisition_metadata.repetitions, len(acq_indices))
-                ),
-                dims=["repetition", acq_index_dim_name],
-                coords={acq_index_dim_name: acq_indices},
-            )
+                )
+                return DataArray(
+                    acq_data,
+                    dims=["repetition", acq_index_dim_name],
+                    coords={acq_index_dim_name: acq_indices},
+                )
+
+            # There is control flow containing measurements, skip reshaping
+            else:
+                warnings.warn(
+                    "The format of acquisition data of looped measurements in APPEND mode"
+                    " will change in quantify-scheduler>=0.18.0",
+                    FutureWarning,
+                )
+                acq_data = acquisitions_data.reshape(
+                    (acquisition_metadata.repetitions, -1)
+                )
+                return DataArray(
+                    acq_data, dims=["repetition", "loop_repetition"], coords=None
+                )
         else:
             raise RuntimeError(
                 f"{acquisition_metadata.acq_protocol} acquisition protocol does not"

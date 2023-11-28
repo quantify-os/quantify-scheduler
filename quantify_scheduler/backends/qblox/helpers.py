@@ -1101,8 +1101,7 @@ def generate_hardware_config(schedule: Schedule, compilation_config: Compilation
             if "RF" in instr_config["instrument_type"]:
                 io_config["lo_freq"] = pc_mod_freqs.lo_freq
             # Else, set the lo frequency in the external lo config:
-            else:
-                lo_name: str = io_config["lo_name"]
+            elif (lo_name := io_config.get("lo_name")) is not None:
                 if (lo_config := hardware_config.get(lo_name)) is None:
                     raise RuntimeError(
                         f"External local oscillator '{lo_name}' set to "
