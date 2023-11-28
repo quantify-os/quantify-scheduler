@@ -64,7 +64,7 @@ def chevron_cz_sched(
         A scalar specifying the flux pulse duration in s.
     flux_port
         An optional string for a flux port. If ``None``, this will default to
-        the `hf_qubit` flux port (``"{hf_qubit}:fl"``).
+        the ``hf_qubit`` flux port (``"{hf_qubit}:fl"``).
     repetitions
         The amount of times the Schedule will be repeated.
 

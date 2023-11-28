@@ -51,7 +51,7 @@ class QASMProgram:
         self.integration_length_acq: Optional[int] = None
         """Integration length to use for the square acquisition."""
         self.time_last_acquisition_triggered: Optional[int] = None
-        """Time on which the last acquisition was triggered. Is `None` if no previous
+        """Time on which the last acquisition was triggered. Is ``None`` if no previous
         acquisition was triggered."""
         self.instructions: List[list] = list()
         """A list containing the instructions added to the program. The instructions
@@ -103,7 +103,7 @@ class QASMProgram:
 
     def emit(self, *args, **kwargs) -> None:
         """
-        Wrapper around the `get_instruction_as_list` which adds it to this program.
+        Wrapper around the ``get_instruction_as_list`` which adds it to this program.
 
         Parameters
         ----------
@@ -166,7 +166,7 @@ class QASMProgram:
         Raises
         ------
         ValueError
-            If `wait_time` <= 0.
+            If ``wait_time <= 0``.
         """
         if wait_time == 0:
             return

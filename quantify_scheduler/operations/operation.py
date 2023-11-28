@@ -20,7 +20,7 @@ class Operation(JSONSchemaValMixin, UserDict):
     """
     A representation of quantum circuit operations.
 
-    The `Operation` class is a JSON-compatible data structure that contains information
+    The :class:`~Operation` class is a JSON-compatible data structure that contains information
     on how to represent the operation on the quantum-circuit and/or the quantum-device
     layer. It also contains information on where the operation should be applied: the
     :class:`~quantify_scheduler.resources.Resource` s used.

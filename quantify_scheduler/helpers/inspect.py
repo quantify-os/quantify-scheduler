@@ -65,7 +65,7 @@ def make_uml_diagram(
     Returns
     -------
     :
-        The name of the generated `png` image
+        The name of the generated ``png`` image
     """
     basic_options = ["--colorized", "-m", "n"]
 

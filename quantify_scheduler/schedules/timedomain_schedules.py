@@ -171,7 +171,7 @@ def ramsey_sched(
     times
         an array of wait times tau between the pi/2 pulses.
     artificial_detuning
-        frequency in Hz of the software emulated, or `artificial` qubit detuning, which is
+        frequency in Hz of the software emulated, or ``artificial`` qubit detuning, which is
         implemented by changing the phase of the second pi/2 (recovery) pulse. The
         artificial detuning changes the observed frequency of the Ramsey oscillation,
         which can be useful to distinguish a slow oscillation due to a small physical

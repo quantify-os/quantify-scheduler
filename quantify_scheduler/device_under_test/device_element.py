@@ -9,7 +9,7 @@ class DeviceElement(Instrument):
     """
     Create a device element for managing parameters.
 
-    The `DeviceElement` is responsible for compiling operations applied to that
+    The :class:`~DeviceElement` is responsible for compiling operations applied to that
     specific device element from the quantum-circuit to the quantum-device
     layer.
     """
@@ -24,7 +24,7 @@ class DeviceElement(Instrument):
 
     def __getstate__(self):
         """
-        Serialize `DeviceElement` and derived classes.
+        Serialize :class:`~DeviceElement` and derived classes.
 
         Serialization is performed by converting submodules into a dict containing
         the name of the device element and a dict for each submodule containing its

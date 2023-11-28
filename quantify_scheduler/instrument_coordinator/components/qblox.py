@@ -192,10 +192,10 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         Return a reference to the instrument of instrument module.
 
         If the instrument behind this instance of
-        `QbloxInstrumentCoordinatorComponentBase` is an `InstrumentModule` (e.g. the
-        module within the `qblox_instrument.Cluster`), it is returned. Otherwise, the
-        reference to the `instrument` is returned (e.g. for a stand-alone
-        `qblox_instruments.Pulsar`).
+        :class:`~QbloxInstrumentCoordinatorComponentBase` is an :class:`~qcodes.instruments.InstrumentModule` (e.g. the
+        module within the :class:`qblox_instruments.Cluster`), it is returned. Otherwise, the
+        reference to the ``instrument`` is returned (e.g. for a stand-alone
+        :class:`qblox_instruments.Pulsar`).
         """
         if self._instrument_module is not None:
             return self._instrument_module
@@ -1014,8 +1014,8 @@ class _QRMAcquisitionManager:
         :
             The acquisitions with the protocols specified in the `acquisition_metadata`.
             Each `xarray.DataArray` in the `xarray.Dataset` corresponds to one `acq_channel`.
-            The `acq_channel` is the name of each `xarray.DataArray` in the `xarray.Dataset`.
-            Each `xarray.DataArray` is a two-dimensional array, with `acq_index` and `repetition` as
+            The ``acq_channel`` is the name of each `xarray.DataArray` in the `xarray.Dataset`.
+            Each `xarray.DataArray` is a two-dimensional array, with ``acq_index`` and ``repetition`` as
             dimensions.
         """
         protocol_to_function_mapping = {
@@ -1103,7 +1103,7 @@ class _QRMAcquisitionManager:
         acq_duration
             Desired maximum number of samples for the scope acquisition.
         acq_channel
-            The `acq_channel` from which to get the data.
+            The ``acq_channel`` from which to get the data.
 
         Returns
         -------
@@ -1170,7 +1170,7 @@ class _QRMAcquisitionManager:
         acq_duration
             Not used in this function.
         acq_channel
-            The `acq_channel` from which to get the data.
+            The ``acq_channel`` from which to get the data.
 
         Returns
         -------
@@ -1249,7 +1249,7 @@ class _QRMAcquisitionManager:
         acq_duration
             Duration of the acquisition. This needs to be specified.
         acq_channel
-            The `acq_channel` from which to get the data.
+            The ``acq_channel`` from which to get the data.
 
         Returns
         -------
@@ -1280,7 +1280,7 @@ class _QRMAcquisitionManager:
         acq_channel: int = 0,
     ) -> DataArray:
         """
-        Retrieve the thresholded acquisition data associated with `acq_channel` and `acq_index`.
+        Retrieve the thresholded acquisition data associated with ``acq_channel`` and ``acq_index``.
 
         Parameters
         ----------
@@ -1293,7 +1293,7 @@ class _QRMAcquisitionManager:
         acq_duration : int
             Duration of the acquisition. This needs to be specified.
         acq_channel : int
-            The `acq_channel` from which to get the data.
+            The ``acq_channel`` from which to get the data.
 
         Returns
         -------
@@ -1355,7 +1355,7 @@ class _QRMAcquisitionManager:
         acq_duration
             Not used in this function.
         acq_channel
-            The `acq_channel` from which to get the data.
+            The ``acq_channel`` from which to get the data.
 
         Returns
         -------

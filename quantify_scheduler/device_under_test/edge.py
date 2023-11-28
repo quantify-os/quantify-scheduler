@@ -25,7 +25,7 @@ class Edge(Instrument):
 
     def __getstate__(self):
         """
-        Serialize `Edge` into a dictionary.
+        Serialize :class:`~Edge` into a dictionary.
 
         Serialization is performed by converting submodules of the object into
         the dictionary containing the parent and child element names of

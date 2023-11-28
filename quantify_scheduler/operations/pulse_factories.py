@@ -34,7 +34,7 @@ def rxy_drag_pulse(
 ) -> pulse_library.DRAGPulse:
     """
     Generate a :class:`~.operations.pulse_library.DRAGPulse` that achieves the right
-    rotation angle `theta` based on a calibrated pi-pulse amplitude and motzoi
+    rotation angle ``theta`` based on a calibrated pi-pulse amplitude and motzoi
     parameter based on linear interpolation of the pulse amplitudes.
 
     Parameters
@@ -92,7 +92,7 @@ def rxy_gauss_pulse(
 ) -> pulse_library.GaussPulse:
     """
     Generate a Gaussian drive with :class:`~.operations.pulse_library.GaussPulse` that achieves the right
-    rotation angle `theta` based on a calibrated pi-pulse amplitude.
+    rotation angle ``theta`` based on a calibrated pi-pulse amplitude.
 
     Parameters
     ----------
@@ -137,7 +137,7 @@ def phase_shift(
     clock: str,
 ) -> pulse_library.ShiftClockPhase:
     """
-    Generate a :class:`~.operations.pulse_library.ShiftClockPhase` that shifts the phase of the `clock` by an angle `theta`.
+    Generate a :class:`~.operations.pulse_library.ShiftClockPhase` that shifts the phase of the ``clock`` by an angle `theta`.
 
     Parameters
     ----------

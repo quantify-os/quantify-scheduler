@@ -69,7 +69,7 @@ def _replace_long_square_pulses(
     schedule: Schedule, pulse_idx_map: Dict[str, List[int]]
 ) -> Schedule:
     """
-    Replace any square pulses indicated by pulse_idx_map by a `long_square_pulse`.
+    Replace any square pulses indicated by pulse_idx_map by a ``long_square_pulse``.
 
     Parameters
     ----------
@@ -185,7 +185,7 @@ def hardware_compile(
         :class:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler`.
     hardware_cfg
         (deprecated) The hardware configuration of the setup. Pass a full compilation
-        config instead using `config` argument.
+        config instead using ``config`` argument.
 
     Returns
     -------
@@ -195,7 +195,7 @@ def hardware_compile(
     Raises
     ------
     ValueError
-        When both `config` and `hardware_cfg` are supplied.
+        When both ``config`` and ``hardware_cfg`` are supplied.
     """
     if not ((config is not None) ^ (hardware_cfg is not None)):
         raise ValueError(
@@ -285,7 +285,9 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
         validate_default=True,
     )
     """
-    A reference to the `HardwareCompilationConfig` DataStructure for the Qblox backend.
+    A reference to the
+    :class:`~quantify_scheduler.backends.types.common.HardwareCompilationConfig`
+    DataStructure for the Qblox backend.
     """
     hardware_description: Dict[
         str, Union[QbloxHardwareDescription, HardwareDescription]

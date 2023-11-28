@@ -91,7 +91,7 @@ class OperationCompilationConfig(DataStructure):
     gate_info_factory_kwargs: Optional[List[str]] = None
     """
     A list of keyword arguments of the factory function for which the value must
-    be retrieved from the `gate_info` of the operation.
+    be retrieved from the ``gate_info`` of the operation.
     """
 
     @field_serializer("factory_func")
@@ -194,26 +194,26 @@ class CompilationConfig(DataStructure):
     name: str
     """The name of the compiler."""
     version: str = "v0.6"
-    """The version of the `CompilationConfig` to facilitate backwards compatibility."""
+    """The version of the ``CompilationConfig`` to facilitate backwards compatibility."""
     keep_original_schedule: bool = True
     """
-    If `True`, the compiler will not modify the schedule argument.
-    If `False`, the compilation modifies the schedule, thereby
+    If ``True``, the compiler will not modify the schedule argument.
+    If ``False``, the compilation modifies the schedule, thereby
     making the original schedule unusable for further usage; this
-    improves compilation time. Warning: if `False`, the returned schedule
+    improves compilation time. Warning: if ``False``, the returned schedule
     references objects from the original schedule, please refrain from modifying
     the original schedule after compilation in this case!
     """
     backend: Type[QuantifyCompiler]
-    """A reference string to the `QuantifyCompiler` class used in the compilation."""
+    """A reference string to the :class:`~QuantifyCompiler` class used in the compilation."""
     device_compilation_config: Optional[Union[DeviceCompilationConfig, Dict]] = None
     """
-    The `DeviceCompilationConfig` used in the compilation from the quantum-circuit
+    The :class:`~DeviceCompilationConfig` used in the compilation from the quantum-circuit
     layer to the quantum-device layer.
     """
     hardware_compilation_config: Optional[HardwareCompilationConfig] = None
     """
-    The `HardwareCompilationConfig` used in the compilation from the quantum-device
+    The ``HardwareCompilationConfig`` used in the compilation from the quantum-device
     layer to the control-hardware layer.
     """
     debug_mode: bool = False

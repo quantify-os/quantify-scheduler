@@ -238,7 +238,7 @@ def to_grid_time(time: float, grid_time_ns: int = constants.GRID_TIME) -> int:
     Raises
     ------
     ValueError
-        If `time` is not a multiple of :data:`~.constants.GRID_TIME` within the tolerance.
+        If ``time`` is not a multiple of :data:`~.constants.GRID_TIME` within the tolerance.
     """
     time_ns_float = time * 1e9
     time_ns = int(round(time_ns_float))
@@ -279,7 +279,7 @@ def is_multiple_of_grid_time(
     Returns
     -------
     :
-        `True` if `time` is a multiple of the grid time, `False` otherwise.
+        ``True`` if ``time`` is a multiple of the grid time, ``False`` otherwise.
     """
     try:
         _ = to_grid_time(time=time, grid_time_ns=grid_time_ns)
@@ -305,7 +305,7 @@ def is_within_half_grid_time(a, b, grid_time_ns: int = constants.GRID_TIME):
     Returns
     -------
     :
-        `True` if `a` and `b`  are less than half grid time apart, `False` otherwise.
+        ``True`` if ``a`` and ``b``  are less than half grid time apart, ``False`` otherwise.
     """
     tolerance = 0.5e-9 * grid_time_ns
     within_half_grid_time = math.isclose(
@@ -318,7 +318,7 @@ def is_within_half_grid_time(a, b, grid_time_ns: int = constants.GRID_TIME):
 def get_nco_phase_arguments(phase_deg: float) -> int:
     """
     Converts a phase in degrees to the int arguments the NCO phase instructions expect.
-    We take `phase_deg` modulo 360 to account for negative phase and phase larger than
+    We take ``phase_deg`` modulo 360 to account for negative phase and phase larger than
     360.
 
     Parameters
@@ -405,16 +405,16 @@ def determine_clock_lo_interm_freqs(
 ) -> Frequencies:
     r"""
     From known frequency for the local oscillator or known intermodulation frequency,
-    determine any missing frequency, after optionally applying `downconverter_freq` to
+    determine any missing frequency, after optionally applying ``downconverter_freq`` to
     the clock frequency.
 
-    If `mix_lo` is ``True``, the following relation is obeyed:
+    If ``mix_lo`` is ``True``, the following relation is obeyed:
     :math:`f_{RF} = f_{LO} + f_{IF}`.
 
-    If `mix_lo` is ``False``, :math:`f_{RF} = f_{LO}` is upheld.
+    If ``mix_lo`` is ``False``, :math:`f_{RF} = f_{LO}` is upheld.
 
     .. warning::
-        Using `downconverter_freq` requires custom Qblox hardware, do not use otherwise.
+        Using ``downconverter_freq`` requires custom Qblox hardware, do not use otherwise.
 
     Parameters
     ----------
@@ -437,21 +437,21 @@ def determine_clock_lo_interm_freqs(
     Warns
     -----
     RuntimeWarning
-        In case `downconverter_freq` is set equal to 0, warns to unset via
+        In case ``downconverter_freq`` is set equal to 0, warns to unset via
         ``null``/``None`` instead.
     RuntimeWarning
-        In case LO is overridden to clock due to `mix_lo` being `False`
+        In case LO is overridden to clock due to ``mix_lo`` being `False`
 
     Raises
     ------
     ValueError
-        In case `downconverter_freq` is less than 0.
+        In case ``downconverter_freq`` is less than 0.
     ValueError
-        In case `downconverter_freq` is less than `clock_freq`.
+        In case ``downconverter_freq`` is less than ``clock_freq``.
     ValueError
-        In case `mix_lo` is `True` and neither LO frequency nor IF has been supplied.
+        In case ``mix_lo`` is ``True`` and neither LO frequency nor IF has been supplied.
     ValueError
-        In case `mix_lo` is `True` and both LO frequency and IF have been supplied and do not adhere to
+        In case ``mix_lo`` is ``True`` and both LO frequency and IF have been supplied and do not adhere to
         :math:`f_{RF} = f_{LO} + f_{IF}`.
 
     """

@@ -133,8 +133,8 @@ class QuantumDevice(Instrument):
 
     def __getstate__(self) -> dict[str, Any]:
         """
-        Serializes `QuantumDevice` into a dict containing serialized `DeviceElement`
-        and `Edge` objects plus `cfg_sched_repetitions`.
+        Serializes :class:`~QuantumDevice` into a dict containing serialized :class:`~DeviceElement`
+        and :class:`~Edge` objects plus ``cfg_sched_repetitions``.
         """
         data = {"name": self.name}
 
@@ -161,7 +161,7 @@ class QuantumDevice(Instrument):
 
     def __setstate__(self, state: dict[str, Any]) -> None:
         """
-        Deserializes a dict of serialized `DeviceElement` and `Edge` objects
+        Deserializes a dict of serialized :class:`~DeviceElement` and :class:`~Edge` objects
         into a `QuantumDevice`.
         """
         self.__init__(state["data"]["name"])
@@ -182,7 +182,7 @@ class QuantumDevice(Instrument):
 
     def to_json(self) -> str:
         """
-        Convert the `QuantumDevice` data structure to a JSON string.
+        Convert the :class:`~QuantumDevice` data structure to a JSON string.
 
         Returns
         -------
@@ -255,7 +255,7 @@ class QuantumDevice(Instrument):
         Returns
         -------
         :
-            The deserialized `QuantumDevice` object.
+            The deserialized :class:`~QuantumDevice` object.
         """
         return json.loads(data, cls=SchedulerJSONDecoder)
 
@@ -272,7 +272,7 @@ class QuantumDevice(Instrument):
         Returns
         -------
         :
-            The deserialized `QuantumDevice` object.
+            The deserialized :class:`~QuantumDevice` object.
         """
         with open(filename) as file:
             deserialized_device = cls.from_json(file.read())
@@ -458,7 +458,7 @@ class QuantumDevice(Instrument):
         Raises
         ------
         KeyError
-            If key `name` is not present in `self.elements`.
+            If key ``name`` is not present in `self.elements`.
         """
         if name in self.elements():
             return self.find_instrument(name)
@@ -520,7 +520,7 @@ class QuantumDevice(Instrument):
         Raises
         ------
         KeyError
-            If key `name` is not present in `self.edges`.
+            If key ``name`` is not present in ``self.edges``.
         """
         if name in self.edges():
             return self.find_instrument(name)

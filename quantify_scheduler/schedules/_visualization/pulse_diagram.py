@@ -93,7 +93,7 @@ def pulse_diagram_plotly(
     schedule :
         The schedule to render.
     port_list :
-        A list of ports to show. if set to `None` will use the first
+        A list of ports to show. if set to ``None`` will use the first
         8 ports it encounters in the sequence.
     fig_ch_height :
         Height for each channel subplot in px.
@@ -331,7 +331,7 @@ def sample_schedule(
     schedule :
         The schedule to render.
     port_list :
-        A list of ports to show. if set to `None` will use the first
+        A list of ports to show. if set to ``None`` will use the first
         8 ports it encounters in the sequence.
     modulation :
         Determines if modulation is included in the visualization.
@@ -458,7 +458,7 @@ def plot_single_subplot_mpl(
     sampled_schedule :
         Dictionary that maps each used port to the sampled pulses played on that port.
     ax :
-        A pre-existing Axes object to plot the pulses in. If `None` (default), this object is
+        A pre-existing Axes object to plot the pulses in. If ``None`` (default), this object is
         created within the function.
 
     Returns
@@ -574,7 +574,7 @@ def pulse_diagram_matplotlib(
     schedule :
         The schedule to plot.
     port_list :
-        A list of ports to show. If `None` (default) the first 8 ports
+        A list of ports to show. If ``None`` (default) the first 8 ports
         encountered in the sequence are used.
     sampling_rate :
         The time resolution used to sample the schedule in Hz. By default 1e9.

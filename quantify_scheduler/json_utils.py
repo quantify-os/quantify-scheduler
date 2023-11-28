@@ -31,12 +31,12 @@ def validate_json(data, schema):
 def load_json_schema(relative_to: Union[str, pathlib.Path], filename: str):
     """
     Load a JSON schema from file. Expects a 'schemas' directory in the same directory
-    as `relative_to`.
+    as ``relative_to``.
 
     .. tip::
 
         Typical usage of the form
-        `schema = load_json_schema(__file__, 'definition.json')`
+        ``schema = load_json_schema(__file__, 'definition.json')``
 
     Parameters
     ----------
@@ -61,7 +61,7 @@ def load_json_validator(
 ) -> Callable:
     """
     Load a JSON validator from file. Expects a 'schemas' directory in the same directory
-    as `relative_to`.
+    as ``relative_to``.
 
 
     Parameters
@@ -121,7 +121,7 @@ class SchedulerJSONDecoder(json.JSONDecoder):
     of Schedule.
 
     The list of serializable classes can be extended with custom classes by
-    providing the `modules` keyword argument. These classes have to implement
+    providing the ``modules`` keyword argument. These classes have to implement
     :class:`quantify_scheduler.operations.operation.Operation` and overload the
     :code:`__str__` and :code:`__repr__` methods in order to serialize and
     deserialize domain objects into a valid JSON-format.
@@ -254,7 +254,7 @@ class SchedulerJSONDecoder(json.JSONDecoder):
 
     def custom_object_hook(self, obj: object) -> object:
         """
-        The `object_hook` hook will be called with the result of every JSON object
+        The ``object_hook`` hook will be called with the result of every JSON object
         decoded and its return value will be used in place of the given ``dict``.
 
         Parameters
@@ -283,7 +283,7 @@ class SchedulerJSONEncoder(json.JSONEncoder):
         Overloads the json.JSONEncoder default method that returns a serializable
         object. It will try 3 different serialization methods which are, in order,
         check if the object is to be serialized to a string using repr. If not, try
-        to use `__getstate__`. Finally, try to serialize the `__dict__` property.
+        to use ``__getstate__``. Finally, try to serialize the ``__dict__`` property.
         """
         if hasattr(o, "__getstate__"):
             return o.__getstate__()

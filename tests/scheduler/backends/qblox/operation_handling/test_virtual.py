@@ -196,7 +196,7 @@ class TestUpdateParameterStrategy:
 class TestNcoSetClockFrequencyStrategy:
     def test_docstring(self):
         assert (
-            f"`upd_param` of {constants.NCO_SET_FREQ_WAIT} ns"
+            f"``upd_param`` of {constants.NCO_SET_FREQ_WAIT} ns"
             in virtual.NcoSetClockFrequencyStrategy.__doc__
         )
         assert (

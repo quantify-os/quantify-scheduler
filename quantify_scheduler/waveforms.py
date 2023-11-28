@@ -289,13 +289,13 @@ def sudden_net_zero(
         Amplitude scaling correction factor of the negative arm of the net-zero pulse.
     t_pulse
         The total duration of the two half square pulses. The duration of each
-        half is rounded to the sample rate of the `t` array.
+        half is rounded to the sample rate of the ``t`` array.
     t_phi
         The idling duration between the two half pulses. The duration is rounded
-        to the sample rate of the `t` array.
+        to the sample rate of the ``t`` array.
     t_integral_correction
         The duration in which any non-zero pulse amplitude needs to be
-        corrected. The duration is rounded to the sample rate of the `t` array.
+        corrected. The duration is rounded to the sample rate of the ``t`` array.
     """
     sampling_rate = t[1] - t[0]
     single_arm_samples = int(t_pulse / 2 / sampling_rate)
@@ -343,7 +343,7 @@ def interpolated_complex_waveform(
     samples
         An array of (possibly complex) values specifying the shape of the waveform.
     t_samples
-        An array of values specifying the corresponding times at which the `samples`
+        An array of values specifying the corresponding times at which the ``samples``
         are evaluated.
     interpolation:
         The interpolation method to use, by default "linear".

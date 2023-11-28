@@ -30,7 +30,7 @@
 - Qblox backend - Fix `MarkerPulse` playback on QRM-RF and QCM-RF. (!828)
   - Marker bit index values for addressing outputs need to be swapped on QCM-RF, not QRM-RF (done via `MarkerPulseStrategy._fix_marker_bit_output_addressing_qcm_rf`).
 - Compilation - Implement Connectivity datastructure for specifying connections between ports on the quantum device and on the control hardware in the `HardwareCompilationConfig`. (!734)
-- Compilation - Allow additional third-party instruments with custom complilation nodes in hardware backends. (!837)
+- Compilation - Allow additional third-party instruments with custom compilation nodes in hardware backends. (!837)
 - Compilation - Allow specifying one-to-many, many-to-one, and many-to-many connections in the `Connectivity`. (!841)
 - Compilation - Improve errors and warnings when compiling subschedules and/or loops. (!847)
 - Schedules - Prevent FutureWarning when creating `Schedule.timing_table` and sort by `abs_time`. (!852) 
@@ -40,6 +40,8 @@
 - Operations - Make `staircase_pulse`, `long_square_pulse` and `long_ramp_pulse` compatible with use in control flow on Qblox hardware. (!857)
   - End on a pulse with 0 voltage offset, to remove 4ns timing mismatch when they are used in control flow.
 - Qblox backend - Fixes for waveform gain/offset instructions and optimization with waveform uploading. (!860)
+- Documentation - Add a warning banner to documentation when on an old or development version of quantify. (!864)
+- Documentation - Improve formatting by replacing single backticks with double backticks where needed. (!866)
 - Qblox backend - Temporary fix for reshaping of acquisition data of looped measurements in `BinMode.APPEND`. (!850)
 
 ## 0.17.1 (2023-11-02)

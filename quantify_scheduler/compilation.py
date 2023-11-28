@@ -91,7 +91,7 @@ def _determine_absolute_timing(  # noqa: PLR0912
     Returns
     -------
     :
-        The modified `schedule` where the absolute time for each operation has been
+        The modified ``schedule`` where the absolute time for each operation has been
         determined.
 
     Raises

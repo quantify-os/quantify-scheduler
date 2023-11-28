@@ -20,10 +20,10 @@ class BinMode(StrEnum):
     Used to set the bin type to
     append or average respectively.
 
-    BinMode `APPEND` uses a list where every new
+    BinMode ``APPEND`` uses a list where every new
     result will be appended to the list.
 
-    BinMode `AVERAGE` incrementally stores the weighted
+    BinMode ``AVERAGE`` incrementally stores the weighted
     average result.
     """
 

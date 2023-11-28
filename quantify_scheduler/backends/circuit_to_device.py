@@ -33,7 +33,7 @@ def _compile_circuit_to_device(
 
     Before calling this function, the schedule can contain abstract operations (gates or
     measurements). This function adds pulse and acquisition information with respect to
-    `config` as they are expected to arrive to device (latency or distortion corrections
+    ``config`` as they are expected to arrive to device (latency or distortion corrections
     are not taken into account).
 
     From a point of view of :ref:`sec-compilation`, this function converts a schedule
@@ -50,18 +50,18 @@ def _compile_circuit_to_device(
         is used in this compilation step.
     device_cfg
         (deprecated) Device compilation config. Pass a full compilation config instead
-        using `config` argument. Note, if a dictionary is passed, it will be parsed to a
+        using ``config`` argument. Note, if a dictionary is passed, it will be parsed to a
         :class:`~.DeviceCompilationConfig`.
 
     Returns
     -------
     :
-        The modified `schedule` with pulse information added to all gates.
+        The modified ``schedule`` with pulse information added to all gates.
 
     Raises
     ------
     ValueError
-        When both `config` and `device_cfg` are supplied.
+        When both ``config`` and ``device_cfg`` are supplied.
     """
     if (config is not None) and (device_cfg is not None):
         raise ValueError(
@@ -196,13 +196,13 @@ def set_pulse_and_acquisition_clock(
         is used in this compilation step.
     device_cfg
         (deprecated) Device compilation config. Pass a full compilation config instead
-        using `config` argument. Note, if a dictionary is passed, it will be parsed to a
+        using ``config`` argument. Note, if a dictionary is passed, it will be parsed to a
         :class:`~.DeviceCompilationConfig`.
 
     Returns
     -------
     :
-        The modified `schedule` with all clock resources added.
+        The modified ``schedule`` with all clock resources added.
 
     Warns
     -----
@@ -214,7 +214,7 @@ def set_pulse_and_acquisition_clock(
     RuntimeError
         When operation is not at pulse/acquisition-level.
     ValueError
-        When both `config` and `device_cfg` are supplied.
+        When both ``config`` and ``device_cfg`` are supplied.
     ValueError
         When clock frequency is unknown.
     ValueError
@@ -289,7 +289,7 @@ def _update_acquisition_info_from_device_config(
     operation: dict[Any, Any], device_compilation_config: DeviceCompilationConfig
 ) -> None:
     """
-    Update an operation's `acquisition_info` from the device configuration.
+    Update an operation's ``acquisition_info`` from the device configuration.
 
     Parameters
     ----------

@@ -564,8 +564,8 @@ def decompose_long_square_pulse(
     Generates a list of square pulses equivalent to a  (very) long square pulse.
 
     Intended to be used for waveform-memory-limited devices. Effectively, only two
-    square pulses, at most, will be needed: a main one of duration `duration_max` and
-    a second one for potential mismatch between N `duration_max` and overall `duration`.
+    square pulses, at most, will be needed: a main one of duration ``duration_max`` and
+    a second one for potential mismatch between N ``duration_max`` and overall `duration`.
 
     Parameters
     ----------
@@ -574,8 +574,8 @@ def decompose_long_square_pulse(
     duration_max
         Maximum duration of square pulses to be generated in seconds.
     single_duration
-        If `True`, only square pulses of duration `duration_max` will be generated.
-        If `False`, a square pulse of `duration` < `duration_max` might be generated if
+        If ``True``, only square pulses of duration ``duration_max`` will be generated.
+        If ``False``, a square pulse of ``duration`` < ``duration_max`` might be generated if
         necessary.
     **kwargs
         Other keyword arguments to be passed to the :class:`~SquarePulse`.
@@ -864,7 +864,7 @@ def create_dc_compensation_pulse(
         Resolution to calculate the enclosure of the
         pulses to calculate the area to compensate.
     amp
-        Desired unitless amplitude of the DCCompensationPulse.
+        Desired unitless amplitude of the DC compensation SquarePulse.
         Leave to None to calculate the value for compensation,
         in this case you must assign a value to duration.
         The sign of the amplitude is ignored and adjusted
@@ -940,7 +940,7 @@ def create_dc_compensation_pulse(
         c_duration = abs(area / c_amp)
     else:
         raise ValueError(
-            "The `DCCompensationPulse` allows either amp or duration to "
+            "The DC compensation SquarePulse allows either amp or duration to "
             + "be specified, not both. Both amp and duration were passed."
         )
 
@@ -958,7 +958,7 @@ class WindowOperation(Operation):
     """
     The WindowOperation is an operation for visualization purposes.
 
-    The `WindowOperation` has a starting time and duration.
+    The :class:`~WindowOperation` has a starting time and duration.
     """
 
     def __init__(
@@ -1004,7 +1004,7 @@ class NumericalPulse(Operation):
         An array of (possibly complex) values specifying the shape of the pulse.
     t_samples
         An array of values specifying the corresponding times at which the
-        `samples` are evaluated.
+        ``samples`` are evaluated.
     port
         The port that the pulse should be played on.
     clock

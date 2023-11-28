@@ -133,7 +133,7 @@ class OpInfo(DataClassJsonMixin):
     name: str
     """Name of the operation that this pulse/acquisition is part of."""
     data: dict
-    """The pulse/acquisition info taken from the `data` property of the
+    """The pulse/acquisition info taken from the ``data`` property of the
     pulse/acquisition in the schedule."""
     timing: float
     """The start time of this pulse/acquisition.
@@ -627,7 +627,7 @@ class ComplexChannelDescription(DataStructure):
     The marker will be pulled high at the same time as the module starts playing or acquiring.
     """
     mix_lo: bool = True
-    """Whether IQ mixing with a local oscillator is enabled for this channel. Effectively always `True` for RF modules."""
+    """Whether IQ mixing with a local oscillator is enabled for this channel. Effectively always ``True`` for RF modules."""
     downconverter_freq: Optional[float] = None
     """
     Downconverter frequency that should be taken into account when determining the modulation frequencies for this channel.

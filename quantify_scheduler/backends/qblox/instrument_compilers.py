@@ -20,7 +20,7 @@ from quantify_scheduler.backends.types.qblox import (
 
 class LocalOscillator(compiler_abc.InstrumentCompiler):
     """
-    Implementation of an `InstrumentCompiler` that compiles for a generic LO. The main
+    Implementation of an :class:`~quantify_scheduler.backends.qblox.compiler_abc.InstrumentCompiler` that compiles for a generic LO. The main
     difference between this class and the other compiler classes is that it doesn't take
     pulses and acquisitions.
 

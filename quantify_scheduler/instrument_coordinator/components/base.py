@@ -92,7 +92,7 @@ class InstrumentCoordinatorComponentBase(base.Instrument):
         """
         Returns if the InstrumentCoordinator component is running.
 
-        The property `is_running` is evaluated each time it is accessed. Example:
+        The property ``is_running`` is evaluated each time it is accessed. Example:
 
         .. code-block::
 

@@ -392,7 +392,7 @@ class HardwareCompilationConfig(DataStructure):
     to convert a schedule defined on a quantum-device layer to compiled instructions
     that can be executed on the control hardware.
 
-    This datastructure defines the overall structure of a `HardwareCompilationConfig`.
+    This datastructure defines the overall structure of a ``HardwareCompilationConfig``.
     Specific hardware backends should customize fields within this structure by inheriting
     from this class and specifying their own `"config_type"`, see e.g.,
     :class:`~quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`,
@@ -404,7 +404,7 @@ class HardwareCompilationConfig(DataStructure):
         validate_default=True,
     )
     """
-    A reference to the `HardwareCompilationConfig` DataStructure for the backend 
+    A reference to the ``HardwareCompilationConfig`` DataStructure for the backend 
     that is used.
     """
     hardware_description: Dict[str, HardwareDescription]
@@ -414,7 +414,7 @@ class HardwareCompilationConfig(DataStructure):
     """
     hardware_options: HardwareOptions
     """
-    The `HardwareOptions` used in the compilation from the quantum-device layer to
+    The :class:`~HardwareOptions` used in the compilation from the quantum-device layer to
     the control-hardware layer.
     """
     connectivity: Union[

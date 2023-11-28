@@ -115,7 +115,7 @@ def find_all_port_clock_combinations(d: dict) -> List[Tuple[str, str]]:
     Generate a list with all port-clock combinations found in a nested dictionary.
 
     Traversing the dictionary is done using the
-    `find_inner_dicts_containing_key` function.
+    ``find_inner_dicts_containing_key`` function.
 
     Parameters
     ----------

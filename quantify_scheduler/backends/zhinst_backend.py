@@ -1081,7 +1081,7 @@ def compile_backend(
         :class:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler`.
     hardware_cfg :
         (deprecated) The hardware configuration of the setup. Pass a full compilation
-        config instead using `config` argument.
+        config instead using ``config`` argument.
 
     Returns
     -------
@@ -1094,7 +1094,7 @@ def compile_backend(
     NotImplementedError
         Thrown when using unsupported ZI Instruments.
     ValueError
-        When both `config` and `hardware_cfg` are supplied.
+        When both ``config`` and ``hardware_cfg`` are supplied.
     """
     if not ((config is not None) ^ (hardware_cfg is not None)):
         raise ValueError(
@@ -1278,7 +1278,8 @@ class ZIHardwareCompilationConfig(common.HardwareCompilationConfig):
         validate_default=True,
     )
     """
-    A reference to the `HardwareCompilationConfig` DataStructure for the Zurich Instruments backend.
+    A reference to the ``HardwareCompilationConfig`` DataStructure for the
+    Zurich Instruments backend.
     """
     hardware_description: Dict[  # noqa: UP006
         str,

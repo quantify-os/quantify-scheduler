@@ -83,8 +83,8 @@ def _verify_valid_register(register_name: str) -> None:
 
     Raises on any of the conditions:
 
-    1. `register_name` does not start with "R" or
-    2. `register_name` does not have an integer next
+    1. ``register_name`` does not start with "R" or
+    2. ``register_name`` does not have an integer next
     3. the integer is higher than the number of registers in the sequence processor
     4. the integer is negative valued
 

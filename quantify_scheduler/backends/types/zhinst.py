@@ -448,12 +448,12 @@ class ZIChannelDescription(DataStructure):
     markers: List[str] = []
     """
     Property that specifies which markers to trigger on each sequencer iteration.
-    The values are used as input for the `setTrigger` sequencer instruction.
+    The values are used as input for the ``setTrigger`` sequencer instruction.
     """
     trigger: Optional[int] = None
     """
-    The `trigger` property specifies for a sequencer which digital trigger to wait for.
-    This value is used as the input parameter for the `waitDigTrigger` sequencer instruction.
+    The ``trigger`` property specifies for a sequencer which digital trigger to wait for.
+    This value is used as the input parameter for the ``waitDigTrigger`` sequencer instruction.
     Setting this will declare the device secondary.
     """
 
@@ -464,9 +464,9 @@ class ZIBaseDescription(common.HardwareDescription):
     ref: Union[Literal["int"], Literal["ext"], Literal["none"]]
     """
     Property that describes if the instrument uses Markers or Triggers.
-    - `int` Enables sending Marker
-    - `ext` Enables waiting for Marker
-    - `none` Ignores waiting for Marker
+    - ``int`` Enables sending Marker
+    - ``ext`` Enables waiting for Marker
+    - ``none`` Ignores waiting for Marker
     """
 
 

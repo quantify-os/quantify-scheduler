@@ -59,9 +59,9 @@ class ScheduleGettable:
     """
     Generic gettable for a quantify schedule using vector (I,Q) acquisition.
 
-    The gettable evaluates the parameters passed as `schedule_kwargs`, then generates
+    The gettable evaluates the parameters passed as ``schedule_kwargs``, then generates
     the :class:`quantify_scheduler.schedules.schedule.Schedule` using the
-    `schedule_function`, this is then compiled and finally executed by the
+    ``schedule_function``, this is then compiled and finally executed by the
     :class:`~.InstrumentCoordinator`.
 
     ``ScheduleGettable`` can be set to return either static (demodulated) I and Q
@@ -75,7 +75,7 @@ class ScheduleGettable:
     schedule_function
         A function which returns a
         :class:`quantify_scheduler.schedules.schedule.Schedule`. The
-        function is required to have the `repetitions` keyword argument.
+        function is required to have the ``repetitions`` keyword argument.
     schedule_kwargs
         The schedule function keyword arguments, when a value in this dictionary is
         a :class:`~qcodes.instrument.parameter.Parameter`, this parameter will be
@@ -99,8 +99,8 @@ class ScheduleGettable:
         mode. Can be used to split up a program in parts if required due to hardware
         constraints.
     always_initialize:
-        If True, then reinitialize the schedule on each invocation of `get`. If
-        False, then only initialize the first invocation of `get`.
+        If True, then reinitialize the schedule on each invocation of ``get``. If
+        False, then only initialize the first invocation of ``get``.
     """
 
     def __init__(
@@ -565,8 +565,8 @@ class ScheduleGettable:
         self, execute_get: bool = False, update: bool = False
     ) -> str:
         """
-        Create a report that saves all information contained in this `ScheduleGettable`
-        and save it in the quantify datadir with its own `tuid`. The information in
+        Create a report that saves all information contained in this ``ScheduleGettable``
+        and save it in the quantify datadir with its own ``tuid``. The information in
         the report includes the generated schedule, device config, hardware config
         and snapshot of the instruments.
 
@@ -580,7 +580,7 @@ class ScheduleGettable:
         Returns
         -------
         :
-            The `tuid` of the generated report.
+            The ``tuid`` of the generated report.
         """
 
         if update is True:
@@ -651,7 +651,7 @@ def _evaluate_parameter_dict(parameters: dict[str, Any]) -> dict[str, Any]:
     Returns
     -------
     :
-        The `parameters` dictionary, but with the parameters replaced by their current
+        The ``parameters`` dictionary, but with the parameters replaced by their current
         value.
 
     Raises

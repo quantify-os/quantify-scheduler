@@ -421,7 +421,7 @@ class ZISettingsBuilder:
         Adds the Instruments waveform vector setting
         by index for an awg by index.
 
-        This equivalent to `with_wave_vector` only it does
+        This equivalent to ``with_wave_vector`` only it does
         not upload the setting to the node, because
         for loading waveforms using a CSV file this is
         not required.

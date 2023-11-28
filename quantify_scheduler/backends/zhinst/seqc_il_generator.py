@@ -135,7 +135,7 @@ class SeqcILGenerator(object):
 
     def declare_var(self, name: str, value: Optional[Union[str, int]] = None) -> None:
         """
-        Creates a new variable of type `var` with a name and
+        Creates a new variable of type ``var`` with a name and
         optionally its value.
 
         Parameters
@@ -155,7 +155,7 @@ class SeqcILGenerator(object):
 
     def declare_wave(self, name: str, value: Optional[str] = None) -> None:
         """
-        Creates a new variable of type `wave` with a name and
+        Creates a new variable of type ``wave`` with a name and
         optionally its value.
 
         Parameters
@@ -258,7 +258,7 @@ class SeqcILGenerator(object):
         Emit executeTableEntry to the program.
         Executes a command table waveform.
 
-        ::note `executeTableEntry` is not blocking
+        ::note ``executeTableEntry`` is not blocking
         so if you want to await the wave use `waitWave`
         directly after it.
 

@@ -327,7 +327,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         Parameters
         ----------
         port_list :
-            A list of ports to show. If `None` (default) the first 8 ports encountered in the sequence are used.
+            A list of ports to show. If ``None`` (default) the first 8 ports encountered in the sequence are used.
         modulation :
             Determines if modulation is included in the visualization.
         modulation_if :
@@ -448,13 +448,13 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         """
         A styled pandas dataframe containing the absolute timing of pulses and acquisitions in a schedule.
 
-        This table is constructed based on the `abs_time` key in the
+        This table is constructed based on the ``abs_time`` key in the
         :attr:`~quantify_scheduler.schedules.schedule.ScheduleBase.schedulables`.
         This requires the timing to have been determined.
 
         The table consists of the following columns:
 
-        - `operation`: a `repr` of :class:`~quantify_scheduler.operations.operation.Operation` corresponding to the pulse/acquisition.
+        - `operation`: a ``repr`` of :class:`~quantify_scheduler.operations.operation.Operation` corresponding to the pulse/acquisition.
         - `waveform_op_id`: an id corresponding to each pulse/acquisition inside an :class:`~quantify_scheduler.operations.operation.Operation`.
         - `port`: the port the pulse/acquisition is to be played/acquired on.
         - `clock`: the clock used to (de)modulate the pulse/acquisition.

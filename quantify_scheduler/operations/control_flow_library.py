@@ -11,7 +11,7 @@ class Loop(Operation):
     """
     Loop over another operation.
 
-    Cannot be added to Schedule manually, to be used with the `control_flow` arg of
+    Cannot be added to Schedule manually, to be used with the ``control_flow`` arg of
     Schedule.add
 
     Parameters
