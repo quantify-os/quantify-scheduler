@@ -43,6 +43,7 @@
 - Documentation - Add a warning banner to documentation when on an old or development version of quantify. (!864)
 - Documentation - Improve formatting by replacing single backticks with double backticks where needed. (!866)
 - Qblox backend - Temporary fix for reshaping of acquisition data of looped measurements in `BinMode.APPEND`. (!850)
+- Infrastructure - New test notebook for performance tests. (!862)
 
 ## 0.17.1 (2023-11-02)
 

@@ -17,6 +17,7 @@ EXPERIMENT_NOTEBOOKS = [
     "simple_binned_acquisition",
     "resonator_spectroscopy",
     "random_gates",
+    "multidim_batched_sweep",
 ]
 # Methods to profile. The function will be profiled in the class.
 # (<name>, (<class>, <function name>))
