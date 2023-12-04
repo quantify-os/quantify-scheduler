@@ -549,10 +549,6 @@ def test_prepare_qcm_qrm(
     qrm2.prepare(prog[qrm2.instrument.name])
 
     # Assert
-    qcm0.instrument.arm_sequencer.assert_called_with(sequencer=0)
-    qrm0.instrument.arm_sequencer.assert_called_with(sequencer=0)
-    qrm2.instrument.arm_sequencer.assert_called_with(sequencer=1)
-
     if set_reference_source:
         if force_set_parameters:
             qcm0.instrument._set_reference_source.assert_called()
@@ -650,9 +646,6 @@ def test_prepare_cluster_rf(
 
     # Assert
     assert compiled_schedule == compiled_schedule_before_prepare
-
-    qcm_rf.arm_sequencer.assert_called_with(sequencer=1)
-    qrm_rf.arm_sequencer.assert_called_with(sequencer=0)
 
     # Assert it's only set in initialization
     ic_cluster.instrument.reference_source.assert_called_once()
@@ -874,6 +867,9 @@ def test_start_qcm_qrm(
     qrm.start()
 
     # Assert
+    qcm.instrument.arm_sequencer.assert_called_with(sequencer=0)
+    qrm.instrument.arm_sequencer.assert_called_with(sequencer=0)
+
     qcm.instrument.start_sequencer.assert_called()
     qrm.instrument.start_sequencer.assert_called()
 
@@ -910,6 +906,9 @@ def test_start_qcm_qrm_rf(
     qrm_rf.start()
 
     # Assert
+    qcm_rf.instrument.arm_sequencer.assert_called_with(sequencer=0)
+    qrm_rf.instrument.arm_sequencer.assert_called_with(sequencer=0)
+
     qcm_rf.instrument.start_sequencer.assert_called()
     qrm_rf.instrument.start_sequencer.assert_called()
 

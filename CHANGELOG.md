@@ -15,6 +15,8 @@
       - For Zurich Instruments: `"config_type": 
  "quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig"`.
 - Schedulables - Rename `Schedulable["operation_repr"]` to `Schedulable["operation_id"]` (!775, #438)
+- Qblox ICCs - Fix to allow running `ScheduleGettable` with option `always_initialize=False`. (!868)
+  - Arming the sequencers is now done via `InstrumentCoordinator.start()` instead of `InstrumentCoordinator.prepare()`.
 
 ### Merged branches and closed issues
 

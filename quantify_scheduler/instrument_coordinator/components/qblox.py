@@ -186,6 +186,8 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
             for idx in range(self._hardware_properties.number_of_sequencers)
         }
 
+        self._program = {}
+
     @property
     def instrument(self) -> Union[Instrument, InstrumentModule]:
         """
@@ -303,12 +305,9 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
             f"{self.instrument.name}_idn": str(self.instrument.get_idn()),
         }
 
-    def start(self) -> None:
-        """Starts execution of the schedule."""
-        for idx in range(self._hardware_properties.number_of_sequencers):
-            state = self.instrument.get_sequencer_state(idx)
-            if state.status is SequencerStatus.ARMED:
-                self.instrument.start_sequencer(idx)
+    def prepare(self, program: Dict[str, dict]) -> None:
+        """Store program containing sequencer settings."""
+        self._program = program
 
     def stop(self) -> None:
         """Stops all execution."""
@@ -428,11 +427,18 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         return channel_map_parameters
 
     def _arm_all_sequencers_in_program(self, program: Dict[str, Any]):
-        """Arms all the sequencers that are part of the program."""
-        for seq_name in program["sequencers"]:
+        """Arm all the sequencers that are part of the program."""
+        for seq_name in program.get("sequencers", {}):
             if seq_name in self._seq_name_to_idx_map:
                 seq_idx = self._seq_name_to_idx_map[seq_name]
                 self.instrument.arm_sequencer(sequencer=seq_idx)
+
+    def _start_armed_sequencers(self):
+        """Start execution of the schedule: start armed sequencers."""
+        for idx in range(self._hardware_properties.number_of_sequencers):
+            state = self.instrument.get_sequencer_state(idx)
+            if state.status is SequencerStatus.ARMED:
+                self.instrument.start_sequencer(idx)
 
     @property
     @abstractmethod
@@ -488,6 +494,8 @@ class QCMComponent(QbloxInstrumentCoordinatorComponentBase):
             options for each sequencer, e.g. :code:`"seq0"`.
             For global settings, the options are under different keys, e.g. :code:`"settings"`.
         """
+        super().prepare(program)
+
         if (settings_entry := program.get("settings")) is not None:
             module_settings = self._hardware_properties.settings_type.from_dict(
                 settings_entry
@@ -512,7 +520,10 @@ class QCMComponent(QbloxInstrumentCoordinatorComponentBase):
                 seq_idx=seq_idx, settings=SequencerSettings.from_dict(seq_cfg)
             )
 
-        self._arm_all_sequencers_in_program(program)
+    def start(self) -> None:
+        """Arm sequencers and start sequencers."""
+        self._arm_all_sequencers_in_program(self._program)
+        self._start_armed_sequencers()
 
     def _configure_global_settings(self, settings: BaseModuleSettings):
         """
@@ -589,6 +600,8 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
             options for each sequencer, e.g. :code:`"seq0"`.
             For global settings, the options are under different keys, e.g. :code:`"settings"`.
         """
+        super().prepare(program)
+
         for seq_idx in range(self._hardware_properties.number_of_sequencers):
             self._set_parameter(
                 self.instrument[f"sequencer{seq_idx}"], "sync_en", False
@@ -647,8 +660,11 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
                 self.instrument, f"scope_acq_avg_mode_en_path{path}", True
             )
 
+    def start(self) -> None:
+        """Clear acquisition data, arm sequencers and start sequencers."""
         self._clear_sequencer_acquisition_data()
-        self._arm_all_sequencers_in_program(program)
+        self._arm_all_sequencers_in_program(self._program)
+        self._start_armed_sequencers()
 
     def _clear_sequencer_acquisition_data(self):
         """Clear all acquisition data."""

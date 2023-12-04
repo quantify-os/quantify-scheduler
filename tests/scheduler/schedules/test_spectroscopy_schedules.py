@@ -12,10 +12,8 @@ from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.compilation import _determine_absolute_timing
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
-from quantify_scheduler.enums import BinMode
 from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.schedules import spectroscopy_schedules as sps
-from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 
 from tests.scheduler.instrument_coordinator.components.test_qblox import (  # pylint: disable=unused-import
     make_cluster_component,
