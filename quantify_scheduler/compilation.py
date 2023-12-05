@@ -337,9 +337,11 @@ def flatten_schedule(
     if config is None and schedule.get("duration", None) is None:
         _determine_absolute_timing(schedule)
 
+    all_resources = dict(schedule.resources)
     for op in schedule.operations.values():
         if isinstance(op, Schedule):
             flatten_schedule(op, config)
+            all_resources.update(op.resources)
 
     op_keys_to_pop = set()
     schedulable_keys_to_pop = set()
@@ -366,6 +368,10 @@ def flatten_schedule(
         schedule["operation_dict"].pop(key)
     for key in schedulable_keys_to_pop:
         schedule["schedulables"].pop(key)
+
+    for resource in all_resources.values():
+        if resource.name not in schedule.resources:
+            schedule.add_resource(resource)
 
     return schedule
 

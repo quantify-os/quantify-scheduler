@@ -46,6 +46,7 @@
 - Documentation - Improve formatting by replacing single backticks with double backticks where needed. (!866)
 - Qblox backend - Temporary fix for reshaping of acquisition data of looped measurements in `BinMode.APPEND`. (!850)
 - Infrastructure - New test notebook for performance tests. (!862)
+- Subscheduling - Fix missing resources in nested schedule. (!877)
 
 ## 0.17.1 (2023-11-02)
 

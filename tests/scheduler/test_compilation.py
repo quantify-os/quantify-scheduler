@@ -11,7 +11,8 @@ from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.circuit_to_device import ConfigKeyError
 from quantify_scheduler.compilation import _determine_absolute_timing, flatten_schedule
 from quantify_scheduler.enums import BinMode
-from quantify_scheduler.operations.gate_library import CNOT, CZ, Measure, Reset, Rxy
+from quantify_scheduler.operations.control_flow_library import Loop
+from quantify_scheduler.operations.gate_library import CNOT, CZ, X, Measure, Reset, Rxy
 from quantify_scheduler.operations.pulse_library import SquarePulse, SetClockFrequency
 from quantify_scheduler.resources import BasebandClockResource, ClockResource, Resource
 
@@ -452,3 +453,37 @@ def test_flatten_schedule():
     timed_sched = _determine_absolute_timing(outer, time_unit="ideal")
     flat = flatten_schedule(timed_sched)
     assert len(flat.data["schedulables"]) == 4
+
+
+@pytest.mark.parametrize(
+    argnames="schedule_kwargs", argvalues=[{}, {"control_flow": Loop(1024)}]
+)
+def test_flatten_schedule_gets_all_resources(
+    compile_config_basic_transmon_qblox_hardware, schedule_kwargs
+):
+    schedule1 = Schedule("")
+    schedule2 = Schedule("")
+    schedule2.add(X("q0"), **schedule_kwargs)
+    schedule1.add(schedule2)
+
+    compiler = SerialCompiler("")
+    compiled_schedule = compiler.compile(
+        schedule=schedule1,
+        config=compile_config_basic_transmon_qblox_hardware,
+    )
+
+    expected_resources = {
+        "cl0.baseband": {
+            "name": "cl0.baseband",
+            "type": "BasebandClockResource",
+            "freq": 0,
+            "phase": 0,
+        },
+        "q0.01": {
+            "name": "q0.01",
+            "type": "ClockResource",
+            "freq": 7300000000.0,
+            "phase": 0,
+        },
+    }
+    assert compiled_schedule.resources == expected_resources
