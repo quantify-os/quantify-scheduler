@@ -117,7 +117,6 @@ class QuantumDevice(Instrument):
                 "using quantum_device.generate_hardware_compilation_config(). This configures "
                 "the compilation from the quantum-device layer to the control-hardware layer."
             ),
-            vals=validators.Dict(),
             initial_value=None,
             instrument=self,
         )
@@ -371,8 +370,10 @@ class QuantumDevice(Instrument):
         hardware_config = self.hardware_config()
         if hardware_config is None:
             return None
-
-        if not any(
+        elif isinstance(hardware_config, HardwareCompilationConfig):
+            # Hardware config is already a valid HardwareCompilationConfig DataStructure
+            return hardware_config
+        elif not any(
             [
                 key in hardware_config
                 for key in [

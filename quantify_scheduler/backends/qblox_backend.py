@@ -4,8 +4,9 @@
 from __future__ import annotations
 
 import warnings
-from pydantic import Field
 from typing import Any, Dict, List, Optional, Type, Union
+
+from pydantic import Field, model_validator
 
 from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends.corrections import (
@@ -305,11 +306,26 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
             compilation_func=compile_long_square_pulses_to_awg_offsets,
         ),
         SimpleNodeConfig(
-            name="qblox_hardware_compile",
-            compilation_func=hardware_compile,
+            name="qblox_hardware_compile", compilation_func=hardware_compile
         ),
     ]
     """
     The list of compilation nodes that should be called in succession to compile a 
     schedule to instructions for the Qblox hardware.
     """
+
+    @model_validator(mode="before")
+    @classmethod
+    def from_old_style_hardware_config(
+        cls: type[QbloxHardwareCompilationConfig], data: Any
+    ) -> Any:
+        """Convert old style hardware config dict to new style before validation."""
+        if (
+            isinstance(data, dict)
+            and data.get("backend")
+            == "quantify_scheduler.backends.qblox_backend.hardware_compile"
+        ):
+            # Input is an old style Qblox hardware config dict
+            data = helpers._generate_new_style_hardware_compilation_config(data)
+
+        return data

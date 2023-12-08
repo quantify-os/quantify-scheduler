@@ -1661,3 +1661,38 @@ def test_generate_hardware_config(hardware_compilation_config_zhinst_example):
     quantum_device.close()
 
     assert generated_hw_config == zhinst_hardware_config_old_style
+
+
+def test_generate_new_style_hardware_compilation_config(
+    hardware_compilation_config_zhinst_example,
+):
+    parsed_new_style_config = zhinst_backend.ZIHardwareCompilationConfig.model_validate(
+        hardware_compilation_config_zhinst_example
+    )
+
+    converted_new_style_hw_cfg = (
+        zhinst_backend.ZIHardwareCompilationConfig.model_validate(
+            zhinst_hardware_config_old_style
+        )
+    )
+
+    # Partial checks
+    # HardwareDescription
+    assert (
+        converted_new_style_hw_cfg.model_dump()["hardware_description"]
+        == parsed_new_style_config.model_dump()["hardware_description"]
+    )
+    # Connectivity
+    assert list(converted_new_style_hw_cfg.connectivity.graph.edges) == list(
+        parsed_new_style_config.connectivity.graph.edges
+    )
+    # HardwareOptions
+    assert (
+        converted_new_style_hw_cfg.model_dump()["hardware_options"]
+        == parsed_new_style_config.model_dump()["hardware_options"]
+    )
+
+    # Write to dict to check equality of full config contents:
+    assert (
+        converted_new_style_hw_cfg.model_dump() == parsed_new_style_config.model_dump()
+    )

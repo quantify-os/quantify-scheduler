@@ -5,20 +5,22 @@ import dataclasses
 import math
 import re
 import warnings
+from collections import defaultdict
 from copy import deepcopy
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
+
 from quantify_core.utilities import deprecated
 from quantify_core.utilities.general import without
-
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends.graph_compilation import CompilationConfig
 from quantify_scheduler.backends.qblox import constants
-from quantify_scheduler.backends.types.common import Connectivity
 from quantify_scheduler.backends.types.qblox import (
+    ComplexChannelDescription,
     ComplexInputGain,
     OpInfo,
+    RealChannelDescription,
     RealInputGain,
 )
 from quantify_scheduler.helpers.collections import (
@@ -26,8 +28,8 @@ from quantify_scheduler.helpers.collections import (
     find_port_clock_path,
 )
 from quantify_scheduler.helpers.schedule import (
-    extract_acquisition_metadata_from_acquisition_protocols,
     _extract_port_clocks_used,
+    extract_acquisition_metadata_from_acquisition_protocols,
 )
 from quantify_scheduler.helpers.waveforms import exec_waveform_function
 from quantify_scheduler.operations.pulse_library import WindowOperation
@@ -957,7 +959,7 @@ def generate_hardware_config(schedule: Schedule, compilation_config: Compilation
     connectivity_graph = (
         compilation_config.hardware_compilation_config.connectivity.graph
     )
-    for port, clock in port_clocks:
+    for port, clock in sorted(port_clocks):
         # Find all nodes connected to quantum device port
         connected_nodes = {}
         for node in connectivity_graph:
@@ -1252,3 +1254,342 @@ def generate_hardware_config(schedule: Schedule, compilation_config: Compilation
     _recursive_digital_io_search(hardware_config)
 
     return hardware_config
+
+
+def _generate_new_style_hardware_compilation_config(
+    old_style_config: dict,
+) -> dict:
+    """
+    Generate a new-style QbloxHardwareCompilationConfig from an old-style hardware config.
+
+    Parameters
+    ----------
+    old_style_config
+        Old-style hardware config.
+
+    Returns
+    -------
+    dict
+        New-style hardware compilation config dictionary.
+
+    """
+
+    def _convert_complex_channel_config(
+        cluster_name: str,
+        module_slot_idx: int,
+        channel_name: str,
+        old_channel_config: dict,
+        new_style_config: dict,
+    ) -> None:
+        """Add information from old-style complex channel config to new-style config."""
+        new_style_config["hardware_description"][cluster_name]["modules"][
+            module_slot_idx
+        ][channel_name] = {}
+        port_name = f"{cluster_name}.module{module_slot_idx}.{channel_name}"
+        for (
+            channel_cfg_key,
+            channel_cfg_value,
+        ) in old_channel_config.items():
+            # Find attached port-clock combinations:
+            channel_port_clocks = [
+                f"{pc_cfg['port']}-{pc_cfg['clock']}"
+                for pc_cfg in old_channel_config["portclock_configs"]
+            ]
+            if channel_cfg_key in [
+                "marker_debug_mode_enable",
+                "mix_lo",
+                "downconverter_freq",
+            ]:
+                new_style_config["hardware_description"][cluster_name]["modules"][
+                    module_slot_idx
+                ][channel_name][channel_cfg_key] = channel_cfg_value
+            elif channel_cfg_key == "lo_name":
+                # Add IQ mixer to the hardware_description:
+                new_style_config["hardware_description"][
+                    f"iq_mixer_{channel_cfg_value}"
+                ] = {"instrument_type": "IQMixer"}
+                # Add LO and IQ mixer to connectivity graph:
+                new_style_config["connectivity"]["graph"].extend(
+                    [
+                        (
+                            port_name,
+                            f"iq_mixer_{channel_cfg_value}.if",
+                        ),
+                        (
+                            f"{channel_cfg_value}.output",
+                            f"iq_mixer_{channel_cfg_value}.lo",
+                        ),
+                    ]
+                )
+                # Overwrite port_name to IQ mixer RF output:
+                port_name = f"iq_mixer_{channel_cfg_value}.rf"
+                if "frequency" in old_style_config[channel_cfg_value]:
+                    # Set lo_freq for all port-clock combinations (external LO)
+                    for port_clock in channel_port_clocks:
+                        new_style_config["hardware_options"]["modulation_frequencies"][
+                            port_clock
+                        ]["lo_freq"] = old_style_config[channel_cfg_value]["frequency"]
+            elif channel_cfg_key == "lo_freq":
+                # Set lo_freq for all port-clock combinations (RF modules)
+                for port_clock in channel_port_clocks:
+                    new_style_config["hardware_options"]["modulation_frequencies"][
+                        port_clock
+                    ]["lo_freq"] = channel_cfg_value
+            elif channel_cfg_key == "dc_mixer_offset_I":
+                # Set mixer offsets for all port-clock combinations (RF modules)
+                for port_clock in channel_port_clocks:
+                    new_style_config["hardware_options"]["mixer_corrections"][
+                        port_clock
+                    ]["dc_offset_i"] = channel_cfg_value
+            elif channel_cfg_key == "dc_mixer_offset_Q":
+                # Set mixer offsets for all port-clock combinations (RF modules)
+                for port_clock in channel_port_clocks:
+                    new_style_config["hardware_options"]["mixer_corrections"][
+                        port_clock
+                    ]["dc_offset_q"] = channel_cfg_value
+            elif channel_cfg_key == "input_gain_I":
+                # Set input gains for all port-clock combinations (RF modules)
+                for port_clock in channel_port_clocks:
+                    new_style_config["hardware_options"]["input_gain"][port_clock][
+                        "gain_I"
+                    ] = channel_cfg_value
+            elif channel_cfg_key == "input_gain_Q":
+                # Set input gains for all port-clock combinations (RF modules)
+                for port_clock in channel_port_clocks:
+                    new_style_config["hardware_options"]["input_gain"][port_clock][
+                        "gain_Q"
+                    ] = channel_cfg_value
+            elif channel_cfg_key == "output_att":
+                # Set output attenuation for all port-clock combinations (RF modules)
+                for port_clock in channel_port_clocks:
+                    new_style_config["hardware_options"]["output_att"][
+                        port_clock
+                    ] = channel_cfg_value
+            elif channel_cfg_key == "input_att":
+                # Set input attenuation for all port-clock combinations (RF modules)
+                for port_clock in channel_port_clocks:
+                    new_style_config["hardware_options"]["input_att"][
+                        port_clock
+                    ] = channel_cfg_value
+            elif channel_cfg_key == "portclock_configs":
+                # Add connectivity information to connectivity graph:
+                for portclock_cfg in channel_cfg_value:
+                    new_style_config["connectivity"]["graph"].append(
+                        (
+                            port_name,
+                            f"{portclock_cfg['port']}",
+                        )
+                    )
+                    port_clock = (
+                        f"{portclock_cfg.pop('port')}-{portclock_cfg.pop('clock')}"
+                    )
+                    if "interm_freq" in portclock_cfg:
+                        # Set intermodulation freqs from portclock config:
+                        new_style_config["hardware_options"]["modulation_frequencies"][
+                            port_clock
+                        ]["interm_freq"] = portclock_cfg.pop("interm_freq")
+                    if "mixer_amp_ratio" in portclock_cfg:
+                        # Set intermodulation freqs from portclock config:
+                        new_style_config["hardware_options"]["mixer_corrections"][
+                            port_clock
+                        ]["amp_ratio"] = portclock_cfg.pop("mixer_amp_ratio")
+                    if "mixer_phase_error_deg" in portclock_cfg:
+                        # Set intermodulation freqs from portclock config:
+                        new_style_config["hardware_options"]["mixer_corrections"][
+                            port_clock
+                        ]["phase_error"] = portclock_cfg.pop("mixer_phase_error_deg")
+                    if portclock_cfg != {}:
+                        # Set remaining portclock config parameters to sequencer options:
+                        new_style_config["hardware_options"]["sequencer_options"][
+                            port_clock
+                        ] = portclock_cfg
+
+    def _convert_real_channel_config(
+        cluster_name: str,
+        module_slot_idx: int,
+        channel_name: str,
+        old_channel_config: dict,
+        new_style_config: dict,
+    ) -> None:
+        """Add information from old-style real channel config to new-style config."""
+        new_style_config["hardware_description"][cluster_name]["modules"][
+            module_slot_idx
+        ][channel_name] = {}
+        for (
+            channel_cfg_key,
+            channel_cfg_value,
+        ) in old_channel_config.items():
+            if channel_cfg_key == "marker_debug_mode_enable":
+                new_style_config["hardware_description"][cluster_name]["modules"][
+                    module_slot_idx
+                ][channel_name][channel_cfg_key] = channel_cfg_value
+            elif channel_cfg_key == "portclock_configs":
+                # Add connectivity information to connectivity graph:
+                for portclock_cfg in channel_cfg_value:
+                    new_style_config["connectivity"]["graph"].append(
+                        (
+                            f"{cluster_name}.module{module_slot_idx}.{channel_name}",
+                            f"{portclock_cfg['port']}",
+                        )
+                    )
+
+    def _convert_digital_channel_config(
+        cluster_name: str,
+        module_slot_idx: int,
+        channel_name: str,
+        old_channel_config: dict,
+        new_style_config: dict,
+    ) -> None:
+        new_style_config["hardware_description"][cluster_name]["modules"][
+            module_slot_idx
+        ][channel_name] = {}
+        for (
+            channel_cfg_key,
+            channel_cfg_value,
+        ) in old_channel_config.items():
+            if channel_cfg_key == "portclock_configs":
+                # Add connectivity information to connectivity graph:
+                for portclock_cfg in channel_cfg_value:
+                    new_style_config["connectivity"]["graph"].append(
+                        (
+                            f"{cluster_name}.module{module_slot_idx}.{channel_name}",
+                            f"{portclock_cfg['port']}",
+                        )
+                    )
+
+    def _convert_cluster_module_config(
+        cluster_name: str,
+        module_slot_idx: int,
+        old_module_config: dict,
+        new_style_config: dict,
+    ) -> None:
+        """Add information from old-style Cluster module config to new-style config."""
+        new_style_config["hardware_description"][cluster_name]["modules"][
+            module_slot_idx
+        ] = {}
+        for module_cfg_key, module_cfg_value in old_module_config.items():
+            if module_cfg_key in ["instrument_type", "sequence_to_file"]:
+                new_style_config["hardware_description"][cluster_name]["modules"][
+                    module_slot_idx
+                ][module_cfg_key] = module_cfg_value
+            elif module_cfg_key.startswith("complex_"):
+                _convert_complex_channel_config(
+                    cluster_name=cluster_name,
+                    module_slot_idx=module_slot_idx,
+                    channel_name=module_cfg_key,
+                    old_channel_config=module_cfg_value,
+                    new_style_config=new_style_config,
+                )
+                # Remove channel description if only default values are set
+                parsed_channel_description = ComplexChannelDescription.model_validate(
+                    new_style_config["hardware_description"][cluster_name]["modules"][
+                        module_slot_idx
+                    ][module_cfg_key]
+                )
+                if (
+                    parsed_channel_description.model_dump()
+                    == ComplexChannelDescription().model_dump()
+                ):
+                    new_style_config["hardware_description"][cluster_name]["modules"][
+                        module_slot_idx
+                    ].pop(module_cfg_key)
+            elif module_cfg_key.startswith("real_"):
+                _convert_real_channel_config(
+                    cluster_name=cluster_name,
+                    module_slot_idx=module_slot_idx,
+                    channel_name=module_cfg_key,
+                    old_channel_config=module_cfg_value,
+                    new_style_config=new_style_config,
+                )
+                # Remove channel description if only default values are set
+                parsed_channel_description = RealChannelDescription.model_validate(
+                    new_style_config["hardware_description"][cluster_name]["modules"][
+                        module_slot_idx
+                    ][module_cfg_key]
+                )
+                if (
+                    parsed_channel_description.model_dump()
+                    == RealChannelDescription().model_dump()
+                ):
+                    new_style_config["hardware_description"][cluster_name]["modules"][
+                        module_slot_idx
+                    ].pop(module_cfg_key)
+            elif module_cfg_key.startswith("digital_"):
+                _convert_digital_channel_config(
+                    cluster_name=cluster_name,
+                    module_slot_idx=module_slot_idx,
+                    channel_name=module_cfg_key,
+                    old_channel_config=module_cfg_value,
+                    new_style_config=new_style_config,
+                )
+
+    def _convert_cluster_config(
+        cluster_name: str, old_cluster_config: dict, new_style_config: dict
+    ) -> None:
+        """Add information from old-style Cluster config to new-style config."""
+        new_style_config["hardware_description"][cluster_name] = {
+            "instrument_type": "Cluster",
+            "modules": {},
+        }
+        for cluster_cfg_key, cluster_cfg_value in old_cluster_config.items():
+            if cluster_cfg_key in ["ref", "sequence_to_file"]:
+                new_style_config["hardware_description"][cluster_name][
+                    cluster_cfg_key
+                ] = cluster_cfg_value
+            elif "module" in cluster_cfg_key:
+                _convert_cluster_module_config(
+                    cluster_name=cluster_name,
+                    module_slot_idx=int(cluster_cfg_key.split(sep="module")[1]),
+                    old_module_config=cluster_cfg_value,
+                    new_style_config=new_style_config,
+                )
+
+    # Avoid modifying the original config
+    old_style_config = deepcopy(old_style_config)
+
+    # Initialize new-style hardware compilation config dictionary
+    new_style_config = {
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {},
+        "hardware_options": defaultdict(lambda: defaultdict(dict)),
+        "connectivity": {"graph": []},
+    }
+
+    # Loop over old-style config and populate new-style input dicts
+    for hw_cfg_key, hw_cfg_value in old_style_config.items():
+        if hw_cfg_key == "backend":
+            pass
+        elif hw_cfg_key in ["latency_corrections", "distortion_corrections"]:
+            new_style_config["hardware_options"][hw_cfg_key] = hw_cfg_value
+        elif "instrument_type" not in hw_cfg_value:
+            warnings.warn(
+                f"Skipping hardware config entry '{hw_cfg_key}' because it does not specify an instrument type."
+            )
+        elif hw_cfg_value["instrument_type"] == "Cluster":
+            _convert_cluster_config(
+                cluster_name=hw_cfg_key,
+                old_cluster_config=hw_cfg_value,
+                new_style_config=new_style_config,
+            )
+        elif hw_cfg_value["instrument_type"] in ["Pulsar_QCM", "Pulsar_QRM"]:
+            raise NotImplementedError(
+                "The old-to-new hardware config conversion has not been implemented for Pulsars."
+            )
+        elif hw_cfg_value["instrument_type"] == "LocalOscillator":
+            new_style_config["hardware_description"][hw_cfg_key] = {}
+            for lo_cfg_key, lo_cfg_value in hw_cfg_value.items():
+                if lo_cfg_key in ["instrument_type", "power"]:
+                    new_style_config["hardware_description"][hw_cfg_key][
+                        lo_cfg_key
+                    ] = lo_cfg_value
+                elif lo_cfg_key == "frequency":
+                    pass
+                else:
+                    raise KeyError(
+                        f"Unexpected key {lo_cfg_key} in LocalOscillator config."
+                    )
+        else:
+            raise ValueError(
+                f"Unexpected instrument_type {hw_cfg_value['instrument_type']} in old-style hardware config."
+            )
+    return new_style_config

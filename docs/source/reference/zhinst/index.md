@@ -131,6 +131,7 @@ print(json.dumps(hardware_compilation_config, indent=4, sort_keys=False))
 ZIHardwareCompilationConfig.model_validate(hardware_compilation_config)
 ```
 
+(sec-zhinst-hardware-description)=
 ### Hardware Description
 
 The {ref}`Hardware Description <sec-hardware-description>` describes the instruments that are used in the setup, along with some instrument-specific settings. The currently supported instruments are:
@@ -236,6 +237,7 @@ hardware_compilation_cfg = {
 }
 ```
 
+(sec-zhinst-hardware-options)=
 ### Hardware Options
 The {class}`~.backends.types.zhinst.ZIHardwareOptions` datastructure contains the settings used in compiling from the quantum-device layer to a set of instructions for the control hardware.
 

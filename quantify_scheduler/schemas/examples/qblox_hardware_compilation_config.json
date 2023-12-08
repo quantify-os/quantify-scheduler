@@ -36,10 +36,10 @@
             "instrument_type": "LocalOscillator",
             "power": 1
         },
-        "iq_mixer0": {
+        "iq_mixer_lo0": {
             "instrument_type": "IQMixer"
         },
-        "iq_mixer1": {
+        "iq_mixer_lo1": {
             "instrument_type": "IQMixer"
         }
     },
@@ -134,14 +134,14 @@
         "graph": [
             [
                 "cluster0.module1.complex_output_0",
-                "iq_mixer0.if"
+                "iq_mixer_lo0.if"
             ],
             [
                 "lo0.output",
-                "iq_mixer0.lo"
+                "iq_mixer_lo0.lo"
             ],
             [
-                "iq_mixer0.rf",
+                "iq_mixer_lo0.rf",
                 "q4:mw"
             ],
             [
@@ -157,15 +157,19 @@
             ],
             [
                 "cluster0.module3.complex_output_0",
-                "iq_mixer1.if"
+                "iq_mixer_lo1.if"
             ],
             [
                 "lo1.output",
-                "iq_mixer1.lo"
+                "iq_mixer_lo1.lo"
             ],
             [
-                "iq_mixer1.rf",
+                "iq_mixer_lo1.rf",
                 "q4:res"
+            ],
+            [
+                "cluster0.module3.complex_input_0",
+                "qe0:optical_readout"
             ],
             [
                 "cluster0.module4.complex_input_0",

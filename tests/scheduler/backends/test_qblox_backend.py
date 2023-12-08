@@ -511,6 +511,7 @@ def test_find_all_port_clock_combinations(
         ("q2:fl", "cl0.baseband"),
         ("q3:fl", "cl0.baseband"),
         ("q4:fl", "cl0.baseband"),
+        ("qe0:optical_readout", "qe0.ge0"),
     }
 
 
@@ -541,6 +542,7 @@ def test_generate_port_clock_to_device_map():
     portclock_map = generate_port_clock_to_device_map(qblox_hardware_config_old_style)
 
     assert set(portclock_map.keys()) == {
+        ("q0:mw", "q0.01"),
         ("q4:mw", "q4.01"),
         ("q5:mw", "q5.01"),
         ("q6:mw", "q6.01"),
@@ -552,6 +554,7 @@ def test_generate_port_clock_to_device_map():
         ("q2:fl", "cl0.baseband"),
         ("q3:fl", "cl0.baseband"),
         ("q4:fl", "cl0.baseband"),
+        ("qe0:optical_readout", "qe0.ge0"),
     }
 
 

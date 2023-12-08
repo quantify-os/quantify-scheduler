@@ -13,33 +13,23 @@ from contextlib import nullcontext
 from typing import Union
 
 import pytest
-from quantify_scheduler.schedules.schedule import Schedule
-from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.operations.pulse_library import SquarePulse
-from quantify_scheduler.helpers.collections import find_all_port_clock_combinations
 
-from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.helpers.collections import find_all_port_clock_combinations
-from quantify_scheduler.operations.pulse_library import SquarePulse
-from quantify_scheduler.schedules.schedule import Schedule
-
-from quantify_scheduler.backends.types.qblox import BasebandModuleSettings
 from quantify_scheduler.backends.qblox import helpers
-from quantify_scheduler.backends.qblox.enums import IoMode
-from quantify_scheduler.backends.qblox.qblox_hardware_config_old_style import (
-    hardware_config as qblox_hardware_config_old_style,
-)
 from quantify_scheduler.backends.qblox.instrument_compilers import (
-    QcmModule,
-    QcmRfModule,
     QrmModule,
-    QrmRfModule,
 )
 from quantify_scheduler.backends.qblox.qblox_hardware_config_old_style import (
     hardware_config as qblox_hardware_config_old_style,
 )
+from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
+from quantify_scheduler.backends.types.qblox import (
+    BasebandModuleSettings,
+)
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
+from quantify_scheduler.helpers.collections import find_all_port_clock_combinations
+from quantify_scheduler.operations.pulse_library import SquarePulse
+from quantify_scheduler.schedules.schedule import Schedule
 
 
 @pytest.mark.parametrize(
@@ -292,4 +282,37 @@ def test_configure_input_gains_overwrite_gain():
         str(error.value)
         == "Overwriting gain of real_output_1 of module tester to in1_gain: 10."
         "\nIt was previously set to in1_gain: 5."
+    )
+
+
+def test_generate_new_style_hardware_compilation_config(
+    hardware_compilation_config_qblox_example,
+):
+    parsed_new_style_config = QbloxHardwareCompilationConfig.model_validate(
+        hardware_compilation_config_qblox_example
+    )
+
+    converted_new_style_hw_cfg = QbloxHardwareCompilationConfig.model_validate(
+        qblox_hardware_config_old_style
+    )
+
+    # Partial checks
+    # HardwareDescription
+    assert (
+        converted_new_style_hw_cfg.model_dump()["hardware_description"]
+        == parsed_new_style_config.model_dump()["hardware_description"]
+    )
+    # Connectivity
+    assert list(converted_new_style_hw_cfg.connectivity.graph.edges) == list(
+        parsed_new_style_config.connectivity.graph.edges
+    )
+    # HardwareOptions
+    assert (
+        converted_new_style_hw_cfg.model_dump()["hardware_options"]
+        == parsed_new_style_config.model_dump()["hardware_options"]
+    )
+
+    # Write to dict to check equality of full config contents:
+    assert (
+        converted_new_style_hw_cfg.model_dump() == parsed_new_style_config.model_dump()
     )

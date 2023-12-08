@@ -10,12 +10,12 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Iterable,
     Literal,
     Optional,
     Tuple,
     TypeVar,
     Union,
-    Iterable,
 )
 
 from dataclasses_json import DataClassJsonMixin

@@ -11,7 +11,7 @@ kernelspec:
 ```{admonition} Under construction
 The {class}`~.backends.types.common.HardwareCompilationConfig` replaces the the old-style unvalidated json/dict hardware configuration, adding validation of the contents
 and restructuring into `"hardware_description"`, `"hardware_options"` and `"connectivity"`. It is still under construction,
-once finished the old-style hardware config will be deprecated but still supported until further notice. 
+once finished the old-style hardware config will be deprecated but still supported until further notice.
 ```
 
 ```{code-cell} ipython3
@@ -71,7 +71,7 @@ hardware_compilation_cfg = {
             "instrument_type": "LocalOscillator",
             "power": 20
         },
-        "iq_mixer0": {
+        "iq_mixer_lo0": {
             "instrument_type": "IQMixer"
         }
     },
@@ -93,9 +93,9 @@ hardware_compilation_cfg = {
     },
     "connectivity": {
         "graph": [
-            ("cluster0.module1.complex_output_0", "iq_mixer0.if"),
-            ("lo0.output", "iq_mixer0.lo"),
-            ("iq_mixer0.rf", "q4:mw"),
+            ("cluster0.module1.complex_output_0", "iq_mixer_lo0.if"),
+            ("lo0.output", "iq_mixer_lo0.lo"),
+            ("iq_mixer_lo0.rf", "q4:mw"),
             ("cluster0.module2.complex_output_0", "q5:mw"),
         ]
     },
@@ -135,6 +135,7 @@ The only instrument types that can be at the top level are:
 - {code}`"Cluster"`,
 - {code}`"LocalOscillator"`.
 
+(sec-cluster-hardware-description)=
 ## Hardware description
 
 To compile to a Cluster, one should include a valid {class}`~.backends.types.qblox.ClusterDescription` in the `"hardware_description"` part of the hardware compilation config.
@@ -268,7 +269,7 @@ hardware_compilation_cfg = {
             }
         },
         "lo0": {"instrument_type": "LocalOscillator", "power": 20},
-        "iq_mixer0": {"instrument_type": "IQMixer"},
+        "iq_mixer_lo0": {"instrument_type": "IQMixer"},
     },
     "hardware_options": {
         "modulation_frequencies": {
@@ -282,9 +283,9 @@ hardware_compilation_cfg = {
     },
     "connectivity": {
         "graph": [
-            ("cluster0.module1.complex_output_0", "iq_mixer0.if"),
-            ("lo0.output", "iq_mixer0.lo"),
-            ("iq_mixer0.rf", "q0:mw"),
+            ("cluster0.module1.complex_output_0", "iq_mixer_lo0.if"),
+            ("lo0.output", "iq_mixer_lo0.lo"),
+            ("iq_mixer_lo0.rf", "q0:mw"),
             ("cluster0.module2.complex_output_0", "q1:mw"),
         ]
     },
@@ -501,7 +502,7 @@ hardware_compilation_cfg = {
             "instrument_type": "LocalOscillator",
             "power": 20
         },
-        "iq_mixer0": {"instrument_type": "IQMixer"},
+        "iq_mixer_lo0": {"instrument_type": "IQMixer"},
     },
     "hardware_options": {
         "modulation_frequencies": {
@@ -512,9 +513,9 @@ hardware_compilation_cfg = {
     },
     "connectivity": {
         "graph": [
-            ("cluster0.module1.complex_output_1", "iq_mixer0.if"),
-            ("lo0.output", "iq_mixer0.lo"),
-            ("iq_mixer0.rf", "q1:mw"),
+            ("cluster0.module1.complex_output_1", "iq_mixer_lo0.if"),
+            ("lo0.output", "iq_mixer_lo0.lo"),
+            ("iq_mixer_lo0.rf", "q1:mw"),
         ]
     }
 }
@@ -578,7 +579,7 @@ In the given example, we add two pulses on the same port but with different cloc
 The Qblox modules have six sequencers available, which sets the upper limit to our multiplexing capabilities.
 
 
-
+(sec-cluster-hardware-options)=
 ## Hardware options
 The {class}`~.backends.types.qblox.QbloxHardwareOptions` datastructure contains the settings used in compiling from the quantum-device layer to a set of instructions for the control hardware.
 
@@ -655,7 +656,7 @@ hardware_compilation_cfg = {
             }
         },
         "lo0": {"instrument_type": "LocalOscillator", "power": 20},
-        "iq_mixer0": {"instrument_type": "IQMixer"},
+        "iq_mixer_lo0": {"instrument_type": "IQMixer"},
     },
     "hardware_options": {
         "modulation_frequencies": {
@@ -673,9 +674,9 @@ hardware_compilation_cfg = {
     "connectivity": {
         "graph": [
             ("cluster0.module1.complex_output_0", "q0:mw"),
-            ("cluster0.module1.complex_output_1", "iq_mixer0.if"),
-            ("lo0.output", "iq_mixer0.lo"),
-            ("iq_mixer0.rf", "q1:mw"),
+            ("cluster0.module1.complex_output_1", "iq_mixer_lo0.if"),
+            ("lo0.output", "iq_mixer_lo0.lo"),
+            ("iq_mixer_lo0.rf", "q1:mw"),
             ("cluster0.module2.complex_output_0", "q2:mw"),
             ("cluster0.module2.complex_output_1", "q3:mw"),
         ]

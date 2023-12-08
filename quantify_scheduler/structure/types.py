@@ -112,7 +112,7 @@ class Graph(nx.Graph):
         return core_schema.no_info_plain_validator_function(
             cls.validate,
             serialization=core_schema.plain_serializer_function_ser_schema(
-                nx.node_link_data, when_used="json"
+                nx.node_link_data, when_used="always"
             ),
         )
 

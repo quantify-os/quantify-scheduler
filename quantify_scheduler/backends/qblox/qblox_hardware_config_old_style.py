@@ -45,7 +45,8 @@ hardware_config = {
                 "lo_freq": None,
                 "output_att": 4,
                 "portclock_configs": [
-                    {"port": "q5:mw", "clock": "q5.01", "interm_freq": 50e6}
+                    {"port": "q0:mw", "clock": "q0.01", "interm_freq": 50e6},
+                    {"port": "q5:mw", "clock": "q5.01", "interm_freq": 50e6},
                 ],
             },
             "complex_output_1": {
@@ -74,6 +75,20 @@ hardware_config = {
                         "interm_freq": None,
                     }
                 ],
+            },
+            "complex_input_0": {
+                "portclock_configs": [
+                    {
+                        "port": "qe0:optical_readout",
+                        "clock": "qe0.ge0",
+                        "ttl_acq_threshold": 0.5,
+                        "init_gain_awg_path_0": 1.0,
+                        "init_gain_awg_path_1": 1.0,
+                        "init_offset_awg_path_0": 0.0,
+                        "init_offset_awg_path_1": 0.0,
+                        "qasm_hook_func": None,
+                    },
+                ]
             },
         },
         "cluster0_module4": {

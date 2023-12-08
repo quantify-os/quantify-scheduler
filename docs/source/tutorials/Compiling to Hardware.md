@@ -102,6 +102,7 @@ hardware_comp_cfg = {
 }
 ```
 
+(sec-tutorial-compiling-to-hardware-compilation)=
 ## Compilation
 
 Now we are ready to proceed to the compilation stage. For each of the control stack's instruments, the compilation generates:

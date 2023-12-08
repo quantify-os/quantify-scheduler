@@ -5,6 +5,7 @@
 
 connectivity_examples
 deprecated
+hardware_config_migration
 serialization
 UML_class_diagrams
 ```

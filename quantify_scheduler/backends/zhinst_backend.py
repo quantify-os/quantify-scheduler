@@ -7,6 +7,8 @@ from __future__ import annotations
 import logging
 import re
 import warnings
+from collections import defaultdict
+from copy import deepcopy
 from dataclasses import dataclass
 from functools import partial
 from typing import (
@@ -22,7 +24,7 @@ from typing import (
 )
 
 import numpy as np
-from pydantic import Field, TypeAdapter
+from pydantic import Field, TypeAdapter, model_validator
 from zhinst.toolkit.helpers import Waveform
 
 from quantify_scheduler import enums
@@ -1038,6 +1040,224 @@ def generate_hardware_config(  # noqa: PLR0912, PLR0915
     return hardware_config
 
 
+def _generate_new_style_hardware_compilation_config(  # noqa: PLR0912, PLR0915
+    old_style_config: dict,
+) -> dict:
+    """
+    Generate a new-style ZIHardwareCompilationConfig from an old-style hardware config.
+
+    Parameters
+    ----------
+    old_style_config
+        Old-style hardware config.
+
+    Returns
+    -------
+    dict
+        New-style hardware compilation config dictionary.
+    """
+    # Avoid modifying the original config
+    old_style_config = deepcopy(old_style_config)
+
+    # Initialize input dicts (before validation)
+    hardware_description = {}
+    hardware_options = defaultdict(lambda: defaultdict(dict))
+    connectivity = {"graph": []}
+
+    # Loop over old-style config and populate new-style input dicts
+    for hw_cfg_key, hw_cfg_value in old_style_config.items():
+        if hw_cfg_key == "backend":
+            pass
+        elif hw_cfg_key in ["latency_corrections", "distortion_corrections"]:
+            hardware_options[hw_cfg_key] = hw_cfg_value
+        elif hw_cfg_key == "local_oscillators":  # noqa: SIM114
+            for lo_cfg in hw_cfg_value:
+                power_cfg = lo_cfg.get("power")
+                if power_cfg:
+                    power_param = list(power_cfg.keys())[0]
+                    power = power_cfg[power_param]
+                else:
+                    power_param = "power"
+                    power = None
+                hardware_description[lo_cfg["unique_name"]] = {
+                    "instrument_type": "LocalOscillator",
+                    "instrument_name": lo_cfg.get("instrument_name"),
+                    "generic_icc_name": lo_cfg.get("generic_icc_name"),
+                    "frequency_param": lo_cfg.get("frequency_param", "frequency"),
+                    "power_param": power_param,
+                    "power": power,
+                }
+        elif hw_cfg_key == "devices":
+            for instr_cfg in hw_cfg_value:
+                if instr_cfg["type"] in ["HDAWG4", "HDAWG8"]:
+                    # Hardware Description
+                    hardware_description[instr_cfg["name"]] = {
+                        "instrument_type": instr_cfg["type"],
+                        "ref": instr_cfg["ref"],
+                        "channelgrouping": instr_cfg["channelgrouping"],
+                        "clock_select": instr_cfg["clock_select"],
+                    }
+                    for ch_idx in [0, 1, 2, 3]:
+                        if ch_cfg := instr_cfg.get(f"channel_{ch_idx}"):
+                            hardware_description[instr_cfg["name"]][
+                                f"channel_{ch_idx}"
+                            ] = {
+                                "mode": ch_cfg["mode"],
+                                "markers": ch_cfg.get("markers", []),
+                                "trigger": ch_cfg.get("trigger"),
+                            }
+                        else:
+                            continue
+                        # Connectivity
+                        port = ch_cfg.get("port")
+                        clock = ch_cfg.get("clock")
+                        port_name = f"{instr_cfg['name']}.channel_{ch_idx}"
+                        if ch_cfg.get("local_oscillator") is not None:
+                            # Add IQ mixer to the hardware_description:
+                            iq_mixer_id = f"iqm_{instr_cfg['name']}_ch{ch_idx}"
+                            hardware_description[iq_mixer_id] = {
+                                "instrument_type": "IQMixer"
+                            }
+                            # Add LO and IQ mixer to connectivity graph:
+                            connectivity["graph"].extend(
+                                [
+                                    (
+                                        port_name,
+                                        f"{iq_mixer_id}.if",
+                                    ),
+                                    (
+                                        f"{ch_cfg['local_oscillator']}.output",
+                                        f"{iq_mixer_id}.lo",
+                                    ),
+                                ]
+                            )
+                            # Overwrite port_name to IQ mixer RF output:
+                            port_name = f"{iq_mixer_id}.rf"
+                            # Set LO frequency in hardware options:
+                            lo_cfg = [
+                                lo_cfg
+                                for lo_cfg in old_style_config["local_oscillators"]
+                                if lo_cfg["unique_name"] == ch_cfg["local_oscillator"]
+                            ][0]
+                            if "frequency" in lo_cfg:
+                                hardware_options["modulation_frequencies"][
+                                    f"{port}-{clock}"
+                                ]["lo_freq"] = list(lo_cfg["frequency"].values())[0]
+                        connectivity["graph"].append((port_name, port))
+                        # Hardware Options
+                        if ch_cfg.get("mixer_corrections"):
+                            # Decapitalize DC offset keys:
+                            mix_corr_lower_case = {}
+                            for key in ch_cfg["mixer_corrections"]:
+                                mix_corr_lower_case[key.lower()] = ch_cfg[
+                                    "mixer_corrections"
+                                ][key]
+                            hardware_options["mixer_corrections"][
+                                f"{port}-{clock}"
+                            ] = mix_corr_lower_case
+                        if ch_cfg.get("gain1"):
+                            hardware_options["output_gain"][f"{port}-{clock}"][
+                                "gain_I"
+                            ] = ch_cfg["gain1"]
+                        if ch_cfg.get("gain2"):
+                            hardware_options["output_gain"][f"{port}-{clock}"][
+                                "gain_Q"
+                            ] = ch_cfg["gain2"]
+                        if (
+                            ch_cfg.get("modulation")
+                            and ch_cfg["modulation"]["type"] == "premod"
+                        ):
+                            hardware_options["modulation_frequencies"][
+                                f"{port}-{clock}"
+                            ]["interm_freq"] = ch_cfg["modulation"]["interm_freq"]
+                elif instr_cfg["type"] == "UHFQA":
+                    # Hardware Description
+                    hardware_description[instr_cfg["name"]] = {
+                        "instrument_type": instr_cfg["type"],
+                        "ref": instr_cfg["ref"],
+                    }
+                    if ch_cfg := instr_cfg.get("channel_0"):
+                        hardware_description[instr_cfg["name"]]["channel_0"] = {
+                            "mode": ch_cfg["mode"],
+                            "markers": ch_cfg.get("markers", []),
+                            "trigger": ch_cfg.get("trigger"),
+                        }
+                        # Connectivity
+                        port = ch_cfg.get("port")
+                        clock = ch_cfg.get("clock")
+                        port_name = f"{instr_cfg['name']}.{'channel_0'}"
+                        if ch_cfg.get("local_oscillator") is not None:
+                            # Add IQ mixer to the hardware_description:
+                            iq_mixer_id = f"iqm_{instr_cfg['name']}_ch0"
+                            hardware_description[iq_mixer_id] = {
+                                "instrument_type": "IQMixer"
+                            }
+                            # Add LO and IQ mixer to connectivity graph:
+                            connectivity["graph"].extend(
+                                [
+                                    (
+                                        port_name,
+                                        f"{iq_mixer_id}.if",
+                                    ),
+                                    (
+                                        f"{ch_cfg['local_oscillator']}.output",
+                                        f"{iq_mixer_id}.lo",
+                                    ),
+                                ]
+                            )
+                            # Overwrite port_name to IQ mixer RF output:
+                            port_name = f"{iq_mixer_id}.rf"
+                            # Set LO frequency in hardware options:
+                            lo_cfg = [
+                                lo_cfg
+                                for lo_cfg in old_style_config["local_oscillators"]
+                                if lo_cfg["unique_name"] == ch_cfg["local_oscillator"]
+                            ][0]
+                            if "frequency" in lo_cfg:
+                                hardware_options["modulation_frequencies"][
+                                    f"{port}-{clock}"
+                                ]["lo_freq"] = list(lo_cfg["frequency"].values())[0]
+                        connectivity["graph"].append((port_name, port))
+                        # Hardware Options
+                        if ch_cfg.get("mixer_corrections"):
+                            hardware_options["mixer_corrections"][
+                                f"{port}-{clock}"
+                            ] = ch_cfg["mixer_corrections"]
+                        if ch_cfg.get("gain1"):
+                            hardware_options["output_gain"][f"{port}-{clock}"][
+                                "gain_I"
+                            ] = ch_cfg["gain1"]
+                        if ch_cfg.get("gain2"):
+                            hardware_options["output_gain"][f"{port}-{clock}"][
+                                "gain_Q"
+                            ] = ch_cfg["gain2"]
+                        if (
+                            ch_cfg.get("modulation")
+                            and ch_cfg["modulation"]["type"] == "premod"
+                        ):
+                            hardware_options["modulation_frequencies"][
+                                f"{port}-{clock}"
+                            ]["interm_freq"] = ch_cfg["modulation"]["interm_freq"]
+                else:
+                    raise ValueError(
+                        f"Unexpected instrument type {instr_cfg['type']} in old-style "
+                        f"hardware config."
+                    )
+        elif hw_cfg_key == "mode":
+            pass
+        else:
+            warnings.warn(
+                f"Skipping unknown key {hw_cfg_key} in old-style hardware config."
+            )
+
+    return dict(
+        config_type="quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig",
+        hardware_description=hardware_description,
+        hardware_options=hardware_options,
+        connectivity=connectivity,
+    )
+
+
 def _get_operations_by_repr(schedule: Schedule) -> dict[str, Operation]:
     operations_dict_with_repr_keys = {
         str(op): op for op in schedule.operations.values()
@@ -1274,7 +1494,7 @@ class ZIHardwareCompilationConfig(common.HardwareCompilationConfig):
     """
 
     config_type: Type[ZIHardwareCompilationConfig] = Field(  # noqa: UP006
-        default="quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        default="quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig",
         validate_default=True,
     )
     """
@@ -1294,14 +1514,29 @@ class ZIHardwareCompilationConfig(common.HardwareCompilationConfig):
     """
     compilation_passes: List[SimpleNodeConfig] = [  # noqa: UP006
         SimpleNodeConfig(
-            name="zhinst_hardware_compile",
-            compilation_func=compile_backend,
+            name="zhinst_hardware_compile", compilation_func=compile_backend
         )
     ]
     """
     The list of compilation nodes that should be called in succession to compile a
     schedule to instructions for the Zurich Instruments hardware.
     """
+
+    @model_validator(mode="before")
+    @classmethod
+    def from_old_style_hardware_config(
+        cls: type[ZIHardwareCompilationConfig], data: Any  # noqa: ANN401
+    ) -> Any:  # noqa: ANN401
+        """Convert old style hardware config dict to new style before validation."""
+        if (
+            isinstance(data, dict)
+            and data.get("backend")
+            == "quantify_scheduler.backends.zhinst_backend.compile_backend"
+        ):
+            # Input is an old style ZI hardware config dict
+            data = _generate_new_style_hardware_compilation_config(data)
+
+        return data
 
 
 def _add_lo_config(  # noqa: PLR0912

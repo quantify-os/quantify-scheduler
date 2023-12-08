@@ -12,8 +12,7 @@
     - `DeviceCompilationConfig`: If you are loading a stored `DeviceCompilationConfig` (instead of relying on the device config generation of the `QuantumDevice`), remove the `"backend"` key.
     - `HardwareCompilatonConfig`: If you are already using the new-style `HardwareCompilatonConfig`, change the `"backend"` key to `"config_type"`.
       - For Qblox: `"config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig"`,
-      - For Zurich Instruments: `"config_type": 
- "quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig"`.
+      - For Zurich Instruments: `"config_type": "quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig"`.
 - Schedulables - Rename `Schedulable["operation_repr"]` to `Schedulable["operation_id"]` (!775, #438)
 - Qblox ICCs - Fix to allow running `ScheduleGettable` with option `always_initialize=False`. (!868)
   - Arming the sequencers is now done via `InstrumentCoordinator.start()` instead of `InstrumentCoordinator.prepare()`.
@@ -35,6 +34,7 @@
 - Compilation - Allow additional third-party instruments with custom compilation nodes in hardware backends. (!837)
 - Compilation - Allow specifying one-to-many, many-to-one, and many-to-many connections in the `Connectivity`. (!841)
 - Compilation - Improve errors and warnings when compiling subschedules and/or loops. (!847)
+- Compilation - Add helper functions and validators to convert old-style hardware config dicts to new-style `HardwareCompilationConfig` datastructures. (!843)
 - Schedules - Prevent FutureWarning when creating `Schedule.timing_table` and sort by `abs_time`. (!852) 
 - Documentation - Moved all `__init__` docstrings to class description and minor docstring changes. (!785)
 - QuantumDevice - Store element and edge instrument references in quantum device. (!855, #442)

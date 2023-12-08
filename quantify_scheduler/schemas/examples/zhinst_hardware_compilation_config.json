@@ -62,19 +62,19 @@
             "frequency_param": "frequency",
             "power": 16
         },
-        "iq_mixer0": {
+        "iqm_ic_hdawg0_ch0": {
             "instrument_type": "IQMixer"
         },
-        "iq_mixer1": {
+        "iqm_ic_hdawg0_ch1": {
             "instrument_type": "IQMixer"
         },
-        "iq_mixer2": {
+        "iqm_ic_hdawg0_ch2": {
             "instrument_type": "IQMixer"
         },
-        "iq_mixer3": {
+        "iqm_ic_hdawg0_ch3": {
             "instrument_type": "IQMixer"
         },
-        "iq_mixer_readout": {
+        "iqm_ic_uhfqa0_ch0": {
             "instrument_type": "IQMixer"
         }
     },
@@ -176,62 +176,62 @@
         "graph": [
             [
                 "ic_hdawg0.channel_0",
-                "iq_mixer0.if"
+                "iqm_ic_hdawg0_ch0.if"
             ],
             [
                 "lo0_ch1.output",
-                "iq_mixer0.lo"
+                "iqm_ic_hdawg0_ch0.lo"
             ],
             [
-                "iq_mixer0.rf",
+                "iqm_ic_hdawg0_ch0.rf",
                 "q0:mw"
             ],
             [
                 "ic_hdawg0.channel_1",
-                "iq_mixer1.if"
+                "iqm_ic_hdawg0_ch1.if"
             ],
             [
                 "lo0_ch2.output",
-                "iq_mixer1.lo"
+                "iqm_ic_hdawg0_ch1.lo"
             ],
             [
-                "iq_mixer1.rf",
+                "iqm_ic_hdawg0_ch1.rf",
                 "q1:mw"
             ],
             [
                 "ic_hdawg0.channel_2",
-                "iq_mixer2.if"
+                "iqm_ic_hdawg0_ch2.if"
             ],
             [
                 "lo0_ch2.output",
-                "iq_mixer2.lo"
+                "iqm_ic_hdawg0_ch2.lo"
             ],
             [
-                "iq_mixer2.rf",
+                "iqm_ic_hdawg0_ch2.rf",
                 "q2:mw"
             ],
             [
                 "ic_hdawg0.channel_3",
-                "iq_mixer3.if"
+                "iqm_ic_hdawg0_ch3.if"
             ],
             [
                 "lo0_ch2.output",
-                "iq_mixer3.lo"
+                "iqm_ic_hdawg0_ch3.lo"
             ],
             [
-                "iq_mixer3.rf",
+                "iqm_ic_hdawg0_ch3.rf",
                 "q3:mw"
             ],
             [
                 "ic_uhfqa0.channel_0",
-                "iq_mixer_readout.if"
+                "iqm_ic_uhfqa0_ch0.if"
             ],
             [
                 "lo1.output",
-                "iq_mixer_readout.lo"
+                "iqm_ic_uhfqa0_ch0.lo"
             ],
             [
-                "iq_mixer_readout.rf",
+                "iqm_ic_uhfqa0_ch0.rf",
                 "q0:res"
             ]
         ]

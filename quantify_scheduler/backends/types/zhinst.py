@@ -437,7 +437,7 @@ class Wave(Instruction):
 
 class ZIChannelDescription(DataStructure):
     """
-    Information needed to specify a ZI Channel in the :class:`~.CompilationConfig`.
+    Information needed to specify a ZI Channel in the :class:`~.quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig`.
 
     A single 'channel' represents a complex output, consisting of two physical I/O channels on
     the Instrument.
@@ -471,10 +471,10 @@ class ZIBaseDescription(common.HardwareDescription):
 
 
 class ZIHDAWG4Description(ZIBaseDescription):
-    """Information needed to specify a HDAWG4 in the :class:`~.CompilationConfig`."""
+    """Information needed to specify a HDAWG4 in the :class:`~.quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig`."""
 
     instrument_type: Literal["HDAWG4"]
-    """The instrument type, used to select this datastructure when parsing a :class:`~.CompilationConfig`."""
+    """The instrument type, used to select this datastructure when parsing a :class:`~.quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig`."""
     channelgrouping: int
     """
     The HDAWG channelgrouping property impacting the amount of HDAWG channels per AWG
@@ -497,10 +497,10 @@ class ZIHDAWG4Description(ZIBaseDescription):
 
 
 class ZIHDAWG8Description(ZIHDAWG4Description):
-    """Information needed to specify a HDAWG8 in the :class:`~.CompilationConfig`."""
+    """Information needed to specify a HDAWG8 in the :class:`~.quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig`."""
 
     instrument_type: Literal["HDAWG8"]
-    """The instrument type, used to select this datastructure when parsing a :class:`~.CompilationConfig`."""
+    """The instrument type, used to select this datastructure when parsing a :class:`~.quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig`."""
     channel_2: Optional[ZIChannelDescription] = None
     """Description of the third channel on this HDAWG (corresponding to 1 or 2 physical output ports)."""
     channel_3: Optional[ZIChannelDescription] = None
@@ -508,10 +508,10 @@ class ZIHDAWG8Description(ZIHDAWG4Description):
 
 
 class ZIUHFQADescription(ZIBaseDescription):
-    """Information needed to specify a UHFQA in the :class:`~.CompilationConfig`."""
+    """Information needed to specify a UHFQA in the :class:`~.quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig`."""
 
     instrument_type: Literal["UHFQA"]
-    """The instrument type, used to select this datastructure when parsing a :class:`~.CompilationConfig`."""
+    """The instrument type, used to select this datastructure when parsing a :class:`~.quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig`."""
     channel_0: Optional[ZIChannelDescription] = None
     """Description of the readout channel on this UHFQA."""
 
