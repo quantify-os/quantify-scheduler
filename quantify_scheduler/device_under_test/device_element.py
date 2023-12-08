@@ -1,8 +1,14 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """The module contains definitions for device elements."""
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from qcodes.instrument.base import Instrument
-from quantify_scheduler.backends.graph_compilation import DeviceCompilationConfig
+
+if TYPE_CHECKING:
+    from quantify_scheduler.backends.graph_compilation import DeviceCompilationConfig
 
 
 class DeviceElement(Instrument):
@@ -14,7 +20,7 @@ class DeviceElement(Instrument):
     layer.
     """
 
-    def __init__(self, name: str, **kwargs) -> None:
+    def __init__(self, name: str, **kwargs) -> None:  # noqa: ANN003
         if "-" in name or "_" in name:
             raise ValueError(
                 f"Invalid DeviceElement name '{name}'. Hyphens and "
@@ -22,7 +28,7 @@ class DeviceElement(Instrument):
             )
         super().__init__(name, **kwargs)
 
-    def __getstate__(self):
+    def __getstate__(self) -> dict:
         """
         Serialize :class:`~DeviceElement` and derived classes.
 
