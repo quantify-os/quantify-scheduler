@@ -239,7 +239,6 @@ def pulse_only_schedule_no_lo():
     sched.add(
         SquarePulse(
             amp=0.5,
-            phase=0,
             port="q1:res",
             duration=20e-9,
             clock="q1.ro",
@@ -4068,7 +4067,6 @@ loop29:
         sched.add(
             SquarePulse(
                 amp=0.5,
-                phase=0,
                 port="q0:res",
                 duration=2e-6,
                 clock="q0.ro",
@@ -4077,7 +4075,6 @@ loop29:
         sched.add(
             SquarePulse(
                 amp=0.3,
-                phase=0,
                 port="q0:res",
                 duration=2e-6,
                 clock="q0.ro",
@@ -4087,7 +4084,6 @@ loop29:
         sched.add(
             SquarePulse(
                 amp=0.7,
-                phase=0,
                 port="q0:res",
                 duration=2e-6,
                 clock="q0.ro",

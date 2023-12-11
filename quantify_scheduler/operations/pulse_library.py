@@ -429,7 +429,7 @@ class SquarePulse(Operation):
     Parameters
     ----------
     amp
-        Unitless amplitude of the envelope.
+        Unitless complex valued amplitude of the envelope.
     duration
         The pulse duration in seconds.
     port
@@ -439,8 +439,6 @@ class SquarePulse(Operation):
     reference_magnitude
         Scaling value and unit for the unitless amplitude. Uses settings in
         hardware config if not provided.
-    phase
-        Phase of the pulse in degrees.
     t0
         Time in seconds when to start the pulses relative to the start time
         of the Operation in the Schedule.
@@ -448,20 +446,13 @@ class SquarePulse(Operation):
 
     def __init__(
         self,
-        amp: float,
+        amp: complex,
         duration: float,
         port: str,
         clock: str = BasebandClockResource.IDENTITY,
         reference_magnitude: Optional[ReferenceMagnitude] = None,
-        phase: float = 0,
         t0: float = 0,
     ):
-        if phase != 0:
-            # Because of how clock interfaces were changed.
-            # FIXME: need to be able to add phases to # pylint: disable=fixme
-            # the waveform separate from the clock.
-            raise NotImplementedError
-
         super().__init__(name=self.__class__.__name__)
         self.data["pulse_info"] = [
             {
@@ -469,7 +460,6 @@ class SquarePulse(Operation):
                 "amp": amp,
                 "reference_magnitude": reference_magnitude,
                 "duration": duration,
-                "phase": phase,
                 "t0": t0,
                 "clock": clock,
                 "port": port,
@@ -949,7 +939,6 @@ def create_dc_compensation_pulse(
         duration=c_duration,
         port=port,
         clock=BasebandClockResource.IDENTITY,
-        phase=0,
         t0=t0,
     )
 

@@ -17,6 +17,7 @@ import pytest
 
 from quantify_scheduler import Schedule, waveforms
 from quantify_scheduler.backends import SerialCompiler
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.qblox.enums import IoMode
 from quantify_scheduler.backends.qblox.operation_handling import pulses
@@ -468,3 +469,46 @@ class TestMarkerPulseStrategy:
         assert re.search(r"^\s*upd_param\s+4\s*($|#)", seq1_digital[idx + 1])
         assert re.search(r"^\s*wait\s+496\s*($|#)", seq1_digital[idx + 2])
         assert re.search(r"^\s*set_mrk\s+3\s*($|#)", seq1_digital[idx + 3])
+
+    def test_marker_pulse_added_to_operation(self):
+        hw_config = {
+            "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+            "cluster0": {
+                "ref": "internal",
+                "instrument_type": "Cluster",
+                "cluster0_module1": {
+                    "instrument_type": "QCM_RF",
+                    "complex_output_0": {
+                        "portclock_configs": [
+                            {"port": "q0:mw", "clock": "q0.01", "interm_freq": 100e6},
+                        ],
+                    },
+                    "digital_output_1": {
+                        "portclock_configs": [
+                            {
+                                "port": "q0:switch",
+                            },
+                        ],
+                    },
+                },
+            },
+        }
+        quantum_device = QuantumDevice("marker_test_device")
+        quantum_device.hardware_config(hw_config)
+
+        # Define experiment schedule
+        schedule = Schedule("test MarkerPulse add to Operation")
+        schedule.add_resource(ClockResource(name="q0.01", freq=5.1e9))
+        square_pulse_op = SquarePulse(
+            amp=0.5, duration=1e-9, port="q0:mw", clock="q0.01"
+        )
+        square_pulse_op.add_pulse(
+            MarkerPulse(duration=100e-9, port="q0:switch", t0=40e-9)
+        )
+        schedule.add(square_pulse_op)
+
+        # Generate compiled schedule
+        compiler = SerialCompiler(name="compiler")
+        _ = compiler.compile(
+            schedule=schedule, config=quantum_device.generate_compilation_config()
+        )

@@ -340,8 +340,8 @@ def long_square_pulse(
     pulse = (
         StitchedPulseBuilder(port=port, clock=clock, t0=t0)
         .add_voltage_offset(
-            path_0=amp,
-            path_1=0.0,
+            path_0=np.real(amp),
+            path_1=np.imag(amp),
             reference_magnitude=reference_magnitude,
         )
         # The last bit, with duration 'grid time' ns, is replaced by a normal pulse. The

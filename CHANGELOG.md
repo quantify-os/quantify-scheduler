@@ -16,6 +16,7 @@
 - Schedulables - Rename `Schedulable["operation_repr"]` to `Schedulable["operation_id"]` (!775, #438)
 - Qblox ICCs - Fix to allow running `ScheduleGettable` with option `always_initialize=False`. (!868)
   - Arming the sequencers is now done via `InstrumentCoordinator.start()` instead of `InstrumentCoordinator.prepare()`.
+- Pulses - The phase argument for `SquarePulse` has been removed. (!867)
 
 ### Merged branches and closed issues
 
@@ -45,6 +46,7 @@
 - Documentation - Add a warning banner to documentation when on an old or development version of quantify. (!864)
 - Documentation - Improve formatting by replacing single backticks with double backticks where needed. (!866)
 - Qblox backend - Temporary fix for reshaping of acquisition data of looped measurements in `BinMode.APPEND`. (!850)
+- Compilation - Allow `MarkerPulse`s to be appended to other operations. (!867)
 - Infrastructure - New test notebook for performance tests. (!862)
 - Subscheduling - Fix missing resources in nested schedule. (!877)
 

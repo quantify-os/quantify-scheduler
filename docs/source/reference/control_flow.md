@@ -93,7 +93,6 @@ schedule = Schedule("T1")
 schedule.add(
     SquarePulse(
         amp=0.3,
-        phase=0,
         port="q0:res",
         duration=2e-6,
         clock="q0.ro",
@@ -118,7 +117,6 @@ inner_schedule.add(IdlePulse(16e-9))
 inner_schedule.add(
     SquarePulse(
         amp=0.3,
-        phase=0,
         port="q0:res",
         duration=2e-6,
         clock="q0.ro",

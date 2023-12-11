@@ -62,7 +62,6 @@ def assert_pulse_equal(pulse_info: Dict, optical_meas_kwargs: Dict, index: int):
     assert isinstance(pulse_info, dict)
     assert pulse_info["amp"] == optical_meas_kwargs["pulse_amplitudes"][index]
     assert pulse_info["duration"] == optical_meas_kwargs["pulse_durations"][index]
-    assert pulse_info["phase"] == 0
     assert pulse_info["port"] == optical_meas_kwargs["pulse_ports"][index]
     assert pulse_info["clock"] == optical_meas_kwargs["pulse_clocks"][index]
     if optical_meas_kwargs["acq_delay"] >= 0:

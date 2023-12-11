@@ -12,6 +12,7 @@ from quantify_scheduler import Operation, Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEncoder
 from quantify_scheduler.operations.gate_library import X90, X
+from quantify_scheduler.operations.pulse_factories import long_square_pulse
 from quantify_scheduler.operations.pulse_library import (
     ChirpPulse,
     DRAGPulse,
@@ -310,6 +311,30 @@ class TestPulseLevelOperation:
 
         # Assert
         assert obj != operation
+
+
+def test_complex_square_pulse(mock_setup_basic_transmon_with_standard_params):
+    pulse0 = SquarePulse(
+        amp=1 + 1j,
+        duration=1e-8,
+        port="q0:fl",
+        clock=BasebandClockResource.IDENTITY,
+    )
+
+    assert pulse0["pulse_info"][0]["amp"] == 1 + 1j
+
+    pulse1 = long_square_pulse(
+        amp=1 + 1j,
+        duration=1.2e-8,
+        port="q0:fl",
+        clock=BasebandClockResource.IDENTITY,
+    )
+
+    assert pulse1["pulse_info"][0]["amp"] == 1 + 1j
+    assert pulse1["pulse_info"][1]["offset_path_0"] == 1
+    assert pulse1["pulse_info"][1]["offset_path_1"] == 1
+    assert pulse1["pulse_info"][2]["offset_path_0"] == 0
+    assert pulse1["pulse_info"][2]["offset_path_1"] == 0
 
 
 def test_dc_compensation_pulse_amp() -> None:
