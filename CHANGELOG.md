@@ -49,6 +49,7 @@
 - Compilation - Allow `MarkerPulse`s to be appended to other operations. (!867)
 - Infrastructure - New test notebook for performance tests. (!862)
 - Subscheduling - Fix missing resources in nested schedule. (!877)
+- Acquisition - Add `acq_channel` argument to `Measure` operation and make `acq_channel` device element accept hashable types. (!869)
 
 ## 0.17.1 (2023-11-02)
 

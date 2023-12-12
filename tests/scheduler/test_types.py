@@ -30,6 +30,7 @@ from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.schedules import timedomain_schedules
 from quantify_scheduler.schedules.schedule import (
     AcquisitionMetadata,
+    AcquisitionChannelMetadata,
     CompiledSchedule,
     Schedule,
     Schedulable,
@@ -447,7 +448,9 @@ def test_acquisition_metadata():
             acq_protocol="SSBIntegrationComplex",
             bin_mode=binmode,
             acq_return_type=complex,
-            acq_indices={0: [0]},
+            acq_channels_metadata={
+                0: AcquisitionChannelMetadata(acq_channel=0, acq_indices=[0])
+            },
             repetitions=1,
         )
         # test whether the copy function works correctly
@@ -461,7 +464,9 @@ def test_acquisition_metadata():
             acq_protocol="SSBIntegrationComplex",
             bin_mode=enums.BinMode.AVERAGE,
             acq_return_type=return_type,
-            acq_indices={0: [0]},
+            acq_channels_metadata={
+                0: AcquisitionChannelMetadata(acq_channel=0, acq_indices=[0])
+            },
             repetitions=1,
         )
         # test whether the copy function works correctly

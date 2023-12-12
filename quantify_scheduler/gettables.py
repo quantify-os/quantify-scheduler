@@ -22,7 +22,7 @@ import sys
 import time
 import warnings
 import zipfile
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, Hashable
 
 import numpy as np
 from qcodes.parameters import Parameter
@@ -245,13 +245,13 @@ class ScheduleGettable:
             self.compiled_schedule
         )
 
-        if len(acquired_data) == 0 and len(acq_metadata.acq_indices) != 0:
+        if len(acquired_data) == 0 and len(acq_metadata.acq_channels_metadata) != 0:
             raise RuntimeError(
                 f"InstrumentCoordinator.retrieve_acquisition() "
                 f"('{instr_coordinator.name}') "
                 f"did not return any data, but was expected to return data based on "
                 f"the acquisition metadata in the compiled schedule: "
-                f"{acq_metadata.acq_indices=}"
+                f"{acq_metadata.acq_channels_metadata=}"
             )
 
         result = self.process_acquired_data(acquired_data, acq_metadata)
@@ -307,7 +307,8 @@ class ScheduleGettable:
             If acquisition protocol other than BinMode.APPEND is used.
         """
         dataset = {}
-        for acq_channel, acq_indices in acq_metadata.acq_indices.items():
+        for acq_channel_metadata in acq_metadata.acq_channels_metadata.values():
+            acq_channel: Hashable = acq_channel_metadata.acq_channel
             dataset[acq_channel] = dataset[acq_channel] = (
                 acquired_data[acq_channel].sel(repetition=0).values
             )
@@ -362,7 +363,8 @@ class ScheduleGettable:
             and acq_metadata.bin_mode == BinMode.AVERAGE
         ):
             dataset = {}
-            for acq_channel in acq_metadata.acq_indices:
+            for acq_channel_metadata in acq_metadata.acq_channels_metadata.values():
+                acq_channel: Hashable = acq_channel_metadata.acq_channel
                 channel_data = acquired_data[acq_channel]
                 if (num_dims := len(channel_data.dims)) != 2 or not np.iscomplexobj(
                     channel_data
@@ -391,7 +393,8 @@ class ScheduleGettable:
             and acq_metadata.bin_mode == BinMode.AVERAGE
         ):
             dataset = {}
-            for acq_channel in acq_metadata.acq_indices:
+            for acq_channel_metadata in acq_metadata.acq_channels_metadata.values():
+                acq_channel: Hashable = acq_channel_metadata.acq_channel
                 channel_data = acquired_data[acq_channel]
                 if (num_dims := len(channel_data.dims)) != 1 or not np.iscomplexobj(
                     channel_data
@@ -414,7 +417,8 @@ class ScheduleGettable:
             and acq_metadata.bin_mode == BinMode.APPEND
         ):
             dataset = {}
-            for acq_channel in acq_metadata.acq_indices:
+            for acq_channel_metadata in acq_metadata.acq_channels_metadata.values():
+                acq_channel: Hashable = acq_channel_metadata.acq_channel
                 channel_data = acquired_data[acq_channel]
                 if (num_dims := len(channel_data.dims)) != 2 or not np.iscomplexobj(
                     channel_data

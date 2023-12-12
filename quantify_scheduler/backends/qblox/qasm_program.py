@@ -14,6 +14,7 @@ from columnar.exceptions import TableOverflowError
 from quantify_scheduler.backends.qblox import constants, helpers, q1asm_instructions
 from quantify_scheduler.backends.qblox.register_manager import RegisterManager
 from quantify_scheduler.backends.types.qblox import OpInfo, StaticHardwareProperties
+from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 
 
 class QASMProgram:
@@ -39,6 +40,7 @@ class QASMProgram:
         static_hw_properties: StaticHardwareProperties,
         register_manager: RegisterManager,
         align_fields: bool,
+        acq_metadata: Optional[AcquisitionMetadata],
     ):
         self.register_manager: RegisterManager = register_manager
         """The register manager that keeps track of the occupied/available registers."""
@@ -60,6 +62,23 @@ class QASMProgram:
         """If true, all labels, instructions, arguments and comments
         in the string representation of the program are printed on the same indention level.
         This worsens performance."""
+        self.acq_metadata: Optional[AcquisitionMetadata] = acq_metadata
+        """Acquisition metadata."""
+
+    def _find_qblox_acq_index(self, acq_channel: Hashable) -> int:
+        """
+        Finds the Qblox acq_index corresponding to acq_channel
+        in the acq_metadata.
+        """
+        # This function is a temporary solution.
+        # Proper solution: SE-298.
+        for (
+            qblox_acq_index,
+            acq_channel_metadata,
+        ) in self.acq_metadata.acq_channels_metadata.items():
+            if acq_channel_metadata.acq_channel == acq_channel:
+                return qblox_acq_index
+        raise ValueError(f"Qblox acquisition index not found for {acq_channel=}.")
 
     @staticmethod
     def get_instruction_as_list(
@@ -112,6 +131,17 @@ class QASMProgram:
         **kwargs
             All keyword arguments to pass to `get_instruction_as_list`.
         """
+        # Translating the acquisition channel to qblox acquisition index is intended as a temporary solution.
+        # Proper solution: SE-298.
+        instruction = args[0]
+        if self.acq_metadata and (
+            instruction == q1asm_instructions.ACQUIRE
+            or instruction == q1asm_instructions.ACQUIRE_TTL
+            or instruction == q1asm_instructions.ACQUIRE_WEIGHED
+        ):
+            args = list(args)
+            args[1] = self._find_qblox_acq_index(acq_channel=args[1])
+
         self.instructions.append(self.get_instruction_as_list(*args, **kwargs))
 
     # --- QOL functions -----
@@ -470,6 +500,7 @@ class QASMProgram:
                 static_hw_properties=QcmModule.static_hw_properties,
                 register_manager=register_manager.RegisterManager(),
                 align_fields=True,
+                acq_metadata=None,
             )
 
             with qasm.loop(label="repeat", repetitions=10):

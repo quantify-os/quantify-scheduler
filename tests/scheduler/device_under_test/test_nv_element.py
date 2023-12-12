@@ -106,6 +106,15 @@ def test_generate_config_measure(electronic_q0: BasicElectronicNVElement):
     assert cfg_measure.factory_kwargs["acq_clock"] == "qe0.ge0"
     assert cfg_measure.factory_kwargs["pulse_type"] == "SquarePulse"
 
+    # Changing values of the measure
+    electronic_q0.measure.acq_channel("ch_7")
+
+    dev_cfg = electronic_q0.generate_device_config()
+    cfg_measure = dev_cfg.elements["qe0"]["measure"]
+
+    # Assert values are in right place
+    assert cfg_measure.factory_kwargs["acq_channel"] == "ch_7"
+
 
 def test_generate_config_charge_reset(electronic_q0: BasicElectronicNVElement):
     """Setting values updates the correct values in the config."""
@@ -150,6 +159,15 @@ def test_generate_config_crcount(electronic_q0: BasicElectronicNVElement):
     assert cfg_crcount.factory_kwargs["acq_duration"] == 39e-9
     assert cfg_crcount.factory_kwargs["acq_delay"] == 1e-9
     assert cfg_crcount.factory_kwargs["acq_channel"] == 3
+
+    # Changing values of the measure
+    electronic_q0.cr_count.acq_channel("ch_3")
+
+    dev_cfg = electronic_q0.generate_device_config()
+    cfg_measure = dev_cfg.elements["qe0"]["cr_count"]
+
+    # Assert values are in right place
+    assert cfg_measure.factory_kwargs["acq_channel"] == "ch_3"
 
 
 def test_generate_device_config(electronic_q0: BasicElectronicNVElement):

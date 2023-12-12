@@ -945,7 +945,7 @@ def test_qrm_acquisition_manager__init__(make_qrm_component):
     qblox._QRMAcquisitionManager(
         parent=qrm,
         acquisition_metadata=dict(),
-        scope_mode_sequencer_and_channel=None,
+        scope_mode_sequencer_and_qblox_acq_index=None,
         acquisition_duration={},
         seq_name_to_idx_map={},
     )
@@ -956,7 +956,7 @@ def test_get_integration_data(make_qrm_component, mock_acquisition_data):
     acq_manager = qblox._QRMAcquisitionManager(
         parent=qrm,
         acquisition_metadata=dict(),
-        scope_mode_sequencer_and_channel=None,
+        scope_mode_sequencer_and_qblox_acq_index=None,
         acquisition_duration={0: 10},
         seq_name_to_idx_map={"seq0": 0},
     )
@@ -965,9 +965,10 @@ def test_get_integration_data(make_qrm_component, mock_acquisition_data):
     )
     formatted_acquisitions = acq_manager._get_integration_data(
         acq_indices=list(range(10)),
-        acquisitions=mock_acquisition_data,
+        hardware_retrieved_acquisitions=mock_acquisition_data,
         acquisition_metadata=acq_metadata,
         acq_duration=10,
+        qblox_acq_index=0,
         acq_channel=0,
     )
 

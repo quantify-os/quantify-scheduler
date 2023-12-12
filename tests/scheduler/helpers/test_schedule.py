@@ -498,9 +498,11 @@ def test_extract_acquisition_metadata_from_schedule(compiled_two_qubit_t1_schedu
     assert acq_metadata.acq_return_type == complex
 
     # keys correspond to acquisition channels
-    assert set(acq_metadata.acq_indices.keys()) == {0, 1}
-    assert acq_metadata.acq_indices[0] == acq_metadata.acq_indices[1]
-    assert acq_metadata.acq_indices[0] == list(np.arange(20))
+    assert set(acq_metadata.acq_channels_metadata.keys()) == {0, 1}
+    assert acq_metadata.acq_channels_metadata[0].acq_channel == 0
+    assert acq_metadata.acq_channels_metadata[1].acq_channel == 1
+    assert acq_metadata.acq_channels_metadata[0].acq_indices == list(np.arange(20))
+    assert acq_metadata.acq_channels_metadata[1].acq_indices == list(np.arange(20))
 
 
 def test_extract_port_clocks_used(create_schedule_with_pulse_info):

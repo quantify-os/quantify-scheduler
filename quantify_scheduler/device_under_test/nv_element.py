@@ -25,6 +25,7 @@ from quantify_scheduler.helpers.validators import (
     _Amplitudes,
     _NonNegativeFrequencies,
     _Delays,
+    _Hashable,
 )
 from quantify_scheduler.device_under_test.device_element import DeviceElement
 from quantify_scheduler.operations import (
@@ -255,8 +256,8 @@ class Measure(InstrumentModule):
             name="acq_channel",
             instrument=self,
             initial_value=0,
-            unit="#",
-            vals=validators.Ints(min_value=0),
+            unit="",
+            vals=_Hashable(),
         )
         """
         Acquisition channel of this device element.
@@ -364,11 +365,11 @@ class CRCount(InstrumentModule):
             name="acq_channel",
             instrument=self,
             initial_value=0,
-            unit="#",
-            vals=validators.Ints(min_value=0),
+            unit="",
+            vals=_Hashable(),
         )
         """
-        Acquisition channel of this device element.
+        Default acquisition channel of this device element.
         """
 
 
@@ -459,7 +460,12 @@ class BasicElectronicNVElement(DeviceElement):
                         "pulse_type": "SquarePulse",
                         "acq_protocol_default": "TriggerCount",
                     },
-                    gate_info_factory_kwargs=["acq_index", "bin_mode", "acq_protocol"],
+                    gate_info_factory_kwargs=[
+                        "acq_channel_override",
+                        "acq_index",
+                        "bin_mode",
+                        "acq_protocol",
+                    ],
                 ),
                 "cr_count": OperationCompilationConfig(
                     factory_func=measurement_factories.optical_measurement,
@@ -488,7 +494,12 @@ class BasicElectronicNVElement(DeviceElement):
                         "pulse_type": "SquarePulse",
                         "acq_protocol_default": "TriggerCount",
                     },
-                    gate_info_factory_kwargs=["acq_index", "bin_mode", "acq_protocol"],
+                    gate_info_factory_kwargs=[
+                        "acq_channel_override",
+                        "acq_index",
+                        "bin_mode",
+                        "acq_protocol",
+                    ],
                 ),
             }
         }

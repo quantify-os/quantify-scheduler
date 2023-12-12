@@ -581,7 +581,7 @@ ic_cluster.instrument.set_dummy_binned_acquisition_data(
     slot_idx=1, sequencer=0, acq_index_name="0", data=[DummyBinnedAcquisitionData(data=(0.0, 0.0), thres=0, avg_cnt=0)]
 )
 ic_cluster.instrument.set_dummy_binned_acquisition_data(
-    slot_idx=3, sequencer=0, acq_index_name="1", data=[DummyBinnedAcquisitionData(data=(0.0, 0.0), thres=0, avg_cnt=0)]
+    slot_idx=3, sequencer=0, acq_index_name="0", data=[DummyBinnedAcquisitionData(data=(0.0, 0.0), thres=0, avg_cnt=0)]
 )
 ```
 
@@ -684,7 +684,7 @@ ic_cluster.instrument.set_dummy_binned_acquisition_data(
     slot_idx=1, sequencer=0, acq_index_name="0", data=[get_dummy_binned_acquisition_data(re * 10, im * 10) for re, im in zip(range(-5, 5), range(5, -5, -1))]
 )
 ic_cluster.instrument.set_dummy_binned_acquisition_data(
-    slot_idx=3, sequencer=0, acq_index_name="1", data=[get_dummy_binned_acquisition_data(re * 10, im * 10) for re, im in zip(range(-5, 5), range(5, -5, -1))]
+    slot_idx=3, sequencer=0, acq_index_name="0", data=[get_dummy_binned_acquisition_data(re * 10, im * 10) for re, im in zip(range(-5, 5), range(5, -5, -1))]
 )
 ```
 

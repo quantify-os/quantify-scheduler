@@ -13,4 +13,5 @@ def fixture_empty_qasm_program():
         static_hw_properties=QcmModule.static_hw_properties,
         register_manager=RegisterManager(),
         align_fields=True,
+        acq_metadata=None,
     )

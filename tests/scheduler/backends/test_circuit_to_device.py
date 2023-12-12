@@ -151,6 +151,7 @@ def test_measurement_compile():
     sched.add(Measure("q0", "q1"))  # acq_index should be 0 for both.
     sched.add(Measure("q0", acq_index=1))
     sched.add(Measure("q1", acq_index=2))  # acq_channel should be 1
+    sched.add(Measure("q1", acq_channel=2, acq_index=0))
     sched.add(Measure("q0", "q1", acq_index=2))
     new_dev_sched = _compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
 
@@ -174,11 +175,16 @@ def test_measurement_compile():
     assert m2_acq[0]["acq_index"] == 2
 
     m3_acq = new_dev_sched.operations[operation_keys_list[3]]["acquisition_info"]
-    assert len(m3_acq) == 2
-    assert m3_acq[0]["acq_channel"] == 0
-    assert m3_acq[1]["acq_channel"] == 1
-    assert m3_acq[0]["acq_index"] == 2
-    assert m3_acq[1]["acq_index"] == 2
+    assert len(m3_acq) == 1
+    assert m3_acq[0]["acq_channel"] == 2
+    assert m3_acq[0]["acq_index"] == 0
+
+    m4_acq = new_dev_sched.operations[operation_keys_list[4]]["acquisition_info"]
+    assert len(m4_acq) == 2
+    assert m4_acq[0]["acq_channel"] == 0
+    assert m4_acq[1]["acq_channel"] == 1
+    assert m4_acq[0]["acq_index"] == 2
+    assert m4_acq[1]["acq_index"] == 2
 
 
 @pytest.mark.parametrize(
@@ -290,6 +296,7 @@ def test_clock_not_defined_raises():
                     "factory_func": "quantify_scheduler.operations."
                     + "measurement_factories.dispersive_measurement",
                     "gate_info_factory_kwargs": [
+                        "acq_channel_override",
                         "acq_index",
                         "bin_mode",
                         "acq_protocol",
@@ -378,6 +385,7 @@ def test_compile_schedule_with_trace_acq_protocol():
                     "factory_func": "quantify_scheduler.operations."
                     + "measurement_factories.dispersive_measurement",
                     "gate_info_factory_kwargs": [
+                        "acq_channel_override",
                         "acq_index",
                         "bin_mode",
                         "acq_protocol",
@@ -416,6 +424,7 @@ def test_compile_schedule_with_invalid_pulse_type_raises():
                     "factory_func": "quantify_scheduler.operations."
                     + "measurement_factories.dispersive_measurement",
                     "gate_info_factory_kwargs": [
+                        "acq_channel_override",
                         "acq_index",
                         "bin_mode",
                         "acq_protocol",
@@ -661,11 +670,11 @@ def test_set_reference_magnitude(mock_setup_basic_transmon):
         "pulse_info"
     ][0]["reference_magnitude"] == ReferenceMagnitude(1e-3, "A")
     assert operations_dict_with_repr_keys[
-        "Measure('q2','q3', acq_index=[0, 0], acq_protocol=\"None\", bin_mode=None)"
+        "Measure('q2','q3', acq_channel=None, acq_index=[0, 0], acq_protocol=\"None\", bin_mode=None)"
     ]["pulse_info"][1]["reference_magnitude"] == ReferenceMagnitude(20, "dBm")
     assert (
         operations_dict_with_repr_keys[
-            "Measure('q2','q3', acq_index=[0, 0], acq_protocol=\"None\", bin_mode=None)"
+            "Measure('q2','q3', acq_channel=None, acq_index=[0, 0], acq_protocol=\"None\", bin_mode=None)"
         ]["pulse_info"][3]["reference_magnitude"]
         is None
     )

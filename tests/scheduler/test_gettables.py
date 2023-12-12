@@ -26,7 +26,11 @@ from quantify_scheduler.gettables_profiled import ProfiledScheduleGettable
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
 )
-from quantify_scheduler.schedules.schedule import AcquisitionMetadata, Schedule
+from quantify_scheduler.schedules.schedule import (
+    AcquisitionChannelMetadata,
+    AcquisitionMetadata,
+    Schedule,
+)
 from quantify_scheduler.schedules.spectroscopy_schedules import (
     heterodyne_spec_sched,
     nv_dark_esr_sched,
@@ -50,7 +54,10 @@ def test_process_acquired_data(
         acq_protocol="SSBIntegrationComplex",
         bin_mode=BinMode.AVERAGE,
         acq_return_type=complex,
-        acq_indices={i: [0] for i in range(num_channels)},
+        acq_channels_metadata={
+            i: AcquisitionChannelMetadata(acq_channel=i, acq_indices=[0])
+            for i in range(num_channels)
+        },
         repetitions=1,
     )
 
@@ -180,7 +187,11 @@ def test_schedule_gettable_batched_allxy(
         * np.exp(1j * np.deg2rad(45))
     ).astype(np.complex64)
     acq_metadata = extract_acquisition_metadata_from_schedule(comp_allxy_sched)
-    acq_channel, acq_indices = next(iter(acq_metadata.acq_indices.items()))
+    first_acq_channel = next(iter(acq_metadata.acq_channels_metadata.values()))
+    acq_channel, acq_indices = (
+        first_acq_channel.acq_channel,
+        first_acq_channel.acq_indices,
+    )
     # SSBIntegrationComplex, bin_mode.AVERAGE
     expected_data = Dataset(
         {acq_channel: ([f"acq_index_{acq_channel}"], data.reshape((len(acq_indices),)))}
@@ -252,7 +263,11 @@ def test_schedule_gettable_append_readout_cal(
     )
 
     acq_metadata = extract_acquisition_metadata_from_schedule(comp_ssro_sched)
-    acq_channel, acq_indices = next(iter(acq_metadata.acq_indices.items()))
+    first_acq_channel = next(iter(acq_metadata.acq_channels_metadata.values()))
+    acq_channel, acq_indices = (
+        first_acq_channel.acq_channel,
+        first_acq_channel.acq_indices,
+    )
     # SSBIntegrationComplex, BinMode.APPEND
     expected_data = Dataset(
         {
@@ -562,6 +577,6 @@ def test_schedule_gettable_no_hardware_cfg_raises(mock_setup_basic_transmon):
         f"InstrumentCoordinator.retrieve_acquisition() "
         f"('{mock_setup_basic_transmon['instrument_coordinator'].name}') did not "
         f"return any data, but was expected to return data based on the acquisition "
-        f"metadata in the compiled schedule: acq_metadata.acq_indices="
+        f"metadata in the compiled schedule: acq_metadata.acq_channels_metadata="
         in str(exc.value)
     )

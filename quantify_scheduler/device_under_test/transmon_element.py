@@ -15,7 +15,7 @@ from quantify_scheduler.backends.graph_compilation import (
     DeviceCompilationConfig,
     OperationCompilationConfig,
 )
-from quantify_scheduler.helpers.validators import Numbers
+from quantify_scheduler.helpers.validators import Numbers, _Hashable
 from quantify_scheduler.device_under_test.device_element import DeviceElement
 from quantify_scheduler.operations import (
     pulse_factories,
@@ -201,8 +201,8 @@ class DispersiveMeasurement(InstrumentChannel):
             name="acq_channel",
             instrument=self,
             initial_value=kwargs.get("acq_channel", 0),
-            unit="#",
-            vals=validators.Ints(min_value=0),
+            unit="",
+            vals=_Hashable(),
         )
         """Acquisition channel of to this device element."""
 
@@ -499,7 +499,12 @@ class BasicTransmonElement(DeviceElement):
                         "acq_rotation": self.measure.acq_rotation(),
                         "acq_threshold": self.measure.acq_threshold(),
                     },
-                    gate_info_factory_kwargs=["acq_index", "bin_mode", "acq_protocol"],
+                    gate_info_factory_kwargs=[
+                        "acq_channel_override",
+                        "acq_index",
+                        "bin_mode",
+                        "acq_protocol",
+                    ],
                 ),
             }
         }

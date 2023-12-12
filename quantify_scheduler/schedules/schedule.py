@@ -9,7 +9,7 @@ import warnings
 from abc import ABC
 from collections import UserDict
 from itertools import chain
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Hashable, Literal
 from uuid import uuid4
 
 import pandas as pd
@@ -1052,6 +1052,23 @@ class CompiledSchedule(ScheduleBase):
 
 
 @dataclasses.dataclass
+class AcquisitionChannelMetadata:
+    """A description of the acquisition channel and it's indices."""
+
+    acq_channel: Hashable
+    """The acquisition channel given in the schedule."""
+    acq_indices: list[int]
+    """The indices reserved for this acquisition channel."""
+
+    def __getstate__(self) -> dict[str, Any]:
+        data = dataclasses.asdict(self)
+        return {"deserialization_type": self.__class__.__name__, "data": data}
+
+    def __setstate__(self, state: dict[str, Any]) -> dict[str, Any]:
+        self.__init__(**state["data"])
+
+
+@dataclasses.dataclass
 class AcquisitionMetadata:
     """
     A description of the shape and type of data that a schedule will return when executed.
@@ -1068,9 +1085,8 @@ class AcquisitionMetadata:
     """How the data is stored in the bins indexed by acq_channel and acq_index."""
     acq_return_type: type
     """The datatype returned by the individual acquisitions."""
-    acq_indices: dict[int, list[int]]
-    """A dictionary containing the acquisition channel as key and a list of acquisition
-    indices that are used for every channel."""
+    acq_channels_metadata: dict[int, AcquisitionChannelMetadata]
+    """A dictionary mapping a numeric key, to the corresponding channel metadata."""
     repetitions: int
     """How many times the acquisition was repeated on this specific sequencer."""
 
@@ -1079,7 +1095,11 @@ class AcquisitionMetadata:
         return {"deserialization_type": self.__class__.__name__, "data": data}
 
     def __setstate__(self, state: dict[str, Any]) -> dict[str, Any]:
-        state["data"]["acq_indices"] = {
-            int(k): v for k, v in state["data"]["acq_indices"].items()
-        }
         self.__init__(**state["data"])
+        self.acq_channels_metadata = {}
+        for numeric_key, acq_channel_metadata in state["data"][
+            "acq_channels_metadata"
+        ].items():
+            self.acq_channels_metadata[int(numeric_key)] = AcquisitionChannelMetadata(
+                acq_channel_metadata["acq_channel"], acq_channel_metadata["acq_indices"]
+            )

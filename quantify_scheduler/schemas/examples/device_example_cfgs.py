@@ -42,7 +42,12 @@ example_transmon_cfg = {
             "measure": {
                 "factory_func": "quantify_scheduler.operations."
                 + "measurement_factories.dispersive_measurement",
-                "gate_info_factory_kwargs": ["acq_index", "bin_mode", "acq_protocol"],
+                "gate_info_factory_kwargs": [
+                    "acq_channel_override",
+                    "acq_index",
+                    "bin_mode",
+                    "acq_protocol",
+                ],
                 "factory_kwargs": {
                     "port": "q0:res",
                     "clock": "q0.ro",
@@ -83,7 +88,12 @@ example_transmon_cfg = {
             "measure": {
                 "factory_func": "quantify_scheduler.operations."
                 + "measurement_factories.dispersive_measurement",
-                "gate_info_factory_kwargs": ["acq_index", "bin_mode", "acq_protocol"],
+                "gate_info_factory_kwargs": [
+                    "acq_channel_override",
+                    "acq_index",
+                    "bin_mode",
+                    "acq_protocol",
+                ],
                 "factory_kwargs": {
                     "port": "q1:res",
                     "clock": "q1.ro",

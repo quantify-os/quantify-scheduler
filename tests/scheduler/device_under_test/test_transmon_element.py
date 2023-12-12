@@ -208,3 +208,12 @@ def test_generate_config_measure(q0: BasicTransmonElement):
     assert cfg_measure.factory_kwargs["acq_duration"] == 8e-7
     assert cfg_measure.factory_kwargs["acq_channel"] == 123
     assert not cfg_measure.factory_kwargs["reset_clock_phase"]
+
+    # Changing values of the measure
+    q0.measure.acq_channel("ch_123")
+
+    dev_cfg = q0.generate_device_config()
+    cfg_measure = dev_cfg.elements["q0"]["measure"]
+
+    # Assert values are in right place
+    assert cfg_measure.factory_kwargs["acq_channel"] == "ch_123"

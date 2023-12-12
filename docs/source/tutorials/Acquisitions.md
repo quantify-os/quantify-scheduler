@@ -1041,7 +1041,7 @@ cluster.delete_dummy_binned_acquisition_data(slot_idx=dummy_slot_idx, sequencer=
 dummy_data_0 = [
         DummyBinnedAcquisitionData(data=(16, 0), thres=0, avg_cnt=0),
 ]
-cluster.set_dummy_binned_acquisition_data(slot_idx=dummy_slot_idx, sequencer=0, acq_index_name="2", data=dummy_data_0)
+cluster.set_dummy_binned_acquisition_data(slot_idx=dummy_slot_idx, sequencer=0, acq_index_name="0", data=dummy_data_0)
 ```
 
 Let's compile the schedule.
@@ -1099,7 +1099,7 @@ cluster.delete_dummy_binned_acquisition_data(slot_idx=dummy_slot_idx, sequencer=
 dummy_data_0 = [
         DummyBinnedAcquisitionData(data=(32, 0), thres=0, avg_cnt=0),
 ]
-cluster.set_dummy_binned_acquisition_data(slot_idx=dummy_slot_idx, sequencer=0, acq_index_name="2", data=dummy_data_0)
+cluster.set_dummy_binned_acquisition_data(slot_idx=dummy_slot_idx, sequencer=0, acq_index_name="0", data=dummy_data_0)
 ```
 
 Let's compile the schedule.

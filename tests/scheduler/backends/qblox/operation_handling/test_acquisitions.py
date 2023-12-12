@@ -61,6 +61,7 @@ def fixture_empty_qasm_program():
         static_hw_properties=QrmModule.static_hw_properties,
         register_manager=RegisterManager(),
         align_fields=True,
+        acq_metadata=None,
     )
 
 
@@ -1345,7 +1346,7 @@ def test_complex_input_hardware_cfg(make_cluster_component, mock_setup_basic_tra
         slot_idx=3, sequencer=0, acq_index_name="0", data=dummy_binned_acquisition_data
     )
     ic_cluster0.instrument.set_dummy_binned_acquisition_data(
-        slot_idx=3, sequencer=1, acq_index_name="1", data=dummy_binned_acquisition_data
+        slot_idx=3, sequencer=1, acq_index_name="0", data=dummy_binned_acquisition_data
     )
 
     # Upload schedule and run experiment
@@ -1839,16 +1840,24 @@ def test_multiple_binned_measurements(
             port="q0:res", clock="q0.ro", duration=5e-6, acq_channel=2, acq_index=1
         )
     )
-    schedule.add(Measure("q1", acq_index=0, acq_protocol="SSBIntegrationComplex"))
-    schedule.add(Measure("q1", acq_index=1, acq_protocol="SSBIntegrationComplex"))
     schedule.add(
-        SSBIntegrationComplex(
-            port="q1:res", clock="q1.ro", duration=5e-6, acq_channel=1, acq_index=2
+        Measure(
+            "q1", acq_channel="ch_1", acq_index=0, acq_protocol="SSBIntegrationComplex"
+        )
+    )
+    schedule.add(
+        Measure(
+            "q1", acq_channel="ch_1", acq_index=1, acq_protocol="SSBIntegrationComplex"
         )
     )
     schedule.add(
         SSBIntegrationComplex(
-            port="q1:res", clock="q1.ro", duration=5e-6, acq_channel=1, acq_index=3
+            port="q1:res", clock="q1.ro", duration=5e-6, acq_channel="ch_1", acq_index=2
+        )
+    )
+    schedule.add(
+        SSBIntegrationComplex(
+            port="q1:res", clock="q1.ro", duration=5e-6, acq_channel="ch_1", acq_index=3
         )
     )
     schedule.add(
@@ -1886,7 +1895,7 @@ def test_multiple_binned_measurements(
     ic_cluster0.instrument.set_dummy_binned_acquisition_data(
         slot_idx=3,
         sequencer=0,
-        acq_index_name="2",
+        acq_index_name="1",
         data=[
             DummyBinnedAcquisitionData(data=(50000, 55000), thres=0, avg_cnt=0),
             DummyBinnedAcquisitionData(data=(60000, 65000), thres=0, avg_cnt=0),
@@ -1895,7 +1904,7 @@ def test_multiple_binned_measurements(
     ic_cluster0.instrument.set_dummy_binned_acquisition_data(
         slot_idx=4,
         sequencer=0,
-        acq_index_name="1",
+        acq_index_name="0",
         data=[
             DummyBinnedAcquisitionData(data=(100000, 150000), thres=0, avg_cnt=0),
             DummyBinnedAcquisitionData(data=(200000, 250000), thres=0, avg_cnt=0),
@@ -1906,7 +1915,7 @@ def test_multiple_binned_measurements(
     ic_cluster0.instrument.set_dummy_binned_acquisition_data(
         slot_idx=4,
         sequencer=0,
-        acq_index_name="3",
+        acq_index_name="1",
         data=[
             DummyBinnedAcquisitionData(data=(500000, 550000), thres=0, avg_cnt=0),
             DummyBinnedAcquisitionData(data=(600000, 650000), thres=0, avg_cnt=0),
@@ -1939,10 +1948,10 @@ def test_multiple_binned_measurements(
                 coords=[[0, 1]],
                 dims=["acq_index_2"],
             ),
-            1: DataArray(
+            "ch_1": DataArray(
                 [20 + 30j, 40 + 50j, 60 + 70j, 80 + 90j],
                 coords=[[0, 1, 2, 3]],
-                dims=["acq_index_1"],
+                dims=["acq_index_ch_1"],
             ),
             3: DataArray(
                 [100 + 110j, 120 + 130j],
@@ -2017,7 +2026,7 @@ def test_append_measurements(
     ic_cluster0.instrument.set_dummy_binned_acquisition_data(
         slot_idx=3,
         sequencer=0,
-        acq_index_name="1",
+        acq_index_name="0",
         data=[
             DummyBinnedAcquisitionData(data=(10000, 15000), thres=0, avg_cnt=0),
             DummyBinnedAcquisitionData(data=(20000, 25000), thres=0, avg_cnt=0),

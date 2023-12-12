@@ -2,7 +2,7 @@
 # Licensed according to the LICENCE file on the main branch
 # pylint: disable=invalid-name
 """NV-center-specific operations for use with the quantify_scheduler."""
-from typing import Literal, Tuple, Union
+from typing import Literal, Tuple, Union, Optional, Hashable
 from .operation import Operation
 from ..enums import BinMode
 
@@ -56,6 +56,10 @@ class CRCount(Operation):
     ----------
     qubits
         The qubits you want to measure
+    acq_channel
+        Only for special use cases.
+        By default (if None): the acquisition channel specified in the device element is used.
+        If set, this acquisition channel is used for this measurement.
     acq_index
         Index of the register where the measurement is stored.
         If None specified, it will default to a list of zeros of len(qubits)
@@ -72,6 +76,7 @@ class CRCount(Operation):
     def __init__(
         self,
         *qubits: str,
+        acq_channel: Optional[Hashable] = None,
         acq_index: Union[Tuple[int, ...], int] = None,
         # These are the currently supported acquisition protocols.
         acq_protocol: Literal[
@@ -111,6 +116,7 @@ class CRCount(Operation):
                     "plot_func": plot_func,
                     "tex": r"CR",
                     "qubits": list(qubits),
+                    "acq_channel_override": acq_channel,
                     "acq_index": acq_index,
                     "acq_protocol": acq_protocol,
                     "bin_mode": bin_mode,
@@ -123,11 +129,14 @@ class CRCount(Operation):
     def __str__(self) -> str:
         gate_info = self.data["gate_info"]
         qubits = map(lambda x: f"'{x}'", gate_info["qubits"])
+        acq_channel = gate_info["acq_channel_override"]
         acq_index = gate_info["acq_index"]
         acq_protocol = gate_info["acq_protocol"]
         bin_mode = gate_info["bin_mode"]
         return (
             f'{self.__class__.__name__}({",".join(qubits)}, '
-            f'acq_index={acq_index}, acq_protocol="{acq_protocol}", '
+            f"acq_channel={acq_channel}, "
+            f"acq_index={acq_index}, "
+            f'acq_protocol="{acq_protocol}", '
             f"bin_mode={str(bin_mode)})"
         )

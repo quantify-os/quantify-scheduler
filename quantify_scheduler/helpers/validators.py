@@ -2,8 +2,10 @@
 # Licensed according to the LICENCE file on the main branch
 """Module containing pydantic validators."""
 import numpy as np
+from typing import Hashable
+
 from qcodes.utils import validators
-from qcodes.utils.validators import numbertypes
+from qcodes.utils.validators import numbertypes, Validator
 
 
 # this is a custom qcodes Numbers validator that allows for nan values.
@@ -104,3 +106,32 @@ class _Delays(Numbers):
         self,
     ) -> None:
         super().__init__(allow_nan=False)
+
+
+class _Hashable(Validator[Hashable]):
+    """Validator used for hashables."""
+
+    def __init__(self) -> None:
+        self._valid_values = (0, "str")
+
+    def validate(self, value: Hashable, context: str = "") -> None:
+        """
+        Validates if hashable else raises error.
+
+        Parameters
+        ----------
+        value
+            Value to validate
+        context
+            Context for validation.
+
+        Raises
+        ------
+        TypeError
+            If value is not hashable.
+        """
+        if not isinstance(value, Hashable):
+            raise TypeError(f"{value!r} is not Hashable; {context}")
+
+    def __repr__(self) -> str:
+        return "<Hashable>"

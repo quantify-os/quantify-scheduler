@@ -704,7 +704,12 @@ class Sequencer:
 
         # initialize an empty dictionary for the format required by module
         acq_declaration_dict = {}
-        for acq_channel, acq_indices in acq_metadata.acq_indices.items():
+        for (
+            qblox_acq_index,
+            acq_channel_metadata,
+        ) in acq_metadata.acq_channels_metadata.items():
+            acq_indices: list[int] = acq_channel_metadata.acq_indices
+            acq_channel: Hashable = acq_channel_metadata.acq_channel
             # Some sanity checks on the input for easier debugging.
             if min(acq_indices) != 0:
                 raise ValueError(
@@ -747,16 +752,9 @@ class Sequencer:
                 # this check exists to catch unexpected errors if we add more
                 # BinModes in the future.
                 raise NotImplementedError(f"Unknown bin mode {acq_metadata.bin_mode}.")
-            if acq_metadata.acq_protocol == "looped_periodic_acquisition":
-                if len(acquisition_infos) > 1:
-                    raise ValueError(
-                        "only one acquisition allowed if "
-                        "looped_periodic_acquisition is used"
-                    )
-                num_bins = acquisition_infos[0].data["num_times"]
-            acq_declaration_dict[str(acq_channel)] = {
+            acq_declaration_dict[str(qblox_acq_index)] = {
                 "num_bins": num_bins,
-                "index": acq_channel,
+                "index": qblox_acq_index,
             }
 
         return acq_declaration_dict
@@ -819,10 +817,20 @@ class Sequencer:
         """
         loop_label = "start"
 
+        if self.parent.supports_acquisition and len(self.acquisitions) != 0:
+            acquisition_infos: List[OpInfo] = [
+                acq.operation_info for acq in self.acquisitions
+            ]
+            acq_metadata = helpers.extract_acquisition_metadata_from_acquisitions(
+                acquisitions=acquisition_infos, repetitions=repetitions
+            )
+        else:
+            acq_metadata = None
         qasm = QASMProgram(
             static_hw_properties=self.static_hw_properties,
             register_manager=self.register_manager,
             align_fields=align_qasm_fields,
+            acq_metadata=acq_metadata,
         )
         qasm.set_marker(self._default_marker)
 
@@ -1637,7 +1645,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         Raises an error if multiple sequencers use scope mode acquisition,
         because that's not supported by the hardware.
         Also, see
-        :func:`~quantify_scheduler.instrument_coordinator.components.qblox.QRMComponent._determine_scope_mode_acquisition_sequencer_and_channel`
+        :func:`~quantify_scheduler.instrument_coordinator.components.qblox.QRMComponent._determine_scope_mode_acquisition_sequencer_and_qblox_acq_index`
         which also ensures the program that gets uploaded to the hardware satisfies this requirement.
 
         Raises

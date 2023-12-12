@@ -3,13 +3,14 @@
 """Schedule helper functions."""
 from __future__ import annotations
 
-from itertools import chain
-from typing import TYPE_CHECKING, Any
+from itertools import chain, count
+from typing import TYPE_CHECKING, Any, Hashable
 
 import numpy as np
 
 from quantify_scheduler.helpers.collections import make_hash, without
 from quantify_scheduler.schedules.schedule import (
+    AcquisitionChannelMetadata,
     AcquisitionMetadata,
     CompiledSchedule,
     Schedule,
@@ -395,7 +396,18 @@ def extract_acquisition_metadata_from_acquisition_protocols(
     repetitions
         How many times the acquisition was repeated.
     """
-    acq_indices: dict[int, list[int]] = {}
+    acq_channels_metadata: dict[int, AcquisitionChannelMetadata] = {}
+
+    # Generating hardware indices this way is intended as a temporary solution.
+    # Proper solution: SE-298.
+    acq_channel_to_numeric_key: dict[Hashable, int] = {}
+    numeric_key_counter = count()
+
+    def _to_numeric_key(acq_channel: Hashable) -> int:
+        nonlocal numeric_key_counter
+        if acq_channel not in acq_channel_to_numeric_key:
+            acq_channel_to_numeric_key[acq_channel] = next(numeric_key_counter)
+        return acq_channel_to_numeric_key[acq_channel]
 
     for i, acq_protocol in enumerate(acquisition_protocols):
         if i == 0:
@@ -419,15 +431,20 @@ def extract_acquisition_metadata_from_acquisition_protocols(
             )
 
         # add the individual channel
-        if acq_protocol["acq_channel"] not in acq_indices:
-            acq_indices[acq_protocol["acq_channel"]] = []
-        acq_indices[acq_protocol["acq_channel"]].append(acq_protocol["acq_index"])
+        acq_channel = acq_protocol["acq_channel"]
+        numeric_key = _to_numeric_key(acq_channel)
+        if numeric_key not in acq_channels_metadata:
+            acq_channels_metadata[numeric_key] = AcquisitionChannelMetadata(
+                acq_channel=acq_channel, acq_indices=[]
+            )
+        acq_indices = acq_protocol["acq_index"]
+        acq_channels_metadata[numeric_key].acq_indices.append(acq_indices)
 
     # combine the information in the acq metadata dataclass.
     acq_metadata = AcquisitionMetadata(
         acq_protocol=protocol,
         bin_mode=bin_mode,
-        acq_indices=acq_indices,
+        acq_channels_metadata=acq_channels_metadata,
         acq_return_type=acq_return_type,
         repetitions=repetitions,
     )

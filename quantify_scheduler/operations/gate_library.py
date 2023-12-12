@@ -2,7 +2,7 @@
 # Licensed according to the LICENCE file on the main branch
 """Standard gateset for use with the quantify_scheduler."""
 from __future__ import annotations
-from typing import Literal, Optional, Tuple
+from typing import Literal, Optional, Tuple, Hashable
 
 import numpy as np
 
@@ -523,18 +523,21 @@ class Measure(Operation):
 
     Parameters
     ----------
-    qubits : str
+    qubits
         The qubits you want to measure.
-    acq_index : Tuple[int, ...] | int | None, optional
+    acq_channel
+        Only for special use cases.
+        By default (if None): the acquisition channel specified in the device element is used.
+        If set, this acquisition channel is used for this measurement.
+    acq_index
         Index of the register where the measurement is stored.  If None specified,
         this defaults to writing the result of all qubits to acq_index 0. By default
         None.
-    acq_protocol : "SSBIntegrationComplex" | "Trace" | "TriggerCount" | \
-            "NumericalWeightedIntegrationComplex" | None, optional
+    acq_protocol
         Acquisition protocols that are supported. If ``None`` is specified, the
         default protocol is chosen based on the device and backend configuration. By
         default None.
-    bin_mode : BinMode or None, optional
+    bin_mode
         The binning mode that is to be used. If not None, it will overwrite the
         binning mode used for Measurements in the circuit-to-device compilation
         step. By default None.
@@ -544,6 +547,7 @@ class Measure(Operation):
     def __init__(
         self,
         *qubits: str,
+        acq_channel: Hashable | None = None,
         acq_index: Tuple[int, ...] | int | None = None,
         # These are the currently supported acquisition protocols.
         acq_protocol: Optional[
@@ -585,6 +589,7 @@ class Measure(Operation):
                     "plot_func": plot_func,
                     "tex": r"$\langle0|$",
                     "qubits": list(qubits),
+                    "acq_channel_override": acq_channel,
                     "acq_index": acq_index,
                     "acq_protocol": acq_protocol,
                     "bin_mode": bin_mode,
@@ -597,11 +602,14 @@ class Measure(Operation):
     def __str__(self) -> str:
         gate_info = self.data["gate_info"]
         qubits = map(lambda x: f"'{x}'", gate_info["qubits"])
+        acq_channel = gate_info["acq_channel_override"]
         acq_index = gate_info["acq_index"]
         acq_protocol = gate_info["acq_protocol"]
         bin_mode = gate_info["bin_mode"]
         return (
             f'{self.__class__.__name__}({",".join(qubits)}, '
-            f'acq_index={acq_index}, acq_protocol="{acq_protocol}", '
+            f"acq_channel={acq_channel}, "
+            f"acq_index={acq_index}, "
+            f'acq_protocol="{acq_protocol}", '
             f"bin_mode={str(bin_mode)})"
         )
