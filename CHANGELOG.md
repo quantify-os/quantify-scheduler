@@ -28,7 +28,7 @@
   - Rename properties in `Sequencer`:
     - `connected_outputs` => `connected_output_indices`,
     - `connected_inputs` => `connected_input_indices`.
-  - Substitute `io_mode` string literals by `IoMode` enums.
+  - Substitute `io_mode` string literals by `ChannelMode` enums.
 - Qblox backend - Fix `MarkerPulse` playback on QRM-RF and QCM-RF. (!828)
   - Marker bit index values for addressing outputs need to be swapped on QCM-RF, not QRM-RF (done via `MarkerPulseStrategy._fix_marker_bit_output_addressing_qcm_rf`).
 - Compilation - Implement Connectivity datastructure for specifying connections between ports on the quantum device and on the control hardware in the `HardwareCompilationConfig`. (!734)
@@ -48,6 +48,7 @@
 - Qblox backend - Temporary fix for reshaping of acquisition data of looped measurements in `BinMode.APPEND`. (!850)
 - Compilation - Allow `MarkerPulse`s to be appended to other operations. (!867)
 - Infrastructure - New test notebook for performance tests. (!862)
+- Qblox backend - Remove "imag" sequencer mode from qblox backend, rename `io_name` to `channel_name` and `path0`/`path1` to `path_I`/`path_Q`. (!870)
 - Subscheduling - Fix missing resources in nested schedule. (!877)
 - Acquisition - Add `acq_channel` argument to `Measure` operation and make `acq_channel` device element accept hashable types. (!869)
 

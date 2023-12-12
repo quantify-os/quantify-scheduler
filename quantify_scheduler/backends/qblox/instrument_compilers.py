@@ -139,7 +139,7 @@ class QcmModule(compiler_abc.QbloxBasebandModule):
         max_sequencers=NUMBER_OF_SEQUENCERS_QCM,
         max_awg_output_voltage=2.5,
         mixer_dc_offset_range=BoundedParameter(min_val=-2.5, max_val=2.5, units="V"),
-        io_name_to_connected_io_indices={
+        channel_name_to_connected_io_indices={
             "complex_output_0": (0, 1),
             "complex_output_1": (2, 3),
             "real_output_0": (0,),
@@ -164,7 +164,7 @@ class QrmModule(compiler_abc.QbloxBasebandModule):
         max_sequencers=NUMBER_OF_SEQUENCERS_QRM,
         max_awg_output_voltage=0.5,
         mixer_dc_offset_range=BoundedParameter(min_val=-0.5, max_val=0.5, units="V"),
-        io_name_to_connected_io_indices={
+        channel_name_to_connected_io_indices={
             "complex_output_0": (0, 1),
             "complex_input_0": (0, 1),
             "real_output_0": (0,),
@@ -188,13 +188,13 @@ class QcmRfModule(compiler_abc.QbloxRFModule):
         max_sequencers=NUMBER_OF_SEQUENCERS_QCM,
         max_awg_output_voltage=None,
         mixer_dc_offset_range=BoundedParameter(min_val=-50, max_val=50, units="mV"),
-        io_name_to_connected_io_indices={
+        channel_name_to_connected_io_indices={
             "complex_output_0": (0, 1),
             "complex_output_1": (2, 3),
             "digital_output_0": (0,),
             "digital_output_1": (1,),
         },
-        io_name_to_digital_marker={
+        channel_name_to_digital_marker={
             "complex_output_0": 0b0001,
             "complex_output_1": 0b0010,
         },
@@ -211,7 +211,7 @@ class QrmRfModule(compiler_abc.QbloxRFModule):
         max_sequencers=NUMBER_OF_SEQUENCERS_QRM,
         max_awg_output_voltage=None,
         mixer_dc_offset_range=BoundedParameter(min_val=-50, max_val=50, units="mV"),
-        io_name_to_connected_io_indices={
+        channel_name_to_connected_io_indices={
             "complex_output_0": (0, 1),
             "complex_input_0": (0, 1),
             "digital_output_0": (0,),

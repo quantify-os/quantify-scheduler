@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-from quantify_scheduler.backends.qblox.enums import IoMode
 from quantify_scheduler.backends.qblox.operation_handling import (
     acquisitions,
     base,
@@ -17,7 +16,7 @@ from quantify_scheduler.enums import BinMode
 
 def get_operation_strategy(
     operation_info: OpInfo,
-    io_mode: IoMode,
+    channel_name: str,
 ) -> base.IOperationStrategy:
     """
     Determines and instantiates the correct strategy object.
@@ -26,9 +25,8 @@ def get_operation_strategy(
     ----------
     operation_info
         The operation we are building the strategy for.
-    io_mode
-        Either :attr:`.IoMode.REAL`, :attr:`.IoMode.IMAG` or :attr:`.IoMode.COMPLEX`
-        depending on whether the signal affects only sequencer path0, path1 or both.
+    channel_name
+        Specifies the channel identifier of the hardware config (e.g. `complex_output_0`).
 
     Returns
     -------
@@ -40,7 +38,7 @@ def get_operation_strategy(
 
     return _get_pulse_strategy(
         operation_info=operation_info,
-        io_mode=io_mode,
+        channel_name=channel_name,
     )
 
 
@@ -71,7 +69,7 @@ def _get_acquisition_strategy(
 
 def _get_pulse_strategy(
     operation_info: OpInfo,
-    io_mode: IoMode,
+    channel_name: str,
 ) -> base.IOperationStrategy:
     """Handles the logic for determining the correct pulse type."""
     if operation_info.is_offset_instruction:
@@ -95,10 +93,11 @@ def _get_pulse_strategy(
 
     elif "clock" in operation_info.data and operation_info.data["clock"] == "digital":
         return pulses.MarkerPulseStrategy(
-            operation_info=operation_info, io_mode=io_mode
+            operation_info=operation_info,
+            channel_name=channel_name,
         )
 
     return pulses.GenericPulseStrategy(
         operation_info=operation_info,
-        io_mode=io_mode,
+        channel_name=channel_name,
     )

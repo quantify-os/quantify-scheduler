@@ -14,6 +14,7 @@ from quantify_scheduler.backends.graph_compilation import (
     DeviceCompilationConfig,
     OperationCompilationConfig,
 )
+from quantify_scheduler.backends.qblox.enums import ChannelMode
 from quantify_scheduler.operations.measurement_factories import dispersive_measurement
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.resources import ClockResource
@@ -268,8 +269,8 @@ def set_pulse_and_acquisition_clock(
             operation_info = operation["pulse_info"] + operation["acquisition_info"]
             clocks_used = set([info["clock"] for info in operation_info])
             for clock in clocks_used:
-                # In digital IO's clocks are non-existant, so we skip them.
-                if clock == "digital":
+                # In digital channels clocks are non-existant, so we skip them.
+                if clock == ChannelMode.DIGITAL:
                     continue
                 if clock in verified_clocks:
                     continue

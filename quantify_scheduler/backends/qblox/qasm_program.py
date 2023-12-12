@@ -354,8 +354,8 @@ class QASMProgram:
 
     def set_gain_from_amplitude(
         self,
-        amplitude_path0: float,
-        amplitude_path1: float,
+        amplitude_path_I: float,
+        amplitude_path_Q: float,
         operation: Optional[OpInfo],
     ) -> None:
         """
@@ -363,21 +363,21 @@ class QASMProgram:
 
         Parameters
         ----------
-        amplitude_path0
-            Voltage to set on path0.
-        amplitude_path1
-            Voltage to set on path1.
+        amplitude_path_I
+            Voltage to set on path_I.
+        amplitude_path_Q
+            Voltage to set on path_Q.
         operation
             The operation for which this is done. Used for the exception messages.
         """
-        awg_gain_path0_immediate = self.expand_awg_from_normalised_range(
-            amplitude_path0,
+        awg_gain_path_I_immediate = self.expand_awg_from_normalised_range(
+            amplitude_path_I,
             constants.IMMEDIATE_SZ_GAIN,
             "awg_gain_0",
             operation,
         )
-        awg_gain_path1_immediate = self.expand_awg_from_normalised_range(
-            amplitude_path1,
+        awg_gain_path_Q_immediate = self.expand_awg_from_normalised_range(
+            amplitude_path_Q,
             constants.IMMEDIATE_SZ_GAIN,
             "awg_gain_1",
             operation,
@@ -385,8 +385,8 @@ class QASMProgram:
         comment = f"setting gain for {operation.name}" if operation else ""
         self.emit(
             q1asm_instructions.SET_AWG_GAIN,
-            awg_gain_path0_immediate,
-            awg_gain_path1_immediate,
+            awg_gain_path_I_immediate,
+            awg_gain_path_Q_immediate,
             comment=comment,
         )
 

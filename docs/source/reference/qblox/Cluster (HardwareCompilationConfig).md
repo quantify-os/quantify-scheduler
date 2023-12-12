@@ -174,7 +174,7 @@ For a complex input/output, this datastructure is:
 
 The markers can be configured by adding a `"marker_debug_mode_enable"` key to the {class}`~.backends.types.qblox.ComplexChannelDescription` 
 (or {class}`~.backends.types.qblox.RealChannelDescription`). 
-If the value is set to `True`, the operations defined for this I/O will be accompanied by a 4 ns trigger pulse on the marker located next to the I/O port.
+If the value is set to `True`, the operations defined for this channel will be accompanied by a 4 ns trigger pulse on the marker located next to the I/O port.
 The marker will be pulled high at the same time as the module starts playing or acquiring.
 ```{code-block} python
 ---
@@ -297,7 +297,7 @@ hardware_compilation_cfg = {
 ## Connectivity
 The {class}`~.backends.types.common.Connectivity` describes how the inputs/outputs of the Cluster modules are connected to ports on the {class}`~.device_under_test.quantum_device.QuantumDevice`. As described in {ref}`sec-connectivity` in the User guide, the connectivity datastructure can be parsed from a list of edges, which are described by a pair of strings that each specify a port on the quantum device, on the cluster modules, or on other auxiliary instruments (like external IQ mixers).
 
-Each input/output node of the Cluster should be specified in the connectivity as `"{cluster_name}.module{module_slot_index}.{io_name}"`. For each module, the possible input/output names are the same as the allowed fields in the corresponding {obj}`~.backends.types.qblox.ClusterModuleDescription` datastructure:
+Each input/output node of the Cluster should be specified in the connectivity as `"{cluster_name}.module{module_slot_index}.{channel_name}"`. For each module, the possible input/output names are the same as the allowed fields in the corresponding {obj}`~.backends.types.qblox.ClusterModuleDescription` datastructure:
 - for `"QCM"`: `"complex_output_{0,1}"`, `"real_output_{0,1,2,3}"`,
 - for `"QRM"`: `"complex_{output,input}_0"`, `"real_{output,input}_{0,1}"`,
 - for `"QCM_RF"`: `"complex_output_{0,1}"`,
@@ -372,9 +372,9 @@ With gate-level operations, you have to follow strict port naming:
 - `"<device element name>:fl"` for the flux port.
 ```
 
-### Complex I/O
+### Complex channel
 
-A complex I/O is defined by including a `"complex_{output, input}_<n>"` in the connectivity.
+A complex channel is defined by including a `"complex_{output, input}_<n>"` in the connectivity.
 Complex outputs (e.g. `complex_output_0`) are used for playbacks, while complex inputs (e.g. `complex_input_0`) are used for acquisitions.
 However, for readout modules it is possible to use the `complex_output_<n>` key for both playbacks and acquisitions.
 
@@ -410,14 +410,14 @@ hardware_compilation_cfg = {
 }
 ```
 
-### Real I/O
+### Real channel
 
-A real I/O is defined by including a `real_{output, input}_<n>` in the connectivity.
+A real channel is defined by including a `real_{output, input}_<n>` in the connectivity.
 Real outputs (e.g. `real_output_0`) are used for playbacks, while real inputs (e.g. `real_input_0`) are used for acquisitions.
 However, for readout modules it is possible to use the `real_output_<n>` key for both playbacks and acquisitions.
-When using a real I/O, the backend automatically maps the signals to the correct output paths.
+When using a real channel, the backend automatically maps the signals to the correct output paths.
 
-Note that the backend throws an error when using a real I/O for pulses with an imaginary component. For example, square and ramp pulses are allowed, but DRAG pulses are not.
+Note that the backend throws an error when using a real channel for pulses with an imaginary component. For example, square and ramp pulses are allowed, but DRAG pulses are not.
 
 ```{note}
 When using a port and clock combination for both playback and acquisition, only set up the `real_output_<n>`.
@@ -453,11 +453,11 @@ hardware_compilation_cfg = {
 }
 ```
 
-### Digital I/O
+### Digital channel
 
-The markers can be controlled by defining a digital I/O, and adding a `MarkerPulse` on this I/O.
-A digital I/O is defined by adding a `"digital_output_n"` to the connectivity. `n` is the number of the digital output port.
-For a digital I/O only a port is required, no clocks or other parameters are needed.
+The markers can be controlled by defining a digital channel, and adding a `MarkerPulse` on this channel.
+A digital channel is defined by adding a `"digital_output_n"` to the connectivity. `n` is the number of the digital output port.
+For a digital channel only a port is required, no clocks or other parameters are needed.
 
 ```{code-block} python
 ---
@@ -980,7 +980,7 @@ from quantify_scheduler.operations.stitched_pulse import StitchedPulseBuilder
 trapezoid_pulse = (
     StitchedPulseBuilder(port="q0:mw", clock="q0.01")
     .add_pulse(RampPulse(amp=0.5, duration=1e-8, port="q0:mw"))
-    .add_voltage_offset(path_0=0.5, path_1=0.0, duration=1e-7)
+    .add_voltage_offset(path_I=0.5, path_Q=0.0, duration=1e-7)
     .add_pulse(RampPulse(amp=-0.5, offset=0.5, duration=1e-8, port="q0:mw"))
     .build()
 )
@@ -988,7 +988,7 @@ trapezoid_pulse = (
 repeat_pulse_with_offset = (
     StitchedPulseBuilder(port="q0:mw", clock="q0.01")
     .add_pulse(RampPulse(amp=0.2, duration=8e-6, port="q0:mw"))
-    .add_voltage_offset(path_0=0.4, path_1=0.0)
+    .add_voltage_offset(path_I=0.4, path_Q=0.0)
     .add_pulse(RampPulse(amp=0.2, duration=8e-6, port="q0:mw"))
     .build()
 )
@@ -1013,7 +1013,7 @@ builder = StitchedPulseBuilder(port="q0:mw", clock="q0.01")
 
 for offset, duration, t_start in zip(offsets, durations, start_times):
     builder.add_voltage_offset(
-        path_0=offset, path_1=0.0, duration=duration, append=False, rel_time=t_start
+        path_I=offset, path_Q=0.0, duration=duration, append=False, rel_time=t_start
     )
 
 pulse = builder.build()

@@ -19,7 +19,6 @@ from quantify_scheduler import Schedule, waveforms
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.backends.qblox import constants
-from quantify_scheduler.backends.qblox.enums import IoMode
 from quantify_scheduler.backends.qblox.operation_handling import pulses
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.helpers.waveforms import normalize_waveform_data
@@ -39,7 +38,7 @@ class TestGenericPulseStrategy:
     def test_constructor(self):
         pulses.GenericPulseStrategy(
             operation_info=types.OpInfo(name="", data={}, timing=0),
-            io_mode=IoMode.REAL,
+            channel_name="real_output_0",
         )
 
     def test_operation_info_property(self):
@@ -47,7 +46,7 @@ class TestGenericPulseStrategy:
         operation_info = types.OpInfo(name="", data={}, timing=0)
         strategy = pulses.GenericPulseStrategy(
             operation_info=operation_info,
-            io_mode=IoMode.REAL,
+            channel_name="real_output_0",
         )
 
         # act
@@ -84,7 +83,7 @@ class TestGenericPulseStrategy:
         operation_info = types.OpInfo(name="", data=data, timing=0)
         strategy = pulses.GenericPulseStrategy(
             operation_info=operation_info,
-            io_mode=IoMode.REAL,
+            channel_name="real_output_0",
         )
         wf_dict = {}
         t_test = np.linspace(0, duration, int(duration * constants.SAMPLING_RATE))
@@ -99,8 +98,8 @@ class TestGenericPulseStrategy:
             wf_func(t=t_test, **wf_kwargs)
         )
         assert waveform0_data == normalized_data.real.tolist()
-        assert strategy._amplitude_path0 == amp_real
-        assert strategy._amplitude_path1 == amp_imag
+        assert strategy._amplitude_path_I == amp_real
+        assert strategy._amplitude_path_Q == amp_imag
         assert strategy._waveform_index0 == 0
         assert strategy._waveform_index1 == None
 
@@ -118,7 +117,7 @@ class TestGenericPulseStrategy:
 
         strategy = pulses.GenericPulseStrategy(
             operation_info=types.OpInfo(name="", data=data, timing=0),
-            io_mode=IoMode.COMPLEX,
+            channel_name="complex_output_0",
         )
         wf_dict = {}
         t_test = (
@@ -141,63 +140,12 @@ class TestGenericPulseStrategy:
         )
         assert waveform0_data == normalized_data.real.tolist()
         assert waveform1_data == normalized_data.imag.tolist()
-        assert strategy._amplitude_path0 == amp_real
-        assert strategy._amplitude_path1 == amp_imag
+        assert strategy._amplitude_path_I == amp_real
+        assert strategy._amplitude_path_Q == amp_imag
         assert strategy._waveform_index0 == 0
         assert strategy._waveform_index1 == 1
 
-    @pytest.mark.parametrize(
-        "wf_func, wf_func_path, wf_kwargs",
-        [
-            (
-                waveforms.square,
-                "quantify_scheduler.waveforms.square",
-                {"amp": 1},
-            ),
-            (
-                waveforms.ramp,
-                "quantify_scheduler.waveforms.ramp",
-                {"amp": 0.1234},
-            ),
-            (
-                waveforms.soft_square,
-                "quantify_scheduler.waveforms.soft_square",
-                {"amp": -0.1234},
-            ),
-        ],
-    )
-    def test_generate_data_imag(self, wf_func, wf_func_path, wf_kwargs):
-        # arrange
-        duration = 24e-9
-        data = {"wf_func": wf_func_path, "duration": duration, **wf_kwargs}
-
-        strategy = pulses.GenericPulseStrategy(
-            operation_info=types.OpInfo(name="", data=data, timing=0),
-            io_mode=IoMode.IMAG,
-        )
-        wf_dict = {}
-        t_test = np.arange(0, duration, step=1e-9)
-
-        # act
-        strategy.generate_data(wf_dict=wf_dict)
-
-        # assert
-        waveforms_generated = list(wf_dict.values())
-        waveform0_data = waveforms_generated[0]["data"]
-        normalized_data, amp_real, amp_imag = normalize_waveform_data(
-            wf_func(t=t_test, **wf_kwargs)
-        )
-        assert waveform0_data == normalized_data.real.tolist()
-        assert strategy._amplitude_path0 == amp_imag
-        assert strategy._amplitude_path1 == amp_real
-        assert strategy._waveform_index0 == None
-        assert strategy._waveform_index1 == 0
-
-    @pytest.mark.parametrize(
-        "io_mode",
-        [IoMode.REAL, IoMode.IMAG],
-    )
-    def test_exception_wrong_mode(self, io_mode):
+    def test_exception_wrong_mode(self):
         # arrange
         duration = 24e-9
         data = {
@@ -211,7 +159,7 @@ class TestGenericPulseStrategy:
 
         strategy = pulses.GenericPulseStrategy(
             operation_info=types.OpInfo(name="test_pulse_name", data=data, timing=0),
-            io_mode=io_mode,
+            channel_name="real_output_0",
         )
         wf_dict = {}
 
@@ -246,7 +194,7 @@ class TestGenericPulseStrategy:
 
         strategy = pulses.GenericPulseStrategy(
             operation_info=types.OpInfo(name="test_pulse", data=data, timing=0),
-            io_mode=IoMode.COMPLEX,
+            channel_name="complex_output_0",
         )
         strategy.generate_data(wf_dict={})
 
@@ -264,7 +212,7 @@ class TestMarkerPulseStrategy:
     def test_constructor(self):
         pulses.MarkerPulseStrategy(
             operation_info=types.OpInfo(name="", data={}, timing=0),
-            io_mode=IoMode.DIGITAL,
+            channel_name="digital_output_0",
         )
 
     def test_insert_qasm_exception(self, empty_qasm_program_qcm):
@@ -281,17 +229,17 @@ class TestMarkerPulseStrategy:
 
         strategy = pulses.MarkerPulseStrategy(
             operation_info=types.OpInfo(name="test_pulse", data=data, timing=0),
-            io_mode=IoMode.COMPLEX,
+            channel_name="complex_output_0",
         )
         strategy.generate_data(wf_dict={})
 
         with pytest.raises(
             ValueError,
             match=re.escape(
-                "MarkerPulseStrategy can only be used with digital IO, "
-                "not io_mode 'complex'. Please make sure that 'digital' keyword is included "
-                "in the io_name in the hardware configuration for port-clock combination"
-                " 'None-None'.Operation causing exception: Pulse \"test_pulse\" (t0=0, duration=2.4e-08)"
+                "MarkerPulseStrategy can only be used with a digital channel. "
+                "Please make sure that 'digital' keyword is included "
+                "in the channel_name in the hardware configuration for port-clock combination"
+                " 'None-None' (current channel_name is 'complex_output_0').Operation causing exception: Pulse \"test_pulse\" (t0=0, duration=2.4e-08)"
             ),
         ):
             strategy.insert_qasm(empty_qasm_program_qcm)
@@ -301,7 +249,7 @@ class TestMarkerPulseStrategy:
         operation_info = types.OpInfo(name="", data={}, timing=0)
         strategy = pulses.MarkerPulseStrategy(
             operation_info=operation_info,
-            io_mode=IoMode.DIGITAL,
+            channel_name="digital_output_0",
         )
 
         # act
@@ -314,7 +262,7 @@ class TestMarkerPulseStrategy:
         # arrange
         strategy = pulses.MarkerPulseStrategy(
             operation_info=types.OpInfo(name="", data={}, timing=0),
-            io_mode=IoMode.DIGITAL,
+            channel_name="digital_output_0",
         )
 
         # act

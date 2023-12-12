@@ -26,7 +26,7 @@ from quantify_core.data.handling import get_datadir
 from xarray import DataArray, Dataset
 
 from quantify_scheduler.backends.qblox import constants, driver_version_check
-from quantify_scheduler.backends.qblox.enums import IoMode
+from quantify_scheduler.backends.qblox.enums import ChannelMode
 from quantify_scheduler.backends.qblox.helpers import (
     single_scope_mode_acquisition_raise,
 )
@@ -357,23 +357,23 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         self._set_parameter(
             self.instrument[f"sequencer{seq_idx}"],
             "offset_awg_path0",
-            settings.init_offset_awg_path_0,
+            settings.init_offset_awg_path_I,
         )
         self._set_parameter(
             self.instrument[f"sequencer{seq_idx}"],
             "offset_awg_path1",
-            settings.init_offset_awg_path_1,
+            settings.init_offset_awg_path_Q,
         )
 
         self._set_parameter(
             self.instrument[f"sequencer{seq_idx}"],
             "gain_awg_path0",
-            settings.init_gain_awg_path_0,
+            settings.init_gain_awg_path_I,
         )
         self._set_parameter(
             self.instrument[f"sequencer{seq_idx}"],
             "gain_awg_path1",
-            settings.init_gain_awg_path_1,
+            settings.init_gain_awg_path_Q,
         )
 
         self._set_parameter(
@@ -419,7 +419,7 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
                 and channel_idx in settings.connected_output_indices
             ):  # For baseband, output indices map 1-to-1 to channel map indices
                 if channel_idx in settings.connected_output_indices:
-                    if settings.io_mode is not IoMode.DIGITAL:
+                    if ChannelMode.DIGITAL not in settings.channel_name:
                         param_setting = "I" if channel_idx in (0, 2) else "Q"
 
             channel_map_parameters[f"connect_out{channel_idx}"] = param_setting
@@ -535,21 +535,21 @@ class QCMComponent(QbloxInstrumentCoordinatorComponentBase):
             The settings to configure it to.
         """
         # configure mixer correction offsets
-        if settings.offset_ch0_path0 is not None:
+        if settings.offset_ch0_path_I is not None:
             self._set_parameter(
-                self.instrument, "out0_offset", settings.offset_ch0_path0
+                self.instrument, "out0_offset", settings.offset_ch0_path_I
             )
-        if settings.offset_ch0_path1 is not None:
+        if settings.offset_ch0_path_Q is not None:
             self._set_parameter(
-                self.instrument, "out1_offset", settings.offset_ch0_path1
+                self.instrument, "out1_offset", settings.offset_ch0_path_Q
             )
-        if settings.offset_ch1_path0 is not None:
+        if settings.offset_ch1_path_I is not None:
             self._set_parameter(
-                self.instrument, "out2_offset", settings.offset_ch1_path0
+                self.instrument, "out2_offset", settings.offset_ch1_path_I
             )
-        if settings.offset_ch1_path1 is not None:
+        if settings.offset_ch1_path_Q is not None:
             self._set_parameter(
-                self.instrument, "out3_offset", settings.offset_ch1_path1
+                self.instrument, "out3_offset", settings.offset_ch1_path_Q
             )
 
 
@@ -681,13 +681,13 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
             The settings to configure it to.
         """
         # configure mixer correction offsets
-        if settings.offset_ch0_path0 is not None:
+        if settings.offset_ch0_path_I is not None:
             self._set_parameter(
-                self.instrument, "out0_offset", settings.offset_ch0_path0
+                self.instrument, "out0_offset", settings.offset_ch0_path_I
             )
-        if settings.offset_ch0_path1 is not None:
+        if settings.offset_ch0_path_Q is not None:
             self._set_parameter(
-                self.instrument, "out1_offset", settings.offset_ch0_path1
+                self.instrument, "out1_offset", settings.offset_ch0_path_Q
             )
         # configure gain
         if settings.in0_gain is not None:
@@ -760,7 +760,8 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
         for channel_idx in range(self._hardware_properties.number_of_input_channels):
             param_setting = (
                 f"in{channel_idx}"
-                if "output" in settings.io_name and "digital" not in settings.io_name
+                if "output" in settings.channel_name
+                and ChannelMode.DIGITAL not in settings.channel_name
                 else "off"
             )
             if (
@@ -844,7 +845,7 @@ class QbloxRFComponent(QbloxInstrumentCoordinatorComponentBase):
         for channel_idx in range(self._hardware_properties.number_of_output_channels):
             param_setting = "off"
             if (
-                settings.io_mode is not IoMode.DIGITAL
+                ChannelMode.DIGITAL not in settings.channel_name
                 and settings.connected_output_indices is not None
                 and settings.connected_output_indices
                 == expected_output_indices[channel_idx]
@@ -875,21 +876,21 @@ class QCMRFComponent(QbloxRFComponent, QCMComponent):
             self._set_parameter(self.instrument, "out1_lo_freq", settings.lo1_freq)
 
         # configure mixer correction offsets
-        if settings.offset_ch0_path0 is not None:
+        if settings.offset_ch0_path_I is not None:
             self._set_parameter(
-                self.instrument, "out0_offset_path0", settings.offset_ch0_path0
+                self.instrument, "out0_offset_path0", settings.offset_ch0_path_I
             )
-        if settings.offset_ch0_path1 is not None:
+        if settings.offset_ch0_path_Q is not None:
             self._set_parameter(
-                self.instrument, "out0_offset_path1", settings.offset_ch0_path1
+                self.instrument, "out0_offset_path1", settings.offset_ch0_path_Q
             )
-        if settings.offset_ch1_path0 is not None:
+        if settings.offset_ch1_path_I is not None:
             self._set_parameter(
-                self.instrument, "out1_offset_path0", settings.offset_ch1_path0
+                self.instrument, "out1_offset_path0", settings.offset_ch1_path_I
             )
-        if settings.offset_ch1_path1 is not None:
+        if settings.offset_ch1_path_Q is not None:
             self._set_parameter(
-                self.instrument, "out1_offset_path1", settings.offset_ch1_path1
+                self.instrument, "out1_offset_path1", settings.offset_ch1_path_Q
             )
         # configure attenuation
         if settings.out0_att is not None:
@@ -916,13 +917,13 @@ class QRMRFComponent(QbloxRFComponent, QRMComponent):
             self._set_parameter(self.instrument, "out0_in0_lo_freq", settings.lo0_freq)
 
         # configure mixer correction offsets
-        if settings.offset_ch0_path0 is not None:
+        if settings.offset_ch0_path_I is not None:
             self._set_parameter(
-                self.instrument, "out0_offset_path0", settings.offset_ch0_path0
+                self.instrument, "out0_offset_path0", settings.offset_ch0_path_I
             )
-        if settings.offset_ch0_path1 is not None:
+        if settings.offset_ch0_path_Q is not None:
             self._set_parameter(
-                self.instrument, "out0_offset_path1", settings.offset_ch0_path1
+                self.instrument, "out0_offset_path1", settings.offset_ch0_path_Q
             )
         # configure attenuation
         if settings.out0_att is not None:
@@ -937,7 +938,10 @@ class QRMRFComponent(QbloxRFComponent, QRMComponent):
         channel_map_parameters["connect_acq"] = (
             "in0" if settings.connected_input_indices == [0, 1] else "off"
         )
-        if "output" in settings.io_name and "digital" not in settings.io_name:
+        if (
+            "output" in settings.channel_name
+            and ChannelMode.DIGITAL not in settings.channel_name
+        ):
             channel_map_parameters["connect_acq"] = "in0"
 
         return channel_map_parameters

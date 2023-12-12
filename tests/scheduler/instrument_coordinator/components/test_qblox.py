@@ -277,16 +277,16 @@ def test_reset_qcodes_settings(
 
     # Act
     hardware_cfg["qcm0"]["complex_output_0"]["portclock_configs"][0][
-        "init_offset_awg_path_0"
+        "init_offset_awg_path_I"
     ] = 0.25
     hardware_cfg["qcm0"]["complex_output_0"]["portclock_configs"][0][
-        "init_offset_awg_path_1"
+        "init_offset_awg_path_Q"
     ] = 0.33
     hardware_cfg["qrm2"]["real_output_0"]["portclock_configs"][0][
-        "init_gain_awg_path_0"
+        "init_gain_awg_path_I"
     ] = 0.5
     hardware_cfg["qrm2"]["real_output_1"]["portclock_configs"][0][
-        "init_gain_awg_path_1"
+        "init_gain_awg_path_Q"
     ] = -0.5
 
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
@@ -400,16 +400,16 @@ def test_init_qcodes_settings(
 
     # Act
     hardware_cfg["qcm0"]["complex_output_0"]["portclock_configs"][0][
-        "init_offset_awg_path_0"
+        "init_offset_awg_path_I"
     ] = 0.25
     hardware_cfg["qcm0"]["complex_output_0"]["portclock_configs"][0][
-        "init_offset_awg_path_1"
+        "init_offset_awg_path_Q"
     ] = 0.33
     hardware_cfg["qrm2"]["real_output_0"]["portclock_configs"][0][
-        "init_gain_awg_path_0"
+        "init_gain_awg_path_I"
     ] = 0.5
     hardware_cfg["qrm2"]["real_output_1"]["portclock_configs"][0][
-        "init_gain_awg_path_1"
+        "init_gain_awg_path_Q"
     ] = -0.5
 
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
@@ -475,7 +475,7 @@ def test_invalid_init_qcodes_settings(
 
     # Act
     hardware_cfg["qcm0"]["complex_output_0"]["portclock_configs"][0][
-        "init_offset_awg_path_0"
+        "init_offset_awg_path_I"
     ] = 1.25
 
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
@@ -1163,7 +1163,7 @@ def test_get_configuration_manager(
 
 
 @pytest.mark.parametrize(
-    ("module_type, io_name, channel_map_parameters"),
+    ("module_type, channel_name, channel_map_parameters"),
     [
         (
             "QCM",
@@ -1322,7 +1322,7 @@ def test_get_configuration_manager(
 def test_channel_map(
     make_cluster_component,
     module_type,
-    io_name,
+    channel_name,
     channel_map_parameters,
 ):
     # Indices according to `make_cluster_component` instrument setup
@@ -1336,7 +1336,7 @@ def test_channel_map(
             "ref": "internal",
             test_module_name: {
                 "instrument_type": module_type,
-                io_name: {
+                channel_name: {
                     "portclock_configs": [{"port": "q5:mw", "clock": "q5.01"}],
                 },
             },
@@ -1344,9 +1344,9 @@ def test_channel_map(
     }
 
     if "RF" in module_type:
-        hardware_config["cluster0"][test_module_name][io_name]["portclock_configs"][0][
-            "interm_freq"
-        ] = 3e5
+        hardware_config["cluster0"][test_module_name][channel_name][
+            "portclock_configs"
+        ][0]["interm_freq"] = 3e5
         freq_01 = 5e9
     else:
         freq_01 = 4.33e8

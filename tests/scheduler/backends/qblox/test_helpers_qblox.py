@@ -247,6 +247,45 @@ def test_generate_hardware_config(hardware_compilation_config_qblox_example):
     assert generated_hw_config == qblox_hardware_config_old_style
 
 
+def test_preprocess_legacy_hardware_config():
+    hardware_config = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "instrument_type": "Cluster",
+            "ref": "internal",
+            "cluster0_module1": {
+                "instrument_type": "QCM_RF",
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "q2:mw",
+                            "clock": "q2.01",
+                            "init_offset_awg_path_0": 0.1,
+                            "init_offset_awg_path_1": -0.1,
+                            "init_gain_awg_path_0": 0.55,
+                            "init_gain_awg_path_1": 0.66,
+                        }
+                    ],
+                },
+            },
+        },
+    }
+
+    preprocessed_hardware_config = helpers._preprocess_legacy_hardware_config(
+        hardware_config
+    )
+    assert preprocessed_hardware_config["cluster0"]["cluster0_module1"][
+        "complex_output_0"
+    ]["portclock_configs"][0] == {
+        "port": "q2:mw",
+        "clock": "q2.01",
+        "init_offset_awg_path_I": 0.1,
+        "init_offset_awg_path_Q": -0.1,
+        "init_gain_awg_path_I": 0.55,
+        "init_gain_awg_path_Q": 0.66,
+    }
+
+
 def test_configure_input_gains_overwrite_gain():
     # Partial test of overwriting gain setting. Note: In using the new
     # QbloxHardwareOptions collisions like these are no longer possible,

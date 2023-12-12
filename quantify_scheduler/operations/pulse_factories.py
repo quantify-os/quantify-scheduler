@@ -340,8 +340,8 @@ def long_square_pulse(
     pulse = (
         StitchedPulseBuilder(port=port, clock=clock, t0=t0)
         .add_voltage_offset(
-            path_0=np.real(amp),
-            path_1=np.imag(amp),
+            path_I=np.real(amp),
+            path_Q=np.imag(amp),
             reference_magnitude=reference_magnitude,
         )
         # The last bit, with duration 'grid time' ns, is replaced by a normal pulse. The
@@ -349,7 +349,7 @@ def long_square_pulse(
         # otherwise lengthen the full operation by adding an 'UpdateParameters'
         # instruction at the end.
         .add_voltage_offset(
-            path_0=0.0, path_1=0.0, rel_time=duration - grid_time_ns * 1e-9
+            path_I=0.0, path_Q=0.0, rel_time=duration - grid_time_ns * 1e-9
         )
         .add_pulse(
             pulse_library.SquarePulse(
@@ -440,8 +440,8 @@ def staircase_pulse(
     # The final step is a special case, see below.
     for amp in amps[:-1]:
         builder.add_voltage_offset(
-            path_0=amp,
-            path_1=0.0,
+            path_I=amp,
+            path_Q=0.0,
             duration=step_duration,
             min_duration=grid_time_ns * 1e-9,
             reference_magnitude=reference_magnitude,
@@ -452,13 +452,13 @@ def staircase_pulse(
     # Qblox backend might otherwise lengthen the full operation by adding an
     # 'UpdateParameters' instruction at the end.
     builder.add_voltage_offset(
-        path_0=amps[-1],
-        path_1=0.0,
+        path_I=amps[-1],
+        path_Q=0.0,
         duration=step_duration - grid_time_ns * 1e-9,
         min_duration=grid_time_ns * 1e-9,
         reference_magnitude=reference_magnitude,
     )
-    builder.add_voltage_offset(path_0=0.0, path_1=0.0)
+    builder.add_voltage_offset(path_I=0.0, path_Q=0.0)
     builder.add_pulse(
         pulse_library.SquarePulse(
             amp=amps[-1],
@@ -539,8 +539,8 @@ def long_ramp_pulse(
         # offset is 0.
         if not (last_sample_voltage == offset and math.isclose(offset, 0.0)):
             builder.add_voltage_offset(
-                path_0=last_sample_voltage,
-                path_1=0.0,
+                path_I=last_sample_voltage,
+                path_Q=0.0,
                 reference_magnitude=reference_magnitude,
             )
         builder.add_pulse(
@@ -561,7 +561,7 @@ def long_ramp_pulse(
     if not math.isclose(last_sample_voltage, offset) and not math.isclose(
         last_sample_voltage - amp_part, 0.0
     ):
-        builder.add_voltage_offset(path_0=0.0, path_1=0.0)
+        builder.add_voltage_offset(path_I=0.0, path_Q=0.0)
     builder.add_pulse(
         pulse_library.RampPulse(
             amp=amp_left,

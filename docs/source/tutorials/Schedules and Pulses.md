@@ -259,7 +259,7 @@ builder = StitchedPulseBuilder(port=port, clock=BasebandClockResource.IDENTITY)
 builder.add_pulse(
     NumericalPulse(samples=hann_up, t_samples=ramp_t, port=port, clock=clock)
 )
-builder.add_voltage_offset(path_0=1.0, path_1=0.0, duration=constant_duration)
+builder.add_voltage_offset(path_I=1.0, path_Q=0.0, duration=constant_duration)
 builder.add_pulse(
     NumericalPulse(samples=hann_down, t_samples=ramp_t, port=port, clock=clock)
 )
@@ -280,7 +280,7 @@ pulse = (
     .add_pulse(
         NumericalPulse(samples=hann_up, t_samples=ramp_t, port=port, clock=clock)
     )
-    .add_voltage_offset(path_0=1.0, path_1=0.0, duration=constant_duration)
+    .add_voltage_offset(path_I=1.0, path_Q=0.0, duration=constant_duration)
     .add_pulse(
         NumericalPulse(samples=hann_up, t_samples=ramp_t, port=port, clock=clock)
     )

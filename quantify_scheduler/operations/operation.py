@@ -287,7 +287,7 @@ class Operation(JSONSchemaValMixin, UserDict):
     def has_voltage_offset(self) -> bool:
         """Checks if the operation contains information for a voltage offset."""
         if any(
-            "offset_path_0" in pulse_info or "offset_path_1" in pulse_info
+            "offset_path_I" in pulse_info or "offset_path_Q" in pulse_info
             for pulse_info in self.data["pulse_info"]
         ):
             return True

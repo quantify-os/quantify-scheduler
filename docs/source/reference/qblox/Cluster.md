@@ -157,8 +157,8 @@ Apart from the `"instrument_type"`, the only possible key in the module configur
 
 Note, for RF hardware, if an output is unused, it will be turned off. (This is to ensure that unused local oscillators do not interfere with used outputs.)
 
-### Complex I/O
-A complex I/O is defined by adding a `"complex_{output, input}_<n>"` to the module configuration.
+### Complex channel
+A complex channel is defined by adding a `"complex_{output, input}_<n>"` to the module configuration.
 Complex outputs (e.g. `complex_output_0`) are used for playbacks, while complex inputs (e.g. `complex_input_0`) are used for acquisitions.
 However, for readout modules it is possible to use the `complex_output_<n>` key for both playbacks and acquisitions.
 
@@ -205,14 +205,14 @@ linenos: true
 When using a port and clock combination for both playback and acquisition, only set up the `complex_output_<n>`.
 ```
 
-### Real I/O
+### Real channel
 
-A real I/O is defined by adding a `real_{output, input}_<n>` to the module configuration.
+A real channel is defined by adding a `real_{output, input}_<n>` to the module configuration.
 Real outputs (e.g. `real_output_0`) are used for playbacks, while real inputs (e.g. `real_input_0`) are used for acquisitions.
 However, for readout modules it is possible to use the `real_output_<n>` key for both playbacks and acquisitions.
-When using a real I/O, the backend automatically maps the signals to the correct output paths.
+When using a real channel, the backend automatically maps the signals to the correct output paths.
 
-Note that the backend throws an error when using a real I/O for pulses with an imaginary component. For example, square and ramp pulses are allowed, but DRAG pulses are not.
+Note that the backend throws an error when using a real channel for pulses with an imaginary component. For example, square and ramp pulses are allowed, but DRAG pulses are not.
 
 ```{note}
 When using a port and clock combination for both playback and acquisition, only set up the `real_output_<n>`.
@@ -257,11 +257,11 @@ linenos: true
 },
 ```
 
-### Digital I/O
+### Digital channel
 
-The markers can be controlled by defining a digital I/O, and adding a `MarkerPulse` on this I/O.
-A digital I/O is defined by adding a `"digital_output_n"` to the module configuration. `n` is the number of the digital output port.
-For a digital I/O only a port is required, no clocks or other parameters are needed.
+The markers can be controlled by defining a digital channel, and adding a `MarkerPulse` on this channel.
+A digital channel is defined by adding a `"digital_output_n"` to the module configuration. `n` is the number of the digital output port.
+For a digital channel only a port is required, no clocks or other parameters are needed.
 
 ```{code-block} python
 "qcm0": {
@@ -284,7 +284,7 @@ schedule.add(MarkerPulse(duration=52e-9, port="q0:switch"))
 
 ### Marker configuration
 
-The markers can be configured by adding a `"marker_debug_mode_enable"` key to I/O configurations. If the value is set to True, the operations defined for this I/O will be accompanied by a 4 ns trigger pulse on the marker located next to the I/O port.
+The markers can be configured by adding a `"marker_debug_mode_enable"` key to channel configurations. If the value is set to True, the operations defined for this channel will be accompanied by a 4 ns trigger pulse on the marker located next to the channel port.
 The marker will be pulled high at the same time as the module starts playing or acquiring.
 ```{code-block} python
 ---
@@ -584,10 +584,10 @@ The following parameters are available.
 - `"mixer_amp_ratio"` by default `1.0`, must be between `0.5` and `2.0`, see {ref}`Mixer corrections <sec-qblox-mixer-corrections>`,
 - `"mixer_phase_error_deg"` by default `0.0`, must be between `-45` and `45`, {ref}`Mixer corrections <sec-qblox-mixer-corrections>`,
 - `"ttl_acq_threshold"`,
-- `"init_offset_awg_path_0"` by default `0.0`, must be between `-1.0` and `1.0`,
-- `"init_offset_awg_path_1"` by default `0.0`, must be between `-1.0` and `1.0`,
-- `"init_gain_awg_path_0"` by default `1.0`, must be between `-1.0` and `1.0`,
-- `"init_gain_awg_path_1"` by default `1.0`, must be between `-1.0` and `1.0`,
+- `"init_offset_awg_path_I"` by default `0.0`, must be between `-1.0` and `1.0`,
+- `"init_offset_awg_path_Q"` by default `0.0`, must be between `-1.0` and `1.0`,
+- `"init_gain_awg_path_I"` by default `1.0`, must be between `-1.0` and `1.0`,
+- `"init_gain_awg_path_Q"` by default `1.0`, must be between `-1.0` and `1.0`,
 - `"qasm_hook_func"`, see {ref}`QASM hook <sec-qblox-qasm-hook>`,
 
 ```{note}
@@ -739,7 +739,7 @@ from quantify_scheduler.operations.stitched_pulse import StitchedPulseBuilder
 trapezoid_pulse = (
     StitchedPulseBuilder(port="q0:mw", clock="q0.01")
     .add_pulse(RampPulse(amp=0.5, duration=1e-8, port="q0:mw"))
-    .add_voltage_offset(path_0=0.5, path_1=0.0, duration=1e-7)
+    .add_voltage_offset(path_I=0.5, path_Q=0.0, duration=1e-7)
     .add_pulse(RampPulse(amp=-0.5, offset=0.5, duration=1e-8, port="q0:mw"))
     .build()
 )
@@ -747,7 +747,7 @@ trapezoid_pulse = (
 repeat_pulse_with_offset = (
     StitchedPulseBuilder(port="q0:mw", clock="q0.01")
     .add_pulse(RampPulse(amp=0.2, duration=8e-6, port="q0:mw"))
-    .add_voltage_offset(path_0=0.4, path_1=0.0)
+    .add_voltage_offset(path_I=0.4, path_Q=0.0)
     .add_pulse(RampPulse(amp=0.2, duration=8e-6, port="q0:mw"))
     .build()
 )
@@ -772,7 +772,7 @@ builder = StitchedPulseBuilder(port="q0:mw", clock="q0.01")
 
 for offset, duration, t_start in zip(offsets, durations, start_times):
     builder.add_voltage_offset(
-        path_0=offset, path_1=0.0, duration=duration, append=False, rel_time=t_start
+        path_I=offset, path_Q=0.0, duration=duration, append=False, rel_time=t_start
     )
 
 pulse = builder.build()

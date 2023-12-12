@@ -90,16 +90,16 @@ def test_long_long_ramp_pulse():
     ramp_parts = []
     offsets = []
     for pulse_info in pulse.data["pulse_info"]:
-        if "offset_path_0" in pulse_info:
+        if "offset_path_I" in pulse_info:
             offsets.append(pulse_info)
         else:
             ramp_parts.append(pulse_info)
 
-    assert offsets[0]["offset_path_0"] == pytest.approx(-0.2)
+    assert offsets[0]["offset_path_I"] == pytest.approx(-0.2)
     assert sum(pul_inf["amp"] for pul_inf in ramp_parts) == pytest.approx(0.5)
     assert sum(pul_inf["duration"] for pul_inf in ramp_parts) == pytest.approx(2.5e-6)
     assert ramp_parts[-1]["offset"] + ramp_parts[-1]["amp"] == pytest.approx(0.3)
-    assert offsets[-1]["offset_path_0"] == pytest.approx(0.0)
+    assert offsets[-1]["offset_path_I"] == pytest.approx(0.0)
 
 
 def test_long_square_pulse():
@@ -111,14 +111,14 @@ def test_long_square_pulse():
     assert (
         pulse["pulse_info"][1]
         == VoltageOffset(
-            offset_path_0=0.8, offset_path_1=0.0, duration=0.0, port=port, clock=clock
+            offset_path_I=0.8, offset_path_Q=0.0, duration=0.0, port=port, clock=clock
         )["pulse_info"][0]
     )
     assert (
         pulse["pulse_info"][2]
         == VoltageOffset(
-            offset_path_0=0.0,
-            offset_path_1=0.0,
+            offset_path_I=0.0,
+            offset_path_Q=0.0,
             duration=0.0,
             port=port,
             clock=clock,
@@ -148,11 +148,11 @@ def test_staircase():
     assert pulse["pulse_info"][0]["duration"] == 4e-9
     assert pulse["pulse_info"][0]["t0"] == pytest.approx(1e-3 - 4e-9)
     for amp, pulse_inf in zip(amps, pulse["pulse_info"][1:-2]):
-        assert pulse_inf["offset_path_0"] == pytest.approx(amp)
+        assert pulse_inf["offset_path_I"] == pytest.approx(amp)
         assert pulse_inf["duration"] == pytest.approx(5e-5)
-    assert pulse["pulse_info"][-2]["offset_path_0"] == 0.9
+    assert pulse["pulse_info"][-2]["offset_path_I"] == 0.9
     assert pulse["pulse_info"][-2]["duration"] == pytest.approx(5e-5 - 4e-9)
-    assert pulse["pulse_info"][-1]["offset_path_0"] == 0.0
+    assert pulse["pulse_info"][-1]["offset_path_I"] == 0.0
 
 
 def test_staircase_raises_not_multiple_of_grid_time():

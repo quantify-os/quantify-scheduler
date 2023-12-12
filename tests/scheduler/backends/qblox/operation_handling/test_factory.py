@@ -12,7 +12,6 @@ from typing import Type
 import pytest
 
 from quantify_scheduler.backends.qblox import q1asm_instructions
-from quantify_scheduler.backends.qblox.enums import IoMode
 from quantify_scheduler.backends.qblox.operation_handling import (
     acquisitions,
     base,
@@ -103,8 +102,8 @@ TEST_OP_INFO_MAPPING = {
         name="",
         data={
             "wf_func": None,
-            "offset_path_0": 0.5,
-            "offset_path_1": 0.5,
+            "offset_path_I": 0.5,
+            "offset_path_Q": 0.5,
             "port": "some_port",
             "clock": "some_clock",
         },
@@ -145,7 +144,7 @@ def test_get_operation_strategy(
 ):
     obj = factory.get_operation_strategy(
         operation_info=operation_info,
-        io_mode=IoMode.COMPLEX,
+        channel_name="complex_output_0",
     )
 
     # assert
@@ -172,7 +171,7 @@ def test_invalid_protocol_exception():
     with pytest.raises(ValueError) as exc:
         factory.get_operation_strategy(
             operation_info=operation_info,
-            io_mode=IoMode.COMPLEX,
+            channel_name="complex_output_0",
         )
 
     # assert
@@ -206,7 +205,7 @@ def test_trace_append_exception():
     with pytest.raises(ValueError) as exc:
         factory.get_operation_strategy(
             operation_info=operation_info,
-            io_mode=IoMode.COMPLEX,
+            channel_name="complex_output_0",
         )
 
     # assert

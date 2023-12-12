@@ -4,6 +4,7 @@
 # pylint: disable= too-many-arguments, too-many-ancestors
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
 from typing import Any, Dict, List, Literal, Optional, Union
 
@@ -12,6 +13,7 @@ from numpy.typing import NDArray
 from qcodes import InstrumentChannel, validators
 from quantify_scheduler import Operation
 from quantify_scheduler.backends.qblox import constants as qblox_constants
+from quantify_scheduler.backends.qblox.enums import ChannelMode
 from quantify_scheduler.helpers.waveforms import area_pulses
 from quantify_scheduler.resources import BasebandClockResource
 
@@ -175,10 +177,10 @@ class VoltageOffset(Operation):
 
     Parameters
     ----------
-    offset_path_0 : float
-        Offset of path 0 (the I-path).
-    offset_path_1 : float
-        Offset of path 1 (the Q-path).
+    offset_path_I : float
+        Offset of path_I.
+    offset_path_Q : float
+        Offset of path_Q.
     port : str or None, optional
         Port of the stitched pulse.
     clock : str or None, optional
@@ -195,25 +197,54 @@ class VoltageOffset(Operation):
 
     def __init__(
         self,
-        offset_path_0: float,
-        offset_path_1: float,
+        offset_path_I: float = None,
+        offset_path_Q: float = None,
         duration: float = 0.0,
         port: Optional[str] = None,
         clock: Optional[str] = None,
         t0: float = 0,
         reference_magnitude: ReferenceMagnitude | None = None,
+        **kwargs,
     ):
+        # When removing these warnings, remove kwargs from self.data["pulse_info"] below
+        if "offset_path_0" in kwargs:
+            warnings.warn(
+                "'offset_path_0' is deprecated and will be removed from the public "
+                "interface in quantify-scheduler >= 0.20.0. Please use "
+                "'offset_path_I' instead.",
+                FutureWarning,
+            )
+            offset_path_I = kwargs["offset_path_0"]
+        elif offset_path_I is None:
+            raise TypeError(
+                "'offset_path_I' argument needed for initializing `VoltageOffset`."
+            )
+
+        if "offset_path_1" in kwargs:
+            warnings.warn(
+                "'offset_path_1' is deprecated and will be removed from the public "
+                "interface in quantify-scheduler >= 0.20.0. Please use "
+                "'offset_path_Q' instead.",
+                FutureWarning,
+            )
+            offset_path_Q = kwargs["offset_path_1"]
+        elif offset_path_Q is None:
+            raise TypeError(
+                "'offset_path_Q' argument needed for initializing `VoltageOffset`."
+            )
+
         super().__init__(name=self.__class__.__name__)
         self.data["pulse_info"] = [
             {
                 "wf_func": None,
                 "t0": t0,
-                "offset_path_0": offset_path_0,
-                "offset_path_1": offset_path_1,
+                "offset_path_I": offset_path_I,
+                "offset_path_Q": offset_path_Q,
                 "clock": clock,
                 "port": port,
                 "duration": duration,
                 "reference_magnitude": reference_magnitude,
+                "kwargs": kwargs,
             }
         ]
         self._update()
@@ -391,8 +422,8 @@ class MarkerPulse(Operation):
     port
         Name of associated port.
     clock
-        As digital IO's technically do not have a clock, this parameter is by default
-        set to "digital". In circuit to device compilation digital IO's get assigned
+        As digital channels technically do not have a clock, this parameter is by default
+        set to "digital". In circuit to device compilation digital channels get assigned
         the digital clock.
     """
 
@@ -401,7 +432,7 @@ class MarkerPulse(Operation):
         duration: float,
         port: str,
         t0: float = 0,
-        clock: str = "digital",
+        clock: str = ChannelMode.DIGITAL,
     ):
         super().__init__(name=self.__class__.__name__)
         self.data["pulse_info"] = [

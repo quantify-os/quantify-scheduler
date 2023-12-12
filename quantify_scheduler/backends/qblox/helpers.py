@@ -7,7 +7,7 @@ import re
 import warnings
 from collections import defaultdict
 from copy import deepcopy
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -16,6 +16,7 @@ from quantify_core.utilities.general import without
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends.graph_compilation import CompilationConfig
 from quantify_scheduler.backends.qblox import constants
+from quantify_scheduler.backends.qblox.enums import ChannelMode
 from quantify_scheduler.backends.types.qblox import (
     ComplexChannelDescription,
     ComplexInputGain,
@@ -894,14 +895,14 @@ def generate_hardware_config(schedule: Schedule, compilation_config: Compilation
         If no external local oscillator is found in the generated Qblox hardware configuration.
     """
 
-    def _recursive_digital_io_search(nested_dict, max_depth=3):
+    def _recursive_digital_channel_search(nested_dict, max_depth=3):
         if max_depth == 0:
             return
         for k in nested_dict:
-            if k.startswith("digital"):
-                nested_dict[k]["portclock_configs"][0]["clock"] = "digital"
+            if k.startswith(ChannelMode.DIGITAL):
+                nested_dict[k]["portclock_configs"][0]["clock"] = ChannelMode.DIGITAL
             elif isinstance(nested_dict[k], Dict):
-                _recursive_digital_io_search(nested_dict[k], max_depth - 1)
+                _recursive_digital_channel_search(nested_dict[k], max_depth - 1)
 
     def _propagate_channel_description_settings(
         config: dict,
@@ -918,7 +919,7 @@ def generate_hardware_config(schedule: Schedule, compilation_config: Compilation
             "real_input_0",
             "real_input_1",
         ]:
-            if (io_description := getattr(description, key, None)) is None:
+            if (channel_description := getattr(description, key, None)) is None:
                 # No channel description to set
                 continue
             if key not in config:
@@ -928,10 +929,12 @@ def generate_hardware_config(schedule: Schedule, compilation_config: Compilation
 
             config[key][
                 "marker_debug_mode_enable"
-            ] = io_description.marker_debug_mode_enable
-            if "complex" in key:
-                config[key]["mix_lo"] = io_description.mix_lo
-                config[key]["downconverter_freq"] = io_description.downconverter_freq
+            ] = channel_description.marker_debug_mode_enable
+            if ChannelMode.COMPLEX in key:
+                config[key]["mix_lo"] = channel_description.mix_lo
+                config[key][
+                    "downconverter_freq"
+                ] = channel_description.downconverter_freq
 
     hardware_description = (
         compilation_config.hardware_compilation_config.hardware_description
@@ -946,7 +949,7 @@ def generate_hardware_config(schedule: Schedule, compilation_config: Compilation
                 " because the networkx Graph object could not be parsed correctly."
             )
         # The connectivity contains the full old-style hardware config
-        _recursive_digital_io_search(connectivity)
+        _recursive_digital_channel_search(connectivity)
         return connectivity
 
     hardware_config = {
@@ -968,8 +971,8 @@ def generate_hardware_config(schedule: Schedule, compilation_config: Compilation
                 break
 
         for connected_node in connected_nodes:
-            io_path = connected_node.split(sep=".")
-            instrument = io_path[0]
+            channel_path = connected_node.split(sep=".")
+            instrument = channel_path[0]
 
             lo_name = None
             if hardware_description[instrument].instrument_type == "IQMixer":
@@ -978,28 +981,30 @@ def generate_hardware_config(schedule: Schedule, compilation_config: Compilation
                     sep="."
                 )[0]
                 # Find which instrument is connected to if port
-                io_path = list(connectivity_graph[instrument + ".if"])[0].split(sep=".")
+                channel_path = list(connectivity_graph[instrument + ".if"])[0].split(
+                    sep="."
+                )
 
-            if hardware_description[io_path[0]].instrument_type == "Cluster":
-                # Format the io_path to match the hardware config:
+            if hardware_description[channel_path[0]].instrument_type == "Cluster":
+                # Format the channel_path to match the hardware config:
                 # e.g., ["cluster0", "cluster0_module1", "complex_output_0"]
-                io_path[1] = f"{io_path[0]}_{io_path[1]}"
+                channel_path[1] = f"{channel_path[0]}_{channel_path[1]}"
 
-            # Set port-clock combination in io config:
+            # Set port-clock combination in channel config:
             instr_config: dict = hardware_config
-            for key in io_path[:-1]:
+            for key in channel_path[:-1]:
                 if key not in instr_config:
                     instr_config[key] = {}
                 instr_config = instr_config[key]
 
-            instrument_io = io_path[-1]
-            if instrument_io not in instr_config:
-                instr_config[instrument_io] = {"portclock_configs": []}
-            instr_config[instrument_io]["portclock_configs"].append(
+            instrument_channel = channel_path[-1]
+            if instrument_channel not in instr_config:
+                instr_config[instrument_channel] = {"portclock_configs": []}
+            instr_config[instrument_channel]["portclock_configs"].append(
                 {"port": port, "clock": clock}
             )
             if lo_name is not None:
-                instr_config[instrument_io]["lo_name"] = lo_name
+                instr_config[instrument_channel]["lo_name"] = lo_name
 
     # Add info from hardware description to hardware config:
     for instr_name, instr_description in hardware_description.items():
@@ -1029,7 +1034,7 @@ def generate_hardware_config(schedule: Schedule, compilation_config: Compilation
             except AttributeError:
                 pass
 
-        # Propagate I/O channel description settings for Pulsars
+        # Propagate channel description settings for Pulsars
         _propagate_channel_description_settings(
             config=instr_config, description=instr_description
         )
@@ -1051,7 +1056,7 @@ def generate_hardware_config(schedule: Schedule, compilation_config: Compilation
                     except AttributeError:
                         pass
 
-                # Propagate I/O channel description settings for Cluster modules
+                # Propagate channel description settings for Cluster modules
                 _propagate_channel_description_settings(
                     config=module_config, description=module_description
                 )
@@ -1092,18 +1097,18 @@ def generate_hardware_config(schedule: Schedule, compilation_config: Compilation
             # Set the interm_freq in the portclock config:
             pc_config["interm_freq"] = pc_mod_freqs.interm_freq
 
-            # Extract instrument config and I/O channel config dicts:
+            # Extract instrument config and channel config dicts:
             instr_config = hardware_config
             # Exclude ["complex_output/input_X", "portclock_configs", i]:
             for key in pc_path[:-3]:
                 instr_config = instr_config[key]
-            io_config = instr_config[pc_path[-3]]
+            channel_config = instr_config[pc_path[-3]]
 
-            # If RF module, set the lo frequency in the I/O config:
+            # If RF module, set the lo frequency in the channel config:
             if "RF" in instr_config["instrument_type"]:
-                io_config["lo_freq"] = pc_mod_freqs.lo_freq
+                channel_config["lo_freq"] = pc_mod_freqs.lo_freq
             # Else, set the lo frequency in the external lo config:
-            elif (lo_name := io_config.get("lo_name")) is not None:
+            elif (lo_name := channel_config.get("lo_name")) is not None:
                 if (lo_config := hardware_config.get(lo_name)) is None:
                     raise RuntimeError(
                         f"External local oscillator '{lo_name}' set to "
@@ -1124,18 +1129,18 @@ def generate_hardware_config(schedule: Schedule, compilation_config: Compilation
             pc_path = find_port_clock_path(
                 hardware_config=hardware_config, port=port, clock=clock
             )
-            # Extract the I/O channel config dict:
-            io_config = hardware_config
+            # Extract the channel config dict:
+            channel_config = hardware_config
             # Exclude ["portclock_configs", i]:
             for key in pc_path[:-2]:
-                io_config = io_config[key]
-            pc_config = io_config["portclock_configs"][pc_path[-1]]
+                channel_config = channel_config[key]
+            pc_config = channel_config["portclock_configs"][pc_path[-1]]
 
             for config, hw_config_key, hw_compilation_config_value in [
                 (pc_config, "mixer_amp_ratio", pc_mix_corr.amp_ratio),
                 (pc_config, "mixer_phase_error_deg", pc_mix_corr.phase_error),
-                (io_config, "dc_mixer_offset_I", pc_mix_corr.dc_offset_i),
-                (io_config, "dc_mixer_offset_Q", pc_mix_corr.dc_offset_q),
+                (channel_config, "dc_mixer_offset_I", pc_mix_corr.dc_offset_i),
+                (channel_config, "dc_mixer_offset_Q", pc_mix_corr.dc_offset_q),
             ]:
                 config[hw_config_key] = hw_compilation_config_value
 
@@ -1151,28 +1156,31 @@ def generate_hardware_config(schedule: Schedule, compilation_config: Compilation
             pc_path = find_port_clock_path(
                 hardware_config=hardware_config, port=port, clock=clock
             )
-            # Extract I/O channel config:
-            io_config = hardware_config
+            # Extract channel config:
+            channel_config = hardware_config
             # Exclude ["portclock_configs", i]:
             for key in pc_path[:-2]:
-                io_config = io_config[key]
-            io_name = pc_path[-3]
+                channel_config = channel_config[key]
+            channel_name = pc_path[-3]
 
-            if not (io_name.startswith("complex") or io_name.startswith("real")):
+            if not (
+                channel_name.startswith(ChannelMode.COMPLEX)
+                or channel_name.startswith(ChannelMode.REAL)
+            ):
                 raise KeyError(
-                    f"The name of i/o channel {pc_path[:-2]} used for {port=} and {clock=} must start "
+                    f"The name of channel {pc_path[:-2]} used for {port=} and {clock=} must start "
                     f"with either 'real' or 'complex'."
                 )
 
-            # Set the input_gain in the I/O channel config:
+            # Set the input_gain in the channel config:
             if isinstance(pc_input_gain, ComplexInputGain):
-                io_config["input_gain_I"] = pc_input_gain.gain_I
-                io_config["input_gain_Q"] = pc_input_gain.gain_Q
+                channel_config["input_gain_I"] = pc_input_gain.gain_I
+                channel_config["input_gain_Q"] = pc_input_gain.gain_Q
             elif isinstance(pc_input_gain, RealInputGain):
-                if io_name == "real_output_0":
-                    io_config["input_gain_0"] = pc_input_gain.gain
-                elif io_name == "real_output_1":
-                    io_config["input_gain_1"] = pc_input_gain.gain
+                if channel_name == "real_output_0":
+                    channel_config["input_gain_0"] = pc_input_gain.gain
+                elif channel_name == "real_output_1":
+                    channel_config["input_gain_1"] = pc_input_gain.gain
 
     output_att = hardware_options.output_att
     if output_att is not None:
@@ -1186,14 +1194,14 @@ def generate_hardware_config(schedule: Schedule, compilation_config: Compilation
             pc_path = find_port_clock_path(
                 hardware_config=hardware_config, port=port, clock=clock
             )
-            # Extract I/O channel config:
-            io_config = hardware_config
+            # Extract channel config:
+            channel_config = hardware_config
             # Exclude ["portclock_configs", i]:
             for key in pc_path[:-2]:
-                io_config = io_config[key]
+                channel_config = channel_config[key]
 
-            # Set the output_att in the I/O channel config:
-            io_config["output_att"] = pc_output_att
+            # Set the output_att in the channel config:
+            channel_config["output_att"] = pc_output_att
 
     input_att = hardware_options.input_att
     if input_att is not None:
@@ -1207,14 +1215,14 @@ def generate_hardware_config(schedule: Schedule, compilation_config: Compilation
             pc_path = find_port_clock_path(
                 hardware_config=hardware_config, port=port, clock=clock
             )
-            # Extract I/O channel config:
-            io_config = hardware_config
+            # Extract channel config:
+            channel_config = hardware_config
             # Exclude ["portclock_configs", i]:
             for key in pc_path[:-2]:
-                io_config = io_config[key]
+                channel_config = channel_config[key]
 
-            # Set the input_att in the I/O channel config:
-            io_config["input_att"] = pc_input_att
+            # Set the input_att in the channel channel config:
+            channel_config["input_att"] = pc_input_att
 
     sequencer_options = hardware_options.sequencer_options
     if sequencer_options is not None:
@@ -1237,23 +1245,71 @@ def generate_hardware_config(schedule: Schedule, compilation_config: Compilation
 
             pc_config["ttl_acq_threshold"] = pc_sequencer_options.ttl_acq_threshold
             pc_config[
-                "init_offset_awg_path_0"
-            ] = pc_sequencer_options.init_offset_awg_path_0
+                "init_offset_awg_path_I"
+            ] = pc_sequencer_options.init_offset_awg_path_I
             pc_config[
-                "init_offset_awg_path_1"
-            ] = pc_sequencer_options.init_offset_awg_path_1
+                "init_offset_awg_path_Q"
+            ] = pc_sequencer_options.init_offset_awg_path_Q
             pc_config[
-                "init_gain_awg_path_0"
-            ] = pc_sequencer_options.init_gain_awg_path_0
+                "init_gain_awg_path_I"
+            ] = pc_sequencer_options.init_gain_awg_path_I
             pc_config[
-                "init_gain_awg_path_1"
-            ] = pc_sequencer_options.init_gain_awg_path_1
+                "init_gain_awg_path_Q"
+            ] = pc_sequencer_options.init_gain_awg_path_Q
             pc_config["qasm_hook_func"] = pc_sequencer_options.qasm_hook_func
 
-    # Add digital clock to digital IO's, so that users don't have to specify it.
-    _recursive_digital_io_search(hardware_config)
+    # Add digital clock to digital channels, so that users don't have to specify it.
+    _recursive_digital_channel_search(hardware_config)
 
     return hardware_config
+
+
+def _preprocess_legacy_hardware_config(
+    hardware_config: Dict[str, Any]
+) -> Dict[str, Any]:
+    """Modify a legacy hardware config into a form that is compatible with the current backend."""
+
+    def _modify_inner_dicts(
+        config: Dict[str, Any], target_key: str, value_modifier: Callable
+    ) -> Dict[str, Any]:
+        for key, value in config.items():
+            if key == target_key:
+                config[key] = value_modifier(value)
+            elif isinstance(config[key], dict):
+                config[key] = _modify_inner_dicts(
+                    config=value, target_key=target_key, value_modifier=value_modifier
+                )
+
+        return config
+
+    def _replace_deprecated_portclock_keys(
+        portclock_configs: List[Dict],
+    ) -> List[Dict]:
+        for portclock_config in portclock_configs:
+            for deprecated_key, updated_key in {
+                "init_offset_awg_path_0": "init_offset_awg_path_I",
+                "init_offset_awg_path_1": "init_offset_awg_path_Q",
+                "init_gain_awg_path_0": "init_gain_awg_path_I",
+                "init_gain_awg_path_1": "init_gain_awg_path_Q",
+            }.items():
+                if deprecated_key in portclock_config:
+                    warnings.warn(
+                        f"'{deprecated_key}' is deprecated and will be removed from the public "
+                        f"interface in quantify-scheduler >= 0.20.0. Please use "
+                        f"'{updated_key}' instead.",
+                        FutureWarning,
+                    )
+                    portclock_config[updated_key] = portclock_config[deprecated_key]
+                    del portclock_config[deprecated_key]
+
+        return portclock_configs
+
+    # Preprocessed config is a deepcopy of original config
+    return _modify_inner_dicts(
+        config=deepcopy(hardware_config),
+        target_key="portclock_configs",
+        value_modifier=_replace_deprecated_portclock_keys,
+    )
 
 
 def _generate_new_style_hardware_compilation_config(
@@ -1544,8 +1600,8 @@ def _generate_new_style_hardware_compilation_config(
                     new_style_config=new_style_config,
                 )
 
-    # Avoid modifying the original config
-    old_style_config = deepcopy(old_style_config)
+    # Update deprecated keys and avoid modifying the original config
+    old_style_config = _preprocess_legacy_hardware_config(old_style_config)
 
     # Initialize new-style hardware compilation config dictionary
     new_style_config = {

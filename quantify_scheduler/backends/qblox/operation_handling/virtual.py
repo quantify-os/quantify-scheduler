@@ -170,23 +170,23 @@ class AwgOffsetStrategy(IdleStrategy):
         qasm_program : QASMProgram
             The QASMProgram to add the assembly instructions to.
         """
-        path0_amp = qasm_program.expand_awg_from_normalised_range(
-            val=self.operation_info.data["offset_path_0"],
+        path_I_amp = qasm_program.expand_awg_from_normalised_range(
+            val=self.operation_info.data["offset_path_I"],
             immediate_size=constants.IMMEDIATE_SZ_OFFSET,
-            param="offset_awg_path_0",
+            param="offset_awg_path_I",
             operation=self.operation_info,
         )
-        path1_amp = qasm_program.expand_awg_from_normalised_range(
-            val=self.operation_info.data["offset_path_1"],
+        path_Q_amp = qasm_program.expand_awg_from_normalised_range(
+            val=self.operation_info.data["offset_path_Q"],
             immediate_size=constants.IMMEDIATE_SZ_OFFSET,
-            param="offset_awg_path_1",
+            param="offset_awg_path_Q",
             operation=self.operation_info,
         )
 
         qasm_program.emit(
             q1asm_instructions.SET_AWG_OFFSET,
-            path0_amp,
-            path1_amp,
+            path_I_amp,
+            path_Q_amp,
         )
 
 

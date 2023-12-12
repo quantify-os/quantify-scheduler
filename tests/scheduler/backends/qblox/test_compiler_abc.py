@@ -57,8 +57,8 @@ def offset_instruction(
         name="VoltageOffset",
         data={
             "wf_func": None,
-            "offset_path_0": 0.5,
-            "offset_path_1": 0.0,
+            "offset_path_I": 0.5,
+            "offset_path_Q": 0.0,
             "port": port,
             "clock": clock,
             "duration": duration,

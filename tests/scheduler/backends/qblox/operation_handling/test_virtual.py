@@ -151,8 +151,8 @@ class TestAwgOffsetStrategy:
         # arrange
         op_info = {
             "wf_func": None,
-            "offset_path_0": 0.4,
-            "offset_path_1": 0,
+            "offset_path_I": 0.4,
+            "offset_path_Q": 0,
         }
         expected_qasm = [["", "set_awg_offs", "13107,0", ""]]
 

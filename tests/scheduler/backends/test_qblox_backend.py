@@ -39,7 +39,6 @@ from quantify_scheduler.backends.qblox import (
     register_manager,
 )
 from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
-from quantify_scheduler.backends.qblox.enums import IoMode
 from quantify_scheduler.backends.qblox.helpers import (
     assign_pulse_and_acq_info_to_devices,
     convert_hw_config_to_portclock_configs_spec,
@@ -683,7 +682,7 @@ def test_construct_sequencers_repeated_portclocks_error(
         (["q0"], "real_output_0"),
     ],
 )
-def test_construct_sequencers_exceeds_seq__invalid_io(
+def test_construct_sequencers_exceeds_seq__invalid_channel_name(
     mock_setup_basic_transmon_elements,
     make_basic_multi_qubit_schedule,
     element_names,
@@ -725,7 +724,7 @@ def test_construct_sequencers_exceeds_seq__invalid_io(
 
     name = "cluster0_module1"
     module_type = QcmRfModule
-    valid_ios = module_type.static_hw_properties.valid_ios
+    valid_channels = module_type.static_hw_properties.valid_channels
 
     assert (
         str(error.value.args[0])
@@ -734,7 +733,7 @@ def test_construct_sequencers_exceeds_seq__invalid_io(
         or str(error.value.args[0])
         == f"Invalid hardware config: '{io}' of {name} ({module_type.__name__}) is not a "
         f"valid name of an input/output."
-        f"\n\nSupported names for {module_type.__name__}:\n{valid_ios}"
+        f"\n\nSupported names for {module_type.__name__}:\n{valid_channels}"
     )
 
 
@@ -768,7 +767,7 @@ def test_portclocks(
 
 
 @pytest.mark.parametrize(
-    "module, io_name_to_connected_io_indices",
+    "module, channel_name_to_connected_io_indices",
     [
         (
             QcmModule,
@@ -820,32 +819,13 @@ def test_portclocks(
         ),
     ],
 )
-def test_validate_io_name_to_connected_io_indices(
-    module, io_name_to_connected_io_indices
+def test_validate_channel_name_to_connected_io_indices(
+    module, channel_name_to_connected_io_indices
 ):
     assert (
-        module.static_hw_properties.io_name_to_connected_io_indices
-        == io_name_to_connected_io_indices
+        module.static_hw_properties.channel_name_to_connected_io_indices
+        == channel_name_to_connected_io_indices
     )
-
-
-@pytest.mark.parametrize(
-    "io_name, io_mode",
-    [
-        ("complex_output_0", IoMode.COMPLEX),
-        ("real_output_0", IoMode.REAL),
-        ("real_output_1", IoMode.IMAG),
-        ("digital_output_0", IoMode.DIGITAL),
-    ],
-)
-def test_io_mode(io_name, io_mode):
-    test_module = QcmModule(
-        parent=None,
-        name="tester",
-        total_play_time=1,
-        instrument_cfg={},
-    )
-    assert io_mode == test_module.static_hw_properties._get_io_mode(io_name)
 
 
 def test_compile_simple(
@@ -3196,11 +3176,11 @@ def test_apply_mixer_corrections(
     ]
 
     assert (
-        qrm_compiled_instructions["settings"]["offset_ch0_path0"]
+        qrm_compiled_instructions["settings"]["offset_ch0_path_I"]
         == expected_settings.dc_offset_i
     )
     assert (
-        qrm_compiled_instructions["settings"]["offset_ch0_path1"]
+        qrm_compiled_instructions["settings"]["offset_ch0_path_Q"]
         == expected_settings.dc_offset_q
     )
 
@@ -3234,10 +3214,10 @@ def test_compile_sequencer_options(
     hardware_compilation_config["hardware_options"]["sequencer_options"] = {
         "q4:res-q4.ro": {
             "ttl_acq_threshold": 0.2,
-            "init_offset_awg_path_0": 0.1,
-            "init_offset_awg_path_1": -0.1,
-            "init_gain_awg_path_0": 0.55,
-            "init_gain_awg_path_1": 0.66,
+            "init_offset_awg_path_I": 0.1,
+            "init_offset_awg_path_Q": -0.1,
+            "init_gain_awg_path_I": 0.55,
+            "init_gain_awg_path_Q": 0.66,
         }
     }
 
@@ -3252,10 +3232,10 @@ def test_compile_sequencer_options(
     ]["sequencers"]["seq0"]
 
     assert sequencer_instructions["ttl_acq_threshold"] == 0.2
-    assert sequencer_instructions["init_offset_awg_path_0"] == 0.1
-    assert sequencer_instructions["init_offset_awg_path_1"] == -0.1
-    assert sequencer_instructions["init_gain_awg_path_0"] == 0.55
-    assert sequencer_instructions["init_gain_awg_path_1"] == 0.66
+    assert sequencer_instructions["init_offset_awg_path_I"] == 0.1
+    assert sequencer_instructions["init_offset_awg_path_Q"] == -0.1
+    assert sequencer_instructions["init_gain_awg_path_I"] == 0.55
+    assert sequencer_instructions["init_gain_awg_path_Q"] == 0.66
 
 
 def test_stitched_pulse_compilation_smoke_test(mock_setup_basic_nv_qblox_hardware):
@@ -3300,8 +3280,8 @@ def test_stitched_pulse_compilation_upd_param_at_end(
 
     only_offsets_pulse = (
         StitchedPulseBuilder(port=port, clock=clock)
-        .add_voltage_offset(path_0=0.5, path_1=0.0)
-        .add_voltage_offset(path_0=0.0, path_1=0.0, rel_time=1e-5)
+        .add_voltage_offset(path_I=0.5, path_Q=0.0)
+        .add_voltage_offset(path_I=0.0, path_Q=0.0, rel_time=1e-5)
         .build()
     )
     sched.add(only_offsets_pulse)

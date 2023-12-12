@@ -222,7 +222,7 @@ def hardware_compile(
         )
     elif config is not None:
         # Support for (deprecated) calling with hardware_cfg as positional argument.
-        hardware_cfg = config
+        hardware_cfg = helpers._preprocess_legacy_hardware_config(config)
 
     # To be removed when hardware config validation is implemented. See
     # https://gitlab.com/groups/quantify-os/-/epics/1

@@ -4,10 +4,9 @@
 from enum import Enum
 
 
-class IoMode(str, Enum):
-    """Enum for the IO mode of the Sequencer."""
+class ChannelMode(str, Enum):
+    """Enum for the channel mode of the Sequencer."""
 
     COMPLEX = "complex"
     REAL = "real"
-    IMAG = "imag"
     DIGITAL = "digital"

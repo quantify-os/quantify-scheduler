@@ -33,12 +33,12 @@ from quantify_core.data.handling import gen_tuid, get_datadir
 from quantify_scheduler.backends.qblox import (
     constants,
     driver_version_check,
-    enums,
     helpers,
     instrument_compilers,
     q1asm_instructions,
     register_manager,
 )
+from quantify_scheduler.backends.qblox.enums import ChannelMode
 from quantify_scheduler.backends.qblox.operation_handling.acquisitions import (
     AcquisitionStrategyPartial,
 )
@@ -307,8 +307,8 @@ class Sequencer:
     portclock
         Tuple that specifies the unique port and clock combination for this
         sequencer. The first value is the port, second is the clock.
-    io_name
-        Specifies the io identifier of the hardware config (e.g. ``complex_output_0``).
+    channel_name
+        Specifies the channel identifier of the hardware config (e.g. ``complex_output_0``).
     sequencer_cfg
         Sequencer settings dictionary.
     latency_corrections
@@ -337,7 +337,7 @@ class Sequencer:
         index: int,
         portclock: Tuple[str, str],
         static_hw_properties: StaticHardwareProperties,
-        io_name: str,
+        channel_name: str,
         sequencer_cfg: Dict[str, Any],
         latency_corrections: Dict[str, float],
         lo_name: Optional[str] = None,
@@ -363,18 +363,19 @@ class Sequencer:
 
         self._settings = SequencerSettings.initialize_from_config_dict(
             sequencer_cfg=sequencer_cfg,
-            io_name=io_name,
+            channel_name=channel_name,
             connected_output_indices=self.static_hw_properties._get_connected_output_indices(
-                io_name
+                channel_name
             ),
             connected_input_indices=self.static_hw_properties._get_connected_input_indices(
-                io_name
+                channel_name
             ),
-            io_mode=self.static_hw_properties._get_io_mode(io_name),
         )
 
-        self._default_marker = self.static_hw_properties.io_name_to_digital_marker.get(
-            io_name, self.static_hw_properties.default_marker
+        self._default_marker = (
+            self.static_hw_properties.channel_name_to_digital_marker.get(
+                channel_name, self.static_hw_properties.default_marker
+            )
         )
 
         self.qasm_hook_func: Optional[Callable] = sequencer_cfg.get(
@@ -397,7 +398,7 @@ class Sequencer:
         output 'n+1'.
 
         For RF modules, output indices '0' and '1' (or: '2' and '3') correspond to
-        'path0' and 'path1' of some sequencer, and both these paths are routed to the
+        'path_I' and 'path_Q' of some sequencer, and both these paths are routed to the
         **same** physical module output '1' (or: '2').
         """
         return self._settings.connected_output_indices
@@ -411,21 +412,10 @@ class Sequencer:
         For the baseband modules, input index 'n' corresponds to physical module input
         'n+1'.
 
-        For RF modules, input indices '0' and '1' correspond to 'path0' and 'path1' of
+        For RF modules, input indices '0' and '1' correspond to 'path_I' and 'path_Q' of
         some sequencer, and both paths are connected to physical module input '1'.
         """
         return self._settings.connected_input_indices
-
-    @property
-    def io_mode(self) -> enums.IoMode:
-        """
-        Return :class:`.enums.IoMode` used by this sequencer.
-
-        If :attr:`.enums.IoMode.REAL` or :attr:`.enums.IoMode.IMAG`, the sequencer is restricted to only using real-valued data.
-        If :attr:`.enums.IoMode.COMPLEX`, the sequencer may also use complex data.
-        If :attr:`.enums.IoMode.DIGITAL`, the sequencer is restricted to only producing :class:`~.quantify_scheduler.operations.pulse_library.MarkerPulse` s.
-        """
-        return self._settings.io_mode
 
     @property
     def portclock(self) -> Tuple[str, str]:
@@ -1273,16 +1263,16 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         """Returns all the port-clock combinations that this device can target."""
         portclocks = []
 
-        for io_name in self.static_hw_properties.valid_ios:
-            if io_name not in self.instrument_cfg:
+        for channel_name in self.static_hw_properties.valid_channels:
+            if channel_name not in self.instrument_cfg:
                 continue
 
-            portclock_configs = self.instrument_cfg[io_name].get(
+            portclock_configs = self.instrument_cfg[channel_name].get(
                 "portclock_configs", []
             )
             if not portclock_configs:
                 raise KeyError(
-                    f"No 'portclock_configs' entry found in '{io_name}' of {self.name}."
+                    f"No 'portclock_configs' entry found in '{channel_name}' of {self.name}."
                 )
 
             portclocks += [
@@ -1326,34 +1316,36 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         """
         # Setup each sequencer.
         sequencers: Dict[str, Sequencer] = {}
-        portclock_io_map: Dict[Tuple, str] = {}
+        portclock_to_channel: Dict[Tuple, str] = {}
 
-        for io_name, io_cfg in sorted(
+        for channel_name, channel_cfg in sorted(
             self.instrument_cfg.items()
         ):  # Sort to ensure deterministic sequencer order
-            if not isinstance(io_cfg, dict):
+            if not isinstance(channel_cfg, dict):
                 continue
-            if io_name not in self.static_hw_properties.valid_ios:
+            if channel_name not in self.static_hw_properties.valid_channels:
                 raise ValueError(
-                    f"Invalid hardware config: '{io_name}' of "
+                    f"Invalid hardware config: '{channel_name}' of "
                     f"{self.name} ({self.__class__.__name__}) "
                     f"is not a valid name of an input/output."
                     f"\n\nSupported names for {self.__class__.__name__}:\n"
-                    f"{self.static_hw_properties.valid_ios}"
+                    f"{self.static_hw_properties.valid_channels}"
                 )
 
-            lo_name = io_cfg.get("lo_name", None)
-            downconverter_freq = io_cfg.get("downconverter_freq", None)
-            mix_lo = io_cfg.get("mix_lo", True)
-            marker_debug_mode_enable = io_cfg.get("marker_debug_mode_enable", False)
+            lo_name = channel_cfg.get("lo_name", None)
+            downconverter_freq = channel_cfg.get("downconverter_freq", None)
+            mix_lo = channel_cfg.get("mix_lo", True)
+            marker_debug_mode_enable = channel_cfg.get(
+                "marker_debug_mode_enable", False
+            )
 
-            portclock_configs: List[Dict[str, Any]] = io_cfg.get(
+            portclock_configs: List[Dict[str, Any]] = channel_cfg.get(
                 "portclock_configs", []
             )
 
             if not portclock_configs:
                 raise KeyError(
-                    f"No 'portclock_configs' entry found in '{io_name}' of {self.name}."
+                    f"No 'portclock_configs' entry found in '{channel_name}' of {self.name}."
                 )
 
             for target in portclock_configs:
@@ -1365,7 +1357,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                         index=len(sequencers),
                         portclock=portclock,
                         static_hw_properties=self.static_hw_properties,
-                        io_name=io_name,
+                        channel_name=channel_name,
                         sequencer_cfg=target,
                         latency_corrections=self.latency_corrections,
                         lo_name=lo_name,
@@ -1376,17 +1368,17 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                     sequencers[new_seq.name] = new_seq
 
                     # Check if the portclock was not multiply specified, which is not allowed
-                    if portclock in portclock_io_map:
+                    if portclock in portclock_to_channel:
                         raise ValueError(
                             f"Portclock {portclock} was assigned to multiple "
                             f"portclock_configs of {self.name}. This portclock was "
-                            f"used in io '{io_name}' despite being already previously "
-                            f"used in io '{portclock_io_map[portclock]}'. When using "
+                            f"used in channel '{channel_name}' despite being already previously "
+                            f"used in channel '{portclock_to_channel[portclock]}'. When using "
                             f"the same portclock for output and input, assigning only "
                             f"the output suffices."
                         )
 
-                    portclock_io_map[portclock] = io_name
+                    portclock_to_channel[portclock] = channel_name
 
         # Check if more portclock_configs than sequencers are active
         if len(sequencers) > self.static_hw_properties.max_sequencers:
@@ -1439,7 +1431,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
                     op_info_to_op_strategy_func = partial(
                         get_operation_strategy,
-                        io_mode=seq.io_mode,
+                        channel_name=seq._settings.channel_name,
                     )
                     strategies_for_pulses = map(
                         op_info_to_op_strategy_func,
@@ -1449,7 +1441,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                         seq.pulses = []
 
                     for pulse_strategy in strategies_for_pulses:
-                        if seq.io_mode == enums.IoMode.DIGITAL:
+                        if ChannelMode.DIGITAL in seq._settings.channel_name:
                             # Digital mode always has one output.
                             pulse_strategy.operation_info.data[
                                 "output"
@@ -1462,7 +1454,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 if seq.portclock == portclock:
                     op_info_to_op_strategy_func = partial(
                         get_operation_strategy,
-                        io_mode=seq.io_mode,
+                        channel_name=seq._settings.channel_name,
                     )
                     strategies_for_acquisitions = map(
                         op_info_to_op_strategy_func,
@@ -1564,25 +1556,25 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
     def _configure_input_gains(self):
         """
         Configures input gain of module settings.
-        Loops through all valid ios and checks for gain values in hw config.
+        Loops through all valid channel names and checks for gain values in hw config.
         Throws a ValueError if a gain value gets modified.
         """
         in0_gain, in1_gain = None, None
-        for io_name in self.static_hw_properties.valid_ios:
-            io_mapping = self.instrument_cfg.get(io_name, None)
-            if io_mapping is None:
+        for channel_name in self.static_hw_properties.valid_channels:
+            channel_mapping = self.instrument_cfg.get(channel_name, None)
+            if channel_mapping is None:
                 continue
 
-            if io_name.startswith("complex"):
-                in0_gain = io_mapping.get("input_gain_I", None)
-                in1_gain = io_mapping.get("input_gain_Q", None)
+            if channel_name.startswith(ChannelMode.COMPLEX):
+                in0_gain = channel_mapping.get("input_gain_I", None)
+                in1_gain = channel_mapping.get("input_gain_Q", None)
 
-            elif io_name.startswith("real"):
+            elif channel_name.startswith(ChannelMode.REAL):
                 # The next code block is for backwards compatibility.
-                in_gain = io_mapping.get("input_gain", None)
+                in_gain = channel_mapping.get("input_gain", None)
                 if in_gain is None:
-                    in0_gain = io_mapping.get("input_gain_0", None)
-                    in1_gain = io_mapping.get("input_gain_1", None)
+                    in0_gain = channel_mapping.get("input_gain_0", None)
+                    in1_gain = channel_mapping.get("input_gain_1", None)
                 else:
                     in0_gain = in_gain
                     in1_gain = in_gain
@@ -1595,7 +1587,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                     self._settings.in0_gain = in0_gain
                 else:
                     raise ValueError(
-                        f"Overwriting gain of {io_name} of module {self.name} "
+                        f"Overwriting gain of {channel_name} of module {self.name} "
                         f"to in0_gain: {in0_gain}.\nIt was previously set to "
                         f"in0_gain: {self._settings.in0_gain}."
                     )
@@ -1608,7 +1600,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                     self._settings.in1_gain = in1_gain
                 else:
                     raise ValueError(
-                        f"Overwriting gain of {io_name} of module {self.name} "
+                        f"Overwriting gain of {channel_name} of module {self.name} "
                         f"to in1_gain: {in1_gain}.\nIt was previously set to "
                         f"in1_gain: {self._settings.in1_gain}."
                     )
@@ -1626,17 +1618,17 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             output_cfg = self.instrument_cfg[output_label]
             voltage_range = self.static_hw_properties.mixer_dc_offset_range
             if output_idx == 0:
-                self._settings.offset_ch0_path0 = helpers.calc_from_units_volt(
+                self._settings.offset_ch0_path_I = helpers.calc_from_units_volt(
                     voltage_range, self.name, "dc_mixer_offset_I", output_cfg
                 )
-                self._settings.offset_ch0_path1 = helpers.calc_from_units_volt(
+                self._settings.offset_ch0_path_Q = helpers.calc_from_units_volt(
                     voltage_range, self.name, "dc_mixer_offset_Q", output_cfg
                 )
             else:
-                self._settings.offset_ch1_path0 = helpers.calc_from_units_volt(
+                self._settings.offset_ch1_path_I = helpers.calc_from_units_volt(
                     voltage_range, self.name, "dc_mixer_offset_I", output_cfg
                 )
-                self._settings.offset_ch1_path1 = helpers.calc_from_units_volt(
+                self._settings.offset_ch1_path_Q = helpers.calc_from_units_volt(
                     voltage_range, self.name, "dc_mixer_offset_Q", output_cfg
                 )
 

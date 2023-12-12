@@ -3,6 +3,7 @@
 """Module containing definitions related to stitched pulses."""
 from __future__ import annotations
 
+import warnings
 import math
 from copy import deepcopy
 from dataclasses import dataclass
@@ -136,7 +137,7 @@ def convert_to_numerical_pulse(
 
     # First set all offsets
     for pulse_info in sorted(operation["pulse_info"], key=lambda inf: inf["t0"]):
-        if "offset_path_0" not in pulse_info or "offset_path_1" not in pulse_info:
+        if "offset_path_I" not in pulse_info or "offset_path_Q" not in pulse_info:
             continue
 
         t0 = round(pulse_info["t0"], 9)
@@ -151,7 +152,7 @@ def convert_to_numerical_pulse(
             t1 = round(pulse_info["t0"] + pulse_info["duration"], 9)
             time_idx = np.where((timestamps >= t0) & (timestamps < t1))
         waveform[time_idx] = (
-            pulse_info["offset_path_0"] + 1j * pulse_info["offset_path_1"]
+            pulse_info["offset_path_I"] + 1j * pulse_info["offset_path_Q"]
         )
 
     # Then add the pulses
@@ -185,8 +186,8 @@ def convert_to_numerical_pulse(
 
 @dataclass
 class _VoltageOffsetInfo:
-    path_0: float
-    path_1: float
+    path_I: float
+    path_Q: float
     t0: float
     duration: float | None = None
     reference_magnitude: ReferenceMagnitude | None = None
@@ -322,25 +323,26 @@ class StitchedPulseBuilder:
         self._pulses.append(pulse)
         return self
 
-    def add_voltage_offset(
+    def add_voltage_offset(  # noqa: D417
         self,
-        path_0: float,
-        path_1: float,
+        path_I: float = math.nan,
+        path_Q: float = math.nan,
         duration: float | None = None,
         rel_time: float = 0.0,
         append: bool = True,
         min_duration: float = qblox_constants.GRID_TIME * 1e-9,
         reference_magnitude: ReferenceMagnitude | None = None,
+        **kwargs,
     ) -> StitchedPulseBuilder:
         """
         Add a DC voltage offset to the StitchedPulse.
 
         Parameters
         ----------
-        path_0 : float
-            The offset on path 0 of the sequencer.
-        path_1 : float
-            The offset on path 1 of the sequencer.
+        path_I : float
+            The offset on path_I of the sequencer.
+        path_Q : float
+            The offset on path_Q of the sequencer.
         duration : float or None, optional
             Specifies how long to maintain the offset. If set to None, the offset
             voltage offset will hold until the end of the StitchedPulse. By default None.
@@ -370,6 +372,30 @@ class StitchedPulseBuilder:
         RuntimeError
             If the offset overlaps in time with a previously added offset.
         """
+        if "path_0" in kwargs:
+            warnings.warn(
+                "'path_0' is deprecated and will be removed from the public interface "
+                "in quantify-scheduler  >= 0.20.0. Please use 'path_I' instead.",
+                FutureWarning,
+            )
+            path_I = kwargs["path_0"]
+        elif path_I is math.nan:
+            raise TypeError(
+                "'offset_path_I' argument needed for calling `add_voltage_offset`."
+            )
+
+        if "path_1" in kwargs:
+            warnings.warn(
+                "'path_1' is deprecated and will be removed from the public interface "
+                "in quantify-scheduler  >= 0.20.0. Please use 'path_Q' instead.",
+                FutureWarning,
+            )
+            path_Q = kwargs["path_1"]
+        elif path_Q is math.nan:
+            raise TypeError(
+                "'offset_path_Q' argument needed for calling `add_voltage_offset`."
+            )
+
         if append:
             rel_time += self.operation_end
 
@@ -379,8 +405,8 @@ class StitchedPulseBuilder:
             )
 
         offset = _VoltageOffsetInfo(
-            path_0=path_0,
-            path_1=path_1,
+            path_I=path_I,
+            path_Q=path_Q,
             t0=rel_time,
             duration=duration,
             reference_magnitude=reference_magnitude,
@@ -459,8 +485,8 @@ class StitchedPulseBuilder:
 
         def create_operation_from_info(info: _VoltageOffsetInfo) -> VoltageOffset:
             return VoltageOffset(
-                offset_path_0=info.path_0,
-                offset_path_1=info.path_1,
+                offset_path_I=info.path_I,
+                offset_path_Q=info.path_Q,
                 duration=info.duration or 0.0,
                 port=self._port,
                 clock=self._clock,
@@ -481,8 +507,8 @@ class StitchedPulseBuilder:
                 # If no duration was specified, this offset should hold until the end of
                 # the StitchedPulse.
                 background = (
-                    offset_info.path_0,
-                    offset_info.path_1,
+                    offset_info.path_I,
+                    offset_info.path_Q,
                 )
                 continue
 
