@@ -1690,6 +1690,16 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                     break
                 if other_op.is_real_time_io_operation:
                     return True
+                if other_op.is_return_stack:
+                    raise RuntimeError(
+                        f"VoltageOffset operation {op} with start time {op.timing} "
+                        "cannot be scheduled at the same time as the end of a "
+                        f"control-flow block {other_op}, which ends at "
+                        f"{other_op.timing}. The control-flow block can be extended "
+                        "by adding an IdlePulse operation with a duration of at least "
+                        f"{constants.GRID_TIME} ns, or the VoltageOffset can be "
+                        "replaced by another operation."
+                    )
             return False
 
         # Check all other operations behind the operation with op_index
@@ -1715,12 +1725,18 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         # inserted
         upd_param_infos: Set[Tuple[str, str, float]] = set()
         for op_index, op in enumerate(pulses_and_acqs):
-            if op.is_offset_instruction and not (
-                # Due to the repetition loop, do not insert at the end of the schedule
-                helpers.is_within_half_grid_time(self.total_play_time, op.timing)
-                or self._any_other_updating_instruction_at_timing(
-                    op_index=op_index, sorted_pulses_and_acqs=pulses_and_acqs
+            if not op.is_offset_instruction:
+                continue
+            if helpers.is_within_half_grid_time(self.total_play_time, op.timing):
+                raise RuntimeError(
+                    f"VoltageOffset operation {op} with start time {op.timing} cannot "
+                    "be scheduled at the very end of a Schedule. The Schedule can be "
+                    "extended by adding an IdlePulse operation with a duration of at "
+                    f"least {constants.GRID_TIME} ns, or the VoltageOffset can be "
+                    "replaced by another operation."
                 )
+            if not self._any_other_updating_instruction_at_timing(
+                op_index=op_index, sorted_pulses_and_acqs=pulses_and_acqs
             ):
                 upd_param_infos.add(
                     (op.data["port"], op.data["clock"], round(op.timing, ndigits=9))

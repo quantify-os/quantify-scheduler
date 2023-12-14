@@ -47,4 +47,5 @@ recent
 How to use
 Cluster
 Cluster (HardwareCompilationConfig)
+Voltage offsets and long waveforms
 ```

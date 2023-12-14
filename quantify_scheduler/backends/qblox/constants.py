@@ -39,7 +39,7 @@ SAMPLING_RATE = 1_000_000_000  # 1GS/s
 STITCHED_PULSE_PART_DURATION_NS = 2000
 """Default duration of the individual waveforms that are used to build up a longer
 stitched waveform. See
-:func:`~quantify_scheduler.operations.pulse_factories.long_ramp_pulse` for an
+:func:`~quantify_scheduler.backends.qblox.operations.pulse_factories.long_ramp_pulse` for an
 example."""
 PULSE_STITCHING_DURATION = 1e-6
 """Duration of the individual pulses when pulse stitching is used."""

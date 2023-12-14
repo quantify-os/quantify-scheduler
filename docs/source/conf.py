@@ -72,7 +72,7 @@ autoapi_template_dir = "_templates"
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "qcodes": ("https://qcodes.github.io/Qcodes/", None),
-    "xarray": ("https://xarray.pydata.org/en/stable/", None),
+    "xarray": ("https://docs.xarray.dev/en/stable/", None),
     "networkx": ("https://networkx.org/documentation/stable/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
     "pandas": ("https://pandas.pydata.org/pandas-docs/dev/", None),
@@ -85,7 +85,7 @@ intersphinx_mapping = {
         "https://quantify-os.org/docs/quantify-core/dev/",
         None,
     ),
-    "scipy": ("https://docs.scipy.org/doc/scipy/reference/", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy/", None),
     "qblox-instruments": (
         "https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/",
         None,
@@ -454,6 +454,11 @@ nitpick_ignore = [
     ("py:class", "quantify_scheduler.Resource"),
     ("py:obj", "quantify_scheduler.structure.DataStructure"),
     ("py:obj", "quantify_scheduler.backends.SerialCompiler"),
+    ("py:obj", "quantify_scheduler.backends.qblox.operations.StitchedPulseBuilder"),
+    ("py:obj", "quantify_scheduler.backends.qblox.operations.VoltageOffset"),
+    ("py:obj", "quantify_scheduler.backends.qblox.operations.long_ramp_pulse"),
+    ("py:obj", "quantify_scheduler.backends.qblox.operations.long_square_pulse"),
+    ("py:obj", "quantify_scheduler.backends.qblox.operations.staircase_pulse"),
     ("py:obj", "quantify_scheduler.schedules.heterodyne_spec_sched"),
     ("py:obj", "quantify_scheduler.schedules.heterodyne_spec_sched_nco"),
     ("py:obj", "quantify_scheduler.schedules.nv_dark_esr_sched"),
@@ -510,3 +515,23 @@ with open("nitpick-exceptions.txt", encoding="utf-8") as nitpick_exceptions:
         dtype, target = line.split(None, 1)
         target = target.strip()
         nitpick_ignore.append((dtype, target))
+
+
+def maybe_skip_member(app, what, name, obj, skip, options):
+    """Prevent creating conflicting reference targets for sphinx."""
+    deprecated_objs = [
+        "quantify_scheduler.operations.stitched_pulse.StitchedPulse",
+        "quantify_scheduler.operations.stitched_pulse.convert_to_numerical_pulse",
+        "quantify_scheduler.operations.stitched_pulse.StitchedPulseBuilder",
+        "quantify_scheduler.operations.pulse_factories.long_ramp_pulse",
+        "quantify_scheduler.operations.pulse_factories.long_square_pulse",
+        "quantify_scheduler.operations.pulse_factories.staircase_pulse",
+        "quantify_scheduler.operations.pulse_library.VoltageOffset",
+    ]
+    if str(name) in deprecated_objs:
+        return True
+    return skip
+
+
+def setup(app):
+    app.connect("autoapi-skip-member", maybe_skip_member)

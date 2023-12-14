@@ -438,7 +438,7 @@ pprint.pprint(device_config_basic_transmon)
 Instead of using the ``instruction_generated_pulses_enabled: True`` field in the port-clock configuration for generating long square and staircase pulses, you can now create long square, staircase and ramp waveforms (that would otherwise not fit in memory), by creating these operations with the following helper functions.
 
 ```{code-cell} ipython3
-from quantify_scheduler.operations.pulse_factories import (
+from quantify_scheduler.backends.qblox.operations import (
     long_ramp_pulse,
     long_square_pulse,
     staircase_pulse,
@@ -451,4 +451,4 @@ staircase_pulse = staircase_pulse(
 )
 ```
 
-More complex long waveforms can now also be created, see section {ref}`Long waveform support <sec-qblox-cluster-long-waveform-support>`.
+More complex long waveforms can now also be created, see section {ref}`Long waveform support <sec-long-waveforms-via-stitchedpulse>`.

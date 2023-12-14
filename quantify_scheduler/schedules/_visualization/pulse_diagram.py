@@ -21,7 +21,9 @@ import quantify_scheduler.operations.pulse_library as pl
 from quantify_scheduler.helpers.importers import import_python_object_from_string
 from quantify_scheduler.helpers.waveforms import modulate_waveform
 from quantify_scheduler.operations.acquisition_library import AcquisitionOperation
-from quantify_scheduler.operations.stitched_pulse import convert_to_numerical_pulse
+from quantify_scheduler.backends.qblox.operations.stitched_pulse import (
+    convert_to_numerical_pulse,
+)
 
 if TYPE_CHECKING:
     from quantify_scheduler import CompiledSchedule, Operation, Schedule

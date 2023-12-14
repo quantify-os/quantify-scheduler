@@ -3,10 +3,10 @@ import pytest
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends import SerialCompiler
+from quantify_scheduler.backends.qblox.operations import long_square_pulse
 from quantify_scheduler.operations.acquisition_library import TriggerCount
 from quantify_scheduler.operations.gate_library import Measure, Reset
 from quantify_scheduler.operations.nv_native_library import ChargeReset, CRCount
-from quantify_scheduler.operations.pulse_factories import long_square_pulse
 from quantify_scheduler.operations.shared_native_library import SpectroscopyOperation
 from quantify_scheduler.schedules.schedule import CompiledSchedule
 

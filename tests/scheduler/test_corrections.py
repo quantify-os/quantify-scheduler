@@ -15,8 +15,14 @@ from quantify_scheduler.backends.corrections import (
     distortion_correct_pulse,
 )
 from quantify_scheduler.backends.qblox import constants as qblox_constants
-from quantify_scheduler.operations.stitched_pulse import StitchedPulseBuilder
-from quantify_scheduler.operations.pulse_library import NumericalPulse, SquarePulse
+from quantify_scheduler.backends.qblox.operations.stitched_pulse import (
+    StitchedPulseBuilder,
+)
+from quantify_scheduler.operations.pulse_library import (
+    NumericalPulse,
+    SquarePulse,
+    IdlePulse,
+)
 from quantify_scheduler.operations.gate_library import X
 from quantify_scheduler.schedules.schedule import Schedule
 
@@ -283,6 +289,7 @@ def test_apply_distortion_corrections_stitched_pulse_warns(
 
     sched = Schedule("Test schedule")
     sched.add(stitched_pulse)
+    sched.add(IdlePulse(4e-9))
 
     quantum_device = mock_setup_basic_transmon["quantum_device"]
 

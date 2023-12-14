@@ -4,17 +4,28 @@ from functools import partial
 import numpy as np
 import pytest
 
-from quantify_scheduler.operations.pulse_factories import (
+from quantify_scheduler.backends.qblox.operations import (
     long_ramp_pulse,
     long_square_pulse,
+    staircase_pulse,
+    VoltageOffset,
+)
+from quantify_scheduler.operations.pulse_factories import (
+    long_ramp_pulse as old_long_ramp_pulse,
+)
+from quantify_scheduler.operations.pulse_factories import (
+    long_square_pulse as old_long_square_pulse,
+)
+from quantify_scheduler.operations.pulse_factories import (
     rxy_drag_pulse,
     rxy_gauss_pulse,
-    staircase_pulse,
+)
+from quantify_scheduler.operations.pulse_factories import (
+    staircase_pulse as old_staircase_pulse,
 )
 from quantify_scheduler.operations.pulse_library import (
     ReferenceMagnitude,
     SquarePulse,
-    VoltageOffset,
 )
 
 
@@ -144,14 +155,14 @@ def test_staircase():
         clock="q0.ro",
     )
     amps = np.linspace(0.1, 0.9, 20)
+    t0s = np.linspace(0, 0.95e-3, 20)
     assert pulse["pulse_info"][0]["amp"] == 0.9
     assert pulse["pulse_info"][0]["duration"] == 4e-9
     assert pulse["pulse_info"][0]["t0"] == pytest.approx(1e-3 - 4e-9)
-    for amp, pulse_inf in zip(amps, pulse["pulse_info"][1:-2]):
+    for amp, t0, pulse_inf in zip(amps, t0s, pulse["pulse_info"][1:-2]):
         assert pulse_inf["offset_path_I"] == pytest.approx(amp)
-        assert pulse_inf["duration"] == pytest.approx(5e-5)
+        assert pulse_inf["t0"] == pytest.approx(t0)
     assert pulse["pulse_info"][-2]["offset_path_I"] == 0.9
-    assert pulse["pulse_info"][-2]["duration"] == pytest.approx(5e-5 - 4e-9)
     assert pulse["pulse_info"][-1]["offset_path_I"] == 0.0
 
 
@@ -220,3 +231,23 @@ def test_voltage_offset_operations_reference_magnitude(pulse):
     pulse = pulse(reference_magnitude=reference_magnitude)
 
     assert pulse["pulse_info"][0]["reference_magnitude"] == reference_magnitude
+
+
+def test_deprecated_functions_warn():
+    with pytest.warns(
+        FutureWarning,
+        match="0.20.0",
+    ):
+        old_long_ramp_pulse(amp=0.5, duration=100e-9, port="port")
+    with pytest.warns(
+        FutureWarning,
+        match="0.20.0",
+    ):
+        old_long_square_pulse(amp=0.5, duration=100e-9, port="port")
+    with pytest.warns(
+        FutureWarning,
+        match="0.20.0",
+    ):
+        old_staircase_pulse(
+            start_amp=0.0, final_amp=1.0, num_steps=20, duration=2e-6, port="port"
+        )

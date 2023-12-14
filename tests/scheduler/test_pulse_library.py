@@ -10,9 +10,12 @@ import pytest
 
 from quantify_scheduler import Operation, Schedule
 from quantify_scheduler.backends import SerialCompiler
+from quantify_scheduler.backends.qblox.operations import VoltageOffset
+from quantify_scheduler.backends.qblox.operations.pulse_factories import (
+    long_square_pulse,
+)
 from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEncoder
 from quantify_scheduler.operations.gate_library import X90, X
-from quantify_scheduler.operations.pulse_factories import long_square_pulse
 from quantify_scheduler.operations.pulse_library import (
     ChirpPulse,
     DRAGPulse,
@@ -28,7 +31,6 @@ from quantify_scheduler.operations.pulse_library import (
     SquarePulse,
     StaircasePulse,
     SuddenNetZeroPulse,
-    VoltageOffset,
     create_dc_compensation_pulse,
     decompose_long_square_pulse,
 )
@@ -242,7 +244,6 @@ def test_decompose_long_square_pulse() -> None:
             VoltageOffset(
                 offset_path_I=0.5,
                 offset_path_Q=0.1,
-                duration=duration,
                 port=port,
                 clock=clock,
             ),
@@ -269,7 +270,10 @@ class TestPulseLevelOperation:
 
     def test_duration(self, operation: Operation) -> None:
         pulse_info = operation.data["pulse_info"][0]
-        if operation.__class__ is ResetClockPhase:
+        if (
+            operation.__class__ is ResetClockPhase
+            or operation.__class__ is VoltageOffset
+        ):
             assert operation.duration == 0, operation
         elif operation.__class__ in [SetClockFrequency, ShiftClockPhase]:
             assert operation.duration == 8e-9, operation
@@ -311,6 +315,25 @@ class TestPulseLevelOperation:
 
         # Assert
         assert obj != operation
+
+
+def test_deprecated_path_args_voltage_offset():
+    with pytest.warns(FutureWarning, match="0.20.0"):
+        VoltageOffset(  # pylint: disable=no-value-for-parameter
+            offset_path_0=0.5,
+            offset_path_1=0.1,
+            port="port",
+            clock="clock",
+        )
+    with pytest.raises(TypeError, match="0.20.0"):
+        VoltageOffset(
+            offset_path_0=0.5,
+            offset_path_1=0.1,
+            offset_path_I=0.5,
+            offset_path_Q=0.1,
+            port="port",
+            clock="clock",
+        )
 
 
 def test_complex_square_pulse(mock_setup_basic_transmon_with_standard_params):

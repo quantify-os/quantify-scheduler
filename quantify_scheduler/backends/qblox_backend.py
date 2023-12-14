@@ -18,6 +18,8 @@ from quantify_scheduler.backends.graph_compilation import (
     SimpleNodeConfig,
 )
 from quantify_scheduler.backends.qblox import compiler_container, constants, helpers
+from quantify_scheduler.backends.qblox.operations import long_square_pulse
+from quantify_scheduler.backends.qblox.operations.stitched_pulse import StitchedPulse
 from quantify_scheduler.backends.types.common import (
     HardwareCompilationConfig,
     HardwareDescription,
@@ -28,8 +30,6 @@ from quantify_scheduler.backends.types.qblox import (
     QbloxHardwareOptions,
 )
 from quantify_scheduler.helpers.collections import find_inner_dicts_containing_key
-from quantify_scheduler.operations.pulse_factories import long_square_pulse
-from quantify_scheduler.operations.stitched_pulse import StitchedPulse
 
 
 def _get_square_pulses_to_replace(schedule: Schedule) -> Dict[str, List[int]]:
@@ -89,7 +89,7 @@ def _replace_long_square_pulses(
         The schedule with square pulses longer than
         :class:`~quantify_scheduler.backends.qblox.constants.PULSE_STITCHING_DURATION`
         replaced by
-        :func:`~quantify_scheduler.operations.pulse_factories.long_square_pulse`. If no
+        :func:`~quantify_scheduler.backends.qblox.operations.pulse_factories.long_square_pulse`. If no
         replacements were done, this is the original unmodified schedule.
     """
     for ref, square_pulse_idx_to_replace in pulse_idx_map.items():
@@ -128,7 +128,7 @@ def compile_long_square_pulses_to_awg_offsets(schedule: Schedule, **_: Any) -> S
     longer than
     :class:`~quantify_scheduler.backends.qblox.constants.PULSE_STITCHING_DURATION`. Any
     of these square pulses are converted to
-    :func:`~quantify_scheduler.operations.pulse_factories.long_square_pulse`, which
+    :func:`~quantify_scheduler.backends.qblox.operations.pulse_factories.long_square_pulse`, which
     consist of AWG voltage offsets.
 
     If any operations are to be replaced, a deepcopy will be made of the schedule, which
@@ -147,7 +147,7 @@ def compile_long_square_pulses_to_awg_offsets(schedule: Schedule, **_: Any) -> S
         The schedule with square pulses longer than
         :class:`~quantify_scheduler.backends.qblox.constants.PULSE_STITCHING_DURATION`
         replaced by
-        :func:`~quantify_scheduler.operations.pulse_factories.long_square_pulse`. If no
+        :func:`~quantify_scheduler.backends.qblox.operations.pulse_factories.long_square_pulse`. If no
         replacements were done, this is the original unmodified schedule.
     """
     pulse_idx_map = _get_square_pulses_to_replace(schedule)

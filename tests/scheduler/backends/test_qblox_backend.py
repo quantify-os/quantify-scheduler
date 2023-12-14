@@ -76,7 +76,7 @@ from quantify_scheduler.operations.acquisition_library import (
 from quantify_scheduler.operations.control_flow_library import Loop
 from quantify_scheduler.operations.gate_library import X90, Measure, Reset, X, Y
 from quantify_scheduler.operations.operation import Operation
-from quantify_scheduler.operations.pulse_factories import (
+from quantify_scheduler.backends.qblox.operations import (
     long_square_pulse,
     long_ramp_pulse,
     staircase_pulse,
@@ -92,7 +92,9 @@ from quantify_scheduler.operations.pulse_library import (
     SoftSquarePulse,
     SquarePulse,
 )
-from quantify_scheduler.operations.stitched_pulse import StitchedPulseBuilder
+from quantify_scheduler.backends.qblox.operations.stitched_pulse import (
+    StitchedPulseBuilder,
+)
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.schedules.timedomain_schedules import (
     allxy_sched,

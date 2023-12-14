@@ -17,6 +17,14 @@
 - Qblox ICCs - Fix to allow running `ScheduleGettable` with option `always_initialize=False`. (!868)
   - Arming the sequencers is now done via `InstrumentCoordinator.start()` instead of `InstrumentCoordinator.prepare()`.
 - Pulses - The phase argument for `SquarePulse` has been removed. (!867)
+- Operations - Modify the parameters of the `VoltageOffset` operation (please also note below that this operation is moved). (!863)
+  - Deprecate the `duration` parameter. The duration of a `VoltageOffset` is always 0.
+  - Make the `port` parameter non-optional, and the `clock` parameter by default `BasebandClockResource.IDENTITY`.
+  - N.B., this changes the order of the arguments. The correct signature is now `VoltageOffset(offset_path_0, offset_path_1, port, clock=BasebandClockResource.IDENTITY, t0=0, reference_magnitude=None)`. Using the `duration` parameter reults in a `FutureWarning`.
+- Operations - Move `VoltageOffset`, `StitchedPulse` and related classes and functions to the Qblox backend. (!863)
+  - Move `VoltageOffset` from `quantify_scheduler.operations.pulse_library` to `quantify_scheduler.backends.qblox.operations.pulse_library`.
+  - Move `quantify_scheduler.operations.stitched_pulse` to `quantify_scheduler.backends.qblox.operations.stitched_pulse`.
+  - Move `staircase_pulse`, `long_square_pulse` and `long_ramp_pulse` from `quantify_scheduler.operations.pulse_factories` to `quantify_scheduler.backends.qblox.operations.pulse_factories`.
 
 ### Merged branches and closed issues
 
