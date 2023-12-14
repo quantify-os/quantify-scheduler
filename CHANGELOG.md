@@ -60,6 +60,7 @@
 - Qblox backend - Remove "imag" sequencer mode from qblox backend, rename `io_name` to `channel_name` and `path0`/`path1` to `path_I`/`path_Q`. (!870)
 - Subscheduling - Fix missing resources in nested schedule. (!877)
 - Acquisition - Add `acq_channel` argument to `Measure` operation and make `acq_channel` device element accept hashable types. (!869)
+- Documentation - Add colored terminal output when building documentation. (!883)
 
 ## 0.17.1 (2023-11-02)
 
