@@ -14,6 +14,7 @@ from typing import Union
 
 import pytest
 
+from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.qblox import helpers
 from quantify_scheduler.backends.qblox.instrument_compilers import (
     QrmModule,
@@ -28,6 +29,7 @@ from quantify_scheduler.backends.types.qblox import (
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.helpers.collections import find_all_port_clock_combinations
+from quantify_scheduler.operations.gate_library import Measure
 from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.schedules.schedule import Schedule
 
@@ -247,43 +249,65 @@ def test_generate_hardware_config(hardware_compilation_config_qblox_example):
     assert generated_hw_config == qblox_hardware_config_old_style
 
 
-def test_preprocess_legacy_hardware_config():
+def test_preprocess_legacy_hardware_config(
+    mock_setup_basic_transmon_with_standard_params,
+):
     hardware_config = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "cluster0": {
-            "instrument_type": "Cluster",
             "ref": "internal",
-            "cluster0_module1": {
-                "instrument_type": "QCM_RF",
+            "instrument_type": "Cluster",
+            "cluster0_module3": {
+                "instrument_type": "QRM",
                 "complex_output_0": {
+                    "lo_name": "lo",
                     "portclock_configs": [
                         {
-                            "port": "q2:mw",
-                            "clock": "q2.01",
+                            "port": "q0:res",
+                            "clock": "q0.ro",
                             "init_offset_awg_path_0": 0.1,
                             "init_offset_awg_path_1": -0.1,
                             "init_gain_awg_path_0": 0.55,
                             "init_gain_awg_path_1": 0.66,
-                        }
+                        },
+                        {
+                            "port": "q1:res",
+                            "clock": "q1.ro",
+                        },
                     ],
                 },
             },
         },
+        "lo": {
+            "instrument_type": "LocalOscillator",
+            "frequency": 7.2e9,
+            "power": 1,
+        },
     }
 
-    preprocessed_hardware_config = helpers._preprocess_legacy_hardware_config(
-        hardware_config
-    )
-    assert preprocessed_hardware_config["cluster0"]["cluster0_module1"][
-        "complex_output_0"
-    ]["portclock_configs"][0] == {
-        "port": "q2:mw",
-        "clock": "q2.01",
-        "init_offset_awg_path_I": 0.1,
-        "init_offset_awg_path_Q": -0.1,
-        "init_gain_awg_path_I": 0.55,
-        "init_gain_awg_path_Q": 0.66,
-    }
+    mock_setup = mock_setup_basic_transmon_with_standard_params
+
+    quantum_device = mock_setup["quantum_device"]
+    quantum_device.hardware_config(hardware_config)
+
+    schedule = Schedule("Thresholded acquisition")
+    schedule.add(Measure("q0", "q1", acq_protocol="ThresholdedAcquisition"))
+
+    compiler = SerialCompiler("compiler", quantum_device=quantum_device)
+    compiled_schedule = compiler.compile(schedule)
+
+    for key in [
+        "init_offset_awg_path_I",
+        "init_offset_awg_path_Q",
+        "init_gain_awg_path_I",
+        "init_gain_awg_path_Q",
+    ]:
+        assert (
+            key
+            in compiled_schedule.compiled_instructions["cluster0"]["cluster0_module3"][
+                "sequencers"
+            ]["seq0"]
+        )
 
 
 def test_configure_input_gains_overwrite_gain():

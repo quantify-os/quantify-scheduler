@@ -19,6 +19,9 @@ from quantify_scheduler.backends.graph_compilation import (
     SerialCompilationConfig,
     SimpleNodeConfig,
 )
+from quantify_scheduler.backends.qblox.helpers import (
+    _preprocess_legacy_hardware_config,
+)
 from quantify_scheduler.backends.types.common import HardwareCompilationConfig
 from quantify_scheduler.compilation import (
     _determine_absolute_timing,
@@ -389,6 +392,8 @@ class QuantumDevice(Instrument):
                 hardware_config["backend"]
                 == "quantify_scheduler.backends.qblox_backend.hardware_compile"
             ):
+                hardware_config = _preprocess_legacy_hardware_config(hardware_config)
+
                 compilation_passes = [
                     SimpleNodeConfig(
                         name="compile_long_square_pulses_to_awg_offsets",

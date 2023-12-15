@@ -61,6 +61,7 @@
 - Subscheduling - Fix missing resources in nested schedule. (!877)
 - Acquisition - Add `acq_channel` argument to `Measure` operation and make `acq_channel` device element accept hashable types. (!869)
 - Documentation - Add colored terminal output when building documentation. (!883)
+- Qblox backend - Add _preprocess_legacy_hardware_config to QuantumDevice.generate_hardware_compilation_config. (!885)
 
 ## 0.17.1 (2023-11-02)
 
