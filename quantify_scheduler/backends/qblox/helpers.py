@@ -11,7 +11,6 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 
-from quantify_core.utilities import deprecated
 from quantify_core.utilities.general import without
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends.graph_compilation import CompilationConfig
@@ -698,71 +697,6 @@ def assign_pulse_and_acq_info_to_devices(
             device_compilers[device_name].add_acquisition(
                 port=port, clock=clock, acq_info=combined_data
             )
-
-
-@deprecated(
-    "0.17.0",
-    "`convert_hw_config_to_portclock_configs_spec` will be removed in a future "
-    "version.",
-)
-def convert_hw_config_to_portclock_configs_spec(
-    hw_config: Dict[str, Any],
-) -> Dict[str, Any]:
-    """
-    Converts possibly old hardware configs to the new format introduced by
-    the new dynamic sequencer allocation feature.
-
-    Manual assignment between sequencers and port-clock combinations under each output
-    is removed, and instead only a list of port-clock configurations is specified,
-    under the new ``"portclock_configs"`` key.
-
-    Furthermore, we scan for ``"latency_correction"`` defined at sequencer or
-    portclock_configs level and store under ``"port:clock"`` under toplevel
-    ``"latency_corrections"`` key.
-
-    Parameters
-    ----------
-    hw_config
-        The hardware config to be upgraded to the new specification.
-
-    Returns
-    -------
-    :
-        A hardware config compatible with the specification required by the new
-        dynamic sequencer allocation feature.
-
-    """
-
-    def _update_hw_config(nested_dict, max_depth=4):
-        if max_depth == 0:
-            return
-        # List is needed because the dictionary keys are changed during recursion
-        for key, value in list(nested_dict.items()):
-            if isinstance(key, str) and re.match(r"^seq\d+$", key):
-                nested_dict["portclock_configs"] = nested_dict.get(
-                    "portclock_configs", []
-                )
-                # Move latency_corrections to parent level of hw_config
-                if "latency_correction" in value.keys():
-                    hw_config["latency_corrections"] = hw_config.get(
-                        "latency_corrections", {}
-                    )
-                    latency_correction_key = f"{value['port']}-{value['clock']}"
-                    hw_config["latency_corrections"][latency_correction_key] = value[
-                        "latency_correction"
-                    ]
-                    del value["latency_correction"]
-
-                nested_dict["portclock_configs"].append(value)
-                del nested_dict[key]
-
-            elif isinstance(value, dict):
-                _update_hw_config(value, max_depth - 1)
-
-    hw_config = deepcopy(hw_config)
-    _update_hw_config(hw_config)
-
-    return hw_config
 
 
 def calc_from_units_volt(

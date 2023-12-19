@@ -7,9 +7,7 @@
 
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-import json
 import os
-import zipfile
 from unittest import TestCase
 from unittest.mock import Mock
 
@@ -19,7 +17,6 @@ from qcodes.instrument.parameter import ManualParameter
 from xarray import DataArray, Dataset
 
 from quantify_scheduler.backends import SerialCompiler
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.gettables_profiled import ProfiledScheduleGettable
@@ -29,7 +26,6 @@ from quantify_scheduler.helpers.schedule import (
 from quantify_scheduler.schedules.schedule import (
     AcquisitionChannelMetadata,
     AcquisitionMetadata,
-    Schedule,
 )
 from quantify_scheduler.schedules.spectroscopy_schedules import (
     heterodyne_spec_sched,
@@ -39,7 +35,6 @@ from quantify_scheduler.schedules.timedomain_schedules import (
     allxy_sched,
     rabi_sched,
     readout_calibration_sched,
-    t1_sched,
 )
 from quantify_scheduler.schedules.trace_schedules import trace_schedule
 
@@ -74,10 +69,7 @@ def test_process_acquired_data(
     )
 
     # act
-    with pytest.warns(FutureWarning, match=".* in quantify-scheduler-0.17."):
-        processed_data = gettable.process_acquired_data(
-            mock_dataset, acq_metadata, repetitions=10
-        )
+    processed_data = gettable.process_acquired_data(mock_dataset, acq_metadata)
 
     # assert
     assert len(processed_data) == 2 * num_channels
@@ -367,69 +359,6 @@ def test_schedule_gettable_trace_acquisition(
     np.testing.assert_array_equal(dset.x0, sample_times)
     np.testing.assert_array_equal(dset.y0, exp_trace.real)
     np.testing.assert_array_equal(dset.y1, exp_trace.imag)
-
-
-@pytest.mark.deprecated
-def test_schedule_gettable_generate_diagnostic(
-    mock_setup_basic_transmon_with_standard_params, mocker
-):
-    schedule_kwargs = {"times": np.linspace(1e-6, 50e-6, 50), "qubit": "q0"}
-    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-
-    # Prepare the mock data the t1 schedule
-    acq_channel = 0
-    data = (np.ones(50) * np.exp(1j * np.deg2rad(45))).astype(np.complex64)
-
-    # SSBIntegrationComplex, BinMode.AVERAGE
-    expected_data = Dataset({acq_channel: (["acq_index"], data)})
-
-    mocker.patch.object(
-        mock_setup_basic_transmon_with_standard_params["instrument_coordinator"],
-        "retrieve_acquisition",
-        return_value=expected_data,
-    )
-
-    # Configure the gettable
-    gettable = ScheduleGettable(
-        quantum_device=quantum_device,
-        schedule_function=t1_sched,
-        schedule_kwargs=schedule_kwargs,
-        real_imag=True,
-        batched=True,
-    )
-    assert gettable.is_initialized is False
-
-    with pytest.raises(RuntimeError):
-        gettable.generate_diagnostics_report()
-
-    with pytest.raises(RuntimeError):
-        gettable.generate_diagnostics_report(update=True)
-
-    filename = gettable.generate_diagnostics_report(execute_get=True)
-
-    assert gettable.is_initialized is True
-
-    with zipfile.ZipFile(filename, mode="r") as zf:
-        _ = QuantumDevice.from_json(zf.read("device_cfg.json").decode())
-        _ = json.loads(zf.read("hardware_cfg.json").decode())
-        get_cfg = json.loads(zf.read("gettable.json").decode())
-        sched = Schedule.from_json(zf.read("schedule.json").decode())
-        snap = json.loads(zf.read("snapshot.json").decode())
-
-    assert (
-        snap["instruments"]["q0"]["submodules"]["reset"]["parameters"]["duration"][
-            "value"
-        ]
-        == 0.0002
-    )
-    assert gettable.quantum_device.cfg_sched_repetitions() == get_cfg["repetitions"]
-
-    compiler = SerialCompiler(name="compiler")
-    compiled_sched = compiler.compile(
-        schedule=sched, config=quantum_device.generate_compilation_config()
-    )
-
-    assert gettable._compiled_schedule == compiled_sched
 
 
 def test_profiling(mock_setup_basic_transmon_with_standard_params, tmp_test_data_dir):

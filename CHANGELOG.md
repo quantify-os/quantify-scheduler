@@ -17,6 +17,11 @@
 - Qblox ICCs - Fix to allow running `ScheduleGettable` with option `always_initialize=False`. (!868)
   - Arming the sequencers is now done via `InstrumentCoordinator.start()` instead of `InstrumentCoordinator.prepare()`.
 - Pulses - The phase argument for `SquarePulse` has been removed. (!867)
+- Deprecation - removed deprecated code: (!881)
+  - function `helpers.convert_hw_config_to_portclock_configs_spec`
+  - argument `repetitions` in `ScheduleGettable.process_acquired_data`
+  - method `ScheduleGettable.generate_diagnostics_report`
+  - argument `t` in `NumericalWeightedIntegrationComplex`
 - Operations - Modify the parameters of the `VoltageOffset` operation (please also note below that this operation is moved). (!863)
   - Deprecate the `duration` parameter. The duration of a `VoltageOffset` is always 0.
   - Make the `port` parameter non-optional, and the `clock` parameter by default `BasebandClockResource.IDENTITY`.

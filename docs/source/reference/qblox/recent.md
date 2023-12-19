@@ -71,7 +71,11 @@ This change has introduced a new syntax for the hardware configuration file:
 
 3. We provide a helper function that may be used to convert from old to new syntax:
 
-   - {func}`~quantify_scheduler.backends.qblox.helpers.convert_hw_config_to_portclock_configs_spec`
+    ```{warning}
+    This helper function has been removed in quantify-scheduler 0.18.0.
+    ```
+
+   - `quantify_scheduler.backends.qblox.helpers.convert_hw_config_to_portclock_configs_spec`
    - Temporarily, this method is called by the Qblox backend before compilation.
 
 The old syntax:

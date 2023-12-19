@@ -41,7 +41,6 @@ from quantify_scheduler.backends.qblox import (
 from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
 from quantify_scheduler.backends.qblox.helpers import (
     assign_pulse_and_acq_info_to_devices,
-    convert_hw_config_to_portclock_configs_spec,
     generate_hardware_config,
     generate_port_clock_to_device_map,
     generate_uuid_from_wf_data,
@@ -2852,114 +2851,6 @@ def test_acq_declaration_dict_bin_avg_mode(
     # the only key corresponds to channel 0
     assert set(acquisitions.keys()) == {"0"}
     assert acquisitions["0"] == {"num_bins": 21, "index": 0}
-
-
-@pytest.mark.filterwarnings("ignore::FutureWarning")
-def test_convert_hw_config_to_portclock_configs_spec(
-    make_basic_multi_qubit_schedule,
-    mock_setup_basic_transmon_with_standard_params,
-):
-    old_config = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "qcm0": {
-            "instrument_type": "Pulsar_QCM",
-            "ref": "internal",
-            "complex_output_0": {
-                "lo_name": "lo0",
-                "seq0": {
-                    "port": "q0:mw",
-                    "clock": "q0.01",
-                    "interm_freq": 50e6,
-                    "latency_correction": 8e-9,
-                },
-            },
-            "complex_output_1": {
-                "lo_name": "lo1",
-                "seq1": {"port": "q1:mw", "clock": "q1.01", "interm_freq": 100e6},
-                "seq2": {
-                    "port": "q2:mw",
-                    "clock": "q2.01",
-                    "interm_freq": None,
-                    "latency_correction": 4e-9,
-                },
-            },
-        },
-        "cluster0": {
-            "ref": "internal",
-            "instrument_type": "Cluster",
-            "cluster0_module2": {
-                "instrument_type": "QRM",
-                "complex_output_0": {
-                    "seq0": {
-                        "port": "q1:res",
-                        "clock": "q1.ro",
-                        "interm_freq": 50e6,
-                    },
-                    "seq1": {
-                        "port": "q2:res",
-                        "clock": "q2.01",
-                        "interm_freq": 50e6,
-                        "latency_correction": 4e-9,
-                    },
-                },
-            },
-        },
-        "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 20},
-        "lo1": {"instrument_type": "LocalOscillator", "frequency": None, "power": 20},
-    }
-
-    expected_config = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "latency_corrections": {
-            "q0:mw-q0.01": 8e-9,
-            "q2:mw-q2.01": 4e-9,
-            "q2:res-q2.01": 4e-9,
-        },
-        "qcm0": {
-            "instrument_type": "Pulsar_QCM",
-            "ref": "internal",
-            "complex_output_0": {
-                "lo_name": "lo0",
-                "portclock_configs": [
-                    {"port": "q0:mw", "clock": "q0.01", "interm_freq": 50e6},
-                ],
-            },
-            "complex_output_1": {
-                "lo_name": "lo1",
-                "portclock_configs": [
-                    {"port": "q1:mw", "clock": "q1.01", "interm_freq": 100e6},
-                    {"port": "q2:mw", "clock": "q2.01", "interm_freq": None},
-                ],
-            },
-        },
-        "cluster0": {
-            "ref": "internal",
-            "instrument_type": "Cluster",
-            "cluster0_module2": {
-                "instrument_type": "QRM",
-                "complex_output_0": {
-                    "portclock_configs": [
-                        {
-                            "port": "q1:res",
-                            "clock": "q1.ro",
-                            "interm_freq": 50e6,
-                        },
-                        {
-                            "port": "q2:res",
-                            "clock": "q2.01",
-                            "interm_freq": 50e6,
-                        },
-                    ],
-                },
-            },
-        },
-        "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 20},
-        "lo1": {"instrument_type": "LocalOscillator", "frequency": None, "power": 20},
-    }
-
-    # Test that the conversion works adequately
-    migrated_config = convert_hw_config_to_portclock_configs_spec(old_config)
-    assert migrated_config == expected_config
 
 
 # Setting latency corrections in the hardware config is deprecated

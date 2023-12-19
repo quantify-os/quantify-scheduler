@@ -459,10 +459,6 @@ class NumericalWeightedIntegrationComplex(
         to the Qblox backend sampling rate. Note that during hardware compilation,
         the weights will be resampled with the sampling rate supported by the target
         hardware.
-    t
-        The time values of each weight. This parameter is deprecated in favor of
-        ``weights_sampling_rate``. If a value is provided for ``t``, the
-        ``weights_sampling_rate`` parameter will be ignored.
     interpolation
         The type of interpolation to use, by default "linear". This argument is
         passed to :obj:`~scipy.interpolate.interp1d`.
@@ -493,7 +489,6 @@ class NumericalWeightedIntegrationComplex(
         weights_a: Union[List[complex], np.ndarray],
         weights_b: Union[List[complex], np.ndarray],
         weights_sampling_rate: float = qblox_constants.SAMPLING_RATE,
-        t: Optional[Union[List[float], np.ndarray]] = None,
         interpolation: str = "linear",
         acq_channel: int = 0,
         acq_index: int = 0,
@@ -501,22 +496,7 @@ class NumericalWeightedIntegrationComplex(
         phase: float = 0,
         t0: float = 0,
     ) -> None:
-        if t is not None:
-            warnings.warn(
-                "Support for the 't' argument will be dropped in quantify-scheduler >= "
-                "0.17.0. Please use 'weights_sampling_rate' instead.",
-                FutureWarning,
-            )
-            if not _is_increasing_at_constant_rate(t):
-                raise ValueError(
-                    "The NumericalWeightedIntegrationComplex protocol requires that "
-                    "the 't' argument has a length larger than 1 and increases at a "
-                    "constant rate"
-                )
-            t_samples = np.array(t)
-            weights_sampling_rate = 1 / (t_samples[1] - t_samples[0])
-        else:
-            t_samples = np.arange(len(weights_a)) / weights_sampling_rate
+        t_samples = np.arange(len(weights_a)) / weights_sampling_rate
 
         weights_a = np.array(weights_a)
         weights_b = np.array(weights_b)
@@ -577,38 +557,6 @@ class NumericalWeightedIntegrationComplex(
 
     def __repr__(self) -> str:
         return str(self)
-
-
-def _is_increasing_at_constant_rate(array: Sequence[float]) -> bool:
-    """
-    Checks whether the array is increasing at a constant rate.
-
-    An array with size 2 is assumed to be increasing at a constant rate.
-
-    .. admonition:: Examples
-
-        .. jupyter-execute::
-            :hide-code:
-
-            from quantify_scheduler.operations.acquisition_library import (
-                _is_increasing_at_constant_rate
-            )
-
-        .. jupyter-execute::
-
-            assert _is_increasing_at_constant_rate([1,2,3,4]) is True
-            assert _is_increasing_at_constant_rate([1,2,4]) is False
-            assert _is_increasing_at_constant_rate([4,3,2,1]) is False
-            assert _is_increasing_at_constant_rate([1,1,1]) is False
-            assert _is_increasing_at_constant_rate([2,1]) is False
-            assert _is_increasing_at_constant_rate([1]) is False
-    """
-    if len(array) < 2:
-        return False
-    diff = np.diff(array)
-    is_constant_rate = np.all(np.isclose(diff, diff[0], atol=1e-10))
-    is_increasing = diff[0] > 0
-    return bool(is_constant_rate and is_increasing)
 
 
 class TriggerCount(AcquisitionOperation):  # pylint: disable=too-many-ancestors
