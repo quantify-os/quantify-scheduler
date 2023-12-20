@@ -13,7 +13,6 @@ from qcodes.instrument.parameter import InstrumentRefParameter, ManualParameter
 from qcodes.utils import validators
 
 from quantify_core.data.handling import get_datadir
-from quantify_scheduler.backends.circuit_to_device import _compile_circuit_to_device
 from quantify_scheduler.backends.graph_compilation import (
     DeviceCompilationConfig,
     SerialCompilationConfig,
@@ -23,11 +22,6 @@ from quantify_scheduler.backends.qblox.helpers import (
     _preprocess_legacy_hardware_config,
 )
 from quantify_scheduler.backends.types.common import HardwareCompilationConfig
-from quantify_scheduler.compilation import (
-    _determine_absolute_timing,
-    flatten_schedule,
-    resolve_control_flow,
-)
 from quantify_scheduler.device_under_test.device_element import DeviceElement
 from quantify_scheduler.device_under_test.edge import Edge
 from quantify_scheduler.helpers.importers import import_python_object_from_string
@@ -329,36 +323,11 @@ class QuantumDevice(Instrument):
             edge_cfg = edge.generate_edge_config()
             edges_cfg.update(edge_cfg)
 
-        compilation_passes = [
-            SimpleNodeConfig(
-                name="circuit_to_device",
-                compilation_func=_compile_circuit_to_device,
-            ),
-            SimpleNodeConfig(
-                name="set_pulse_and_acquisition_clock",
-                compilation_func="quantify_scheduler.backends.circuit_to_device."
-                + "set_pulse_and_acquisition_clock",
-            ),
-            SimpleNodeConfig(
-                name="resolve_control_flow",
-                compilation_func=resolve_control_flow,
-            ),
-            SimpleNodeConfig(
-                name="determine_absolute_timing",
-                compilation_func=_determine_absolute_timing,
-            ),
-            SimpleNodeConfig(
-                name="flatten",
-                compilation_func=flatten_schedule,
-            ),
-        ]
-
         device_config = DeviceCompilationConfig(
             elements=elements_cfg,
             clocks=clocks,
             edges=edges_cfg,
             scheduling_strategy=self.scheduling_strategy(),
-            compilation_passes=compilation_passes,
         )
 
         return device_config

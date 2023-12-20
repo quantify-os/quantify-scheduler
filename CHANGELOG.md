@@ -8,6 +8,7 @@
   - The `backend` field in the `HardwareCompilationConfig` was replaced by the `config_type` field, which contains a (string) reference to the backend-specific `HardwareCompilationConfig` datastructure.
   - The `backend` field was removed from the `DeviceCompilationConfig`.
   - The `compilation_passes` field was moved from the `SerialCompilationConfig` into the `DeviceCompilationConfig` and `HardwareCompilationConfig` datastructures.
+    - Move the default device `compilation_passes` from the `QuantumDevice.generate_device_config()` to the `DeviceCompilationConfig` datastructure to ensure backwards compatibility (!884).
   - Migration:
     - `DeviceCompilationConfig`: If you are loading a stored `DeviceCompilationConfig` (instead of relying on the device config generation of the `QuantumDevice`), remove the `"backend"` key.
     - `HardwareCompilatonConfig`: If you are already using the new-style `HardwareCompilatonConfig`, change the `"backend"` key to `"config_type"`.
