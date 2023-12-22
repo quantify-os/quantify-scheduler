@@ -187,6 +187,7 @@ class AwgOffsetStrategy(IdleStrategy):
             q1asm_instructions.SET_AWG_OFFSET,
             path_I_amp,
             path_Q_amp,
+            comment=f"setting offset for {self.operation_info.name}",
         )
 
 

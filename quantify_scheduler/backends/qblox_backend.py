@@ -4,11 +4,12 @@
 from __future__ import annotations
 
 import warnings
-from typing import Any, Dict, List, Optional, Type, Union
+from collections import defaultdict
+from typing import Any, Dict, List, Literal, Optional, Type, Union
 
+import numpy as np
 from pydantic import Field, model_validator
 
-from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends.corrections import (
     apply_distortion_corrections,
     determine_relative_latency_corrections,
@@ -30,9 +31,14 @@ from quantify_scheduler.backends.types.qblox import (
     QbloxHardwareOptions,
 )
 from quantify_scheduler.helpers.collections import find_inner_dicts_containing_key
+from quantify_scheduler.schedules.schedule import (
+    CompiledSchedule,
+    Schedulable,
+    Schedule,
+)
 
 
-def _get_square_pulses_to_replace(schedule: Schedule) -> Dict[str, List[int]]:
+def _get_square_pulses_to_replace(schedule: Schedule) -> dict[str, list[int]]:
     """
     Generate a dict referring to long square pulses to replace in the schedule.
 
@@ -49,12 +55,12 @@ def _get_square_pulses_to_replace(schedule: Schedule) -> Dict[str, List[int]]:
 
     Returns
     -------
-    square_pulse_idx_map : Dict[str, List[int]]
+    square_pulse_idx_map : dict[str, list[int]]
         The mapping from ``operation_id`` to ``"pulse_info"`` indices to be replaced.
     """
-    square_pulse_idx_map: Dict[str, List[int]] = {}
+    square_pulse_idx_map: dict[str, list[int]] = {}
     for ref, operation in schedule.operations.items():
-        square_pulse_idx_to_replace: List[int] = []
+        square_pulse_idx_to_replace: list[int] = []
         for i, pulse_info in enumerate(operation.data["pulse_info"]):
             if (
                 pulse_info.get("wf_func", "") == "quantify_scheduler.waveforms.square"
@@ -67,7 +73,7 @@ def _get_square_pulses_to_replace(schedule: Schedule) -> Dict[str, List[int]]:
 
 
 def _replace_long_square_pulses(
-    schedule: Schedule, pulse_idx_map: Dict[str, List[int]]
+    schedule: Schedule, pulse_idx_map: dict[str, list[int]]
 ) -> Schedule:
     """
     Replace any square pulses indicated by pulse_idx_map by a ``long_square_pulse``.
@@ -77,7 +83,7 @@ def _replace_long_square_pulses(
     schedule : Schedule
         A :class:`~quantify_scheduler.schedules.schedule.Schedule`, possibly containing
         long square pulses.
-    pulse_idx_map : Dict[str, List[int]]
+    pulse_idx_map : dict[str, list[int]]
         A mapping from the keys in the
         :meth:`~quantify_scheduler.schedules.schedule.ScheduleBase.operations` dict to
         a list of indices, which refer to entries in the `"pulse_info"` list that
@@ -116,7 +122,9 @@ def _replace_long_square_pulses(
             # To not break __str__ in some cases, the operation type must be a
             # StitchedPulse.
             if idx == 0 and not (operation.valid_acquisition or operation.valid_gate):
-                schedule.operations[ref] = StitchedPulse(operation.data["pulse_info"])
+                schedule.operations[ref] = StitchedPulse(
+                    name=operation.data["name"], pulse_info=operation.data["pulse_info"]
+                )
     return schedule
 
 
@@ -158,11 +166,11 @@ def compile_long_square_pulses_to_awg_offsets(schedule: Schedule, **_: Any) -> S
 
 def hardware_compile(
     schedule: Schedule,
-    config: CompilationConfig | Dict[str, Any] | None = None,
-    # config can be Dict to support (deprecated) calling with hardware config
+    config: CompilationConfig | dict[str, Any] | None = None,
+    # config can be dict to support (deprecated) calling with hardware config
     # as positional argument.
     *,  # Support for (deprecated) calling with hardware_cfg as keyword argument:
-    hardware_cfg: Optional[Dict[str, Any]] = None,
+    hardware_cfg: Optional[dict[str, Any]] = None,
 ) -> CompiledSchedule:
     """
     Generate qblox hardware instructions for executing the schedule.
@@ -247,6 +255,8 @@ def hardware_compile(
 
     schedule = apply_distortion_corrections(schedule, hardware_cfg)
 
+    validate_non_overlapping_stitched_pulse(schedule)
+
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         schedule, hardware_cfg
     )
@@ -329,3 +339,151 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
             data = helpers._generate_new_style_hardware_compilation_config(data)
 
         return data
+
+
+def validate_non_overlapping_stitched_pulse(schedule: Schedule, **_: Any) -> None:
+    """
+    Raise an error when pulses overlap, if at least one contains a voltage offset.
+
+    Since voltage offsets are sometimes used to construct pulses (see e.g.
+    :func:`.long_square_pulse`), overlapping these with regular pulses in time on the
+    same port-clock can lead to undefined behaviour.
+
+    Note that for each schedulable, all pulse info entries with the same port and clock
+    count as one pulse for that port and clock. This is because schedulables, starting
+    before another schedulable has finished, could affect the waveforms or offsets in
+    the remaining time of that other schedulable.
+
+    Parameters
+    ----------
+    schedule : Schedule
+        A :class:`~quantify_scheduler.schedules.schedule.Schedule`, possibly containing
+        long square pulses.
+
+    Returns
+    -------
+    schedule : Schedule
+        A :class:`~quantify_scheduler.schedules.schedule.Schedule`, possibly containing
+        long square pulses.
+
+    Raises
+    ------
+    RuntimeError
+        If the schedule contains overlapping pulses (containing voltage offsets) on the
+        same port and clock.
+    """
+    schedulables = sorted(schedule.schedulables.values(), key=lambda x: x["abs_time"])
+    # Iterate through the schedulables in chronological order, and keep track of the
+    # latest end time of schedulables containing pulses.
+    # When a schedulable contains a voltage offset, check if it starts before the end of
+    # a previously found pulse, else look ahead for any schedulables with pulses
+    # starting before this schedulable ends.
+    last_pulse_end = -np.inf
+    last_pulse_sched = None
+    for i, schedulable in enumerate(schedulables):
+        if _has_voltage_offset(schedulable, schedule):
+            # Add 1e-10 for possible floating point errors (strictly >).
+            if last_pulse_end > schedulable["abs_time"] + 1e-10:
+                _raise_if_pulses_overlap_on_same_port_clock(
+                    schedulable, last_pulse_sched, schedule  # type: ignore
+                )
+            elif other := _exists_pulse_starting_before_current_end(
+                schedulables, i, schedule
+            ):
+                _raise_if_pulses_overlap_on_same_port_clock(
+                    schedulable, other, schedule
+                )
+        if _has_pulse(schedulable, schedule):
+            last_pulse_end = _operation_end(schedulable, schedule)
+            last_pulse_sched = schedulable
+
+
+def _exists_pulse_starting_before_current_end(
+    sorted_schedulables: list[Schedulable], current_idx: int, schedule: Schedule
+) -> Schedulable | Literal[False]:
+    current_end = _operation_end(sorted_schedulables[current_idx], schedule)
+    for schedulable in sorted_schedulables[current_idx + 1 :]:
+        # Schedulable starting at the exact time a previous one ends does not count as
+        # overlapping. Subtract 1e-10 for possible floating point errors.
+        if schedulable["abs_time"] >= current_end - 1e-10:
+            return False
+        if _has_pulse(schedulable, schedule) or _has_voltage_offset(
+            schedulable, schedule
+        ):
+            return schedulable
+    return False
+
+
+def _raise_if_pulses_overlap_on_same_port_clock(
+    schble_a: Schedulable, schble_b: Schedulable, schedule: Schedule
+):
+    """
+    Raise an error if any pulse operations overlap on the same port-clock.
+
+    A pulse here means a waveform or a voltage offset.
+    """
+    pulse_start_ends_per_port_a = _get_pulse_start_ends(schble_a, schedule)
+    pulse_start_ends_per_port_b = _get_pulse_start_ends(schble_b, schedule)
+    common_ports = set(pulse_start_ends_per_port_a.keys()) & set(
+        pulse_start_ends_per_port_b.keys()
+    )
+    for port_clock in common_ports:
+        start_a, end_a = pulse_start_ends_per_port_a[port_clock]
+        start_b, end_b = pulse_start_ends_per_port_b[port_clock]
+        if (
+            start_b < start_a < end_b
+            or start_b < end_a < end_b
+            or start_a < start_b < end_a
+            or start_a < end_b < end_a
+        ):
+            op_a = schedule.operations[schble_a["operation_id"]]
+            op_b = schedule.operations[schble_b["operation_id"]]
+            raise RuntimeError(
+                f"{op_a} at t={schble_a['abs_time']} and {op_b} at t="
+                f"{schble_b['abs_time']} contain pulses with voltage offsets that "
+                "overlap in time on the same port and clock. This leads to undefined "
+                "behaviour."
+            )
+
+
+def _get_pulse_start_ends(
+    schedulable: Schedulable, schedule: Schedule
+) -> dict[str, tuple[float, float]]:
+    pulse_start_ends_per_port: dict[str, tuple[float, float]] = defaultdict(
+        lambda: (np.inf, -np.inf)
+    )
+    for pulse_info in schedule.operations[schedulable["operation_id"]]["pulse_info"]:
+        if (
+            pulse_info.get("wf_func") is None
+            and pulse_info.get("offset_path_I") is None
+        ):
+            continue
+        prev_start, prev_end = pulse_start_ends_per_port[
+            f"{pulse_info['port']}_{pulse_info['clock']}"
+        ]
+        new_start = schedulable["abs_time"] + pulse_info["t0"]
+        new_end = new_start + pulse_info["duration"]
+        if new_start < prev_start:
+            prev_start = new_start
+        if new_end > prev_end:
+            prev_end = new_end
+        pulse_start_ends_per_port[f"{pulse_info['port']}_{pulse_info['clock']}"] = (
+            prev_start,
+            prev_end,
+        )
+    return pulse_start_ends_per_port
+
+
+def _has_voltage_offset(schedulable: Schedulable, schedule: Schedule) -> bool:
+    return schedule.operations[schedulable["operation_id"]].has_voltage_offset
+
+
+def _has_pulse(schedulable: Schedulable, schedule: Schedule) -> bool:
+    return schedule.operations[schedulable["operation_id"]].valid_pulse
+
+
+def _operation_end(schedulable: Schedulable, schedule: Schedule) -> float:
+    return (
+        schedulable["abs_time"]
+        + schedule.operations[schedulable["operation_id"]].duration
+    )

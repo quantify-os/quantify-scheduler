@@ -3248,39 +3248,39 @@ def test_q1asm_stitched_pulses(mock_setup_basic_nv_qblox_hardware):
     )
 
     assert (
-        """ set_awg_offs 16384,0 
+        """ set_awg_offs 16384,0 # setting offset for long_square_pulse
  upd_param 4 
  wait 3992 # auto generated wait (3992 ns)
- set_awg_offs 0,0 
- set_awg_gain 16384,0 # setting gain for StitchedPulse
- play 0,0,4 # play StitchedPulse (4 ns)
+ set_awg_offs 0,0 # setting offset for long_square_pulse
+ set_awg_gain 16384,0 # setting gain for long_square_pulse
+ play 0,0,4 # play long_square_pulse (4 ns)
  wait 500 # auto generated wait (500 ns)
- set_awg_offs -16384,0 
- set_awg_gain 16376,0 # setting gain for StitchedPulse
- play 1,1,4 # play StitchedPulse (2000 ns)
+ set_awg_offs -16384,0 # setting offset for long_ramp_pulse
+ set_awg_gain 16376,0 # setting gain for long_ramp_pulse
+ play 1,1,4 # play long_ramp_pulse (2000 ns)
  wait 1996 # auto generated wait (1996 ns)
- set_awg_offs 0,0 
- set_awg_gain 16376,0 # setting gain for StitchedPulse
- play 1,1,4 # play StitchedPulse (2000 ns)
+ set_awg_offs 0,0 # setting offset for long_ramp_pulse
+ set_awg_gain 16376,0 # setting gain for long_ramp_pulse
+ play 1,1,4 # play long_ramp_pulse (2000 ns)
  wait 2496 # auto generated wait (2496 ns)
- set_awg_offs -16384,0 
+ set_awg_offs -16384,0 # setting offset for staircase_pulse
  upd_param 4 
  wait 796 # auto generated wait (796 ns)
- set_awg_offs -8192,0 
+ set_awg_offs -8192,0 # setting offset for staircase_pulse
  upd_param 4 
  wait 796 # auto generated wait (796 ns)
- set_awg_offs 0,0 
+ set_awg_offs 0,0 # setting offset for staircase_pulse
  upd_param 4 
  wait 796 # auto generated wait (796 ns)
- set_awg_offs 8192,0 
+ set_awg_offs 8192,0 # setting offset for staircase_pulse
  upd_param 4 
  wait 796 # auto generated wait (796 ns)
- set_awg_offs 16384,0 
+ set_awg_offs 16384,0 # setting offset for staircase_pulse
  upd_param 4 
  wait 792 # auto generated wait (792 ns)
- set_awg_offs 0,0 
- set_awg_gain 16384,0 # setting gain for StitchedPulse
- play 0,0,4 # play StitchedPulse (4 ns)"""
+ set_awg_offs 0,0 # setting offset for staircase_pulse
+ set_awg_gain 16384,0 # setting gain for staircase_pulse
+ play 0,0,4 # play staircase_pulse (4 ns)"""
         in compiled_sched.compiled_instructions["cluster0"]["cluster0_module4"][
             "sequencers"
         ]["seq0"]["sequence"]["program"]
@@ -3311,12 +3311,15 @@ def test_auto_compile_long_square_pulses(
         config=quantum_device.generate_compilation_config(),
     )
 
-    assert list(compiled_sched.operations.values())[0] == long_square_pulse(
-        amp=0.2,
-        duration=2.5e-6,
-        port=port,
-        clock=clock,
-        t0=1e-6,
+    assert (
+        list(compiled_sched.operations.values())[0]["pulse_info"]
+        == long_square_pulse(
+            amp=0.2,
+            duration=2.5e-6,
+            port=port,
+            clock=clock,
+            t0=1e-6,
+        )["pulse_info"]
     )
 
     assert square_pulse == saved_pulse
@@ -3704,12 +3707,12 @@ def test_debug_mode_qasm_aligning(
 start:   
  reset_ph  
  upd_param 4 
- set_awg_offs 16384,0 
+ set_awg_offs 16384,0 # setting offset for SquarePulse
  upd_param 4 
  wait 992 # auto generated wait (992 ns)
- set_awg_offs 0,0 
- set_awg_gain 16384,0 # setting gain for StitchedPulse
- play 0,0,4 # play StitchedPulse (4 ns)
+ set_awg_offs 0,0 # setting offset for SquarePulse
+ set_awg_gain 16384,0 # setting gain for SquarePulse
+ play 0,0,4 # play SquarePulse (4 ns)
  loop R0,@start 
  stop  
 """
@@ -3722,16 +3725,67 @@ start:
   start:                                                                 
           reset_ph                                                       
           upd_param     4                                                
-          set_awg_offs  16384,0                                          
+          set_awg_offs  16384,0    # setting offset for SquarePulse      
           upd_param     4                                                
           wait          992        # auto generated wait (992 ns)        
-          set_awg_offs  0,0                                              
-          set_awg_gain  16384,0    # setting gain for StitchedPulse      
-          play          0,0,4      # play StitchedPulse (4 ns)           
+          set_awg_offs  0,0        # setting offset for SquarePulse      
+          set_awg_gain  16384,0    # setting gain for SquarePulse        
+          play          0,0,4      # play SquarePulse (4 ns)             
           loop          R0,@start                                        
           stop                                                           
 """
     assert program == expected_program, program
+
+
+@pytest.mark.parametrize(
+    "op1, op2, ref_pt2, rel_time2",
+    [
+        (
+            long_square_pulse(amp=0.3, duration=100e-9, port="q0:res", clock="q0.ro"),
+            SquarePulse(amp=0.3, duration=32e-9, port="q0:res", clock="q0.ro"),
+            "start",
+            32e-9,
+        ),
+        (
+            long_square_pulse(amp=0.3, duration=100e-9, port="q0:res", clock="q0.ro"),
+            SquarePulse(amp=0.3, duration=32e-9, port="q0:res", clock="q0.ro"),
+            "start",
+            84e-9,
+        ),
+        (
+            long_square_pulse(amp=0.4, duration=100e-9, port="q0:res", clock="q0.ro"),
+            long_square_pulse(amp=0.2, duration=100e-9, port="q0:res", clock="q0.ro"),
+            "start",
+            52e-9,
+        ),
+    ],
+)
+def test_overlapping_pulse_and_voltage_offset_raises1(
+    hardware_compilation_config_qblox_example,
+    mock_setup_basic_transmon_with_standard_params,
+    op1,
+    op2,
+    ref_pt2,
+    rel_time2,
+):
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.hardware_config(hardware_compilation_config_qblox_example)
+    compilation_config = quantum_device.generate_compilation_config()
+
+    compiler = SerialCompiler(name="compiler")
+
+    schedule = Schedule("test align qasm fields")
+    schedule.add(op1)
+    schedule.add(op2, ref_pt=ref_pt2, rel_time=rel_time2)
+
+    with pytest.raises(
+        RuntimeError,
+        match=(
+            "contain pulses with voltage offsets that overlap in time on the same "
+            "port and clock"
+        ),
+    ):
+        _ = compiler.compile(schedule=schedule, config=compilation_config)
 
 
 class TestControlFlow:

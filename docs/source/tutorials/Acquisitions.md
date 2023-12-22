@@ -510,7 +510,7 @@ def add_pulse_and_weighted_acquisition_to_schedule(
 ):
     schedule.add(
         SquarePulse(
-            duration=1000,
+            duration=1e-6,
             amp=0.5,
             port="q0:res",
             clock="q0.ro",

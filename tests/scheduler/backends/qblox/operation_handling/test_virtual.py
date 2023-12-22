@@ -154,7 +154,9 @@ class TestAwgOffsetStrategy:
             "offset_path_I": 0.4,
             "offset_path_Q": 0,
         }
-        expected_qasm = [["", "set_awg_offs", "13107,0", ""]]
+        expected_qasm = [
+            ["", "set_awg_offs", "13107,0", "# setting offset for test_pulse"]
+        ]
 
         qasm = empty_qasm_program_qcm
         duration = 24e-9

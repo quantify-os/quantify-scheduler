@@ -31,6 +31,8 @@ class StitchedPulse(Operation):
 
     Parameters
     ----------
+    name : str or None, optional
+        An optional name for the pulse.
     pulse_info : list[Any] or None, optional
         A list containing the pulses that are part of the StitchedPulse. By default
         None.
@@ -38,16 +40,19 @@ class StitchedPulse(Operation):
 
     def __init__(
         self,
+        name: str | None = None,
         pulse_info: list[Any] | None = None,
     ) -> None:
         pulse_info = pulse_info or []
-        super().__init__(name=self.__class__.__name__)
+        super().__init__(name=name or self.__class__.__name__)
         self.data["pulse_info"] = pulse_info
         self._update()
 
     def __str__(self) -> str:
-        pulse_info = self.data["pulse_info"]
-        return f"StitchedPulse(pulse_info={pulse_info}) "
+        return (
+            f"StitchedPulse(name='{self.data['name']}', pulse_info="
+            f"{self.data['pulse_info']})"
+        )
 
     def add_pulse(self, pulse_operation: Operation) -> None:
         """
@@ -176,6 +181,7 @@ def convert_to_numerical_pulse(
         clock=operation["pulse_info"][0]["clock"],
         t0=pulse_t0,
     )
+    num_pulse["name"] = operation["name"]
     if operation.valid_acquisition or operation.valid_gate:
         converted_op = deepcopy(operation)  # Do not modify the original operation
         converted_op.data["pulse_info"] = num_pulse.data["pulse_info"]
@@ -212,8 +218,13 @@ class StitchedPulseBuilder:
     """
 
     def __init__(
-        self, port: str | None = None, clock: str | None = None, t0: float = 0.0
+        self,
+        name: str | None = None,
+        port: str | None = None,
+        clock: str | None = None,
+        t0: float = 0.0,
     ) -> None:
+        self._name = name or StitchedPulse.__name__
         self._port = port
         self._clock = clock
         self._t0 = t0
@@ -550,7 +561,7 @@ class StitchedPulseBuilder:
         self._distribute_port_clock()
         offsets = self._build_voltage_offset_operations()
         self._distribute_t0()
-        stitched_pulse = StitchedPulse()
+        stitched_pulse = StitchedPulse(self._name)
         for op in self._pulses + offsets:
             stitched_pulse.add_pulse(op)
         return stitched_pulse
