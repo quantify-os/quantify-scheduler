@@ -184,7 +184,7 @@ class QcmRfModule(compiler_abc.QbloxRFModule):
 
     supports_acquisition: bool = False
     static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
-        instrument_type="QCM-RF",
+        instrument_type="QCM_RF",
         max_sequencers=NUMBER_OF_SEQUENCERS_QCM,
         max_awg_output_voltage=None,
         mixer_dc_offset_range=BoundedParameter(min_val=-50, max_val=50, units="mV"),
@@ -207,7 +207,7 @@ class QrmRfModule(compiler_abc.QbloxRFModule):
 
     supports_acquisition: bool = True
     static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
-        instrument_type="QRM-RF",
+        instrument_type="QRM_RF",
         max_sequencers=NUMBER_OF_SEQUENCERS_QRM,
         max_awg_output_voltage=None,
         mixer_dc_offset_range=BoundedParameter(min_val=-50, max_val=50, units="mV"),

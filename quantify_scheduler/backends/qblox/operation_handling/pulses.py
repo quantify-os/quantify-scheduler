@@ -247,7 +247,7 @@ class MarkerPulseStrategy(PulseStrategyPartial):
         marker_bit_index = int(self.operation_info.data["output"])
         default_marker = qasm_program.static_hw_properties.default_marker
         # RF modules use first 2 bits of marker bitstring as output/input switch.
-        if qasm_program.static_hw_properties.instrument_type in ("QRM-RF", "QCM-RF"):
+        if qasm_program.static_hw_properties.instrument_type in ("QRM_RF", "QCM_RF"):
             marker_bit_index += 2
         # QCM-RF has swapped addressing of outputs
         marker_bit_index = self._fix_marker_bit_output_addressing_qcm_rf(
@@ -268,7 +268,7 @@ class MarkerPulseStrategy(PulseStrategyPartial):
         qasm_program: QASMProgram, marker_bit_index: int
     ):
         """Fix for the swapped marker bit output addressing of the QCM-RF."""
-        if qasm_program.static_hw_properties.instrument_type == "QCM-RF":
+        if qasm_program.static_hw_properties.instrument_type == "QCM_RF":
             if marker_bit_index == 2:
                 marker_bit_index = 3
             elif marker_bit_index == 3:

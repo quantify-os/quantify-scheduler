@@ -1191,11 +1191,11 @@ class Sequencer:
 
         # For RF modules, the first two indices correspond to path enable/disable.
         # Therefore, the index of the output is shifted by 2.
-        elif instrument_type == "QCM-RF":
+        elif instrument_type == "QCM_RF":
             for output in self.connected_output_indices:
                 marker_bit_string |= 1 << (output + 2)
                 marker_bit_string |= self._default_marker
-        elif instrument_type == "QRM-RF":
+        elif instrument_type == "QRM_RF":
             if operation.operation_info.is_acquisition:
                 marker_bit_string = 0b1011
             else:
@@ -1263,10 +1263,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         """Returns all the port-clock combinations that this device can target."""
         portclocks = []
 
-        for channel_name in self.static_hw_properties.valid_channels:
-            if channel_name not in self.instrument_cfg:
-                continue
-
+        for channel_name in helpers.find_channel_names(self.instrument_cfg):
             portclock_configs = self.instrument_cfg[channel_name].get(
                 "portclock_configs", []
             )
@@ -1323,14 +1320,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         ):  # Sort to ensure deterministic sequencer order
             if not isinstance(channel_cfg, dict):
                 continue
-            if channel_name not in self.static_hw_properties.valid_channels:
-                raise ValueError(
-                    f"Invalid hardware config: '{channel_name}' of "
-                    f"{self.name} ({self.__class__.__name__}) "
-                    f"is not a valid name of an input/output."
-                    f"\n\nSupported names for {self.__class__.__name__}:\n"
-                    f"{self.static_hw_properties.valid_channels}"
-                )
 
             lo_name = channel_cfg.get("lo_name", None)
             downconverter_freq = channel_cfg.get("downconverter_freq", None)
@@ -1560,10 +1549,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         Throws a ValueError if a gain value gets modified.
         """
         in0_gain, in1_gain = None, None
-        for channel_name in self.static_hw_properties.valid_channels:
+
+        for channel_name in helpers.find_channel_names(self.instrument_cfg):
             channel_mapping = self.instrument_cfg.get(channel_name, None)
-            if channel_mapping is None:
-                continue
 
             if channel_name.startswith(ChannelMode.COMPLEX):
                 in0_gain = channel_mapping.get("input_gain_I", None)

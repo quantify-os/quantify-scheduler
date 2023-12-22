@@ -709,7 +709,7 @@ class ZIDeviceConfig:
     """
 
 
-def generate_hardware_config(  # noqa: PLR0912, PLR0915
+def _generate_legacy_hardware_config(  # noqa: PLR0912, PLR0915
     schedule: Schedule,
     compilation_config: CompilationConfig,
 ) -> dict:
@@ -1316,7 +1316,7 @@ def compile_backend(
         )
     if isinstance(config, CompilationConfig):
         # Extract the hardware config from the CompilationConfig
-        hardware_cfg = generate_hardware_config(
+        hardware_cfg = _generate_legacy_hardware_config(
             schedule=schedule, compilation_config=config
         )
     elif config is not None:

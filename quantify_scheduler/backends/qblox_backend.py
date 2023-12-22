@@ -3,6 +3,7 @@
 """Compiler backend for Qblox hardware."""
 from __future__ import annotations
 
+import re
 import warnings
 from collections import defaultdict
 from typing import Any, Dict, List, Literal, Optional, Type, Union
@@ -18,17 +19,31 @@ from quantify_scheduler.backends.graph_compilation import (
     CompilationConfig,
     SimpleNodeConfig,
 )
-from quantify_scheduler.backends.qblox import compiler_container, constants, helpers
+from quantify_scheduler.backends.qblox import compiler_container, constants
+from quantify_scheduler.backends.qblox.helpers import (
+    _generate_legacy_hardware_config,
+    _generate_new_style_hardware_compilation_config,
+    _preprocess_legacy_hardware_config,
+    assign_pulse_and_acq_info_to_devices,
+    find_channel_names,
+)
 from quantify_scheduler.backends.qblox.operations import long_square_pulse
 from quantify_scheduler.backends.qblox.operations.stitched_pulse import StitchedPulse
 from quantify_scheduler.backends.types.common import (
+    Connectivity,
     HardwareCompilationConfig,
     HardwareDescription,
     HardwareOptions,
 )
 from quantify_scheduler.backends.types.qblox import (
+    PulsarQCMDescription,
+    PulsarQRMDescription,
     QbloxHardwareDescription,
     QbloxHardwareOptions,
+    QCMDescription,
+    QCMRFDescription,
+    QRMDescription,
+    QRMRFDescription,
 )
 from quantify_scheduler.helpers.collections import find_inner_dicts_containing_key
 from quantify_scheduler.schedules.schedule import (
@@ -225,12 +240,12 @@ def hardware_compile(
 
     if isinstance(config, CompilationConfig):
         # Extract the hardware config from the CompilationConfig
-        hardware_cfg = helpers.generate_hardware_config(
+        hardware_cfg = _generate_legacy_hardware_config(
             schedule=schedule, compilation_config=config
         )
     elif config is not None:
         # Support for (deprecated) calling with hardware_cfg as positional argument.
-        hardware_cfg = helpers._preprocess_legacy_hardware_config(config)
+        hardware_cfg = _preprocess_legacy_hardware_config(config)
 
     # To be removed when hardware config validation is implemented. See
     # https://gitlab.com/groups/quantify-os/-/epics/1
@@ -261,7 +276,7 @@ def hardware_compile(
         schedule, hardware_cfg
     )
 
-    helpers.assign_pulse_and_acq_info_to_devices(
+    assign_pulse_and_acq_info_to_devices(
         schedule=schedule,
         hardware_cfg=hardware_cfg,
         device_compilers=container.instrument_compilers,
@@ -280,6 +295,21 @@ def hardware_compile(
     schedule["compiled_instructions"].update(compiled_instructions)
     # Mark the schedule as a compiled schedule
     return CompiledSchedule(schedule)
+
+
+def find_qblox_instruments(
+    hardware_config: Dict[str, Any], instrument_type: str
+) -> Dict[str, Any]:
+    """Find all inner dictionaries representing a qblox instrument of the given type."""
+    instruments = {}
+    for key, value in hardware_config.items():
+        try:
+            if value["instrument_type"] == instrument_type:
+                instruments[key] = value
+        except (KeyError, TypeError):
+            pass
+
+    return instruments
 
 
 class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
@@ -324,6 +354,87 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
     schedule to instructions for the Qblox hardware.
     """
 
+    @model_validator(mode="after")
+    def _validate_connectivity_channel_names(self) -> QbloxHardwareCompilationConfig:
+        all_channel_names = []
+
+        # Fetch channel_names from connectivity datastructure
+        if isinstance(self.connectivity, Connectivity):
+            for edge in self.connectivity.graph.edges:
+                for node in edge:
+                    try:
+                        cluster_name, module_name, channel_name = node.split(".")
+                        if (
+                            self.hardware_description[cluster_name].instrument_type
+                            == "Cluster"
+                        ):
+                            slot_idx = int(re.search(r"\d+$", module_name).group())
+                            module_type = (
+                                self.hardware_description[cluster_name]
+                                .modules[slot_idx]
+                                .instrument_type
+                            )
+                            all_channel_names.append(
+                                (
+                                    f"{cluster_name}.{module_name}",
+                                    module_type,
+                                    channel_name,
+                                )
+                            )
+                    except ValueError:
+                        pass
+
+        # Fetch channel_names from legacy hardware config
+        else:
+            for cluster_name, cluster_config in find_qblox_instruments(
+                hardware_config=self.connectivity, instrument_type="Cluster"
+            ).items():
+                for module_type in ["QCM", "QRM", "QCM_RF", "QRM_RF"]:
+                    for module_name, module in find_qblox_instruments(
+                        hardware_config=cluster_config, instrument_type=module_type
+                    ).items():
+                        for channel_name in find_channel_names(module):
+                            all_channel_names.append(
+                                (cluster_name, module_type, channel_name)
+                            )
+
+            for pulsar_type in ["Pulsar_QRM", "Pulsar_QCM"]:
+                for pulsar_name, pulsar_config in find_qblox_instruments(
+                    hardware_config=self.connectivity, instrument_type=pulsar_type
+                ).items():
+                    for channel_name in find_channel_names(pulsar_config):
+                        all_channel_names.append(
+                            (pulsar_name, pulsar_type, channel_name)
+                        )
+
+        # Validate channel_names
+        instrument_type_to_description = {
+            description.get_instrument_type(): description
+            for description in [
+                QCMDescription,
+                QRMDescription,
+                QCMRFDescription,
+                QRMRFDescription,
+                PulsarQCMDescription,
+                PulsarQRMDescription,
+            ]
+        }
+
+        for instrument_name, instrument_type, channel_name in all_channel_names:
+            valid_channel_names = instrument_type_to_description[
+                instrument_type
+            ].get_valid_channels()
+            if channel_name not in valid_channel_names:
+                raise ValueError(
+                    f"Invalid connectivity: '{channel_name}' of "
+                    f"{instrument_name} ({instrument_type}) "
+                    f"is not a valid name of an input/output."
+                    f"\n\nSupported names for {instrument_type}:\n"
+                    f"{valid_channel_names}"
+                )
+
+        return self
+
     @model_validator(mode="before")
     @classmethod
     def from_old_style_hardware_config(
@@ -336,7 +447,7 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
             == "quantify_scheduler.backends.qblox_backend.hardware_compile"
         ):
             # Input is an old style Qblox hardware config dict
-            data = helpers._generate_new_style_hardware_compilation_config(data)
+            data = _generate_new_style_hardware_compilation_config(data)
 
         return data
 

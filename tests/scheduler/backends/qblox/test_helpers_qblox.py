@@ -227,7 +227,7 @@ def test_Frequencies():
             freq.validate()
 
 
-def test_generate_hardware_config(hardware_compilation_config_qblox_example):
+def test_generate_legacy_hardware_config(hardware_compilation_config_qblox_example):
     sched = Schedule("All portclocks schedule")
     quantum_device = QuantumDevice("All_portclocks_device")
     quantum_device.hardware_config(hardware_compilation_config_qblox_example)
@@ -242,7 +242,7 @@ def test_generate_hardware_config(hardware_compilation_config_qblox_example):
             qubits[qubit_name] = BasicTransmonElement(qubit_name)
             quantum_device.add_element(qubits[qubit_name])
 
-    generated_hw_config = helpers.generate_hardware_config(
+    generated_hw_config = helpers._generate_legacy_hardware_config(
         schedule=sched, compilation_config=quantum_device.generate_compilation_config()
     )
 
@@ -346,6 +346,15 @@ def test_configure_input_gains_overwrite_gain():
         == "Overwriting gain of real_output_1 of module tester to in1_gain: 10."
         "\nIt was previously set to in1_gain: 5."
     )
+
+
+def test_find_channel_names(hardware_cfg_rf):
+    assert helpers.find_channel_names(
+        hardware_cfg_rf["cluster0"]["cluster0_module2"]
+    ) == [
+        "complex_output_0",
+        "complex_output_1",
+    ]
 
 
 def test_generate_new_style_hardware_compilation_config(

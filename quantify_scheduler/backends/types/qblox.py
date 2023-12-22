@@ -11,11 +11,13 @@ from typing import (
     Callable,
     Dict,
     Iterable,
+    List,
     Literal,
     Optional,
     Tuple,
     TypeVar,
     Union,
+    get_args,
 )
 
 from dataclasses_json import DataClassJsonMixin
@@ -68,11 +70,6 @@ class StaticHardwareProperties:
     """A mapping from channel_name to digital marker setting.
     Specifies which marker bit needs to be set at start if the
     output (as a string ex. `complex_output_0`) contains a pulse."""
-
-    @property
-    def valid_channels(self) -> Iterable[str]:
-        """Specifies the channel_name identifiers supported by this instrument."""
-        return self.channel_name_to_connected_io_indices.keys()
 
     def _get_connected_output_indices(
         self, channel_name
@@ -625,7 +622,34 @@ class DigitalChannelDescription(DataStructure):
     """
 
 
-class QRMDescription(DataStructure):
+class DescriptionAnnotationsGettersMixin:
+    """Provide the functionality of retrieving valid channel names by inheriting this class."""
+
+    @classmethod
+    def get_valid_channels(cls) -> List[str]:
+        """Return all the valid channel names for this hardware description."""
+        channel_description_types = [
+            ComplexChannelDescription.__name__,
+            RealChannelDescription.__name__,
+            DigitalChannelDescription.__name__,
+        ]
+
+        channel_names = []
+        for description_name, description_type in cls.__annotations__.items():
+            for channel_description_type in channel_description_types:
+                if channel_description_type in description_type:
+                    channel_names.append(description_name)
+                    break
+
+        return channel_names
+
+    @classmethod
+    def get_instrument_type(cls) -> str:
+        """Return the instrument type indicated in this hardware description."""
+        return get_args(cls.model_fields["instrument_type"].annotation)[0]
+
+
+class QRMDescription(DataStructure, DescriptionAnnotationsGettersMixin):
     """Information needed to specify a QRM in the :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`."""
 
     instrument_type: Literal["QRM"]
@@ -654,7 +678,7 @@ class QRMDescription(DataStructure):
     """Description of the digital (marker) output channel on this QRM, corresponding to port M4."""
 
 
-class QCMDescription(DataStructure):
+class QCMDescription(DataStructure, DescriptionAnnotationsGettersMixin):
     """Information needed to specify a QCM in the :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`."""
 
     instrument_type: Literal["QCM"]
@@ -683,7 +707,7 @@ class QCMDescription(DataStructure):
     """Description of the digital (marker) output channel on this QRM, corresponding to port M4."""
 
 
-class QRMRFDescription(DataStructure):
+class QRMRFDescription(DataStructure, DescriptionAnnotationsGettersMixin):
     """Information needed to specify a QRM-RF in the :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`."""
 
     instrument_type: Literal["QRM_RF"]
@@ -700,7 +724,7 @@ class QRMRFDescription(DataStructure):
     """Description of the digital (marker) output channel on this QRM, corresponding to port M2."""
 
 
-class QCMRFDescription(DataStructure):
+class QCMRFDescription(DataStructure, DescriptionAnnotationsGettersMixin):
     """Information needed to specify a QCM-RF in the :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`."""
 
     instrument_type: Literal["QCM_RF"]
@@ -741,7 +765,7 @@ class ClusterDescription(QbloxBaseDescription):
     """Description of the modules of this Cluster, using slot index as key."""
 
 
-class PulsarQCMDescription(QbloxBaseDescription):
+class PulsarQCMDescription(QbloxBaseDescription, DescriptionAnnotationsGettersMixin):
     """Information needed to specify a Pulsar QCM in the :class:`~.CompilationConfig`."""
 
     instrument_type: Literal["Pulsar_QCM"]
@@ -768,7 +792,7 @@ class PulsarQCMDescription(QbloxBaseDescription):
     """Description of the digital (marker) output channel on this QRM, corresponding to port M4."""
 
 
-class PulsarQRMDescription(QbloxBaseDescription):
+class PulsarQRMDescription(QbloxBaseDescription, DescriptionAnnotationsGettersMixin):
     """Information needed to specify a Pulsar QRM in the :class:`~.CompilationConfig`."""
 
     instrument_type: Literal["Pulsar_QRM"]

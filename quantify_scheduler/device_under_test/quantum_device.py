@@ -21,6 +21,7 @@ from quantify_scheduler.backends.graph_compilation import (
 from quantify_scheduler.backends.qblox.helpers import (
     _preprocess_legacy_hardware_config,
 )
+from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
 from quantify_scheduler.backends.types.common import HardwareCompilationConfig
 from quantify_scheduler.device_under_test.device_element import DeviceElement
 from quantify_scheduler.device_under_test.edge import Edge
@@ -374,6 +375,12 @@ class QuantumDevice(Instrument):
                         compilation_func=hardware_config["backend"],
                     ),
                 ]
+                hardware_compilation_config = QbloxHardwareCompilationConfig(
+                    hardware_description={},
+                    hardware_options={},
+                    connectivity=hardware_config,
+                    compilation_passes=compilation_passes,
+                )
             elif (
                 hardware_config["backend"]
                 == "quantify_scheduler.backends.zhinst_backend.compile_backend"
@@ -384,6 +391,13 @@ class QuantumDevice(Instrument):
                         compilation_func=hardware_config["backend"],
                     ),
                 ]
+                hardware_compilation_config = HardwareCompilationConfig(
+                    hardware_description={},
+                    hardware_options={},
+                    connectivity=hardware_config,
+                    compilation_passes=compilation_passes,
+                )
+
             else:
                 compilation_passes = [
                     SimpleNodeConfig(
@@ -391,12 +405,12 @@ class QuantumDevice(Instrument):
                         compilation_func=hardware_config["backend"],
                     ),
                 ]
-            hardware_compilation_config = HardwareCompilationConfig(
-                hardware_description={},
-                hardware_options={},
-                connectivity=hardware_config,
-                compilation_passes=compilation_passes,
-            )
+                hardware_compilation_config = HardwareCompilationConfig(
+                    hardware_description={},
+                    hardware_options={},
+                    connectivity=hardware_config,
+                    compilation_passes=compilation_passes,
+                )
         else:
             # Parse a (backend-specific) HardwareCompilationConfig
             if "backend" in hardware_config:

@@ -800,7 +800,9 @@ def single_scope_mode_acquisition_raise(sequencer_0, sequencer_1, module_name):
     )
 
 
-def generate_hardware_config(schedule: Schedule, compilation_config: CompilationConfig):
+def _generate_legacy_hardware_config(
+    schedule: Schedule, compilation_config: CompilationConfig
+) -> Dict[str, Any]:
     """
     Extract the old-style Qblox hardware config from the CompilationConfig.
 
@@ -1097,15 +1099,6 @@ def generate_hardware_config(schedule: Schedule, compilation_config: Compilation
                 channel_config = channel_config[key]
             channel_name = pc_path[-3]
 
-            if not (
-                channel_name.startswith(ChannelMode.COMPLEX)
-                or channel_name.startswith(ChannelMode.REAL)
-            ):
-                raise KeyError(
-                    f"The name of channel {pc_path[:-2]} used for {port=} and {clock=} must start "
-                    f"with either 'real' or 'complex'."
-                )
-
             # Set the input_gain in the channel config:
             if isinstance(pc_input_gain, ComplexInputGain):
                 channel_config["input_gain_I"] = pc_input_gain.gain_I
@@ -1196,6 +1189,19 @@ def generate_hardware_config(schedule: Schedule, compilation_config: Compilation
     _recursive_digital_channel_search(hardware_config)
 
     return hardware_config
+
+
+def find_channel_names(instrument_config: Dict[str, Any]) -> List[str]:
+    """Find all channel names within this Qblox instrument config dict."""
+    channel_names = []
+    for channel_name, channel_cfg in instrument_config.items():
+        try:
+            if "portclock_configs" in channel_cfg.keys():
+                channel_names.append(channel_name)
+        except AttributeError:
+            pass
+
+    return channel_names
 
 
 def _preprocess_legacy_hardware_config(

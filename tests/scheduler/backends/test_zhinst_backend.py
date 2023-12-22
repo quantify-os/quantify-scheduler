@@ -96,7 +96,7 @@ def create_typical_timing_table(
 ):
     def _create_test_compile_datastructure():
         schedule = make_schedule()
-        hardware_config = zhinst_backend.generate_hardware_config(
+        hardware_config = zhinst_backend._generate_legacy_hardware_config(
             schedule=schedule,
             compilation_config=compile_config_basic_transmon_zhinst_hardware,
         )
@@ -1595,7 +1595,7 @@ def test_too_long_acquisition_raises_readable_exception(
     assert "4320 samples" in str(exc_info.value)
 
 
-def test_generate_hardware_config(hardware_compilation_config_zhinst_example):
+def test_generate_legacy_hardware_config(hardware_compilation_config_zhinst_example):
     sched = Schedule("All portclocks schedule")
     quantum_device = QuantumDevice("All_portclocks_device")
     quantum_device.hardware_config(hardware_compilation_config_zhinst_example)
@@ -1614,7 +1614,7 @@ def test_generate_hardware_config(hardware_compilation_config_zhinst_example):
             quantum_device.add_element(qubit)
             qubits[qubit_name] = qubit
 
-    generated_hw_config = zhinst_backend.generate_hardware_config(
+    generated_hw_config = zhinst_backend._generate_legacy_hardware_config(
         schedule=sched, compilation_config=quantum_device.generate_compilation_config()
     )
 

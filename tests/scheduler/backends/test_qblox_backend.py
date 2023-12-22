@@ -41,7 +41,7 @@ from quantify_scheduler.backends.qblox import (
 from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
 from quantify_scheduler.backends.qblox.helpers import (
     assign_pulse_and_acq_info_to_devices,
-    generate_hardware_config,
+    _generate_legacy_hardware_config,
     generate_port_clock_to_device_map,
     generate_uuid_from_wf_data,
     generate_waveform_data,
@@ -59,9 +59,12 @@ from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox.qblox_hardware_config_old_style import (
     hardware_config as qblox_hardware_config_old_style,
 )
+from quantify_scheduler.backends.qblox_backend import find_qblox_instruments
 from quantify_scheduler.backends.types.common import HardwareDescription
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.backends.types.qblox import BasebandModuleSettings
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.compilation import _determine_absolute_timing
 from quantify_scheduler.helpers.collections import (
     find_all_port_clock_combinations,
@@ -525,7 +528,7 @@ def test_find_all_port_clock_combinations_generated_hardware_config(
         sched, compile_config_basic_transmon_qblox_hardware
     )
 
-    hardware_config = generate_hardware_config(
+    hardware_config = _generate_legacy_hardware_config(
         compiled_sched, compile_config_basic_transmon_qblox_hardware
     )
 
@@ -568,7 +571,7 @@ def test_generate_port_clock_to_device_map_generated_hardware_config(
         sched, compile_config_basic_transmon_qblox_hardware
     )
 
-    hardware_config = generate_hardware_config(
+    hardware_config = _generate_legacy_hardware_config(
         compiled_sched, compile_config_basic_transmon_qblox_hardware
     )
 
@@ -673,22 +676,11 @@ def test_construct_sequencers_repeated_portclocks_error(
     )
 
 
-@pytest.mark.parametrize(
-    "element_names, io",
-    [
-        (
-            [f"q{i}" for i in range(7)],
-            "complex_output_0",
-        ),
-        (["q0"], "real_output_0"),
-    ],
-)
-def test_construct_sequencers_exceeds_seq__invalid_channel_name(
-    mock_setup_basic_transmon_elements,
+def test_construct_sequencers_exceeds_seq(
     make_basic_multi_qubit_schedule,
-    element_names,
-    io,
 ):
+    element_names = [f"q{i}" for i in range(7)]
+
     hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "cluster0": {
@@ -696,7 +688,7 @@ def test_construct_sequencers_exceeds_seq__invalid_channel_name(
             "ref": "internal",
             "cluster0_module1": {
                 "instrument_type": "QCM_RF",
-                f"{io}": {
+                "complex_output_0": {
                     "portclock_configs": [
                         {
                             "port": f"{qubit}:mw",
@@ -710,32 +702,128 @@ def test_construct_sequencers_exceeds_seq__invalid_channel_name(
         },
     }
 
+    quantum_device = QuantumDevice("quantum_device")
+    quantum_device.hardware_config(hardware_cfg)
+
+    for name in element_names:
+        quantum_device.add_element(BasicTransmonElement(name))
+
     sched = make_basic_multi_qubit_schedule(element_names)
     sched.add_resources([ClockResource(f"{qubit}.01", 5e9) for qubit in element_names])
 
-    quantum_device = mock_setup_basic_transmon_elements["quantum_device"]
-    quantum_device.hardware_config(hardware_cfg)
-
     compiler = SerialCompiler(name="compiler")
-    with pytest.raises(ValueError) as error:
+    with pytest.raises(ValueError) as test_error:
         sched = compiler.compile(
             schedule=sched,
             config=quantum_device.generate_compilation_config(),
         )
 
-    name = "cluster0_module1"
-    module_type = QcmRfModule
-    valid_channels = module_type.static_hw_properties.valid_channels
-
     assert (
-        str(error.value.args[0])
-        == f"Number of simultaneously active port-clock combinations exceeds number of "
-        f"sequencers. Maximum allowed for {name} ({module_type.__name__}) is {6}!"
-        or str(error.value.args[0])
-        == f"Invalid hardware config: '{io}' of {name} ({module_type.__name__}) is not a "
-        f"valid name of an input/output."
-        f"\n\nSupported names for {module_type.__name__}:\n{valid_channels}"
+        "Number of simultaneously active port-clock combinations exceeds number of sequencers"
+        in test_error.exconly()
     )
+
+
+def test_find_qblox_instruments(hardware_compilation_config_qblox_example):
+    clusters = find_qblox_instruments(
+        hardware_config=hardware_compilation_config_qblox_example[
+            "hardware_description"
+        ],
+        instrument_type="Cluster",
+    )
+    assert list(clusters.keys()) == ["cluster0"]
+    assert clusters["cluster0"]["modules"]["1"]["instrument_type"] == "QCM"
+
+
+def test_invalid_channel_names_connectivity(
+    mock_setup_basic_transmon_with_standard_params,
+):
+    hardware_compilation_config = {
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "ref": "internal",
+                "modules": {
+                    "1": {
+                        "instrument_type": "QCM",
+                    },
+                },
+            },
+        },
+        "hardware_options": {},
+        "connectivity": {
+            "graph": [
+                [f"cluster0.module1.wrong_key", "q0:res"],
+            ]
+        },
+    }
+
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.hardware_config(hardware_compilation_config)
+
+    schedule = Schedule("test valid channel_names")
+    schedule.add(SquarePulse(amp=0.5, duration=1e-6, port="q0:res", clock="q0.ro"))
+
+    compiler = SerialCompiler(name="compiler")
+    with pytest.raises(ValueError) as error:
+        compiler.compile(
+            schedule=schedule, config=quantum_device.generate_compilation_config()
+        )
+
+    assert "Invalid connectivity" in error.exconly()
+
+
+def test_invalid_channel_names_legacy_hardware_config(
+    mock_setup_basic_transmon_with_standard_params,
+):
+    hardware_config_cluster = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "instrument_type": "Cluster",
+            "ref": "internal",
+            "cluster0_module1": {
+                "instrument_type": "QCM",
+                "wrong_key": {
+                    "portclock_configs": [
+                        {
+                            "port": "q1:mw",
+                            "clock": "q1.01",
+                        }
+                    ],
+                },
+            },
+        },
+    }
+
+    hardware_config_pulsar = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "qcm0": {
+            "instrument_type": "Pulsar_QCM",
+            "ref": "internal",
+            "wrong_key": {
+                "portclock_configs": [{"port": "q0:mw", "clock": "q0.01"}],
+            },
+        },
+    }
+
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+
+    schedule = Schedule("test valid channel names")
+    schedule.add(
+        SquarePulse(port="q1:mw", clock="q1.01", amp=0.25, duration=12e-9),
+        ref_pt="start",
+    )
+
+    for hardware_config in [hardware_config_pulsar, hardware_config_cluster]:
+        quantum_device.hardware_config(hardware_config)
+        compiler = SerialCompiler(name="compiler")
+        with pytest.raises(ValueError) as error:
+            compiler.compile(
+                schedule=schedule, config=quantum_device.generate_compilation_config()
+            )
+
+        assert "Invalid connectivity" in error.exconly()
 
 
 def test_portclocks(
@@ -749,7 +837,7 @@ def test_portclocks(
         schedule=sched, config=compile_config_basic_transmon_qblox_hardware
     )
 
-    hardware_cfg = generate_hardware_config(
+    hardware_cfg = _generate_legacy_hardware_config(
         schedule=sched, compilation_config=compile_config_basic_transmon_qblox_hardware
     )
     container = compiler_container.CompilerContainer.from_hardware_cfg(
@@ -1833,7 +1921,7 @@ def test_from_mapping(
     pulse_only_schedule, compile_config_basic_transmon_qblox_hardware
 ):
     pulse_only_schedule = _determine_absolute_timing(pulse_only_schedule)
-    hardware_cfg = generate_hardware_config(
+    hardware_cfg = _generate_legacy_hardware_config(
         schedule=pulse_only_schedule,
         compilation_config=compile_config_basic_transmon_qblox_hardware,
     )
@@ -2656,7 +2744,7 @@ def test_cluster_settings(
     pulse_only_schedule, compile_config_basic_transmon_qblox_hardware
 ):
     pulse_only_schedule = _determine_absolute_timing(pulse_only_schedule)
-    hardware_cfg = generate_hardware_config(
+    hardware_cfg = _generate_legacy_hardware_config(
         schedule=pulse_only_schedule,
         compilation_config=compile_config_basic_transmon_qblox_hardware,
     )
