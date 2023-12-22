@@ -13,7 +13,7 @@ Download the notebook: {nb-download}`deprecated.ipynb`
 
 | **Target** | **Depr** | **Remv** | **Alternatives** |
 |---|---|---|---|
-| `ScheduleGettable.generate_diagnostics_report()` | 0.17 | - | See {ref}`ScheduleGettable.generate_diagnostics_report()` |
+| `ScheduleGettable.generate_diagnostics_report()` | 0.17 | 0.18 | See {ref}`ScheduleGettable.generate_diagnostics_report()` |
 | `plot_kwargs` parameter in `ScheduleBase.plot_pulse_diagram()` | 0.15 | - | See {ref}`plot_kwargs parameter in ScheduleBase.plot_pulse_diagram()` |
 | `repetitions` parameter in `ScheduleGettable.process_acquired_data()` | 0.15 | 0.18 | See {ref}`repetitions parameter in ScheduleGettable.process_acquired_data()` |
 | `t` parameter in `NumericalWeightedIntegrationComplex` | 0.13 | 0.18 | See {ref}`t parameter in NumericalWeightedIntegrationComplex` |

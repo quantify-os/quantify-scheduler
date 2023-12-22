@@ -1,5 +1,13 @@
 # Recent interface changes
 
+## 0.18.0: HardwareCompilationConfig and DeviceCompilationConfig
+
+- `DeviceCompilationConfig`: The `backend` field was replaced by the `config_type` field.
+  - If you are loading a stored `DeviceCompilationConfig` (instead of relying on the device config generation of the `QuantumDevice`), remove the `"backend"` key.
+- `HardwareCompilationConfig`: The `backend` field was removed.
+  - Only if you are already using the `HardwareCompilationConfig`, remove the `"backend"` key and add `"config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig"`.
+
+
 ## 0.15.0: HardwareCompilationConfig structure
 
 The {class}`~.backends.types.common.HardwareCompilationConfig` datastructure was introduced to structure the information that was previously stored in the hardware configuration dict.
