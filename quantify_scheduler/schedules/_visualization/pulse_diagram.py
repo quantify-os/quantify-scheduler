@@ -3,11 +3,11 @@
 """Functions for drawing pulse diagrams."""
 from __future__ import annotations
 
-import inspect
 import logging
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Literal, Optional, Tuple
+from itertools import chain
+from typing import TYPE_CHECKING, Any, Literal
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -18,12 +18,16 @@ from plotly.subplots import make_subplots
 from quantify_core.visualization.SI_utilities import set_xlabel, set_ylabel
 
 import quantify_scheduler.operations.pulse_library as pl
-from quantify_scheduler.helpers.importers import import_python_object_from_string
-from quantify_scheduler.helpers.waveforms import modulate_waveform
-from quantify_scheduler.operations.acquisition_library import AcquisitionOperation
 from quantify_scheduler.backends.qblox.operations.stitched_pulse import (
+    StitchedPulse,
     convert_to_numerical_pulse,
 )
+from quantify_scheduler.helpers.waveforms import (
+    exec_waveform_function,
+    modulate_waveform,
+)
+from quantify_scheduler.operations.acquisition_library import AcquisitionOperation
+from quantify_scheduler.waveforms import interpolated_complex_waveform
 
 if TYPE_CHECKING:
     from quantify_scheduler import CompiledSchedule, Operation, Schedule
@@ -31,56 +35,377 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _populate_port_mapping(schedule, portmap: Dict[str, int], ports_length) -> None:
-    """Dynamically add up to 8 ports to the port_map dictionary."""
-    offset_idx: int = 0
+@dataclass
+class SampledPulse:
+    """Class containing the necessary information to display pulses in a plot."""
 
-    for schedulable in schedule.schedulables.values():
-        operation = schedule.operations[schedulable["operation_id"]]
-        for operation_info in operation["pulse_info"] + operation["acquisition_info"]:
-            if offset_idx == ports_length:
-                return
+    time: np.ndarray
+    signal: np.ndarray
+    label: str
 
-            port = operation_info["port"]
-            if port is None:
+
+@dataclass
+class SampledAcquisition:
+    """Class containing the necessary information to display acquisitions in a plot."""
+
+    t0: float
+    duration: float
+    label: str
+
+
+@dataclass
+class ScheduledInfo:
+    """
+    Class containing pulse or acquisition info, with some additional information.
+
+    This class is used in the schedule sampling process to temporarily hold pulse info
+    or acquisition info dictionaries, together with some useful information from the
+    operation and schedulable that they are a part of.
+    """
+
+    op_info: dict[str, Any]
+    """Pulse info or acquisition info."""
+    time: float
+    """The sum of the ``Schedulable["abs_time"]`` and the ``info["t0"]``."""
+    op_name: str
+    """The name of the operation containing the pulse or acquisition info."""
+
+
+def get_sampled_pulses_from_voltage_offsets(
+    schedule: Schedule | CompiledSchedule,
+    offset_infos: dict[str, dict[str, list[ScheduledInfo]]],
+    x_min: float,
+    x_max: float,
+    modulation: Literal["off", "if", "clock"] = "off",
+    modulation_if: float = 0.0,
+    sampling_rate: float = 1e9,
+    sampled_pulses: dict[str, list[SampledPulse]] | None = None,
+) -> dict[str, list[SampledPulse]]:
+    """
+    Generate :class:`.SampledPulse` objects from :class:`.VoltageOffset` pulse_info dicts.
+
+    This function groups all VoltageOffset operations by port-clock combination and
+    turns each of those groups of operations into a single SampledPulse. The returned
+    dictionary contains these SampledPulse objects grouped by port.
+
+    Parameters
+    ----------
+    schedule :
+        The schedule to render.
+    offset_infos :
+        A nested dictionary containing lists of pulse_info dictionaries. The outer
+        dictionary's keys are ports, and the inner dictionary's keys are clocks.
+    x_min :
+        The left limit of the x-axis of the intended plot.
+    x_max :
+        The right limit of the x-axis of the intended plot.
+    modulation :
+        Determines if modulation is included in the visualization.
+    modulation_if :
+        Modulation frequency used when modulation is set to "if".
+    sampled_pulses :
+        An already existing dictionary (same type as the return value). If provided,
+        this dictionary will be extended with the SampledPulse objects created in this
+        function.
+
+    Returns
+    -------
+    dict[str, list[SampledPulse]] :
+        SampledPulse objects grouped by port.
+    """
+    if sampled_pulses is None:
+        sampled_pulses = defaultdict(list)
+    for port in offset_infos:
+        for clock, info_list in offset_infos[port].items():
+            time: list[float] = []
+            signal: list[float] = []
+            for info in info_list:
+                if len(time) > 0:
+                    # Each offset is a point, so the previous offset is extended to a
+                    # line before adding the next.
+                    time.append(info.time)
+                    signal.append(signal[-1])
+                time.append(info.time)
+                signal.append(
+                    info.op_info["offset_path_I"] + 1j * info.op_info["offset_path_Q"]
+                )
+            time.append(schedule.duration)
+            signal.append(signal[-1])
+
+            # Filter in time: Keep one point before and one point after the limit (if
+            # possible).
+            start_idx = next(i for i, v in enumerate(time) if v > x_min)
+            if start_idx > 0:
+                start_idx -= 1
+            try:
+                stop_idx = next(i for i, v in enumerate(time) if v > x_max) + 1
+            except StopIteration:
+                stop_idx = len(time)
+            time = time[start_idx:stop_idx]
+            signal = signal[start_idx:stop_idx]
+
+            time = np.array(time)
+            signal = np.array(signal)
+            if modulation != "off":
+                new_time = np.linspace(
+                    time[0], time[-1], round((time[-1] - time[0]) * sampling_rate) + 1
+                )
+                signal = interpolated_complex_waveform(
+                    t=new_time, samples=signal, t_samples=time
+                )
+                time = new_time
+            if modulation == "clock":
+                signal = modulate_waveform(
+                    time, signal, schedule.resources[clock]["freq"]
+                )
+
+            elif modulation == "if":
+                signal = modulate_waveform(time, signal, modulation_if)
+
+            signal = np.real_if_close(signal)
+            sampled_pulses[port].append(
+                SampledPulse(
+                    time=np.array(time),
+                    signal=np.array(signal),
+                    label=f"VoltageOffset, clock {clock}",
+                )
+            )
+    return sampled_pulses
+
+
+def get_sampled_pulses(
+    schedule: Schedule | CompiledSchedule,
+    pulse_infos: dict[str, list[ScheduledInfo]],
+    x_min: float,
+    x_max: float,
+    modulation: Literal["off", "if", "clock"] = "off",
+    modulation_if: float = 0.0,
+    sampling_rate: float = 1e9,
+    sampled_pulses: dict[str, list[SampledPulse]] | None = None,
+) -> dict[str, list[SampledPulse]]:
+    """
+    Generate :class:`.SampledPulse` objects from pulse_info dicts.
+
+    This function creates a SampledPulse for each pulse_info dict. The pulse_info must
+    contain a valid ``"wf_func"``.
+
+    Parameters
+    ----------
+    schedule :
+        The schedule to render.
+    pulse_infos :
+        A dictionary from ports to lists of pulse_info dictionaries.
+    x_min :
+        The left limit of the x-axis of the intended plot.
+    x_max :
+        The right limit of the x-axis of the intended plot.
+    modulation :
+        Determines if modulation is included in the visualization.
+    modulation_if :
+        Modulation frequency used when modulation is set to "if".
+    sampling_rate :
+        The time resolution used to sample the schedule in Hz.
+    sampled_pulses :
+        An already existing dictionary (same type as the return value). If provided,
+        this dictionary will be extended with the SampledPulse objects created in this
+        function.
+
+    Returns
+    -------
+    dict[str, list[SampledPulse]] :
+        SampledPulse objects grouped by port.
+    """
+    if sampled_pulses is None:
+        sampled_pulses = defaultdict(list)
+    for port, info_list in pulse_infos.items():
+        for info in info_list:
+            t0 = info.time
+            t1 = t0 + info.op_info["duration"]
+
+            if t1 < x_min or t0 > x_max:
+                continue
+            t0 = max(x_min, t0)
+            t1 = min(x_max, t1)
+
+            t = np.arange(t0, t1 - 0.5 / sampling_rate, 1 / sampling_rate)
+            if len(t) == 0:
                 continue
 
-            if port not in portmap:
-                portmap[port] = offset_idx
-                offset_idx += 1
+            if (
+                info.op_info["wf_func"]
+                == "quantify_scheduler.waveforms.interpolated_complex_waveform"
+            ):
+                info.op_info["t_samples"] = (
+                    np.asarray(info.op_info["t_samples"]) - info.op_info["t_samples"][0]
+                )
 
-
-def validate_operation_data(operation_data, port_map, schedulable, operation):
-    """Validates if the pulse/acquisition information is valid for visualization."""
-    if operation_data["port"] not in port_map:
-        # Do not draw pulses for this port
-        return False
-
-    if operation_data["port"] is None:
-        logger.warning(
-            "Unable to sample waveform for operation_data due to missing 'port' for "
-            f"operation name={operation['name']} "
-            f"id={schedulable['operation_id']} operation_data={operation_data}"
-        )
-        return False
-
-    if "acq_index" not in operation_data:  # This will be skipped for acquisitions
-        if operation_data["wf_func"] is None:
-            logger.warning(
-                "Unable to sample pulse for pulse_info due to missing 'wf_func' for "
-                f"operation name={operation['name']} "
-                f"id={schedulable['operation_id']} operation_data={operation_data}"
+            waveform = exec_waveform_function(
+                wf_func=info.op_info["wf_func"], t=t - t[0], pulse_info=info.op_info
             )
-            return False
-    return True
+
+            # Hold the last data point for 1 unit of sample time, so that the full
+            # duration of the pulse is plotted.
+            t = np.concatenate((t, [2 * t[-1] - t[-2]]))
+            waveform = np.concatenate((waveform, [waveform[-1]]))
+
+            if modulation == "clock":
+                waveform = modulate_waveform(
+                    t, waveform, schedule.resources[info.op_info["clock"]]["freq"]
+                )
+
+            if modulation == "if":
+                waveform = modulate_waveform(t, waveform, modulation_if)
+
+            waveform = np.real_if_close(waveform)
+            label = f"{info.op_name}, clock {info.op_info['clock']}"
+            sampled_pulses[port].append(
+                SampledPulse(time=t, signal=waveform, label=label)
+            )
+    return sampled_pulses
 
 
-# pylint: disable=too-many-arguments
-# pylint: disable=too-many-locals
-# pylint: disable=too-many-statements
+def get_sampled_acquisitions(
+    acq_infos: dict[str, list[ScheduledInfo]]
+) -> dict[str, list[SampledAcquisition]]:
+    """
+    Generate :class:`.SampledAcquisition` objects from acquisition_info dicts.
+
+    Parameters
+    ----------
+    acq_infos :
+        A dictionary from ports to lists of acquisition_info dictionaries.
+
+    Returns
+    -------
+    dict[str, list[SampledAcquisition]] :
+        SampledAcquisition objects grouped by port.
+    """
+    sampled_acqs: dict[str, list[SampledAcquisition]] = defaultdict(list)
+    for port, info_list in acq_infos.items():
+        for info in info_list:
+            sampled_acqs[port].append(
+                SampledAcquisition(
+                    t0=info.time, duration=info.op_info["duration"], label=info.op_name
+                )
+            )
+    return sampled_acqs
+
+
+def sample_schedule(
+    schedule: Schedule | CompiledSchedule,
+    port_list: list[str] | None = None,
+    modulation: Literal["off", "if", "clock"] = "off",
+    modulation_if: float = 0.0,
+    sampling_rate: float = 1e9,
+    x_range: tuple[float, float] = (-np.inf, np.inf),
+) -> dict[str, tuple[list[SampledPulse], list[SampledAcquisition]]]:
+    """
+    Generate :class:`.SampledPulse` and :class:`.SampledAcquisition` objects grouped by
+    port.
+
+    This function generates SampledPulse objects for all pulses and voltage offsets
+    defined in the Schedule, and SampledAcquisition for all acquisitions defined in the
+    Schedule.
+
+    Parameters
+    ----------
+    schedule :
+        The schedule to render.
+    port_list :
+        A list of ports to show. if set to ``None`` (default), it will use all ports in
+        the Schedule.
+    modulation :
+        Determines if modulation is included in the visualization.
+    modulation_if :
+        Modulation frequency used when modulation is set to "if".
+    sampling_rate :
+        The time resolution used to sample the schedule in Hz.
+    x_range :
+        The range of the x-axis that is plotted, given as a tuple (left limit, right
+        limit). This can be used to reduce memory usage when plotting a small section of
+        a long pulse sequence. By default (-np.inf, np.inf).
+
+    Returns
+    -------
+    dict[str, tuple[list[SampledPulse], list[SampledAcquisition]]] :
+        SampledPulse and SampledAcquisition objects grouped by port.
+    """
+    x_min, x_max = x_range
+
+    offset_infos: dict[str, dict[str, list[ScheduledInfo]]] = defaultdict(
+        lambda: defaultdict(list)
+    )
+    pulse_infos: dict[str, list[ScheduledInfo]] = defaultdict(list)
+    acq_infos: dict[str, list[ScheduledInfo]] = defaultdict(list)
+    for schedulable in schedule.schedulables.values():
+        operation = schedule.operations[schedulable["operation_id"]]
+
+        if isinstance(operation, StitchedPulse):
+            operation = convert_to_numerical_pulse(
+                operation, scheduled_at=schedulable["abs_time"]
+            )
+
+        for acq_info in operation["acquisition_info"]:
+            if port_list is not None and acq_info["port"] not in port_list:
+                continue
+            acq_info_cpy = ScheduledInfo(
+                op_info=acq_info,
+                time=schedulable["abs_time"] + acq_info["t0"],
+                op_name=operation["name"],
+            )
+            acq_infos[acq_info["port"]].append(acq_info_cpy)
+
+        for pulse_info in operation["pulse_info"]:
+            if port_list is not None and pulse_info["port"] not in port_list:
+                continue
+            if pulse_info.get("wf_func") is not None:
+                pulse_info_cpy = ScheduledInfo(
+                    op_info=pulse_info,
+                    time=schedulable["abs_time"] + pulse_info["t0"],
+                    op_name=operation["name"],
+                )
+                pulse_infos[pulse_info["port"]].append(pulse_info_cpy)
+            elif "offset_path_I" in pulse_info:
+                pulse_info_cpy = ScheduledInfo(
+                    op_info=pulse_info,
+                    time=schedulable["abs_time"] + pulse_info["t0"],
+                    op_name=operation["name"],
+                )
+                offset_infos[pulse_info["port"]][pulse_info["clock"]].append(
+                    pulse_info_cpy
+                )
+
+    sampled_pulses = get_sampled_pulses_from_voltage_offsets(
+        schedule=schedule,
+        offset_infos=offset_infos,
+        x_min=x_min,
+        x_max=x_max,
+        modulation=modulation,
+        modulation_if=modulation_if,
+    )
+
+    sampled_pulses = get_sampled_pulses(
+        schedule=schedule,
+        pulse_infos=pulse_infos,
+        x_min=x_min,
+        x_max=x_max,
+        modulation=modulation,
+        modulation_if=modulation_if,
+        sampling_rate=sampling_rate,
+        sampled_pulses=sampled_pulses,
+    )
+
+    sampled_acqs = get_sampled_acquisitions(acq_infos)
+
+    sampled_all: dict[str, tuple[list[SampledPulse], list[SampledAcquisition]]] = {}
+    for port in chain(sampled_pulses, sampled_acqs):
+        sampled_all[port] = (sampled_pulses[port], sampled_acqs[port])
+    return sampled_all
+
+
 def pulse_diagram_plotly(
     schedule: Schedule | CompiledSchedule,
-    port_list: Optional[List[str]] = None,
+    port_list: list[str] | None = None,
     fig_ch_height: float = 300,
     fig_width: float = 1000,
     modulation: Literal["off", "if", "clock"] = "off",
@@ -95,8 +420,8 @@ def pulse_diagram_plotly(
     schedule :
         The schedule to render.
     port_list :
-        A list of ports to show. if set to ``None`` will use the first
-        8 ports it encounters in the sequence.
+        A list of ports to show. if set to ``None`` (default), it will use all ports in
+        the Schedule.
     fig_ch_height :
         Height for each channel subplot in px.
     fig_width :
@@ -113,84 +438,38 @@ def pulse_diagram_plotly(
     :class:`plotly.graph_objects.Figure` :
         the plot
     """
-    port_map: Dict[str, int] = {}
-    ports_length: int = 8
+    sampled_pulses_and_acqs = sample_schedule(
+        schedule=schedule,
+        port_list=port_list,
+        modulation=modulation,
+        modulation_if=modulation_if,
+        sampling_rate=sampling_rate,
+    )
 
-    if port_list is not None:
-        ports_length = len(port_list)
-        port_map = dict(zip(port_list, range(len(port_list))))
-    else:
-        _populate_port_mapping(schedule, port_map, ports_length)
-        ports_length = len(port_map)
-
-    nrows = ports_length
-    fig = make_subplots(rows=nrows, cols=1, shared_xaxes=True, vertical_spacing=0.02)
+    n_rows = len(sampled_pulses_and_acqs)
+    fig = make_subplots(rows=n_rows, cols=1, shared_xaxes=True, vertical_spacing=0.02)
     fig.update_layout(
-        height=fig_ch_height * nrows,
+        height=fig_ch_height * n_rows,
         width=fig_width,
-        title=schedule.data["name"],
+        title=schedule["name"],
         showlegend=False,
     )
 
     colors = px.colors.qualitative.Plotly
-    col_idx: int = 0
+    col_idx = 0
 
-    for pulse_idx, schedulable in enumerate(schedule.schedulables.values()):
-        operation = schedule.operations[schedulable["operation_id"]]
-
-        if operation.has_voltage_offset:
-            operation = convert_to_numerical_pulse(
-                operation, scheduled_at=schedulable["abs_time"]
-            )
-
-        for pulse_info in operation["pulse_info"]:
-            if not validate_operation_data(
-                pulse_info, port_map, schedulable, operation
-            ):
-                continue
-
-            port: str = pulse_info["port"]
-
-            wf_func: Callable = import_python_object_from_string(pulse_info["wf_func"])
-
-            col_idx = (col_idx + 1) % len(colors)
-
-            t0 = schedulable["abs_time"] + pulse_info["t0"]
-            t = np.arange(t0, t0 + pulse_info["duration"], 1 / sampling_rate)
-            par_map = inspect.signature(wf_func).parameters
-            wf_kwargs = {}
-            for kwargs in par_map.keys():
-                if kwargs in pulse_info.keys():
-                    wf_kwargs[kwargs] = pulse_info[kwargs]
-
-            # check for reference equality in case import alias is used
-            if wf_func == import_python_object_from_string(
-                "quantify_scheduler.waveforms.interpolated_complex_waveform"
-            ):
-                wf_kwargs["t_samples"] = (
-                    np.asarray(wf_kwargs["t_samples"]) - wf_kwargs["t_samples"][0]
-                )
-
-            waveform = wf_func(t=t - t[0], **wf_kwargs)
-
-            if modulation == "clock":
-                waveform = modulate_waveform(
-                    t, waveform, schedule.resources[pulse_info["clock"]]["freq"]
-                )
-
-            if modulation == "if":
-                waveform = modulate_waveform(t, waveform, modulation_if)
-
-            row: int = port_map[port] + 1
-
-            label = operation["name"]
+    legendgroup = -1
+    for i, (port, (pulses, acqs)) in enumerate(sampled_pulses_and_acqs.items()):
+        row = i + 1
+        for pulse in pulses:
+            legendgroup += 1
             fig.add_trace(
                 go.Scatter(
-                    x=t,
-                    y=waveform.real,
+                    x=pulse.time,
+                    y=pulse.signal.real,
                     mode="lines",
-                    name=f"{label}, clock: {pulse_info['clock']}",
-                    legendgroup=pulse_idx,
+                    name=pulse.label,
+                    legendgroup=legendgroup,
                     showlegend=True,
                     line_color=colors[col_idx],
                     fill="tozeroy",
@@ -200,15 +479,16 @@ def pulse_diagram_plotly(
                 row=row,
                 col=1,
             )
+            col_idx = (col_idx + 1) % len(colors)
 
-            if waveform.dtype.kind == "c":
+            if np.iscomplexobj(pulse.signal):
                 fig.add_trace(
                     go.Scatter(
-                        x=t,
-                        y=waveform.imag,
+                        x=pulse.time,
+                        y=pulse.signal.imag,
                         mode="lines",
-                        name=f"Im[{label}], clock: {pulse_info['clock']}",
-                        legendgroup=pulse_idx,
+                        name=f"{pulse.label} (imag)",
+                        legendgroup=legendgroup,
                         showlegend=True,
                         line_color="darkgrey",
                         fill="tozeroy",
@@ -237,20 +517,13 @@ def pulse_diagram_plotly(
                 autorange=True,
             )
 
-        for acq_info in operation["acquisition_info"]:
-            if not validate_operation_data(acq_info, port_map, schedulable, operation):
-                continue
-            acq_port: str = acq_info["port"]
-            label = operation["name"]
-
-            row = port_map[acq_port] + 1
-            t = schedulable["abs_time"] + acq_info["t0"]
-            yref: str = f"y{row} domain" if row != 1 else "y domain"
+        for acq in acqs:
+            yref = f"y{row} domain" if row != 1 else "y domain"
             fig.add_trace(
                 go.Scatter(
-                    x=[t, t + acq_info["duration"]],
+                    x=[acq.t0, acq.t0 + acq.duration],
                     y=[0, 0],
-                    name=label,
+                    name=acq.label,
                     mode="markers",
                     marker=dict(
                         size=15,
@@ -265,11 +538,11 @@ def pulse_diagram_plotly(
                 type="rect",
                 xref="x",
                 yref=yref,
-                x0=t,
+                x0=acq.t0,
                 y0=0,
-                x1=t + acq_info["duration"],
+                x1=acq.t0 + acq.duration,
                 y1=1,
-                name=label,
+                name=acq.label,
                 line=dict(
                     color="rgba(0,0,0,0)",
                     width=3,
@@ -291,12 +564,12 @@ def pulse_diagram_plotly(
                 tickformat=".2s",
                 hoverformat=".3s",
                 ticksuffix="V",
-                title=acq_port,
+                title=port,
                 autorange=True,
             )
 
     fig.update_xaxes(
-        row=ports_length,
+        row=n_rows,
         col=1,
         title="Time",
         tickformatstops=[
@@ -308,130 +581,6 @@ def pulse_diagram_plotly(
     )
 
     return fig
-
-
-@dataclass
-class SampledPulse:
-    time: np.ndarray
-    signal: np.ndarray
-    label: str
-
-
-def sample_schedule(
-    schedule: Schedule | CompiledSchedule,
-    port_list: Optional[List[str]] = None,
-    modulation: Literal["off", "if", "clock"] = "off",
-    modulation_if: float = 0.0,
-    sampling_rate: float = 1e9,
-    x_range: Tuple[float, float] = (-np.inf, np.inf),
-) -> Dict[str, List[SampledPulse]]:
-    """
-    Sample a schedule at discrete points in time.
-
-    Parameters
-    ----------
-    schedule :
-        The schedule to render.
-    port_list :
-        A list of ports to show. if set to ``None`` will use the first
-        8 ports it encounters in the sequence.
-    modulation :
-        Determines if modulation is included in the visualization.
-    modulation_if :
-        Modulation frequency used when modulation is set to "if".
-    sampling_rate :
-        The time resolution used to sample the schedule in Hz.
-    x_range :
-        The minimum and maximum time values at which to sample the waveforms.
-
-    Returns
-    -------
-    :
-        Dictionary that maps each used port to the sampled pulses played on that port.
-    """
-    if x_range[0] > x_range[1]:
-        raise ValueError(
-            f"Expected the left limit of x_range to be smaller than the right limit, "
-            f"but got (left, right) = {x_range}"
-        )
-
-    port_map: Dict[str, int] = {}
-    ports_length: int = 8
-
-    if port_list is not None:
-        ports_length = len(port_list)
-        port_map = dict(zip(port_list, range(len(port_list))))
-    else:
-        _populate_port_mapping(schedule, port_map, ports_length)
-        ports_length = len(port_map)
-
-    waveforms: Dict[str, List[SampledPulse]] = {}
-
-    min_x, max_x = x_range
-    for schedulable in schedule.schedulables.values():
-        operation = schedule.operations[schedulable["operation_id"]]
-
-        if operation.has_voltage_offset:
-            operation = convert_to_numerical_pulse(
-                operation, scheduled_at=schedulable["abs_time"]
-            )
-
-        for pulse_info in operation["pulse_info"]:
-            if not validate_operation_data(
-                pulse_info, port_map, schedulable, operation
-            ):
-                logging.info(f"Operation {operation} is not valid for plotting.")
-                continue
-
-            t0 = schedulable["abs_time"] + pulse_info["t0"]
-            t1 = t0 + pulse_info["duration"]
-
-            if t1 < min_x or t0 > max_x:
-                continue
-
-            t0 = max(min_x, t0)
-            t1 = min(max_x, t1)
-
-            port: str = pulse_info["port"]
-
-            wf_func: Callable = import_python_object_from_string(pulse_info["wf_func"])
-
-            t = np.arange(t0, t1 + 0.5 / sampling_rate, 1 / sampling_rate)
-            if len(t) == 0:
-                continue
-
-            par_map = inspect.signature(wf_func).parameters
-            wf_kwargs = {}
-            for kwargs in par_map.keys():
-                if kwargs in pulse_info.keys():
-                    wf_kwargs[kwargs] = pulse_info[kwargs]
-
-            # check for reference equality in case import alias is used
-            if wf_func == import_python_object_from_string(
-                "quantify_scheduler.waveforms.interpolated_complex_waveform"
-            ):
-                wf_kwargs["t_samples"] = (
-                    np.asarray(wf_kwargs["t_samples"]) - wf_kwargs["t_samples"][0]
-                )
-
-            waveform = wf_func(t=t - t[0], **wf_kwargs)
-
-            if modulation == "clock":
-                waveform = modulate_waveform(
-                    t, waveform, schedule.resources[pulse_info["clock"]]["freq"]
-                )
-
-            if modulation == "if":
-                waveform = modulate_waveform(t, waveform, modulation_if)
-
-            waveform = np.real_if_close(waveform)
-            label = f"{operation['name']}, clock {pulse_info['clock']}"
-            if port in waveforms:
-                waveforms[port].append(SampledPulse(t, waveform, label))
-            else:
-                waveforms[port] = [SampledPulse(t, waveform, label)]
-
-    return waveforms
 
 
 def deduplicate_legend_handles_labels(ax: mpl.axes.Axes) -> None:
@@ -446,9 +595,9 @@ def deduplicate_legend_handles_labels(ax: mpl.axes.Axes) -> None:
 
 
 def plot_single_subplot_mpl(
-    sampled_schedule: Dict[str, List[SampledPulse]],
-    ax: Optional[mpl.axes.Axes] = None,
-) -> Tuple[mpl.figure.Figure, mpl.axes.Axes]:
+    sampled_schedule: dict[str, list[SampledPulse]],
+    ax: mpl.axes.Axes | None = None,
+) -> tuple[mpl.figure.Figure, mpl.axes.Axes]:
     """
     Plot all pulses for all ports in the schedule in the same subplot.
 
@@ -460,8 +609,8 @@ def plot_single_subplot_mpl(
     sampled_schedule :
         Dictionary that maps each used port to the sampled pulses played on that port.
     ax :
-        A pre-existing Axes object to plot the pulses in. If ``None`` (default), this object is
-        created within the function.
+        A pre-existing Axes object to plot the pulses in. If ``None`` (default), this
+        object is created within the function.
 
     Returns
     -------
@@ -498,8 +647,8 @@ def plot_single_subplot_mpl(
 
 
 def plot_multiple_subplots_mpl(
-    sampled_schedule: Dict[str, List[SampledPulse]]
-) -> Tuple[mpl.figure.Figure, List[mpl.axes.Axes]]:
+    sampled_schedule: dict[str, list[SampledPulse]]
+) -> tuple[mpl.figure.Figure, list[mpl.axes.Axes]]:
     """
     Plot pulses in a different subplot for each port in the sampled schedule.
 
@@ -523,7 +672,7 @@ def plot_multiple_subplots_mpl(
 
     for i, (port, data) in enumerate(sampled_schedule.items()):
         # This automatically creates a label-to-color map as the plots get created.
-        color: Dict[str, str] = defaultdict(lambda: f"C{len(color)}")
+        color: dict[str, str] = defaultdict(lambda: f"C{len(color)}")
 
         for pulse in data:
             axs[i].plot(
@@ -560,14 +709,14 @@ def plot_multiple_subplots_mpl(
 
 def pulse_diagram_matplotlib(
     schedule: Schedule | CompiledSchedule,
-    port_list: Optional[List[str]] = None,
+    port_list: list[str] | None = None,
     sampling_rate: float = 1e9,
     modulation: Literal["off", "if", "clock"] = "off",
     modulation_if: float = 0.0,
-    x_range: Tuple[float, float] = (-np.inf, np.inf),
+    x_range: tuple[float, float] = (-np.inf, np.inf),
     multiple_subplots: bool = False,
-    ax: Optional[mpl.axes.Axes] = None,
-) -> Tuple[mpl.figure.Figure, mpl.axes.Axes | List[mpl.axes.Axes]]:
+    ax: mpl.axes.Axes | None = None,
+) -> tuple[mpl.figure.Figure, mpl.axes.Axes | list[mpl.axes.Axes]]:
     """
     Plots a schedule using matplotlib.
 
@@ -576,8 +725,8 @@ def pulse_diagram_matplotlib(
     schedule :
         The schedule to plot.
     port_list :
-        A list of ports to show. If ``None`` (default) the first 8 ports
-        encountered in the sequence are used.
+        A list of ports to show. If set to ``None`` (default), it will use all ports in
+        the Schedule.
     sampling_rate :
         The time resolution used to sample the schedule in Hz. By default 1e9.
     modulation :
@@ -595,8 +744,8 @@ def pulse_diagram_matplotlib(
         play. For multiple subplots, each pulse has its own
         color and legend entry.
     ax :
-        Axis onto which to plot. If `None`, this is created within the function. By
-        default None.
+        Axis onto which to plot. If ``None`` (default), this is created within the
+        function. By default None.
 
     Returns
     -------
@@ -607,7 +756,7 @@ def pulse_diagram_matplotlib(
         The Axes object belonging to the Figure, or an array of Axes if
         ``multiple_subplots=True``.
     """
-    pulses = sample_schedule(
+    pulses_and_acqs = sample_schedule(
         schedule,
         sampling_rate=sampling_rate,
         port_list=port_list,
@@ -615,6 +764,8 @@ def pulse_diagram_matplotlib(
         modulation_if=modulation_if,
         x_range=x_range,
     )
+
+    pulses = {port: pulses for port, (pulses, _) in pulses_and_acqs.items()}
 
     if len(pulses) == 0:
         raise RuntimeError(
@@ -631,7 +782,7 @@ def pulse_diagram_matplotlib(
 
 def get_window_operations(
     schedule: Schedule,
-) -> List[Tuple[float, float, Operation]]:
+) -> list[tuple[float, float, Operation]]:
     r"""
     Return a list of all :class:`.WindowOperation`\s with start and end time.
 
@@ -659,9 +810,9 @@ def get_window_operations(
 
 def plot_window_operations(
     schedule: Schedule,
-    ax: Optional[mpl.axes.Axes] = None,
+    ax: mpl.axes.Axes | None = None,
     time_scale_factor: float = 1,
-) -> Tuple[mpl.figure.Figure, mpl.axes.Axes]:
+) -> tuple[mpl.figure.Figure, mpl.axes.Axes]:
     """
     Plot the window operations in a schedule.
 
@@ -706,8 +857,8 @@ def plot_window_operations(
 
 
 def plot_acquisition_operations(
-    schedule: Schedule, ax: Optional[mpl.axes.Axes] = None, **kwargs
-) -> List[Any]:
+    schedule: Schedule, ax: mpl.axes.Axes | None = None, **kwargs
+) -> list[Any]:
     """
     Plot the acquisition operations in a schedule.
 

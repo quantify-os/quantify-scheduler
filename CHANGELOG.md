@@ -6,13 +6,12 @@
 
 ### Merged branches and closed issues
 
+- Visualization - Allow plotting `VoltageOffset` operations in both the `"mpl"` and `"plotly"` backends. (!873).
 - Operations - Make it possible to specify a custom name for `StitchedPulse`. `StitchedPulse` instances created by `long_square_pulse`, `long_ramp_pulse` and `staircase_pulse` now have the same name as the factory function. (!871)
 
 ## 0.18.0 (2023-12-22)
 
 ### Release highlights
-
-### Merged branches and closed issues
 
 **General updates**
 - Add device elements and edges to quantum devices without keeping an explicit reference to them, e.g. do `quantum_device.add_element(BasicTransmonElement("q0"))`.

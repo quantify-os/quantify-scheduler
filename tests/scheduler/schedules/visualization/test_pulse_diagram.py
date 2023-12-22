@@ -1,17 +1,23 @@
-# pylint: disable=missing-module-docstring
-# pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import pytest
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends import SerialCompiler
+from quantify_scheduler.backends.qblox.operations import (
+    long_square_pulse,
+    VoltageOffset,
+)
 from quantify_scheduler.compilation import _determine_absolute_timing
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.gate_library import CZ, Measure, Reset, Rxy
-from quantify_scheduler.operations.pulse_library import SquarePulse, WindowOperation
+from quantify_scheduler.operations.pulse_library import (
+    IdlePulse,
+    SquarePulse,
+    WindowOperation,
+)
 from quantify_scheduler.resources import BasebandClockResource
 from quantify_scheduler.schedules._visualization.pulse_diagram import (
     get_window_operations,
@@ -89,24 +95,26 @@ def test_pulse_diagram_matplotlib_multiple_subplots() -> None:
 
     assert len(axs) == 2
     np.testing.assert_array_almost_equal(
-        axs[0].get_lines()[0].get_xdata(), np.array([0.0, 2e-9, 4e-9])
+        axs[0].get_lines()[0].get_xdata(), np.array([0.0, 2e-9, 4e-9]), decimal=9
     )
     np.testing.assert_array_almost_equal(
-        axs[0].get_lines()[0].get_ydata(), np.array([0.2, 0.2, 0.2])
-    )
-
-    np.testing.assert_array_almost_equal(
-        axs[0].get_lines()[1].get_xdata(), np.array([6e-9, 8e-9, 1e-8, 1.2e-8])
-    )
-    np.testing.assert_array_almost_equal(
-        axs[0].get_lines()[1].get_ydata(), np.array([0.3, 0.3, 0.3, 0.3])
+        axs[0].get_lines()[0].get_ydata(), np.array([0.2, 0.2, 0.2]), decimal=9
     )
 
     np.testing.assert_array_almost_equal(
-        axs[1].get_lines()[0].get_xdata(), np.array([0.0, 2e-9, 4e-9, 6e-9])
+        axs[0].get_lines()[1].get_xdata(),
+        np.array([6e-9, 8e-9, 1e-8, 1.2e-8]),
+        decimal=9,
     )
     np.testing.assert_array_almost_equal(
-        axs[1].get_lines()[0].get_ydata(), np.array([-0.2, -0.2, -0.2, -0.2])
+        axs[0].get_lines()[1].get_ydata(), np.array([0.3, 0.3, 0.3, 0.3]), decimal=9
+    )
+
+    np.testing.assert_array_almost_equal(
+        axs[1].get_lines()[0].get_xdata(), np.array([0.0, 2e-9, 4e-9, 6e-9]), decimal=9
+    )
+    np.testing.assert_array_almost_equal(
+        axs[1].get_lines()[0].get_ydata(), np.array([-0.2, -0.2, -0.2, -0.2]), decimal=9
     )
 
     plt.close(1)
@@ -131,39 +139,99 @@ def test_sample_schedule() -> None:
     schedule.add(SquarePulse(amp=0.2, duration=4e-9, port="SDP"))
     schedule.add(SquarePulse(amp=-0.2, duration=6e-9, port="T"), ref_pt="start")
     schedule.add(SquarePulse(amp=0.3, duration=6e-9, port="SDP"))
+    schedule.add(long_square_pulse(amp=0.4, duration=8e-9, port="SDP"))
     schedule = _determine_absolute_timing(schedule=schedule)
 
     waveforms = sample_schedule(schedule, sampling_rate=0.5e9, x_range=(0, 1.21e-8))
 
     np.testing.assert_array_almost_equal(
-        waveforms["SDP"][0].time,
+        waveforms["SDP"][0][0].time,
         np.array([0.0, 2e-9, 4e-9]),
+        decimal=9,
     )
     np.testing.assert_array_almost_equal(
-        waveforms["SDP"][0].signal,
+        waveforms["SDP"][0][0].signal,
         np.array([0.2, 0.2, 0.2]),
+        decimal=9,
     )
 
     np.testing.assert_array_almost_equal(
-        waveforms["T"][0].time,
-        np.array(
-            [0.0, 2e-9, 4e-9, 6e-9],
-        ),
+        waveforms["T"][0][0].time,
+        np.array([0.0, 2e-9, 4e-9, 6e-9]),
+        decimal=9,
     )
     np.testing.assert_array_almost_equal(
-        waveforms["T"][0].signal,
+        waveforms["T"][0][0].signal,
+        np.array([-0.2, -0.2, -0.2, -0.2]),
+        decimal=9,
+    )
+
+    np.testing.assert_array_almost_equal(
+        waveforms["SDP"][0][1].time,
+        np.array([6e-9, 8e-9, 1e-8, 1.2e-8]),
+        decimal=9,
+    )
+    np.testing.assert_array_almost_equal(
+        waveforms["SDP"][0][1].signal,
+        np.array([0.3, 0.3, 0.3, 0.3]),
+        decimal=9,
+    )
+
+
+def test_sample_schedule_voltage_offsets() -> None:
+    schedule = Schedule("test")
+    schedule.add(VoltageOffset(offset_path_I=0.2, offset_path_Q=-0.2, port="SDP"))
+    schedule.add(SquarePulse(amp=-0.2, duration=6e-9, port="T"), rel_time=8e-9)
+    schedule.add(VoltageOffset(offset_path_I=-0.3, offset_path_Q=0.3, port="SDP"))
+    schedule.add(VoltageOffset(offset_path_I=0.3, offset_path_Q=-0.3, port="T"))
+    schedule.add(
+        VoltageOffset(offset_path_I=0.0, offset_path_Q=0.0, port="SDP"), rel_time=8e-9
+    )
+    schedule.add(VoltageOffset(offset_path_I=0.0, offset_path_Q=0.0, port="T"))
+    schedule.add(IdlePulse(4e-9))
+    schedule = _determine_absolute_timing(schedule=schedule)
+
+    waveforms = sample_schedule(schedule, sampling_rate=0.5e9)
+
+    np.testing.assert_array_almost_equal(
+        waveforms["SDP"][0][0].time,
+        np.array([0.0, 1.3e-8, 1.4e-8, 2.1e-8, 2.2e-8, 2.6e-8]),
+        decimal=9,
+    )
+    np.testing.assert_array_almost_equal(
+        waveforms["SDP"][0][0].signal,
+        np.array([0.2 - 0.2j, 0.2 - 0.2j, -0.3 + 0.3j, -0.3 + 0.3j, 0.0, 0.0]),
+        decimal=9,
+    )
+
+    np.testing.assert_array_almost_equal(
+        waveforms["T"][0][0].time,
+        np.array(
+            [1.4e-8, 2.1e-8, 2.2e-8, 2.6e-8],
+        ),
+        decimal=9,
+    )
+    np.testing.assert_array_almost_equal(
+        waveforms["T"][0][0].signal,
+        np.array(
+            [0.3 - 0.3j, 0.3 - 0.3j, 0.0, 0.0],
+        ),
+        decimal=9,
+    )
+
+    np.testing.assert_array_almost_equal(
+        waveforms["T"][0][1].time,
+        np.array(
+            [8.0e-9, 1.0e-8, 1.2e-8, 1.4e-8],
+        ),
+        decimal=9,
+    )
+    np.testing.assert_array_almost_equal(
+        waveforms["T"][0][1].signal,
         np.array(
             [-0.2, -0.2, -0.2, -0.2],
         ),
-    )
-
-    np.testing.assert_array_almost_equal(
-        waveforms["SDP"][1].time,
-        np.array([6e-9, 8e-9, 1e-8, 1.2e-8]),
-    )
-    np.testing.assert_array_almost_equal(
-        waveforms["SDP"][1].signal,
-        np.array([0.3, 0.3, 0.3, 0.3]),
+        decimal=9,
     )
 
 
@@ -185,27 +253,28 @@ def test_sample_modulated_waveform() -> None:
         modulation="clock",
     )
 
-    assert waveforms["SDP"][0].signal.dtype.kind == "c"
+    assert waveforms["SDP"][0][0].signal.dtype.kind == "c"
     np.testing.assert_array_almost_equal(
-        waveforms["SDP"][0].signal,
+        waveforms["SDP"][0][0].signal,
         np.array(
             [
                 0.2 + 0.0j,
-                0.117557 + 0.161803j,
-                -0.061803 + 0.190211j,
-                -0.190211 + 0.061803j,
+                0.11755705 + 0.161803399j,
+                -0.061803399 + 0.190211303j,
+                -0.190211303 + 0.061803399j,
             ]
         ),
+        decimal=9,
     )
     np.testing.assert_array_almost_equal(
-        waveforms["T"][0].signal, np.array([0.2, 0.2, 0.2, 0.2])
+        waveforms["T"][0][0].signal, np.array([0.2, 0.2, 0.2, 0.2]), decimal=9
     )
 
 
 def test_sample_custom_port_list() -> None:
     schedule = Schedule("test")
-    r = SquarePulse(amp=0.2, duration=4e-9, port="SDP")
-    schedule.add(r)
+    square = SquarePulse(amp=0.2, duration=4e-9, port="SDP")
+    schedule.add(square)
     schedule = _determine_absolute_timing(schedule=schedule)
 
     waveforms = sample_schedule(schedule, sampling_rate=0.5e9, port_list=["SDP"])
