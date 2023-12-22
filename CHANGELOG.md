@@ -1,8 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Breaking changes
+ 
 ## 0.18.0 (2023-12-22)
 
 ### Release highlights
+
+### Merged branches and closed issues
 
 **General updates**
 - Add device elements and edges to quantum devices without keeping an explicit reference to them, e.g. do `quantum_device.add_element(BasicTransmonElement("q0"))`.
