@@ -31,6 +31,7 @@
   - Move `VoltageOffset` from `quantify_scheduler.operations.pulse_library` to `quantify_scheduler.backends.qblox.operations.pulse_library`.
   - Move `quantify_scheduler.operations.stitched_pulse` to `quantify_scheduler.backends.qblox.operations.stitched_pulse`.
   - Move `staircase_pulse`, `long_square_pulse` and `long_ramp_pulse` from `quantify_scheduler.operations.pulse_factories` to `quantify_scheduler.backends.qblox.operations.pulse_factories`.
+- Qblox backend - Fix missing signal on O2 and O4 outputs of baseband modules in real mode (reverting !803). (!891)
 
 ### Merged branches and closed issues
 

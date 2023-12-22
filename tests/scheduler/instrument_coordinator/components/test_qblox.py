@@ -1200,7 +1200,7 @@ def test_get_configuration_manager(
             "real_output_1",
             {
                 "connect_out0": "off",
-                "connect_out1": "Q",
+                "connect_out1": "I",
                 "connect_out2": "off",
                 "connect_out3": "off",
             },
@@ -1222,7 +1222,7 @@ def test_get_configuration_manager(
                 "connect_out0": "off",
                 "connect_out1": "off",
                 "connect_out2": "off",
-                "connect_out3": "Q",
+                "connect_out3": "I",
             },
         ),
         (
@@ -1260,7 +1260,7 @@ def test_get_configuration_manager(
             "real_output_1",
             {
                 "connect_out0": "off",
-                "connect_out1": "Q",
+                "connect_out1": "I",
                 "connect_acq_I": "in0",
                 "connect_acq_Q": "in1",
             },

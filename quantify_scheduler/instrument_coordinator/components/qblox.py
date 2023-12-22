@@ -419,8 +419,10 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
                 and channel_idx in settings.connected_output_indices
             ):  # For baseband, output indices map 1-to-1 to channel map indices
                 if channel_idx in settings.connected_output_indices:
-                    if ChannelMode.DIGITAL not in settings.channel_name:
-                        param_setting = "I" if channel_idx in (0, 2) else "Q"
+                    if ChannelMode.COMPLEX in settings.channel_name:
+                        param_setting = ["I", "Q", "I", "Q"][channel_idx]
+                    elif ChannelMode.REAL in settings.channel_name:
+                        param_setting = "I"
 
             channel_map_parameters[f"connect_out{channel_idx}"] = param_setting
 
