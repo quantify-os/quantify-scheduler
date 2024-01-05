@@ -838,7 +838,7 @@ def plot_window_operations(
 
     window_operations = get_window_operations(schedule)
 
-    cmap = mpl.cm.get_cmap("jet")
+    cmap = mpl.colormaps.get_cmap("jet")
 
     for idx, (t0, t1, operation) in enumerate(window_operations):
         window_name = operation.window_name

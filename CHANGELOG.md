@@ -11,6 +11,8 @@
 - Qblox backend - Add io_name validators for connectivity (both graph input list and legacy hardware config) in QbloxCompilationConfig, as well as a get_valid_channels method in the cluster module and pulsar hardware descriptions (!874)
 - Documentation
   - Update copyright notice to 2024. (!892)
+- Deprecation 
+  - Replace `matplotlib.cm` with `matplotlib.colormaps` to resolve a `DeprecationWarning`. (!888)
 
 ## 0.18.0 (2023-12-22)
 
