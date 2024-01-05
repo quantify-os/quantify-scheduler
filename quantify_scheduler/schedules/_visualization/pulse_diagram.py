@@ -103,6 +103,8 @@ def get_sampled_pulses_from_voltage_offsets(
         Determines if modulation is included in the visualization.
     modulation_if :
         Modulation frequency used when modulation is set to "if".
+    sampling_rate :
+        Number of samples per second to draw when drawing modulated pulses.
     sampled_pulses :
         An already existing dictionary (same type as the return value). If provided,
         this dictionary will be extended with the SampledPulse objects created in this

@@ -3,7 +3,6 @@
 """Helper functions for Qblox backend."""
 import dataclasses
 import math
-import re
 import warnings
 from collections import defaultdict
 from copy import deepcopy

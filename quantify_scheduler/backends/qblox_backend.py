@@ -355,7 +355,9 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
     """
 
     @model_validator(mode="after")
-    def _validate_connectivity_channel_names(self) -> QbloxHardwareCompilationConfig:
+    def _validate_connectivity_channel_names(  # noqa: PLR0912
+        self,
+    ) -> QbloxHardwareCompilationConfig:
         all_channel_names = []
 
         # Fetch channel_names from connectivity datastructure
@@ -527,7 +529,7 @@ def _exists_pulse_starting_before_current_end(
 
 def _raise_if_pulses_overlap_on_same_port_clock(
     schble_a: Schedulable, schble_b: Schedulable, schedule: Schedule
-):
+) -> None:
     """
     Raise an error if any pulse operations overlap on the same port-clock.
 

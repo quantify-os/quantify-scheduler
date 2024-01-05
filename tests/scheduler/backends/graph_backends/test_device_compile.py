@@ -120,4 +120,4 @@ def test_device_compile_default_compilation_passes(basic_schedule):
     assert isinstance(compiled_schedule, CompiledSchedule)
 
     for op in compiled_schedule.operations.values():
-        assert op.valid_pulse
+        assert op.valid_pulse  # pyright: ignore[reportGeneralTypeIssues]

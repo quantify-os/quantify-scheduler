@@ -185,182 +185,120 @@ extend-ignore-names = ["path_I", "path_Q", "offset_path_I", "offset_path_Q"]
 "*.py" = ["D205"] # this should still be refactored.
 
 # All files below are temporarily excluded explicitly and expected to be gradually turned into ruff-compliancy
-"quantify_scheduler/backends/qblox/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/backends/qblox/compiler_container.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/backends/qblox/operation_handling/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/backends/qblox/operation_handling/base.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/backends/qblox/operation_handling/pulses.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/backends/qblox/operation_handling/acquisitions.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/backends/qblox/operation_handling/factory.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/backends/qblox/operation_handling/virtual.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/backends/qblox/register_manager.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/backends/qblox/qasm_program.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/backends/qblox/driver_version_check.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/backends/qblox/instrument_compilers.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/backends/qblox/compiler_abc.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/backends/qblox/constants.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/backends/qblox/helpers.py" = ["F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/backends/qblox/q1asm_instructions.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/backends/types/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/backends/types/common.py" = ["F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/backends/types/zhinst.py" = ["F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/backends/types/qblox.py" = ["F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/backends/zhinst/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/backends/zhinst/helpers.py" = ["D", "I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/backends/zhinst/resolvers.py" = ["D", "I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/backends/zhinst/seqc_il_generator.py" = ["D", "I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/backends/zhinst/settings.py" = ["D417", "I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/backends/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/backends/qblox_backend.py" = ["F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/backends/circuit_to_device.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/backends/corrections.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/backends/graph_compilation.py" = ["UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/backends/zhinst_backend.py" = ["D"]
-"quantify_scheduler/device_under_test/mock_setup.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/device_under_test/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/device_under_test/composite_square_edge.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/device_under_test/nv_element.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/device_under_test/transmon_element.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/device_under_test/quantum_device.py" = ["ANN", "PLR"]
-"quantify_scheduler/enums.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/frontends.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/helpers/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/helpers/collections.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/helpers/inspect.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/helpers/time.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/helpers/mock_instruments.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/helpers/validators.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/helpers/waveforms.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/helpers/importers.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/instrument_coordinator/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/instrument_coordinator/components/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/instrument_coordinator/components/base.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/instrument_coordinator/components/zhinst.py" = ["D"]
-"quantify_scheduler/instrument_coordinator/components/generic.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/instrument_coordinator/components/qblox.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/instrument_coordinator/instrument_coordinator.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/instrument_coordinator/utility.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/operations/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/operations/operation.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/operations/gate_library.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/operations/measurement_factories.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/operations/nv_native_library.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/operations/pulse_factories.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/operations/shared_native_library.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/operations/acquisition_library.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/operations/pulse_library.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/operations/stitched_pulse.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/schedules/timedomain_schedules.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/schedules/trace_schedules.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/schedules/verification.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/schedules/_visualization/__init__.py" = ["D", "I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/schedules/_visualization/circuit_diagram.py" = ["D", "I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/schedules/_visualization/constants.py" = ["D", "I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/schedules/_visualization/pulse_diagram.py" = ["D", "I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/schedules/_visualization/pulse_scheme.py" = ["D", "I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/schedules/schedule.py" = ["D105", "D107", "ANN101", "ANN102"]  # ANN101,ANN102, see https://github.com/astral-sh/ruff/issues/4396
-"quantify_scheduler/schedules/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/schedules/spectroscopy_schedules.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/schemas/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/schemas/examples/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/schemas/examples/device_example_cfgs.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/schemas/examples/utils.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/structure/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/structure/model.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/types.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/visualization/constants.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/visualization/pulse_scheme.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/visualization/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/visualization/circuit_diagram.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/visualization/pulse_diagram.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/json_utils.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/_static_version.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/resources.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/waveforms.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/gettables_profiled.py" = ["D", "I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/_version.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/compilation.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"quantify_scheduler/gettables.py" = ["D"]
-"tests/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/conftest.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/fixtures/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/fixtures/qcodes_utilities.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/fixtures/mock_setup.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/fixtures/schedule.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/integration/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/backends/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/backends/graph_backends/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/backends/graph_backends/test_compilation_flow.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/backends/graph_backends/standard_schedules.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/backends/graph_backends/test_device_compile.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/backends/graph_backends/test_qblox_backend.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/backends/graph_backends/test_zhinst_backend.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/backends/qblox/operation_handling/test_pulses.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/backends/qblox/operation_handling/test_acquisitions.py" = ["F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/backends/qblox/operation_handling/test_factory.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/backends/qblox/operation_handling/test_virtual.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/backends/qblox/operation_handling/empty_qasm_program.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/backends/qblox/test_driver_version_check.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/backends/qblox/test_compiler_abc.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/backends/qblox/test_gettables_qblox.py" = ["F811"]
-"tests/scheduler/backends/qblox/test_register_manager.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/backends/qblox/test_helpers_qblox.py" = ["F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/backends/test_graph_compilation.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/backends/zhinst/test_resolvers.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/backends/zhinst/test_seqc_il_generator.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/backends/zhinst/test_helpers.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/backends/zhinst/test_settings.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/backends/test_circuit_to_device.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/backends/test_zhinst_backend.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/backends/test_qblox_backend.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/device_under_test/test_composite_square_edge.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/device_under_test/test_transmon_element.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/device_under_test/test_nv_element.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/helpers/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/helpers/test_waveforms.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/helpers/test_inspect.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/helpers/test_importers.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/helpers/test_schedule.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/instrument_coordinator/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/instrument_coordinator/components/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/instrument_coordinator/components/test_zhinst.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/instrument_coordinator/components/test_generic.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/instrument_coordinator/components/test_qblox.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/instrument_coordinator/test_utility.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/instrument_coordinator/test_instrument_coordinator.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/schedules/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/schedules/test_trace_schedules.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/schedules/test_timedomain_schedules.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/schedules/test_verification.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/schedules/visualization/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/schedules/visualization/test_circuit_diagram.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/schedules/visualization/test_pulse_diagram.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/schedules/visualization/test_pulse_scheme.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/schedules/test_schedule_plotting.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/schedules/compiles_all_backends.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/schedules/test_spectroscopy_schedules.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/schemas/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/schemas/examples/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/schemas/examples/test_utils.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/test_json_utils.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/test_math.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/test_resources.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/test_structure.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/operations/test_measurement_factories.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/operations/test_pulse_factories.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/operations/test_stitched_pulse.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/test_acquisition_library.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/test_gate_library.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/test_waveforms.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/structure/__init__.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/structure/test_model.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/test_compilation.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/test_corrections.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/test_types.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/scheduler/test_pulse_library.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
-"tests/test_headers_and_copyright.py" = ["I", "F", "E", "W", "TID", "SIM", "N", "UP", "TCH", "ANN", "ARG", "PLR"]
+"quantify_scheduler/_static_version.py" = ['UP009']
+"quantify_scheduler/_version.py" = ['ANN001', 'ANN202', 'N801', 'PLR0912', 'SIM105', 'UP032']
+"quantify_scheduler/backends/circuit_to_device.py" = ['ANN001', 'ANN202', 'ANN204', 'I001', 'PLR0912', 'TCH001', 'UP006']
+"quantify_scheduler/backends/corrections.py" = ['E501', 'I001', 'SIM118']
+"quantify_scheduler/backends/graph_compilation.py" = ['ANN001', 'ANN003', 'ANN201', 'ANN202', 'ANN204', 'TCH001', 'TCH002', 'UP006', 'UP007']
+"quantify_scheduler/backends/qblox/compiler_abc.py" = ['ANN001', 'ANN201', 'ANN202', 'ANN204', 'ANN401', 'E501', 'F821', 'I001', 'SIM108', 'TCH001', 'TCH003', 'UP006', 'UP007']
+"quantify_scheduler/backends/qblox/compiler_container.py" = ['ANN102', 'ANN201', 'ANN204', 'TCH001', 'UP006', 'UP007']
+"quantify_scheduler/backends/qblox/constants.py" = ['E501']
+"quantify_scheduler/backends/qblox/driver_version_check.py" = ['ANN201']
+"quantify_scheduler/backends/qblox/helpers.py" = ['ANN001', 'ANN201', 'ANN202', 'ANN204', 'ANN401', 'E501', 'PLR0912', 'PLR0915', 'PLR5501', 'SIM105', 'SIM118']
+"quantify_scheduler/backends/qblox/instrument_compilers.py" = ['ANN001', 'ANN202', 'ANN204', 'ARG002', 'E501', 'SIM102', 'TCH003', 'UP006', 'UP007']
+"quantify_scheduler/backends/qblox/operation_handling/acquisitions.py" = ['ANN201', 'ANN202', 'ANN204', 'ARG002', 'SIM102', 'TCH001', 'UP006', 'UP007']
+"quantify_scheduler/backends/qblox/operation_handling/base.py" = ['ANN201', 'I001', 'TCH001', 'UP006']
+"quantify_scheduler/backends/qblox/operation_handling/factory.py" = ['PLR0911', 'TCH001']
+"quantify_scheduler/backends/qblox/operation_handling/pulses.py" = ['ANN201', 'ANN202', 'ANN204', 'ANN205', 'ARG002', 'E501', 'E713', 'E731', 'TCH001', 'UP006', 'UP007', 'W291', 'W293']
+"quantify_scheduler/backends/qblox/operation_handling/virtual.py" = ['ANN201', 'ANN204', 'ARG002', 'I001']
+"quantify_scheduler/backends/qblox/operations/control_flow_library.py" = ['F401']
+"quantify_scheduler/backends/qblox/qasm_program.py" = ['ANN002', 'ANN003', 'ANN201', 'ANN204', 'ANN205', 'E501', 'F821', 'N803', 'PLR1714', 'TCH001', 'UP006', 'UP007']
+"quantify_scheduler/backends/qblox_backend.py" = ['ANN401', 'E501', 'SIM118', 'TCH001', 'UP006', 'UP007', 'W291']
+"quantify_scheduler/backends/types/common.py" = ['ANN001', 'ANN003', 'ANN202', 'E501', 'N805', 'TCH001', 'TCH002', 'UP006', 'UP007', 'UP037', 'W291']
+"quantify_scheduler/backends/types/qblox.py" = ['ANN001', 'ANN102', 'ANN202', 'ANN204', 'E501', 'N815', 'PLR1714', 'UP006', 'UP007', 'W291']
+"quantify_scheduler/backends/types/zhinst.py" = ['ANN001', 'ANN201', 'ANN204', 'ANN205', 'ARG002', 'E501', 'N805', 'N815', 'W291']
+"quantify_scheduler/backends/zhinst/helpers.py" = ['ANN001', 'ANN201', 'D417', 'TCH002', 'UP006', 'UP007']
+"quantify_scheduler/backends/zhinst/resolvers.py" = ['D100', 'D417', 'TCH002', 'UP006']
+"quantify_scheduler/backends/zhinst/seqc_il_generator.py" = ['ANN201', 'D100', 'D417', 'UP004', 'UP006', 'UP007']
+"quantify_scheduler/backends/zhinst/settings.py" = ['ANN001', 'ANN102', 'ANN201', 'ANN202', 'ANN204', 'ARG001', 'D417', 'I001', 'PLR0912', 'TCH002', 'UP006', 'UP007']
+"quantify_scheduler/backends/zhinst_backend.py" = ['D202', 'D417', 'D419']
+"quantify_scheduler/device_under_test/composite_square_edge.py" = ['ANN003', 'ANN204', 'ANN401', 'I001']
+"quantify_scheduler/device_under_test/mock_setup.py" = ['ANN001', 'ANN201', 'I001', 'W605']
+"quantify_scheduler/device_under_test/nv_element.py" = ['ANN003', 'ANN204', 'ANN401', 'ARG002', 'I001']
+"quantify_scheduler/device_under_test/quantum_device.py" = ['ANN102']
+"quantify_scheduler/device_under_test/transmon_element.py" = ['ANN003', 'ANN202', 'ANN204', 'ANN401', 'I001', 'SIM118']
+"quantify_scheduler/enums.py" = ['ANN204']
+"quantify_scheduler/gettables.py" = ['D101', 'D202', 'D213', 'D400', 'D404', 'D405', 'D407', 'D410', 'D411', 'D414', 'D415', 'D417']
+"quantify_scheduler/gettables_profiled.py" = ['ANN001', 'ANN002', 'ANN003', 'ANN201', 'ANN202', 'ANN204', 'ARG002', 'D102', 'D404', 'I001']
+"quantify_scheduler/helpers/collections.py" = ['ANN001', 'ANN401', 'F401', 'I001', 'SIM102', 'UP006']
+"quantify_scheduler/helpers/importers.py" = ['ANN401', 'SIM108']
+"quantify_scheduler/helpers/inspect.py" = ['TCH003', 'UP006', 'UP007']
+"quantify_scheduler/helpers/mock_instruments.py" = ['ANN202', 'ANN204']
+"quantify_scheduler/helpers/validators.py" = ['I001', 'UP032']
+"quantify_scheduler/helpers/waveforms.py" = ['ANN202', 'I001', 'SIM118', 'TCH001', 'UP006']
+"quantify_scheduler/instrument_coordinator/components/__init__.py" = ['E501']
+"quantify_scheduler/instrument_coordinator/components/base.py" = ['ANN401', 'TCH001', 'UP006']
+"quantify_scheduler/instrument_coordinator/components/generic.py" = ['ANN001', 'ANN201', 'ANN401', 'ARG002', 'E501', 'TCH001', 'UP006', 'UP007']
+"quantify_scheduler/instrument_coordinator/components/qblox.py" = ['ANN001', 'ANN003', 'ANN102', 'ANN202', 'ANN204', 'ANN401', 'ARG002', 'E501', 'F821', 'I001', 'SIM102', 'SIM118', 'TCH001', 'UP006', 'UP007', 'UP015']
+"quantify_scheduler/instrument_coordinator/components/zhinst.py" = ['D101', 'D102']
+"quantify_scheduler/instrument_coordinator/instrument_coordinator.py" = ['ANN001', 'ANN002', 'ANN003', 'ANN202', 'E501', 'F401', 'SIM118', 'UP006']
+"quantify_scheduler/instrument_coordinator/utility.py" = ['ANN001', 'ANN201', 'ANN202', 'ANN401', 'E501', 'E731', 'I001']
+"quantify_scheduler/json_utils.py" = ['ANN001', 'ANN002', 'ANN003', 'ANN102', 'ANN201', 'I001', 'UP006', 'UP007']
+"quantify_scheduler/operations/acquisition_library.py" = ['I001']
+"quantify_scheduler/operations/gate_library.py" = ['ANN204', 'E501', 'I001', 'N803', 'PLR5501', 'TCH001', 'TID252', 'UP006', 'UP007', 'W291', 'W293']
+"quantify_scheduler/operations/measurement_factories.py" = ['ARG001', 'I001', 'PLR0912', 'TCH002', 'UP006', 'UP007']
+"quantify_scheduler/operations/nv_native_library.py" = ['ANN204', 'I001', 'PLR5501', 'TID252']
+"quantify_scheduler/operations/operation.py" = ['ANN001', 'ANN102', 'ANN204', 'E501']
+"quantify_scheduler/operations/pulse_factories.py" = ['E501', 'I001', 'TCH001']
+"quantify_scheduler/operations/pulse_library.py" = ['ANN002', 'ANN003', 'ANN102', 'ANN204', 'ANN206', 'ARG001', 'E501', 'N803', 'SIM108', 'TCH002', 'UP006', 'UP007']
+"quantify_scheduler/operations/shared_native_library.py" = ['ANN204']
+"quantify_scheduler/operations/stitched_pulse.py" = ['ANN002', 'ANN003', 'ANN201', 'I001']
+"quantify_scheduler/resources.py" = ['ANN001', 'ANN102', 'ANN204', 'I001']
+"quantify_scheduler/schedules/_visualization/circuit_diagram.py" = ['ANN001', 'ANN003', 'ANN202', 'ARG001', 'I001', 'PLR0912', 'PLR0915', 'TCH002', 'UP006', 'UP007']
+"quantify_scheduler/schedules/_visualization/pulse_diagram.py" = ['ANN001', 'ANN003', 'ANN202', 'I001', 'PLR0912', 'PLR0915', 'SIM102', 'SIM118', 'UP006', 'UP007']
+"quantify_scheduler/schedules/_visualization/pulse_scheme.py" = ['ANN001', 'ANN002', 'ANN003', 'D417', 'N802', 'SIM108', 'TCH002', 'UP006', 'UP007']
+"quantify_scheduler/schedules/schedule.py" = ['ANN102']
+"quantify_scheduler/schedules/spectroscopy_schedules.py" = ['E501', 'I001', 'TCH002', 'UP007']
+"quantify_scheduler/schedules/timedomain_schedules.py" = ['E501', 'I001', 'N803']
+"quantify_scheduler/schedules/trace_schedules.py" = ['I001']
+"quantify_scheduler/schedules/verification.py" = ['ANN001', 'ANN202', 'TCH002']
+"quantify_scheduler/schemas/examples/device_example_cfgs.py" = ['E501']
+"quantify_scheduler/structure/model.py" = ['ANN401', 'F401']
+"quantify_scheduler/waveforms.py" = ['ANN001', 'ANN003', 'ANN201', 'E501', 'I001', 'N803', 'UP006', 'UP007', 'UP032']
+"tests/conftest.py" = ['F403', 'UP009']
+"tests/fixtures/mock_setup.py" = ['I001', 'SIM105']
+"tests/fixtures/schedule.py" = ['I001', 'UP006', 'UP007']
+"tests/scheduler/backends/graph_backends/standard_schedules.py" = ['I001']
+"tests/scheduler/backends/graph_backends/test_device_compile.py" = ['I001']
+"tests/scheduler/backends/graph_backends/test_zhinst_backend.py" = ['I001', 'TID252']
+"tests/scheduler/backends/qblox/operation_handling/test_acquisitions.py" = ['E501', 'F401', 'F811', 'PLR0915']
+"tests/scheduler/backends/qblox/operation_handling/test_pulses.py" = ['ARG002', 'E501', 'E711', 'F401', 'F811', 'I001']
+"tests/scheduler/backends/qblox/operation_handling/test_virtual.py" = ['I001']
+"tests/scheduler/backends/qblox/test_compiler_abc.py" = ['I001']
+"tests/scheduler/backends/qblox/test_gettables_qblox.py" = ['F811']
+"tests/scheduler/backends/qblox/test_helpers_qblox.py" = ['N802', 'PLR5501']
+"tests/scheduler/backends/test_circuit_to_device.py" = ['E501', 'I001', 'TCH001']
+"tests/scheduler/backends/test_graph_compilation.py" = ['ARG001', 'I001', 'N816']
+"tests/scheduler/backends/test_qblox_backend.py" = ['ARG001', 'E501', 'F541', 'F821', 'I001', 'SIM118', 'SIM300', 'W291']
+"tests/scheduler/backends/test_zhinst_backend.py" = ['ARG001', 'E501', 'F841', 'I001', 'SIM118', 'UP006']
+"tests/scheduler/backends/zhinst/test_helpers.py" = ['ARG001']
+"tests/scheduler/backends/zhinst/test_settings.py" = ['F401', 'I001', 'PLR0124', 'UP034']
+"tests/scheduler/device_under_test/test_composite_square_edge.py" = ['I001', 'PLR1714']
+"tests/scheduler/device_under_test/test_nv_element.py" = ['E501', 'I001', 'SIM118', 'TCH002']
+"tests/scheduler/device_under_test/test_transmon_element.py" = ['I001']
+"tests/scheduler/helpers/test_schedule.py" = ['I001']
+"tests/scheduler/helpers/test_waveforms.py" = ['ARG001', 'TCH002', 'UP006']
+"tests/scheduler/instrument_coordinator/components/test_generic.py" = ['I001']
+"tests/scheduler/instrument_coordinator/components/test_qblox.py" = ['F541', 'I001']
+"tests/scheduler/instrument_coordinator/components/test_zhinst.py" = ['ARG001']
+"tests/scheduler/instrument_coordinator/test_instrument_coordinator.py" = ['ARG001', 'F401', 'F811', 'I001', 'UP006']
+"tests/scheduler/operations/test_measurement_factories.py" = ['I001']
+"tests/scheduler/operations/test_pulse_factories.py" = ['I001']
+"tests/scheduler/operations/test_stitched_pulse.py" = ['F841']
+"tests/scheduler/schedules/test_schedule_plotting.py" = ['I001']
+"tests/scheduler/schedules/test_spectroscopy_schedules.py" = ['F401', 'F811', 'I001', 'SIM201', 'TCH001']
+"tests/scheduler/schedules/test_timedomain_schedules.py" = ['E501', 'N801', 'SIM118']
+"tests/scheduler/schedules/visualization/test_pulse_diagram.py" = ['I001']
+"tests/scheduler/structure/test_model.py" = ['E501', 'I001']
+"tests/scheduler/test_acquisition_library.py" = ['I001']
+"tests/scheduler/test_compilation.py" = ['I001', 'SIM118']
+"tests/scheduler/test_corrections.py" = ['ARG001', 'F541', 'I001']
+"tests/scheduler/test_gate_library.py" = ['E714', 'F401', 'I001']
+"tests/scheduler/test_json_utils.py" = ['I001']
+"tests/scheduler/test_pulse_library.py" = ['ARG001']
+"tests/scheduler/test_types.py" = ['F401', 'I001']
+"tests/scheduler/test_waveforms.py" = ['I001']
+"tests/test_headers_and_copyright.py" = ['UP015', 'UP032']
 
 [tool.ruff.isort]
 known-first-party = ["quantify_core", "quantify_scheduler"]
@@ -369,180 +307,91 @@ exclude = [
     "docs",
     "setup.py",
     # All files below are temporarily excluded explicitly and expected to be gradually turned into pyright-compliancy
-    "quantify_scheduler/backends/qblox/__init__.py",
-    "quantify_scheduler/backends/qblox/compiler_container.py",
-    "quantify_scheduler/backends/qblox/operation_handling/__init__.py",
-    "quantify_scheduler/backends/qblox/operation_handling/base.py",
-    "quantify_scheduler/backends/qblox/operation_handling/pulses.py",
-    "quantify_scheduler/backends/qblox/operation_handling/acquisitions.py",
-    "quantify_scheduler/backends/qblox/operation_handling/factory.py",
-    "quantify_scheduler/backends/qblox/operation_handling/virtual.py",
-    "quantify_scheduler/backends/qblox/register_manager.py",
-    "quantify_scheduler/backends/qblox/qasm_program.py",
-    "quantify_scheduler/backends/qblox/driver_version_check.py",
-    "quantify_scheduler/backends/qblox/instrument_compilers.py",
-    "quantify_scheduler/backends/qblox/compiler_abc.py",
-    "quantify_scheduler/backends/qblox/constants.py",
-    "quantify_scheduler/backends/qblox/helpers.py",
-    "quantify_scheduler/backends/qblox/q1asm_instructions.py",
-    "quantify_scheduler/backends/types/__init__.py",
-    "quantify_scheduler/backends/types/common.py",
-    "quantify_scheduler/backends/types/zhinst.py",
-    "quantify_scheduler/backends/types/qblox.py",
-    "quantify_scheduler/backends/zhinst/__init__.py",
-    "quantify_scheduler/backends/zhinst/helpers.py",
-    "quantify_scheduler/backends/zhinst/resolvers.py",
-    "quantify_scheduler/backends/zhinst/seqc_il_generator.py",
-    "quantify_scheduler/backends/zhinst/settings.py",
-    "quantify_scheduler/backends/__init__.py",
-    "quantify_scheduler/backends/qblox_backend.py",
-    "quantify_scheduler/backends/zhinst_backend.py",
+    "quantify_scheduler/compilation.py",
+    "quantify_scheduler/gettables_profiled.py",
+    "quantify_scheduler/json_utils.py",
     "quantify_scheduler/backends/circuit_to_device.py",
     "quantify_scheduler/backends/corrections.py",
     "quantify_scheduler/backends/graph_compilation.py",
+    "quantify_scheduler/backends/qblox_backend.py",
+    "quantify_scheduler/backends/zhinst_backend.py",
+    "quantify_scheduler/backends/qblox/compiler_abc.py",
+    "quantify_scheduler/backends/qblox/compiler_container.py",
+    "quantify_scheduler/backends/qblox/driver_version_check.py",
+    "quantify_scheduler/backends/qblox/helpers.py",
+    "quantify_scheduler/backends/qblox/instrument_compilers.py",
+    "quantify_scheduler/backends/qblox/qasm_program.py",
+    "quantify_scheduler/backends/qblox/operation_handling/pulses.py",
+    "quantify_scheduler/backends/qblox/operation_handling/virtual.py",
+    "quantify_scheduler/backends/types/common.py",
+    "quantify_scheduler/backends/types/qblox.py",
+    "quantify_scheduler/backends/types/zhinst.py",
+    "quantify_scheduler/backends/zhinst/helpers.py",
+    "quantify_scheduler/backends/zhinst/seqc_il_generator.py",
+    "quantify_scheduler/backends/zhinst/settings.py",
+    "quantify_scheduler/device_under_test/composite_square_edge.py",
     "quantify_scheduler/device_under_test/device_element.py",
     "quantify_scheduler/device_under_test/edge.py",
     "quantify_scheduler/device_under_test/mock_setup.py",
-    "quantify_scheduler/device_under_test/__init__.py",
-    "quantify_scheduler/device_under_test/composite_square_edge.py",
-    "quantify_scheduler/device_under_test/nv_element.py",
-    "quantify_scheduler/device_under_test/transmon_element.py",
     "quantify_scheduler/device_under_test/quantum_device.py",
-    "quantify_scheduler/enums.py",
-    "quantify_scheduler/frontends.py",
-    "quantify_scheduler/helpers/__init__.py",
     "quantify_scheduler/helpers/collections.py",
     "quantify_scheduler/helpers/inspect.py",
-    "quantify_scheduler/helpers/time.py",
     "quantify_scheduler/helpers/mock_instruments.py",
+    "quantify_scheduler/helpers/schedule.py",
     "quantify_scheduler/helpers/validators.py",
     "quantify_scheduler/helpers/waveforms.py",
-    "quantify_scheduler/helpers/importers.py",
-    "quantify_scheduler/helpers/schedule.py",
-    "quantify_scheduler/instrument_coordinator/__init__.py",
-    "quantify_scheduler/instrument_coordinator/components/__init__.py",
-    "quantify_scheduler/instrument_coordinator/components/base.py",
-    "quantify_scheduler/instrument_coordinator/components/zhinst.py",
-    "quantify_scheduler/instrument_coordinator/components/generic.py",
-    "quantify_scheduler/instrument_coordinator/components/qblox.py",
     "quantify_scheduler/instrument_coordinator/instrument_coordinator.py",
     "quantify_scheduler/instrument_coordinator/utility.py",
-    "quantify_scheduler/operations/__init__.py",
-    "quantify_scheduler/operations/operation.py",
+    "quantify_scheduler/instrument_coordinator/components/generic.py",
+    "quantify_scheduler/instrument_coordinator/components/qblox.py",
+    "quantify_scheduler/instrument_coordinator/components/zhinst.py",
+    "quantify_scheduler/operations/acquisition_library.py",
     "quantify_scheduler/operations/gate_library.py",
     "quantify_scheduler/operations/measurement_factories.py",
     "quantify_scheduler/operations/nv_native_library.py",
     "quantify_scheduler/operations/pulse_factories.py",
-    "quantify_scheduler/operations/shared_native_library.py",
-    "quantify_scheduler/operations/acquisition_library.py",
     "quantify_scheduler/operations/pulse_library.py",
+    "quantify_scheduler/schedules/schedule.py",
     "quantify_scheduler/schedules/timedomain_schedules.py",
     "quantify_scheduler/schedules/trace_schedules.py",
     "quantify_scheduler/schedules/verification.py",
-    "quantify_scheduler/schedules/_visualization/__init__.py",
     "quantify_scheduler/schedules/_visualization/circuit_diagram.py",
-    "quantify_scheduler/schedules/_visualization/constants.py",
     "quantify_scheduler/schedules/_visualization/pulse_diagram.py",
     "quantify_scheduler/schedules/_visualization/pulse_scheme.py",
-    "quantify_scheduler/schedules/schedule.py",
-    "quantify_scheduler/schedules/__init__.py",
-    "quantify_scheduler/schedules/spectroscopy_schedules.py",
-    "quantify_scheduler/schemas/__init__.py",
-    "quantify_scheduler/schemas/examples/__init__.py",
-    "quantify_scheduler/schemas/examples/device_example_cfgs.py",
-    "quantify_scheduler/schemas/examples/utils.py",
-    "quantify_scheduler/structure/__init__.py",
-    "quantify_scheduler/structure/model.py",
-    "quantify_scheduler/types.py",
-    "quantify_scheduler/visualization/constants.py",
-    "quantify_scheduler/visualization/pulse_scheme.py",
-    "quantify_scheduler/visualization/__init__.py",
-    "quantify_scheduler/visualization/circuit_diagram.py",
-    "quantify_scheduler/visualization/pulse_diagram.py",
-    "quantify_scheduler/math.py",
-    "quantify_scheduler/json_utils.py",
-    "quantify_scheduler/__init__.py",
-    "quantify_scheduler/_static_version.py",
-    "quantify_scheduler/resources.py",
-    "quantify_scheduler/waveforms.py",
-    "quantify_scheduler/gettables_profiled.py",
-    "quantify_scheduler/_version.py",
-    "quantify_scheduler/compilation.py",
-    "tests/__init__.py",
-    "tests/conftest.py",
-    "tests/fixtures/__init__.py",
-    "tests/fixtures/qcodes_utilities.py",
     "tests/fixtures/mock_setup.py",
-    "tests/fixtures/schedule.py",
-    "tests/integration/__init__.py",
-    "tests/integration/test_compilation_nv.py",
-    "tests/scheduler/__init__.py",
-    "tests/scheduler/backends/__init__.py",
-    "tests/scheduler/backends/graph_backends/__init__.py",
-    "tests/scheduler/backends/graph_backends/test_compilation_flow.py",
-    "tests/scheduler/backends/graph_backends/standard_schedules.py",
-    "tests/scheduler/backends/graph_backends/test_device_compile.py",
-    "tests/scheduler/backends/graph_backends/test_qblox_backend.py",
-    "tests/scheduler/backends/graph_backends/test_zhinst_backend.py",
-    "tests/scheduler/backends/qblox/operation_handling/test_pulses.py",
-    "tests/scheduler/backends/qblox/operation_handling/test_acquisitions.py",
-    "tests/scheduler/backends/qblox/operation_handling/test_factory.py",
-    "tests/scheduler/backends/qblox/operation_handling/test_virtual.py",
-    "tests/scheduler/backends/qblox/test_driver_version_check.py",
-    "tests/scheduler/backends/qblox/test_register_manager.py",
-    "tests/scheduler/backends/qblox/test_helpers_qblox.py",
-    "tests/scheduler/backends/test_graph_compilation.py",
-    "tests/scheduler/backends/zhinst/test_resolvers.py",
-    "tests/scheduler/backends/zhinst/test_seqc_il_generator.py",
-    "tests/scheduler/backends/zhinst/test_helpers.py",
-    "tests/scheduler/backends/zhinst/test_settings.py",
-    "tests/scheduler/backends/test_circuit_to_device.py",
-    "tests/scheduler/backends/test_zhinst_backend.py",
-    "tests/scheduler/backends/test_qblox_backend.py",
-    "tests/scheduler/device_under_test/test_composite_square_edge.py",
-    "tests/scheduler/device_under_test/test_transmon_element.py",
-    "tests/scheduler/device_under_test/test_nv_element.py",
-    "tests/scheduler/device_under_test/test_quantum_device.py",
-    "tests/scheduler/helpers/__init__.py",
-    "tests/scheduler/helpers/test_waveforms.py",
-    "tests/scheduler/helpers/test_inspect.py",
-    "tests/scheduler/helpers/test_importers.py",
-    "tests/scheduler/helpers/test_schedule.py",
-    "tests/scheduler/instrument_coordinator/__init__.py",
-    "tests/scheduler/instrument_coordinator/components/__init__.py",
-    "tests/scheduler/instrument_coordinator/components/test_zhinst.py",
-    "tests/scheduler/instrument_coordinator/components/test_generic.py",
-    "tests/scheduler/instrument_coordinator/components/test_qblox.py",
-    "tests/scheduler/instrument_coordinator/test_utility.py",
-    "tests/scheduler/instrument_coordinator/test_instrument_coordinator.py",
-    "tests/scheduler/schedules/__init__.py",
-    "tests/scheduler/schedules/test_trace_schedules.py",
-    "tests/scheduler/schedules/test_timedomain_schedules.py",
-    "tests/scheduler/schedules/test_verification.py",
-    "tests/scheduler/schedules/visualization/__init__.py",
-    "tests/scheduler/schedules/visualization/test_circuit_diagram.py",
-    "tests/scheduler/schedules/visualization/test_pulse_diagram.py",
-    "tests/scheduler/schedules/visualization/test_pulse_scheme.py",
-    "tests/scheduler/schedules/test_schedule_plotting.py",
-    "tests/scheduler/schedules/compiles_all_backends.py",
-    "tests/scheduler/schedules/test_spectroscopy_schedules.py",
-    "tests/scheduler/schemas/__init__.py",
-    "tests/scheduler/schemas/examples/__init__.py",
-    "tests/scheduler/schemas/examples/test_utils.py",
-    "tests/scheduler/test_json_utils.py",
-    "tests/scheduler/test_math.py",
-    "tests/scheduler/test_resources.py",
-    "tests/scheduler/test_structure.py",
-    "tests/scheduler/operations/test_measurement_factories.py",
-    "tests/scheduler/test_acquisition_library.py",
-    "tests/scheduler/test_gate_library.py",
-    "tests/scheduler/test_waveforms.py",
-    "tests/scheduler/structure/__init__.py",
-    "tests/scheduler/structure/test_model.py",
     "tests/scheduler/test_compilation.py",
     "tests/scheduler/test_corrections.py",
-    "tests/scheduler/test_types.py",
-    "tests/scheduler/test_pulse_library.py",
+    "tests/scheduler/test_gate_library.py",
     "tests/scheduler/test_gettables.py",
-    "tests/test_headers_and_copyright.py",
+    "tests/scheduler/test_json_utils.py",
+    "tests/scheduler/test_pulse_library.py",
+    "tests/scheduler/test_types.py",
+    "tests/scheduler/backends/test_circuit_to_device.py",
+    "tests/scheduler/backends/test_graph_compilation.py",
+    "tests/scheduler/backends/test_qblox_backend.py",
+    "tests/scheduler/backends/test_zhinst_backend.py",
+    "tests/scheduler/backends/graph_backends/test_qblox_backend.py",
+    "tests/scheduler/backends/qblox/test_driver_version_check.py",
+    "tests/scheduler/backends/qblox/test_helpers_qblox.py",
+    "tests/scheduler/backends/qblox/operation_handling/test_acquisitions.py",
+    "tests/scheduler/backends/qblox/operation_handling/test_virtual.py",
+    "tests/scheduler/backends/zhinst/test_helpers.py",
+    "tests/scheduler/backends/zhinst/test_resolvers.py",
+    "tests/scheduler/backends/zhinst/test_seqc_il_generator.py",
+    "tests/scheduler/backends/zhinst/test_settings.py",
+    "tests/scheduler/device_under_test/test_composite_square_edge.py",
+    "tests/scheduler/device_under_test/test_nv_element.py",
+    "tests/scheduler/device_under_test/test_transmon_element.py",
+    "tests/scheduler/helpers/test_schedule.py",
+    "tests/scheduler/helpers/test_waveforms.py",
+    "tests/scheduler/instrument_coordinator/test_instrument_coordinator.py",
+    "tests/scheduler/instrument_coordinator/test_utility.py",
+    "tests/scheduler/instrument_coordinator/components/test_qblox.py",
+    "tests/scheduler/instrument_coordinator/components/test_zhinst.py",
+    "tests/scheduler/schedules/compiles_all_backends.py",
+    "tests/scheduler/schedules/test_schedule_plotting.py",
+    "tests/scheduler/schedules/test_spectroscopy_schedules.py",
+    "tests/scheduler/schedules/test_timedomain_schedules.py",
+    "tests/scheduler/schedules/visualization/test_pulse_scheme.py",
+    "tests/scheduler/structure/test_model.py",
 ]

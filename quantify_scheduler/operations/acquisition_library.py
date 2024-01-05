@@ -3,8 +3,7 @@
 # pylint: disable=too-many-arguments
 """Standard acquisition protocols for use with the quantify_scheduler."""
 
-from typing import Any, Dict, List, Optional, Sequence, Union
-import warnings
+from typing import Any, Dict, List, Union
 
 import numpy as np
 
