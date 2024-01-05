@@ -117,7 +117,7 @@ def set_dummy_data(repetitions=1):
         for i in range(num_acquisitions)
     ] * repetitions
     cluster.set_dummy_binned_acquisition_data(
-        slot_idx=dummy_slot_idx, sequencer=1, acq_index_name="1", data=dummy_data_1
+        slot_idx=dummy_slot_idx, sequencer=1, acq_index_name="0", data=dummy_data_1
     )
 
 
