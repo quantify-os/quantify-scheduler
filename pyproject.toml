@@ -61,9 +61,6 @@ dependencies = [
 
     # We are using rich in our tutorials
     "rich[jupyter]",
-
-    # Conditional
-    "tomli >= 1.1.0; python_version < '3.11'"
 ]
 
 [project.optional-dependencies]

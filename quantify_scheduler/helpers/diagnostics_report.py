@@ -5,25 +5,19 @@
 
 import json
 import os
+import re
 import sys
 import traceback
 import zipfile
 from datetime import datetime, timezone
-from os.path import dirname
+from importlib.metadata import distribution
+from importlib.metadata import version as get_version
 from types import TracebackType
 from typing import Any, Dict, Optional, Tuple, Type, Union
 from uuid import uuid4
 
 import numpy as np
 from qcodes.utils.json_utils import NumpyJSONEncoder
-
-try:
-    import tomllib  # type: ignore[reportMissingImports]
-except ModuleNotFoundError:
-    import tomli as tomllib
-
-import pkg_resources
-from packaging.specifiers import SpecifierSet
 
 from quantify_core._version import __version__ as __core_version__
 from quantify_core.data.handling import get_datadir, snapshot
@@ -75,26 +69,29 @@ def _generate_diagnostics_report(  # noqa: PLR0915
         return extracted_hw_logs
 
     def _get_dependency_versions() -> list:
-        package_root = dirname(dirname(os.path.realpath(__file__)))
-        pyproject_path = os.path.join(dirname(package_root), "pyproject.toml")
-
-        with open(pyproject_path, "rb") as pyproject_file:
-            pyproject_data = tomllib.load(pyproject_file)
+        dependencies = [
+            dependency
+            for dependency in distribution(
+                "quantify-scheduler"
+            ).requires  # pyright: ignore[reportOptionalIterable]
+            if "extra" not in dependency
+        ]
 
         all_dependency_versions = []
-        for dependency in pyproject_data["project"]["dependencies"]:
+        _operator_regex_str = r"(~=|==|!=|<=|>=|<|>|===|\[|\s)"
+        for line in dependencies:
+            dependency = re.split(_operator_regex_str, line)[0]
+            if dependency == "quantify_core":
+                dependency = dependency.replace("_", "-")
             version = (
                 __core_version__
                 if dependency == "quantify-core"
-                else pkg_resources.get_distribution(dependency).version
+                else get_version(dependency)
             )
             all_dependency_versions.append(f"{dependency}: {version}")
 
-        python_specs = SpecifierSet(pyproject_data["project"]["requires-python"])
-        python_version = sys.version.split(" ")[0]
-        all_dependency_versions.append(f"python{python_specs}: {python_version}")
-
         all_dependency_versions.append(f"quantify-scheduler: {__scheduler_version__}")
+        all_dependency_versions.append(f"python: {sys.version.split(' ')[0]}")
 
         return sorted(all_dependency_versions)
 
