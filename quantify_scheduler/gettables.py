@@ -255,6 +255,8 @@ class ScheduleGettable:
         if acq_metadata.acq_protocol == "TriggerCount":
             return [vals.real.astype(np.uint64)]
 
+        if acq_metadata.acq_protocol == "ThresholdedAcquisition":
+            return [vals.real.astype(acq_metadata.acq_return_type)]
         if acq_metadata.acq_protocol in (
             "Trace",
             "SSBIntegrationComplex",
@@ -367,16 +369,18 @@ class ScheduleGettable:
 
         elif (
             acq_metadata.acq_protocol
-            in ("SSBIntegrationComplex", "WeightedIntegratedComplex")
+            in (
+                "SSBIntegrationComplex",
+                "WeightedIntegratedComplex",
+                "ThresholdedAcquisition",
+            )
             and acq_metadata.bin_mode == BinMode.AVERAGE
         ):
             dataset = {}
             for acq_channel_metadata in acq_metadata.acq_channels_metadata.values():
                 acq_channel: Hashable = acq_channel_metadata.acq_channel
                 channel_data = acquired_data[acq_channel]
-                if (num_dims := len(channel_data.dims)) != 1 or not np.iscomplexobj(
-                    channel_data
-                ):
+                if (num_dims := len(channel_data.dims)) != 1:
                     raise AcquisitionProtocolError(
                         "Data returned by an instrument coordinator component for"
                         f" {acq_metadata.acq_protocol} acquisition protocol in"
@@ -391,16 +395,18 @@ class ScheduleGettable:
 
         elif (
             acq_metadata.acq_protocol
-            in ("SSBIntegrationComplex", "WeightedIntegratedComplex")
+            in (
+                "SSBIntegrationComplex",
+                "WeightedIntegratedComplex",
+                "ThresholdedAcquisition",
+            )
             and acq_metadata.bin_mode == BinMode.APPEND
         ):
             dataset = {}
             for acq_channel_metadata in acq_metadata.acq_channels_metadata.values():
                 acq_channel: Hashable = acq_channel_metadata.acq_channel
                 channel_data = acquired_data[acq_channel]
-                if (num_dims := len(channel_data.dims)) != 2 or not np.iscomplexobj(
-                    channel_data
-                ):
+                if (num_dims := len(channel_data.dims)) != 2:
                     raise AcquisitionProtocolError(
                         "Data returned by an instrument coordinator component for"
                         f" {acq_metadata.acq_protocol} acquisition protocol in"

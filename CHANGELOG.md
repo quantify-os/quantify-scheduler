@@ -6,6 +6,8 @@
 
 ### Merged branches and closed issues
 
+- Acquisition
+  - Fix `ThresholdedAcquisition` dataset format. (!897)
 - Visualization - Allow plotting `VoltageOffset` operations in both the `"mpl"` and `"plotly"` backends. (!873).
 - Operations - Make it possible to specify a custom name for `StitchedPulse`. `StitchedPulse` instances created by `long_square_pulse`, `long_ramp_pulse` and `staircase_pulse` now have the same name as the factory function. (!871)
 - Qblox backend - Add io_name validators for connectivity (both graph input list and legacy hardware config) in QbloxCompilationConfig, as well as a get_valid_channels method in the cluster module and pulsar hardware descriptions (!874)

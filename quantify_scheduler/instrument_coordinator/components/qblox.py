@@ -1353,17 +1353,20 @@ class _QRMAcquisitionManager:
             hardware_retrieved_acquisitions=hardware_retrieved_acquisitions,
             qblox_acq_index=qblox_acq_index,
         )
-        acquisitions_data = np.array(bin_data["threshold"])
 
         acq_index_dim_name = f"acq_index_{acq_channel}"
 
         if acquisition_metadata.bin_mode == BinMode.AVERAGE:
+            acquisitions_data = np.array(bin_data["threshold"])
             return DataArray(
                 acquisitions_data.reshape((len(acq_indices),)),
                 dims=[acq_index_dim_name],
                 coords={acq_index_dim_name: acq_indices},
             )
         elif acquisition_metadata.bin_mode == BinMode.APPEND:
+            acquisitions_data = np.array(
+                bin_data["threshold"], dtype=acquisition_metadata.acq_return_type
+            )
             return DataArray(
                 acquisitions_data.reshape(
                     (acquisition_metadata.repetitions, len(acq_indices))

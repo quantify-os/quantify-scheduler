@@ -218,6 +218,7 @@ class SchedulerJSONDecoder(json.JSONDecoder):
                     np.ndarray,
                     np.complex128,
                     np.int32,
+                    np.uint32,
                     np.int64,
                 ]
             }
@@ -317,6 +318,7 @@ class SchedulerJSONEncoder(json.JSONEncoder):
             np.ndarray,
             np.complex128,
             np.int32,
+            np.uint32,
             np.int64,
         ]:
             return {"deserialization_type": o.__name__, "mode": "type"}

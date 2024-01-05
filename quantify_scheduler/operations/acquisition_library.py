@@ -406,7 +406,7 @@ class ThresholdedAcquisition(AcquisitionOperation):
                 "acq_channel": acq_channel,
                 "acq_index": acq_index,
                 "bin_mode": bin_mode,
-                "acq_return_type": int,
+                "acq_return_type": np.uint32,
                 "protocol": "ThresholdedAcquisition",
                 # The following are set during _compile_circuit_to_device
                 "acq_threshold": None,
