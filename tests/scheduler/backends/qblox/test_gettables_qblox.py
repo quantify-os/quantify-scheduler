@@ -28,7 +28,7 @@ from quantify_scheduler.instrument_coordinator.components.qblox import (
     ClusterComponent,
 )
 from quantify_scheduler.operations.gate_library import Reset
-from quantify_scheduler.schedules.schedule import Schedule
+from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 from quantify_scheduler.schedules.spectroscopy_schedules import (
     heterodyne_spec_sched,
 )
@@ -246,7 +246,7 @@ def test_initialize_and_get_with_report_failed_initialization(  # pylint: disabl
     assert "failed_initialization" in os.path.basename(report_zipfile)
 
     with zipfile.ZipFile(report_zipfile, mode="r") as zf:
-        compiled_schedule_report = Schedule.from_json(
+        compiled_schedule_report = CompiledSchedule.from_json(
             zf.read("compiled_schedule.json").decode()
         )
     assert gettable.compiled_schedule == compiled_schedule_report
@@ -440,7 +440,15 @@ def test_initialize_and_get_with_report_completed_exp(
     # Prepare mock data
     acquisition_channel = 0
     data = (np.ones(50) * np.exp(1j * np.deg2rad(45))).astype(np.complex64)
-    expected_data = Dataset({acquisition_channel: (["acq_index"], data)})
+    expected_data = Dataset(
+        {
+            acquisition_channel: (
+                ["acq_index"],
+                data,
+                {"acq_protocol": "SSBIntegrationComplex"},
+            )
+        }
+    )
 
     mocker.patch.object(
         ic,

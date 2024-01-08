@@ -28,11 +28,9 @@ from quantify_scheduler.helpers.collections import (
 )
 from quantify_scheduler.helpers.schedule import (
     _extract_port_clocks_used,
-    extract_acquisition_metadata_from_acquisition_protocols,
 )
 from quantify_scheduler.helpers.waveforms import exec_waveform_function
 from quantify_scheduler.operations.pulse_library import WindowOperation
-from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 
 
 def generate_waveform_data(
@@ -755,20 +753,6 @@ def calc_from_units_volt(
         )
 
     return calculated_offset
-
-
-def extract_acquisition_metadata_from_acquisitions(
-    acquisitions: List[OpInfo], repetitions: int
-) -> AcquisitionMetadata:
-    """
-    Variant of
-    :func:`~quantify_scheduler.helpers.schedule.extract_acquisition_metadata_from_acquisition_protocols`
-    for use with the Qblox backend.
-    """
-    return extract_acquisition_metadata_from_acquisition_protocols(
-        acquisition_protocols=[acq.data for acq in acquisitions],
-        repetitions=repetitions,
-    )
 
 
 def single_scope_mode_acquisition_raise(sequencer_0, sequencer_1, module_name):

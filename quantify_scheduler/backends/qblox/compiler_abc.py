@@ -24,6 +24,7 @@ from typing import (
     Set,
     Tuple,
     Union,
+    Hashable,
 )
 
 from pathvalidate import sanitize_filename
@@ -62,9 +63,13 @@ from quantify_scheduler.backends.types.qblox import (
 )
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.pulse_library import SetClockFrequency
+from quantify_scheduler.helpers.schedule import (
+    extract_acquisition_metadata_from_acquisition_protocols,
+)
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.qblox.instrument_compilers import LocalOscillator
+    from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
@@ -606,7 +611,9 @@ class Sequencer:
             )
 
     def _prepare_acq_settings(
-        self, acquisitions: List[IOperationStrategy], repetitions: int
+        self,
+        acquisitions: List[IOperationStrategy],
+        acq_metadata: AcquisitionMetadata,
     ):
         """
         Sets sequencer settings that are specific to certain acquisitions.
@@ -616,14 +623,11 @@ class Sequencer:
         ----------
         acquisitions
             List of the acquisitions assigned to this sequencer.
-        repetitions
-            The number of times to repeat execution of the schedule.
+        acq_metadata
+            Acquisition metadata.
         """
         acquisition_infos: List[OpInfo] = list(
             map(lambda acq: acq.operation_info, acquisitions)
-        )
-        acq_metadata = helpers.extract_acquisition_metadata_from_acquisitions(
-            acquisitions=acquisition_infos, repetitions=repetitions
         )
         if acq_metadata.acq_protocol == "TriggerCount":
             self._settings.ttl_acq_auto_bin_incr_en = (
@@ -659,8 +663,8 @@ class Sequencer:
 
     def _generate_acq_declaration_dict(
         self,
-        acquisitions: List[IOperationStrategy],
         repetitions: int,
+        acq_metadata: AcquisitionMetadata,
     ) -> Dict[str, Any]:
         """
         Generates the "acquisitions" entry of the program json. It contains declaration
@@ -672,10 +676,10 @@ class Sequencer:
 
         Parameters
         ----------
-        acquisitions:
-            List of the acquisitions assigned to this sequencer.
-        repetitions:
+        repetitions
             The number of times to repeat execution of the schedule.
+        acq_metadata
+            Acquisition metadata.
 
         Returns
         -------
@@ -683,15 +687,6 @@ class Sequencer:
             The "acquisitions" entry of the program json as a dict. The keys correspond
             to the names of the acquisitions (i.e. the acq_channel in the scheduler).
         """
-        acquisition_infos: List[OpInfo] = list(
-            map(lambda acq: acq.operation_info, acquisitions)
-        )
-
-        # acquisition metadata for acquisitions relevant to this sequencer only
-        acq_metadata = helpers.extract_acquisition_metadata_from_acquisitions(
-            acquisitions=acquisition_infos, repetitions=repetitions
-        )
-
         # initialize an empty dictionary for the format required by module
         acq_declaration_dict = {}
         for (
@@ -754,7 +749,8 @@ class Sequencer:
         self,
         total_sequence_time: float,
         align_qasm_fields: bool,
-        repetitions: int = 1,
+        acq_metadata: Optional[AcquisitionMetadata],
+        repetitions: int,
     ) -> str:
         """
         Generates a QASM program for a sequencer. Requires the awg and acq dicts to
@@ -785,6 +781,8 @@ class Sequencer:
             before this time, a wait is added at the end to ensure synchronization.
         align_qasm_fields
             If True, make QASM program more human-readable by aligning its fields.
+        acq_metadata
+            Acquisition metadata.
         repetitions
             Number of times to repeat execution of the schedule.
 
@@ -807,15 +805,6 @@ class Sequencer:
         """
         loop_label = "start"
 
-        if self.parent.supports_acquisition and len(self.acquisitions) != 0:
-            acquisition_infos: List[OpInfo] = [
-                acq.operation_info for acq in self.acquisitions
-            ]
-            acq_metadata = helpers.extract_acquisition_metadata_from_acquisitions(
-                acquisitions=acquisition_infos, repetitions=repetitions
-            )
-        else:
-            acq_metadata = None
         qasm = QASMProgram(
             static_hw_properties=self.static_hw_properties,
             register_manager=self.register_manager,
@@ -1092,7 +1081,7 @@ class Sequencer:
         sequence_to_file: bool,
         align_qasm_fields: bool,
         repetitions: int = 1,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Tuple[Optional[Dict[str, Any]], Optional[AcquisitionMetadata]]:
         """
         Performs the full sequencer level compilation based on the assigned data and
         settings. If no data is assigned to this sequencer, the compilation is skipped
@@ -1111,22 +1100,31 @@ class Sequencer:
         Returns
         -------
         :
-            The compiled program. If no data is assigned to this sequencer, the
+            The compiled program and the acquisition metadata.
+            If no data is assigned to this sequencer, the
             compilation is skipped and None is returned instead.
         """
         if not self.has_data:
-            return None
+            return None, None
 
         awg_dict = self._generate_awg_dict()
         weights_dict = None
         acq_declaration_dict = None
+        acq_metadata: Optional[AcquisitionMetadata] = None
 
         # the program needs _generate_weights_dict for the waveform indices
         if self.parent.supports_acquisition:
             weights_dict = {}
             if len(self.acquisitions) > 0:
+                acq_metadata = extract_acquisition_metadata_from_acquisition_protocols(
+                    acquisition_protocols=[
+                        acq.operation_info.data for acq in self.acquisitions
+                    ],
+                    repetitions=repetitions,
+                )
                 self._prepare_acq_settings(
-                    acquisitions=self.acquisitions, repetitions=repetitions
+                    acquisitions=self.acquisitions,
+                    acq_metadata=acq_metadata,
                 )
                 weights_dict = self._generate_weights_dict()
 
@@ -1134,14 +1132,16 @@ class Sequencer:
         qasm_program = self.generate_qasm_program(
             total_sequence_time=self.parent.total_play_time,
             align_qasm_fields=align_qasm_fields,
+            acq_metadata=acq_metadata,
             repetitions=repetitions,
         )
 
         if self.parent.supports_acquisition:
             acq_declaration_dict = {}
-            if len(self.acquisitions) > 0:
+            if acq_metadata is not None:
                 acq_declaration_dict = self._generate_acq_declaration_dict(
-                    acquisitions=self.acquisitions, repetitions=repetitions
+                    repetitions=repetitions,
+                    acq_metadata=acq_metadata,
                 )
 
         wf_and_prog = self._generate_waveforms_and_program_dict(
@@ -1156,7 +1156,7 @@ class Sequencer:
             )
 
         sequencer_cfg = self._settings.to_dict()
-        return sequencer_cfg
+        return sequencer_cfg, acq_metadata
 
     def _decide_markers(self, operation) -> int:
         """
@@ -1785,31 +1785,25 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         align_qasm_fields = debug_mode
 
+        if self.supports_acquisition:
+            program["acq_metadata"] = {}
+
         program["sequencers"] = {}
         for seq_name, seq in self.sequencers.items():
-            seq_program = seq.compile(
+            seq_program, acq_metadata = seq.compile(
                 repetitions=repetitions,
                 sequence_to_file=sequence_to_file,
                 align_qasm_fields=align_qasm_fields,
             )
             if seq_program is not None:
                 program["sequencers"][seq_name] = seq_program
+            if acq_metadata is not None:
+                program["acq_metadata"][seq_name] = acq_metadata
 
         if len(program) == 0:
             return None
 
         program["settings"] = self._settings.to_dict()
-        if self.supports_acquisition:
-            program["acq_metadata"] = {}
-
-            for sequencer in self.sequencers.values():
-                if not sequencer.acquisitions:
-                    continue
-                acq_metadata = helpers.extract_acquisition_metadata_from_acquisitions(
-                    acquisitions=[acq.operation_info for acq in sequencer.acquisitions],
-                    repetitions=repetitions,
-                )
-                program["acq_metadata"][sequencer.name] = acq_metadata
         program["repetitions"] = repetitions
 
         return program

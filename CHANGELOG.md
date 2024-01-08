@@ -16,6 +16,7 @@
 - Fixes - Fetch dependencies in `_get_dependency_versions()` from quantify-scheduler package metadata instead of `pyproject.toml`. Also remove `pkg_resources` because it is deprecated. (!896)
 - Deprecation 
   - Replace `matplotlib.cm` with `matplotlib.colormaps` to resolve a `DeprecationWarning`. (!888)
+- Compilation - Acquisition metadata calculation location is a single place in the compiler container. (!894)
 
 ## 0.18.0 (2023-12-22)
 

@@ -261,15 +261,29 @@ def acquisition_test_data(request):
     if acq_protocol == "Trace" and bin_mode == BinMode.AVERAGE:
         expected_data = np.ones((1, 64), dtype=np.complex_)
         expected_result = xr.Dataset(
-            {0: (["acq_index_0", "trace_index_0"], expected_data)}
+            {
+                0: (
+                    ["acq_index_0", "trace_index_0"],
+                    expected_data,
+                    {"acq_protocol": acq_protocol},
+                )
+            }
         )
     elif acq_protocol == "SSBIntegrationComplex" and bin_mode == BinMode.AVERAGE:
         expected_data = np.ones((1,), dtype=np.complex_)
-        expected_result = xr.Dataset({0: (["acq_index_0"], expected_data)})
+        expected_result = xr.Dataset(
+            {0: (["acq_index_0"], expected_data, {"acq_protocol": acq_protocol})}
+        )
     elif acq_protocol == "SSBIntegrationComplex" and bin_mode == BinMode.APPEND:
         expected_data = np.ones((64, 1), dtype=np.complex_)
         expected_result = xr.Dataset(
-            {0: (["repetition", "acq_index_0"], expected_data)}
+            {
+                0: (
+                    ["repetition", "acq_index_0"],
+                    expected_data,
+                    {"acq_protocol": acq_protocol},
+                )
+            }
         )
     else:
         raise RuntimeError("Unknown protocol")

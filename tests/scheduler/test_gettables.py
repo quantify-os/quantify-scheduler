@@ -17,15 +17,10 @@ from qcodes.instrument.parameter import ManualParameter
 from xarray import DataArray, Dataset
 
 from quantify_scheduler.backends import SerialCompiler
-from quantify_scheduler.enums import BinMode
 from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.gettables_profiled import ProfiledScheduleGettable
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
-)
-from quantify_scheduler.schedules.schedule import (
-    AcquisitionChannelMetadata,
-    AcquisitionMetadata,
 )
 from quantify_scheduler.schedules.spectroscopy_schedules import (
     heterodyne_spec_sched,
@@ -45,20 +40,17 @@ def test_process_acquired_data(
 ):
     # arrange
     quantum_device = mock_setup_basic_transmon["quantum_device"]
-    acq_metadata = AcquisitionMetadata(
-        acq_protocol="SSBIntegrationComplex",
-        bin_mode=BinMode.AVERAGE,
-        acq_return_type=complex,
-        acq_channels_metadata={
-            i: AcquisitionChannelMetadata(acq_channel=i, acq_indices=[0])
-            for i in range(num_channels)
-        },
-        repetitions=1,
-    )
 
     mock_results = np.array([4815 + 162342j], dtype=np.complex64)
     mock_dataset = Dataset(
-        {i: ([f"acq_index_{i}"], mock_results) for i in range(num_channels)}
+        {
+            i: (
+                [f"acq_index_{i}"],
+                mock_results,
+                {"acq_protocol": "SSBIntegrationComplex"},
+            )
+            for i in range(num_channels)
+        }
     )
 
     gettable = ScheduleGettable(
@@ -69,7 +61,7 @@ def test_process_acquired_data(
     )
 
     # act
-    processed_data = gettable.process_acquired_data(mock_dataset, acq_metadata)
+    processed_data = gettable.process_acquired_data(mock_dataset)
 
     # assert
     assert len(processed_data) == 2 * num_channels
@@ -108,6 +100,7 @@ def test_schedule_gettable_iterative_heterodyne_spec(mock_setup_basic_transmon, 
                     f"acq_index_{acq_channel}_yolo"
                 ],  # the name of acquisition channel dimension should not matter
                 data.reshape((len(acq_indices),)),
+                {"acq_protocol": "SSBIntegrationComplex"},
             )
         },
     )
@@ -186,7 +179,13 @@ def test_schedule_gettable_batched_allxy(
     )
     # SSBIntegrationComplex, bin_mode.AVERAGE
     expected_data = Dataset(
-        {acq_channel: ([f"acq_index_{acq_channel}"], data.reshape((len(acq_indices),)))}
+        {
+            acq_channel: (
+                [f"acq_index_{acq_channel}"],
+                data.reshape((len(acq_indices),)),
+                {"acq_protocol": "SSBIntegrationComplex"},
+            ),
+        }
     )
 
     mocker.patch.object(
@@ -266,6 +265,7 @@ def test_schedule_gettable_append_readout_cal(
             acq_channel: (
                 ["a_repetition_index", "an_acq_index"],
                 data.reshape((repetitions, len(acq_indices))),
+                {"acq_protocol": "SSBIntegrationComplex"},
             )
         }
     )
@@ -339,6 +339,7 @@ def test_schedule_gettable_trace_acquisition(
         [exp_trace],
         coords=[[0], range(len(exp_trace))],
         dims=["repetition", "acq_index"],
+        attrs={"acq_protocol": "SSBIntegrationComplex"},
     )
     exp_data = Dataset({0: exp_data_array})
 
@@ -433,6 +434,7 @@ def test_formatting_trigger_count(mock_setup_basic_nv):
         [[101, 35, 2]],
         coords=[[0], [0, 1, 2]],
         dims=["repetition", "acq_index"],
+        attrs={"acq_protocol": "TriggerCount"},
     )
     acquired_data = Dataset({0: acquired_data_array})
 
@@ -505,7 +507,5 @@ def test_schedule_gettable_no_hardware_cfg_raises(mock_setup_basic_transmon):
     assert (
         f"InstrumentCoordinator.retrieve_acquisition() "
         f"('{mock_setup_basic_transmon['instrument_coordinator'].name}') did not "
-        f"return any data, but was expected to return data based on the acquisition "
-        f"metadata in the compiled schedule: acq_metadata.acq_channels_metadata="
-        in str(exc.value)
+        f"return any data, but was expected to return data." in str(exc.value)
     )

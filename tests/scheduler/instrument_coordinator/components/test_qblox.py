@@ -774,10 +774,10 @@ def test_retrieve_acquisition_qrm(
 
     # Assert
     expected_dataset = Dataset(
-        {0: (["acq_index_0"], [0.1 + 0.2j])},
+        {0: (["acq_index_0"], [0.1 + 0.2j], {"acq_protocol": "SSBIntegrationComplex"})},
         coords={"acq_index_0": [0]},
     )
-    xr.testing.assert_equal(acq, expected_dataset)
+    xr.testing.assert_identical(acq, expected_dataset)
 
 
 def test_retrieve_acquisition_cluster(
@@ -830,9 +830,10 @@ def test_retrieve_acquisition_cluster(
     acq_qrm_rf = qrm_rf.retrieve_acquisition()
 
     expected_dataset = Dataset(
-        {0: (["acq_index_0"], [0.1 + 0.2j])}, coords={"acq_index_0": [0]}
+        {0: (["acq_index_0"], [0.1 + 0.2j], {"acq_protocol": "SSBIntegrationComplex"})},
+        coords={"acq_index_0": [0]},
     )
-    xr.testing.assert_equal(acq_qrm_rf, expected_dataset)
+    xr.testing.assert_identical(acq_qrm_rf, expected_dataset)
 
     assert acq_qrm_rf is not None
 

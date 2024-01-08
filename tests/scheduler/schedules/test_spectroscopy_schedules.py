@@ -171,7 +171,15 @@ def test_heterodyne_spec_sched_nco__qblox_hardware(
         ro_freqs, 1 * np.exp(1j * np.deg2rad(45)), dtype=np.complex64
     )
     acq_channel = 0
-    expected_dataset = Dataset({acq_channel: ([f"acq_index_{acq_channel}"], exp_data)})
+    expected_dataset = Dataset(
+        {
+            acq_channel: (
+                [f"acq_index_{acq_channel}"],
+                exp_data,
+                {"acq_protocol": "SSBIntegrationComplex"},
+            )
+        }
+    )
     mocker.patch.object(
         ic,
         "retrieve_acquisition",

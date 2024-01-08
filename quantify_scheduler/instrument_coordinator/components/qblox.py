@@ -10,7 +10,7 @@ import warnings
 from abc import abstractmethod
 from dataclasses import dataclass
 from math import isnan
-from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
+from typing import Any, Callable, Dict, Optional, Tuple, Type, Union, Hashable
 from uuid import uuid4
 
 import numpy as np
@@ -1111,6 +1111,12 @@ class _QRMAcquisitionManager:
         qblox_acq_name = self._qblox_acq_index_to_qblox_acq_name(qblox_acq_index)
         self.instrument.store_scope_acquisition(sequencer_index, qblox_acq_name)
 
+    @staticmethod
+    def _acq_channel_attrs(
+        protocol: str,
+    ) -> dict:
+        return {"acq_protocol": protocol}
+
     def _get_scope_data(
         self,
         acq_indices: list,
@@ -1181,6 +1187,7 @@ class _QRMAcquisitionManager:
                 acq_index_dim_name: acq_indices,
                 trace_index_dim_name: list(range(acq_duration)),
             },
+            attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
         )
 
     def _get_integration_data(
@@ -1191,6 +1198,7 @@ class _QRMAcquisitionManager:
         acq_duration: int,  # pylint: disable=unused-argument
         qblox_acq_index: int,
         acq_channel: Hashable,
+        multiplier: float = 1,
     ) -> DataArray:
         """
         Retrieves the integrated acquisition data associated with an `acq_channel`.
@@ -1209,6 +1217,8 @@ class _QRMAcquisitionManager:
             The Qblox acquisition index from which to get the data.
         acq_channel
             The acquisition channel.
+        multiplier
+            Multiplies the data with this number.
 
         Returns
         -------
@@ -1218,7 +1228,7 @@ class _QRMAcquisitionManager:
         bin_data = self._get_bin_data(hardware_retrieved_acquisitions, qblox_acq_index)
         i_data = np.array(bin_data["integration"]["path0"])
         q_data = np.array(bin_data["integration"]["path1"])
-        acquisitions_data = i_data + q_data * 1j
+        acquisitions_data = multiplier * (i_data + q_data * 1j)
         acq_index_dim_name = f"acq_index_{acq_channel}"
 
         if acquisition_metadata.bin_mode == BinMode.AVERAGE:
@@ -1226,6 +1236,7 @@ class _QRMAcquisitionManager:
                 acquisitions_data.reshape((len(acq_indices),)),
                 dims=[acq_index_dim_name],
                 coords={acq_index_dim_name: acq_indices},
+                attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
             )
         elif acquisition_metadata.bin_mode == BinMode.APPEND:
             if (
@@ -1239,6 +1250,7 @@ class _QRMAcquisitionManager:
                     acq_data,
                     dims=["repetition", acq_index_dim_name],
                     coords={acq_index_dim_name: acq_indices},
+                    attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
                 )
 
             # There is control flow containing measurements, skip reshaping
@@ -1252,7 +1264,10 @@ class _QRMAcquisitionManager:
                     (acquisition_metadata.repetitions, -1)
                 )
                 return DataArray(
-                    acq_data, dims=["repetition", "loop_repetition"], coords=None
+                    acq_data,
+                    dims=["repetition", "loop_repetition"],
+                    coords=None,
+                    attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
                 )
         else:
             raise RuntimeError(
@@ -1308,9 +1323,10 @@ class _QRMAcquisitionManager:
             acq_duration=acq_duration,
             qblox_acq_index=qblox_acq_index,
             acq_channel=acq_channel,
+            multiplier=1 / acq_duration,
         )
 
-        return formatted_data / acq_duration
+        return formatted_data
 
     def _get_threshold_data(
         self,
@@ -1362,6 +1378,7 @@ class _QRMAcquisitionManager:
                 acquisitions_data.reshape((len(acq_indices),)),
                 dims=[acq_index_dim_name],
                 coords={acq_index_dim_name: acq_indices},
+                attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
             )
         elif acquisition_metadata.bin_mode == BinMode.APPEND:
             acquisitions_data = np.array(
@@ -1373,6 +1390,7 @@ class _QRMAcquisitionManager:
                 ),
                 dims=["repetition", acq_index_dim_name],
                 coords={acq_index_dim_name: acq_indices},
+                attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
             )
         else:
             raise RuntimeError(
@@ -1449,6 +1467,7 @@ class _QRMAcquisitionManager:
                 [list(result.values())[::-1]],
                 dims=["repetition", "counts"],
                 coords={"repetition": [0], "counts": list(result.keys())[::-1]},
+                attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
             )
         elif acquisition_metadata.bin_mode == BinMode.APPEND:
             counts = np.array(bin_data["avg_cnt"]).astype(int)
@@ -1456,6 +1475,7 @@ class _QRMAcquisitionManager:
                 [counts],
                 dims=["repetition", acq_index_dim_name],
                 coords={"repetition": [0], acq_index_dim_name: range(len(counts))},
+                attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
             )
         else:
             raise RuntimeError(

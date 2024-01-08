@@ -822,7 +822,10 @@ def test_trigger_count_append(
     # Assert intended behaviour
     assert isinstance(data, Dataset)
     expected_dataarray = DataArray(
-        [[100, 200, 300]], coords=[[0], [0, 1, 2]], dims=["repetition", "acq_index_0"]
+        [[100, 200, 300]],
+        coords=[[0], [0, 1, 2]],
+        dims=["repetition", "acq_index_0"],
+        attrs={"acq_protocol": "TriggerCount"},
     )
     expected_dataset = Dataset({0: expected_dataarray})
 
@@ -950,6 +953,7 @@ def test_trigger_count_average(
         [[25, 25, 25, 20, 5]],
         coords=[[0], [2, 3, 4, 6, 7]],
         dims=["repetition", "counts"],
+        attrs={"acq_protocol": "TriggerCount"},
     )
     expected_dataset = Dataset({0: expected_dataarray})
 
@@ -1097,11 +1101,13 @@ def test_mixed_binned_trace_measurements(
         [[1j] * 3000],
         coords=[[0], range(3000)],
         dims=["acq_index_1", "trace_index_1"],
+        attrs={"acq_protocol": "Trace"},
     )
     expected_dataarray_binned = DataArray(
         [0.02 + 0.04j],
         coords=[[0]],
         dims=["acq_index_0"],
+        attrs={"acq_protocol": "SSBIntegrationComplex"},
     )
     expected_dataset = Dataset(
         {0: expected_dataarray_binned, 1: expected_dataarray_trace}
@@ -1361,14 +1367,16 @@ def test_complex_input_hardware_cfg(make_cluster_component, mock_setup_basic_tra
         [0.1 + 0.2j],
         coords=[[0]],
         dims=["acq_index_0"],
+        attrs={"acq_protocol": "SSBIntegrationComplex"},
     )
     expected_dataarray_1 = DataArray(
         [0.1 + 0.2j],
         coords=[[0]],
         dims=["acq_index_1"],
+        attrs={"acq_protocol": "SSBIntegrationComplex"},
     )
     expected_dataset = Dataset({0: expected_dataarray_0, 1: expected_dataarray_1})
-    xr.testing.assert_equal(data, expected_dataset)
+    xr.testing.assert_identical(data, expected_dataset)
     assert compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"][
         "sequencers"
     ]["seq0"]["connected_input_indices"] == [0, 1]
@@ -1626,10 +1634,13 @@ def test_trace_acquisition_instrument_coordinator(  # pylint: disable=too-many-l
 
     assert isinstance(acquired_data, Dataset)
     expected_dataarray = DataArray(
-        [[1j] * 1000], coords=[[0], range(1000)], dims=["acq_index_0", "trace_index_0"]
+        [[1j] * 1000],
+        coords=[[0], range(1000)],
+        dims=["acq_index_0", "trace_index_0"],
+        attrs={"acq_protocol": "Trace"},
     )
     expected_dataset = Dataset({0: expected_dataarray})
-    xr.testing.assert_equal(acquired_data, expected_dataset)
+    xr.testing.assert_identical(acquired_data, expected_dataset)
     instr_coordinator.remove_component(ic_component.name)
 
 
@@ -1942,26 +1953,30 @@ def test_multiple_binned_measurements(
                 [2 + 3j, 4 + 5j, 6 + 7j, 8 + 9j],
                 coords=[[0, 1, 2, 3]],
                 dims=["acq_index_0"],
+                attrs={"acq_protocol": "SSBIntegrationComplex"},
             ),
             2: DataArray(
                 [10 + 11j, 12 + 13j],
                 coords=[[0, 1]],
                 dims=["acq_index_2"],
+                attrs={"acq_protocol": "SSBIntegrationComplex"},
             ),
             "ch_1": DataArray(
                 [20 + 30j, 40 + 50j, 60 + 70j, 80 + 90j],
                 coords=[[0, 1, 2, 3]],
                 dims=["acq_index_ch_1"],
+                attrs={"acq_protocol": "SSBIntegrationComplex"},
             ),
             3: DataArray(
                 [100 + 110j, 120 + 130j],
                 coords=[[0, 1]],
                 dims=["acq_index_3"],
+                attrs={"acq_protocol": "SSBIntegrationComplex"},
             ),
         }
     )
 
-    xr.testing.assert_equal(data, expected_dataset)
+    xr.testing.assert_identical(data, expected_dataset)
 
     instr_coordinator.remove_component("ic_cluster0")
 
@@ -2057,11 +2072,12 @@ def test_append_measurements(
                 [[2 + 3j, 4 + 5j], [6 + 7j, 8 + 9j], [10 + 11j, 12 + 13j]],
                 coords={"acq_index_1": [0, 1]},
                 dims=["repetition", "acq_index_1"],
+                attrs={"acq_protocol": "SSBIntegrationComplex"},
             ),
         }
     )
 
-    xr.testing.assert_equal(data, expected_dataset)
+    xr.testing.assert_identical(data, expected_dataset)
 
     instr_coordinator.remove_component("ic_cluster0")
 
@@ -2165,10 +2181,11 @@ def test_looped_measurements(
                 [[2 + 3j, 4 + 5j, 6 + 7j], [8 + 9j, 10 + 11j, 12 + 13j]],
                 coords=None,
                 dims=["repetition", "loop_repetition"],
+                attrs={"acq_protocol": "SSBIntegrationComplex"},
             ),
         }
     )
 
-    xr.testing.assert_equal(data, expected_dataset)
+    xr.testing.assert_identical(data, expected_dataset)
 
     instr_coordinator.remove_component("ic_cluster0")

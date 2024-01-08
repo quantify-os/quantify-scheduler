@@ -310,7 +310,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
                 check_already_existing_acquisition(
                     new_dataset=component_acquisitions, current_dataset=acquisitions
                 )
-                acquisitions.update(component_acquisitions)
+                acquisitions = acquisitions.merge(component_acquisitions)
         return acquisitions
 
     def wait_done(self, timeout_sec: int = 10) -> None:
