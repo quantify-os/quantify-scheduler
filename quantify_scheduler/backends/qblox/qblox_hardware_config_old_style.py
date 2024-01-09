@@ -11,6 +11,7 @@ hardware_config = {
             "input_var_name": "x",
             "kwargs": {"b": [0, 0.25, 0.5], "a": [1]},
             "clipping_values": [-2.5, 2.5],
+            "sampling_rate": 1e9,
         }
     },
     "cluster0": {

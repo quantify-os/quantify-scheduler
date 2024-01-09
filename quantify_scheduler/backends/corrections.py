@@ -7,9 +7,8 @@ from typing import Any, Dict, Generator, Optional, Tuple
 
 import numpy as np
 from quantify_scheduler import Schedule
-from quantify_scheduler.backends.qblox import constants
-from quantify_scheduler.backends.qblox.helpers import generate_waveform_data
 from quantify_scheduler.helpers.importers import import_python_object_from_string
+from quantify_scheduler.helpers.waveforms import get_waveform
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import NumericalPulse
 
@@ -106,10 +105,7 @@ def distortion_correct_pulse(  # pylint: disable=too-many-arguments
     :
         The sampled, distortion corrected pulse wrapped in a ``NumericalPulse``.
     """
-    waveform_data = generate_waveform_data(
-        data_dict=pulse_data,
-        sampling_rate=sampling_rate,
-    )
+    waveform_data = get_waveform(pulse_info=pulse_data, sampling_rate=sampling_rate)
 
     filter_func = import_python_object_from_string(filter_func_name)
     kwargs = {input_var_name: waveform_data, **kwargs_dict}
@@ -233,6 +229,7 @@ def apply_distortion_corrections(
                 input_var_name = correction_cfg.get("input_var_name", None)
                 kwargs_dict = correction_cfg.get("kwargs", None)
                 clipping_values = correction_cfg.get("clipping_values", None)
+                sampling_rate = correction_cfg.get("sampling_rate")
 
                 if None in (filter_func_name, input_var_name, kwargs_dict):
                     raise KeyError(
@@ -252,7 +249,7 @@ def apply_distortion_corrections(
 
                 corrected_pulse = distortion_correct_pulse(
                     pulse_data=pulse_data,
-                    sampling_rate=constants.SAMPLING_RATE,
+                    sampling_rate=sampling_rate,
                     filter_func_name=filter_func_name,
                     input_var_name=input_var_name,
                     kwargs_dict=kwargs_dict,

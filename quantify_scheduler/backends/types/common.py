@@ -69,18 +69,8 @@ operations in the schedule.
 
 
 class DistortionCorrection(DataStructure):
-    """Distortion correction information for a port-clock combination."""
-
-    filter_func: str
-    """The function applied to the waveforms."""
-    input_var_name: str
-    """The argument to which the waveforms will be passed in the filter_func."""
-    kwargs: Dict[str, Union[List, NDArray]]
-    """The keyword arguments that are passed to the filter_func."""
-    clipping_values: Optional[List] = None
     """
-    The optional boundaries to which the corrected pulses will be clipped,
-    upon exceeding.
+    Distortion correction information for a port-clock combination.
 
 
     .. admonition:: Example
@@ -104,6 +94,20 @@ class DistortionCorrection(DataStructure):
                 )
             }
     """
+
+    filter_func: str
+    """The function applied to the waveforms."""
+    input_var_name: str
+    """The argument to which the waveforms will be passed in the filter_func."""
+    kwargs: Dict[str, Union[List, NDArray]]
+    """The keyword arguments that are passed to the filter_func."""
+    clipping_values: Optional[List] = None
+    """
+    The optional boundaries to which the corrected pulses will be clipped, upon 
+    exceeding.
+    """
+    sampling_rate: float = 1e9
+    """The sample rate of the corrected pulse, in Hz."""
 
 
 class ModulationFrequencies(DataStructure):
