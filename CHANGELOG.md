@@ -13,6 +13,8 @@
 - Qblox backend - Add io_name validators for connectivity (both graph input list and legacy hardware config) in QbloxCompilationConfig, as well as a get_valid_channels method in the cluster module and pulsar hardware descriptions (!874)
 - Documentation
   - Update copyright notice to 2024. (!892)
+  - Update URLs to new QCoDeS location (`qcodes.github.io` to `microsoft.github.io`) (!901)
+  - Improve return docstring for `_get_trigger_count_data` and `_determine_measurement_fixpoint_correction`. (!902)
 - Fixes - Fetch dependencies in `_get_dependency_versions()` from quantify-scheduler package metadata instead of `pyproject.toml`. Also remove `pkg_resources` because it is deprecated. (!896)
 - Deprecation 
   - Replace `matplotlib.cm` with `matplotlib.colormaps` to resolve a `DeprecationWarning`. (!888)

@@ -71,7 +71,7 @@ autoapi_template_dir = "_templates"
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
-    "qcodes": ("https://qcodes.github.io/Qcodes/", None),
+    "qcodes": ("https://microsoft.github.io/Qcodes/", None),
     "xarray": ("https://docs.xarray.dev/en/stable/", None),
     "networkx": ("https://networkx.org/documentation/stable/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),

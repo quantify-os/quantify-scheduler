@@ -1427,12 +1427,13 @@ class _QRMAcquisitionManager:
 
         Returns
         -------
-        :
-        count
-            A list of integers indicating the amount of triggers counted.
-        occurrence
-            For BinMode.AVERAGE a list of integers with the occurrence of each trigger count,
-            for BinMode.APPEND a list of 1's.
+        data : xarray.DataArray
+            The acquired trigger count data.
+
+        Notes
+        -----
+        - For BinMode.AVERAGE, `data` contains the distribution of counts.
+        - For BinMode.APPEND, `data` contains the raw trigger counts.
         """
         bin_data = self._get_bin_data(hardware_retrieved_acquisitions, qblox_acq_index)
         acq_index_dim_name = f"acq_index_{acq_channel}"

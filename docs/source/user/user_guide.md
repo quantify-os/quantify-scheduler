@@ -467,7 +467,7 @@ Several utility instruments are used to control the flow of the experiments.
 
 ### Physical instruments
 
-[QCoDeS instrument drivers](https://qcodes.github.io/Qcodes/drivers_api/index.html) are used to represent the physical hardware.
+[QCoDeS instrument drivers](https://microsoft.github.io/Qcodes/drivers_api/index.html) are used to represent the physical hardware.
 For the purpose of quantify-scheduler, these instruments are treated as stateless, the desired configurations for an experiment being described by the compiled instructions.
 Because the instruments correspond to physical hardware, there is a significant overhead in querying and configuring these parameters.
 As such, the state of the instruments in the software is intended to track the state of the physical hardware to facilitate lazy configuration and logging purposes.

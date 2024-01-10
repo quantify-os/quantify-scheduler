@@ -322,12 +322,9 @@ def _determine_measurement_fixpoint_correction(
 
     Returns
     -------
-    :
-        The time correction to be applied in seconds
-    :
-        The correction in number of samples.
-
-
+    Tuple[float, int]
+        The time correction to be applied in seconds.
+        The correction in the number of samples.
     """
     uhf_sampling_rate = 1.8e9
     samples_per_clock_cycle = 8
