@@ -81,7 +81,7 @@ docs = [
     "hvplot",
     "pylint",
     "rich[jupyter]",
-    "scanpydoc",
+    "scanpydoc<0.12", # 0.12.0 and 0.12.1 parse return type in docstrings incorrectly. see also https://github.com/theislab/scanpydoc/issues/120.
     "sphinx-autoapi",
     "sphinx-autodoc-typehints", # required by either sphinx.ext.autodoc or sphinx.ext.napoleon
     "sphinx-design",
