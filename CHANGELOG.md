@@ -21,6 +21,9 @@
   - Replace `matplotlib.cm` with `matplotlib.colormaps` to resolve a `DeprecationWarning`. (!888)
 - Compilation - Acquisition metadata calculation location is a single place in the compiler container. (!894)
 - Compilation - Remove Qblox backend code usage in distortion corrections. (!898)
+- GitLab
+  - Make general Merge Request template the default. (!906)
+  - Add documentation redirect instructions to Release merge request template. (!906)
 
 ## 0.18.0 (2023-12-22)
 
