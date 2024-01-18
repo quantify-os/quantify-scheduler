@@ -183,6 +183,7 @@ def create_typical_timing_table(
     yield _create_test_compile_datastructure
 
 
+@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 @pytest.mark.parametrize(
     "unsupported_device_type", [(zhinst.DeviceType.UHFLI), (zhinst.DeviceType.MFLI)]
 )
@@ -218,7 +219,7 @@ def test_compile_backend_unsupported_devices(
     assert unsupported_device_type.value in str(execinfo.value)
 
 
-@pytest.mark.deprecated
+@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 @pytest.fixture(scope="function", autouse=False)
 def deprecated_zhinst_hardware_config_example():
     return {
@@ -344,7 +345,7 @@ def deprecated_zhinst_hardware_config_example():
     }
 
 
-@pytest.mark.deprecated
+@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 def test_compile_hardware_hdawg4_successfully_deprecated_hardware_config(
     mocker,
     create_schedule_with_pulse_info,
@@ -491,7 +492,7 @@ def test_compile_hardware_hdawg4_successfully(
     assert device_configs["generic"]["lo0.ch1.frequency"] == q0_mw_rf - q0_mw_if
 
 
-@pytest.mark.deprecated
+@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 def test_compile_hardware_uhfqa_successfully_deprecated_hardware_config(
     mocker,
     make_schedule,
@@ -643,7 +644,7 @@ def test_compile_hardware_uhfqa_successfully(
     assert device_configs["generic"]["lo1.frequency"] == q0_ro_rf - q0_ro_if
 
 
-@pytest.mark.deprecated
+@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 def test_compile_invalid_latency_corrections_hardware_config_raises(
     make_schedule,
     zhinst_hw_config_invalid_latency_corrections,

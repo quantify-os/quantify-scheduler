@@ -49,7 +49,7 @@ def test_add_operation_wrong_clock():
     pulse = (
         StitchedPulseBuilder(port="q0:mw", clock="q0.01")
         .add_pulse(SquarePulse(amp=0.2, duration=1e-6, port="q0:mw", clock="q0.01"))
-        .add_voltage_offset(path_I=0.5, path_Q=0.0, duration=1e-7)
+        .add_voltage_offset(path_I=0.5, path_Q=0.0)
         .build()
     )
     with pytest.raises(ValueError):
@@ -68,7 +68,6 @@ def test_add_operation_wrong_clock():
             VoltageOffset(
                 offset_path_I=0.5,
                 offset_path_Q=0.0,
-                duration=1e-7,
                 t0=1e-6,
                 port="q0:res",
                 clock="q0.01",

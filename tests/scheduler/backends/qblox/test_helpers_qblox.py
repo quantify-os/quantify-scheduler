@@ -294,7 +294,8 @@ def test_preprocess_legacy_hardware_config(
     schedule.add(Measure("q0", "q1", acq_protocol="ThresholdedAcquisition"))
 
     compiler = SerialCompiler("compiler", quantum_device=quantum_device)
-    compiled_schedule = compiler.compile(schedule)
+    with pytest.warns(FutureWarning, match="init_"):
+        compiled_schedule = compiler.compile(schedule)
 
     for key in [
         "init_offset_awg_path_I",

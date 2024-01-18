@@ -17,6 +17,7 @@ from quantify_scheduler.backends.circuit_to_device import (
     _clocks_compatible,
     _valid_clock_in_schedule,
 )
+from quantify_scheduler.backends.graph_compilation import SerialCompilationConfig
 from quantify_scheduler.device_under_test.mock_setup import (
     set_up_mock_transmon_setup,
     set_standard_params_transmon,
@@ -77,7 +78,12 @@ def test_compile_all_gates_example_transmon_cfg():
     assert len(sched.schedulables) == 18
 
     # test that all these operations compile correctly.
-    _ = _compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
+    _ = _compile_circuit_to_device(
+        sched,
+        config=SerialCompilationConfig(
+            name="test", device_compilation_config=example_transmon_cfg
+        ),
+    )
 
 
 def test_compile_all_gates_basic_transmon(mock_setup_basic_transmon):
@@ -114,7 +120,7 @@ def test_compile_all_gates_basic_transmon(mock_setup_basic_transmon):
     quantum_device = mock_setup_basic_transmon["quantum_device"]
     _ = _compile_circuit_to_device(
         sched,
-        device_cfg=quantum_device.generate_device_config(),
+        config=quantum_device.generate_compilation_config(),
     )
 
 
@@ -142,7 +148,7 @@ def test_compile_asymmetric_gate(mock_setup_basic_transmon):
 
     with pytest.raises(ConfigKeyError):
         _ = _compile_circuit_to_device(
-            sched, device_cfg=quantum_device.generate_device_config()
+            sched, config=quantum_device.generate_compilation_config()
         )
 
 
@@ -153,7 +159,12 @@ def test_measurement_compile():
     sched.add(Measure("q1", acq_index=2))  # acq_channel should be 1
     sched.add(Measure("q1", acq_channel=2, acq_index=0))
     sched.add(Measure("q0", "q1", acq_index=2))
-    new_dev_sched = _compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
+    new_dev_sched = _compile_circuit_to_device(
+        sched,
+        config=SerialCompilationConfig(
+            name="test", device_compilation_config=example_transmon_cfg
+        ),
+    )
 
     operation_keys_list = list(new_dev_sched.operations.keys())
 
@@ -204,9 +215,17 @@ def test_only_add_clocks_used(operations: List[Operation], clocks_used: List[str
     sched = Schedule("Test schedule")
     for operation in operations:
         sched.add(operation)
-    dev_sched = _compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
+    dev_sched = _compile_circuit_to_device(
+        sched,
+        config=SerialCompilationConfig(
+            name="test", device_compilation_config=example_transmon_cfg
+        ),
+    )
     checked_dev_sched = set_pulse_and_acquisition_clock(
-        dev_sched, device_cfg=example_transmon_cfg
+        dev_sched,
+        config=SerialCompilationConfig(
+            name="test", device_compilation_config=example_transmon_cfg
+        ),
     )
 
     assert set(checked_dev_sched.resources.keys()) == set(clocks_used)
@@ -217,12 +236,12 @@ def test_set_gate_clock_raises(mock_setup_basic_transmon_with_standard_params):
     operation = X("q0")
     sched.add(operation)
 
-    device_cfg = mock_setup_basic_transmon_with_standard_params[
+    compilation_cfg = mock_setup_basic_transmon_with_standard_params[
         "quantum_device"
-    ].generate_device_config()
+    ].generate_compilation_config()
 
     with pytest.raises(RuntimeError) as error:
-        _ = set_pulse_and_acquisition_clock(sched, device_cfg=device_cfg)
+        _ = set_pulse_and_acquisition_clock(sched, config=compilation_cfg)
 
     assert (
         error.value.args[0]
@@ -238,32 +257,33 @@ def test_multiply_defined_clock_freq_raises(
     clock = "q0.01"
     clock_freq_schedule = 5e9
 
-    device_cfg = mock_setup_basic_transmon_with_standard_params[
+    compilation_cfg = mock_setup_basic_transmon_with_standard_params[
         "quantum_device"
-    ].generate_device_config()
-    clock_freq_device_cfg = device_cfg.clocks[clock]
+    ].generate_compilation_config()
+    clock_freq_device_cfg = compilation_cfg.device_compilation_config.clocks[clock]
 
     sched = Schedule("Test schedule")
     sched.add_resource(ClockResource(name="q0.01", freq=clock_freq_schedule))
     operation = X("q0")
     sched.add(operation)
-    dev_sched = _compile_circuit_to_device(schedule=sched, device_cfg=device_cfg)
+    dev_sched = _compile_circuit_to_device(schedule=sched, config=compilation_cfg)
 
-    with pytest.warns(RuntimeWarning) as warning:
+    with pytest.warns(
+        RuntimeWarning,
+        match=(
+            f"Clock '{clock}' has conflicting frequency definitions: "
+            f"{clock_freq_schedule} Hz in the schedule and "
+            f"{clock_freq_device_cfg} Hz in the device config. "
+            f"The clock is set to '{clock_freq_schedule}'. "
+            f"Ensure the schedule clock resource matches the "
+            f"device config clock frequency or set the "
+            f"clock frequency in the device config to np.NaN "
+            f"to omit this warning."
+        ),
+    ):
         compiled_sched = set_pulse_and_acquisition_clock(
-            schedule=dev_sched, device_cfg=device_cfg
+            schedule=dev_sched, config=compilation_cfg
         )
-    assert (
-        warning[1].message.args[0]
-        == f"Clock '{clock}' has conflicting frequency definitions: "
-        f"{clock_freq_schedule} Hz in the schedule and "
-        f"{clock_freq_device_cfg} Hz in the device config. "
-        f"The clock is set to '{clock_freq_schedule}'. "
-        f"Ensure the schedule clock resource matches the "
-        f"device config clock frequency or set the "
-        f"clock frequency in the device config to np.NaN "
-        f"to omit this warning."
-    )
     assert clock_freq_schedule != clock_freq_device_cfg
     assert compiled_sched.resources[clock]["freq"] == clock_freq_schedule
 
@@ -323,9 +343,19 @@ def test_clock_not_defined_raises():
     sched = Schedule("Test schedule")
     operation = Measure("q0", acq_protocol="Trace")
     sched.add(operation)
-    dev_sched = _compile_circuit_to_device(sched, device_cfg=simple_config)
+    dev_sched = _compile_circuit_to_device(
+        sched,
+        config=SerialCompilationConfig(
+            name="test", device_compilation_config=simple_config
+        ),
+    )
     with pytest.raises(ValueError) as error:
-        _ = set_pulse_and_acquisition_clock(dev_sched, device_cfg=simple_config)
+        _ = set_pulse_and_acquisition_clock(
+            dev_sched,
+            config=SerialCompilationConfig(
+                name="test", device_compilation_config=simple_config
+            ),
+        )
 
     assert (
         error.value.args[0]
@@ -339,38 +369,68 @@ def test_reset_operations_compile():
     sched = Schedule("Test schedule")
     sched.add(Reset("q0"))
     sched.add(Reset("q0", "q1"))
-    _ = _compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
+    _ = _compile_circuit_to_device(
+        sched,
+        config=SerialCompilationConfig(
+            name="test", device_compilation_config=example_transmon_cfg
+        ),
+    )
 
 
 def test_qubit_not_in_config_raises():
     sched = Schedule("Test schedule")
     sched.add(Rxy(90, 0, qubit="q20"))
     with pytest.raises(ConfigKeyError):
-        _ = _compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
+        _ = _compile_circuit_to_device(
+            sched,
+            config=SerialCompilationConfig(
+                name="test", device_compilation_config=example_transmon_cfg
+            ),
+        )
 
     sched = Schedule("Test schedule")
     sched.add(Reset("q2", "q5", "q3"))
     with pytest.raises(ConfigKeyError):
-        _ = _compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
+        _ = _compile_circuit_to_device(
+            sched,
+            config=SerialCompilationConfig(
+                name="test", device_compilation_config=example_transmon_cfg
+            ),
+        )
 
     sched = Schedule("Test schedule")
     sched.add(Reset("q0", "q5"))
     with pytest.raises(ConfigKeyError):
-        _ = _compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
+        _ = _compile_circuit_to_device(
+            sched,
+            config=SerialCompilationConfig(
+                name="test", device_compilation_config=example_transmon_cfg
+            ),
+        )
 
 
 def test_edge_not_in_config_raises():
     sched = Schedule("Test schedule")
     sched.add(CZ("q0", "q3"))
     with pytest.raises(ConfigKeyError):
-        _ = _compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
+        _ = _compile_circuit_to_device(
+            sched,
+            config=SerialCompilationConfig(
+                name="test", device_compilation_config=example_transmon_cfg
+            ),
+        )
 
 
 def test_operation_not_in_config_raises():
     sched = Schedule("Test schedule")
     sched.add(CNOT("q0", "q1"))
     with pytest.raises(ConfigKeyError):
-        _ = _compile_circuit_to_device(sched, device_cfg=example_transmon_cfg)
+        _ = _compile_circuit_to_device(
+            sched,
+            config=SerialCompilationConfig(
+                name="test", device_compilation_config=example_transmon_cfg
+            ),
+        )
 
 
 def test_compile_schedule_with_trace_acq_protocol():
@@ -409,7 +469,12 @@ def test_compile_schedule_with_trace_acq_protocol():
     )
     sched = Schedule("Test schedule")
     sched.add(Measure("q0", acq_protocol="Trace"))
-    _ = _compile_circuit_to_device(sched, device_cfg=simple_config)
+    _ = _compile_circuit_to_device(
+        sched,
+        config=SerialCompilationConfig(
+            name="test", device_compilation_config=simple_config
+        ),
+    )
 
 
 def test_compile_schedule_with_invalid_pulse_type_raises():
@@ -449,7 +514,12 @@ def test_compile_schedule_with_invalid_pulse_type_raises():
     sched = Schedule("Test schedule")
     sched.add(Measure("q0", acq_protocol="Trace"))
     with pytest.raises(NotImplementedError):
-        _ = _compile_circuit_to_device(sched, device_cfg=simple_config)
+        _ = _compile_circuit_to_device(
+            sched,
+            config=SerialCompilationConfig(
+                name="test", device_compilation_config=simple_config
+            ),
+        )
 
 
 def test_operation_not_in_config_raises_custom():
@@ -467,17 +537,32 @@ def test_operation_not_in_config_raises_custom():
     sched = Schedule("Test missing single q op")
     sched.add(Reset("q0"))
     with pytest.raises(ConfigKeyError):
-        _ = _compile_circuit_to_device(sched, device_cfg=simple_config)
+        _ = _compile_circuit_to_device(
+            sched,
+            config=SerialCompilationConfig(
+                name="test", device_compilation_config=simple_config
+            ),
+        )
 
     sched = Schedule("Test schedule mux missing op")
     sched.add(Reset("q0", "q1", "q2"))
     with pytest.raises(ConfigKeyError):
-        _ = _compile_circuit_to_device(sched, device_cfg=simple_config)
+        _ = _compile_circuit_to_device(
+            sched,
+            config=SerialCompilationConfig(
+                name="test", device_compilation_config=simple_config
+            ),
+        )
 
     sched = Schedule("Test missing 2Q op")
     sched.add(CZ("q0", "q1"))
     with pytest.raises(ConfigKeyError):
-        _ = _compile_circuit_to_device(sched, device_cfg=simple_config)
+        _ = _compile_circuit_to_device(
+            sched,
+            config=SerialCompilationConfig(
+                name="test", device_compilation_config=simple_config
+            ),
+        )
 
 
 def test_config_with_callables():
@@ -519,7 +604,12 @@ def test_config_with_callables():
 
     sched = Schedule("Test callable op")
     sched.add(Reset("q0", "q1"))
-    _ = _compile_circuit_to_device(sched, device_cfg=simple_config)
+    _ = _compile_circuit_to_device(
+        sched,
+        config=SerialCompilationConfig(
+            name="test", device_compilation_config=simple_config
+        ),
+    )
 
 
 def test_config_validation():
@@ -656,7 +746,7 @@ def test_set_reference_magnitude(mock_setup_basic_transmon):
     # test that all these operations compile correctly.
     quantum_device = mock_setup_basic_transmon["quantum_device"]
     compiled_schedule = _compile_circuit_to_device(
-        sched, device_cfg=quantum_device.generate_device_config()
+        sched, config=quantum_device.generate_compilation_config()
     )
 
     operations_dict_with_repr_keys = {

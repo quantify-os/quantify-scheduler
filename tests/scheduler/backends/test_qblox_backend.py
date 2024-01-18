@@ -967,7 +967,7 @@ def test_compile_with_third_party_instrument(
     )
 
 
-@pytest.mark.deprecated
+@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 def test_compile_cluster_deprecated_hardware_config(
     cluster_only_schedule, mock_setup_basic_transmon_with_standard_params
 ):
@@ -2428,7 +2428,7 @@ def test_assign_frequencies_rf_downconverter(
     )
 
 
-@pytest.mark.deprecated
+@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 @pytest.mark.parametrize(
     "use_output, element_names", ([use_output, ["q0"]] for use_output in [True, False])
 )
@@ -2942,7 +2942,7 @@ def test_acq_declaration_dict_bin_avg_mode(
 
 
 # Setting latency corrections in the hardware config is deprecated
-@pytest.mark.deprecated
+@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 def test_apply_latency_corrections_hardware_config_invalid_raises(
     mock_setup_basic_transmon, hardware_cfg_latency_corrections_invalid
 ):
@@ -2976,7 +2976,7 @@ def test_apply_latency_corrections_hardware_config_invalid_raises(
 
 
 # Setting latency corrections in the hardware config is deprecated
-@pytest.mark.deprecated
+@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 def test_apply_latency_corrections_hardware_config_valid(
     mock_setup_basic_transmon_with_standard_params,
     hardware_cfg_cluster_and_pulsar_latency_corrections,

@@ -20,6 +20,7 @@ from quantify_scheduler.backends.circuit_to_device import (
     DeviceCompilationConfig,
     _compile_circuit_to_device,
 )
+from quantify_scheduler.backends.graph_compilation import SerialCompilationConfig
 from quantify_scheduler.compilation import _determine_absolute_timing, flatten_schedule
 from quantify_scheduler.operations.gate_library import CZ, Measure, Reset, X, X90
 from quantify_scheduler.schemas.examples import utils
@@ -61,7 +62,10 @@ def create_schedule_with_pulse_info(
             device_config if device_config is not None else device_cfg_transmon_example
         )
         _schedule = _compile_circuit_to_device(
-            schedule=_schedule, device_cfg=_device_config
+            schedule=_schedule,
+            config=SerialCompilationConfig(
+                name="test", device_compilation_config=_device_config
+            ),
         )
         _schedule = _determine_absolute_timing(schedule=_schedule, time_unit="physical")
         _schedule = flatten_schedule(schedule=_schedule)
