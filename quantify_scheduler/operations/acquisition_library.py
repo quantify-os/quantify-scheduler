@@ -371,6 +371,8 @@ class ThresholdedAcquisition(AcquisitionOperation):
         bin_mode: Union[BinMode, str] = BinMode.AVERAGE,
         phase: float = 0,
         t0: float = 0,
+        acq_rotation: float = 0,
+        acq_threshold: float = 0,
     ) -> None:
         waveform_i = {
             "port": port,
@@ -407,10 +409,8 @@ class ThresholdedAcquisition(AcquisitionOperation):
                 "bin_mode": bin_mode,
                 "acq_return_type": np.uint32,
                 "protocol": "ThresholdedAcquisition",
-                # The following are set during _compile_circuit_to_device
-                "acq_threshold": None,
-                "acq_rotation": None,
-                "integration_length": None,
+                "acq_threshold": acq_threshold,
+                "acq_rotation": acq_rotation,
             },
         ]
         self._update()

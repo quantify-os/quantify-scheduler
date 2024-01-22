@@ -6,7 +6,7 @@ from __future__ import annotations
 import warnings
 from copy import deepcopy
 from itertools import permutations
-from typing import Any, Dict
+from typing import Dict
 
 import numpy as np
 from quantify_scheduler.backends.graph_compilation import (
@@ -15,7 +15,6 @@ from quantify_scheduler.backends.graph_compilation import (
     OperationCompilationConfig,
 )
 from quantify_scheduler.backends.qblox.enums import ChannelMode
-from quantify_scheduler.operations.measurement_factories import dispersive_measurement
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.schedule import Schedule
@@ -142,9 +141,6 @@ def _compile_circuit_to_device(
                     device_cfg=device_cfg,
                 )
 
-        _update_acquisition_info_from_device_config(
-            operation=operation, device_compilation_config=device_cfg
-        )
     return schedule
 
 
@@ -284,37 +280,6 @@ def set_pulse_and_acquisition_clock(
                 verified_clocks.append(clock)
 
     return schedule
-
-
-def _update_acquisition_info_from_device_config(
-    operation: dict[Any, Any], device_compilation_config: DeviceCompilationConfig
-) -> None:
-    """
-    Update an operation's ``acquisition_info`` from the device configuration.
-
-    Parameters
-    ----------
-    operation : dict
-        The operation containing acquisition info.
-    device_compilation_config : DeviceCompilationConfig
-        The device compilation configuration.
-
-    Returns
-    -------
-    None
-
-    """
-    for acquisition_info in operation["acquisition_info"]:
-        if acquisition_info["protocol"] == "ThresholdedAcquisition":
-            qubit = acquisition_info["clock"].split(".")[0]
-            device_element = device_compilation_config.elements.get(qubit)
-            if device_element["measure"].factory_func != dispersive_measurement:
-                continue
-
-            factory_kwargs = device_element["measure"].factory_kwargs
-            acquisition_info["acq_rotation"] = factory_kwargs.get("acq_rotation", 0)
-            acquisition_info["acq_threshold"] = factory_kwargs.get("acq_threshold", 0)
-            acquisition_info["integration_length"] = factory_kwargs.get("acq_duration")
 
 
 def _valid_clock_in_schedule(clock, device_cfg, schedule, operation) -> bool:

@@ -170,6 +170,8 @@ def dispersive_measurement(
                 acq_index=acq_index,
                 bin_mode=bin_mode,
                 t0=acq_delay,
+                acq_rotation=acq_rotation,
+                acq_threshold=acq_threshold,
             )
         )
     elif acq_protocol == "Trace":

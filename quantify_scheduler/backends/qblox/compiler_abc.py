@@ -654,9 +654,7 @@ class Sequencer:
                 "acq_rotation"
             )
 
-            integration_length = (
-                acquisition_infos[0].data.get("integration_length") * 1e9
-            )
+            integration_length = acquisition_infos[0].data.get("duration") * 1e9
             self._settings.thresholded_acq_threshold = (
                 acquisition_infos[0].data.get("acq_threshold") * integration_length
             )
