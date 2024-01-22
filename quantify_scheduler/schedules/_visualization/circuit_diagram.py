@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
 
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+from quantify_scheduler.operations.operation import Operation
 
 import quantify_scheduler.schedules._visualization.pulse_scheme as ps
 from quantify_scheduler.helpers.importers import import_python_object_from_string
@@ -335,6 +336,10 @@ def circuit_diagram_matplotlib(
     # in order to avoid unnecessary redraws.
     for schedulable in schedule.schedulables.values():
         operation = schedule.operations[schedulable["operation_id"]]
+        if not isinstance(operation, Operation):
+            # FIXME #461 We do not support schedule operations in pulse diagrams yet.
+            continue
+
         if operation.valid_pulse:
             try:
                 for pulse_info in operation["pulse_info"]:
@@ -375,6 +380,9 @@ def circuit_diagram_matplotlib(
         schedule.schedulables.values(), key=lambda sch: sch["abs_time"]
     ):
         operation = schedule.operations[schedulable["operation_id"]]
+        if not isinstance(operation, Operation):
+            # FIXME #461 We do not support schedule operations in pulse diagrams yet.
+            continue
 
         tf = schedulable["abs_time"]
         time += 1 if tf != t0 else 0

@@ -46,6 +46,7 @@ from quantify_scheduler.backends.types.qblox import (
     QRMRFDescription,
 )
 from quantify_scheduler.helpers.collections import find_inner_dicts_containing_key
+from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.schedules.schedule import (
     CompiledSchedule,
     Schedulable,
@@ -588,11 +589,19 @@ def _get_pulse_start_ends(
 
 
 def _has_voltage_offset(schedulable: Schedulable, schedule: Schedule) -> bool:
-    return schedule.operations[schedulable["operation_id"]].has_voltage_offset
+    operation = schedule.operations[schedulable["operation_id"]]
+    # FIXME #461 Help the type checker. Schedule should have been flattened at this
+    # point.
+    assert isinstance(operation, Operation)
+    return operation.has_voltage_offset
 
 
 def _has_pulse(schedulable: Schedulable, schedule: Schedule) -> bool:
-    return schedule.operations[schedulable["operation_id"]].valid_pulse
+    operation = schedule.operations[schedulable["operation_id"]]
+    # FIXME #461 Help the type checker. Schedule should have been flattened at this
+    # point.
+    assert isinstance(operation, Operation)
+    return operation.valid_pulse
 
 
 def _operation_end(schedulable: Schedulable, schedule: Schedule) -> float:

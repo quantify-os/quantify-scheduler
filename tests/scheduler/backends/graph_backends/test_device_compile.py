@@ -13,6 +13,7 @@ from quantify_scheduler.backends.graph_compilation import (
 )  # The module we are interested in testing
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
+from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.schemas.examples.device_example_cfgs import (
     example_transmon_cfg,
 )
@@ -120,4 +121,5 @@ def test_device_compile_default_compilation_passes(basic_schedule):
     assert isinstance(compiled_schedule, CompiledSchedule)
 
     for op in compiled_schedule.operations.values():
-        assert op.valid_pulse  # pyright: ignore[reportGeneralTypeIssues]
+        assert isinstance(op, Operation)  # FIXME #461
+        assert op.valid_pulse

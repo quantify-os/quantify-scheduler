@@ -30,6 +30,7 @@ from quantify_scheduler.helpers.schedule import (
     _extract_port_clocks_used,
 )
 from quantify_scheduler.helpers.waveforms import exec_waveform_function
+from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import WindowOperation
 
 
@@ -594,6 +595,9 @@ def assign_pulse_and_acq_info_to_devices(
     for schedulable in schedule.schedulables.values():
         op_hash = schedulable["operation_id"]
         op_data = schedule.operations[op_hash]
+        # FIXME #461 Help the type checker. Schedule should have been flattened at this
+        # point.
+        assert isinstance(op_data, Operation)
 
         if isinstance(op_data, WindowOperation):
             continue
