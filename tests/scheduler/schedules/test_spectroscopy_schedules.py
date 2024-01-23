@@ -102,7 +102,10 @@ class TestHeterodyneSpecScheduleNCO(TestHeterodyneSpecSchedule):
             ), schedulable["label"]
             abs_time += rel_times[i]
 
-    @pytest.mark.xfail(reason="SetClockFrequency not supported in Zhinst backend")
+    @pytest.mark.xfail(
+        raises=NotImplementedError,
+        reason="SetClockFrequency not supported in Zhinst backend",
+    )
     def test_compiles_zi_backend(
         self, compile_config_basic_transmon_zhinst_hardware
     ) -> None:
@@ -300,7 +303,10 @@ class TestTwoToneSpecScheduleNCO(TestTwoToneSpecSchedule):
             ), schedulable["label"]
             abs_time += rel_times[i]
 
-    @pytest.mark.xfail(reason="SetClockFrequency not supported in Zhinst backend")
+    @pytest.mark.xfail(
+        raises=NotImplementedError,
+        reason="SetClockFrequency not supported in Zhinst backend",
+    )
     def test_compiles_zi_backend(
         self, compile_config_basic_transmon_zhinst_hardware
     ) -> None:

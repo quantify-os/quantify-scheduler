@@ -26,6 +26,7 @@
   - Make general Merge Request template the default. (!906)
   - Add documentation redirect instructions to Release merge request template. (!906)
 - Tests - Fail pytest when using deprecated code from `quantify-scheduler` unintentionally. (!899)
+- Error handling - Make the zhinst backend correctly throw a `NotImplementedError` for `SetClockFrequency`. (!910)
 - Type checking - Add `isinstance` checks to help pyright. (!914)
 
 ## 0.18.0 (2023-12-22)

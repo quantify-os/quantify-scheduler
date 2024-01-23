@@ -51,6 +51,7 @@ from quantify_scheduler.instrument_coordinator.components.generic import (
     DEFAULT_NAME as GENERIC_ICC_DEFAULT_NAME,
 )
 from quantify_scheduler.operations.control_flow_library import Loop
+from quantify_scheduler.operations.pulse_library import SetClockFrequency
 from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 
 if TYPE_CHECKING:
@@ -545,7 +546,7 @@ def _validate_schedule(schedule: Schedule) -> None:
         for pulse_data in op.data["pulse_info"]:
             if pulse_data.get("reference_magnitude", None) is not None:
                 raise NotImplementedError
-        if isinstance(op, Loop):
+        if isinstance(op, (Loop, SetClockFrequency)):
             raise NotImplementedError(
                 f"Operation '{op}' is not supported by the zhinst backend."
             )
