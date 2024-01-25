@@ -280,15 +280,24 @@ def test_start(instrument_coordinator, dummy_components):
     # Arrange
     component1 = dummy_components.pop(0)
     component2 = dummy_components.pop(0)
+    component3 = dummy_components.pop(0)
     instrument_coordinator.add_component(component1)
     instrument_coordinator.add_component(component2)
+    instrument_coordinator.add_component(component3)
 
     # Act
+    test_sched = Schedule(name="test_schedule")
+    args = {"dev0": {"foo": 0}, "dev1": {"foo": 1}}
+    test_sched["compiled_instructions"] = args
+    compiled_sched = CompiledSchedule(test_sched)
+    instrument_coordinator.prepare(compiled_sched)
+
     instrument_coordinator.start()
 
     # Assert
     component1.start.assert_called()
     component2.start.assert_called()
+    component3.start.assert_not_called()
 
 
 def test_stop(instrument_coordinator, dummy_components):

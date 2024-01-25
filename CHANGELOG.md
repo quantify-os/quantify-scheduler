@@ -18,6 +18,7 @@
   - Improve return docstring for `_get_trigger_count_data` and `_determine_measurement_fixpoint_correction`. (!902)
   - Pin `scanpydoc<0.12` to prevent incorrect parsing of return types in docstrings. (!903)
 - Fixes - Fetch dependencies in `_get_dependency_versions()` from quantify-scheduler package metadata instead of `pyproject.toml`. Also remove `pkg_resources` because it is deprecated. (!896)
+- Fixes - Ensure that only instruments mentioned in the schedule compiled instructions are started by the `start` method of the instrument coordinator (!909).
 - Deprecation 
   - Replace `matplotlib.cm` with `matplotlib.colormaps` to resolve a `DeprecationWarning`. (!888)
 - Compilation - Acquisition metadata calculation location is a single place in the compiler container. (!894)
