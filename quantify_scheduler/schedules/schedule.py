@@ -762,18 +762,19 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
             raise ValueError(f"Schedulable name '{label}' must be unique.")
 
         # ensure that reference schedulable exists in current schedule
-        if ref_op is not None and (
-            (isinstance(ref_op, str) and ref_op not in self.schedulables)
-            # in case a user references a schedulable from another schedule
-            # that has a label that exists in this schedule:
-            or (
-                isinstance(ref_op, Schedulable)
-                and self.schedulables.get(str(ref_op)) is not ref_op
-            )
+        if (
+            ref_op is not None
+            and (ref_op not in self.schedulables)
+            and (not any([ref_op is op for op in self.schedulables.values()]))
         ):
             raise ValueError(
-                f"Reference schedulable '{ref_op}' does not exists in "
-                f"schedule '{self.name}'."
+                f"Reference schedulable '{ref_op}' does not exist in this schedule. Please "
+                "ensure that `ref_op` corresponds to a label, for example\n\n"
+                "    schedule.add(operationA, label='my_label')\n"
+                "    schedule.add(operationB, ref_op='my_label')\n\n"
+                "or a schedulable that has been added to the schedule, for example\n\n"
+                "    my_operation = schedule.add(operationA)\n"
+                "    schedule.add(operationB, ref_op=my_operation)."
             )
 
         operation_id = operation.hash
