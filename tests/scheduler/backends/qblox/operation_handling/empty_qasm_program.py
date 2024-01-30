@@ -1,4 +1,5 @@
 """Empty QASM program fixture."""
+
 import pytest
 
 from quantify_scheduler.backends.qblox.instrument_compilers import QcmModule

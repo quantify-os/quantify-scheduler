@@ -1,4 +1,5 @@
 """Tests for pulse factory functions."""
+
 from functools import partial
 
 import numpy as np

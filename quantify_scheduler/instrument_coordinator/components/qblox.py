@@ -1014,13 +1014,13 @@ class _QRMAcquisitionManager:
         seq_name_to_idx_map: Dict[str, int],
     ):
         self.parent: QRMComponent = parent
-        self._acquisition_metadata: Dict[
-            str, AcquisitionMetadata
-        ] = acquisition_metadata
+        self._acquisition_metadata: Dict[str, AcquisitionMetadata] = (
+            acquisition_metadata
+        )
 
-        self._scope_mode_sequencer_and_qblox_acq_index: Optional[
-            Tuple[int, int]
-        ] = scope_mode_sequencer_and_qblox_acq_index
+        self._scope_mode_sequencer_and_qblox_acq_index: Optional[Tuple[int, int]] = (
+            scope_mode_sequencer_and_qblox_acq_index
+        )
         self._acq_duration: Dict[str, int] = acquisition_duration
         self._seq_name_to_idx_map = seq_name_to_idx_map
 

@@ -7,7 +7,6 @@ change in the future.
 Might be good to mark those tests in detail.
 """
 
-
 import pytest
 
 from quantify_scheduler import Schedule, CompiledSchedule

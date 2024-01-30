@@ -10,6 +10,7 @@
     * - :class:`.ZIInstrumentCoordinator`
       - :class:`!quantify_scheduler.instrument_coordinator.ZIInstrumentCoordinator`
 """
+
 from .instrument_coordinator import InstrumentCoordinator, ZIInstrumentCoordinator
 
 # Commented out because it messes up Sphinx and sphinx extensions

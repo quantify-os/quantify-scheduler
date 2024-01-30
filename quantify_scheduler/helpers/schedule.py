@@ -260,12 +260,14 @@ def get_schedule_time_offset(
     """
     return min(
         map(
-            lambda port: get_operation_start(
-                schedule,
-                timeslot_index=next(iter(port_timeline_dict[port])),
-            )
-            if port != "None"
-            else np.inf,
+            lambda port: (
+                get_operation_start(
+                    schedule,
+                    timeslot_index=next(iter(port_timeline_dict[port])),
+                )
+                if port != "None"
+                else np.inf
+            ),
             port_timeline_dict.keys(),
         ),
         default=0,

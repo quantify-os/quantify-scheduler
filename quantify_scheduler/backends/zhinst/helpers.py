@@ -396,9 +396,11 @@ def get_sampling_rates(base_sampling_rate: float) -> Dict[int, int]:
     """
     return dict(
         map(
-            lambda i: (i, int(base_sampling_rate))
-            if i == 0
-            else (i, int(base_sampling_rate / pow(2, i))),
+            lambda i: (
+                (i, int(base_sampling_rate))
+                if i == 0
+                else (i, int(base_sampling_rate / pow(2, i)))
+            ),
             range(14),
         )
     )

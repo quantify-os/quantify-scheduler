@@ -140,9 +140,11 @@ def dummy_cluster():
         nonlocal cluster
         cluster = Cluster(
             name=name,
-            dummy_cfg=dummy_cfg
-            if dummy_cfg is not None
-            else {2: ClusterType.CLUSTER_QCM, 4: ClusterType.CLUSTER_QRM},
+            dummy_cfg=(
+                dummy_cfg
+                if dummy_cfg is not None
+                else {2: ClusterType.CLUSTER_QCM, 4: ClusterType.CLUSTER_QRM}
+            ),
         )
         return cluster
 

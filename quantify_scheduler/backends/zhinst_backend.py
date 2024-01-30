@@ -759,9 +759,9 @@ def _generate_legacy_hardware_config(  # noqa: PLR0912, PLR0915
     port_clocks = _extract_port_clocks_used(schedule=schedule)
 
     hardware_config: dict = {"devices": [], "local_oscillators": []}
-    hardware_config[
-        "backend"
-    ] = "quantify_scheduler.backends.zhinst_backend.compile_backend"
+    hardware_config["backend"] = (
+        "quantify_scheduler.backends.zhinst_backend.compile_backend"
+    )
 
     # Add connectivity information to the hardware config:
     connectivity_graph = (
@@ -1204,9 +1204,9 @@ def _generate_new_style_hardware_compilation_config(  # noqa: PLR0912, PLR0915
                         connectivity["graph"].append((port_name, port))
                         # Hardware Options
                         if ch_cfg.get("mixer_corrections"):
-                            hardware_options["mixer_corrections"][
-                                f"{port}-{clock}"
-                            ] = ch_cfg["mixer_corrections"]
+                            hardware_options["mixer_corrections"][f"{port}-{clock}"] = (
+                                ch_cfg["mixer_corrections"]
+                            )
                         if ch_cfg.get("gain1"):
                             hardware_options["output_gain"][f"{port}-{clock}"][
                                 "gain_I"

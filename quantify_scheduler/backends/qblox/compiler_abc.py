@@ -1251,9 +1251,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         self.is_pulsar: bool = True
         """Specifies if it is a standalone Pulsar or a cluster module. To be overridden
         by the cluster compiler if needed."""
-        self._settings: Union[
-            BaseModuleSettings, None
-        ] = None  # set in the prepare method.
+        self._settings: Union[BaseModuleSettings, None] = (
+            None  # set in the prepare method.
+        )
         self.sequencers: Dict[str, Sequencer] = {}
 
     @property
@@ -1430,9 +1430,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                     for pulse_strategy in strategies_for_pulses:
                         if ChannelMode.DIGITAL in seq._settings.channel_name:
                             # Digital mode always has one output.
-                            pulse_strategy.operation_info.data[
-                                "output"
-                            ] = seq.connected_output_indices[0]
+                            pulse_strategy.operation_info.data["output"] = (
+                                seq.connected_output_indices[0]
+                            )
                         seq.pulses.append(pulse_strategy)
 
         acq_data_list: List[OpInfo]

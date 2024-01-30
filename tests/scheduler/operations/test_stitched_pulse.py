@@ -1,4 +1,5 @@
 """Tests for the stitched_pulse module."""
+
 import numpy as np
 import pytest
 

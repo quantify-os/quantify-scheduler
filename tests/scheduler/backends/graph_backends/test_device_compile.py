@@ -3,6 +3,7 @@ Testing specifically the device compilation.
 This stage should take care of the conversion of gates to pulses and also support hybrid
 schedules.
 """
+
 import pytest
 
 from quantify_scheduler import Schedule, CompiledSchedule

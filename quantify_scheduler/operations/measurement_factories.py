@@ -42,13 +42,15 @@ def dispersive_measurement(
     acq_channel: Hashable,
     acq_channel_override: Hashable | None,
     acq_index: int,
-    acq_protocol: Literal[
-        "SSBIntegrationComplex",
-        "Trace",
-        "NumericalWeightedIntegrationComplex",
-        "ThresholdedAcquisition",
-    ]
-    | None,
+    acq_protocol: (
+        Literal[
+            "SSBIntegrationComplex",
+            "Trace",
+            "NumericalWeightedIntegrationComplex",
+            "ThresholdedAcquisition",
+        ]
+        | None
+    ),
     pulse_type: Literal["SquarePulse"] = "SquarePulse",
     bin_mode: BinMode | None = BinMode.AVERAGE,
     acq_protocol_default: Literal[

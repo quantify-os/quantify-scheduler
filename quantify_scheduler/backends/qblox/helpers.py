@@ -1158,18 +1158,18 @@ def _generate_legacy_hardware_config(
                 pc_config = pc_config[key]
 
             pc_config["ttl_acq_threshold"] = pc_sequencer_options.ttl_acq_threshold
-            pc_config[
-                "init_offset_awg_path_I"
-            ] = pc_sequencer_options.init_offset_awg_path_I
-            pc_config[
-                "init_offset_awg_path_Q"
-            ] = pc_sequencer_options.init_offset_awg_path_Q
-            pc_config[
-                "init_gain_awg_path_I"
-            ] = pc_sequencer_options.init_gain_awg_path_I
-            pc_config[
-                "init_gain_awg_path_Q"
-            ] = pc_sequencer_options.init_gain_awg_path_Q
+            pc_config["init_offset_awg_path_I"] = (
+                pc_sequencer_options.init_offset_awg_path_I
+            )
+            pc_config["init_offset_awg_path_Q"] = (
+                pc_sequencer_options.init_offset_awg_path_Q
+            )
+            pc_config["init_gain_awg_path_I"] = (
+                pc_sequencer_options.init_gain_awg_path_I
+            )
+            pc_config["init_gain_awg_path_Q"] = (
+                pc_sequencer_options.init_gain_awg_path_Q
+            )
             pc_config["qasm_hook_func"] = pc_sequencer_options.qasm_hook_func
 
     # Add digital clock to digital channels, so that users don't have to specify it.

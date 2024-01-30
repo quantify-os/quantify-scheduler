@@ -256,9 +256,9 @@ def apply_distortion_corrections(
                     clipping_values=clipping_values,
                 )
 
-                schedule.operations[operation_id].data["pulse_info"][
-                    pulse_info_idx
-                ] = corrected_pulse.data["pulse_info"][0]
+                schedule.operations[operation_id].data["pulse_info"][pulse_info_idx] = (
+                    corrected_pulse.data["pulse_info"][0]
+                )
 
                 if pulse_info_idx == 0:
                     substitute_operation = corrected_pulse
