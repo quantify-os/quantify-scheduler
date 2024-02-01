@@ -56,7 +56,6 @@ from quantify_scheduler.backends.types.qblox import (
     BasebandModuleSettings,
     BaseModuleSettings,
     OpInfo,
-    PulsarSettings,
     RFModuleSettings,
     SequencerSettings,
     StaticHardwareProperties,
@@ -1248,9 +1247,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         )
         driver_version_check.verify_qblox_instruments_version()
 
-        self.is_pulsar: bool = True
-        """Specifies if it is a standalone Pulsar or a cluster module. To be overridden
-        by the cluster compiler if needed."""
         self._settings: Union[BaseModuleSettings, None] = (
             None  # set in the prepare method.
         )
@@ -1278,8 +1274,8 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
     @property
     @abstractmethod
-    def settings_type(self) -> PulsarSettings:
-        """Specifies the PulsarSettings class used by the instrument."""
+    def settings_type(self) -> BaseModuleSettings:
+        """Specifies the module settings class used by the instrument."""
 
     @property
     @abstractmethod
@@ -1393,7 +1389,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 f"which is not supported by hardware."
             )
 
-        compiler_container = self.parent if self.is_pulsar else self.parent.parent
+        compiler_container = self.parent.parent
 
         portclock: Tuple[str, str]
         pulse_data_list: List[OpInfo]
@@ -1816,7 +1812,7 @@ class QbloxBasebandModule(QbloxBaseModule):
     @property
     def settings_type(self) -> type:
         """The settings type used by baseband-type devices."""
-        return PulsarSettings if self.is_pulsar else BasebandModuleSettings
+        return BasebandModuleSettings
 
     def assign_frequencies(self, sequencer: Sequencer):
         """
@@ -1830,7 +1826,7 @@ class QbloxBasebandModule(QbloxBaseModule):
         ``False``, the LO is given the same frequency as the clock
         (via :func:`.helpers.determine_clock_lo_interm_freqs`).
         """
-        compiler_container = self.parent if self.is_pulsar else self.parent.parent
+        compiler_container = self.parent.parent
         if sequencer.clock not in compiler_container.resources:
             return
 
@@ -1888,19 +1884,10 @@ class QbloxRFModule(QbloxBaseModule):
     @property
     def settings_type(self) -> type:
         """The settings type used by RF modules."""
-        if self.is_pulsar:
-            raise RuntimeError(
-                "Cannot return RFModule settings, RF pulsar components do not exist."
-            )
         return RFModuleSettings
 
     def assign_frequencies(self, sequencer: Sequencer):
         """Determines LO/IF frequencies and assigns them for RF modules."""
-        if self.is_pulsar:
-            raise RuntimeError(
-                "Cannot determine LO/IF frequencies, RF pulsar components do not exist."
-            )
-
         compiler_container = self.parent.parent
         if (
             sequencer.connected_output_indices is None

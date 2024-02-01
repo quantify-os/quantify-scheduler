@@ -933,8 +933,6 @@ def _generate_legacy_hardware_config(
     for instr_name, instr_description in hardware_description.items():
         if instr_description.instrument_type not in [
             "Cluster",
-            "Pulsar_QCM",
-            "Pulsar_QRM",
             "LocalOscillator",
         ]:
             # Only generate hardware config entries for supported instruments,
@@ -956,11 +954,6 @@ def _generate_legacy_hardware_config(
                 instr_config[key] = getattr(instr_description, key)
             except AttributeError:
                 pass
-
-        # Propagate channel description settings for Pulsars
-        _propagate_channel_description_settings(
-            config=instr_config, description=instr_description
-        )
 
         if instr_description.instrument_type == "Cluster":
             for (
@@ -1553,10 +1546,6 @@ def _generate_new_style_hardware_compilation_config(
                 cluster_name=hw_cfg_key,
                 old_cluster_config=hw_cfg_value,
                 new_style_config=new_style_config,
-            )
-        elif hw_cfg_value["instrument_type"] in ["Pulsar_QCM", "Pulsar_QRM"]:
-            raise NotImplementedError(
-                "The old-to-new hardware config conversion has not been implemented for Pulsars."
             )
         elif hw_cfg_value["instrument_type"] == "LocalOscillator":
             new_style_config["hardware_description"][hw_cfg_key] = {}

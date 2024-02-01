@@ -78,7 +78,7 @@
         <text id="Instrument-drivers-f" font-family="LucidaGrande, Lucida Grande" font-size="10" font-weight="normal" letter-spacing="0.04" fill="#1A1919">
             <tspan x="44" y="209">Instrument drivers for physical </tspan>
             <tspan x="44" y="221">instruments: e.g., QCoDeS </tspan>
-            <tspan x="44" y="233" font-family="AndaleMono, Andale Mono">pulsar_qcm_qcodes</tspan>
+            <tspan x="44" y="233" font-family="AndaleMono, Andale Mono">cluster_qcodes</tspan>
             <tspan x="146.696602" y="233">,  </tspan>
             <tspan x="44" y="245" font-family="AndaleMono, Andale Mono">RohdeSchwarz_SGS100A</tspan>
             <tspan x="164.819531" y="245">, etc.</tspan>

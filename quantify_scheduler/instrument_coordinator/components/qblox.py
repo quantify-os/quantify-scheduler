@@ -195,9 +195,7 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
 
         If the instrument behind this instance of
         :class:`~QbloxInstrumentCoordinatorComponentBase` is an :class:`~qcodes.instruments.InstrumentModule` (e.g. the
-        module within the :class:`qblox_instruments.Cluster`), it is returned. Otherwise, the
-        reference to the ``instrument`` is returned (e.g. for a stand-alone
-        :class:`qblox_instruments.Pulsar`).
+        module within the :class:`qblox_instruments.Cluster`), it is returned.
         """
         if self._instrument_module is not None:
             return self._instrument_module
@@ -282,7 +280,7 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         """
         Retrieve the hardware log of the Qblox instrument associated to this component.
 
-        This log includes the instrument serial number and firmware version.
+        This log does not include the instrument serial number and firmware version.
 
         Parameters
         ----------
@@ -298,12 +296,7 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         if self.instrument.name not in compiled_schedule.compiled_instructions.keys():
             return None
 
-        return {
-            f"{self.instrument.name}_log": _download_log(
-                _get_configuration_manager(_get_instrument_ip(self))
-            ),
-            f"{self.instrument.name}_idn": str(self.instrument.get_idn()),
-        }
+        return _download_log(_get_configuration_manager(_get_instrument_ip(self)))
 
     def prepare(self, program: Dict[str, dict]) -> None:
         """Store program containing sequencer settings."""
@@ -947,40 +940,6 @@ class QRMRFComponent(QbloxRFComponent, QRMComponent):
             channel_map_parameters["connect_acq"] = "in0"
 
         return channel_map_parameters
-
-
-class PulsarQCMComponent(QCMComponent):
-    """A component for a baseband Pulsar QCM."""
-
-    def prepare(self, options: Dict[str, dict]) -> None:
-        """
-        Uploads the waveforms and programs to the sequencers.
-
-        All the settings that are required are configured. Keep in mind that
-        values set directly through the driver may be overridden (e.g. the
-        offsets will be set according to the specified mixer calibration
-        parameters).
-        """
-        super().prepare(options)
-        reference_source: str = options["settings"]["ref"]
-        self._set_parameter(self.instrument, "reference_source", reference_source)
-
-
-class PulsarQRMComponent(QRMComponent):
-    """A component for a baseband Pulsar QRM."""
-
-    def prepare(self, options: Dict[str, dict]) -> None:
-        """
-        Uploads the waveforms and programs to the sequencers.
-
-        All the settings that are required are configured. Keep in mind that
-        values set directly through the driver may be overridden (e.g. the
-        offsets will be set according to the specified mixer calibration
-        parameters).
-        """
-        super().prepare(options)
-        reference_source: str = options["settings"]["ref"]
-        self._set_parameter(self.instrument, "reference_source", reference_source)
 
 
 class _QRMAcquisitionManager:

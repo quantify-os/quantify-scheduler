@@ -234,7 +234,6 @@ flux_settable(0.0)
 # ### Activate NCO delay compensation
 # Compensate for the digital propagation delay for each qubit (i.e each sequencer)
 #
-# For more info, please see: https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/sequencer.html#pulsar-qcm-sequencer-nco-prop-delay-comp-en
 #
 # To avoid mismatches between modulation and demodulation, the delay between any readout frequency or phase changes and the next acquisition should be equal or greater than the total propagation delay (146ns + user defined value).
 

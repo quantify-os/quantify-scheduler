@@ -12,7 +12,6 @@ change in the future.
 Might be good to mark those tests in detail.
 """
 import json
-from typing import Union
 
 import pytest
 
@@ -53,13 +52,13 @@ def clock_only_schedule() -> Schedule:
 )
 def test_compiles_standard_schedules(
     schedule: Schedule,
-    compile_config_basic_transmon_qblox_hardware_pulsar,
+    compile_config_basic_transmon_qblox_hardware_cluster,
 ):
     """
     Tests if a set of standard schedules compile without raising exceptions
     """
 
-    config = compile_config_basic_transmon_qblox_hardware_pulsar
+    config = compile_config_basic_transmon_qblox_hardware_cluster
     assert config.name == "QuantumDevice-generated SerialCompilationConfig"
     assert config.backend == SerialCompiler
 
@@ -70,14 +69,14 @@ def test_compiles_standard_schedules(
     assert isinstance(compiled_sched, CompiledSchedule)
 
 
-def test_compile_empty_device(hardware_cfg_pulsar):
+def test_compile_empty_device(hardware_cfg_cluster):
     """
     Test if compilation works for a pulse only schedule on a freshly initialized
     quantum device object to which only a hardware config has been provided.
     """
 
     quantum_device = QuantumDevice(name="empty_quantum_device")
-    quantum_device.hardware_config(hardware_cfg_pulsar)
+    quantum_device.hardware_config(hardware_cfg_cluster)
 
     config = quantum_device.generate_compilation_config()
     backend = SerialCompiler(config.name)
@@ -97,45 +96,21 @@ def test_compile_empty_device(hardware_cfg_pulsar):
 
 @pytest.mark.deprecated
 @pytest.mark.parametrize(
-    "instrument, sequence_to_file",
-    [
-        (instrument, sequence_to_file)
-        for instrument in ["qrm0", ("cluster0", "cluster0_module1")]
-        for sequence_to_file in [True, False, None]
-    ],
+    "sequence_to_file",
+    [sequence_to_file for sequence_to_file in [True, False, None]],
 )
-def test_compile_sequence_to_file_deprecated_hardware_config(
-    instrument: Union[str, tuple], sequence_to_file: bool
-):
+def test_compile_sequence_to_file_deprecated_hardware_config(sequence_to_file: bool):
     # Arrange
 
     hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile"
     }
-    if isinstance(instrument, tuple):
-        hardware_cfg[instrument[0]] = {
-            "instrument_type": "Cluster",
-            "ref": "internal",
-            "sequence_to_file": sequence_to_file,
-            instrument[1]: {
-                "instrument_type": "QRM",
-                "complex_output_0": {
-                    "portclock_configs": [
-                        {
-                            "port": "q0:res",
-                            "clock": "q0.ro",
-                        }
-                    ],
-                },
-            },
-        }
-        if sequence_to_file is None:
-            del hardware_cfg[instrument[0]]["sequence_to_file"]
-    else:
-        hardware_cfg[instrument] = {
-            "instrument_type": "Pulsar_QRM",
-            "ref": "internal",
-            "sequence_to_file": sequence_to_file,
+    hardware_cfg["cluster0"] = {
+        "instrument_type": "Cluster",
+        "ref": "internal",
+        "sequence_to_file": sequence_to_file,
+        "cluster0_module1": {
+            "instrument_type": "QRM",
             "complex_output_0": {
                 "portclock_configs": [
                     {
@@ -144,9 +119,10 @@ def test_compile_sequence_to_file_deprecated_hardware_config(
                     }
                 ],
             },
-        }
-        if sequence_to_file is None:
-            del hardware_cfg[instrument]["sequence_to_file"]
+        },
+    }
+    if sequence_to_file is None:
+        del hardware_cfg["cluster0"]["sequence_to_file"]
 
     quantum_device = QuantumDevice(name="empty_quantum_device")
     quantum_device.hardware_config(hardware_cfg)
@@ -160,12 +136,7 @@ def test_compile_sequence_to_file_deprecated_hardware_config(
     compiled_sched = backend.compile(schedule=sched, config=config)
 
     # Assert
-    compiled_data = compiled_sched.compiled_instructions
-    if isinstance(instrument, tuple):
-        for key in instrument:
-            compiled_data = compiled_data.get(key)
-    else:
-        compiled_data = compiled_data.get(instrument)
+    compiled_data = compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"]
 
     seq0_json = compiled_data["sequencers"]["seq0"]["sequence"]
     seq_fn = compiled_data["sequencers"]["seq0"]["seq_fn"]
@@ -182,55 +153,31 @@ def test_compile_sequence_to_file_deprecated_hardware_config(
 
 
 @pytest.mark.parametrize(
-    "instrument, sequence_to_file",
-    [
-        (instrument, sequence_to_file)
-        for instrument in ["qrm0", ("cluster0", "module1")]
-        for sequence_to_file in [True, False, None]
-    ],
+    "sequence_to_file",
+    [sequence_to_file for sequence_to_file in [True, False, None]],
 )
-def test_compile_sequence_to_file(
-    instrument: Union[str, tuple], sequence_to_file: bool
-):
+def test_compile_sequence_to_file(sequence_to_file: bool):
     # Arrange
 
     hardware_comp_cfg = {
         "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
         "hardware_options": {},
     }
-    if isinstance(instrument, tuple):
-        hardware_comp_cfg["hardware_description"] = {
-            instrument[0]: {
-                "instrument_type": "Cluster",
-                "ref": "internal",
-                "sequence_to_file": sequence_to_file,
-                "modules": {
-                    instrument[1][-1]: {"instrument_type": "QRM"},
-                },
-            }
+    hardware_comp_cfg["hardware_description"] = {
+        "cluster0": {
+            "instrument_type": "Cluster",
+            "ref": "internal",
+            "sequence_to_file": sequence_to_file,
+            "modules": {
+                "1": {"instrument_type": "QRM"},
+            },
         }
-        hardware_comp_cfg["connectivity"] = {
-            "graph": [(f"{instrument[0]}.{instrument[1]}.complex_output_0", "q0:res")]
-        }
-        if sequence_to_file is None:
-            del hardware_comp_cfg["hardware_description"][instrument[0]][
-                "sequence_to_file"
-            ]
-    else:
-        hardware_comp_cfg["hardware_description"] = {
-            instrument: {
-                "instrument_type": "Pulsar_QRM",
-                "ref": "internal",
-                "sequence_to_file": sequence_to_file,
-            }
-        }
-        hardware_comp_cfg["connectivity"] = {
-            "graph": [(f"{instrument}.complex_output_0", "q0:res")]
-        }
-        if sequence_to_file is None:
-            del hardware_comp_cfg["hardware_description"][instrument][
-                "sequence_to_file"
-            ]
+    }
+    hardware_comp_cfg["connectivity"] = {
+        "graph": [("cluster0.module1.complex_output_0", "q0:res")]
+    }
+    if sequence_to_file is None:
+        del hardware_comp_cfg["hardware_description"]["cluster0"]["sequence_to_file"]
 
     quantum_device = QuantumDevice(name="empty_quantum_device")
     quantum_device.hardware_config(hardware_comp_cfg)
@@ -244,11 +191,7 @@ def test_compile_sequence_to_file(
     compiled_sched = backend.compile(schedule=sched, config=config)
 
     # Assert
-    compiled_data = compiled_sched.compiled_instructions
-    if isinstance(instrument, tuple):
-        compiled_data = compiled_data[instrument[0]][f"{instrument[0]}_{instrument[1]}"]
-    else:
-        compiled_data = compiled_data[instrument]
+    compiled_data = compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"]
 
     seq0_json = compiled_data["sequencers"]["seq0"]["sequence"]
     seq_fn = compiled_data["sequencers"]["seq0"]["seq_fn"]

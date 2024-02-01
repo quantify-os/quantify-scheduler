@@ -91,32 +91,34 @@ The old syntax:
 ```python
 hardware_cfg = {
     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-    "qcm0": {
-        "instrument_type": "Pulsar_QCM",
+    "cluster0": {
+        "instrument_type": "Cluster",
         "ref": "internal",
-        "complex_output_0": {
-            "lo_name": "lo0",
-            "seq0": {
-                "port": "q0:mw",
-                "clock": "q0.01",
-                "interm_freq": 50e6,
-                "latency_correction" : 4e-9
+        "cluster0_module1: {
+            "instrument_type": "QCM",
+            "complex_output_0": {
+                "lo_name": "lo0",
+                "seq0": {
+                    "port": "q0:mw",
+                    "clock": "q0.01",
+                    "interm_freq": 50e6,
+                    "latency_correction" : 4e-9
+                },
+                "seq1": {
+                    "port": "q1:mw",
+                    "clock": "q1.01",
+                    "interm_freq": 100e6
+                }
             },
-            "seq1": {
-                "port": "q1:mw",
-                "clock": "q1.01",
-                "interm_freq": 100e6
-            }
+            "complex_output_1": {
+                "lo_name": "lo1",
+                "seq2": {
+                    "port": "q2:mw",
+                    "clock": "q2.01",
+                    "interm_freq": None
+                }
+            },
         },
-        "complex_output_1": {
-            "lo_name": "lo1",
-            "seq2": {
-                "port": "q2:mw",
-                "clock": "q2.01",
-                "interm_freq": None
-            }
-        }
-    },
     "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 20},
     "lo1": {"instrument_type": "LocalOscillator", "frequency": 7.2e9, "power": 20}
 }
@@ -130,35 +132,37 @@ hardware_cfg = {
     "latency_corrections": {
         "q0:mw-q0.01": 4e-9
     },
-    "qcm0": {
-        "instrument_type": "Pulsar_QCM",
+    "cluster0": {
+        "instrument_type": "Cluster",
         "ref": "internal",
-        "complex_output_0": {
-            "lo_name": "lo0",
-            "portclock_configs": [
-                {
-                    "port": "q0:mw",
-                    "clock": "q0.01",
-                    "interm_freq": 50e6
-                },
-                {
-                    "port": "q1:mw",
-                    "clock": "q1.01",
-                    "interm_freq": 100e6
-                }
-            ]
+        "cluster0_module1: {
+            "complex_output_0": {
+                "instrument_type": "QCM",
+                "lo_name": "lo0",
+                "portclock_configs": [
+                    {
+                        "port": "q0:mw",
+                        "clock": "q0.01",
+                        "interm_freq": 50e6
+                    },
+                    {
+                        "port": "q1:mw",
+                        "clock": "q1.01",
+                        "interm_freq": 100e6
+                    }
+                ]
+            },
+            "complex_output_1": {
+                "lo_name": "lo1",
+                "portclock_configs": [
+                    {
+                        "port": "q2:mw",
+                        "clock": "q2.01",
+                        "interm_freq": None
+                    }
+                ]
+            }
         },
-        "complex_output_1": {
-            "lo_name": "lo1",
-            "portclock_configs": [
-                {
-                    "port": "q2:mw",
-                    "clock": "q2.01",
-                    "interm_freq": None
-                }
-            ]
-        }
-    },
     "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 20},
     "lo1": {"instrument_type": "LocalOscillator", "frequency": 7.2e9, "power": 20}
 }

@@ -36,8 +36,6 @@ from quantify_scheduler.backends.types.common import (
     HardwareOptions,
 )
 from quantify_scheduler.backends.types.qblox import (
-    PulsarQCMDescription,
-    PulsarQRMDescription,
     QbloxHardwareDescription,
     QbloxHardwareOptions,
     QCMDescription,
@@ -401,15 +399,6 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
                                 (cluster_name, module_type, channel_name)
                             )
 
-            for pulsar_type in ["Pulsar_QRM", "Pulsar_QCM"]:
-                for pulsar_name, pulsar_config in find_qblox_instruments(
-                    hardware_config=self.connectivity, instrument_type=pulsar_type
-                ).items():
-                    for channel_name in find_channel_names(pulsar_config):
-                        all_channel_names.append(
-                            (pulsar_name, pulsar_type, channel_name)
-                        )
-
         # Validate channel_names
         instrument_type_to_description = {
             description.get_instrument_type(): description
@@ -418,8 +407,6 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
                 QRMDescription,
                 QCMRFDescription,
                 QRMRFDescription,
-                PulsarQCMDescription,
-                PulsarQRMDescription,
             ]
         }
 

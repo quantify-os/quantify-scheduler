@@ -305,8 +305,6 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
                 instrument_cfg=cfg,
                 latency_corrections=self.latency_corrections,
             )
-            assert hasattr(instance, "is_pulsar")
-            instance.is_pulsar = False
 
             instrument_compilers[name] = instance
         return instrument_compilers
@@ -371,8 +369,6 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
 
 
 COMPILER_MAPPING: Dict[str, type] = {
-    "Pulsar_QCM": QcmModule,
-    "Pulsar_QRM": QrmModule,
     "Cluster": Cluster,
     "LocalOscillator": LocalOscillator,
 }

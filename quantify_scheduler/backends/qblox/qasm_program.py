@@ -94,7 +94,8 @@ class QASMProgram:
         Parameters
         ----------
         instruction
-            The instruction to use. This should be one specified in `PulsarInstructions`
+            The instruction to use. This should be one specified in
+            :mod:`~quantify_scheduler.backends.qblox.q1asm_instructions`
             or the assembler will raise an exception.
         args
             Arguments to be passed.
@@ -434,7 +435,7 @@ class QASMProgram:
 
     def __str__(self) -> str:
         """
-        Returns a string representation of the program. The pulsar expects the program
+        Returns a string representation of the program. The sequencer expects the program
         to be such a string.
 
         The conversion to str is done using `columnar`, which expects a list of lists,

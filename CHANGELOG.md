@@ -30,6 +30,7 @@
 - Tests - Fail pytest when using deprecated code from `quantify-scheduler` unintentionally. (!899)
 - Error handling - Make the zhinst backend correctly throw a `NotImplementedError` for `SetClockFrequency`. (!910)
 - Type checking - Add `isinstance` checks to help pyright. (!914)
+- Qblox backend - Remove pulsars from codebase. (!893)
 
 ## 0.18.0 (2023-12-22)
 

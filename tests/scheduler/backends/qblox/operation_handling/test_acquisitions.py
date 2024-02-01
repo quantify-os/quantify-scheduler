@@ -20,7 +20,6 @@ from qblox_instruments import (
     ClusterType,
     DummyBinnedAcquisitionData,
     DummyScopeAcquisitionData,
-    PulsarType,
 )
 from qcodes.instrument.parameter import ManualParameter
 from xarray import DataArray, Dataset
@@ -51,7 +50,6 @@ from quantify_scheduler.schedules.trace_schedules import trace_schedule_circuit_
 from tests.fixtures.mock_setup import close_instruments
 from tests.scheduler.instrument_coordinator.components.test_qblox import (  # pylint: disable=unused-import
     make_cluster_component,
-    make_qrm_component,
 )
 
 
@@ -1498,13 +1496,12 @@ def test_multi_real_input_hardware_cfg_trigger_count(
 
 @pytest.mark.parametrize(
     "module_under_test",
-    [ClusterType.CLUSTER_QRM_RF, ClusterType.CLUSTER_QRM, PulsarType.PULSAR_QRM],
+    [ClusterType.CLUSTER_QRM_RF, ClusterType.CLUSTER_QRM],
 )
 def test_trace_acquisition_instrument_coordinator(  # pylint: disable=too-many-locals, too-many-statements
     mocker,
     mock_setup_basic_transmon_with_standard_params,
     make_cluster_component,
-    make_qrm_component,
     module_under_test,
 ):
     hardware_cfgs = {}
@@ -1536,37 +1533,21 @@ def test_trace_acquisition_instrument_coordinator(  # pylint: disable=too-many-l
             },
         },
     }
-    hardware_cfgs[PulsarType.PULSAR_QRM] = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "qrm0": {
-            "instrument_type": "Pulsar_QRM",
-            "ref": "internal",
-            "complex_output_0": {
-                "portclock_configs": [{"port": "q2:res", "clock": "q2.ro"}],
-            },
-        },
-    }
     hardware_cfg = hardware_cfgs[module_under_test]
 
     mock_setup = mock_setup_basic_transmon_with_standard_params
     instr_coordinator = mock_setup["instrument_coordinator"]
 
-    if isinstance(module_under_test, ClusterType):
-        name = "cluster0"
+    name = "cluster0"
 
-        try:
-            ic_component = make_cluster_component(name)
-        except KeyError:
-            close_instruments([name])
+    try:
+        ic_component = make_cluster_component(name)
+    except KeyError:
+        close_instruments([name])
 
-        module_name = (
-            set(hardware_cfg[name].keys())
-            .intersection(ic_component._cluster_modules)
-            .pop()
-        )
-    else:
-        ic_component = make_qrm_component("qrm0")
-        instr_coordinator.add_component(ic_component)
+    module_name = (
+        set(hardware_cfg[name].keys()).intersection(ic_component._cluster_modules).pop()
+    )
 
     try:
         instr_coordinator.add_component(ic_component)

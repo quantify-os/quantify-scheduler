@@ -284,43 +284,6 @@ class BasebandModuleSettings(BaseModuleSettings):
 
 
 @dataclass
-class PulsarSettings(BaseModuleSettings):
-    """
-    Global settings for the Pulsar to be set in the InstrumentCoordinator component.
-    This is kept separate from the settings that can be set on a per sequencer basis,
-    which are specified in :class:`~.SequencerSettings`.
-    """
-
-    ref: str = "internal"
-    """The reference source. Should either be ``"internal"`` or ``"external"``, will
-    raise an exception in the instrument coordinator component otherwise."""
-
-    @classmethod
-    def extract_settings_from_mapping(
-        cls, mapping: Dict[str, Any], **kwargs: Optional[dict]
-    ) -> PulsarSettings:
-        """
-        Factory method that takes all the settings defined in the mapping and generates
-        a :class:`~.PulsarSettings` object from it.
-
-        Parameters
-        ----------
-        mapping
-            The mapping dict to extract the settings from
-        **kwargs
-            Additional keyword arguments passed to the constructor. Can be used to
-            override parts of the mapping dict.
-        """
-        ref: str = mapping["ref"]
-        if ref != "internal" and ref != "external":
-            raise ValueError(
-                f"Attempting to configure ref to {ref}. "
-                f"The only allowed values are 'internal' and 'external'."
-            )
-        return cls(ref=ref, **kwargs)
-
-
-@dataclass
 class RFModuleSettings(BaseModuleSettings):
     """
     Global settings for the module to be set in the InstrumentCoordinator component.
@@ -764,65 +727,9 @@ class ClusterDescription(QbloxBaseDescription):
     """Description of the modules of this Cluster, using slot index as key."""
 
 
-class PulsarQCMDescription(QbloxBaseDescription, DescriptionAnnotationsGettersMixin):
-    """Information needed to specify a Pulsar QCM in the :class:`~.CompilationConfig`."""
-
-    instrument_type: Literal["Pulsar_QCM"]
-    """The instrument type, used to select this datastructure when parsing a :class:`~.CompilationConfig`."""
-    complex_output_0: Optional[ComplexChannelDescription] = None
-    """Description of the complex output channel on this QRM, corresponding to ports O1 and O2."""
-    complex_output_1: Optional[ComplexChannelDescription] = None
-    """Description of the complex output channel on this QRM, corresponding to ports O3 and O4."""
-    real_output_0: Optional[RealChannelDescription] = None
-    """Description of the real output channel on this QRM, corresponding to port O1."""
-    real_output_1: Optional[RealChannelDescription] = None
-    """Description of the real output channel on this QRM, corresponding to port O2."""
-    real_output_2: Optional[RealChannelDescription] = None
-    """Description of the real output channel on this QRM, corresponding to port O3."""
-    real_output_3: Optional[RealChannelDescription] = None
-    """Description of the real output channel on this QRM, corresponding to port O4."""
-    digital_output_0: Optional[DigitalChannelDescription] = None
-    """Description of the digital (marker) output channel on this QRM, corresponding to port M1."""
-    digital_output_1: Optional[DigitalChannelDescription] = None
-    """Description of the digital (marker) output channel on this QRM, corresponding to port M2."""
-    digital_output_2: Optional[DigitalChannelDescription] = None
-    """Description of the digital (marker) output channel on this QRM, corresponding to port M3."""
-    digital_output_3: Optional[DigitalChannelDescription] = None
-    """Description of the digital (marker) output channel on this QRM, corresponding to port M4."""
-
-
-class PulsarQRMDescription(QbloxBaseDescription, DescriptionAnnotationsGettersMixin):
-    """Information needed to specify a Pulsar QRM in the :class:`~.CompilationConfig`."""
-
-    instrument_type: Literal["Pulsar_QRM"]
-    """The instrument type, used to select this datastructure when parsing a :class:`~.CompilationConfig`."""
-    complex_output_0: Optional[ComplexChannelDescription] = None
-    """Description of the complex output channel on this QRM, corresponding to ports O1 and O2."""
-    complex_input_0: Optional[ComplexChannelDescription] = None
-    """Description of the complex input channel on this QRM, corresponding to ports I1 and I2."""
-    real_output_0: Optional[RealChannelDescription] = None
-    """Description of the real output channel on this QRM, corresponding to port O1."""
-    real_output_1: Optional[RealChannelDescription] = None
-    """Description of the real output channel on this QRM, corresponding to port O2."""
-    real_input_0: Optional[RealChannelDescription] = None
-    """Description of the real input channel on this QRM, corresponding to port I1."""
-    real_input_1: Optional[RealChannelDescription] = None
-    """Description of the real output channel on this QRM, corresponding to port I2."""
-    digital_output_0: Optional[DigitalChannelDescription] = None
-    """Description of the digital (marker) output channel on this QRM, corresponding to port M1."""
-    digital_output_1: Optional[DigitalChannelDescription] = None
-    """Description of the digital (marker) output channel on this QRM, corresponding to port M2."""
-    digital_output_2: Optional[DigitalChannelDescription] = None
-    """Description of the digital (marker) output channel on this QRM, corresponding to port M3."""
-    digital_output_3: Optional[DigitalChannelDescription] = None
-    """Description of the digital (marker) output channel on this QRM, corresponding to port M4."""
-
-
 QbloxHardwareDescription = Annotated[
     Union[
         ClusterDescription,
-        PulsarQCMDescription,
-        PulsarQRMDescription,
         LocalOscillatorDescription,
         IQMixerDescription,
     ],
