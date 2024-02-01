@@ -31,6 +31,7 @@
 - Error handling - Make the zhinst backend correctly throw a `NotImplementedError` for `SetClockFrequency`. (!910)
 - Type checking - Add `isinstance` checks to help pyright. (!914)
 - Qblox backend - Remove pulsars from codebase. (!893)
+- tests - small refactor of the `mock_setup_basic_transmon` fixture. (!917)
 
 ## 0.18.0 (2023-12-22)
 

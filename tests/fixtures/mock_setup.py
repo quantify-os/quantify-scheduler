@@ -90,25 +90,9 @@ def mock_setup_basic_transmon():
     """
 
     # moved to a separate module to allow using the mock_setup in tutorials.
-    mock_setup = set_up_mock_transmon_setup()
-
-    mock_instruments = {
-        "meas_ctrl": mock_setup["meas_ctrl"],
-        "instrument_coordinator": mock_setup["instrument_coordinator"],
-        "q0": mock_setup["q0"],
-        "q1": mock_setup["q1"],
-        "q2": mock_setup["q2"],
-        "q3": mock_setup["q3"],
-        "q4": mock_setup["q4"],
-        "q0_q2": mock_setup["q0_q2"],
-        "q1_q2": mock_setup["q1_q2"],
-        "q2_q3": mock_setup["q2_q3"],
-        "q2_q4": mock_setup["q2_q4"],
-        "quantum_device": mock_setup["quantum_device"],
-    }
+    mock_instruments = set_up_mock_transmon_setup()
 
     yield mock_instruments
-
     # NB only close the instruments this fixture is responsible for to avoid
     # hard to debug side effects
     # N.B. the keys need to correspond to the names of the instruments otherwise
