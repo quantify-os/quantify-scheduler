@@ -730,7 +730,7 @@ def calc_from_units_volt(
         outside the allowed range.
 
     """
-    offset_in_config = cfg.get(param_name, None)  # Always in volts
+    offset_in_config = cfg.get(param_name)  # Always in volts
     if offset_in_config is None:
         return None
 

@@ -449,7 +449,7 @@ class SequencerSettings(DataClassJsonMixin):
                 )
             return val
 
-        modulation_freq: Optional[float] = sequencer_cfg.get("interm_freq", None)
+        modulation_freq: Optional[float] = sequencer_cfg.get("interm_freq")
         nco_en: bool = (
             modulation_freq is not None and modulation_freq != 0
         )  # Allow NCO to be permanently disabled via `"interm_freq": 0` in the hardware config
@@ -518,7 +518,7 @@ class SequencerSettings(DataClassJsonMixin):
             max_value=constants.MAX_PHASE_ROTATION_ACQ,
         )
 
-        ttl_acq_threshold = sequencer_cfg.get("ttl_acq_threshold", None)
+        ttl_acq_threshold = sequencer_cfg.get("ttl_acq_threshold")
 
         sequencer_settings = cls(
             nco_en=nco_en,

@@ -382,9 +382,7 @@ class Sequencer:
             )
         )
 
-        self.qasm_hook_func: Optional[Callable] = sequencer_cfg.get(
-            "qasm_hook_func", None
-        )
+        self.qasm_hook_func: Optional[Callable] = sequencer_cfg.get("qasm_hook_func")
         """Allows the user to inject custom Q1ASM code into the compilation, just prior
          to returning the final string."""
 

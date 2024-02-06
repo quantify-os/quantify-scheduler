@@ -129,7 +129,7 @@ readme = { file = ["README.md"], content-type = "text/markdown" }
 
 [tool.ruff]
 line-length = 100 # Needs to be >=88 for compat with black, increasing to prevent ruffness
-select = [
+lint.select = [
     "F",  # pyflakes
     "E",  # pycodestyle
     "W",  # pycodestyle
@@ -163,7 +163,7 @@ select = [
 # A003: Class attribute `compile` is shadowing a python builtin
 # ANN101: Missing type annotation for `self` in method
 # PLR2004: Magic value used in comparison, consider replacing `...` with a constant variable
-ignore = ["D105", "D107", "D203", "D212", "D401", "D413", "E741", "N806", "PLR0913", "A003", "ANN101", "PLR2004"]
+lint.ignore = ["D105", "D107", "D203", "D212", "D401", "D413", "E741", "N806", "PLR0913", "A003", "ANN101", "PLR2004"]
 extend-exclude = [
     "docs",
 ]
@@ -171,7 +171,7 @@ extend-exclude = [
 [tool.ruff.lint.pep8-naming]
 extend-ignore-names = ["path_I", "path_Q", "offset_path_I", "offset_path_Q"]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "setup.py" = ["D", "ANN"]
 "conftest.py" = ["D"]
 "tests" = ["D"]
@@ -300,7 +300,7 @@ extend-ignore-names = ["path_I", "path_Q", "offset_path_I", "offset_path_Q"]
 "tests/scheduler/test_waveforms.py" = ['I001']
 "tests/test_headers_and_copyright.py" = ['UP015', 'UP032']
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = ["quantify_core", "quantify_scheduler"]
 [tool.pyright]
 exclude = [
