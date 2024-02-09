@@ -42,8 +42,6 @@ from quantify_scheduler.operations.pulse_library import MarkerPulse, SquarePulse
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.schedule import AcquisitionMetadata, Schedule
 
-from tests.fixtures.mock_setup import close_instruments
-
 
 @pytest.fixture
 def make_cluster_component(mocker):
@@ -54,7 +52,6 @@ def make_cluster_component(mocker):
         sequencer_status: SequencerStatus = SequencerStatus.ARMED,
         sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
     ) -> qblox.ClusterComponent:
-        close_instruments([f"ic_{name}", name])
         cluster = Cluster(
             name=name,
             dummy_cfg={
@@ -100,11 +97,6 @@ def make_cluster_component(mocker):
 
     yield _make_cluster_component
 
-    if cluster_component:
-        for comp in cluster_component._cluster_modules.values():
-            comp.close()
-        cluster_component.close()
-
 
 @pytest.fixture
 def make_qcm_component(mocker):
@@ -115,7 +107,6 @@ def make_qcm_component(mocker):
         sequencer_status: SequencerStatus = SequencerStatus.ARMED,
         sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
     ) -> qblox.QCMComponent:
-        close_instruments([f"ic_{name}", name])
         cluster = Cluster(name=name, dummy_cfg={1: ClusterType.CLUSTER_QCM})
 
         # mocker.patch.object(cluster, "_set_reference_source", wraps=cluster._set_reference_source)
@@ -153,9 +144,6 @@ def make_qcm_component(mocker):
 
     yield _make_qcm_component
 
-    if component:
-        component.close()
-
 
 @pytest.fixture
 def make_qrm_component(mocker):
@@ -166,7 +154,6 @@ def make_qrm_component(mocker):
         sequencer_status: SequencerStatus = SequencerStatus.ARMED,
         sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
     ) -> qblox.QRMComponent:
-        close_instruments([f"ic_{name}", name])
         cluster = Cluster(name=name, dummy_cfg={1: ClusterType.CLUSTER_QRM})
 
         mocker.patch.object(
@@ -206,9 +193,6 @@ def make_qrm_component(mocker):
         return component
 
     yield _make_qrm_component
-
-    if component:
-        component.close()
 
 
 @pytest.fixture(name="mock_acquisition_data")

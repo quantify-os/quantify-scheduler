@@ -93,11 +93,6 @@ def mock_setup_basic_transmon():
     mock_instruments = set_up_mock_transmon_setup()
 
     yield mock_instruments
-    # NB only close the instruments this fixture is responsible for to avoid
-    # hard to debug side effects
-    # N.B. the keys need to correspond to the names of the instruments otherwise
-    # they do not close correctly. Watch out with edges (e.g., q0_q2)
-    close_instruments(mock_instruments)
 
 
 @pytest.fixture(scope="function", autouse=False)
@@ -129,7 +124,6 @@ def mock_setup_basic_nv():
     mock_setup = set_up_mock_basic_nv_setup()
     set_standard_params_basic_nv(mock_setup)
     yield mock_setup
-    close_instruments(mock_setup)
 
 
 @pytest.fixture(scope="function", autouse=False)
@@ -262,5 +256,3 @@ def mock_setup_basic_transmon_elements(element_names: List[str]):
 
     mock_instruments = {"quantum_device": quantum_device, **elements}
     yield mock_instruments
-
-    close_instruments(mock_instruments)

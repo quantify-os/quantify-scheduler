@@ -80,13 +80,6 @@ def fixture_dummy_components(
             )
         components.append(comp)
 
-    def cleanup_tmp():
-        # This should prevent the garbage collector from colleting the qcodes instrument
-        for instrument in instruments:
-            instrument.close()
-
-    request.addfinalizer(cleanup_tmp)
-
     return components
 
 
@@ -101,13 +94,6 @@ def fixture_instrument_coordinator(request, component_names) -> InstrumentCoordi
     instrument_coordinator._compiled_schedule = dict(
         compiled_instructions={name: {} for name in component_names}
     )
-
-    def cleanup_tmp():
-        # This should prevent the garbage collector from collecting the qcodes
-        # instrument
-        instrument_coordinator.close()
-
-    request.addfinalizer(cleanup_tmp)
 
     return instrument_coordinator
 
@@ -125,13 +111,6 @@ def fixture_zi_instrument_coordinator(
     zi_instrument_coordinator._compiled_schedule = dict(
         compiled_instructions={name: {} for name in component_names}
     )
-
-    def cleanup_tmp():
-        # This should prevent the garbage collector from collecting the qcodes
-        # instrument
-        zi_instrument_coordinator.close()
-
-    request.addfinalizer(cleanup_tmp)
 
     return zi_instrument_coordinator
 

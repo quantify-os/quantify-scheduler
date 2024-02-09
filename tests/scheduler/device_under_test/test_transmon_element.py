@@ -20,14 +20,12 @@ from quantify_scheduler.operations.gate_library import Measure
 def q0() -> BasicTransmonElement:
     q0 = BasicTransmonElement("q0")
     yield q0
-    q0.close()
 
 
 @pytest.fixture
 def dev() -> QuantumDevice:
     dev = QuantumDevice("dev")
     yield dev
-    dev.close()
 
 
 def test_qubit_name(q0: BasicTransmonElement):
@@ -145,8 +143,6 @@ def test_basic_transmon_deserialization(q0: BasicTransmonElement, dev: QuantumDe
         f"Compiled operations of deserialized '{deserialized_q0.name}' does not match "
         f"the original's"
     )
-
-    deserialized_q0.close()
 
 
 def test_reference_magnitude_overwrite_units(q0: BasicTransmonElement):

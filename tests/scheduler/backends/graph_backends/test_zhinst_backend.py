@@ -138,5 +138,3 @@ def test_compile_empty_device():
 
     # this will fail if no hardware_config was specified
     assert len(comp_sched.compiled_instructions) > 0
-
-    quantum_device.close()  # need to clean up nicely after the test

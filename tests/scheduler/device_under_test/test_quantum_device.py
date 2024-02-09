@@ -85,14 +85,12 @@ def test_generate_hardware_config(
 def dev():
     dev = QuantumDevice("dev")
     yield dev
-    dev.close()
 
 
 @pytest.fixture
 def meas_ctrl():
     test_mc = QuantumDevice("test_mc")
     yield test_mc
-    test_mc.close()
 
 
 def test_adding_non_element_raises(dev, meas_ctrl):

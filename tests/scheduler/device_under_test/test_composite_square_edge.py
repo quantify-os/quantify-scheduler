@@ -24,10 +24,6 @@ def edge_q2b_q3b():
 
     # Transmon element is returned
     yield edge_q2b_q3b
-    # after the test, teardown...
-    q2b.close()
-    q3b.close()
-    edge_q2b_q3b.close()
 
 
 def test_generate_edge_config(edge_q2b_q3b):

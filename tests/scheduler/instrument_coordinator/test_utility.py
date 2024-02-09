@@ -42,8 +42,6 @@ def fixture_mock_instrument() -> Instrument:
 
     yield instr
 
-    instr.close()
-
 
 @pytest.mark.parametrize(
     "channel_name, parameter_name",

@@ -31,8 +31,6 @@ def electronic_q0() -> BasicElectronicNVElement:
 
     # Electronic NV element is returned
     yield q0
-    # after the test, teardown...
-    q0.close()
 
 
 def test_qubit_name(electronic_q0: BasicElectronicNVElement):
@@ -189,8 +187,6 @@ def test_mock_nv_setup():
     mock_nv_setup = set_up_mock_basic_nv_setup()
     assert isinstance(mock_nv_setup, dict)
     set_standard_params_basic_nv(mock_nv_setup)
-    for key in mock_nv_setup:
-        Instrument.find_instrument(key).close()
 
 
 @pytest.fixture
@@ -200,8 +196,6 @@ def dev() -> QuantumDevice:
     coordinator = InstrumentCoordinator("ic")
     device.instr_instrument_coordinator(coordinator.name)
     yield device
-    device.close()
-    coordinator.close()
 
 
 def test_find_coordinator(dev: QuantumDevice):
@@ -341,7 +335,5 @@ def test_nv_center_deserialization(mock_setup_basic_nv_with_standard_params):
     electronic_q0_serialized = json.dumps(electronic_q0, cls=SchedulerJSONEncoder)
 
     assert electronic_q0_serialized.__class__ is str
-
-    electronic_q0.close()
 
     json.loads(electronic_q0_serialized, cls=SchedulerJSONDecoder)

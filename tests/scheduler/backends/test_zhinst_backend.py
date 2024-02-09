@@ -1619,8 +1619,6 @@ def test_generate_legacy_hardware_config(hardware_compilation_config_zhinst_exam
         schedule=sched, compilation_config=quantum_device.generate_compilation_config()
     )
 
-    quantum_device.close()
-
     assert generated_hw_config == zhinst_hardware_config_old_style
 
 

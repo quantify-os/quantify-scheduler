@@ -104,7 +104,6 @@ from quantify_scheduler.schedules.timedomain_schedules import (
     readout_calibration_sched,
 )
 
-from tests.fixtures.mock_setup import close_instruments
 
 REGENERATE_REF_FILES: bool = False  # Set flag to true to regenerate the reference files
 
@@ -132,9 +131,6 @@ def dummy_cluster():
         return cluster
 
     yield _dummy_cluster
-
-    if cluster is not None:
-        close_instruments([cluster.name])
 
 
 @pytest.fixture

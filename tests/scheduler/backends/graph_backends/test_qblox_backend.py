@@ -91,8 +91,6 @@ def test_compile_empty_device(hardware_cfg_cluster):
     # This will fail if no hardware_config was specified
     assert len(compiled_sched.compiled_instructions) > 0
 
-    quantum_device.close()
-
 
 @pytest.mark.deprecated
 @pytest.mark.parametrize(
@@ -149,8 +147,6 @@ def test_compile_sequence_to_file_deprecated_hardware_config(sequence_to_file: b
     else:
         assert seq_fn is None
 
-    quantum_device.close()
-
 
 @pytest.mark.parametrize(
     "sequence_to_file",
@@ -203,5 +199,3 @@ def test_compile_sequence_to_file(sequence_to_file: bool):
         assert seq0_json_from_disk == seq0_json
     else:
         assert seq_fn is None
-
-    quantum_device.close()
