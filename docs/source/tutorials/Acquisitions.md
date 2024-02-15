@@ -475,7 +475,7 @@ As expected, it has only two values, and the value of `acq_index_<acq_channel>=1
 (sec-weighted-ssb)=
 ### Weighted single-sideband integration acquisition
 
-_Weighted_ single-sideband (SBB) integration works almost the same as regular SSB integration. In weighted SSB integration, the acquired (demodulated) data points are multiplied together with points of a _weight_ waveform. The relevant acquisition class is {class}`~quantify_scheduler.operations.acquisition_library.NumericalWeightedIntegrationComplex`.
+_Weighted_ single-sideband (SBB) integration works almost the same as regular SSB integration. In weighted SSB integration, the acquired (demodulated) data points are multiplied together with points of a _weight_ waveform. The relevant acquisition class is {class}`~quantify_scheduler.operations.acquisition_library.NumericalSeparatedWeightedIntegration`.
 
 The weights can be provided in the form of two numerical arrays, `weights_a` for the I-path and `weights_b` for the Q-path of the acquisition signal, together with the sampling rate (`weights_sampling_rate`) of these arrays. The `quantify-scheduler` hardware backends will resample the weights if needed to match the hardware sampling rate. Note that the length of the weights arrays determines the integration time of the acquisition. All values in the weight arrays must be in the range `[-1, 1]`.
 
@@ -491,7 +491,7 @@ mystnb:
   remove_code_outputs: true
 ---
 from quantify_scheduler.operations.acquisition_library import (
-    NumericalWeightedIntegrationComplex,
+    NumericalSeparatedWeightedIntegration,
 )
 
 
@@ -519,7 +519,7 @@ def add_pulse_and_weighted_acquisition_to_schedule(
         rel_time=1e-6,  # Idle time before the pulse is played
     )
     schedule.add(
-        NumericalWeightedIntegrationComplex(
+        NumericalSeparatedWeightedIntegration(
             port="q0:res",
             clock="q0.ro",
             weights_a=weights_a,
@@ -607,7 +607,7 @@ acquisition
 
 The data set contains three data points corresponding to the acquisitions we scheduled. The first acquisition with the maximum amplitude (1.0) square weights shows the highest voltage, the second one with the weights halved also shows half the voltage. The third, corresponding to the sinusoidal weights with an average of 0, shows 0 as expected.
 
-As a final note, weighted integration can also be scheduled at the {ref}`gate-level <Gate-level acquisitions>` by specifying `"NumericalWeightedIntegrationComplex"` as the acquisition protocol and providing the weights in the quantum device element {attr}`.BasicTransmonElement.measure`, for example:
+As a final note, weighted integration can also be scheduled at the {ref}`gate-level <Gate-level acquisitions>` by specifying `"NumericalSeparatedWeightedIntegration"` as the acquisition protocol and providing the weights in the quantum device element {attr}`.BasicTransmonElement.measure`, for example:
 
 ```
 <qubit>.measure.acq_weights_a(sine_weights)

@@ -295,7 +295,13 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
                     }
                 )
             elif (
-                acq_protocol in ("SSBIntegrationComplex", "WeightedIntegratedComplex")
+                acq_protocol
+                in (
+                    "SSBIntegrationComplex",
+                    "WeightedIntegratedSeparated",
+                    "NumericalSeparatedWeightedIntegration",
+                    "NumericalWeightedIntegration",
+                )
                 and acq_config.bin_mode == BinMode.AVERAGE
             ):
                 acq_channel_results.append(
@@ -309,7 +315,13 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
                     }
                 )
             elif (
-                acq_protocol in ("SSBIntegrationComplex", "WeightedIntegratedComplex")
+                acq_protocol
+                in (
+                    "SSBIntegrationComplex",
+                    "WeightedIntegratedSeparated",
+                    "NumericalSeparatedWeightedIntegration",
+                    "NumericalWeightedIntegration",
+                )
                 and acq_config.bin_mode == BinMode.APPEND
             ):
                 acq_channel_results.append(

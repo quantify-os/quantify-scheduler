@@ -533,7 +533,9 @@ class Measure(Operation):
         Index of the register where the measurement is stored.  If None specified,
         this defaults to writing the result of all qubits to acq_index 0. By default
         None.
-    acq_protocol
+    acq_protocol : "SSBIntegrationComplex" | "Trace" | "TriggerCount" | \
+            "NumericalSeparatedWeightedIntegration" | \
+            "NumericalWeightedIntegration" | None, optional
         Acquisition protocols that are supported. If ``None`` is specified, the
         default protocol is chosen based on the device and backend configuration. By
         default None.
@@ -555,7 +557,8 @@ class Measure(Operation):
                 "SSBIntegrationComplex",
                 "Trace",
                 "TriggerCount",
-                "NumericalWeightedIntegrationComplex",
+                "NumericalSeparatedWeightedIntegration",
+                "NumericalWeightedIntegration",
                 "ThresholdedAcquisition",
             ]
         ] = None,

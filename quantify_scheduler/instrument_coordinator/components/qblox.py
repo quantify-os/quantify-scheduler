@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import copy
+from functools import partial
 import logging
 import os
 import warnings
@@ -1002,7 +1003,15 @@ class _QRMAcquisitionManager:
             dimensions.
         """
         protocol_to_function_mapping = {
-            "WeightedIntegratedComplex": self._get_integration_data,
+            "WeightedIntegratedSeparated": partial(
+                self._get_integration_data, separated=True
+            ),
+            "NumericalSeparatedWeightedIntegration": partial(
+                self._get_integration_data, separated=True
+            ),
+            "NumericalWeightedIntegration": partial(
+                self._get_integration_data, separated=False
+            ),
             "SSBIntegrationComplex": self._get_integration_amplitude_data,
             "ThresholdedAcquisition": self._get_threshold_data,
             "Trace": self._get_scope_data,
@@ -1158,6 +1167,7 @@ class _QRMAcquisitionManager:
         qblox_acq_index: int,
         acq_channel: Hashable,
         multiplier: float = 1,
+        separated: bool = True,
     ) -> DataArray:
         """
         Retrieves the integrated acquisition data associated with an `acq_channel`.
@@ -1178,6 +1188,9 @@ class _QRMAcquisitionManager:
             The acquisition channel.
         multiplier
             Multiplies the data with this number.
+        separated
+            True: return I and Q data separately
+            False: return I+Q in the real part and 0 in the imaginary part
 
         Returns
         -------
@@ -1187,6 +1200,9 @@ class _QRMAcquisitionManager:
         bin_data = self._get_bin_data(hardware_retrieved_acquisitions, qblox_acq_index)
         i_data = np.array(bin_data["integration"]["path0"])
         q_data = np.array(bin_data["integration"]["path1"])
+        if not separated:
+            i_data = i_data + q_data
+            q_data = np.zeros_like(q_data)
         acquisitions_data = multiplier * (i_data + q_data * 1j)
         acq_index_dim_name = f"acq_index_{acq_channel}"
 

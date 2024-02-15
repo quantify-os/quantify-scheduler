@@ -248,7 +248,8 @@ class DispersiveMeasurement(InstrumentChannel):
             vals=validators.Arrays(),
         )
         """The weights for the I path. Used when specifying the
-        ``"NumericalWeightedIntegrationComplex"`` acquisition protocol."""
+        ``"NumericalSeparatedWeightedIntegration"`` or the
+        ``"NumericalWeightedIntegration"`` acquisition protocol."""
 
         self.acq_weights_b = ManualParameter(
             name="acq_weights_b",
@@ -257,7 +258,8 @@ class DispersiveMeasurement(InstrumentChannel):
             vals=validators.Arrays(),
         )
         """The weights for the Q path. Used when specifying the
-        ``"NumericalWeightedIntegrationComplex"`` acquisition protocol."""
+        ``"NumericalSeparatedWeightedIntegration"`` or the
+        ``"NumericalWeightedIntegration"`` acquisition protocol."""
 
         self.acq_weights_sampling_rate = ManualParameter(
             name="acq_weights_sampling_rate",
@@ -266,7 +268,8 @@ class DispersiveMeasurement(InstrumentChannel):
             vals=validators.Numbers(min_value=1, max_value=10e9),
         )
         """The sample rate of the weights arrays, in Hertz. Used when specifying the
-        ``"NumericalWeightedIntegrationComplex"`` acquisition protocol."""
+        ``"NumericalSeparatedWeightedIntegration"`` or the
+        ``"NumericalWeightedIntegration"`` acquisition protocol."""
 
         ro_acq_weight_type_validator = validators.Enum("SSB", "Numerical")
         self.acq_weight_type = ManualParameter(

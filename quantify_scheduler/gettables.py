@@ -247,7 +247,9 @@ class ScheduleGettable:
         if acq_protocol in (
             "Trace",
             "SSBIntegrationComplex",
-            "WeightedIntegratedComplex",
+            "WeightedIntegratedSeparated",
+            "NumericalSeparatedWeightedIntegration",
+            "NumericalWeightedIntegration",
         ):
             ret_val = []
             if self.real_imag:
@@ -303,7 +305,9 @@ class ScheduleGettable:
                 )
             if acq_protocol in (
                 "SSBIntegrationComplex",
-                "WeightedIntegratedComplex",
+                "WeightedIntegratedSeparated",
+                "NumericalSeparatedWeightedIntegration",
+                "NumericalWeightedIntegration",
                 "ThresholdedAcquisition",
             ) and num_dims not in (1, 2):
                 raise AcquisitionProtocolError(
@@ -325,7 +329,9 @@ class ScheduleGettable:
                 "TriggerCount",
                 "Trace",
                 "SSBIntegrationComplex",
-                "WeightedIntegratedComplex",
+                "WeightedIntegratedSeparated",
+                "NumericalSeparatedWeightedIntegration",
+                "NumericalWeightedIntegration",
             ):
                 raise AcquisitionProtocolNotSupportedError(
                     f"ScheduleGettable does not support {acq_protocol}."

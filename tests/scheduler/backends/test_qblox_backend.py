@@ -1341,12 +1341,38 @@ def test_acquisitions_back_to_back(
     )
 
 
-def test_weighted_acquisition_end_to_end(
+def test_deprecated_weighted_acquisition_end_to_end(
     pulse_only_schedule_with_operation_timing,
     compile_config_transmon_weighted_integration_qblox_hardware,
 ):
     sched = pulse_only_schedule_with_operation_timing
     sched.add(Measure("q0", acq_protocol="NumericalWeightedIntegrationComplex"))
+
+    compiler = SerialCompiler(name="compiler")
+    with pytest.warns(
+        FutureWarning,
+        match="0.20.0",
+    ):
+        compiled_sched = compiler.compile(
+            sched,
+            config=compile_config_transmon_weighted_integration_qblox_hardware,
+        )
+    assert re.search(
+        rf"\n\s*acquire_weighed\s+0,0,0,1,4(\s|$)",
+        (
+            compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"][
+                "sequencers"
+            ]["seq0"]["sequence"]["program"]
+        ),
+    )
+
+
+def test_separated_weighted_acquisition_end_to_end(
+    pulse_only_schedule_with_operation_timing,
+    compile_config_transmon_weighted_integration_qblox_hardware,
+):
+    sched = pulse_only_schedule_with_operation_timing
+    sched.add(Measure("q0", acq_protocol="NumericalSeparatedWeightedIntegration"))
 
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
@@ -1363,12 +1389,61 @@ def test_weighted_acquisition_end_to_end(
     )
 
 
+def test_weighted_acquisition_end_to_end(
+    pulse_only_schedule_with_operation_timing,
+    compile_config_transmon_weighted_integration_qblox_hardware,
+):
+    sched = pulse_only_schedule_with_operation_timing
+    sched.add(Measure("q0", acq_protocol="NumericalWeightedIntegration"))
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        sched,
+        config=compile_config_transmon_weighted_integration_qblox_hardware,
+    )
+    assert re.search(
+        rf"\n\s*acquire_weighed\s+0,0,0,1,4(\s|$)",
+        (
+            compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"][
+                "sequencers"
+            ]["seq0"]["sequence"]["program"]
+        ),
+    )
+
+
+def test_separated_weighted_acquisition_too_high_sampling_rate_raises(
+    pulse_only_schedule_with_operation_timing,
+    compile_config_transmon_weighted_integration_qblox_hardware,
+):
+    sched = pulse_only_schedule_with_operation_timing
+    sched.add(Measure("q0", acq_protocol="NumericalSeparatedWeightedIntegration"))
+    compile_config_transmon_weighted_integration_qblox_hardware.device_compilation_config.elements[
+        "q0"
+    ][
+        "measure"
+    ].factory_kwargs[
+        "acq_weights_sampling_rate"
+    ] = 5e9
+
+    compiler = SerialCompiler(name="compiler")
+    with pytest.raises(ValueError) as exc:
+        _ = compiler.compile(
+            sched,
+            config=compile_config_transmon_weighted_integration_qblox_hardware,
+        )
+    assert exc.value.args[0] == (
+        "Qblox hardware supports a sampling rate up to 1.0e+00 GHz, but a sampling "
+        "rate of 5.0e+00 GHz was provided to WeightedAcquisitionStrategy. Please check "
+        "the device configuration."
+    )
+
+
 def test_weighted_acquisition_too_high_sampling_rate_raises(
     pulse_only_schedule_with_operation_timing,
     compile_config_transmon_weighted_integration_qblox_hardware,
 ):
     sched = pulse_only_schedule_with_operation_timing
-    sched.add(Measure("q0", acq_protocol="NumericalWeightedIntegrationComplex"))
+    sched.add(Measure("q0", acq_protocol="NumericalWeightedIntegration"))
     compile_config_transmon_weighted_integration_qblox_hardware.device_compilation_config.elements[
         "q0"
     ][

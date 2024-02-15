@@ -14,6 +14,8 @@ import pytest
 from quantify_scheduler import Operation
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.acquisition_library import (
+    NumericalSeparatedWeightedIntegration,
+    NumericalWeightedIntegration,
     NumericalWeightedIntegrationComplex,
     SSBIntegrationComplex,
     ThresholdedAcquisition,
@@ -136,8 +138,43 @@ def test_trigger_count_invalid_index_average_mode():
     )
 
 
+def test_deprecated_weighted_acquisition():
+    with pytest.warns(
+        FutureWarning,
+        match="0.20.0",
+    ):
+        weighted = NumericalWeightedIntegrationComplex(
+            port="q0:res",
+            clock="q0.ro",
+            weights_a=[0.25, 0.5, 0.25, 0.25],
+            weights_b=[0.25, 0.5, 0.5, 0.25],
+            interpolation="linear",
+            acq_channel=1,
+            acq_index=2,
+            bin_mode=BinMode.APPEND,
+            t0=16e-9,
+        )
+    expected = {
+        "t0": 1.6e-08,
+        "clock": "q0.ro",
+        "port": "q0:res",
+        "duration": pytest.approx(4e-9),
+        "phase": 0,
+        "acq_channel": 1,
+        "acq_index": 2,
+        "bin_mode": BinMode.APPEND,
+        "protocol": "NumericalSeparatedWeightedIntegration",
+        "acq_return_type": complex,
+    }
+    for k, v in expected.items():
+        assert weighted.data["acquisition_info"][0][k] == v
+    wf_a, wf_b = weighted.data["acquisition_info"][0]["waveforms"]
+    assert list(wf_a["t_samples"]) == [0.0e00, 1.0e-09, 2.0e-09, 3.0e-09]
+    assert list(wf_b["t_samples"]) == [0.0e00, 1.0e-09, 2.0e-09, 3.0e-09]
+
+
 def test_weighted_acquisition():
-    weighted = NumericalWeightedIntegrationComplex(
+    weighted = NumericalSeparatedWeightedIntegration(
         port="q0:res",
         clock="q0.ro",
         weights_a=[0.25, 0.5, 0.25, 0.25],
@@ -157,7 +194,36 @@ def test_weighted_acquisition():
         "acq_channel": 1,
         "acq_index": 2,
         "bin_mode": BinMode.APPEND,
-        "protocol": "WeightedIntegratedComplex",
+        "protocol": "NumericalSeparatedWeightedIntegration",
+        "acq_return_type": complex,
+    }
+    for k, v in expected.items():
+        assert weighted.data["acquisition_info"][0][k] == v
+    wf_a, wf_b = weighted.data["acquisition_info"][0]["waveforms"]
+    assert list(wf_a["t_samples"]) == [0.0e00, 1.0e-09, 2.0e-09, 3.0e-09]
+    assert list(wf_b["t_samples"]) == [0.0e00, 1.0e-09, 2.0e-09, 3.0e-09]
+
+    weighted = NumericalWeightedIntegration(
+        port="q0:res",
+        clock="q0.ro",
+        weights_a=[0.25, 0.5, 0.25, 0.25],
+        weights_b=[0.25, 0.5, 0.5, 0.25],
+        interpolation="linear",
+        acq_channel=1,
+        acq_index=2,
+        bin_mode=BinMode.APPEND,
+        t0=16e-9,
+    )
+    expected = {
+        "t0": 1.6e-08,
+        "clock": "q0.ro",
+        "port": "q0:res",
+        "duration": pytest.approx(4e-9),
+        "phase": 0,
+        "acq_channel": 1,
+        "acq_index": 2,
+        "bin_mode": BinMode.APPEND,
+        "protocol": "NumericalWeightedIntegration",
         "acq_return_type": complex,
     }
     for k, v in expected.items():
@@ -210,7 +276,13 @@ def test__repr__(operation: Operation):
             clock="q0.ro",
             duration=100e-9,
         ),
-        NumericalWeightedIntegrationComplex(
+        NumericalSeparatedWeightedIntegration(
+            weights_a=np.zeros(3, dtype=complex),
+            weights_b=np.ones(3, dtype=complex),
+            port="q0:res",
+            clock="q0.ro",
+        ),
+        NumericalWeightedIntegration(
             weights_a=np.zeros(3, dtype=complex),
             weights_b=np.ones(3, dtype=complex),
             port="q0:res",
@@ -245,7 +317,13 @@ def test__str__(operation: Operation):
             clock="q0.ro",
             duration=100e-9,
         ),
-        NumericalWeightedIntegrationComplex(
+        NumericalSeparatedWeightedIntegration(
+            weights_a=np.zeros(3, dtype=complex),
+            weights_b=np.ones(3, dtype=complex),
+            port="q0:res",
+            clock="q0.ro",
+        ),
+        NumericalWeightedIntegration(
             weights_a=np.zeros(3, dtype=complex),
             weights_b=np.ones(3, dtype=complex),
             port="q0:res",
@@ -271,7 +349,9 @@ def test_deserialize(operation: Operation):
     obj = json.loads(operation_state, cls=SchedulerJSONDecoder)
 
     # Assert
-    if isinstance(operation, NumericalWeightedIntegrationComplex):
+    if isinstance(
+        operation, (NumericalSeparatedWeightedIntegration, NumericalWeightedIntegration)
+    ):
         waveforms = operation.data["acquisition_info"][0]["waveforms"]
         for i, waveform in enumerate(waveforms):
             assert isinstance(waveform["t_samples"], (np.generic, np.ndarray))

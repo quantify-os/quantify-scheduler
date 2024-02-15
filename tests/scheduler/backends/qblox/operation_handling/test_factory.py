@@ -65,7 +65,7 @@ TEST_OP_INFO_MAPPING = {
     "weighted": OpInfo(
         name="",
         data={
-            "protocol": "WeightedIntegratedComplex",
+            "protocol": "NumericalSeparatedWeightedIntegration",
             "acq_channel": 0,
             "acq_index": 0,
             "bin_mode": BinMode.AVERAGE,

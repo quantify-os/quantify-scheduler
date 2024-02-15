@@ -10,7 +10,9 @@
   - Fix `ThresholdedAcquisition` dataset format. (!897)
   - Minor refactor of `ThresholdedAcquisition`: removed `_update_acquisition_info_from_device_config`. (!913)
 - Visualization - Allow plotting `VoltageOffset` operations in both the `"mpl"` and `"plotly"` backends. (!873).
-- Operations - Make it possible to specify a custom name for `StitchedPulse`. `StitchedPulse` instances created by `long_square_pulse`, `long_ramp_pulse` and `staircase_pulse` now have the same name as the factory function. (!871)
+- Operations
+  - Make it possible to specify a custom name for `StitchedPulse`. `StitchedPulse` instances created by `long_square_pulse`, `long_ramp_pulse` and `staircase_pulse` now have the same name as the factory function. (!871)
+  - Renamed `NumericalWeightedIntegrationComplex` acquisition protocol to `NumericalSeparatedWeightedIntegration` and created `NumericalWeightedIntegration` acquisition protocol. (!880)
 - Qblox backend - Add io_name validators for connectivity (both graph input list and legacy hardware config) in QbloxCompilationConfig, as well as a get_valid_channels method in the cluster module and pulsar hardware descriptions (!874)
 - Documentation
   - Update copyright notice to 2024. (!892)

@@ -348,8 +348,9 @@ def test_compile_weighted_acquisition(
     sched.add(Reset(q0))
     sched.add(Rxy(90, 0, qubit=q0))
     sched.add(
-        Measure(q0, acq_protocol="NumericalWeightedIntegrationComplex"), label="M0"
+        Measure(q0, acq_protocol="NumericalSeparatedWeightedIntegration"), label="M0"
     )
+    sched.add(Measure(q0, acq_protocol="NumericalWeightedIntegration"), label="M1")
 
     compiler = SerialCompiler(name="compile")
     sched = compiler.compile(
@@ -357,10 +358,15 @@ def test_compile_weighted_acquisition(
         config=device_compile_config_basic_transmon_with_weighted_integration,
     )
 
+    measure_repr = list(sched.schedulables.values())[-2]["operation_id"]
+    assert (
+        sched.operations[measure_repr]["acquisition_info"][0]["protocol"]
+        == "NumericalSeparatedWeightedIntegration"
+    )
     measure_repr = list(sched.schedulables.values())[-1]["operation_id"]
     assert (
         sched.operations[measure_repr]["acquisition_info"][0]["protocol"]
-        == "WeightedIntegratedComplex"
+        == "NumericalWeightedIntegration"
     )
 
 

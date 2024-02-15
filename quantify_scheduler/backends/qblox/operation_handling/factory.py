@@ -55,7 +55,11 @@ def _get_acquisition_strategy(
             )
         return acquisitions.SquareAcquisitionStrategy(operation_info)
 
-    elif protocol == "WeightedIntegratedComplex":
+    elif protocol in (
+        "WeightedIntegratedSeparated",
+        "NumericalSeparatedWeightedIntegration",
+        "NumericalWeightedIntegration",
+    ):
         return acquisitions.WeightedAcquisitionStrategy(operation_info)
 
     elif protocol == "TriggerCount":

@@ -3,6 +3,7 @@
 # pylint: disable=too-many-arguments
 """Standard acquisition protocols for use with the quantify_scheduler."""
 
+import warnings
 from typing import Any, Dict, List, Union
 
 import numpy as np
@@ -96,30 +97,30 @@ class Trace(AcquisitionOperation):  # pylint: disable=too-many-ancestors
         return self._get_signature(acq_info)
 
 
-class WeightedIntegratedComplex(
+class WeightedIntegratedSeparated(
     AcquisitionOperation
 ):  # pylint: disable=too-many-ancestors
     r"""
-    Weighted integration acquisition protocol on a complex signal.
+    Weighted integration acquisition protocol where two sets weights
+    are applied separately to the real and imaginary parts
+    of the signal.
 
     Weights are applied as:
 
     .. math::
 
-        \widetilde{A} = \int ( \mathrm{Re}(S(t))\cdot \mathrm{Re}(W_A(t)) +
-        \mathrm{Im}(S(t))\cdot \mathrm{Im}(W_A(t)) ) \mathrm{d}t
+        \widetilde{A} = \int \mathrm{Re}(S(t))\cdot W_A(t) \mathrm{d}t
 
     .. math::
 
-        \widetilde{B} = \int ( \mathrm{Re}(S(t))\cdot \mathrm{Re}(W_B(t)) +
-        \mathrm{Im}(S(t))\cdot \mathrm{Im}(W_B(t)) ) \mathrm{d}t
+        \widetilde{B} = \int \mathrm{Im}(S(t))\cdot W_B(t) \mathrm{d}t
 
     Parameters
     ----------
     waveform_a
-        The complex waveform used as integration weights :math:`A(t)`.
+        The complex waveform used as integration weights :math:`W_A(t)`.
     waveform_b
-        The complex waveform used as integration weights :math:`B(t)`.
+        The complex waveform used as integration weights :math:`W_B(t)`.
     port
         The acquisition port.
     clock
@@ -178,7 +179,7 @@ class WeightedIntegratedComplex(
                 "acq_channel": acq_channel,
                 "acq_index": acq_index,
                 "bin_mode": bin_mode,
-                "protocol": "WeightedIntegratedComplex",
+                "protocol": "WeightedIntegratedSeparated",
                 "acq_return_type": complex,
             }
         ]
@@ -186,7 +187,7 @@ class WeightedIntegratedComplex(
         # certain fields are required in the acquisition data
         if "acq_return_type" not in self.data["acquisition_info"][0]:
             self.data["acquisition_info"][0]["acq_return_type"] = complex
-            self.data["acquisition_info"][0]["protocol"] = "WeightedIntegratedComplex"
+            self.data["acquisition_info"][0]["protocol"] = "WeightedIntegratedSeparated"
 
     def __str__(self) -> str:
         acq_info = self.data["acquisition_info"][0]
@@ -420,26 +421,24 @@ class ThresholdedAcquisition(AcquisitionOperation):
         return self._get_signature(acq_info)
 
 
-class NumericalWeightedIntegrationComplex(
-    WeightedIntegratedComplex
+class NumericalSeparatedWeightedIntegration(
+    WeightedIntegratedSeparated
 ):  # pylint: disable=too-many-ancestors
     r"""
-    Subclass of WeightedIntegratedComplex with parameterized waveforms as weights.
+    Subclass of :class:`~WeightedIntegratedSeparated` with parameterized waveforms as weights.
 
-    A WeightedIntegratedComplex class using parameterized waveforms and
+    A WeightedIntegratedSeparated class using parameterized waveforms and
     interpolation as the integration weights.
 
     Weights are applied as:
 
     .. math::
 
-        \widetilde{A} = \int ( \mathrm{Re}(S(t))\cdot \mathrm{Re}(W_A(t)) +
-        \mathrm{Im}(S(t))\cdot \mathrm{Im}(W_A(t)) ) \mathrm{d}t
+        \widetilde{A} = \int \mathrm{Re}(S(t)\cdot W_A(t) \mathrm{d}t
 
     .. math::
 
-        \widetilde{B} = \int ( \mathrm{Re}(S(t))\cdot \mathrm{Re}(W_B(t)) +
-        \mathrm{Im}(S(t))\cdot \mathrm{Im}(W_B(t)) ) \mathrm{d}t
+        \widetilde{B} = \int \mathrm{Im}(S(t))\cdot W_B(t) \mathrm{d}t
 
     Parameters
     ----------
@@ -527,6 +526,10 @@ class NumericalWeightedIntegrationComplex(
             t0=t0,
         )
         self.data["name"] = self.__class__.__name__
+        self.data["acquisition_info"][0]["acq_return_type"]: list
+        self.data["acquisition_info"][0][
+            "protocol"
+        ] = "NumericalSeparatedWeightedIntegration"
         self._update()
 
     def __str__(self) -> str:
@@ -556,6 +559,103 @@ class NumericalWeightedIntegrationComplex(
 
     def __repr__(self) -> str:
         return str(self)
+
+
+class NumericalWeightedIntegrationComplex(
+    WeightedIntegratedSeparated
+):  # pylint: disable=too-many-ancestors
+    """Deprecated, renamed to :class:`~NumericalSeparatedWeightedIntegration`."""
+
+    def __new__(cls, *args, **kwargs) -> NumericalSeparatedWeightedIntegration:
+        """Return :class:`~NumericalSeparatedWeightedIntegration`."""
+        warnings.warn(
+            (
+                f"{NumericalWeightedIntegrationComplex.__name__} is "
+                f"deprecated and will be removed in quantify-scheduler>=0.20.0. Use "
+                f"{NumericalSeparatedWeightedIntegration.__name__} instead."
+            ),
+            FutureWarning,
+        )
+        return NumericalSeparatedWeightedIntegration(*args, **kwargs)
+
+
+class NumericalWeightedIntegration(NumericalSeparatedWeightedIntegration):
+    """
+    Subclass of :class:`~NumericalSeparatedWeightedIntegration` returning a complex number.
+
+    Parameters
+    ----------
+    port
+        The acquisition port.
+    clock
+        The clock used to demodulate the acquisition.
+    weights_a
+        The list of complex values used as weights :math:`A(t)` on
+        the incoming complex signal.
+    weights_b
+        The list of complex values used as weights :math:`B(t)` on
+        the incoming complex signal.
+    weights_sampling_rate
+        The rate with which the weights have been sampled, in Hz. By default equal
+        to the Qblox backend sampling rate. Note that during hardware compilation,
+        the weights will be resampled with the sampling rate supported by the target
+        hardware.
+    t
+        The time values of each weight. This parameter is deprecated in favor of
+        ``weights_sampling_rate``. If a value is provided for ``t``, the
+        ``weights_sampling_rate`` parameter will be ignored.
+    interpolation
+        The type of interpolation to use, by default "linear". This argument is
+        passed to :obj:`~scipy.interpolate.interp1d`.
+    acq_channel
+        The data channel in which the acquisition is stored, by default 0.
+        Describes the "where" information of the  measurement, which typically
+        corresponds to a qubit idx.
+    acq_index
+        The data register in which the acquisition is stored, by default 0.
+        Describes the "when" information of the measurement, used to label or
+        tag individual measurements in a large circuit. Typically corresponds
+        to the setpoints of a schedule (e.g., tau in a T1 experiment).
+    bin_mode
+        Describes what is done when data is written to a register that already
+        contains a value. Options are "append" which appends the result to the
+        list or "average" which stores the weighted average value of the
+        new result and the old register value, by default BinMode.APPEND.
+    phase
+        The phase of the pulse and acquisition in degrees, by default 0.
+    t0
+        The acquisition start time in seconds, by default 0.
+    """
+
+    def __init__(
+        self,
+        port: str,
+        clock: str,
+        weights_a: Union[List[complex], np.ndarray],
+        weights_b: Union[List[complex], np.ndarray],
+        weights_sampling_rate: float = qblox_constants.SAMPLING_RATE,
+        interpolation: str = "linear",
+        acq_channel: int = 0,
+        acq_index: int = 0,
+        bin_mode: Union[BinMode, str] = BinMode.APPEND,
+        phase: float = 0,
+        t0: float = 0,
+    ) -> None:
+        super().__init__(
+            port=port,
+            clock=clock,
+            weights_a=weights_a,
+            weights_b=weights_b,
+            weights_sampling_rate=weights_sampling_rate,
+            interpolation=interpolation,
+            acq_channel=acq_channel,
+            acq_index=acq_index,
+            bin_mode=bin_mode,
+            phase=phase,
+            t0=t0,
+        )
+        self.data["acquisition_info"][0]["protocol"] = "NumericalWeightedIntegration"
+        self._update()
 
 
 class TriggerCount(AcquisitionOperation):  # pylint: disable=too-many-ancestors

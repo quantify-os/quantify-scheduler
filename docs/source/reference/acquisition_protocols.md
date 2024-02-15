@@ -198,16 +198,38 @@ xr.Dataset(
 )
 ```
 
-(sec-acquisition-protocols-numerical-weighted-integration-complex)=
-## Numerical Weighted Complex Integration
+(sec-acquisition-protocols-numerical-weighted-integration-separated)=
+## Numerical Separated Weighted Integration
 
-- Referred to as `"NumericalWeightedIntegrationComplex"`.
+- Referred to as `"NumericalSeparatedWeightedIntegration"`.
 - Supported by the {mod}`Qblox <quantify_scheduler.backends.qblox>` backend.
 
 Equivalent to
 {ref}`SSB complex integration <sec-acquisition-protocols-ssb-integration-complex>`,
-but instead of a simple average of a demodulated signal, a weighted average is taken.
-The dataset format is also the same.
+but instead of a simple average of a demodulated signal, the signal is weighted
+with two waveforms and then integrated. One waveform for the real part of the
+signal, and one for the imaginary part. The dataset format is also the same.
+
+Integration weights should normally be calibrated in a separate experiment
+(see, for example, {cite:t}`magesan2015machine`).
+
+(sec-acquisition-protocols-numerical-weighted-integration)=
+## Numerical Separated Weighted
+
+- Referred to as `"NumericalWeightedIntegration"`.
+- Supported by the {mod}`Qblox <quantify_scheduler.backends.qblox>` backend.
+
+Equivalent to
+{ref}`Numerical Separated Weighted Integration <sec-acquisition-protocols-numerical-weighted-integration-separated>`,
+but the real part of the output is the sum of the real and imaginary part
+of the output from the {ref}`Numerical Separated Weighted Integration <sec-acquisition-protocols-numerical-weighted-integration-separated>` protocol. The dataset format is also the same.
+This is equivalent to multiplying the complex signal with complex waveform
+weights, and only returning the real part of the result. If the integration
+weights are calibrated as in {cite:t}`magesan2015machine`, i.e. the complex
+weights are the difference between the two signals we wish to distinguish,
+then the real part of the complex weighted multiplication contains all the
+relevant information required to distinguish between the states, and the
+imaginary part contains only noise.
 
 Integration weights should normally be calibrated in a separate experiment
 (see, for example, {cite:t}`magesan2015machine`).

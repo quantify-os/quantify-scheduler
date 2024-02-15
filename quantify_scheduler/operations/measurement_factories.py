@@ -17,6 +17,8 @@ import numpy as np
 from quantify_scheduler import Operation
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.acquisition_library import (
+    NumericalSeparatedWeightedIntegration,
+    NumericalWeightedIntegration,
     NumericalWeightedIntegrationComplex,
     SSBIntegrationComplex,
     ThresholdedAcquisition,
@@ -42,23 +44,10 @@ def dispersive_measurement(
     acq_channel: Hashable,
     acq_channel_override: Hashable | None,
     acq_index: int,
-    acq_protocol: (
-        Literal[
-            "SSBIntegrationComplex",
-            "Trace",
-            "NumericalWeightedIntegrationComplex",
-            "ThresholdedAcquisition",
-        ]
-        | None
-    ),
+    acq_protocol: str | None,
     pulse_type: Literal["SquarePulse"] = "SquarePulse",
     bin_mode: BinMode | None = BinMode.AVERAGE,
-    acq_protocol_default: Literal[
-        "SSBIntegrationComplex",
-        "Trace",
-        "NumericalWeightedIntegrationComplex",
-        "ThresholdedAcquisition",
-    ] = "SSBIntegrationComplex",
+    acq_protocol_default: str = "SSBIntegrationComplex",
     reset_clock_phase: bool = True,
     reference_magnitude: Optional[ReferenceMagnitude] = None,
     acq_weights_a: List[complex] | np.ndarray | None = None,
@@ -127,7 +116,11 @@ def dispersive_measurement(
                 t0=acq_delay,
             )
         )
-    elif acq_protocol == "NumericalWeightedIntegrationComplex":
+    elif acq_protocol in (
+        "NumericalSeparatedWeightedIntegration",
+        "NumericalWeightedIntegration",
+        "NumericalWeightedIntegrationComplex",
+    ):
         if (
             acq_weights_a is None
             or acq_weights_b is None
@@ -149,19 +142,48 @@ def dispersive_measurement(
                 f"ignored for weighted acquisition.",
                 UserWarning,
             )
-        device_op.add_acquisition(
-            NumericalWeightedIntegrationComplex(
-                port=port,
-                clock=clock,
-                weights_a=acq_weights_a,
-                weights_b=acq_weights_b,
-                weights_sampling_rate=acq_weights_sampling_rate,
-                acq_channel=acq_channel,
-                acq_index=acq_index,
-                bin_mode=bin_mode,
-                t0=acq_delay,
+        if acq_protocol == "NumericalSeparatedWeightedIntegration":
+            device_op.add_acquisition(
+                NumericalSeparatedWeightedIntegration(
+                    port=port,
+                    clock=clock,
+                    weights_a=acq_weights_a,
+                    weights_b=acq_weights_b,
+                    weights_sampling_rate=acq_weights_sampling_rate,
+                    acq_channel=acq_channel,
+                    acq_index=acq_index,
+                    bin_mode=bin_mode,
+                    t0=acq_delay,
+                )
             )
-        )
+        elif acq_protocol == "NumericalWeightedIntegration":
+            device_op.add_acquisition(
+                NumericalWeightedIntegration(
+                    port=port,
+                    clock=clock,
+                    weights_a=acq_weights_a,
+                    weights_b=acq_weights_b,
+                    weights_sampling_rate=acq_weights_sampling_rate,
+                    acq_channel=acq_channel,
+                    acq_index=acq_index,
+                    bin_mode=bin_mode,
+                    t0=acq_delay,
+                )
+            )
+        elif acq_protocol == "NumericalWeightedIntegrationComplex":
+            device_op.add_acquisition(
+                NumericalWeightedIntegrationComplex(
+                    port=port,
+                    clock=clock,
+                    weights_a=acq_weights_a,
+                    weights_b=acq_weights_b,
+                    weights_sampling_rate=acq_weights_sampling_rate,
+                    acq_channel=acq_channel,
+                    acq_index=acq_index,
+                    bin_mode=bin_mode,
+                    t0=acq_delay,
+                )
+            )
     elif acq_protocol == "ThresholdedAcquisition":
         device_op.add_acquisition(
             ThresholdedAcquisition(
