@@ -4,6 +4,8 @@
 
 ### Breaking changes
 
+- Acquisition - Adjust acquisition channel ordering in ScheduleGettable. (!924)
+
 ### Merged branches and closed issues
 
 - Acquisition
@@ -36,6 +38,7 @@
 - tests 
   - small refactor of the `mock_setup_basic_transmon` fixture. (!917)
   - Cleaning unused `instrument.close()`. (!919)
+
 ## 0.18.0 (2023-12-22)
 
 ### Release highlights

@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import logging
 import sys
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, Hashable
 
 import numpy as np
 from qcodes.parameters import Parameter
@@ -286,7 +286,11 @@ class ScheduleGettable:
         # retrieve the acquisition results
 
         return_data = []
-        for idx, acq_channel in enumerate(acquired_data):
+        # We sort acquisition channels so that the user
+        # has control over the order of the return data.
+        # https://gitlab.com/quantify-os/quantify-scheduler/-/issues/466
+        sorted_acq_channels: list[Hashable] = sorted(acquired_data.data_vars)
+        for idx, acq_channel in enumerate(sorted_acq_channels):
             acq_channel_data = acquired_data[acq_channel]
             acq_protocol = acq_channel_data.attrs["acq_protocol"]
 
@@ -332,6 +336,7 @@ class ScheduleGettable:
                 "WeightedIntegratedSeparated",
                 "NumericalSeparatedWeightedIntegration",
                 "NumericalWeightedIntegration",
+                "ThresholdedAcquisition",
             ):
                 raise AcquisitionProtocolNotSupportedError(
                     f"ScheduleGettable does not support {acq_protocol}."

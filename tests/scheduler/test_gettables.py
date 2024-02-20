@@ -41,12 +41,13 @@ def test_process_acquired_data(
     # arrange
     quantum_device = mock_setup_basic_transmon["quantum_device"]
 
-    mock_results = np.array([4815 + 162342j], dtype=np.complex64)
+    mock_number = 4815 + 162342j
+    mock_results = np.array([mock_number], dtype=np.complex64)
     mock_dataset = Dataset(
         {
             i: (
                 [f"acq_index_{i}"],
-                mock_results,
+                mock_results * i,
                 {"acq_protocol": "SSBIntegrationComplex"},
             )
             for i in range(num_channels)
@@ -63,8 +64,20 @@ def test_process_acquired_data(
     # act
     processed_data = gettable.process_acquired_data(mock_dataset)
 
+    def transform_complex(c: complex) -> tuple:
+        if real_imag:
+            return (c.real, c.imag)
+        else:
+            return (abs(c), np.angle(c, deg=True))
+
+    expected_data: tuple = tuple(
+        np.array([transform_complex(mock_number * i)[elem]], dtype=np.float32)
+        for i in range(num_channels)
+        for elem in [0, 1]
+    )
+
     # assert
-    assert len(processed_data) == 2 * num_channels
+    np.testing.assert_array_almost_equal(processed_data, expected_data, decimal=5)
 
 
 def test_schedule_gettable_iterative_heterodyne_spec(mock_setup_basic_transmon, mocker):
