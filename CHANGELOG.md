@@ -1,6 +1,20 @@
 # Changelog
 
-## Unreleased
+## 0.18.1 (2024-02-22)
+
+### Release highlights
+
+**Fixes**
+- `ThresholdedAcquisition` refactored: the dataset format was changed, `ThresholdedAcquisition` was also made compatible with `ScheduleGettable`. 
+- Instrument Coordinator prepares only the instruments mentioned in the Compiled Schedule
+
+**General Updates**
+- The general merge request template has been made default.
+- The plotting of `VoltageOffset` operations can now be done in both the `"mpl"` and `"plotly"` backends.
+
+**Qblox backend improvements**
+- Validation of io_name in connectivity in QbloxCompilationConfig and addition of get_valid_channels method in the cluster module and pulsar hardware descriptions
+- Removal of pulsars from codebase
 
 ### Breaking changes
 
@@ -9,35 +23,48 @@
 ### Merged branches and closed issues
 
 - Acquisition
-  - Fix `ThresholdedAcquisition` dataset format. (!897)
   - Minor refactor of `ThresholdedAcquisition`: removed `_update_acquisition_info_from_device_config`. (!913)
-- Visualization - Allow plotting `VoltageOffset` operations in both the `"mpl"` and `"plotly"` backends. (!873).
+
+- Visualization - Allow plotting `VoltageOffset` operations in both the `"mpl"` and `"plotly"` backends. (!873)
+
 - Operations
   - Make it possible to specify a custom name for `StitchedPulse`. `StitchedPulse` instances created by `long_square_pulse`, `long_ramp_pulse` and `staircase_pulse` now have the same name as the factory function. (!871)
   - Renamed `NumericalWeightedIntegrationComplex` acquisition protocol to `NumericalSeparatedWeightedIntegration` and created `NumericalWeightedIntegration` acquisition protocol. (!880)
-- Qblox backend - Add io_name validators for connectivity (both graph input list and legacy hardware config) in QbloxCompilationConfig, as well as a get_valid_channels method in the cluster module and pulsar hardware descriptions (!874)
+
+- Qblox backend 
+  - Add io_name validators for connectivity (both graph input list and legacy hardware config) in QbloxCompilationConfig, as well as a get_valid_channels method in the cluster module and pulsar hardware descriptions (!874)
+  - Remove pulsars from codebase. (!893)
+
 - Documentation
   - Update copyright notice to 2024. (!892)
   - Update URLs to new QCoDeS location (`qcodes.github.io` to `microsoft.github.io`) (!901)
   - Improve return docstring for `_get_trigger_count_data` and `_determine_measurement_fixpoint_correction`. (!902)
   - Pin `scanpydoc<0.12` to prevent incorrect parsing of return types in docstrings. (!903)
-- Fixes - Fetch dependencies in `_get_dependency_versions()` from quantify-scheduler package metadata instead of `pyproject.toml`. Also remove `pkg_resources` because it is deprecated. (!896)
-- Fixes - Ensure that only instruments mentioned in the schedule compiled instructions are started by the `start` method of the instrument coordinator (!909).
-- Deprecation 
-  - Replace `matplotlib.cm` with `matplotlib.colormaps` to resolve a `DeprecationWarning`. (!888)
-- Compilation - Acquisition metadata calculation location is a single place in the compiler container. (!894)
-- Compilation - Remove Qblox backend code usage in distortion corrections. (!898)
-- Schedule - Add typecheck for references passed to `ref_op`. (!907)
+
+- Error handling 
+  - Make the zhinst backend correctly throw a `NotImplementedError` for `SetClockFrequency`. (!910)
+
+- Fixes 
+  - Fetch dependencies in `_get_dependency_versions()` from quantify-scheduler package metadata instead of `pyproject.toml`. Also remove `pkg_resources` because it is deprecated. (!896)
+  - Ensure that only instruments mentioned in the schedule compiled instructions are started by the `start` method of the instrument coordinator (!909).
+  - Add `isinstance` checks to help pyright. (!914)
+  - Fail pytest when using deprecated code from `quantify-scheduler` unintentionally. (!899)
+  - Refactor of the `mock_setup_basic_transmon` fixture. (!917)
+  - Make the zhinst backend correctly throw a `NotImplementedError` for `SetClockFrequency`. (!910)
+  - Add typecheck for references passed to `ref_op` in Schedule. (!907)
+
 - GitLab
   - Make general Merge Request template the default. (!906)
   - Add documentation redirect instructions to Release merge request template. (!906)
-- Tests - Fail pytest when using deprecated code from `quantify-scheduler` unintentionally. (!899)
-- Error handling - Make the zhinst backend correctly throw a `NotImplementedError` for `SetClockFrequency`. (!910)
-- Type checking - Add `isinstance` checks to help pyright. (!914)
-- Qblox backend - Remove pulsars from codebase. (!893)
-- tests 
-  - small refactor of the `mock_setup_basic_transmon` fixture. (!917)
+
+- Tests
+  - Fail pytest when using deprecated code from `quantify-scheduler` unintentionally. (!899)
+  - Small refactor of the `mock_setup_basic_transmon` fixture. (!917)
   - Cleaning unused `instrument.close()`. (!919)
+
+- Type checking - Add `isinstance` checks to help pyright. (!914)
+
+
 
 ## 0.18.0 (2023-12-22)
 

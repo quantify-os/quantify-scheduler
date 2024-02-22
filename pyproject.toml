@@ -11,7 +11,7 @@ description="""\
 maintainers = [
     {name = "Edgar Reehuis", email = "ereehuis@qblox.com"},
     {name = "Robert Sokolewicz", email = "rsokolewicz@qblox.com"},
-    {name = "Tobias Bonsen", email = "tobias@orangeqs.com"},
+    {name = "Amirtha Varshiny Arumugam", email = "amirthavarshiny@orangeqs.com"},
     {name = "Viacheslav Ostroukh", email = "viacheslav@orangeqs.com"},
 ]
 classifiers = [
