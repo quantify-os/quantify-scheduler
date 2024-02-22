@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Breaking changes
+
+### Merged branches and closed issues
+
 ## 0.18.1 (2024-02-22)
 
 ### Release highlights
