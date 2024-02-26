@@ -9,6 +9,7 @@ from quantify_scheduler.backends.qblox import constants, helpers, q1asm_instruct
 from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.types import qblox as types
+from quantify_scheduler.backends.qblox.conditional import FeedbackTriggerCondition
 
 
 class IdleStrategy(IOperationStrategy):
@@ -191,6 +192,29 @@ class AwgOffsetStrategy(IdleStrategy):
         )
 
 
+class ResetFeedbackTriggersStrategy(IdleStrategy):
+    """Strategy for resetting the count of feedback trigger addresses."""
+
+    def insert_qasm(self, qasm_program: QASMProgram):
+        """
+        Add the assembly instructions for the Q1 sequence processor that corresponds to
+        this pulse.
+
+        Parameters
+        ----------
+        qasm_program
+            The QASMProgram to add the assembly instructions to.
+
+        """
+        duration = round(1e9 * self.operation_info.data.get("duration"))
+        qasm_program.emit(
+            q1asm_instructions.FEEDBACK_TRIGGERS_RST,
+            duration,
+            comment="reset trigger count",
+        )
+        qasm_program.elapsed_time += duration
+
+
 class UpdateParameterStrategy(IdleStrategy):
     """Strategy for compiling an "update parameters" real-time instruction."""
 
@@ -216,6 +240,16 @@ class LoopStrategy(IdleStrategy):
 
     Empty as it is used for isinstance.
     """
+
+
+class ConditionalStrategy(IdleStrategy):
+    """Strategy for compiling a "Conditional" control flow instruction."""
+
+    def __init__(
+        self, operation_info: types.OpInfo, trigger_condition: FeedbackTriggerCondition
+    ):
+        super().__init__(operation_info=operation_info)
+        self.trigger_condition = trigger_condition
 
 
 class ControlFlowReturnStrategy(IdleStrategy):

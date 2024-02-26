@@ -4,7 +4,7 @@
 """Standard acquisition protocols for use with the quantify_scheduler."""
 
 import warnings
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 
@@ -356,6 +356,10 @@ class ThresholdedAcquisition(AcquisitionOperation):
         result to the list or "average" which stores the weighted average
         value of the new result and the old register value, by default
         BinMode.AVERAGE.
+    feedback_trigger_label : str
+        The label corresponding to the feedback trigger, which is mapped by the
+        compiler to a feedback trigger address on hardware, by default None.
+
     phase : float
         The phase of the pulse and acquisition in degrees, by default 0.
     t0 : float
@@ -370,6 +374,7 @@ class ThresholdedAcquisition(AcquisitionOperation):
         acq_channel: int = 0,
         acq_index: int = 0,
         bin_mode: Union[BinMode, str] = BinMode.AVERAGE,
+        feedback_trigger_label: Optional[str] = None,
         phase: float = 0,
         t0: float = 0,
         acq_rotation: float = 0,
@@ -410,6 +415,7 @@ class ThresholdedAcquisition(AcquisitionOperation):
                 "bin_mode": bin_mode,
                 "acq_return_type": np.uint32,
                 "protocol": "ThresholdedAcquisition",
+                "feedback_trigger_label": feedback_trigger_label,
                 "acq_threshold": acq_threshold,
                 "acq_rotation": acq_rotation,
             },
@@ -526,7 +532,6 @@ class NumericalSeparatedWeightedIntegration(
             t0=t0,
         )
         self.data["name"] = self.__class__.__name__
-        self.data["acquisition_info"][0]["acq_return_type"]: list
         self.data["acquisition_info"][0][
             "protocol"
         ] = "NumericalSeparatedWeightedIntegration"

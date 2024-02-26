@@ -645,9 +645,9 @@ def assign_pulse_and_acq_info_to_devices(
             if port is None:
                 # Distribute clock operations to all sequencers utilizing that clock
                 for (map_port, map_clock), device_name in portclock_mapping.items():
-                    if map_clock == clock:
+                    if (combined_data.name == "LatchReset") or map_clock == clock:
                         device_compilers[device_name].add_pulse(
-                            port=map_port, clock=clock, pulse_info=combined_data
+                            port=map_port, clock=map_clock, pulse_info=combined_data
                         )
             else:
                 if (port, clock) not in portclock_mapping:

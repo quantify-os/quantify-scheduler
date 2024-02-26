@@ -3,9 +3,11 @@
 """Compiler backend for Qblox hardware."""
 from __future__ import annotations
 
+import itertools
 import re
 import warnings
 from collections import defaultdict
+from dataclasses import dataclass
 from typing import Any, Dict, List, Literal, Optional, Type, Union
 
 import numpy as np
@@ -28,6 +30,7 @@ from quantify_scheduler.backends.qblox.helpers import (
     find_channel_names,
 )
 from quantify_scheduler.backends.qblox.operations import long_square_pulse
+from quantify_scheduler.backends.qblox.operations.pulse_library import LatchReset
 from quantify_scheduler.backends.qblox.operations.stitched_pulse import StitchedPulse
 from quantify_scheduler.backends.types.common import (
     Connectivity,
@@ -44,6 +47,7 @@ from quantify_scheduler.backends.types.qblox import (
     QRMRFDescription,
 )
 from quantify_scheduler.helpers.collections import find_inner_dicts_containing_key
+from quantify_scheduler.helpers.schedule import _extract_port_clocks_used
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.schedules.schedule import (
     CompiledSchedule,
@@ -139,6 +143,196 @@ def _replace_long_square_pulses(
                 schedule.operations[ref] = StitchedPulse(
                     name=operation.data["name"], pulse_info=operation.data["pulse_info"]
                 )
+    return schedule
+
+
+@dataclass
+class OperationTimingInfo:
+    """Timing information for an Operation."""
+
+    start: float
+    """start time of the operation."""
+    end: float
+    """end time of the operation."""
+
+    @classmethod
+    def from_operation_and_schedulable(
+        cls, operation: Operation, schedulable: Schedulable  # noqa: ANN102
+    ) -> OperationTimingInfo:
+        """Create an ``OperationTimingInfo`` from an operation and a schedulable."""
+        start: float = schedulable.data["abs_time"]
+        duration: float = operation.duration
+        end: float = start + duration
+
+        return cls(
+            start=start,
+            end=end,
+        )
+
+    def overlaps_with(self, operation_timing_info: OperationTimingInfo) -> bool:
+        """Check if this operation timing info overlaps with another."""
+        return (
+            self.start <= operation_timing_info.end
+            and operation_timing_info.start <= self.end
+        )
+
+
+def compile_conditional_playback(  # noqa: PLR0915, PLR0912
+    schedule: Schedule, **_: Any
+) -> Schedule:
+    """
+    Compiles conditional playback.
+
+    This compiler pass will determine the mapping between trigger labels and
+    trigger addresses that the hardware will use. The feedback trigger address
+    is stored under the key ``feedback_trigger_address`` in ``pulse_info`` and
+    in ``acquisition_info`` of the corresponding operation.
+
+    A valid conditional playback consists of two parts: (1) a conditional
+    acquisition or measure, and (2) a conditional control flow. The first should
+    always be followed by the second, else an error is raised. A conditional
+    acquisition sends a trigger after the acquisition ends and if the
+    acquisition crosses a certain threshold. Each sequencer that is subscribed
+    to this trigger will increase their *latch* counters by one. To ensure the
+    latch counters contain either 0 or 1 trigger counts, a
+    :class:`~quantify_scheduler.backends.qblox.operations.pulse_library.LatchReset`
+    operation is inserted right after the start of a conditional acquisition, on
+    all sequencers. If this is not possible (e.g. due to concurring operations),
+    a :class:`RuntimeError` is raised.
+
+    Parameters
+    ----------
+    schedule :
+        The schedule to compile.
+
+    Returns
+    -------
+    Schedule
+        The returned schedule is a reference to the original ``schedule``, but
+        updated.
+
+    Raises
+    ------
+    RuntimeError
+        - If a conditional acquisitions/measures is not followed by a
+          conditional control flow.
+        - If a conditional control flow is not preceded by a conditional
+          acquisition/measure.
+        - If the compilation pass is unable to insert
+          :class:`~quantify_scheduler.backends.qblox.operations.pulse_library.LatchReset`
+          on all sequencers.
+
+    """
+
+    def _insert_latch_reset(
+        at: float,
+    ) -> None:
+        """
+        Attempt to insert ``LatchReset`` during a conditional acquisition acquire phase.
+
+        Parameters
+        ----------
+        at : float
+            time at which to insert ``LatchReset``.
+
+        """
+        for port, clock in _extract_port_clocks_used(schedule):
+            operation = LatchReset(port=port, clock=clock)
+            schedulable = schedule.add(operation)
+            schedulable.data["abs_time"] = at
+
+    # TODO: this logic needs to be moved to a cluster compiler container. With
+    # this implementation the `address_map` is shared among multiple
+    # clusters, but each cluster should have its own map. (SE-332)
+    address_counter = itertools.count(1)
+    address_map = defaultdict(address_counter.__next__)
+
+    schedulables = sorted(
+        schedule.schedulables.values(), key=lambda schedulable: schedulable["abs_time"]
+    )
+    operations: list[Operation] = [
+        schedule.operations[schedulable["operation_id"]] for schedulable in schedulables
+    ]
+    times: list[float] = [schedulable["abs_time"] for schedulable in schedulables]
+
+    current_ongoing_conditional_acquire = None
+    for time, operation in zip(times, operations):
+        if operation.is_control_flow and operation.is_conditional:
+            if current_ongoing_conditional_acquire is None:
+                raise RuntimeError(
+                    f"Conditional control flow, ``{operation}``,  found without a preceding "
+                    "Conditional acquisition. Please ensure that the preceding acquisition or Measure "
+                    "is conditional, by passing `feedback_trigger_label=qubit_name` to the "
+                    "corresponding operation, e.g.\n\n"
+                    "> schedule.add(Measure(qubit_name, ..., feedback_trigger_label=qubit_name))\n"
+                )
+            else:
+                current_ongoing_conditional_acquire = None
+
+            # Store `feedback_trigger_address` in the pulse that corresponds to conditional
+            # control flow.
+            control_flow_info = operation.data.get("control_flow_info")
+            feedback_trigger_label: str = control_flow_info.get(
+                "feedback_trigger_label"
+            )
+            for info in operation.data["pulse_info"]:
+                info["feedback_trigger_address"] = address_map[feedback_trigger_label]
+
+        # Store `feedback_trigger_address` in the correct acquisition, so that it can
+        # be passed to the correct Sequencer via ``SequencerSettings``.
+        if operation.valid_acquisition and operation.is_conditional:
+            if current_ongoing_conditional_acquire is None:
+                current_ongoing_conditional_acquire = operation
+            else:
+                raise RuntimeError(
+                    "Two subsequent conditional acquisitions found, without a "
+                    "conditional control flow operation in between. Conditional "
+                    "playback will only work if a conditional measure or acquisition "
+                    "is followed by a conditional control flow operation.\n"
+                    "The following two operations caused this problem: \n"
+                    f"{current_ongoing_conditional_acquire}\nand\n"
+                    f"{operation}\n"
+                )
+            acq_info = operation["acquisition_info"]
+            for info in acq_info:
+                if (
+                    feedback_trigger_label := info.get("feedback_trigger_label")
+                ) is not None:
+                    info["feedback_trigger_address"] = address_map[
+                        feedback_trigger_label
+                    ]
+
+            # Attempt to insert LatchReset into the schedule.
+            acquisition_start = operation.data["acquisition_info"][0]["t0"] + time
+
+            latch_rst_time_info = OperationTimingInfo(
+                acquisition_start + constants.MAX_MIN_INSTRUCTION_WAIT,
+                acquisition_start + 2 * constants.MAX_MIN_INSTRUCTION_WAIT,
+            )
+            for other_operation, other_schedulable in zip(operations, schedulables):
+                operation_time_info = (
+                    OperationTimingInfo.from_operation_and_schedulable(
+                        other_operation, other_schedulable
+                    )
+                )
+                if (
+                    operation_time_info.overlaps_with(latch_rst_time_info)
+                    and operation is not other_operation
+                ):
+                    raise RuntimeError(
+                        "Unable to insert latch reset during conditional acquisition. "
+                        f"Please ensure at least {int(2 * constants.MAX_MIN_INSTRUCTION_WAIT*1e9)}ns "
+                        f"of idle time during the start of the acquisition of {operation} on remaining sequencers."
+                    )
+            _insert_latch_reset(at=latch_rst_time_info.start)
+
+    if max(address_map.values(), default=0) > constants.MAX_FEEDBACK_TRIGGER_ADDRESS:
+        raise ValueError(
+            "Maximum number of feedback trigger addresses received. "
+            "Currently a Qblox cluster can store a maximum of "
+            f"{constants.MAX_FEEDBACK_TRIGGER_ADDRESS} addresses."
+        )
+
     return schedule
 
 
@@ -343,6 +537,10 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
         SimpleNodeConfig(
             name="compile_long_square_pulses_to_awg_offsets",
             compilation_func=compile_long_square_pulses_to_awg_offsets,
+        ),
+        SimpleNodeConfig(
+            name="qblox_compile_conditional_playback",
+            compilation_func=compile_conditional_playback,
         ),
         SimpleNodeConfig(
             name="qblox_hardware_compile", compilation_func=hardware_compile

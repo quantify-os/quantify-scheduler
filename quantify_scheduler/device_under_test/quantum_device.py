@@ -371,6 +371,11 @@ class QuantumDevice(Instrument):
                         + ".compile_long_square_pulses_to_awg_offsets",
                     ),
                     SimpleNodeConfig(
+                        name="qblox_compile_conditional_playback",
+                        compilation_func="quantify_scheduler.backends.qblox_backend"
+                        + ".compile_conditional_playback",
+                    ),
+                    SimpleNodeConfig(
                         name="qblox_hardware_compile",
                         compilation_func=hardware_config["backend"],
                     ),

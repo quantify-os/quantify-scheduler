@@ -4,14 +4,20 @@
 # pylint: disable=eval-used
 # pylint: disable=redefined-outer-name
 import json
-from typing import Any
+import re
 from unittest import TestCase
 
 import numpy as np
 import pytest
 
 from quantify_scheduler import Operation, Schedule, Schedulable
+from quantify_scheduler.backends.graph_compilation import SerialCompiler
+from quantify_scheduler.backends.qblox import constants
+from quantify_scheduler.backends.qblox.operations.gate_library import ConditionalReset
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.json_utils import SchedulerJSONEncoder, SchedulerJSONDecoder
+from quantify_scheduler.operations.control_flow_library import Loop
 from quantify_scheduler.operations.gate_library import (
     CNOT,
     CZ,
@@ -28,6 +34,7 @@ from quantify_scheduler.operations.gate_library import (
 )
 from quantify_scheduler.operations.shared_native_library import SpectroscopyOperation
 from quantify_scheduler.operations.nv_native_library import ChargeReset
+from quantify_scheduler.schemas.examples import utils
 
 
 def test_schedule_add_schedulables() -> None:
@@ -247,3 +254,269 @@ def test_rotation_unitaries() -> None:
         (1.0 + 0.0j) / np.sqrt(2) * np.array([[1 - 1j, 0], [0, 1 + 1j]]),
         atol=atol,
     )
+
+
+@pytest.mark.filterwarnings("ignore: Loops and Conditionals")
+def test_conditional_reset_inside_loop(mock_setup_basic_transmon_with_standard_params):
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+
+    hardware_config = utils.load_json_example_scheme(
+        "qblox_hardware_compilation_config.json"
+    )
+    quantum_device.hardware_config(hardware_config)
+    config = quantum_device.generate_compilation_config()
+
+    schedule = Schedule("")
+    inner = Schedule("test")
+    inner.add(ConditionalReset("q0"))
+    schedule.add(inner, control_flow=Loop(1024))
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        schedule,
+        config=config,
+    )
+
+    qcm_program = (
+        compiled_schedule.compiled_instructions.get("cluster0")
+        .get("cluster0_module2")
+        .get("sequencers")
+        .get("seq0")
+        .get("sequence")
+        .get("program")
+    )
+
+    # Check that there is no `loop` instruction between the two `set_cond`
+    # instructions.
+    pattern = r"^\s*set_cond.*?(?!^\s*loop).*^\s*set_cond"
+    match = re.search(pattern, qcm_program, re.DOTALL | re.MULTILINE)
+    assert match is not None, "`loop` and `set_cond` are not exited correctly."
+
+
+def test_conditional_reset_single_qubit(
+    mock_setup_basic_transmon_with_standard_params,
+):
+    q0 = mock_setup_basic_transmon_with_standard_params["q0"]
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+
+    hardware_config = utils.load_json_example_scheme(
+        "qblox_hardware_compilation_config.json"
+    )
+    quantum_device.hardware_config(hardware_config)
+    config = quantum_device.generate_compilation_config()
+
+    schedule = Schedule("test")
+    schedule.add(X("q0"))
+    schedule.add(ConditionalReset("q0"))
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        schedule,
+        config=config,
+    )
+
+    seq_settings = (
+        compiled_schedule.compiled_instructions.get("cluster0")
+        .get("cluster0_module4")
+        .get("sequencers")
+        .get("seq0")
+    )
+    assert (
+        expected_address := seq_settings["thresholded_acq_trigger_address"]
+    ) is not None
+    assert seq_settings["thresholded_acq_trigger_en"] is True
+    assert seq_settings["thresholded_acq_trigger_invert"] is False
+
+    qcm_program = (
+        compiled_schedule.compiled_instructions.get("cluster0")
+        .get("cluster0_module2")
+        .get("sequencers")
+        .get("seq0")
+        .get("sequence")
+        .get("program")
+    )
+
+    qrm_program = (
+        compiled_schedule.compiled_instructions.get("cluster0")
+        .get("cluster0_module4")
+        .get("sequencers")
+        .get("seq0")
+        .get("sequence")
+        .get("program")
+    )
+
+    pattern = r"^\s*latch_rst.*$"
+    match = re.search(pattern, qrm_program, re.MULTILINE)
+    assert match is not None
+
+    pattern = r"^\s*set_latch_en\s*(\d).*$"
+    match = re.search(pattern, qcm_program, re.MULTILINE)
+    assert match is not None
+
+    latch_en_arg = int(match.group(1))
+    assert latch_en_arg == 1
+
+    pattern = r"""
+        \s*set_cond\s* (\d), (\d+), (\d), (\d+).*\n
+        \s*set_awg_gain.*\n
+        \s*play \s*\d+, \d+, \d+.*\n
+        \s*wait .*\n
+        \s*set_cond \s*(\d), 0, 0, (\d+).*\n
+    """
+
+    compiled_pattern = re.compile(pattern, re.MULTILINE | re.DOTALL | re.VERBOSE)
+    match = compiled_pattern.search(qcm_program)
+    assert match is not None
+
+    enable, mask, operator, duration1 = (match.group(i) for i in range(1, 5))
+    disable, duration2 = match.group(5), match.group(6)
+
+    expected_mask = str(2**expected_address - 1)
+    expected_duration1 = str(int(1e9 * q0.rxy.duration()) // 2)
+    assert enable == "1"
+    assert mask == expected_mask
+    assert operator == "0"
+    assert duration1 == expected_duration1
+    assert disable == "0"
+    assert duration2 == "0"
+    assert 2**expected_address - 1 == int(mask)
+
+
+def test_conditional_acquire_without_control_flow_raises(
+    mock_setup_basic_transmon_with_standard_params,
+):
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+
+    hardware_config = utils.load_json_example_scheme(
+        "qblox_hardware_compilation_config.json"
+    )
+    quantum_device.hardware_config(hardware_config)
+    config = quantum_device.generate_compilation_config()
+
+    schedule = Schedule("test")
+    schedule.add(Measure("q0", feedback_trigger_label="q0", acq_index=0))
+    schedule.add(Measure("q0", feedback_trigger_label="q0", acq_index=1))
+
+    compiler = SerialCompiler(name="compiler")
+    with pytest.raises(
+        RuntimeError,
+        match="Two subsequent conditional acquisitions found, "
+        "without a conditional control flow operation in between",
+    ):
+        _ = compiler.compile(
+            schedule,
+            config=config,
+        )
+
+
+@pytest.mark.parametrize(
+    ["num_reset", "expected_exception"],
+    [
+        (constants.MAX_FEEDBACK_TRIGGER_ADDRESS - 1, None),
+        (constants.MAX_FEEDBACK_TRIGGER_ADDRESS, None),
+        (constants.MAX_FEEDBACK_TRIGGER_ADDRESS + 1, ValueError),
+    ],
+)
+def test_max_conditional_resets(num_reset, expected_exception):
+    q = {}
+    quantum_device = QuantumDevice("o")
+
+    for i in range(num_reset):
+        q[i] = BasicTransmonElement(f"q{i}")
+        q[i].rxy.amp180(0.9)
+        q[i].rxy.motzoi(0.9)
+        q[i].rxy.duration(200e-9)
+        q[i].clock_freqs.f01(1.2e9)
+        q[i].clock_freqs.f12(1.2e9)
+        q[i].clock_freqs.readout(1.2e9)
+        q[i].measure.acq_delay(100e-9)
+        q[i].measure.integration_time(200e-9)
+        quantum_device.add_element(q[i])
+
+    hw_config = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "QAE_cluster": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+        },
+    }
+    for i in range(15):
+        hw_config["QAE_cluster"][f"QAE_cluster_module{i+1}"] = (
+            {
+                "instrument_type": "QCM",
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {"port": f"q{i}:mw", "clock": f"q{i}.01"},
+                        {"port": f"q{i}:res", "clock": f"q{i}.ro"},
+                    ],
+                },
+            },
+        )
+    quantum_device.hardware_config(hw_config)
+
+    schedule = Schedule("test")
+    for qubit in q.values():
+        schedule.add(ConditionalReset(qubit.name))
+
+    config = quantum_device.generate_compilation_config()
+
+    compiler = SerialCompiler("")
+
+    if expected_exception is None:
+        compiler.compile(schedule, config)
+    else:
+        with pytest.raises(expected_exception, match="Maximum number"):
+            compiler.compile(schedule, config)
+
+
+def test_conditional_reset_multi_qubits(
+    mock_setup_basic_transmon_with_standard_params,
+):
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+
+    hardware_config = utils.load_json_example_scheme(
+        "qblox_hardware_compilation_config.json"
+    )
+    quantum_device.hardware_config(hardware_config)
+    config = quantum_device.generate_compilation_config()
+
+    compiler = SerialCompiler(name="compiler")
+
+    schedule = Schedule("")
+    schedule.add(ConditionalReset("q0"))
+    schedule.add(ConditionalReset("q4"))
+
+    compiled_schedule = compiler.compile(
+        schedule,
+        config=config,
+    )
+
+    # Assert readout module sequencer settings.
+    trigger_address_q0 = compiled_schedule.compiled_instructions["cluster0"][
+        "cluster0_module4"
+    ]["sequencers"]["seq0"]["thresholded_acq_trigger_address"]
+    thresholded_acq_trigger_en_q0 = compiled_schedule.compiled_instructions["cluster0"][
+        "cluster0_module4"
+    ]["sequencers"]["seq0"]["thresholded_acq_trigger_en"]
+    thresholded_acq_trigger_invert_q0 = compiled_schedule.compiled_instructions[
+        "cluster0"
+    ]["cluster0_module4"]["sequencers"]["seq0"]["thresholded_acq_trigger_invert"]
+
+    assert trigger_address_q0 == 1
+    assert thresholded_acq_trigger_en_q0 is True
+    assert thresholded_acq_trigger_invert_q0 is False
+
+    # Assert readout module sequencer settings for "q4".
+    trigger_address_q4 = compiled_schedule.compiled_instructions["cluster0"][
+        "cluster0_module3"
+    ]["sequencers"]["seq0"]["thresholded_acq_trigger_address"]
+    thresholded_acq_trigger_en_q4 = compiled_schedule.compiled_instructions["cluster0"][
+        "cluster0_module3"
+    ]["sequencers"]["seq0"]["thresholded_acq_trigger_en"]
+    thresholded_acq_trigger_invert_q4 = compiled_schedule.compiled_instructions[
+        "cluster0"
+    ]["cluster0_module3"]["sequencers"]["seq0"]["thresholded_acq_trigger_invert"]
+
+    assert trigger_address_q4 == 2
+    assert thresholded_acq_trigger_en_q4 is True
+    assert thresholded_acq_trigger_invert_q4 is False

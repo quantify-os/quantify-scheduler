@@ -77,3 +77,15 @@ MAX_NUMBER_OF_BINS: int = 131072
 """Number of bins available in the Qblox sequencers."""
 GENERIC_IC_COMPONENT_NAME: str = "generic"
 """Default name for the generic instrument coordinator component."""
+TRIGGER_DELAY: float = 364e-9
+"""
+Total delay time of the feedback trigger before it is registered after the
+end of a thresholded acquisition.
+"""
+MAX_FEEDBACK_TRIGGER_ADDRESS: int = 15
+"""Available trigger addresses on each cluster range from 1,...,15."""
+MAX_MIN_INSTRUCTION_WAIT: float = 4e-9
+"""
+Maximum of minimum wait times for real-time-instructions. e.g. play,
+set_cond, acquire, require at least 4ns.
+"""

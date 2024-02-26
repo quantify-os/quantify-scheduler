@@ -247,6 +247,7 @@ class ScheduleGettable:
         if acq_protocol in (
             "Trace",
             "SSBIntegrationComplex",
+            "ThresholdedAcquisition",
             "WeightedIntegratedSeparated",
             "NumericalSeparatedWeightedIntegration",
             "NumericalWeightedIntegration",

@@ -17,7 +17,7 @@ import pandas as pd
 from quantify_scheduler import enums, json_utils, resources
 from quantify_scheduler.helpers.collections import make_hash
 from quantify_scheduler.json_utils import JSONSchemaValMixin
-from quantify_scheduler.operations.control_flow_library import Loop
+from quantify_scheduler.operations.control_flow_library import Conditional, Loop
 from quantify_scheduler.operations.operation import Operation
 
 if TYPE_CHECKING:
@@ -704,7 +704,7 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
         ref_pt: Literal["start", "center", "end"] | None = None,
         ref_pt_new: Literal["start", "center", "end"] | None = None,
         label: str | None = None,
-        control_flow: Loop | None = None,
+        control_flow: Conditional | Loop | None = None,
         validate: bool = True,
     ) -> Schedulable:
         """
@@ -804,23 +804,26 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
                 f"The provided object '{operation=}' is not"
                 " an instance of Operation or Schedule"
             )
-        if isinstance(operation, Loop):
+        if operation.get("control_flow_info") is not None:
+            name = operation.__class__.__name__
             raise ValueError(
-                "Attempting to manually add control flow operation. "
-                "Use the 'control_flow' kwarg instead."
+                f"Attempting to manually add control flow operation "
+                f"`{name}` to schedule. Please use "
+                f"the 'control_flow' kwarg instead, e.g. "
+                f"`schedule.add(..., control_flow={name}(...))`."
             )
         if control_flow is not None:
-            if isinstance(control_flow, Loop):
+            if isinstance(control_flow, (Loop, Conditional)):
                 warnings.warn(
-                    "Loops are an experimental feature."
+                    "Loops and Conditionals are an experimental feature."
                     " Please refer to the documentation:"
                     " https://quantify-os.org/docs/quantify-scheduler/reference/control_flow.html"  # noqa: E501
                 )
             else:
                 raise ValueError(
                     f"Attempting to add operation other than control flow as control flow."
-                    f" Supplied: '{control_flow=}' of type '{type(control_flow)}'\n"
-                    f" Valid: '{type(Loop)}' (or value 'None')."
+                    f" Supplied: '{control_flow=}'.\n"
+                    f" Valid: 'Loop', 'Conditional' or 'None'."
                 )
 
         # ensure the schedulable name is unique

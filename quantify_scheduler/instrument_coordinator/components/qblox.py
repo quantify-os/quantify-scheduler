@@ -736,6 +736,23 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
                 "thresholded_acq_threshold",
                 settings.thresholded_acq_threshold,
             )
+        if settings.thresholded_acq_trigger_address is not None:
+            self._set_parameter(
+                self.instrument[f"sequencer{seq_idx}"],
+                "thresholded_acq_trigger_address",
+                settings.thresholded_acq_trigger_address,
+            )
+        if settings.thresholded_acq_trigger_en is not None:
+            self._set_parameter(
+                self.instrument[f"sequencer{seq_idx}"],
+                "thresholded_acq_trigger_en",
+                settings.thresholded_acq_trigger_en,
+            )
+            self._set_parameter(
+                self.instrument[f"sequencer{seq_idx}"],
+                "thresholded_acq_trigger_invert",
+                settings.thresholded_acq_trigger_invert,
+            )
 
     def _determine_channel_map_parameters(
         self, settings: SequencerSettings

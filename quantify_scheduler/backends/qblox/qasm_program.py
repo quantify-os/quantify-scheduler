@@ -5,16 +5,27 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
-from typing import Iterator, List, Optional, Union
+from typing import TYPE_CHECKING, Hashable, Iterator, List, Optional, Sequence, Union
 
 import numpy as np
 from columnar import columnar
 from columnar.exceptions import TableOverflowError
 
 from quantify_scheduler.backends.qblox import constants, helpers, q1asm_instructions
+from quantify_scheduler.backends.qblox.conditional import (
+    ConditionalManager,
+)
 from quantify_scheduler.backends.qblox.register_manager import RegisterManager
 from quantify_scheduler.backends.types.qblox import OpInfo, StaticHardwareProperties
 from quantify_scheduler.schedules.schedule import AcquisitionMetadata
+
+if TYPE_CHECKING:
+    from quantify_scheduler.backends.qblox.operation_handling.base import (
+        IOperationStrategy,
+    )
+    from quantify_scheduler.backends.qblox.operation_handling.virtual import (
+        ConditionalStrategy,
+    )
 
 
 class QASMProgram:
@@ -62,8 +73,12 @@ class QASMProgram:
         """If true, all labels, instructions, arguments and comments
         in the string representation of the program are printed on the same indention level.
         This worsens performance."""
+        self.conditional_manager: ConditionalManager = ConditionalManager()
+        """The conditional manager that keeps track of the conditionals."""
         self.acq_metadata: Optional[AcquisitionMetadata] = acq_metadata
         """Acquisition metadata."""
+        self._lock_conditional: bool = False
+        """A lock to prevent nested conditionals."""
 
     def _find_qblox_acq_index(self, acq_channel: Hashable) -> int:
         """
@@ -121,7 +136,7 @@ class QASMProgram:
         comment_str = f"# {comment}" if comment is not None else ""
         return [label_str, instruction, instr_args, comment_str]
 
-    def emit(self, *args, **kwargs) -> None:
+    def emit(self, *args, **kwargs) -> list[str, int]:
         """
         Wrapper around the ``get_instruction_as_list`` which adds it to this program.
 
@@ -131,6 +146,12 @@ class QASMProgram:
             All arguments to pass to `get_instruction_as_list`.
         **kwargs
             All keyword arguments to pass to `get_instruction_as_list`.
+
+        Returns
+        -------
+        :
+            A list containing instructions.
+
         """
         # Translating the acquisition channel to qblox acquisition index is intended as a temporary solution.
         # Proper solution: SE-298.
@@ -144,6 +165,7 @@ class QASMProgram:
             args[1] = self._find_qblox_acq_index(acq_channel=args[1])
 
         self.instructions.append(self.get_instruction_as_list(*args, **kwargs))
+        return self.instructions[-1]
 
     # --- QOL functions -----
 
@@ -170,6 +192,25 @@ class QASMProgram:
             marker_binary,
             comment=f"set markers to {marker_setting}",
         )
+
+    def set_latch(self, pulses: Sequence[IOperationStrategy]) -> None:
+        """
+        Set the latch that is needed for conditional playback.
+
+        This assumes that the latch address is present inside the pulses'
+        `operation_info`. If no latch address is found, nothing is emitted.
+
+        Parameters
+        ----------
+        pulses
+            The pulses to search the latch address in.
+
+        """
+        for pulse in pulses:
+            pulse_data = pulse.operation_info.data
+            if (pulse_data.get("feedback_trigger_address")) is not None:
+                self.emit(q1asm_instructions.FEEDBACK_TRIGGER_EN, 1, 4)
+                return
 
     def auto_wait(
         self,
@@ -222,6 +263,7 @@ class QASMProgram:
                         constants.IMMEDIATE_MAX_WAIT_TIME,
                         comment=comment,
                     )
+                    self.conditional_manager.num_real_time_instructions += 1
             else:
                 for _ in range(repetitions):
                     self.emit(
@@ -229,6 +271,7 @@ class QASMProgram:
                         constants.IMMEDIATE_MAX_WAIT_TIME,
                         comment=comment,
                     )
+                    self.conditional_manager.num_real_time_instructions += 1
             time_left = wait_time % constants.IMMEDIATE_MAX_WAIT_TIME
         else:
             time_left = int(wait_time)
@@ -239,6 +282,7 @@ class QASMProgram:
                 time_left,
                 comment=comment,
             )
+            self.conditional_manager.num_real_time_instructions += 1
 
         if count_as_elapsed_time:
             self.elapsed_time += wait_time
@@ -463,6 +507,82 @@ class QASMProgram:
                 "\n".join(" ".join(instruction) for instruction in self.instructions)
                 + "\n"
             )
+
+    @contextmanager
+    def conditional(self, operation: ConditionalStrategy) -> None:
+        """
+        Defines a conditional block in the QASM program.
+
+        When this context manager is entered/exited it will insert additional
+        ``set_cond`` QASM instructions in the program that specify the
+        conditionality of a set of instructions.
+
+        For example, a conditional X gate would correspond to the QASM program:
+
+        .. code-block::
+
+            set_cond 1, 0, 0, 20
+            play 1, 20
+            set_cond 0, 0, 0, 4
+
+        The exact values that need to be passed to the first ``set_cond``
+        instruction are determined while the qasm program is generated with the
+        help of
+        :class:`~quantify_scheduler.backends.qblox.conditional.FeedbackTriggerCondition`
+        and
+        :class:`~quantify_scheduler.backends.qblox.conditional.ConditionalManager`.
+
+        Parameters
+        ----------
+        operation: ConditionalStrategy
+            The conditional strategy that defines the start of a conditional block.
+
+        """
+        trigger_condition = operation.trigger_condition
+        if self._lock_conditional:
+            raise RuntimeError(
+                "Nested conditional playback inside schedules is not supported by "
+                f"the Qblox backend. This error is caused by the following operation strategy:\n{operation}."
+            )
+        self._lock_conditional = True
+
+        # This instruction will be replaced when the context manager exits the
+        # conditional block.
+        enable_conditional_instructions = self.emit(
+            q1asm_instructions.FEEDBACK_SET_COND,
+            0,
+            0,
+            0,
+            0,
+            comment="start conditional playback",
+        )
+        self.conditional_manager.reset()
+        self.conditional_manager.enable_conditional = enable_conditional_instructions
+        self.conditional_manager.start_time = self.elapsed_time
+
+        yield
+        # When the context manager exits, add a stop conditional playback and
+        # replace the initial FEEDBACK_SET_COND instruction.
+        self.conditional_manager.end_time = self.elapsed_time
+        self.emit(
+            q1asm_instructions.FEEDBACK_SET_COND,
+            0,
+            0,
+            0,
+            0,
+            comment="stop conditional playback",
+        )
+        instruction = self.get_instruction_as_list(
+            q1asm_instructions.FEEDBACK_SET_COND,
+            int(trigger_condition.enable),
+            trigger_condition.mask,
+            trigger_condition.operator.value,
+            self.conditional_manager.wait_per_real_time_instruction,
+            comment="start conditional playback",
+        )
+        self.conditional_manager.replace_enable_conditional(instruction)
+        self.conditional_manager.reset()
+        self._lock_conditional = False
 
     @contextmanager
     def loop(self, label: str, repetitions: int = 1):

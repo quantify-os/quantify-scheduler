@@ -545,6 +545,9 @@ class Measure(Operation):
         The binning mode that is to be used. If not None, it will overwrite the
         binning mode used for Measurements in the circuit-to-device compilation
         step. By default None.
+    feedback_trigger_label : str
+        The label corresponding to the feedback trigger, which is mapped by the
+        compiler to a feedback trigger address on hardware, by default None.
 
     """
 
@@ -565,6 +568,7 @@ class Measure(Operation):
             ]
         ] = None,
         bin_mode: BinMode | None = None,
+        feedback_trigger_label: Optional[str] = None,
     ):
         # this if else statement a workaround to support multiplexed measurements (#262)
 
@@ -599,6 +603,7 @@ class Measure(Operation):
                     "acq_protocol": acq_protocol,
                     "bin_mode": bin_mode,
                     "operation_type": "measure",
+                    "feedback_trigger_label": feedback_trigger_label,
                 },
             }
         )
@@ -611,12 +616,14 @@ class Measure(Operation):
         acq_index = gate_info["acq_index"]
         acq_protocol = gate_info["acq_protocol"]
         bin_mode = gate_info["bin_mode"]
+        feedback_trigger_label = gate_info["feedback_trigger_label"]
         return (
             f'{self.__class__.__name__}({",".join(qubits)}, '
             f"acq_channel={acq_channel}, "
             f"acq_index={acq_index}, "
             f'acq_protocol="{acq_protocol}", '
-            f"bin_mode={str(bin_mode)})"
+            f"bin_mode={str(bin_mode)}, "
+            f"feedback_trigger_label={feedback_trigger_label})"
         )
 
 

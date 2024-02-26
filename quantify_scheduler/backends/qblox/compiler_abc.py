@@ -3,6 +3,7 @@
 """Compiler base and utility classes for Qblox backend."""
 # pylint: disable=too-many-lines
 from __future__ import annotations
+from enum import Enum, auto
 
 import json
 import logging
@@ -45,6 +46,7 @@ from quantify_scheduler.backends.qblox.operation_handling.acquisitions import (
 )
 from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
 from quantify_scheduler.backends.qblox.operation_handling.virtual import (
+    ConditionalStrategy,
     LoopStrategy,
     ControlFlowReturnStrategy,
 )
@@ -256,7 +258,12 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
             InstrumentCompiler.
         """
         portclocks_used = set()
-        portclocks_used.update(self._pulses.keys())
+        _pulses_but_not_latch_reset = {
+            key: _pulses
+            for key, _pulses in self._pulses.items()
+            if not all([_pulse.data.get("name") == "LatchReset" for _pulse in _pulses])
+        }
+        portclocks_used.update(_pulses_but_not_latch_reset.keys())
         portclocks_used.update(self._acquisitions.keys())
         return portclocks_used
 
@@ -655,6 +662,10 @@ class Sequencer:
             self._settings.thresholded_acq_threshold = (
                 acquisition_infos[0].data.get("acq_threshold") * integration_length
             )
+            for info in acquisition_infos:
+                if (address := info.data.get("feedback_trigger_address")) is not None:
+                    self._settings.thresholded_acq_trigger_en = True
+                    self._settings.thresholded_acq_trigger_address = address
 
     def _generate_acq_declaration_dict(
         self,
@@ -809,6 +820,7 @@ class Sequencer:
         qasm.set_marker(self._default_marker)
 
         # program header
+        qasm.set_latch(self.pulses)
         qasm.emit(q1asm_instructions.WAIT_SYNC, constants.GRID_TIME)
         qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
 
@@ -904,6 +916,14 @@ class Sequencer:
 
         return str(qasm)
 
+    class ParseOperationStatus(Enum):
+        """Return status of the stack."""
+
+        COMPLETED_ITERATION = auto()
+        """The iterator containing operations is exhausted."""
+        EXITED_CONTROL_FLOW = auto()
+        """The end of a control flow scope is reached."""
+
     def _parse_operations(
         self,
         operations_iter: Iterator[IOperationStrategy],
@@ -918,16 +938,31 @@ class Sequencer:
                 repetitions = operation.operation_info.data["repetitions"]
                 with qasm.loop(label=loop_label, repetitions=repetitions):
                     returned_from_return_stack = self._parse_operations(
-                        operations_iter, qasm, acquisition_multiplier * repetitions
+                        operations_iter=operations_iter,
+                        qasm=qasm,
+                        acquisition_multiplier=acquisition_multiplier * repetitions,
                     )
-                    assert returned_from_return_stack
+                    assert returned_from_return_stack in self.ParseOperationStatus
+
+            elif isinstance(operation, ConditionalStrategy):
+                with qasm.conditional(operation):
+                    returned_from_return_stack = self._parse_operations(
+                        operations_iter=operations_iter,
+                        qasm=qasm,
+                        acquisition_multiplier=acquisition_multiplier,
+                    )
+                    assert returned_from_return_stack in self.ParseOperationStatus
+
             elif isinstance(operation, ControlFlowReturnStrategy):
-                return True
+                qasm.conditional_manager.end_time = operation.operation_info.timing
+                return self.ParseOperationStatus.EXITED_CONTROL_FLOW
             else:
                 if operation.operation_info.is_acquisition:
                     self._num_acquisitions += acquisition_multiplier
+                qasm.conditional_manager.update(operation)
                 self._insert_qasm_marker_debug_wrapped(operation, qasm)
-        return False
+
+        return self.ParseOperationStatus.EXITED_CONTROL_FLOW
 
     def _insert_qasm_marker_debug_wrapped(
         self, operation: IOperationStrategy, qasm: QASMProgram

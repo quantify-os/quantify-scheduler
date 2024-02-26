@@ -284,6 +284,44 @@ class Operation(JSONSchemaValMixin, UserDict):
         return False
 
     @property
+    def is_conditional(self) -> bool:
+        """
+        An operation is conditional if one of the following holds, ``self`` is a:
+        - a Measure gate with a ``feedback_trigger_label`` assigned to it
+        - an acquisition with a ``feedback_trigger_label`` assigned to it
+        - a conditional control_flow operation.
+        """
+        is_conditional_measure = (
+            self.data["gate_info"].get("feedback_trigger_label") is not None
+        )
+        is_conditional_acquisition = False
+        if (acq_info := self.data.get("acquisition_info")) is not None:
+            is_conditional_acquisition = len(acq_info) > 0 and (
+                acq_info[0].get("feedback_trigger_label") is not None
+            )
+        is_conditional_control_flow = (
+            control_flow_info := self.data.get("control_flow_info")
+        ) is not None and control_flow_info.get("feedback_trigger_label") is not None
+
+        return (
+            is_conditional_measure
+            or is_conditional_acquisition
+            or is_conditional_control_flow
+        )
+
+    @property
+    def is_control_flow(self) -> bool:
+        """
+        Determine if operation is a control flow operation.
+
+        Returns
+        -------
+        bool
+            Whether the operation is a control flow operation.
+        """
+        return self.data.get("control_flow_info") is not None
+
+    @property
     def has_voltage_offset(self) -> bool:
         """Checks if the operation contains information for a voltage offset."""
         if any(

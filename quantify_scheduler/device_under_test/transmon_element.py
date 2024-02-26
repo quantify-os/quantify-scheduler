@@ -507,6 +507,7 @@ class BasicTransmonElement(DeviceElement):
                         "acq_index",
                         "bin_mode",
                         "acq_protocol",
+                        "feedback_trigger_label",
                     ],
                 ),
             }

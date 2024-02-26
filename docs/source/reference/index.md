@@ -14,4 +14,5 @@ zhinst/index
 
 acquisition_protocols
 control_flow
+conditional_playback
 ```

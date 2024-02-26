@@ -17,6 +17,7 @@ from quantify_scheduler.backends.circuit_to_device import (
     _clocks_compatible,
     _valid_clock_in_schedule,
 )
+from quantify_scheduler.backends.qblox.operations.gate_library import ConditionalReset
 from quantify_scheduler.backends.graph_compilation import SerialCompilationConfig
 from quantify_scheduler.device_under_test.mock_setup import (
     set_up_mock_transmon_setup,
@@ -56,6 +57,7 @@ def test_compile_all_gates_example_transmon_cfg():
 
     # define the resources
     q0, q1 = ("q0", "q1")
+    sched.add(ConditionalReset(q0))
     sched.add(Reset(q0, q1))
     sched.add(Rxy(90, 0, qubit=q0))
     sched.add(Rxy(45, 0, qubit=q0))
@@ -75,7 +77,7 @@ def test_compile_all_gates_example_transmon_cfg():
     sched.add(Rz(theta=90, qubit=q0))
     sched.add(Measure(q0, q1), label="M_q0_q1")
 
-    assert len(sched.schedulables) == 18
+    assert len(sched.schedulables) == 19
 
     # test that all these operations compile correctly.
     _ = _compile_circuit_to_device(
@@ -95,6 +97,7 @@ def test_compile_all_gates_basic_transmon(mock_setup_basic_transmon):
 
     # define the resources
     q2, q3 = ("q2", "q3")
+    sched.add(ConditionalReset(q2))
     sched.add(Reset(q2, q3))
     sched.add(Rxy(90, 0, qubit=q2))
     sched.add(Rxy(45, 0, qubit=q2))
@@ -114,7 +117,7 @@ def test_compile_all_gates_basic_transmon(mock_setup_basic_transmon):
     sched.add(Rz(theta=90, qubit=q2))
     sched.add(Measure(q2, q3), label="M_q2_q3")
 
-    assert len(sched.schedulables) == 18
+    assert len(sched.schedulables) == 19
 
     # test that all these operations compile correctly.
     quantum_device = mock_setup_basic_transmon["quantum_device"]
@@ -760,11 +763,11 @@ def test_set_reference_magnitude(mock_setup_basic_transmon):
         "pulse_info"
     ][0]["reference_magnitude"] == ReferenceMagnitude(1e-3, "A")
     assert operations_dict_with_repr_keys[
-        "Measure('q2','q3', acq_channel=None, acq_index=[0, 0], acq_protocol=\"None\", bin_mode=None)"
+        "Measure('q2','q3', acq_channel=None, acq_index=[0, 0], acq_protocol=\"None\", bin_mode=None, feedback_trigger_label=None)"
     ]["pulse_info"][1]["reference_magnitude"] == ReferenceMagnitude(20, "dBm")
     assert (
         operations_dict_with_repr_keys[
-            "Measure('q2','q3', acq_channel=None, acq_index=[0, 0], acq_protocol=\"None\", bin_mode=None)"
+            "Measure('q2','q3', acq_channel=None, acq_index=[0, 0], acq_protocol=\"None\", bin_mode=None, feedback_trigger_label=None)"
         ]["pulse_info"][3]["reference_magnitude"]
         is None
     )

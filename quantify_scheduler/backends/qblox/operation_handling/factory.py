@@ -4,6 +4,10 @@
 
 from __future__ import annotations
 
+from quantify_scheduler.backends.qblox.conditional import (
+    FeedbackTriggerCondition,
+    FeedbackTriggerOperator,
+)
 from quantify_scheduler.backends.qblox.operation_handling import (
     acquisitions,
     base,
@@ -82,9 +86,21 @@ def _get_pulse_strategy(
         return virtual.UpdateParameterStrategy(operation_info)
     elif operation_info.is_loop:
         return virtual.LoopStrategy(operation_info)
+    elif (
+        feedback_trigger_address := operation_info.data.get("feedback_trigger_address")
+    ) is not None:
+        trigger_condition = FeedbackTriggerCondition(
+            enable=True,
+            operator=FeedbackTriggerOperator.OR,
+            addresses=[feedback_trigger_address],
+        )
+        return virtual.ConditionalStrategy(
+            operation_info=operation_info, trigger_condition=trigger_condition
+        )
     elif operation_info.is_return_stack:
         return virtual.ControlFlowReturnStrategy(operation_info)
-
+    elif operation_info.data.get("name") == "LatchReset":
+        return virtual.ResetFeedbackTriggersStrategy(operation_info=operation_info)
     elif operation_info.data["port"] is None:
         if "phase_shift" in operation_info.data:
             return virtual.NcoPhaseShiftStrategy(operation_info)

@@ -399,6 +399,15 @@ class SequencerSettings(DataClassJsonMixin):
     """Sets the threshold value with which to compare the input ADC values of the selected input path."""
     ttl_acq_auto_bin_incr_en: Optional[bool] = None
     """Selects if the bin index is automatically incremented when acquiring multiple triggers."""
+    thresholded_acq_trigger_address: Optional[int] = None
+    """Sets the feedback trigger address to be used by conditional playback."""
+    thresholded_acq_trigger_en: Optional[bool] = None
+    """Enables the sequencer to record acquisitions."""
+    thresholded_acq_trigger_invert: bool = False
+    """
+    If you want to set a trigger when the acquisition result is 1, the parameter must be set to false 
+    and vice versa.
+    """
 
     @classmethod
     def initialize_from_config_dict(

@@ -6,6 +6,9 @@
 
 ### Merged branches and closed issues
 
+- Operations - Add `ConditionalReset` gate to Qblox gate library. (!788)
+
+
 ## 0.18.1 (2024-02-22)
 
 ### Release highlights
