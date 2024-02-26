@@ -194,7 +194,7 @@ def test_rotation_unitaries() -> None:
     # Test for the X180, X90, Y180 and Y90 gates which are derived from Rxy
     np.testing.assert_allclose(
         X(qubit=None).data["gate_info"]["unitary"],
-        (1.0 + 0.0j) * np.array([[0, 1j], [1j, 0]]),
+        (1.0 + 0.0j) * np.array([[0, -1j], [-1j, 0]]),
         atol=atol,
     )
 
@@ -206,7 +206,7 @@ def test_rotation_unitaries() -> None:
 
     np.testing.assert_allclose(
         Y(qubit=None).data["gate_info"]["unitary"],
-        (1.0 + 0.0j) * np.array([[0, 1], [-1, 0]]),
+        -(1.0 + 0.0j) * np.array([[0, 1], [-1, 0]]),
         atol=atol,
     )
 
@@ -238,7 +238,7 @@ def test_rotation_unitaries() -> None:
     # Test for the Z180, Z90 gates which are derived from Rz
     np.testing.assert_allclose(
         Z(qubit=None).data["gate_info"]["unitary"],
-        (1.0 + 0.0j) * np.array([[1j, 0], [0, -1j]]),
+        (1.0 + 0.0j) * np.array([[-1j, 0], [0, 1j]]),
         atol=atol,
     )
 

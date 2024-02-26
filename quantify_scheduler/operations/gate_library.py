@@ -49,7 +49,8 @@ class Rxy(Operation):
 
         # this solves an issue where different rotations with the same rotation angle
         # modulo a full period are treated as distinct operations in the OperationDict
-        theta = round((theta + 180) % 360 - 180, 8)
+        # Here we map [0,360[ onto ]-180,180] so that X180 has positive amplitude
+        theta = round(_modulo_360_with_mapping(theta), 8)
 
         phi = round(phi % 360, 8)
 
@@ -254,7 +255,8 @@ class Rz(Operation):
 
         # this solves an issue where different rotations with the same rotation angle
         # modulo a full period are treated as distinct operations in the OperationDict
-        theta = (theta + 180) % 360 - 180
+        # Here we map [0,360[ onto ]-180,180] so that X180 has positive amplitude
+        theta = _modulo_360_with_mapping(theta)
 
         tex = r"$R_{z}^{" + f"{theta:.0f}" + r"}$"
         plot_func = (
@@ -616,3 +618,46 @@ class Measure(Operation):
             f'acq_protocol="{acq_protocol}", '
             f"bin_mode={str(bin_mode)})"
         )
+
+
+def _modulo_360_with_mapping(theta: float) -> float:
+    """
+    Maps an input angle ``theta`` (in degrees) onto the range ``]-180, 180]``.
+
+    By mapping the input angle to the range ``]-180, 180]`` (where -180 is
+    excluded), it ensures that the output amplitude is always minimized on the
+    hardware. This mapping should not have an effect on the qubit in general.
+
+    -180 degrees is excluded to ensure positive amplitudes in the gates like
+    X180 and Z180.
+
+    Note that an input of -180 degrees is remapped to 180 degrees to maintain
+    the positive amplitude constraint.
+
+    Parameters
+    ----------
+    theta : float
+        The rotation angle in degrees. This angle will be mapped to the interval
+        ``]-180, 180]``.
+
+    Returns
+    -------
+    float
+        The mapped angle in degrees, which will be in the range ``]-180, 180]``.
+        This mapping ensures the output amplitude is always minimized for
+        transmon operations.
+
+    Example
+    -------
+    ```
+    >>> _modulo_360_with_mapping(360)
+    0.0
+    >>> _modulo_360_with_mapping(-180)
+    180.0
+    >>> _modulo_360_with_mapping(270)
+    -90.0
+    ```
+
+    """
+    mapped_theta = -((-theta - 180) % 360) + 180
+    return mapped_theta

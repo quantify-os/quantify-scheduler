@@ -69,6 +69,7 @@
   - Cleaning unused `instrument.close()`. (!919)
 
 - Type checking - Add `isinstance` checks to help pyright. (!914)
+- Change `X` and `Z` gates to have a positive amplitude at 180 degrees by mapping the rotation angle to the range `]-180,180]` instead of `[-180,180[`. (!915)
 
 
 
