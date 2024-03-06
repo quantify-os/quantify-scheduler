@@ -7,7 +7,7 @@
 ### Merged branches and closed issues
 
 - Operations - Add `ConditionalReset` gate to Qblox gate library. (!788)
-
+- Schedule - Fix control flow compilation in certain edge cases, when operation length is zero. (!928)
 
 ## 0.18.1 (2024-02-22)
 

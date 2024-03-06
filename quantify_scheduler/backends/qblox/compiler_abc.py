@@ -835,9 +835,15 @@ class Sequencer:
         op_list = pulses + acquisitions
         op_list = sorted(
             op_list,
-            # Note: round to nanoseconds below such that e.g. 1.0000000001 == 1
+            # Note: round to 12 digits below such that
+            # the control flow begin operation is always
+            # going to go first, but floating point precision
+            # issues do not cause any problems.
+            # See compilation.resolve_control_flow,
+            # which adds a small negative relative
+            # timing for control flow start.
             key=lambda op: (
-                round(op.operation_info.timing, ndigits=9),
+                round(op.operation_info.timing, ndigits=12),
                 op.operation_info.is_real_time_io_operation,
             ),
         )
@@ -1693,19 +1699,21 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             self._pulses[portclock] += upd_params
 
     @staticmethod
-    def _any_other_updating_instruction_at_timing(
+    def _any_other_updating_instruction_at_timing_for_offset_instruction(
         op_index: int, sorted_pulses_and_acqs: List[OpInfo]
     ) -> bool:
         op = sorted_pulses_and_acqs[op_index]
+        if not op.is_offset_instruction:
+            return False
 
-        def iterate_other_ops(iterate_range) -> bool:
+        def iterate_other_ops(iterate_range, allow_return_stack: bool) -> bool:
             for other_op_index in iterate_range:
                 other_op = sorted_pulses_and_acqs[other_op_index]
                 if not helpers.is_within_half_grid_time(other_op.timing, op.timing):
                     break
                 if other_op.is_real_time_io_operation:
                     return True
-                if other_op.is_return_stack:
+                if not allow_return_stack and other_op.is_return_stack:
                     raise RuntimeError(
                         f"VoltageOffset operation {op} with start time {op.timing} "
                         "cannot be scheduled at the same time as the end of a "
@@ -1719,12 +1727,23 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         # Check all other operations behind the operation with op_index
         # whether they're within half grid time
-        if iterate_other_ops(iterate_range=range(op_index - 1, -1, -1)):
+        #
+        # We specifically allow an offset instruction to be after a return stack:
+        # the caller is free to start an offset instruction and a play signal after
+        # we return from a loop
+        if iterate_other_ops(
+            iterate_range=range(op_index - 1, -1, -1), allow_return_stack=True
+        ):
             return True
         # Check all other operations in front of the operation with op_index
         # whether they're within half grid time
+        #
+        # We specifically disallow an offset instruction to be after a return stack:
+        # when the caller sets an offset, it might have an unknown effect depending
+        # on whether we actually exist the loop, or go the next cycle in the loop
         if iterate_other_ops(
-            iterate_range=range(op_index + 1, len(sorted_pulses_and_acqs))
+            iterate_range=range(op_index + 1, len(sorted_pulses_and_acqs)),
+            allow_return_stack=False,
         ):
             return True
 
@@ -1750,7 +1769,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                     f"least {constants.GRID_TIME} ns, or the VoltageOffset can be "
                     "replaced by another operation."
                 )
-            if not self._any_other_updating_instruction_at_timing(
+            if not self._any_other_updating_instruction_at_timing_for_offset_instruction(
                 op_index=op_index, sorted_pulses_and_acqs=pulses_and_acqs
             ):
                 upd_param_infos.add(

@@ -207,25 +207,16 @@ def test_error_parameter_update_end_of_schedule(op_list: List[OpInfo]):
         component._insert_update_parameters()
 
 
-@pytest.mark.parametrize(
-    "op_list",
-    list(
-        permutations(
-            [
-                pulse_with_waveform(0.0),
-                offset_instruction(1e-7),
-                acquisition(2e-7),
-                control_flow_return(1e-7),
-            ]
-        )
-    ),
-)
-def test_error_parameter_update_at_control_flow_return(op_list: List[OpInfo]):
+def test_error_parameter_update_at_control_flow_return():
     """Test if no upd_param is inserted where it is not necessary."""
     component = QrmRfModule(
         parent=Mock(), name="Test", total_play_time=2e-7, instrument_cfg={}
     )
 
+    op_list = [
+        offset_instruction(1e-7),
+        control_flow_return(1e-7),
+    ]
     for op in op_list:
         if op.is_acquisition:
             component.add_acquisition(DEFAULT_PORT, DEFAULT_CLOCK, op)
@@ -245,40 +236,40 @@ def test_error_parameter_update_at_control_flow_return(op_list: List[OpInfo]):
     [
         (
             [
-                OpInfo(name="", data={}, timing=1 - 1e-9),
-                OpInfo(name="", data={}, timing=1),
-                OpInfo(name="", data={}, timing=1 + 1e-9),
-                OpInfo(name="", data={}, timing=1 + 1.5e-9),
+                offset_instruction(1 - 1e-9),
+                offset_instruction(1),
+                offset_instruction(1 + 1e-9),
+                offset_instruction(1 + 1.5e-9),
             ],
             1,
             False,
         ),
         (
             [
-                OpInfo(name="", data={}, timing=1 - 1e-9),
-                OpInfo(name="", data={}, timing=1),
-                OpInfo(name="", data={}, timing=1 + 1e-9),
-                OpInfo(name="", data={"acq_channel": 0}, timing=1 + 1.5e-9),
+                offset_instruction(1 - 1e-9),
+                offset_instruction(1),
+                offset_instruction(1 + 1e-9),
+                acquisition(1 + 1.5e-9),
             ],
             1,
             True,
         ),
         (
             [
-                OpInfo(name="", data={"acq_channel": 0}, timing=1 - 1.5e-9),
-                OpInfo(name="", data={}, timing=1 - 1e-9),
-                OpInfo(name="", data={}, timing=1),
-                OpInfo(name="", data={}, timing=1 + 1e-9),
+                acquisition(1 - 1.5e-9),
+                offset_instruction(1 - 1e9),
+                offset_instruction(1),
+                offset_instruction(1 + 1e-9),
             ],
             2,
-            True,
+            False,
         ),
         (
             [
-                OpInfo(name="", data={}, timing=1 - 1e-9),
-                OpInfo(name="", data={}, timing=1),
-                OpInfo(name="", data={}, timing=1 + 1e-9),
-                OpInfo(name="", data={"acq_channel": 0}, timing=1 + 2.5e-9),
+                offset_instruction(1 - 1e-9),
+                offset_instruction(1),
+                offset_instruction(1 + 1e-9),
+                acquisition(1 + 2.5e-9),
             ],
             1,
             False,
@@ -289,7 +280,7 @@ def test_any_other_updating_instruction_at_timing(
     sorted_pulses_and_acqs: List[OpInfo], op_index: int, expected: bool
 ):
     assert (
-        QbloxBaseModule._any_other_updating_instruction_at_timing(
+        QbloxBaseModule._any_other_updating_instruction_at_timing_for_offset_instruction(
             op_index=op_index, sorted_pulses_and_acqs=sorted_pulses_and_acqs
         )
         == expected

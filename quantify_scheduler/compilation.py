@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 import warnings
 from copy import deepcopy
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 from uuid import uuid4
 
 from quantify_scheduler.helpers.schedule import _extract_port_clocks_used
@@ -263,9 +263,9 @@ def resolve_control_flow(
     if not schedule.schedulables:
         raise ValueError(f"schedule '{schedule.name}' contains no schedulables.")
 
-    schedulables = tuple(schedule.schedulables.values())
-
-    for schedulable in schedulables:
+    # Iterating through the shallow copy of items, because
+    # we modify the schedulables dict.
+    for schedulable_key, schedulable in schedule.schedulables.copy().items():
         cf = schedulable.get("control_flow", None)
         if cf is not None:
             cf["pulse_info"] = [
@@ -291,9 +291,11 @@ def resolve_control_flow(
                 for port, clock in port_clocks
             ]
 
+            _move_to_end(schedule.schedulables, schedulable_key)
+
             schedule.add(
                 cf,
-                rel_time=-0.001e-9,
+                rel_time=-1e-12,
                 ref_op=str(schedulable),
                 ref_pt="start",
                 ref_pt_new="start",
@@ -309,6 +311,9 @@ def resolve_control_flow(
                 ref_pt_new="start",
                 validate=False,
             )
+        else:
+            _move_to_end(schedule.schedulables, schedulable_key)
+
     return schedule
 
 
@@ -363,6 +368,8 @@ def flatten_schedule(
             # mark the inner schedule for removal from the parent
             op_keys_to_pop.add(op_key)
             schedulable_keys_to_pop.add(schedulable_key)
+        else:
+            _move_to_end(schedule.schedulables, schedulable_key)
 
     for key in op_keys_to_pop:
         schedule["operation_dict"].pop(key)
@@ -410,3 +417,13 @@ def validate_config(config: dict, scheme_fn: str) -> bool:
     scheme = load_json_schema(__file__, scheme_fn)
     validate_json(config, scheme)
     return True
+
+
+def _move_to_end(ordered_dict: dict, key: Any) -> None:  # noqa: ANN401
+    """
+    Moves the element with ``key`` to the end of the dict.
+
+    Note: dictionaries from Python 3.7 are ordered.
+    """
+    value = ordered_dict.pop(key)
+    ordered_dict[key] = value

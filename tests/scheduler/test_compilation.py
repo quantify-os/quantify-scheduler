@@ -434,7 +434,7 @@ def test_determine_absolute_timing_subschedule():
     abs_times = [
         constr["abs_time"] for constr in timed_sched.data["schedulables"].values()
     ]
-    assert abs_times == [0, 3, 3, 1, 2]
+    assert abs_times == [0, 1, 2, 3, 3]
 
 
 def test_flatten_schedule():

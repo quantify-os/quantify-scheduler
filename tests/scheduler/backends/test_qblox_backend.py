@@ -3955,15 +3955,22 @@ def test_overlapping_pulse_and_voltage_offset_raises1(
 
 
 class TestControlFlow:
-    def compare_sequence(self, compiled, reference, module):
+    @staticmethod
+    def _replace_multiple_spaces(s: str) -> str:
+        s = re.sub(r" *\n *", "\n", s)
+        return re.sub(r" {2,}", " ", s)
+
+    def _compare_sequence(self, compiled, reference, module):
         if module == "qcm":
             mod = "cluster0_module2"
         elif module == "qrm":
             mod = "cluster0_module4"
-        program = compiled.compiled_instructions["cluster0"][mod]["sequencers"]["seq0"][
-            "sequence"
-        ]["program"].replace(" ", "")
-        reference = reference.replace(" ", "")
+        program = self._replace_multiple_spaces(
+            compiled.compiled_instructions["cluster0"][mod]["sequencers"]["seq0"][
+                "sequence"
+            ]["program"]
+        )
+        reference = self._replace_multiple_spaces(reference)
         assert reference == program
 
     def test_subschedule(self, compile_config_basic_transmon_qblox_hardware):
@@ -4013,8 +4020,7 @@ class TestControlFlow:
 
         assert program_ref == program_subschedule
 
-    @pytest.mark.xfail(reason="Ordering for zero-duration operations is broken")
-    def test_loop(self, compile_config_basic_transmon_qblox_hardware):
+    def test_complex_loop(self, compile_config_basic_transmon_qblox_hardware):
         """
         - Sched
           - X90
@@ -4061,92 +4067,91 @@ class TestControlFlow:
         )
 
         reference_sequence_qcm = """ set_mrk 1 # set markers to 1
- wait_sync 4 
- upd_param 4 
- wait 4 # latency correction of 4 + 0 ns
- move 1,R0 # iterator for loop with label start
-start:   
- reset_ph  
- upd_param 4 
- set_awg_gain 1882,110 # setting gain for X_90 q0
- play 0,1,4 # play X_90 q0 (20 ns)
- wait 16 # auto generated wait (16 ns)
- move 3,R1 # iterator for loop with label loop11
-loop11:   
- set_awg_gain 3764,220 # setting gain for X q0
- play 2,3,4 # play X q0 (20 ns)
- wait 16 # auto generated wait (16 ns)
- move 2,R10 # iterator for loop with label loop16
-loop16:   
- set_awg_gain 220,3764 # setting gain for Y q0
- play 1,2,4 # play Y q0 (20 ns)
- wait 16 # auto generated wait (16 ns)
- loop R10,@loop16 
- wait 1100 # auto generated wait (1100 ns)
- loop R1,@loop11 
- set_awg_gain 1882,110 # setting gain for X_90 q0
- play 0,1,4 # play X_90 q0 (20 ns)
- wait 16 # auto generated wait (16 ns)
- move 4,R1 # iterator for loop with label loop27
-loop27:   
- set_awg_gain 220,3764 # setting gain for Y q0
- play 1,2,4 # play Y q0 (20 ns)
- wait 16 # auto generated wait (16 ns)
- loop R1,@loop27 
- set_awg_gain 1882,110 # setting gain for X_90 q0
- play 0,1,4 # play X_90 q0 (20 ns)
- wait 16 # auto generated wait (16 ns)
- move 2,R1 # iterator for loop with label loop36
-loop36:   
- set_awg_gain 3764,220 # setting gain for X q0
- play 2,3,4 # play X q0 (20 ns)
- wait 16 # auto generated wait (16 ns)
- loop R1,@loop36 
- loop R0,@start 
- stop 
- """
+wait_sync 4
+upd_param 4
+wait 4 # latency correction of 4 + 0 ns
+move 1,R0 # iterator for loop with label start
+start:
+    reset_ph
+    upd_param 4
+    set_awg_gain 1882,110 # setting gain for X_90 q0
+    play 0,1,4 # play X_90 q0 (20 ns)
+    wait 16 # auto generated wait (16 ns)
+    move 3,R1 # iterator for loop with label loop11
+    loop11:
+        set_awg_gain 3765,221 # setting gain for X q0
+        play 0,1,4 # play X q0 (20 ns)
+        wait 16 # auto generated wait (16 ns)
+        move 2,R10 # iterator for loop with label loop16
+        loop16:
+            set_awg_gain -221,3765 # setting gain for Y q0
+            play 1,0,4 # play Y q0 (20 ns)
+            wait 16 # auto generated wait (16 ns)
+        loop R10,@loop16
+        wait 1100 # auto generated wait (1100 ns)
+    loop R1,@loop11
+    set_awg_gain 1882,110 # setting gain for X_90 q0
+    play 0,1,4 # play X_90 q0 (20 ns)
+    wait 16 # auto generated wait (16 ns)
+    move 4,R1 # iterator for loop with label loop27
+    loop27:
+        set_awg_gain -221,3765 # setting gain for Y q0
+        play 1,0,4 # play Y q0 (20 ns)
+        wait 16 # auto generated wait (16 ns)
+    loop R1,@loop27
+    set_awg_gain 1882,110 # setting gain for X_90 q0
+    play 0,1,4 # play X_90 q0 (20 ns)
+    wait 16 # auto generated wait (16 ns)
+    move 2,R1 # iterator for loop with label loop36
+    loop36:
+        set_awg_gain 3765,221 # setting gain for X q0
+        play 0,1,4 # play X q0 (20 ns)
+        wait 16 # auto generated wait (16 ns)
+    loop R1,@loop36
+loop R0,@start
+stop
+"""
 
         reference_sequence_qrm = """ set_mrk 3 # set markers to 3
- wait_sync 4 
- upd_param 4 
- wait 4 # latency correction of 4 + 0 ns
- move 1,R0 # iterator for loop with label start
-start:   
- reset_ph  
- upd_param 4 
- wait 20 # auto generated wait (20 ns)
- move 3,R1 # iterator for loop with label loop9
-loop9:   
- wait 20 # auto generated wait (20 ns)
- move 2,R10 # iterator for loop with label loop12
-loop12:   
- wait 20 # auto generated wait (20 ns)
- loop R10,@loop12 
- reset_ph  
- set_awg_gain 8191,0 # setting gain for Measure q0
- play 0,0,4 # play Measure q0 (300 ns)
- wait 96 # auto generated wait (96 ns)
- acquire 0,0,4 
- wait 996 # auto generated wait (996 ns)
- loop R1,@loop9 
- wait 20 # auto generated wait (20 ns)
- move 4,R1 # iterator for loop with label loop24
-loop24:   
- wait 20 # auto generated wait (20 ns)
- loop R1,@loop24 
- wait 20 # auto generated wait (20 ns)
- move 2,R1 # iterator for loop with label loop29
-loop29:   
- wait 20 # auto generated wait (20 ns)
- loop R1,@loop29 
- loop R0,@start 
- stop
- """
+wait_sync 4
+upd_param 4
+wait 4 # latency correction of 4 + 0 ns
+move 1,R0 # iterator for loop with label start
+start:
+    reset_ph
+    upd_param 4
+    wait 20 # auto generated wait (20 ns)
+    move 3,R1 # iterator for loop with label loop9
+    loop9:
+        wait 20 # auto generated wait (20 ns)
+        move 2,R10 # iterator for loop with label loop12
+        loop12:
+            wait 20 # auto generated wait (20 ns)
+        loop R10,@loop12
+        reset_ph
+        set_awg_gain 8192,0 # setting gain for Measure q0
+        play 0,0,4 # play Measure q0 (300 ns)
+        wait 96 # auto generated wait (96 ns)
+        acquire 0,0,4
+        wait 996 # auto generated wait (996 ns)
+    loop R1,@loop9
+    wait 20 # auto generated wait (20 ns)
+    move 4,R1 # iterator for loop with label loop24
+    loop24:
+        wait 20 # auto generated wait (20 ns)
+    loop R1,@loop24
+    wait 20 # auto generated wait (20 ns)
+    move 2,R1 # iterator for loop with label loop29
+    loop29:
+        wait 20 # auto generated wait (20 ns)
+    loop R1,@loop29
+    loop R0,@start
+stop
+"""
 
-        self.compare_sequence(compiled, reference_sequence_qcm, "qcm")
-        self.compare_sequence(compiled, reference_sequence_qrm, "qrm")
+        self._compare_sequence(compiled, reference_sequence_qcm, "qcm")
+        self._compare_sequence(compiled, reference_sequence_qrm, "qrm")
 
-    @pytest.mark.xfail(reason="Ordering for zero-duration operations is broken")
     def test_loop_instruction_generated(
         self, compile_config_basic_transmon_qblox_hardware
     ):
@@ -4183,37 +4188,44 @@ loop29:
                 clock="q0.ro",
             )
         )
+
         reference = """ set_mrk 3 # set markers to 3
- wait_sync 4 
- upd_param 4 
- wait 4 # latency correction of 4 + 0 ns
- move 1,R0 # iterator for loop with label start
-start:   
- reset_ph  
- upd_param 4 
- set_awg_offs 16383,0 
- upd_param 4 
- wait 1996 # auto generated wait (1996 ns)
- set_awg_offs 0,0 
- move 3,R1 # iterator for loop with label loop13
-loop13:   
-set_awg_offs 9830,0 
- upd_param 4 
- wait 1996 # auto generated wait (1996 ns)
- set_awg_offs 0,0 
- loop R1,@loop13 
- set_awg_offs 22937,0 
- upd_param 4 
- wait 1996 # auto generated wait (1996 ns)
- set_awg_offs 0,0 
- loop R0,@start 
- stop
- """
+wait_sync 4
+upd_param 4
+wait 4 # latency correction of 4 + 0 ns
+move 1,R0 # iterator for loop with label start
+start:
+    reset_ph
+    upd_param 4
+    set_awg_offs 16384,0 # setting offset for SquarePulse
+    upd_param 4
+    wait 1992 # auto generated wait (1992 ns)
+    set_awg_offs 0,0 # setting offset for SquarePulse
+    set_awg_gain 16384,0 # setting gain for SquarePulse
+    play 0,0,4 # play SquarePulse (4 ns)
+    move 3,R1 # iterator for loop with label loop14
+    loop14:
+        set_awg_offs 9830,0 # setting offset for SquarePulse
+        upd_param 4
+        wait 1992 # auto generated wait (1992 ns)
+        set_awg_offs 0,0 # setting offset for SquarePulse
+        set_awg_gain 9830,0 # setting gain for SquarePulse
+        play 0,0,4 # play SquarePulse (4 ns)
+    loop R1,@loop14
+    set_awg_offs 22938,0 # setting offset for SquarePulse
+    upd_param 4
+    wait 1992 # auto generated wait (1992 ns)
+    set_awg_offs 0,0 # setting offset for SquarePulse
+    set_awg_gain 22938,0 # setting gain for SquarePulse
+    play 0,0,4 # play SquarePulse (4 ns)
+loop R0,@start
+stop
+"""
         compiler = SerialCompiler(name="compiler")
         compiled = compiler.compile(
             sched, config=compile_config_basic_transmon_qblox_hardware
         )
-        self.compare_sequence(compiled, reference, "qrm")
+        self._compare_sequence(compiled, reference, "qrm")
 
 
 @pytest.mark.parametrize("scaling_factor", [0.999, 1])

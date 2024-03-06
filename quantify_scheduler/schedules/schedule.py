@@ -661,10 +661,14 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
 
         # ensure keys exist
         self["operation_dict"] = {}
-        self["schedulables"] = {}
         self["resource_dict"] = {}
         self["name"] = "nameless"
         self["repetitions"] = repetitions
+
+        # Note the order of schedulables is important.
+        # If two schedulables have the same absolute time,
+        # the order is determined by the order of their keys.
+        self["schedulables"] = {}
 
         # This is used to define baseband pulses and is expected to always be present
         # in any schedule.
