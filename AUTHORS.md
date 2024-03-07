@@ -7,6 +7,7 @@
 - Axel Andersson ([GitLab](https://gitlab.com/axean))
 - Bosco d'Aligny ([Gitlab](https://gitlab.com/BoscodAlignyOQS))
 - Callum Attryde ([GitLab](https://gitlab.com/CallumAttryde))
+- Calvin Dijksman ([GitLab](https://gitlab.com/CalvinOQS))
 - Christian Dickel ([GitLab](https://gitlab.com/christiandickel8))
 - Damaz de Jong ([GitLab](https://gitlab.com/damazdejong))
 - Damien Crielaard ([GitLab](https://gitlab.com/dcrielaard))

@@ -21,6 +21,7 @@ See also [merge request guidelines](https://quantify-os.org/docs/quantify-core/d
 - [ ] Pipeline fix or dependency update: post in `#software-for-developers` channel to merge `main` back in or [update local packages](https://quantify-os.org/docs/quantify-scheduler/dev/user/installation.html#setting-up-for-local-development) (or N/A).
 - [ ] Tested on hardware (or N/A).
 - [ ] `CHANGELOG.md` and `AUTHORS.md` have been updated (or N/A).
+- [ ] Update Hardware backends documentation if backend interface change or N/A
 - [ ] Performance tests: if changes can affect performance, trigger CI manually and evaluate results (or N/A).
 - [ ] Windows tests in CI pipeline pass (manually triggered by maintainers before merging).
    - _Maintainers do not hit Auto-merge, we need to actively check as manual tests do not block pipeline_

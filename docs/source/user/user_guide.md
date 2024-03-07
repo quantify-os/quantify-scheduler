@@ -488,6 +488,7 @@ The {class}`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` 
 
 Because the {class}`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice` and the {code}`DeviceElement`s are an {class}`~qcodes.instrument.base.Instrument`, the parameters used to generate the configuration files can be easily managed and are stored in the snapshot containing the experiment's metadata.
 
+(sec-user-guide-experiment-flow)=
 ## Experiment flow
 
 To use schedules in an experimental setting, in which the parameters used for compilation as well as the schedules themselves routinely change, we provide a framework for performing experiments making use of the concepts of `quantify-core`.

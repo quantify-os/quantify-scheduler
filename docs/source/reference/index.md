@@ -4,6 +4,7 @@
 :caption: Hardware backends
 :maxdepth: 1
 
+hardware_backends
 qblox/index
 zhinst/index
 ```

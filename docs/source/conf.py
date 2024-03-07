@@ -21,7 +21,6 @@
 import os
 import re
 import sys
-
 from typing import Any, Dict
 
 package_path = os.path.abspath("..")
@@ -56,6 +55,7 @@ extensions = [
     # however the smart_resolver seems to fail for external packages like `zhinst`
     "scanpydoc.elegant_typehints",
     "sphinxcontrib.bibtex",
+    "sphinxcontrib.mermaid",
     "autoapi.extension",
     "sphinx_design",
 ]
@@ -320,21 +320,21 @@ if os.environ.get("GITLAB_CI", "false") == "true":
 # https://github.com/QCoDeS/Qcodes/pull/2909
 # but the issues popped up again, so this is the best and easier solution so far
 
+# qcodes0.36.0 lazyloads h5py which causes build failures
+import h5py
+
 # qcodes imports scipy under the hood but since scipy=1.7.0 it needs to be imported
 # here with typing.TYPE_CHECKING = True otherwise we run into quantify-core#
 import lmfit  # related to quantify-core#218 and quantify-core#221
 import marshmallow
-import qcodes
-
-# qcodes0.36.0 lazyloads h5py which causes build failures
-import h5py
-
-# Prevents a circular import warning
-import tenacity
 
 # `pydantic` fails to import automatically and leads to broken documentation,
 # if not preloaded.
 import pydantic
+import qcodes
+
+# Prevents a circular import warning
+import tenacity
 
 # When building the docs we need `typing.TYPE_CHECKING` to be `True` so that the
 # sphinx' kernel loads the modules corresponding to the typehints and is able to
@@ -409,6 +409,11 @@ nb_mime_priority_overrides = [
     ("linkcheck", "image/png", 40),
 ]
 
+# Workaround for sphinxcontrib.mermaid bug:
+# mermaid.min.js needs to be loaded after require.min.js
+# see https://github.com/mgaitan/sphinxcontrib-mermaid/issues/124
+mermaid_js_priority = 100
+
 # These are working links but (the redirect) doesn't allow polling
 linkcheck_ignore = [
     "https://doi.org/10.1063/1.447644",
@@ -481,6 +486,7 @@ nitpick_ignore = [
     ("py:class", "quantify_scheduler.backends.types.zhinst.ZIHardwareDescription"),
     ("py:class", "ClusterModuleDescription"),
     ("py:class", "Literal[Zurich Instruments]"),
+    ("py:class", "Literal[Mock readout module]"),
     ("py:class", "RealInputGain"),
     ("py:class", "OutputAttenuation"),
     ("py:class", "InputAttenuation"),

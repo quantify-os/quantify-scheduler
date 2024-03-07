@@ -88,11 +88,13 @@ docs = [
     "sphinx-jsonschema",
     "sphinx-togglebutton",
     "sphinxcontrib-bibtex",
+    "sphinxcontrib-mermaid"
 ]
 
 dev = [
     "black",
     "coverage",
+    'eval-type-backport; python_version < "3.9"', # Required for type checking in Python 3.8
     "pre-commit",
     "pre-commit-hooks", # common hooks for git repos
     "prospector",
@@ -185,6 +187,7 @@ extend-ignore-names = ["path_I", "path_Q", "offset_path_I", "offset_path_Q"]
 "*.py" = ["D205"] # this should still be refactored.
 
 # All files below are temporarily excluded explicitly and expected to be gradually turned into ruff-compliancy
+"quantify_scheduler/backends/mock/mock_rom.py" = ['ANN401', 'E501', 'SIM118', 'TCH001', 'UP006', 'UP007', 'W291', 'D101', 'D102', 'D103', 'ARG002']
 "quantify_scheduler/_static_version.py" = ['UP009']
 "quantify_scheduler/_version.py" = ['ANN001', 'ANN202', 'N801', 'PLR0912', 'SIM105', 'UP032']
 "quantify_scheduler/backends/circuit_to_device.py" = ['ANN001', 'ANN202', 'ANN204', 'I001', 'PLR0912', 'TCH001', 'UP006']
