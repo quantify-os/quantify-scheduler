@@ -6,16 +6,14 @@ import pytest
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends import SerialCompiler
-from quantify_scheduler.backends.qblox.operations import (
-    long_square_pulse,
-    VoltageOffset,
-)
+from quantify_scheduler.backends.qblox.operations import long_square_pulse
 from quantify_scheduler.compilation import _determine_absolute_timing
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.gate_library import CZ, Measure, Reset, Rxy
 from quantify_scheduler.operations.pulse_library import (
     IdlePulse,
     SquarePulse,
+    VoltageOffset,
     WindowOperation,
 )
 from quantify_scheduler.resources import BasebandClockResource

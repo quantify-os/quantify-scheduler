@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from quantify_scheduler.backends.qblox.operations import VoltageOffset, long_ramp_pulse
+from quantify_scheduler.backends.qblox.operations import long_ramp_pulse
 from quantify_scheduler.backends.qblox.operations.stitched_pulse import (
     StitchedPulse,
     StitchedPulseBuilder,
@@ -16,6 +16,7 @@ from quantify_scheduler.operations.pulse_library import (
     RampPulse,
     ReferenceMagnitude,
     SquarePulse,
+    VoltageOffset,
 )
 from quantify_scheduler.operations.stitched_pulse import (
     StitchedPulse as OldStitchedPulse,

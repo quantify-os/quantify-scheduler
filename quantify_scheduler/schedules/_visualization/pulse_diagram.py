@@ -82,7 +82,9 @@ def get_sampled_pulses_from_voltage_offsets(
     sampled_pulses: dict[str, list[SampledPulse]] | None = None,
 ) -> dict[str, list[SampledPulse]]:
     """
-    Generate :class:`.SampledPulse` objects from :class:`.VoltageOffset` pulse_info dicts.
+    Generate :class:`.SampledPulse` objects from
+    :class:`~quantify_scheduler.operations.pulse_library.VoltageOffset` pulse_info
+    dicts.
 
     This function groups all VoltageOffset operations by port-clock combination and
     turns each of those groups of operations into a single SampledPulse. The returned

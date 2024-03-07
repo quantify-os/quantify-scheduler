@@ -82,7 +82,7 @@ In this section we introduce how to use voltage offsets and build up long wavefo
 (sec-qblox-offsets-long-voltage-offsets)=
 ## Voltage offsets
 
-Qblox modules can set and hold a voltage on their outputs using the {class}`~quantify_scheduler.backends.qblox.operations.pulse_library.VoltageOffset` operation. The operation supports real and complex outputs, and it has effectively zero duration, meaning it takes effect at the exact moment you schedule it, and you can schedule other operations simultaneously. It can be used as follows:
+Qblox modules can set and hold a voltage on their outputs using the {class}`~quantify_scheduler.operations.pulse_library.VoltageOffset` operation. The operation supports real and complex outputs, and it has effectively zero duration, meaning it takes effect at the exact moment you schedule it, and you can schedule other operations simultaneously. It can be used as follows:
 
 ```{code-cell} ipython3
 ---
@@ -91,7 +91,7 @@ mystnb:
   remove_code_outputs: true
 ---
 
-from quantify_scheduler.backends.qblox.operations import VoltageOffset
+from quantify_scheduler.operations.pulse_library import VoltageOffset
 
 
 voltage_offset_real = VoltageOffset(

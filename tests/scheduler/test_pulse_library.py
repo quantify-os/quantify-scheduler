@@ -10,7 +10,6 @@ import pytest
 
 from quantify_scheduler import Operation, Schedule
 from quantify_scheduler.backends import SerialCompiler
-from quantify_scheduler.backends.qblox.operations import VoltageOffset
 from quantify_scheduler.backends.qblox.operations.pulse_factories import (
     long_square_pulse,
 )
@@ -31,6 +30,7 @@ from quantify_scheduler.operations.pulse_library import (
     SquarePulse,
     StaircasePulse,
     SuddenNetZeroPulse,
+    VoltageOffset,
     create_dc_compensation_pulse,
     decompose_long_square_pulse,
 )

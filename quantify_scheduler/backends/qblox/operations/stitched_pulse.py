@@ -12,12 +12,12 @@ import numpy as np
 
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.qblox.helpers import generate_waveform_data
-from quantify_scheduler.backends.qblox.operations.pulse_library import VoltageOffset
 from quantify_scheduler.helpers.deprecation import deprecated_arg_alias
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import (
     NumericalPulse,
     ReferenceMagnitude,
+    VoltageOffset,
 )
 
 

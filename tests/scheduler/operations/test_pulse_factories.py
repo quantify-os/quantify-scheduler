@@ -9,7 +9,6 @@ from quantify_scheduler.backends.qblox.operations import (
     long_ramp_pulse,
     long_square_pulse,
     staircase_pulse,
-    VoltageOffset,
 )
 from quantify_scheduler.operations.pulse_factories import (
     long_ramp_pulse as old_long_ramp_pulse,
@@ -27,6 +26,7 @@ from quantify_scheduler.operations.pulse_factories import (
 from quantify_scheduler.operations.pulse_library import (
     ReferenceMagnitude,
     SquarePulse,
+    VoltageOffset,
 )
 
 

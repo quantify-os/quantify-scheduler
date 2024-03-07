@@ -156,9 +156,6 @@ class SchedulerJSONDecoder(json.JSONDecoder):
         # 'quantify_scheduler')
         # pylint: disable=import-outside-toplevel
         from quantify_scheduler import resources
-        from quantify_scheduler.backends.qblox.operations.pulse_library import (
-            VoltageOffset as QbloxVoltageOffset,
-        )
         from quantify_scheduler.backends.qblox.operations.stitched_pulse import (
             StitchedPulse as QbloxStitchedPulse,
         )
@@ -203,9 +200,7 @@ class SchedulerJSONDecoder(json.JSONDecoder):
                 ]
             }
         )
-        self.classes.update(
-            {"VoltageOffset": QbloxVoltageOffset, "StitchedPulse": QbloxStitchedPulse}
-        )
+        self.classes.update({"StitchedPulse": QbloxStitchedPulse})
         self.classes.update(
             {
                 t.__name__: t

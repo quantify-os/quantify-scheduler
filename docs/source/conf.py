@@ -460,7 +460,6 @@ nitpick_ignore = [
     ("py:obj", "quantify_scheduler.structure.DataStructure"),
     ("py:obj", "quantify_scheduler.backends.SerialCompiler"),
     ("py:obj", "quantify_scheduler.backends.qblox.operations.StitchedPulseBuilder"),
-    ("py:obj", "quantify_scheduler.backends.qblox.operations.VoltageOffset"),
     ("py:obj", "quantify_scheduler.backends.qblox.operations.long_ramp_pulse"),
     ("py:obj", "quantify_scheduler.backends.qblox.operations.long_square_pulse"),
     ("py:obj", "quantify_scheduler.backends.qblox.operations.staircase_pulse"),
@@ -533,7 +532,6 @@ def maybe_skip_member(app, what, name, obj, skip, options):
         "quantify_scheduler.operations.pulse_factories.long_ramp_pulse",
         "quantify_scheduler.operations.pulse_factories.long_square_pulse",
         "quantify_scheduler.operations.pulse_factories.staircase_pulse",
-        "quantify_scheduler.operations.pulse_library.VoltageOffset",
     ]
     if str(name) in deprecated_objs:
         return True

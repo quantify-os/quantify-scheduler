@@ -4,6 +4,8 @@
 
 ### Breaking changes
 
+- Operations - Move `VoltageOffset` back to the common `pulse_library` (partially revert !863). (!932)
+
 ### Merged branches and closed issues
 
 - Operations - Add `ConditionalReset` gate to Qblox gate library. (!788)

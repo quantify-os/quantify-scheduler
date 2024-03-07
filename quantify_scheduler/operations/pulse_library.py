@@ -15,6 +15,7 @@ from qcodes import InstrumentChannel, validators
 from quantify_scheduler import Operation
 from quantify_scheduler.backends.qblox import constants as qblox_constants
 from quantify_scheduler.backends.qblox.enums import ChannelMode
+from quantify_scheduler.helpers.deprecation import deprecated_arg_alias
 from quantify_scheduler.helpers.waveforms import area_pulses
 from quantify_scheduler.resources import BasebandClockResource
 
@@ -169,26 +170,69 @@ class SetClockFrequency(Operation):
 
 
 class VoltageOffset(Operation):
-    """Deprecated VoltageOffset."""
+    """
+    Operation that represents setting a constant offset to the output voltage.
 
-    def __new__(cls, *args, **kwargs) -> VoltageOffset:
-        """Return StitchedPulse from the new location."""
-        warnings.warn(
-            (
-                "Class quantify_scheduler.backends.qblox.operations.pulse_library.VoltageOffset is "
-                "deprecated and will be removed in quantify-scheduler-0.20.0. Use "
-                "quantify_scheduler.backends.qblox.backends.qblox.operations.pulse_library.VoltageOffset "
-                "instead."
-            ),
-            FutureWarning,
-        )
-        # Avoid circular import
-        # pylint: disable=import-outside-toplevel
-        from quantify_scheduler.backends.qblox.operations import (
-            VoltageOffset as QbloxVoltageOffset,
-        )
+    Please refer to :ref:`sec-qblox-offsets-long-voltage-offsets` in the reference guide
+    for more details.
 
-        return QbloxVoltageOffset(*args, **kwargs)
+    Parameters
+    ----------
+    offset_path_I : float
+        Offset of path I.
+    offset_path_Q : float
+        Offset of path Q.
+    port : str
+        Port of the voltage offset.
+    clock : str, optional
+        Clock used to modulate the voltage offset. By default a BasebandClock is used.
+    duration : float, optional
+        (deprecated) The time to hold the offset for (in seconds).
+    t0 : float, optional
+        Time in seconds when to start the pulses relative to the start time
+        of the Operation in the Schedule.
+    reference_magnitude :
+        Scaling value and unit for the unitless amplitude. Uses settings in
+        hardware config if not provided.
+    """
+
+    @deprecated_arg_alias(
+        "0.20.0", offset_path_0="offset_path_I", offset_path_1="offset_path_Q"
+    )
+    def __init__(
+        self,
+        offset_path_I: float,
+        offset_path_Q: float,
+        port: str,
+        clock: str = BasebandClockResource.IDENTITY,
+        duration: float = 0.0,
+        t0: float = 0,
+        reference_magnitude: ReferenceMagnitude | None = None,
+    ) -> None:
+        if duration != 0.0:
+            warnings.warn(
+                "The duration parameter will be removed in quantify-scheduler >= "
+                "0.20.0, and the duration will be fixed to 0.0.",
+                FutureWarning,
+            )
+        super().__init__(name=self.__class__.__name__)
+        self.data["pulse_info"] = [
+            {
+                "wf_func": None,
+                "t0": t0,
+                "offset_path_I": offset_path_I,
+                "offset_path_Q": offset_path_Q,
+                "clock": clock,
+                "port": port,
+                "duration": duration,
+                "reference_magnitude": reference_magnitude,
+            }
+        ]
+        self._update()
+
+    def __str__(self) -> str:
+        pulse_info = self.data["pulse_info"][0]
+        return self._get_signature(pulse_info)
 
 
 class IdlePulse(Operation):
