@@ -1,19 +1,45 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Tests for the InstrumentCompiler subclasses."""
-from itertools import permutations
+from itertools import permutations, product
 from typing import List
 from unittest.mock import Mock
 
 import pytest
-from quantify_scheduler.backends.qblox import q1asm_instructions
-from quantify_scheduler.backends.qblox.instrument_compilers import QrmRfModule
-from quantify_scheduler.backends.types.qblox import OpInfo
-from quantify_scheduler.backends.qblox.compiler_abc import QbloxBaseModule
 
+from quantify_scheduler.backends.qblox import q1asm_instructions
+from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
+from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
+from quantify_scheduler.backends.qblox.operation_handling.factory import (
+    get_operation_strategy,
+)
+from quantify_scheduler.backends.qblox.operation_handling.virtual import (
+    UpdateParameterStrategy,
+)
+from quantify_scheduler.backends.types.qblox import OpInfo
+from quantify_scheduler.enums import BinMode
 
 DEFAULT_PORT = "q0:res"
 DEFAULT_CLOCK = "q0.ro"
+
+
+@pytest.fixture
+def mock_sequencer(total_play_time) -> Sequencer:
+    mod = Mock()
+    mod.configure_mock(total_play_time=total_play_time)
+    return Sequencer(
+        parent=mod,
+        index=0,
+        portclock=(DEFAULT_PORT, DEFAULT_CLOCK),
+        static_hw_properties=Mock(),
+        channel_name="complex_out_0",
+        sequencer_cfg={
+            "port": "q1:mw",
+            "clock": "q1.01",
+            "interm_freq": 50e6,
+        },
+        latency_corrections={},
+    )
 
 
 def pulse_with_waveform(
@@ -32,7 +58,7 @@ def pulse_with_waveform(
     )
 
 
-def virtual_pulse(
+def reset_clock_phase(
     timing: float, duration: float = 0.0, port: str = DEFAULT_PORT, clock=DEFAULT_CLOCK
 ) -> OpInfo:
     """Create an OpInfo object that is recognized as a virtual pulse."""
@@ -80,6 +106,7 @@ def acquisition(
             "clock": clock,
             "acq_channel": 0,
             "acq_index": 0,
+            "bin_mode": BinMode.AVERAGE,
             "protocol": "Trace",
         },
         timing=timing,
@@ -102,133 +129,146 @@ def control_flow_return(
     )
 
 
+def ioperation_strategy_from_op_info(
+    op_info: OpInfo, channel_name: str
+) -> IOperationStrategy:
+    return get_operation_strategy(op_info, channel_name)
+
+
 @pytest.mark.parametrize(
-    "op_list",
+    "op_list, total_play_time",
     list(
-        permutations(
-            [
-                pulse_with_waveform(0.0),
-                offset_instruction(1e-7),
-                offset_instruction(2e-7),
-                pulse_with_waveform(2e-7),
-                virtual_pulse(1e-7),
-            ]
-        )
+        product(
+            permutations(
+                [
+                    pulse_with_waveform(0.0),
+                    offset_instruction(1e-7),
+                    offset_instruction(2e-7),
+                    pulse_with_waveform(2e-7),
+                    reset_clock_phase(1e-7),
+                ]
+            ),
+            [3e-7],
+        ),
     ),
 )
-def test_param_update_after_offset_except_if_simultaneous_play(op_list: List[OpInfo]):
+def test_param_update_after_param_op_except_if_simultaneous_play(
+    op_list: List[OpInfo], mock_sequencer: Sequencer
+):
     """Test if upd_param is inserted after a VoltageOffset in the correct places."""
-    component = QrmRfModule(
-        parent=Mock(), name="Test", total_play_time=3e-7, instrument_cfg={}
+    iop_list = [ioperation_strategy_from_op_info(op, "complex_out_0") for op in op_list]
+
+    for op in iop_list:
+        mock_sequencer.pulses.append(op)
+    mock_sequencer._insert_update_parameters()
+
+    assert len(mock_sequencer.pulses) == 6
+    upd_param_inserted = next(
+        filter(lambda x: isinstance(x, UpdateParameterStrategy), mock_sequencer.pulses)
     )
-
-    for op in op_list:
-        component.add_pulse(DEFAULT_PORT, DEFAULT_CLOCK, op)
-    component._insert_update_parameters()
-
-    assert len(component._pulses[(DEFAULT_PORT, DEFAULT_CLOCK)]) == 6
-    assert (
-        OpInfo(
-            name="UpdateParameters",
-            data={
-                "t0": 0,
-                "duration": 0.0,
-                "instruction": q1asm_instructions.UPDATE_PARAMETERS,
-                "port": DEFAULT_PORT,
-                "clock": DEFAULT_CLOCK,
-            },
-            timing=1e-7,
-        )
-        in component._pulses[(DEFAULT_PORT, DEFAULT_CLOCK)]
+    assert upd_param_inserted.operation_info == OpInfo(
+        name="UpdateParameters",
+        data={
+            "t0": 0,
+            "duration": 0.0,
+            "instruction": q1asm_instructions.UPDATE_PARAMETERS,
+            "port": DEFAULT_PORT,
+            "clock": DEFAULT_CLOCK,
+        },
+        timing=pytest.approx(1e-7),  # type: ignore
     )
 
 
 @pytest.mark.parametrize(
-    "op_list",
+    "op_list, total_play_time",
     list(
-        permutations(
-            [
-                pulse_with_waveform(0.0),
-                offset_instruction(1e-7),
-                acquisition(1e-7),
-                virtual_pulse(1e-7),
-            ]
-        )
+        product(
+            permutations(
+                [
+                    pulse_with_waveform(0.0),
+                    offset_instruction(1e-7),
+                    acquisition(1e-7),
+                    reset_clock_phase(1e-7),
+                ]
+            ),
+            [2e-7],
+        ),
     ),
 )
-def test_no_parameter_update(op_list: List[OpInfo]):
+def test_no_parameter_update(op_list: List[OpInfo], mock_sequencer: Sequencer):
     """Test if no upd_param is inserted where it is not necessary."""
-    component = QrmRfModule(
-        parent=Mock(), name="Test", total_play_time=2e-7, instrument_cfg={}
-    )
+    iop_list = [ioperation_strategy_from_op_info(op, "complex_out_0") for op in op_list]  # type: ignore
 
-    for op in op_list:
-        if op.is_acquisition:
-            component.add_acquisition(DEFAULT_PORT, DEFAULT_CLOCK, op)
+    for op in iop_list:
+        if op.operation_info.is_acquisition:
+            mock_sequencer.acquisitions.append(op)
         else:
-            component.add_pulse(DEFAULT_PORT, DEFAULT_CLOCK, op)
+            mock_sequencer.pulses.append(op)
 
-    component._insert_update_parameters()
+    mock_sequencer._insert_update_parameters()
 
-    assert len(component._pulses[(DEFAULT_PORT, DEFAULT_CLOCK)]) == 3
-    for op in component._pulses[(DEFAULT_PORT, DEFAULT_CLOCK)]:
-        assert op.name != "UpdateParameters"
+    assert len(mock_sequencer.pulses) == 3
+    for op in mock_sequencer.pulses:
+        assert op.operation_info.name != "UpdateParameters"
 
 
 @pytest.mark.parametrize(
-    "op_list",
+    "op_list, total_play_time",
     list(
-        permutations(
-            [
-                pulse_with_waveform(0.0),
-                offset_instruction(2e-7),
-                acquisition(1e-7),
-                virtual_pulse(1e-7),
-            ]
-        )
+        product(
+            permutations(
+                [
+                    pulse_with_waveform(0.0),
+                    offset_instruction(2e-7),
+                    acquisition(1e-7),
+                    reset_clock_phase(1e-7),
+                ]
+            ),
+            [2e-7],
+        ),
     ),
 )
-def test_error_parameter_update_end_of_schedule(op_list: List[OpInfo]):
+def test_error_parameter_update_end_of_schedule(
+    op_list: List[OpInfo], mock_sequencer: Sequencer
+):
     """Test if no upd_param is inserted where it is not necessary."""
-    component = QrmRfModule(
-        parent=Mock(), name="Test", total_play_time=2e-7, instrument_cfg={}
-    )
+    iop_list = [ioperation_strategy_from_op_info(op, "complex_out_0") for op in op_list]  # type: ignore
 
-    for op in op_list:
-        if op.is_acquisition:
-            component.add_acquisition(DEFAULT_PORT, DEFAULT_CLOCK, op)
+    for op in iop_list:
+        if op.operation_info.is_acquisition:
+            mock_sequencer.acquisitions.append(op)
         else:
-            component.add_pulse(DEFAULT_PORT, DEFAULT_CLOCK, op)
+            mock_sequencer.pulses.append(op)
 
     with pytest.raises(
         RuntimeError,
         match=f"start time {2e-7} cannot be scheduled at the very end of a Schedule",
     ):
-        component._insert_update_parameters()
+        mock_sequencer._insert_update_parameters()
 
 
-def test_error_parameter_update_at_control_flow_return():
+@pytest.mark.parametrize("total_play_time", [3e-7])
+def test_error_parameter_update_at_control_flow_return(mock_sequencer: Sequencer):
     """Test if no upd_param is inserted where it is not necessary."""
-    component = QrmRfModule(
-        parent=Mock(), name="Test", total_play_time=2e-7, instrument_cfg={}
-    )
-
     op_list = [
         offset_instruction(1e-7),
         control_flow_return(1e-7),
     ]
-    for op in op_list:
-        if op.is_acquisition:
-            component.add_acquisition(DEFAULT_PORT, DEFAULT_CLOCK, op)
+
+    iop_list = [ioperation_strategy_from_op_info(op, "complex_out_0") for op in op_list]  # type: ignore
+
+    for op in iop_list:
+        if op.operation_info.is_acquisition:
+            mock_sequencer.acquisitions.append(op)
         else:
-            component.add_pulse(DEFAULT_PORT, DEFAULT_CLOCK, op)
+            mock_sequencer.pulses.append(op)
 
     with pytest.raises(
         RuntimeError,
         match=f"with start time {1e-7} cannot be scheduled at the same time as the end "
         "of a control-flow block",
     ):
-        component._insert_update_parameters()
+        mock_sequencer._insert_update_parameters()
 
 
 @pytest.mark.parametrize(
@@ -257,12 +297,12 @@ def test_error_parameter_update_at_control_flow_return():
         (
             [
                 acquisition(1 - 1.5e-9),
-                offset_instruction(1 - 1e9),
+                offset_instruction(1 - 1e-9),
                 offset_instruction(1),
                 offset_instruction(1 + 1e-9),
             ],
             2,
-            False,
+            True,
         ),
         (
             [
@@ -279,9 +319,13 @@ def test_error_parameter_update_at_control_flow_return():
 def test_any_other_updating_instruction_at_timing(
     sorted_pulses_and_acqs: List[OpInfo], op_index: int, expected: bool
 ):
+    pulse_list = [
+        ioperation_strategy_from_op_info(op, "complex_out_0")
+        for op in sorted_pulses_and_acqs
+    ]
     assert (
-        QbloxBaseModule._any_other_updating_instruction_at_timing_for_offset_instruction(
-            op_index=op_index, sorted_pulses_and_acqs=sorted_pulses_and_acqs
+        Sequencer._any_other_updating_instruction_at_timing_for_offset_instruction(
+            op_index=op_index, sorted_pulses_and_acqs=pulse_list
         )
         == expected
     )

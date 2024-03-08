@@ -20,12 +20,12 @@ from typing import (
     Callable,
     Dict,
     Generator,
+    Hashable,
     List,
     Optional,
     Set,
     Tuple,
     Union,
-    Hashable,
 )
 
 from pathvalidate import sanitize_filename
@@ -45,13 +45,15 @@ from quantify_scheduler.backends.qblox.operation_handling.acquisitions import (
     AcquisitionStrategyPartial,
 )
 from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
-from quantify_scheduler.backends.qblox.operation_handling.virtual import (
-    ConditionalStrategy,
-    LoopStrategy,
-    ControlFlowReturnStrategy,
-)
 from quantify_scheduler.backends.qblox.operation_handling.factory import (
     get_operation_strategy,
+)
+from quantify_scheduler.backends.qblox.operation_handling.virtual import (
+    AwgOffsetStrategy,
+    ConditionalStrategy,
+    ControlFlowReturnStrategy,
+    LoopStrategy,
+    UpdateParameterStrategy,
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.types.qblox import (
@@ -63,10 +65,10 @@ from quantify_scheduler.backends.types.qblox import (
     StaticHardwareProperties,
 )
 from quantify_scheduler.enums import BinMode
-from quantify_scheduler.operations.pulse_library import SetClockFrequency
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_acquisition_protocols,
 )
+from quantify_scheduler.operations.pulse_library import SetClockFrequency
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.qblox.instrument_compilers import LocalOscillator
@@ -1038,6 +1040,116 @@ class Sequencer:
 
         return latency_correction_ns
 
+    def _insert_update_parameters(self) -> None:
+        """
+        Insert update parameter instructions to activate offsets, if they are not
+        already activated by a play, acquire or acquire_weighed instruction (see also
+        `the Q1ASM reference
+        <https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/cluster/q1_sequence_processor.html#instructions>`_).
+        """
+        upd_params = self._get_new_update_parameters(self.pulses + self.acquisitions)
+        # This can be unsorted. The sorting step is in Sequencer.generate_qasm_program()
+        self.pulses += upd_params
+
+    @staticmethod
+    def _any_other_updating_instruction_at_timing_for_offset_instruction(
+        op_index: int, sorted_pulses_and_acqs: List[IOperationStrategy]
+    ) -> bool:
+        op = sorted_pulses_and_acqs[op_index]
+        if not isinstance(op, AwgOffsetStrategy):
+            return False
+
+        def iterate_other_ops(iterate_range, allow_return_stack: bool) -> bool:
+            for other_op_index in iterate_range:
+                other_op = sorted_pulses_and_acqs[other_op_index]
+                if not helpers.is_within_half_grid_time(
+                    other_op.operation_info.timing, op.operation_info.timing
+                ):
+                    break
+                if other_op.operation_info.is_real_time_io_operation:
+                    return True
+                if not allow_return_stack and other_op.operation_info.is_return_stack:
+                    raise RuntimeError(
+                        f"VoltageOffset operation {op.operation_info} with start time "
+                        f"{op.operation_info.timing} cannot be scheduled at the same "
+                        "time as the end of a control-flow block "
+                        f"{other_op.operation_info}, which ends at "
+                        f"{other_op.operation_info.timing}. The control-flow block can "
+                        "be extended by adding an IdlePulse operation with a duration "
+                        f"of at least {constants.GRID_TIME} ns, or the VoltageOffset "
+                        "can be replaced by another operation."
+                    )
+            return False
+
+        # Check all other operations behind the operation with op_index
+        # whether they're within half grid time
+        #
+        # We specifically allow an offset instruction to be after a return stack:
+        # the caller is free to start an offset instruction and a play signal after
+        # we return from a loop
+        if iterate_other_ops(
+            iterate_range=range(op_index - 1, -1, -1), allow_return_stack=True
+        ):
+            return True
+        # Check all other operations in front of the operation with op_index
+        # whether they're within half grid time
+        #
+        # We specifically disallow an offset instruction to be after a return stack:
+        # when the caller sets an offset, it might have an unknown effect depending
+        # on whether we actually exist the loop, or go the next cycle in the loop
+        if iterate_other_ops(
+            iterate_range=range(op_index + 1, len(sorted_pulses_and_acqs)),
+            allow_return_stack=False,
+        ):
+            return True
+
+        return False
+
+    def _get_new_update_parameters(
+        self,
+        pulses_and_acqs: List[IOperationStrategy],
+    ) -> List[IOperationStrategy]:
+        pulses_and_acqs.sort(key=lambda op: op.operation_info.timing)
+
+        # Collect all times (in ns, so that it's an integer) where an upd_param needs to
+        # be inserted.
+        upd_param_times_ns: Set[int] = set()
+        for op_index, op in enumerate(pulses_and_acqs):
+            if not isinstance(op, AwgOffsetStrategy):
+                continue
+            if helpers.is_within_half_grid_time(
+                self.parent.total_play_time, op.operation_info.timing
+            ):
+                raise RuntimeError(
+                    f"VoltageOffset operation {op.operation_info} with start time "
+                    f"{op.operation_info.timing} cannot be scheduled at the very end "
+                    "of a Schedule. The Schedule can be extended by adding an "
+                    "IdlePulse operation with a duration of at least "
+                    f"{constants.GRID_TIME} ns, or the VoltageOffset can be replaced "
+                    "by another operation."
+                )
+            if not self._any_other_updating_instruction_at_timing_for_offset_instruction(
+                op_index=op_index, sorted_pulses_and_acqs=pulses_and_acqs
+            ):
+                upd_param_times_ns.add(round(op.operation_info.timing * 1e9))
+
+        return [
+            UpdateParameterStrategy(
+                OpInfo(
+                    name="UpdateParameters",
+                    data={
+                        "t0": 0,
+                        "port": self.port,
+                        "clock": self.clock,
+                        "duration": 0,
+                        "instruction": q1asm_instructions.UPDATE_PARAMETERS,
+                    },
+                    timing=time_ns * 1e-9,
+                )
+            )
+            for time_ns in upd_param_times_ns
+        ]
+
     @staticmethod
     def _generate_waveforms_and_program_dict(
         program: str,
@@ -1142,6 +1254,8 @@ class Sequencer:
         """
         if not self.has_data:
             return None, None
+
+        self._insert_update_parameters()
 
         awg_dict = self._generate_awg_dict()
         weights_dict = None
@@ -1568,7 +1682,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         self._configure_input_gains()
         self._configure_mixer_offsets()
         self._construct_sequencers()
-        self._insert_update_parameters()
         for seq in self.sequencers.values():
             self.assign_frequencies(seq)
         self.distribute_data()
@@ -1684,112 +1797,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                         module_name=self.name,
                     )
                 scope_acq_seq = seq.index
-
-    def _insert_update_parameters(self):
-        """
-        Insert update parameter instructions to activate offsets, if they are not
-        already activated by a play, acquire or acquire_weighed instruction (see also
-        `the Q1ASM reference
-        <https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/cluster/q1_sequence_processor.html#instructions>`_).
-        """
-        for portclock, pulses in self._pulses.items():
-            upd_params = self._new_update_parameters_for_port_clock(
-                pulses_and_acqs=pulses + self._acquisitions[portclock]
-            )
-            self._pulses[portclock] += upd_params
-
-    @staticmethod
-    def _any_other_updating_instruction_at_timing_for_offset_instruction(
-        op_index: int, sorted_pulses_and_acqs: List[OpInfo]
-    ) -> bool:
-        op = sorted_pulses_and_acqs[op_index]
-        if not op.is_offset_instruction:
-            return False
-
-        def iterate_other_ops(iterate_range, allow_return_stack: bool) -> bool:
-            for other_op_index in iterate_range:
-                other_op = sorted_pulses_and_acqs[other_op_index]
-                if not helpers.is_within_half_grid_time(other_op.timing, op.timing):
-                    break
-                if other_op.is_real_time_io_operation:
-                    return True
-                if not allow_return_stack and other_op.is_return_stack:
-                    raise RuntimeError(
-                        f"VoltageOffset operation {op} with start time {op.timing} "
-                        "cannot be scheduled at the same time as the end of a "
-                        f"control-flow block {other_op}, which ends at "
-                        f"{other_op.timing}. The control-flow block can be extended "
-                        "by adding an IdlePulse operation with a duration of at least "
-                        f"{constants.GRID_TIME} ns, or the VoltageOffset can be "
-                        "replaced by another operation."
-                    )
-            return False
-
-        # Check all other operations behind the operation with op_index
-        # whether they're within half grid time
-        #
-        # We specifically allow an offset instruction to be after a return stack:
-        # the caller is free to start an offset instruction and a play signal after
-        # we return from a loop
-        if iterate_other_ops(
-            iterate_range=range(op_index - 1, -1, -1), allow_return_stack=True
-        ):
-            return True
-        # Check all other operations in front of the operation with op_index
-        # whether they're within half grid time
-        #
-        # We specifically disallow an offset instruction to be after a return stack:
-        # when the caller sets an offset, it might have an unknown effect depending
-        # on whether we actually exist the loop, or go the next cycle in the loop
-        if iterate_other_ops(
-            iterate_range=range(op_index + 1, len(sorted_pulses_and_acqs)),
-            allow_return_stack=False,
-        ):
-            return True
-
-        return False
-
-    def _new_update_parameters_for_port_clock(
-        self,
-        pulses_and_acqs: List[OpInfo],
-    ) -> List[OpInfo]:
-        pulses_and_acqs.sort(key=lambda op: op.timing)
-
-        # Collect all (port, clock, time) triples where an upd_param needs to be
-        # inserted
-        upd_param_infos: Set[Tuple[str, str, float]] = set()
-        for op_index, op in enumerate(pulses_and_acqs):
-            if not op.is_offset_instruction:
-                continue
-            if helpers.is_within_half_grid_time(self.total_play_time, op.timing):
-                raise RuntimeError(
-                    f"VoltageOffset operation {op} with start time {op.timing} cannot "
-                    "be scheduled at the very end of a Schedule. The Schedule can be "
-                    "extended by adding an IdlePulse operation with a duration of at "
-                    f"least {constants.GRID_TIME} ns, or the VoltageOffset can be "
-                    "replaced by another operation."
-                )
-            if not self._any_other_updating_instruction_at_timing_for_offset_instruction(
-                op_index=op_index, sorted_pulses_and_acqs=pulses_and_acqs
-            ):
-                upd_param_infos.add(
-                    (op.data["port"], op.data["clock"], round(op.timing, ndigits=9))
-                )  # Note: round to nanoseconds
-
-        return [
-            OpInfo(
-                name="UpdateParameters",
-                data={
-                    "t0": 0,
-                    "port": port,
-                    "clock": clock,
-                    "duration": 0,
-                    "instruction": q1asm_instructions.UPDATE_PARAMETERS,
-                },
-                timing=timing,
-            )
-            for port, clock, timing in upd_param_infos
-        ]
 
     def compile(
         self,
