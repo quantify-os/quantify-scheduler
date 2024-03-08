@@ -7,20 +7,34 @@ import functools
 import json
 import pathlib
 import sys
+import warnings
 from types import ModuleType
 from typing import Any, Callable, Dict, List, Type, Union
 
 import fastjsonschema
 import numpy as np
-
 from qcodes import Instrument
 
-from quantify_scheduler.helpers import inspect as inspect_helpers
 from quantify_scheduler import enums
+from quantify_scheduler.helpers import inspect as inspect_helpers
+from quantify_scheduler.helpers.importers import import_python_object_from_string
 
 current_python_version = sys.version_info
 
 lru_cache = functools.lru_cache(maxsize=200)
+
+DEFAULT_TYPES = [
+    complex,
+    float,
+    int,
+    bool,
+    str,
+    np.ndarray,
+    np.complex128,
+    np.int32,
+    np.uint32,
+    np.int64,
+]
 
 
 def validate_json(data, schema):
@@ -81,6 +95,10 @@ def load_json_validator(
     return validator
 
 
+class UnknownDeserializationTypeError(Exception):
+    """Raised when an unknown deserialization type is encountered."""
+
+
 class JSONSchemaValMixin:  # pylint: disable=too-few-public-methods
     """
     A mixin that adds validation utilities to classes that have
@@ -116,15 +134,19 @@ class SchedulerJSONDecoder(json.JSONDecoder):
     The SchedulerJSONDecoder is used to convert a string with JSON content into
     instances of classes in quantify-scheduler.
 
-    To avoid the execution of malicious code ScheduleJSONDecoder uses
-    :func:`ast.literal_eval` instead of :func:`eval` to convert the data to an instance
-    of Schedule.
+    For a few types, :data:`~.DEFAULT_TYPES` contains the mapping from type name to the
+    python object. This dictionary can be expanded with classes from modules specified
+    in the keyword argument ``modules``.
 
-    The list of serializable classes can be extended with custom classes by
-    providing the ``modules`` keyword argument. These classes have to implement
-    :class:`quantify_scheduler.operations.operation.Operation` and overload the
-    :code:`__str__` and :code:`__repr__` methods in order to serialize and
-    deserialize domain objects into a valid JSON-format.
+    Classes not contained in :data:`~.DEFAULT_TYPES` by default must implement
+    ``__getstate__``, such that it returns a dictionary containing at least the keys
+    ``"deserialization_type"`` and ``"data"``, and ``__setstate__``, which should be
+    able to parse the data from ``__getstate__``.
+
+    The value of ``"deserialization_type"`` must be either the name of the class
+    specified in :data:`~.DEFAULT_TYPES` or the fully qualified name of the class, which
+    can be obtained from
+    :func:`~quantify_scheduler.helpers.importers.export_python_object_to_path_string`.
 
     Keyword Arguments
     -----------------
@@ -132,7 +154,7 @@ class SchedulerJSONDecoder(json.JSONDecoder):
         A list of custom modules containing serializable classes, by default []
     """  # noqa: D416
 
-    classes: Dict[str, Type[Any]]
+    _classes: Dict[str, Type[Any]]
 
     def __init__(self, *args, **kwargs) -> None:
         extended_modules: List[ModuleType] = kwargs.pop("modules", [])
@@ -152,72 +174,8 @@ class SchedulerJSONDecoder(json.JSONDecoder):
             **kwargs,
         )
 
-        # Use local import to void Error('Operation' from partially initialized module
-        # 'quantify_scheduler')
-        # pylint: disable=import-outside-toplevel
-        from quantify_scheduler import resources
-        from quantify_scheduler.backends.qblox.operations.stitched_pulse import (
-            StitchedPulse as QbloxStitchedPulse,
-        )
-        from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-        from quantify_scheduler.device_under_test.composite_square_edge import (
-            CompositeSquareEdge,
-        )
-        from quantify_scheduler.schedules.schedule import (
-            AcquisitionMetadata,
-            Schedulable,
-        )
-        from quantify_scheduler.operations import (
-            acquisition_library,
-            gate_library,
-            operation,
-            nv_native_library,
-            pulse_library,
-            shared_native_library,
-        )
-        from quantify_scheduler.device_under_test import transmon_element
-
-        self._modules: List[ModuleType] = [
-            enums,
-            operation,
-            transmon_element,
-            acquisition_library,
-            gate_library,
-            pulse_library,
-            nv_native_library,
-            shared_native_library,
-            resources,
-        ] + extended_modules
-        self.classes = inspect_helpers.get_classes(*self._modules)
-        self.classes.update(
-            {
-                c.__name__: c
-                for c in [
-                    AcquisitionMetadata,
-                    Schedulable,
-                    QuantumDevice,
-                    CompositeSquareEdge,
-                ]
-            }
-        )
-        self.classes.update({"StitchedPulse": QbloxStitchedPulse})
-        self.classes.update(
-            {
-                t.__name__: t
-                for t in [
-                    complex,
-                    float,
-                    int,
-                    bool,
-                    str,
-                    np.ndarray,
-                    np.complex128,
-                    np.int32,
-                    np.uint32,
-                    np.int64,
-                ]
-            }
-        )
+        self._classes = inspect_helpers.get_classes(*[enums, *extended_modules])
+        self._classes.update({t.__name__: t for t in DEFAULT_TYPES})
 
     def decode_dict(
         self, obj: Dict[str, Any]
@@ -239,7 +197,12 @@ class SchedulerJSONDecoder(json.JSONDecoder):
         # serialized using `__getstate__` and should be deserialized using
         # `__setstate__`.
         if "deserialization_type" in obj:
-            class_type: Type = self.classes[obj["deserialization_type"]]
+            try:
+                class_type = self._get_type_from_string(obj["deserialization_type"])
+            except UnknownDeserializationTypeError as exc:
+                raise UnknownDeserializationTypeError(
+                    f"Object '{obj}' cannot be deserialized to type '{obj['deserialization_type']}'"
+                ) from exc
 
             if "mode" in obj and obj["mode"] == "__init__":
                 if class_type == np.ndarray:
@@ -276,6 +239,109 @@ class SchedulerJSONDecoder(json.JSONDecoder):
             return self.decode_dict(obj)
         return obj
 
+    def _get_type_from_string(self, deserialization_type: str) -> Type:
+        """
+        Get the python type based on the description string.
+
+        The following methods are tried, in order:
+
+            1. Try to find the string in :data:`~.DEFAULT_TYPES` or the extended modules
+                passed to this class' initializer.
+            2. Try to import the type. This works only if ``deserialization_type`` is
+                formatted as a dot-separated path to the type. E.g.
+                ``quantify_scheduler.json_utils.SchedulerJSONDecoder``.
+            3. (deprecated) Try to find the class by its ``__name__`` in a predefined
+                selection of types present in ``quantify_scheduler``.
+
+        Parameters
+        ----------
+        deserialization_type
+            Description of a type.
+
+        Raises
+        ------
+        UnknownDeserializationTypeError
+            If the type cannot be found by any of the methods described.
+
+        Returns
+        -------
+        Type
+            The ``Type`` found.
+        """
+        try:
+            return self._classes[deserialization_type]
+        except KeyError:
+            pass
+
+        try:
+            return import_python_object_from_string(deserialization_type)
+        except (AttributeError, ModuleNotFoundError, ValueError):
+            pass
+
+        try:
+            return _get_type_from_string_deprecated(deserialization_type)
+        except KeyError:
+            raise UnknownDeserializationTypeError(
+                f"Type '{deserialization_type}' is not a known deserialization type."
+            )
+
+
+def _get_type_from_string_deprecated(deserialization_type: str) -> Type:
+    # Use local import to void Error('Operation' from partially initialized module
+    # 'quantify_scheduler')
+    # pylint: disable=import-outside-toplevel
+    from quantify_scheduler import resources
+    from quantify_scheduler.backends.qblox.operations.stitched_pulse import (
+        StitchedPulse as QbloxStitchedPulse,
+    )
+    from quantify_scheduler.device_under_test import transmon_element
+    from quantify_scheduler.device_under_test.composite_square_edge import (
+        CompositeSquareEdge,
+    )
+    from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+    from quantify_scheduler.operations import (
+        acquisition_library,
+        gate_library,
+        nv_native_library,
+        operation,
+        pulse_library,
+        shared_native_library,
+    )
+    from quantify_scheduler.schedules.schedule import AcquisitionMetadata, Schedulable
+
+    classes = inspect_helpers.get_classes(
+        operation,
+        transmon_element,
+        acquisition_library,
+        gate_library,
+        pulse_library,
+        nv_native_library,
+        shared_native_library,
+        resources,
+    )
+    classes.update(
+        {
+            c.__name__: c
+            for c in [
+                AcquisitionMetadata,
+                Schedulable,
+                QuantumDevice,
+                CompositeSquareEdge,
+            ]
+        }
+    )
+    classes.update({"StitchedPulse": QbloxStitchedPulse})
+
+    class_type = classes[deserialization_type]
+    # Only warn if we succeed
+    warnings.warn(
+        "Having only the class name as the deserialization type is deprecated "
+        "and this feature will be removed in quantify-scheduler >= 0.20.0. "
+        "Please re-serialize the object to use the fully qualified class name.",
+        FutureWarning,
+    )
+    return class_type
+
 
 class SchedulerJSONEncoder(json.JSONEncoder):
     """
@@ -304,18 +370,7 @@ class SchedulerJSONEncoder(json.JSONEncoder):
                 "mode": "__init__",
                 "data": list(o),
             }
-        if o in [
-            complex,
-            float,
-            int,
-            bool,
-            str,
-            np.ndarray,
-            np.complex128,
-            np.int32,
-            np.uint32,
-            np.int64,
-        ]:
+        if o in DEFAULT_TYPES:
             return {"deserialization_type": o.__name__, "mode": "type"}
         if hasattr(o, "__dict__"):
             return o.__dict__

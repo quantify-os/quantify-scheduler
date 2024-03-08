@@ -18,14 +18,15 @@ from quantify_scheduler.backends.graph_compilation import (
     SerialCompilationConfig,
     SimpleNodeConfig,
 )
-from quantify_scheduler.backends.qblox.helpers import (
-    _preprocess_legacy_hardware_config,
-)
+from quantify_scheduler.backends.qblox.helpers import _preprocess_legacy_hardware_config
 from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
 from quantify_scheduler.backends.types.common import HardwareCompilationConfig
 from quantify_scheduler.device_under_test.device_element import DeviceElement
 from quantify_scheduler.device_under_test.edge import Edge
-from quantify_scheduler.helpers.importers import import_python_object_from_string
+from quantify_scheduler.helpers.importers import (
+    export_python_object_to_path_string,
+    import_python_object_from_string,
+)
 from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEncoder
 
 
@@ -150,7 +151,7 @@ class QuantumDevice(Instrument):
         data["cfg_sched_repetitions"] = str(self.cfg_sched_repetitions())
 
         state = {
-            "deserialization_type": self.__class__.__name__,
+            "deserialization_type": export_python_object_to_path_string(self.__class__),
             "data": data,
         }
 

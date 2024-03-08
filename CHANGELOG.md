@@ -12,6 +12,7 @@
 - Schedule - Fix control flow compilation in certain edge cases, when operation length is zero. (!928)
 - Documentation - Add guides on generic hardware backend and developing a new hardware backend in quantify (!817)
 - Qblox backend - Move `_insert_update_parameters` from `QbloxBaseModule` to `Sequencer`. (!912)
+- Serialization - Allow `"deserialization_type"` in the serialized dictionary to be the fully qualified name of the object, such that it can be imported via `import_python_object_from_string`. (!905)
 
 ## 0.18.1 (2024-02-22)
 

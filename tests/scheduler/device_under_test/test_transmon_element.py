@@ -83,7 +83,10 @@ def test_basic_transmon_serialization(
 
     q0_as_dict = json.loads(json.dumps(q0, cls=SchedulerJSONEncoder))
     assert q0_as_dict.__class__ is dict
-    assert q0_as_dict["deserialization_type"] == "BasicTransmonElement"
+    assert (
+        q0_as_dict["deserialization_type"]
+        == "quantify_scheduler.device_under_test.transmon_element.BasicTransmonElement"
+    )
 
     # Check that all original submodule params match their serialized counterpart
     for submodule_name, submodule in q0.submodules.items():

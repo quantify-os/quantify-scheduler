@@ -16,6 +16,7 @@ import pandas as pd
 
 from quantify_scheduler import enums, json_utils, resources
 from quantify_scheduler.helpers.collections import make_hash
+from quantify_scheduler.helpers.importers import export_python_object_to_path_string
 from quantify_scheduler.json_utils import JSONSchemaValMixin
 from quantify_scheduler.operations.control_flow_library import Conditional, Loop
 from quantify_scheduler.operations.operation import Operation
@@ -945,7 +946,10 @@ class Schedulable(JSONSchemaValMixin, UserDict):
         return str(self["name"])
 
     def __getstate__(self) -> dict[str, Any]:
-        return {"deserialization_type": self.__class__.__name__, "data": self.data}
+        return {
+            "deserialization_type": export_python_object_to_path_string(self.__class__),
+            "data": self.data,
+        }
 
     def __setstate__(self, state: dict[str, Any]) -> None:
         self.data = state["data"]
@@ -1070,7 +1074,10 @@ class AcquisitionChannelMetadata:
 
     def __getstate__(self) -> dict[str, Any]:
         data = dataclasses.asdict(self)
-        return {"deserialization_type": self.__class__.__name__, "data": data}
+        return {
+            "deserialization_type": export_python_object_to_path_string(self.__class__),
+            "data": data,
+        }
 
     def __setstate__(self, state: dict[str, Any]) -> dict[str, Any]:
         self.__init__(**state["data"])
@@ -1100,7 +1107,10 @@ class AcquisitionMetadata:
 
     def __getstate__(self) -> dict[str, Any]:
         data = dataclasses.asdict(self)
-        return {"deserialization_type": self.__class__.__name__, "data": data}
+        return {
+            "deserialization_type": export_python_object_to_path_string(self.__class__),
+            "data": data,
+        }
 
     def __setstate__(self, state: dict[str, Any]) -> dict[str, Any]:
         self.__init__(**state["data"])

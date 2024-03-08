@@ -78,7 +78,10 @@ def test_composite_square_edge_serialization(edge_q2b_q3b):
         json.dumps(edge_q2b_q3b, cls=SchedulerJSONEncoder)
     )
     assert edge_q2b_q3b_as_dict.__class__ is dict
-    assert edge_q2b_q3b_as_dict["deserialization_type"] == "CompositeSquareEdge"
+    assert (
+        edge_q2b_q3b_as_dict["deserialization_type"]
+        == "quantify_scheduler.device_under_test.composite_square_edge.CompositeSquareEdge"
+    )
 
     # Check that all original submodule params match their serialized counterpart
     for submodule_name, submodule in edge_q2b_q3b.submodules.items():

@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 from qcodes.instrument.base import Instrument
 
 from quantify_scheduler.device_under_test.device_element import DeviceElement
+from quantify_scheduler.helpers.importers import export_python_object_to_path_string
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.graph_compilation import DeviceCompilationConfig
@@ -58,7 +59,7 @@ class Edge(Instrument):
             }
 
         state = {
-            "deserialization_type": self.__class__.__name__,  # Will return derived class name
+            "deserialization_type": export_python_object_to_path_string(self.__class__),
             "mode": "__init__",
             "data": edge_data,
         }

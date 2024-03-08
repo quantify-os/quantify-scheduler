@@ -10,6 +10,7 @@ from enum import Enum
 from pydoc import locate
 
 from quantify_scheduler.helpers.collections import make_hash
+from quantify_scheduler.helpers.importers import export_python_object_to_path_string
 from quantify_scheduler.json_utils import JSONSchemaValMixin, lru_cache
 
 cached_locate = lru_cache(locate)
@@ -102,7 +103,7 @@ class Operation(JSONSchemaValMixin, UserDict):
 
     def __getstate__(self):
         return {
-            "deserialization_type": self.__class__.__name__,
+            "deserialization_type": export_python_object_to_path_string(self.__class__),
             "data": self.data,
         }
 

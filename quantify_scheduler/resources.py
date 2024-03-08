@@ -6,8 +6,9 @@ from __future__ import annotations
 
 from collections import UserDict
 
-from quantify_scheduler.json_utils import load_json_schema, validate_json
 from quantify_scheduler.helpers.collections import make_hash
+from quantify_scheduler.helpers.importers import export_python_object_to_path_string
+from quantify_scheduler.json_utils import load_json_schema, validate_json
 
 
 class Resource(UserDict):
@@ -91,7 +92,10 @@ class Resource(UserDict):
         return f"{self.__class__.__name__}(name='{self.name}')"
 
     def __getstate__(self):
-        return {"deserialization_type": self.__class__.__name__, "data": self.data}
+        return {
+            "deserialization_type": export_python_object_to_path_string(self.__class__),
+            "data": self.data,
+        }
 
     def __setstate__(self, state):
         self.data = state["data"]

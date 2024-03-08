@@ -298,7 +298,10 @@ def test_nv_center_serialization(electronic_q0):
         json.dumps(electronic_q0, cls=SchedulerJSONEncoder)
     )
     assert electronic_q0_as_dict.__class__ is dict
-    assert electronic_q0_as_dict["deserialization_type"] == "BasicElectronicNVElement"
+    assert (
+        electronic_q0_as_dict["deserialization_type"]
+        == "quantify_scheduler.device_under_test.nv_element.BasicElectronicNVElement"
+    )
 
     # Check that all original submodule params match their serialized counterpart
     for submodule_name, submodule in electronic_q0.submodules.items():
