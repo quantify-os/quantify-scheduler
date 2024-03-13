@@ -53,9 +53,9 @@ class Trace(AcquisitionOperation):  # pylint: disable=too-many-ancestors
         to the setpoints of a schedule (e.g., tau in a T1 experiment).
     bin_mode
         Describes what is done when data is written to a register that already
-        contains a value. Options are "append" which appends the result to the
-        list or "average" which stores the weighted average value of the
-        new result and the old register value, by default BinMode.APPEND.
+        contains a value. Only "BinMode.AVERAGE" option is available at the moment;
+        this option stores the weighted average value of the new result and the old
+        register value.
     t0
         The acquisition start time in seconds, by default 0.
     """

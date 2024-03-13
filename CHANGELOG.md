@@ -54,6 +54,7 @@
   - Update URLs to new QCoDeS location (`qcodes.github.io` to `microsoft.github.io`) (!901)
   - Improve return docstring for `_get_trigger_count_data` and `_determine_measurement_fixpoint_correction`. (!902)
   - Pin `scanpydoc<0.12` to prevent incorrect parsing of return types in docstrings. (!903)
+  - Change description of `bin_mode` from options being `BinMode.AVERAGE` and`BinMode.APPEND` to only allow `BinMode.AVERAGE` as option for `bin_mode`. (!930)
 
 - Error handling 
   - Make the zhinst backend correctly throw a `NotImplementedError` for `SetClockFrequency`. (!910)
