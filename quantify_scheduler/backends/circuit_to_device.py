@@ -17,7 +17,7 @@ from quantify_scheduler.backends.graph_compilation import (
 from quantify_scheduler.backends.qblox.enums import ChannelMode
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.resources import ClockResource
-from quantify_scheduler.schedules.schedule import Schedule
+from quantify_scheduler.schedules.schedule import Schedule, Schedulable
 
 
 def _compile_circuit_to_device(
@@ -96,27 +96,32 @@ def _compile_circuit_to_device(
             )
         device_cfg = DeviceCompilationConfig.model_validate(device_cfg)
 
-    for key, operation in schedule.operations.items():
+    for op_key in schedule.operations:
         # If operation is a valid pulse or acquisition it will not attempt to
         # add pulse/acquisition info in the lines below (if operation.valid_gate
         # will not work here for e.g. Measure, which is also a valid
         # acquisition)
-        if isinstance(operation, Schedule):
-            schedule.operations[key] = _compile_circuit_to_device(
-                schedule=operation, config=config
+        if isinstance(schedule.operations[op_key], Schedule):
+            schedule.operations[op_key] = _compile_circuit_to_device(
+                schedule=schedule.operations[op_key], config=config
             )
-            continue
-        elif not (operation.valid_pulse or operation.valid_acquisition):
-            qubits = operation.data["gate_info"]["qubits"]
-            operation_type = operation.data["gate_info"]["operation_type"]
+        elif not (
+            schedule.operations[op_key].valid_pulse
+            or schedule.operations[op_key].valid_acquisition
+        ):
+            qubits = schedule.operations[op_key].data["gate_info"]["qubits"]
+            operation_type = schedule.operations[op_key].data["gate_info"][
+                "operation_type"
+            ]
 
             # single qubit operations
             if len(qubits) == 1:
-                _compile_single_qubit(
-                    operation=operation,
+                schedule.operations[op_key] = _compile_single_qubit(
+                    operation=schedule.operations[op_key],
                     qubit=qubits[0],
                     operation_type=operation_type,
                     device_cfg=device_cfg,
+                    config=config,
                 )
 
             # it is a two-qubit operation if the operation not in the qubit config
@@ -124,21 +129,23 @@ def _compile_circuit_to_device(
                 len(qubits) == 2
                 and operation_type not in device_cfg.elements[qubits[0]]
             ):
-                _compile_two_qubits(
-                    operation=operation,
+                schedule.operations[op_key] = _compile_two_qubits(
+                    operation=schedule.operations[op_key],
                     qubits=qubits,
                     operation_type=operation_type,
                     device_cfg=device_cfg,
+                    config=config,
                 )
             # we only support 2-qubit operations and single-qubit operations.
             # some single-qubit operations (reset, measure) can be expressed as acting
             # on multiple qubits simultaneously. That is covered through this for-loop.
             else:
-                _compile_multiplexed(
-                    operation=operation,
+                schedule.operations[op_key] = _compile_multiplexed(
+                    operation=schedule.operations[op_key],
                     qubits=qubits,
                     operation_type=operation_type,
                     device_cfg=device_cfg,
+                    config=config,
                 )
 
     return schedule
@@ -404,7 +411,21 @@ def _assert_operation_valid_device_level(operation: Operation) -> None:
         )
 
 
-def _compile_multiplexed(operation, qubits, operation_type, device_cfg):
+def _compile_multiplexed(
+    operation,
+    qubits,
+    operation_type,
+    device_cfg,
+    config: CompilationConfig | DeviceCompilationConfig | Dict | None,
+) -> Schedule:
+    """
+    Compiles gate with multiple qubits.
+
+    Note: it updates the `operation`, if it can directly add pulse representation.
+    """
+    inner_subschedules: list = []
+    operation_has_device_representation: bool = False
+
     for mux_idx, qubit in enumerate(qubits):
         if qubit not in device_cfg.elements:
             raise ConfigKeyError(
@@ -422,12 +443,55 @@ def _compile_multiplexed(operation, qubits, operation_type, device_cfg):
                 allowed=list(element_cfg.keys()),
             )
 
-        _add_device_repr_from_cfg_multiplexed(
+        device_op: Operation | Schedule = _get_device_repr_from_cfg_multiplexed(
             operation, element_cfg[operation_type], mux_idx=mux_idx
         )
 
+        if isinstance(device_op, Schedule):
+            inner_subschedules.append(_compile_circuit_to_device(device_op, config))
+        else:
+            operation.add_device_representation(device_op)
+            operation_has_device_representation = True
 
-def _compile_single_qubit(operation, qubit, operation_type, device_cfg):
+    if len(inner_subschedules) != 0:
+        inner_schedule: Schedule = Schedule(f"Inner schedule for {str(operation)}")
+        # All operations in the inner schedule
+        # should happen at the same time;
+        # this reference time is the start time
+        # of the `ref_schedulable` operation / schedule
+        ref_schedulable: Schedulable | None = None
+        if operation_has_device_representation:
+            ref_schedulable = inner_schedule.add(operation)
+
+        for inner_subschedule in inner_subschedules:
+            if ref_schedulable is not None:
+                inner_schedule.add(
+                    operation=_compile_circuit_to_device(inner_subschedule, config),
+                    rel_time=0,
+                    ref_op=ref_schedulable,
+                    ref_pt="start",
+                )
+            else:
+                ref_schedulable = inner_schedule.add(
+                    operation=_compile_circuit_to_device(inner_subschedule, config),
+                )
+        return inner_schedule
+    else:
+        return operation
+
+
+def _compile_single_qubit(
+    operation,
+    qubit,
+    operation_type,
+    device_cfg,
+    config: CompilationConfig | DeviceCompilationConfig | Dict | None,
+) -> Operation | Schedule:
+    """
+    Compiles gate with multiple qubits.
+
+    Note: it updates the `operation`, if it can directly add pulse representation.
+    """
     if qubit not in device_cfg.elements:
         raise ConfigKeyError(
             kind="element",
@@ -443,13 +507,30 @@ def _compile_single_qubit(operation, qubit, operation_type, device_cfg):
             allowed=list(element_cfg.keys()),
         )
 
-    _add_device_repr_from_cfg(
+    device_op: Operation | Schedule = _get_device_repr_from_cfg(
         operation=operation,
         operation_cfg=element_cfg[operation_type],
     )
 
+    if isinstance(device_op, Schedule):
+        return _compile_circuit_to_device(device_op, config)
+    else:
+        operation.add_device_representation(device_op)
+        return operation
 
-def _compile_two_qubits(operation, qubits, operation_type, device_cfg):
+
+def _compile_two_qubits(
+    operation,
+    qubits,
+    operation_type,
+    device_cfg,
+    config: CompilationConfig | DeviceCompilationConfig | Dict | None,
+) -> Operation | Schedule:
+    """
+    Compiles gate with multiple qubits.
+
+    Note: it updates the `operation`, if it can directly add pulse representation.
+    """
     parent_qubit, child_qubit = qubits
     edge = f"{parent_qubit}_{child_qubit}"
 
@@ -485,12 +566,20 @@ def _compile_two_qubits(operation, qubits, operation_type, device_cfg):
             allowed=list(edge_config.keys()),
         )
 
-    _add_device_repr_from_cfg(operation, edge_config[operation_type])
+    device_op: Operation | Schedule = _get_device_repr_from_cfg(
+        operation, edge_config[operation_type]
+    )
+
+    if isinstance(device_op, Schedule):
+        return _compile_circuit_to_device(device_op, config)
+    else:
+        operation.add_device_representation(device_op)
+        return operation
 
 
-def _add_device_repr_from_cfg(
+def _get_device_repr_from_cfg(
     operation: Operation, operation_cfg: OperationCompilationConfig
-):
+) -> Operation | Schedule:
     # deepcopy because operation_type can occur multiple times
     # (e.g., parametrized operations).
     operation_cfg = deepcopy(operation_cfg)
@@ -503,13 +592,12 @@ def _add_device_repr_from_cfg(
         for key in operation_cfg.gate_info_factory_kwargs:
             factory_kwargs[key] = operation.data["gate_info"][key]
 
-    device_op = factory_func(**factory_kwargs)
-    operation.add_device_representation(device_op)
+    return factory_func(**factory_kwargs)
 
 
-def _add_device_repr_from_cfg_multiplexed(
+def _get_device_repr_from_cfg_multiplexed(
     operation: Operation, operation_cfg: OperationCompilationConfig, mux_idx: int
-):
+) -> Operation | Schedule:
     operation_cfg = deepcopy(operation_cfg)
     factory_func = operation_cfg.factory_func
 
@@ -531,8 +619,7 @@ def _add_device_repr_from_cfg_multiplexed(
             else:
                 factory_kwargs[key] = gate_info
 
-    device_op = factory_func(**factory_kwargs)
-    operation.add_device_representation(device_op)
+    return factory_func(**factory_kwargs)
 
 
 # pylint: disable=super-init-not-called

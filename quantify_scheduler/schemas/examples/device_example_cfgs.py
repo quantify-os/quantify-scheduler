@@ -39,6 +39,11 @@ example_transmon_cfg = {
                 "gate_info_factory_kwargs": ["theta"],
                 "factory_kwargs": {"clock": "q0.01"},
             },
+            "H": {
+                "factory_func": "quantify_scheduler.operations."
+                + "composite_factories.hadamard_as_y90z",
+                "factory_kwargs": {"qubit": "q0"},
+            },
             "measure": {
                 "factory_func": "quantify_scheduler.operations."
                 + "measurement_factories.dispersive_measurement",

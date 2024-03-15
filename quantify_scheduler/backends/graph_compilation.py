@@ -78,7 +78,7 @@ class OperationCompilationConfig(DataStructure):
     defined on a quantum-device layer.
     """
 
-    factory_func: Callable[..., Operation]
+    factory_func: Callable[..., Union[Operation, Schedule]]
     """
     A callable designating a factory function used to create the representation
     of the operation at the quantum-device level.

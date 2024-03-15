@@ -351,6 +351,48 @@ class Z90(Rz):
         return f"{self.__class__.__name__}(qubit='{qubit}')"
 
 
+class H(Operation):
+    r"""
+    A single qubit Hadamard gate.
+
+    Note that the gate uses :math:`R_z(\pi) = -iZ`, adding a global phase of :math:`-\pi/2`.
+    This operation can be represented by the following unitary:
+
+    .. math::
+
+        H = Y90 \cdot Z = \frac{-i}{\sqrt{2}}\begin{bmatrix}
+             1 & 1 \\
+             1 & -1 \\ \end{bmatrix}
+
+    Parameters
+    ----------
+    qubit
+        The target qubit.
+
+    """
+
+    def __init__(self, *qubits: str):
+        tex = r"$H$"
+        plot_func = (
+            "quantify_scheduler.schedules._visualization.circuit_diagram.gate_box"
+        )
+
+        unitary = -1j / np.sqrt(2) * np.array([[1, 1], [1, -1]], dtype=complex)
+        super().__init__(f"H, '{qubits}')")
+        self.data["gate_info"] = {
+            "unitary": unitary,
+            "tex": tex,
+            "plot_func": plot_func,
+            "qubits": list(qubits),
+            "operation_type": "H",
+        }
+        self._update()
+
+    def __str__(self) -> str:
+        qubits = map(lambda x: f"'{x}'", self.data["gate_info"]["qubits"])
+        return f'{self.__class__.__name__}({",".join(qubits)})'
+
+
 class CNOT(Operation):
     r"""
     Conditional-NOT gate, a common entangling gate.

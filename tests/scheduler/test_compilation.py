@@ -1,4 +1,3 @@
-# pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
@@ -12,7 +11,16 @@ from quantify_scheduler.backends.circuit_to_device import ConfigKeyError
 from quantify_scheduler.compilation import _determine_absolute_timing, flatten_schedule
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.control_flow_library import Loop
-from quantify_scheduler.operations.gate_library import CNOT, CZ, X, Measure, Reset, Rxy
+from quantify_scheduler.operations.gate_library import (
+    CNOT,
+    CZ,
+    X,
+    Measure,
+    Reset,
+    Rxy,
+    H,
+)
+from quantify_scheduler.operations.composite_factories import hadamard_as_y90z
 from quantify_scheduler.operations.pulse_library import SquarePulse, SetClockFrequency
 from quantify_scheduler.resources import BasebandClockResource, ClockResource, Resource
 
@@ -133,6 +141,47 @@ def test_compile_transmon_program(mock_setup_basic_transmon_with_standard_params
             "quantum_device"
         ].generate_compilation_config(),
     )
+
+
+def test_compile_gates_to_subschedule(mock_setup_basic_transmon_with_standard_params):
+    compiler = SerialCompiler(name="compiler")
+
+    # Add H composite gate to sched and compile to subschedules
+    sched = Schedule("Schedule")
+    sched.add(H("q0", "q1"))
+    compiled_sched = compiler.compile(
+        sched,
+        mock_setup_basic_transmon_with_standard_params[
+            "quantum_device"
+        ].generate_compilation_config(),
+    )
+
+    # Add H constituent gates Y90 and Z to sched directly as subschedules
+    expected_inner_sched = Schedule("Inner sched H q0 q1")
+    ref_h = expected_inner_sched.add(hadamard_as_y90z("q0"))
+    expected_inner_sched.add(hadamard_as_y90z("q1"), ref_op=ref_h, ref_pt="start")
+
+    expected_sched = Schedule("Expected sched")
+    expected_sched.add(expected_inner_sched)
+
+    expected_compiled_sched = compiler.compile(
+        expected_sched,
+        mock_setup_basic_transmon_with_standard_params[
+            "quantum_device"
+        ].generate_compilation_config(),
+    )
+
+    assert len(compiled_sched) == len(expected_compiled_sched)
+
+    for schedulable, expected_schedulable in zip(
+        compiled_sched.schedulables.values(),
+        expected_compiled_sched.schedulables.values(),
+    ):
+        op = compiled_sched.operations[schedulable["operation_id"]]
+        expected_op = expected_compiled_sched.operations[
+            expected_schedulable["operation_id"]
+        ]
+        assert op == expected_op
 
 
 def test_missing_edge(mock_setup_basic_transmon):

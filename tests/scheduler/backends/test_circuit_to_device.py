@@ -36,6 +36,7 @@ from quantify_scheduler.operations.gate_library import (
     Y90,
     Z,
     Z90,
+    H,
 )
 from quantify_scheduler.operations.pulse_factories import (
     rxy_drag_pulse,
@@ -75,9 +76,10 @@ def test_compile_all_gates_example_transmon_cfg():
     sched.add(operation=CZ(qC=q0, qT=q1))
     sched.add(Rxy(theta=90, phi=0, qubit=q0))
     sched.add(Rz(theta=90, qubit=q0))
+    sched.add(H(q0))
     sched.add(Measure(q0, q1), label="M_q0_q1")
 
-    assert len(sched.schedulables) == 19
+    assert len(sched.schedulables) == 20
 
     # test that all these operations compile correctly.
     _ = _compile_circuit_to_device(
@@ -115,9 +117,10 @@ def test_compile_all_gates_basic_transmon(mock_setup_basic_transmon):
     sched.add(operation=CZ(qC=q2, qT=q3))
     sched.add(Rxy(theta=90, phi=0, qubit=q2))
     sched.add(Rz(theta=90, qubit=q2))
+    sched.add(H(q2))
     sched.add(Measure(q2, q3), label="M_q2_q3")
 
-    assert len(sched.schedulables) == 19
+    assert len(sched.schedulables) == 20
 
     # test that all these operations compile correctly.
     quantum_device = mock_setup_basic_transmon["quantum_device"]

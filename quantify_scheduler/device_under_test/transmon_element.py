@@ -21,6 +21,7 @@ from quantify_scheduler.operations import (
     pulse_factories,
     pulse_library,
     measurement_factories,
+    composite_factories,
 )
 
 
@@ -477,6 +478,12 @@ class BasicTransmonElement(DeviceElement):
                     gate_info_factory_kwargs=[
                         "theta",
                     ],  # the keys from the gate info to pass to the factory function
+                ),
+                "H": OperationCompilationConfig(
+                    factory_func=composite_factories.hadamard_as_y90z,
+                    factory_kwargs={
+                        "qubit": f"{self.name}",
+                    },
                 ),
                 # the measurement also has a parametrized mapping, and uses a
                 # factory function.

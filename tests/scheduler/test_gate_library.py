@@ -31,6 +31,7 @@ from quantify_scheduler.operations.gate_library import (
     Y90,
     Z,
     Z90,
+    H,
 )
 from quantify_scheduler.operations.shared_native_library import SpectroscopyOperation
 from quantify_scheduler.operations.nv_native_library import ChargeReset
@@ -99,6 +100,7 @@ def test_rxy_angle_modulo() -> None:
         Reset("q0", "q1"),
         CZ("q0", "q1"),
         CNOT("q0", "q6"),
+        H("q0", "q1"),
         Measure("q0", "q6"),
         Measure("q0"),
         Measure("q0", "q6", acq_index=92),
@@ -252,6 +254,12 @@ def test_rotation_unitaries() -> None:
     np.testing.assert_allclose(
         Z90(qubit=None).data["gate_info"]["unitary"],
         (1.0 + 0.0j) / np.sqrt(2) * np.array([[1 - 1j, 0], [0, 1 + 1j]]),
+        atol=atol,
+    )
+
+    np.testing.assert_allclose(
+        H("q0").data["gate_info"]["unitary"],
+        -1j / np.sqrt(2) * np.array([[1, 1], [1, -1]], dtype=complex),
         atol=atol,
     )
 
