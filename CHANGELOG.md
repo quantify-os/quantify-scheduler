@@ -5,6 +5,7 @@
 ### Breaking changes
 
 - Operations - Move `VoltageOffset` back to the common `pulse_library` (partially revert !863). (!932)
+- InstrumentCoordinator - Rename `QbloxInstrumentCoordinatorComponentBase` to `_ModuleComponentBase`. (!931)
 
 ### Merged branches and closed issues
 
@@ -15,6 +16,7 @@
 - Serialization - Allow `"deserialization_type"` in the serialized dictionary to be the fully qualified name of the object, such that it can be imported via `import_python_object_from_string`. (!905)
 - Compilation - Allow gates to be device compiled to schedules. (!904)
 - Operations - Add `H` Hadamard gate to gate library. (!904)
+- InstrumentCoordinator - Remove `make_qcm_component` and `make_qrm_component` from tests, and allow user-defined module setting in `make_cluster_component`. (!931)
 
 ## 0.18.1 (2024-02-22)
 

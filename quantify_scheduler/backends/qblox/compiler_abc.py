@@ -1771,7 +1771,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         Raises an error if multiple sequencers use scope mode acquisition,
         because that's not supported by the hardware.
         Also, see
-        :func:`~quantify_scheduler.instrument_coordinator.components.qblox.QRMComponent._determine_scope_mode_acquisition_sequencer_and_qblox_acq_index`
+        :func:`~quantify_scheduler.instrument_coordinator.components.qblox._QRMComponent._determine_scope_mode_acquisition_sequencer_and_qblox_acq_index`
         which also ensures the program that gets uploaded to the hardware satisfies this requirement.
 
         Raises

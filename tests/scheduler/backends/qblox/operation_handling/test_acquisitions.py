@@ -39,7 +39,7 @@ from quantify_scheduler.instrument_coordinator.components.generic import (
     GenericInstrumentCoordinatorComponent,
 )
 from quantify_scheduler.instrument_coordinator.components.qblox import (
-    QbloxInstrumentCoordinatorComponentBase,
+    _ModuleComponentBase,
 )
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.control_flow_library import Loop
@@ -1229,7 +1229,7 @@ def test_same_index_in_module_and_cluster_measurement_error(
     instr_coordinator.add_component(ic_cluster0)
 
     for comp in ic_cluster0._cluster_modules.values():
-        instrument = comp._instrument_module
+        instrument = comp.instrument
         mock_acquisition_data = {
             "0": {
                 "index": 0,
@@ -1585,7 +1585,7 @@ def test_trace_acquisition_instrument_coordinator(  # pylint: disable=too-many-l
         sequencer=None, data=dummy_scope_acquisition_data
     )
 
-    wrapped = QbloxInstrumentCoordinatorComponentBase._set_parameter
+    wrapped = _ModuleComponentBase._set_parameter
     called_with = None
 
     def wrapper(*args, **kwargs):
@@ -1596,7 +1596,7 @@ def test_trace_acquisition_instrument_coordinator(  # pylint: disable=too-many-l
 
     with mocker.patch(
         "quantify_scheduler.instrument_coordinator.components.qblox."
-        "QbloxInstrumentCoordinatorComponentBase._set_parameter",
+        "_ModuleComponentBase._set_parameter",
         wraps=wrapper,
     ):
         try:

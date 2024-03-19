@@ -11,7 +11,17 @@ import warnings
 from abc import abstractmethod
 from dataclasses import dataclass
 from math import isnan
-from typing import Any, Callable, Dict, Optional, Tuple, Type, Union, Hashable
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+    Hashable,
+    TYPE_CHECKING,
+)
 from uuid import uuid4
 
 import numpy as np
@@ -22,7 +32,7 @@ from qblox_instruments import (
     SequencerStatus,
     SequencerStatusFlags,
 )
-from qcodes.instrument import Instrument, InstrumentModule
+
 from quantify_core.data.handling import get_datadir
 from xarray import DataArray, Dataset
 
@@ -42,7 +52,15 @@ from quantify_scheduler.instrument_coordinator.utility import (
     check_already_existing_acquisition,
     lazy_set,
 )
-from quantify_scheduler.schedules.schedule import AcquisitionMetadata, CompiledSchedule
+
+if TYPE_CHECKING:
+    from qblox_instruments.qcodes_drivers.qcm_qrm import QcmQrm
+    from qblox_instruments.qcodes_drivers.sequencer import Sequencer
+from quantify_scheduler.schedules.schedule import (
+    AcquisitionMetadata,
+    CompiledSchedule,
+)
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
@@ -162,23 +180,19 @@ _QRM_RF_PROPERTIES = _StaticHardwareProperties(
 )
 
 
-class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponentBase):
+class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
     """Qblox InstrumentCoordinator component base class."""
 
-    def __init__(
-        self, instrument: Union[Instrument, InstrumentModule], **kwargs
-    ) -> None:
-        super().__init__(instrument, **kwargs)
+    def __init__(self, instrument: QcmQrm) -> None:
+        super().__init__(instrument)
 
-        self._instrument_module = (
-            instrument if isinstance(instrument, InstrumentModule) else None
-        )
+        self._instrument_module = instrument
 
         if instrument.is_rf_type is not self._hardware_properties.has_internal_lo:
             raise RuntimeError(
-                "QbloxInstrumentCoordinatorComponentBase not compatible with the "
+                "_ModuleComponentBase not compatible with the "
                 "provided instrument. Please confirm whether your device "
-                "is an RF module or a baseband module (having or not having an "
+                "is a Qblox RF or baseband module (having or not having an "
                 "internal LO)."
             )
 
@@ -189,23 +203,16 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
 
         self._program = {}
 
+    # Necessary to override the `instrument` attr from `InstrumentCoordinatorComponentBase`,
+    # `QcmQrm` is a qcodes `InstrumentModule` subclass
     @property
-    def instrument(self) -> Union[Instrument, InstrumentModule]:
-        """
-        Return a reference to the instrument of instrument module.
-
-        If the instrument behind this instance of
-        :class:`~QbloxInstrumentCoordinatorComponentBase` is an :class:`~qcodes.instruments.InstrumentModule` (e.g. the
-        module within the :class:`qblox_instruments.Cluster`), it is returned.
-        """
-        if self._instrument_module is not None:
-            return self._instrument_module
-
-        return super().instrument
+    def instrument(self) -> QcmQrm:
+        """Returns a reference to the module instrument."""
+        return self._instrument_module
 
     def _set_parameter(
         self,
-        instrument: Union[Instrument, InstrumentModule],
+        instrument: Union[QcmQrm, Sequencer],
         parameter_name: str,
         val: Any,
     ) -> None:
@@ -449,18 +456,18 @@ class QbloxInstrumentCoordinatorComponentBase(base.InstrumentCoordinatorComponen
         """
 
 
-class QCMComponent(QbloxInstrumentCoordinatorComponentBase):
+class _QCMComponent(_ModuleComponentBase):
     """QCM specific InstrumentCoordinator component."""
 
     _hardware_properties = _QCM_BASEBAND_PROPERTIES
 
-    def __init__(self, instrument: Instrument, **kwargs) -> None:
+    def __init__(self, instrument: QcmQrm) -> None:
         if not instrument.is_qcm_type:
             raise TypeError(
-                f"Trying to create QCMComponent from non-QCM instrument "
+                f"Trying to create _QCMComponent from non-QCM instrument "
                 f'of type "{type(instrument)}".'
             )
-        super().__init__(instrument, **kwargs)
+        super().__init__(instrument)
 
     def retrieve_acquisition(self) -> None:
         """
@@ -549,18 +556,18 @@ class QCMComponent(QbloxInstrumentCoordinatorComponentBase):
             )
 
 
-class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
+class _QRMComponent(_ModuleComponentBase):
     """QRM specific InstrumentCoordinator component."""
 
     _hardware_properties = _QRM_BASEBAND_PROPERTIES
 
-    def __init__(self, instrument: Instrument, **kwargs) -> None:
+    def __init__(self, instrument: QcmQrm) -> None:
         if not instrument.is_qrm_type:
             raise TypeError(
-                f"Trying to create QRMComponent from non-QRM instrument "
+                f"Trying to create _QRMComponent from non-QRM instrument "
                 f'of type "{type(instrument)}".'
             )
-        super().__init__(instrument, **kwargs)
+        super().__init__(instrument)
 
         self._acquisition_manager: Optional[_QRMAcquisitionManager] = None
         """Holds all the acquisition related logic."""
@@ -835,7 +842,7 @@ class QRMComponent(QbloxInstrumentCoordinatorComponentBase):
         return sequencer_and_qblox_acq_index
 
 
-class QbloxRFComponent(QbloxInstrumentCoordinatorComponentBase):
+class _RFComponent(_ModuleComponentBase):
     """Mix-in for RF-module-specific InstrumentCoordinatorComponent behaviour."""
 
     def _configure_sequencer_settings(
@@ -869,7 +876,7 @@ class QbloxRFComponent(QbloxInstrumentCoordinatorComponentBase):
         return channel_map_parameters
 
 
-class QCMRFComponent(QbloxRFComponent, QCMComponent):
+class _QCMRFComponent(_RFComponent, _QCMComponent):
     """QCM-RF specific InstrumentCoordinator component."""
 
     _hardware_properties = _QCM_RF_PROPERTIES
@@ -912,7 +919,7 @@ class QCMRFComponent(QbloxRFComponent, QCMComponent):
             self._set_parameter(self.instrument, "out1_att", settings.out1_att)
 
 
-class QRMRFComponent(QbloxRFComponent, QRMComponent):
+class _QRMRFComponent(_RFComponent, _QRMComponent):
     """QRM-RF specific InstrumentCoordinator component."""
 
     _hardware_properties = _QRM_RF_PROPERTIES
@@ -984,13 +991,13 @@ class _QRMAcquisitionManager:
 
     def __init__(
         self,
-        parent: QRMComponent,
+        parent: _QRMComponent,
         acquisition_metadata: Dict[str, AcquisitionMetadata],
         scope_mode_sequencer_and_qblox_acq_index: Optional[Tuple[int, int]],
         acquisition_duration: Dict[int, int],
         seq_name_to_idx_map: Dict[str, int],
     ):
-        self.parent: QRMComponent = parent
+        self.parent: _QRMComponent = parent
         self._acquisition_metadata: Dict[str, AcquisitionMetadata] = (
             acquisition_metadata
         )
@@ -1496,7 +1503,7 @@ class _QRMAcquisitionManager:
         return channel_data["acquisition"]["bins"]
 
 
-ClusterModule = Union[QCMComponent, QRMComponent, QCMRFComponent, QRMRFComponent]
+_ClusterModule = Union[_QCMComponent, _QRMComponent, _QCMRFComponent, _QRMRFComponent]
 """Type that combines all the possible modules for a cluster."""
 
 
@@ -1511,22 +1518,20 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
     ----------
     instrument
         Reference to the cluster driver object.
-    **kwargs
-        Keyword arguments passed to the parent class.
     """
 
-    def __init__(self, instrument: Cluster, **kwargs) -> None:
-        super().__init__(instrument, **kwargs)
-        self._cluster_modules: Dict[str, ClusterModule] = {}
+    def __init__(self, instrument: Cluster) -> None:
+        super().__init__(instrument)
+        self._cluster_modules: Dict[str, _ClusterModule] = {}
         self._program = {}
 
         for instrument_module in instrument.modules:
             try:
                 icc_class: type = {
-                    (True, False): QCMComponent,
-                    (True, True): QCMRFComponent,
-                    (False, False): QRMComponent,
-                    (False, True): QRMRFComponent,
+                    (True, False): _QCMComponent,
+                    (True, True): _QCMRFComponent,
+                    (False, False): _QRMComponent,
+                    (False, True): _QRMRFComponent,
                 }[(instrument_module.is_qcm_type, instrument_module.is_rf_type)]
             except KeyError:
                 continue

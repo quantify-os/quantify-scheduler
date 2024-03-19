@@ -380,6 +380,81 @@ def hardware_cfg_cluster():
 
 
 @pytest.fixture
+def hardware_cfg_cluster_test_component():
+    yield {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "instrument_type": "Cluster",
+            "ref": "internal",
+            "cluster0_module1": {
+                "instrument_type": "QCM",
+                "complex_output_0": {
+                    "dc_mixer_offset_I": -0.045,
+                    "dc_mixer_offset_Q": -0.035,
+                    "portclock_configs": [
+                        {
+                            "mixer_amp_ratio": 0.9996,
+                            "mixer_phase_error_deg": -3.9,
+                            "port": "q0:mw",
+                            "clock": "q0.01",
+                            "interm_freq": 6.33e9,
+                        }
+                    ],
+                },
+            },
+            "cluster0_module3": {
+                "instrument_type": "QRM",
+                "complex_output_0": {
+                    "portclock_configs": [{"port": "q0:res", "clock": "q0.ro"}],
+                },
+            },
+            "cluster0_module2": {
+                "instrument_type": "QCM_RF",
+                "complex_output_0": {
+                    "dc_mixer_offset_I": -0.045,
+                    "dc_mixer_offset_Q": -0.035,
+                    "portclock_configs": [
+                        {
+                            "mixer_amp_ratio": 0.9996,
+                            "mixer_phase_error_deg": -3.9,
+                            "port": "q2:mw",
+                            "clock": "q2.01",
+                            "interm_freq": 50e6,
+                        }
+                    ],
+                },
+                "complex_output_1": {
+                    "lo_freq": 5e9,
+                    "portclock_configs": [
+                        {"port": "q3:mw", "clock": "q3.01", "interm_freq": None}
+                    ],
+                },
+            },
+            "cluster0_module4": {
+                "instrument_type": "QRM_RF",
+                "ref": "external",
+                "complex_output_0": {
+                    "lo_freq": 7.2e9,
+                    "dc_mixer_offset_I": -0.046,
+                    "dc_mixer_offset_Q": -0.036,
+                    "portclock_configs": [
+                        {
+                            "mixer_amp_ratio": 0.9999,
+                            "mixer_phase_error_deg": -3.8,
+                            "port": "q2:res",
+                            "clock": "q2.ro",
+                            "interm_freq": None,
+                        }
+                    ],
+                },
+            },
+        },
+        "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
+        "lo1": {"instrument_type": "LocalOscillator", "frequency": 7.2e9, "power": 1},
+    }
+
+
+@pytest.fixture
 def hardware_cfg_qcm(add_lo1):
     yield {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
