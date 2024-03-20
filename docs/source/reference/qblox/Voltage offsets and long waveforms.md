@@ -239,7 +239,13 @@ quantum_device = QuantumDevice("quantum_device")
 device_compiler = SerialCompiler("Device compiler", quantum_device)
 
 comp_sched = device_compiler.compile(sched)
-comp_sched.plot_pulse_diagram(plot_backend="plotly")
+comp_sched.plot_pulse_diagram(
+    plot_backend="plotly", combine_waveforms_on_same_port=True
+)
+```
+
+```{tip}
+Add the argument `combine_waveforms_on_same_port=True` to `plot_pulse_diagram` to show the appearance of the final hardware output (default `combine_waveforms_on_same_port=False` shows individual pulse elements). 
 ```
 
 Using these factory functions, the resulting square and staircase pulses use no waveform memory at all. The ramp pulse uses waveform memory for a short section of the waveform, which is repeated multiple times.
@@ -284,7 +290,9 @@ sched = Schedule("Long soft square pulse")
 sched.add(pulse)
 
 comp_sched = device_compiler.compile(sched)
-comp_sched.plot_pulse_diagram(plot_backend="plotly")
+comp_sched.plot_pulse_diagram(
+    plot_backend="plotly", combine_waveforms_on_same_port=True
+)
 ```
 
 Alternatively, the building methods of the {class}`~quantify_scheduler.backends.qblox.operations.stitched_pulse.StitchedPulseBuilder` can be conveniently **chained** to create a {class}`~quantify_scheduler.backends.qblox.operations.stitched_pulse.StitchedPulse` via more elegant syntax:

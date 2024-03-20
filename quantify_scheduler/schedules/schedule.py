@@ -12,6 +12,7 @@ from itertools import chain
 from typing import TYPE_CHECKING, Any, Hashable, Literal
 from uuid import uuid4
 
+import numpy as np
 import pandas as pd
 
 from quantify_scheduler import enums, json_utils, resources
@@ -22,7 +23,6 @@ from quantify_scheduler.operations.control_flow_library import Conditional, Loop
 from quantify_scheduler.operations.operation import Operation
 
 if TYPE_CHECKING:
-    import numpy as np
     import plotly.graph_objects as go
     from matplotlib.axes import Axes
     from matplotlib.figure import Figure
@@ -306,7 +306,8 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         modulation: Literal["off", "if", "clock"] = "off",
         modulation_if: float = 0.0,
         plot_backend: Literal["mpl", "plotly"] = "mpl",
-        plot_kwargs: dict | None = None,
+        x_range: tuple[float, float] = (-np.inf, np.inf),
+        combine_waveforms_on_same_port: bool = False,
         **backend_kwargs: Any,  # noqa: ANN401
     ) -> tuple[Figure, Axes] | go.Figure:
         # pylint: disable=line-too-long
@@ -337,12 +338,15 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             The time resolution used to sample the schedule in Hz.
         plot_backend:
             Plotting library to use, can either be 'mpl' or 'plotly'.
-        plot_kwargs:
-            Keyword arguments to be passed on to the plotting backend. The arguments
-            that can be used for either backend can be found in the documentation of
-            :func:`quantify_scheduler.schedules._visualization.pulse_diagram.pulse_diagram_matplotlib`
-            and
-            :func:`quantify_scheduler.schedules._visualization.pulse_diagram.pulse_diagram_plotly`.
+        x_range:
+            The range of the x-axis that is plotted, given as a tuple (left limit, right
+            limit). This can be used to reduce memory usage when plotting a small section of
+            a long pulse sequence. By default (-np.inf, np.inf).
+        combine_waveforms_on_same_port:
+            By default False. If True, combines all waveforms on the same port into one
+            single waveform. The resulting waveform is the sum of all waveforms on that
+            port (small inaccuracies may occur due to floating point approximation). If
+            False, the waveforms are shown individually.
         backend_kwargs:
             Keyword arguments to be passed on to the plotting backend. The arguments
             that can be used for either backend can be found in the documentation of
@@ -365,7 +369,9 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
                 from quantify_scheduler.backends.graph_compilation import SerialCompiler
                 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-                from quantify_scheduler.operations.pulse_library import DRAGPulse, SquarePulse, RampPulse
+                from quantify_scheduler.operations.pulse_library import (
+                    DRAGPulse, SquarePulse, RampPulse, VoltageOffset,
+                )
                 from quantify_scheduler.resources import ClockResource
 
                 schedule = Schedule("Multiple waveforms")
@@ -387,7 +393,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
             .. jupyter-execute::
 
-                compiled_schedule.plot_pulse_diagram(sampling_rate=20e6, plot_backend='plotly')
+                _ = compiled_schedule.plot_pulse_diagram(sampling_rate=20e6, plot_backend='plotly')
 
             The same can be achieved in the default ``plot_backend`` (``matplotlib``)
             by passing the keyword argument ``multiple_subplots=True``:
@@ -396,18 +402,41 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
                 _ = compiled_schedule.plot_pulse_diagram(sampling_rate=20e6, multiple_subplots=True)
 
-        """  # noqa: E501
-        if plot_kwargs is None:
-            plot_kwargs = {}
-        else:
-            warnings.warn(
-                "Support for the 'plot_kwargs' argument will be dropped in "
-                "quantify-scheduler >= 0.18.0.\nPlease use regular keyword arguments "
-                "instead.",
-                FutureWarning,
-            )
+            By default, waveforms overlapping in time on the same port are shown separately:
 
-        kwargs = {**plot_kwargs, **backend_kwargs}
+            .. jupyter-execute::
+
+                schedule = Schedule("Overlapping waveforms")
+                schedule.add(VoltageOffset(offset_path_I=0.25, offset_path_Q=0.0, port="Q"))
+                schedule.add(SquarePulse(amp=0.1, duration=4e-6, port="Q"), rel_time=2e-6)
+                schedule.add(VoltageOffset(offset_path_I=0.0, offset_path_Q=0.0, port="Q"), ref_pt="start", rel_time=2e-6)
+
+                compiled_schedule = device_compiler.compile(schedule)
+
+                _ = compiled_schedule.plot_pulse_diagram(sampling_rate=20e6)
+
+            This behaviour can be changed with the parameter ``combine_waveforms_on_same_port``:
+
+            .. jupyter-execute::
+
+                _ = compiled_schedule.plot_pulse_diagram(sampling_rate=20e6, combine_waveforms_on_same_port=True)
+
+        """  # noqa: E501
+        # NB imported here to avoid circular import
+        # pylint: disable=import-outside-toplevel
+        from quantify_scheduler.schedules._visualization.pulse_diagram import (
+            sample_schedule,
+        )
+
+        sampled_pulses_and_acqs = sample_schedule(
+            self,
+            sampling_rate=sampling_rate,
+            port_list=port_list,
+            modulation=modulation,
+            modulation_if=modulation_if,
+            x_range=x_range,
+            combine_waveforms_on_same_port=combine_waveforms_on_same_port,
+        )
 
         if plot_backend == "mpl":
             # NB imported here to avoid circular import
@@ -417,12 +446,9 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             )
 
             return pulse_diagram_matplotlib(
-                schedule=self,
-                sampling_rate=sampling_rate,
-                port_list=port_list,
-                modulation=modulation,
-                modulation_if=modulation_if,
-                **kwargs,
+                sampled_pulses_and_acqs=sampled_pulses_and_acqs,
+                title=self["name"],
+                **backend_kwargs,
             )
         if plot_backend == "plotly":
             # NB imported here to avoid circular import
@@ -432,12 +458,9 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             )
 
             return pulse_diagram_plotly(
-                schedule=self,
-                sampling_rate=sampling_rate,
-                port_list=port_list,
-                modulation=modulation,
-                modulation_if=modulation_if,
-                **kwargs,
+                sampled_pulses_and_acqs=sampled_pulses_and_acqs,
+                title=self["name"],
+                **backend_kwargs,
             )
         raise ValueError(
             f"plot_backend must be equal to either 'mpl' or 'plotly', "

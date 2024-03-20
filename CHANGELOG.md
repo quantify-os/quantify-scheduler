@@ -16,6 +16,7 @@
 - Serialization - Allow `"deserialization_type"` in the serialized dictionary to be the fully qualified name of the object, such that it can be imported via `import_python_object_from_string`. (!905)
 - Compilation - Allow gates to be device compiled to schedules. (!904)
 - Operations - Add `H` Hadamard gate to gate library. (!904)
+- Visualization - Remove automatic conversion of `StitchedPulse` in pulse diagrams, and introduce `combine_waveforms_on_same_port` parameter to `Schedule.plot_pulse_diagram()` to allow for summing overlapping waveforms on the same port. (!935)
 - InstrumentCoordinator - Remove `make_qcm_component` and `make_qrm_component` from tests, and allow user-defined module setting in `make_cluster_component`. (!931)
 
 ## 0.18.1 (2024-02-22)

@@ -18,10 +18,6 @@ from plotly.subplots import make_subplots
 from quantify_core.visualization.SI_utilities import set_xlabel, set_ylabel
 
 import quantify_scheduler.operations.pulse_library as pl
-from quantify_scheduler.backends.qblox.operations.stitched_pulse import (
-    StitchedPulse,
-    convert_to_numerical_pulse,
-)
 from quantify_scheduler.helpers.waveforms import (
     exec_waveform_function,
     modulate_waveform,
@@ -82,9 +78,7 @@ def get_sampled_pulses_from_voltage_offsets(
     sampled_pulses: dict[str, list[SampledPulse]] | None = None,
 ) -> dict[str, list[SampledPulse]]:
     """
-    Generate :class:`.SampledPulse` objects from
-    :class:`~quantify_scheduler.operations.pulse_library.VoltageOffset` pulse_info
-    dicts.
+    Generate :class:`.SampledPulse` objects from :class:`.VoltageOffset` pulse_info dicts.
 
     This function groups all VoltageOffset operations by port-clock combination and
     turns each of those groups of operations into a single SampledPulse. The returned
@@ -127,7 +121,9 @@ def get_sampled_pulses_from_voltage_offsets(
                 if len(time) > 0:
                     # Each offset is a point, so the previous offset is extended to a
                     # line before adding the next.
-                    time.append(info.time)
+                    # Subtract a small number from the time so that interpolation (in
+                    # sum_waveforms) looks correct visually.
+                    time.append(info.time - 0.01 / sampling_rate)
                     signal.append(signal[-1])
                 time.append(info.time)
                 signal.append(
@@ -249,8 +245,17 @@ def get_sampled_pulses(
 
             # Hold the last data point for 1 unit of sample time, so that the full
             # duration of the pulse is plotted.
-            t = np.concatenate((t, [2 * t[-1] - t[-2]]))
-            waveform = np.concatenate((waveform, [waveform[-1]]))
+            visual_end = 2 * t[-1] - t[-2]
+            # Add 0 amplitude points before and after the pulse such that interpolation
+            # in sum_waveforms looks correct visually.
+            t = np.concatenate(
+                (
+                    [t[0] - 0.01 / sampling_rate],
+                    t,
+                    [visual_end - 0.01 / sampling_rate, visual_end],
+                )
+            )
+            waveform = np.concatenate(([0], waveform, [waveform[-1], 0]))
 
             if modulation == "clock":
                 waveform = modulate_waveform(
@@ -295,6 +300,29 @@ def get_sampled_acquisitions(
     return sampled_acqs
 
 
+def merge_pulses_and_offsets(operations: list[SampledPulse]) -> SampledPulse:
+    """
+    Combine multiple ``SampledPulse`` objects by interpolating the ``signal`` at the
+    ``time`` points used by all pulses together, and then summing the result.
+    Interpolation outside of a ``SampledPulse.time`` array results in 0 for that pulse.
+    """
+    result_time = np.sort(np.concatenate([op.time for op in operations]))
+    if len(operations) > 3:
+        # If the label would become too large, opt for this short form:
+        label = f"{len(operations)} operations"
+    else:
+        label = "+\n".join(op.label for op in operations)
+
+    return SampledPulse(
+        time=result_time,
+        signal=np.sum(
+            np.interp(result_time, op.time, op.signal, left=0.0, right=0.0)
+            for op in operations
+        ),  # type: ignore
+        label=label,
+    )
+
+
 def sample_schedule(
     schedule: Schedule | CompiledSchedule,
     port_list: list[str] | None = None,
@@ -302,6 +330,7 @@ def sample_schedule(
     modulation_if: float = 0.0,
     sampling_rate: float = 1e9,
     x_range: tuple[float, float] = (-np.inf, np.inf),
+    combine_waveforms_on_same_port: bool = False,
 ) -> dict[str, tuple[list[SampledPulse], list[SampledAcquisition]]]:
     """
     Generate :class:`.SampledPulse` and :class:`.SampledAcquisition` objects grouped by
@@ -328,6 +357,11 @@ def sample_schedule(
         The range of the x-axis that is plotted, given as a tuple (left limit, right
         limit). This can be used to reduce memory usage when plotting a small section of
         a long pulse sequence. By default (-np.inf, np.inf).
+    combine_waveforms_on_same_port :
+        By default False. If True, combines all waveforms on the same port into one
+        single waveform. The resulting waveform is the sum of all waveforms on that
+        port (small inaccuracies may occur due to floating point approximation). If
+        False, the waveforms are shown individually.
 
     Returns
     -------
@@ -343,11 +377,6 @@ def sample_schedule(
     acq_infos: dict[str, list[ScheduledInfo]] = defaultdict(list)
     for schedulable in schedule.schedulables.values():
         operation = schedule.operations[schedulable["operation_id"]]
-
-        if isinstance(operation, StitchedPulse):
-            operation = convert_to_numerical_pulse(
-                operation, scheduled_at=schedulable["abs_time"]
-            )
 
         for acq_info in operation["acquisition_info"]:
             if port_list is not None and acq_info["port"] not in port_list:
@@ -399,6 +428,10 @@ def sample_schedule(
         sampled_pulses=sampled_pulses,
     )
 
+    if combine_waveforms_on_same_port:
+        for port, pulses in sampled_pulses.copy().items():
+            sampled_pulses[port] = [merge_pulses_and_offsets(pulses)]
+
     sampled_acqs = get_sampled_acquisitions(acq_infos)
 
     sampled_all: dict[str, tuple[list[SampledPulse], list[SampledAcquisition]]] = {}
@@ -408,54 +441,38 @@ def sample_schedule(
 
 
 def pulse_diagram_plotly(
-    schedule: Schedule | CompiledSchedule,
-    port_list: list[str] | None = None,
+    sampled_pulses_and_acqs: dict[
+        str, tuple[list[SampledPulse], list[SampledAcquisition]]
+    ],
+    title: str = "Pulse diagram",
     fig_ch_height: float = 300,
     fig_width: float = 1000,
-    modulation: Literal["off", "if", "clock"] = "off",
-    modulation_if: float = 0.0,
-    sampling_rate: float = 1e9,
 ) -> go.Figure:
     """
     Produce a plotly visualization of the pulses used in the schedule.
 
     Parameters
     ----------
-    schedule :
-        The schedule to render.
-    port_list :
-        A list of ports to show. if set to ``None`` (default), it will use all ports in
-        the Schedule.
+    sampled_pulses_and_acqs :
+        SampledPulse and SampledAcquisition objects grouped by port.
+    title :
+        Plot title.
     fig_ch_height :
         Height for each channel subplot in px.
     fig_width :
         Width for the figure in px.
-    modulation :
-        Determines if modulation is included in the visualization.
-    modulation_if :
-        Modulation frequency used when modulation is set to "if".
-    sampling_rate :
-        The time resolution used to sample the schedule in Hz.
 
     Returns
     -------
     :class:`plotly.graph_objects.Figure` :
         the plot
     """
-    sampled_pulses_and_acqs = sample_schedule(
-        schedule=schedule,
-        port_list=port_list,
-        modulation=modulation,
-        modulation_if=modulation_if,
-        sampling_rate=sampling_rate,
-    )
-
     n_rows = len(sampled_pulses_and_acqs)
     fig = make_subplots(rows=n_rows, cols=1, shared_xaxes=True, vertical_spacing=0.02)
     fig.update_layout(
         height=fig_ch_height * n_rows,
         width=fig_width,
-        title=schedule["name"],
+        title=title,
         showlegend=False,
     )
 
@@ -601,6 +618,7 @@ def deduplicate_legend_handles_labels(ax: mpl.axes.Axes) -> None:
 def plot_single_subplot_mpl(
     sampled_schedule: dict[str, list[SampledPulse]],
     ax: mpl.axes.Axes | None = None,
+    title: str = "Pulse diagram",
 ) -> tuple[mpl.figure.Figure, mpl.axes.Axes]:
     """
     Plot all pulses for all ports in the schedule in the same subplot.
@@ -615,6 +633,8 @@ def plot_single_subplot_mpl(
     ax :
         A pre-existing Axes object to plot the pulses in. If ``None`` (default), this
         object is created within the function.
+    title :
+        Plot title.
 
     Returns
     -------
@@ -647,11 +667,14 @@ def plot_single_subplot_mpl(
     deduplicate_legend_handles_labels(ax)
     set_xlabel(label="Time", unit="s", axis=ax)
     set_ylabel(label="Amplitude", unit="V", axis=ax)
+
+    ax.set_title(title)
     return fig, ax
 
 
 def plot_multiple_subplots_mpl(
-    sampled_schedule: dict[str, list[SampledPulse]]
+    sampled_schedule: dict[str, list[SampledPulse]],
+    title: str = "Pulse diagram",
 ) -> tuple[mpl.figure.Figure, list[mpl.axes.Axes]]:
     """
     Plot pulses in a different subplot for each port in the sampled schedule.
@@ -663,6 +686,8 @@ def plot_multiple_subplots_mpl(
     ----------
     sampled_schedule :
         Dictionary that maps each used port to the sampled pulses played on that port.
+    title :
+        Plot title.
 
     Returns
     -------
@@ -708,39 +733,26 @@ def plot_multiple_subplots_mpl(
 
     # Make the figure taller if y-labels overlap.
     fig.set_figheight(max(4.8 * len(axs) / 3, 4.8))
+
+    axs[0].set_title(title)
     return fig, axs
 
 
 def pulse_diagram_matplotlib(
-    schedule: Schedule | CompiledSchedule,
-    port_list: list[str] | None = None,
-    sampling_rate: float = 1e9,
-    modulation: Literal["off", "if", "clock"] = "off",
-    modulation_if: float = 0.0,
-    x_range: tuple[float, float] = (-np.inf, np.inf),
+    sampled_pulses_and_acqs: dict[
+        str, tuple[list[SampledPulse], list[SampledAcquisition]]
+    ],
     multiple_subplots: bool = False,
     ax: mpl.axes.Axes | None = None,
+    title: str = "Pulse diagram",
 ) -> tuple[mpl.figure.Figure, mpl.axes.Axes | list[mpl.axes.Axes]]:
     """
     Plots a schedule using matplotlib.
 
     Parameters
     ----------
-    schedule :
-        The schedule to plot.
-    port_list :
-        A list of ports to show. If set to ``None`` (default), it will use all ports in
-        the Schedule.
-    sampling_rate :
-        The time resolution used to sample the schedule in Hz. By default 1e9.
-    modulation :
-        Determines if modulation is included in the visualization. By default "off".
-    modulation_if :
-        Modulation frequency used when modulation is set to "if". By default 0.0.
-    x_range :
-        The range of the x-axis that is plotted, given as a tuple (left limit, right
-        limit). This can be used to reduce memory usage when plotting a small section of
-        a long pulse sequence. By default (-np.inf, np.inf).
+    sampled_pulses_and_acqs :
+        SampledPulse and SampledAcquisition objects grouped by port.
     multiple_subplots :
         Plot the pulses for each port on a different subplot if True, else plot
         everything in one subplot. By default False. When using just one
@@ -750,6 +762,8 @@ def pulse_diagram_matplotlib(
     ax :
         Axis onto which to plot. If ``None`` (default), this is created within the
         function. By default None.
+    title :
+        Plot title.
 
     Returns
     -------
@@ -760,28 +774,19 @@ def pulse_diagram_matplotlib(
         The Axes object belonging to the Figure, or an array of Axes if
         ``multiple_subplots=True``.
     """
-    pulses_and_acqs = sample_schedule(
-        schedule,
-        sampling_rate=sampling_rate,
-        port_list=port_list,
-        modulation=modulation,
-        modulation_if=modulation_if,
-        x_range=x_range,
-    )
-
-    pulses = {port: pulses for port, (pulses, _) in pulses_and_acqs.items()}
+    pulses = {port: pulses for port, (pulses, _) in sampled_pulses_and_acqs.items()}
 
     if len(pulses) == 0:
         raise RuntimeError(
-            f"Attempting to sample schedule {schedule.name}, "
+            "Attempting to sample schedule, "
             "but the schedule does not contain any `pulse_info`. "
             "Please verify that the schedule has been populated and "
             "device compilation has been performed."
         )
 
     if not multiple_subplots or len(pulses) == 1:
-        return plot_single_subplot_mpl(pulses, ax)
-    return plot_multiple_subplots_mpl(pulses)
+        return plot_single_subplot_mpl(sampled_schedule=pulses, ax=ax, title=title)
+    return plot_multiple_subplots_mpl(sampled_schedule=pulses, title=title)
 
 
 def get_window_operations(
