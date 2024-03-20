@@ -886,14 +886,14 @@ def test_validate_channel_name_to_connected_io_indices(
 
 
 def test_compile_simple(
-    pulse_only_schedule, compile_config_basic_transmon_qblox_hardware_cluster
+    pulse_only_schedule, compile_config_basic_transmon_qblox_hardware
 ):
     """Tests if compilation with only pulses finishes without exceptions"""
 
     compiler = SerialCompiler(name="compiler")
     compiler.compile(
         pulse_only_schedule,
-        config=compile_config_basic_transmon_qblox_hardware_cluster,
+        config=compile_config_basic_transmon_qblox_hardware,
     )
 
 
@@ -1319,7 +1319,7 @@ def test_acquisitions_same_index_raises(
 
 
 def test_acquisitions_back_to_back(
-    compile_config_basic_transmon_qblox_hardware_cluster,
+    compile_config_basic_transmon_qblox_hardware,
 ):
     sched = Schedule("acquisitions_back_to_back")
     meas_op = sched.add(Measure("q0", acq_index=0))
@@ -1332,7 +1332,7 @@ def test_acquisitions_back_to_back(
         compiler = SerialCompiler(name="compiler")
         _ = compiler.compile(
             sched,
-            config=compile_config_basic_transmon_qblox_hardware_cluster,
+            config=compile_config_basic_transmon_qblox_hardware,
         )
 
     assert (
@@ -1343,7 +1343,7 @@ def test_acquisitions_back_to_back(
 
 def test_deprecated_weighted_acquisition_end_to_end(
     pulse_only_schedule_with_operation_timing,
-    compile_config_transmon_weighted_integration_qblox_hardware,
+    compile_config_basic_transmon_qblox_hardware,
 ):
     sched = pulse_only_schedule_with_operation_timing
     sched.add(Measure("q0", acq_protocol="NumericalWeightedIntegrationComplex"))
@@ -1355,12 +1355,12 @@ def test_deprecated_weighted_acquisition_end_to_end(
     ):
         compiled_sched = compiler.compile(
             sched,
-            config=compile_config_transmon_weighted_integration_qblox_hardware,
+            config=compile_config_basic_transmon_qblox_hardware,
         )
     assert re.search(
         rf"\n\s*acquire_weighed\s+0,0,0,1,4(\s|$)",
         (
-            compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"][
+            compiled_sched.compiled_instructions["cluster0"]["cluster0_module4"][
                 "sequencers"
             ]["seq0"]["sequence"]["program"]
         ),
@@ -1369,7 +1369,7 @@ def test_deprecated_weighted_acquisition_end_to_end(
 
 def test_separated_weighted_acquisition_end_to_end(
     pulse_only_schedule_with_operation_timing,
-    compile_config_transmon_weighted_integration_qblox_hardware,
+    compile_config_basic_transmon_qblox_hardware_cluster,
 ):
     sched = pulse_only_schedule_with_operation_timing
     sched.add(Measure("q0", acq_protocol="NumericalSeparatedWeightedIntegration"))
@@ -1377,7 +1377,7 @@ def test_separated_weighted_acquisition_end_to_end(
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
         sched,
-        config=compile_config_transmon_weighted_integration_qblox_hardware,
+        config=compile_config_basic_transmon_qblox_hardware_cluster,
     )
     assert re.search(
         rf"\n\s*acquire_weighed\s+0,0,0,1,4(\s|$)",
@@ -1391,7 +1391,7 @@ def test_separated_weighted_acquisition_end_to_end(
 
 def test_weighted_acquisition_end_to_end(
     pulse_only_schedule_with_operation_timing,
-    compile_config_transmon_weighted_integration_qblox_hardware,
+    compile_config_basic_transmon_qblox_hardware_cluster,
 ):
     sched = pulse_only_schedule_with_operation_timing
     sched.add(Measure("q0", acq_protocol="NumericalWeightedIntegration"))
@@ -1399,7 +1399,7 @@ def test_weighted_acquisition_end_to_end(
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
         sched,
-        config=compile_config_transmon_weighted_integration_qblox_hardware,
+        config=compile_config_basic_transmon_qblox_hardware_cluster,
     )
     assert re.search(
         rf"\n\s*acquire_weighed\s+0,0,0,1,4(\s|$)",
@@ -1413,11 +1413,11 @@ def test_weighted_acquisition_end_to_end(
 
 def test_separated_weighted_acquisition_too_high_sampling_rate_raises(
     pulse_only_schedule_with_operation_timing,
-    compile_config_transmon_weighted_integration_qblox_hardware,
+    compile_config_basic_transmon_qblox_hardware_cluster,
 ):
     sched = pulse_only_schedule_with_operation_timing
     sched.add(Measure("q0", acq_protocol="NumericalSeparatedWeightedIntegration"))
-    compile_config_transmon_weighted_integration_qblox_hardware.device_compilation_config.elements[
+    compile_config_basic_transmon_qblox_hardware_cluster.device_compilation_config.elements[
         "q0"
     ][
         "measure"
@@ -1429,7 +1429,7 @@ def test_separated_weighted_acquisition_too_high_sampling_rate_raises(
     with pytest.raises(ValueError) as exc:
         _ = compiler.compile(
             sched,
-            config=compile_config_transmon_weighted_integration_qblox_hardware,
+            config=compile_config_basic_transmon_qblox_hardware_cluster,
         )
     assert exc.value.args[0] == (
         "Qblox hardware supports a sampling rate up to 1.0e+00 GHz, but a sampling "
@@ -1440,23 +1440,19 @@ def test_separated_weighted_acquisition_too_high_sampling_rate_raises(
 
 def test_weighted_acquisition_too_high_sampling_rate_raises(
     pulse_only_schedule_with_operation_timing,
-    compile_config_transmon_weighted_integration_qblox_hardware,
+    compile_config_basic_transmon_qblox_hardware,
 ):
     sched = pulse_only_schedule_with_operation_timing
     sched.add(Measure("q0", acq_protocol="NumericalWeightedIntegration"))
-    compile_config_transmon_weighted_integration_qblox_hardware.device_compilation_config.elements[
+    compile_config_basic_transmon_qblox_hardware.device_compilation_config.elements[
         "q0"
-    ][
-        "measure"
-    ].factory_kwargs[
-        "acq_weights_sampling_rate"
-    ] = 5e9
+    ]["measure"].factory_kwargs["acq_weights_sampling_rate"] = 5e9
 
     compiler = SerialCompiler(name="compiler")
     with pytest.raises(ValueError) as exc:
         _ = compiler.compile(
             sched,
-            config=compile_config_transmon_weighted_integration_qblox_hardware,
+            config=compile_config_basic_transmon_qblox_hardware,
         )
     assert exc.value.args[0] == (
         "Qblox hardware supports a sampling rate up to 1.0e+00 GHz, but a sampling "
@@ -1834,12 +1830,12 @@ def test_assign_pulse_and_acq_info_to_devices(
 def test_container_prepare(
     pulse_only_schedule,
     hardware_cfg_cluster,
-    compile_config_basic_transmon_qblox_hardware_cluster,
+    compile_config_basic_transmon_qblox_hardware,
 ):
     compiler = SerialCompiler(name="compiler")
     sched = compiler.compile(
         schedule=pulse_only_schedule,
-        config=compile_config_basic_transmon_qblox_hardware_cluster,
+        config=compile_config_basic_transmon_qblox_hardware,
     )
 
     container = compiler_container.CompilerContainer.from_hardware_cfg(
@@ -3520,19 +3516,15 @@ def test_auto_compile_long_square_pulses_raises(
 
 def test_long_acquisition(
     mixed_schedule_with_acquisition,
-    compile_config_basic_transmon_qblox_hardware_cluster,
+    compile_config_basic_transmon_qblox_hardware,
 ):
-    compile_config_basic_transmon_qblox_hardware_cluster.device_compilation_config.elements[
+    compile_config_basic_transmon_qblox_hardware.device_compilation_config.elements[
         "q0"
-    ][
-        "measure"
-    ].factory_kwargs[
-        "pulse_duration"
-    ] = 3e-6
+    ]["measure"].factory_kwargs["pulse_duration"] = 3e-6
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
         mixed_schedule_with_acquisition,
-        config=compile_config_basic_transmon_qblox_hardware_cluster,
+        config=compile_config_basic_transmon_qblox_hardware,
     )
 
     measure_op = next(
@@ -3554,7 +3546,7 @@ def test_long_acquisition(
 
 
 def test_too_long_waveform_doesnt_raise(
-    compile_config_basic_transmon_qblox_hardware_cluster,
+    compile_config_basic_transmon_qblox_hardware,
 ):
     sched = Schedule("Too long waveform")
     sched.add(
@@ -3574,13 +3566,11 @@ def test_too_long_waveform_doesnt_raise(
         )
     )
     compiler = SerialCompiler(name="compiler")
-    _ = compiler.compile(
-        sched, config=compile_config_basic_transmon_qblox_hardware_cluster
-    )
+    _ = compiler.compile(sched, config=compile_config_basic_transmon_qblox_hardware)
 
 
 def test_too_long_waveform_raises(
-    compile_config_basic_transmon_qblox_hardware_cluster,
+    compile_config_basic_transmon_qblox_hardware,
 ):
     sched = Schedule("Too long waveform")
     sched.add(
@@ -3596,16 +3586,14 @@ def test_too_long_waveform_raises(
     )
     compiler = SerialCompiler(name="compiler")
     with pytest.raises(RuntimeError) as error:
-        _ = compiler.compile(
-            sched, config=compile_config_basic_transmon_qblox_hardware_cluster
-        )
+        _ = compiler.compile(sched, config=compile_config_basic_transmon_qblox_hardware)
     assert (
         "waveform size" in error.value.args[0] or "sample limit" in error.value.args[0]
     )
 
 
 def test_too_long_waveform_raises2(
-    compile_config_basic_transmon_qblox_hardware_cluster,
+    compile_config_basic_transmon_qblox_hardware,
 ):
     sched = Schedule("Too long waveform")
     sched.add(
@@ -3637,9 +3625,7 @@ def test_too_long_waveform_raises2(
     )
     compiler = SerialCompiler(name="compiler")
     with pytest.raises(RuntimeError) as error:
-        _ = compiler.compile(
-            sched, config=compile_config_basic_transmon_qblox_hardware_cluster
-        )
+        _ = compiler.compile(sched, config=compile_config_basic_transmon_qblox_hardware)
     assert (
         "waveform size" in error.value.args[0] or "sample limit" in error.value.args[0]
     )

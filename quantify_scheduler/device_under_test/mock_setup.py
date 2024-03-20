@@ -4,6 +4,7 @@
 """Code to set up a mock setup for use in tutorials and testing."""
 
 from typing import Any, Dict
+import numpy as np
 
 from quantify_core.measurement.control import MeasurementControl
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
@@ -141,6 +142,15 @@ def set_standard_params_transmon(mock_setup):
     q4.clock_freqs.f12(5.41e9)
     q4.clock_freqs.readout(9.1e9)
     q4.measure.acq_delay(100e-9)
+
+    for i in range(5):
+        qi: BasicTransmonElement = mock_setup[f"q{i}"]
+        sample_rate_MHz = 500
+        acq_duration_us = 2
+        qi.measure.acq_weights_a(np.ones(sample_rate_MHz * acq_duration_us) * 0.6)
+        qi.measure.acq_weights_b(np.ones(sample_rate_MHz * acq_duration_us) * 0.4)
+        qi.measure.acq_weights_sampling_rate(sample_rate_MHz * 1e6)
+        qi.measure.acq_weight_type("Numerical")
 
 
 def set_up_mock_basic_nv_setup() -> Dict:

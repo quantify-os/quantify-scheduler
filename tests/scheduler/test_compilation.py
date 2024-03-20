@@ -390,21 +390,23 @@ def test_compile_trace_acquisition(device_compile_config_basic_transmon):
 
 
 def test_compile_weighted_acquisition(
-    device_compile_config_basic_transmon_with_weighted_integration,
+    compile_config_basic_transmon_qblox_hardware_cluster,
 ):
     sched = Schedule("Test schedule")
     q0 = "q0"
+    q1 = "q1"
+
     sched.add(Reset(q0))
     sched.add(Rxy(90, 0, qubit=q0))
     sched.add(
         Measure(q0, acq_protocol="NumericalSeparatedWeightedIntegration"), label="M0"
     )
-    sched.add(Measure(q0, acq_protocol="NumericalWeightedIntegration"), label="M1")
+    sched.add(Measure(q1, acq_protocol="NumericalWeightedIntegration"), label="M1")
 
     compiler = SerialCompiler(name="compile")
     sched = compiler.compile(
         schedule=sched,
-        config=device_compile_config_basic_transmon_with_weighted_integration,
+        config=compile_config_basic_transmon_qblox_hardware_cluster,
     )
 
     measure_repr = list(sched.schedulables.values())[-2]["operation_id"]
