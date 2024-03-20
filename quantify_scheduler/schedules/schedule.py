@@ -686,7 +686,7 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
         # ensure keys exist
         self["operation_dict"] = {}
         self["resource_dict"] = {}
-        self["name"] = "nameless"
+        self["name"] = name
         self["repetitions"] = repetitions
 
         # Note the order of schedulables is important.
@@ -699,9 +699,6 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
         self.add_resource(
             resources.BasebandClockResource(resources.BasebandClockResource.IDENTITY)
         )
-
-        if name is not None:
-            self["name"] = name
 
         if data is not None:
             self.data.update(data)
