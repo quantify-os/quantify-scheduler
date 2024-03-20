@@ -15,17 +15,27 @@ class StrEnum(Enum):
 @unique
 class BinMode(StrEnum):
     """
-    The acquisition protocol bin mode enum type.
+    Describes how to handle `Acquisitions` that write to the same `AcquisitionIndex`.
 
-    Used to set the bin type to
-    append or average respectively.
+    A BinMode is a property of an `AcquisitionChannel` that describes how to
+    handle multiple
+    :class:`~quantify_scheduler.operations.acquisition_library.Acquisition` s
+    that write data to the same `AcquisitionIndex` on a channel.
 
-    BinMode ``APPEND`` uses a list where every new
-    result will be appended to the list.
+    The most common use-case for this is when iterating over multiple
+    repetitions of a :class:`~quantify_scheduler.schedules.schedule.Schedule`
+    When the BinMode is set to `APPEND` new entries will be added as a list
+    along the `repetitions` dimension.
 
-    BinMode ``AVERAGE`` incrementally stores the weighted
-    average result.
+    When the BinMode is set to `AVERAGE` the outcomes are averaged together
+    into one value.
+
+    Note that not all `AcquisitionProtocols` and backends support all possible
+    BinModes.
     """
 
     APPEND = "append"
     AVERAGE = "average"
+    # N.B. in principle it is possible to specify other behaviours for
+    # BinMode such as `SUM` or `OVERWRITE` but these are not
+    # currently supported by any backend.

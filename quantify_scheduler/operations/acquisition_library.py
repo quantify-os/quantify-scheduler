@@ -9,22 +9,35 @@ from typing import Any, Dict, List, Optional, Union
 import numpy as np
 
 import quantify_scheduler.backends.qblox.constants as qblox_constants
+from quantify_core.utilities import deprecated
 from quantify_scheduler import Operation
 from quantify_scheduler.enums import BinMode
 
 
-class AcquisitionOperation(Operation):  # pylint: disable=too-many-ancestors
+class Acquisition(Operation):  # pylint: disable=too-many-ancestors
     """
-    Acquisition operations for highlighting in pulse diagrams.
+    An operation representing data acquisition at the quantum-device abstraction layer.
 
-    This class is used to help differentiate an acquisition operation from the regular
+    An Acquisition must consist of (at least) an AcquisitionProtocol specifying how the
+    acquired signal is to be processed, and an AcquisitionChannel and AcquisitionIndex
+    specifying where the acquired data is to be stored in the RawDataset.
+
+
+    N.B. This class helps differentiate an acquisition operation from the regular
     operations. This enables us to use
     :func:`~.quantify_scheduler.schedules._visualization.pulse_diagram.plot_acquisition_operations`
     to highlight acquisition pulses in the pulse diagrams.
     """
 
 
-class Trace(AcquisitionOperation):  # pylint: disable=too-many-ancestors
+@deprecated("1.0", Acquisition)
+class AcquisitionOperation(Acquisition):
+    """Deprecated alias."""
+
+    pass
+
+
+class Trace(Acquisition):  # pylint: disable=too-many-ancestors
     """
     The Trace acquisition protocol measures a signal s(t).
 
@@ -97,9 +110,7 @@ class Trace(AcquisitionOperation):  # pylint: disable=too-many-ancestors
         return self._get_signature(acq_info)
 
 
-class WeightedIntegratedSeparated(
-    AcquisitionOperation
-):  # pylint: disable=too-many-ancestors
+class WeightedIntegratedSeparated(Acquisition):  # pylint: disable=too-many-ancestors
     r"""
     Weighted integration acquisition protocol where two sets weights
     are applied separately to the real and imaginary parts
@@ -194,7 +205,7 @@ class WeightedIntegratedSeparated(
         return self._get_signature(acq_info)
 
 
-class SSBIntegrationComplex(AcquisitionOperation):  # pylint: disable=too-many-ancestors
+class SSBIntegrationComplex(Acquisition):  # pylint: disable=too-many-ancestors
     """
     Single sideband integration acquisition protocol with complex results.
 
@@ -291,7 +302,7 @@ class SSBIntegrationComplex(AcquisitionOperation):  # pylint: disable=too-many-a
         return self._get_signature(acq_info)
 
 
-class ThresholdedAcquisition(AcquisitionOperation):
+class ThresholdedAcquisition(Acquisition):
     """
     Acquisition protocol allowing to control rotation and threshold.
 
@@ -663,7 +674,7 @@ class NumericalWeightedIntegration(NumericalSeparatedWeightedIntegration):
         self._update()
 
 
-class TriggerCount(AcquisitionOperation):  # pylint: disable=too-many-ancestors
+class TriggerCount(Acquisition):  # pylint: disable=too-many-ancestors
     """
     Trigger counting acquisition protocol returning an integer.
 

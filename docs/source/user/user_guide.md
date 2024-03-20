@@ -333,8 +333,9 @@ This is schematically shown in {numref}`compilation_overview`.
 
 A schematic overview of the different abstraction layers and the compilation process.
 Both a quantum circuit, consisting of gates and measurements of qubits, and timed sequences of control pulses are represented as a {class}`.Schedule` .
-The information specified in the {ref}`device configuration<sec-device-config>` is used during compilation to add information on how to represent {class}`.Operation` s specified at the quantum-circuit level as control pulses.
+The information specified in the {ref}`device configuration<sec-device-config>` is used during compilation to add information on how to represent {class}`.Operation` s specified at the quantum-circuit layer as pulses and acquisitions at the quantum-device layer.
 The information in the {ref}`hardware description <sec-hardware-description>`, {ref}`hardware options <sec-hardware-options>`, and {ref}`connectivity <sec-connectivity>` is then used to compile the control pulses into instructions suitable for hardware execution.
+Once executed on the hardware, a dataset is returned to the user. 
 ```
 
 In the first compilation step, pulse information is added to all operations that are not valid pulses (see {attr}`.Operation.valid_pulse`) based on the information specified in the {ref}`sec-device-config`.

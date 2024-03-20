@@ -45,6 +45,8 @@
 ### Merged branches and closed issues
 
 - Acquisition
+  - renamed `AcquisitionOperation` to `Acquisition` (!929)
+  - Fix `ThresholdedAcquisition` dataset format. (!897)
   - Minor refactor of `ThresholdedAcquisition`: removed `_update_acquisition_info_from_device_config`. (!913)
 
 - Visualization - Allow plotting `VoltageOffset` operations in both the `"mpl"` and `"plotly"` backends. (!873)
@@ -58,6 +60,8 @@
   - Remove pulsars from codebase. (!893)
 
 - Documentation
+  - Added documentation specifying what a BinMode is (!929)
+  - Added a reference guide on the Acquisition Framework(!929)
   - Update copyright notice to 2024. (!892)
   - Update URLs to new QCoDeS location (`qcodes.github.io` to `microsoft.github.io`) (!901)
   - Improve return docstring for `_get_trigger_count_data` and `_determine_measurement_fixpoint_correction`. (!902)
@@ -877,7 +881,7 @@ For help in migrating from deprecated methods, see [Quantify Deprecated Code Sug
 - Infrastructure - Adds rich package in the requirements since tutorials use it. (!276)
 - Operations - The `locate` function now uses the `functools.lru_cache` to cache the result (only for python >= 3.8). For python 3.7, behaviour remains the same.  (!273, !275)
 - Operations - Resolved a minor issue where identical Rxy rotations (for angles >360) would be treated as separate operations in a schedule (!263)
-- Visualization - Adds a function `plot_acquisition_operations` which together with the new `AcquisitionOperation` class will help highlight acquisition pulses in the pulse diagrams. (!271, !277)
+- Visualization - Adds a function `plot_acquisition_operations` which together with the new `Acquisition` class will help highlight acquisition pulses in the pulse diagrams. (!271, !277)
 - Zhinst backend - Large parts of the Zhinst backend have been rewritten. This should resolve a range of issues. (!263)
     - Calculation of the timelines for different operations now makes using of a timing table, improving code readability and debugability.
     - Timing issues related to triggering should be resolved (#218)

@@ -22,7 +22,7 @@ from quantify_scheduler.helpers.waveforms import (
     exec_waveform_function,
     modulate_waveform,
 )
-from quantify_scheduler.operations.acquisition_library import AcquisitionOperation
+from quantify_scheduler.operations.acquisition_library import Acquisition
 from quantify_scheduler.waveforms import interpolated_complex_waveform
 
 if TYPE_CHECKING:
@@ -892,7 +892,7 @@ def plot_acquisition_operations(
     for idx, schedulable in enumerate(schedule.schedulables.values()):
         _ = idx  # unused variable
         operation = schedule.operations[schedulable["operation_id"]]
-        if isinstance(operation, AcquisitionOperation):
+        if isinstance(operation, Acquisition):
             t0 = schedulable["abs_time"] + operation.data["acquisition_info"][0]["t0"]
             t1 = t0 + operation.duration
             handle = ax.axvspan(t0, t1, **kwargs)
