@@ -17,7 +17,16 @@ from quantify_scheduler.backends.qblox.operation_handling.virtual import (
     UpdateParameterStrategy,
 )
 from quantify_scheduler.backends.types.qblox import OpInfo
-from quantify_scheduler.enums import BinMode
+from quantify_scheduler.compilation import _ControlFlowReturn
+from quantify_scheduler.operations.acquisition_library import Trace
+from quantify_scheduler.operations.operation import Operation
+from quantify_scheduler.operations.pulse_library import (
+    ResetClockPhase,
+    SetClockFrequency,
+    ShiftClockPhase,
+    SquarePulse,
+    VoltageOffset,
+)
 
 DEFAULT_PORT = "q0:res"
 DEFAULT_CLOCK = "q0.ro"
@@ -42,36 +51,54 @@ def mock_sequencer(total_play_time) -> Sequencer:
     )
 
 
-def pulse_with_waveform(
-    timing: float, duration: float = 1e-7, port: str = DEFAULT_PORT, clock=DEFAULT_CLOCK
-) -> OpInfo:
-    """Create an OpInfo object that is recognized as a non-idle pulse."""
+def op_info_from_operation(operation: Operation, timing: float, data: dict) -> OpInfo:
     return OpInfo(
-        name="ExamplePulse",
-        data={
-            "wf_func": "something",
-            "port": port,
-            "clock": clock,
-            "duration": duration,
-        },
+        name=operation.name,
+        data=data,
         timing=timing,
     )
 
 
+def pulse_with_waveform(
+    timing: float, duration: float = 1e-7, port: str = DEFAULT_PORT, clock=DEFAULT_CLOCK
+) -> OpInfo:
+    """Create an OpInfo object that is recognized as a non-idle pulse."""
+    operation = SquarePulse(amp=1.0, duration=duration, port=port, clock=clock)
+    return op_info_from_operation(
+        operation=operation, timing=timing, data=operation.data["pulse_info"][0]
+    )
+
+
 def reset_clock_phase(
-    timing: float, duration: float = 0.0, port: str = DEFAULT_PORT, clock=DEFAULT_CLOCK
+    timing: float, port: str = DEFAULT_PORT, clock=DEFAULT_CLOCK
 ) -> OpInfo:
     """Create an OpInfo object that is recognized as a virtual pulse."""
-    return OpInfo(
-        name="ResetClockPhase",
-        data={
-            "wf_func": None,
-            "port": port,
-            "clock": clock,
-            "duration": duration,
-            "reset_clock_phase": True,
-        },
-        timing=timing,
+    operation = ResetClockPhase(clock=clock)
+    operation.data["pulse_info"][0]["port"] = port
+    return op_info_from_operation(
+        operation=operation, timing=timing, data=operation.data["pulse_info"][0]
+    )
+
+
+def set_clock_frequency(
+    timing: float, port: str = DEFAULT_PORT, clock=DEFAULT_CLOCK
+) -> OpInfo:
+    """Create an OpInfo object that is recognized as a virtual pulse."""
+    operation = SetClockFrequency(clock=clock, clock_freq_new=1e9)
+    operation.data["pulse_info"][0]["port"] = port
+    return op_info_from_operation(
+        operation=operation, timing=timing, data=operation.data["pulse_info"][0]
+    )
+
+
+def shift_clock_phase(
+    timing: float, port: str = DEFAULT_PORT, clock=DEFAULT_CLOCK
+) -> OpInfo:
+    """Create an OpInfo object that is recognized as a virtual pulse."""
+    operation = ShiftClockPhase(phase_shift=0.5, clock=clock)
+    operation.data["pulse_info"][0]["port"] = port
+    return op_info_from_operation(
+        operation=operation, timing=timing, data=operation.data["pulse_info"][0]
     )
 
 
@@ -79,17 +106,11 @@ def offset_instruction(
     timing: float, port: str = DEFAULT_PORT, clock=DEFAULT_CLOCK
 ) -> OpInfo:
     """Create an OpInfo object that is recognized as an offset instruction."""
-    return OpInfo(
-        name="VoltageOffset",
-        data={
-            "wf_func": None,
-            "offset_path_I": 0.5,
-            "offset_path_Q": 0.0,
-            "port": port,
-            "clock": clock,
-            "duration": 0,
-        },
-        timing=timing,
+    operation = VoltageOffset(
+        offset_path_I=0.5, offset_path_Q=0.0, port=port, clock=clock
+    )
+    return op_info_from_operation(
+        operation=operation, timing=timing, data=operation.data["pulse_info"][0]
     )
 
 
@@ -97,35 +118,17 @@ def acquisition(
     timing: float, duration: float = 1e-7, port: str = DEFAULT_PORT, clock=DEFAULT_CLOCK
 ) -> OpInfo:
     """Create an OpInfo object that is recognized as an acquisition."""
-    return OpInfo(
-        name="Trace",
-        data={
-            "waveforms": [],
-            "duration": duration,
-            "port": port,
-            "clock": clock,
-            "acq_channel": 0,
-            "acq_index": 0,
-            "bin_mode": BinMode.AVERAGE,
-            "protocol": "Trace",
-        },
-        timing=timing,
+    operation = Trace(duration=duration, port=port, clock=clock)
+    return op_info_from_operation(
+        operation=operation, timing=timing, data=operation.data["acquisition_info"][0]
     )
 
 
-def control_flow_return(
-    timing: float, port: str = DEFAULT_PORT, clock=DEFAULT_CLOCK
-) -> OpInfo:
+def control_flow_return(timing: float) -> OpInfo:
     """Create an OpInfo object that is recognized as a control flow return operation."""
-    return OpInfo(
-        name="ControlFlowReturn ",
-        data={
-            "return_stack": True,
-            "duration": 0.0,
-            "port": port,
-            "clock": clock,
-        },
-        timing=timing,
+    operation = _ControlFlowReturn()
+    return op_info_from_operation(
+        operation=operation, timing=timing, data=operation.data["control_flow_info"]
     )
 
 
@@ -210,6 +213,36 @@ def test_no_parameter_update(op_list: List[OpInfo], mock_sequencer: Sequencer):
     assert len(mock_sequencer.pulses) == 3
     for op in mock_sequencer.pulses:
         assert op.operation_info.name != "UpdateParameters"
+
+
+@pytest.mark.parametrize("total_play_time", [2e-7])
+def test_only_one_param_update(mock_sequencer: Sequencer):
+    """Test if no upd_param is inserted where it is not necessary."""
+    op_list = [
+        pulse_with_waveform(0.0),
+        set_clock_frequency(1e-7),
+        shift_clock_phase(1e-7),
+        offset_instruction(1e-7),
+        reset_clock_phase(1e-7),
+        acquisition(2e-7),
+    ]
+    iop_list = [ioperation_strategy_from_op_info(op, "complex_out_0") for op in op_list]  # type: ignore
+
+    for op in iop_list:
+        if op.operation_info.is_acquisition:
+            mock_sequencer.acquisitions.append(op)
+        else:
+            mock_sequencer.pulses.append(op)
+
+    mock_sequencer._insert_update_parameters()
+
+    assert len(mock_sequencer.pulses) == 6
+    upd_params = [
+        op
+        for op in mock_sequencer.pulses
+        if op.operation_info.name == "UpdateParameters"
+    ]
+    assert len(upd_params) == 1
 
 
 @pytest.mark.parametrize(
@@ -324,7 +357,7 @@ def test_any_other_updating_instruction_at_timing(
         for op in sorted_pulses_and_acqs
     ]
     assert (
-        Sequencer._any_other_updating_instruction_at_timing_for_offset_instruction(
+        Sequencer._any_other_updating_instruction_at_timing_for_parameter_instruction(
             op_index=op_index, sorted_pulses_and_acqs=pulse_list
         )
         == expected

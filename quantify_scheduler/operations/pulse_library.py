@@ -13,7 +13,6 @@ from numpy.typing import NDArray
 from qcodes import InstrumentChannel, validators
 
 from quantify_scheduler import Operation
-from quantify_scheduler.backends.qblox import constants as qblox_constants
 from quantify_scheduler.backends.qblox.enums import ChannelMode
 from quantify_scheduler.helpers.deprecation import deprecated_arg_alias
 from quantify_scheduler.helpers.waveforms import area_pulses
@@ -62,7 +61,7 @@ class ShiftClockPhase(Operation):
         Time in seconds when to execute the command relative
         to the start time of the Operation in the Schedule.
     duration
-        The duration of the operation in seconds.
+        (deprecated) The duration of the operation in seconds.
     """
 
     def __init__(
@@ -70,8 +69,14 @@ class ShiftClockPhase(Operation):
         phase_shift: float,
         clock: str,
         t0: float = 0,
-        duration: float = qblox_constants.NCO_SET_PH_DELTA_WAIT * 1e-9,
+        duration: float = 0.0,
     ):
+        if duration != 0.0:
+            warnings.warn(
+                "The duration parameter will be removed in quantify-scheduler >= "
+                "0.20.0, and the duration will be fixed to 0.0.",
+                FutureWarning,
+            )
         super().__init__(name=self.__class__.__name__)
         self.data["pulse_info"] = [
             {
@@ -80,7 +85,7 @@ class ShiftClockPhase(Operation):
                 "phase_shift": phase_shift,
                 "clock": clock,
                 "port": None,
-                "duration": duration,
+                "duration": 0,
             }
         ]
         self._update()
@@ -139,7 +144,7 @@ class SetClockFrequency(Operation):
         Time in seconds when to execute the command relative to the start time of
         the Operation in the Schedule.
     duration
-            The duration of the operation in seconds.
+        (deprecated) The duration of the operation in seconds.
     """
 
     def __init__(
@@ -147,8 +152,14 @@ class SetClockFrequency(Operation):
         clock: str,
         clock_freq_new: float,
         t0: float = 0,
-        duration: float = qblox_constants.NCO_SET_FREQ_WAIT * 1e-9,
+        duration: float = 0.0,
     ):
+        if duration != 0.0:
+            warnings.warn(
+                "The duration parameter will be removed in quantify-scheduler >= "
+                "0.20.0, and the duration will be fixed to 0.0.",
+                FutureWarning,
+            )
         super().__init__(name=self.__class__.__name__)
         self.data["pulse_info"] = [
             {
@@ -159,7 +170,7 @@ class SetClockFrequency(Operation):
                 "clock_freq_old": None,
                 "interm_freq_old": None,
                 "port": None,
-                "duration": duration,
+                "duration": 0,
             }
         ]
         self._update()
@@ -419,12 +430,11 @@ class MarkerPulse(Operation):
         self.data["pulse_info"] = [
             {
                 "wf_func": None,
+                "marker_pulse": True,  # This distinguishes MarkerPulse from other operations
                 "t0": t0,
                 "clock": clock,
                 "port": port,
-                "duration": duration
-                + qblox_constants.GRID_TIME  # Add grid time for upd_param at end of pulse
-                * 1e-9,
+                "duration": duration,
             }
         ]
         self._update()

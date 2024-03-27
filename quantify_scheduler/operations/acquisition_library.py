@@ -8,7 +8,6 @@ from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 
-import quantify_scheduler.backends.qblox.constants as qblox_constants
 from quantify_core.utilities import deprecated
 from quantify_scheduler import Operation
 from quantify_scheduler.enums import BinMode
@@ -471,9 +470,8 @@ class NumericalSeparatedWeightedIntegration(
         the incoming complex signal.
     weights_sampling_rate
         The rate with which the weights have been sampled, in Hz. By default equal
-        to the Qblox backend sampling rate. Note that during hardware compilation,
-        the weights will be resampled with the sampling rate supported by the target
-        hardware.
+        to 1 GHz. Note that during hardware compilation, the weights will be resampled
+        with the sampling rate supported by the target hardware.
     interpolation
         The type of interpolation to use, by default "linear". This argument is
         passed to :obj:`~scipy.interpolate.interp1d`.
@@ -503,7 +501,7 @@ class NumericalSeparatedWeightedIntegration(
         clock: str,
         weights_a: Union[List[complex], np.ndarray],
         weights_b: Union[List[complex], np.ndarray],
-        weights_sampling_rate: float = qblox_constants.SAMPLING_RATE,
+        weights_sampling_rate: float = 1e9,
         interpolation: str = "linear",
         acq_channel: int = 0,
         acq_index: int = 0,
@@ -613,9 +611,8 @@ class NumericalWeightedIntegration(NumericalSeparatedWeightedIntegration):
         the incoming complex signal.
     weights_sampling_rate
         The rate with which the weights have been sampled, in Hz. By default equal
-        to the Qblox backend sampling rate. Note that during hardware compilation,
-        the weights will be resampled with the sampling rate supported by the target
-        hardware.
+        to 1 GHz. Note that during hardware compilation, the weights will be resampled
+        with the sampling rate supported by the target hardware.
     t
         The time values of each weight. This parameter is deprecated in favor of
         ``weights_sampling_rate``. If a value is provided for ``t``, the
@@ -649,7 +646,7 @@ class NumericalWeightedIntegration(NumericalSeparatedWeightedIntegration):
         clock: str,
         weights_a: Union[List[complex], np.ndarray],
         weights_b: Union[List[complex], np.ndarray],
-        weights_sampling_rate: float = qblox_constants.SAMPLING_RATE,
+        weights_sampling_rate: float = 1e9,
         interpolation: str = "linear",
         acq_channel: int = 0,
         acq_index: int = 0,

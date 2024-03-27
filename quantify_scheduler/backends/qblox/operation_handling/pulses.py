@@ -243,7 +243,6 @@ class MarkerPulseStrategy(PulseStrategyPartial):
                 f"for port-clock combination '{port}-{clock}' (current channel_name is '{self.channel_name}')."
                 f"Operation causing exception: {self.operation_info}"
             )
-        duration = round(self.operation_info.duration * 1e9)
         marker_bit_index = int(self.operation_info.data["output"])
         default_marker = qasm_program.static_hw_properties.default_marker
         # RF modules use first 2 bits of marker bitstring as output/input switch.
@@ -254,14 +253,10 @@ class MarkerPulseStrategy(PulseStrategyPartial):
             qasm_program=qasm_program, marker_bit_index=marker_bit_index
         )
 
-        qasm_program.set_marker((1 << marker_bit_index) | default_marker)
-        qasm_program.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
-        qasm_program.elapsed_time += constants.GRID_TIME
-        # Wait for the duration of the pulse minus 2 times grid time, one for each upd_param.
-        qasm_program.auto_wait(duration - constants.GRID_TIME - constants.GRID_TIME)
-        qasm_program.set_marker(default_marker)
-        qasm_program.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
-        qasm_program.elapsed_time += constants.GRID_TIME
+        if self.operation_info.data["enable"]:
+            qasm_program.set_marker((1 << marker_bit_index) | default_marker)
+        else:
+            qasm_program.set_marker(default_marker)
 
     @staticmethod
     def _fix_marker_bit_output_addressing_qcm_rf(

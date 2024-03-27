@@ -270,13 +270,13 @@ class TestPulseLevelOperation:
 
     def test_duration(self, operation: Operation) -> None:
         pulse_info = operation.data["pulse_info"][0]
-        if (
-            operation.__class__ is ResetClockPhase
-            or operation.__class__ is VoltageOffset
-        ):
+        if operation.__class__ in [
+            SetClockFrequency,
+            ShiftClockPhase,
+            ResetClockPhase,
+            VoltageOffset,
+        ]:
             assert operation.duration == 0, operation
-        elif operation.__class__ in [SetClockFrequency, ShiftClockPhase]:
-            assert operation.duration == 8e-9, operation
         elif operation.__class__ is SuddenNetZeroPulse:
             assert (
                 operation.duration

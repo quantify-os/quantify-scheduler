@@ -494,6 +494,7 @@ def test_find_all_port_clock_combinations(
         ("q3:fl", "cl0.baseband"),
         ("q4:fl", "cl0.baseband"),
         ("qe0:optical_readout", "qe0.ge0"),
+        ("q0:switch", "digital"),
     }
 
 
@@ -537,6 +538,7 @@ def test_generate_port_clock_to_device_map():
         ("q3:fl", "cl0.baseband"),
         ("q4:fl", "cl0.baseband"),
         ("qe0:optical_readout", "qe0.ge0"),
+        ("q0:switch", "digital"),
     }
 
 
@@ -1086,11 +1088,11 @@ def test_compile_measure(
     "operation, instruction_to_check, clock_freq_old, add_lo1",
     [
         [
-            (IdlePulse(duration=64e-9), rf"^\s*wait\s+64(\s+|$)", None, add_lo1),
-            (Reset("q1"), rf"^\s*wait\s+65532", None, add_lo1),
+            (IdlePulse(duration=64e-9), r"^\s*wait\s+68(\s+|$)", None, add_lo1),
+            (Reset("q1"), r"^\s*wait\s+65532", None, add_lo1),
             (
                 ShiftClockPhase(clock=clock, phase_shift=180.0),
-                rf"^\s*set_ph_delta\s+500000000(\s+|$)",
+                r"^\s*set_ph_delta\s+500000000(\s+|$)",
                 None,
                 add_lo1,
             ),
@@ -1117,6 +1119,7 @@ def test_compile_clock_operations(
 ):
     sched = Schedule("compile_clock_operations")
     sched.add(operation)
+    sched.add(SquarePulse(amp=1, port="q1:mw", clock="q1.01", duration=4e-9))
 
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     quantum_device.hardware_config(hardware_cfg_qcm)

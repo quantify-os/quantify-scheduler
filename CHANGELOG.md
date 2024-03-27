@@ -6,6 +6,9 @@
 
 - Operations - Move `VoltageOffset` back to the common `pulse_library` (partially revert !863). (!932)
 - InstrumentCoordinator - Rename `QbloxInstrumentCoordinatorComponentBase` to `_ModuleComponentBase`. (!931)
+- Operations - Various changes to durations (!934):
+  - The durations of `ShiftClockPhase` and `SetClockFrequency` are now 0.0, instead of `2 * GRID_TIME`.
+  - The duration of `MarkerPulse` is now equal to the user-specified duration, instead of having an extra `GRID_TIME` duration.
 
 ### Merged branches and closed issues
 
@@ -20,7 +23,12 @@
 - InstrumentCoordinator - Remove `make_qcm_component` and `make_qrm_component` from tests, and allow user-defined module settings in `make_cluster_component`. (!931)
 - tests - small refactor of the `mock_setup_basic_transmon` fixtures. (!918)
 - Schedules - Remove trivial name check in `Schedule` instantiation. (!848)
-
+- Operations - Remove Qblox references in the pulse and acquistion library, and make various modifications in the Qblox backend (!934):
+  - `NumericalSeparatedWeightedIntegration` and `NumericalWeightedIntegration` no longer depend on `SAMPLING_RATE` from the Qblox backend.
+  - `NcoPhaseShiftStrategy`, `NcoSetClockFrequencyStrategy` and `MarkerPulseStrategy` no longer insert `upd_param`. That is now handled by `Sequencer._insert_update_parameters` and `UpdateParameterStrategy`.
+  - A check is performed during compilation (`Sequencer._check_nco_operation_timing`) to ensure enough time is left between successive frequency or phase updates.
+  - `NCO_SET_PH_DELTA_WAIT` constant has been corrected to 4 ns.
+  - A new step during compilation splits `MarkerPulse` operations into a "setting" and "resetting" operation: `Sequencer._replace_marker_pulses()`. 
 
 ## 0.18.1 (2024-02-22)
 

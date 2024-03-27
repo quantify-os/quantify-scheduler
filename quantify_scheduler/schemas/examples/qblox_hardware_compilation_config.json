@@ -12,7 +12,8 @@
                     }
                 },
                 "2": {
-                    "instrument_type": "QCM_RF"
+                    "instrument_type": "QCM_RF",
+                    "digital_output_0": {}
                 },
                 "3": {
                     "instrument_type": "QRM"
@@ -154,6 +155,10 @@
             [
                 "cluster0.module2.complex_output_1",
                 "q6:mw"
+            ],
+            [
+                "cluster0.module2.digital_output_0",
+                "q0:switch"
             ],
             [
                 "cluster0.module3.complex_output_0",

@@ -41,6 +41,7 @@ class _ControlFlowReturn(Operation):
                 "name": "ControlFlowReturn ",
                 "control_flow_info": {
                     "t0": t0,
+                    "duration": 0.0,
                     "return_stack": True,
                 },
             }

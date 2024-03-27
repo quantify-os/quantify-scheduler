@@ -48,12 +48,17 @@ from quantify_scheduler.backends.qblox.operation_handling.base import IOperation
 from quantify_scheduler.backends.qblox.operation_handling.factory import (
     get_operation_strategy,
 )
+from quantify_scheduler.backends.qblox.operation_handling.pulses import (
+    MarkerPulseStrategy,
+)
 from quantify_scheduler.backends.qblox.operation_handling.virtual import (
-    AwgOffsetStrategy,
     ConditionalStrategy,
     ControlFlowReturnStrategy,
     LoopStrategy,
     UpdateParameterStrategy,
+    NcoPhaseShiftStrategy,
+    NcoResetClockPhaseStrategy,
+    NcoSetClockFrequencyStrategy,
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.types.qblox import (
@@ -304,6 +309,10 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
         :
             A data structure representing the compiled program.
         """
+
+
+class NcoOperationTimingError(ValueError):
+    """Exception thrown if there are timing errors for NCO operations."""
 
 
 # pylint: disable=too-many-instance-attributes
@@ -850,6 +859,8 @@ class Sequencer:
             ),
         )
 
+        self._check_nco_operation_timing(op_list)
+
         # Adds the latency correction, this needs to be a minimum of 4 ns,
         # so all sequencers get delayed by at least that.
         latency_correction_ns: int = self._get_latency_correction_ns(
@@ -1052,11 +1063,11 @@ class Sequencer:
         self.pulses += upd_params
 
     @staticmethod
-    def _any_other_updating_instruction_at_timing_for_offset_instruction(
+    def _any_other_updating_instruction_at_timing_for_parameter_instruction(
         op_index: int, sorted_pulses_and_acqs: List[IOperationStrategy]
     ) -> bool:
         op = sorted_pulses_and_acqs[op_index]
-        if not isinstance(op, AwgOffsetStrategy):
+        if not op.operation_info.is_parameter_instruction:
             return False
 
         def iterate_other_ops(iterate_range, allow_return_stack: bool) -> bool:
@@ -1070,14 +1081,14 @@ class Sequencer:
                     return True
                 if not allow_return_stack and other_op.operation_info.is_return_stack:
                     raise RuntimeError(
-                        f"VoltageOffset operation {op.operation_info} with start time "
+                        f"Parameter operation {op.operation_info} with start time "
                         f"{op.operation_info.timing} cannot be scheduled at the same "
                         "time as the end of a control-flow block "
                         f"{other_op.operation_info}, which ends at "
                         f"{other_op.operation_info.timing}. The control-flow block can "
                         "be extended by adding an IdlePulse operation with a duration "
-                        f"of at least {constants.GRID_TIME} ns, or the VoltageOffset "
-                        "can be replaced by another operation."
+                        f"of at least {constants.GRID_TIME} ns, or the Parameter "
+                        "operation can be replaced by another operation."
                     )
             return False
 
@@ -1115,20 +1126,20 @@ class Sequencer:
         # be inserted.
         upd_param_times_ns: Set[int] = set()
         for op_index, op in enumerate(pulses_and_acqs):
-            if not isinstance(op, AwgOffsetStrategy):
+            if not op.operation_info.is_parameter_instruction:
                 continue
             if helpers.is_within_half_grid_time(
                 self.parent.total_play_time, op.operation_info.timing
             ):
                 raise RuntimeError(
-                    f"VoltageOffset operation {op.operation_info} with start time "
+                    f"Parameter operation {op.operation_info} with start time "
                     f"{op.operation_info.timing} cannot be scheduled at the very end "
                     "of a Schedule. The Schedule can be extended by adding an "
                     "IdlePulse operation with a duration of at least "
-                    f"{constants.GRID_TIME} ns, or the VoltageOffset can be replaced "
-                    "by another operation."
+                    f"{constants.GRID_TIME} ns, or the Parameter operation can be "
+                    "replaced by another operation."
                 )
-            if not self._any_other_updating_instruction_at_timing_for_offset_instruction(
+            if not self._any_other_updating_instruction_at_timing_for_parameter_instruction(
                 op_index=op_index, sorted_pulses_and_acqs=pulses_and_acqs
             ):
                 upd_param_times_ns.add(round(op.operation_info.timing * 1e9))
@@ -1224,6 +1235,14 @@ class Sequencer:
 
         return file_path
 
+    def prepare(self) -> None:
+        """
+        Perform necessary operations on this sequencer's data before
+        :meth:`~Sequencer.compile` is called.
+        """
+        self.pulses = self._replace_marker_pulses(self.pulses)
+        self._insert_update_parameters()
+
     def compile(
         self,
         sequence_to_file: bool,
@@ -1254,8 +1273,6 @@ class Sequencer:
         """
         if not self.has_data:
             return None, None
-
-        self._insert_update_parameters()
 
         awg_dict = self._generate_awg_dict()
         weights_dict = None
@@ -1308,6 +1325,47 @@ class Sequencer:
         sequencer_cfg = self._settings.to_dict()
         return sequencer_cfg, acq_metadata
 
+    @staticmethod
+    def _replace_marker_pulses(
+        pulse_list: list[IOperationStrategy],
+    ) -> list[IOperationStrategy]:
+        """Replaces MarkerPulse operations by explicit high and low operations."""
+        new_pulses = []
+        for pulse in pulse_list:
+            if not isinstance(pulse, MarkerPulseStrategy):
+                new_pulses.append(pulse)
+            else:
+                high_op_info = OpInfo(
+                    name=pulse.operation_info.name,
+                    data=pulse.operation_info.data.copy(),
+                    timing=pulse.operation_info.timing,
+                )
+                duration = pulse.operation_info.data["duration"]
+                high_op_info.data["enable"] = True
+                high_op_info.data["duration"] = 0
+                new_pulses.append(
+                    MarkerPulseStrategy(
+                        operation_info=high_op_info,
+                        channel_name=pulse.channel_name,
+                    )
+                )
+
+                low_op_info = OpInfo(
+                    name=pulse.operation_info.name,
+                    data=pulse.operation_info.data.copy(),
+                    timing=pulse.operation_info.timing + duration,
+                )
+                low_op_info.data["enable"] = False
+                low_op_info.data["duration"] = 0
+                new_pulses.append(
+                    MarkerPulseStrategy(
+                        operation_info=low_op_info,
+                        channel_name=pulse.channel_name,
+                    )
+                )
+
+        return new_pulses
+
     def _decide_markers(self, operation) -> int:
         """
         Helper method to decide what markers should be pulled high when enable_marker is set to True.
@@ -1351,6 +1409,38 @@ class Sequencer:
             else:
                 marker_bit_string = 0b0111
         return marker_bit_string
+
+    @staticmethod
+    def _check_nco_operation_timing(
+        sorted_pulses_and_acqs: list[IOperationStrategy],
+    ) -> None:
+        """Check whether this sequencer's operation adhere to NCO timing restrictions."""
+        last_freq_upd_time = -constants.NCO_SET_FREQ_WAIT
+        last_phase_upd_time = -constants.NCO_SET_PH_DELTA_WAIT
+        for op in sorted_pulses_and_acqs:
+            timing = round(op.operation_info.timing * 1e9)
+            if isinstance(op, NcoSetClockFrequencyStrategy):
+                if (diff := timing - last_freq_upd_time) < constants.NCO_SET_FREQ_WAIT:
+                    raise NcoOperationTimingError(
+                        f"Operation {op.operation_info} occurred {diff} ns after the "
+                        "previous frequency update. The minimum time between frequency "
+                        f"updates must be {constants.NCO_SET_FREQ_WAIT} ns."
+                    )
+                else:
+                    last_freq_upd_time = timing
+
+            if isinstance(op, (NcoPhaseShiftStrategy, NcoResetClockPhaseStrategy)):
+                timing = round(op.operation_info.timing * 1e9)
+                if (
+                    diff := timing - last_phase_upd_time
+                ) < constants.NCO_SET_PH_DELTA_WAIT:
+                    raise NcoOperationTimingError(
+                        f"Operation {op.operation_info} occurred {diff} ns after the "
+                        "previous phase update. The minimum time between phase "
+                        f"updates must be {constants.NCO_SET_PH_DELTA_WAIT} ns."
+                    )
+                else:
+                    last_phase_upd_time = timing
 
 
 class QbloxBaseModule(ControlDeviceCompiler, ABC):
@@ -1685,6 +1775,8 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         for seq in self.sequencers.values():
             self.assign_frequencies(seq)
         self.distribute_data()
+        for seq in self.sequencers.values():
+            seq.prepare()
         self._ensure_single_scope_mode_acquisition_sequencer()
         self.assign_attenuation()
 

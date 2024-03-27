@@ -146,6 +146,27 @@ class OpInfo(DataClassJsonMixin):
         return "offset_path_I" in self.data or "offset_path_Q" in self.data
 
     @property
+    def is_parameter_instruction(self) -> bool:
+        """
+        Return ``True`` if the instruction is a parameter, like a voltage offset.
+
+        From the Qblox documentation: "parameter operation instructions" are latched and
+        only updated when the upd_param, play, acquire, acquire_weighed or acquire_ttl
+        instructions are executed.
+
+        Please refer to
+        https://qblox-qblox-instruments.readthedocs-hosted.com/en/main/cluster/q1_sequence_processor.html#q1-instructions
+        for the full list of these instructions.
+        """
+        return (
+            self.is_offset_instruction
+            or "phase_shift" in self.data
+            or "reset_clock_phase" in self.data
+            or "clock_freq_new" in self.data
+            or "marker_pulse" in self.data
+        )
+
+    @property
     def is_parameter_update(self) -> bool:
         """
         Return ``True`` if the operation is a parameter update, corresponding to the

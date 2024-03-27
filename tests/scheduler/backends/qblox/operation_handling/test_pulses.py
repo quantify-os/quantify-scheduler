@@ -23,7 +23,11 @@ from quantify_scheduler.backends.qblox.operation_handling import pulses
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.helpers.waveforms import normalize_waveform_data
 from quantify_scheduler.operations.gate_library import Measure
-from quantify_scheduler.operations.pulse_library import MarkerPulse, SquarePulse
+from quantify_scheduler.operations.pulse_library import (
+    IdlePulse,
+    MarkerPulse,
+    SquarePulse,
+)
 from quantify_scheduler.resources import ClockResource
 from tests.scheduler.instrument_coordinator.components.test_qblox import (  # pylint: disable=unused-import
     make_cluster_component,
@@ -454,6 +458,7 @@ class TestMarkerPulseStrategy:
             MarkerPulse(duration=100e-9, port="q0:switch", t0=40e-9)
         )
         schedule.add(square_pulse_op)
+        schedule.add(IdlePulse(4e-9))
 
         # Generate compiled schedule
         compiler = SerialCompiler(name="compiler")

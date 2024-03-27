@@ -57,6 +57,9 @@ hardware_config = {
                     {"port": "q6:mw", "clock": "q6.01", "interm_freq": None}
                 ],
             },
+            "digital_output_0": {
+                "portclock_configs": [{"port": "q0:switch", "clock": "digital"}]
+            },
         },
         "cluster0_module3": {
             "instrument_type": "QRM",

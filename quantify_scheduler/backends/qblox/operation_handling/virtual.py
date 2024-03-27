@@ -74,12 +74,6 @@ class NcoPhaseShiftStrategy(IdleStrategy):
                 phase_arg,
                 comment=f"increment nco phase by {phase:.2f} deg",
             )
-            qasm_program.emit(
-                q1asm_instructions.UPDATE_PARAMETERS,
-                constants.NCO_SET_PH_DELTA_WAIT,
-                comment="apply nco phase shift",
-            )
-            qasm_program.elapsed_time += constants.NCO_SET_PH_DELTA_WAIT
 
 
 class NcoResetClockPhaseStrategy(IdleStrategy):
@@ -148,12 +142,6 @@ class NcoSetClockFrequencyStrategy(IdleStrategy):
             frequency_args,
             comment=f"set nco frequency to {iterm_freq_new:e} Hz",
         )
-        qasm_program.emit(
-            q1asm_instructions.UPDATE_PARAMETERS,
-            constants.NCO_SET_FREQ_WAIT,
-            comment="apply nco frequency change",
-        )
-        qasm_program.elapsed_time += constants.NCO_SET_FREQ_WAIT
 
 
 class AwgOffsetStrategy(IdleStrategy):

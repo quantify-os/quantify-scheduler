@@ -88,7 +88,7 @@ class TestHeterodyneSpecScheduleNCO(TestHeterodyneSpecSchedule):
 
         rel_times = [
             self.sched_kwargs["init_duration"],
-            8e-9,
+            0,
             self.sched_kwargs["acquisition_delay"],
             self.sched_kwargs["integration_time"],
         ]
@@ -287,7 +287,7 @@ class TestTwoToneSpecScheduleNCO(TestTwoToneSpecSchedule):
 
         rel_times = [
             self.sched_kwargs["init_duration"],
-            8e-9,
+            0,
             self.sched_kwargs["spec_pulse_duration"]
             + self.sched_kwargs["ro_pulse_delay"],
             self.sched_kwargs["ro_acquisition_delay"],
@@ -440,7 +440,7 @@ class TestNVDarkESRSchedNCO:
             qe0.cr_count.acq_duration(),
         ]
         rel_times = [
-            8e-9,
+            0,
             qe0.reset.duration(),
             qe0.spectroscopy_operation.duration(),
             qe0.measure.acq_duration(),

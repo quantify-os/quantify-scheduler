@@ -241,8 +241,6 @@ class TestNcoSetClockFrequencyStrategy:
                 (
                     "set_freq",
                     f"{round((interm_freq_old + clock_freq_new - clock_freq_old)*4)}",
-                    "upd_param",
-                    "8",
                 ),
             )
             for clock_freq_new in [-2e9, 0, 600]
@@ -255,17 +253,15 @@ class TestNcoSetClockFrequencyStrategy:
         clock_freq_new: float,
         clock_freq_old: float,
         interm_freq_old: float,
-        expected_instruction: Tuple[str, str, str, str],
+        expected_instruction: Tuple[str, str],
         empty_qasm_program_qcm: QASMProgram,
     ):
         def extract_instruction_and_args(
             qasm_prog: QASMProgram,
-        ) -> Tuple[str, str, str, str]:
+        ) -> Tuple[str, str]:
             return (
                 qasm_prog.instructions[0][1],
                 qasm_prog.instructions[0][2],
-                qasm_prog.instructions[1][1],
-                qasm_prog.instructions[1][2],
             )
 
         # arrange

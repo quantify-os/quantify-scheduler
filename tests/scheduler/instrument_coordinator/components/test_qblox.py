@@ -37,7 +37,11 @@ from quantify_scheduler.enums import BinMode
 from quantify_scheduler.instrument_coordinator.components import qblox
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.gate_library import Reset, Measure
-from quantify_scheduler.operations.pulse_library import MarkerPulse, SquarePulse
+from quantify_scheduler.operations.pulse_library import (
+    IdlePulse,
+    MarkerPulse,
+    SquarePulse,
+)
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.schedule import AcquisitionMetadata, Schedule
 
@@ -1341,6 +1345,7 @@ def test_channel_map_off_with_marker_pulse(
             port="q0:switch",
         ),
     )
+    schedule.add(IdlePulse(4e-9))
 
     # Generate compiled schedule
     compiler = SerialCompiler(name="compiler")

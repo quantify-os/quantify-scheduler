@@ -18,7 +18,7 @@ import pytest
 from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.operations.pulse_library import SetClockFrequency
+from quantify_scheduler.operations.pulse_library import IdlePulse, SetClockFrequency
 from quantify_scheduler.resources import ClockResource
 
 from .standard_schedules import (
@@ -34,6 +34,7 @@ from .standard_schedules import (
 def clock_only_schedule() -> Schedule:
     sched = Schedule("Clock only schedule")
     sched.add(SetClockFrequency(clock="q0.01", clock_freq_new=7.501e9))
+    sched.add(IdlePulse(4e-9))
 
     return sched
 
