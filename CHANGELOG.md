@@ -29,6 +29,7 @@
   - A check is performed during compilation (`Sequencer._check_nco_operation_timing`) to ensure enough time is left between successive frequency or phase updates.
   - `NCO_SET_PH_DELTA_WAIT` constant has been corrected to 4 ns.
   - A new step during compilation splits `MarkerPulse` operations into a "setting" and "resetting" operation: `Sequencer._replace_marker_pulses()`. 
+- Documentation - Fix references to `qblox_instruments` documentation. (!943)
 
 ## 0.18.1 (2024-02-22)
 

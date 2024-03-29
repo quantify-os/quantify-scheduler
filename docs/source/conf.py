@@ -87,7 +87,7 @@ intersphinx_mapping = {
     ),
     "scipy": ("https://docs.scipy.org/doc/scipy/", None),
     "qblox-instruments": (
-        "https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/",
+        "https://qblox-qblox-instruments.readthedocs-hosted.com/en/main/",
         None,
     ),
     "zhinst-toolkit": ("https://docs.zhinst.com/zhinst-toolkit/en/latest/", None),

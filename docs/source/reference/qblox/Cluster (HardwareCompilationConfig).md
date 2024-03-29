@@ -38,7 +38,7 @@ set_datadir(temp_dir.name)
 ```
 
 In this section we introduce how to configure [Qblox Clusters](https://www.qblox.com/products#cluster) and the options available for them via Quantify.
-For information about their lower-level functionality, you can consult the [Qblox Instruments documentation](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/).
+For information about their lower-level functionality, you can consult the [Qblox Instruments documentation](https://qblox-qblox-instruments.readthedocs-hosted.com/en/main/).
 For information on the process of compilation to hardware, see {ref}`sec-tutorial-compiling`.
 
 (example-cluster-hardware-compilation-config)=
@@ -739,7 +739,7 @@ For QRM, QRM-RF and QCM-RF modules you can set the gain and attenuation paramete
 
 #### Gain configuration
 
-* The `"input_gain"` parameter for QRM corresponds to the qcodes parameters [in0_gain](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/qcm_qrm.html#QRM.in0_gain) and [in1_gain](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/qcm_qrm.html#QRM.in1_gain).
+* The `"input_gain"` parameter for QRM corresponds to the qcodes parameters [in0_gain](https://qblox-qblox-instruments.readthedocs-hosted.com/en/main/api_reference/module.html#QRM.in0_gain) and [in1_gain](https://qblox-qblox-instruments.readthedocs-hosted.com/en/main/api_reference/module.html#QRM.in1_gain).
 
 Note, these parameters only affect the QRM modules. For complex inputs you have to specify a tuple (for the I and Q inputs), and for real inputs a scalar value.
 
@@ -784,11 +784,11 @@ hardware_compilation_cfg = {
 
 #### Attenuation configuration
 
-* The parameters `"output_att"` and `"input_att"` for QRM-RF correspond to the qcodes parameters [out0_att](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/qcm_qrm.html#QRM_RF.out0_att) and [in0_att](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/qcm_qrm.html#QRM_RF.in0_att) respectively.
-* The parameter `"output_att"` for QCM-RF correspond to the qcodes parameters [out0_att](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/qcm_qrm.html#QCM_RF.out0_att) and [out1_att](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/qcm_qrm.html#QCM_RF.out1_att).
+* The parameters `"output_att"` and `"input_att"` for QRM-RF correspond to the qcodes parameters [out0_att](https://qblox-qblox-instruments.readthedocs-hosted.com/en/main/api_reference/module.html#QRM_RF.out0_att) and [in0_att](https://qblox-qblox-instruments.readthedocs-hosted.com/en/main/api_reference/module.html#QRM_RF.in0_att) respectively.
+* The parameter `"output_att"` for QCM-RF correspond to the qcodes parameters [out0_att](https://qblox-qblox-instruments.readthedocs-hosted.com/en/main/api_reference/module.html#QCM_RF.out0_att) and [out1_att](https://qblox-qblox-instruments.readthedocs-hosted.com/en/main/api_reference/module.html#QCM_RF.out1_att).
 
 Note, that these parameters only affect RF modules.
-See [Qblox Instruments: QCM-QRM](https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/qcm_qrm.html) documentation for allowed values.
+See [Qblox Instruments: QCM-QRM](https://qblox-qblox-instruments.readthedocs-hosted.com/en/main/api_reference/module.html) documentation for allowed values.
 
 ```{code-block} python
 ---

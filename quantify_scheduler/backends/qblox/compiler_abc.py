@@ -1056,7 +1056,7 @@ class Sequencer:
         Insert update parameter instructions to activate offsets, if they are not
         already activated by a play, acquire or acquire_weighed instruction (see also
         `the Q1ASM reference
-        <https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/cluster/q1_sequence_processor.html#instructions>`_).
+        <https://qblox-qblox-instruments.readthedocs-hosted.com/en/main/cluster/q1_sequence_processor.html#instructions>`_).
         """
         upd_params = self._get_new_update_parameters(self.pulses + self.acquisitions)
         # This can be unsorted. The sorting step is in Sequencer.generate_qasm_program()

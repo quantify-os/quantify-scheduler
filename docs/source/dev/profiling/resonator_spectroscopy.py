@@ -15,7 +15,7 @@
 # %% [markdown]
 # # Resonator spectroscopy
 #
-# https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/applications/quantify/tuning_transmon_qubit.html
+# https://qblox-qblox-instruments.readthedocs-hosted.com/en/main/applications/quantify/tuning_transmon_qubit.html
 
 # %% [markdown]
 # ## Setup
