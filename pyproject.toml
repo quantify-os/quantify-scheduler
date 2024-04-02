@@ -13,6 +13,7 @@ maintainers = [
     {name = "Robert Sokolewicz", email = "rsokolewicz@qblox.com"},
     {name = "Amirtha Varshiny Arumugam", email = "amirthavarshiny@orangeqs.com"},
     {name = "Viacheslav Ostroukh", email = "viacheslav@orangeqs.com"},
+    {name = "Gábor Oszkár Dénes", email = "gdenes@qblox.com"},
 ]
 classifiers = [
     "Development Status :: 4 - Beta",

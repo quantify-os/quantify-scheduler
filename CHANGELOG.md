@@ -1,36 +1,67 @@
 # Changelog
 
-## Unreleased
+## 0.18.2 (2024-04-02)
+
+### Release highlights
+
+**Fixes**
+- Fix control flow compilation in certain edge cases, when operation length is zero. (!928)
+
+**General Updates**
+- Add `ConditionalReset` gate to Qblox gate library. (!788)
+- Allow gates to be device compiled to schedules. (!904)
+- Add guides on generic hardware backend and developing a new hardware backend in quantify (!817)
+- Remove Qblox references in the pulse and acquistion library, and make various modifications in the Qblox backend (!934)
 
 ### Breaking changes
 
-- Operations - Move `VoltageOffset` back to the common `pulse_library` (partially revert !863). (!932)
+- Operations
+  - Move `VoltageOffset` back to the common `pulse_library` (partially revert !863). (!932)
+  - Various changes to durations (!934):
+    - The durations of `ShiftClockPhase` and `SetClockFrequency` are now 0.0, instead of `2 * GRID_TIME`.
+    - The duration of `MarkerPulse` is now equal to the user-specified duration, instead of having an extra `GRID_TIME` duration.
 - InstrumentCoordinator - Rename `QbloxInstrumentCoordinatorComponentBase` to `_ModuleComponentBase`. (!931)
-- Operations - Various changes to durations (!934):
-  - The durations of `ShiftClockPhase` and `SetClockFrequency` are now 0.0, instead of `2 * GRID_TIME`.
-  - The duration of `MarkerPulse` is now equal to the user-specified duration, instead of having an extra `GRID_TIME` duration.
-- Serialization - remove `orjson_dumps` function, that is not used anymore since migrating to `pydantic>=2` (!941).
 
 ### Merged branches and closed issues
 
-- Operations - Add `ConditionalReset` gate to Qblox gate library. (!788)
-- Schedule - Fix control flow compilation in certain edge cases, when operation length is zero. (!928)
-- Documentation - Add guides on generic hardware backend and developing a new hardware backend in quantify (!817)
-- Qblox backend - Move `_insert_update_parameters` from `QbloxBaseModule` to `Sequencer`. (!912)
-- Serialization - Allow `"deserialization_type"` in the serialized dictionary to be the fully qualified name of the object, such that it can be imported via `import_python_object_from_string`. (!905)
-- Compilation - Allow gates to be device compiled to schedules. (!904)
-- Operations - Add `H` Hadamard gate to gate library. (!904)
-- Visualization - Remove automatic conversion of `StitchedPulse` in pulse diagrams, and introduce `combine_waveforms_on_same_port` parameter to `Schedule.plot_pulse_diagram()` to allow for summing overlapping waveforms on the same port. (!935)
-- InstrumentCoordinator - Remove `make_qcm_component` and `make_qrm_component` from tests, and allow user-defined module settings in `make_cluster_component`. (!931)
-- tests - small refactor of the `mock_setup_basic_transmon` fixtures. (!918)
-- Schedules - Remove trivial name check in `Schedule` instantiation. (!848)
-- Operations - Remove Qblox references in the pulse and acquistion library, and make various modifications in the Qblox backend (!934):
-  - `NumericalSeparatedWeightedIntegration` and `NumericalWeightedIntegration` no longer depend on `SAMPLING_RATE` from the Qblox backend.
-  - `NcoPhaseShiftStrategy`, `NcoSetClockFrequencyStrategy` and `MarkerPulseStrategy` no longer insert `upd_param`. That is now handled by `Sequencer._insert_update_parameters` and `UpdateParameterStrategy`.
-  - A check is performed during compilation (`Sequencer._check_nco_operation_timing`) to ensure enough time is left between successive frequency or phase updates.
-  - `NCO_SET_PH_DELTA_WAIT` constant has been corrected to 4 ns.
-  - A new step during compilation splits `MarkerPulse` operations into a "setting" and "resetting" operation: `Sequencer._replace_marker_pulses()`. 
-- Documentation - Fix references to `qblox_instruments` documentation. (!943)
+- Operations
+  - Add `ConditionalReset` gate to Qblox gate library. (!788)
+  - Add `H` Hadamard gate to gate library. (!904)
+  - Remove Qblox references in the pulse and acquistion library, and make various modifications in the Qblox backend (!934):
+    - `NumericalSeparatedWeightedIntegration` and `NumericalWeightedIntegration` no longer depend on `SAMPLING_RATE` from the Qblox backend.
+    - `NcoPhaseShiftStrategy`, `NcoSetClockFrequencyStrategy` and `MarkerPulseStrategy` no longer insert `upd_param`. That is now handled by `Sequencer._insert_update_parameters` and `UpdateParameterStrategy`.
+    - A check is performed during compilation (`Sequencer._check_nco_operation_timing`) to ensure enough time is left between successive frequency or phase updates.
+    - `NCO_SET_PH_DELTA_WAIT` constant has been corrected to 4 ns.
+    - A new step during compilation splits `MarkerPulse` operations into a "setting" and "resetting" operation: `Sequencer._replace_marker_pulses()`.
+
+- Compilation
+  - Allow gates to be device compiled to schedules. (!904)
+
+- Documentation
+  - Add guides on generic hardware backend and developing a new hardware backend in quantify (!817)
+  - Fix references to `qblox_instruments` documentation. (!943)
+
+- Schedule
+  - Fix control flow compilation in certain edge cases, when operation length is zero. (!928)
+
+- Qblox backend
+  - Move `_insert_update_parameters` from `QbloxBaseModule` to `Sequencer`. (!912)
+
+- Serialization
+  - Allow `"deserialization_type"` in the serialized dictionary to be the fully qualified name of the object, such that it can be imported via `import_python_object_from_string`. (!905)
+  - Serialization - remove `orjson_dumps` function, that is not used anymore since migrating to `pydantic>=2`. (!941)
+
+- Visualization
+  - Remove automatic conversion of `StitchedPulse` in pulse diagrams, and introduce `combine_waveforms_on_same_port` parameter to `Schedule.plot_pulse_diagram()` to allow for summing overlapping waveforms on the same port. (!935)
+
+- InstrumentCoordinator
+  - Remove `make_qcm_component` and `make_qrm_component` from tests, and allow user-defined module settings in `make_cluster_component`. (!931)
+
+- Tests
+  - small refactor of the `mock_setup_basic_transmon` fixtures. (!918)
+
+- Schedules
+  - Remove trivial name check in `Schedule` instantiation. (!848)
 
 ## 0.18.1 (2024-02-22)
 
