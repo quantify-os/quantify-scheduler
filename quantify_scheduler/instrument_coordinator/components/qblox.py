@@ -28,9 +28,8 @@ import numpy as np
 from qblox_instruments import (
     Cluster,
     ConfigurationManager,
-    SequencerState,
+    SequencerStates,
     SequencerStatus,
-    SequencerStatusFlags,
 )
 
 from quantify_core.data.handling import get_datadir
@@ -67,71 +66,6 @@ logger.setLevel(logging.WARNING)
 
 # Prevent unsupported qblox-instruments version from crashing this submodule
 driver_version_check.verify_qblox_instruments_version()
-
-
-@dataclass(frozen=True)
-class _SequencerStateInfo:
-    message: str
-    """The text to pass as the logging message."""
-    logging_level: int
-    """The logging level to use."""
-
-    @staticmethod
-    def get_logging_level(flag: SequencerStatusFlags) -> int:
-        """Define the logging level per SequencerStatusFlags flag."""
-        if (
-            flag is SequencerStatusFlags.ACQ_SCOPE_DONE_PATH_0
-            or flag is SequencerStatusFlags.ACQ_SCOPE_DONE_PATH_0
-            or flag is SequencerStatusFlags.ACQ_BINNING_DONE
-        ):
-            return logging.DEBUG
-
-        if (
-            flag is SequencerStatusFlags.DISARMED
-            or flag is SequencerStatusFlags.FORCED_STOP
-            or flag is SequencerStatusFlags.ACQ_SCOPE_OVERWRITTEN_PATH_0
-            or flag is SequencerStatusFlags.ACQ_SCOPE_OVERWRITTEN_PATH_1
-        ):
-            return logging.INFO
-
-        if (
-            flag is SequencerStatusFlags.ACQ_SCOPE_OUT_OF_RANGE_PATH_0
-            or flag is SequencerStatusFlags.ACQ_SCOPE_OUT_OF_RANGE_PATH_1
-            or flag is SequencerStatusFlags.ACQ_BINNING_OUT_OF_RANGE
-        ):
-            return logging.WARNING
-
-        if (
-            flag is SequencerStatusFlags.SEQUENCE_PROCESSOR_Q1_ILLEGAL_INSTRUCTION
-            or flag
-            is SequencerStatusFlags.SEQUENCE_PROCESSOR_RT_EXEC_ILLEGAL_INSTRUCTION
-            or flag is SequencerStatusFlags.SEQUENCE_PROCESSOR_RT_EXEC_COMMAND_UNDERFLOW
-            or flag is SequencerStatusFlags.AWG_WAVE_PLAYBACK_INDEX_INVALID_PATH_0
-            or flag is SequencerStatusFlags.AWG_WAVE_PLAYBACK_INDEX_INVALID_PATH_1
-            or flag is SequencerStatusFlags.ACQ_WEIGHT_PLAYBACK_INDEX_INVALID_PATH_0
-            or flag is SequencerStatusFlags.ACQ_WEIGHT_PLAYBACK_INDEX_INVALID_PATH_1
-            or flag is SequencerStatusFlags.ACQ_BINNING_FIFO_ERROR
-            or flag is SequencerStatusFlags.ACQ_BINNING_COMM_ERROR
-            or flag is SequencerStatusFlags.ACQ_INDEX_INVALID
-            or flag is SequencerStatusFlags.ACQ_BIN_INDEX_INVALID
-            or flag is SequencerStatusFlags.CLOCK_INSTABILITY
-            or flag is SequencerStatusFlags.OUTPUT_OVERFLOW
-            or flag is SequencerStatusFlags.TRIGGER_NETWORK_CONFLICT
-            or flag is SequencerStatusFlags.TRIGGER_NETWORK_MISSED_INTERNAL_TRIGGER
-        ):
-            return logging.ERROR
-
-        return logging.DEBUG
-
-
-_SEQUENCER_STATE_FLAG_INFO: Dict[SequencerStatusFlags, _SequencerStateInfo] = {
-    flag: _SequencerStateInfo(
-        message=flag.value, logging_level=_SequencerStateInfo.get_logging_level(flag)
-    )
-    for flag in SequencerStatusFlags
-}
-"""Used to link all flags returned by the hardware to logging message and
-logging level."""
 
 
 @dataclass(frozen=True)
@@ -242,11 +176,11 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
         Returns
         -------
         :
-            True if any of the sequencers reports the `SequencerStatus.RUNNING` status.
+            True if any of the sequencers reports the `SequencerStates.RUNNING` status.
         """
         for seq_idx in range(self._hardware_properties.number_of_sequencers):
-            seq_state = self.instrument.get_sequencer_state(seq_idx)
-            if seq_state.status is SequencerStatus.RUNNING:
+            seq_status = self.instrument.get_sequencer_status(seq_idx)
+            if seq_status.state is SequencerStates.RUNNING:
                 return True
         return False
 
@@ -264,22 +198,24 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
         if timeout_min == 0:
             timeout_min = 1
         for idx in range(self._hardware_properties.number_of_sequencers):
-            state: SequencerState = self.instrument.get_sequencer_state(
+            state: SequencerStatus = self.instrument.get_sequencer_status(
                 sequencer=idx, timeout=timeout_min
             )
-            if state.flags:
-                for flag in state.flags:
-                    if flag not in _SEQUENCER_STATE_FLAG_INFO:
-                        logger.error(
-                            f"[{self.name}|seq{idx}] Encountered flag {flag} in "
-                            f"returned value by `get_sequencer_state` which is not "
-                            f"defined in {self.__module__}. Please refer to the Qblox "
-                            f"instruments documentation for more info."
-                        )
-                    else:
-                        flag_info = _SEQUENCER_STATE_FLAG_INFO[flag]
-                        msg = f"[{self.name}|seq{idx}] {flag} - {flag_info.message}"
-                        logger.log(level=flag_info.logging_level, msg=msg)
+            for flag in state.info_flags:
+                logger.log(
+                    level=logging.INFO,
+                    msg=f"[{self.name}|seq{idx}] {flag} - {flag.value}",
+                )
+            for flag in state.warn_flags:
+                logger.log(
+                    level=logging.WARNING,
+                    msg=f"[{self.name}|seq{idx}] {flag} - {flag.value}",
+                )
+            for flag in state.err_flags:
+                logger.log(
+                    level=logging.ERROR,
+                    msg=f"[{self.name}|seq{idx}] {flag} - {flag.value}",
+                )
 
     def get_hardware_log(
         self,
@@ -439,8 +375,8 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
     def _start_armed_sequencers(self):
         """Start execution of the schedule: start armed sequencers."""
         for idx in range(self._hardware_properties.number_of_sequencers):
-            state = self.instrument.get_sequencer_state(idx)
-            if state.status is SequencerStatus.ARMED:
+            state = self.instrument.get_sequencer_status(idx)
+            if state.state is SequencerStates.ARMED:
                 self.instrument.start_sequencer(idx)
 
     @property

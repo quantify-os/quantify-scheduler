@@ -9,7 +9,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Tests for Qblox instrument coordinator components."""
-import logging
 import os
 from collections import defaultdict
 from copy import deepcopy
@@ -23,8 +22,9 @@ from qblox_instruments import (
     Cluster,
     ClusterType,
     DummyBinnedAcquisitionData,
-    SequencerState,
+    SequencerStates,
     SequencerStatus,
+    SequencerStatuses,
     SequencerStatusFlags,
 )
 from qcodes.instrument import Instrument, InstrumentChannel, InstrumentModule
@@ -62,8 +62,12 @@ def make_cluster_component(mocker):
     def _make_cluster_component(
         name: str = "cluster0",
         modules: dict = default_modules,
-        sequencer_status: SequencerStatus = SequencerStatus.ARMED,
-        sequencer_flags: Optional[List[SequencerStatusFlags]] = None,
+        sequencer_status: SequencerStatuses = SequencerStatuses.OKAY,
+        sequencer_state: SequencerStates = SequencerStates.ARMED,
+        info_flags: Optional[List[SequencerStatusFlags]] = None,
+        warn_flags: Optional[List[SequencerStatusFlags]] = None,
+        err_flags: Optional[List[SequencerStatusFlags]] = None,
+        sequencer_logs: Optional[List[str]] = None,
     ) -> qblox.ClusterComponent:
         qblox_types = {
             "QCM": ClusterType.CLUSTER_QCM,
@@ -102,9 +106,14 @@ def make_cluster_component(mocker):
             mocker.patch.object(instrument, "set", wraps=instrument.set)
             mocker.patch.object(
                 instrument,
-                "get_sequencer_state",
-                return_value=SequencerState(
-                    sequencer_status, sequencer_flags if sequencer_flags else []
+                "get_sequencer_status",
+                return_value=SequencerStatus(
+                    sequencer_status,
+                    sequencer_state,
+                    info_flags if info_flags else [],
+                    warn_flags if warn_flags else [],
+                    err_flags if err_flags else [],
+                    sequencer_logs if sequencer_logs else [],
                 ),
             )
             mocker.patch.object(
@@ -150,22 +159,6 @@ def fixture_mock_acquisition_data():
         }
     }
     yield data
-
-
-def test_sequencer_state_flag_info():
-    assert len(SequencerStatusFlags) == len(
-        qblox._SEQUENCER_STATE_FLAG_INFO
-    ), "Verify all flags are represented"
-
-    debug_status = [
-        key
-        for key, info in qblox._SEQUENCER_STATE_FLAG_INFO.items()
-        if info.logging_level == logging.DEBUG
-    ]
-    assert len(debug_status) == 5, (
-        "Verify no new flags were implicitly added "
-        "(otherwise update `qblox._SequencerStateInfo.get_logging_level()`)"
-    )
 
 
 def test_initialize_cluster_component(make_cluster_component):
@@ -278,7 +271,7 @@ def test_marker_override_false(
 ):
     # Arrange
     cluster = make_cluster_component(
-        name="cluster0", sequencer_status=SequencerStatus.IDLE
+        name="cluster0", sequencer_status=SequencerStates.IDLE
     )
 
     mock_setup = mock_setup_basic_transmon_with_standard_params
@@ -650,7 +643,7 @@ def test_prepare_rf(
 def test_prepare_exception(make_cluster_component):
     # Arrange
     cluster = make_cluster_component(
-        name="cluster0", sequencer_status=SequencerStatus.IDLE
+        name="cluster0", sequencer_status=SequencerStates.IDLE
     )
 
     invalid_config = {"sequencers": {"idontexist": "this is not used"}}
@@ -669,23 +662,31 @@ def test_prepare_exception(make_cluster_component):
 
 
 @pytest.mark.parametrize(
-    "sequencer_status",
-    [SequencerStatus.ARMED, SequencerStatus.RUNNING, SequencerStatus.STOPPED],
+    "sequencer_state",
+    [SequencerStates.ARMED, SequencerStates.RUNNING, SequencerStates.STOPPED],
 )
-def test_is_running(make_cluster_component, sequencer_status):
-    cluster = make_cluster_component(name="cluster0", sequencer_status=sequencer_status)
-    assert cluster.is_running is (sequencer_status is SequencerStatus.RUNNING)
+def test_is_running(make_cluster_component, sequencer_state):
+    cluster = make_cluster_component(name="cluster0", sequencer_state=sequencer_state)
+    assert cluster.is_running is (sequencer_state is SequencerStates.RUNNING)
 
 
 @pytest.mark.parametrize(
-    "sequencer_flags",
-    [[], [SequencerStatusFlags.ACQ_SCOPE_OVERWRITTEN_PATH_0]],
+    "warn_flags, err_flags",
+    [
+        ([], []),
+        (
+            [SequencerStatusFlags.ACQ_SCOPE_OVERWRITTEN_PATH_0],
+            [SequencerStatusFlags.SEQUENCE_PROCESSOR_Q1_ILLEGAL_INSTRUCTION],
+        ),
+        ([SequencerStatusFlags.ACQ_SCOPE_OVERWRITTEN_PATH_0], []),
+    ],
 )
-def test_wait_done(make_cluster_component, sequencer_flags):
+def test_wait_done(make_cluster_component, warn_flags, err_flags):
     cluster = make_cluster_component(
         name="cluster0",
-        sequencer_status=SequencerStatus.ARMED,
-        sequencer_flags=sequencer_flags,
+        sequencer_status=SequencerStates.ARMED,
+        warn_flags=warn_flags,
+        err_flags=err_flags,
     )
     cluster.wait_done()
 

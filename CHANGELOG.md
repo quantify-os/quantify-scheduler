@@ -4,7 +4,7 @@
 
 ### Breaking changes
 
-
+- Qblox backend - Update to `qblox_instruments` version 0.12.0, requires firmware version 0.7.0. (!942)
 
 ### Merged branches and closed issues
 
