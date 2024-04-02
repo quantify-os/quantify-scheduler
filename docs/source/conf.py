@@ -499,7 +499,6 @@ nitpick_ignore = [
 nitpick_ignore_regex = [
     ("py:class", r"numpy.*"),
     ("py:class", r"np.*"),
-    ("py:.*", r"orjson.*"),
     ("py:.*", r"pydantic.*"),
     ("py:.*", r"qcodes.*"),
     ("py:class", r"Ellipsis.*"),

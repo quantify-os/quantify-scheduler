@@ -43,7 +43,6 @@ dependencies = [
     "matplotlib",
     "networkx",
     "numpy",
-    "orjson",
     "pandas[output_formatting]",
     "pathvalidate",
     "plotly",

@@ -2,43 +2,13 @@
 # Licensed according to the LICENCE file on the main branch
 """Root models for data structures used within the package."""
 
-import types
 from typing import Any, Callable
 
-import orjson
 from pydantic import BaseModel, ConfigDict
 
 from quantify_scheduler.helpers.importers import (
     import_python_object_from_string,
 )
-
-
-def orjson_dumps(obj: Any, *, default: Callable[[Any], Any]) -> str:
-    """
-    Dump an object to a JSON string using :mod:`orjson` library.
-
-    Parameters
-    ----------
-    obj
-        Object to dump
-    default
-        A function that is called if an object can't be serialized otherwise.
-        It should return a JSON-encodable version of an object or raise a
-        :class:`TypeError`.
-
-    Returns
-    -------
-    str
-        JSON-encoded string representation of an object
-
-    Raises
-    ------
-    TypeError
-        If value can't be serialized.
-    """
-    # Use orjson.OPT_NON_STR_KEYS to allow for non-string keys in datastructures.
-    # For example: a module/channel index in the HardwareDescription.
-    return orjson.dumps(obj, default=default, option=orjson.OPT_NON_STR_KEYS).decode()
 
 
 class DataStructure(BaseModel):  # pylint: disable=too-few-public-methods

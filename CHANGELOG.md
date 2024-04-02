@@ -9,6 +9,7 @@
 - Operations - Various changes to durations (!934):
   - The durations of `ShiftClockPhase` and `SetClockFrequency` are now 0.0, instead of `2 * GRID_TIME`.
   - The duration of `MarkerPulse` is now equal to the user-specified duration, instead of having an extra `GRID_TIME` duration.
+- Serialization - remove `orjson_dumps` function, that is not used anymore since migrating to `pydantic>=2` (!941).
 
 ### Merged branches and closed issues
 
