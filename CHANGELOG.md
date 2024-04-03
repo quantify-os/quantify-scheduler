@@ -1,14 +1,18 @@
 # Changelog
 
-## Unreleased
+## 0.19.0 (2024-04-03)
 
 ### Breaking changes
 
 - Qblox backend - Update to `qblox_instruments` version 0.12.0, requires firmware version 0.7.0. (!942)
 
-### Merged branches and closed issues
+### Compatibility info
 
+**Qblox**
 
+| quantify-scheduler |                      qblox-instruments                       |                               Cluster firmware                                |
+|--------------------|:------------------------------------------------------------:|:-----------------------------------------------------------------------------:|
+| v0.19.0            | [0.12.0](https://pypi.org/project/qblox-instruments/0.12.0/) | [0.7.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.7.0) |
 
 ## 0.18.2 (2024-04-02)
 

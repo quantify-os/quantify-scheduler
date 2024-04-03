@@ -93,7 +93,7 @@ jupyter_core==5.7.2
 jupyterlab_pygments==0.3.0
 jupyterlab_widgets==3.0.10
 jupytext==1.16.1
-keyring==25.0.0
+keyring==25.1.0
 kiwisolver==1.4.5
 latexcodec==3.0.0
 lazy-object-proxy==1.10.0
@@ -195,11 +195,11 @@ PyVISA==1.14.1
 pyviz_comms==3.0.2
 PyYAML==6.0.1
 pyzmq==25.1.2
-qblox_instruments==0.11.2
+qblox_instruments==0.12.0
 qcodes==0.44.1
 qcodes-loop==0.1.2
 quantify-core==0.7.4
-quantify-scheduler @ file:///builds/quantify-os/quantify-scheduler/dist/quantify_scheduler-0.18.2.dev19%2Bg74391e9f7-py3-none-any.whl#sha256=b952297f3a1097752d3f4c809c29994f756e58795d871a7fcde6c115de017203
+quantify-scheduler @ file:///builds/quantify-os/quantify-scheduler/dist/quantify_scheduler-0.18.3.dev3%2Bgcbb73ef4b-py3-none-any.whl#sha256=4b2481118abee8e45f5699ffc9196952258df395b19b235221f8d766db84aab7
 readme_renderer==43.0
 referencing==0.34.0
 requests==2.31.0
