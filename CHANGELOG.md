@@ -8,7 +8,7 @@
 
 ### Merged branches and closed issues
 
-
+- Schedules - Add `long_time_trace` and `long_time_trace_with_qubit` to perform  custom integrated time traces. (!878)
 
 ## 0.19.0 (2024-04-03)
 

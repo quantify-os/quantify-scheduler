@@ -46,7 +46,10 @@ from quantify_scheduler.operations.control_flow_library import Loop
 from quantify_scheduler.operations.gate_library import Measure
 from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import ClockResource
-from quantify_scheduler.schedules.trace_schedules import trace_schedule_circuit_layer
+from quantify_scheduler.schedules.trace_schedules import (
+    long_time_trace_with_qubit,
+    trace_schedule_circuit_layer,
+)
 from tests.fixtures.mock_setup import close_instruments
 from tests.scheduler.instrument_coordinator.components.test_qblox import (  # pylint: disable=unused-import
     make_cluster_component,
@@ -630,6 +633,72 @@ def test_trace_acquisition_measurement_control(
             raise
     assert dataset.sizes == {"dim_0": acq_duration * sampling_rate}
 
+    instr_coordinator.remove_component(ic_cluster0.name)
+
+
+def test_custom_long_trace_acquisition_measurement_control(
+    mock_setup_basic_transmon_with_standard_params, make_cluster_component
+):
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module4": {
+                "instrument_type": "QRM",
+                "real_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "q2:res",
+                            "clock": "q2.ro",
+                        },
+                    ],
+                },
+            },
+        },
+    }
+
+    mock_setup = mock_setup_basic_transmon_with_standard_params
+    ic_cluster0 = make_cluster_component("cluster0")
+    instr_coordinator = mock_setup["instrument_coordinator"]
+    instr_coordinator.add_component(ic_cluster0)
+
+    quantum_device = mock_setup["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+    quantum_device.cfg_sched_repetitions(1)
+
+    acq_duration = 1e-6
+    q2 = mock_setup["q2"]
+    q2.measure.pulse_amp(0.2)
+    q2.measure.acq_delay(600e-9)
+    q2.clock_freqs.readout(300e6)
+    q2.reset.duration(252e-9)
+    q2.measure.integration_time(acq_duration)
+
+    sample_param = ManualParameter("sample", label="Dummy Sample", unit="None")
+    sample_param.batched = True
+    num_points = 1000
+    sample_setpoints = np.arange(start=0, stop=num_points, step=1)
+
+    sched_gettable = ScheduleGettable(
+        quantum_device=quantum_device,
+        schedule_function=long_time_trace_with_qubit,
+        schedule_kwargs={"qubit": q2, "num_points": num_points},
+        batched=True,
+    )
+
+    meas_ctrl = quantum_device.instr_measurement_control.get_instr()
+    meas_ctrl.settables(sample_param)
+    meas_ctrl.setpoints(sample_setpoints)
+    meas_ctrl.gettables(sched_gettable)
+    with pytest.warns(
+        FutureWarning,
+        match="The format of acquisition data of looped measurements in APPEND mode will change in quantify-scheduler>=0.18.0",
+    ):
+        dataset = meas_ctrl.run(f"Readout long trace schedule of {q2.name}")
+
+    assert dataset.y0.size == num_points
+    assert dataset.y1.size == num_points
     instr_coordinator.remove_component(ic_cluster0.name)
 
 

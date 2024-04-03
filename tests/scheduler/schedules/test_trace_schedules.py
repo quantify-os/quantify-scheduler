@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 # pylint: disable=missing-function-docstring
+import numpy as np
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.schedules import trace_schedules
@@ -127,3 +128,60 @@ def test_two_tone_trace_schedule() -> None:
     assert schedulable["timing_constraints"][0]["rel_time"] == -20e-9
     assert acq_info["duration"] == integration_time
     assert acq_info["port"] == "q0:res"
+
+
+def test_long_trace_schedule() -> None:
+    # Arrange
+    pulse_amp = 0.5 + 0.25 * 1j
+    pulse_delay = 0
+    clock_frequency = 250e6
+    acquisition_delay = 152e-9
+    integration_time = 1e-6
+    num_points = 100
+
+    # Act
+    schedule = trace_schedules.long_time_trace(
+        pulse_amp=pulse_amp,
+        pulse_delay=pulse_delay,
+        frequency=clock_frequency,
+        acquisition_delay=acquisition_delay,
+        integration_time=integration_time,
+        port="q0:res",
+        clock="q0.ro",
+        num_points=num_points,
+    )
+
+    # Assert
+    assert isinstance(schedule, Schedule)
+    assert schedule.name == "Long time trace acquisition"
+    assert schedule.repetitions == 1
+    assert schedule.resources["q0.ro"]["freq"] == clock_frequency
+    assert len(schedule.schedulables) == 4
+
+    # # VoltageOffset
+    voltage_offset_op = schedule.operations[
+        list(schedule.schedulables.values())[0]["operation_id"]
+    ]
+    assert voltage_offset_op["name"] == "VoltageOffset"
+    assert voltage_offset_op["pulse_info"][0]["offset_path_I"] == np.real(pulse_amp)
+    assert voltage_offset_op["pulse_info"][0]["offset_path_Q"] == np.imag(pulse_amp)
+
+    # # Control Flow loop
+    control_flow_sched = list(schedule.schedulables.values())[1]
+    inner_sched = schedule.operations[control_flow_sched["operation_id"]]
+    assert isinstance(inner_sched, Schedule)
+    assert list(inner_sched.operations.values())[0]["name"] == "SSBIntegrationComplex"
+    assert control_flow_sched["timing_constraints"][0]["rel_time"] == acquisition_delay
+    assert control_flow_sched["control_flow"]["name"] == "Loop"
+    assert (
+        control_flow_sched["control_flow"]["control_flow_info"]["repetitions"]
+        == num_points
+    )
+
+    # # VoltageOffset_off
+    voltage_offset_op_off = schedule.operations[
+        list(schedule.schedulables.values())[2]["operation_id"]
+    ]
+    assert voltage_offset_op_off["name"] == "VoltageOffset"
+    assert voltage_offset_op_off["pulse_info"][0]["offset_path_I"] == 0
+    assert voltage_offset_op_off["pulse_info"][0]["offset_path_Q"] == 0
