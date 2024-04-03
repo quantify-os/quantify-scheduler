@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Breaking changes
+
+
+
+### Merged branches and closed issues
+
+
+
 ## 0.19.0 (2024-04-03)
 
 ### Breaking changes
