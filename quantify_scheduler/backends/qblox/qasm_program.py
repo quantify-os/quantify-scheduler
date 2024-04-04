@@ -193,7 +193,7 @@ class QASMProgram:
             comment=f"set markers to {marker_setting}",
         )
 
-    def set_latch(self, pulses: Sequence[IOperationStrategy]) -> None:
+    def set_latch(self, op_strategies: Sequence[IOperationStrategy]) -> None:
         """
         Set the latch that is needed for conditional playback.
 
@@ -202,13 +202,15 @@ class QASMProgram:
 
         Parameters
         ----------
-        pulses
-            The pulses to search the latch address in.
+        op_strategies
+            The op_strategies containing the pulses to search the latch address in.
 
         """
-        for pulse in pulses:
-            pulse_data = pulse.operation_info.data
-            if (pulse_data.get("feedback_trigger_address")) is not None:
+        for op_strategy in op_strategies:
+            op_info = op_strategy.operation_info
+            if not op_info.is_acquisition and (
+                op_info.data.get("feedback_trigger_address") is not None
+            ):
                 self.emit(q1asm_instructions.FEEDBACK_TRIGGER_EN, 1, 4)
                 return
 

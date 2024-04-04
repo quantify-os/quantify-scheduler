@@ -12,7 +12,6 @@ import warnings
 from abc import ABC, ABCMeta, abstractmethod
 from collections import defaultdict
 from collections.abc import Iterator
-from functools import partial
 from os import makedirs, path
 from typing import (
     TYPE_CHECKING,
@@ -198,8 +197,7 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
             instrument_cfg=instrument_cfg,
             latency_corrections=latency_corrections,
         )
-        self._pulses: Dict[Tuple[str, str], List[OpInfo]] = defaultdict(list)
-        self._acquisitions: Dict[Tuple[str, str], List[OpInfo]] = defaultdict(list)
+        self._op_infos: Dict[Tuple[str, str], List[OpInfo]] = defaultdict(list)
 
     @property
     @abstractmethod
@@ -213,44 +211,28 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
             The maximum amount of sequencers
         """
 
-    def add_pulse(self, port: str, clock: str, pulse_info: OpInfo):
+    def add_op_info(self, port: str, clock: str, op_info: OpInfo):
         """
-        Assigns a certain pulse to this device.
+        Assigns a certain pulse or acquisition to this device.
 
         Parameters
         ----------
         port
-            The port the pulse needs to be sent to.
+            The port this waveform is sent to (or acquired from).
         clock
-            The clock for modulation of the pulse. Can be a BasebandClock.
-        pulse_info
-            Data structure containing all the information regarding this specific pulse
-            operation.
-        """
-        self._pulses[(port, clock)].append(pulse_info)
-
-    def add_acquisition(self, port: str, clock: str, acq_info: OpInfo):
-        """
-        Assigns a certain acquisition to this device.
-
-        Parameters
-        ----------
-        port
-            The port the pulse needs to be sent to.
-        clock
-            The clock for modulation of the pulse. Can be a BasebandClock.
-        acq_info
+            The clock for modulation of the pulse or acquisition. Can be a BasebandClock.
+        op_info
             Data structure containing all the information regarding this specific
-            acquisition operation.
+            pulse or acquisition operation.
         """
-        if not self.supports_acquisition:
+        if op_info.is_acquisition and not self.supports_acquisition:
             raise RuntimeError(
                 f"{self.__class__.__name__} {self.name} does not support acquisitions. "
-                f"Attempting to add acquisition {repr(acq_info)} "
+                f"Attempting to add acquisition {repr(op_info)} "
                 f"on port {port} with clock {clock}."
             )
 
-        self._acquisitions[(port, clock)].append(acq_info)
+        self._op_infos[(port, clock)].append(op_info)
 
     @property
     def _portclocks_with_data(self) -> Set[Tuple[str, str]]:
@@ -264,29 +246,11 @@ class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
             A set containing all the port-clock combinations that are used by this
             InstrumentCompiler.
         """
-        portclocks_used = set()
-        _pulses_but_not_latch_reset = {
-            key: _pulses
-            for key, _pulses in self._pulses.items()
-            if not all([_pulse.data.get("name") == "LatchReset" for _pulse in _pulses])
+        portclocks_used: Set[Tuple[str, str]] = {
+            portclock
+            for portclock, op_infos in self._op_infos.items()
+            if not all(op_info.data.get("name") == "LatchReset" for op_info in op_infos)
         }
-        portclocks_used.update(_pulses_but_not_latch_reset.keys())
-        portclocks_used.update(self._acquisitions.keys())
-        return portclocks_used
-
-    @property
-    def _portclocks_with_pulses(self) -> Set[Tuple[str, str]]:
-        """
-        All the port-clock combinations associated with at least one pulse.
-
-        Returns
-        -------
-        :
-            A set containing all the port-clock combinations that are used by this
-            InstrumentCompiler.
-        """
-        portclocks_used = set()
-        portclocks_used.update(self._pulses.keys())
         return portclocks_used
 
     @abstractmethod
@@ -371,8 +335,7 @@ class Sequencer:
         self.index = index
         self.port = portclock[0]
         self.clock = portclock[1]
-        self.pulses: List[IOperationStrategy] = []
-        self.acquisitions: List[IOperationStrategy] = []
+        self.op_strategies: List[IOperationStrategy] = []
         self.associated_ext_lo: str = lo_name
         self.downconverter_freq: float = downconverter_freq
         self.mix_lo: bool = mix_lo
@@ -484,7 +447,7 @@ class Sequencer:
         :
             Has data been assigned to this sequencer?
         """
-        return len(self.acquisitions) > 0 or len(self.pulses) > 0
+        return len(self.op_strategies) > 0
 
     @property
     def frequency(self) -> float:
@@ -567,8 +530,9 @@ class Sequencer:
             the waveform sample limit of the hardware.
         """
         wf_dict: Dict[str, Any] = {}
-        for pulse in self.pulses:
-            pulse.generate_data(wf_dict=wf_dict)
+        for op_strategy in self.op_strategies:
+            if not op_strategy.operation_info.is_acquisition:
+                op_strategy.generate_data(wf_dict=wf_dict)
         self._validate_awg_dict(wf_dict=wf_dict)
         return wf_dict
 
@@ -609,8 +573,9 @@ class Sequencer:
             both a real and imaginary part.
         """
         wf_dict: Dict[str, Any] = {}
-        for acq in self.acquisitions:
-            acq.generate_data(wf_dict)
+        for op_strategy in self.op_strategies:
+            if op_strategy.operation_info.is_acquisition:
+                op_strategy.generate_data(wf_dict)
         return wf_dict
 
     def _validate_awg_dict(self, wf_dict: Dict[str, Any]) -> None:
@@ -831,21 +796,17 @@ class Sequencer:
         qasm.set_marker(self._default_marker)
 
         # program header
-        qasm.set_latch(self.pulses)
+        qasm.set_latch(self.op_strategies)
         qasm.emit(q1asm_instructions.WAIT_SYNC, constants.GRID_TIME)
         qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
 
-        pulses = [] if self.pulses is None else self.pulses
-        acquisitions = [] if self.acquisitions is None else self.acquisitions
-
-        self._initialize_append_mode_registers(qasm, acquisitions)
+        self._initialize_append_mode_registers(qasm, self.op_strategies)
 
         # Program body. The operations are sorted such that real-time IO operations
         # always come after any other operations. E.g., an offset instruction should
         # always come before the parameter update, play, or acquisition instruction.
-        op_list = pulses + acquisitions
         op_list = sorted(
-            op_list,
+            self.op_strategies,
             # Note: round to 12 digits below such that
             # the control flow begin operation is always
             # going to go first, but floating point precision
@@ -1001,7 +962,7 @@ class Sequencer:
             operation.insert_qasm(qasm)
 
     def _initialize_append_mode_registers(
-        self, qasm: QASMProgram, acquisitions: List[AcquisitionStrategyPartial]
+        self, qasm: QASMProgram, op_strategies: List[AcquisitionStrategyPartial]
     ):
         """
         Adds the instructions to initialize the registers needed to use the append
@@ -1011,15 +972,18 @@ class Sequencer:
         ----------
         qasm:
             The program to add the instructions to.
-        acquisitions:
-            A list with all the acquisitions to consider.
+        op_strategies:
+            An operations list including all the acquisitions to consider.
         """
         channel_to_reg = {}
-        for acq in acquisitions:
-            if acq.operation_info.data["bin_mode"] != BinMode.APPEND:
+        for op_strategy in op_strategies:
+            if not op_strategy.operation_info.is_acquisition:
                 continue
 
-            channel = acq.operation_info.data["acq_channel"]
+            if op_strategy.operation_info.data["bin_mode"] != BinMode.APPEND:
+                continue
+
+            channel = op_strategy.operation_info.data["acq_channel"]
             if channel in channel_to_reg:
                 acq_bin_idx_reg = channel_to_reg[channel]
             else:
@@ -1031,9 +995,9 @@ class Sequencer:
                     0,
                     acq_bin_idx_reg,
                     comment=f"Initialize acquisition bin_idx for "
-                    f"ch{acq.operation_info.data['acq_channel']}",
+                    f"ch{op_strategy.operation_info.data['acq_channel']}",
                 )
-            acq.bin_idx_register = acq_bin_idx_reg
+            op_strategy.bin_idx_register = acq_bin_idx_reg
 
     def _get_latency_correction_ns(self, latency_correction: float) -> int:
         if latency_correction == 0:
@@ -1058,9 +1022,9 @@ class Sequencer:
         `the Q1ASM reference
         <https://qblox-qblox-instruments.readthedocs-hosted.com/en/main/cluster/q1_sequence_processor.html#instructions>`_).
         """
-        upd_params = self._get_new_update_parameters(self.pulses + self.acquisitions)
+        upd_params = self._get_new_update_parameters(self.op_strategies)
         # This can be unsorted. The sorting step is in Sequencer.generate_qasm_program()
-        self.pulses += upd_params
+        self.op_strategies += upd_params
 
     @staticmethod
     def _any_other_updating_instruction_at_timing_for_parameter_instruction(
@@ -1240,7 +1204,7 @@ class Sequencer:
         Perform necessary operations on this sequencer's data before
         :meth:`~Sequencer.compile` is called.
         """
-        self.pulses = self._replace_marker_pulses(self.pulses)
+        self.op_strategies = self._replace_marker_pulses(self.op_strategies)
         self._insert_update_parameters()
 
     def compile(
@@ -1282,15 +1246,20 @@ class Sequencer:
         # the program needs _generate_weights_dict for the waveform indices
         if self.parent.supports_acquisition:
             weights_dict = {}
-            if len(self.acquisitions) > 0:
+            acquisitions = [
+                op_strategy
+                for op_strategy in self.op_strategies
+                if op_strategy.operation_info.is_acquisition
+            ]
+            if len(acquisitions) > 0:
                 acq_metadata = extract_acquisition_metadata_from_acquisition_protocols(
                     acquisition_protocols=[
-                        acq.operation_info.data for acq in self.acquisitions
+                        acq.operation_info.data for acq in acquisitions
                     ],
                     repetitions=repetitions,
                 )
                 self._prepare_acq_settings(
-                    acquisitions=self.acquisitions,
+                    acquisitions=acquisitions,
                     acq_metadata=acq_metadata,
                 )
                 weights_dict = self._generate_weights_dict()
@@ -1327,44 +1296,44 @@ class Sequencer:
 
     @staticmethod
     def _replace_marker_pulses(
-        pulse_list: list[IOperationStrategy],
+        op_strategies: list[IOperationStrategy],
     ) -> list[IOperationStrategy]:
         """Replaces MarkerPulse operations by explicit high and low operations."""
-        new_pulses = []
-        for pulse in pulse_list:
-            if not isinstance(pulse, MarkerPulseStrategy):
-                new_pulses.append(pulse)
-            else:
+        new_op_strategies: list[IOperationStrategy] = []
+        for op_strategy in op_strategies:
+            if isinstance(op_strategy, MarkerPulseStrategy):
                 high_op_info = OpInfo(
-                    name=pulse.operation_info.name,
-                    data=pulse.operation_info.data.copy(),
-                    timing=pulse.operation_info.timing,
+                    name=op_strategy.operation_info.name,
+                    data=op_strategy.operation_info.data.copy(),
+                    timing=op_strategy.operation_info.timing,
                 )
-                duration = pulse.operation_info.data["duration"]
+                duration = op_strategy.operation_info.data["duration"]
                 high_op_info.data["enable"] = True
                 high_op_info.data["duration"] = 0
-                new_pulses.append(
+                new_op_strategies.append(
                     MarkerPulseStrategy(
                         operation_info=high_op_info,
-                        channel_name=pulse.channel_name,
+                        channel_name=op_strategy.channel_name,
                     )
                 )
 
                 low_op_info = OpInfo(
-                    name=pulse.operation_info.name,
-                    data=pulse.operation_info.data.copy(),
-                    timing=pulse.operation_info.timing + duration,
+                    name=op_strategy.operation_info.name,
+                    data=op_strategy.operation_info.data.copy(),
+                    timing=op_strategy.operation_info.timing + duration,
                 )
                 low_op_info.data["enable"] = False
                 low_op_info.data["duration"] = 0
-                new_pulses.append(
+                new_op_strategies.append(
                     MarkerPulseStrategy(
                         operation_info=low_op_info,
-                        channel_name=pulse.channel_name,
+                        channel_name=op_strategy.channel_name,
                     )
                 )
+            else:
+                new_op_strategies.append(op_strategy)
 
-        return new_pulses
+        return new_op_strategies
 
     def _decide_markers(self, operation) -> int:
         """
@@ -1624,7 +1593,10 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         the device does not support acquisitions.
         """
         if (
-            any(len(acq) > 0 for acq in self._acquisitions.values())
+            any(
+                any(op_info.is_acquisition for op_info in op_infos)
+                for op_infos in self._op_infos.values()
+            )
             and not self.supports_acquisition
         ):
             raise RuntimeError(
@@ -1634,59 +1606,44 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         compiler_container = self.parent.parent
 
-        portclock: Tuple[str, str]
-        pulse_data_list: List[OpInfo]
-        for portclock, pulse_data_list in self._pulses.items():
-            for seq in self.sequencers.values():
+        for seq in self.sequencers.values():
+            if seq.op_strategies is None:
+                seq.op_strategies = []
+
+            clock_freq = compiler_container.resources.get(seq.clock, {}).get(
+                "freq", None
+            )
+
+            for portclock, op_info_list in self._op_infos.items():
                 if seq.portclock == portclock or (
                     portclock[0] is None and portclock[1] == seq.clock
                 ):
-                    clock_freq = compiler_container.resources.get(seq.clock, {}).get(
-                        "freq", None
-                    )
-
-                    pulse_data: OpInfo
-                    for pulse_data in pulse_data_list:
-                        if pulse_data.name == SetClockFrequency.__name__:
-                            pulse_data.data.update(
+                    for op_info in op_info_list:
+                        if (
+                            not op_info.is_acquisition
+                            and op_info.name == SetClockFrequency.__name__
+                        ):
+                            op_info.data.update(
                                 {
                                     "clock_freq_old": clock_freq,
                                     "interm_freq_old": seq.frequency,
                                 }
                             )
 
-                    op_info_to_op_strategy_func = partial(
-                        get_operation_strategy,
-                        channel_name=seq._settings.channel_name,
-                    )
-                    strategies_for_pulses = map(
-                        op_info_to_op_strategy_func,
-                        pulse_data_list,
-                    )
-                    if seq.pulses is None:
-                        seq.pulses = []
-
-                    for pulse_strategy in strategies_for_pulses:
-                        if ChannelMode.DIGITAL in seq._settings.channel_name:
-                            # Digital mode always has one output.
-                            pulse_strategy.operation_info.data["output"] = (
-                                seq.connected_output_indices[0]
+                        if not op_info.is_acquisition or not (
+                            portclock[0] is None and portclock[1] == seq.clock
+                        ):
+                            op_strategy = get_operation_strategy(
+                                operation_info=op_info,
+                                channel_name=seq._settings.channel_name,
                             )
-                        seq.pulses.append(pulse_strategy)
 
-        acq_data_list: List[OpInfo]
-        for portclock, acq_data_list in self._acquisitions.items():
-            for seq in self.sequencers.values():
-                if seq.portclock == portclock:
-                    op_info_to_op_strategy_func = partial(
-                        get_operation_strategy,
-                        channel_name=seq._settings.channel_name,
-                    )
-                    strategies_for_acquisitions = map(
-                        op_info_to_op_strategy_func,
-                        acq_data_list,
-                    )
-                    seq.acquisitions = list(strategies_for_acquisitions)
+                            if ChannelMode.DIGITAL in seq._settings.channel_name:
+                                # A digital pulse always uses one output.
+                                op_strategy.operation_info.data["output"] = (
+                                    seq.connected_output_indices[0]
+                                )
+                            seq.op_strategies.append(op_strategy)
 
     @abstractmethod
     def assign_frequencies(self, sequencer: Sequencer):
@@ -1878,7 +1835,11 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         scope_acq_seq = None
         for seq in self.sequencers.values():
-            op_infos = [acq.operation_info for acq in seq.acquisitions]
+            op_infos = [
+                op.operation_info
+                for op in seq.op_strategies
+                if op.operation_info.is_acquisition
+            ]
 
             has_scope = any(map(is_scope_acquisition, op_infos))
             if has_scope:

@@ -126,7 +126,7 @@ def test_nested_conditional_control_flow_raises_runtime_warning():
         latency_corrections={},
     )
 
-    sequencer.pulses = [
+    sequencer.op_strategies = [
         ConditionalStrategy(
             operation_info=OpInfo("Conditional", {}, 0),
             trigger_condition=FeedbackTriggerCondition(

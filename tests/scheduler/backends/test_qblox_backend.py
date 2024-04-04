@@ -1594,7 +1594,11 @@ def test_qcm_acquisition_error(hardware_cfg_cluster):
         total_play_time=10,
         instrument_cfg=hardware_cfg_cluster["cluster0"]["cluster0_module1"],
     )
-    qcm._acquisitions[0] = [0]
+    qcm._op_infos[0] = [
+        types.OpInfo(
+            name="test_acq", data={"acq_channel": 0, "duration": 20e-9}, timing=4e-9
+        )
+    ]
 
     with pytest.raises(RuntimeError):
         qcm.distribute_data()
@@ -1816,9 +1820,24 @@ def test_assign_pulse_and_acq_info_to_devices(
         "cluster0_module3"
     ]
     expected_num_of_pulses = 1 if reset_clock_phase is False else 2
-    actual_num_of_pulses = len(qrm._pulses[list(qrm._portclocks_with_data)[0]])
+
+    actual_portclocks = list(qrm._portclocks_with_data)
+    assert len(actual_portclocks) == 1
+    actual_portclock = actual_portclocks[0]
+
+    actual_num_of_pulses = len(
+        [
+            op_info
+            for op_info in qrm._op_infos[actual_portclock]
+            if not op_info.is_acquisition
+        ]
+    )
     actual_num_of_acquisitions = len(
-        qrm._acquisitions[list(qrm._portclocks_with_data)[0]]
+        [
+            op_info
+            for op_info in qrm._op_infos[actual_portclock]
+            if op_info.is_acquisition
+        ]
     )
     assert actual_num_of_pulses == expected_num_of_pulses, (
         f"Expected {expected_num_of_pulses} number of pulses, but found "

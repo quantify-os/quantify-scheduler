@@ -10,7 +10,6 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 
-from quantify_core.utilities.general import without
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends.graph_compilation import CompilationConfig
 from quantify_scheduler.backends.qblox import constants
@@ -646,8 +645,8 @@ def assign_pulse_and_acq_info_to_devices(
                 # Distribute clock operations to all sequencers utilizing that clock
                 for (map_port, map_clock), device_name in portclock_mapping.items():
                     if (combined_data.name == "LatchReset") or map_clock == clock:
-                        device_compilers[device_name].add_pulse(
-                            port=map_port, clock=map_clock, pulse_info=combined_data
+                        device_compilers[device_name].add_op_info(
+                            port=map_port, clock=map_clock, op_info=combined_data
                         )
             else:
                 if (port, clock) not in portclock_mapping:
@@ -659,8 +658,8 @@ def assign_pulse_and_acq_info_to_devices(
                         f"Relevant operation:\n{combined_data}."
                     )
                 device_name = portclock_mapping[(port, clock)]
-                device_compilers[device_name].add_pulse(
-                    port=port, clock=clock, pulse_info=combined_data
+                device_compilers[device_name].add_op_info(
+                    port=port, clock=clock, op_info=combined_data
                 )
 
         for acq_data in op_data.data["acquisition_info"]:
@@ -674,11 +673,6 @@ def assign_pulse_and_acq_info_to_devices(
 
             if port is None:
                 continue
-
-            hashed_dict = without(acq_data, ["t0", "waveforms"])
-            hashed_dict["waveforms"] = []
-            for acq in acq_data["waveforms"]:
-                hashed_dict["waveforms"].append(acq)
 
             combined_data = OpInfo(
                 name=op_data.data["name"],
@@ -695,8 +689,8 @@ def assign_pulse_and_acq_info_to_devices(
                     f"Relevant operation:\n{combined_data}."
                 )
             device_name = portclock_mapping[(port, clock)]
-            device_compilers[device_name].add_acquisition(
-                port=port, clock=clock, acq_info=combined_data
+            device_compilers[device_name].add_op_info(
+                port=port, clock=clock, op_info=combined_data
             )
 
 

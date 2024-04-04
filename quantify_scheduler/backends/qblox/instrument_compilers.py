@@ -323,12 +323,9 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
         for compiler in self.instrument_compilers.values():
             for portclock in compiler.portclocks:
                 port, clock = portclock
-                if portclock in self._pulses:
-                    for pulse in self._pulses[portclock]:
-                        compiler.add_pulse(port, clock, pulse)
-                if portclock in self._acquisitions:
-                    for acq in self._acquisitions[portclock]:
-                        compiler.add_acquisition(port, clock, acq)
+                if portclock in self._op_infos:
+                    for pulse in self._op_infos[portclock]:
+                        compiler.add_op_info(port, clock, pulse)
 
     def compile(
         self, debug_mode: bool, repetitions: int = 1

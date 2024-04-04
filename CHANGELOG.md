@@ -10,6 +10,7 @@
 
 - Schedules - Add `long_time_trace` and `long_time_trace_with_qubit` to perform  custom integrated time traces. (!878)
 - Qblox backend - Speedup execution by starting and stopping all armed sequencers in a Cluster via a single call. (!876)
+- Qblox backend - Keep order between pulses and acquisitions for opinfo and opstrategy. (!939)
 
 ## 0.19.0 (2024-04-03)
 

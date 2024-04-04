@@ -162,12 +162,15 @@ def test_param_update_after_param_op_except_if_simultaneous_play(
     iop_list = [ioperation_strategy_from_op_info(op, "complex_out_0") for op in op_list]
 
     for op in iop_list:
-        mock_sequencer.pulses.append(op)
+        mock_sequencer.op_strategies.append(op)
     mock_sequencer._insert_update_parameters()
 
-    assert len(mock_sequencer.pulses) == 6
+    assert len(mock_sequencer.op_strategies) == 6
     upd_param_inserted = next(
-        filter(lambda x: isinstance(x, UpdateParameterStrategy), mock_sequencer.pulses)
+        filter(
+            lambda x: isinstance(x, UpdateParameterStrategy),
+            mock_sequencer.op_strategies,
+        )
     )
     assert upd_param_inserted.operation_info == OpInfo(
         name="UpdateParameters",
@@ -203,15 +206,31 @@ def test_no_parameter_update(op_list: List[OpInfo], mock_sequencer: Sequencer):
     iop_list = [ioperation_strategy_from_op_info(op, "complex_out_0") for op in op_list]  # type: ignore
 
     for op in iop_list:
-        if op.operation_info.is_acquisition:
-            mock_sequencer.acquisitions.append(op)
-        else:
-            mock_sequencer.pulses.append(op)
+        mock_sequencer.op_strategies.append(op)
 
     mock_sequencer._insert_update_parameters()
 
-    assert len(mock_sequencer.pulses) == 3
-    for op in mock_sequencer.pulses:
+    assert (
+        len(
+            [
+                op_strategy
+                for op_strategy in mock_sequencer.op_strategies
+                if not op_strategy.operation_info.is_acquisition
+            ]
+        )
+        == 3
+    )
+    assert (
+        len(
+            [
+                op_strategy
+                for op_strategy in mock_sequencer.op_strategies
+                if op_strategy.operation_info.is_acquisition
+            ]
+        )
+        == 1
+    )
+    for op in mock_sequencer.op_strategies:
         assert op.operation_info.name != "UpdateParameters"
 
 
@@ -229,17 +248,33 @@ def test_only_one_param_update(mock_sequencer: Sequencer):
     iop_list = [ioperation_strategy_from_op_info(op, "complex_out_0") for op in op_list]  # type: ignore
 
     for op in iop_list:
-        if op.operation_info.is_acquisition:
-            mock_sequencer.acquisitions.append(op)
-        else:
-            mock_sequencer.pulses.append(op)
+        mock_sequencer.op_strategies.append(op)
 
     mock_sequencer._insert_update_parameters()
 
-    assert len(mock_sequencer.pulses) == 6
+    assert (
+        len(
+            [
+                op_strategy
+                for op_strategy in mock_sequencer.op_strategies
+                if not op_strategy.operation_info.is_acquisition
+            ]
+        )
+        == 6
+    )
+    assert (
+        len(
+            [
+                op_strategy
+                for op_strategy in mock_sequencer.op_strategies
+                if op_strategy.operation_info.is_acquisition
+            ]
+        )
+        == 1
+    )
     upd_params = [
         op
-        for op in mock_sequencer.pulses
+        for op in mock_sequencer.op_strategies
         if op.operation_info.name == "UpdateParameters"
     ]
     assert len(upd_params) == 1
@@ -268,10 +303,7 @@ def test_error_parameter_update_end_of_schedule(
     iop_list = [ioperation_strategy_from_op_info(op, "complex_out_0") for op in op_list]  # type: ignore
 
     for op in iop_list:
-        if op.operation_info.is_acquisition:
-            mock_sequencer.acquisitions.append(op)
-        else:
-            mock_sequencer.pulses.append(op)
+        mock_sequencer.op_strategies.append(op)
 
     with pytest.raises(
         RuntimeError,
@@ -291,10 +323,7 @@ def test_error_parameter_update_at_control_flow_return(mock_sequencer: Sequencer
     iop_list = [ioperation_strategy_from_op_info(op, "complex_out_0") for op in op_list]  # type: ignore
 
     for op in iop_list:
-        if op.operation_info.is_acquisition:
-            mock_sequencer.acquisitions.append(op)
-        else:
-            mock_sequencer.pulses.append(op)
+        mock_sequencer.op_strategies.append(op)
 
     with pytest.raises(
         RuntimeError,
