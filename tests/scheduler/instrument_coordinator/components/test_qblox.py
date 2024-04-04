@@ -44,6 +44,9 @@ from quantify_scheduler.operations.pulse_library import (
 )
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.schedule import AcquisitionMetadata, Schedule
+from quantify_scheduler.helpers.qblox_dummy_instrument import (
+    start_dummy_cluster_armed_sequencers,
+)
 
 
 @pytest.fixture
@@ -87,6 +90,14 @@ def make_cluster_component(mocker):
         cluster_component = qblox.ClusterComponent(cluster)
 
         mocker.patch.object(cluster, "reference_source", wraps=cluster.reference_source)
+
+        mocker.patch.object(
+            cluster,
+            "start_sequencer",
+            wraps=lambda: start_dummy_cluster_armed_sequencers(cluster_component),
+        )
+
+        mocker.patch.object(cluster, "stop_sequencer", wraps=cluster.stop_sequencer)
 
         for comp in cluster_component._cluster_modules.values():
             instrument = comp.instrument
@@ -797,7 +808,7 @@ def test_start_baseband(
     qrm.instrument.start_sequencer.assert_called()
 
 
-def test_start_rf(
+def test_start_cluster(
     mock_setup_basic_transmon_with_standard_params,
     schedule_with_measurement_q2,
     hardware_cfg_rf,
@@ -822,18 +833,15 @@ def test_start_rf(
     qcm_rf = cluster._cluster_modules[f"{cluster_name}_module2"]
     qrm_rf = cluster._cluster_modules[f"{cluster_name}_module4"]
 
-    qcm_rf.prepare(prog[cluster_name][f"{cluster_name}_module2"])
-    qrm_rf.prepare(prog[cluster_name][f"{cluster_name}_module4"])
+    cluster.prepare(prog[cluster_name])
 
-    qcm_rf.start()
-    qrm_rf.start()
+    cluster.start()
 
     # Assert
     qcm_rf.instrument.arm_sequencer.assert_called_with(sequencer=0)
     qrm_rf.instrument.arm_sequencer.assert_called_with(sequencer=0)
 
-    qcm_rf.instrument.start_sequencer.assert_called()
-    qrm_rf.instrument.start_sequencer.assert_called()
+    cluster.instrument.start_sequencer.assert_called()
 
 
 def test_stop_cluster(make_cluster_component):
@@ -844,8 +852,7 @@ def test_stop_cluster(make_cluster_component):
     cluster.stop()
 
     # Assert
-    for comp in cluster._cluster_modules.values():
-        comp.instrument.stop_sequencer.assert_called()
+    cluster.instrument.stop_sequencer.assert_called()
 
 
 # ------------------- _QRMAcquisitionManager -------------------

@@ -246,11 +246,15 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
         """Store program containing sequencer settings."""
         self._program = program
 
+    def disable_sync(self) -> None:
+        """Disable sync for all sequencers."""
+        for idx in range(self._hardware_properties.number_of_sequencers):
+            # Prevent hanging on next run if instrument is not used.
+            self._set_parameter(self.instrument[f"sequencer{idx}"], "sync_en", False)
+
     def stop(self) -> None:
         """Stops all execution."""
-        for idx in range(self._hardware_properties.number_of_sequencers):
-            # disable sync to prevent hanging on next run if instrument is not used.
-            self._set_parameter(self.instrument[f"sequencer{idx}"], "sync_en", False)
+        self.disable_sync()
         self.instrument.stop_sequencer()
 
     @abstractmethod
@@ -365,9 +369,9 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
 
         return channel_map_parameters
 
-    def _arm_all_sequencers_in_program(self, program: Dict[str, Any]):
+    def arm_all_sequencers_in_program(self) -> None:
         """Arm all the sequencers that are part of the program."""
-        for seq_name in program.get("sequencers", {}):
+        for seq_name in self._program.get("sequencers", {}):
             if seq_name in self._seq_name_to_idx_map:
                 seq_idx = self._seq_name_to_idx_map[seq_name]
                 self.instrument.arm_sequencer(sequencer=seq_idx)
@@ -461,7 +465,7 @@ class _QCMComponent(_ModuleComponentBase):
 
     def start(self) -> None:
         """Arm sequencers and start sequencers."""
-        self._arm_all_sequencers_in_program(self._program)
+        self.arm_all_sequencers_in_program()
         self._start_armed_sequencers()
 
     def _configure_global_settings(self, settings: BaseModuleSettings):
@@ -602,7 +606,7 @@ class _QRMComponent(_ModuleComponentBase):
     def start(self) -> None:
         """Clear acquisition data, arm sequencers and start sequencers."""
         self._clear_sequencer_acquisition_data()
-        self._arm_all_sequencers_in_program(self._program)
+        self.arm_all_sequencers_in_program()
         self._start_armed_sequencers()
 
     def _clear_sequencer_acquisition_data(self):
@@ -1481,13 +1485,25 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
 
     def start(self) -> None:
         """Starts all the modules in the cluster."""
-        for comp in self._cluster_modules.values():
-            comp.start()
+        # Disarming all sequencers, to make sure the last
+        # `self.instrument.start_sequencer` only starts sequencers
+        # which are explicitly armed by the subsequent calls.
+        self.instrument.stop_sequencer()
+
+        # Arming all sequencers in the program.
+        for comp_name, comp in self._cluster_modules.items():
+            if comp_name in self._program:
+                comp.arm_all_sequencers_in_program()
+
+        # Starts all sequencers in the cluster, time efficiently.
+        self.instrument.start_sequencer()
 
     def stop(self) -> None:
         """Stops all the modules in the cluster."""
         for comp in self._cluster_modules.values():
-            comp.stop()
+            comp.disable_sync()
+        # Stops all sequencers in the cluster, time efficiently.
+        self.instrument.stop_sequencer()
 
     def _configure_cmm_settings(self, settings: Dict[str, Any]):
         """

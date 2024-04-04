@@ -44,6 +44,7 @@ from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
+from quantify_scheduler.helpers.qblox_dummy_instrument import start_dummy_cluster_armed_sequencers
 
 
 # First, don't forget to set the data directory!
@@ -88,6 +89,9 @@ cluster = Cluster(
 )
 
 ic_cluster = ClusterComponent(cluster)
+
+# Temporarily fixing dummy cluster's deficiency.
+cluster.start_sequencer = lambda : start_dummy_cluster_armed_sequencers(ic_cluster)
 
 # We create an InstrumentCoordinator to control the cluster and add it to the
 # QuantumDevice.
@@ -513,6 +517,9 @@ cluster = Cluster(
 )
 
 ic_cluster = ClusterComponent(cluster)
+
+# Temporarily fixing dummy cluster's deficiency.
+cluster.start_sequencer = lambda : start_dummy_cluster_armed_sequencers(ic_cluster)
 
 instrument_coordinator = InstrumentCoordinator("instrument_coordinator")
 instrument_coordinator.add_component(ic_cluster)

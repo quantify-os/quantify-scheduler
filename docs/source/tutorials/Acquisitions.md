@@ -51,12 +51,16 @@ In this tutorial we will use the Qblox dummy device, but for real hardware, the 
 ```{code-cell} ipython3
 from qblox_instruments import Cluster, ClusterType
 from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
+from quantify_scheduler.helpers.qblox_dummy_instrument import start_dummy_cluster_armed_sequencers
 
 cluster = Cluster("cluster0",
                   identifier="<ip address>",
                   dummy_cfg={1: ClusterType.CLUSTER_QRM},
           )
 cluster_component = ClusterComponent(cluster)
+
+# Temporarily fixing dummy cluster's deficiency.
+cluster.start_sequencer = lambda : start_dummy_cluster_armed_sequencers(cluster_component)
 ```
 
 ```{code-cell} ipython3
