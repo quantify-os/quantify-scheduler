@@ -269,7 +269,7 @@ class ScheduleGettable:
     def process_acquired_data(  # noqa: PLR0912
         self,
         acquired_data: Dataset,
-    ) -> tuple[NDArray[np.float_], ...]:
+    ) -> tuple[NDArray[np.float64], ...]:
         """
         Reshapes the data as returned from the instrument coordinator into the form
         accepted by the measurement control.

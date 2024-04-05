@@ -8,7 +8,9 @@
 
 ### Merged branches and closed issues
 
-- Schedules - Add `long_time_trace` and `long_time_trace_with_qubit` to perform  custom integrated time traces. (!878)
+- Linter
+  - Replace deprecated numpy definitions with numpy 2.0 compatible definitions. (!952)
+- Schedules - Add `long_time_trace` and `long_time_trace_with_qubit` to perform custom integrated time traces. (!878)
 - Qblox backend - Speedup execution by starting and stopping all armed sequencers in a Cluster via a single call. (!876)
 - Qblox backend - Keep order between pulses and acquisitions for opinfo and opstrategy. (!939)
 - Documentation

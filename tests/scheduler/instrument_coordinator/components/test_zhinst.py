@@ -259,7 +259,7 @@ def acquisition_test_data(request):
     acq_protocol, bin_mode = request.param
 
     if acq_protocol == "Trace" and bin_mode == BinMode.AVERAGE:
-        expected_data = np.ones((1, 64), dtype=np.complex_)
+        expected_data = np.ones((1, 64), dtype=np.complex128)
         expected_result = xr.Dataset(
             {
                 0: (
@@ -270,12 +270,12 @@ def acquisition_test_data(request):
             }
         )
     elif acq_protocol == "SSBIntegrationComplex" and bin_mode == BinMode.AVERAGE:
-        expected_data = np.ones((1,), dtype=np.complex_)
+        expected_data = np.ones((1,), dtype=np.complex128)
         expected_result = xr.Dataset(
             {0: (["acq_index_0"], expected_data, {"acq_protocol": acq_protocol})}
         )
     elif acq_protocol == "SSBIntegrationComplex" and bin_mode == BinMode.APPEND:
-        expected_data = np.ones((64, 1), dtype=np.complex_)
+        expected_data = np.ones((64, 1), dtype=np.complex128)
         expected_result = xr.Dataset(
             {
                 0: (

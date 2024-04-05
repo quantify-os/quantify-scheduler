@@ -11,7 +11,7 @@ def test_ndarray():
 
     instance = Model(a_string="foo", an_array=[1 + 1j, 101])  # type: ignore
     assert isinstance(instance.an_array, NDArray)
-    assert instance.an_array.dtype == np.complex_
+    assert instance.an_array.dtype == np.complex128
 
     serialized = instance.model_dump_json()
     deserialized = Model.model_validate_json(serialized)
