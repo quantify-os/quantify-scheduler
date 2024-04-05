@@ -125,7 +125,7 @@ from quantify_scheduler.instrument_coordinator.components.qblox import ClusterCo
 cluster = Cluster(
     "cluster",
     dummy_cfg={
-        1: ClusterType.CLUSTER_QRM,
+        1: ClusterType.CLUSTER_QRM_RF,
         2: ClusterType.CLUSTER_QCM_RF,
     },
 )
