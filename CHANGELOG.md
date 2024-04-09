@@ -15,6 +15,7 @@
 - Qblox backend - Keep order between pulses and acquisitions for opinfo and opstrategy. (!939)
 - Documentation
   - Update dummy cluster configuration to use RF module. (!951)
+- Qblox backend - Move the logic for updating `SetClockFrequency` from `QbloxBaseModule.distribute_data()` partly to a new method `QbloxBaseModule._update_set_clock_frequency_operations()` and partly to a new function `quantify_scheduler.backends.qblox_backend._add_clock_freqs_to_set_clock_frequency()`. (!949)
 
 ## 0.19.0 (2024-04-03)
 

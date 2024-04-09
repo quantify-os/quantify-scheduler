@@ -1204,8 +1204,18 @@ class Sequencer:
         Perform necessary operations on this sequencer's data before
         :meth:`~Sequencer.compile` is called.
         """
+        self._update_set_clock_frequency_operations()
         self.op_strategies = self._replace_marker_pulses(self.op_strategies)
         self._insert_update_parameters()
+
+    def _update_set_clock_frequency_operations(self) -> None:
+        for op_strat in self.op_strategies:
+            if op_strat.operation_info.name == SetClockFrequency.__name__:
+                op_strat.operation_info.data.update(
+                    {
+                        "interm_freq_old": self.frequency,
+                    }
+                )
 
     def compile(
         self,
@@ -1604,32 +1614,15 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 f"which is not supported by hardware."
             )
 
-        compiler_container = self.parent.parent
-
         for seq in self.sequencers.values():
             if seq.op_strategies is None:
                 seq.op_strategies = []
-
-            clock_freq = compiler_container.resources.get(seq.clock, {}).get(
-                "freq", None
-            )
 
             for portclock, op_info_list in self._op_infos.items():
                 if seq.portclock == portclock or (
                     portclock[0] is None and portclock[1] == seq.clock
                 ):
                     for op_info in op_info_list:
-                        if (
-                            not op_info.is_acquisition
-                            and op_info.name == SetClockFrequency.__name__
-                        ):
-                            op_info.data.update(
-                                {
-                                    "clock_freq_old": clock_freq,
-                                    "interm_freq_old": seq.frequency,
-                                }
-                            )
-
                         if not op_info.is_acquisition or not (
                             portclock[0] is None and portclock[1] == seq.clock
                         ):

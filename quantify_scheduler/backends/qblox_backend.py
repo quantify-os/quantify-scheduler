@@ -463,6 +463,8 @@ def hardware_compile(
 
     schedule = apply_distortion_corrections(schedule, hardware_cfg)
 
+    schedule = _add_clock_freqs_to_set_clock_frequency(schedule)
+
     validate_non_overlapping_stitched_pulse(schedule)
 
     container = compiler_container.CompilerContainer.from_hardware_cfg(
@@ -638,6 +640,22 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
             data = _generate_new_style_hardware_compilation_config(data)
 
         return data
+
+
+def _add_clock_freqs_to_set_clock_frequency(schedule: Schedule) -> Schedule:
+    for operation in schedule.operations.values():
+        for pulse_info in operation["pulse_info"]:
+            clock_freq = schedule.resources.get(pulse_info["clock"], {}).get(
+                "freq", None
+            )
+
+            if "clock_freq_new" in pulse_info:
+                pulse_info.update(
+                    {
+                        "clock_freq_old": clock_freq,
+                    }
+                )
+    return schedule
 
 
 def validate_non_overlapping_stitched_pulse(schedule: Schedule, **_: Any) -> None:
