@@ -44,7 +44,7 @@ class ConditionalManager:
         if operation.operation_info.is_real_time_io_operation:
             self.num_real_time_instructions += 1
 
-    def replace_enable_conditional(self, instruction: list[list]) -> None:
+    def replace_enable_conditional(self, instruction: list[str | int]) -> None:
         """
         Replace the enable conditional instruction.
 

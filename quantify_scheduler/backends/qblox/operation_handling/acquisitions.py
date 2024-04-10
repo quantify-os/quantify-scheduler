@@ -163,10 +163,6 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
             The bin_idx to store the result in, can be either an int (for immediates) or
             a str (for registers).
         """
-        qasm_program.verify_square_acquisition_duration(
-            self.operation_info, self.operation_info.duration
-        )
-
         qasm_program.emit(
             q1asm_instructions.ACQUIRE,
             self.acq_channel,

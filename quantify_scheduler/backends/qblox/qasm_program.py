@@ -5,7 +5,16 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Hashable, Iterator, List, Optional, Sequence, Union
+from typing import (
+    TYPE_CHECKING,
+    Generator,
+    Hashable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Union,
+)
 
 import numpy as np
 from columnar import columnar
@@ -61,8 +70,6 @@ class QASMProgram:
         self.elapsed_time: int = 0
         """The time elapsed after finishing the program in its current form. This is
         used  to keep track of the overall timing and necessary waits."""
-        self.integration_length_acq: Optional[int] = None
-        """Integration length to use for the square acquisition."""
         self.time_last_acquisition_triggered: Optional[int] = None
         """Time on which the last acquisition was triggered. Is ``None`` if no previous
         acquisition was triggered."""
@@ -136,7 +143,7 @@ class QASMProgram:
         comment_str = f"# {comment}" if comment is not None else ""
         return [label_str, instruction, instr_args, comment_str]
 
-    def emit(self, *args, **kwargs) -> list[str, int]:
+    def emit(self, *args, **kwargs) -> list[str | int]:
         """
         Wrapper around the ``get_instruction_as_list`` which adds it to this program.
 
@@ -325,80 +332,6 @@ class QASMProgram:
                 f"operations.\nAre multiple operations being started at the same time?"
             )
 
-    def verify_square_acquisition_duration(self, acquisition: OpInfo, duration: float):
-        """
-        Verifies if the square acquisition is valid by checking constraints on the
-        duration.
-
-        Parameters
-        ----------
-        acquisition:
-            The operation info of the acquisition to process.
-        duration:
-            The duration to verify.
-
-        Raises
-        ------
-        ValueError
-            When attempting to perform an acquisition of a duration that is not a
-            multiple of 4 ns.
-        ValueError
-            When using a different duration than previous acquisitions.
-        """
-        duration_ns = int(np.round(duration * 1e9))
-        if self.integration_length_acq is None:
-            if duration_ns % constants.GRID_TIME != 0:
-                raise ValueError(
-                    f"Attempting to perform square acquisition with a "
-                    f"duration of {duration_ns} ns. Please ensure the "
-                    f"duration is a multiple of {constants.GRID_TIME} "
-                    f"ns.\n\nException caused by {repr(acquisition)}."
-                )
-            self.integration_length_acq = duration_ns
-        elif self.integration_length_acq != duration_ns:
-            raise ValueError(
-                f"Attempting to set an integration_length of {duration_ns} "
-                f"ns, while this was previously determined to be "
-                f"{self.integration_length_acq}. Please "
-                f"check whether all square acquisitions in the schedule "
-                f"have the same duration."
-            )
-
-    def _acquire_looped(self, acquisition: OpInfo, bin_idx: Union[int, str]) -> None:
-        if bin_idx != 0:
-            raise ValueError(
-                "looped acquisition currently only works for acquisition "
-                "index 0 in `BinMode` `AVERAGE`."
-            )
-
-        measurement_idx = acquisition.data["acq_channel"]
-
-        duration = acquisition.data["integration_time"]
-        self.verify_square_acquisition_duration(acquisition, duration)
-
-        duration_ns = helpers.to_grid_time(duration)
-
-        number_of_times = acquisition.data["num_times"]
-        buffer_time = acquisition.data["buffer_time"]
-        with self.loop(
-            label=f"looped_acq{len(self.instructions)}", repetitions=number_of_times
-        ) as loop_register:
-            self.emit(
-                q1asm_instructions.ACQUIRE,
-                measurement_idx,
-                loop_register,
-                duration_ns,
-            )
-            buffer_time_ns = helpers.to_grid_time(buffer_time)
-            if buffer_time > 0:
-                self.emit(q1asm_instructions.WAIT, buffer_time_ns)
-            if buffer_time < 0:
-                raise ValueError(
-                    f"Buffer time cannot be smaller than 0.\n\nException "
-                    f"occurred because of {repr(acquisition)}."
-                )
-        self.elapsed_time += number_of_times * (duration_ns + buffer_time_ns)
-
     def set_gain_from_amplitude(
         self,
         amplitude_path_I: float,
@@ -511,7 +444,9 @@ class QASMProgram:
             )
 
     @contextmanager
-    def conditional(self, operation: ConditionalStrategy) -> None:
+    def conditional(
+        self, operation: ConditionalStrategy
+    ) -> Generator[None, None, None]:
         """
         Defines a conditional block in the QASM program.
 

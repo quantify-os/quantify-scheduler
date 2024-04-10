@@ -42,6 +42,7 @@ from quantify_scheduler.backends.qblox import (
 from quantify_scheduler.backends.qblox.enums import ChannelMode
 from quantify_scheduler.backends.qblox.operation_handling.acquisitions import (
     AcquisitionStrategyPartial,
+    SquareAcquisitionStrategy,
 )
 from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
 from quantify_scheduler.backends.qblox.operation_handling.factory import (
@@ -643,6 +644,42 @@ class Sequencer:
                     self._settings.thresholded_acq_trigger_en = True
                     self._settings.thresholded_acq_trigger_address = address
 
+        self._settings.integration_length_acq = (
+            self._get_integration_length_from_acquisitions()
+        )
+
+    def _get_integration_length_from_acquisitions(self) -> int | None:
+        """
+        Get the (validated) integration_length sequencer setting.
+
+        Get the duration of all SSB integration acquisitions assigned to this sequencer
+        and validate that they are all the same.
+        """
+        integration_length = None
+        for op_strat in self.op_strategies:
+            if not isinstance(op_strat, SquareAcquisitionStrategy):
+                continue
+
+            acq_duration_ns = round(op_strat.operation_info.duration * 1e9)
+            if acq_duration_ns % constants.GRID_TIME != 0:
+                raise ValueError(
+                    "Attempting to perform square acquisition with a duration of "
+                    f"{acq_duration_ns} ns. Please ensure the duration is a multiple "
+                    f"of {constants.GRID_TIME} ns.\n\nException caused by "
+                    f"{repr(op_strat)}."
+                )
+            if integration_length is None:
+                integration_length = acq_duration_ns
+            elif integration_length != acq_duration_ns:
+                raise ValueError(
+                    f"Attempting to set an integration_length of {acq_duration_ns} "
+                    f"ns, while this was previously determined to be "
+                    f"{integration_length}. Please check whether all square "
+                    "acquisitions in the schedule have the same duration."
+                )
+
+        return integration_length
+
     def _generate_acq_declaration_dict(
         self,
         repetitions: int,
@@ -875,8 +912,6 @@ class Sequencer:
 
         if self.qasm_hook_func:
             self.qasm_hook_func(qasm)
-
-        self._settings.integration_length_acq = qasm.integration_length_acq
 
         max_instructions = (
             constants.MAX_NUMBER_OF_INSTRUCTIONS_QCM
