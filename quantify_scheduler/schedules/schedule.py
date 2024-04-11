@@ -8,6 +8,7 @@ import json
 import warnings
 from abc import ABC
 from collections import UserDict
+from copy import copy
 from itertools import chain
 from typing import TYPE_CHECKING, Any, Hashable, Literal
 from uuid import uuid4
@@ -28,6 +29,15 @@ if TYPE_CHECKING:
     from matplotlib.figure import Figure
 
     from quantify_scheduler.resources import Resource
+
+DictOrdered = dict
+"""
+An ordered dictionary type hint,
+which makes it clear and obvious
+that order is significant and used by the logic.
+Note: dict is ordered from Python version 3.7.
+Note: collections.OrderedDict can be slow in some cases.
+"""
 
 
 # pylint: disable=too-many-ancestors
@@ -50,8 +60,9 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
     - operation_dict - a hash table containing the unique
         :class:`quantify_scheduler.operations.operation.Operation` s added to the
         schedule.
-    - schedulables - a dictionary of all timing constraints added
-        between operations.
+    - schedulables - an ordered dictionary of all timing constraints added
+        between operations; when multiple schedulables have the same
+        absolute time, the order defined in the dictionary decides precedence.
 
     The :class:`~.Schedule` provides an API to create schedules.
     The :class:`~.CompiledSchedule` represents a schedule after
@@ -115,9 +126,9 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         return self["operation_dict"]
 
     @property
-    def schedulables(self) -> dict[str, Any]:
+    def schedulables(self) -> DictOrdered[str, Any]:
         """
-        A list of schedulables describing the timing of operations.
+        Ordered dictionary of schedulables describing timing and order of operations.
 
         A schedulable uses timing constraints to constrain the operation in time by
         specifying the time (:code:`"rel_time"`) between a reference operation and the
@@ -649,6 +660,20 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         """
         return self.get("duration", None)
 
+    def __getstate__(self) -> dict[str, Any]:
+        data = copy(self.data)
+        # For serialization, we need to keep the order
+        # of keys in the serialized data too.
+        data["schedulables"] = list(data["schedulables"].items())
+        return data
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        if isinstance(state["schedulables"], list):
+            # Schedulables can be a list of pair of key values to store
+            # the order of schedulables too in the serialized data.
+            state["schedulables"] = {k: v for k, v in state["schedulables"]}
+        self.data = state
+
 
 class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
     """
@@ -854,12 +879,6 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
         # ensure the schedulable name is unique
         if label in self.schedulables:
             raise ValueError(f"Schedulable name '{label}' must be unique.")
-
-    def __getstate__(self) -> dict[str, Any]:
-        return self.data
-
-    def __setstate__(self, state: dict[str, Any]) -> None:
-        self.data = state
 
 
 class Schedulable(JSONSchemaValMixin, UserDict):

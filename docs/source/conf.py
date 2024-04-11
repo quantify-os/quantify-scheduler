@@ -439,6 +439,7 @@ nitpick_ignore = [
         "py:class",
         "quantify_scheduler.schedules.schedule.CompiledSchedule.hardware_timing_table",
     ),
+    ("py:class", "DictOrdered"),
     ("py:class", "quantify_scheduler.helpers.schedule.AcquisitionMetadata"),
     ("py:class", "_StaircaseParameters"),
     ("py:class", "quantify_scheduler.operations.operation.Operation"),

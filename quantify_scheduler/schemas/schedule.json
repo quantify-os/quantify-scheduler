@@ -21,7 +21,7 @@
         },
         "schedulables": {
             "type": "object",
-            "description": "A dictionary containing schedulables."
+            "description": "An ordered dictionary containing schedulables."
         },
         "operation_dict": {
             "type": "object",
