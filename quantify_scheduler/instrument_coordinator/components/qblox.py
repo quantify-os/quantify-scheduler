@@ -376,12 +376,22 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
                 seq_idx = self._seq_name_to_idx_map[seq_name]
                 self.instrument.arm_sequencer(sequencer=seq_idx)
 
+    def start(self) -> None:
+        """Clear data, arm sequencers and start sequencers."""
+        self.clear_data()
+        self.arm_all_sequencers_in_program()
+        self._start_armed_sequencers()
+
     def _start_armed_sequencers(self):
         """Start execution of the schedule: start armed sequencers."""
         for idx in range(self._hardware_properties.number_of_sequencers):
             state = self.instrument.get_sequencer_status(idx)
             if state.state is SequencerStates.ARMED:
                 self.instrument.start_sequencer(idx)
+
+    def clear_data(self) -> None:
+        """Clears remaining data on the module. Module type specific function."""
+        return None
 
     @property
     @abstractmethod
@@ -462,11 +472,6 @@ class _QCMComponent(_ModuleComponentBase):
             self._configure_sequencer_settings(
                 seq_idx=seq_idx, settings=SequencerSettings.from_dict(seq_cfg)
             )
-
-    def start(self) -> None:
-        """Arm sequencers and start sequencers."""
-        self.arm_all_sequencers_in_program()
-        self._start_armed_sequencers()
 
     def _configure_global_settings(self, settings: BaseModuleSettings):
         """
@@ -602,17 +607,6 @@ class _QRMComponent(_ModuleComponentBase):
             self._set_parameter(
                 self.instrument, f"scope_acq_avg_mode_en_path{path}", True
             )
-
-    def start(self) -> None:
-        """Clear acquisition data, arm sequencers and start sequencers."""
-        self._clear_sequencer_acquisition_data()
-        self.arm_all_sequencers_in_program()
-        self._start_armed_sequencers()
-
-    def _clear_sequencer_acquisition_data(self):
-        """Clear all acquisition data."""
-        for sequencer_id in range(self._hardware_properties.number_of_sequencers):
-            self.instrument.delete_acquisition_data(sequencer=sequencer_id, all=True)
 
     def _configure_global_settings(self, settings: BaseModuleSettings):
         """
@@ -780,6 +774,11 @@ class _QRMComponent(_ModuleComponentBase):
                 sequencer_and_qblox_acq_index = (sequencer_id, qblox_acq_index)
 
         return sequencer_and_qblox_acq_index
+
+    def clear_data(self) -> None:
+        """Clears remaining data on the module. Module type specific function."""
+        for sequencer_id in range(self._hardware_properties.number_of_sequencers):
+            self.instrument.delete_acquisition_data(sequencer=sequencer_id, all=True)
 
 
 class _RFComponent(_ModuleComponentBase):
@@ -1493,6 +1492,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         # Arming all sequencers in the program.
         for comp_name, comp in self._cluster_modules.items():
             if comp_name in self._program:
+                comp.clear_data()
                 comp.arm_all_sequencers_in_program()
 
         # Starts all sequencers in the cluster, time efficiently.
