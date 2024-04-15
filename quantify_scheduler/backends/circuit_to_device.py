@@ -6,7 +6,7 @@ from __future__ import annotations
 import warnings
 from copy import deepcopy
 from itertools import permutations
-from typing import Dict
+from typing import Dict, List, Sequence, overload
 
 import numpy as np
 from quantify_scheduler.backends.graph_compilation import (
@@ -17,10 +17,10 @@ from quantify_scheduler.backends.graph_compilation import (
 from quantify_scheduler.backends.qblox.enums import ChannelMode
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.resources import ClockResource
-from quantify_scheduler.schedules.schedule import Schedule, Schedulable
+from quantify_scheduler.schedules.schedule import Schedule, Schedulable, ScheduleBase
 
 
-def _compile_circuit_to_device(
+def compile_circuit_to_device_with_config_validation(
     schedule: Schedule,
     config: CompilationConfig | DeviceCompilationConfig | Dict | None = None,
     # config can be DeviceCompilationConfig and Dict to support (deprecated) calling
@@ -63,23 +63,11 @@ def _compile_circuit_to_device(
     ValueError
         When both ``config`` and ``device_cfg`` are supplied.
     """
-    if (config is not None) and (device_cfg is not None):
-        raise ValueError(
-            f"`{_compile_circuit_to_device.__name__}` was called with {config=} "
-            f"and {device_cfg=}. Please make sure this function is called with "
-            f"only one of the two (CompilationConfig recommended)."
-        )
-    if not isinstance(config, CompilationConfig):
-        warnings.warn(
-            f"`{_compile_circuit_to_device.__name__}` will require a full "
-            f"CompilationConfig as input as of quantify-scheduler >= 0.19.0",
-            FutureWarning,
-        )
-    if isinstance(config, CompilationConfig):
-        device_cfg = config.device_compilation_config
-    elif config is not None:
-        # Support for (deprecated) calling with device_cfg as positional argument:
-        device_cfg = config
+    device_cfg = _validate_and_extract_device_cfg(
+        config=config,
+        device_cfg=device_cfg,
+        caller_function_name=compile_circuit_to_device_with_config_validation.__name__,
+    )
 
     if device_cfg is None:
         # This is a special case to be supported to enable compilation for schedules
@@ -88,67 +76,69 @@ def _compile_circuit_to_device(
         # A better solution would be to omit skip this compile call in a backend,
         # but this is supported for backwards compatibility reasons.
         return schedule
-    elif not isinstance(device_cfg, DeviceCompilationConfig):
-        if "backend" in device_cfg:
-            raise ValueError(
-                f"`{DeviceCompilationConfig.__name__}` no longer takes a"
-                f" 'backend' field; please remove it."
-            )
-        device_cfg = DeviceCompilationConfig.model_validate(device_cfg)
 
-    for op_key in schedule.operations:
+    return _compile_circuit_to_device(schedule, device_cfg)
+
+
+# It is important that if the operation is a Schedule type, we always return a Schedule.
+# Otherwise, we can return an Operation or a Schedule.
+@overload
+def _compile_circuit_to_device(
+    operation: Schedule,
+    device_cfg: DeviceCompilationConfig,
+) -> Schedule: ...
+@overload
+def _compile_circuit_to_device(
+    operation: Operation | Schedule,
+    device_cfg: DeviceCompilationConfig,
+) -> Operation | Schedule: ...
+def _compile_circuit_to_device(
+    operation,
+    device_cfg,
+):
+    if isinstance(operation, ScheduleBase):
+        for inner_op_key in operation.operations:
+            operation.operations[inner_op_key] = _compile_circuit_to_device(
+                operation=operation.operations[inner_op_key], device_cfg=device_cfg
+            )
+        return operation
+    elif not (operation.valid_pulse or operation.valid_acquisition):
         # If operation is a valid pulse or acquisition it will not attempt to
         # add pulse/acquisition info in the lines below (if operation.valid_gate
         # will not work here for e.g. Measure, which is also a valid
         # acquisition)
-        if isinstance(schedule.operations[op_key], Schedule):
-            schedule.operations[op_key] = _compile_circuit_to_device(
-                schedule=schedule.operations[op_key], config=config
+        qubits: Sequence[str] = operation.data["gate_info"]["qubits"]
+        operation_type: str = operation.data["gate_info"]["operation_type"]
+
+        # single qubit operations
+        if len(qubits) == 1:
+            return _compile_single_qubit(
+                operation=operation,
+                qubit=qubits[0],
+                operation_type=operation_type,
+                device_cfg=device_cfg,
             )
-        elif not (
-            schedule.operations[op_key].valid_pulse
-            or schedule.operations[op_key].valid_acquisition
-        ):
-            qubits = schedule.operations[op_key].data["gate_info"]["qubits"]
-            operation_type = schedule.operations[op_key].data["gate_info"][
-                "operation_type"
-            ]
 
-            # single qubit operations
-            if len(qubits) == 1:
-                schedule.operations[op_key] = _compile_single_qubit(
-                    operation=schedule.operations[op_key],
-                    qubit=qubits[0],
-                    operation_type=operation_type,
-                    device_cfg=device_cfg,
-                    config=config,
-                )
-
-            # it is a two-qubit operation if the operation not in the qubit config
-            elif (
-                len(qubits) == 2
-                and operation_type not in device_cfg.elements[qubits[0]]
-            ):
-                schedule.operations[op_key] = _compile_two_qubits(
-                    operation=schedule.operations[op_key],
-                    qubits=qubits,
-                    operation_type=operation_type,
-                    device_cfg=device_cfg,
-                    config=config,
-                )
-            # we only support 2-qubit operations and single-qubit operations.
-            # some single-qubit operations (reset, measure) can be expressed as acting
-            # on multiple qubits simultaneously. That is covered through this for-loop.
-            else:
-                schedule.operations[op_key] = _compile_multiplexed(
-                    operation=schedule.operations[op_key],
-                    qubits=qubits,
-                    operation_type=operation_type,
-                    device_cfg=device_cfg,
-                    config=config,
-                )
-
-    return schedule
+        # it is a two-qubit operation if the operation not in the qubit config
+        elif len(qubits) == 2 and operation_type not in device_cfg.elements[qubits[0]]:
+            return _compile_two_qubits(
+                operation=operation,
+                qubits=qubits,
+                operation_type=operation_type,
+                device_cfg=device_cfg,
+            )
+        # we only support 2-qubit operations and single-qubit operations.
+        # some single-qubit operations (reset, measure) can be expressed as acting
+        # on multiple qubits simultaneously. That is covered through this for-loop.
+        else:
+            return _compile_multiplexed(
+                operation=operation,
+                qubits=qubits,
+                operation_type=operation_type,
+                device_cfg=device_cfg,
+            )
+    else:
+        return operation
 
 
 def compile_circuit_to_device(
@@ -164,10 +154,10 @@ def compile_circuit_to_device(
         f"Calling {compile_circuit_to_device.__name__} directly is deprecated "
         f"and will be removed from the public interface in quantify-scheduler "
         f">= 0.21.0. Please use `QuantifyCompiler` instead, which calls "
-        f"{_compile_circuit_to_device.__name__} as a compilation node.",
+        f"{compile_circuit_to_device_with_config_validation.__name__} as a compilation node.",
         FutureWarning,
     )
-    return _compile_circuit_to_device(
+    return compile_circuit_to_device_with_config_validation(
         schedule=deepcopy(schedule), config=config, device_cfg=device_cfg
     )
 
@@ -181,7 +171,8 @@ def set_pulse_and_acquisition_clock(
     device_cfg: DeviceCompilationConfig | Dict | None = None,
 ) -> Schedule:
     """
-    Ensures that each pulse/acquisition-level clock resource is added to the schedule.
+    Ensures that each pulse/acquisition-level clock resource is added to the schedule,
+    and validates the given configuration.
 
     If a pulse/acquisition-level clock resource has not been added
     to the schedule and is present in device_cfg, it is added to the schedule.
@@ -224,72 +215,109 @@ def set_pulse_and_acquisition_clock(
     ValueError
         When clock frequency is NaN.
     """
-    if (config is not None) and (device_cfg is not None):
-        raise ValueError(
-            f"`{set_pulse_and_acquisition_clock.__name__}` was called with {config=} "
-            f"and {device_cfg=}. Please make sure this function is called with "
-            f"only one of the two (CompilationConfig recommended)."
-        )
-    if not isinstance(config, CompilationConfig):
-        warnings.warn(
-            f"`{set_pulse_and_acquisition_clock.__name__}` will require a full "
-            f"CompilationConfig as input as of quantify-scheduler >= 0.19.0",
-            FutureWarning,
-        )
-    if isinstance(config, CompilationConfig):
-        device_cfg = config.device_compilation_config
-    elif config is not None:
-        # Support for (deprecated) calling with device_cfg as positional argument:
-        device_cfg = config
+    device_cfg = _validate_and_extract_device_cfg(
+        config=config,
+        device_cfg=device_cfg,
+        caller_function_name=set_pulse_and_acquisition_clock.__name__,
+    )
 
     if device_cfg is None:
-        # this is a special case to be supported to enable compilation for schedules
+        # This is a special case to be supported to enable compilation for schedules
         # that are defined completely at the quantum-device layer and require no
         # circuit to device compilation.
         # A better solution would be to omit skip this compile call in a backend,
         # but this is supported for backwards compatibility reasons.
         return schedule
-    elif not isinstance(device_cfg, DeviceCompilationConfig):
-        if "backend" in device_cfg:
-            raise ValueError(
-                f"`{DeviceCompilationConfig.__name__}` no longer takes a"
-                f" 'backend' field; please remove it."
-            )
-        device_cfg = DeviceCompilationConfig.model_validate(device_cfg)
+
     assert isinstance(device_cfg, DeviceCompilationConfig)
 
-    # verify that required clocks are present; print warning if they are inconsistent
-    verified_clocks = []
-    for key, operation in schedule.operations.items():
-        # Only if we have a valid device-level operation, we can assign clocks
-        if isinstance(operation, Schedule):
-            schedule.operations[key] = set_pulse_and_acquisition_clock(
-                operation, config
+    return _set_pulse_and_acquisition_clock(
+        schedule=schedule, operation=schedule, device_cfg=device_cfg, verified_clocks=[]
+    )
+
+
+# It is important that if the operation is a Schedule type, we always return a Schedule.
+# Otherwise, we can return an Operation or a Schedule.
+@overload
+def _set_pulse_and_acquisition_clock(
+    schedule: Schedule,
+    operation: Schedule,
+    device_cfg: DeviceCompilationConfig,
+    verified_clocks: List,
+) -> Schedule: ...
+@overload
+def _set_pulse_and_acquisition_clock(
+    schedule: Schedule,
+    operation: Operation | Schedule,
+    device_cfg: DeviceCompilationConfig,
+    verified_clocks: List,
+) -> Operation | Schedule: ...
+def _set_pulse_and_acquisition_clock(
+    schedule,
+    operation,
+    device_cfg,
+    verified_clocks,
+):
+    """
+    Ensures that each pulse/acquisition-level clock resource is added to the schedule.
+
+    Parameters
+    ----------
+    schedule
+        The resources from ``operation`` are added to ``schedule``
+        if ``operation`` is not a ``Schedule``.
+    operation
+        The ``operation`` to collect resources from.
+    device_cfg
+        Device compilation config.
+    verified_clocks
+        Already verified clocks.
+
+    Returns
+    -------
+    :
+        The modified ``operation`` with all clock resources added.
+    """
+    if isinstance(operation, ScheduleBase):
+        # verify that required clocks are present; print warning if they are inconsistent
+        verified_clocks = []
+        for inner_op_key in operation.operations:
+            # Only if we have a valid device-level operation, we can assign clocks
+            operation.operations[inner_op_key] = _set_pulse_and_acquisition_clock(
+                schedule=operation,
+                device_cfg=device_cfg,
+                operation=operation.operations[inner_op_key],
+                verified_clocks=verified_clocks,
             )
-        else:
-            _assert_operation_valid_device_level(operation)
+    else:
+        _assert_operation_valid_device_level(operation)
 
-            operation_info = operation["pulse_info"] + operation["acquisition_info"]
-            clocks_used = set([info["clock"] for info in operation_info])
-            for clock in clocks_used:
-                # In digital channels clocks are non-existant, so we skip them.
-                if clock == ChannelMode.DIGITAL:
-                    continue
-                if clock in verified_clocks:
-                    continue
-                # raises ValueError if no clock found;
-                # enters if condition if clock only in device config
-                if not _valid_clock_in_schedule(clock, device_cfg, schedule, operation):
-                    clock_resource = ClockResource(
-                        name=clock, freq=device_cfg.clocks[clock]
-                    )
-                    schedule.add_resource(clock_resource)
-                verified_clocks.append(clock)
+        operation_info = operation["pulse_info"] + operation["acquisition_info"]
+        clocks_used = set([info["clock"] for info in operation_info])
+        for clock in clocks_used:
+            # In digital channels clocks are non-existant, so we skip them.
+            if clock == ChannelMode.DIGITAL:
+                continue
+            if clock in verified_clocks:
+                continue
+            # raises ValueError if no clock found;
+            # enters if condition if clock only in device config
+            if not _valid_clock_in_schedule(clock, device_cfg, schedule, operation):
+                clock_resource = ClockResource(
+                    name=clock, freq=device_cfg.clocks[clock]
+                )
+                schedule.add_resource(clock_resource)
+            verified_clocks.append(clock)
 
-    return schedule
+    return operation
 
 
-def _valid_clock_in_schedule(clock, device_cfg, schedule, operation) -> bool:
+def _valid_clock_in_schedule(
+    clock: str,
+    device_cfg: DeviceCompilationConfig,
+    schedule: Schedule,
+    operation: Operation,
+) -> bool:
     """
     Asserts that valid clock is present. Returns whether clock is already in schedule.
 
@@ -412,12 +440,11 @@ def _assert_operation_valid_device_level(operation: Operation) -> None:
 
 
 def _compile_multiplexed(
-    operation,
-    qubits,
-    operation_type,
-    device_cfg,
-    config: CompilationConfig | DeviceCompilationConfig | Dict | None,
-) -> Schedule:
+    operation: Operation,
+    qubits: Sequence[str],
+    operation_type: str,
+    device_cfg: DeviceCompilationConfig,
+) -> Operation | Schedule:
     """
     Compiles gate with multiple qubits.
 
@@ -447,8 +474,10 @@ def _compile_multiplexed(
             operation, element_cfg[operation_type], mux_idx=mux_idx
         )
 
-        if isinstance(device_op, Schedule):
-            inner_subschedules.append(_compile_circuit_to_device(device_op, config))
+        if isinstance(device_op, ScheduleBase):
+            inner_subschedules.append(
+                _compile_circuit_to_device(operation=device_op, device_cfg=device_cfg)
+            )
         else:
             operation.add_device_representation(device_op)
             operation_has_device_representation = True
@@ -466,26 +495,25 @@ def _compile_multiplexed(
         for inner_subschedule in inner_subschedules:
             if ref_schedulable is not None:
                 inner_schedule.add(
-                    operation=_compile_circuit_to_device(inner_subschedule, config),
+                    operation=_compile_circuit_to_device(
+                        operation=inner_subschedule, device_cfg=device_cfg
+                    ),
                     rel_time=0,
                     ref_op=ref_schedulable,
                     ref_pt="start",
                 )
             else:
-                ref_schedulable = inner_schedule.add(
-                    operation=_compile_circuit_to_device(inner_subschedule, config),
-                )
+                ref_schedulable = inner_schedule.add(operation=inner_subschedule)
         return inner_schedule
     else:
         return operation
 
 
 def _compile_single_qubit(
-    operation,
-    qubit,
-    operation_type,
-    device_cfg,
-    config: CompilationConfig | DeviceCompilationConfig | Dict | None,
+    operation: Operation,
+    qubit: str,
+    operation_type: str,
+    device_cfg: DeviceCompilationConfig,
 ) -> Operation | Schedule:
     """
     Compiles gate with multiple qubits.
@@ -512,19 +540,18 @@ def _compile_single_qubit(
         operation_cfg=element_cfg[operation_type],
     )
 
-    if isinstance(device_op, Schedule):
-        return _compile_circuit_to_device(device_op, config)
+    if isinstance(device_op, ScheduleBase):
+        return _compile_circuit_to_device(operation=device_op, device_cfg=device_cfg)
     else:
         operation.add_device_representation(device_op)
         return operation
 
 
 def _compile_two_qubits(
-    operation,
-    qubits,
-    operation_type,
-    device_cfg,
-    config: CompilationConfig | DeviceCompilationConfig | Dict | None,
+    operation: Operation,
+    qubits: Sequence[str],
+    operation_type: str,
+    device_cfg: DeviceCompilationConfig,
 ) -> Operation | Schedule:
     """
     Compiles gate with multiple qubits.
@@ -570,8 +597,10 @@ def _compile_two_qubits(
         operation, edge_config[operation_type]
     )
 
-    if isinstance(device_op, Schedule):
-        return _compile_circuit_to_device(device_op, config)
+    if isinstance(device_op, ScheduleBase):
+        return compile_circuit_to_device_with_config_validation(
+            schedule=device_op, device_cfg=device_cfg
+        )
     else:
         operation.add_device_representation(device_op)
         return operation
@@ -620,6 +649,40 @@ def _get_device_repr_from_cfg_multiplexed(
                 factory_kwargs[key] = gate_info
 
     return factory_func(**factory_kwargs)
+
+
+def _validate_and_extract_device_cfg(
+    config: CompilationConfig | DeviceCompilationConfig | Dict | None,
+    device_cfg: DeviceCompilationConfig | Dict | None,
+    caller_function_name: str,
+) -> DeviceCompilationConfig:
+    if (config is not None) and (device_cfg is not None):
+        raise ValueError(
+            f"`{caller_function_name}` was called with {config=} "
+            f"and {device_cfg=}. Please make sure this function is called with "
+            f"only one of the two (CompilationConfig recommended)."
+        )
+    if not isinstance(config, CompilationConfig):
+        warnings.warn(
+            f"`{caller_function_name}` will require a full "
+            f"CompilationConfig as input as of quantify-scheduler >= 0.19.0",
+            FutureWarning,
+        )
+    if isinstance(config, CompilationConfig):
+        device_cfg = config.device_compilation_config
+    elif config is not None:
+        # Support for (deprecated) calling with device_cfg as positional argument:
+        device_cfg = config
+
+    if not isinstance(device_cfg, DeviceCompilationConfig):
+        if "backend" in device_cfg:
+            raise ValueError(
+                f"`{DeviceCompilationConfig.__name__}` no longer takes a"
+                f" 'backend' field; please remove it."
+            )
+        device_cfg = DeviceCompilationConfig.model_validate(device_cfg)
+
+    return device_cfg
 
 
 # pylint: disable=super-init-not-called

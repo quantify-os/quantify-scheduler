@@ -19,6 +19,7 @@
 - Qblox backend - Move the logic for determining and validating the `integration_length` from the`QASMProgram` to the `Sequencer` class. (!946)
 - Schedule - Introduce type alias update schedule serialization to make schedulables ordering more apparent. (!933)
 - Qblox backend - Fix cluster start function to clear acquisition data. (!955)
+- Compilation - Refactor device compilation to make schedule and operation compilation more consistent. (!938)
 
 ## 0.19.0 (2024-04-03)
 

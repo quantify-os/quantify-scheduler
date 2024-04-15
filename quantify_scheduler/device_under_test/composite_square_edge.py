@@ -91,7 +91,7 @@ class CompositeSquareEdge(Edge):
 
         Fills in the edges information to produce a valid device config for the
         quantify-scheduler making use of the
-        :func:`~.circuit_to_device._compile_circuit_to_device` function.
+        :func:`~.circuit_to_device.compile_circuit_to_device_with_config_validation` function.
         """
         # pylint: disable=line-too-long
         edge_op_config = {

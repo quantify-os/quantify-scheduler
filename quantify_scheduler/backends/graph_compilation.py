@@ -180,7 +180,7 @@ class DeviceCompilationConfig(DataStructure):
             {
                 "name": "circuit_to_device",
                 "compilation_func": "quantify_scheduler.backends.circuit_to_device."
-                + "_compile_circuit_to_device",
+                + "compile_circuit_to_device_with_config_validation",
             },
             {
                 "name": "set_pulse_and_acquisition_clock",

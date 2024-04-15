@@ -756,7 +756,7 @@ def _generate_legacy_hardware_config(  # noqa: PLR0912, PLR0915
             )
         return connectivity
 
-    port_clocks = _extract_port_clocks_used(schedule=schedule)
+    port_clocks = _extract_port_clocks_used(operation=schedule)
 
     hardware_config: dict = {"devices": [], "local_oscillators": []}
     hardware_config["backend"] = (

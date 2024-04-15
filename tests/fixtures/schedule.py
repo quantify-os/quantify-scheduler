@@ -18,7 +18,7 @@ from quantify_scheduler import Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.circuit_to_device import (
     DeviceCompilationConfig,
-    _compile_circuit_to_device,
+    compile_circuit_to_device_with_config_validation,
 )
 from quantify_scheduler.backends.graph_compilation import SerialCompilationConfig
 from quantify_scheduler.compilation import _determine_absolute_timing, flatten_schedule
@@ -37,7 +37,7 @@ ZHINST_HARDWARE_COMPILATION_CONFIG = utils.load_json_example_scheme(
 @pytest.fixture
 def device_cfg_transmon_example() -> Generator[DeviceCompilationConfig, None, None]:
     """
-    Circuit to device level compilation for the _compile_circuit_to_device
+    Circuit to device level compilation for the circuit_to_device
     compilation backend.
     """
     yield DeviceCompilationConfig.model_validate(example_transmon_cfg)
@@ -61,7 +61,7 @@ def create_schedule_with_pulse_info(
         _device_config = (
             device_config if device_config is not None else device_cfg_transmon_example
         )
-        _schedule = _compile_circuit_to_device(
+        _schedule = compile_circuit_to_device_with_config_validation(
             schedule=_schedule,
             config=SerialCompilationConfig(
                 name="test", device_compilation_config=_device_config

@@ -12,7 +12,7 @@ from uuid import uuid4
 from quantify_scheduler.helpers.schedule import _extract_port_clocks_used
 from quantify_scheduler.json_utils import load_json_schema, validate_json
 from quantify_scheduler.operations.operation import Operation
-from quantify_scheduler.schedules.schedule import Schedulable, Schedule
+from quantify_scheduler.schedules.schedule import Schedulable, Schedule, ScheduleBase
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.graph_compilation import (
@@ -53,7 +53,7 @@ class _ControlFlowReturn(Operation):
 
 
 def _determine_absolute_timing(  # noqa: PLR0912
-    schedule: Schedule,
+    schedule: Schedule | Operation,
     time_unit: Literal[
         "physical", "ideal", None
     ] = "physical",  # should be included in CompilationConfig
@@ -106,23 +106,41 @@ def _determine_absolute_timing(  # noqa: PLR0912
             f"Undefined time_unit '{time_unit}'! Must be one of {valid_time_units}"
         )
 
-    for op in schedule.operations.values():
-        if isinstance(op, Schedule):
-            if op.get("duration", None) is None:
-                _determine_absolute_timing(
-                    schedule=op,
+    if isinstance(schedule, ScheduleBase):
+        return _determine_absolute_timing_schedule(schedule, time_unit, config)
+    elif schedule.duration is None:
+        raise RuntimeError(
+            f"Cannot determine timing for operation {schedule.name}."
+            f" Operation data: {repr(schedule)}"
+        )
+    else:
+        return schedule
+
+
+def _determine_absolute_timing_schedule(
+    schedule: Schedule,
+    time_unit: Literal["physical", "ideal", None],
+    config: CompilationConfig | None,
+) -> Schedule:
+    for op_key in schedule.operations:
+        if isinstance(schedule.operations[op_key], ScheduleBase):
+            if schedule.operations[op_key].get("duration", None) is None:
+                schedule.operations[op_key] = _determine_absolute_timing(
+                    schedule=schedule.operations[op_key],
                     time_unit=time_unit,
                     config=config,
                 )
 
         elif (
-            time_unit == "physical" and not op.valid_pulse and not op.valid_acquisition
+            time_unit == "physical"
+            and not schedule.operations[op_key].valid_pulse
+            and not schedule.operations[op_key].valid_acquisition
         ):
             # Gates do not have a defined duration, so only ideal timing is defined
             raise RuntimeError(
-                f"Operation {op.name} is not a valid pulse or acquisition."
+                f"Operation {schedule.operations[op_key].name} is not a valid pulse or acquisition."
                 f" Please check whether the device compilation has been performed."
-                f" Operation data: {repr(op)}"
+                f" Operation data: {repr(schedule.operations[op_key])}"
             )
 
     # If called directly and not by the compiler, ensure control flow is resolved
@@ -258,7 +276,7 @@ def resolve_control_flow(
     if not port_clocks:
         port_clocks = _extract_port_clocks_used(schedule)
     for op in schedule.operations.values():
-        if isinstance(op, Schedule):
+        if isinstance(op, ScheduleBase):
             resolve_control_flow(op, config, port_clocks)
 
     if not schedule.schedulables:
@@ -345,7 +363,7 @@ def flatten_schedule(
 
     all_resources = dict(schedule.resources)
     for op in schedule.operations.values():
-        if isinstance(op, Schedule):
+        if isinstance(op, ScheduleBase):
             flatten_schedule(op, config)
             all_resources.update(op.resources)
 
@@ -356,7 +374,7 @@ def flatten_schedule(
     for schedulable_key, schedulable in schedulable_iter:
         op_key = schedulable["operation_id"]
         op = schedule.operations[op_key]
-        if isinstance(op, Schedule):
+        if isinstance(op, ScheduleBase):
             offset = schedulable["abs_time"]
 
             # insert new schedulables shifted by the correct offset

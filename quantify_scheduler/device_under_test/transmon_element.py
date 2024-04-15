@@ -526,7 +526,7 @@ class BasicTransmonElement(DeviceElement):
         Generate a valid device config.
 
         The config will be used for the quantify-scheduler making use of the
-        :func:`~.circuit_to_device.compile_circuit_to_device` function.
+        :func:`~.circuit_to_device.compile_circuit_to_device_with_config_validation` function.
 
         This enables the settings of this qubit to be used in isolation.
 

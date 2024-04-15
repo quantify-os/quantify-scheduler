@@ -873,7 +873,7 @@ def _generate_legacy_hardware_config(
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile"
     }
 
-    port_clocks = _extract_port_clocks_used(schedule=schedule)
+    port_clocks = _extract_port_clocks_used(operation=schedule)
 
     # Add connectivity information to the hardware config:
     connectivity_graph = (

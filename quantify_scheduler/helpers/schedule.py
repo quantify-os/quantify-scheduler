@@ -333,7 +333,7 @@ def get_acq_info_by_uuid(schedule: CompiledSchedule) -> dict[int, dict[str, Any]
 
 
 def extract_acquisition_metadata_from_schedule(
-    schedule: ScheduleBase,
+    schedule: Schedule,
 ) -> AcquisitionMetadata:
     """
     Extract acquisition metadata from a schedule.
@@ -453,23 +453,23 @@ def extract_acquisition_metadata_from_acquisition_protocols(
     return acq_metadata
 
 
-def _extract_port_clocks_used(schedule: ScheduleBase) -> set[tuple]:
-    """Extracts which port-clock combinations are used in a schedule."""
-    port_clocks_used = set()
-    for op_data in schedule.operations.values():
-        if isinstance(op_data, Schedule):
+def _extract_port_clocks_used(operation: Operation | Schedule) -> set[tuple]:
+    """Extracts which port-clock combinations are used in an operation or schedule."""
+    if isinstance(operation, ScheduleBase):
+        port_clocks_used = set()
+        for op_data in operation.operations.values():
             port_clocks_used |= _extract_port_clocks_used(op_data)
-            continue
-        if not op_data.valid_pulse and not op_data.valid_acquisition:
-            raise RuntimeError(
-                f"Operation {op_data.name} is not a valid pulse or acquisition."
-                f" Please check whether the device compilation has been performed successfully."
-                f" Operation data: {repr(op_data)}"
-            )
-
-        for op_info in op_data["pulse_info"] + op_data["acquisition_info"]:
+        return port_clocks_used
+    elif operation.valid_pulse or operation.valid_acquisition:
+        port_clocks_used = set()
+        for op_info in operation["pulse_info"] + operation["acquisition_info"]:
             if (port := op_info["port"]) is None or (clock := op_info["clock"]) is None:
                 continue
             port_clocks_used.add((port, clock))
-
-    return port_clocks_used
+        return port_clocks_used
+    else:
+        raise RuntimeError(
+            f"Operation {operation.name} is not a valid pulse or acquisition."
+            f" Please check whether the device compilation has been performed successfully."
+            f" Operation data: {repr(operation)}"
+        )
