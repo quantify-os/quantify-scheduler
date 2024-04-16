@@ -22,7 +22,6 @@ from quantify_scheduler.operations.pulse_library import (
 from quantify_scheduler.resources import ClockResource
 
 
-# pylint: disable=too-many-arguments
 def trace_schedule(
     pulse_amp: float,
     pulse_duration: float,
@@ -125,8 +124,6 @@ def trace_schedule_circuit_layer(
     return schedule
 
 
-# pylint: disable=too-many-arguments
-# pylint: disable=too-many-locals
 def two_tone_trace_schedule(
     qubit_pulse_amp: float,
     qubit_pulse_duration: float,

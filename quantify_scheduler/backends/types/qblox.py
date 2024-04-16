@@ -356,7 +356,6 @@ class RFModuleSettings(BaseModuleSettings):
 
 @dataclass
 class SequencerSettings(DataClassJsonMixin):
-    # pylint: disable=too-many-instance-attributes
     """
     Sequencer level settings.
 

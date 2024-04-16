@@ -35,7 +35,6 @@ from quantify_scheduler.operations import (
 )
 
 
-# pylint: disable=too-few-public-methods
 class Ports(InstrumentModule):
     """Submodule containing the ports."""
 
@@ -73,7 +72,6 @@ class Ports(InstrumentModule):
         """Port to readout photons from the device element."""
 
 
-# pylint: disable=too-few-public-methods
 class ClockFrequencies(InstrumentModule):
     """Submodule with clock frequencies specifying the transitions to address."""
 
@@ -136,7 +134,6 @@ class ClockFrequencies(InstrumentModule):
         """Frequency of the green ionization laser for manipulation of the NVs charge state."""
 
 
-# pylint: disable=too-few-public-methods
 class SpectroscopyOperationHermiteMW(InstrumentModule):
     """
     Convert the SpectroscopyOperation into a hermite microwave pulse.

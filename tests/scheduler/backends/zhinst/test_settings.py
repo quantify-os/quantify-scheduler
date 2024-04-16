@@ -1,7 +1,3 @@
-# pylint: disable=missing-module-docstring
-# pylint: disable=missing-class-docstring
-# pylint: disable=missing-function-docstring
-# pylint: disable=redefined-outer-name
 from __future__ import annotations
 
 import json
@@ -73,7 +69,7 @@ def test_zi_settings_equality(
     sett_c = comp_sched_c.compiled_instructions["ic_uhfqa0"].settings_builder.build()
 
     # Assert
-    # pylint: disable=comparison-with-itself
+
     assert sett_a == sett_a
     assert sett_a != sett_b
     assert sett_a != sett_c

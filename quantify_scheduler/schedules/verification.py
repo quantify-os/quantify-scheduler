@@ -12,9 +12,6 @@ from quantify_scheduler.operations.acquisition_library import SSBIntegrationComp
 from quantify_scheduler.operations.pulse_library import IdlePulse, SquarePulse
 from quantify_scheduler.resources import ClockResource
 
-# pylint: disable=too-many-arguments
-# pylint: disable=too-many-locals
-
 
 def acquisition_staircase_sched(
     readout_pulse_amps: NDArray[np.ScalarType],

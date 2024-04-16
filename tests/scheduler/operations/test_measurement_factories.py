@@ -5,8 +5,6 @@ import numpy as np
 
 from quantify_scheduler.operations.measurement_factories import optical_measurement
 
-# pylint: disable=redefined-outer-name
-
 
 @pytest.fixture
 def typical_kwargs_optical_measurement_single_pulse():

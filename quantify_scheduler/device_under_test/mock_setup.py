@@ -1,6 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-# pylint: disable=(invalid-name)
+
 """Code to set up a mock setup for use in tutorials and testing."""
 
 from typing import Any, Dict

@@ -1,6 +1,3 @@
-# pylint: disable=missing-function-docstring
-# pylint: disable=invalid-name
-
 import os
 import re
 from pathlib import Path

@@ -1,7 +1,3 @@
-# pylint: disable=missing-module-docstring
-# pylint: disable=missing-class-docstring
-# pylint: disable=missing-function-docstring
-
 import math
 import numpy as np
 import pytest
@@ -15,7 +11,7 @@ from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVEle
 from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.schedules import spectroscopy_schedules as sps
 
-from tests.scheduler.instrument_coordinator.components.test_qblox import (  # pylint: disable=unused-import
+from tests.scheduler.instrument_coordinator.components.test_qblox import (
     make_cluster_component,
 )
 from tests.scheduler.schedules.compiles_all_backends import _CompilesAllBackends

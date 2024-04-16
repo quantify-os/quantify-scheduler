@@ -1,7 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Compiler base and utility classes for Qblox backend."""
-# pylint: disable=too-many-lines
+
 from __future__ import annotations
 from enum import Enum, auto
 
@@ -280,7 +280,6 @@ class NcoOperationTimingError(ValueError):
     """Exception thrown if there are timing errors for NCO operations."""
 
 
-# pylint: disable=too-many-instance-attributes
 class Sequencer:
     """
     Class that performs the compilation steps on the sequencer level.
@@ -317,7 +316,6 @@ class Sequencer:
         Defaults to False, which means the markers will not be used during the sequence.
     """
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         parent: QbloxBaseModule,
@@ -763,7 +761,6 @@ class Sequencer:
 
         return acq_declaration_dict
 
-    # pylint: disable=too-many-locals
     def generate_qasm_program(
         self,
         total_sequence_time: float,

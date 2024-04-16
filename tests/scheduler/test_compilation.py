@@ -1,6 +1,3 @@
-# pylint: disable=missing-class-docstring
-# pylint: disable=missing-function-docstring
-
 from copy import deepcopy
 
 import numpy as np

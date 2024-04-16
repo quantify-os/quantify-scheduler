@@ -12,7 +12,6 @@ from quantify_scheduler.json_utils import load_json_schema, validate_json
 
 
 class Resource(UserDict):
-    # pylint: disable=line-too-long
     """
     A resource corresponds to a physical resource such as a port or a clock.
 
@@ -24,7 +23,6 @@ class Resource(UserDict):
         The resource name.
     """
 
-    # pylint: enable=line-too-long
     def __init__(self, name: str) -> None:
         super().__init__()
         self.data["name"] = name

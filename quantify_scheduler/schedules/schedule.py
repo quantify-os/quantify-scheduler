@@ -40,9 +40,7 @@ Note: collections.OrderedDict can be slow in some cases.
 """
 
 
-# pylint: disable=too-many-ancestors
 class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
-    # pylint: disable=line-too-long
     """
     Interface to be used for :class:`~.Schedule`.
 
@@ -86,7 +84,6 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
     """  # noqa: E501
 
-    # pylint: enable=line-too-long
     @property
     def name(self) -> str:
         """Returns the name of the schedule."""
@@ -222,7 +219,6 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         ax: Axes | None = None,
         plot_backend: Literal["mpl"] = "mpl",
     ) -> tuple[Figure, Axes | list[Axes]]:
-        # pylint: disable=line-too-long
         """
         Create a circuit diagram visualization of the schedule using the specified plotting backend.
 
@@ -299,7 +295,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
         """  # noqa: E501
         # NB imported here to avoid circular import
-        # pylint: disable=import-outside-toplevel
+
         if plot_backend == "mpl":
             import quantify_scheduler.schedules._visualization.circuit_diagram as cd
 
@@ -309,7 +305,6 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             f"plot_backend must be equal to 'mpl', value given: {repr(plot_backend)}"
         )
 
-    # pylint: disable=too-many-arguments
     def plot_pulse_diagram(
         self,
         port_list: list[str] | None = None,
@@ -321,7 +316,6 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         combine_waveforms_on_same_port: bool = False,
         **backend_kwargs: Any,  # noqa: ANN401
     ) -> tuple[Figure, Axes] | go.Figure:
-        # pylint: disable=line-too-long
         """
         Create a visualization of all the pulses in a schedule using the specified plotting backend.
 
@@ -434,7 +428,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
         """  # noqa: E501
         # NB imported here to avoid circular import
-        # pylint: disable=import-outside-toplevel
+
         from quantify_scheduler.schedules._visualization.pulse_diagram import (
             sample_schedule,
         )
@@ -451,7 +445,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
         if plot_backend == "mpl":
             # NB imported here to avoid circular import
-            # pylint: disable=import-outside-toplevel
+
             from quantify_scheduler.schedules._visualization.pulse_diagram import (
                 pulse_diagram_matplotlib,
             )
@@ -463,7 +457,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             )
         if plot_backend == "plotly":
             # NB imported here to avoid circular import
-            # pylint: disable=import-outside-toplevel
+
             from quantify_scheduler.schedules._visualization.pulse_diagram import (
                 pulse_diagram_plotly,
             )
@@ -570,7 +564,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         ------
         ValueError
             When the absolute timing has not been determined during compilation.
-        """  # noqa: E501 # pylint: disable=line-too-long
+        """  # noqa: E501
         timing_table_list = []
         for schedulable in self.schedulables.values():
             if "abs_time" not in schedulable:
@@ -675,7 +669,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         self.data = state
 
 
-class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
+class Schedule(ScheduleBase):
     """
     A modifiable schedule.
 
@@ -698,7 +692,7 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
         The amount of times the schedule will be repeated, by default 1
     data
         A dictionary containing a pre-existing schedule, by default None
-    """  # pylint: disable=line-too-long
+    """
 
     schema_filename = "schedule.json"
 
@@ -745,7 +739,6 @@ class Schedule(ScheduleBase):  # pylint: disable=too-many-ancestors
 
         self["resource_dict"][resource.name] = resource
 
-    # pylint: disable=too-many-arguments
     def add(
         self,
         operation: Operation | Schedule,
@@ -994,7 +987,6 @@ class Schedulable(JSONSchemaValMixin, UserDict):
         self.data = state["data"]
 
 
-# pylint: disable=too-many-ancestors
 class CompiledSchedule(ScheduleBase):
     """
     A schedule that contains compiled instructions ready for execution using the :class:`~.InstrumentCoordinator`.
@@ -1008,7 +1000,7 @@ class CompiledSchedule(ScheduleBase):
         A :class:`~.CompiledSchedule` can be obtained by compiling a
         :class:`~.Schedule` using :meth:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler.compile`.
 
-    """  # pylint: disable=line-too-long  # noqa: E501
+    """  # noqa: E501
 
     schema_filename = "schedule.json"
 
@@ -1045,7 +1037,7 @@ class CompiledSchedule(ScheduleBase):
 
         These values typically contain a combination of sequence files, waveform
         definitions, and parameters to configure on the instrument.
-        """  # pylint: disable=line-too-long
+        """
         return self["compiled_instructions"]
 
     @classmethod

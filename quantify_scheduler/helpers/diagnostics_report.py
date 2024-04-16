@@ -102,7 +102,7 @@ def _generate_diagnostics_report(  # noqa: PLR0915
     if initialized:
         try:
             hardware_logs = instrument_coordinator.retrieve_hardware_logs()
-        except:  # noqa: E722  pylint: disable=bare-except
+        except Exception:
             connection_exception = sys.exc_info()
 
         if experiment_exception is not None:

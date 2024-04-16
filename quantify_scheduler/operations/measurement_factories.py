@@ -32,8 +32,6 @@ from quantify_scheduler.operations.pulse_library import (
 )
 
 
-# pylint: disable=too-many-arguments
-# pylint: disable=unused-argument
 def dispersive_measurement(
     pulse_amp: float,
     pulse_duration: float,
@@ -233,7 +231,6 @@ def optical_measurement(
     acq_protocol_default: Literal["Trace", "TriggerCount"],
     pulse_type: Literal["SquarePulse"],
 ) -> Operation:
-    # pylint: disable=too-many-locals
     """
     Generator function for an optical measurement with multiple excitation pulses.
 

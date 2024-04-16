@@ -69,7 +69,6 @@ def without(dict_in: dict, keys: list) -> dict:
     return new_d
 
 
-# pylint: disable=invalid-name
 def find_inner_dicts_containing_key(d: dict, key: Any) -> List[dict]:
     """
     Generate a list of the first dictionaries encountered that contain a certain key.
@@ -109,7 +108,6 @@ def find_inner_dicts_containing_key(d: dict, key: Any) -> List[dict]:
     return dicts_found
 
 
-# pylint: disable=invalid-name
 def find_all_port_clock_combinations(d: dict) -> List[Tuple[str, str]]:
     """
     Generate a list with all port-clock combinations found in a nested dictionary.

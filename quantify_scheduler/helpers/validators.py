@@ -62,7 +62,6 @@ class Numbers(validators.Numbers):
             # return early as the next statement will otherwise trigger
             return
 
-        # pylint: disable=superfluous-parens
         if not (self._min_value <= value <= self._max_value):
             raise ValueError(
                 "{} is invalid: must be between "

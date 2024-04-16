@@ -12,7 +12,7 @@ quantify-scheduler.
     The intent is to have one generic ``ScheduleGettable``.
     Expect breaking changes.
 """
-# pylint: disable-all
+
 from __future__ import annotations
 
 import logging
@@ -424,7 +424,7 @@ class ScheduleGettable:
             self.initialize()
             initialized = True
             acquisition_data = self.get()
-        except:  # pylint: disable=bare-except  # noqa: E722
+        except Exception:
             exception = sys.exc_info()
 
         gettable_config = {

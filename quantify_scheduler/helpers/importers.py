@@ -13,7 +13,7 @@ def import_python_object_from_string(function_string: str) -> Any:
     :func:`export_python_object_to_path_string`.
 
     (Based on https://stackoverflow.com/questions/3061/calling-a-function-of-a-module-by-using-its-name-a-string)
-    """  # pylint: disable=line-too-long
+    """
     mod_name, func_name = function_string.rsplit(".", 1)
     mod = importlib.import_module(mod_name)
     func = getattr(mod, func_name)

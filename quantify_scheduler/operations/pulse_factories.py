@@ -152,7 +152,7 @@ def phase_shift(
     )
 
 
-def composite_square_pulse(  # pylint: disable=too-many-arguments
+def composite_square_pulse(
     square_amp: float,
     square_duration: float,
     square_port: str,

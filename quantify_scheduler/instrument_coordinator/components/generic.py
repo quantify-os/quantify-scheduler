@@ -17,9 +17,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_NAME = "generic"
 
 
-class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancestors
-    base.InstrumentCoordinatorComponentBase
-):
+class GenericInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
     """
     A Generic class which can be used for interaction with the InstrumentCoordinator.
 
@@ -89,7 +87,6 @@ class GenericInstrumentCoordinatorComponent(  # pylint: disable=too-many-ancesto
         """Stop the instrument."""
         pass
 
-    # pylint: disable=arguments-differ
     def prepare(self, params_config: Dict[str, Any]) -> None:
         """
         Prepare the instrument.

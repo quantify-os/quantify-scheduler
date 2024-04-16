@@ -1,11 +1,3 @@
-# pylint: disable=missing-class-docstring
-# pylint: disable=missing-function-docstring
-# pylint: disable=missing-module-docstring
-# pylint: disable=no-name-in-module
-# pylint: disable=redefined-outer-name
-# pylint: disable=too-many-lines
-# pylint: disable=unused-argument
-
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Tests for acquisitions module."""
@@ -51,7 +43,7 @@ from quantify_scheduler.schedules.trace_schedules import (
     trace_schedule_circuit_layer,
 )
 from tests.fixtures.mock_setup import close_instruments
-from tests.scheduler.instrument_coordinator.components.test_qblox import (  # pylint: disable=unused-import
+from tests.scheduler.instrument_coordinator.components.test_qblox import (
     make_cluster_component,
 )
 
@@ -105,8 +97,7 @@ class TestAcquisitionStrategyPartial:
         strategy = MockAcquisition(op_info)
         append_mock = mocker.patch.object(strategy, "_acquire_append")
         average_mock = mocker.patch.object(strategy, "_acquire_average")
-        # pylint: disable=attribute-defined-outside-init
-        # what pylint claims here is simply not true
+
         strategy.bin_idx_register = "R0" if bin_mode == BinMode.APPEND else None
 
         # act
@@ -966,7 +957,7 @@ def test_trigger_count_append_gettables(
 
 def test_trigger_count_average(
     mock_setup_basic_nv, make_cluster_component, hardware_cfg_trigger_count
-):  # pylint: disable=too-many-locals
+):
     # Setup objects needed for experiment
     ic_cluster0 = make_cluster_component("cluster0")
     laser_red = MockLocalOscillator("laser_red")
@@ -1085,7 +1076,7 @@ def test_trigger_count_average_gettables(
 
 def test_mixed_binned_trace_measurements(
     mock_setup_basic_transmon, make_cluster_component
-):  # pylint: disable=too-many-locals
+):
     hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "cluster0": {
@@ -1265,7 +1256,7 @@ def test_same_index_in_module_and_cluster_measurement_error(
     mock_setup_basic_transmon_with_standard_params,
     make_cluster_component,
     qubit_to_overwrite,
-):  # pylint: disable=too-many-locals
+):
     hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "cluster0": {
@@ -1567,7 +1558,7 @@ def test_multi_real_input_hardware_cfg_trigger_count(
     "module_under_test",
     [ClusterType.CLUSTER_QRM_RF, ClusterType.CLUSTER_QRM],
 )
-def test_trace_acquisition_instrument_coordinator(  # pylint: disable=too-many-locals, too-many-statements
+def test_trace_acquisition_instrument_coordinator(
     mocker,
     mock_setup_basic_transmon_with_standard_params,
     make_cluster_component,
@@ -1837,7 +1828,7 @@ def test_marker_debug_mode_enable(
 
 def test_multiple_binned_measurements(
     mock_setup_basic_transmon, make_cluster_component
-):  # pylint: disable=too-many-locals
+):
     hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "cluster0": {
@@ -2031,9 +2022,7 @@ def test_multiple_binned_measurements(
     instr_coordinator.remove_component("ic_cluster0")
 
 
-def test_append_measurements(
-    mock_setup_basic_transmon, make_cluster_component
-):  # pylint: disable=too-many-locals
+def test_append_measurements(mock_setup_basic_transmon, make_cluster_component):
     hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "cluster0": {
@@ -2132,9 +2121,7 @@ def test_append_measurements(
     instr_coordinator.remove_component("ic_cluster0")
 
 
-def test_looped_measurements(
-    mock_setup_basic_transmon, make_cluster_component
-):  # pylint: disable=too-many-locals
+def test_looped_measurements(mock_setup_basic_transmon, make_cluster_component):
     hardware_cfg = {
         "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
         "hardware_description": {

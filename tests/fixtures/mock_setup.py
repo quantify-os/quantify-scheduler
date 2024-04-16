@@ -78,7 +78,6 @@ def tmp_test_data_dir(tmp_path_factory):
         yield get_datadir()
 
 
-# pylint: disable=redefined-outer-name
 @pytest.fixture(scope="function", autouse=False)
 def mock_setup_basic_transmon():
     """
@@ -100,7 +99,6 @@ def mock_setup_basic_transmon_with_standard_params(mock_setup_basic_transmon):
     yield mock_setup_basic_transmon
 
 
-# pylint: disable=redefined-outer-name
 @pytest.fixture(scope="function", autouse=False)
 def mock_setup_basic_nv():
     """

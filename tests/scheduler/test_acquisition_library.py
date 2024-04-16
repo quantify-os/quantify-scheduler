@@ -2,9 +2,7 @@
 # Licensed according to the LICENCE file on the main branch
 """Unit tests acquisition protocols for use with the quantify_scheduler."""
 
-# pylint: disable=missing-class-docstring
-# pylint: disable=missing-function-docstring
-# pylint: disable=eval-used
+
 import json
 from unittest import TestCase
 

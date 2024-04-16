@@ -21,7 +21,6 @@ from quantify_scheduler.operations.pulse_library import (
 from quantify_scheduler.resources import ClockResource
 
 
-# pylint: disable=too-many-arguments
 def rabi_sched(
     pulse_amp: Union[np.ndarray, float],
     pulse_duration: Union[np.ndarray, float],
@@ -482,9 +481,6 @@ def readout_calibration_sched(
     return schedule
 
 
-# pylint: disable=too-many-arguments
-# pylint: disable=too-many-locals
-# pylint: disable=invalid-name
 def rabi_pulse_sched(
     mw_G_amp: float,
     mw_D_amp: float,

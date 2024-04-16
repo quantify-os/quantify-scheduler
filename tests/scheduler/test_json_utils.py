@@ -1,6 +1,3 @@
-# pylint: disable=missing-function-docstring
-# pylint: disable=missing-class-docstring
-# pylint: disable=missing-module-docstring
 import copy
 import json
 import sys

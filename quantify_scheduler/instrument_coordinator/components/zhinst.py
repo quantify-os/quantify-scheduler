@@ -1,9 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Module containing Zurich Instruments InstrumentCoordinator Components."""
-# pylint: disable=useless-super-delegation
-# pylint: disable=too-many-arguments
-# pylint: disable=too-many-ancestors
+
 
 from __future__ import annotations
 
@@ -54,7 +52,6 @@ class ZIInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
     def is_running(self) -> bool:
         raise NotImplementedError()
 
-    # pylint: disable=arguments-differ
     def prepare(self, zi_device_config: ZIDeviceConfig) -> bool:
         """
         Prepare the InstrumentCoordinator component with configuration
@@ -231,7 +228,6 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
             if configure is False:
                 return False
 
-        # pylint: disable=broad-except
         # the exception being raised is "Upload failed", but the ZI backend raises it
         # as a general exception.
         except Exception as e:

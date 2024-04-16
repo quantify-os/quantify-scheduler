@@ -1126,7 +1126,7 @@ class _QRMAcquisitionManager:
         acq_indices: list,
         hardware_retrieved_acquisitions: dict,
         acquisition_metadata: AcquisitionMetadata,
-        acq_duration: int,  # pylint: disable=unused-argument
+        acq_duration: int,
         qblox_acq_index: int,
         acq_channel: Hashable,
         multiplier: float = 1,
@@ -1218,7 +1218,7 @@ class _QRMAcquisitionManager:
         acq_indices: list,
         hardware_retrieved_acquisitions: dict,
         acquisition_metadata: AcquisitionMetadata,
-        acq_duration: int,  # pylint: disable=unused-argument
+        acq_duration: int,
         qblox_acq_index: int,
         acq_channel: Hashable,
     ) -> DataArray:
@@ -1341,7 +1341,7 @@ class _QRMAcquisitionManager:
         acq_indices: list,
         hardware_retrieved_acquisitions: dict,
         acquisition_metadata: AcquisitionMetadata,
-        acq_duration: int,  # pylint: disable=unused-argument
+        acq_duration: int,
         qblox_acq_index: int,
         acq_channel: Hashable,
     ) -> DataArray:

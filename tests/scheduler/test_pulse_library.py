@@ -1,7 +1,3 @@
-# pylint: disable=missing-module-docstring
-# pylint: disable=missing-class-docstring
-# pylint: disable=missing-function-docstring
-# pylint: disable=eval-used
 import json
 from unittest import TestCase
 
@@ -319,7 +315,7 @@ class TestPulseLevelOperation:
 
 def test_deprecated_path_args_voltage_offset():
     with pytest.warns(FutureWarning, match="0.20.0"):
-        VoltageOffset(  # pylint: disable=no-value-for-parameter
+        VoltageOffset(
             offset_path_0=0.5,
             offset_path_1=0.1,
             port="port",

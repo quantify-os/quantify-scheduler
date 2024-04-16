@@ -11,7 +11,7 @@ from quantify_scheduler.helpers.importers import (
 )
 
 
-class DataStructure(BaseModel):  # pylint: disable=too-few-public-methods
+class DataStructure(BaseModel):
     """
     A parent for all data structures.
 

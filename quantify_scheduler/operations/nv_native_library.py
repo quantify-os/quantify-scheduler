@@ -1,6 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-# pylint: disable=invalid-name
+
 """NV-center-specific operations for use with the quantify_scheduler."""
 from typing import Literal, Tuple, Union, Optional, Hashable
 from .operation import Operation

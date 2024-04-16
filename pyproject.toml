@@ -185,7 +185,7 @@ extend-ignore-names = ["path_I", "path_Q", "offset_path_I", "offset_path_Q"]
 
 "*/docs/source/conf.py" = ["E402", "F401"]
 "__init__.py" = ["F401", "D104", "D205", "D415", "D400"]
-"tests/**/*.py" = ["D", "ANN"]
+"tests/**/*.py" = ["D", "ANN", "F401"]
 "*.py" = ["D205"] # this should still be refactored.
 
 # All files below are temporarily excluded explicitly and expected to be gradually turned into ruff-compliancy

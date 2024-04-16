@@ -1,7 +1,3 @@
-# pylint: disable=missing-function-docstring
-# pylint: disable=invalid-name
-# pylint: disable=redefined-outer-name
-
 import itertools
 import numpy as np
 import numpy.testing as npt

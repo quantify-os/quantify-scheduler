@@ -1,10 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-# pylint: disable=missing-module-docstring
-# pylint: disable=missing-class-docstring
-# pylint: disable=missing-function-docstring
-# pylint: disable=unused-argument
-# pylint: disable=too-many-arguments
+
+
 from __future__ import annotations
 
 import gc
@@ -27,7 +24,7 @@ from quantify_scheduler.instrument_coordinator.components import base as base_co
 from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
 from quantify_scheduler.operations.gate_library import Reset
 
-from tests.scheduler.backends.test_qblox_backend import (  # pylint: disable=unused-import
+from tests.scheduler.backends.test_qblox_backend import (
     dummy_cluster,
 )
 

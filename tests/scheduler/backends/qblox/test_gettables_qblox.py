@@ -1,11 +1,3 @@
-# pylint: disable=missing-function-docstring
-# pylint: disable=missing-class-docstring
-# pylint: disable=missing-module-docstring
-# pylint: disable=too-many-locals
-# pylint: disable=invalid-name
-# pylint: disable=unused-argument
-# pylint: disable=redefined-outer-name
-
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 import json
@@ -35,10 +27,10 @@ from quantify_scheduler.schedules.spectroscopy_schedules import (
 from quantify_scheduler.schedules.timedomain_schedules import (
     t1_sched,
 )
-from tests.scheduler.backends.test_qblox_backend import (  # pylint: disable=unused-import # noqa: F401 (imported-but-unused)
+from tests.scheduler.backends.test_qblox_backend import (
     dummy_cluster,
 )
-from tests.scheduler.instrument_coordinator.components.test_qblox import (  # pylint: disable=unused-import # noqa: F401 (imported-but-unused)
+from tests.scheduler.instrument_coordinator.components.test_qblox import (
     make_cluster_component,
 )
 
@@ -113,7 +105,7 @@ def test_schedule_gettable_always_initialize_false(
     assert qrm_rf.instrument.arm_sequencer.call_count == 2
 
 
-def test_initialize_and_get_with_report_failed_initialization(  # pylint: disable=too-many-statements # noqa: PLR0915 (too-many-statements)
+def test_initialize_and_get_with_report_failed_initialization(  # noqa: PLR0915
     mock_setup_basic_transmon_with_standard_params,
     mocker,
     hardware_cfg_rf,

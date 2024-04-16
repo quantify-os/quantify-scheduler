@@ -1,10 +1,3 @@
-# pylint: disable=missing-class-docstring
-# pylint: disable=missing-function-docstring
-# pylint: disable=missing-module-docstring
-# pylint: disable=redefined-outer-name
-# pylint: disable=too-many-lines
-# pylint: disable=too-many-locals
-
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Tests for Qblox backend."""
@@ -1115,7 +1108,7 @@ def test_compile_clock_operations(
     operation: Operation,
     instruction_to_check: str,
     clock_freq_old: Optional[float],
-    add_lo1: bool,  # pylint: disable=unused-argument
+    add_lo1: bool,
 ):
     sched = Schedule("compile_clock_operations")
     sched.add(operation)
@@ -1911,7 +1904,7 @@ def test_container_prepare_baseband(
     mock_setup_basic_transmon,
     baseband_square_pulse_schedule,
     hardware_cfg_qcm,
-    add_lo1: bool,  # pylint: disable=unused-argument
+    add_lo1: bool,
 ):
     quantum_device = mock_setup_basic_transmon["quantum_device"]
     quantum_device.hardware_config(hardware_cfg_qcm)

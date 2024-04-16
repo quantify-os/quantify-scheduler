@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=wildcard-import
-# pylint: disable=unused-wildcard-import
-# pylint: disable=unused-variable
-import pytest  # noqa  # pylint: disable=unused-import
+
+
+import pytest  # noqa
 
 from tests.fixtures.mock_setup import *  # noqa: F401
 from tests.fixtures.schedule import *  # noqa: F401

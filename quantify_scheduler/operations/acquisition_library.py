@@ -1,6 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-# pylint: disable=too-many-arguments
+
 """Standard acquisition protocols for use with the quantify_scheduler."""
 
 import warnings
@@ -13,7 +13,7 @@ from quantify_scheduler import Operation
 from quantify_scheduler.enums import BinMode
 
 
-class Acquisition(Operation):  # pylint: disable=too-many-ancestors
+class Acquisition(Operation):
     """
     An operation representing data acquisition at the quantum-device abstraction layer.
 
@@ -36,7 +36,7 @@ class AcquisitionOperation(Acquisition):
     pass
 
 
-class Trace(Acquisition):  # pylint: disable=too-many-ancestors
+class Trace(Acquisition):
     """
     The Trace acquisition protocol measures a signal s(t).
 
@@ -109,7 +109,7 @@ class Trace(Acquisition):  # pylint: disable=too-many-ancestors
         return self._get_signature(acq_info)
 
 
-class WeightedIntegratedSeparated(Acquisition):  # pylint: disable=too-many-ancestors
+class WeightedIntegratedSeparated(Acquisition):
     r"""
     Weighted integration acquisition protocol where two sets weights
     are applied separately to the real and imaginary parts
@@ -204,7 +204,7 @@ class WeightedIntegratedSeparated(Acquisition):  # pylint: disable=too-many-ance
         return self._get_signature(acq_info)
 
 
-class SSBIntegrationComplex(Acquisition):  # pylint: disable=too-many-ancestors
+class SSBIntegrationComplex(Acquisition):
     """
     Single sideband integration acquisition protocol with complex results.
 
@@ -437,9 +437,7 @@ class ThresholdedAcquisition(Acquisition):
         return self._get_signature(acq_info)
 
 
-class NumericalSeparatedWeightedIntegration(
-    WeightedIntegratedSeparated
-):  # pylint: disable=too-many-ancestors
+class NumericalSeparatedWeightedIntegration(WeightedIntegratedSeparated):
     r"""
     Subclass of :class:`~WeightedIntegratedSeparated` with parameterized waveforms as weights.
 
@@ -575,9 +573,7 @@ class NumericalSeparatedWeightedIntegration(
         return str(self)
 
 
-class NumericalWeightedIntegrationComplex(
-    WeightedIntegratedSeparated
-):  # pylint: disable=too-many-ancestors
+class NumericalWeightedIntegrationComplex(WeightedIntegratedSeparated):
     """Deprecated, renamed to :class:`~NumericalSeparatedWeightedIntegration`."""
 
     def __new__(cls, *args, **kwargs) -> NumericalSeparatedWeightedIntegration:
@@ -671,7 +667,7 @@ class NumericalWeightedIntegration(NumericalSeparatedWeightedIntegration):
         self._update()
 
 
-class TriggerCount(Acquisition):  # pylint: disable=too-many-ancestors
+class TriggerCount(Acquisition):
     """
     Trigger counting acquisition protocol returning an integer.
 

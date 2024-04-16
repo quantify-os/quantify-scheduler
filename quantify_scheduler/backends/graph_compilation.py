@@ -40,7 +40,6 @@ class CompilationError(RuntimeError):
     """Custom exception class for failures in compilation of quantify schedules."""
 
 
-# pylint: disable=too-few-public-methods
 class SimpleNodeConfig(DataStructure):
     """
     Datastructure specifying the structure of a simple compiler pass config.
@@ -107,7 +106,6 @@ class OperationCompilationConfig(DataStructure):
         return fun  # type: ignore
 
 
-# pylint: disable=line-too-long
 class DeviceCompilationConfig(DataStructure):
     """
     Information required to compile a schedule to the quantum-device layer.
@@ -208,7 +206,6 @@ class DeviceCompilationConfig(DataStructure):
     """
 
 
-# pylint: disable=too-few-public-methods
 class CompilationConfig(DataStructure):
     """
     Base class for a compilation config.
@@ -324,7 +321,6 @@ class CompilationNode:
         return self._compilation_func(schedule=schedule, config=config)
 
 
-# pylint: disable=too-few-public-methods
 class SimpleNode(CompilationNode):
     """
     A node representing a single compilation pass.
@@ -362,7 +358,6 @@ class SimpleNode(CompilationNode):
         return self.compilation_func(schedule=schedule, config=config)
 
 
-# pylint: disable=abstract-method
 class QuantifyCompiler(CompilationNode):
     """
     A compiler for quantify :class:`~.Schedule` s.
@@ -598,7 +593,6 @@ class SerialCompiler(QuantifyCompiler):
         return CompiledSchedule(schedule)
 
 
-# pylint: disable=too-few-public-methods
 class SerialCompilationConfig(CompilationConfig):
     """
     A compilation config for a simple serial compiler.

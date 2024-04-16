@@ -557,8 +557,6 @@ def generate_port_clock_to_device_map(
     return portclock_map
 
 
-# pylint: disable=too-many-locals
-# pylint: disable=too-many-branches
 def assign_pulse_and_acq_info_to_devices(
     schedule: Schedule,
     device_compilers: Dict[str, Any],

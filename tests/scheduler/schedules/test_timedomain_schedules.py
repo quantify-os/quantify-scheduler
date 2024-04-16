@@ -1,8 +1,3 @@
-# pylint: disable=missing-module-docstring
-# pylint: disable=missing-class-docstring
-# pylint: disable=missing-function-docstring
-# pylint: disable=no-self-use
-
 from math import isclose
 
 import numpy as np
@@ -15,7 +10,7 @@ from quantify_scheduler.schedules.schedule import Schedule
 from .compiles_all_backends import _CompilesAllBackends
 
 
-# FIXME classmethods cannot use fixtures, these test are mixing testing style # pylint: disable=fixme
+# FIXME classmethods cannot use fixtures, these test are mixing testing style
 class TestRabiPulse(_CompilesAllBackends):
     @classmethod
     def setup_class(cls):
@@ -247,7 +242,6 @@ class TestT1Sched(_CompilesAllBackends):
                     == self.sched_kwargs["times"][i // 3]
                 )
 
-    # pylint: disable=no-self-use
     def test_sched_float_times(self, device_compile_config_basic_transmon):
         sched_kwargs = {
             "times": 3e-6,  # a floating point time
@@ -396,7 +390,6 @@ class TestRamseySchedDetuning(_CompilesAllBackends):
             if (i - 3) % 4 == 0:
                 assert schedulable["label"][:11] == "Measurement"
 
-    # pylint: disable=no-self-use
     def test_sched_float_times(self, device_compile_config_basic_transmon):
         sched_kwargs = {
             "times": 3e-6,  # a floating point time
@@ -444,7 +437,6 @@ class TestRamseySched(_CompilesAllBackends):
             if (i - 3) % 4 == 0:
                 assert schedulable["label"][:11] == "Measurement"
 
-    # pylint: disable=no-self-use
     def test_sched_float_times(self, device_compile_config_basic_transmon):
         sched_kwargs = {
             "times": 3e-6,  # a floating point time
@@ -475,7 +467,6 @@ class TestEchoSched(_CompilesAllBackends):
     def test_repetitions(self):
         assert self.uncomp_sched.repetitions == self.sched_kwargs["repetitions"]
 
-    # pylint: disable=no-self-use
     def test_sched_float_times(self, device_compile_config_basic_transmon):
         sched_kwargs = {
             "times": 3e-6,  # a floating point time

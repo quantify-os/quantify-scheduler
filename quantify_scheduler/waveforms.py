@@ -131,7 +131,6 @@ def chirp(t: np.ndarray, amp: float, start_freq: float, end_freq: float) -> np.n
     return amp * np.exp(1.0j * 2 * np.pi * (chirp_rate * t / 2 + start_freq) * t)
 
 
-# pylint: disable=too-many-arguments
 def drag(
     t: np.ndarray,
     G_amp: float,
@@ -480,9 +479,6 @@ def skewed_hermite(
         complex skewed waveform
 
     """
-    # pylint: disable=too-many-locals
-    # pylint: disable=invalid-name
-
     # Hermite factors are taken from paper cited in docstring.
     PI_HERMITE_FACTOR = 0.956
     PI2_HERMITE_FACTOR = 0.667

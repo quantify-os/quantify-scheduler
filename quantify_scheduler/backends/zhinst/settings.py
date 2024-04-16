@@ -232,9 +232,7 @@ class ZISettings:
         return file_path
 
     @classmethod
-    def deserialize(  # pylint: disable=too-many-locals,too-many-branches
-        cls, settings_path: Path
-    ) -> ZISettingsBuilder:
+    def deserialize(cls, settings_path: Path) -> ZISettingsBuilder:
         """
         Deserializes the JSON settings for Zurich Instruments in to the
         :class:`.ZISettingsBuilder`.
@@ -316,7 +314,6 @@ class ZISettings:
 
 
 class ZISettingsBuilder:
-    # pylint: disable=too-many-public-methods
     """
     The Zurich Instruments Settings builder class.
 
@@ -437,9 +434,7 @@ class ZISettingsBuilder:
         :
         """
 
-        def void(
-            instrument: base.ZIBaseInstrument, node, value
-        ):  # pylint: disable=unused-argument
+        def void(instrument: base.ZIBaseInstrument, node, value):
             pass
 
         return self._set_daq(

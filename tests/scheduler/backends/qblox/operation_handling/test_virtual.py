@@ -1,14 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Tests for virtual strategy module."""
-# pylint: disable=missing-module-docstring
-# pylint: disable=missing-class-docstring
-# pylint: disable=missing-function-docstring
-# pylint: disable=redefined-outer-name
-# pylint: disable=unused-argument
-# pylint: disable=no-self-use
-# pylint: disable=too-many-locals
-# pylint: disable=too-many-arguments
+
 
 from contextlib import nullcontext
 from typing import Tuple
@@ -38,7 +31,7 @@ def fixture_empty_qasm_program():
 
 
 def _assert_none_data(strategy: IOperationStrategy):
-    # pylint: disable=assignment-from-none
+
     # this is what we want to verify
     data = strategy.generate_data({})
 

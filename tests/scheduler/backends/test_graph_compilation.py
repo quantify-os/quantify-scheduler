@@ -1,7 +1,3 @@
-# pylint: disable=missing-module-docstring
-# pylint: disable=missing-class-docstring
-# pylint: disable=missing-function-docstring
-
 """
 This test style covers the classes and functions in the backends/graph_compilation.py
 file.
@@ -22,7 +18,6 @@ from quantify_scheduler.operations.gate_library import Reset
 from quantify_scheduler.schedules.schedule import CompiledSchedule
 
 
-# pylint: disable=unused-argument
 def dummy_compile_add_reset_q0(schedule: Schedule, config=None) -> Schedule:
     schedule.add(Reset("q0"))
     return schedule

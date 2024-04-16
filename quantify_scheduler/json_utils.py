@@ -99,7 +99,7 @@ class UnknownDeserializationTypeError(Exception):
     """Raised when an unknown deserialization type is encountered."""
 
 
-class JSONSchemaValMixin:  # pylint: disable=too-few-public-methods
+class JSONSchemaValMixin:
     """
     A mixin that adds validation utilities to classes that have
     a data attribute like a :class:`UserDict` based on JSONSchema.
@@ -289,7 +289,7 @@ class SchedulerJSONDecoder(json.JSONDecoder):
 def _get_type_from_string_deprecated(deserialization_type: str) -> Type:
     # Use local import to void Error('Operation' from partially initialized module
     # 'quantify_scheduler')
-    # pylint: disable=import-outside-toplevel
+
     from quantify_scheduler import resources
     from quantify_scheduler.backends.qblox.operations.stitched_pulse import (
         StitchedPulse as QbloxStitchedPulse,

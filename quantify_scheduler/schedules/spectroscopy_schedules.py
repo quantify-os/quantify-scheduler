@@ -21,7 +21,6 @@ from quantify_scheduler.operations.shared_native_library import SpectroscopyOper
 from quantify_scheduler.resources import ClockResource
 
 
-# pylint: disable=too-many-arguments
 def heterodyne_spec_sched(
     pulse_amp: float,
     pulse_duration: float,
@@ -232,8 +231,6 @@ def heterodyne_spec_sched_nco(
     return sched
 
 
-# pylint: disable=too-many-arguments
-# pylint: disable=too-many-locals
 def two_tone_spec_sched(
     spec_pulse_amp: float,
     spec_pulse_duration: float,
@@ -336,8 +333,6 @@ def two_tone_spec_sched(
     return sched
 
 
-# pylint: disable=too-many-arguments
-# pylint: disable=too-many-locals
 def two_tone_spec_sched_nco(
     spec_pulse_amp: float,
     spec_pulse_duration: float,

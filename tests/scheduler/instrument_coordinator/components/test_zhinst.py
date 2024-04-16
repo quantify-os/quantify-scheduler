@@ -1,9 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-# pylint: disable=missing-module-docstring
-# pylint: disable=missing-class-docstring
-# pylint: disable=missing-function-docstring
-# pylint: disable=redefined-outer-name
+
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -288,7 +286,7 @@ def acquisition_test_data(request):
     else:
         raise RuntimeError("Unknown protocol")
 
-    def resolver(uhfqa):  # pylint: disable=unused-variable
+    def resolver(uhfqa):
         return expected_data
 
     return acq_protocol, bin_mode, resolver, expected_result

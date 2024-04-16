@@ -4,7 +4,7 @@
 Module containing functions for drawing pulse schemes and circuit diagrams
 using matplotlib.
 """
-# pylint: disable=too-many-arguments
+
 from __future__ import annotations
 
 import logging

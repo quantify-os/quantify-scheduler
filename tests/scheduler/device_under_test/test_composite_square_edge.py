@@ -1,7 +1,3 @@
-# pylint: disable=missing-module-docstring
-# pylint: disable=missing-class-docstring
-# pylint: disable=missing-function-docstring
-# pylint: disable=redefined-outer-name
 import json
 import pytest
 
@@ -15,8 +11,8 @@ from quantify_scheduler.json_utils import SchedulerJSONEncoder, SchedulerJSONDec
 
 @pytest.fixture
 def edge_q2b_q3b():
-    q2b = BasicTransmonElement("q2b")  # pylint: disable=invalid-name
-    q3b = BasicTransmonElement("q3b")  # pylint: disable=invalid-name
+    q2b = BasicTransmonElement("q2b")
+    q3b = BasicTransmonElement("q3b")
 
     edge_q2b_q3b = CompositeSquareEdge(
         parent_element_name=q2b.name, child_element_name=q3b.name

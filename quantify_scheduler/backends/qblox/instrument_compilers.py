@@ -154,7 +154,6 @@ class QcmModule(compiler_abc.QbloxBasebandModule):
     )
 
 
-# pylint: disable=invalid-name
 class QrmModule(compiler_abc.QbloxBasebandModule):
     """QRM specific implementation of the qblox compiler."""
 

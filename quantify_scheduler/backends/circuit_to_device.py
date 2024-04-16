@@ -685,7 +685,6 @@ def _validate_and_extract_device_cfg(
     return device_cfg
 
 
-# pylint: disable=super-init-not-called
 class ConfigKeyError(KeyError):
     """Custom exception for when a key is missing in a configuration file."""
 
@@ -699,7 +698,6 @@ class ConfigKeyError(KeyError):
         return repr(self.value)
 
 
-# pylint: disable=super-init-not-called
 class MultipleKeysError(KeyError):
     """Custom exception for when symmetric keys are found in a configuration file."""
 

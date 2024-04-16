@@ -80,7 +80,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
     add_default_generic_icc
         If True, automatically adds a GenericInstrumentCoordinatorComponent to this
         instrument coordinator with the default name.
-    """  # pylint: disable=line-too-long
+    """
 
     def __init__(self, name: str, add_default_generic_icc: bool = True) -> None:
         super().__init__(name)

@@ -43,7 +43,7 @@ def test_str():
         .add_voltage_offset(path_I=0.5, path_Q=0.0, duration=1e-7)
         .build()
     )
-    assert eval(str(pulse)) == pulse  # pylint: disable=eval-used # nosec
+    assert eval(str(pulse)) == pulse
 
 
 def test_add_operation_wrong_clock():
@@ -300,12 +300,12 @@ def test_deprecated_funcs_and_classes_warn():
     ):
         builder = OldStitchedPulseBuilder(port="port")
     assert isinstance(builder, StitchedPulseBuilder)
-    assert builder._port == "port"  # pylint: disable=no-member
+    assert builder._port == "port"
     with pytest.warns(
         FutureWarning,
         match="0.20.0",
     ):
-        old_convert_to_numerical_pulse(  # pylint: disable=too-many-function-args
+        old_convert_to_numerical_pulse(
             long_ramp_pulse(
                 amp=0.5,
                 duration=1e-4,
@@ -318,7 +318,7 @@ def test_deprecated_funcs_and_classes_warn():
 
 def test_deprecated_path_args():
     with pytest.warns(FutureWarning, match="0.20.0"):
-        # pylint: disable=unused-variable,unexpected-keyword-arg,no-value-for-parameter
+
         pulse = (
             StitchedPulseBuilder(port="q0:mw", clock="q0.01")  # type: ignore
             .add_pulse(SquarePulse(amp=0.2, duration=1e-6, port="q0:mw", clock="q0.01"))
@@ -329,7 +329,7 @@ def test_deprecated_path_args():
             .build()
         )
     with pytest.raises(TypeError, match="0.20.0"):
-        # pylint: disable=unexpected-keyword-arg
+
         pulse = (
             StitchedPulseBuilder(port="q0:mw", clock="q0.01")  # type: ignore
             .add_pulse(SquarePulse(amp=0.2, duration=1e-6, port="q0:mw", clock="q0.01"))

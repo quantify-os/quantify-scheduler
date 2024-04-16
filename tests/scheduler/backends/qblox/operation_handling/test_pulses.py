@@ -1,14 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Tests for pulses module."""
-# pylint: disable=missing-module-docstring
-# pylint: disable=missing-class-docstring
-# pylint: disable=missing-function-docstring
-# pylint: disable=redefined-outer-name
-# pylint: disable=unused-argument
-# pylint: disable=no-self-use
-# pylint: disable=too-many-locals
-# pylint: disable=too-many-arguments
+
 
 import re
 
@@ -29,11 +22,11 @@ from quantify_scheduler.operations.pulse_library import (
     SquarePulse,
 )
 from quantify_scheduler.resources import ClockResource
-from tests.scheduler.instrument_coordinator.components.test_qblox import (  # pylint: disable=unused-import
+from tests.scheduler.instrument_coordinator.components.test_qblox import (
     make_cluster_component,
 )
 
-from .empty_qasm_program import (  # pylint: disable=unused-import
+from .empty_qasm_program import (
     fixture_empty_qasm_program,
 )
 
@@ -137,8 +130,7 @@ class TestGenericPulseStrategy:
         waveform0_data = waveforms_generated[0]["data"]
         waveform1_data = waveforms_generated[1]["data"]
         del data["wf_func"]
-        # pylint: disable=unexpected-keyword-arg
-        # pylint doesn't understand the del so it thinks we are passing wf_func
+
         normalized_data, amp_real, amp_imag = normalize_waveform_data(
             waveforms.drag(t=t_test, **data)
         )
@@ -270,7 +262,7 @@ class TestMarkerPulseStrategy:
         )
 
         # act
-        # pylint: disable=assignment-from-none
+
         # this is what we want to verify
         data = strategy.generate_data({})
 

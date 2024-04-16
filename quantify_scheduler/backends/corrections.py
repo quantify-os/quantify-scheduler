@@ -15,9 +15,6 @@ from quantify_scheduler.operations.pulse_library import NumericalPulse
 logger = logging.getLogger(__name__)
 
 
-# pylint: disable=too-few-public-methods
-
-
 def determine_relative_latency_corrections(
     hardware_cfg: Dict[str, Any]
 ) -> Dict[str, float]:
@@ -70,7 +67,7 @@ def determine_relative_latency_corrections(
     return latency_dict
 
 
-def distortion_correct_pulse(  # pylint: disable=too-many-arguments
+def distortion_correct_pulse(
     pulse_data: Dict[str, Any],
     sampling_rate: int,
     filter_func_name: str,

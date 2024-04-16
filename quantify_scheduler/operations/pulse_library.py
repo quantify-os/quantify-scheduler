@@ -1,7 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Standard pulse-level operations for use with the quantify_scheduler."""
-# pylint: disable= too-many-arguments, too-many-ancestors
+
 from __future__ import annotations
 
 import warnings
@@ -340,7 +340,7 @@ class RampPulse(Operation):
         return self._get_signature(pulse_info)
 
 
-class StaircasePulse(Operation):  # pylint: disable=too-many-ancestors
+class StaircasePulse(Operation):
     """
     A real valued staircase pulse, which reaches it's final amplitude in discrete steps.
 
@@ -666,7 +666,7 @@ class SoftSquarePulse(Operation):
         return self._get_signature(pulse_info)
 
 
-class ChirpPulse(Operation):  # pylint: disable=too-many-ancestors
+class ChirpPulse(Operation):
     """
     A linear chirp signal. A sinusoidal signal that ramps up in frequency.
 
@@ -725,7 +725,6 @@ class ChirpPulse(Operation):  # pylint: disable=too-many-ancestors
 
 
 class DRAGPulse(Operation):
-    # pylint: disable=line-too-long, too-many-ancestors
     r"""
     A Gaussian pulse with a derivative component added to the out-of-phase channel.
 
@@ -792,7 +791,6 @@ class DRAGPulse(Operation):
 
 
 class GaussPulse(Operation):
-    # pylint: disable=line-too-long, too-many-ancestors
     r"""
     The GaussPulse Operation is a real-valued pulse with the specified
     amplitude and width 4 sigma.
@@ -1055,7 +1053,7 @@ class NumericalPulse(Operation):
 
         super().__init__(name=self.__class__.__name__)
         self.data["pulse_info"] = [
-            {  # pylint: disable=line-too-long
+            {
                 "wf_func": "quantify_scheduler.waveforms.interpolated_complex_waveform",
                 "samples": samples,
                 "t_samples": t_samples,
@@ -1076,7 +1074,6 @@ class NumericalPulse(Operation):
 
 
 class SkewedHermitePulse(Operation):
-    # pylint: disable=line-too-long, too-many-ancestors
     """
     Hermite pulse intended for single qubit gates in diamond based systems.
 

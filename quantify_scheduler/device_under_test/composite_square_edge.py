@@ -93,7 +93,6 @@ class CompositeSquareEdge(Edge):
         quantify-scheduler making use of the
         :func:`~.circuit_to_device.compile_circuit_to_device_with_config_validation` function.
         """
-        # pylint: disable=line-too-long
         edge_op_config = {
             f"{self.name}": {
                 "CZ": OperationCompilationConfig(

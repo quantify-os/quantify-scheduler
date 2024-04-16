@@ -40,8 +40,7 @@ def get_classes(*modules: ModuleType) -> Dict[str, Type[Any]]:
         module_name: str = module.__name__
         classes += inspect.getmembers(
             sys.modules[module_name],
-            lambda member: inspect.isclass(member)
-            and member.__module__ == module_name,  # pylint: disable=cell-var-from-loop
+            lambda member: inspect.isclass(member) and member.__module__ == module_name,
         )
     return dict(classes)
 

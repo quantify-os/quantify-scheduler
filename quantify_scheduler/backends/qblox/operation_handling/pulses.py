@@ -141,7 +141,7 @@ class GenericPulseStrategy(PulseStrategyPartial):
         ValueError
             Data is complex (has an imaginary component), but the channel_name is not
             set as complex (e.g. ``complex_output_0``).
-        """  # pylint: disable=line-too-long  # noqa: D301
+        """  # noqa: D301
         op_info = self.operation_info
         waveform_data = helpers.generate_waveform_data(
             op_info.data, sampling_rate=constants.SAMPLING_RATE

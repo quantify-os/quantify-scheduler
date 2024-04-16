@@ -1,8 +1,3 @@
-# pylint: disable=missing-module-docstring
-# pylint: disable=missing-class-docstring
-# pylint: disable=missing-function-docstring
-# pylint: disable=redefined-outer-name
-
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Tests for pulse and acquisition corrections."""
@@ -203,7 +198,7 @@ def test_apply_distortion_corrections(
         list(compiled_sched.operations.keys())[1] == operation_hash
     ), f"Key of CZ operation remains identical"
 
-    assert (  # pylint: disable=unidiomatic-typecheck
+    assert (
         type(list(compiled_sched.operations.values())[1]) is NumericalPulse
     ), f"Type of CZ operation is now NumericalPulse"
 
@@ -276,7 +271,7 @@ def test_apply_latency_corrections_hardware_options_invalid_raises(
 def test_apply_distortion_corrections_stitched_pulse_warns(
     mock_setup_basic_transmon,
     hardware_options_distortion_corrections,
-    use_numpy_array,  # pylint: disable=unused-argument
+    use_numpy_array,
 ):
     port = "q2:fl"
     clock = "cl0.baseband"

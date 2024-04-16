@@ -222,8 +222,7 @@ def get_port_timeline(
         # Sort pulses and acquisitions within an operation.
         for uuid, info in sorted(
             chain(pulse_info_iter, acq_info_iter),
-            key=lambda pair: abs_time  # pylint: disable=cell-var-from-loop
-            + pair[1]["t0"],
+            key=lambda pair: abs_time + pair[1]["t0"],
         ):
             port = str(info["port"])
             if port not in port_timeline_dict:
@@ -372,7 +371,7 @@ def extract_acquisition_metadata_from_schedule(
         If the return type of the acquisitions is different.
 
 
-    """  # FIXME update when quantify-core!212 spec is ready # pylint: disable=fixme
+    """  # FIXME update when quantify-core!212 spec is ready
     # a dictionary containing the acquisition indices used for each channel
     acqid_acqinfo_dict = get_acq_info_by_uuid(schedule)
 
