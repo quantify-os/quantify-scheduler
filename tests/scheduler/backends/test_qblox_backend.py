@@ -1587,14 +1587,18 @@ def test_qcm_acquisition_error(hardware_cfg_cluster):
         total_play_time=10,
         instrument_cfg=hardware_cfg_cluster["cluster0"]["cluster0_module1"],
     )
-    qcm._op_infos[0] = [
-        types.OpInfo(
-            name="test_acq", data={"acq_channel": 0, "duration": 20e-9}, timing=4e-9
+    with pytest.raises(
+        RuntimeError,
+        match="QcmModule qcm0 does not support acquisitions. "
+        "Attempting to add acquisition Acquisition",
+    ):
+        qcm.add_op_info(
+            "port",
+            "clock",
+            types.OpInfo(
+                name="test_acq", data={"acq_channel": 0, "duration": 20e-9}, timing=4e-9
+            ),
         )
-    ]
-
-    with pytest.raises(RuntimeError):
-        qcm.distribute_data()
 
 
 def test_real_mode_pulses(

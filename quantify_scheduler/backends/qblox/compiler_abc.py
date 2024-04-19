@@ -1634,18 +1634,6 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         different sequencers based on their portclocks. Raises an exception in case
         the device does not support acquisitions.
         """
-        if (
-            any(
-                any(op_info.is_acquisition for op_info in op_infos)
-                for op_infos in self._op_infos.values()
-            )
-            and not self.supports_acquisition
-        ):
-            raise RuntimeError(
-                f"Attempting to add acquisitions to  {self.__class__} {self.name}, "
-                f"which is not supported by hardware."
-            )
-
         for seq in self.sequencers.values():
             if seq.op_strategies is None:
                 seq.op_strategies = []
