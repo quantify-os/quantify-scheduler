@@ -88,8 +88,17 @@ intersphinx_mapping = {
         "https://qblox-qblox-instruments.readthedocs-hosted.com/en/main/",
         None,
     ),
-    "zhinst-toolkit": ("https://docs.zhinst.com/zhinst-toolkit/en/latest/", None),
-    "zhinst-qcodes": ("https://docs.zhinst.com/zhinst-qcodes/en/v0.1/", None),
+    # FIXME change the "*objects.inv" strings in the lines below back to None, and
+    # remove the local files, once https://github.com/zhinst/zhinst-toolkit/issues/278
+    # is resolved.
+    "zhinst-toolkit": (
+        "https://docs.zhinst.com/zhinst-toolkit/en/latest/",
+        "zhinst_toolkit_objects.inv",
+    ),
+    "zhinst-qcodes": (
+        "https://docs.zhinst.com/zhinst-qcodes/en/v0.1/",
+        "zhinst_qcodes_objects.inv",
+    ),
 }
 
 bibtex_bibfiles = ["refs.bib"]

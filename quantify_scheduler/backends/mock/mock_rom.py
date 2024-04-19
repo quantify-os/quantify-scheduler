@@ -22,7 +22,6 @@ from quantify_scheduler.backends.types.common import (
     HardwareCompilationConfig,
     HardwareDescription,
     HardwareOptions,
-    ModulationFrequencies,
 )
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.waveforms import (
@@ -329,9 +328,6 @@ class MockROMDescription(HardwareDescription):
 
 
 class MockROMHardwareOptions(HardwareOptions):
-    modulation_frequencies: Dict[
-        str, ModulationFrequencies
-    ]  # enforce always specifying modulation frequencies
     gain: Optional[Dict[str, float]] = None  # noqa: UP007
 
 
