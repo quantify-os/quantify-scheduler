@@ -25,6 +25,7 @@ from typing_extensions import Annotated
 
 from quantify_scheduler.backends.qblox import constants, q1asm_instructions
 from quantify_scheduler.backends.types.common import (
+    Connectivity,
     HardwareDescription,
     HardwareOptions,
     IQMixerDescription,
@@ -752,7 +753,7 @@ class ClusterDescription(QbloxBaseDescription):
 
     instrument_type: Literal["Cluster"]
     """The instrument type, used to select this datastructure when parsing a :class:`~.CompilationConfig`."""
-    modules: Dict[int, ClusterModuleDescription]
+    modules: Dict[int, ClusterModuleDescription] = {}
     """Description of the modules of this Cluster, using slot index as key."""
 
 
@@ -963,3 +964,48 @@ class QbloxHardwareOptions(HardwareOptions):
     Dictionary containing the options (values) that should be set
     on the sequencer that is used for a certain port-clock combination (keys).
     """
+
+
+class _LocalOscillatorCompilerConfig(DataStructure):
+    """Configuration values for a :class:`quantify_scheduler.backends.qblox.instrument_compilers.LocalOscillator` compiler."""
+
+    instrument_type: Literal["LocalOscillator"]
+    """The type of the instrument described by this config."""
+    hardware_description: LocalOscillatorDescription
+    """Description of the physical setup of this local oscillator."""
+    frequency: Union[float, None] = None
+    """The frequency of this local oscillator."""
+
+
+class _ClusterCompilerConfig(DataStructure):
+    """Configuration values for a :class:`~.Cluster` compiler."""
+
+    instrument_type: Literal["Cluster"]
+    """The type of the instrument described by this config."""
+    ref: Union[Literal["internal"], Literal["external"]]
+    """The reference source for the cluster."""
+    sequence_to_file: bool = False
+    """Write sequencer programs to files for (all modules in this) cluster."""
+    modules: Dict[int, _ClusterModuleCompilerConfig] = {}
+    """Compiler configs of the modules of this cluster, using slot index as key."""
+    portclock_to_path: Dict[str, str] = {}
+    """Mapping between portclocks and their associated channel name paths (e.g. cluster0.module1.complex_output_0)."""
+
+
+class _ClusterModuleCompilerConfig(DataStructure):
+    """Configuration values for a :class:`~.QbloxBaseModule` compiler."""
+
+    instrument_type: Union[
+        Literal["QCM"], Literal["QRM"], Literal["QCM_RF"], Literal["QRM_RF"]
+    ]
+    """The type of the instrument described by this config."""
+    hardware_description: ClusterModuleDescription
+    """Description of the physical setup of this module."""
+    hardware_options: QbloxHardwareOptions
+    """Options that are used in compiling the instructions for the hardware."""
+    connectivity: Connectivity
+    """Datastructure representing how ports on the quantum device are connected to ports on the control hardware."""
+    portclock_to_path: Dict[str, str] = {}
+    """Mapping between portclocks and their associated channel name paths (e.g. cluster0.module1.complex_output_0)."""
+    channel_to_lo: Dict[str, str] = {}
+    """Mapping between channel names and the name of the local oscillator they are connected to."""

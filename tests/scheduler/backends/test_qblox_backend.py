@@ -11,6 +11,7 @@ import re
 import warnings
 from contextlib import nullcontext
 from typing import Optional
+from copy import deepcopy
 
 import networkx as nx
 import numpy as np
@@ -25,6 +26,7 @@ from quantify_scheduler.backends.graph_compilation import (
     CompilationConfig,
     SimpleNodeConfig,
 )
+from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
 from quantify_scheduler.backends.qblox import (
     compiler_container,
     constants,
@@ -2014,6 +2016,95 @@ def test_from_mapping(
         if instr_name == "backend" or "corrections" in instr_name:
             continue
         assert instr_name in container.instrument_compilers
+
+
+def test_extract_instrument_compiler_configs(hardware_compilation_config_qblox_example):
+    hardware_config = deepcopy(hardware_compilation_config_qblox_example)
+
+    # Add additional clusters to compilation config
+    hardware_config["hardware_description"]["cluster1"] = {
+        "instrument_type": "Cluster",
+        "ref": "internal",
+        "modules": {
+            "1": {"instrument_type": "QRM_RF"},
+            "2": {"instrument_type": "QCM_RF"},
+        },
+    }
+    hardware_config["hardware_description"]["cluster2"] = {
+        "instrument_type": "Cluster",
+        "ref": "internal",
+        "modules": {
+            "1": {"instrument_type": "QCM"},
+        },
+    }
+    hardware_config["hardware_options"]["modulation_frequencies"]["q7:res-q7.ro"] = {
+        "interm_freq": 52e6
+    }
+    hardware_config["hardware_options"]["input_att"]["q7:res-q7.ro"] = 12
+    hardware_config["connectivity"]["graph"].extend(
+        [("cluster1.module1.complex_input_0", "q7:res")]
+    )
+
+    hardware_config = QbloxHardwareCompilationConfig.model_validate(hardware_config)
+
+    portclocks_used = {
+        ("q4:mw", "q4.01"),
+        ("q4:res", "q4.ro"),
+        ("q5:res", "q5.ro"),
+        ("q7:res", "q7.ro"),
+    }
+
+    compiler_configs = hardware_config._extract_instrument_compiler_configs(
+        portclocks_used
+    )
+
+    assert list(compiler_configs.keys()) == [
+        "cluster0",
+        "lo0",
+        "lo1",
+        "cluster1",
+    ]
+
+    assert ("q4:res", "q4.ro") in compiler_configs["cluster0"].portclock_to_path.keys()
+
+    cluster0_module4 = compiler_configs["cluster0"].modules[4]
+    assert cluster0_module4.hardware_description.instrument_type == "QRM_RF"
+    assert cluster0_module4.hardware_options.modulation_frequencies[
+        "q5:res-q5.ro"
+    ].model_dump() == {"interm_freq": 50e6, "lo_freq": None}
+    assert cluster0_module4.hardware_options.input_att["q5:res-q5.ro"] == 10
+    assert any("q5:res" in node for node in cluster0_module4.connectivity.graph.nodes)
+    assert ("q5:res", "q5.ro") in cluster0_module4.portclock_to_path.keys()
+
+    cluster0_module1 = compiler_configs["cluster0"].modules[1]
+    for node in [
+        "cluster0.module1.complex_output_0",
+        "iq_mixer_lo0.if",
+        "lo0.output",
+        "iq_mixer_lo0.lo",
+    ]:
+        assert node in cluster0_module1.connectivity.graph.nodes
+
+    assert list(compiler_configs["cluster1"].modules.keys()) == [1]
+
+    cluster1_module1 = compiler_configs["cluster1"].modules[1]
+    assert cluster1_module1.hardware_description.instrument_type == "QRM_RF"
+    assert cluster1_module1.hardware_options.modulation_frequencies[
+        "q7:res-q7.ro"
+    ].model_dump() == {"interm_freq": 52e6, "lo_freq": None}
+    assert cluster1_module1.hardware_options.input_att["q7:res-q7.ro"] == 12
+    assert any("q7:res" in node for node in cluster1_module1.connectivity.graph.nodes)
+    assert ("q7:res", "q7.ro") in cluster1_module1.portclock_to_path.keys()
+
+    assert compiler_configs["lo0"].hardware_description.model_dump(
+        exclude_unset=True
+    ) == {
+        "instrument_type": "LocalOscillator",
+        "instrument_name": "lo0",
+        "power": 1,
+    }
+    assert compiler_configs["lo1"].hardware_description.instrument_name == "lo1"
+    assert compiler_configs["lo1"].frequency == 7.2e9
 
 
 def test_generate_uuid_from_wf_data():

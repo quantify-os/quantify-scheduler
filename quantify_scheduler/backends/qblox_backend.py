@@ -45,6 +45,9 @@ from quantify_scheduler.backends.types.qblox import (
     QCMRFDescription,
     QRMDescription,
     QRMRFDescription,
+    _ClusterCompilerConfig,
+    _ClusterModuleCompilerConfig,
+    _LocalOscillatorCompilerConfig,
 )
 from quantify_scheduler.helpers.collections import find_inner_dicts_containing_key
 from quantify_scheduler.helpers.schedule import _extract_port_clocks_used
@@ -54,6 +57,7 @@ from quantify_scheduler.schedules.schedule import (
     Schedulable,
     Schedule,
 )
+from quantify_scheduler.structure.model import DataStructure
 
 
 def _get_square_pulses_to_replace(schedule: Schedule) -> dict[str, list[int]]:
@@ -640,6 +644,201 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
             data = _generate_new_style_hardware_compilation_config(data)
 
         return data
+
+    def _extract_instrument_compiler_configs(  # noqa: PLR0912, PLR0915
+        self, portclocks_used: set[tuple]
+    ) -> Dict[str, DataStructure]:
+        """
+        Extract an instrument compiler config for each instrument mentioned in ``hardware_description``.
+        Each instrument config has a similar structure than ``QbloxHardwareCompilationConfig``, but
+        contains only the settings related to their related instrument. Each config must contain at least one
+        portclock referenced in ``portclocks_used``, otherwise the config is deleted.
+        """
+        compiler_configs = {}
+
+        # Extract instrument hardware descriptions
+        for (
+            instrument_name,
+            instrument_description,
+        ) in self.hardware_description.items():
+            if instrument_description.instrument_type == "Cluster":
+                cluster_config = _ClusterCompilerConfig(
+                    instrument_type="Cluster",
+                    ref=instrument_description.ref,
+                    sequence_to_file=instrument_description.sequence_to_file,
+                )
+                for (
+                    module_idx,
+                    module_description,
+                ) in instrument_description.modules.items():
+                    cluster_config.modules[module_idx] = _ClusterModuleCompilerConfig(
+                        instrument_type=instrument_description.modules[
+                            module_idx
+                        ].instrument_type,
+                        hardware_description=module_description,
+                        hardware_options={},
+                        connectivity={"graph": []},
+                    )
+
+                compiler_configs[instrument_name] = cluster_config
+
+            elif instrument_description.instrument_type == "LocalOscillator":
+                compiler_configs[instrument_name] = _LocalOscillatorCompilerConfig(
+                    instrument_type="LocalOscillator",
+                    hardware_description=instrument_description,
+                    frequency=None,
+                )
+
+        # Distribute connectivity edges to the different cluster modules
+        # and get portclock to module / lo_name mappings
+        portclock_to_path = {}
+
+        mixers_and_ports = []
+        for edge in self.connectivity.graph.edges:
+            instr_source = edge[0].split(".")[0]
+            target_0 = edge[1].split(".")[0]
+
+            edge_portclocks = [pc for pc in portclocks_used if target_0 in pc[0]]
+            if len(edge_portclocks) > 0:
+                if self.hardware_description[instr_source].instrument_type == "Cluster":
+                    module_idx = int(edge[0].split(".")[1].replace("module", ""))
+                    compiler_configs[instr_source].modules[
+                        module_idx
+                    ].connectivity.graph.add_edge(*edge)
+                    for pc in edge_portclocks:
+                        portclock_to_path[f"{pc[0]}-{pc[1]}"] = edge[0]
+                else:
+                    mixers_and_ports.append(edge)
+
+        for edge_with_mixer in mixers_and_ports:
+            edge_with_lo, edge_with_channel = None, None
+
+            for edge in self.connectivity.graph.edges:
+                instr_source = edge[0].split(".")[0]
+                target_0 = edge[1].split(".")[0]
+
+                if target_0 in edge_with_mixer[0]:
+                    if (
+                        self.hardware_description[instr_source].instrument_type
+                        == "Cluster"
+                    ):
+                        cluster_name = instr_source
+                        module_idx = int(edge[0].split(".")[1].replace("module", ""))
+                        edge_with_channel = edge
+                    else:
+                        edge_with_lo = edge
+
+                if edge_with_channel and edge_with_lo:
+                    compiler_configs[cluster_name].modules[
+                        module_idx
+                    ].connectivity.graph.add_edges_from(
+                        [
+                            edge_with_channel,
+                            edge_with_lo,
+                            edge_with_mixer,
+                        ]
+                    )
+
+                    channel_name = edge_with_channel[0].split(".")[-1]
+                    lo_name = edge_with_lo[0].split(".")[0]
+                    compiler_configs[cluster_name].modules[module_idx].channel_to_lo[
+                        channel_name
+                    ] = lo_name
+
+                    edge_portclocks = [
+                        pc for pc in portclocks_used if edge_with_mixer[1] in pc[0]
+                    ]
+                    for pc in edge_portclocks:
+                        portclock = f"{pc[0]}-{pc[1]}"
+                        portclock_to_path[portclock] = edge_with_channel[0]
+                    break
+
+        # Extract hardware options
+        hardware_options = self.hardware_options.model_dump()
+        modules_hardware_options = {}
+
+        for (
+            instrument_name,
+            instrument_description,
+        ) in self.hardware_description.items():
+            if instrument_description.instrument_type == "Cluster":
+                modules_hardware_options[instrument_name] = {}
+                for module_idx in instrument_description.modules.keys():
+                    modules_hardware_options[instrument_name][module_idx] = {}
+
+        for option, values in hardware_options.items():
+            if values is not None:
+                for portclock, option_value in values.items():
+                    if portclock in portclock_to_path:
+                        path = portclock_to_path[portclock]
+                        cluster_name, module_name, channel_name = path.split(".")
+                        module_idx = int(module_name.replace("module", ""))
+                        if not modules_hardware_options[cluster_name][module_idx].get(
+                            option
+                        ):
+                            modules_hardware_options[cluster_name][module_idx][
+                                option
+                            ] = {}
+                        modules_hardware_options[cluster_name][module_idx][option][
+                            portclock
+                        ] = option_value
+
+                        # Populate LO hardware description
+                        channel_to_lo = (
+                            compiler_configs[cluster_name]
+                            .modules[module_idx]
+                            .channel_to_lo
+                        )
+                        if (
+                            option == "modulation_frequencies"
+                            and channel_name in channel_to_lo.keys()
+                        ):
+                            lo_name = channel_to_lo[channel_name]
+                            lo_config = compiler_configs[lo_name]
+                            if lo_config.hardware_description.instrument_name is None:
+                                lo_config.hardware_description.instrument_name = lo_name
+                                lo_config.frequency = option_value.get("lo_freq")
+
+        for cluster_name, value in modules_hardware_options.items():
+            for module_idx, options in value.items():
+                compiler_configs[cluster_name].modules[module_idx].hardware_options = (
+                    QbloxHardwareOptions.model_validate(options)
+                )
+
+        # Distribute portclock paths and channel LOs between the different clusters and modules
+        for portclock, path in portclock_to_path.items():
+            cluster_name = path.split(".")[0]
+            module_idx = int(path.split(".")[1].replace("module", ""))
+            portclock_tuple = tuple(portclock.split("-"))
+            compiler_configs[cluster_name].portclock_to_path[portclock_tuple] = path
+            compiler_configs[cluster_name].modules[module_idx].portclock_to_path[
+                portclock_tuple
+            ] = path
+
+        # Delete empty configs of unused modules
+        cluster_names = []
+        unused_modules = defaultdict(list)
+        for instrument_name, cfg in compiler_configs.items():
+            if cfg.instrument_type == "Cluster":
+                cluster_names.append(instrument_name)
+                for module_idx in cfg.modules.keys():
+                    if len(cfg.modules[module_idx].portclock_to_path) == 0:
+                        unused_modules[instrument_name].append(module_idx)
+
+        for cluster_name, indices in unused_modules.items():
+            for module_idx in indices:
+                del compiler_configs[cluster_name].modules[module_idx]
+
+        # Delete empty configs of unused clusters
+        unused_clusters = []
+        for cluster_name in cluster_names:
+            if len(compiler_configs[cluster_name].modules) == 0:
+                unused_clusters.append(cluster_name)
+
+        for cluster_name in unused_clusters:
+            del compiler_configs[cluster_name]
+
+        return compiler_configs
 
 
 def _add_clock_freqs_to_set_clock_frequency(schedule: Schedule) -> Schedule:

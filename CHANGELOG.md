@@ -20,6 +20,7 @@
 - Schedule - Introduce type alias update schedule serialization to make schedulables ordering more apparent. (!933)
 - Qblox backend - Fix cluster start function to clear acquisition data. (!955)
 - Compilation - Refactor device compilation to make schedule and operation compilation more consistent. (!938)
+- Qblox backend - Add instrument compilers `_ClusterCompilerConfig`, `_ClusterModuleCompilerConfig` and `_LocalOscillatorCompilerConfig` to qblox backend types, and add `_extract_instrument_compiler_configs` to `QbloxHardwareCompilationConfig`. (!956)
 
 ## 0.19.0 (2024-04-03)
 
