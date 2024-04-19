@@ -108,7 +108,8 @@ class TestGenericPulseStrategy:
             "duration": duration,
             "G_amp": 0.1234,
             "D_amp": 1,
-            "nr_sigma": 3,
+            "nr_sigma": 4,
+            "sigma": None,
             "phase": 0,
         }
 
@@ -149,7 +150,8 @@ class TestGenericPulseStrategy:
             "duration": duration,
             "G_amp": 0.1234,
             "D_amp": 1,
-            "nr_sigma": 3,
+            "nr_sigma": 4,
+            "sigma": None,
             "phase": 0,
         }
 
@@ -172,7 +174,7 @@ class TestGenericPulseStrategy:
             "an output marked as real.\n\nException caused by Pulse "
             "test_pulse_name (t=0 to 2.4e-08)\ndata={'wf_func': "
             "'quantify_scheduler.waveforms.drag', 'duration': 2.4e-08, '"
-            "G_amp': 0.1234, 'D_amp': 1, 'nr_sigma': 3, 'phase': 0}."
+            "G_amp': 0.1234, 'D_amp': 1, 'nr_sigma': 4, 'sigma': None, 'phase': 0}."
         )
 
     def test_insert_qasm(self, empty_qasm_program_qcm):
@@ -184,6 +186,7 @@ class TestGenericPulseStrategy:
             "D_amp": 1.0,
             "duration": 24e-9,
             "nr_sigma": 3,
+            "sigma": None,
             "phase": 0,
         }
         data = {"wf_func": wf_func_path, "duration": duration, **wf_kwargs}
@@ -218,7 +221,7 @@ class TestMarkerPulseStrategy:
             "G_amp": 1.0,
             "D_amp": 1.0,
             "duration": 24e-9,
-            "nr_sigma": 3,
+            "nr_sigma": 4,
             "phase": 0,
         }
         data = {"wf_func": wf_func_path, "duration": duration, **wf_kwargs}

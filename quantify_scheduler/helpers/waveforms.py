@@ -288,6 +288,7 @@ def exec_waveform_function(wf_func: str, t: np.ndarray, pulse_info: dict) -> np.
                 D_amp=pulse_info["D_amp"],
                 duration=pulse_info["duration"],
                 nr_sigma=pulse_info["nr_sigma"],
+                sigma=pulse_info["sigma"],
                 phase=pulse_info["phase"],
             )
     else:

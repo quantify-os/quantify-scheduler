@@ -160,6 +160,7 @@ def test_exec_waveform_function(wf_func: str, mocker: MockerFixture) -> None:
         "G_amp": 0.7,
         "D_amp": -0.2,
         "nr_sigma": 3,
+        "sigma": None,
         "phase": 90,
     }
     wavefn_stub = mocker.patch(wf_func, return_value=[])

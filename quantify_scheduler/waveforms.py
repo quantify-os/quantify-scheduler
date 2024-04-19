@@ -136,7 +136,8 @@ def drag(
     G_amp: float,
     D_amp: float,
     duration: float,
-    nr_sigma: int = 3,
+    nr_sigma: float,
+    sigma: float | int | None = None,
     phase: float = 0,
     subtract_offset: str = "average",
 ) -> np.ndarray:
@@ -172,6 +173,8 @@ def drag(
         Duration of the pulse in seconds.
     nr_sigma
         After how many sigma the Gaussian is cut off.
+    sigma
+        Width of the Gaussian envelope. If None, it is calculated with nr_sigma, which is set to 4.
     phase
         Phase of the pulse in degrees.
     subtract_offset
@@ -191,10 +194,16 @@ def drag(
     """
     mu = t[0] + duration / 2
 
-    sigma = duration / (2 * nr_sigma)
+    if sigma is not None and nr_sigma is not None:
+        raise ValueError(
+            "Both sigma and nr_sigma are specified. Please specify only one."
+        )
+
+    if sigma is None:
+        sigma = duration / (2 * nr_sigma)
 
     gauss_env = G_amp * np.exp(-(0.5 * ((t - mu) ** 2) / sigma**2))
-    deriv_gauss_env = -D_amp * (t - mu) / (sigma**1) * gauss_env
+    deriv_gauss_env = -D_amp * (t - mu) / sigma * gauss_env
 
     # Subtract offsets
     if subtract_offset.lower() == "none" or subtract_offset is None:

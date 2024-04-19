@@ -727,6 +727,8 @@ class ChirpPulse(Operation):
 class DRAGPulse(Operation):
     r"""
     A Gaussian pulse with a derivative component added to the out-of-phase channel.
+    It uses the specified amplitude and sigma.
+    If sigma is not specified it is set to 1/4 of the duration.
 
     The DRAG pulse is intended for single qubit gates in transmon based systems.
     It can be calibrated to reduce unwanted excitations of the
@@ -752,6 +754,9 @@ class DRAGPulse(Operation):
     reference_magnitude
         Scaling value and unit for the unitless amplitude. Uses settings in
         hardware config if not provided.
+    sigma
+        Width of the Gaussian envelope in seconds. If not provided, the sigma
+        is set to 1/4 of the duration.
     t0
         Time in seconds when to start the pulses relative to the start time
         of the Operation in the Schedule.
@@ -766,6 +771,7 @@ class DRAGPulse(Operation):
         port: str,
         clock: str,
         reference_magnitude: Optional[ReferenceMagnitude] = None,
+        sigma: float = None,
         t0: float = 0,
     ):
         super().__init__(name=self.__class__.__name__)
@@ -777,7 +783,8 @@ class DRAGPulse(Operation):
                 "reference_magnitude": reference_magnitude,
                 "duration": duration,
                 "phase": phase,
-                "nr_sigma": 4,
+                "nr_sigma": 4 if sigma is None else None,
+                "sigma": sigma,
                 "clock": clock,
                 "port": port,
                 "t0": t0,
@@ -793,7 +800,8 @@ class DRAGPulse(Operation):
 class GaussPulse(Operation):
     r"""
     The GaussPulse Operation is a real-valued pulse with the specified
-    amplitude and width 4 sigma.
+    amplitude and sigma.
+    If sigma is not specified it is set to 1/4 of the duration.
 
     The waveform is generated using :func:`.waveforms.drag` whith a D_amp set to zero, corresponding to a Gaussian pulse.
 
@@ -812,6 +820,9 @@ class GaussPulse(Operation):
     reference_magnitude
         Scaling value and unit for the unitless amplitude. Uses settings in
         hardware config if not provided.
+    sigma
+        Width of the Gaussian envelope in seconds. If not provided, the sigma
+        is set to 1/4 of the duration.
     t0
         Time in seconds when to start the pulses relative to the start time
         of the Operation in the Schedule.
@@ -825,6 +836,7 @@ class GaussPulse(Operation):
         port: str,
         clock: str,
         reference_magnitude: Optional[ReferenceMagnitude] = None,
+        sigma: float = None,
         t0: float = 0,
     ):
         super().__init__(name=self.__class__.__name__)
@@ -836,7 +848,8 @@ class GaussPulse(Operation):
                 "reference_magnitude": reference_magnitude,
                 "duration": duration,
                 "phase": phase,
-                "nr_sigma": 4,
+                "nr_sigma": 4 if sigma is None else None,
+                "sigma": sigma,
                 "clock": clock,
                 "port": port,
                 "t0": t0,

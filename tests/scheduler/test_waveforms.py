@@ -56,7 +56,7 @@ def test_staircase() -> None:
 
 def test_drag_ns() -> None:
     duration = 20e-9
-    nr_sigma = 3
+    nr_sigma = 4
     G_amp = 0.5
     D_amp = 1
 
@@ -81,7 +81,7 @@ def test_drag_ns() -> None:
     assert np.max(waveform) == pytest.approx(0.5)
 
     with pytest.raises(ValueError):
-        drag(times, 0.5, D_amp, duration, subtract_offset="bad!")
+        drag(times, 0.5, D_amp, duration, nr_sigma=nr_sigma, subtract_offset="bad!")
 
     waveform = drag(
         times,
@@ -272,4 +272,39 @@ def test_hermite_duration_scaling(hermite_kwargs):
             skewness=scaling * skewness,
             **hermite_kwargs,
         )
+    )
+
+
+@pytest.mark.parametrize(
+    "nr_sigma, sigma",
+    [
+        (4, None),
+        (None, 3),
+    ],
+)
+def test_drag_sigma(nr_sigma, sigma):
+    waveform = drag(
+        t=np.arange(0, 20e-9, 1e-9),
+        G_amp=0.5,
+        D_amp=1,
+        duration=20e-9,
+        nr_sigma=nr_sigma,
+        sigma=sigma,
+    )
+    assert waveform is not None
+
+
+def test_drag_sigma_raises_error():
+    with pytest.raises(ValueError) as exception:
+        drag(
+            t=np.arange(0, 20e-9, 1e-9),
+            G_amp=0.5,
+            D_amp=1,
+            duration=20e-9,
+            nr_sigma=4,
+            sigma=3,
+        )
+    assert (
+        str(exception.value)
+        == "Both sigma and nr_sigma are specified. Please specify only one."
     )
