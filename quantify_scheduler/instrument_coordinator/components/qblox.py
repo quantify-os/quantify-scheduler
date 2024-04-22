@@ -53,12 +53,12 @@ from quantify_scheduler.instrument_coordinator.utility import (
 )
 
 if TYPE_CHECKING:
-    from qblox_instruments.qcodes_drivers.qcm_qrm import QcmQrm
+    from qblox_instruments.qcodes_drivers.module import Module
     from qblox_instruments.qcodes_drivers.sequencer import Sequencer
-from quantify_scheduler.schedules.schedule import (
-    AcquisitionMetadata,
-    CompiledSchedule,
-)
+    from quantify_scheduler.schedules.schedule import (
+        AcquisitionMetadata,
+        CompiledSchedule,
+    )
 
 
 logger = logging.getLogger(__name__)
@@ -117,7 +117,7 @@ _QRM_RF_PROPERTIES = _StaticHardwareProperties(
 class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
     """Qblox InstrumentCoordinator component base class."""
 
-    def __init__(self, instrument: QcmQrm) -> None:
+    def __init__(self, instrument: Module) -> None:
         super().__init__(instrument)
 
         self._instrument_module = instrument
@@ -138,15 +138,15 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
         self._program = {}
 
     # Necessary to override the `instrument` attr from `InstrumentCoordinatorComponentBase`,
-    # `QcmQrm` is a qcodes `InstrumentModule` subclass
+    # `Module` is a qcodes `InstrumentModule` subclass
     @property
-    def instrument(self) -> QcmQrm:
+    def instrument(self) -> Module:
         """Returns a reference to the module instrument."""
         return self._instrument_module
 
     def _set_parameter(
         self,
-        instrument: Union[QcmQrm, Sequencer],
+        instrument: Union[Module, Sequencer],
         parameter_name: str,
         val: Any,
     ) -> None:
@@ -411,7 +411,7 @@ class _QCMComponent(_ModuleComponentBase):
 
     _hardware_properties = _QCM_BASEBAND_PROPERTIES
 
-    def __init__(self, instrument: QcmQrm) -> None:
+    def __init__(self, instrument: Module) -> None:
         if not instrument.is_qcm_type:
             raise TypeError(
                 f"Trying to create _QCMComponent from non-QCM instrument "
@@ -506,7 +506,7 @@ class _QRMComponent(_ModuleComponentBase):
 
     _hardware_properties = _QRM_BASEBAND_PROPERTIES
 
-    def __init__(self, instrument: QcmQrm) -> None:
+    def __init__(self, instrument: Module) -> None:
         if not instrument.is_qrm_type:
             raise TypeError(
                 f"Trying to create _QRMComponent from non-QRM instrument "
@@ -738,7 +738,7 @@ class _QRMComponent(_ModuleComponentBase):
         Note, that compiler ensures there is at most one scope mode acquisition,
         however the user is able to freely modify the compiler program,
         so we make sure this requirement is still satisfied. See
-        :func:`~quantify_scheduler.backends.qblox.compiler_abc.QbloxBaseModule._ensure_single_scope_mode_acquisition_sequencer`.
+        :func:`~quantify_scheduler.backends.qblox.compiler_abc.ClusterModuleCompiler._ensure_single_scope_mode_acquisition_sequencer`.
 
         Parameters
         ----------

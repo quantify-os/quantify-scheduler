@@ -1,17 +1,17 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Helper functions for Qblox backend."""
+from __future__ import annotations
+
 import dataclasses
 import math
 import warnings
 from collections import defaultdict
 from copy import deepcopy
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable
 
 import numpy as np
 
-from quantify_scheduler import Schedule
-from quantify_scheduler.backends.graph_compilation import CompilationConfig
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.qblox.enums import ChannelMode
 from quantify_scheduler.backends.types.qblox import (
@@ -25,16 +25,19 @@ from quantify_scheduler.helpers.collections import (
     find_all_port_clock_combinations,
     find_port_clock_path,
 )
-from quantify_scheduler.helpers.schedule import (
-    _extract_port_clocks_used,
-)
+from quantify_scheduler.helpers.schedule import _extract_port_clocks_used
 from quantify_scheduler.helpers.waveforms import exec_waveform_function
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import WindowOperation
 
+if TYPE_CHECKING:
+    from quantify_scheduler import Schedule
+    from quantify_scheduler.backends.graph_compilation import CompilationConfig
+    from quantify_scheduler.backends.qblox.instrument_compilers import ClusterCompiler
+
 
 def generate_waveform_data(
-    data_dict: dict, sampling_rate: float, duration: Optional[float] = None
+    data_dict: dict, sampling_rate: float, duration: float | None = None
 ) -> np.ndarray:
     """
     Generates an array using the parameters specified in ``data_dict``.
@@ -81,7 +84,7 @@ def generate_waveform_data(
     return wf_data
 
 
-def generate_waveform_names_from_uuid(uuid: Any) -> Tuple[str, str]:
+def generate_waveform_names_from_uuid(uuid: Any) -> tuple[str, str]:
     """
     Generates names for the I and Q parts of the complex waveform based on a unique
     identifier for the pulse/acquisition.
@@ -123,8 +126,8 @@ def generate_uuid_from_wf_data(wf_data: np.ndarray, decimals: int = 12) -> str:
 
 
 def add_to_wf_dict_if_unique(
-    wf_dict: Dict[str, Any], waveform: np.ndarray
-) -> Tuple[Dict[str, Any], str, int]:
+    wf_dict: dict[str, Any], waveform: np.ndarray
+) -> tuple[dict[str, Any], str, int]:
     """
     Adds a waveform to the waveform dictionary if it is not yet in there and returns the
     uuid and index. If it is already present it simply returns the uuid and index.
@@ -146,7 +149,7 @@ def add_to_wf_dict_if_unique(
         The index.
     """
 
-    def generate_entry(name: str, data: np.ndarray, idx: int) -> Dict[str, Any]:
+    def generate_entry(name: str, data: np.ndarray, idx: int) -> dict[str, Any]:
         return {name: {"data": data.tolist(), "index": idx}}
 
     def find_first_free_wf_index():
@@ -168,7 +171,7 @@ def add_to_wf_dict_if_unique(
     return index
 
 
-def generate_waveform_dict(waveforms_complex: Dict[str, np.ndarray]) -> Dict[str, dict]:
+def generate_waveform_dict(waveforms_complex: dict[str, np.ndarray]) -> dict[str, dict]:
     """
     Takes a dictionary with complex waveforms and generates a new dictionary with
     real valued waveforms with a unique index, as required by the hardware.
@@ -377,8 +380,8 @@ class Frequencies:
     """Holds and validates frequencies."""
 
     clock: float
-    LO: Optional[float] = None
-    IF: Optional[float] = None
+    LO: float | None = None
+    IF: float | None = None
 
     def __post_init__(self):
         if self.LO is not None and math.isnan(self.LO):
@@ -399,7 +402,7 @@ class Frequencies:
 
 def determine_clock_lo_interm_freqs(
     freqs: Frequencies,
-    downconverter_freq: Optional[float] = None,
+    downconverter_freq: float | None = None,
     mix_lo: bool = True,
 ) -> Frequencies:
     r"""
@@ -510,8 +513,8 @@ def determine_clock_lo_interm_freqs(
 
 
 def generate_port_clock_to_device_map(
-    hardware_cfg: Dict[str, Any]
-) -> Dict[Tuple[str, str], str]:
+    hardware_cfg: dict[str, Any]
+) -> dict[tuple[str, str], str]:
     """
     Generates a mapping that specifies which port-clock combinations belong to which
     device.
@@ -559,12 +562,12 @@ def generate_port_clock_to_device_map(
 
 def assign_pulse_and_acq_info_to_devices(
     schedule: Schedule,
-    device_compilers: Dict[str, Any],
-    hardware_cfg: Dict[str, Any],
+    device_compilers: dict[str, ClusterCompiler],
+    hardware_cfg: dict[str, Any],
 ):
     """
     Traverses the schedule and generates `OpInfo` objects for every pulse and
-    acquisition, and assigns it to the correct `InstrumentCompiler`.
+    acquisition, and assigns it to the correct `ClusterCompiler`.
 
     Parameters
     ----------
@@ -693,8 +696,8 @@ def assign_pulse_and_acq_info_to_devices(
 
 
 def calc_from_units_volt(
-    voltage_range, name: str, param_name: str, cfg: Dict[str, Any]
-) -> Optional[float]:
+    voltage_range, name: str, param_name: str, cfg: dict[str, Any]
+) -> float | None:
     """
     Helper method to calculate the offset from mV or V.
     Then compares to given voltage range, and throws a ValueError if out of bounds.
@@ -781,7 +784,7 @@ def single_scope_mode_acquisition_raise(sequencer_0, sequencer_1, module_name):
 
 def _generate_legacy_hardware_config(
     schedule: Schedule, compilation_config: CompilationConfig
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Extract the old-style Qblox hardware config from the CompilationConfig.
 
@@ -816,7 +819,7 @@ def _generate_legacy_hardware_config(
         for k in nested_dict:
             if k.startswith(ChannelMode.DIGITAL):
                 nested_dict[k]["portclock_configs"][0]["clock"] = ChannelMode.DIGITAL
-            elif isinstance(nested_dict[k], Dict):
+            elif isinstance(nested_dict[k], dict):
                 _recursive_digital_channel_search(nested_dict[k], max_depth - 1)
 
     def _propagate_channel_description_settings(
@@ -1163,7 +1166,7 @@ def _generate_legacy_hardware_config(
     return hardware_config
 
 
-def find_channel_names(instrument_config: Dict[str, Any]) -> List[str]:
+def find_channel_names(instrument_config: dict[str, Any]) -> list[str]:
     """Find all channel names within this Qblox instrument config dict."""
     channel_names = []
     for channel_name, channel_cfg in instrument_config.items():
@@ -1177,13 +1180,13 @@ def find_channel_names(instrument_config: Dict[str, Any]) -> List[str]:
 
 
 def _preprocess_legacy_hardware_config(
-    hardware_config: Dict[str, Any]
-) -> Dict[str, Any]:
+    hardware_config: dict[str, Any]
+) -> dict[str, Any]:
     """Modify a legacy hardware config into a form that is compatible with the current backend."""
 
     def _modify_inner_dicts(
-        config: Dict[str, Any], target_key: str, value_modifier: Callable
-    ) -> Dict[str, Any]:
+        config: dict[str, Any], target_key: str, value_modifier: Callable
+    ) -> dict[str, Any]:
         for key, value in config.items():
             if key == target_key:
                 config[key] = value_modifier(value)
@@ -1195,8 +1198,8 @@ def _preprocess_legacy_hardware_config(
         return config
 
     def _replace_deprecated_portclock_keys(
-        portclock_configs: List[Dict],
-    ) -> List[Dict]:
+        portclock_configs: list[dict],
+    ) -> list[dict]:
         for portclock_config in portclock_configs:
             for deprecated_key, updated_key in {
                 "init_offset_awg_path_0": "init_offset_awg_path_I",

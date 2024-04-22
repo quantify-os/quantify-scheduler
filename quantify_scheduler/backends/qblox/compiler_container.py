@@ -4,14 +4,18 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Set, Union
+from typing import TYPE_CHECKING, Any
 
-from quantify_scheduler import Schedule
 from quantify_scheduler.backends.qblox import constants
-from quantify_scheduler.backends.qblox import instrument_compilers as compiler_classes
-from quantify_scheduler.backends.qblox.compiler_abc import InstrumentCompiler
-from quantify_scheduler.helpers.importers import import_python_object_from_string
+from quantify_scheduler.backends.qblox.instrument_compilers import (
+    ClusterCompiler,
+    LocalOscillatorCompiler,
+)
 from quantify_scheduler.helpers.schedule import get_total_duration
+
+if TYPE_CHECKING:
+    from quantify_scheduler import Schedule
+    from quantify_scheduler.backends.qblox.compiler_abc import InstrumentCompiler
 
 
 class CompilerContainer:
@@ -43,10 +47,10 @@ class CompilerContainer:
         The resources attribute of the schedule. Used for getting the information
          from the clocks.
         """
-        self.instrument_compilers: Dict[str, InstrumentCompiler] = {}
-        """The compilers for the individual instruments."""
-        self.generics: Set[str] = set()
-        """Set of generic instruments in the setup."""
+        self.clusters: dict[str, ClusterCompiler] = {}
+        """Cluster compiler instances managed by this container instance."""
+        self.local_oscillators: dict[str, LocalOscillatorCompiler] = {}
+        """Local oscillator compiler instances managed by this container instance."""
 
     def prepare(self):
         """
@@ -56,7 +60,12 @@ class CompilerContainer:
         for compiler in self.instrument_compilers.values():
             compiler.prepare()
 
-    def compile(self, debug_mode: bool, repetitions: int) -> Dict[str, Any]:
+    @property
+    def instrument_compilers(self) -> dict[str, InstrumentCompiler]:
+        """The compilers for the individual instruments."""
+        return {**self.clusters, **self.local_oscillators}
+
+    def compile(self, debug_mode: bool, repetitions: int) -> dict[str, Any]:
         """
         Performs the compilation for all the individual instruments.
 
@@ -74,78 +83,51 @@ class CompilerContainer:
             Dictionary containing all the compiled programs for each instrument. The key
             refers to the name of the instrument that the program belongs to.
         """
-        # for now name is hardcoded, but should be read from config.
-        compiled_schedule = {}
-        for name, compiler in self.instrument_compilers.items():
-            compiled_instrument_program = compiler.compile(
-                debug_mode=debug_mode, repetitions=repetitions
-            )
+        compiled_schedule: dict[str, Any] = {}
 
-            if compiled_instrument_program is not None:
-                if name in self.generics:
-                    if constants.GENERIC_IC_COMPONENT_NAME not in compiled_schedule:
-                        compiled_schedule[constants.GENERIC_IC_COMPONENT_NAME] = {}
-                    compiled_schedule[constants.GENERIC_IC_COMPONENT_NAME].update(
-                        compiled_instrument_program
-                    )
-                else:
-                    compiled_schedule[name] = compiled_instrument_program
+        for name, compiler in self.clusters.items():
+            if (
+                compiled_instrument_program := compiler.compile(
+                    debug_mode=debug_mode, repetitions=repetitions
+                )
+            ) is not None:
+                compiled_schedule[name] = compiled_instrument_program
+
+        for name, compiler in self.local_oscillators.items():
+            if (
+                compiled_instrument_program := compiler.compile(
+                    debug_mode=debug_mode, repetitions=repetitions
+                )
+            ) is not None:
+                if constants.GENERIC_IC_COMPONENT_NAME not in compiled_schedule:
+                    compiled_schedule[constants.GENERIC_IC_COMPONENT_NAME] = {}
+                compiled_schedule[constants.GENERIC_IC_COMPONENT_NAME].update(
+                    compiled_instrument_program
+                )
+
         return compiled_schedule
 
-    def add_instrument_compiler(
+    def _add_cluster(
         self,
         name: str,
-        instrument_type: Union[str, type],
-        instrument_cfg: Dict[str, Any],
-        latency_corrections: Optional[Dict[str, float]] = None,
+        instrument_cfg: dict[str, Any],
+        latency_corrections: dict[str, float] | None = None,
     ) -> None:
-        """
-        Adds an instrument compiler to the container.
+        self.clusters[name] = ClusterCompiler(
+            parent=self,
+            name=name,
+            total_play_time=self.total_play_time,
+            instrument_cfg=instrument_cfg,
+            latency_corrections=latency_corrections,
+        )
 
-        Parameters
-        ----------
-        name
-            Name of the instrument.
-        instrument_type
-            A reference to the compiler class. Can either be passed as string or a
-            direct reference.
-        instrument_cfg
-            The hardware config dict for this specific instrument.
-        latency_corrections
-            Dict containing the delays for each port-clock combination. This is
-            specified in the top layer of hardware config.
-        """
-        if isinstance(instrument_type, str):
-            if instrument_type in compiler_classes.COMPILER_MAPPING:
-                instrument_type = compiler_classes.COMPILER_MAPPING[instrument_type]
-            else:
-                instrument_type = import_python_object_from_string(instrument_type)
-
-        if isinstance(instrument_type, type):
-            if instrument_type is compiler_classes.LocalOscillator:
-                compiler = compiler_classes.LocalOscillator(
-                    parent=self,
-                    name=name,
-                    total_play_time=self.total_play_time,
-                    instrument_cfg=instrument_cfg,
-                )
-                self.generics.add(name)
-            else:
-                compiler = instrument_type(
-                    parent=self,
-                    name=name,
-                    total_play_time=self.total_play_time,
-                    instrument_cfg=instrument_cfg,
-                    latency_corrections=latency_corrections,
-                )
-
-            self.instrument_compilers[name] = compiler
-        else:
-            raise ValueError(
-                f"{instrument_type} is not a valid compiler. {self.__class__} "
-                f"expects either a string or a type. But {type(instrument_type)} was "
-                f"passed."
-            )
+    def _add_local_oscillator(self, name: str, instrument_cfg: dict[str, Any]) -> None:
+        self.local_oscillators[name] = LocalOscillatorCompiler(
+            parent=self,
+            name=name,
+            total_play_time=self.total_play_time,
+            instrument_cfg=instrument_cfg,
+        )
 
     @classmethod
     def from_hardware_cfg(
@@ -173,10 +155,20 @@ class CompilerContainer:
             instrument_type = instrument_cfg["instrument_type"]
             latency_corrections = hardware_cfg.get("latency_corrections", {})
 
-            composite.add_instrument_compiler(
-                name=instrument_name,
-                instrument_type=instrument_type,
-                instrument_cfg=instrument_cfg,
-                latency_corrections=latency_corrections,
-            )
+            if instrument_type == "Cluster":
+                composite._add_cluster(
+                    name=instrument_name,
+                    instrument_cfg=instrument_cfg,
+                    latency_corrections=latency_corrections,
+                )
+            elif instrument_type == "LocalOscillator":
+                composite._add_local_oscillator(
+                    name=instrument_name, instrument_cfg=instrument_cfg
+                )
+            else:
+                raise ValueError(
+                    f"{instrument_type} is not a known compiler type. Expected either a "
+                    "'Cluster' or a 'LocalOscillator'."
+                )
+
         return composite

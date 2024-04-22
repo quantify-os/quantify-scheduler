@@ -60,7 +60,7 @@ def get_acq_uuid(acq_info: dict[str, Any]) -> int:
     return make_hash(without(acq_info, ["t0", "waveforms"]))
 
 
-def get_total_duration(schedule: CompiledSchedule) -> float:
+def get_total_duration(schedule: ScheduleBase) -> float:
     """
     Return the total schedule duration in seconds.
 
@@ -143,7 +143,7 @@ def get_operation_start(
 
 
 def get_operation_end(
-    schedule: CompiledSchedule,
+    schedule: ScheduleBase,
     timeslot_index: int,
 ) -> float:
     """

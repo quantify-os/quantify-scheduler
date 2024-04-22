@@ -546,7 +546,7 @@ class QASMProgram:
         .. jupyter-execute::
 
             from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
-            from quantify_scheduler.backends.qblox.instrument_compilers import QcmModule
+            from quantify_scheduler.backends.qblox.instrument_compilers import QCMCompiler
             from quantify_scheduler.backends.qblox import register_manager, constants
             from quantify_scheduler.backends.types.qblox import (
                 StaticHardwareProperties,
@@ -554,7 +554,7 @@ class QASMProgram:
             )
 
             qasm = QASMProgram(
-                static_hw_properties=QcmModule.static_hw_properties,
+                static_hw_properties=QCMCompiler.static_hw_properties,
                 register_manager=register_manager.RegisterManager(),
                 align_fields=True,
                 acq_metadata=None,

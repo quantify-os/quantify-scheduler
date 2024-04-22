@@ -195,8 +195,8 @@ extend-ignore-names = ["path_I", "path_Q", "offset_path_I", "offset_path_Q"]
 "quantify_scheduler/backends/circuit_to_device.py" = ['ANN001', 'ANN202', 'ANN204', 'I001', 'PLR0912', 'TCH001', 'UP006']
 "quantify_scheduler/backends/corrections.py" = ['E501', 'I001', 'SIM118']
 "quantify_scheduler/backends/graph_compilation.py" = ['ANN001', 'ANN003', 'ANN201', 'ANN202', 'ANN204', 'TCH001', 'TCH002', 'UP006', 'UP007']
-"quantify_scheduler/backends/qblox/compiler_abc.py" = ['ANN001', 'ANN201', 'ANN202', 'ANN204', 'ANN401', 'E501', 'F821', 'I001', 'SIM108', 'TCH001', 'TCH003', 'UP006', 'UP007']
-"quantify_scheduler/backends/qblox/compiler_container.py" = ['ANN102', 'ANN201', 'ANN204', 'TCH001', 'UP006', 'UP007']
+"quantify_scheduler/backends/qblox/compiler_abc.py" = ['ANN001', 'ANN202', 'ANN204', 'ANN401', 'E501', 'F821', 'I001', 'SIM108', 'TCH001', 'TCH003', 'UP006', 'UP007']
+"quantify_scheduler/backends/qblox/compiler_container.py" = ['ANN102', 'ANN201', 'ANN204']
 "quantify_scheduler/backends/qblox/constants.py" = ['E501']
 "quantify_scheduler/backends/qblox/driver_version_check.py" = ['ANN201']
 "quantify_scheduler/backends/qblox/helpers.py" = ['ANN001', 'ANN201', 'ANN202', 'ANN204', 'ANN401', 'E501', 'PLR0912', 'PLR0915', 'PLR5501', 'SIM105', 'SIM118']
@@ -321,7 +321,6 @@ exclude = [
     "quantify_scheduler/backends/qblox_backend.py",
     "quantify_scheduler/backends/zhinst_backend.py",
     "quantify_scheduler/backends/qblox/compiler_abc.py",
-    "quantify_scheduler/backends/qblox/compiler_container.py",
     "quantify_scheduler/backends/qblox/driver_version_check.py",
     "quantify_scheduler/backends/qblox/helpers.py",
     "quantify_scheduler/backends/qblox/instrument_compilers.py",

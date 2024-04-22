@@ -19,7 +19,7 @@ from xarray import DataArray, Dataset
 from quantify_scheduler import Schedule, waveforms
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.qblox import constants
-from quantify_scheduler.backends.qblox.instrument_compilers import QrmModule
+from quantify_scheduler.backends.qblox.instrument_compilers import QRMCompiler
 from quantify_scheduler.backends.qblox.operation_handling import acquisitions
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox.register_manager import RegisterManager
@@ -51,7 +51,7 @@ from tests.scheduler.instrument_coordinator.components.test_qblox import (
 @pytest.fixture(name="empty_qasm_program_qrm")
 def fixture_empty_qasm_program():
     yield QASMProgram(
-        static_hw_properties=QrmModule.static_hw_properties,
+        static_hw_properties=QRMCompiler.static_hw_properties,
         register_manager=RegisterManager(),
         align_fields=True,
         acq_metadata=None,

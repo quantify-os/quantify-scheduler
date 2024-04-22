@@ -22,6 +22,9 @@
 - Qblox backend - Fix cluster start function to clear acquisition data. (!955)
 - Compilation - Refactor device compilation to make schedule and operation compilation more consistent. (!938)
 - Qblox backend - Add instrument compilers `_ClusterCompilerConfig`, `_ClusterModuleCompilerConfig` and `_LocalOscillatorCompilerConfig` to qblox backend types, and add `_extract_instrument_compiler_configs` to `QbloxHardwareCompilationConfig`. (!956)
+- Qblox backend - Remove the `ControlDeviceCompiler` class. (!940)
+- Qblox backend - Rename many classes in `compiler_abc` and `instrument_compilers` to reflect a similar naming style as the Qblox `InstrumentCoordinator` components. (!940)
+- Qblox backend - Explicitly split `ClusterCompiler` and `LocalOscillatorCompiler` instances in `CompilerContainer` to fix a typing issue in `assign_pulse_and_acq_info_to_devices`. (!940)
 
 ## 0.19.0 (2024-04-03)
 

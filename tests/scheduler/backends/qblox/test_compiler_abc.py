@@ -391,3 +391,31 @@ def test_any_other_updating_instruction_at_timing(
         )
         == expected
     )
+
+
+# Total play time number does not matter here. The fixture needs it.
+@pytest.mark.parametrize("total_play_time", [2e-7])
+def test_too_many_instructions_warns(mock_sequencer: Sequencer):
+    max_num_instructions = 100
+    max_operations_num = (max_num_instructions - 10) // 2
+    mock_sequencer.parent.configure_mock(  # type: ignore # Member "configure_mock" is unknown
+        max_number_of_instructions=max_num_instructions
+    )
+    mock_sequencer._default_marker = 0
+    operations = [
+        ioperation_strategy_from_op_info(
+            offset_instruction(t * 8e-9), channel_name="real_output_0"
+        )
+        for t in range(0, max_operations_num + 1)
+    ]
+    mock_sequencer.op_strategies = operations
+    with pytest.warns(
+        RuntimeWarning,
+        match="exceeds the maximum supported number of instructions in Q1ASM programs",
+    ):
+        mock_sequencer.generate_qasm_program(
+            total_sequence_time=max_operations_num * 8e-9,
+            align_qasm_fields=False,
+            acq_metadata=None,
+            repetitions=1,
+        )

@@ -4,7 +4,7 @@ import pytest
 
 from quantify_scheduler.backends.graph_compilation import SerialCompiler
 from quantify_scheduler.backends.qblox.compiler_abc import (
-    QbloxBasebandModule,
+    BasebandModuleCompiler,
     Sequencer,
 )
 from quantify_scheduler.backends.qblox.conditional import (
@@ -115,7 +115,7 @@ def test_nested_conditional_control_flow_raises_runtime_warning():
             "complex_output_0": (0, 1),
         },
     )
-    mock_parent_module = Mock(QbloxBasebandModule)
+    mock_parent_module = Mock(BasebandModuleCompiler)
     sequencer = Sequencer(
         parent=mock_parent_module,
         index=0,

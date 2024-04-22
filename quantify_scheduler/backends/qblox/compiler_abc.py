@@ -9,7 +9,7 @@ import json
 import logging
 import math
 import warnings
-from abc import ABC, ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 from collections import defaultdict
 from collections.abc import Iterator
 from os import makedirs, path
@@ -18,7 +18,6 @@ from typing import (
     Any,
     Callable,
     Dict,
-    Generator,
     Hashable,
     List,
     Optional,
@@ -35,7 +34,6 @@ from quantify_scheduler.backends.qblox import (
     constants,
     driver_version_check,
     helpers,
-    instrument_compilers,
     q1asm_instructions,
     register_manager,
 )
@@ -76,7 +74,9 @@ from quantify_scheduler.helpers.schedule import (
 from quantify_scheduler.operations.pulse_library import SetClockFrequency
 
 if TYPE_CHECKING:
-    from quantify_scheduler.backends.qblox.instrument_compilers import LocalOscillator
+    from quantify_scheduler.backends.qblox.instrument_compilers import (
+        LocalOscillatorCompiler,
+    )
     from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 
 logger = logging.getLogger(__name__)
@@ -160,122 +160,6 @@ class InstrumentCompiler(ABC):
         """
 
 
-class ControlDeviceCompiler(InstrumentCompiler, metaclass=ABCMeta):
-    """
-    Abstract class for devices requiring logic for acquisition and playback of pulses.
-
-    Parameters
-    ----------
-    parent: :class:`~quantify_scheduler.backends.qblox.compiler_container.CompilerContainer`
-        Reference to the parent object.
-    name
-        Name of the `QCoDeS` instrument this compiler object corresponds to.
-    total_play_time
-        Total time execution of the schedule should go on for. This parameter is
-        used to ensure that the different devices, potentially with different clock
-        rates, can work in a synchronized way when performing multiple executions of
-        the schedule.
-    instrument_cfg
-        The part of the hardware configuration dictionary referring to this device. This is one
-        of the inner dictionaries of the overall hardware config.
-    latency_corrections
-        Dict containing the delays for each port-clock combination. This is specified in
-        the top layer of hardware config.
-    """
-
-    def __init__(
-        self,
-        parent,  # No type hint due to circular import, added to docstring
-        name: str,
-        total_play_time: float,
-        instrument_cfg: Dict[str, Any],
-        latency_corrections: Optional[Dict[str, float]] = None,
-    ):
-        super().__init__(
-            parent=parent,
-            name=name,
-            total_play_time=total_play_time,
-            instrument_cfg=instrument_cfg,
-            latency_corrections=latency_corrections,
-        )
-        self._op_infos: Dict[Tuple[str, str], List[OpInfo]] = defaultdict(list)
-
-    @property
-    @abstractmethod
-    def supports_acquisition(self) -> bool:
-        """
-        Specifies whether the device can perform acquisitions.
-
-        Returns
-        -------
-        :
-            The maximum amount of sequencers
-        """
-
-    def add_op_info(self, port: str, clock: str, op_info: OpInfo):
-        """
-        Assigns a certain pulse or acquisition to this device.
-
-        Parameters
-        ----------
-        port
-            The port this waveform is sent to (or acquired from).
-        clock
-            The clock for modulation of the pulse or acquisition. Can be a BasebandClock.
-        op_info
-            Data structure containing all the information regarding this specific
-            pulse or acquisition operation.
-        """
-        if op_info.is_acquisition and not self.supports_acquisition:
-            raise RuntimeError(
-                f"{self.__class__.__name__} {self.name} does not support acquisitions. "
-                f"Attempting to add acquisition {repr(op_info)} "
-                f"on port {port} with clock {clock}."
-            )
-
-        self._op_infos[(port, clock)].append(op_info)
-
-    @property
-    def _portclocks_with_data(self) -> Set[Tuple[str, str]]:
-        """
-        All the port-clock combinations associated with at least one pulse and/or
-        acquisition.
-
-        Returns
-        -------
-        :
-            A set containing all the port-clock combinations that are used by this
-            InstrumentCompiler.
-        """
-        portclocks_used: Set[Tuple[str, str]] = {
-            portclock
-            for portclock, op_infos in self._op_infos.items()
-            if not all(op_info.data.get("name") == "LatchReset" for op_info in op_infos)
-        }
-        return portclocks_used
-
-    @abstractmethod
-    def compile(self, debug_mode: bool, repetitions: int = 1) -> Dict[str, Any]:
-        """
-        An abstract method that should be overridden by a subclass to implement the
-        actual compilation. Method turns the pulses and acquisitions added to the device
-        into device-specific instructions.
-
-        Parameters
-        ----------
-        debug_mode
-            Debug mode can modify the compilation process,
-            so that debugging of the compilation process is easier.
-        repetitions
-            Number of times execution the schedule is repeated.
-
-        Returns
-        -------
-        :
-            A data structure representing the compiled program.
-        """
-
-
 class NcoOperationTimingError(ValueError):
     """Exception thrown if there are timing errors for NCO operations."""
 
@@ -318,7 +202,7 @@ class Sequencer:
 
     def __init__(
         self,
-        parent: QbloxBaseModule,
+        parent: ClusterModuleCompiler,
         index: int,
         portclock: Tuple[str, str],
         static_hw_properties: StaticHardwareProperties,
@@ -335,10 +219,10 @@ class Sequencer:
         self.port = portclock[0]
         self.clock = portclock[1]
         self.op_strategies: List[IOperationStrategy] = []
-        self.associated_ext_lo: str = lo_name
-        self.downconverter_freq: float = downconverter_freq
-        self.mix_lo: bool = mix_lo
-        self._marker_debug_mode_enable: bool = marker_debug_mode_enable
+        self.associated_ext_lo = lo_name
+        self.downconverter_freq = downconverter_freq
+        self.mix_lo = mix_lo
+        self._marker_debug_mode_enable = marker_debug_mode_enable
         self._num_acquisitions = 0
 
         self.static_hw_properties: StaticHardwareProperties = static_hw_properties
@@ -449,7 +333,7 @@ class Sequencer:
         return len(self.op_strategies) > 0
 
     @property
-    def frequency(self) -> float:
+    def frequency(self) -> float | None:
         """
         The frequency used for modulation of the pulses.
 
@@ -910,19 +794,15 @@ class Sequencer:
         if self.qasm_hook_func:
             self.qasm_hook_func(qasm)
 
-        max_instructions = (
-            constants.MAX_NUMBER_OF_INSTRUCTIONS_QCM
-            if self.parent.__class__
-            in [instrument_compilers.QcmModule, instrument_compilers.QcmRfModule]
-            else constants.MAX_NUMBER_OF_INSTRUCTIONS_QRM
-        )
-        if (num_instructions := len(qasm.instructions)) > max_instructions:
+        if (
+            num_instructions := len(qasm.instructions)
+        ) > self.parent.max_number_of_instructions:
             warnings.warn(
                 f"Number of instructions ({num_instructions}) compiled for "
                 f"'{self.name}' of {self.parent.__class__.__name__} "
                 f"'{self.parent.name}' exceeds the maximum supported number of "
                 f"instructions in Q1ASM programs for {self.parent.__class__.__name__} "
-                f"({max_instructions}).",
+                f"({self.parent.max_number_of_instructions}).",
                 RuntimeWarning,
             )
 
@@ -941,7 +821,7 @@ class Sequencer:
         operations_iter: Iterator[IOperationStrategy],
         qasm: QASMProgram,
         acquisition_multiplier: int,
-    ) -> bool:
+    ) -> ParseOperationStatus:
         """Handle control flow and insert Q1ASM."""
         while (operation := next(operations_iter, None)) is not None:
             qasm.wait_till_start_operation(operation.operation_info)
@@ -966,7 +846,6 @@ class Sequencer:
                     assert returned_from_return_stack in self.ParseOperationStatus
 
             elif isinstance(operation, ControlFlowReturnStrategy):
-                qasm.conditional_manager.end_time = operation.operation_info.timing
                 return self.ParseOperationStatus.EXITED_CONTROL_FLOW
             else:
                 if operation.operation_info.is_acquisition:
@@ -1007,7 +886,7 @@ class Sequencer:
         op_strategies:
             An operations list including all the acquisitions to consider.
         """
-        channel_to_reg = {}
+        channel_to_reg: dict[str, str] = {}
         for op_strategy in op_strategies:
             if not op_strategy.operation_info.is_acquisition:
                 continue
@@ -1188,7 +1067,7 @@ class Sequencer:
         :
             The combined program.
         """
-        compiled_dict = {}
+        compiled_dict: dict[str, Any] = {}
         compiled_dict["program"] = program
         compiled_dict["waveforms"] = waveforms_dict
         if weights_dict is not None:
@@ -1454,20 +1333,19 @@ class Sequencer:
                     last_phase_upd_time = timing
 
 
-class QbloxBaseModule(ControlDeviceCompiler, ABC):
+class ClusterModuleCompiler(InstrumentCompiler, ABC):
     """
-    Qblox specific implementation of
-    :class:`quantify_scheduler.backends.qblox.compiler_abc.InstrumentCompiler`.
+    Base class for all cluster modules, and an interface for those modules to the
+    :class:`~quantify_scheduler.backends.qblox.instrument_compilers.ClusterCompiler`.
 
     This class is defined as an abstract base class since the distinctions between the
     different devices are defined in subclasses.
     Effectively, this base class contains the functionality shared by all Qblox
     devices and serves to avoid repeated code between them.
 
-
     Parameters
     ----------
-    parent: :class:`quantify_scheduler.backends.qblox.compiler_container.CompilerContainer`
+    parent: :class:`~quantify_scheduler.backends.qblox.compiler_container.CompilerContainer`
         Reference to the parent object.
     name
         Name of the `QCoDeS` instrument this compiler object corresponds to.
@@ -1492,6 +1370,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         instrument_cfg: Dict[str, Any],
         latency_corrections: Optional[Dict[str, float]] = None,
     ):
+        driver_version_check.verify_qblox_instruments_version()
         super().__init__(
             parent=parent,
             name=name,
@@ -1499,7 +1378,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             instrument_cfg=instrument_cfg,
             latency_corrections=latency_corrections,
         )
-        driver_version_check.verify_qblox_instruments_version()
+        self._op_infos: Dict[Tuple[str, str], List[OpInfo]] = defaultdict(list)
 
         self._settings: Union[BaseModuleSettings, None] = (
             None  # set in the prepare method.
@@ -1528,7 +1407,59 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
     @property
     @abstractmethod
-    def settings_type(self) -> BaseModuleSettings:
+    def supports_acquisition(self) -> bool:
+        """Specifies whether the device can perform acquisitions."""
+
+    @property
+    @abstractmethod
+    def max_number_of_instructions(self) -> int:
+        """The maximum number of Q1ASM instructions supported by this module type."""
+
+    def add_op_info(self, port: str, clock: str, op_info: OpInfo) -> None:
+        """
+        Assigns a certain pulse or acquisition to this device.
+
+        Parameters
+        ----------
+        port
+            The port this waveform is sent to (or acquired from).
+        clock
+            The clock for modulation of the pulse or acquisition. Can be a BasebandClock.
+        op_info
+            Data structure containing all the information regarding this specific
+            pulse or acquisition operation.
+        """
+        if op_info.is_acquisition and not self.supports_acquisition:
+            raise RuntimeError(
+                f"{self.__class__.__name__} {self.name} does not support acquisitions. "
+                f"Attempting to add acquisition {repr(op_info)} "
+                f"on port {port} with clock {clock}."
+            )
+
+        self._op_infos[(port, clock)].append(op_info)
+
+    @property
+    def _portclocks_with_data(self) -> Set[Tuple[str, str]]:
+        """
+        All the port-clock combinations associated with at least one pulse and/or
+        acquisition.
+
+        Returns
+        -------
+        :
+            A set containing all the port-clock combinations that are used by this
+            InstrumentCompiler.
+        """
+        portclocks_used: Set[Tuple[str, str]] = {
+            portclock
+            for portclock, op_infos in self._op_infos.items()
+            if not all(op_info.data.get("name") == "LatchReset" for op_info in op_infos)
+        }
+        return portclocks_used
+
+    @property
+    @abstractmethod
+    def settings_type(self) -> type[BaseModuleSettings]:
         """Specifies the module settings class used by the instrument."""
 
     @property
@@ -1539,7 +1470,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         differences between the different modules.
         """
 
-    def _construct_sequencers(self):
+    def _construct_sequencers(self) -> None:
         """
         Constructs :class:`~Sequencer` objects for each port and clock combination
         belonging to this device.
@@ -1628,7 +1559,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
 
         self.sequencers = sequencers
 
-    def distribute_data(self):
+    def distribute_data(self) -> None:
         """
         Distributes the pulses and acquisitions assigned to this module over the
         different sequencers based on their portclocks. Raises an exception in case
@@ -1659,7 +1590,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                             seq.op_strategies.append(op_strategy)
 
     @abstractmethod
-    def assign_frequencies(self, sequencer: Sequencer):
+    def assign_frequencies(self, sequencer: Sequencer) -> None:
         r"""
         An abstract method that should be overridden. Meant to assign an IF frequency
         to each sequencer, and an LO frequency to each output (if applicable).
@@ -1669,7 +1600,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         self,
         freqs: helpers.Frequencies,
         sequencer: Sequencer,
-        compiler_lo_baseband: Optional[LocalOscillator] = None,
+        compiler_lo_baseband: Optional[LocalOscillatorCompiler] = None,
         lo_freq_setting_rf: Optional[str] = None,
     ):
         """
@@ -1683,8 +1614,9 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         sequencer
             The sequencer for which frequences are to be set.
         compiler_lo_baseband
-            For baseband modules, supply the :class:`.instrument_compilers.LocalOscillator` instrument
-            compiler of which the frequency is to be set.
+            For baseband modules, supply the
+            :class:`.instrument_compilers.LocalOscillatorCompiler` instrument compiler
+            of which the frequency is to be set.
         lo_freq_setting_rf
             For RF modules, supply the name of the LO frequency param from the
             :class:`.RFModuleSettings` that is to be set.
@@ -1723,7 +1655,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
             sequencer.frequency = freqs.IF
 
     @abstractmethod
-    def assign_attenuation(self):
+    def assign_attenuation(self) -> None:
         """
         An abstract method that should be overridden. Meant to assign
         attenuation settings from the hardware configuration if there is any.
@@ -1920,6 +1852,7 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
                 program["acq_metadata"][seq_name] = acq_metadata
 
         if len(program) == 0:
+            assert False
             return None
 
         program["settings"] = self._settings.to_dict()
@@ -1928,18 +1861,18 @@ class QbloxBaseModule(ControlDeviceCompiler, ABC):
         return program
 
 
-class QbloxBasebandModule(QbloxBaseModule):
+class BasebandModuleCompiler(ClusterModuleCompiler):
     """
     Abstract class with all the shared functionality between the QRM and QCM baseband
     modules.
     """
 
     @property
-    def settings_type(self) -> type:
+    def settings_type(self) -> type[BasebandModuleSettings]:
         """The settings type used by baseband-type devices."""
         return BasebandModuleSettings
 
-    def assign_frequencies(self, sequencer: Sequencer):
+    def assign_frequencies(self, sequencer: Sequencer) -> None:
         """
         Determines LO/IF frequencies and assigns them, for baseband modules.
 
@@ -1993,25 +1926,25 @@ class QbloxBasebandModule(QbloxBaseModule):
                 freqs=freqs, sequencer=sequencer, compiler_lo_baseband=compiler_lo
             )
 
-    def assign_attenuation(self):
+    def assign_attenuation(self) -> None:
         """
         Meant to assign attenuation settings from the hardware configuration, if there
         is any. For baseband modules there is no attenuation parameters currently.
         """
 
 
-class QbloxRFModule(QbloxBaseModule):
+class RFModuleCompiler(ClusterModuleCompiler):
     """
     Abstract class with all the shared functionality between the QRM-RF and QCM-RF
     modules.
     """
 
     @property
-    def settings_type(self) -> type:
+    def settings_type(self) -> type[RFModuleSettings]:
         """The settings type used by RF modules."""
         return RFModuleSettings
 
-    def assign_frequencies(self, sequencer: Sequencer):
+    def assign_frequencies(self, sequencer: Sequencer) -> None:
         """Determines LO/IF frequencies and assigns them for RF modules."""
         compiler_container = self.parent.parent
         if (
@@ -2020,7 +1953,7 @@ class QbloxRFModule(QbloxBaseModule):
         ):
             return
 
-        for lo_idx in QbloxRFModule._get_connected_lo_indices(sequencer):
+        for lo_idx in RFModuleCompiler._get_connected_lo_indices(sequencer):
             lo_freq_setting_name = f"lo{lo_idx}_freq"
             try:
                 freqs = helpers.determine_clock_lo_interm_freqs(
@@ -2044,7 +1977,7 @@ class QbloxRFModule(QbloxBaseModule):
             )
 
     @staticmethod
-    def _get_connected_lo_indices(sequencer: Sequencer) -> Generator[int]:
+    def _get_connected_lo_indices(sequencer: Sequencer) -> Iterator[int]:
         """
         Identify the LO the sequencer is outputting.
         Use the sequencer output to module output correspondence, and then
@@ -2059,7 +1992,7 @@ class QbloxRFModule(QbloxBaseModule):
             module_output_index = 0 if sequencer_output_index == 0 else 1
             yield module_output_index
 
-    def assign_attenuation(self):
+    def assign_attenuation(self) -> None:
         """
         Assigns attenuation settings from the hardware configuration.
 

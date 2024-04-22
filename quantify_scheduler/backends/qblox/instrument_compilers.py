@@ -3,22 +3,28 @@
 """Compiler classes for Qblox backend."""
 from __future__ import annotations
 
-from collections import abc
-from typing import Any, Dict, Optional, Tuple
+from collections import abc, defaultdict
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
-from quantify_scheduler.backends.qblox import compiler_abc, compiler_container
+from quantify_scheduler.backends.qblox import compiler_abc
 from quantify_scheduler.backends.qblox.constants import (
+    MAX_NUMBER_OF_INSTRUCTIONS_QCM,
+    MAX_NUMBER_OF_INSTRUCTIONS_QRM,
     NUMBER_OF_SEQUENCERS_QCM,
     NUMBER_OF_SEQUENCERS_QRM,
 )
 from quantify_scheduler.backends.types.qblox import (
     BoundedParameter,
     LOSettings,
+    OpInfo,
     StaticHardwareProperties,
 )
 
+if TYPE_CHECKING:
+    from quantify_scheduler.backends.qblox import compiler_container
 
-class LocalOscillator(compiler_abc.InstrumentCompiler):
+
+class LocalOscillatorCompiler(compiler_abc.InstrumentCompiler):
     """
     Implementation of an :class:`~quantify_scheduler.backends.qblox.compiler_abc.InstrumentCompiler` that compiles for a generic LO. The main
     difference between this class and the other compiler classes is that it doesn't take
@@ -130,11 +136,12 @@ class LocalOscillator(compiler_abc.InstrumentCompiler):
         }
 
 
-class QcmModule(compiler_abc.QbloxBasebandModule):
+class QCMCompiler(compiler_abc.BasebandModuleCompiler):
     """QCM specific implementation of the qblox compiler."""
 
-    supports_acquisition: bool = False
-    static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
+    supports_acquisition = False
+    max_number_of_instructions = MAX_NUMBER_OF_INSTRUCTIONS_QCM
+    static_hw_properties = StaticHardwareProperties(
         instrument_type="QCM",
         max_sequencers=NUMBER_OF_SEQUENCERS_QCM,
         max_awg_output_voltage=2.5,
@@ -154,11 +161,12 @@ class QcmModule(compiler_abc.QbloxBasebandModule):
     )
 
 
-class QrmModule(compiler_abc.QbloxBasebandModule):
+class QRMCompiler(compiler_abc.BasebandModuleCompiler):
     """QRM specific implementation of the qblox compiler."""
 
-    supports_acquisition: bool = True
-    static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
+    supports_acquisition = True
+    max_number_of_instructions = MAX_NUMBER_OF_INSTRUCTIONS_QRM
+    static_hw_properties = StaticHardwareProperties(
         instrument_type="QRM",
         max_sequencers=NUMBER_OF_SEQUENCERS_QRM,
         max_awg_output_voltage=0.5,
@@ -178,11 +186,12 @@ class QrmModule(compiler_abc.QbloxBasebandModule):
     )
 
 
-class QcmRfModule(compiler_abc.QbloxRFModule):
+class QCMRFCompiler(compiler_abc.RFModuleCompiler):
     """QCM-RF specific implementation of the qblox compiler."""
 
-    supports_acquisition: bool = False
-    static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
+    supports_acquisition = False
+    max_number_of_instructions = MAX_NUMBER_OF_INSTRUCTIONS_QCM
+    static_hw_properties = StaticHardwareProperties(
         instrument_type="QCM_RF",
         max_sequencers=NUMBER_OF_SEQUENCERS_QCM,
         max_awg_output_voltage=None,
@@ -201,11 +210,12 @@ class QcmRfModule(compiler_abc.QbloxRFModule):
     )
 
 
-class QrmRfModule(compiler_abc.QbloxRFModule):
+class QRMRFCompiler(compiler_abc.RFModuleCompiler):
     """QRM-RF specific implementation of the qblox compiler."""
 
-    supports_acquisition: bool = True
-    static_hw_properties: StaticHardwareProperties = StaticHardwareProperties(
+    supports_acquisition = True
+    max_number_of_instructions = MAX_NUMBER_OF_INSTRUCTIONS_QRM
+    static_hw_properties = StaticHardwareProperties(
         instrument_type="QRM_RF",
         max_sequencers=NUMBER_OF_SEQUENCERS_QRM,
         max_awg_output_voltage=None,
@@ -220,7 +230,7 @@ class QrmRfModule(compiler_abc.QbloxRFModule):
     )
 
 
-class Cluster(compiler_abc.ControlDeviceCompiler):
+class ClusterCompiler(compiler_abc.InstrumentCompiler):
     """
     Compiler class for a Qblox cluster.
 
@@ -241,15 +251,13 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
     """
 
     compiler_classes: Dict[str, type] = {
-        "QCM": QcmModule,
-        "QRM": QrmModule,
-        "QCM_RF": QcmRfModule,
-        "QRM_RF": QrmRfModule,
+        "QCM": QCMCompiler,
+        "QRM": QRMCompiler,
+        "QCM_RF": QCMRFCompiler,
+        "QRM_RF": QRMRFCompiler,
     }
     """References to the individual module compiler classes that can be used by the
     cluster."""
-    supports_acquisition: bool = True
-    """Specifies that the Cluster supports performing acquisitions."""
 
     def __init__(
         self,
@@ -266,10 +274,29 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
             instrument_cfg=instrument_cfg,
             latency_corrections=latency_corrections,
         )
-        self.instrument_compilers: dict = self.construct_instrument_compilers()
+        self._op_infos: Dict[Tuple[str, str], List[OpInfo]] = defaultdict(list)
+        self.instrument_compilers = self.construct_instrument_compilers()
         self.latency_corrections = latency_corrections
 
-    def construct_instrument_compilers(self) -> Dict[str, compiler_abc.QbloxBaseModule]:
+    def add_op_info(self, port: str, clock: str, op_info: OpInfo) -> None:
+        """
+        Assigns a certain pulse or acquisition to this device.
+
+        Parameters
+        ----------
+        port
+            The port this waveform is sent to (or acquired from).
+        clock
+            The clock for modulation of the pulse or acquisition. Can be a BasebandClock.
+        op_info
+            Data structure containing all the information regarding this specific
+            pulse or acquisition operation.
+        """
+        self._op_infos[(port, clock)].append(op_info)
+
+    def construct_instrument_compilers(
+        self,
+    ) -> Dict[str, compiler_abc.ClusterModuleCompiler]:
         """
         Constructs the compilers for the modules inside the cluster.
 
@@ -360,12 +387,6 @@ class Cluster(compiler_abc.ControlDeviceCompiler):
                 program[compiler.name] = instrument_program
 
         if len(program) == 0:
+            assert False
             program = None
         return program
-
-
-COMPILER_MAPPING: Dict[str, type] = {
-    "Cluster": Cluster,
-    "LocalOscillator": LocalOscillator,
-}
-"""Maps the names in the hardware config to their appropriate compiler classes."""

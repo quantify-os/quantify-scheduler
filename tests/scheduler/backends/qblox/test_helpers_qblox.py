@@ -11,7 +11,7 @@ import pytest
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.qblox import helpers
 from quantify_scheduler.backends.qblox.instrument_compilers import (
-    QrmModule,
+    QRMCompiler,
 )
 from quantify_scheduler.backends.qblox.qblox_hardware_config_old_style import (
     hardware_config as qblox_hardware_config_old_style,
@@ -321,7 +321,7 @@ def test_configure_input_gains_overwrite_gain():
         },
     }
 
-    test_module = QrmModule(
+    test_module = QRMCompiler(
         parent=None,
         name="tester",
         total_play_time=1,

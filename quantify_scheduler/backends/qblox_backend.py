@@ -478,7 +478,7 @@ def hardware_compile(
     assign_pulse_and_acq_info_to_devices(
         schedule=schedule,
         hardware_cfg=hardware_cfg,
-        device_compilers=container.instrument_compilers,
+        device_compilers=container.clusters,
     )
 
     container.prepare()

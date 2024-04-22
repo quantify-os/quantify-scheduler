@@ -45,11 +45,11 @@ from quantify_scheduler.backends.qblox.helpers import (
     to_grid_time,
 )
 from quantify_scheduler.backends.qblox.instrument_compilers import (
-    Cluster as ClusterCompiler,
-    QcmModule,
-    QcmRfModule,
-    QrmModule,
-    QrmRfModule,
+    ClusterCompiler,
+    QCMCompiler,
+    QCMRFCompiler,
+    QRMCompiler,
+    QRMRFCompiler,
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox.qblox_hardware_config_old_style import (
@@ -390,7 +390,7 @@ def real_square_pulse_schedule():
 @pytest.fixture(name="empty_qasm_program_qcm")
 def fixture_empty_qasm_program():
     return QASMProgram(
-        static_hw_properties=QcmModule.static_hw_properties,
+        static_hw_properties=QCMCompiler.static_hw_properties,
         register_manager=register_manager.RegisterManager(),
         align_fields=True,
         acq_metadata=None,
@@ -632,14 +632,14 @@ def test_construct_sequencers_repeated_portclocks_error(
             "clock": clock,
         },
     ]
-    test_module = QcmRfModule(
+    test_module = QCMRFCompiler(
         parent=None,
         name="tester",
         total_play_time=1,
         instrument_cfg=instrument_cfg,
     )
     mocker.patch(
-        "quantify_scheduler.backends.qblox.instrument_compilers.QcmRfModule._portclocks_with_data",
+        "quantify_scheduler.backends.qblox.instrument_compilers.QCMRFCompiler._portclocks_with_data",
         new_callable=mocker.PropertyMock,
         return_value={(port, clock)},
     )
@@ -812,7 +812,7 @@ def test_portclocks(
     assign_pulse_and_acq_info_to_devices(
         schedule=sched,
         hardware_cfg=hardware_cfg,
-        device_compilers=container.instrument_compilers,
+        device_compilers=container.clusters,
     )
 
     compilers = container.instrument_compilers["cluster0"].instrument_compilers
@@ -820,11 +820,29 @@ def test_portclocks(
     assert compilers["cluster0_module2"].portclocks == [("q0:mw", "q0.01")]
 
 
+def test_compiler_container_unknown_instrument_type():
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "instrument_type": "FooBar",
+            "ref": "internal",
+            "cluster0_module1": {
+                "instrument_type": "QCM_RF",
+                "complex_output_0": {},
+            },
+        },
+    }
+    with pytest.raises(ValueError, match="is not a known compiler type"):
+        _ = compiler_container.CompilerContainer.from_hardware_cfg(
+            Schedule(""), hardware_cfg
+        )
+
+
 @pytest.mark.parametrize(
     "module, channel_name_to_connected_io_indices",
     [
         (
-            QcmModule,
+            QCMCompiler,
             {
                 "complex_output_0": (0, 1),
                 "complex_output_1": (2, 3),
@@ -839,7 +857,7 @@ def test_portclocks(
             },
         ),
         (
-            QrmModule,
+            QRMCompiler,
             {
                 "complex_output_0": (0, 1),
                 "complex_input_0": (0, 1),
@@ -854,7 +872,7 @@ def test_portclocks(
             },
         ),
         (
-            QcmRfModule,
+            QCMRFCompiler,
             {
                 "complex_output_0": (0, 1),
                 "complex_output_1": (2, 3),
@@ -863,7 +881,7 @@ def test_portclocks(
             },
         ),
         (
-            QrmRfModule,
+            QRMRFCompiler,
             {
                 "complex_output_0": (0, 1),
                 "complex_input_0": (0, 1),
@@ -1583,7 +1601,7 @@ def test_qasm_hook_hardware_config(
 
 
 def test_qcm_acquisition_error(hardware_cfg_cluster):
-    qcm = QcmModule(
+    qcm = QCMCompiler(
         parent=None,
         name="qcm0",
         total_play_time=10,
@@ -1591,7 +1609,7 @@ def test_qcm_acquisition_error(hardware_cfg_cluster):
     )
     with pytest.raises(
         RuntimeError,
-        match="QcmModule qcm0 does not support acquisitions. "
+        match="QCMCompiler qcm0 does not support acquisitions. "
         "Attempting to add acquisition Acquisition",
     ):
         qcm.add_op_info(
@@ -1809,11 +1827,10 @@ def test_assign_pulse_and_acq_info_to_devices(
 
     assign_pulse_and_acq_info_to_devices(
         schedule=sched_with_pulse_info,
-        device_compilers=container.instrument_compilers[
-            "cluster0"
-        ].instrument_compilers,
-        hardware_cfg=hardware_cfg_cluster["cluster0"],
+        device_compilers=container.clusters,
+        hardware_cfg=hardware_cfg_cluster,
     )
+    container.prepare()
 
     qrm = container.instrument_compilers["cluster0"].instrument_compilers[
         "cluster0_module3"
@@ -1863,7 +1880,7 @@ def test_container_prepare(
         sched, hardware_cfg_cluster
     )
     assign_pulse_and_acq_info_to_devices(
-        sched, container.instrument_compilers, hardware_cfg_cluster
+        sched, container.clusters, hardware_cfg_cluster
     )
     container.prepare()
 
@@ -1925,7 +1942,7 @@ def test_container_prepare_baseband(
     )
     assign_pulse_and_acq_info_to_devices(
         schedule=sched,
-        device_compilers=container.instrument_compilers,
+        device_compilers=container.clusters,
         hardware_cfg=hardware_cfg_qcm,
     )
     container.prepare()
@@ -1955,7 +1972,7 @@ def test_container_prepare_no_lo(
     )
     assign_pulse_and_acq_info_to_devices(
         sched,
-        container.instrument_compilers,
+        container.clusters,
         hardware_cfg_cluster,
     )
     container.prepare()
@@ -1967,38 +1984,6 @@ def test_container_prepare_no_lo(
         .frequency
         == 8.3e9
     )
-
-
-def test_container_add_from_type(pulse_only_schedule, hardware_cfg_cluster):
-    pulse_only_schedule = _determine_absolute_timing(pulse_only_schedule)
-    container = compiler_container.CompilerContainer(pulse_only_schedule)
-    container.add_instrument_compiler(
-        "cluster0", ClusterCompiler, hardware_cfg_cluster["cluster0"]
-    )
-    assert "cluster0" in container.instrument_compilers
-    assert isinstance(container.instrument_compilers["cluster0"], ClusterCompiler)
-
-
-def test_container_add_from_str(pulse_only_schedule, hardware_cfg_cluster):
-    pulse_only_schedule = _determine_absolute_timing(pulse_only_schedule)
-    container = compiler_container.CompilerContainer(pulse_only_schedule)
-    container.add_instrument_compiler(
-        "cluster0", "Cluster", hardware_cfg_cluster["cluster0"]
-    )
-    assert "cluster0" in container.instrument_compilers
-    assert isinstance(container.instrument_compilers["cluster0"], ClusterCompiler)
-
-
-def test_container_add_from_path(pulse_only_schedule, hardware_cfg_cluster):
-    pulse_only_schedule = _determine_absolute_timing(pulse_only_schedule)
-    container = compiler_container.CompilerContainer(pulse_only_schedule)
-    container.add_instrument_compiler(
-        "cluster0",
-        "quantify_scheduler.backends.qblox.instrument_compilers.Cluster",
-        hardware_cfg_cluster["cluster0"],
-    )
-    assert "cluster0" in container.instrument_compilers
-    assert isinstance(container.instrument_compilers["cluster0"], ClusterCompiler)
 
 
 def test_from_mapping(
@@ -2137,7 +2122,7 @@ def test_real_mode_container(
         config=quantum_device.generate_compilation_config(),
     )
     assign_pulse_and_acq_info_to_devices(
-        sched, container.instrument_compilers, hardware_cfg_real_mode
+        sched, container.clusters, hardware_cfg_real_mode
     )
     container.prepare()
     qcm0 = container.instrument_compilers["cluster0"].instrument_compilers[
@@ -4048,6 +4033,28 @@ def test_overlapping_pulse_and_voltage_offset_raises1(
         ),
     ):
         _ = compiler.compile(schedule=schedule, config=compilation_config)
+
+
+def test_add_acquisition_to_control_module_raises(
+    compile_config_basic_transmon_qblox_hardware,
+):
+    sched = Schedule("Overlapping operations", repetitions=1)
+
+    sched.add(
+        SSBIntegrationComplex(
+            duration=800e-9,
+            port="q0:mw",
+            clock="q0.01",
+            acq_channel=0,
+            acq_index=0,
+        ),
+    )
+
+    compiler = SerialCompiler(name="compiler")
+
+    # Test explicitly that no warning is raised if there is no overlap
+    with pytest.raises(RuntimeError, match="does not support acquisitions"):
+        compiler.compile(sched, compile_config_basic_transmon_qblox_hardware)
 
 
 class TestControlFlow:

@@ -967,7 +967,7 @@ class QbloxHardwareOptions(HardwareOptions):
 
 
 class _LocalOscillatorCompilerConfig(DataStructure):
-    """Configuration values for a :class:`quantify_scheduler.backends.qblox.instrument_compilers.LocalOscillator` compiler."""
+    """Configuration values for a :class:`quantify_scheduler.backends.qblox.instrument_compilers.LocalOscillatorCompiler`."""
 
     instrument_type: Literal["LocalOscillator"]
     """The type of the instrument described by this config."""
@@ -978,7 +978,7 @@ class _LocalOscillatorCompilerConfig(DataStructure):
 
 
 class _ClusterCompilerConfig(DataStructure):
-    """Configuration values for a :class:`~.Cluster` compiler."""
+    """Configuration values for a :class:`~.ClusterCompiler`."""
 
     instrument_type: Literal["Cluster"]
     """The type of the instrument described by this config."""
@@ -993,7 +993,7 @@ class _ClusterCompilerConfig(DataStructure):
 
 
 class _ClusterModuleCompilerConfig(DataStructure):
-    """Configuration values for a :class:`~.QbloxBaseModule` compiler."""
+    """Configuration values for a :class:`~.ClusterModuleCompiler`."""
 
     instrument_type: Union[
         Literal["QCM"], Literal["QRM"], Literal["QCM_RF"], Literal["QRM_RF"]
