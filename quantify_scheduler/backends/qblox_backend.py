@@ -8,7 +8,7 @@ import re
 import warnings
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any, Dict, List, Literal, Optional, Type, Union
+from typing import Any, Dict, List, Literal, Optional, Tuple, Type, Union
 
 import numpy as np
 from pydantic import Field, model_validator
@@ -31,7 +31,6 @@ from quantify_scheduler.backends.qblox.helpers import (
 )
 from quantify_scheduler.backends.qblox.operations import long_square_pulse
 from quantify_scheduler.backends.qblox.operations.pulse_library import LatchReset
-from quantify_scheduler.backends.qblox.operations.stitched_pulse import StitchedPulse
 from quantify_scheduler.backends.types.common import (
     Connectivity,
     HardwareCompilationConfig,
@@ -56,11 +55,14 @@ from quantify_scheduler.schedules.schedule import (
     CompiledSchedule,
     Schedulable,
     Schedule,
+    ScheduleBase,
 )
 from quantify_scheduler.structure.model import DataStructure
 
 
-def _get_square_pulses_to_replace(schedule: Schedule) -> dict[str, list[int]]:
+def _replace_long_square_pulses_recursively(
+    operation: Operation | Schedule,
+) -> Operation | None:
     """
     Generate a dict referring to long square pulses to replace in the schedule.
 
@@ -71,17 +73,18 @@ def _get_square_pulses_to_replace(schedule: Schedule) -> dict[str, list[int]]:
 
     Parameters
     ----------
-    schedule : Schedule
-        A :class:`~quantify_scheduler.schedules.schedule.Schedule`, possibly containing
-        long square pulses.
-
-    Returns
-    -------
-    square_pulse_idx_map : dict[str, list[int]]
-        The mapping from ``operation_id`` to ``"pulse_info"`` indices to be replaced.
+    operation
+        An operation, possibly containing long square pulses.
     """
-    square_pulse_idx_map: dict[str, list[int]] = {}
-    for ref, operation in schedule.operations.items():
+    if isinstance(operation, ScheduleBase):
+        for inner_operation_id, inner_operation in operation.operations.items():
+            replacing_operation = _replace_long_square_pulses_recursively(
+                inner_operation
+            )
+            if replacing_operation:
+                operation.operations[inner_operation_id] = replacing_operation
+        return None
+    else:
         square_pulse_idx_to_replace: list[int] = []
         for i, pulse_info in enumerate(operation.data["pulse_info"]):
             if (
@@ -89,65 +92,73 @@ def _get_square_pulses_to_replace(schedule: Schedule) -> dict[str, list[int]]:
                 and pulse_info["duration"] >= constants.PULSE_STITCHING_DURATION
             ):
                 square_pulse_idx_to_replace.append(i)
-        if square_pulse_idx_to_replace:
-            square_pulse_idx_map[ref] = square_pulse_idx_to_replace
-    return square_pulse_idx_map
+        replacing_operation = _replace_long_square_pulses(
+            operation, square_pulse_idx_to_replace
+        )
+        if replacing_operation:
+            return replacing_operation
+        return None
 
 
 def _replace_long_square_pulses(
-    schedule: Schedule, pulse_idx_map: dict[str, list[int]]
-) -> Schedule:
+    operation: Operation,
+    square_pulse_idx_to_replace: list[int],
+) -> Operation | None:
     """
     Replace any square pulses indicated by pulse_idx_map by a ``long_square_pulse``.
 
     Parameters
     ----------
-    schedule : Schedule
-        A :class:`~quantify_scheduler.schedules.schedule.Schedule`, possibly containing
-        long square pulses.
-    pulse_idx_map : dict[str, list[int]]
-        A mapping from the keys in the
-        :meth:`~quantify_scheduler.schedules.schedule.ScheduleBase.operations` dict to
-        a list of indices, which refer to entries in the `"pulse_info"` list that
-        describe a square pulse.
+    operation
+        Operation to be replaced.
+    square_pulse_idx_to_replace
+        A list of indices in the pulse info to be replaced.
 
     Returns
     -------
-    Schedule
-        The schedule with square pulses longer than
-        :class:`~quantify_scheduler.backends.qblox.constants.PULSE_STITCHING_DURATION`
-        replaced by
-        :func:`~quantify_scheduler.backends.qblox.operations.pulse_factories.long_square_pulse`. If no
-        replacements were done, this is the original unmodified schedule.
+    operation
+        The operation to be replaced. If returns ``None``, the operation does
+        not need to be replaced in the schedule or control flow.
+    square_pulse_idx_to_replace
+        The pulse indices that need to be replaced in the operation.
     """
-    for ref, square_pulse_idx_to_replace in pulse_idx_map.items():
-        # Below, we replace entries in-place in a list that we loop over. The
-        # indices here are the entries to be replaced. We sort such that popping
-        # from the end returns indices in descending order.
-        square_pulse_idx_to_replace.sort()
+    square_pulse_idx_to_replace.sort()
 
-        operation = schedule.operations[ref]
+    while square_pulse_idx_to_replace:
+        idx = square_pulse_idx_to_replace.pop()
+        pulse_info = operation.data["pulse_info"].pop(idx)
+        new_square_pulse = long_square_pulse(
+            amp=pulse_info["amp"],
+            duration=pulse_info["duration"],
+            port=pulse_info["port"],
+            clock=pulse_info["clock"],
+            t0=pulse_info["t0"],
+            reference_magnitude=pulse_info["reference_magnitude"],
+        )
+        operation.add_pulse(new_square_pulse)
+    return None
 
-        while square_pulse_idx_to_replace:
-            idx = square_pulse_idx_to_replace.pop()
-            pulse_info = operation.data["pulse_info"].pop(idx)
-            new_square_pulse = long_square_pulse(
-                amp=pulse_info["amp"],
-                duration=pulse_info["duration"],
-                port=pulse_info["port"],
-                clock=pulse_info["clock"],
-                t0=pulse_info["t0"],
-                reference_magnitude=pulse_info["reference_magnitude"],
+
+def _all_conditional_acqs_and_control_flows_and_latch_reset(
+    operation: Operation | Schedule,
+    time_offset: float,
+    accumulator: List[Tuple[float, Operation]],
+) -> None:
+    if isinstance(operation, ScheduleBase):
+        for schedulable in operation.schedulables.values():
+            abs_time = schedulable.data["abs_time"]
+            inner_operation = operation.operations[schedulable["operation_id"]]
+            _all_conditional_acqs_and_control_flows_and_latch_reset(
+                inner_operation,
+                time_offset + abs_time,
+                accumulator,
             )
-            operation.add_pulse(new_square_pulse)
-
-            # To not break __str__ in some cases, the operation type must be a
-            # StitchedPulse.
-            if idx == 0 and not (operation.valid_acquisition or operation.valid_gate):
-                schedule.operations[ref] = StitchedPulse(
-                    name=operation.data["name"], pulse_info=operation.data["pulse_info"]
-                )
-    return schedule
+    elif (
+        (operation.is_control_flow and operation.is_conditional)
+        or (operation.valid_acquisition and operation.is_conditional)
+        or isinstance(operation, LatchReset)
+    ):
+        accumulator.append((time_offset, operation))
 
 
 @dataclass
@@ -181,9 +192,103 @@ class OperationTimingInfo:
         )
 
 
-def compile_conditional_playback(  # noqa: PLR0915, PLR0912
-    schedule: Schedule, **_: Any
-) -> Schedule:
+def _is_other_operation_overlaps_with_latch_reset(
+    latch_reset_timing_info: OperationTimingInfo,
+    operation: Operation | Schedule,
+    time_offset: float,
+    excluded_operation: Operation,
+) -> bool:
+    if operation is excluded_operation:
+        return False
+
+    if isinstance(operation, ScheduleBase):
+        for schedulable in operation.schedulables.values():
+            abs_time = schedulable.data["abs_time"]
+            inner_operation = operation.operations[schedulable["operation_id"]]
+            if _is_other_operation_overlaps_with_latch_reset(
+                latch_reset_timing_info,
+                inner_operation,
+                time_offset + abs_time,
+                excluded_operation,
+            ):
+                return True
+    elif not (operation.valid_acquisition and operation.is_conditional) and not (
+        operation.is_control_flow and operation.is_conditional
+    ):
+        # Conditional acquisitions and conditional control flows
+        # can overlap with latch reset,
+        # but not any other operations.
+        operation_timing_info = OperationTimingInfo(
+            time_offset, time_offset + operation.duration
+        )
+        if latch_reset_timing_info.overlaps_with(operation_timing_info):
+            return True
+
+    return False
+
+
+def _set_trigger_address_and_insert_latch_reset(
+    operation: Operation | Schedule,
+    abs_time_relative_to_schedule: float,
+    schedule: Schedule,
+    address_map: defaultdict[str, int],
+    used_port_clocks: list,
+) -> None:
+    def _insert_latch_reset(at: float) -> None:
+        """
+        Attempt to insert ``LatchReset`` during a conditional acquisition acquire phase.
+
+        Parameters
+        ----------
+        at
+            Time at which to insert ``LatchReset``.
+
+        """
+        schedulable = schedule.add(LatchReset(portclocks=used_port_clocks))
+        schedulable.data["abs_time"] = at
+
+    if isinstance(operation, ScheduleBase):
+        schedulables = list(operation.schedulables.values())
+        for schedulable in schedulables:
+            abs_time = schedulable.data["abs_time"]
+            inner_operation = operation.operations[schedulable["operation_id"]]
+            _set_trigger_address_and_insert_latch_reset(
+                operation=inner_operation,
+                abs_time_relative_to_schedule=abs_time,
+                schedule=operation,
+                address_map=address_map,
+                used_port_clocks=used_port_clocks,
+            )
+    elif operation.is_control_flow and operation.is_conditional:
+        # Store `feedback_trigger_address` in the pulse that corresponds
+        # to a conditional control flow.
+        # Note, we do not allow recursive conditional calls, so no need to
+        # go recursively into conditionals.
+        control_flow_info: dict = operation.data["control_flow_info"]
+        feedback_trigger_label: str = control_flow_info["feedback_trigger_label"]
+        for info in operation.data["pulse_info"]:
+            info["feedback_trigger_address"] = address_map[feedback_trigger_label]
+    elif operation.valid_acquisition and operation.is_conditional:
+        # Store `feedback_trigger_address` in the correct acquisition, so that it can
+        # be passed to the correct Sequencer via ``SequencerSettings``.
+        acq_info = operation["acquisition_info"]
+        for info in acq_info:
+            if (
+                feedback_trigger_label := info.get("feedback_trigger_label")
+            ) is not None:
+                info["feedback_trigger_address"] = address_map[feedback_trigger_label]
+
+        # Insert LatchReset into the schedule.
+        _insert_latch_reset(
+            at=(
+                abs_time_relative_to_schedule
+                + +operation.data["acquisition_info"][0]["t0"]
+                + constants.MAX_MIN_INSTRUCTION_WAIT
+            )
+        )
+
+
+def compile_conditional_playback(schedule: Schedule, **_: Any) -> Schedule:
     """
     Compiles conditional playback.
 
@@ -227,40 +332,35 @@ def compile_conditional_playback(  # noqa: PLR0915, PLR0912
           on all sequencers.
 
     """
-
-    def _insert_latch_reset(
-        at: float,
-    ) -> None:
-        """
-        Attempt to insert ``LatchReset`` during a conditional acquisition acquire phase.
-
-        Parameters
-        ----------
-        at : float
-            time at which to insert ``LatchReset``.
-
-        """
-        for port, clock in _extract_port_clocks_used(schedule):
-            operation = LatchReset(port=port, clock=clock)
-            schedulable = schedule.add(operation)
-            schedulable.data["abs_time"] = at
-
     # TODO: this logic needs to be moved to a cluster compiler container. With
     # this implementation the `address_map` is shared among multiple
     # clusters, but each cluster should have its own map. (SE-332)
     address_counter = itertools.count(1)
     address_map = defaultdict(address_counter.__next__)
-
-    schedulables = sorted(
-        schedule.schedulables.values(), key=lambda schedulable: schedulable["abs_time"]
+    used_port_clocks = _extract_port_clocks_used(schedule)
+    _set_trigger_address_and_insert_latch_reset(
+        schedule, 0, schedule, address_map, used_port_clocks
     )
-    operations: list[Operation] = [
-        schedule.operations[schedulable["operation_id"]] for schedulable in schedulables
-    ]
-    times: list[float] = [schedulable["abs_time"] for schedulable in schedulables]
+    if max(address_map.values(), default=0) > constants.MAX_FEEDBACK_TRIGGER_ADDRESS:
+        raise ValueError(
+            "Maximum number of feedback trigger addresses received. "
+            "Currently a Qblox cluster can store a maximum of "
+            f"{constants.MAX_FEEDBACK_TRIGGER_ADDRESS} addresses."
+        )
+
+    all_conditional_acqs_and_control_flows: List[Tuple[float, Operation]] = list()
+    _all_conditional_acqs_and_control_flows_and_latch_reset(
+        schedule, 0, all_conditional_acqs_and_control_flows
+    )
+    all_conditional_acqs_and_control_flows.sort(
+        key=lambda time_op_sched: time_op_sched[0]
+    )
 
     current_ongoing_conditional_acquire = None
-    for time, operation in zip(times, operations):
+    for (
+        time,
+        operation,
+    ) in all_conditional_acqs_and_control_flows:
         if operation.is_control_flow and operation.is_conditional:
             if current_ongoing_conditional_acquire is None:
                 raise RuntimeError(
@@ -272,19 +372,7 @@ def compile_conditional_playback(  # noqa: PLR0915, PLR0912
                 )
             else:
                 current_ongoing_conditional_acquire = None
-
-            # Store `feedback_trigger_address` in the pulse that corresponds to conditional
-            # control flow.
-            control_flow_info = operation.data.get("control_flow_info")
-            feedback_trigger_label: str = control_flow_info.get(
-                "feedback_trigger_label"
-            )
-            for info in operation.data["pulse_info"]:
-                info["feedback_trigger_address"] = address_map[feedback_trigger_label]
-
-        # Store `feedback_trigger_address` in the correct acquisition, so that it can
-        # be passed to the correct Sequencer via ``SequencerSettings``.
-        if operation.valid_acquisition and operation.is_conditional:
+        elif operation.valid_acquisition and operation.is_conditional:
             if current_ongoing_conditional_acquire is None:
                 current_ongoing_conditional_acquire = operation
             else:
@@ -297,45 +385,18 @@ def compile_conditional_playback(  # noqa: PLR0915, PLR0912
                     f"{current_ongoing_conditional_acquire}\nand\n"
                     f"{operation}\n"
                 )
-            acq_info = operation["acquisition_info"]
-            for info in acq_info:
-                if (
-                    feedback_trigger_label := info.get("feedback_trigger_label")
-                ) is not None:
-                    info["feedback_trigger_address"] = address_map[
-                        feedback_trigger_label
-                    ]
-
-            # Attempt to insert LatchReset into the schedule.
-            acquisition_start = operation.data["acquisition_info"][0]["t0"] + time
-
-            latch_rst_time_info = OperationTimingInfo(
-                acquisition_start + constants.MAX_MIN_INSTRUCTION_WAIT,
-                acquisition_start + 2 * constants.MAX_MIN_INSTRUCTION_WAIT,
+        elif isinstance(operation, LatchReset):
+            latch_reset_timing_info = OperationTimingInfo(
+                time, time + operation.duration
             )
-            for other_operation, other_schedulable in zip(operations, schedulables):
-                operation_time_info = (
-                    OperationTimingInfo.from_operation_and_schedulable(
-                        other_operation, other_schedulable
-                    )
+            if _is_other_operation_overlaps_with_latch_reset(
+                latch_reset_timing_info, schedule, 0, operation
+            ):
+                raise RuntimeError(
+                    "Unable to insert latch reset during conditional acquisition. "
+                    f"Please ensure at least {int(2 * constants.MAX_MIN_INSTRUCTION_WAIT*1e9)}ns "
+                    f"of idle time during the start of the acquisition of {operation} on remaining sequencers."
                 )
-                if (
-                    operation_time_info.overlaps_with(latch_rst_time_info)
-                    and operation is not other_operation
-                ):
-                    raise RuntimeError(
-                        "Unable to insert latch reset during conditional acquisition. "
-                        f"Please ensure at least {int(2 * constants.MAX_MIN_INSTRUCTION_WAIT*1e9)}ns "
-                        f"of idle time during the start of the acquisition of {operation} on remaining sequencers."
-                    )
-            _insert_latch_reset(at=latch_rst_time_info.start)
-
-    if max(address_map.values(), default=0) > constants.MAX_FEEDBACK_TRIGGER_ADDRESS:
-        raise ValueError(
-            "Maximum number of feedback trigger addresses received. "
-            "Currently a Qblox cluster can store a maximum of "
-            f"{constants.MAX_FEEDBACK_TRIGGER_ADDRESS} addresses."
-        )
 
     return schedule
 
@@ -370,9 +431,7 @@ def compile_long_square_pulses_to_awg_offsets(schedule: Schedule, **_: Any) -> S
         :func:`~quantify_scheduler.backends.qblox.operations.pulse_factories.long_square_pulse`. If no
         replacements were done, this is the original unmodified schedule.
     """
-    pulse_idx_map = _get_square_pulses_to_replace(schedule)
-    if pulse_idx_map:
-        schedule = _replace_long_square_pulses(schedule, pulse_idx_map)
+    _replace_long_square_pulses_recursively(schedule)
     return schedule
 
 
@@ -465,9 +524,16 @@ def hardware_compile(
             hardware_cfg
         )
 
-    schedule = apply_distortion_corrections(schedule, hardware_cfg)
+    if (
+        distortion_corrections := hardware_cfg.get("distortion_corrections")
+    ) is not None:
+        replacing_schedule = apply_distortion_corrections(
+            schedule, distortion_corrections
+        )
+        if replacing_schedule is not None:
+            schedule = replacing_schedule
 
-    schedule = _add_clock_freqs_to_set_clock_frequency(schedule)
+    _add_clock_freqs_to_set_clock_frequency(schedule)
 
     validate_non_overlapping_stitched_pulse(schedule)
 
@@ -841,8 +907,35 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
         return compiler_configs
 
 
-def _add_clock_freqs_to_set_clock_frequency(schedule: Schedule) -> Schedule:
-    for operation in schedule.operations.values():
+def _all_abs_times_ops_with_voltage_offsets_pulses(
+    operation: Operation | Schedule,
+    time_offset: float,
+    accumulator: List[Tuple[float, Operation]],
+) -> None:
+    if isinstance(operation, ScheduleBase):
+        for schedulable in operation.schedulables.values():
+            abs_time = schedulable["abs_time"]
+            inner_operation = operation.operations[schedulable["operation_id"]]
+            _all_abs_times_ops_with_voltage_offsets_pulses(
+                inner_operation, time_offset + abs_time, accumulator
+            )
+    elif operation.valid_pulse or operation.has_voltage_offset:
+        accumulator.append((time_offset, operation))
+
+
+def _add_clock_freqs_to_set_clock_frequency(
+    schedule: Schedule, operation: Operation | Schedule | None = None
+) -> None:
+    if operation is None:
+        operation = schedule
+
+    if isinstance(operation, ScheduleBase):
+        for schedulable in operation.schedulables.values():
+            inner_operation = operation.operations[schedulable["operation_id"]]
+            _add_clock_freqs_to_set_clock_frequency(
+                operation=inner_operation, schedule=operation
+            )
+    else:
         for pulse_info in operation["pulse_info"]:
             clock_freq = schedule.resources.get(pulse_info["clock"], {}).get(
                 "freq", None
@@ -854,7 +947,6 @@ def _add_clock_freqs_to_set_clock_frequency(schedule: Schedule) -> Schedule:
                         "clock_freq_old": clock_freq,
                     }
                 )
-    return schedule
 
 
 def validate_non_overlapping_stitched_pulse(schedule: Schedule, **_: Any) -> None:
@@ -888,58 +980,75 @@ def validate_non_overlapping_stitched_pulse(schedule: Schedule, **_: Any) -> Non
         If the schedule contains overlapping pulses (containing voltage offsets) on the
         same port and clock.
     """
-    schedulables = sorted(schedule.schedulables.values(), key=lambda x: x["abs_time"])
-    # Iterate through the schedulables in chronological order, and keep track of the
+    abs_times_and_operations: list[Tuple[float, Operation]] = list()
+    _all_abs_times_ops_with_voltage_offsets_pulses(
+        schedule, 0, abs_times_and_operations
+    )
+    abs_times_and_operations.sort(key=lambda abs_time_and_op: abs_time_and_op[0])
+
+    # Iterate through all relevant operations in chronological order, and keep track of the
     # latest end time of schedulables containing pulses.
     # When a schedulable contains a voltage offset, check if it starts before the end of
     # a previously found pulse, else look ahead for any schedulables with pulses
     # starting before this schedulable ends.
     last_pulse_end = -np.inf
-    last_pulse_sched = None
-    for i, schedulable in enumerate(schedulables):
-        if _has_voltage_offset(schedulable, schedule):
+    last_pulse_abs_time = None
+    last_pulse_op = None
+    for i, (abs_time_op, op) in enumerate(abs_times_and_operations):
+        if op.has_voltage_offset:
             # Add 1e-10 for possible floating point errors (strictly >).
-            if last_pulse_end > schedulable["abs_time"] + 1e-10:
+            if last_pulse_end > abs_time_op + 1e-10:
                 _raise_if_pulses_overlap_on_same_port_clock(
-                    schedulable, last_pulse_sched, schedule  # type: ignore
+                    abs_time_op,
+                    op,
+                    last_pulse_abs_time,
+                    last_pulse_op,
                 )
             elif other := _exists_pulse_starting_before_current_end(
-                schedulables, i, schedule
+                abs_times_and_operations,
+                i,
             ):
+                abs_time_other = other[0]
+                op_other = other[1]
                 _raise_if_pulses_overlap_on_same_port_clock(
-                    schedulable, other, schedule
+                    abs_time_op,
+                    op,
+                    abs_time_other,
+                    op_other,
                 )
-        if _has_pulse(schedulable, schedule):
-            last_pulse_end = _operation_end(schedulable, schedule)
-            last_pulse_sched = schedulable
+        if op.valid_pulse:
+            last_pulse_end = _operation_end((abs_time_op, op))
+            last_pulse_abs_time = abs_time_op
+            last_pulse_op = op
 
 
 def _exists_pulse_starting_before_current_end(
-    sorted_schedulables: list[Schedulable], current_idx: int, schedule: Schedule
-) -> Schedulable | Literal[False]:
-    current_end = _operation_end(sorted_schedulables[current_idx], schedule)
-    for schedulable in sorted_schedulables[current_idx + 1 :]:
+    abs_times_and_operations: list[Tuple[float, Operation]], current_idx: int
+) -> Tuple[float, Operation] | Literal[False]:
+    current_end = _operation_end(abs_times_and_operations[current_idx])
+    for abs_time, operation in abs_times_and_operations[current_idx + 1 :]:
         # Schedulable starting at the exact time a previous one ends does not count as
         # overlapping. Subtract 1e-10 for possible floating point errors.
-        if schedulable["abs_time"] >= current_end - 1e-10:
+        if abs_time >= current_end - 1e-10:
             return False
-        if _has_pulse(schedulable, schedule) or _has_voltage_offset(
-            schedulable, schedule
-        ):
-            return schedulable
+        if operation.valid_pulse or operation.has_voltage_offset:
+            return abs_time, operation
     return False
 
 
 def _raise_if_pulses_overlap_on_same_port_clock(
-    schble_a: Schedulable, schble_b: Schedulable, schedule: Schedule
+    abs_time_a: float,
+    op_a: Operation,
+    abs_time_b: float,
+    op_b: Operation,
 ) -> None:
     """
     Raise an error if any pulse operations overlap on the same port-clock.
 
     A pulse here means a waveform or a voltage offset.
     """
-    pulse_start_ends_per_port_a = _get_pulse_start_ends(schble_a, schedule)
-    pulse_start_ends_per_port_b = _get_pulse_start_ends(schble_b, schedule)
+    pulse_start_ends_per_port_a = _get_pulse_start_ends(abs_time_a, op_a)
+    pulse_start_ends_per_port_b = _get_pulse_start_ends(abs_time_b, op_b)
     common_ports = set(pulse_start_ends_per_port_a.keys()) & set(
         pulse_start_ends_per_port_b.keys()
     )
@@ -952,23 +1061,21 @@ def _raise_if_pulses_overlap_on_same_port_clock(
             or start_a < start_b < end_a
             or start_a < end_b < end_a
         ):
-            op_a = schedule.operations[schble_a["operation_id"]]
-            op_b = schedule.operations[schble_b["operation_id"]]
             raise RuntimeError(
-                f"{op_a} at t={schble_a['abs_time']} and {op_b} at t="
-                f"{schble_b['abs_time']} contain pulses with voltage offsets that "
+                f"{op_a} at t={abs_time_a} and {op_b} at t="
+                f"{abs_time_b} contain pulses with voltage offsets that "
                 "overlap in time on the same port and clock. This leads to undefined "
                 "behaviour."
             )
 
 
 def _get_pulse_start_ends(
-    schedulable: Schedulable, schedule: Schedule
+    abs_time: float, operation: Operation
 ) -> dict[str, tuple[float, float]]:
     pulse_start_ends_per_port: dict[str, tuple[float, float]] = defaultdict(
         lambda: (np.inf, -np.inf)
     )
-    for pulse_info in schedule.operations[schedulable["operation_id"]]["pulse_info"]:
+    for pulse_info in operation["pulse_info"]:
         if (
             pulse_info.get("wf_func") is None
             and pulse_info.get("offset_path_I") is None
@@ -977,7 +1084,7 @@ def _get_pulse_start_ends(
         prev_start, prev_end = pulse_start_ends_per_port[
             f"{pulse_info['port']}_{pulse_info['clock']}"
         ]
-        new_start = schedulable["abs_time"] + pulse_info["t0"]
+        new_start = abs_time + pulse_info["t0"]
         new_end = new_start + pulse_info["duration"]
         if new_start < prev_start:
             prev_start = new_start
@@ -990,24 +1097,7 @@ def _get_pulse_start_ends(
     return pulse_start_ends_per_port
 
 
-def _has_voltage_offset(schedulable: Schedulable, schedule: Schedule) -> bool:
-    operation = schedule.operations[schedulable["operation_id"]]
-    # FIXME #461 Help the type checker. Schedule should have been flattened at this
-    # point.
-    assert isinstance(operation, Operation)
-    return operation.has_voltage_offset
-
-
-def _has_pulse(schedulable: Schedulable, schedule: Schedule) -> bool:
-    operation = schedule.operations[schedulable["operation_id"]]
-    # FIXME #461 Help the type checker. Schedule should have been flattened at this
-    # point.
-    assert isinstance(operation, Operation)
-    return operation.valid_pulse
-
-
-def _operation_end(schedulable: Schedulable, schedule: Schedule) -> float:
-    return (
-        schedulable["abs_time"]
-        + schedule.operations[schedulable["operation_id"]].duration
-    )
+def _operation_end(abs_time_and_operation: Tuple[float, Operation]) -> float:
+    abs_time = abs_time_and_operation[0]
+    operation = abs_time_and_operation[1]
+    return abs_time + operation.duration

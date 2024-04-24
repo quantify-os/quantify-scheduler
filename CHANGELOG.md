@@ -25,6 +25,7 @@
 - Qblox backend - Remove the `ControlDeviceCompiler` class. (!940)
 - Qblox backend - Rename many classes in `compiler_abc` and `instrument_compilers` to reflect a similar naming style as the Qblox `InstrumentCoordinator` components. (!940)
 - Qblox backend - Explicitly split `ClusterCompiler` and `LocalOscillatorCompiler` instances in `CompilerContainer` to fix a typing issue in `assign_pulse_and_acq_info_to_devices`. (!940)
+- Qblox backend - Refactor hardware compilation schedule operation more consistent. (!962)
 
 ## 0.19.0 (2024-04-03)
 

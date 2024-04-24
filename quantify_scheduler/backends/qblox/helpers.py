@@ -29,6 +29,7 @@ from quantify_scheduler.helpers.schedule import _extract_port_clocks_used
 from quantify_scheduler.helpers.waveforms import exec_waveform_function
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import WindowOperation
+from quantify_scheduler.schedules.schedule import Schedule, ScheduleBase
 
 if TYPE_CHECKING:
     from quantify_scheduler import Schedule
@@ -560,6 +561,22 @@ def generate_port_clock_to_device_map(
     return portclock_map
 
 
+def _get_list_of_operations_for_op_info_creation(
+    operation: Operation | Schedule,
+    time_offset: float,
+    accumulator: list[tuple[float, Operation]],
+) -> None:
+    if isinstance(operation, ScheduleBase):
+        for schedulable in operation.schedulables.values():
+            abs_time = schedulable["abs_time"]
+            inner_operation = operation.operations[schedulable["operation_id"]]
+            _get_list_of_operations_for_op_info_creation(
+                inner_operation, time_offset + abs_time, accumulator
+            )
+    else:
+        accumulator.append((time_offset, operation))
+
+
 def assign_pulse_and_acq_info_to_devices(
     schedule: Schedule,
     device_compilers: dict[str, ClusterCompiler],
@@ -592,9 +609,10 @@ def assign_pulse_and_acq_info_to_devices(
     """
     portclock_mapping = generate_port_clock_to_device_map(hardware_cfg)
 
-    for schedulable in schedule.schedulables.values():
-        op_hash = schedulable["operation_id"]
-        op_data = schedule.operations[op_hash]
+    list_of_operations: list[tuple[float, Operation]] = list()
+    _get_list_of_operations_for_op_info_creation(schedule, 0, list_of_operations)
+
+    for operation_start_time, op_data in list_of_operations:
         # FIXME #461 Help the type checker. Schedule should have been flattened at this
         # point.
         assert isinstance(op_data, Operation)
@@ -604,12 +622,11 @@ def assign_pulse_and_acq_info_to_devices(
 
         if not op_data.valid_pulse and not op_data.valid_acquisition:
             raise RuntimeError(
-                f"Operation {op_hash} is not a valid pulse or acquisition. Please check"
+                f"Operation is not a valid pulse or acquisition. Please check"
                 f" whether the device compilation been performed successfully. "
                 f"Operation data: {repr(op_data)}"
             )
 
-        operation_start_time = schedulable["abs_time"]
         for pulse_data in op_data.data["pulse_info"]:
             if "t0" in pulse_data:
                 pulse_start_time = operation_start_time + pulse_data["t0"]

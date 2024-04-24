@@ -1261,7 +1261,7 @@ def _get_operations_by_repr(schedule: Schedule) -> dict[str, Operation]:
     return operations_dict_with_repr_keys
 
 
-def compile_backend(
+def compile_backend(  # noqa: PLR0912
     schedule: Schedule,
     config: CompilationConfig | dict[str, Any] | None = None,
     # config can be Dict to support (deprecated) calling with hardware config
@@ -1329,7 +1329,14 @@ def compile_backend(
         # (see also https://gitlab.com/groups/quantify-os/-/epics/1)
         common.HardwareOptions(latency_corrections=hardware_cfg["latency_corrections"])
 
-    schedule = apply_distortion_corrections(schedule, hardware_cfg)
+    if (
+        distortion_corrections := hardware_cfg.get("distortion_corrections")
+    ) is not None:
+        replacing_schedule = apply_distortion_corrections(
+            schedule, distortion_corrections
+        )
+        if replacing_schedule is not None:
+            schedule = replacing_schedule
 
     ################################################
     # Timing table manipulation
