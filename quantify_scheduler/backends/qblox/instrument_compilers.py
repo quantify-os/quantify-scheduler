@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from collections import abc, defaultdict
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any
 
 from quantify_scheduler.backends.qblox import compiler_abc
 from quantify_scheduler.backends.qblox.constants import (
@@ -51,11 +51,11 @@ class LocalOscillatorCompiler(compiler_abc.InstrumentCompiler):
         parent: compiler_container.CompilerContainer,
         name: str,
         total_play_time: float,
-        instrument_cfg: Dict[str, Any],
+        instrument_cfg: dict[str, Any],
     ):
         def _extract_parameter(
-            parameter_dict: Dict[str, Optional[float]]
-        ) -> Tuple[str, Optional[float]]:
+            parameter_dict: dict[str, float | None]
+        ) -> tuple[str, float | None]:
             items: abc.ItemsView = parameter_dict.items()
             return list(items)[0]
 
@@ -72,7 +72,7 @@ class LocalOscillatorCompiler(compiler_abc.InstrumentCompiler):
         self.power_param_name, self._power = _extract_parameter(self._settings.power)
 
     @property
-    def frequency(self) -> Optional[float]:
+    def frequency(self) -> float | None:
         """
         Getter for the frequency.
 
@@ -110,7 +110,7 @@ class LocalOscillatorCompiler(compiler_abc.InstrumentCompiler):
                 )
         self._frequency = value
 
-    def compile(self, debug_mode, repetitions: int = 1) -> Optional[Dict[str, Any]]:
+    def compile(self, debug_mode, repetitions: int = 1) -> dict[str, Any] | None:
         """
         Compiles the program for the LO InstrumentCoordinator component.
 
@@ -250,7 +250,7 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
         specified in the top layer of hardware config.
     """
 
-    compiler_classes: Dict[str, type] = {
+    compiler_classes: dict[str, type] = {
         "QCM": QCMCompiler,
         "QRM": QRMCompiler,
         "QCM_RF": QCMRFCompiler,
@@ -264,8 +264,8 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
         parent: compiler_container.CompilerContainer,
         name: str,
         total_play_time: float,
-        instrument_cfg: Dict[str, Any],
-        latency_corrections: Optional[Dict[str, float]] = None,
+        instrument_cfg: dict[str, Any],
+        latency_corrections: dict[str, float] | None = None,
     ):
         super().__init__(
             parent=parent,
@@ -274,7 +274,7 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
             instrument_cfg=instrument_cfg,
             latency_corrections=latency_corrections,
         )
-        self._op_infos: Dict[Tuple[str, str], List[OpInfo]] = defaultdict(list)
+        self._op_infos: dict[tuple[str, str], list[OpInfo]] = defaultdict(list)
         self.instrument_compilers = self.construct_instrument_compilers()
         self.latency_corrections = latency_corrections
 
@@ -296,7 +296,7 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
 
     def construct_instrument_compilers(
         self,
-    ) -> Dict[str, compiler_abc.ClusterModuleCompiler]:
+    ) -> dict[str, compiler_abc.ClusterModuleCompiler]:
         """
         Constructs the compilers for the modules inside the cluster.
 
@@ -353,9 +353,7 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
                     for pulse in self._op_infos[portclock]:
                         compiler.add_op_info(port, clock, pulse)
 
-    def compile(
-        self, debug_mode: bool, repetitions: int = 1
-    ) -> Optional[Dict[str, Any]]:
+    def compile(self, debug_mode: bool, repetitions: int = 1) -> dict[str, Any]:
         """
         Performs the compilation.
 
@@ -386,7 +384,4 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
             if instrument_program is not None and len(instrument_program) > 0:
                 program[compiler.name] = instrument_program
 
-        if len(program) == 0:
-            assert False
-            program = None
         return program

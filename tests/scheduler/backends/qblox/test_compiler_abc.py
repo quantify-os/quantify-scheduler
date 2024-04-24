@@ -16,7 +16,7 @@ from quantify_scheduler.backends.qblox.operation_handling.factory import (
 from quantify_scheduler.backends.qblox.operation_handling.virtual import (
     UpdateParameterStrategy,
 )
-from quantify_scheduler.backends.types.qblox import OpInfo
+from quantify_scheduler.backends.types.qblox import SequencerSettings, OpInfo
 from quantify_scheduler.compilation import _ControlFlowReturn
 from quantify_scheduler.operations.acquisition_library import Trace
 from quantify_scheduler.operations.operation import Operation
@@ -36,17 +36,22 @@ DEFAULT_CLOCK = "q0.ro"
 def mock_sequencer(total_play_time) -> Sequencer:
     mod = Mock()
     mod.configure_mock(total_play_time=total_play_time)
+    settings = SequencerSettings.initialize_from_config_dict(
+        {
+            "port": "q1:mw",
+            "clock": "q1.01",
+            "interm_freq": 50e6,
+        },
+        channel_name="complex_out_0",
+        connected_input_indices=(),
+        connected_output_indices=(0,),
+    )
     return Sequencer(
         parent=mod,
         index=0,
         portclock=(DEFAULT_PORT, DEFAULT_CLOCK),
         static_hw_properties=Mock(),
-        channel_name="complex_out_0",
-        sequencer_cfg={
-            "port": "q1:mw",
-            "clock": "q1.01",
-            "interm_freq": 50e6,
-        },
+        settings=settings,
         latency_corrections={},
     )
 

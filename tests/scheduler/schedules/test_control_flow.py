@@ -17,6 +17,7 @@ from quantify_scheduler.backends.qblox.operation_handling.virtual import (
 from quantify_scheduler.backends.types.qblox import (
     BoundedParameter,
     OpInfo,
+    SequencerSettings,
     StaticHardwareProperties,
 )
 from quantify_scheduler.operations.control_flow_library import Conditional, Loop
@@ -116,13 +117,22 @@ def test_nested_conditional_control_flow_raises_runtime_warning():
         },
     )
     mock_parent_module = Mock(BasebandModuleCompiler)
+    settings = SequencerSettings.initialize_from_config_dict(
+        {
+            "port": "q1:mw",
+            "clock": "q1.01",
+            "interm_freq": 50e6,
+        },
+        channel_name="complex_out_0",
+        connected_input_indices=(),
+        connected_output_indices=(0,),
+    )
     sequencer = Sequencer(
         parent=mock_parent_module,
         index=0,
         portclock=("", ""),
         static_hw_properties=static_hw_properties,
-        channel_name="complex_output_0",
-        sequencer_cfg={"port": None, "clock": None},
+        settings=settings,
         latency_corrections={},
     )
 

@@ -11,19 +11,13 @@ import math
 import warnings
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from collections.abc import Iterator
 from os import makedirs, path
 from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Dict,
     Hashable,
-    List,
-    Optional,
-    Set,
-    Tuple,
-    Union,
+    Iterator,
 )
 
 from pathvalidate import sanitize_filename
@@ -89,7 +83,7 @@ class InstrumentCompiler(ABC):
 
     The subclasses that inherit from this are meant to implement the compilation
     steps needed to compile the lists of
-    :class:`quantify_scheduler.backends.types.qblox.OpInfo` representing the
+    :class:`~quantify_scheduler.backends.types.qblox.OpInfo` representing the
     pulse and acquisition information to device-specific instructions.
 
     Each device that needs to be part of the compilation process requires an
@@ -120,9 +114,9 @@ class InstrumentCompiler(ABC):
         parent,  # No type hint due to circular import, added to docstring
         name: str,
         total_play_time: float,
-        instrument_cfg: Dict[str, Any],
-        latency_corrections: Optional[Dict[str, float]] = None,
-    ):
+        instrument_cfg: dict[str, Any],
+        latency_corrections: dict[str, float] | None = None,
+    ) -> None:
         self.parent = parent
         self.name = name
         self.total_play_time = total_play_time
@@ -171,18 +165,22 @@ class Sequencer:
     Parameters
     ----------
     parent
-        A reference to the parent instrument this sequencer belongs to.
+        A reference to the module compiler this sequencer belongs to.
     index
         Index of the sequencer.
     portclock
         Tuple that specifies the unique port and clock combination for this
         sequencer. The first value is the port, second is the clock.
-    channel_name
-        Specifies the channel identifier of the hardware config (e.g. ``complex_output_0``).
-    sequencer_cfg
-        Sequencer settings dictionary.
+    static_hw_properties
+        The static properties of the hardware. This effectively gathers all the
+        differences between the different modules.
+    settings
+        The settings set to this sequencer.
     latency_corrections
         Dict containing the delays for each port-clock combination.
+    qasm_hook_func
+        Allows the user to inject custom Q1ASM code into the compilation, just prior to
+        returning the final string.
     lo_name
         The name of the local oscillator instrument connected to the same output via
         an IQ mixer. This is used for frequency calculations.
@@ -204,58 +202,49 @@ class Sequencer:
         self,
         parent: ClusterModuleCompiler,
         index: int,
-        portclock: Tuple[str, str],
+        portclock: tuple[str, str],
         static_hw_properties: StaticHardwareProperties,
-        channel_name: str,
-        sequencer_cfg: Dict[str, Any],
-        latency_corrections: Dict[str, float],
-        lo_name: Optional[str] = None,
-        downconverter_freq: Optional[float] = None,
+        settings: SequencerSettings,
+        latency_corrections: dict[str, float],
+        qasm_hook_func: Callable | None = None,
+        lo_name: str | None = None,
+        downconverter_freq: float | None = None,
         mix_lo: bool = True,
         marker_debug_mode_enable: bool = False,
-    ):
+    ) -> None:
         self.parent = parent
         self.index = index
         self.port = portclock[0]
         self.clock = portclock[1]
-        self.op_strategies: List[IOperationStrategy] = []
+        self.op_strategies: list[IOperationStrategy] = []
         self.associated_ext_lo = lo_name
         self.downconverter_freq = downconverter_freq
         self.mix_lo = mix_lo
         self._marker_debug_mode_enable = marker_debug_mode_enable
         self._num_acquisitions = 0
 
-        self.static_hw_properties: StaticHardwareProperties = static_hw_properties
+        self.static_hw_properties = static_hw_properties
 
         self.register_manager = register_manager.RegisterManager()
 
-        self._settings = SequencerSettings.initialize_from_config_dict(
-            sequencer_cfg=sequencer_cfg,
-            channel_name=channel_name,
-            connected_output_indices=self.static_hw_properties._get_connected_output_indices(
-                channel_name
-            ),
-            connected_input_indices=self.static_hw_properties._get_connected_input_indices(
-                channel_name
-            ),
-        )
+        self._settings = settings
 
         self._default_marker = (
             self.static_hw_properties.channel_name_to_digital_marker.get(
-                channel_name, self.static_hw_properties.default_marker
+                self._settings.channel_name, self.static_hw_properties.default_marker
             )
         )
 
-        self.qasm_hook_func: Optional[Callable] = sequencer_cfg.get("qasm_hook_func")
+        self.qasm_hook_func = qasm_hook_func
         """Allows the user to inject custom Q1ASM code into the compilation, just prior
          to returning the final string."""
 
-        portclock_key = f"{sequencer_cfg['port']}-{sequencer_cfg['clock']}"
+        portclock_key = f"{self.port}-{self.clock}"
         self.latency_correction: float = latency_corrections.get(portclock_key, 0)
         """Latency correction accounted for by delaying the start of the program."""
 
     @property
-    def connected_output_indices(self) -> Optional[Union[Tuple[int], Tuple[int, int]]]:
+    def connected_output_indices(self) -> tuple[int, ...]:
         """
         Return the connected output indices associated with the output name
         specified in the hardware config.
@@ -270,7 +259,7 @@ class Sequencer:
         return self._settings.connected_output_indices
 
     @property
-    def connected_input_indices(self) -> Optional[Union[Tuple[int], Tuple[int, int]]]:
+    def connected_input_indices(self) -> tuple[int, ...]:
         """
         Return the connected input indices associated with the input name specified
         in the hardware config.
@@ -284,7 +273,7 @@ class Sequencer:
         return self._settings.connected_input_indices
 
     @property
-    def portclock(self) -> Tuple[str, str]:
+    def portclock(self) -> tuple[str, str]:
         """
         A tuple containing the unique port and clock combination for this sequencer.
 
@@ -345,7 +334,7 @@ class Sequencer:
         return self._settings.modulation_freq
 
     @frequency.setter
-    def frequency(self, freq: float):
+    def frequency(self, freq: float) -> None:
         """
         Assigns a modulation frequency to the sequencer.
 
@@ -374,7 +363,7 @@ class Sequencer:
         self._settings.modulation_freq = freq
         self._settings.nco_en = freq is not None
 
-    def _generate_awg_dict(self) -> Dict[str, Any]:
+    def _generate_awg_dict(self) -> dict[str, Any]:
         """
         Generates the dictionary that contains the awg waveforms in the
         format accepted by the driver.
@@ -412,14 +401,14 @@ class Sequencer:
             When the total waveform size specified for a port-clock combination exceeds
             the waveform sample limit of the hardware.
         """
-        wf_dict: Dict[str, Any] = {}
+        wf_dict: dict[str, Any] = {}
         for op_strategy in self.op_strategies:
             if not op_strategy.operation_info.is_acquisition:
                 op_strategy.generate_data(wf_dict=wf_dict)
         self._validate_awg_dict(wf_dict=wf_dict)
         return wf_dict
 
-    def _generate_weights_dict(self) -> Dict[str, Any]:
+    def _generate_weights_dict(self) -> dict[str, Any]:
         """
         Generates the dictionary that corresponds that contains the acq weights
         waveforms in the format accepted by the driver.
@@ -455,13 +444,13 @@ class Sequencer:
             weights. This exception is raised when either or both waveforms contain
             both a real and imaginary part.
         """
-        wf_dict: Dict[str, Any] = {}
+        wf_dict: dict[str, Any] = {}
         for op_strategy in self.op_strategies:
             if op_strategy.operation_info.is_acquisition:
                 op_strategy.generate_data(wf_dict)
         return wf_dict
 
-    def _validate_awg_dict(self, wf_dict: Dict[str, Any]) -> None:
+    def _validate_awg_dict(self, wf_dict: dict[str, Any]) -> None:
         total_size = 0
         for waveform in wf_dict.values():
             total_size += len(waveform["data"])
@@ -475,9 +464,9 @@ class Sequencer:
 
     def _prepare_acq_settings(
         self,
-        acquisitions: List[IOperationStrategy],
+        acquisitions: list[IOperationStrategy],
         acq_metadata: AcquisitionMetadata,
-    ):
+    ) -> None:
         """
         Sets sequencer settings that are specific to certain acquisitions.
         For example for a TTL acquisition strategy.
@@ -489,28 +478,25 @@ class Sequencer:
         acq_metadata
             Acquisition metadata.
         """
-        acquisition_infos: List[OpInfo] = list(
+        acquisition_infos: list[OpInfo] = list(
             map(lambda acq: acq.operation_info, acquisitions)
         )
         if acq_metadata.acq_protocol == "TriggerCount":
             self._settings.ttl_acq_auto_bin_incr_en = (
                 acq_metadata.bin_mode == BinMode.AVERAGE
             )
-            if self.connected_input_indices is not None:
-                if len(self.connected_input_indices) == 1:
-                    self._settings.ttl_acq_input_select = self.connected_input_indices[
-                        0
-                    ]
-                else:
-                    raise ValueError(
-                        f"Please make sure you use a single real input for this "
-                        f"portclock combination. "
-                        f"Found: {len(self.connected_input_indices)} connected. "
-                        f"TTL acquisition does not support multiple inputs."
-                        f"Problem occurred for port {self.port} with"
-                        f"clock {self.clock}, which corresponds to {self.name} of "
-                        f"{self.parent.name}."
-                    )
+            if len(self.connected_input_indices) == 1:
+                self._settings.ttl_acq_input_select = self.connected_input_indices[0]
+            elif len(self.connected_input_indices) > 1:
+                raise ValueError(
+                    f"Please make sure you use a single real input for this "
+                    f"portclock combination. "
+                    f"Found: {len(self.connected_input_indices)} connected. "
+                    f"TTL acquisition does not support multiple inputs."
+                    f"Problem occurred for port {self.port} with"
+                    f"clock {self.clock}, which corresponds to {self.name} of "
+                    f"{self.parent.name}."
+                )
 
         elif acq_metadata.acq_protocol == "ThresholdedAcquisition":
             self._settings.thresholded_acq_rotation = acquisition_infos[0].data.get(
@@ -566,7 +552,7 @@ class Sequencer:
         self,
         repetitions: int,
         acq_metadata: AcquisitionMetadata,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generates the "acquisitions" entry of the program json. It contains declaration
         of the acquisitions along with the number of bins and the corresponding index.
@@ -649,7 +635,7 @@ class Sequencer:
         self,
         total_sequence_time: float,
         align_qasm_fields: bool,
-        acq_metadata: Optional[AcquisitionMetadata],
+        acq_metadata: AcquisitionMetadata | None,
         repetitions: int,
     ) -> str:
         """
@@ -857,7 +843,7 @@ class Sequencer:
 
     def _insert_qasm_marker_debug_wrapped(
         self, operation: IOperationStrategy, qasm: QASMProgram
-    ):
+    ) -> None:
         if self._marker_debug_mode_enable:
             valid_operation = (
                 operation.operation_info.is_acquisition
@@ -873,8 +859,8 @@ class Sequencer:
             operation.insert_qasm(qasm)
 
     def _initialize_append_mode_registers(
-        self, qasm: QASMProgram, op_strategies: List[AcquisitionStrategyPartial]
-    ):
+        self, qasm: QASMProgram, op_strategies: list[AcquisitionStrategyPartial]
+    ) -> None:
         """
         Adds the instructions to initialize the registers needed to use the append
         bin mode to the program. This should be added in the header.
@@ -939,7 +925,7 @@ class Sequencer:
 
     @staticmethod
     def _any_other_updating_instruction_at_timing_for_parameter_instruction(
-        op_index: int, sorted_pulses_and_acqs: List[IOperationStrategy]
+        op_index: int, sorted_pulses_and_acqs: list[IOperationStrategy]
     ) -> bool:
         op = sorted_pulses_and_acqs[op_index]
         if not op.operation_info.is_parameter_instruction:
@@ -993,13 +979,13 @@ class Sequencer:
 
     def _get_new_update_parameters(
         self,
-        pulses_and_acqs: List[IOperationStrategy],
-    ) -> List[IOperationStrategy]:
+        pulses_and_acqs: list[IOperationStrategy],
+    ) -> list[IOperationStrategy]:
         pulses_and_acqs.sort(key=lambda op: op.operation_info.timing)
 
         # Collect all times (in ns, so that it's an integer) where an upd_param needs to
         # be inserted.
-        upd_param_times_ns: Set[int] = set()
+        upd_param_times_ns: set[int] = set()
         for op_index, op in enumerate(pulses_and_acqs):
             if not op.operation_info.is_parameter_instruction:
                 continue
@@ -1039,10 +1025,10 @@ class Sequencer:
     @staticmethod
     def _generate_waveforms_and_program_dict(
         program: str,
-        waveforms_dict: Dict[str, Any],
-        weights_dict: Optional[Dict[str, Any]] = None,
-        acq_decl_dict: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        waveforms_dict: dict[str, Any],
+        weights_dict: dict[str, Any] | None = None,
+        acq_decl_dict: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Generates the full waveforms and program dict that is to be uploaded to the
         sequencer from the program string and the awg and acq dicts, by combining them
@@ -1078,7 +1064,7 @@ class Sequencer:
 
     @staticmethod
     def _dump_waveforms_and_program_json(
-        wf_and_pr_dict: Dict[str, Any], label: Optional[str] = None
+        wf_and_pr_dict: dict[str, Any], label: str | None = None
     ) -> str:
         """
         Takes a combined waveforms and program dict and dumps it as a json file.
@@ -1133,7 +1119,7 @@ class Sequencer:
         sequence_to_file: bool,
         align_qasm_fields: bool,
         repetitions: int = 1,
-    ) -> Tuple[Optional[Dict[str, Any]], Optional[AcquisitionMetadata]]:
+    ) -> tuple[dict[str, Any] | None, AcquisitionMetadata | None]:
         """
         Performs the full sequencer level compilation based on the assigned data and
         settings. If no data is assigned to this sequencer, the compilation is skipped
@@ -1162,7 +1148,7 @@ class Sequencer:
         awg_dict = self._generate_awg_dict()
         weights_dict = None
         acq_declaration_dict = None
-        acq_metadata: Optional[AcquisitionMetadata] = None
+        acq_metadata: AcquisitionMetadata | None = None
 
         # the program needs _generate_weights_dict for the waveform indices
         if self.parent.supports_acquisition:
@@ -1367,9 +1353,9 @@ class ClusterModuleCompiler(InstrumentCompiler, ABC):
         parent,  # No type hint due to circular import, added to docstring
         name: str,
         total_play_time: float,
-        instrument_cfg: Dict[str, Any],
-        latency_corrections: Optional[Dict[str, float]] = None,
-    ):
+        instrument_cfg: dict[str, Any],
+        latency_corrections: dict[str, float] | None = None,
+    ) -> None:
         driver_version_check.verify_qblox_instruments_version()
         super().__init__(
             parent=parent,
@@ -1378,15 +1364,13 @@ class ClusterModuleCompiler(InstrumentCompiler, ABC):
             instrument_cfg=instrument_cfg,
             latency_corrections=latency_corrections,
         )
-        self._op_infos: Dict[Tuple[str, str], List[OpInfo]] = defaultdict(list)
+        self._op_infos: dict[tuple[str, str], list[OpInfo]] = defaultdict(list)
 
-        self._settings: Union[BaseModuleSettings, None] = (
-            None  # set in the prepare method.
-        )
-        self.sequencers: Dict[str, Sequencer] = {}
+        self._settings: BaseModuleSettings | None = None  # set in the prepare method.
+        self.sequencers: dict[str, Sequencer] = {}
 
     @property
-    def portclocks(self) -> List[Tuple[str, str]]:
+    def portclocks(self) -> list[tuple[str, str]]:
         """Returns all the port-clock combinations that this device can target."""
         portclocks = []
 
@@ -1439,7 +1423,7 @@ class ClusterModuleCompiler(InstrumentCompiler, ABC):
         self._op_infos[(port, clock)].append(op_info)
 
     @property
-    def _portclocks_with_data(self) -> Set[Tuple[str, str]]:
+    def _portclocks_with_data(self) -> set[tuple[str, str]]:
         """
         All the port-clock combinations associated with at least one pulse and/or
         acquisition.
@@ -1450,7 +1434,7 @@ class ClusterModuleCompiler(InstrumentCompiler, ABC):
             A set containing all the port-clock combinations that are used by this
             InstrumentCompiler.
         """
-        portclocks_used: Set[Tuple[str, str]] = {
+        portclocks_used: set[tuple[str, str]] = {
             portclock
             for portclock, op_infos in self._op_infos.items()
             if not all(op_info.data.get("name") == "LatchReset" for op_info in op_infos)
@@ -1491,8 +1475,8 @@ class ClusterModuleCompiler(InstrumentCompiler, ABC):
 
         """
         # Setup each sequencer.
-        sequencers: Dict[str, Sequencer] = {}
-        portclock_to_channel: Dict[Tuple, str] = {}
+        sequencers: dict[str, Sequencer] = {}
+        portclock_to_channel: dict[tuple, str] = {}
 
         for channel_name, channel_cfg in sorted(
             self.instrument_cfg.items()
@@ -1500,14 +1484,7 @@ class ClusterModuleCompiler(InstrumentCompiler, ABC):
             if not isinstance(channel_cfg, dict):
                 continue
 
-            lo_name = channel_cfg.get("lo_name", None)
-            downconverter_freq = channel_cfg.get("downconverter_freq", None)
-            mix_lo = channel_cfg.get("mix_lo", True)
-            marker_debug_mode_enable = channel_cfg.get(
-                "marker_debug_mode_enable", False
-            )
-
-            portclock_configs: List[Dict[str, Any]] = channel_cfg.get(
+            portclock_configs: list[dict[str, Any]] = channel_cfg.get(
                 "portclock_configs", []
             )
 
@@ -1516,22 +1493,34 @@ class ClusterModuleCompiler(InstrumentCompiler, ABC):
                     f"No 'portclock_configs' entry found in '{channel_name}' of {self.name}."
                 )
 
-            for target in portclock_configs:
-                portclock = (target["port"], target["clock"])
+            for sequencer_cfg in portclock_configs:
+                portclock = (sequencer_cfg["port"], sequencer_cfg["clock"])
 
                 if portclock in self._portclocks_with_data:
+                    settings = SequencerSettings.initialize_from_config_dict(
+                        sequencer_cfg=sequencer_cfg,
+                        channel_name=channel_name,
+                        connected_output_indices=self.static_hw_properties._get_connected_output_indices(
+                            channel_name
+                        ),
+                        connected_input_indices=self.static_hw_properties._get_connected_input_indices(
+                            channel_name
+                        ),
+                    )
                     new_seq = Sequencer(
                         parent=self,
                         index=len(sequencers),
                         portclock=portclock,
                         static_hw_properties=self.static_hw_properties,
-                        channel_name=channel_name,
-                        sequencer_cfg=target,
+                        settings=settings,
                         latency_corrections=self.latency_corrections,
-                        lo_name=lo_name,
-                        mix_lo=mix_lo,
-                        marker_debug_mode_enable=marker_debug_mode_enable,
-                        downconverter_freq=downconverter_freq,
+                        qasm_hook_func=sequencer_cfg.get("qasm_hook_func"),
+                        lo_name=channel_cfg.get("lo_name"),
+                        mix_lo=channel_cfg.get("mix_lo", True),
+                        marker_debug_mode_enable=channel_cfg.get(
+                            "marker_debug_mode_enable", False
+                        ),
+                        downconverter_freq=channel_cfg.get("downconverter_freq"),
                     )
                     sequencers[new_seq.name] = new_seq
 
@@ -1600,9 +1589,9 @@ class ClusterModuleCompiler(InstrumentCompiler, ABC):
         self,
         freqs: helpers.Frequencies,
         sequencer: Sequencer,
-        compiler_lo_baseband: Optional[LocalOscillatorCompiler] = None,
-        lo_freq_setting_rf: Optional[str] = None,
-    ):
+        compiler_lo_baseband: LocalOscillatorCompiler | None = None,
+        lo_freq_setting_rf: str | None = None,
+    ) -> None:
         """
         Sets the LO/IF frequencies, for baseband and RF modules.
 
@@ -1682,7 +1671,7 @@ class ClusterModuleCompiler(InstrumentCompiler, ABC):
         self._ensure_single_scope_mode_acquisition_sequencer()
         self.assign_attenuation()
 
-    def _configure_input_gains(self):
+    def _configure_input_gains(self) -> None:
         """
         Configures input gain of module settings.
         Loops through all valid channel names and checks for gain values in hw config.
@@ -1733,7 +1722,7 @@ class ClusterModuleCompiler(InstrumentCompiler, ABC):
                         f"in1_gain: {self._settings.in1_gain}."
                     )
 
-    def _configure_mixer_offsets(self):
+    def _configure_mixer_offsets(self) -> None:
         """
         Configures offset of input, uses calc_from_units_volt found in helper file.
         Raises an exception if a value outside the accepted voltage range is given.
@@ -1800,8 +1789,8 @@ class ClusterModuleCompiler(InstrumentCompiler, ABC):
         self,
         debug_mode: bool,
         repetitions: int = 1,
-        sequence_to_file: Optional[bool] = None,
-    ) -> Optional[Dict[str, Any]]:
+        sequence_to_file: bool | None = None,
+    ) -> dict[str, Any]:
         """
         Performs the actual compilation steps for this module, by calling the sequencer
         level compilation functions and combining them into a single dictionary.
@@ -1852,8 +1841,7 @@ class ClusterModuleCompiler(InstrumentCompiler, ABC):
                 program["acq_metadata"][seq_name] = acq_metadata
 
         if len(program) == 0:
-            assert False
-            return None
+            return {}
 
         program["settings"] = self._settings.to_dict()
         program["repetitions"] = repetitions
@@ -1948,7 +1936,7 @@ class RFModuleCompiler(ClusterModuleCompiler):
         """Determines LO/IF frequencies and assigns them for RF modules."""
         compiler_container = self.parent.parent
         if (
-            sequencer.connected_output_indices is None
+            len(sequencer.connected_output_indices) == 0
             or sequencer.clock not in compiler_container.resources
         ):
             return
@@ -2001,7 +1989,7 @@ class RFModuleCompiler(ClusterModuleCompiler):
         converts setpoints to floats when using an attenuation as settable.
         """
 
-        def _convert_to_int(value, label: str) -> Optional[int]:
+        def _convert_to_int(value, label: str) -> int | None:
             if value is not None:
                 if not math.isclose(value % 1, 0):
                     raise ValueError(

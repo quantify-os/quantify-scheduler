@@ -356,7 +356,7 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
         for channel_idx in range(self._hardware_properties.number_of_output_channels):
             param_setting = "off"
             if (
-                settings.connected_output_indices is not None
+                len(settings.connected_output_indices) > 0
                 and channel_idx in settings.connected_output_indices
             ):  # For baseband, output indices map 1-to-1 to channel map indices
                 if channel_idx in settings.connected_output_indices:
@@ -719,7 +719,7 @@ class _QRMComponent(_ModuleComponentBase):
                 else "off"
             )
             if (
-                settings.connected_input_indices is not None
+                len(settings.connected_input_indices) > 0
                 and channel_idx in settings.connected_input_indices
             ):  # For baseband, input indices map 1-to-1 to channel map indices
                 param_setting = f"in{channel_idx}"
@@ -805,9 +805,9 @@ class _RFComponent(_ModuleComponentBase):
             param_setting = "off"
             if (
                 ChannelMode.DIGITAL not in settings.channel_name
-                and settings.connected_output_indices is not None
-                and settings.connected_output_indices
-                == expected_output_indices[channel_idx]
+                and len(settings.connected_output_indices) > 0
+                and tuple(settings.connected_output_indices)
+                == tuple(expected_output_indices[channel_idx])
             ):
                 param_setting = "IQ"
 
@@ -895,7 +895,7 @@ class _QRMRFComponent(_RFComponent, _QRMComponent):
     ) -> Dict[str, str]:
         """Adds the inputs to the channel map parameters dict."""
         channel_map_parameters["connect_acq"] = (
-            "in0" if settings.connected_input_indices == [0, 1] else "off"
+            "in0" if tuple(settings.connected_input_indices) == (0, 1) else "off"
         )
         if (
             "output" in settings.channel_name

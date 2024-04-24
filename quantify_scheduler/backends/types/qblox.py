@@ -59,7 +59,7 @@ class StaticHardwareProperties:
     mixer_dc_offset_range: BoundedParameter
     """Specifies the range over which the dc offsets can be set that are used for mixer
     calibration."""
-    channel_name_to_connected_io_indices: Dict[str, Union[Tuple[int], Tuple[int, int]]]
+    channel_name_to_connected_io_indices: Dict[str, tuple[int, ...]]
     """Specifies the connected io indices per channel_name identifier."""
     default_marker: int = 0
     """The default marker value to set at the beginning of programs.
@@ -71,9 +71,7 @@ class StaticHardwareProperties:
     Specifies which marker bit needs to be set at start if the
     output (as a string ex. `complex_output_0`) contains a pulse."""
 
-    def _get_connected_output_indices(
-        self, channel_name
-    ) -> Optional[Union[Tuple[int], Tuple[int, int], None]]:
+    def _get_connected_output_indices(self, channel_name) -> tuple[int, ...]:
         """
         Return the connected output indices associated with the output name
         specified in the hardware config.
@@ -81,12 +79,10 @@ class StaticHardwareProperties:
         return (
             self.channel_name_to_connected_io_indices[channel_name]
             if "output" in channel_name
-            else None
+            else ()
         )
 
-    def _get_connected_input_indices(
-        self, channel_name
-    ) -> Optional[Union[Tuple[int], Tuple[int, int], None]]:
+    def _get_connected_input_indices(self, channel_name) -> tuple[int, ...]:
         """
         Return the connected input indices associated with the input name
         specified in the hardware config.
@@ -94,7 +90,7 @@ class StaticHardwareProperties:
         return (
             self.channel_name_to_connected_io_indices[channel_name]
             if "input" in channel_name
-            else None
+            else ()
         )
 
 
@@ -258,6 +254,13 @@ class LOSettings(DataClassJsonMixin):
         return cls(power=power_entry, frequency=freq_entry)
 
 
+_ModuleSettingsT = TypeVar("_ModuleSettingsT", bound="BaseModuleSettings")
+"""
+Custom type to allow correct type inference from ``extract_settings_from_mapping`` for
+child classes.
+"""
+
+
 @dataclass
 class BaseModuleSettings(DataClassJsonMixin):
     """Shared settings between all the Qblox modules."""
@@ -275,23 +278,13 @@ class BaseModuleSettings(DataClassJsonMixin):
     in1_gain: Optional[int] = None
     """The gain of input 1."""
 
-
-@dataclass
-class BasebandModuleSettings(BaseModuleSettings):
-    """
-    Settings for a baseband module.
-
-    Class exists to ensure that the cluster baseband modules don't need special
-    treatment in the rest of the code.
-    """
-
     @classmethod
     def extract_settings_from_mapping(
-        cls, mapping: Dict[str, Any], **kwargs: Optional[dict]
-    ) -> BasebandModuleSettings:
+        cls: type[_ModuleSettingsT], mapping: Dict[str, Any], **kwargs: Optional[dict]
+    ) -> _ModuleSettingsT:
         """
         Factory method that takes all the settings defined in the mapping and generates
-        a :class:`~.BasebandModuleSettings` object from it.
+        an instance of this class.
 
         Parameters
         ----------
@@ -303,6 +296,16 @@ class BasebandModuleSettings(BaseModuleSettings):
         """
         del mapping  # not used
         return cls(**kwargs)
+
+
+@dataclass
+class BasebandModuleSettings(BaseModuleSettings):
+    """
+    Settings for a baseband module.
+
+    Class exists to ensure that the cluster baseband modules don't need special
+    treatment in the rest of the code.
+    """
 
 
 @dataclass
@@ -379,9 +382,9 @@ class SequencerSettings(DataClassJsonMixin):
     """Enables party-line synchronization."""
     channel_name: str
     """Specifies the channel identifier of the hardware config (e.g. `complex_output_0`)."""
-    connected_output_indices: Optional[Union[Tuple[int], Tuple[int, int]]]
+    connected_output_indices: Tuple[int, ...]
     """Specifies the indices of the outputs this sequencer produces waveforms for."""
-    connected_input_indices: Optional[Union[Tuple[int], Tuple[int, int]]]
+    connected_input_indices: Tuple[int, ...]
     """Specifies the indices of the inputs this sequencer collects data for."""
     init_offset_awg_path_I: float = 0.0
     """Specifies what value the sequencer offset for AWG path_I will be reset to
@@ -435,8 +438,8 @@ class SequencerSettings(DataClassJsonMixin):
         cls,
         sequencer_cfg: Dict[str, Any],
         channel_name: str,
-        connected_output_indices: Optional[Union[Tuple[int], Tuple[int, int]]],
-        connected_input_indices: Optional[Union[Tuple[int], Tuple[int, int]]],
+        connected_output_indices: tuple[int, ...],
+        connected_input_indices: tuple[int, ...],
     ) -> SequencerSettings:
         """
         Instantiates an instance of this class, with initial parameters determined from
