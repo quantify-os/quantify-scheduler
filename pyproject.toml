@@ -24,8 +24,9 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
-    # Python 3.10 is not supported because we are locked to old zhinst version
-    #"Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering",
 ]
 keywords = [
@@ -34,8 +35,7 @@ keywords = [
 ]
 license = { text = "BSD-3-Clause" }
 dynamic = ["version", "readme"]
-# Python 3.10 is not supported because we are locked to old zhinst version
-requires-python = ">=3.8, <3.10"
+requires-python = ">=3.8"
 dependencies = [
     "columnar",
     "dataclasses-json",
@@ -53,11 +53,6 @@ dependencies = [
     "qcodes>=0.32.0", # 0.32.0: introduces InstrumentModule
     "scipy",
     "xxhash",
-
-    # zhinst versions pinned, see #187
-    "zhinst==21.8.20515",
-    "zhinst-qcodes==0.1.4",
-    "zhinst-toolkit==0.1.5",
 
     # We are using rich in our tutorials
     "rich[jupyter]",
@@ -88,7 +83,9 @@ docs = [
     "sphinx-jsonschema",
     "sphinx-togglebutton",
     "sphinxcontrib-bibtex",
-    "sphinxcontrib-mermaid"
+    "sphinxcontrib-mermaid",
+    "quantify_scheduler[zhinst]",
+
 ]
 
 dev = [
@@ -106,6 +103,13 @@ dev = [
     "quantify-scheduler[docs,test]",
     # Live rebuild of Documentation
     "sphinx-autobuild",
+    "quantify_scheduler[zhinst]",
+]
+
+zhinst = [
+    "zhinst==21.8.20515; python_version<'3.10'",
+    "zhinst-qcodes==0.1.4; python_version<'3.10'",
+    "zhinst-toolkit==0.1.5; python_version<'3.10'",
 ]
 
 [project.urls]
@@ -183,6 +187,8 @@ extend-ignore-names = ["path_I", "path_Q", "offset_path_I", "offset_path_Q"]
 # - E402: Module level import not at top of file
 # - F401: Multiple imports on one line
 
+"zhinst_backend.py" = ["E402"]
+"zhinst.py" = ["E402"]
 "*/docs/source/conf.py" = ["E402", "F401"]
 "__init__.py" = ["F401", "D104", "D205", "D415", "D400"]
 "tests/**/*.py" = ["D", "ANN", "F401"]

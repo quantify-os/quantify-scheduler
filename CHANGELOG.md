@@ -4,7 +4,8 @@
 
 ### Breaking changes
 
-
+- Zhinst backend
+  - make zhinst dependencies optional (e.g. `pip install quantify-scheduler[zhinst]`) (!887)
 
 ### Merged branches and closed issues
 
@@ -31,6 +32,8 @@
   - Clean up the `Sequencer` initialization.
   - Move `extract_settings_from_mapping` to parent class (`BaseModuleSettings`).
 - Qblox backend - Refactor hardware compilation schedule operation more consistent. (!962)
+- Python
+  - `quantify-scheduler` is now compatible with python 3.10, 3.11 and 3.12. The current zhinst backend still requires 3.8 or 3.9. (!887)
 
 ## 0.19.0 (2024-04-03)
 

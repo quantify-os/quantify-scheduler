@@ -401,6 +401,7 @@ def test_sched_timing_table(
     )
 
 
+@pytest.mark.needs_zhinst
 def test_sched_hardware_timing_table(
     t1_schedule, compile_config_basic_transmon_zhinst_hardware
 ):
@@ -419,6 +420,7 @@ def test_sched_hardware_timing_table(
     assert "waveform_id" in columns_of_hw_timing_table
 
 
+@pytest.mark.needs_zhinst
 def test_sched_hardware_waveform_dict(
     t1_schedule, compile_config_basic_transmon_zhinst_hardware
 ):
@@ -455,7 +457,7 @@ def test_acquisition_metadata():
         # test whether the copy function works correctly
         metadata_copy = copy.copy(metadata)
         assert metadata_copy == metadata
-        assert isinstance(metadata_copy.bin_mode, enums.BinMode)
+        assert enums.BinMode(metadata_copy.bin_mode)
         assert isinstance(metadata_copy.acq_return_type, type)
 
     for return_type in complex, float, int, bool, str, np.ndarray:
@@ -471,7 +473,7 @@ def test_acquisition_metadata():
         # test whether the copy function works correctly
         metadata_copy = copy.copy(metadata)
         assert metadata_copy == metadata
-        assert isinstance(metadata_copy.bin_mode, enums.BinMode)
+        assert enums.BinMode(metadata_copy.bin_mode)
         assert isinstance(metadata_copy.acq_return_type, type)
 
     # Test that json serialization works correctly
@@ -479,5 +481,5 @@ def test_acquisition_metadata():
     # Test that json deserialization works correctly
     metadata_copy = json.loads(serialized, cls=json_utils.SchedulerJSONDecoder)
     assert metadata_copy == metadata
-    assert isinstance(metadata_copy.bin_mode, enums.BinMode)
+    assert enums.BinMode(metadata_copy.bin_mode)
     assert isinstance(metadata_copy.acq_return_type, type)

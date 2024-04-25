@@ -21,6 +21,9 @@ from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.schemas.examples import utils
 
+from tests import is_zhinst_available
+
+
 # Test hardware mappings. Note, these will change as we are updating our hardware
 # mapping for the graph based compilation.
 ZHINST_HARDWARE_COMPILATION_CONFIG = utils.load_json_example_scheme(
@@ -166,6 +169,10 @@ def compile_config_basic_transmon_zhinst_hardware(
     # N.B. how this fixture produces the hardware config will change in the future
     # as we separate the config up into a more fine grained config. For now it uses
     # the old JSON files to load settings from.
+
+    # pytest sometimes reads fixtures before ignoring tests.
+    if not is_zhinst_available():
+        pytest.skip("zhinst backend is not available.")
     mock_setup = mock_setup_basic_transmon_with_standard_params
     mock_setup["quantum_device"].hardware_config(ZHINST_HARDWARE_COMPILATION_CONFIG)
 

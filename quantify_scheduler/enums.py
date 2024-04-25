@@ -2,18 +2,20 @@
 # Licensed according to the LICENCE file on the main branch
 """Enums for quantify-scheduler."""
 
-from enum import Enum, unique
+try:
+    from enum import StrEnum, unique  # type: ignore
+except ImportError:
+    from enum import Enum, unique
 
+    class StrEnum(Enum):
+        """Enum that can be directly serialized to string."""
 
-class StrEnum(Enum):
-    """Enum that can be directly serialized to string."""
-
-    def __str__(self):
-        return self.value
+        def __str__(self):
+            return self.value
 
 
 @unique
-class BinMode(StrEnum):
+class BinMode(StrEnum):  # type: ignore
     """
     Describes how to handle `Acquisitions` that write to the same `AcquisitionIndex`.
 

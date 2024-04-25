@@ -319,6 +319,7 @@ class TestCPMGSched(_CompilesAllBackends):
                 )
                 i += 1
 
+    @pytest.mark.needs_zhinst
     def test_compiles_zi_backend(
         self, compile_config_basic_transmon_zhinst_hardware
     ) -> None:

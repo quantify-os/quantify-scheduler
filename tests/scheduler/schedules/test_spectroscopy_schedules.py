@@ -98,6 +98,7 @@ class TestHeterodyneSpecScheduleNCO(TestHeterodyneSpecSchedule):
             ), schedulable["label"]
             abs_time += rel_times[i]
 
+    @pytest.mark.needs_zhinst
     @pytest.mark.xfail(
         raises=NotImplementedError,
         reason="SetClockFrequency not supported in Zhinst backend",

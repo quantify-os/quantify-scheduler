@@ -97,7 +97,7 @@ def test_multiple_conditional_without_acquisition_raises(
     compiler = SerialCompiler(name="compiler")
     with pytest.raises(
         RuntimeError,
-        match="Conditional control flow, ``Conditional\(qubit_name='q0',t0=0\)``"  # noqa: W605
+        match=r"Conditional control flow, ``Conditional\(qubit_name='q0',t0=0\)``"  # noqa: W605
         ",  found without a preceding Conditional acquisition",
     ):
         _ = compiler.compile(

@@ -72,6 +72,7 @@ def test_acq_staircase_comp_qblox(
     )
 
 
+@pytest.mark.needs_zhinst
 def test_acq_staircase_comp_zhinst(
     gen_acquisition_staircase_sched, compile_config_basic_transmon_zhinst_hardware
 ):
@@ -142,6 +143,7 @@ def test_awg_staircase_comp_qblox(
     )
 
 
+@pytest.mark.needs_zhinst
 def test_awg_staircase_comp_zhinst(
     gen_awg_staircase_sched,
     compile_config_basic_transmon_zhinst_hardware,

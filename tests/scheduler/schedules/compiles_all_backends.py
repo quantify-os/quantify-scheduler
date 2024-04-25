@@ -1,5 +1,7 @@
 import pprint
 
+import pytest
+
 from quantify_scheduler.backends import SerialCompiler
 
 
@@ -22,6 +24,7 @@ class _CompilesAllBackends:
             pprint.pprint(compilation_config.model_dump())
             raise
 
+    @pytest.mark.needs_zhinst
     def test_compiles_zi_backend(
         self, compile_config_basic_transmon_zhinst_hardware
     ) -> None:

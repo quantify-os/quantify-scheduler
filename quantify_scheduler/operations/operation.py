@@ -73,7 +73,7 @@ class Operation(JSONSchemaValMixin, UserDict):
 
     def __eq__(self, other) -> bool:
         """
-        Returns the equality of two instances based on its content :code:`self.data`.
+        Returns the equality of two instances based on its hash.
 
         Parameters
         ----------
@@ -84,7 +84,7 @@ class Operation(JSONSchemaValMixin, UserDict):
         -------
         :
         """
-        return repr(self) == repr(other)
+        return hash(self) == hash(other)
 
     def __str__(self) -> str:
         """

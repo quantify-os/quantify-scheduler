@@ -1,6 +1,10 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Python dataclasses for quantify-scheduler json-schemas."""
+from quantify_scheduler.compatibility_check import check_zhinst_compatibility
+
+check_zhinst_compatibility()
+
 from dataclasses import dataclass, field
 from enum import Enum, unique
 from typing import Dict, List, Literal, Optional, Union

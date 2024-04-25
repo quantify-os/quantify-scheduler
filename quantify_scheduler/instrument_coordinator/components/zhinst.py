@@ -5,6 +5,10 @@
 
 from __future__ import annotations
 
+from quantify_scheduler.compatibility_check import check_zhinst_compatibility
+
+check_zhinst_compatibility()
+
 import logging
 import shutil
 from pathlib import Path

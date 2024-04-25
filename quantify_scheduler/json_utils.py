@@ -356,8 +356,6 @@ class SchedulerJSONEncoder(json.JSONEncoder):
         check if the object is to be serialized to a string using repr. If not, try
         to use ``__getstate__``. Finally, try to serialize the ``__dict__`` property.
         """
-        if hasattr(o, "__getstate__"):
-            return o.__getstate__()
         if isinstance(o, (complex, np.int32, np.complex128, np.int64, enums.BinMode)):
             return {
                 "deserialization_type": type(o).__name__,
@@ -372,6 +370,8 @@ class SchedulerJSONEncoder(json.JSONEncoder):
             }
         if o in DEFAULT_TYPES:
             return {"deserialization_type": o.__name__, "mode": "type"}
+        if hasattr(o, "__getstate__"):
+            return o.__getstate__()
         if hasattr(o, "__dict__"):
             return o.__dict__
 

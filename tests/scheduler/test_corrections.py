@@ -21,6 +21,8 @@ from quantify_scheduler.operations.pulse_library import (
 from quantify_scheduler.operations.gate_library import X
 from quantify_scheduler.schedules.schedule import Schedule
 
+from tests import is_zhinst_available
+
 
 # --------- Test fixtures ---------
 @pytest.fixture
@@ -139,6 +141,9 @@ def test_apply_distortion_corrections(
     two_qubit_gate_schedule,
     config_type,
 ):
+    if "zhinst" in config_type and not is_zhinst_available():
+        pytest.skip("zhinst backend not installed")
+
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     if "Qblox" in config_type:
         hardware_compilation_config = {

@@ -6,7 +6,10 @@ kernelspec:
 ---
 (sec-backend-zhinst)=
 # Zurich Instruments
-
+```{admonition} Info
+:class: note
+The zhinst backend is currently only compatible with python versions 3.8 and 3.9. Please see the [installation page](zhinst-backend-install) for more information.
+```
 ## Introduction
 
 `quantify-scheduler` provides a stateless module: {mod}`~quantify_scheduler.backends.zhinst_backend`,
