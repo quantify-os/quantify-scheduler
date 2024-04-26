@@ -711,6 +711,48 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
 
         return data
 
+    # TODO: Remove this validator (and test) when substituting `networkx.Graph` with `networkx.DiGraph` (SE-477)
+    #       (introduced to find errors during conversion of hardware config versions)
+    @model_validator(mode="after")
+    def _validate_connectivity_graph_structure(self) -> QbloxHardwareCompilationConfig:
+        """Validate connectivity graph structure."""
+        EXC_MESSAGE = (
+            "Channels, rf-signals of iq mixers and lo outputs must be source nodes "
+            "(left), and ports and if/lo-signals of iq mixers must be target nodes (right)."
+        )
+
+        def _is_channel(node: str) -> bool:
+            return bool(re.match(r"^\w+\.module\d+\.\w+$", node))
+
+        def _is_iq_mixer(node: str, signal_type: str) -> bool:
+            return bool(re.match(rf"^iq_mixer_lo\d+\.{signal_type}$", node))
+
+        def _is_lo(node: str) -> bool:
+            return bool(re.match(r"^lo\d+\.output$", node))
+
+        def _is_port(node: str) -> bool:
+            return len(node.split(":")) == 2
+
+        if isinstance(self.connectivity, Connectivity):
+            for edge in self.connectivity.graph.edges:
+                source, target = edge
+
+                if (
+                    _is_port(source)
+                    or _is_iq_mixer(source, "if")
+                    or _is_iq_mixer(source, "lo")
+                ):
+                    raise ValueError(
+                        f"Node {source} in connectivity graph is a source. {EXC_MESSAGE}"
+                    )
+
+                if _is_channel(target) or _is_lo(target) or _is_iq_mixer(target, "rf"):
+                    raise ValueError(
+                        f"Node {target} in connectivity graph is a target. {EXC_MESSAGE}"
+                    )
+
+        return self
+
     def _extract_instrument_compiler_configs(  # noqa: PLR0912, PLR0915
         self, portclocks_used: set[tuple]
     ) -> Dict[str, DataStructure]:

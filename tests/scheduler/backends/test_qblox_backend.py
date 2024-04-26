@@ -19,6 +19,7 @@ import pytest
 from pydantic import ValidationError
 from qblox_instruments import Cluster, ClusterType
 
+from quantify_scheduler.operations.gate_library import CZ
 import quantify_scheduler
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends import SerialCompiler, corrections
@@ -352,7 +353,7 @@ def real_square_pulse_schedule():
         SquarePulse(
             amp=1.0,
             duration=5e-7,
-            port="dummy_port_1",
+            port="q0:fl",
             clock=BasebandClockResource.IDENTITY,
             t0=1e-6,
         )
@@ -361,7 +362,7 @@ def real_square_pulse_schedule():
         SquarePulse(
             amp=0.5,
             duration=7e-7,
-            port="dummy_port_2",
+            port="q1:fl",
             clock=BasebandClockResource.IDENTITY,
             t0=0.5e-6,
         )
@@ -370,7 +371,7 @@ def real_square_pulse_schedule():
         SquarePulse(
             amp=1.2 / 5.0,
             duration=9e-7,
-            port="dummy_port_3",
+            port="q2:fl",
             clock=BasebandClockResource.IDENTITY,
             t0=0,
         )
@@ -379,7 +380,7 @@ def real_square_pulse_schedule():
         SquarePulse(
             amp=1.2 / 5.0,
             duration=9e-7,
-            port="dummy_port_4",
+            port="q3:fl",
             clock=BasebandClockResource.IDENTITY,
             t0=0,
         )
@@ -482,6 +483,7 @@ def test_find_all_port_clock_combinations(
         ("q5:res", "q5.ro"),
         ("q5:mw", "q5.01"),
         ("q6:mw", "q6.01"),
+        ("q7:mw", "q7.01"),
         ("q4:res", "q4.ro"),
         ("q0:fl", "cl0.baseband"),
         ("q1:fl", "cl0.baseband"),
@@ -524,6 +526,7 @@ def test_generate_port_clock_to_device_map():
         ("q4:mw", "q4.01"),
         ("q5:mw", "q5.01"),
         ("q6:mw", "q6.01"),
+        ("q7:mw", "q7.01"),
         ("q4:res", "q4.ro"),
         ("q5:res", "q5.ro"),
         ("q0:res", "q0.ro"),
@@ -749,6 +752,43 @@ def test_invalid_channel_names_connectivity(
         )
 
     assert "Invalid connectivity" in error.exconly()
+
+
+@pytest.mark.parametrize(
+    "edge",
+    [
+        ["q0:mw", "cluster0.module1.complex_output_0"],
+        ["iq_mixer_lo0.if", "cluster0.module1.complex_output_0"],
+        ["iq_mixer_lo0.lo", "lo0.output"],
+        ["q0:mw", "iq_mixer_lo0.rf"],
+    ],
+)
+def test_validate_connectivity_graph_structure(
+    edge,
+):
+    hardware_cfg = {
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "ref": "internal",
+                "modules": {
+                    "1": {
+                        "instrument_type": "QCM",
+                    },
+                },
+            },
+            "lo0": {"instrument_type": "LocalOscillator", "power": 1},
+            "iq_mixer_lo0": {"instrument_type": "IQMixer"},
+        },
+        "hardware_options": {},
+        "connectivity": {"graph": [edge]},
+    }
+
+    with pytest.raises(ValueError) as error:
+        _ = QbloxHardwareCompilationConfig.model_validate(hardware_cfg)
+
+    assert "is a source" in error.exconly()
 
 
 def test_invalid_channel_names_legacy_hardware_config(
@@ -1098,28 +1138,27 @@ def test_compile_measure(
 
 
 @pytest.mark.parametrize(
-    "operation, instruction_to_check, clock_freq_old, add_lo1",
+    "operation, instruction_to_check, clock_freq_old",
     [
         [
-            (IdlePulse(duration=64e-9), r"^\s*wait\s+68(\s+|$)", None, add_lo1),
-            (Reset("q1"), r"^\s*wait\s+65532", None, add_lo1),
+            # TODO: Use commented line when updating to new-style cfg
+            # (IdlePulse(duration=64e-9), r"^\s*wait\s+64(\s+|$)", None),
+            (IdlePulse(duration=64e-9), r"^\s*wait\s+68(\s+|$)", None),
+            (Reset("q1"), r"^\s*wait\s+65532", None),
             (
                 ShiftClockPhase(clock=clock, phase_shift=180.0),
                 r"^\s*set_ph_delta\s+500000000(\s+|$)",
                 None,
-                add_lo1,
             ),
             (
                 SetClockFrequency(clock=clock, clock_freq_new=clock_freq_new),
                 rf"^\s*set_freq\s+{round((2e8 + clock_freq_new - clock_freq_old)*4)}(\s+|$)",
                 clock_freq_old,
-                add_lo1,
             ),
         ]
         for clock in ["q1.01"]
         for clock_freq_old in [5e9]
         for clock_freq_new in [5.001e9]
-        for add_lo1 in [True]
     ][0],
 )
 def test_compile_clock_operations(
@@ -1128,14 +1167,25 @@ def test_compile_clock_operations(
     operation: Operation,
     instruction_to_check: str,
     clock_freq_old: Optional[float],
-    add_lo1: bool,
 ):
+    hardware_cfg = copy.deepcopy(hardware_cfg_qcm)
+
+    hardware_cfg["lo1"] = {
+        "instrument_type": "LocalOscillator",
+        "frequency": 4.8e9,
+        "power": 1,
+    }
+    hardware_cfg["cluster0"]["cluster0_module1"]["complex_output_1"] = {
+        "lo_name": "lo1",
+        "portclock_configs": [{"port": "q1:mw", "clock": "q1.01"}],
+    }
+
     sched = Schedule("compile_clock_operations")
     sched.add(operation)
     sched.add(SquarePulse(amp=1, port="q1:mw", clock="q1.01", duration=4e-9))
 
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    quantum_device.hardware_config(hardware_cfg_qcm)
+    quantum_device.hardware_config(hardware_cfg)
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
         schedule=sched,
@@ -1177,18 +1227,31 @@ def test_compile_clock_operations(
 def test_compile_cz_gate(
     mock_setup_basic_transmon_with_standard_params,
     hardware_cfg_qcm_two_qubit_gate,
-    two_qubit_gate_schedule,
 ):
     mock_setup = mock_setup_basic_transmon_with_standard_params
     edge_q2_q3 = mock_setup["q2_q3"]
     edge_q2_q3.cz.q2_phase_correction(44)
     edge_q2_q3.cz.q3_phase_correction(63)
 
+    sched = Schedule("schedule")
+    sched.add(Reset("q2", "q3"))
+    sched.add(CZ(qC="q2", qT="q3"))
+    sched.add(
+        SquarePulse(
+            amp=1, port="q2:fl", clock=BasebandClockResource.IDENTITY, duration=4e-9
+        )
+    )
+    sched.add(
+        SquarePulse(
+            amp=1, port="q3:fl", clock=BasebandClockResource.IDENTITY, duration=4e-9
+        )
+    )
+
     quantum_device = mock_setup["quantum_device"]
     quantum_device.hardware_config(hardware_cfg_qcm_two_qubit_gate)
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
-        schedule=two_qubit_gate_schedule,
+        schedule=sched,
         config=quantum_device.generate_compilation_config(),
     )
 
@@ -1922,12 +1985,10 @@ def test_multiple_trace_acquisition_error(
     )
 
 
-@pytest.mark.parametrize("add_lo1", [False])
 def test_container_prepare_baseband(
     mock_setup_basic_transmon,
     baseband_square_pulse_schedule,
     hardware_cfg_qcm,
-    add_lo1: bool,
 ):
     quantum_device = mock_setup_basic_transmon["quantum_device"]
     quantum_device.hardware_config(hardware_cfg_qcm)
@@ -2047,6 +2108,7 @@ def test_extract_instrument_compiler_configs(hardware_compilation_config_qblox_e
         "cluster0",
         "lo0",
         "lo1",
+        "lo_real",
         "cluster1",
     ]
 
@@ -2609,7 +2671,8 @@ def test_assign_frequencies_rf_downconverter(
 
 @pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 @pytest.mark.parametrize(
-    "use_output, element_names", ([use_output, ["q0"]] for use_output in [True, False])
+    "use_output, element_names",
+    ([use_output, ["q0", "q5"]] for use_output in [True, False]),
 )
 def test_assign_attenuation_old_style_hardware_config(
     mock_setup_basic_transmon_elements,
@@ -2639,14 +2702,14 @@ def test_assign_attenuation_old_style_hardware_config(
     quantum_device = mock_setup_basic_transmon_elements["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
 
-    qubit_name = element_names[0]
-    qubit = quantum_device.get_element(qubit_name)
-    qubit.clock_freqs.readout(5e9)
-    qubit.measure.pulse_amp(0.2)
-    qubit.measure.acq_delay(40e-9)
-
     sched = Schedule("Measurement")
-    sched.add(Measure(qubit_name))
+    for qubit_name in element_names:
+        qubit = quantum_device.get_element(qubit_name)
+        qubit.clock_freqs.readout(5e9)
+        qubit.measure.pulse_amp(0.2)
+        qubit.measure.acq_delay(40e-9)
+
+        sched.add(Measure(qubit_name))
 
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
@@ -2721,6 +2784,7 @@ def test_assign_input_att_both_output_input_raises(
 
     schedule = Schedule("test_assign_input_att_both_output_input_raises")
     schedule.add(SquarePulse(amp=0.5, duration=1e-6, port="q0:res", clock="q0.ro"))
+    schedule.add(SquarePulse(amp=0.5, duration=1e-6, port="q1:res", clock="q1.ro"))
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
 

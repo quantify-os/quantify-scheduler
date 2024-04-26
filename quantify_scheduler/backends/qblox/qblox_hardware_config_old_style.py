@@ -114,6 +114,16 @@ hardware_config = {
                 ],
             },
         },
+        "cluster0_module7": {
+            "instrument_type": "QCM",
+            "sequence_to_file": False,
+            "real_output_0": {
+                "lo_name": "lo_real",
+                "portclock_configs": [
+                    {"port": "q7:mw", "clock": "q7.01", "interm_freq": None}
+                ],
+            },
+        },
         "cluster0_module10": {
             "instrument_type": "QCM",
             "sequence_to_file": False,
@@ -140,4 +150,5 @@ hardware_config = {
     },
     "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
     "lo1": {"instrument_type": "LocalOscillator", "frequency": 7.2e9, "power": 1},
+    "lo_real": {"instrument_type": "LocalOscillator", "frequency": 5e9, "power": 1},
 }

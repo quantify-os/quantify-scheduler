@@ -34,6 +34,7 @@
 - Qblox backend - Refactor hardware compilation schedule operation more consistent. (!962)
 - Python
   - `quantify-scheduler` is now compatible with python 3.10, 3.11 and 3.12. The current zhinst backend still requires 3.8 or 3.9. (!887)
+- Tests - Make transmon tests and hardware configs compatible with `QbloxHardwareCompilationConfig` validation. (!964) 
 
 ## 0.19.0 (2024-04-03)
 

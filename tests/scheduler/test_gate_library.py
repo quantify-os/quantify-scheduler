@@ -444,17 +444,15 @@ def test_max_conditional_resets(num_reset, expected_exception):
         },
     }
     for i in range(15):
-        hw_config["QAE_cluster"][f"QAE_cluster_module{i+1}"] = (
-            {
-                "instrument_type": "QCM",
-                "complex_output_0": {
-                    "portclock_configs": [
-                        {"port": f"q{i}:mw", "clock": f"q{i}.01"},
-                        {"port": f"q{i}:res", "clock": f"q{i}.ro"},
-                    ],
-                },
+        hw_config["QAE_cluster"][f"QAE_cluster_module{i+1}"] = {
+            "instrument_type": "QRM",
+            "complex_output_0": {
+                "portclock_configs": [
+                    {"port": f"q{i}:mw", "clock": f"q{i}.01"},
+                    {"port": f"q{i}:res", "clock": f"q{i}.ro"},
+                ],
             },
-        )
+        }
     quantum_device.hardware_config(hw_config)
 
     schedule = Schedule("test")

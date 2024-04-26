@@ -300,7 +300,7 @@ def hardware_cfg_cluster():
             "cluster0_module3": {
                 "instrument_type": "QRM",
                 "complex_output_0": {
-                    "lo_name": "lo1",
+                    "lo_name": "lo2",
                     "dc_mixer_offset_I": -0.054,
                     "dc_mixer_offset_Q": -0.034,
                     "input_gain_I": 2,
@@ -376,6 +376,7 @@ def hardware_cfg_cluster():
         },
         "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
         "lo1": {"instrument_type": "LocalOscillator", "frequency": 7.2e9, "power": 1},
+        "lo2": {"instrument_type": "LocalOscillator", "frequency": 7.2e9, "power": 1},
     }
 
 
@@ -455,7 +456,7 @@ def hardware_cfg_cluster_test_component():
 
 
 @pytest.fixture
-def hardware_cfg_qcm(add_lo1):
+def hardware_cfg_qcm():
     yield {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
         "cluster0": {
@@ -474,14 +475,9 @@ def hardware_cfg_qcm(add_lo1):
                         }
                     ],
                 },
-                "complex_output_1": {
-                    "lo_name": "lo1" if add_lo1 else None,
-                    "portclock_configs": [{"port": "q1:mw", "clock": "q1.01"}],
-                },
             },
         },
         "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
-        "lo1": {"instrument_type": "LocalOscillator", "frequency": 4.8e9, "power": 1},
     }
 
 
@@ -497,7 +493,7 @@ def hardware_cfg_real_mode():
                 "real_output_0": {
                     "portclock_configs": [
                         {
-                            "port": "dummy_port_1",
+                            "port": "q0:fl",
                             "clock": "cl0.baseband",
                         },
                     ],
@@ -505,7 +501,7 @@ def hardware_cfg_real_mode():
                 "real_output_1": {
                     "portclock_configs": [
                         {
-                            "port": "dummy_port_2",
+                            "port": "q1:fl",
                             "clock": "cl0.baseband",
                         }
                     ],
@@ -513,7 +509,7 @@ def hardware_cfg_real_mode():
                 "real_output_2": {
                     "portclock_configs": [
                         {
-                            "port": "dummy_port_3",
+                            "port": "q2:fl",
                             "clock": "cl0.baseband",
                         }
                     ],
@@ -521,7 +517,7 @@ def hardware_cfg_real_mode():
                 "real_output_3": {
                     "portclock_configs": [
                         {
-                            "port": "dummy_port_4",
+                            "port": "q3:fl",
                             "clock": "cl0.baseband",
                         }
                     ],
@@ -569,9 +565,6 @@ def hardware_cfg_qcm_multiplexing():
                             "interm_freq": 50e6,
                         },
                     ],
-                },
-                "complex_output_1": {
-                    "portclock_configs": [{"port": "q1:mw", "clock": "q1.01"}],
                 },
             },
         },

@@ -1727,12 +1727,12 @@ class ClusterModuleCompiler(InstrumentCompiler, ABC):
         Configures offset of input, uses calc_from_units_volt found in helper file.
         Raises an exception if a value outside the accepted voltage range is given.
         """
-        supported_outputs = ("complex_output_0", "complex_output_1")
-        for output_idx, output_label in enumerate(supported_outputs):
-            if output_label not in self.instrument_cfg:
+        supported_channels = ("complex_output_0", "complex_output_1")
+        for output_idx, channel_name in enumerate(supported_channels):
+            if channel_name not in self.instrument_cfg:
                 continue
 
-            output_cfg = self.instrument_cfg[output_label]
+            output_cfg = self.instrument_cfg[channel_name]
             voltage_range = self.static_hw_properties.mixer_dc_offset_range
             if output_idx == 0:
                 self._settings.offset_ch0_path_I = helpers.calc_from_units_volt(
@@ -1820,7 +1820,8 @@ class ClusterModuleCompiler(InstrumentCompiler, ABC):
         """
         program = {}
 
-        if sequence_to_file is None:
+        # `sequence_to_file` of a module can be `True` even if its `False` for a cluster
+        if sequence_to_file is None or sequence_to_file is False:
             sequence_to_file = self.instrument_cfg.get("sequence_to_file", False)
 
         align_qasm_fields = debug_mode

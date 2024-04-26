@@ -28,7 +28,7 @@ from quantify_scheduler.device_under_test.transmon_element import BasicTransmonE
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.instrument_coordinator.components import qblox
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
-from quantify_scheduler.operations.gate_library import Reset, Measure
+from quantify_scheduler.operations.gate_library import Reset, Measure, X90
 from quantify_scheduler.operations.pulse_library import (
     IdlePulse,
     MarkerPulse,
@@ -50,6 +50,7 @@ def make_cluster_component(mocker):
         "2": "QCM_RF",
         "3": "QRM",
         "4": "QRM_RF",
+        "7": "QCM",
         "10": "QCM",  # for flux pulsing q0_q3
         "12": "QCM",  # for flux pulsing q4
     }
@@ -186,7 +187,6 @@ def test_initialize_cluster_component(make_cluster_component):
 
 
 def test_reset_qcodes_settings(
-    schedule_with_measurement,
     hardware_cfg_cluster,
     make_cluster_component,
     mock_setup_basic_transmon_with_standard_params,
@@ -228,11 +228,40 @@ def test_reset_qcodes_settings(
         "init_gain_awg_path_Q"
     ] = -0.5
 
+    schedule = Schedule(f"Schedule")
+    schedule.add(
+        SquarePulse(
+            amp=1.0,
+            duration=5e-7,
+            port="q0:mw",
+            clock="q0.01",
+            t0=1e-6,
+        )
+    )
+    schedule.add(
+        SquarePulse(
+            amp=1.0,
+            duration=5e-7,
+            port="q0:fl",
+            clock="cl0.baseband",
+            t0=1e-6,
+        )
+    )
+    schedule.add(
+        SquarePulse(
+            amp=1.0,
+            duration=5e-7,
+            port="q1:fl",
+            clock="cl0.baseband",
+            t0=1e-6,
+        )
+    )
+
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
     config = quantum_device.generate_compilation_config()
     compiled_schedule = SerialCompiler(name="compiler").compile(
-        schedule=schedule_with_measurement, config=config
+        schedule=schedule, config=config
     )
     prog = compiled_schedule["compiled_instructions"][cluster_name]
 
@@ -305,7 +334,6 @@ def test_marker_override_false(
 
 def test_init_qcodes_settings(
     mocker,
-    schedule_with_measurement,
     hardware_cfg_cluster,
     make_cluster_component,
     mock_setup_basic_transmon_with_standard_params,
@@ -354,11 +382,40 @@ def test_init_qcodes_settings(
         "init_gain_awg_path_Q"
     ] = -0.5
 
+    schedule = Schedule(f"Schedule")
+    schedule.add(
+        SquarePulse(
+            amp=1.0,
+            duration=5e-7,
+            port="q0:mw",
+            clock="q0.01",
+            t0=1e-6,
+        )
+    )
+    schedule.add(
+        SquarePulse(
+            amp=1.0,
+            duration=5e-7,
+            port="q0:fl",
+            clock="cl0.baseband",
+            t0=1e-6,
+        )
+    )
+    schedule.add(
+        SquarePulse(
+            amp=1.0,
+            duration=5e-7,
+            port="q1:fl",
+            clock="cl0.baseband",
+            t0=1e-6,
+        )
+    )
+
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
     config = quantum_device.generate_compilation_config()
     compiled_schedule = SerialCompiler(name="compiler").compile(
-        schedule=schedule_with_measurement, config=config
+        schedule=schedule, config=config
     )
     prog = compiled_schedule["compiled_instructions"]
 
@@ -440,7 +497,6 @@ def test_invalid_init_qcodes_settings(
 )
 def test_prepare_baseband(  # noqa: PLR0915
     mocker,
-    schedule_with_measurement,
     mock_setup_basic_transmon_with_standard_params,
     hardware_cfg_cluster,
     make_cluster_component,
@@ -501,9 +557,33 @@ def test_prepare_baseband(  # noqa: PLR0915
     quantum_device.hardware_config(hardware_cfg_cluster)
     quantum_device.get_element("q0").clock_freqs.readout(7.5e9)
 
+    schedule = Schedule(f"Schedule with measurement")
+    schedule.add(Reset("q0", "q1"))
+    schedule.add(X90("q0"))
+    schedule.add(X90("q1"))
+    schedule.add(
+        SquarePulse(
+            amp=1.0,
+            duration=5e-7,
+            port="q0:fl",
+            clock="cl0.baseband",
+            t0=1e-6,
+        )
+    )
+    schedule.add(
+        SquarePulse(
+            amp=1.0,
+            duration=5e-7,
+            port="q1:fl",
+            clock="cl0.baseband",
+            t0=1e-6,
+        )
+    )
+    schedule.add(Measure("q0"))
+
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
-        schedule_with_measurement, config=quantum_device.generate_compilation_config()
+        schedule, config=quantum_device.generate_compilation_config()
     )
     prog = compiled_schedule["compiled_instructions"][cluster_name]
 

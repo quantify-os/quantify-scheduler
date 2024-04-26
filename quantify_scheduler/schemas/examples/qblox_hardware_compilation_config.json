@@ -21,6 +21,9 @@
                 "4": {
                     "instrument_type": "QRM_RF"
                 },
+                "7": {
+                    "instrument_type": "QCM"
+                },
                 "10": {
                     "instrument_type": "QCM"
                 },
@@ -37,10 +40,17 @@
             "instrument_type": "LocalOscillator",
             "power": 1
         },
+        "lo_real": {
+            "instrument_type": "LocalOscillator",
+            "power": 1
+        },
         "iq_mixer_lo0": {
             "instrument_type": "IQMixer"
         },
         "iq_mixer_lo1": {
+            "instrument_type": "IQMixer"
+        },
+        "iq_mixer_lo_real": {
             "instrument_type": "IQMixer"
         }
     },
@@ -94,6 +104,9 @@
                 "interm_freq": 50e6
             },
             "q6:mw-q6.01": {
+                "lo_freq": 5e9
+            },
+            "q7:mw-q7.01": {
                 "lo_freq": 5e9
             }
         },
@@ -184,7 +197,19 @@
                 "cluster0.module4.complex_output_0",
                 "q0:res"
             ],
-                        [
+            [
+                "cluster0.module7.real_output_0",
+                "iq_mixer_lo_real.if"
+            ],
+            [
+                "lo_real.output",
+                "iq_mixer_lo_real.lo"
+            ],
+            [
+                "iq_mixer_lo_real.rf",
+                "q7:mw"
+            ],
+            [
                 "cluster0.module10.real_output_0",
                 "q0:fl"
             ],
