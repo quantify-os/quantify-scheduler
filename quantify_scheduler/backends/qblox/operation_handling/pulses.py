@@ -190,6 +190,21 @@ class GenericPulseStrategy(PulseStrategyPartial):
         qasm_program
             The QASMProgram to add the assembly instructions to.
         """
+        if qasm_program.time_last_pulse_triggered is not None and (
+            qasm_program.elapsed_time - qasm_program.time_last_pulse_triggered
+            < constants.MIN_TIME_BETWEEN_OPERATIONS
+        ):
+
+            raise ValueError(
+                f"Attempting to start an operation at t="
+                f"{qasm_program.elapsed_time} ns, while the last operation was "
+                f"started at t={qasm_program.time_last_pulse_triggered} ns. "
+                f"Please ensure a minimum interval of "
+                f"{constants.MIN_TIME_BETWEEN_OPERATIONS} ns between "
+                f"operations.\n\nError caused by operation:\n"
+                f"{repr(self.operation_info)}."
+            )
+        qasm_program.time_last_pulse_triggered = qasm_program.elapsed_time
         self._check_amplitudes_set()
 
         # Only emit play command if at least one path has a signal
@@ -209,10 +224,10 @@ class GenericPulseStrategy(PulseStrategyPartial):
                 q1asm_instructions.PLAY,
                 index0 if (index0 is not None) else index1,
                 index1 if (index1 is not None) else index0,
-                constants.GRID_TIME,  # N.B. the waveform keeps playing
+                constants.MIN_TIME_BETWEEN_OPERATIONS,  # N.B. the waveform keeps playing
                 comment=f"play {self.operation_info.name} ({self._waveform_len} ns)",
             )
-            qasm_program.elapsed_time += constants.GRID_TIME
+            qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
 
 
 class MarkerPulseStrategy(PulseStrategyPartial):

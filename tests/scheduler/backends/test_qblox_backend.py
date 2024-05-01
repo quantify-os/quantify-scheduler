@@ -34,7 +34,10 @@ from quantify_scheduler.backends.qblox import (
     q1asm_instructions,
     register_manager,
 )
-from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
+from quantify_scheduler.backends.qblox.compiler_abc import (
+    Sequencer,
+    NcoOperationTimingError,
+)
 from quantify_scheduler.backends.qblox.helpers import (
     assign_pulse_and_acq_info_to_devices,
     _generate_legacy_hardware_config,
@@ -42,7 +45,6 @@ from quantify_scheduler.backends.qblox.helpers import (
     generate_uuid_from_wf_data,
     generate_waveform_data,
     is_multiple_of_grid_time,
-    is_within_half_grid_time,
     to_grid_time,
 )
 from quantify_scheduler.backends.qblox.instrument_compilers import (
@@ -90,6 +92,7 @@ from quantify_scheduler.operations.pulse_library import (
     ShiftClockPhase,
     SoftSquarePulse,
     SquarePulse,
+    ResetClockPhase,
 )
 from quantify_scheduler.backends.qblox.operations.stitched_pulse import (
     StitchedPulseBuilder,
@@ -99,7 +102,6 @@ from quantify_scheduler.schedules.timedomain_schedules import (
     allxy_sched,
     readout_calibration_sched,
 )
-
 
 REGENERATE_REF_FILES: bool = False  # Set flag to true to regenerate the reference files
 
@@ -1152,7 +1154,7 @@ def test_compile_measure(
             ),
             (
                 SetClockFrequency(clock=clock, clock_freq_new=clock_freq_new),
-                rf"^\s*set_freq\s+{round((2e8 + clock_freq_new - clock_freq_old)*4)}(\s+|$)",
+                rf"^\s*set_freq\s+{round((2e8 + clock_freq_new - clock_freq_old) * 4)}(\s+|$)",
                 clock_freq_old,
             ),
         ]
@@ -1714,7 +1716,7 @@ def test_real_mode_pulses(
                 assert (np.array(waveform_data) == 0).all()
 
         assert re.search(rf"play\s+0,0", seq_instructions["program"]), (
-            f"Output {output+1} must be connected to "
+            f"Output {output + 1} must be connected to "
             f"sequencer{output} path{iq_order[0]} in real mode."
         )
 
@@ -1793,7 +1795,7 @@ def test_to_grid_time(time, expected_time_ns):
 )
 def test_to_grid_time_raises(time):
     with pytest.raises(ValueError) as error:
-        to_grid_time(time)
+        to_grid_time(time, grid_time_ns=constants.MIN_TIME_BETWEEN_OPERATIONS)
 
     assert (
         "Please ensure that the durations of operations"
@@ -1813,32 +1815,19 @@ def test_to_grid_time_raises(time):
         (4.0008e-9, True),
     ],
 )
-def test_is_multiple_of_grid_time(time, expected):
-    assert is_multiple_of_grid_time(time) is expected
+def test_is_multiple_of_min_op_time(time, expected):
+    assert (
+        is_multiple_of_grid_time(
+            time, grid_time_ns=constants.MIN_TIME_BETWEEN_OPERATIONS
+        )
+        is expected
+    )
 
 
-def test_is_within_grid_time_even_if_floating_point_error():
+def test_is_within_min_op_time_even_if_floating_point_error():
     time1, time2 = 8e-9, 12e-9
-    assert abs(time1 - time2) < constants.GRID_TIME
-    assert not is_within_half_grid_time(time1, time2)
-
-
-@pytest.mark.parametrize(
-    "time1, time2, within_half_grid_time",
-    [
-        (8e-9, 8e-9, True),
-        (12e-9, 16e-9, False),
-        (20e-9, 21e-9, True),
-        (1, 1 + 3e-9, False),
-        (
-            60,
-            60 + 2e-9 - 1e-12,
-            True,
-        ),  # Needs to be slightly smaller than half grid time
-    ],
-)
-def test_is_within_grid_time(time1, time2, within_half_grid_time):
-    assert is_within_half_grid_time(time1, time2) is within_half_grid_time
+    assert abs(time1 - time2) < constants.MIN_TIME_BETWEEN_OPERATIONS
+    assert to_grid_time(time1) != to_grid_time(time2)
 
 
 def test_loop(empty_qasm_program_qcm):
@@ -3260,7 +3249,8 @@ def test_apply_latency_corrections_hardware_config_valid(
         "program"
     ].splitlines()
     assert any(
-        f"latency correction of {constants.GRID_TIME} + {latency} ns" in line
+        f"latency correction of {constants.MIN_TIME_BETWEEN_OPERATIONS} + {latency} ns"
+        in line
         for line in program_lines
     ), f"instrument={('cluster0', 'cluster0_module1')}, latency={latency}"
 
@@ -3294,7 +3284,7 @@ def test_apply_latency_corrections_hardware_options_valid(
         "sequencers"
     ]["seq0"]["sequence"]["program"].splitlines()
     assert any(
-        f"latency correction of {constants.GRID_TIME} + 8 ns" in line
+        f"latency correction of {constants.MIN_TIME_BETWEEN_OPERATIONS} + 8 ns" in line
         for line in program_lines_mw
     )
 
@@ -3303,7 +3293,7 @@ def test_apply_latency_corrections_hardware_options_valid(
         "sequencers"
     ]["seq0"]["sequence"]["program"].splitlines()
     assert any(
-        f"latency correction of {constants.GRID_TIME} + 0 ns" in line
+        f"latency correction of {constants.MIN_TIME_BETWEEN_OPERATIONS} + 0 ns" in line
         for line in program_lines_ro
     )
 
@@ -3349,7 +3339,7 @@ def test_apply_latency_corrections_warning(
     sched.add_resource(ClockResource("q4.01", freq=5e9))
     sched.add_resource(ClockResource("q4.ro", freq=6e9))
 
-    warning = f"not a multiple of {constants.GRID_TIME}"
+    warning = f"not a multiple of {constants.MIN_TIME_BETWEEN_OPERATIONS} ns"
     with caplog.at_level(
         logging.WARNING, logger="quantify_scheduler.backends.qblox.qblox_backend"
     ):
@@ -3644,33 +3634,6 @@ def test_auto_compile_long_square_pulses(
     )
 
     assert square_pulse == saved_pulse
-
-
-def test_auto_compile_long_square_pulses_raises(
-    mock_setup_basic_nv_qblox_hardware,
-):
-    sched = Schedule("long_square_pulse_schedule")
-    port = "qe0:optical_readout"
-    clock = "qe0.ge0"
-    sched.add_resource(ClockResource(name=clock, freq=470.4e12))
-    bad_duration = 2.5e-6 + 1e-9
-    sched.add(
-        SquarePulse(
-            amp=0.2,
-            duration=bad_duration,
-            port=port,
-            clock=clock,
-            t0=1e-6,
-        )
-    )
-    quantum_device = mock_setup_basic_nv_qblox_hardware["quantum_device"]
-    compiler = SerialCompiler(name="compiler")
-    with pytest.raises(ValueError) as exc:
-        _ = compiler.compile(
-            sched,
-            config=quantum_device.generate_compilation_config(),
-        )
-    assert "The duration of a long_square_pulse must be a multiple of" in str(exc.value)
 
 
 def test_long_acquisition(
@@ -4460,4 +4423,120 @@ def test_very_low_amp_paths(
 
     assert re.search(
         rf"^\s*play\s+0,{0 if suppressed_waveform else 1},4\s*", seq_instructions[9]
+    )
+
+
+def test_1_ns_time_grid(compile_config_basic_transmon_qblox_hardware):
+    sched = Schedule("1 ns timegrid")
+    sched.add(
+        SquarePulse(
+            amp=0.5,
+            port="q0:mw",
+            duration=5e-9,
+            clock="q0.01",
+            t0=4e-9,
+        )
+    )
+    sched.add(IdlePulse(duration=2e-9))
+    sched.add(
+        SquarePulse(
+            amp=0.5,
+            port="q0:mw",
+            duration=6e-9,
+            clock="q0.01",
+            t0=4e-9,
+        )
+    )
+    compiler = SerialCompiler(name="compiler")
+    compiled = compiler.compile(
+        sched, config=compile_config_basic_transmon_qblox_hardware
+    )
+    assert round(compiled.duration, 12) == 21e-9
+
+
+def test_1_ns_time_grid_half_ns(compile_config_basic_transmon_qblox_hardware):
+    sched = Schedule("1 ns timegrid")
+    sched.add(
+        SquarePulse(
+            amp=0.5,
+            port="q0:mw",
+            duration=5.5e-9,
+            clock="q0.01",
+            t0=4e-9,
+        )
+    )
+    sched.add(IdlePulse(duration=5e-9))
+    with pytest.raises(ValueError) as exception:
+        compiler = SerialCompiler(name="compiler")
+        _ = compiler.compile(
+            schedule=sched,
+            config=compile_config_basic_transmon_qblox_hardware,
+        )
+    assert str(exception.value) == (
+        "An operation start time of 9.499999999999998 ns does not align with a grid "
+        "time of 1 ns. Please make sure the start time of all operations is a "
+        "multiple of 1 ns.\n"
+        "\n"
+        "Offending operation:\n"
+        "{'name': 'IdlePulse', 'gate_info': {}, 'pulse_info': [{'wf_func': None, "
+        "'t0': 0, 'duration': 5e-09, 'clock': 'cl0.baseband', 'port': None}], "
+        "'acquisition_info': [], 'logic_info': {}}."
+    )
+
+
+def test_1_ns_time_grid_less_than_min_op(
+    compile_config_basic_transmon_qblox_hardware,
+):
+    sched = Schedule("1 ns timegrid")
+    sched.add(
+        SquarePulse(
+            amp=0.5,
+            port="q0:mw",
+            duration=2e-9,
+            clock="q0.01",
+            t0=0,
+        )
+    )
+    sched.add(
+        SquarePulse(
+            amp=0.5,
+            port="q0:mw",
+            duration=2e-9,
+            clock="q0.01",
+            t0=0,
+        )
+    )
+    with pytest.raises(ValueError) as exception:
+        compiler = SerialCompiler(name="compiler")
+        _ = compiler.compile(
+            schedule=sched,
+            config=compile_config_basic_transmon_qblox_hardware,
+        )
+    assert str(exception.value).partition("\n")[0] == (
+        "Invalid timing. Attempting to wait for -2 ns before Pulse SquarePulse "
+        "(t=2e-09 to 4e-09)"
+    )
+
+
+def test_1_ns_time_grid_nco(compile_config_basic_transmon_qblox_hardware):
+    sched = Schedule("1 ns timegrid")
+    pulse = SquarePulse(
+        amp=0.5,
+        port="q0:mw",
+        duration=5e-9,
+        clock="q0.01",
+        t0=4e-9,
+    )
+    sched.add(pulse)
+    sched.add(ResetClockPhase(clock="q0.01"))
+    sched.add(pulse)
+    with pytest.raises(NcoOperationTimingError) as exception:
+        compiler = SerialCompiler(name="compiler")
+        _ = compiler.compile(
+            schedule=sched,
+            config=compile_config_basic_transmon_qblox_hardware,
+        )
+    assert str(exception.value) == (
+        'NCO related operation Pulse "ResetClockPhase" (t0=9.000000000000001e-09, '
+        "duration=0) must be on 4 ns time grid"
     )

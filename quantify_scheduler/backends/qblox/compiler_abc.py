@@ -701,8 +701,10 @@ class Sequencer:
 
         # program header
         qasm.set_latch(self.op_strategies)
-        qasm.emit(q1asm_instructions.WAIT_SYNC, constants.GRID_TIME)
-        qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
+        qasm.emit(q1asm_instructions.WAIT_SYNC, constants.MIN_TIME_BETWEEN_OPERATIONS)
+        qasm.emit(
+            q1asm_instructions.UPDATE_PARAMETERS, constants.MIN_TIME_BETWEEN_OPERATIONS
+        )
 
         self._initialize_append_mode_registers(qasm, self.op_strategies)
 
@@ -732,15 +734,18 @@ class Sequencer:
             self.latency_correction
         )
         qasm.auto_wait(
-            wait_time=constants.GRID_TIME + latency_correction_ns,
+            wait_time=constants.MIN_TIME_BETWEEN_OPERATIONS + latency_correction_ns,
             count_as_elapsed_time=False,
-            comment=f"latency correction of {constants.GRID_TIME} + "
+            comment=f"latency correction of {constants.MIN_TIME_BETWEEN_OPERATIONS} + "
             f"{latency_correction_ns} ns",
         )
 
         with qasm.loop(label=loop_label, repetitions=repetitions):
             qasm.emit(q1asm_instructions.RESET_PHASE)
-            qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
+            qasm.emit(
+                q1asm_instructions.UPDATE_PARAMETERS,
+                constants.MIN_TIME_BETWEEN_OPERATIONS,
+            )
 
             last_operation_end = {True: 0, False: 0}
             for operation in op_list:
@@ -853,8 +858,11 @@ class Sequencer:
                 qasm.set_marker(self._decide_markers(operation))
                 operation.insert_qasm(qasm)
                 qasm.set_marker(self._default_marker)
-                qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.GRID_TIME)
-                qasm.elapsed_time += constants.GRID_TIME
+                qasm.emit(
+                    q1asm_instructions.UPDATE_PARAMETERS,
+                    constants.MIN_TIME_BETWEEN_OPERATIONS,
+                )
+                qasm.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
         else:
             operation.insert_qasm(qasm)
 
@@ -905,7 +913,7 @@ class Sequencer:
             logger.warning(
                 f"Latency correction of {latency_correction_ns} ns specified"
                 f" for {self.name} of {self.parent.name}, which is not a"
-                f" multiple of {constants.GRID_TIME} ns. This feature should"
+                f" multiple of {constants.MIN_TIME_BETWEEN_OPERATIONS} ns. This feature should"
                 f" be considered experimental and stable results are not guaranteed at "
                 f"this stage."
             )
@@ -934,9 +942,9 @@ class Sequencer:
         def iterate_other_ops(iterate_range, allow_return_stack: bool) -> bool:
             for other_op_index in iterate_range:
                 other_op = sorted_pulses_and_acqs[other_op_index]
-                if not helpers.is_within_half_grid_time(
-                    other_op.operation_info.timing, op.operation_info.timing
-                ):
+                if helpers.to_grid_time(
+                    other_op.operation_info.timing
+                ) != helpers.to_grid_time(op.operation_info.timing):
                     break
                 if other_op.operation_info.is_real_time_io_operation:
                     return True
@@ -948,7 +956,7 @@ class Sequencer:
                         f"{other_op.operation_info}, which ends at "
                         f"{other_op.operation_info.timing}. The control-flow block can "
                         "be extended by adding an IdlePulse operation with a duration "
-                        f"of at least {constants.GRID_TIME} ns, or the Parameter "
+                        f"of at least {constants.MIN_TIME_BETWEEN_OPERATIONS} ns, or the Parameter "
                         "operation can be replaced by another operation."
                     )
             return False
@@ -989,15 +997,15 @@ class Sequencer:
         for op_index, op in enumerate(pulses_and_acqs):
             if not op.operation_info.is_parameter_instruction:
                 continue
-            if helpers.is_within_half_grid_time(
-                self.parent.total_play_time, op.operation_info.timing
-            ):
+            if helpers.to_grid_time(
+                self.parent.total_play_time
+            ) == helpers.to_grid_time(op.operation_info.timing):
                 raise RuntimeError(
                     f"Parameter operation {op.operation_info} with start time "
                     f"{op.operation_info.timing} cannot be scheduled at the very end "
                     "of a Schedule. The Schedule can be extended by adding an "
                     "IdlePulse operation with a duration of at least "
-                    f"{constants.GRID_TIME} ns, or the Parameter operation can be "
+                    f"{constants.MIN_TIME_BETWEEN_OPERATIONS} ns, or the Parameter operation can be "
                     "replaced by another operation."
                 )
             if not self._any_other_updating_instruction_at_timing_for_parameter_instruction(
@@ -1317,6 +1325,22 @@ class Sequencer:
                     )
                 else:
                     last_phase_upd_time = timing
+
+            if isinstance(
+                op,
+                (
+                    NcoSetClockFrequencyStrategy,
+                    NcoPhaseShiftStrategy,
+                    NcoResetClockPhaseStrategy,
+                ),
+            ):
+                try:
+                    helpers.to_grid_time(timing * 1e-9, constants.NCO_TIME_GRID)
+                except ValueError as e:
+                    raise NcoOperationTimingError(
+                        f"NCO related operation {op.operation_info} must be on "
+                        f"{constants.NCO_TIME_GRID} ns time grid"
+                    ) from e
 
 
 class ClusterModuleCompiler(InstrumentCompiler, ABC):

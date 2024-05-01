@@ -343,40 +343,40 @@ def test_error_parameter_update_at_control_flow_return(mock_sequencer: Sequencer
     [
         (
             [
-                offset_instruction(1 - 1e-9),
+                offset_instruction(1 - 1e-12),
                 offset_instruction(1),
-                offset_instruction(1 + 1e-9),
-                offset_instruction(1 + 1.5e-9),
+                offset_instruction(1 + 1e-12),
+                offset_instruction(1 + 1e-12),
             ],
             1,
             False,
         ),
         (
             [
-                offset_instruction(1 - 1e-9),
+                offset_instruction(1 - 1e-12),
                 offset_instruction(1),
-                offset_instruction(1 + 1e-9),
-                acquisition(1 + 1.5e-9),
+                offset_instruction(1 + 1e-12),
+                acquisition(1 + 1e-12),
             ],
             1,
             True,
         ),
         (
             [
-                acquisition(1 - 1.5e-9),
-                offset_instruction(1 - 1e-9),
+                acquisition(1 - 1e-12),
+                offset_instruction(1 - 1e-12),
                 offset_instruction(1),
-                offset_instruction(1 + 1e-9),
+                offset_instruction(1 + 1e-12),
             ],
             2,
             True,
         ),
         (
             [
-                offset_instruction(1 - 1e-9),
+                offset_instruction(1 - 1e-12),
                 offset_instruction(1),
-                offset_instruction(1 + 1e-9),
-                acquisition(1 + 2.5e-9),
+                offset_instruction(1 + 1e-12),
+                acquisition(1 + 1e-9),
             ],
             1,
             False,

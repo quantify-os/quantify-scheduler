@@ -342,7 +342,7 @@ class StitchedPulseBuilder:
         duration: float | None = None,
         rel_time: float = 0.0,
         append: bool = True,
-        min_duration: float = constants.GRID_TIME * 1e-9,
+        min_duration: float = constants.MIN_TIME_BETWEEN_OPERATIONS * 1e-9,
         reference_magnitude: ReferenceMagnitude | None = None,
     ) -> StitchedPulseBuilder:
         """

@@ -28,9 +28,17 @@ NCO_SET_FREQ_WAIT = 8  # ns
 NCO_SET_PH_DELTA_WAIT = 4  # ns
 """Wait that is issued after NCO set_ph_delta instruction, included via upd_param."""
 
-GRID_TIME = 4  # ns
+GRID_TIME = 1  # ns
 """
 Clock period of the sequencers. All time intervals used must be multiples of this value.
+"""
+MIN_TIME_BETWEEN_OPERATIONS = 4  # ns
+"""
+Minimum time between two operations to prevent FIFO errors.
+"""
+NCO_TIME_GRID = 4  # ns
+"""
+Clock period of the NCO. All time intervals used must be multiples of this value for NCO related operations.
 """
 MIN_TIME_BETWEEN_ACQUISITIONS = 300  # ns
 """Minimum time between two acquisitions to prevent FIFO errors."""

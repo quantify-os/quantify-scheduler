@@ -167,9 +167,9 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
             q1asm_instructions.ACQUIRE,
             self.acq_channel,
             bin_idx,
-            constants.GRID_TIME,
+            constants.MIN_TIME_BETWEEN_OPERATIONS,
         )
-        qasm_program.elapsed_time += constants.GRID_TIME
+        qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
 
 
 class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
@@ -279,10 +279,10 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
             bin_idx,
             self.waveform_index0,
             self.waveform_index1,
-            constants.GRID_TIME,
+            constants.MIN_TIME_BETWEEN_OPERATIONS,
             comment=f"Store acq in acq_channel:{self.acq_channel}, bin_idx:{bin_idx}",
         )
-        qasm_program.elapsed_time += constants.GRID_TIME
+        qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
 
     def _acquire_append(self, qasm_program: QASMProgram):
         """
@@ -324,7 +324,7 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
                 acq_bin_idx_reg,
                 acq_idx0_reg,
                 acq_idx1_reg,
-                constants.GRID_TIME,
+                constants.MIN_TIME_BETWEEN_OPERATIONS,
                 comment=f"Store acq in acq_channel:{self.acq_channel}, "
                 f"bin_idx:{acq_bin_idx_reg}",
             )
@@ -336,7 +336,7 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
                 comment=f"Increment bin_idx for ch{self.acq_channel}",
             )
             qasm_program.emit(q1asm_instructions.NEW_LINE)
-            qasm_program.elapsed_time += constants.GRID_TIME
+            qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
 
 
 class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
@@ -363,15 +363,16 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
             self.acq_channel,
             bin_idx,
             1,  # enable ttl acquisition
-            constants.GRID_TIME,
+            constants.MIN_TIME_BETWEEN_OPERATIONS,
             comment=f"Enable TTL acquisition of acq_channel:{self.acq_channel}, "
             f"bin_mode:{BinMode.AVERAGE}",
         )
-        qasm_program.elapsed_time += constants.GRID_TIME
+        qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
 
         qasm_program.auto_wait(
             wait_time=(
-                helpers.to_grid_time(self.operation_info.duration) - constants.GRID_TIME
+                helpers.to_grid_time(self.operation_info.duration)
+                - constants.MIN_TIME_BETWEEN_OPERATIONS
             )
         )
 
@@ -380,7 +381,7 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
             self.acq_channel,
             bin_idx,
             0,  # disable ttl acquisition
-            constants.GRID_TIME,
+            constants.MIN_TIME_BETWEEN_OPERATIONS,
             comment=f"Disable TTL acquisition of acq_channel:{self.acq_channel}, "
             f"bin_mode:{BinMode.AVERAGE}",
         )
@@ -408,15 +409,16 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
             self.acq_channel,
             acq_bin_idx_reg,
             1,  # enable ttl acquisition
-            constants.GRID_TIME,
+            constants.MIN_TIME_BETWEEN_OPERATIONS,
             comment=f"Enable TTL acquisition of acq_channel:{self.acq_channel}, "
             f"store in bin:{acq_bin_idx_reg}",
         )
-        qasm_program.elapsed_time += constants.GRID_TIME
+        qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
 
         qasm_program.auto_wait(
             wait_time=(
-                helpers.to_grid_time(self.operation_info.duration) - constants.GRID_TIME
+                helpers.to_grid_time(self.operation_info.duration)
+                - constants.MIN_TIME_BETWEEN_OPERATIONS
             )
         )
 
@@ -425,7 +427,7 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
             self.acq_channel,
             acq_bin_idx_reg,
             0,  # disable ttl acquisition
-            constants.GRID_TIME,
+            constants.MIN_TIME_BETWEEN_OPERATIONS,
             comment=f"Disable TTL acquisition of acq_channel:{self.acq_channel}, "
             f"store in bin:{acq_bin_idx_reg}",
         )

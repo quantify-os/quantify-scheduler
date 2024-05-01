@@ -9,6 +9,7 @@
 
 ### Merged branches and closed issues
 
+- Qblox backend - 1 ns time grid for Q1ASM generation. Note: NCO related instructions (`set_ph`, `set_ph_delta`, `reset_ph` and `set_freq`)still on 4 ns time grid (!936)
 - Operations - expose sigma to users in Gaussian pulse, also change nr_sigma of in waveforms from 3 to 4 as it is defined as 4 in pulse_library (!926)
 - Linter
   - Replace deprecated numpy definitions with numpy 2.0 compatible definitions. (!952)

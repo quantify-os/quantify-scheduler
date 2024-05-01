@@ -73,6 +73,9 @@ class QASMProgram:
         self.time_last_acquisition_triggered: Optional[int] = None
         """Time on which the last acquisition was triggered. Is ``None`` if no previous
         acquisition was triggered."""
+        self.time_last_pulse_triggered: Optional[int] = None
+        """Time on which the last operation was triggered. Is ``None`` if no previous
+        operation was triggered."""
         self.instructions: List[list] = list()
         """A list containing the instructions added to the program. The instructions
         added are in turn a list of the instruction string with arguments."""
@@ -310,16 +313,6 @@ class QASMProgram:
         ValueError
             If wait time < 0.
         """
-        if not helpers.is_multiple_of_grid_time(
-            operation.timing, grid_time_ns=constants.GRID_TIME
-        ):
-            raise ValueError(
-                f"Start time of operation is invalid. Qblox QCM and QRM "
-                f"enforce a grid time of {constants.GRID_TIME} ns. Please "
-                f"make sure all operations start at an interval of "
-                f"{constants.GRID_TIME} ns.\n\nOffending operation:\n"
-                f"{repr(operation)}."
-            )
         start_time = helpers.to_grid_time(operation.timing)
         wait_time = start_time - self.elapsed_time
         if wait_time > 0:
@@ -328,7 +321,7 @@ class QASMProgram:
             raise ValueError(
                 f"Invalid timing. Attempting to wait for {wait_time} "
                 f"ns before {repr(operation)}. Please note that a wait time of at least"
-                f" {constants.GRID_TIME} ns is required between "
+                f" {constants.MIN_TIME_BETWEEN_OPERATIONS} ns is required between "
                 f"operations.\nAre multiple operations being started at the same time?"
             )
 

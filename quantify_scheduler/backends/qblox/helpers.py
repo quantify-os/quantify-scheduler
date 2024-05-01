@@ -291,32 +291,6 @@ def is_multiple_of_grid_time(
     return True
 
 
-def is_within_half_grid_time(a, b, grid_time_ns: int = constants.GRID_TIME):
-    """
-    Determine whether two time values in seconds are within half grid time of each other.
-
-    Parameters
-    ----------
-    a
-        A time value in seconds.
-    b
-        A time value in seconds.
-    grid_time_ns
-        The grid time to use in nanoseconds.
-
-    Returns
-    -------
-    :
-        ``True`` if ``a`` and ``b``  are less than half grid time apart, ``False`` otherwise.
-    """
-    tolerance = 0.5e-9 * grid_time_ns
-    within_half_grid_time = math.isclose(
-        a, b, abs_tol=tolerance, rel_tol=0
-    )  # rel_tol=0 results in: abs(a-b) <= max(0, abs_tol)
-
-    return within_half_grid_time
-
-
 def get_nco_phase_arguments(phase_deg: float) -> int:
     """
     Converts a phase in degrees to the int arguments the NCO phase instructions expect.

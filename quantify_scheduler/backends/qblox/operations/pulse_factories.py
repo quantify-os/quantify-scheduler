@@ -28,7 +28,6 @@ def long_square_pulse(
     port: str,
     clock: str = BasebandClockResource.IDENTITY,
     t0: float = 0,
-    grid_time_ns: int = constants.GRID_TIME,
     reference_magnitude: pulse_library.ReferenceMagnitude | None = None,
 ) -> StitchedPulse:
     """
@@ -54,9 +53,9 @@ def long_square_pulse(
     t0 : float, optional
         Time in seconds when to start the pulses relative to the start time
         of the Operation in the Schedule. By default 0.
-    grid_time_ns : int, optional
-        Grid time in ns. The duration of the long_square_pulse must be a multiple
-        of this. By default equal to the grid time of Qblox modules.
+    min_operation_time_ns : int, optional
+        Min operation time in ns. The duration of the long_square_pulse must be a multiple
+        of this. By default equal to the min operation time time of Qblox modules.
     reference_magnitude : optional
         Scaling value and unit for the unitless amplitude. Uses settings in
         hardware config if not provided.
@@ -72,13 +71,13 @@ def long_square_pulse(
     ValueError
         When the duration of the pulse is not a multiple of ``grid_time_ns``.
     """
-    try:
-        duration = helpers.to_grid_time(duration, grid_time_ns) * 1e-9
-    except ValueError as err:
+    if duration * 1e9 < constants.MIN_TIME_BETWEEN_OPERATIONS:
         raise ValueError(
-            f"The duration of a long_square_pulse must be a multiple of "
-            f"{grid_time_ns} ns."
-        ) from err
+            f"The duration of a long_square_pulse must be at least "
+            f"{constants.MIN_TIME_BETWEEN_OPERATIONS} ns."
+            f" Duration of offending operation: {duration}."
+            f" Start time: {t0}"
+        )
 
     pulse = (
         StitchedPulseBuilder(
@@ -94,12 +93,14 @@ def long_square_pulse(
         # otherwise lengthen the full operation by adding an 'UpdateParameters'
         # instruction at the end.
         .add_voltage_offset(
-            path_I=0.0, path_Q=0.0, rel_time=duration - grid_time_ns * 1e-9
+            path_I=0.0,
+            path_Q=0.0,
+            rel_time=duration - constants.MIN_TIME_BETWEEN_OPERATIONS * 1e-9,
         )
         .add_pulse(
             pulse_library.SquarePulse(
                 amp=amp,
-                duration=grid_time_ns * 1e-9,
+                duration=constants.MIN_TIME_BETWEEN_OPERATIONS * 1e-9,
                 port=port,
                 clock=clock,
                 reference_magnitude=reference_magnitude,
@@ -118,7 +119,7 @@ def staircase_pulse(
     port: str,
     clock: str = BasebandClockResource.IDENTITY,
     t0: float = 0,
-    grid_time_ns: int = constants.GRID_TIME,
+    min_operation_time_ns: int = constants.MIN_TIME_BETWEEN_OPERATIONS,
     reference_magnitude: pulse_library.ReferenceMagnitude | None = None,
 ) -> StitchedPulse:
     """
@@ -151,9 +152,9 @@ def staircase_pulse(
     t0 : float, optional
         Time in seconds when to start the pulses relative to the start time
         of the Operation in the Schedule. By default 0.
-    grid_time_ns : int, optional
-        Grid time in ns. The duration of each step of the staircase must be a multiple
-        of this. By default equal to the grid time of Qblox modules.
+    min_operation_time_ns : int, optional
+        Min operation time in ns. The duration of the long_square_pulse must be a multiple
+        of this. By default equal to the min operation time time of Qblox modules.
     reference_magnitude : optional
         Scaling value and unit for the unitless amplitude. Uses settings in
         hardware config if not provided.
@@ -174,11 +175,13 @@ def staircase_pulse(
     )
 
     try:
-        step_duration = helpers.to_grid_time(duration / num_steps, grid_time_ns) * 1e-9
+        step_duration = (
+            helpers.to_grid_time(duration / num_steps, min_operation_time_ns) * 1e-9
+        )
     except ValueError as err:
         raise ValueError(
             f"The duration of each step of the staircase must be a multiple of"
-            f" {grid_time_ns} ns."
+            f" {min_operation_time_ns} ns."
         ) from err
 
     amps = np.linspace(start_amp, final_amp, num_steps)
@@ -189,7 +192,7 @@ def staircase_pulse(
             path_I=amp,
             path_Q=0.0,
             duration=step_duration,
-            min_duration=grid_time_ns * 1e-9,
+            min_duration=min_operation_time_ns * 1e-9,
             reference_magnitude=reference_magnitude,
         )
 
@@ -200,15 +203,15 @@ def staircase_pulse(
     builder.add_voltage_offset(
         path_I=amps[-1],
         path_Q=0.0,
-        duration=step_duration - grid_time_ns * 1e-9,
-        min_duration=grid_time_ns * 1e-9,
+        duration=step_duration - min_operation_time_ns * 1e-9,
+        min_duration=min_operation_time_ns * 1e-9,
         reference_magnitude=reference_magnitude,
     )
     builder.add_voltage_offset(path_I=0.0, path_Q=0.0)
     builder.add_pulse(
         pulse_library.SquarePulse(
             amp=amps[-1],
-            duration=grid_time_ns * 1e-9,
+            duration=min_operation_time_ns * 1e-9,
             port=port,
             clock=clock,
             reference_magnitude=reference_magnitude,

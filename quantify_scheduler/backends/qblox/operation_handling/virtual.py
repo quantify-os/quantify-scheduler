@@ -217,9 +217,9 @@ class UpdateParameterStrategy(IdleStrategy):
         """
         qasm_program.emit(
             q1asm_instructions.UPDATE_PARAMETERS,
-            constants.GRID_TIME,
+            constants.MIN_TIME_BETWEEN_OPERATIONS,
         )
-        qasm_program.elapsed_time += constants.GRID_TIME
+        qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
 
 
 class LoopStrategy(IdleStrategy):
