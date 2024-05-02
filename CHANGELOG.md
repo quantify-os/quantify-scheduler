@@ -11,20 +11,20 @@
 
 ### Breaking changes
 
-The Zhinst backend is now optional, meaning that installing `quantify-scheduler` no longer installs packages that are required by this backend. For users of the Zhinst backend that want to upgrade to `v0.20.0` via `pip install --upgrade quantify-scheduler` nothing will break, but for fresh environments, you will have to run `pip install quantify-scheduler[zhinst]`. (!887)
+The Zhinst backend is now optional, meaning that installing `quantify-scheduler` no longer installs packages that are required by this backend. For users of the Zhinst backend that want to upgrade to `v0.20.0` via `pip install --upgrade quantify-scheduler` nothing will break, but for fresh environments, you will have to run `pip install quantify-scheduler[zhinst]`.
 
 
 ### Release Highlights
 
-- `sigma` is a new parameter that can be passed to the operations `GaussPulse` and `DragPulse` which sets the width of the Gaussian envelope in seconds. (!926)
+- `sigma` is a new parameter that can be passed to the operations `GaussPulse` and `DragPulse` which sets the width of the Gaussian envelope in seconds. 
 
-- For the Qblox backend, operations are now allowed to live on a 1 ns time grid, with the exception of NCO-related instructions   (`set_ph`, `set_ph_delta`, `reset_ph` and `set_freq`) that still require to start on 4 ns time grid. (!936)
+- For the Qblox backend, operations are now allowed to live on a 1 ns time grid, except NCO-related instructions   (`set_ph`, `set_ph_delta`, `reset_ph` and `set_freq`) that still require to start on a 4 ns time grid.
 
-- `quantify-scheduler` is now compatible with Python 3.10, 3.11 and 3.12. The current Zhinst backend still requires 3.8 or 3.9. (!887)
+- `quantify-scheduler` is now compatible with Python 3.10, 3.11 and 3.12. The current Zhinst backend still requires 3.8 or 3.9.
 
-- Two new schedules are added to `quantify_scheduler.schedules` to perform long time-traces: `long_time_trace` and `long_time_trace_with_qubit`. (!878)
+- Two new schedules are added to `quantify_scheduler.schedules` to perform long time-traces: `long_time_trace` and `long_time_trace_with_qubit`.
 
-- The time between uploading and executing `Schedules` to a Qblox Cluster has reduced, leading to an execution speedup for experiments. (!876, !955)
+- The time between uploading and executing `Schedules` to a Qblox Cluster has reduced, leading to an execution speedup for experiments.
 
 
 

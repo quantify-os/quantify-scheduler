@@ -15,7 +15,7 @@ NEW_LINE = ""
 JUMP = "jmp"
 LOOP = "loop"
 JUMP_GREATER_EQUALS = "jge"
-JUMP_LESS_EQUALS = "jle"
+JUMP_LESS_THAN = "jlt"
 
 # Arithmetic
 MOVE = "move"
