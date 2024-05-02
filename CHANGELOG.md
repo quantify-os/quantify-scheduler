@@ -1,41 +1,82 @@
 # Changelog
 
-## Unreleased
+## 0.20.0 (2024-05-01)
 
 ### Breaking changes
 
-- Zhinst backend
-  - make zhinst dependencies optional (e.g. `pip install quantify-scheduler[zhinst]`) (!887)
+The Zhinst backend is now optional, meaning that installing `quantify-scheduler` no longer installs packages that are required by this backend. For users of the Zhinst backend that want to upgrade to `v0.20.0` via `pip install --upgrade quantify-scheduler` nothing will break, but for fresh environments, you will have to run `pip install quantify-scheduler[zhinst]`. (!887)
+
+
+### Release Highlights
+
+- `sigma` is a new parameter that can be passed to the operations `GaussPulse` and `DragPulse` which sets the width of the Gaussian envelope in seconds. (!926)
+
+- For the Qblox backend, operations are now allowed to live on a 1 ns time grid, with the exception of NCO-related instructions   (`set_ph`, `set_ph_delta`, `reset_ph` and `set_freq`) that still require to start on 4 ns time grid. (!936)
+
+- `quantify-scheduler` is now compatible with Python 3.10, 3.11 and 3.12. The current Zhinst backend still requires 3.8 or 3.9. (!887)
+
+- Two new schedules are added to `quantify_scheduler.schedules` to perform long time-traces: `long_time_trace` and `long_time_trace_with_qubit`. (!878)
+
+- The time between uploading and executing `Schedules` to a Qblox Cluster has reduced, leading to an execution speedup for experiments. (!876, !955)
+
+
 
 ### Merged branches and closed issues
 
-- Qblox backend - 1 ns time grid for Q1ASM generation. Note: NCO related instructions (`set_ph`, `set_ph_delta`, `reset_ph` and `set_freq`)still on 4 ns time grid (!936)
-- Operations - expose sigma to users in Gaussian pulse, also change nr_sigma of in waveforms from 3 to 4 as it is defined as 4 in pulse_library (!926)
-- Linter
-  - Replace deprecated numpy definitions with numpy 2.0 compatible definitions. (!952)
-- Schedules - Add `long_time_trace` and `long_time_trace_with_qubit` to perform custom integrated time traces. (!878)
-- Qblox backend - Speedup execution by starting and stopping all armed sequencers in a Cluster via a single call. (!876)
-- Qblox backend - Keep order between pulses and acquisitions for opinfo and opstrategy. (!939)
-- Documentation
-  - Update dummy cluster configuration to use RF module. (!951)
-- Qblox backend - Move the logic for updating `SetClockFrequency` from `QbloxBaseModule.distribute_data()` partly to a new method `QbloxBaseModule._update_set_clock_frequency_operations()` and partly to a new function `quantify_scheduler.backends.qblox_backend._add_clock_freqs_to_set_clock_frequency()`. (!949)
-- Qblox backend - Move the logic for determining and validating the `integration_length` from the`QASMProgram` to the `Sequencer` class. (!946)
-- Schedule - Introduce type alias update schedule serialization to make schedulables ordering more apparent. (!933)
-- Qblox backend - Fix cluster start function to clear acquisition data. (!955)
-- Compilation - Refactor device compilation to make schedule and operation compilation more consistent. (!938)
-- Qblox backend - Add instrument compilers `_ClusterCompilerConfig`, `_ClusterModuleCompilerConfig` and `_LocalOscillatorCompilerConfig` to qblox backend types, and add `_extract_instrument_compiler_configs` to `QbloxHardwareCompilationConfig`. (!956)
-- Qblox backend - Remove the `ControlDeviceCompiler` class. (!940)
-- Qblox backend - Rename many classes in `compiler_abc` and `instrument_compilers` to reflect a similar naming style as the Qblox `InstrumentCoordinator` components. (!940)
-- Qblox backend - Explicitly split `ClusterCompiler` and `LocalOscillatorCompiler` instances in `CompilerContainer` to fix a typing issue in `assign_pulse_and_acq_info_to_devices`. (!940)
-- Qblox backend - Various style refactors. (!965)
+- Zhinst backend
+  - make `zhinst` dependencies optional (e.g. `pip install quantify-scheduler[zhinst]`) (!887)
+
+- Operations 
+  - expose sigma to users in Gaussian pulse, also change nr_sigma of in waveforms from 3 to 4 as it is defined as 4 in pulse_library (!926)
+
+- Python
+  - `quantify-scheduler` is now compatible with Python 3.10, 3.11 and 3.12. The current zhinst backend still requires 3.8 or 3.9. (!887)
+
+- Schedules 
+  - Add `long_time_trace` and `long_time_trace_with_qubit` to perform custom integrated time traces. (!878)
+
+- Qblox backend 
+  - Speedup execution by starting and stopping all armed sequencers in a Cluster via a single call. (!876, !955)
+  - Remove the `ControlDeviceCompiler` class. (!940)
+  - Rename many classes in `compiler_abc` and `instrument_compilers` to reflect a similar naming style as the Qblox `InstrumentCoordinator` components. (!940)
+  - Explicitly split `ClusterCompiler` and `LocalOscillatorCompiler` instances in `CompilerContainer` to fix a typing issue in `assign_pulse_and_acq_info_to_devices`. (!940)
+  - Various style refactors. (!965)
   - Apply PEP585 and PEP604 to `compiler_abc` and `instrument_compilers`.
   - `connected_output_indices` / `connected_input_indices` can no longer be None.
   - Clean up the `Sequencer` initialization.
-  - Move `extract_settings_from_mapping` to parent class (`BaseModuleSettings`).
-- Qblox backend - Refactor hardware compilation schedule operation more consistent. (!962)
-- Python
-  - `quantify-scheduler` is now compatible with python 3.10, 3.11 and 3.12. The current zhinst backend still requires 3.8 or 3.9. (!887)
-- Tests - Make transmon tests and hardware configs compatible with `QbloxHardwareCompilationConfig` validation. (!964) 
+  - Move `extract_settings_from_mapping` to the parent class (`BaseModuleSettings`).
+  - Refactor hardware compilation schedule operation more consistently. (!962)
+  - Move the logic for determining and validating the `integration_length` from the `QASMProgram` to the `Sequencer` class. (!946)
+  - Keep order between pulses and acquisitions for `OpInfo` and `OpStrategy`. (!939)
+  - Move the logic for updating `SetClockFrequency` from `QbloxBaseModule.distribute_data()` partly to a new method `QbloxBaseModule._update_set_clock_frequency_operations()` and partly to a new function `quantify_scheduler.backends.qblox_backend._add_clock_freqs_to_set_clock_frequency()`. (!949)
+  - Add instrument compilers `_ClusterCompilerConfig`, `_ClusterModuleCompilerConfig` and `_LocalOscillatorCompilerConfig` to Qblox backend types, and add `_extract_instrument_compiler_configs` to `QbloxHardwareCompilationConfig`. (!956)
+
+- Schedule 
+  	- Introduce type alias update schedule serialization to make `schedulables` ordering more apparent. (!933)
+
+- Compilation 
+  - Refactor device compilation to make schedule and operation compilation more consistent. (!938)
+
+- Tests 
+  - Make transmon tests and hardware configs compatible with `QbloxHardwareCompilationConfig` validation. (!964) 
+
+- Linter
+  - Replace deprecated `numpy` definitions with `numpy` 2.0 compatible definitions. (!952)
+
+- Documentation
+  - Update dummy cluster configuration to use RF module. (!951)
+
+### Compatibility Info
+
+**Qblox**
+
+| quantify-scheduler |                      qblox-instruments                       |                               Cluster firmware                                |
+|--------------------|:------------------------------------------------------------:|:-----------------------------------------------------------------------------:|
+| v0.20.0            | [0.13.0](https://pypi.org/project/qblox-instruments/0.12.0/) | [0.8.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.8.0) |
+| v0.20.0            | [0.12.0](https://pypi.org/project/qblox-instruments/0.12.0/) | [0.7.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.7.0) |
+
+**Zurich Instruments**
+- `zhinst==21.8.20515`, `zhinst-qcodes==0.1.4`, `zhinst-toolkit==0.1.5`
 
 ## 0.19.0 (2024-04-03)
 
@@ -62,7 +103,7 @@
 - Add `ConditionalReset` gate to Qblox gate library. (!788)
 - Allow gates to be device compiled to schedules. (!904)
 - Add guides on generic hardware backend and developing a new hardware backend in quantify (!817)
-- Remove Qblox references in the pulse and acquistion library, and make various modifications in the Qblox backend (!934)
+- Remove Qblox references in the pulse and acquisition library, and make various modifications in the Qblox backend (!934)
 
 ### Breaking changes
 

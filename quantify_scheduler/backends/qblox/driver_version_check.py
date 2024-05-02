@@ -12,7 +12,7 @@ try:
 except ImportError:
     driver_version = None  # Prior to v0.3.2 __version__ was not there
 
-SUPPORTED_DRIVER_VERSIONS: Tuple[str, ...] = ("0.12",)
+SUPPORTED_DRIVER_VERSIONS: Tuple[str, ...] = ("0.12", "0.13")
 """Tuple containing all the version supported by this version of the backend."""
 raise_on_version_mismatch: bool = True
 """Can be set to false to override version check."""
