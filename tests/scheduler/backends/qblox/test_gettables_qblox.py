@@ -207,7 +207,9 @@ def test_initialize_and_get_with_report_failed_initialization(  # noqa: PLR0915
     )
 
     assert (
-        hardware_cfg_report[cluster_name][f"{cluster_name}_module2"]["instrument_type"]
+        hardware_cfg_report["hardware_description"][cluster_name]["modules"]["2"][
+            "instrument_type"
+        ]
         == "QCM_RF"
     )
 

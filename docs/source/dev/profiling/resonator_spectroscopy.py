@@ -33,62 +33,58 @@
 #     - Flux line for `qubit`.
 # 6. **QRM-RF**
 #     - Readout line for `qubit` using a fixed LO set at 7.5 GHz.
+# `sequence_to_file` is a boolean flag which dumps waveforms and program dict to JSON file if `True`.
+# `"ref": "internal"` specifies the use of the shared clock reference of the cluster
 #
 # Note that in the hardware configuration below the mixers are uncorrected, but for high fidelity experiments this should also be done for all the modules.
 
+
 # %%
 hardware_cfg = {
-    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-    "cluster0": {
-        "sequence_to_file": False,  # Boolean flag which dumps waveforms and program dict to JSON file
-        "ref": "internal",  # Use shared clock reference of the cluster
-        "instrument_type": "Cluster",
-        # ============ DRIVE ============#
-        "cluster0_module1": {
-            "instrument_type": "QCM_RF",
-            "complex_output_0": {
-                "output_att": 0,
-                "dc_mixer_offset_I": 0.0,
-                "dc_mixer_offset_Q": 0.0,
-                "portclock_configs": [
-                    {
-                        "port": "qubit:mw",
-                        "clock": "qubit.01",
-                        "interm_freq": 80e6,
-                        "mixer_amp_ratio": 1.0,
-                        "mixer_phase_error_deg": 0.0,
-                    }
-                ],
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+    "hardware_description": {
+        "cluster0": {
+            "instrument_type": "Cluster",
+            "modules": {
+                "1": {"instrument_type": "QCM_RF"},
+                "2": {"instrument_type": "QCM"},
+                "3": {"instrument_type": "QRM_RF"},
+            },
+            "sequence_to_file": False,
+            "ref": "internal",
+        }
+    },
+    "hardware_options": {
+        "output_att": {"qubit:mw-qubit.01": 0, "qubit:res-qubit.ro": 0},
+        "mixer_corrections": {
+            "qubit:mw-qubit.01": {
+                "dc_offset_i": 0.0,
+                "dc_offset_q": 0.0,
+                "amp_ratio": 1.0,
+                "phase_error": 0.0,
+            },
+            "qubit:res-qubit.ro": {
+                "dc_offset_i": 0.0,
+                "dc_offset_q": 0.0,
+                "amp_ratio": 1.0,
+                "phase_error": 0.0,
             },
         },
-        # ============ FLUX ============#
-        "cluster0_module2": {
-            "instrument_type": "QCM",
-            "real_output_0": {
-                "portclock_configs": [{"port": "qubit:fl", "clock": "cl0.baseband"}]
-            },
+        "modulation_frequencies": {
+            "qubit:mw-qubit.01": {"interm_freq": 80000000.0},
+            "qubit:res-qubit.ro": {"lo_freq": 7500000000.0},
         },
-        # ============ READOUT ============#
-        "cluster0_module3": {
-            "instrument_type": "QRM_RF",
-            "complex_output_0": {
-                "output_att": 0,
-                "input_att": 0,
-                "dc_mixer_offset_I": 0.0,
-                "dc_mixer_offset_Q": 0.0,
-                "lo_freq": 7.5e9,
-                "portclock_configs": [
-                    {
-                        "port": "qubit:res",
-                        "clock": "qubit.ro",
-                        "mixer_amp_ratio": 1.0,
-                        "mixer_phase_error_deg": 0.0,
-                    }
-                ],
-            },
-        },
+        "input_att": {"qubit:res-qubit.ro": 0},
+    },
+    "connectivity": {
+        "graph": [
+            ["cluster0.module1.complex_output_0", "qubit:mw"],
+            ["cluster0.module2.real_output_0", "qubit:fl"],
+            ["cluster0.module3.complex_output_0", "qubit:res"],
+        ]
     },
 }
+
 
 # %%
 from pathlib import Path

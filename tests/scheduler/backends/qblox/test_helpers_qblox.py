@@ -343,9 +343,9 @@ def test_configure_input_gains_overwrite_gain():
     )
 
 
-def test_find_channel_names(hardware_cfg_rf):
+def test_find_channel_names(hardware_cfg_rf_legacy):
     assert helpers.find_channel_names(
-        hardware_cfg_rf["cluster0"]["cluster0_module2"]
+        hardware_cfg_rf_legacy["cluster0"]["cluster0_module2"]
     ) == [
         "complex_output_0",
         "complex_output_1",

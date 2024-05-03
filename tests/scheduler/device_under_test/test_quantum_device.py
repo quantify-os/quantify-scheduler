@@ -41,32 +41,36 @@ def test_generate_hardware_config(
     quantum_device = mock_setup_basic_transmon["quantum_device"]
 
     mock_hardware_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            "instrument_type": "Cluster",
-            "ref": "external",
-            "cluster0_module1": {
-                "instrument_type": "QCM",
-                "complex_output_0": {
-                    "lo_name": "ic_lo_mw0",
-                    "lo_freq": None,
-                    "seq0": {"port": "q0:mw", "clock": "q0.01", "interm_freq": -100e6},
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "ref": "external",
+                "modules": {
+                    "1": {"instrument_type": "QCM"},
+                    "2": {"instrument_type": "QRM"},
                 },
             },
-            "cluster0_module2": {
-                "instrument_type": "QRM",
-                "complex_output_0": {
-                    "lo_name": "ic_lo_ro",
-                    "lo_freq": None,
-                    "seq0": {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6},
-                },
-            },
+            "iq_mixer_ic_lo_mw0": {"instrument_type": "IQMixer"},
+            "iq_mixer_ic_lo_ro": {"instrument_type": "IQMixer"},
+            "ic_lo_ro": {"instrument_type": "LocalOscillator", "power": 1},
+            "ic_lo_mw0": {"instrument_type": "LocalOscillator", "power": 1},
         },
-        "ic_lo_ro": {"instrument_type": "LocalOscillator", "lo_freq": None, "power": 1},
-        "ic_lo_mw0": {
-            "instrument_type": "LocalOscillator",
-            "lo_freq": None,
-            "power": 1,
+        "hardware_options": {
+            "modulation_frequencies": {
+                "q0:mw-q0.01": {"lo_freq": None, "interm_freq": -100000000.0},
+                "q0:res-q0.ro": {"lo_freq": None, "interm_freq": 50000000.0},
+            }
+        },
+        "connectivity": {
+            "graph": [
+                ["cluster0.module1.complex_output_0", "iq_mixer_ic_lo_mw0.if"],
+                ["ic_lo_mw0.output", "iq_mixer_ic_lo_mw0.lo"],
+                ["iq_mixer_ic_lo_mw0.rf", "q0:mw"],
+                ["cluster0.module2.complex_output_0", "iq_mixer_ic_lo_ro.if"],
+                ["ic_lo_ro.output", "iq_mixer_ic_lo_ro.lo"],
+                ["iq_mixer_ic_lo_ro.rf", "q0:res"],
+            ]
         },
     }
 

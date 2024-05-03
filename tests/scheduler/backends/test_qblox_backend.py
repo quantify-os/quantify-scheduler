@@ -464,11 +464,11 @@ def test_find_inner_dicts_containing_key():
 
 
 def test_find_all_port_clock_combinations(
-    hardware_cfg_cluster,
-    hardware_cfg_rf,
+    hardware_cfg_cluster_legacy,
+    hardware_cfg_rf_legacy,
 ):
-    combined_hw_cfg = copy.deepcopy(hardware_cfg_cluster)
-    combined_hw_cfg["cluster1"] = hardware_cfg_rf["cluster0"]
+    combined_hw_cfg = copy.deepcopy(hardware_cfg_cluster_legacy)
+    combined_hw_cfg["cluster1"] = hardware_cfg_rf_legacy["cluster0"]
     combined_hw_cfg["cluster2"] = qblox_hardware_config_old_style["cluster0"]
 
     assert set(find_all_port_clock_combinations(combined_hw_cfg)) == {
@@ -570,9 +570,9 @@ def test_generate_port_clock_to_device_map_generated_hardware_config(
     ["cluster1_module1", "cluster1_module2", "cluster2_module1"],
 )
 def test_generate_port_clock_to_device_map_repeated_port_clock_raises(
-    hardware_cfg_rf_two_clusters, duplicating_module_name
+    hardware_cfg_rf_two_clusters_legacy, duplicating_module_name
 ):
-    hardware_cfg = copy.deepcopy(hardware_cfg_rf_two_clusters)
+    hardware_cfg = copy.deepcopy(hardware_cfg_rf_two_clusters_legacy)
     portclock_configs = hardware_cfg["cluster1"]["cluster1_module1"][
         "complex_output_0"
     ]["portclock_configs"]
@@ -592,13 +592,13 @@ def test_generate_port_clock_to_device_map_repeated_port_clock_raises(
 def test_construct_sequencers(
     make_basic_multi_qubit_schedule,
     compile_config_basic_transmon_qblox_hardware_cluster,
-    hardware_cfg_cluster,
+    hardware_cfg_cluster_legacy,
 ):
     test_cluster = ClusterCompiler(
         parent=None,
         name="tester",
         total_play_time=1,
-        instrument_cfg=hardware_cfg_cluster["cluster0"],
+        instrument_cfg=hardware_cfg_cluster_legacy["cluster0"],
     )
     test_module = test_cluster.instrument_compilers["cluster0_module1"]
     sched = make_basic_multi_qubit_schedule(["q0", "q1"])
@@ -610,7 +610,7 @@ def test_construct_sequencers(
     )
     assign_pulse_and_acq_info_to_devices(
         schedule=sched,
-        hardware_cfg=hardware_cfg_cluster["cluster0"],
+        hardware_cfg=hardware_cfg_cluster_legacy["cluster0"],
         device_compilers={"cluster0_module1": test_module},
     )
 
@@ -622,11 +622,11 @@ def test_construct_sequencers(
 
 
 def test_construct_sequencers_repeated_portclocks_error(
-    hardware_cfg_rf,
+    hardware_cfg_rf_legacy,
     mocker,
 ):
     port, clock = "q0:mw", "q0.01"
-    instrument_cfg = hardware_cfg_rf["cluster0"]["cluster0_module2"]
+    instrument_cfg = hardware_cfg_rf_legacy["cluster0"]["cluster0_module2"]
     instrument_cfg["complex_output_0"]["portclock_configs"] = [
         {
             "port": port,
@@ -664,25 +664,36 @@ def test_construct_sequencers_exceeds_seq(
     element_names = [f"q{i}" for i in range(7)]
 
     hardware_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            "instrument_type": "Cluster",
-            "ref": "internal",
-            "cluster0_module1": {
-                "instrument_type": "QCM_RF",
-                "complex_output_0": {
-                    "portclock_configs": [
-                        {
-                            "port": f"{qubit}:mw",
-                            "clock": f"{qubit}.01",
-                            "interm_freq": 50e6,
-                        }
-                        for qubit in element_names
-                    ]
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {
+                    "1": {"instrument_type": "QCM_RF"},
                 },
+                "ref": "internal",
             },
         },
+        "hardware_options": {
+            "modulation_frequencies": {},
+        },
+        "connectivity": {
+            "graph": [],
+        },
     }
+
+    # Define modulation frequencies with a loop
+    for i in range(7):
+        port = f"q{i}:mw"
+        clock = f"q{i}.01"
+        key = f"{port}-{clock}"
+        hardware_cfg["hardware_options"]["modulation_frequencies"][key] = {
+            "interm_freq": 50000000.0
+        }
+
+    for i in range(7):
+        module_reference = "cluster0.module1.complex_output_0"
+        hardware_cfg["connectivity"]["graph"].append([module_reference, f"q{i}:mw"])
 
     quantum_device = QuantumDevice("quantum_device")
     quantum_device.hardware_config(hardware_cfg)
@@ -1143,9 +1154,7 @@ def test_compile_measure(
     "operation, instruction_to_check, clock_freq_old",
     [
         [
-            # TODO: Use commented line when updating to new-style cfg
-            # (IdlePulse(duration=64e-9), r"^\s*wait\s+64(\s+|$)", None),
-            (IdlePulse(duration=64e-9), r"^\s*wait\s+68(\s+|$)", None),
+            (IdlePulse(duration=64e-9), r"^\s*wait\s+64(\s+|$)", None),
             (Reset("q1"), r"^\s*wait\s+65532", None),
             (
                 ShiftClockPhase(clock=clock, phase_shift=180.0),
@@ -1172,15 +1181,23 @@ def test_compile_clock_operations(
 ):
     hardware_cfg = copy.deepcopy(hardware_cfg_qcm)
 
-    hardware_cfg["lo1"] = {
+    hardware_cfg["hardware_description"]["iq_mixer_lo1"] = {
+        "instrument_type": "IQMixer"
+    }
+    hardware_cfg["hardware_description"]["lo1"] = {
         "instrument_type": "LocalOscillator",
-        "frequency": 4.8e9,
         "power": 1,
     }
-    hardware_cfg["cluster0"]["cluster0_module1"]["complex_output_1"] = {
-        "lo_name": "lo1",
-        "portclock_configs": [{"port": "q1:mw", "clock": "q1.01"}],
+
+    hardware_cfg["hardware_options"]["modulation_frequencies"]["q1:mw-q1.01"] = {
+        "lo_freq": 4.8e9
     }
+
+    hardware_cfg["connectivity"]["graph"].append(
+        ["cluster0.module1.complex_output_0", "iq_mixer_lo1.if"]
+    )
+    hardware_cfg["connectivity"]["graph"].append(["lo1.output", "iq_mixer_lo1.lo"])
+    hardware_cfg["connectivity"]["graph"].append(["iq_mixer_lo1.rf", "q1:mw"])
 
     sched = Schedule("compile_clock_operations")
     sched.add(operation)
@@ -1228,8 +1245,27 @@ def test_compile_clock_operations(
 
 def test_compile_cz_gate(
     mock_setup_basic_transmon_with_standard_params,
-    hardware_cfg_qcm_two_qubit_gate,
 ):
+
+    # TODO: Adjust CZ implementation on the pulse level, fix this test and update hw cfg to new-style (SE-479)
+    hardware_cfg = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "instrument_type": "Cluster",
+            "ref": "internal",
+            "cluster0_module1": {
+                "instrument_type": "QCM",
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {"port": f"{qubit}:fl", "clock": clock}
+                        for qubit in ["q2", "q3"]
+                        for clock in [BasebandClockResource.IDENTITY, f"{qubit}.01"]
+                    ]
+                },
+            },
+        },
+    }
+
     mock_setup = mock_setup_basic_transmon_with_standard_params
     edge_q2_q3 = mock_setup["q2_q3"]
     edge_q2_q3.cz.q2_phase_correction(44)
@@ -1250,7 +1286,7 @@ def test_compile_cz_gate(
     )
 
     quantum_device = mock_setup["quantum_device"]
-    quantum_device.hardware_config(hardware_cfg_qcm_two_qubit_gate)
+    quantum_device.hardware_config(hardware_cfg)
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
         schedule=sched,
@@ -1313,7 +1349,9 @@ def test_compile_acq_measurement_with_clock_phase_reset(
     schedule = Schedule("Test schedule")
 
     hardware_cfg = copy.deepcopy(hardware_cfg_cluster)
-    hardware_cfg["cluster0"]["cluster0_module3"]["sequence_to_file"] = True
+    hardware_cfg["hardware_description"]["cluster0"]["modules"]["3"][
+        "sequence_to_file"
+    ] = True
 
     q0, q1 = "q0", "q1"
     times = np.arange(0, 60e-6, 3e-6)
@@ -1625,24 +1663,24 @@ def test_qasm_hook_hardware_config(
     pulse_only_schedule, mock_setup_basic_transmon_with_standard_params
 ):
     hw_config = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            "instrument_type": "Cluster",
-            "ref": "external",
-            "cluster0_module1": {
-                "instrument_type": "QCM",
-                "complex_output_0": {
-                    "portclock_configs": [
-                        {
-                            "qasm_hook_func": _func_for_hook_test,
-                            "port": "q0:mw",
-                            "clock": "q0.01",
-                        }
-                    ]
-                },
-            },
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {"1": {"instrument_type": "QCM"}},
+                "ref": "external",
+            }
         },
+        "hardware_options": {
+            "sequencer_options": {
+                "q0:mw-q0.01": {
+                    "qasm_hook_func": _func_for_hook_test,
+                }
+            }
+        },
+        "connectivity": {"graph": [["cluster0.module1.complex_output_0", "q0:mw"]]},
     }
+
     sched = pulse_only_schedule
 
     sched.repetitions = 11
@@ -1665,12 +1703,12 @@ def test_qasm_hook_hardware_config(
     assert q1asm_instructions.NOP == program_lines[0].strip()
 
 
-def test_qcm_acquisition_error(hardware_cfg_cluster):
+def test_qcm_acquisition_error(hardware_cfg_cluster_legacy):
     qcm = QCMCompiler(
         parent=None,
         name="qcm0",
         total_play_time=10,
-        instrument_cfg=hardware_cfg_cluster["cluster0"]["cluster0_module1"],
+        instrument_cfg=hardware_cfg_cluster_legacy["cluster0"]["cluster0_module1"],
     )
     with pytest.raises(
         RuntimeError,
@@ -1858,7 +1896,7 @@ def test_temp_register(amount, empty_qasm_program_qcm):
 def test_assign_pulse_and_acq_info_to_devices(
     mock_setup_basic_transmon_with_standard_params,
     mixed_schedule_with_acquisition,
-    hardware_cfg_cluster,
+    hardware_cfg_cluster_legacy,
     reset_clock_phase,
 ):
     sched = mixed_schedule_with_acquisition
@@ -1874,13 +1912,13 @@ def test_assign_pulse_and_acq_info_to_devices(
         ].generate_compilation_config(),
     )
     container = compiler_container.CompilerContainer.from_hardware_cfg(
-        sched_with_pulse_info, hardware_cfg_cluster
+        sched_with_pulse_info, hardware_cfg_cluster_legacy
     )
 
     assign_pulse_and_acq_info_to_devices(
         schedule=sched_with_pulse_info,
         device_compilers=container.clusters,
-        hardware_cfg=hardware_cfg_cluster,
+        hardware_cfg=hardware_cfg_cluster_legacy,
     )
     container.prepare()
 
@@ -1919,7 +1957,7 @@ def test_assign_pulse_and_acq_info_to_devices(
 
 def test_container_prepare(
     pulse_only_schedule,
-    hardware_cfg_cluster,
+    hardware_cfg_cluster_legacy,
     compile_config_basic_transmon_qblox_hardware,
 ):
     compiler = SerialCompiler(name="compiler")
@@ -1929,10 +1967,10 @@ def test_container_prepare(
     )
 
     container = compiler_container.CompilerContainer.from_hardware_cfg(
-        sched, hardware_cfg_cluster
+        sched, hardware_cfg_cluster_legacy
     )
     assign_pulse_and_acq_info_to_devices(
-        sched, container.clusters, hardware_cfg_cluster
+        sched, container.clusters, hardware_cfg_cluster_legacy
     )
     container.prepare()
 
@@ -1977,10 +2015,10 @@ def test_multiple_trace_acquisition_error(
 def test_container_prepare_baseband(
     mock_setup_basic_transmon,
     baseband_square_pulse_schedule,
-    hardware_cfg_qcm,
+    hardware_cfg_qcm_legacy,
 ):
     quantum_device = mock_setup_basic_transmon["quantum_device"]
-    quantum_device.hardware_config(hardware_cfg_qcm)
+    quantum_device.hardware_config(hardware_cfg_qcm_legacy)
     compiler = SerialCompiler(name="compiler")
     sched = compiler.compile(
         schedule=baseband_square_pulse_schedule,
@@ -1988,12 +2026,12 @@ def test_container_prepare_baseband(
     )
 
     container = compiler_container.CompilerContainer.from_hardware_cfg(
-        schedule=sched, hardware_cfg=hardware_cfg_qcm
+        schedule=sched, hardware_cfg=hardware_cfg_qcm_legacy
     )
     assign_pulse_and_acq_info_to_devices(
         schedule=sched,
         device_compilers=container.clusters,
-        hardware_cfg=hardware_cfg_qcm,
+        hardware_cfg=hardware_cfg_qcm_legacy,
     )
     container.prepare()
 
@@ -2009,7 +2047,7 @@ def test_container_prepare_baseband(
 
 def test_container_prepare_no_lo(
     pulse_only_schedule_no_lo,
-    hardware_cfg_cluster,
+    hardware_cfg_cluster_legacy,
     compile_config_basic_transmon_qblox_hardware_cluster,
 ):
     compiler = SerialCompiler(name="compiler")
@@ -2018,12 +2056,12 @@ def test_container_prepare_no_lo(
         config=compile_config_basic_transmon_qblox_hardware_cluster,
     )
     container = compiler_container.CompilerContainer.from_hardware_cfg(
-        sched, hardware_cfg_cluster
+        sched, hardware_cfg_cluster_legacy
     )
     assign_pulse_and_acq_info_to_devices(
         sched,
         container.clusters,
-        hardware_cfg_cluster,
+        hardware_cfg_cluster_legacy,
     )
     container.prepare()
 
@@ -2158,22 +2196,22 @@ def test_generate_uuid_from_wf_data():
 
 def test_real_mode_container(
     real_square_pulse_schedule,
-    hardware_cfg_real_mode,
+    hardware_cfg_real_mode_legacy,
     mock_setup_basic_transmon,
 ):
     real_square_pulse_schedule = _determine_absolute_timing(real_square_pulse_schedule)
     container = compiler_container.CompilerContainer.from_hardware_cfg(
-        real_square_pulse_schedule, hardware_cfg_real_mode
+        real_square_pulse_schedule, hardware_cfg_real_mode_legacy
     )
     quantum_device = mock_setup_basic_transmon["quantum_device"]
-    quantum_device.hardware_config(hardware_cfg_real_mode)
+    quantum_device.hardware_config(hardware_cfg_real_mode_legacy)
     compiler = SerialCompiler(name="compiler")
     sched = compiler.compile(
         schedule=real_square_pulse_schedule,
         config=quantum_device.generate_compilation_config(),
     )
     assign_pulse_and_acq_info_to_devices(
-        sched, container.clusters, hardware_cfg_real_mode
+        sched, container.clusters, hardware_cfg_real_mode_legacy
     )
     container.prepare()
     qcm0 = container.instrument_compilers["cluster0"].instrument_compilers[
@@ -2201,20 +2239,28 @@ def test_assign_frequencies_baseband_hardware_config(
     q0_clock_freq = device_cfg.clocks["q0.01"]
     q1_clock_freq = device_cfg.clocks["q1.01"]
 
-    if0 = hardware_cfg["cluster0"]["cluster0_module1"]["complex_output_0"][
-        "portclock_configs"
-    ][0].get("interm_freq")
-    if1 = hardware_cfg["cluster0"]["cluster0_module1"]["complex_output_1"][
-        "portclock_configs"
-    ][0].get("interm_freq")
-    io0_lo_name = hardware_cfg["cluster0"]["cluster0_module1"]["complex_output_0"][
-        "lo_name"
+    if0 = hardware_cfg["hardware_options"]["modulation_frequencies"]["q0:mw-q0.01"][
+        "interm_freq"
     ]
-    io1_lo_name = hardware_cfg["cluster0"]["cluster0_module1"]["complex_output_1"][
-        "lo_name"
+    if1 = hardware_cfg["hardware_options"]["modulation_frequencies"]["q1:mw-q1.01"][
+        "interm_freq"
     ]
-    lo0 = hardware_cfg[io0_lo_name].get("frequency")
-    lo1 = hardware_cfg[io1_lo_name].get("frequency")
+
+    io0_lo_name, io1_lo_name = None, None
+
+    for edge in hardware_cfg["connectivity"]["graph"]:
+        source, target = edge
+        if source == "cluster0.module1.complex_output_0":
+            io0_lo_name = target.replace("iq_mixer_", "").replace(".if", "")
+        if source == "cluster0.module1.complex_output_1":
+            io1_lo_name = target.replace("iq_mixer_", "").replace(".if", "")
+
+    lo0 = hardware_cfg["hardware_options"]["modulation_frequencies"]["q0:mw-q0.01"][
+        "lo_freq"
+    ]
+    lo1 = hardware_cfg["hardware_options"]["modulation_frequencies"]["q1:mw-q1.01"][
+        "lo_freq"
+    ]
 
     assert if0 is not None
     assert if1 is None
@@ -2323,7 +2369,7 @@ def test_assign_frequencies_baseband(compile_config_basic_transmon_qblox_hardwar
     "downconverter_freq0, downconverter_freq1",
     list(itertools.product([None, 0, 9e9], repeat=2)) + [(-1, None), (1e6, None)],
 )
-def test_assign_frequencies_baseband_downconverter(
+def test_assign_frequencies_baseband_downconverter(  # noqa: PLR0912, PLR0915
     hardware_cfg_cluster,
     mock_setup_basic_transmon_with_standard_params,
     downconverter_freq0,
@@ -2334,24 +2380,26 @@ def test_assign_frequencies_baseband_downconverter(
     sched.add(X("q1"))
 
     hardware_cfg = copy.deepcopy(hardware_cfg_cluster)
-    hardware_cfg["cluster0"]["cluster0_module1"]["complex_output_0"][
-        "downconverter_freq"
-    ] = downconverter_freq0
-    hardware_cfg["cluster0"]["cluster0_module1"]["complex_output_1"][
-        "downconverter_freq"
-    ] = downconverter_freq1
+    hardware_cfg["hardware_description"]["cluster0"]["modules"]["1"][
+        "complex_output_0"
+    ] = {"downconverter_freq": downconverter_freq0}
+    hardware_cfg["hardware_description"]["cluster0"]["modules"]["1"][
+        "complex_output_1"
+    ] = {"downconverter_freq": downconverter_freq1}
 
-    io0_lo_name = hardware_cfg["cluster0"]["cluster0_module1"]["complex_output_0"][
-        "lo_name"
-    ]
-    io1_lo_name = hardware_cfg["cluster0"]["cluster0_module1"]["complex_output_1"][
-        "lo_name"
-    ]
+    io0_lo_name = None
 
-    if0 = hardware_cfg["cluster0"]["cluster0_module1"]["complex_output_0"][
-        "portclock_configs"
-    ][0].get("interm_freq")
-    lo1 = hardware_cfg[io1_lo_name].get("frequency")
+    for edge in hardware_cfg["connectivity"]["graph"]:
+        source, target = edge
+        if source == "cluster0.module1.complex_output_0":
+            io0_lo_name = target.replace("iq_mixer_", "").replace(".if", "")
+
+    if0 = hardware_cfg["hardware_options"]["modulation_frequencies"]["q0:mw-q0.01"][
+        "interm_freq"
+    ]
+    lo1 = hardware_cfg["hardware_options"]["modulation_frequencies"]["q1:mw-q1.01"][
+        "lo_freq"
+    ]
 
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     q0 = quantum_device.get_element("q0")
@@ -2377,9 +2425,17 @@ def test_assign_frequencies_baseband_downconverter(
         )
     if error is not None:
         if downconverter_freq0 is not None:
-            portclock_config = hardware_cfg["cluster0"]["cluster0_module1"][
-                "complex_output_0"
-            ]["portclock_configs"][0]
+            # Find portclock config
+            for edge in hardware_cfg["connectivity"]["graph"]:
+                source, target = edge
+                if source == "cluster0.module1.complex_output_0":
+                    iq_name = target.split(".")[0]
+
+            for edge in hardware_cfg["connectivity"]["graph"]:
+                source, target = edge
+                if source == f"{iq_name}.rf":
+                    portclock_config = {"port": target, "clock": "q0.01"}
+
             if downconverter_freq0 < 0:
                 assert (
                     str(error.value) == f"Downconverter frequency must be positive "
@@ -2417,6 +2473,7 @@ def test_assign_frequencies_baseband_downconverter(
     if downconverter_freq1 is None:
         expected_if1 = q1_clock_freq - lo1
     else:
+        print(f"{downconverter_freq1=}, {q1_clock_freq=}, {lo1=}")
         expected_if1 = downconverter_freq1 - q1_clock_freq - lo1
 
     assert actual_lo0 == expected_lo0, (
@@ -2440,16 +2497,16 @@ def test_assign_frequencies_rf_hardware_config(
     sched.add(X("q3"))
 
     hardware_cfg = copy.deepcopy(hardware_cfg_rf)
-    if0 = hardware_cfg["cluster0"]["cluster0_module2"]["complex_output_0"][
-        "portclock_configs"
-    ][0].get("interm_freq")
-    if1 = hardware_cfg["cluster0"]["cluster0_module2"]["complex_output_1"][
-        "portclock_configs"
-    ][0].get("interm_freq")
-    lo0 = hardware_cfg["cluster0"]["cluster0_module2"]["complex_output_0"].get(
+    if0 = hardware_cfg["hardware_options"]["modulation_frequencies"]["q2:mw-q2.01"].get(
+        "interm_freq"
+    )
+    if1 = hardware_cfg["hardware_options"]["modulation_frequencies"]["q3:mw-q3.01"].get(
+        "interm_freq"
+    )
+    lo0 = hardware_cfg["hardware_options"]["modulation_frequencies"]["q2:mw-q2.01"].get(
         "lo_freq"
     )
-    lo1 = hardware_cfg["cluster0"]["cluster0_module2"]["complex_output_1"].get(
+    lo1 = hardware_cfg["hardware_options"]["modulation_frequencies"]["q3:mw-q3.01"].get(
         "lo_freq"
     )
 
@@ -2749,25 +2806,26 @@ def test_assign_input_att_both_output_input_raises(
     mock_setup_basic_transmon_with_standard_params,
 ):
     hardware_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            "ref": "internal",
-            "instrument_type": "Cluster",
-            "cluster0_module4": {
-                "instrument_type": "QRM_RF",
-                "complex_output_0": {
-                    "input_att": 10,
-                    "portclock_configs": [
-                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6},
-                    ],
-                },
-                "complex_input_0": {
-                    "input_att": 10,
-                    "portclock_configs": [
-                        {"port": "q1:res", "clock": "q1.ro", "interm_freq": 50e6},
-                    ],
-                },
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {"4": {"instrument_type": "QRM_RF"}},
+                "ref": "internal",
+            }
+        },
+        "hardware_options": {
+            "input_att": {"q0:res-q0.ro": 10, "q1:res-q1.ro": 10},
+            "modulation_frequencies": {
+                "q0:res-q0.ro": {"interm_freq": 50000000.0},
+                "q1:res-q1.ro": {"interm_freq": 50000000.0},
             },
+        },
+        "connectivity": {
+            "graph": [
+                ["cluster0.module4.complex_output_0", "q0:res"],
+                ["cluster0.module4.complex_input_0", "q1:res"],
+            ]
         },
     }
 
@@ -2801,9 +2859,7 @@ def test_assign_attenuation_invalid_raises(
     sched.add(X("q1"))
 
     hardware_cfg = copy.deepcopy(hardware_cfg_qcm_rf)
-    hardware_cfg["cluster0"]["cluster0_module1"]["complex_output_0"][
-        "output_att"
-    ] = 10.3
+    hardware_cfg["hardware_options"]["output_att"] = {"q1:mw-q0.01": 10.3}
 
     mock_setup_basic_transmon_with_standard_params["quantum_device"].hardware_config(
         hardware_cfg
@@ -2964,11 +3020,13 @@ def test_markers(mock_setup_basic_transmon, hardware_cfg_cluster, hardware_cfg_r
     _confirm_correct_markers(qrm_rf_program, 0b0011, is_rf=True)
 
 
-def test_extract_settings_from_mapping(hardware_cfg_rf, hardware_cfg_cluster):
+def test_extract_settings_from_mapping(hardware_cfg_rf_legacy, hardware_cfg_cluster):
     types.BasebandModuleSettings.extract_settings_from_mapping(
-        hardware_cfg_rf["cluster0"]
+        hardware_cfg_rf_legacy["cluster0"]
     )
-    types.RFModuleSettings.extract_settings_from_mapping(hardware_cfg_rf["cluster0"])
+    types.RFModuleSettings.extract_settings_from_mapping(
+        hardware_cfg_rf_legacy["cluster0"]
+    )
 
 
 def test_cluster_settings(
@@ -3194,7 +3252,7 @@ def test_apply_latency_corrections_hardware_config_invalid_raises(
     )
 
     hardware_cfg = copy.deepcopy(hardware_cfg_latency_corrections_invalid)
-    hardware_cfg["latency_corrections"]["q1:mw-q1.01"] = None
+    hardware_cfg["hardware_options"]["latency_corrections"]["q1:mw-q1.01"] = None
     mock_setup_basic_transmon["quantum_device"].hardware_config(hardware_cfg)
     with pytest.raises(ValidationError):
         compiler = SerialCompiler(name="compiler")
@@ -3210,7 +3268,7 @@ def test_apply_latency_corrections_hardware_config_invalid_raises(
 @pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 def test_apply_latency_corrections_hardware_config_valid(
     mock_setup_basic_transmon_with_standard_params,
-    hardware_cfg_cluster_latency_corrections,
+    hardware_cfg_cluster_latency_corrections_legacy,
 ):
     """
     This test function checks that:
@@ -3219,9 +3277,9 @@ def test_apply_latency_corrections_hardware_config_valid(
     """
 
     mock_setup = mock_setup_basic_transmon_with_standard_params
-    hardware_cfg = hardware_cfg_cluster_latency_corrections
+    hardware_cfg = hardware_cfg_cluster_latency_corrections_legacy
     mock_setup["quantum_device"].hardware_config(
-        hardware_cfg_cluster_latency_corrections
+        hardware_cfg_cluster_latency_corrections_legacy
     )
 
     sched = Schedule("Single Gate Experiment on Two Qubits")
@@ -3301,10 +3359,10 @@ def test_apply_latency_corrections_hardware_options_valid(
 # Setting latency corrections in the hardware config is deprecated
 @pytest.mark.deprecated
 def test_determine_relative_latency_corrections(
-    hardware_cfg_cluster_latency_corrections,
+    hardware_cfg_cluster_latency_corrections_legacy,
 ) -> None:
     generated_latency_dict = corrections.determine_relative_latency_corrections(
-        hardware_cfg=hardware_cfg_cluster_latency_corrections
+        hardware_cfg=hardware_cfg_cluster_latency_corrections_legacy
     )
     assert generated_latency_dict == {"q0:mw-q0.01": 2.5e-08, "q1:mw-q1.01": 0.0}
 
@@ -3822,7 +3880,58 @@ def test_zero_pulse_skip_timing(
     assert re.search(r"^\s*play\s+0,0,4\s+", seq_instructions[idx + 2])
 
 
-def test_set_thresholded_acquisition_via_hardware_config_raises(
+def test_set_thresholded_acquisition_via_new_style_config_raises(
+    mock_setup_basic_transmon_with_standard_params,
+):
+    """Defining thresholded acquisition through the device config is not
+    allowed and should throw a KeyError. This is a test to test a temporary
+    solution until hardware validation is implemented. See
+    https://gitlab.com/groups/quantify-os/-/epics/1
+    """
+    hardware_config = {
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {"3": {"instrument_type": "QRM"}},
+                "ref": "internal",
+            },
+            "iq_mixer_lo": {"instrument_type": "IQMixer"},
+            "lo": {"instrument_type": "LocalOscillator", "power": 1},
+        },
+        "hardware_options": {
+            "modulation_frequencies": {"q0:res-q0.ro": {"lo_freq": 7800000000.0}},
+            "sequencer_options": {
+                "q0:res-q0.ro": {
+                    "thresholded_acq_threshold": 20,
+                    "thresholded_acq_rotation": -0.2,
+                }
+            },
+        },
+        "connectivity": {
+            "graph": [
+                ["cluster0.module3.complex_output_0", "iq_mixer_lo.if"],
+                ["lo.output", "iq_mixer_lo.lo"],
+                ["iq_mixer_lo.rf", "q0:res"],
+            ]
+        },
+    }
+
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+
+    quantum_device.hardware_config(hardware_config)
+
+    # basic schedule
+    schedule = Schedule("thresholded acquisition")
+    schedule.add(ThresholdedAcquisition(port="q0:res", clock="q0.ro", duration=1e-6))
+
+    compiler = SerialCompiler(name="compiler", quantum_device=quantum_device)
+
+    with pytest.raises(ValidationError):
+        compiler.compile(schedule)
+
+
+def test_set_thresholded_acquisition_via_legacy_config_raises(
     mock_setup_basic_transmon_with_standard_params,
 ):
     """Defining thresholded acquisition through the device config is not

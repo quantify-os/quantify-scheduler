@@ -116,20 +116,20 @@ def test_heterodyne_spec_sched_nco__qblox_hardware(
 ):
     cluster_name = "cluster0"
     hardware_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        f"{cluster_name}": {
-            "ref": "internal",
-            "instrument_type": "Cluster",
-            f"{cluster_name}_module4": {
-                "instrument_type": "QRM_RF",
-                "complex_output_0": {
-                    "lo_freq": 5e9,
-                    "portclock_configs": [
-                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": None},
-                    ],
-                },
-            },
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {"4": {"instrument_type": "QRM_RF"}},
+                "ref": "internal",
+            }
         },
+        "hardware_options": {
+            "modulation_frequencies": {
+                "q0:res-q0.ro": {"lo_freq": 5000000000.0, "interm_freq": None}
+            }
+        },
+        "connectivity": {"graph": [["cluster0.module4.complex_output_0", "q0:res"]]},
     }
 
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]

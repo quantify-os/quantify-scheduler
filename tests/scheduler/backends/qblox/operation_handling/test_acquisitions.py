@@ -555,19 +555,18 @@ def test_trace_acquisition_measurement_control(
     mock_setup_basic_transmon_with_standard_params, mocker, make_cluster_component
 ):
     hardware_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            "ref": "internal",
-            "instrument_type": "Cluster",
-            "cluster0_module4": {
-                "instrument_type": "QRM_RF",
-                "complex_output_0": {
-                    "portclock_configs": [
-                        {"port": "q2:res", "clock": "q2.ro", "interm_freq": 50e6},
-                    ],
-                },
-            },
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {"4": {"instrument_type": "QRM_RF"}},
+                "ref": "internal",
+            }
         },
+        "hardware_options": {
+            "modulation_frequencies": {"q2:res-q2.ro": {"interm_freq": 50000000.0}}
+        },
+        "connectivity": {"graph": [["cluster0.module4.complex_output_0", "q2:res"]]},
     }
 
     mock_setup = mock_setup_basic_transmon_with_standard_params
@@ -631,22 +630,16 @@ def test_custom_long_trace_acquisition_measurement_control(
     mock_setup_basic_transmon_with_standard_params, make_cluster_component
 ):
     hardware_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            "ref": "internal",
-            "instrument_type": "Cluster",
-            "cluster0_module4": {
-                "instrument_type": "QRM",
-                "real_output_0": {
-                    "portclock_configs": [
-                        {
-                            "port": "q2:res",
-                            "clock": "q2.ro",
-                        },
-                    ],
-                },
-            },
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {"4": {"instrument_type": "QRM"}},
+                "ref": "internal",
+            }
         },
+        "hardware_options": {},
+        "connectivity": {"graph": [["cluster0.module4.real_output_0", "q2:res"]]},
     }
 
     mock_setup = mock_setup_basic_transmon_with_standard_params
@@ -746,31 +739,29 @@ def test_thresholded_acquisition_multiplex(
     mock_setup_basic_transmon_with_standard_params,
 ):
     hardware_config = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            "ref": "internal",
-            "instrument_type": "Cluster",
-            "cluster0_module3": {
-                "instrument_type": "QRM",
-                "complex_output_0": {
-                    "lo_name": "lo",
-                    "portclock_configs": [
-                        {
-                            "port": "q0:res",
-                            "clock": "q0.ro",
-                        },
-                        {
-                            "port": "q1:res",
-                            "clock": "q1.ro",
-                        },
-                    ],
-                },
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {"3": {"instrument_type": "QRM"}},
+                "ref": "internal",
             },
+            "iq_mixer_lo": {"instrument_type": "IQMixer"},
+            "lo": {"instrument_type": "LocalOscillator", "power": 1},
         },
-        "lo": {
-            "instrument_type": "LocalOscillator",
-            "frequency": 7.2e9,
-            "power": 1,
+        "hardware_options": {
+            "modulation_frequencies": {
+                "q0:res-q0.ro": {"lo_freq": 7200000000.0},
+                "q1:res-q1.ro": {"lo_freq": 7200000000.0},
+            }
+        },
+        "connectivity": {
+            "graph": [
+                ["cluster0.module3.complex_output_0", "iq_mixer_lo.if"],
+                ["lo.output", "iq_mixer_lo.lo"],
+                ["iq_mixer_lo.rf", "q0:res"],
+                ["iq_mixer_lo.rf", "q1:res"],
+            ]
         },
     }
 
@@ -819,7 +810,7 @@ def test_thresholded_acquisition_multiplex(
 
 
 def test_trigger_count_append(
-    mock_setup_basic_nv, make_cluster_component, hardware_cfg_trigger_count
+    mock_setup_basic_nv, make_cluster_component, hardware_cfg_trigger_count_legacy
 ):
     # Setup objects needed for experiment
     ic_cluster0 = make_cluster_component("cluster0")
@@ -833,7 +824,7 @@ def test_trigger_count_append(
     instr_coordinator.add_component(ic_generic)
 
     quantum_device = mock_setup_basic_nv["quantum_device"]
-    quantum_device.hardware_config(hardware_cfg_trigger_count)
+    quantum_device.hardware_config(hardware_cfg_trigger_count_legacy)
 
     # Define experiment schedule
     schedule = Schedule("test multiple measurements")
@@ -893,7 +884,7 @@ def test_trigger_count_append(
 
 
 def test_trigger_count_append_gettables(
-    mock_setup_basic_nv, make_cluster_component, hardware_cfg_trigger_count
+    mock_setup_basic_nv, make_cluster_component, hardware_cfg_trigger_count_legacy
 ):
     # Setup objects needed for experiment
     ic_cluster0 = make_cluster_component("cluster0")
@@ -907,7 +898,7 @@ def test_trigger_count_append_gettables(
     instr_coordinator.add_component(ic_generic)
 
     quantum_device = mock_setup_basic_nv["quantum_device"]
-    quantum_device.hardware_config(hardware_cfg_trigger_count)
+    quantum_device.hardware_config(hardware_cfg_trigger_count_legacy)
 
     # Define experiment schedule
     def _schedule_function(repetitions):
@@ -956,7 +947,7 @@ def test_trigger_count_append_gettables(
 
 
 def test_trigger_count_average(
-    mock_setup_basic_nv, make_cluster_component, hardware_cfg_trigger_count
+    mock_setup_basic_nv, make_cluster_component, hardware_cfg_trigger_count_legacy
 ):
     # Setup objects needed for experiment
     ic_cluster0 = make_cluster_component("cluster0")
@@ -970,7 +961,7 @@ def test_trigger_count_average(
     instr_coordinator.add_component(ic_generic)
 
     quantum_device = mock_setup_basic_nv["quantum_device"]
-    quantum_device.hardware_config(hardware_cfg_trigger_count)
+    quantum_device.hardware_config(hardware_cfg_trigger_count_legacy)
 
     # Define experiment schedule
     schedule = Schedule("test multiple measurements")
@@ -1021,7 +1012,7 @@ def test_trigger_count_average(
 
 
 def test_trigger_count_average_gettables(
-    mock_setup_basic_nv, make_cluster_component, hardware_cfg_trigger_count
+    mock_setup_basic_nv, make_cluster_component, hardware_cfg_trigger_count_legacy
 ):
     # Setup objects needed for experiment
     ic_cluster0 = make_cluster_component("cluster0")
@@ -1035,7 +1026,7 @@ def test_trigger_count_average_gettables(
     instr_coordinator.add_component(ic_generic)
 
     quantum_device = mock_setup_basic_nv["quantum_device"]
-    quantum_device.hardware_config(hardware_cfg_trigger_count)
+    quantum_device.hardware_config(hardware_cfg_trigger_count_legacy)
 
     # Define experiment schedule
     def _schedule_function(repetitions):
@@ -1078,23 +1069,22 @@ def test_mixed_binned_trace_measurements(
     mock_setup_basic_transmon, make_cluster_component
 ):
     hardware_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            "ref": "internal",
-            "instrument_type": "Cluster",
-            "cluster0_module3": {
-                "instrument_type": "QRM",
-                "complex_output_0": {
-                    "portclock_configs": [
-                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6},
-                    ],
-                },
-                "real_output_0": {
-                    "portclock_configs": [
-                        {"port": "q1:res", "clock": "q1.ro", "interm_freq": 50e6},
-                    ],
-                },
-            },
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {"3": {"instrument_type": "QRM"}},
+                "ref": "internal",
+            }
+        },
+        "hardware_options": {
+            "modulation_frequencies": {"q0:res-q0.ro": {"interm_freq": 50000000.0}}
+        },
+        "connectivity": {
+            "graph": [
+                ["cluster0.module3.complex_output_0", "q0:res"],
+                ["cluster0.module3.real_output_0", "q1:res"],
+            ]
         },
     }
 
@@ -1180,19 +1170,18 @@ def test_multiple_trace_raises(
     mock_setup_basic_transmon_with_standard_params, make_cluster_component
 ):
     hardware_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            "ref": "internal",
-            "instrument_type": "Cluster",
-            "cluster0_module3": {
-                "instrument_type": "QRM_RF",
-                "complex_output_0": {
-                    "portclock_configs": [
-                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6},
-                    ],
-                },
-            },
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {"3": {"instrument_type": "QRM_RF"}},
+                "ref": "internal",
+            }
         },
+        "hardware_options": {
+            "modulation_frequencies": {"q0:res-q0.ro": {"interm_freq": 50000000.0}}
+        },
+        "connectivity": {"graph": [["cluster0.module3.complex_output_0", "q0:res"]]},
     }
 
     # Setup objects needed for experiment
@@ -1258,27 +1247,30 @@ def test_same_index_in_module_and_cluster_measurement_error(
     qubit_to_overwrite,
 ):
     hardware_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            "ref": "internal",
-            "instrument_type": "Cluster",
-            "cluster0_module3": {
-                "instrument_type": "QRM",
-                "complex_output_0": {
-                    "portclock_configs": [
-                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6},
-                        {"port": "q1:res", "clock": "q1.ro", "interm_freq": 50e6},
-                    ],
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {
+                    "3": {"instrument_type": "QRM"},
+                    "4": {"instrument_type": "QRM_RF"},
                 },
-            },
-            "cluster0_module4": {
-                "instrument_type": "QRM_RF",
-                "complex_output_0": {
-                    "portclock_configs": [
-                        {"port": "q2:res", "clock": "q2.ro", "interm_freq": 50e6},
-                    ],
-                },
-            },
+                "ref": "internal",
+            }
+        },
+        "hardware_options": {
+            "modulation_frequencies": {
+                "q0:res-q0.ro": {"interm_freq": 50000000.0},
+                "q1:res-q1.ro": {"interm_freq": 50000000.0},
+                "q2:res-q2.ro": {"interm_freq": 50000000.0},
+            }
+        },
+        "connectivity": {
+            "graph": [
+                ["cluster0.module3.complex_output_0", "q0:res"],
+                ["cluster0.module3.complex_output_0", "q1:res"],
+                ["cluster0.module4.complex_output_0", "q2:res"],
+            ]
         },
     }
 
@@ -1354,25 +1346,28 @@ def test_complex_input_hardware_cfg(make_cluster_component, mock_setup_basic_tra
     # for a transmon measurement now both input and output can be used to run it.
     # if we like to take these apart, dispersive_measurement should be adjusted.
     hardware_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            "ref": "internal",
-            "instrument_type": "Cluster",
-            "cluster0_module3": {
-                "instrument_type": "QRM",
-                "complex_input_0": {
-                    "portclock_configs": [
-                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6},
-                    ],
-                },
-                "complex_output_0": {
-                    "portclock_configs": [
-                        {"port": "q1:res", "clock": "q1.ro", "interm_freq": 50e6},
-                    ],
-                },
-            },
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {"3": {"instrument_type": "QRM"}},
+                "ref": "internal",
+            }
+        },
+        "hardware_options": {
+            "modulation_frequencies": {
+                "q0:res-q0.ro": {"interm_freq": 50000000.0},
+                "q1:res-q1.ro": {"interm_freq": 50000000.0},
+            }
+        },
+        "connectivity": {
+            "graph": [
+                ["cluster0.module3.complex_input_0", "q0:res"],
+                ["cluster0.module3.complex_output_0", "q1:res"],
+            ]
         },
     }
+
     # Setup objects needed for experiment
     ic_cluster0 = make_cluster_component("cluster0")
     instr_coordinator = mock_setup_basic_transmon["instrument_coordinator"]
@@ -1566,33 +1561,33 @@ def test_trace_acquisition_instrument_coordinator(
 ):
     hardware_cfgs = {}
     hardware_cfgs[ClusterType.CLUSTER_QRM_RF] = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            "ref": "internal",
-            "instrument_type": "Cluster",
-            "cluster0_module4": {
-                "instrument_type": "QRM_RF",
-                "complex_output_0": {
-                    "portclock_configs": [
-                        {"port": "q2:res", "clock": "q2.ro", "interm_freq": 50e6}
-                    ],
-                },
-            },
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {"4": {"instrument_type": "QRM_RF"}},
+                "ref": "internal",
+            }
         },
+        "hardware_options": {
+            "modulation_frequencies": {"q2:res-q2.ro": {"interm_freq": 50000000.0}}
+        },
+        "connectivity": {"graph": [["cluster0.module4.complex_output_0", "q2:res"]]},
     }
+
     hardware_cfgs[ClusterType.CLUSTER_QRM] = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            "ref": "internal",
-            "instrument_type": "Cluster",
-            "cluster0_module3": {
-                "instrument_type": "QRM",
-                "complex_output_0": {
-                    "portclock_configs": [{"port": "q2:res", "clock": "q2.ro"}],
-                },
-            },
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {"3": {"instrument_type": "QRM"}},
+                "ref": "internal",
+            }
         },
+        "hardware_options": {},
+        "connectivity": {"graph": [["cluster0.module3.complex_output_0", "q2:res"]]},
     }
+
     hardware_cfg = hardware_cfgs[module_under_test]
 
     mock_setup = mock_setup_basic_transmon_with_standard_params
@@ -1605,9 +1600,13 @@ def test_trace_acquisition_instrument_coordinator(
     except KeyError:
         close_instruments([name])
 
-    module_name = (
-        set(hardware_cfg[name].keys()).intersection(ic_component._cluster_modules).pop()
+    hardware_cfg_module_names = set(
+        f"{name}_module{idx}"
+        for idx in hardware_cfg["hardware_description"]["cluster0"]["modules"]
     )
+    module_name = hardware_cfg_module_names.intersection(
+        ic_component._cluster_modules
+    ).pop()
 
     try:
         instr_coordinator.add_component(ic_component)
@@ -1689,22 +1688,33 @@ def test_mix_lo_flag(
     mock_setup_basic_transmon_with_standard_params, make_cluster_component
 ):
     hardware_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            "ref": "internal",
-            "instrument_type": "Cluster",
-            "cluster0_module1": {
-                "instrument_type": "QCM",
-                "complex_output_0": {
-                    "lo_name": "lo0",
-                    "mix_lo": True,
-                    "portclock_configs": [
-                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6},
-                    ],
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {
+                    "1": {
+                        "instrument_type": "QCM",
+                        "complex_output_0": {"mix_lo": True},
+                    }
                 },
+                "ref": "internal",
             },
+            "iq_mixer_lo0": {"instrument_type": "IQMixer"},
+            "lo0": {"instrument_type": "LocalOscillator", "power": 1},
         },
-        "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
+        "hardware_options": {
+            "modulation_frequencies": {
+                "q0:res-q0.ro": {"lo_freq": None, "interm_freq": 50000000.0}
+            }
+        },
+        "connectivity": {
+            "graph": [
+                ["cluster0.module1.complex_output_0", "iq_mixer_lo0.if"],
+                ["lo0.output", "iq_mixer_lo0.lo"],
+                ["iq_mixer_lo0.rf", "q0:res"],
+            ]
+        },
     }
 
     # Setup objects needed for experiment
@@ -1726,7 +1736,9 @@ def test_mix_lo_flag(
     )
 
     # Change mix_lo to false, set new LO freq and generate new compiled schedule
-    hardware_cfg["cluster0"]["cluster0_module1"]["complex_output_0"]["mix_lo"] = False
+    hardware_cfg["hardware_description"]["cluster0"]["modules"]["1"][
+        "complex_output_0"
+    ]["mix_lo"] = False
     compiled_sched_mix_lo_false = compiler.compile(
         schedule=schedule, config=quantum_device.generate_compilation_config()
     )
@@ -1755,20 +1767,23 @@ def test_marker_debug_mode_enable(
     mock_setup_basic_transmon_with_standard_params, make_cluster_component
 ):
     hardware_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            "ref": "internal",
-            "instrument_type": "Cluster",
-            "cluster0_module1": {
-                "instrument_type": "QRM",
-                "complex_input_0": {
-                    "marker_debug_mode_enable": True,
-                    "portclock_configs": [
-                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": 0},
-                    ],
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {
+                    "1": {
+                        "instrument_type": "QRM",
+                        "complex_input_0": {"marker_debug_mode_enable": True},
+                    }
                 },
-            },
+                "ref": "internal",
+            }
         },
+        "hardware_options": {
+            "modulation_frequencies": {"q0:res-q0.ro": {"interm_freq": 0}}
+        },
+        "connectivity": {"graph": [["cluster0.module1.complex_input_0", "q0:res"]]},
     }
 
     # Setup objects needed for experiment
@@ -1791,7 +1806,9 @@ def test_marker_debug_mode_enable(
     )
 
     # Generate compiled schedule for QRM-RF
-    hardware_cfg["cluster0"]["cluster0_module1"]["instrument_type"] = "QRM_RF"
+    hardware_cfg["hardware_description"]["cluster0"]["modules"]["1"][
+        "instrument_type"
+    ] = "QRM_RF"
     compiled_sched_qrm_rf = compiler.compile(
         schedule=schedule, config=quantum_device.generate_compilation_config()
     )
@@ -1830,26 +1847,28 @@ def test_multiple_binned_measurements(
     mock_setup_basic_transmon, make_cluster_component
 ):
     hardware_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            "ref": "internal",
-            "instrument_type": "Cluster",
-            "cluster0_module3": {
-                "instrument_type": "QRM",
-                "complex_output_0": {
-                    "portclock_configs": [
-                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6},
-                    ],
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {
+                    "3": {"instrument_type": "QRM"},
+                    "4": {"instrument_type": "QRM_RF"},
                 },
-            },
-            "cluster0_module4": {
-                "instrument_type": "QRM_RF",
-                "complex_output_0": {
-                    "portclock_configs": [
-                        {"port": "q1:res", "clock": "q1.ro", "interm_freq": 50e6},
-                    ],
-                },
-            },
+                "ref": "internal",
+            }
+        },
+        "hardware_options": {
+            "modulation_frequencies": {
+                "q0:res-q0.ro": {"interm_freq": 50000000.0},
+                "q1:res-q1.ro": {"interm_freq": 50000000.0},
+            }
+        },
+        "connectivity": {
+            "graph": [
+                ["cluster0.module3.complex_output_0", "q0:res"],
+                ["cluster0.module4.complex_output_0", "q1:res"],
+            ]
         },
     }
 
@@ -2024,19 +2043,18 @@ def test_multiple_binned_measurements(
 
 def test_append_measurements(mock_setup_basic_transmon, make_cluster_component):
     hardware_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            "ref": "internal",
-            "instrument_type": "Cluster",
-            "cluster0_module3": {
-                "instrument_type": "QRM",
-                "complex_output_0": {
-                    "portclock_configs": [
-                        {"port": "q0:res", "clock": "q0.ro", "interm_freq": 50e6},
-                    ],
-                },
-            },
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {"3": {"instrument_type": "QRM"}},
+                "ref": "internal",
+            }
         },
+        "hardware_options": {
+            "modulation_frequencies": {"q0:res-q0.ro": {"interm_freq": 50000000.0}}
+        },
+        "connectivity": {"graph": [["cluster0.module3.complex_output_0", "q0:res"]]},
     }
 
     # Setup objects needed for experiment

@@ -276,23 +276,22 @@ class TestMarkerPulseStrategy:
         self, mock_setup_basic_transmon_with_standard_params, make_cluster_component
     ):
         hardware_cfg = {
-            "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-            "cluster0": {
-                "ref": "internal",
-                "instrument_type": "Cluster",
-                "cluster0_module1": {
-                    "instrument_type": "QRM",
-                    "complex_input_0": {
-                        "portclock_configs": [
-                            {"port": "q0:res", "clock": "q0.ro"},
-                        ],
+            "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+            "hardware_description": {
+                "cluster0": {
+                    "instrument_type": "Cluster",
+                    "modules": {
+                        "1": {"instrument_type": "QRM", "digital_output_1": {}}
                     },
-                    "digital_output_1": {
-                        "portclock_configs": [
-                            {"port": "q0:switch"},
-                        ],
-                    },
-                },
+                    "ref": "internal",
+                }
+            },
+            "hardware_options": {},
+            "connectivity": {
+                "graph": [
+                    ["cluster0.module1.complex_input_0", "q0:res"],
+                    ["cluster0.module1.digital_output_1", "q0:switch"],
+                ]
             },
         }
 
@@ -348,25 +347,24 @@ class TestMarkerPulseStrategy:
         self, mock_setup_basic_transmon_with_standard_params, make_cluster_component
     ):
         hardware_cfg = {
-            "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-            "cluster0": {
-                "ref": "internal",
-                "instrument_type": "Cluster",
-                "cluster0_module1": {
-                    "instrument_type": "QCM_RF",
-                    "complex_output_0": {
-                        "portclock_configs": [
-                            {"port": "q0:res", "clock": "q0.ro", "interm_freq": 0},
-                        ],
+            "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+            "hardware_description": {
+                "cluster0": {
+                    "instrument_type": "Cluster",
+                    "modules": {
+                        "1": {"instrument_type": "QCM_RF", "digital_output_1": {}}
                     },
-                    "digital_output_1": {
-                        "portclock_configs": [
-                            {
-                                "port": "q0:switch",
-                            },
-                        ],
-                    },
-                },
+                    "ref": "internal",
+                }
+            },
+            "hardware_options": {
+                "modulation_frequencies": {"q0:res-q0.ro": {"interm_freq": 0}}
+            },
+            "connectivity": {
+                "graph": [
+                    ["cluster0.module1.complex_output_0", "q0:res"],
+                    ["cluster0.module1.digital_output_1", "q0:switch"],
+                ]
             },
         }
 
@@ -419,27 +417,27 @@ class TestMarkerPulseStrategy:
 
     def test_marker_pulse_added_to_operation(self):
         hw_config = {
-            "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-            "cluster0": {
-                "ref": "internal",
-                "instrument_type": "Cluster",
-                "cluster0_module1": {
-                    "instrument_type": "QCM_RF",
-                    "complex_output_0": {
-                        "portclock_configs": [
-                            {"port": "q0:mw", "clock": "q0.01", "interm_freq": 100e6},
-                        ],
+            "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+            "hardware_description": {
+                "cluster0": {
+                    "instrument_type": "Cluster",
+                    "modules": {
+                        "1": {"instrument_type": "QCM_RF", "digital_output_1": {}}
                     },
-                    "digital_output_1": {
-                        "portclock_configs": [
-                            {
-                                "port": "q0:switch",
-                            },
-                        ],
-                    },
-                },
+                    "ref": "internal",
+                }
+            },
+            "hardware_options": {
+                "modulation_frequencies": {"q0:mw-q0.01": {"interm_freq": 100000000.0}}
+            },
+            "connectivity": {
+                "graph": [
+                    ["cluster0.module1.complex_output_0", "q0:mw"],
+                    ["cluster0.module1.digital_output_1", "q0:switch"],
+                ]
             },
         }
+
         quantum_device = QuantumDevice("marker_test_device")
         quantum_device.hardware_config(hw_config)
 

@@ -76,23 +76,32 @@ my_device.instr_instrument_coordinator("my_instr_coord")
 
 # %%
 hw_config = {
-    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-    "cluster0": {
-        "ref": "internal",
-        "instrument_type": "Cluster",
-        "cluster0_module15": {
-            "instrument_type": "QRM",
-            "complex_output_0": {
-                "portclock_configs": [
-                    {"port": "q0:res", "clock": "q0.ro", "interm_freq": 0},
-                    {"port": "q1:res", "clock": "q1.ro", "interm_freq": 0},
-                    {"port": "q0:mw", "clock": "q0.01", "interm_freq": 0},
-                    {"port": "q1:mw", "clock": "q1.01", "interm_freq": 0},
-                ]
-            },
-        },
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+    "hardware_description": {
+        "cluster0": {
+            "instrument_type": "Cluster",
+            "modules": {"15": {"instrument_type": "QRM"}},
+            "ref": "internal",
+        }
+    },
+    "hardware_options": {
+        "modulation_frequencies": {
+            "q0:res-q0.ro": {"interm_freq": 0},
+            "q1:res-q1.ro": {"interm_freq": 0},
+            "q0:mw-q0.01": {"interm_freq": 0},
+            "q1:mw-q1.01": {"interm_freq": 0},
+        }
+    },
+    "connectivity": {
+        "graph": [
+            ["cluster0.module15.complex_output_0", "q0:res"],
+            ["cluster0.module15.complex_output_0", "q1:res"],
+            ["cluster0.module15.complex_output_0", "q0:mw"],
+            ["cluster0.module15.complex_output_0", "q1:mw"],
+        ]
     },
 }
+
 
 # %%
 my_device.hardware_config(hw_config)

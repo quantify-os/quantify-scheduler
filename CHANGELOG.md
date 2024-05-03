@@ -5,6 +5,8 @@
 ### Breaking changes
 
 ### Merged branches and closed issues
+- Tests 
+  - Convert transmon-specific hardware configs in test suite and docs to new style. (!972)
 
 
 ## 0.20.0 (2024-05-01)

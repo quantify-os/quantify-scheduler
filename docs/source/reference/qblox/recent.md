@@ -128,7 +128,7 @@ The new syntax:
 
 ```python
 hardware_cfg = {
-    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+    "backend": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
     "latency_corrections": {
         "q0:mw-q0.01": 4e-9
     },

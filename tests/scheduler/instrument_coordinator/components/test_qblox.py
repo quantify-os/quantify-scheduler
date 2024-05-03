@@ -215,18 +215,14 @@ def test_reset_qcodes_settings(
             qrm.instrument[f"sequencer{seq}"].set(f"gain_awg_path{path}", 0.9876)
 
     # Act
-    hardware_cfg[cluster_name][qcm_name]["complex_output_0"]["portclock_configs"][0][
-        "init_offset_awg_path_I"
-    ] = 0.25
-    hardware_cfg[cluster_name][qcm_name]["complex_output_0"]["portclock_configs"][0][
-        "init_offset_awg_path_Q"
-    ] = 0.33
-    hardware_cfg[cluster_name][qrm_name]["real_output_0"]["portclock_configs"][0][
-        "init_gain_awg_path_I"
-    ] = 0.5
-    hardware_cfg[cluster_name][qrm_name]["real_output_1"]["portclock_configs"][0][
-        "init_gain_awg_path_Q"
-    ] = -0.5
+    hardware_cfg["hardware_options"]["sequencer_options"] = {
+        "q0:mw-q0.01": {
+            "init_offset_awg_path_I": 0.25,
+            "init_offset_awg_path_Q": 0.33,
+        },
+        "q0:fl-cl0.baseband": {"init_gain_awg_path_I": 0.5},
+        "q1:fl-cl0.baseband": {"init_gain_awg_path_Q": -0.5},
+    }
 
     schedule = Schedule(f"Schedule")
     schedule.add(
@@ -369,18 +365,11 @@ def test_init_qcodes_settings(
     hardware_cfg = deepcopy(hardware_cfg_cluster)
 
     # Act
-    hardware_cfg[cluster_name][qcm_name]["complex_output_0"]["portclock_configs"][0][
-        "init_offset_awg_path_I"
-    ] = 0.25
-    hardware_cfg[cluster_name][qcm_name]["complex_output_0"]["portclock_configs"][0][
-        "init_offset_awg_path_Q"
-    ] = 0.33
-    hardware_cfg[cluster_name][qrm_name]["real_output_0"]["portclock_configs"][0][
-        "init_gain_awg_path_I"
-    ] = 0.5
-    hardware_cfg[cluster_name][qrm_name]["real_output_1"]["portclock_configs"][0][
-        "init_gain_awg_path_Q"
-    ] = -0.5
+    hardware_cfg["hardware_options"]["sequencer_options"] = {
+        "q0:mw-q0.01": {"init_offset_awg_path_I": 0.25, "init_offset_awg_path_Q": 0.33},
+        "q0:fl-cl0.baseband": {"init_gain_awg_path_I": 0.5},
+        "q1:fl-cl0.baseband": {"init_gain_awg_path_Q": -0.5},
+    }
 
     schedule = Schedule(f"Schedule")
     schedule.add(
@@ -455,7 +444,7 @@ def test_init_qcodes_settings(
 def test_invalid_init_qcodes_settings(
     mocker,
     schedule_with_measurement,
-    hardware_cfg_cluster,
+    hardware_cfg_cluster_legacy,
     make_cluster_component,
     mock_setup_basic_transmon_with_standard_params,
 ):
@@ -475,7 +464,7 @@ def test_invalid_init_qcodes_settings(
             "set",
         )
 
-    hardware_cfg = deepcopy(hardware_cfg_cluster)
+    hardware_cfg = deepcopy(hardware_cfg_cluster_legacy)
 
     # Act
     hardware_cfg[cluster_name]["cluster0_module1"]["complex_output_0"][
@@ -604,37 +593,43 @@ def test_prepare_baseband(  # noqa: PLR0915
             qrm2.instrument.set.assert_not_called()
 
     for qcodes_param, hw_config_param in [
-        ("out0_offset", ["complex_output_0", "dc_mixer_offset_I"]),
-        ("out1_offset", ["complex_output_0", "dc_mixer_offset_Q"]),
-        ("out2_offset", ["complex_output_1", "dc_mixer_offset_I"]),
-        ("out3_offset", ["complex_output_1", "dc_mixer_offset_Q"]),
+        ("out0_offset", ["q0:mw-q0.01", "dc_offset_i"]),
+        ("out1_offset", ["q0:mw-q0.01", "dc_offset_q"]),
+        ("out2_offset", ["q1:mw-q1.01", "dc_offset_i"]),
+        ("out3_offset", ["q1:mw-q1.01", "dc_offset_q"]),
     ]:
         qcm0.instrument.parameters[qcodes_param].set.assert_any_call(
-            hardware_cfg_cluster[cluster_name][qcm_name][hw_config_param[0]][
-                hw_config_param[1]
-            ]
+            hardware_cfg_cluster["hardware_options"]["mixer_corrections"][
+                hw_config_param[0]
+            ][hw_config_param[1]]
         )
 
     for qcodes_param, hw_config_param in [
-        ("out0_offset", ["complex_output_0", "dc_mixer_offset_I"]),
-        ("out1_offset", ["complex_output_0", "dc_mixer_offset_Q"]),
-        ("in0_gain", ["complex_output_0", "input_gain_I"]),
-        ("in1_gain", ["complex_output_0", "input_gain_Q"]),
+        ("out0_offset", ["q0:res-q0.ro", "dc_offset_i"]),
+        ("out1_offset", ["q0:res-q0.ro", "dc_offset_q"]),
     ]:
         qrm0.instrument.parameters[qcodes_param].set.assert_any_call(
-            hardware_cfg_cluster[cluster_name][qrm_name][hw_config_param[0]][
+            hardware_cfg_cluster["hardware_options"]["mixer_corrections"][
+                hw_config_param[0]
+            ][hw_config_param[1]]
+        )
+
+    for qcodes_param, hw_config_param in [
+        ("in0_gain", ["q0:res-q0.ro", "gain_I"]),
+        ("in1_gain", ["q0:res-q0.ro", "gain_Q"]),
+    ]:
+        qrm0.instrument.parameters[qcodes_param].set.assert_any_call(
+            hardware_cfg_cluster["hardware_options"]["input_gain"][hw_config_param[0]][
                 hw_config_param[1]
             ]
         )
 
-    for qcodes_param, hw_config_param in [
-        ("in0_gain", ["real_output_0", "input_gain_0"]),
-        ("in1_gain", ["real_output_1", "input_gain_1"]),
+    for qcodes_param, portclock in [
+        ("in0_gain", "q0:fl-cl0.baseband"),
+        ("in1_gain", "q1:fl-cl0.baseband"),
     ]:
         qrm2.instrument.parameters[qcodes_param].set.assert_any_call(
-            hardware_cfg_cluster[cluster_name][qrm2_name][hw_config_param[0]][
-                hw_config_param[1]
-            ]
+            hardware_cfg_cluster["hardware_options"]["input_gain"][portclock]
         )
 
 
@@ -1316,23 +1311,26 @@ def test_channel_map(
     test_module_name = f"cluster0_module{module_idx[module_type]}"
 
     hardware_config = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            "instrument_type": "Cluster",
-            "ref": "internal",
-            test_module_name: {
-                "instrument_type": module_type,
-                channel_name: {
-                    "portclock_configs": [{"port": "q5:mw", "clock": "q5.01"}],
-                },
-            },
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {module_idx[module_type]: {"instrument_type": module_type}},
+                "ref": "internal",
+            }
+        },
+        "hardware_options": {},
+        "connectivity": {
+            "graph": [
+                [f"cluster0.module{module_idx[module_type]}.{channel_name}", "q5:mw"]
+            ]
         },
     }
 
     if "RF" in module_type:
-        hardware_config["cluster0"][test_module_name][channel_name][
-            "portclock_configs"
-        ][0]["interm_freq"] = 3e5
+        hardware_config["hardware_options"] = {
+            "modulation_frequencies": {"q5:mw-q5.01": {"interm_freq": 3e5}}
+        }
         freq_01 = 5e9
     else:
         freq_01 = 4.33e8
@@ -1397,19 +1395,21 @@ def test_channel_map_off_with_marker_pulse(
 ):
     cluster_name = "cluster0"
     module_name = f"{cluster_name}_module{slot_idx}"
+
     hardware_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        cluster_name: {
-            "ref": "internal",
-            "instrument_type": "Cluster",
-            module_name: {
-                "instrument_type": module_type,
-                "digital_output_0": {
-                    "portclock_configs": [
-                        {"port": "q0:switch"},
-                    ],
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            cluster_name: {
+                "instrument_type": "Cluster",
+                "modules": {
+                    slot_idx: {"instrument_type": module_type, "digital_output_0": {}}
                 },
-            },
+                "ref": "internal",
+            }
+        },
+        "hardware_options": {},
+        "connectivity": {
+            "graph": [[f"cluster0.module{slot_idx}.digital_output_0", "q0:switch"]]
         },
     }
 

@@ -437,22 +437,31 @@ def test_max_conditional_resets(num_reset, expected_exception):
         quantum_device.add_element(q[i])
 
     hw_config = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "QAE_cluster": {
-            "ref": "internal",
-            "instrument_type": "Cluster",
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "QAE_cluster": {
+                "instrument_type": "Cluster",
+                "modules": {},
+                "ref": "internal",
+            },
+        },
+        "hardware_options": {},
+        "connectivity": {
+            "graph": [],
         },
     }
-    for i in range(15):
-        hw_config["QAE_cluster"][f"QAE_cluster_module{i+1}"] = {
-            "instrument_type": "QRM",
-            "complex_output_0": {
-                "portclock_configs": [
-                    {"port": f"q{i}:mw", "clock": f"q{i}.01"},
-                    {"port": f"q{i}:res", "clock": f"q{i}.ro"},
-                ],
-            },
+
+    for i in range(1, 16):  # From 1 to 15
+        hw_config["hardware_description"]["QAE_cluster"]["modules"][str(i)] = {
+            "instrument_type": "QRM"
         }
+
+    for i in range(15):
+        module_index = i + 1
+        module_reference = f"QAE_cluster.module{module_index}.complex_output_0"
+
+        hw_config["connectivity"]["graph"].append([module_reference, f"q{i}:mw"])
+        hw_config["connectivity"]["graph"].append([module_reference, f"q{i}:res"])
     quantum_device.hardware_config(hw_config)
 
     schedule = Schedule("test")

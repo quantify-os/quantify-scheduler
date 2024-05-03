@@ -448,34 +448,28 @@ def test_retrieve_hardware_logs__qblox_hardware(
 ):
     cluster_name = "cluster0"
     hardware_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        f"{cluster_name}": {
-            "instrument_type": "Cluster",
-            "ref": "internal",
-            f"{cluster_name}_module2": {
-                "instrument_type": "QCM",
-                "complex_output_0": {
-                    "portclock_configs": [
-                        {
-                            "port": "q3:res",
-                            "clock": "q3.ro",
-                            "interm_freq": 300e6,
-                        }
-                    ],
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            f"{cluster_name}": {
+                "instrument_type": "Cluster",
+                "modules": {
+                    "2": {"instrument_type": "QCM"},
+                    "4": {"instrument_type": "QRM"},
                 },
-            },
-            f"{cluster_name}_module4": {
-                "instrument_type": "QRM",
-                "complex_output_0": {
-                    "portclock_configs": [
-                        {
-                            "port": "q3:mw",
-                            "clock": "q3.01",
-                            "interm_freq": 50e6,
-                        },
-                    ],
-                },
-            },
+                "ref": "internal",
+            }
+        },
+        "hardware_options": {
+            "modulation_frequencies": {
+                "q3:res-q3.ro": {"interm_freq": 300000000.0},
+                "q3:mw-q3.01": {"interm_freq": 50000000.0},
+            }
+        },
+        "connectivity": {
+            "graph": [
+                [f"{cluster_name}.module2.complex_output_0", "q3:res"],
+                [f"{cluster_name}.module4.complex_output_0", "q3:mw"],
+            ]
         },
     }
 

@@ -81,87 +81,87 @@ quantum_device.instr_measurement_control(meas_ctrl.name)
 
 # %%
 hardware_config = {
-    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-    "cluster0": {
-        "sequence_to_file": False,
-        "ref": "internal",
-        "instrument_type": "Cluster",
-        "cluster0_module2": {
-            "instrument_type": "QCM_RF",
-            "complex_output_0": {
-                "dc_mixer_offset_I": -0.0024496,
-                "dc_mixer_offset_Q": -0.0109159,
-                "lo_freq": 4895200000.0,
-                "portclock_configs": [
-                    {
-                        "port": "q1:mw",
-                        "clock": "q1.01",
-                        "mixer_amp_ratio": 0.9416,
-                        "mixer_phase_error_deg": -17.36234,
-                    },
-                    {
-                        "port": "q1:mw",
-                        "clock": "q1.12",
-                        "mixer_amp_ratio": 0.9416,
-                        "mixer_phase_error_deg": -17.36234,
-                    },
-                ],
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+    "hardware_description": {
+        "cluster0": {
+            "instrument_type": "Cluster",
+            "modules": {
+                "2": {"instrument_type": "QCM_RF"},
+                "4": {"instrument_type": "QCM_RF"},
+                "10": {"instrument_type": "QRM_RF"},
+                "12": {"instrument_type": "QCM"},
+            },
+            "sequence_to_file": False,
+            "ref": "internal",
+        }
+    },
+    "hardware_options": {
+        "mixer_corrections": {
+            "q1:mw-q1.01": {
+                "dc_offset_i": -0.0024496,
+                "dc_offset_q": -0.0109159,
+                "amp_ratio": 0.9416,
+                "phase_error": -17.36234,
+            },
+            "q1:mw-q1.12": {
+                "dc_offset_i": -0.0024496,
+                "dc_offset_q": -0.0109159,
+                "amp_ratio": 0.9416,
+                "phase_error": -17.36234,
+            },
+            "q2:mw-q2.01": {
+                "dc_offset_i": -0.0024927,
+                "dc_offset_q": -0.0051141,
+                "amp_ratio": 0.9519,
+                "phase_error": -19.85496,
+            },
+            "q2:mw-q2.12": {
+                "dc_offset_i": -0.0024927,
+                "dc_offset_q": -0.0051141,
+                "amp_ratio": 0.9519,
+                "phase_error": -19.85496,
+            },
+            "q1:res-q1.ro": {
+                "dc_offset_i": -0.009068,
+                "dc_offset_q": -0.0082944,
+                "amp_ratio": 0.9973,
+                "phase_error": 12.46307,
+            },
+            "q2:res-q2.ro": {
+                "dc_offset_i": -0.009068,
+                "dc_offset_q": -0.0082944,
+                "amp_ratio": 0.9973,
+                "phase_error": 12.46307,
             },
         },
-        "cluster0_module4": {
-            "instrument_type": "QCM_RF",
-            "complex_output_0": {
-                "dc_mixer_offset_I": -0.0024927,
-                "dc_mixer_offset_Q": -0.0051141,
-                "lo_freq": 4802000000.0,
-                "portclock_configs": [
-                    {
-                        "port": "q2:mw",
-                        "clock": "q2.01",
-                        "mixer_amp_ratio": 0.9519,
-                        "mixer_phase_error_deg": -19.85496,
-                    },
-                    {
-                        "port": "q2:mw",
-                        "clock": "q2.12",
-                        "mixer_amp_ratio": 0.9519,
-                        "mixer_phase_error_deg": -19.85496,
-                    },
-                ],
-                "output_att": 0,
-            },
+        "modulation_frequencies": {
+            "q1:mw-q1.01": {"lo_freq": 4895200000.0},
+            "q1:mw-q1.12": {"lo_freq": 4895200000.0},
+            "q2:mw-q2.01": {"lo_freq": 4802000000.0},
+            "q2:mw-q2.12": {"lo_freq": 4802000000.0},
+            "q1:res-q1.ro": {"lo_freq": 7050000000.0},
+            "q2:res-q2.ro": {"lo_freq": 7050000000.0},
         },
-        "cluster0_module10": {
-            "instrument_type": "QRM_RF",
-            "complex_output_0": {
-                "dc_mixer_offset_I": -0.009068,
-                "dc_mixer_offset_Q": -0.0082944,
-                "lo_freq": 7050000000.0,
-                "portclock_configs": [
-                    {
-                        "port": "q1:res",
-                        "clock": "q1.ro",
-                        "mixer_amp_ratio": 0.9973,
-                        "mixer_phase_error_deg": 12.46307,
-                    },
-                    {
-                        "port": "q2:res",
-                        "clock": "q2.ro",
-                        "mixer_amp_ratio": 0.9973,
-                        "mixer_phase_error_deg": 12.46307,
-                    },
-                ],
-                "output_att": 24,
-            },
-        },
-        "cluster0_module12": {
-            "instrument_type": "QCM",
-            "real_output_0": {
-                "portclock_configs": [{"port": "q2:fl", "clock": "cl0.baseband"}]
-            },
+        "output_att": {
+            "q2:mw-q2.01": 0,
+            "q2:mw-q2.12": 0,
+            "q1:res-q1.ro": 24,
+            "q2:res-q2.ro": 24,
         },
     },
+    "connectivity": {
+        "graph": [
+            ["cluster0.module2.complex_output_0", "q1:mw"],
+            ["cluster0.module2.complex_output_0", "q1:mw"],
+            ["cluster0.module4.complex_output_0", "q2:mw"],
+            ["cluster0.module4.complex_output_0", "q2:mw"],
+            ["cluster0.module10.complex_output_0", "q1:res"],
+            ["cluster0.module10.complex_output_0", "q2:res"],
+            ["cluster0.module12.real_output_0", "q2:fl"],
+        ]
+    },
 }
+
 
 # %%
 quantum_device.hardware_config(hardware_config)

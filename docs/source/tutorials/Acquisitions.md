@@ -82,22 +82,40 @@ device.instr_instrument_coordinator("instrument_coordinator")
 
 ```{code-cell} ipython3
 hardware_config = {
-    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-    "cluster0": {
-        "ref": "internal",
-        "instrument_type": "Cluster",
-        "cluster0_module1": {
-             "instrument_type": "QRM",
-             "complex_output_0": {
-                 "portclock_configs": [
-                     {"port": "q0:res", "clock": "q0.ro", "interm_freq": 0},
-                     {"port": "q1:res", "clock": "q1.ro", "interm_freq": 0},
-                     {"port": "q0:mw", "clock" : "q0.01", "interm_freq": 0}
-                 ]
-             }
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+    "hardware_description": {
+        "cluster0": {
+            "instrument_type": "Cluster",
+            "modules": {
+                "1": {
+                    "instrument_type": "QRM"
+                }
+            },
+            "ref": "internal"
         }
     },
+    "hardware_options": {
+        "modulation_frequencies": {
+            "q0:res-q0.ro": {
+                "interm_freq": 0
+            },
+            "q1:res-q1.ro": {
+                "interm_freq": 0
+            },
+            "q0:mw-q0.01": {
+                "interm_freq": 0
+            }
+        }
+    },
+    "connectivity": {
+        "graph": [
+            ["cluster0.module1.complex_output_0", "q0:res"],
+            ["cluster0.module1.complex_output_0", "q1:res"],
+            ["cluster0.module1.complex_output_0", "q0:mw"]
+        ]
+    }
 }
+
 device.hardware_config(hardware_config)
 ```
 
@@ -705,13 +723,13 @@ rot = np.arctan(-b)-np.pi/2
 threshold = -a*b/np.sqrt(1+b*b)
 
 dummy_slot_idx = 1
-cluster.delete_dummy_binned_acquisition_data(slot_idx=dummy_slot_idx, sequencer=0)
+cluster.delete_dummy_binned_acquisition_data(slot_idx=dummy_slot_idx, sequencer=1)
 
 dummy_data_0 = [
         DummyBinnedAcquisitionData(data=(1e3*a, 1e3*b), thres=0, avg_cnt=0)
         for a, b in zip(i,q)
 ]
-cluster.set_dummy_binned_acquisition_data(slot_idx=dummy_slot_idx, sequencer=0, acq_index_name="0", data=dummy_data_0)
+cluster.set_dummy_binned_acquisition_data(slot_idx=dummy_slot_idx, sequencer=1, acq_index_name="0", data=dummy_data_0)
 ```
 
 Next, after compiling the schedule and retrieving the acquisitions from the hardware,
