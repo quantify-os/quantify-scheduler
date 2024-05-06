@@ -111,7 +111,7 @@ def _get_pulse_strategy(
         else:
             return virtual.IdleStrategy(operation_info)
 
-    elif "clock" in operation_info.data and operation_info.data["clock"] == "digital":
+    elif operation_info.data.get("marker_pulse", False):
         return pulses.MarkerPulseStrategy(
             operation_info=operation_info,
             channel_name=channel_name,

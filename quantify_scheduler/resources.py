@@ -165,3 +165,28 @@ class BasebandClockResource(Resource):
             "freq": 0,
             "phase": 0,
         }
+
+
+class DigitalClockResource(Resource):
+    """
+    Global identity for a virtual digital clock.
+
+    Digital clocks can only be associated with digital channels.
+
+    Parameters
+    ----------
+    name :
+        the name of this clock
+    """
+
+    IDENTITY = "digital"
+
+    def __init__(self, name: str) -> None:
+        super().__init__(name)
+
+        self.data = {
+            "name": name,
+            "type": str(self.__class__.__name__),
+            "freq": 0,
+            "phase": 0,
+        }

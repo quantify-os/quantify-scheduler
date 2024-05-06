@@ -29,6 +29,7 @@ from quantify_scheduler.helpers.schedule import _extract_port_clocks_used
 from quantify_scheduler.helpers.waveforms import exec_waveform_function
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import WindowOperation
+from quantify_scheduler.resources import DigitalClockResource
 from quantify_scheduler.schedules.schedule import Schedule, ScheduleBase
 
 if TYPE_CHECKING:
@@ -808,7 +809,10 @@ def _generate_legacy_hardware_config(
             return
         for k in nested_dict:
             if k.startswith(ChannelMode.DIGITAL):
-                nested_dict[k]["portclock_configs"][0]["clock"] = ChannelMode.DIGITAL
+                if "clock" not in nested_dict[k]["portclock_configs"][0]:
+                    nested_dict[k]["portclock_configs"][0][
+                        "clock"
+                    ] = DigitalClockResource.IDENTITY
             elif isinstance(nested_dict[k], dict):
                 _recursive_digital_channel_search(nested_dict[k], max_depth - 1)
 

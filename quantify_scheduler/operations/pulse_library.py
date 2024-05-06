@@ -13,10 +13,9 @@ from numpy.typing import NDArray
 from qcodes import InstrumentChannel, validators
 
 from quantify_scheduler import Operation
-from quantify_scheduler.backends.qblox.enums import ChannelMode
 from quantify_scheduler.helpers.deprecation import deprecated_arg_alias
 from quantify_scheduler.helpers.waveforms import area_pulses
-from quantify_scheduler.resources import BasebandClockResource
+from quantify_scheduler.resources import BasebandClockResource, DigitalClockResource
 
 
 @dataclass
@@ -412,11 +411,13 @@ class MarkerPulse(Operation):
     duration
         Duration of the HIGH signal.
     port
-        Name of associated port.
+        Name of the associated port.
     clock
-        As digital channels technically do not have a clock, this parameter is by default
-        set to "digital". In circuit to device compilation digital channels get assigned
-        the digital clock.
+        Name of the associated clock. By default
+        :class:`~quantify_scheduler.resources.DigitalClockResource`. This only needs to
+        be specified if a custom clock name is used for a digital channel (for example,
+        when a port-clock combination of a device element is used with a digital
+        channel).
     """
 
     def __init__(
@@ -424,7 +425,7 @@ class MarkerPulse(Operation):
         duration: float,
         port: str,
         t0: float = 0,
-        clock: str = ChannelMode.DIGITAL,
+        clock: str = DigitalClockResource.IDENTITY,
     ):
         super().__init__(name=self.__class__.__name__)
         self.data["pulse_info"] = [

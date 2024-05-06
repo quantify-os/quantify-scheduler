@@ -282,6 +282,14 @@ The `MarkerPulse` is defined by adding a `MarkerPulse` to the sequence in questi
 schedule.add(MarkerPulse(duration=52e-9, port="q0:switch"))
 ```
 
+#### Clock names
+
+Clocks in digital channels serve simply as a label and are automatically set to {attr}`"digital" <quantify_scheduler.resources.DigitalClockResource.IDENTITY>` at `MarkerPulse` initialization, but it is also possible to specify a custom clock name (for example, a clock name from the device configuration, like `qe0.ge0`). This makes it possible to connect a digital channel to a given port-clock combination in a device element, for example. Similar to clocks for non-digital channels, the clock must be either
+
+- specified in the device configuration,
+- added to the {class}`~quantify_scheduler.schedules.schedule.Schedule` as a {class}`~quantify_scheduler.resources.ClockResource`, or
+- a clock that is present by default in the schedule resources, i.e. {attr}`"digital" <quantify_scheduler.resources.DigitalClockResource.IDENTITY>` or {attr}`"cl0.baseband" <quantify_scheduler.resources.BasebandClockResource.IDENTITY>`.
+
 ### Marker configuration
 
 The markers can be configured by adding a `"marker_debug_mode_enable"` key to channel configurations. If the value is set to True, the operations defined for this channel will be accompanied by a 4 ns trigger pulse on the marker located next to the channel port.

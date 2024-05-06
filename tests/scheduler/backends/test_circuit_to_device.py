@@ -204,13 +204,13 @@ def test_measurement_compile():
 @pytest.mark.parametrize(
     "operations, clocks_used",
     [
-        ([], ["cl0.baseband"]),
-        ([X(qubit="q0")], ["cl0.baseband", "q0.01"]),
-        ([Z(qubit="q0")], ["cl0.baseband", "q0.01"]),
-        ([Measure("q0", "q1")], ["cl0.baseband", "q0.ro", "q1.ro"]),
+        ([], ["cl0.baseband", "digital"]),
+        ([X(qubit="q0")], ["cl0.baseband", "digital", "q0.01"]),
+        ([Z(qubit="q0")], ["cl0.baseband", "digital", "q0.01"]),
+        ([Measure("q0", "q1")], ["cl0.baseband", "digital", "q0.ro", "q1.ro"]),
         (
             [X(qubit="q0"), Z(qubit="q1"), Measure("q0", "q1")],
-            ["cl0.baseband", "q0.01", "q1.01", "q0.ro", "q1.ro"],
+            ["cl0.baseband", "digital", "q0.01", "q1.01", "q0.ro", "q1.ro"],
         ),
     ],
 )

@@ -85,6 +85,7 @@ from quantify_scheduler.backends.qblox.operations import (
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     IdlePulse,
+    MarkerPulse,
     NumericalPulse,
     RampPulse,
     ReferenceMagnitude,
@@ -3498,6 +3499,77 @@ def test_compile_sequencer_options(
     assert sequencer_instructions["init_offset_awg_path_Q"] == -0.1
     assert sequencer_instructions["init_gain_awg_path_I"] == 0.55
     assert sequencer_instructions["init_gain_awg_path_Q"] == 0.66
+
+
+def test_digital_channel_any_clock_name(
+    mock_setup_basic_transmon_with_standard_params, assert_equal_q1asm
+):
+    hardware_cfg = {
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "ref": "internal",
+                "modules": {
+                    "1": {"instrument_type": "QRM"},
+                },
+            },
+        },
+        "hardware_options": {},
+        "connectivity": {
+            "graph": [
+                ("cluster0.module1.digital_output_1", "q0:switch"),
+            ]
+        },
+    }
+
+    # Setup objects needed for experiment
+    mock_setup = mock_setup_basic_transmon_with_standard_params
+    quantum_device = mock_setup["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+
+    # Define experiment schedule
+    schedule = Schedule("test MarkerPulse compilation")
+    schedule.add(
+        MarkerPulse(
+            duration=500e-9,
+            port="q0:switch",
+            clock="q0.some_clock",
+        ),
+    )
+    schedule.add(IdlePulse(duration=4e-9))
+    schedule.add_resource(BasebandClockResource(name="q0.some_clock"))
+
+    # Generate compiled schedule
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    # # Assert markers were set correctly, and wait time is correct for QRM
+    seq0_digital = compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"][
+        "sequencers"
+    ]["seq0"]["sequence"]["program"]
+    assert_equal_q1asm(
+        seq0_digital,
+        """
+set_mrk 0 # set markers to 0
+ wait_sync 4 
+ upd_param 4 
+ wait 4 # latency correction of 4 + 0 ns
+ move 1,R0 # iterator for loop with label start
+start:   
+ reset_ph  
+ upd_param 4 
+ set_mrk 2 # set markers to 2
+ upd_param 4 
+ wait 496 # auto generated wait (496 ns)
+ set_mrk 0 # set markers to 0
+ upd_param 4 
+ loop R0,@start 
+ stop  
+""",
+    )
 
 
 def test_stitched_pulse_compilation_smoke_test(mock_setup_basic_nv_qblox_hardware):

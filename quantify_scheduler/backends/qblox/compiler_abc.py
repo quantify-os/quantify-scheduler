@@ -1898,7 +1898,10 @@ class BasebandModuleCompiler(ClusterModuleCompiler):
         (via :func:`.helpers.determine_clock_lo_interm_freqs`).
         """
         compiler_container = self.parent.parent
-        if sequencer.clock not in compiler_container.resources:
+        if (
+            sequencer.clock not in compiler_container.resources
+            or ChannelMode.DIGITAL in sequencer.settings.channel_name
+        ):
             return
 
         clock_freq = compiler_container.resources[sequencer.clock]["freq"]
@@ -1963,6 +1966,7 @@ class RFModuleCompiler(ClusterModuleCompiler):
         if (
             len(sequencer.connected_output_indices) == 0
             or sequencer.clock not in compiler_container.resources
+            or ChannelMode.DIGITAL in sequencer.settings.channel_name
         ):
             return
 

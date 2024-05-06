@@ -528,6 +528,12 @@ def test_flatten_schedule_gets_all_resources(
             "freq": 0,
             "phase": 0,
         },
+        "digital": {
+            "name": "digital",
+            "type": "DigitalClockResource",
+            "freq": 0,
+            "phase": 0,
+        },
         "q0.01": {
             "name": "q0.01",
             "type": "ClockResource",

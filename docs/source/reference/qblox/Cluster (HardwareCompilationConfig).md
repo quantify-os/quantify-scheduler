@@ -481,6 +481,15 @@ The `MarkerPulse` is defined by adding a `MarkerPulse` to the sequence in questi
 schedule.add(MarkerPulse(duration=52e-9, port="q0:switch"))
 ```
 
+#### Clock names
+
+Clocks in digital channels serve simply as a label and are automatically set to {attr}`"digital" <quantify_scheduler.resources.DigitalClockResource.IDENTITY>` at `MarkerPulse` initialization, but it is also possible to specify a custom clock name (for example, a clock name from the device configuration, like `qe0.ge0`). This makes it possible to connect a digital channel to a given port-clock combination in a device element, for example. Similar to clocks for non-digital channels, the clock must be either
+
+- specified in the device configuration,
+- added to the {class}`~quantify_scheduler.schedules.schedule.Schedule` as a {class}`~quantify_scheduler.resources.ClockResource`, or
+- a clock that is present by default in the schedule resources, i.e. {attr}`"digital" <quantify_scheduler.resources.DigitalClockResource.IDENTITY>` or {attr}`"cl0.baseband" <quantify_scheduler.resources.BasebandClockResource.IDENTITY>`.
+
+
 ### External IQ mixers and local oscillators
 
 Baseband modules can be connected to external IQ mixers and local oscillators. To achieve this, you should add a {class}`~.quantify_scheduler.backends.types.common.IQMixerDescription` and {class}`~.quantify_scheduler.backends.types.common.LocalOscillatorDescription` to the `"hardware_description"` part of the hardware compilation config, and specify the connections of the `"if"`, `"lo"` and `"rf"` ports on the IQ mixer in the `"connectivity"` part of the hardware compilation config. The compiler will then use this information to assign the pulses and acquisitions to the port on the baseband module that is connected to the `"if"` port on the IQ mixer, and set the local oscillator and intermodulation frequencies accordingly.

@@ -718,6 +718,10 @@ class Schedule(ScheduleBase):
         self.add_resource(
             resources.BasebandClockResource(resources.BasebandClockResource.IDENTITY)
         )
+        # This is used to define operations on marker and digital channels.
+        self.add_resource(
+            resources.DigitalClockResource(resources.DigitalClockResource.IDENTITY)
+        )
 
         if data is not None:
             self.data.update(data)
