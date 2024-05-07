@@ -53,6 +53,9 @@ class QASMProgram:
         The register manager that keeps track of the occupied/available registers.
     align_fields
         If True, make QASM program more human-readable by aligning its fields.
+    acq_metadata
+        Provides a summary of the used acquisition protocol, bin mode, acquisition
+        channels, acquisition indices per channel, and repetitions.
     """
 
     def __init__(
@@ -62,12 +65,20 @@ class QASMProgram:
         align_fields: bool,
         acq_metadata: Optional[AcquisitionMetadata],
     ):
-        self.register_manager: RegisterManager = register_manager
-        """The register manager that keeps track of the occupied/available registers."""
-        self.static_hw_properties: StaticHardwareProperties = static_hw_properties
+        self.static_hw_properties = static_hw_properties
         """Dataclass holding the properties of the hardware that this program is to be
         played on."""
-        self.elapsed_time: int = 0
+        self.register_manager = register_manager
+        """The register manager that keeps track of the occupied/available registers."""
+        self.align_fields = align_fields
+        """If true, all labels, instructions, arguments and comments
+        in the string representation of the program are printed on the same indention level.
+        This worsens performance."""
+        self.acq_metadata = acq_metadata
+        """Provides a summary of the used acquisition protocol, bin mode, acquisition
+        channels, acquisition indices per channel, and repetitions."""
+
+        self.elapsed_time = 0
         """The time elapsed after finishing the program in its current form. This is
         used  to keep track of the overall timing and necessary waits."""
         self.time_last_acquisition_triggered: Optional[int] = None
@@ -79,14 +90,8 @@ class QASMProgram:
         self.instructions: List[list] = list()
         """A list containing the instructions added to the program. The instructions
         added are in turn a list of the instruction string with arguments."""
-        self.align_fields: bool = align_fields
-        """If true, all labels, instructions, arguments and comments
-        in the string representation of the program are printed on the same indention level.
-        This worsens performance."""
-        self.conditional_manager: ConditionalManager = ConditionalManager()
+        self.conditional_manager = ConditionalManager()
         """The conditional manager that keeps track of the conditionals."""
-        self.acq_metadata: Optional[AcquisitionMetadata] = acq_metadata
-        """Acquisition metadata."""
         self._lock_conditional: bool = False
         """A lock to prevent nested conditionals."""
 
@@ -542,7 +547,7 @@ class QASMProgram:
             from quantify_scheduler.backends.qblox.instrument_compilers import QCMCompiler
             from quantify_scheduler.backends.qblox import register_manager, constants
             from quantify_scheduler.backends.types.qblox import (
-                StaticHardwareProperties,
+                StaticAnalogModuleProperties,
                 BoundedParameter
             )
 

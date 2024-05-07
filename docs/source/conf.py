@@ -489,6 +489,7 @@ nitpick_ignore = [
     ("py:class", "SUPPORTED_ACQ_PROTOCOLS"),
     ("py:class", "HardwareDescription"),
     ("py:class", "LatencyCorrection"),
+    ("py:class", "_SequencerT_co"),
     ("py:class", "_ModuleSettingsT"),
     ("py:class", "quantify_scheduler.backends.types.qblox.QbloxHardwareDescription"),
     ("py:class", "quantify_scheduler.backends.types.zhinst.ZIHardwareDescription"),

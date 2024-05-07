@@ -34,8 +34,8 @@ from quantify_scheduler.backends.qblox import (
     q1asm_instructions,
     register_manager,
 )
-from quantify_scheduler.backends.qblox.compiler_abc import (
-    Sequencer,
+from quantify_scheduler.backends.qblox.analog import (
+    AnalogSequencerCompiler,
     NcoOperationTimingError,
 )
 from quantify_scheduler.backends.qblox.helpers import (
@@ -615,11 +615,11 @@ def test_construct_sequencers(
         device_compilers={"cluster0_module1": test_module},
     )
 
-    test_module._construct_sequencers()
+    test_module._construct_all_sequencer_compilers()
     seq_keys = list(test_module.sequencers.keys())
 
     assert len(seq_keys) == 2
-    assert isinstance(test_module.sequencers[seq_keys[0]], Sequencer)
+    assert isinstance(test_module.sequencers[seq_keys[0]], AnalogSequencerCompiler)
 
 
 def test_construct_sequencers_repeated_portclocks_error(
@@ -651,7 +651,7 @@ def test_construct_sequencers_repeated_portclocks_error(
     )
 
     with pytest.raises(ValueError) as error:
-        test_module.sequencers = test_module._construct_sequencers()
+        test_module.sequencers = test_module._construct_all_sequencer_compilers()
 
     assert (
         f"Portclock {(port, clock)} was assigned to multiple portclock_configs"

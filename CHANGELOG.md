@@ -9,6 +9,7 @@
   - Convert transmon-specific hardware configs in test suite and docs to new style. (!972)
 
 - Qblox backend - Allow operations on a digital channel to take a custom clock name as argument. If the clock name is not the default name (`"digital"`), it must be a name that is present in the device configuration, or one that is manually added to the `Schedule` as a `ClockResource`. (!967)
+- Qblox backend - Refactor the module and sequencer compiler classes, and add new QTM compiler classes. (!937)
 
 ## 0.20.0 (2024-05-01)
 

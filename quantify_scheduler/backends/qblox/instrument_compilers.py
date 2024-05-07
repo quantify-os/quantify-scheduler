@@ -7,17 +7,28 @@ from collections import abc, defaultdict
 from typing import TYPE_CHECKING, Any
 
 from quantify_scheduler.backends.qblox import compiler_abc
+from quantify_scheduler.backends.qblox.analog import (
+    AnalogModuleCompiler,
+    BasebandModuleCompiler,
+    RFModuleCompiler,
+)
 from quantify_scheduler.backends.qblox.constants import (
     MAX_NUMBER_OF_INSTRUCTIONS_QCM,
     MAX_NUMBER_OF_INSTRUCTIONS_QRM,
+    MAX_NUMBER_OF_INSTRUCTIONS_QTM,
     NUMBER_OF_SEQUENCERS_QCM,
     NUMBER_OF_SEQUENCERS_QRM,
+    NUMBER_OF_SEQUENCERS_QTM,
 )
+from quantify_scheduler.backends.qblox.timetag import TimetagSequencerCompiler
 from quantify_scheduler.backends.types.qblox import (
     BoundedParameter,
     LOSettings,
     OpInfo,
-    StaticHardwareProperties,
+    StaticAnalogModuleProperties,
+    StaticTimetagModuleProperties,
+    TimetagModuleSettings,
+    TimetagSequencerSettings,
 )
 
 if TYPE_CHECKING:
@@ -136,12 +147,12 @@ class LocalOscillatorCompiler(compiler_abc.InstrumentCompiler):
         }
 
 
-class QCMCompiler(compiler_abc.BasebandModuleCompiler):
+class QCMCompiler(BasebandModuleCompiler):
     """QCM specific implementation of the qblox compiler."""
 
     supports_acquisition = False
     max_number_of_instructions = MAX_NUMBER_OF_INSTRUCTIONS_QCM
-    static_hw_properties = StaticHardwareProperties(
+    static_hw_properties = StaticAnalogModuleProperties(
         instrument_type="QCM",
         max_sequencers=NUMBER_OF_SEQUENCERS_QCM,
         max_awg_output_voltage=2.5,
@@ -161,12 +172,12 @@ class QCMCompiler(compiler_abc.BasebandModuleCompiler):
     )
 
 
-class QRMCompiler(compiler_abc.BasebandModuleCompiler):
+class QRMCompiler(BasebandModuleCompiler):
     """QRM specific implementation of the qblox compiler."""
 
     supports_acquisition = True
     max_number_of_instructions = MAX_NUMBER_OF_INSTRUCTIONS_QRM
-    static_hw_properties = StaticHardwareProperties(
+    static_hw_properties = StaticAnalogModuleProperties(
         instrument_type="QRM",
         max_sequencers=NUMBER_OF_SEQUENCERS_QRM,
         max_awg_output_voltage=0.5,
@@ -186,12 +197,12 @@ class QRMCompiler(compiler_abc.BasebandModuleCompiler):
     )
 
 
-class QCMRFCompiler(compiler_abc.RFModuleCompiler):
+class QCMRFCompiler(RFModuleCompiler):
     """QCM-RF specific implementation of the qblox compiler."""
 
     supports_acquisition = False
     max_number_of_instructions = MAX_NUMBER_OF_INSTRUCTIONS_QCM
-    static_hw_properties = StaticHardwareProperties(
+    static_hw_properties = StaticAnalogModuleProperties(
         instrument_type="QCM_RF",
         max_sequencers=NUMBER_OF_SEQUENCERS_QCM,
         max_awg_output_voltage=None,
@@ -210,12 +221,12 @@ class QCMRFCompiler(compiler_abc.RFModuleCompiler):
     )
 
 
-class QRMRFCompiler(compiler_abc.RFModuleCompiler):
+class QRMRFCompiler(RFModuleCompiler):
     """QRM-RF specific implementation of the qblox compiler."""
 
     supports_acquisition = True
     max_number_of_instructions = MAX_NUMBER_OF_INSTRUCTIONS_QRM
-    static_hw_properties = StaticHardwareProperties(
+    static_hw_properties = StaticAnalogModuleProperties(
         instrument_type="QRM_RF",
         max_sequencers=NUMBER_OF_SEQUENCERS_QRM,
         max_awg_output_voltage=None,
@@ -228,6 +239,117 @@ class QRMRFCompiler(compiler_abc.RFModuleCompiler):
         },
         default_marker=0b0011,
     )
+
+
+class TimetagModuleCompiler(compiler_abc.ClusterModuleCompiler):
+    """
+    QTM specific implementation of the qblox compiler.
+
+    Parameters
+    ----------
+    parent: :class:`quantify_scheduler.backends.qblox.instrument_compilers.ClusterCompiler`
+        Reference to the parent object.
+    name
+        Name of the `QCoDeS` instrument this compiler object corresponds to.
+    total_play_time
+        Total time execution of the schedule should go on for. This parameter is
+        used to ensure that the different devices, potentially with different clock
+        rates, can work in a synchronized way when performing multiple executions of
+        the schedule.
+    instrument_cfg
+        The part of the hardware configuration dictionary referring to this device. This is one
+        of the inner dictionaries of the overall hardware config.
+    latency_corrections
+        Dict containing the delays for each port-clock combination. This is specified in
+        the top layer of hardware config.
+    """
+
+    def __init__(
+        self,
+        parent: ClusterCompiler,
+        name: str,
+        total_play_time: float,
+        instrument_cfg: dict[str, Any],
+        latency_corrections: dict[str, float] | None = None,
+    ) -> None:
+        super().__init__(
+            parent=parent,
+            name=name,
+            total_play_time=total_play_time,
+            instrument_cfg=instrument_cfg,
+            latency_corrections=latency_corrections,
+        )
+        self.sequencers: dict[str, TimetagSequencerCompiler] = {}
+
+        self._settings: TimetagModuleSettings = (  # type: ignore
+            TimetagModuleSettings.extract_settings_from_mapping(instrument_cfg)
+        )
+
+    @property
+    def max_number_of_instructions(self) -> int:
+        """The maximum number of Q1ASM instructions supported by this module type."""
+        return MAX_NUMBER_OF_INSTRUCTIONS_QTM
+
+    @property
+    def supports_acquisition(self) -> bool:
+        """Specifies whether the device can perform acquisitions."""
+        return True
+
+    @property
+    def static_hw_properties(self) -> StaticTimetagModuleProperties:
+        """
+        The static properties of the hardware. This effectively gathers all the
+        differences between the different modules.
+        """
+        return StaticTimetagModuleProperties(
+            instrument_type="QTM",
+            max_sequencers=NUMBER_OF_SEQUENCERS_QTM,
+            channel_name_to_connected_io_indices={
+                f"digital_{io}_{idx}": (idx,)
+                for io in ("input", "output")
+                for idx in range(8)
+            },
+        )
+
+    def _construct_sequencer_compiler(
+        self,
+        index: int,
+        portclock: tuple[str, str],
+        channel_name: str,
+        sequencer_cfg: dict[str, Any],
+        channel_cfg: dict[str, Any],  # noqa: ARG002 ignore unused argument
+    ) -> TimetagSequencerCompiler:
+        settings = TimetagSequencerSettings.initialize_from_config_dict(
+            sequencer_cfg=sequencer_cfg,
+            channel_name=channel_name,
+            connected_output_indices=self.static_hw_properties._get_connected_output_indices(
+                channel_name
+            ),
+            connected_input_indices=self.static_hw_properties._get_connected_input_indices(
+                channel_name
+            ),
+        )
+        return TimetagSequencerCompiler(
+            parent=self,
+            index=index,
+            portclock=portclock,
+            static_hw_properties=self.static_hw_properties,
+            settings=settings,
+            latency_corrections=self.latency_corrections,
+            qasm_hook_func=sequencer_cfg.get("qasm_hook_func"),
+        )
+
+    def prepare(self) -> None:
+        """
+        Performs the logic needed before being able to start the compilation. In effect,
+        this means assigning the pulses and acquisitions to the sequencers and
+        calculating the relevant frequencies in case an external local oscillator is
+        used.
+        """
+        self._construct_all_sequencer_compilers()
+        self.distribute_data()
+        for seq in self.sequencers.values():
+            seq.prepare()
 
 
 class ClusterCompiler(compiler_abc.InstrumentCompiler):
@@ -275,7 +397,7 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
             latency_corrections=latency_corrections,
         )
         self._op_infos: dict[tuple[str, str], list[OpInfo]] = defaultdict(list)
-        self.instrument_compilers = self.construct_instrument_compilers()
+        self.instrument_compilers = self.construct_module_compilers()
         self.latency_corrections = latency_corrections
 
     def add_op_info(self, port: str, clock: str, op_info: OpInfo) -> None:
@@ -294,9 +416,7 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
         """
         self._op_infos[(port, clock)].append(op_info)
 
-    def construct_instrument_compilers(
-        self,
-    ) -> dict[str, compiler_abc.ClusterModuleCompiler]:
+    def construct_module_compilers(self) -> dict[str, AnalogModuleCompiler]:
         """
         Constructs the compilers for the modules inside the cluster.
 

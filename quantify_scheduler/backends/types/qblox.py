@@ -54,22 +54,8 @@ class StaticHardwareProperties:
     """The type of instrument."""
     max_sequencers: int
     """The amount of sequencers available."""
-    max_awg_output_voltage: Optional[float]
-    """Maximum output voltage of the awg."""
-    mixer_dc_offset_range: BoundedParameter
-    """Specifies the range over which the dc offsets can be set that are used for mixer
-    calibration."""
     channel_name_to_connected_io_indices: Dict[str, tuple[int, ...]]
     """Specifies the connected io indices per channel_name identifier."""
-    default_marker: int = 0
-    """The default marker value to set at the beginning of programs.
-    Important for RF instruments that use the set_mrk command to enable/disable the RF output."""
-    channel_name_to_digital_marker: Dict[str, int] = dataclasses_field(
-        default_factory=dict
-    )
-    """A mapping from channel_name to digital marker setting.
-    Specifies which marker bit needs to be set at start if the
-    output (as a string ex. `complex_output_0`) contains a pulse."""
 
     def _get_connected_output_indices(self, channel_name) -> tuple[int, ...]:
         """
@@ -92,6 +78,31 @@ class StaticHardwareProperties:
             if "input" in channel_name
             else ()
         )
+
+
+@dataclass(frozen=True)
+class StaticAnalogModuleProperties(StaticHardwareProperties):
+    """Specifies the fixed hardware properties needed in the backend for QRM/QCM modules."""
+
+    max_awg_output_voltage: Optional[float]
+    """Maximum output voltage of the awg."""
+    mixer_dc_offset_range: BoundedParameter
+    """Specifies the range over which the dc offsets can be set that are used for mixer
+    calibration."""
+    default_marker: int = 0
+    """The default marker value to set at the beginning of programs.
+    Important for RF instruments that use the set_mrk command to enable/disable the RF output."""
+    channel_name_to_digital_marker: Dict[str, int] = dataclasses_field(
+        default_factory=dict
+    )
+    """A mapping from channel_name to digital marker setting.
+    Specifies which marker bit needs to be set at start if the
+    output (as a string ex. `complex_output_0`) contains a pulse."""
+
+
+@dataclass(frozen=True)
+class StaticTimetagModuleProperties(StaticHardwareProperties):
+    """Specifies the fixed hardware properties needed in the backend for QTM modules."""
 
 
 @dataclass(frozen=True)
@@ -265,19 +276,6 @@ child classes.
 class BaseModuleSettings(DataClassJsonMixin):
     """Shared settings between all the Qblox modules."""
 
-    offset_ch0_path_I: Optional[float] = None
-    """The DC offset on the path_I of channel 0."""
-    offset_ch0_path_Q: Optional[float] = None
-    """The DC offset on the path_Q of channel 0."""
-    offset_ch1_path_I: Optional[float] = None
-    """The DC offset on path_I of channel 1."""
-    offset_ch1_path_Q: Optional[float] = None
-    """The DC offset on path_Q of channel 1."""
-    in0_gain: Optional[int] = None
-    """The gain of input 0."""
-    in1_gain: Optional[int] = None
-    """The gain of input 1."""
-
     @classmethod
     def extract_settings_from_mapping(
         cls: type[_ModuleSettingsT], mapping: Dict[str, Any], **kwargs: Optional[dict]
@@ -299,7 +297,25 @@ class BaseModuleSettings(DataClassJsonMixin):
 
 
 @dataclass
-class BasebandModuleSettings(BaseModuleSettings):
+class AnalogModuleSettings(BaseModuleSettings):
+    """Shared settings between all QCM/QRM modules."""
+
+    offset_ch0_path_I: Optional[float] = None
+    """The DC offset on the path_I of channel 0."""
+    offset_ch0_path_Q: Optional[float] = None
+    """The DC offset on the path_Q of channel 0."""
+    offset_ch1_path_I: Optional[float] = None
+    """The DC offset on path_I of channel 1."""
+    offset_ch1_path_Q: Optional[float] = None
+    """The DC offset on path_Q of channel 1."""
+    in0_gain: Optional[int] = None
+    """The gain of input 0."""
+    in1_gain: Optional[int] = None
+    """The gain of input 1."""
+
+
+@dataclass
+class BasebandModuleSettings(AnalogModuleSettings):
     """
     Settings for a baseband module.
 
@@ -309,11 +325,11 @@ class BasebandModuleSettings(BaseModuleSettings):
 
 
 @dataclass
-class RFModuleSettings(BaseModuleSettings):
+class RFModuleSettings(AnalogModuleSettings):
     """
     Global settings for the module to be set in the InstrumentCoordinator component.
     This is kept separate from the settings that can be set on a per sequencer basis,
-    which are specified in :class:`~.SequencerSettings`.
+    which are specified in :class:`~.AnalogSequencerSettings`.
     """
 
     lo0_freq: Optional[float] = None
@@ -359,6 +375,15 @@ class RFModuleSettings(BaseModuleSettings):
 
 
 @dataclass
+class TimetagModuleSettings(BaseModuleSettings):
+    """
+    Global settings for the module to be set in the InstrumentCoordinator component.
+    This is kept separate from the settings that can be set on a per sequencer basis,
+    which are specified in :class:`~.TimetagSequencerSettings`.
+    """
+
+
+@dataclass
 class SequencerSettings(DataClassJsonMixin):
     """
     Sequencer level settings.
@@ -376,8 +401,6 @@ class SequencerSettings(DataClassJsonMixin):
     (e.g. parameters related to thresholded acquisition).
     """
 
-    nco_en: bool
-    """Specifies whether the NCO will be used or not."""
     sync_en: bool
     """Enables party-line synchronization."""
     channel_name: str
@@ -386,43 +409,11 @@ class SequencerSettings(DataClassJsonMixin):
     """Specifies the indices of the outputs this sequencer produces waveforms for."""
     connected_input_indices: Tuple[int, ...]
     """Specifies the indices of the inputs this sequencer collects data for."""
-    init_offset_awg_path_I: float = 0.0
-    """Specifies what value the sequencer offset for AWG path_I will be reset to
-    before the start of the experiment."""
-    init_offset_awg_path_Q: float = 0.0
-    """Specifies what value the sequencer offset for AWG path_Q will be reset to
-    before the start of the experiment."""
-    init_gain_awg_path_I: float = 1.0
-    """Specifies what value the sequencer gain for AWG path_I will be reset to
-    before the start of the experiment."""
-    init_gain_awg_path_Q: float = 1.0
-    """Specifies what value the sequencer gain for AWG path_Q will be reset to
-    before the start of the experiment."""
-    modulation_freq: Optional[float] = None
-    """Specifies the frequency of the modulation."""
-    mixer_corr_phase_offset_degree: float = 0.0
-    """The phase shift to apply between the I and Q channels, to correct for quadrature
-    errors."""
-    mixer_corr_gain_ratio: float = 1.0
-    """The gain ratio to apply in order to correct for imbalances between the I and Q
-    paths of the mixer."""
-    integration_length_acq: Optional[int] = None
-    """Integration length for acquisitions. Must be a multiple of 4 ns."""
     sequence: Optional[Dict[str, Any]] = None
     """JSON compatible dictionary holding the waveforms and program for the
     sequencer."""
     seq_fn: Optional[str] = None
     """Filename of JSON file containing a dump of the waveforms and program."""
-    thresholded_acq_threshold: Optional[float] = None
-    """The sequencer discretization threshold for discretizing the phase rotation result."""
-    thresholded_acq_rotation: Optional[float] = None
-    """The sequencer integration result phase rotation in degrees."""
-    ttl_acq_input_select: Optional[int] = None
-    """Selects the input used to compare against the threshold value in the TTL trigger acquisition path."""
-    ttl_acq_threshold: Optional[float] = None
-    """Sets the threshold value with which to compare the input ADC values of the selected input path."""
-    ttl_acq_auto_bin_incr_en: Optional[bool] = None
-    """Selects if the bin index is automatically incremented when acquiring multiple triggers."""
     thresholded_acq_trigger_address: Optional[int] = None
     """Sets the feedback trigger address to be used by conditional playback."""
     thresholded_acq_trigger_en: Optional[bool] = None
@@ -436,7 +427,7 @@ class SequencerSettings(DataClassJsonMixin):
     @classmethod
     def initialize_from_config_dict(
         cls,
-        sequencer_cfg: Dict[str, Any],
+        sequencer_cfg: Dict[str, Any],  # noqa: ARG003 ignore unused argument
         channel_name: str,
         connected_output_indices: tuple[int, ...],
         connected_input_indices: tuple[int, ...],
@@ -461,12 +452,101 @@ class SequencerSettings(DataClassJsonMixin):
         : SequencerSettings
             A SequencerSettings instance with initial values.
         """
+        return cls(
+            sync_en=True,
+            channel_name=channel_name,
+            connected_output_indices=connected_output_indices,
+            connected_input_indices=connected_input_indices,
+        )
+
+
+@dataclass
+class AnalogSequencerSettings(SequencerSettings):
+    """
+    Sequencer level settings.
+
+    In the Qblox driver these settings are typically recognized by parameter names of
+    the form ``"{module}.sequencer{index}.{setting}"`` (for allowed values see
+    `Cluster QCoDeS parameters
+    <https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/sequencer.html#cluster-qcodes-parameters>`__).
+    These settings are set once and will remain unchanged after, meaning that these
+    correspond to the "slow" QCoDeS parameters and not settings that are changed
+    dynamically by the sequencer.
+
+    These settings are mostly defined in the hardware configuration under each
+    port-clock key combination or in some cases through the device configuration
+    (e.g. parameters related to thresholded acquisition).
+    """
+
+    nco_en: bool = False
+    """Specifies whether the NCO will be used or not."""
+    init_offset_awg_path_I: float = 0.0
+    """Specifies what value the sequencer offset for AWG path_I will be reset to
+    before the start of the experiment."""
+    init_offset_awg_path_Q: float = 0.0
+    """Specifies what value the sequencer offset for AWG path_Q will be reset to
+    before the start of the experiment."""
+    init_gain_awg_path_I: float = 1.0
+    """Specifies what value the sequencer gain for AWG path_I will be reset to
+    before the start of the experiment."""
+    init_gain_awg_path_Q: float = 1.0
+    """Specifies what value the sequencer gain for AWG path_Q will be reset to
+    before the start of the experiment."""
+    modulation_freq: Optional[float] = None
+    """Specifies the frequency of the modulation."""
+    mixer_corr_phase_offset_degree: float = 0.0
+    """The phase shift to apply between the I and Q channels, to correct for quadrature
+    errors."""
+    mixer_corr_gain_ratio: float = 1.0
+    """The gain ratio to apply in order to correct for imbalances between the I and Q
+    paths of the mixer."""
+    integration_length_acq: Optional[int] = None
+    """Integration length for acquisitions. Must be a multiple of 4 ns."""
+    thresholded_acq_threshold: Optional[float] = None
+    """The sequencer discretization threshold for discretizing the phase rotation result."""
+    thresholded_acq_rotation: Optional[float] = None
+    """The sequencer integration result phase rotation in degrees."""
+    ttl_acq_input_select: Optional[int] = None
+    """Selects the input used to compare against the threshold value in the TTL trigger acquisition path."""
+    ttl_acq_threshold: Optional[float] = None
+    """Sets the threshold value with which to compare the input ADC values of the selected input path."""
+    ttl_acq_auto_bin_incr_en: Optional[bool] = None
+    """Selects if the bin index is automatically incremented when acquiring multiple triggers."""
+
+    @classmethod
+    def initialize_from_config_dict(
+        cls,
+        sequencer_cfg: Dict[str, Any],
+        channel_name: str,
+        connected_output_indices: tuple[int, ...],
+        connected_input_indices: tuple[int, ...],
+    ) -> AnalogSequencerSettings:
+        """
+        Instantiates an instance of this class, with initial parameters determined from
+        the sequencer configuration dictionary.
+
+        Parameters
+        ----------
+        sequencer_cfg : dict
+            The sequencer configuration dict.
+        channel_name
+            Specifies the channel identifier of the hardware config (e.g. `complex_output_0`).
+        connected_output_indices
+            Specifies the indices of the outputs this sequencer produces waveforms for.
+        connected_input_indices
+            Specifies the indices of the inputs this sequencer collects data for.
+
+        Returns
+        -------
+        : AnalogSequencerSettings
+            A AnalogSequencerSettings instance with initial values.
+        """
         T = TypeVar("T", int, float)
 
         def extract_and_verify_range(
             param_name: str,
             settings: Dict[str, Any],
-            default_value: T,
+            default_value: T | None,
             min_value: T,
             max_value: T,
         ) -> T:
@@ -553,7 +633,7 @@ class SequencerSettings(DataClassJsonMixin):
 
         ttl_acq_threshold = sequencer_cfg.get("ttl_acq_threshold")
 
-        sequencer_settings = cls(
+        return cls(
             nco_en=nco_en,
             sync_en=True,
             channel_name=channel_name,
@@ -570,7 +650,60 @@ class SequencerSettings(DataClassJsonMixin):
             thresholded_acq_threshold=thresholded_acq_threshold,
             ttl_acq_threshold=ttl_acq_threshold,
         )
-        return sequencer_settings
+
+
+@dataclass
+class TimetagSequencerSettings(SequencerSettings):
+    """
+    Sequencer level settings.
+
+    In the Qblox driver these settings are typically recognized by parameter names of
+    the form ``"{module}.sequencer{index}.{setting}"`` (for allowed values see
+    `Cluster QCoDeS parameters
+    <https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/sequencer.html#cluster-qcodes-parameters>`__).
+    These settings are set once and will remain unchanged after, meaning that these
+    correspond to the "slow" QCoDeS parameters and not settings that are changed
+    dynamically by the sequencer.
+
+    These settings are mostly defined in the hardware configuration under each
+    port-clock key combination or in some cases through the device configuration
+    (e.g. parameters related to thresholded acquisition).
+    """
+
+    @classmethod
+    def initialize_from_config_dict(
+        cls,
+        sequencer_cfg: Dict[str, Any],  # noqa: ARG003 ignore unused argument
+        channel_name: str,
+        connected_output_indices: tuple[int, ...],
+        connected_input_indices: tuple[int, ...],
+    ) -> TimetagSequencerSettings:
+        """
+        Instantiates an instance of this class, with initial parameters determined from
+        the sequencer configuration dictionary.
+
+        Parameters
+        ----------
+        sequencer_cfg : dict
+            The sequencer configuration dict.
+        channel_name
+            Specifies the channel identifier of the hardware config (e.g. `complex_output_0`).
+        connected_output_indices
+            Specifies the indices of the outputs this sequencer produces waveforms for.
+        connected_input_indices
+            Specifies the indices of the inputs this sequencer collects data for.
+
+        Returns
+        -------
+        : SequencerSettings
+            A SequencerSettings instance with initial values.
+        """
+        return cls(
+            sync_en=True,
+            channel_name=channel_name,
+            connected_output_indices=connected_output_indices,
+            connected_input_indices=connected_input_indices,
+        )
 
 
 class QbloxBaseDescription(HardwareDescription):

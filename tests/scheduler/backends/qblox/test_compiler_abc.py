@@ -8,7 +8,7 @@ from unittest.mock import Mock
 import pytest
 
 from quantify_scheduler.backends.qblox import q1asm_instructions
-from quantify_scheduler.backends.qblox.compiler_abc import Sequencer
+from quantify_scheduler.backends.qblox.analog import AnalogSequencerCompiler
 from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
 from quantify_scheduler.backends.qblox.operation_handling.factory import (
     get_operation_strategy,
@@ -16,9 +16,12 @@ from quantify_scheduler.backends.qblox.operation_handling.factory import (
 from quantify_scheduler.backends.qblox.operation_handling.virtual import (
     UpdateParameterStrategy,
 )
-from quantify_scheduler.backends.types.qblox import SequencerSettings, OpInfo
+from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
+from quantify_scheduler.backends.qblox.timetag import TimetagSequencerCompiler
+from quantify_scheduler.backends.types.qblox import AnalogSequencerSettings, OpInfo
 from quantify_scheduler.compilation import _ControlFlowReturn
 from quantify_scheduler.operations.acquisition_library import Trace
+from quantify_scheduler.operations.control_flow_library import Loop
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import (
     ResetClockPhase,
@@ -33,10 +36,10 @@ DEFAULT_CLOCK = "q0.ro"
 
 
 @pytest.fixture
-def mock_sequencer(total_play_time) -> Sequencer:
+def mock_sequencer(total_play_time) -> AnalogSequencerCompiler:
     mod = Mock()
     mod.configure_mock(total_play_time=total_play_time)
-    settings = SequencerSettings.initialize_from_config_dict(
+    settings = AnalogSequencerSettings.initialize_from_config_dict(
         {
             "port": "q1:mw",
             "clock": "q1.01",
@@ -46,7 +49,7 @@ def mock_sequencer(total_play_time) -> Sequencer:
         connected_input_indices=(),
         connected_output_indices=(0,),
     )
-    return Sequencer(
+    return AnalogSequencerCompiler(
         parent=mod,
         index=0,
         portclock=(DEFAULT_PORT, DEFAULT_CLOCK),
@@ -137,6 +140,31 @@ def control_flow_return(timing: float) -> OpInfo:
     )
 
 
+def loop(timing: float, repetitions: int = 1) -> OpInfo:
+    """Create an OpInfo object that is recognized as a loop operation."""
+    operation = Loop(repetitions=repetitions)
+    return op_info_from_operation(
+        operation=operation, timing=timing, data=operation.data["control_flow_info"]
+    )
+
+
+def upd_param(
+    timing: float, port: str = DEFAULT_PORT, clock: str = DEFAULT_CLOCK
+) -> OpInfo:
+    """Create an OpInfo object that is recognized as upd_param operation."""
+    return OpInfo(
+        name="UpdateParameters",
+        data={
+            "t0": 0,
+            "port": port,
+            "clock": clock,
+            "duration": 0,
+            "instruction": q1asm_instructions.UPDATE_PARAMETERS,
+        },
+        timing=timing,
+    )
+
+
 def ioperation_strategy_from_op_info(
     op_info: OpInfo, channel_name: str
 ) -> IOperationStrategy:
@@ -161,7 +189,7 @@ def ioperation_strategy_from_op_info(
     ),
 )
 def test_param_update_after_param_op_except_if_simultaneous_play(
-    op_list: List[OpInfo], mock_sequencer: Sequencer
+    op_list: List[OpInfo], mock_sequencer: AnalogSequencerCompiler
 ):
     """Test if upd_param is inserted after a VoltageOffset in the correct places."""
     iop_list = [ioperation_strategy_from_op_info(op, "complex_out_0") for op in op_list]
@@ -206,7 +234,9 @@ def test_param_update_after_param_op_except_if_simultaneous_play(
         ),
     ),
 )
-def test_no_parameter_update(op_list: List[OpInfo], mock_sequencer: Sequencer):
+def test_no_parameter_update(
+    op_list: List[OpInfo], mock_sequencer: AnalogSequencerCompiler
+):
     """Test if no upd_param is inserted where it is not necessary."""
     iop_list = [ioperation_strategy_from_op_info(op, "complex_out_0") for op in op_list]  # type: ignore
 
@@ -240,7 +270,7 @@ def test_no_parameter_update(op_list: List[OpInfo], mock_sequencer: Sequencer):
 
 
 @pytest.mark.parametrize("total_play_time", [2e-7])
-def test_only_one_param_update(mock_sequencer: Sequencer):
+def test_only_one_param_update(mock_sequencer: AnalogSequencerCompiler):
     """Test if no upd_param is inserted where it is not necessary."""
     op_list = [
         pulse_with_waveform(0.0),
@@ -302,7 +332,7 @@ def test_only_one_param_update(mock_sequencer: Sequencer):
     ),
 )
 def test_error_parameter_update_end_of_schedule(
-    op_list: List[OpInfo], mock_sequencer: Sequencer
+    op_list: List[OpInfo], mock_sequencer: AnalogSequencerCompiler
 ):
     """Test if no upd_param is inserted where it is not necessary."""
     iop_list = [ioperation_strategy_from_op_info(op, "complex_out_0") for op in op_list]  # type: ignore
@@ -318,7 +348,9 @@ def test_error_parameter_update_end_of_schedule(
 
 
 @pytest.mark.parametrize("total_play_time", [3e-7])
-def test_error_parameter_update_at_control_flow_return(mock_sequencer: Sequencer):
+def test_error_parameter_update_at_control_flow_return(
+    mock_sequencer: AnalogSequencerCompiler,
+):
     """Test if no upd_param is inserted where it is not necessary."""
     op_list = [
         offset_instruction(1e-7),
@@ -339,7 +371,7 @@ def test_error_parameter_update_at_control_flow_return(mock_sequencer: Sequencer
 
 
 @pytest.mark.parametrize(
-    "sorted_pulses_and_acqs, op_index, expected",
+    "ordered_op_infos, op_index, expected",
     [
         (
             [
@@ -384,15 +416,14 @@ def test_error_parameter_update_at_control_flow_return(mock_sequencer: Sequencer
     ],
 )
 def test_any_other_updating_instruction_at_timing(
-    sorted_pulses_and_acqs: List[OpInfo], op_index: int, expected: bool
+    ordered_op_infos: List[OpInfo], op_index: int, expected: bool
 ):
     pulse_list = [
-        ioperation_strategy_from_op_info(op, "complex_out_0")
-        for op in sorted_pulses_and_acqs
+        ioperation_strategy_from_op_info(op, "complex_out_0") for op in ordered_op_infos
     ]
     assert (
-        Sequencer._any_other_updating_instruction_at_timing_for_parameter_instruction(
-            op_index=op_index, sorted_pulses_and_acqs=pulse_list
+        AnalogSequencerCompiler._any_other_updating_instruction_at_timing_for_parameter_instruction(
+            op_index=op_index, ordered_op_strategies=pulse_list
         )
         == expected
     )
@@ -400,7 +431,7 @@ def test_any_other_updating_instruction_at_timing(
 
 # Total play time number does not matter here. The fixture needs it.
 @pytest.mark.parametrize("total_play_time", [2e-7])
-def test_too_many_instructions_warns(mock_sequencer: Sequencer):
+def test_too_many_instructions_warns(mock_sequencer: AnalogSequencerCompiler):
     max_num_instructions = 100
     max_operations_num = (max_num_instructions - 10) // 2
     mock_sequencer.parent.configure_mock(  # type: ignore # Member "configure_mock" is unknown
@@ -413,14 +444,114 @@ def test_too_many_instructions_warns(mock_sequencer: Sequencer):
         )
         for t in range(0, max_operations_num + 1)
     ]
-    mock_sequencer.op_strategies = operations
     with pytest.warns(
         RuntimeWarning,
         match="exceeds the maximum supported number of instructions in Q1ASM programs",
     ):
         mock_sequencer.generate_qasm_program(
+            ordered_op_strategies=operations,
             total_sequence_time=max_operations_num * 8e-9,
             align_qasm_fields=False,
             acq_metadata=None,
             repetitions=1,
         )
+
+
+_REAL_TIME_INSTRUCTIONS = {
+    q1asm_instructions.UPDATE_PARAMETERS,
+    q1asm_instructions.PLAY,
+    q1asm_instructions.ACQUIRE,
+    q1asm_instructions.ACQUIRE_TTL,
+    q1asm_instructions.ACQUIRE_WEIGHED,
+    q1asm_instructions.ACQUIRE_TTL,
+    q1asm_instructions.FEEDBACK_TRIGGER_EN,
+    q1asm_instructions.FEEDBACK_TRIGGERS_RST,
+    q1asm_instructions.WAIT,
+    q1asm_instructions.WAIT_SYNC,
+    q1asm_instructions.WAIT_TRIGGER,
+}
+
+
+def _get_instruction_duration(instruction: str, arguments: str) -> int:
+    if instruction not in _REAL_TIME_INSTRUCTIONS:
+        return 0
+
+    return int(arguments.split(",")[-1])
+
+
+def test_write_repetition_loop_header_equal_time():
+    analog_sequencer = AnalogSequencerCompiler(
+        parent=Mock(),
+        index=0,
+        portclock=("foo", "bar"),
+        static_hw_properties=Mock(),
+        settings=Mock(),
+        latency_corrections={},
+    )
+    analog_sequencer._default_marker = 0b1000
+    timetag_sequencer = TimetagSequencerCompiler(
+        parent=Mock(),
+        index=0,
+        portclock=("foo", "bar"),
+        static_hw_properties=Mock(),
+        settings=Mock(),
+        latency_corrections={},
+    )
+
+    durations = []
+    for class_ in (analog_sequencer, timetag_sequencer):
+        qasm_program = QASMProgram(
+            static_hw_properties=Mock(),
+            register_manager=Mock(),
+            align_fields=False,
+            acq_metadata=None,
+        )
+        class_._write_repetition_loop_header(qasm_program)
+        durations.append(
+            sum(
+                map(
+                    lambda instr_list: _get_instruction_duration(
+                        instr_list[1], instr_list[2]
+                    ),
+                    qasm_program.instructions,
+                )
+            )
+        )
+
+    assert all(dur == durations[0] for dur in durations)
+
+
+@pytest.mark.parametrize("total_play_time", [2.08e-7])
+def test_get_ordered_operations(mock_sequencer: AnalogSequencerCompiler):
+    op_list = [
+        reset_clock_phase(timing=0.0),
+        set_clock_frequency(timing=0.0),
+        shift_clock_phase(timing=4e-09),
+        loop(timing=4e-9 - 1e-12, repetitions=3),
+        pulse_with_waveform(timing=4e-09, duration=1e-07),
+        control_flow_return(timing=1.04e-07),
+        offset_instruction(timing=1.04e-07),
+        offset_instruction(timing=2.04e-07),
+        upd_param(timing=0.0),
+        upd_param(timing=2.04e-7),
+        upd_param(timing=1.04e-7),
+    ]
+    mock_sequencer.op_strategies = [
+        ioperation_strategy_from_op_info(op, "complex_out_0") for op in op_list
+    ]
+
+    assert [
+        op_strat.operation_info for op_strat in mock_sequencer._get_ordered_operations()
+    ] == [
+        reset_clock_phase(timing=0.0),
+        set_clock_frequency(timing=0.0),
+        upd_param(timing=0.0),
+        loop(timing=4e-9 - 1e-12, repetitions=3),
+        shift_clock_phase(timing=4e-09),
+        pulse_with_waveform(timing=4e-09, duration=1e-07),
+        control_flow_return(timing=1.04e-07),
+        offset_instruction(timing=1.04e-07),
+        upd_param(timing=1.04e-7),
+        offset_instruction(timing=2.04e-07),
+        upd_param(timing=2.04e-7),
+    ]

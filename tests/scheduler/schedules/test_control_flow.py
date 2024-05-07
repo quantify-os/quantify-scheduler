@@ -3,9 +3,9 @@ from unittest.mock import Mock
 import pytest
 
 from quantify_scheduler.backends.graph_compilation import SerialCompiler
-from quantify_scheduler.backends.qblox.compiler_abc import (
+from quantify_scheduler.backends.qblox.analog import (
+    AnalogSequencerCompiler,
     BasebandModuleCompiler,
-    Sequencer,
 )
 from quantify_scheduler.backends.qblox.conditional import (
     FeedbackTriggerCondition,
@@ -15,10 +15,10 @@ from quantify_scheduler.backends.qblox.operation_handling.virtual import (
     ConditionalStrategy,
 )
 from quantify_scheduler.backends.types.qblox import (
+    AnalogSequencerSettings,
     BoundedParameter,
     OpInfo,
-    SequencerSettings,
-    StaticHardwareProperties,
+    StaticAnalogModuleProperties,
 )
 from quantify_scheduler.operations.control_flow_library import Conditional, Loop
 from quantify_scheduler.operations.gate_library import Measure, Rxy, X
@@ -107,7 +107,7 @@ def test_multiple_conditional_without_acquisition_raises(
 
 
 def test_nested_conditional_control_flow_raises_runtime_warning():
-    static_hw_properties = StaticHardwareProperties(
+    static_hw_properties = StaticAnalogModuleProperties(
         instrument_type="QRM",
         max_sequencers=6,
         max_awg_output_voltage=None,
@@ -117,7 +117,7 @@ def test_nested_conditional_control_flow_raises_runtime_warning():
         },
     )
     mock_parent_module = Mock(BasebandModuleCompiler)
-    settings = SequencerSettings.initialize_from_config_dict(
+    settings = AnalogSequencerSettings.initialize_from_config_dict(
         {
             "port": "q1:mw",
             "clock": "q1.01",
@@ -127,7 +127,7 @@ def test_nested_conditional_control_flow_raises_runtime_warning():
         connected_input_indices=(),
         connected_output_indices=(0,),
     )
-    sequencer = Sequencer(
+    sequencer = AnalogSequencerCompiler(
         parent=mock_parent_module,
         index=0,
         portclock=("", ""),
@@ -157,6 +157,7 @@ def test_nested_conditional_control_flow_raises_runtime_warning():
         "is not supported by the Qblox backend.",
     ):
         sequencer.generate_qasm_program(
+            ordered_op_strategies=sequencer._get_ordered_operations(),
             total_sequence_time=0,
             align_qasm_fields=False,
             acq_metadata=None,

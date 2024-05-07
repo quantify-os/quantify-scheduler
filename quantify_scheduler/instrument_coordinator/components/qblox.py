@@ -4,23 +4,23 @@
 from __future__ import annotations
 
 import copy
-from functools import partial
 import logging
 import os
 import warnings
 from abc import abstractmethod
 from dataclasses import dataclass
+from functools import partial
 from math import isnan
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
+    Hashable,
     Optional,
     Tuple,
     Type,
     Union,
-    Hashable,
-    TYPE_CHECKING,
 )
 from uuid import uuid4
 
@@ -31,7 +31,6 @@ from qblox_instruments import (
     SequencerStates,
     SequencerStatus,
 )
-
 from quantify_core.data.handling import get_datadir
 from xarray import DataArray, Dataset
 
@@ -41,9 +40,9 @@ from quantify_scheduler.backends.qblox.helpers import (
     single_scope_mode_acquisition_raise,
 )
 from quantify_scheduler.backends.types.qblox import (
-    BaseModuleSettings,
+    AnalogModuleSettings,
+    AnalogSequencerSettings,
     RFModuleSettings,
-    SequencerSettings,
 )
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.instrument_coordinator.components import base
@@ -60,7 +59,6 @@ if TYPE_CHECKING:
         CompiledSchedule,
     )
 
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
@@ -72,7 +70,7 @@ driver_version_check.verify_qblox_instruments_version()
 class _StaticHardwareProperties:
     """Dataclass for storing configuration differences across Qblox devices."""
 
-    settings_type: Type[BaseModuleSettings]
+    settings_type: Type[AnalogModuleSettings]
     """The settings dataclass to use that the hardware needs to configure to."""
     has_internal_lo: bool
     """Specifies if an internal lo source is available."""
@@ -85,14 +83,14 @@ class _StaticHardwareProperties:
 
 
 _QCM_BASEBAND_PROPERTIES = _StaticHardwareProperties(
-    settings_type=BaseModuleSettings,
+    settings_type=AnalogModuleSettings,
     has_internal_lo=False,
     number_of_sequencers=constants.NUMBER_OF_SEQUENCERS_QCM,
     number_of_output_channels=4,
     number_of_input_channels=0,
 )
 _QRM_BASEBAND_PROPERTIES = _StaticHardwareProperties(
-    settings_type=BaseModuleSettings,
+    settings_type=AnalogModuleSettings,
     has_internal_lo=False,
     number_of_sequencers=constants.NUMBER_OF_SEQUENCERS_QRM,
     number_of_output_channels=2,
@@ -258,7 +256,7 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
         self.instrument.stop_sequencer()
 
     @abstractmethod
-    def _configure_global_settings(self, settings: BaseModuleSettings) -> None:
+    def _configure_global_settings(self, settings: AnalogModuleSettings) -> None:
         """
         Configures all settings that are set globally for the whole instrument.
 
@@ -269,7 +267,7 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
         """
 
     def _configure_sequencer_settings(
-        self, seq_idx: int, settings: SequencerSettings
+        self, seq_idx: int, settings: AnalogSequencerSettings
     ) -> None:
         """
         Configures all sequencer-specific settings.
@@ -341,7 +339,7 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
         )
 
     def _determine_channel_map_parameters(
-        self, settings: SequencerSettings
+        self, settings: AnalogSequencerSettings
     ) -> Dict[str, str]:
         """Returns a dictionary with the channel map parameters for this module."""
         channel_map_parameters = {}
@@ -350,7 +348,7 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
         return channel_map_parameters
 
     def _determine_output_channel_map_parameters(
-        self, settings: SequencerSettings, channel_map_parameters: Dict[str, str]
+        self, settings: AnalogSequencerSettings, channel_map_parameters: Dict[str, str]
     ) -> Dict[str, str]:
         """Adds the outputs to the channel map parameters dict."""
         for channel_idx in range(self._hardware_properties.number_of_output_channels):
@@ -470,10 +468,10 @@ class _QCMComponent(_ModuleComponentBase):
                 )
 
             self._configure_sequencer_settings(
-                seq_idx=seq_idx, settings=SequencerSettings.from_dict(seq_cfg)
+                seq_idx=seq_idx, settings=AnalogSequencerSettings.from_dict(seq_cfg)
             )
 
-    def _configure_global_settings(self, settings: BaseModuleSettings):
+    def _configure_global_settings(self, settings: AnalogModuleSettings):
         """
         Configures all settings that are set globally for the whole instrument.
 
@@ -565,7 +563,7 @@ class _QRMComponent(_ModuleComponentBase):
                     f'with name "{seq_name}".'
                 )
 
-            settings = SequencerSettings.from_dict(seq_cfg)
+            settings = AnalogSequencerSettings.from_dict(seq_cfg)
             self._configure_sequencer_settings(seq_idx=seq_idx, settings=settings)
             acq_duration[seq_name] = settings.integration_length_acq
 
@@ -608,7 +606,7 @@ class _QRMComponent(_ModuleComponentBase):
                 self.instrument, f"scope_acq_avg_mode_en_path{path}", True
             )
 
-    def _configure_global_settings(self, settings: BaseModuleSettings):
+    def _configure_global_settings(self, settings: AnalogModuleSettings):
         """
         Configures all settings that are set globally for the whole instrument.
 
@@ -633,7 +631,7 @@ class _QRMComponent(_ModuleComponentBase):
             self._set_parameter(self.instrument, "in1_gain", settings.in1_gain)
 
     def _configure_sequencer_settings(
-        self, seq_idx: int, settings: SequencerSettings
+        self, seq_idx: int, settings: AnalogSequencerSettings
     ) -> None:
         super()._configure_sequencer_settings(seq_idx, settings)
 
@@ -696,7 +694,7 @@ class _QRMComponent(_ModuleComponentBase):
             )
 
     def _determine_channel_map_parameters(
-        self, settings: SequencerSettings
+        self, settings: AnalogSequencerSettings
     ) -> Dict[str, str]:
         """Returns a dictionary with the channel map parameters for this module."""
         channel_map_parameters = {}
@@ -706,7 +704,7 @@ class _QRMComponent(_ModuleComponentBase):
         return channel_map_parameters
 
     def _determine_input_channel_map_parameters(
-        self, settings: SequencerSettings, channel_map_parameters: Dict[str, str]
+        self, settings: AnalogSequencerSettings, channel_map_parameters: Dict[str, str]
     ) -> Dict[str, str]:
         """Adds the inputs to the channel map parameters dict."""
         param_name = {0: "connect_acq_I", 1: "connect_acq_Q"}
@@ -738,7 +736,7 @@ class _QRMComponent(_ModuleComponentBase):
         Note, that compiler ensures there is at most one scope mode acquisition,
         however the user is able to freely modify the compiler program,
         so we make sure this requirement is still satisfied. See
-        :func:`~quantify_scheduler.backends.qblox.compiler_abc.ClusterModuleCompiler._ensure_single_scope_mode_acquisition_sequencer`.
+        :func:`~quantify_scheduler.backends.qblox.analog.AnalogModuleCompiler._ensure_single_scope_mode_acquisition_sequencer`.
 
         Parameters
         ----------
@@ -785,7 +783,7 @@ class _RFComponent(_ModuleComponentBase):
     """Mix-in for RF-module-specific InstrumentCoordinatorComponent behaviour."""
 
     def _configure_sequencer_settings(
-        self, seq_idx: int, settings: SequencerSettings
+        self, seq_idx: int, settings: AnalogSequencerSettings
     ) -> None:
         super()._configure_sequencer_settings(seq_idx, settings)
         # Always set override to False.
@@ -796,10 +794,10 @@ class _RFComponent(_ModuleComponentBase):
         )
 
     def _determine_output_channel_map_parameters(
-        self, settings: SequencerSettings, channel_map_parameters: Dict[str, str]
+        self, settings: AnalogSequencerSettings, channel_map_parameters: Dict[str, str]
     ) -> Dict[str, str]:
         """Adds the outputs to the channel map parameters dict."""
-        expected_output_indices = {0: [0, 1], 1: [2, 3]}
+        expected_output_indices = {0: (0, 1), 1: (2, 3)}
 
         for channel_idx in range(self._hardware_properties.number_of_output_channels):
             param_setting = "off"
@@ -891,7 +889,7 @@ class _QRMRFComponent(_RFComponent, _QRMComponent):
             self._set_parameter(self.instrument, "in0_att", settings.in0_att)
 
     def _determine_input_channel_map_parameters(
-        self, settings: SequencerSettings, channel_map_parameters: Dict[str, str]
+        self, settings: AnalogSequencerSettings, channel_map_parameters: Dict[str, str]
     ) -> Dict[str, str]:
         """Adds the inputs to the channel map parameters dict."""
         channel_map_parameters["connect_acq"] = (
