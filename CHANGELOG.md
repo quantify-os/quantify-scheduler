@@ -1,8 +1,14 @@
 # Changelog
 
-## Unreleased
+## 0.20.1 (2024-05-01)
 
 ### Breaking changes
+
+None
+
+### Release highlights
+
+This release comes with an interface for configuring hardware distortion corrections but without the actual implementation of it.
 
 ### Deprecation
 - Distortion corrections
@@ -13,12 +19,24 @@
    - deprecate `DistortionCorrection` in favor of `SoftwareDistortionCorrection`. (!789)
    - add the interface for `QbloxHardwareDistortionCorrection`. (!789)
 - Qblox backend 
-  - Allow operations on a digital channel to take a custom clock name as argument. If the clock name is not the default name (`"digital"`), it must be a name that is present in the device configuration, or one that is manually added to the `Schedule` as a `ClockResource`. (!967)
+  - Allow operations on a digital channel to take a custom clock name as n argument. If the clock name is not the default name (`"digital"`), it must be a name that is present in the device configuration, or one that is manually added to the `Schedule` as a `ClockResource`. (!967)
   - Refactor the module and sequencer compiler classes, and add new QTM compiler classes. (!937)
+  - Change the default value of `DispersiveMeasurement.acq_weights_a` and `DispersiveMeasurement.acq_weights_b` from `None` to `np.array([], dtype=np.float64)`, so that `load_settings_onto_instrument` from `quantify-core` correctly detects that these parameters take numpy arrays. (!977)
 - Tests 
   - Convert transmon-specific hardware configs in test suite and docs to new style. (!972)
-- Qblox backend - Refactor the module and sequencer compiler classes, and add new QTM compiler classes. (!937)
-- Qblox backend - Change the default value of `DispersiveMeasurement.acq_weights_a` and `DispersiveMeasurement.acq_weights_b` from `None` to `np.array([], dtype=np.float64)`, so that `load_settings_onto_instrument` from `quantify-core` correctly detects that these parameters take numpy arrays. (!977)
+
+### Compatibility Info
+
+**Qblox**
+
+| quantify-scheduler |                      qblox-instruments                       |                               Cluster firmware                                |
+|--------------------|:------------------------------------------------------------:|:-----------------------------------------------------------------------------:|
+| v0.20.1            | [0.13.0](https://pypi.org/project/qblox-instruments/0.12.0/) | [0.8.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.8.0) |
+| v0.20.1            | [0.12.0](https://pypi.org/project/qblox-instruments/0.12.0/) | [0.7.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.7.0) |
+
+**Zurich Instruments**
+- `zhinst==21.8.20515`, `zhinst-qcodes==0.1.4`, `zhinst-toolkit==0.1.5`
+
 
 ## 0.20.0 (2024-05-01)
 

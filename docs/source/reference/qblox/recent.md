@@ -1,5 +1,9 @@
 # Recent interface changes
 
+## 0.20.1: DistortionCorrection
+
+- `DistortionCorrection` is now deprecated in favor of `SoftwareDistortionCorrection`. 
+
 ## 0.18.0: HardwareCompilationConfig and DeviceCompilationConfig
 
 - `DeviceCompilationConfig`: The `backend` field was replaced by the `config_type` field.
