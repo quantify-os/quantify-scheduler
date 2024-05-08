@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Release highlights
+
+### Breaking changes
+
+### Deprecation
+
+### Merged branches and closed issues
+
+
 ## 0.20.1 (2024-05-01)
 
 ### Breaking changes
