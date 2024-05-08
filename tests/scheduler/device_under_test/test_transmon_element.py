@@ -1,5 +1,6 @@
 import json
 
+import numpy as np
 import pytest
 import math
 
@@ -69,6 +70,9 @@ def test_basic_transmon_serialization(
     the serialized counterpart.
     """
 
+    def is_serialized_ndarray(obj):
+        return isinstance(obj, dict) and obj["deserialization_type"] == "ndarray"
+
     q0.clock_freqs.readout(readout_frequency)
     q0.clock_freqs.f01(mw_frequency)
     q0.clock_freqs.f12(0)
@@ -87,24 +91,40 @@ def test_basic_transmon_serialization(
     # Check that all original submodule params match their serialized counterpart
     for submodule_name, submodule in q0.submodules.items():
         for parameter_name in submodule.parameters:
-            assert (
+            if is_serialized_ndarray(
                 q0_as_dict["data"][submodule_name][parameter_name]
-                == q0.submodules[submodule_name][parameter_name]()
-            ), (
-                f"Expected value {q0.submodules[submodule_name][parameter_name]()} for "
-                f"{submodule_name}.{parameter_name} but got "
-                f"{q0_as_dict['data'][submodule_name][parameter_name]}"
-            )
+            ):
+                np.testing.assert_equal(
+                    q0_as_dict["data"][submodule_name][parameter_name]["data"],
+                    q0.submodules[submodule_name][parameter_name](),
+                )
+            else:
+                assert (
+                    q0_as_dict["data"][submodule_name][parameter_name]
+                    == q0.submodules[submodule_name][parameter_name]()
+                ), (
+                    f"Expected value {q0.submodules[submodule_name][parameter_name]()} for "
+                    f"{submodule_name}.{parameter_name} but got "
+                    f"{q0_as_dict['data'][submodule_name][parameter_name]}"
+                )
 
     # Check that all serialized submodule params match the original
     for submodule_name, submodule_data in q0_as_dict["data"].items():
         if submodule_name == "name":
             continue
         for parameter_name, parameter_val in submodule_data.items():
-            assert parameter_val == q0.submodules[submodule_name][parameter_name](), (
-                f"Expected value {q0.submodules[submodule_name][parameter_name]()} for "
-                f"{submodule_name}.{parameter_name} but got {parameter_val}"
-            )
+            if is_serialized_ndarray(parameter_val):
+                np.testing.assert_equal(
+                    parameter_val["data"],
+                    q0.submodules[submodule_name][parameter_name](),
+                )
+            else:
+                assert (
+                    parameter_val == q0.submodules[submodule_name][parameter_name]()
+                ), (
+                    f"Expected value {q0.submodules[submodule_name][parameter_name]()} for "
+                    f"{submodule_name}.{parameter_name} but got {parameter_val}"
+                )
 
 
 def test_basic_transmon_deserialization(q0: BasicTransmonElement, dev: QuantumDevice):

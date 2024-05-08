@@ -4,6 +4,7 @@
 from typing import Any, Dict, Tuple
 import math
 
+import numpy as np
 from qcodes.instrument import InstrumentChannel
 from qcodes.instrument.base import InstrumentBase
 from qcodes.instrument.parameter import (
@@ -245,7 +246,7 @@ class DispersiveMeasurement(InstrumentChannel):
         self.acq_weights_a = ManualParameter(
             name="acq_weights_a",
             instrument=self,
-            initial_value=kwargs.get("acq_weights_a", None),
+            initial_value=kwargs.get("acq_weights_a", np.array([], dtype=np.float64)),
             vals=validators.Arrays(),
         )
         """The weights for the I path. Used when specifying the
@@ -255,7 +256,7 @@ class DispersiveMeasurement(InstrumentChannel):
         self.acq_weights_b = ManualParameter(
             name="acq_weights_b",
             instrument=self,
-            initial_value=kwargs.get("acq_weights_b", None),
+            initial_value=kwargs.get("acq_weights_b", np.array([], dtype=np.float64)),
             vals=validators.Arrays(),
         )
         """The weights for the Q path. Used when specifying the
