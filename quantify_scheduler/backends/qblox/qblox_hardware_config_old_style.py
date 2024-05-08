@@ -2,6 +2,8 @@
 # Licensed according to the LICENCE file on the main branch
 """Example old-style Qblox hardware config dictionary for legacy support."""
 
+from quantify_scheduler.backends.qblox.enums import DistortionCorrectionLatencyEnum
+
 hardware_config = {
     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
     "latency_corrections": {"q4:mw-q4.01": 8e-9, "q5:mw-q5.01": 4e-9},
@@ -27,6 +29,7 @@ hardware_config = {
                 "dc_mixer_offset_Q": 0.0,
                 "downconverter_freq": None,
                 "marker_debug_mode_enable": True,
+                "distortion_correction_latency_compensation": DistortionCorrectionLatencyEnum.NO_DELAY_COMP,  # noqa: E501
                 "mix_lo": True,
                 "portclock_configs": [
                     {
@@ -58,7 +61,8 @@ hardware_config = {
                 ],
             },
             "digital_output_0": {
-                "portclock_configs": [{"port": "q0:switch", "clock": "digital"}]
+                "portclock_configs": [{"port": "q0:switch", "clock": "digital"}],
+                "distortion_correction_latency_compensation": DistortionCorrectionLatencyEnum.NO_DELAY_COMP,  # noqa: E501
             },
         },
         "cluster0_module3": {

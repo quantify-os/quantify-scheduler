@@ -23,6 +23,7 @@ from typing import (
     Union,
 )
 from uuid import uuid4
+import re
 
 import numpy as np
 from qblox_instruments import (
@@ -49,6 +50,7 @@ from quantify_scheduler.instrument_coordinator.components import base
 from quantify_scheduler.instrument_coordinator.utility import (
     check_already_existing_acquisition,
     lazy_set,
+    search_settable_param,
 )
 
 if TYPE_CHECKING:
@@ -161,6 +163,27 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
         val
             The new value of the parameter.
         """
+        # TODO: these qcodes parameters already exist in the development branch
+        # of qblox-instruments, but will be released in 0.13.0 when RTP is
+        # officially supported. Until then, catching the value error is needed.
+        try:
+            search_settable_param(
+                instrument=instrument, nested_parameter_name=parameter_name
+            )
+        except ValueError as e:
+            if (
+                re.search(
+                    r".*(out|marker)[0-9]_(exp|bt|fir)[0-9]?_config", parameter_name
+                )
+                and val == "bypassed"
+            ):
+                return
+            if re.search(
+                r".*(out|marker)[0-9]_(exp|bt|fir)[0-9]?_(time_constant|amplitude|coeffs)",
+                parameter_name,
+            ):
+                return
+            raise e
         if self.force_set_parameters():
             instrument.set(parameter_name, val)
         else:
@@ -498,6 +521,46 @@ class _QCMComponent(_ModuleComponentBase):
                 self.instrument, "out3_offset", settings.offset_ch1_path_Q
             )
 
+        for output, dc_settings in enumerate(
+            settings.distortion_corrections[
+                : self._hardware_properties.number_of_output_channels
+            ]
+        ):
+            for i in range(4):
+                if getattr(dc_settings, f"exp{i}").coeffs is not None:
+                    self._set_parameter(
+                        self.instrument,
+                        f"out{output}_exp{i}_time_constant",
+                        getattr(dc_settings, f"exp{i}").coeffs[0],
+                    )
+                    self._set_parameter(
+                        self.instrument,
+                        f"out{output}_exp{i}_amplitude",
+                        getattr(dc_settings, f"exp{i}").coeffs[1],
+                    )
+                self._set_parameter(
+                    self.instrument,
+                    f"out{output}_exp{i}_config",
+                    getattr(dc_settings, f"exp{i}").config.value,
+                )
+                self._set_parameter(
+                    self.instrument,
+                    f"marker{output}_exp{i}_config",
+                    getattr(dc_settings, f"exp{i}").marker_delay.value,
+                )
+            if dc_settings.fir.coeffs is not None:
+                self._set_parameter(
+                    self.instrument, f"out{output}_fir_coeffs", dc_settings.fir.coeffs
+                )
+            self._set_parameter(
+                self.instrument, f"out{output}_fir_config", dc_settings.fir.config.value
+            )
+            self._set_parameter(
+                self.instrument,
+                f"marker{output}_fir_config",
+                dc_settings.fir.marker_delay.value,
+            )
+
 
 class _QRMComponent(_ModuleComponentBase):
     """QRM specific InstrumentCoordinator component."""
@@ -629,6 +692,21 @@ class _QRMComponent(_ModuleComponentBase):
             self._set_parameter(self.instrument, "in0_gain", settings.in0_gain)
         if settings.in1_gain is not None:
             self._set_parameter(self.instrument, "in1_gain", settings.in1_gain)
+
+        for output, dc_settings in enumerate(
+            settings.distortion_corrections[
+                : self._hardware_properties.number_of_output_channels
+            ]
+        ):
+            for i in range(4):
+                self._set_parameter(
+                    self.instrument,
+                    f"out{output}_exp{i}_config",
+                    getattr(dc_settings, f"exp{i}").config.value,
+                )
+            self._set_parameter(
+                self.instrument, f"out{output}_fir_config", dc_settings.fir.config.value
+            )
 
     def _configure_sequencer_settings(
         self, seq_idx: int, settings: AnalogSequencerSettings

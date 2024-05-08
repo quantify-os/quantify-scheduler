@@ -104,12 +104,14 @@ class InstrumentCompiler(ABC):
         total_play_time: float,
         instrument_cfg: dict[str, Any],
         latency_corrections: dict[str, float] | None = None,
+        distortion_corrections: dict[int, Any] | None = None,
     ) -> None:
         self.parent = parent
         self.name = name
         self.total_play_time = total_play_time
         self.instrument_cfg = instrument_cfg
         self.latency_corrections = latency_corrections or {}
+        self.distortion_corrections = distortion_corrections or {}
 
     def prepare(self) -> None:
         """
@@ -177,6 +179,7 @@ class SequencerCompiler(ABC):
         static_hw_properties: StaticHardwareProperties,
         settings: SequencerSettings,
         latency_corrections: dict[str, float],
+        distortion_corrections: dict[int, Any] | None = None,
         qasm_hook_func: Callable | None = None,
     ) -> None:
         self.parent = parent
@@ -199,6 +202,8 @@ class SequencerCompiler(ABC):
         portclock_key = f"{self.port}-{self.clock}"
         self.latency_correction: float = latency_corrections.get(portclock_key, 0)
         """Latency correction accounted for by delaying the start of the program."""
+
+        self.distortion_correction: float = distortion_corrections
 
     @property
     def connected_output_indices(self) -> tuple[int, ...]:
@@ -1107,6 +1112,7 @@ class ClusterModuleCompiler(InstrumentCompiler, Generic[_SequencerT_co], ABC):
         total_play_time: float,
         instrument_cfg: dict[str, Any],
         latency_corrections: dict[str, float] | None = None,
+        distortion_corrections: dict[int, Any] | None = None,
     ) -> None:
         driver_version_check.verify_qblox_instruments_version()
         super().__init__(
@@ -1115,6 +1121,7 @@ class ClusterModuleCompiler(InstrumentCompiler, Generic[_SequencerT_co], ABC):
             total_play_time=total_play_time,
             instrument_cfg=instrument_cfg,
             latency_corrections=latency_corrections,
+            distortion_corrections=distortion_corrections,
         )
         self._op_infos: dict[tuple[str, str], list[OpInfo]] = defaultdict(list)
 

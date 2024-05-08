@@ -13,6 +13,7 @@ Download the notebook: {nb-download}`deprecated.ipynb`
 
 | **Target** | **Depr** | **Remv** | **Alternatives** |
 |---|---|---|---|
+| `common.DistortionCorrection` | 0.20.1 | 0.23 | See {ref}`DistortionCorrection => SoftwareDistortionCorrection`|
 | `ScheduleGettable.generate_diagnostics_report()` | 0.17 | 0.18 | See {ref}`ScheduleGettable.generate_diagnostics_report()` |
 | `plot_kwargs` parameter in `ScheduleBase.plot_pulse_diagram()` | 0.15 | - | See {ref}`plot_kwargs parameter in ScheduleBase.plot_pulse_diagram()` |
 | `repetitions` parameter in `ScheduleGettable.process_acquired_data()` | 0.15 | 0.18 | See {ref}`repetitions parameter in ScheduleGettable.process_acquired_data()` |
@@ -178,6 +179,34 @@ def simple_trace_sched(
 
 
 sched = simple_trace_sched(repetitions=1)
+```
+
+## DistortionCorrection => SoftwareDistortionCorrection
+
+To prepare for distortion corrections performed by hardware, distortion corrections will now come in two flavors: `SoftwareDistortionCorrection` and `HardwareDistortionCorrection`. 
+
+In the hardware configuration, the following needs to be replaced:
+
+```{code-block} diff
+
+hardware_configuration = {
+    ...
+    hardware_options : {
+        ...
+            distortion_corrections = {
+-                "q0:fl-cl0.baseband": DistortionCorrection(
++                "q0:fl-cl0.baseband": SoftwareDistortionCorrection(    
+                    filter_func="scipy.signal.lfilter",
+                    input_var_name="x",
+                    kwargs={
+                        "b": [0, 0.25, 0.5],
+                        "a": [1]
+                    },
+                    clipping_values=[-2.5, 2.5]
+                )
+            }
+    }
+}
 ```
 
 ## qcompile() => SerialCompiler

@@ -112,6 +112,7 @@ class CompilerContainer:
         name: str,
         instrument_cfg: dict[str, Any],
         latency_corrections: dict[str, float] | None = None,
+        distortion_corrections: dict[int, Any] | None = None,
     ) -> None:
         self.clusters[name] = ClusterCompiler(
             parent=self,
@@ -119,6 +120,7 @@ class CompilerContainer:
             total_play_time=self.total_play_time,
             instrument_cfg=instrument_cfg,
             latency_corrections=latency_corrections,
+            distortion_corrections=distortion_corrections,
         )
 
     def _add_local_oscillator(self, name: str, instrument_cfg: dict[str, Any]) -> None:
@@ -144,6 +146,9 @@ class CompilerContainer:
         hardware_cfg
             The hardware config.
         """
+        distortion_corrections = hardware_cfg.get("distortion_corrections", {})
+        latency_corrections = hardware_cfg.get("latency_corrections", {})
+
         composite = cls(schedule)
         for instrument_name, instrument_cfg in hardware_cfg.items():
             if (
@@ -153,13 +158,18 @@ class CompilerContainer:
                 continue
 
             instrument_type = instrument_cfg["instrument_type"]
-            latency_corrections = hardware_cfg.get("latency_corrections", {})
+
+            instrument_distortion_corrections = None
+
+            if instrument_type == "Cluster":
+                instrument_distortion_corrections = distortion_corrections
 
             if instrument_type == "Cluster":
                 composite._add_cluster(
                     name=instrument_name,
                     instrument_cfg=instrument_cfg,
                     latency_corrections=latency_corrections,
+                    distortion_corrections=instrument_distortion_corrections,
                 )
             elif instrument_type == "LocalOscillator":
                 composite._add_local_oscillator(

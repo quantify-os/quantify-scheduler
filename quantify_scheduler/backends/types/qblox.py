@@ -24,12 +24,19 @@ from pydantic import Field, field_validator
 from typing_extensions import Annotated
 
 from quantify_scheduler.backends.qblox import constants, q1asm_instructions
+from quantify_scheduler.backends.qblox.enums import (
+    DistortionCorrectionLatencyEnum,
+    QbloxFilterConfig,
+    QbloxFilterMarkerDelay,
+)
 from quantify_scheduler.backends.types.common import (
     Connectivity,
     HardwareDescription,
+    HardwareDistortionCorrection,
     HardwareOptions,
     IQMixerDescription,
     LocalOscillatorDescription,
+    SoftwareDistortionCorrection,
 )
 from quantify_scheduler.structure.model import DataStructure
 
@@ -273,8 +280,60 @@ child classes.
 
 
 @dataclass
+class QbloxRealTimeFilter(DataClassJsonMixin):
+    """An individual real time filter on Qblox hardware."""
+
+    coeffs: Optional[Union[float, List[float]]] = None
+    """Coefficient(s) of the filter.
+       Can be None if there is no filter
+       or if it is inactive."""
+    config: QbloxFilterConfig = QbloxFilterConfig.BYPASSED
+    """Configuration of the filter.
+       One of 'BYPASSED', 'ENABLED',
+       or 'DELAY_COMP'."""
+    marker_delay: QbloxFilterMarkerDelay = QbloxFilterMarkerDelay.BYPASSED
+    """State of the marker delay.
+       One of 'BYPASSED' or 'ENABLED'."""
+
+
+@dataclass
+class DistortionSettings(DataClassJsonMixin):
+    """Distortion correction settings for all Qblox modules."""
+
+    bt: QbloxRealTimeFilter = dataclasses_field(default_factory=QbloxRealTimeFilter)
+    """The bias tee correction filter."""
+    exp0: QbloxRealTimeFilter = dataclasses_field(default_factory=QbloxRealTimeFilter)
+    """The exponential overshoot correction 1 filter."""
+    exp1: QbloxRealTimeFilter = dataclasses_field(default_factory=QbloxRealTimeFilter)
+    """The exponential overshoot correction 2 filter."""
+    exp2: QbloxRealTimeFilter = dataclasses_field(default_factory=QbloxRealTimeFilter)
+    """The exponential overshoot correction 3 filter."""
+    exp3: QbloxRealTimeFilter = dataclasses_field(default_factory=QbloxRealTimeFilter)
+    """The exponential overshoot correction 4 filter."""
+    fir: QbloxRealTimeFilter = dataclasses_field(default_factory=QbloxRealTimeFilter)
+    """The FIR filter."""
+
+
+@dataclass
 class BaseModuleSettings(DataClassJsonMixin):
     """Shared settings between all the Qblox modules."""
+
+    offset_ch0_path_I: Optional[float] = None
+    """The DC offset on the path_I of channel 0."""
+    offset_ch0_path_Q: Optional[float] = None
+    """The DC offset on the path_Q of channel 0."""
+    offset_ch1_path_I: Optional[float] = None
+    """The DC offset on path_I of channel 1."""
+    offset_ch1_path_Q: Optional[float] = None
+    """The DC offset on path_Q of channel 1."""
+    in0_gain: Optional[int] = None
+    """The gain of input 0."""
+    in1_gain: Optional[int] = None
+    """The gain of input 1."""
+    distortion_corrections: List[DistortionSettings] = dataclasses_field(
+        default_factory=lambda: [DistortionSettings() for _ in range(4)]
+    )
+    """distortion correction settings"""
 
     @classmethod
     def extract_settings_from_mapping(
@@ -730,6 +789,12 @@ class ComplexChannelDescription(DataStructure):
     Downconverter frequency that should be taken into account when determining the modulation frequencies for this channel.
     Only relevant for users with custom Qblox downconverter hardware.
     """
+    distortion_correction_latency_compensation: int = (
+        DistortionCorrectionLatencyEnum.NO_DELAY_COMP
+    )
+    """
+    Delay compensation setting that either delays the signal by the amount chosen by the settings or not.
+    """
 
 
 class RealChannelDescription(DataStructure):
@@ -740,13 +805,22 @@ class RealChannelDescription(DataStructure):
     Setting to send 4 ns trigger pulse on the marker located next to the I/O port along with each operation.
     The marker will be pulled high at the same time as the module starts playing or acquiring.
     """
+    distortion_correction_latency_compensation: int = (
+        DistortionCorrectionLatencyEnum.NO_DELAY_COMP
+    )
+    """
+    Delay compensation setting that either delays the signal by the amount chosen by the settings or not.
+    """
 
 
 class DigitalChannelDescription(DataStructure):
-    """
-    Information needed to specify a digital (marker) output (for :class:`~.quantify_scheduler.operations.pulse_library.MarkerPulse`) in the :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`.
+    """Information needed to specify a digital (marker) output (for :class:`~.quantify_scheduler.operations.pulse_library.MarkerPulse`) in the :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`."""
 
-    This datastructure is currently empty, since no extra settings are needed/allowed for a digital output.
+    distortion_correction_latency_compensation: int = (
+        DistortionCorrectionLatencyEnum.NO_DELAY_COMP
+    )
+    """
+    Delay compensation setting that either delays the signal by the amount chosen by the settings or not.
     """
 
 
@@ -1046,6 +1120,23 @@ class SequencerOptions(DataStructure):
         return init_setting
 
 
+class QbloxHardwareDistortionCorrection(HardwareDistortionCorrection):
+    """A hardware distortion correction specific to the Qblox backend."""
+
+    bt_coeffs: Optional[List[float]] = None
+    """Coefficient of the bias tee correction."""
+    exp0_coeffs: Optional[List[float]] = None
+    """Coefficients of the exponential overshoot/undershoot correction 1."""
+    exp1_coeffs: Optional[List[float]] = None
+    """Coefficients of the exponential overshoot/undershoot correction 2."""
+    exp2_coeffs: Optional[List[float]] = None
+    """Coefficients of the exponential overshoot/undershoot correction 3."""
+    exp3_coeffs: Optional[List[float]] = None
+    """Coefficients of the exponential overshoot/undershoot correction 4."""
+    fir_coeffs: Optional[List[float]] = None
+    """Coefficients for the FIR filter."""
+
+
 class QbloxHardwareOptions(HardwareOptions):
     """
     Datastructure containing the hardware options for each port-clock combination.
@@ -1100,6 +1191,19 @@ class QbloxHardwareOptions(HardwareOptions):
     Dictionary containing the options (values) that should be set
     on the sequencer that is used for a certain port-clock combination (keys).
     """
+    distortion_corrections: Optional[
+        Dict[
+            str,
+            Union[
+                SoftwareDistortionCorrection,
+                QbloxHardwareDistortionCorrection,
+                List[QbloxHardwareDistortionCorrection],
+            ],
+        ]
+    ] = None
+
+
+QbloxHardwareOptions.model_rebuild()
 
 
 class _LocalOscillatorCompilerConfig(DataStructure):

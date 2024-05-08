@@ -8,7 +8,6 @@ import logging
 import math
 import os
 import re
-import warnings
 from contextlib import nullcontext
 from typing import Optional
 from copy import deepcopy
@@ -22,6 +21,7 @@ from qblox_instruments import Cluster, ClusterType
 from quantify_scheduler.operations.gate_library import CZ
 import quantify_scheduler
 from quantify_scheduler import Schedule
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.backends import SerialCompiler, corrections
 from quantify_scheduler.backends.graph_compilation import (
     CompilationConfig,
@@ -60,9 +60,14 @@ from quantify_scheduler.backends.qblox.qblox_hardware_config_old_style import (
 )
 from quantify_scheduler.backends.qblox_backend import find_qblox_instruments
 from quantify_scheduler.backends.types.common import HardwareDescription
+from quantify_scheduler.backends.qblox.enums import (
+    DistortionCorrectionLatencyEnum,
+    QbloxFilterConfig,
+    QbloxFilterMarkerDelay,
+)
+from quantify_scheduler.backends.types.qblox import QbloxHardwareDistortionCorrection
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.backends.types.qblox import BasebandModuleSettings
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.compilation import _determine_absolute_timing
 from quantify_scheduler.helpers.collections import (
@@ -4115,16 +4120,12 @@ def test_overlapping_operations_warn(
 
     compiler = SerialCompiler(name="compiler")
 
-    # Test explicitly that no warning is raised if there is no overlap
-    with warnings.catch_warnings():
-        warnings.simplefilter("error")
-
-        if expected is None:
-            context_mngr = nullcontext()
-        else:
-            context_mngr = pytest.raises(RuntimeWarning, match=expected)
-        with context_mngr:
-            compiler.compile(sched, compile_config_basic_transmon_qblox_hardware)
+    if expected is None:
+        context_mngr = nullcontext()
+    else:
+        context_mngr = pytest.warns(RuntimeWarning, match=expected)
+    with context_mngr:
+        compiler.compile(sched, compile_config_basic_transmon_qblox_hardware)
 
 
 @pytest.mark.parametrize("debug_mode", [True, False])
@@ -4721,3 +4722,733 @@ def test_1_ns_time_grid_nco(compile_config_basic_transmon_qblox_hardware):
         'NCO related operation Pulse "ResetClockPhase" (t0=9.000000000000001e-09, '
         "duration=0) must be on 4 ns time grid"
     )
+
+
+@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
+def test_compile_hardware_distortion_corrections():
+    hardware_cfg = copy.deepcopy(qblox_hardware_config_old_style)
+    hardware_cfg["cluster0"]["cluster0_module4"]["complex_input_0"].pop("input_att")
+
+    sched = Schedule("Qblox hardware distortion corrections test", repetitions=1)
+    sched.add(
+        SquarePulse(
+            amp=0.1,
+            port="q0:fl",
+            duration=200e-9,
+            clock="cl0.baseband",
+            t0=0,
+        )
+    )
+
+    quantum_device = QuantumDevice("qblox_distortions_device")
+    compiler = SerialCompiler(name="compiler")
+
+    with pytest.raises(ValueError) as error:
+        hardware_cfg["distortion_corrections"] = {
+            "q0:fl-cl0.baseband": {
+                "correction_type": "qblox",
+                "exp1_coeffs": [-356, -0.1],
+            }
+        }
+
+        quantum_device.hardware_config(hardware_cfg)
+
+        sched = compiler.compile(
+            schedule=sched,
+            config=quantum_device.generate_compilation_config(),
+        )
+    assert (
+        "The exponential overshoot correction has two coefficients with ranges of [6,inf) and [-1,1)."
+        in str(error.value)
+    )
+
+    hardware_cfg["distortion_corrections"] = {
+        "q0:fl-cl0.baseband": {
+            "correction_type": "qblox",
+            "exp1_coeffs": [356, -0.1],
+            "fir_coeffs": [1.025] + [0.03, 0.02] * 15 + [0],
+        },
+        "q4:mw-q4.01": [
+            {
+                "correction_type": "qblox",
+                "exp1_coeffs": [13002, -0.5],
+                "fir_coeffs": [1.025] + [0.03, 0.02] * 15 + [0],
+            },
+            {
+                "correction_type": "qblox",
+                "exp1_coeffs": [18, -0.06],
+                "fir_coeffs": [1.025] + [0.03, 0.02] * 15 + [0],
+            },
+        ],
+    }
+    quantum_device.hardware_config(hardware_cfg)
+
+    sched = compiler.compile(
+        schedule=sched,
+        config=quantum_device.generate_compilation_config(),
+    )
+
+    assert sched.compiled_instructions["cluster0"]["cluster0_module1"]["settings"][
+        "distortion_corrections"
+    ][0]["exp1"]["coeffs"] == [13002, -0.5]
+    assert sched.compiled_instructions["cluster0"]["cluster0_module1"]["settings"][
+        "distortion_corrections"
+    ][1]["exp1"]["coeffs"] == [18, -0.06]
+    assert (
+        sched.compiled_instructions["cluster0"]["cluster0_module1"]["settings"][
+            "distortion_corrections"
+        ][2]["exp0"]["coeffs"]
+        is None
+    )
+    assert sched.compiled_instructions["cluster0"]["cluster0_module10"]["settings"][
+        "distortion_corrections"
+    ][0]["fir"]["coeffs"] == [1.025] + [0.03, 0.02] * 15 + [0]
+
+    hardware_compilation_cfg = {
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "ref": "internal",
+                "modules": {
+                    "1": {"instrument_type": "QCM"},
+                    "2": {"instrument_type": "QCM_RF"},
+                },
+            },
+            "lo0": {"instrument_type": "LocalOscillator", "power": 20},
+            "iq_mixer0": {"instrument_type": "IQMixer"},
+        },
+        "hardware_options": {
+            "modulation_frequencies": {
+                "q4:mw-q4.01": {"interm_freq": 200e6},
+                "q5:mw-q5.01": {"interm_freq": 50e6},
+            },
+            "mixer_corrections": {
+                "q4:mw-q4.01": {"amp_ratio": 0.9999, "phase_error": -4.2}
+            },
+            "distortion_corrections": {
+                "q0:fl-cl0.baseband": QbloxHardwareDistortionCorrection(
+                    exp1_coeffs=[2000, -0.1],
+                    fir_coeffs=[1.025] + [0.03, 0.02] * 15 + [0],
+                ),
+                "iq_mixer0.if-iq_mixer01": [
+                    QbloxHardwareDistortionCorrection(
+                        exp1_coeffs=[200, -0.1],
+                        fir_coeffs=[1.025] + [0.03, 0.02] * 15 + [0],
+                    ),
+                    QbloxHardwareDistortionCorrection(
+                        exp1_coeffs=[20, -0.1],
+                        fir_coeffs=[1.025] + [0.03, 0.02] * 15 + [0],
+                    ),
+                ],
+            },
+        },
+        "connectivity": {
+            "graph": [
+                ("cluster0.module1.complex_output_0", "iq_mixer0.if"),
+                ("cluster0.module1.real_output_2", "q0:fl"),
+                ("cluster0.module1.real_output_3", "q1:fl"),
+                ("lo0.output", "iq_mixer0.lo"),
+                ("iq_mixer0.rf", "q4:mw"),
+                ("cluster0.module2.complex_output_0", "q5:mw"),
+            ]
+        },
+    }
+
+    sched = Schedule("Qblox hardware distortion corrections test", repetitions=1)
+    sched.add_resource(ClockResource(name="iq_mixer01", freq=5e6))
+    sched.add(
+        SquarePulse(
+            amp=0.1,
+            port="q0:fl",
+            duration=200e-9,
+            clock="cl0.baseband",
+            t0=0,
+        )
+    )
+    sched.add(
+        SquarePulse(
+            amp=0.1,
+            port="iq_mixer0.if",
+            duration=200e-9,
+            clock="iq_mixer01",
+            t0=0,
+        )
+    )
+
+    quantum_device.hardware_config(hardware_compilation_cfg)
+
+    sched = compiler.compile(
+        schedule=sched,
+        config=quantum_device.generate_compilation_config(),
+    )
+
+    assert sched.compiled_instructions["cluster0"]["cluster0_module1"]["settings"][
+        "distortion_corrections"
+    ][2]["exp1"]["coeffs"] == [2000, -0.1]
+    assert sched.compiled_instructions["cluster0"]["cluster0_module1"]["settings"][
+        "distortion_corrections"
+    ][0]["exp1"]["coeffs"] == [200, -0.1]
+    assert sched.compiled_instructions["cluster0"]["cluster0_module1"]["settings"][
+        "distortion_corrections"
+    ][1]["exp1"]["coeffs"] == [20, -0.1]
+
+
+def test_distortion_correction_latency_compensation():
+    hardware_compilation_cfg = {
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "ref": "internal",
+                "modules": {
+                    "1": {
+                        "instrument_type": "QCM",
+                        "complex_output_0": {
+                            "distortion_correction_latency_compensation": DistortionCorrectionLatencyEnum.EXP0
+                            | DistortionCorrectionLatencyEnum.EXP1
+                            | DistortionCorrectionLatencyEnum.EXP3
+                        },
+                        "real_output_2": {
+                            "marker_debug_mode_enable": True,
+                            "distortion_correction_latency_compensation": DistortionCorrectionLatencyEnum.EXP0
+                            | DistortionCorrectionLatencyEnum.FIR,
+                        },
+                        "real_output_3": {
+                            "marker_debug_mode_enable": False,
+                            "distortion_correction_latency_compensation": DistortionCorrectionLatencyEnum.EXP0
+                            | DistortionCorrectionLatencyEnum.EXP2,
+                        },
+                        "digital_output_0": {
+                            "distortion_correction_latency_compensation": DistortionCorrectionLatencyEnum.EXP0
+                            | DistortionCorrectionLatencyEnum.FIR
+                        },
+                        "digital_output_1": {
+                            "distortion_correction_latency_compensation": DistortionCorrectionLatencyEnum.EXP0
+                        },
+                        "digital_output_2": {
+                            "distortion_correction_latency_compensation": DistortionCorrectionLatencyEnum.EXP0
+                        },
+                        "digital_output_3": {
+                            "distortion_correction_latency_compensation": DistortionCorrectionLatencyEnum.EXP0
+                            | DistortionCorrectionLatencyEnum.EXP1
+                        },
+                    },
+                    "2": {
+                        "instrument_type": "QCM_RF",
+                        "complex_output_0": {
+                            "distortion_correction_latency_compensation": DistortionCorrectionLatencyEnum.EXP0
+                            | DistortionCorrectionLatencyEnum.EXP1
+                            | DistortionCorrectionLatencyEnum.EXP3
+                        },
+                        "complex_output_1": {
+                            "marker_debug_mode_enable": True,
+                            "distortion_correction_latency_compensation": DistortionCorrectionLatencyEnum.EXP0
+                            | DistortionCorrectionLatencyEnum.FIR,
+                        },
+                        "digital_output_0": {
+                            "distortion_correction_latency_compensation": DistortionCorrectionLatencyEnum.EXP0
+                            | DistortionCorrectionLatencyEnum.EXP1
+                        },
+                        "digital_output_1": {
+                            "distortion_correction_latency_compensation": DistortionCorrectionLatencyEnum.EXP0
+                        },
+                    },
+                },
+            },
+            "lo0": {"instrument_type": "LocalOscillator", "power": 20},
+            "iq_mixer0": {"instrument_type": "IQMixer"},
+        },
+        "hardware_options": {
+            "modulation_frequencies": {
+                "q4:mw-q4.01": {"interm_freq": 200e6},
+                "q6:mw-q6.01": {"interm_freq": 200e6},
+                "q5:mw-q5.01": {"interm_freq": 50e6},
+            },
+            "mixer_corrections": {
+                "q4:mw-q4.01": {"amp_ratio": 0.9999, "phase_error": -4.2}
+            },
+            "distortion_corrections": {
+                "q0:fl-cl0.baseband": QbloxHardwareDistortionCorrection(
+                    exp1_coeffs=[2000, -0.1],
+                    fir_coeffs=[1.025] + [0.03, 0.02] * 15 + [0],
+                ),
+                "iq_mixer0.if-iq_mixer01": [
+                    QbloxHardwareDistortionCorrection(
+                        exp1_coeffs=[200, -0.1],
+                        fir_coeffs=[1.025] + [0.03, 0.02] * 15 + [0],
+                    ),
+                    QbloxHardwareDistortionCorrection(
+                        exp1_coeffs=[20, -0.1],
+                        fir_coeffs=[1.025] + [0.03, 0.02] * 15 + [0],
+                    ),
+                ],
+            },
+        },
+        "connectivity": {
+            "graph": [
+                ("cluster0.module1.complex_output_0", "iq_mixer0.if"),
+                ("cluster0.module1.real_output_2", "q0:fl"),
+                ("cluster0.module1.real_output_3", "q1:fl"),
+                ("lo0.output", "iq_mixer0.lo"),
+                ("iq_mixer0.rf", "q4:mw"),
+                ("cluster0.module2.complex_output_0", "q5:mw"),
+                ("cluster0.module2.complex_output_1", "q6:mw"),
+                ("cluster0.module1.digital_output_0", "q0:marker"),
+                ("cluster0.module1.digital_output_1", "q1:marker"),
+                ("cluster0.module1.digital_output_2", "q2:marker"),
+                ("cluster0.module1.digital_output_3", "q3:marker"),
+                ("cluster0.module2.digital_output_0", "qq0:marker"),
+                ("cluster0.module2.digital_output_1", "qq1:marker"),
+            ]
+        },
+    }
+
+    sched = Schedule("Qblox hardware distortion corrections test", repetitions=1)
+    sched.add_resource(ClockResource(name="iq_mixer01", freq=5e6))
+    sched.add_resource(ClockResource(name="q5.01", freq=5e6))
+    sched.add_resource(ClockResource(name="q6.01", freq=5e9))
+    sched.add(
+        SquarePulse(
+            amp=0.1,
+            port="q0:fl",
+            duration=200e-9,
+            clock="cl0.baseband",
+            t0=0,
+        )
+    )
+    sched.add(
+        SquarePulse(
+            amp=0.1,
+            port="q1:fl",
+            duration=200e-9,
+            clock="cl0.baseband",
+            t0=0,
+        )
+    )
+    sched.add(
+        SquarePulse(
+            amp=0.1,
+            port="iq_mixer0.if",
+            duration=200e-9,
+            clock="iq_mixer01",
+            t0=0,
+        )
+    )
+    sched.add(
+        SquarePulse(
+            amp=0.1,
+            port="q5:mw",
+            duration=200e-9,
+            clock="q5.01",
+            t0=0,
+        )
+    )
+    sched.add(
+        SquarePulse(
+            amp=0.1,
+            port="q6:mw",
+            duration=200e-9,
+            clock="q6.01",
+            t0=0,
+        )
+    )
+    for port in [
+        "q0:marker",
+        "q1:marker",
+        # "q2:marker",
+        "q3:marker",
+        "qq0:marker",
+        # "qq1:marker",
+    ]:
+        sched.add(
+            MarkerPulse(
+                port=port,
+                duration=200e-9,
+                t0=0,
+            )
+        )
+    sched.add(IdlePulse(duration=4e-9))
+
+    quantum_device = QuantumDevice("qblox_distortions_device")
+    compiler = SerialCompiler(name="compiler")
+
+    quantum_device.hardware_config(hardware_compilation_cfg)
+
+    sched = compiler.compile(
+        schedule=sched,
+        config=quantum_device.generate_compilation_config(),
+    )
+
+    corrections = sched.compiled_instructions["cluster0"]["cluster0_module1"][
+        "settings"
+    ]["distortion_corrections"]
+
+    ideal_corrections = [
+        {
+            "bt": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.BYPASSED,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+            "exp0": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.DELAY_COMP,
+                "marker_delay": QbloxFilterMarkerDelay.DELAY_COMP,
+            },
+            "exp1": {
+                "coeffs": [200.0, -0.1],
+                "config": QbloxFilterConfig.ENABLED,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+            "exp2": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.BYPASSED,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+            "exp3": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.DELAY_COMP,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+            "fir": {
+                "coeffs": [
+                    1.025,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.0,
+                ],
+                "config": QbloxFilterConfig.ENABLED,
+                "marker_delay": QbloxFilterMarkerDelay.DELAY_COMP,
+            },
+        },
+        {
+            "bt": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.BYPASSED,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+            "exp0": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.DELAY_COMP,
+                "marker_delay": QbloxFilterMarkerDelay.DELAY_COMP,
+            },
+            "exp1": {
+                "coeffs": [20.0, -0.1],
+                "config": QbloxFilterConfig.ENABLED,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+            "exp2": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.BYPASSED,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+            "exp3": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.DELAY_COMP,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+            "fir": {
+                "coeffs": [
+                    1.025,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.0,
+                ],
+                "config": QbloxFilterConfig.ENABLED,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+        },
+        {
+            "bt": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.BYPASSED,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+            "exp0": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.DELAY_COMP,
+                "marker_delay": QbloxFilterMarkerDelay.DELAY_COMP,
+            },
+            "exp1": {
+                "coeffs": [2000.0, -0.1],
+                "config": QbloxFilterConfig.ENABLED,
+                "marker_delay": QbloxFilterMarkerDelay.DELAY_COMP,
+            },
+            "exp2": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.BYPASSED,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+            "exp3": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.BYPASSED,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+            "fir": {
+                "coeffs": [
+                    1.025,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.03,
+                    0.02,
+                    0.0,
+                ],
+                "config": QbloxFilterConfig.ENABLED,
+                "marker_delay": QbloxFilterMarkerDelay.DELAY_COMP,
+            },
+        },
+        {
+            "bt": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.BYPASSED,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+            "exp0": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.DELAY_COMP,
+                "marker_delay": QbloxFilterMarkerDelay.DELAY_COMP,
+            },
+            "exp1": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.BYPASSED,
+                "marker_delay": QbloxFilterMarkerDelay.DELAY_COMP,
+            },
+            "exp2": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.DELAY_COMP,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+            "exp3": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.BYPASSED,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+            "fir": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.BYPASSED,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+        },
+    ]
+
+    assert corrections == ideal_corrections
+
+    corrections = sched.compiled_instructions["cluster0"]["cluster0_module2"][
+        "settings"
+    ]["distortion_corrections"]
+
+    ideal_corrections = [
+        {
+            "bt": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.BYPASSED,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+            "exp0": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.DELAY_COMP,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+            "exp1": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.DELAY_COMP,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+            "exp2": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.BYPASSED,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+            "exp3": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.DELAY_COMP,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+            "fir": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.BYPASSED,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+        },
+        {
+            "bt": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.BYPASSED,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+            "exp0": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.DELAY_COMP,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+            "exp1": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.DELAY_COMP,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+            "exp2": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.BYPASSED,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+            "exp3": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.DELAY_COMP,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+            "fir": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.BYPASSED,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+        },
+        {
+            "bt": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.BYPASSED,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+            "exp0": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.DELAY_COMP,
+                "marker_delay": QbloxFilterMarkerDelay.DELAY_COMP,
+            },
+            "exp1": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.BYPASSED,
+                "marker_delay": QbloxFilterMarkerDelay.DELAY_COMP,
+            },
+            "exp2": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.BYPASSED,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+            "exp3": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.BYPASSED,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+            "fir": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.DELAY_COMP,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+        },
+        {
+            "bt": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.BYPASSED,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+            "exp0": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.DELAY_COMP,
+                "marker_delay": QbloxFilterMarkerDelay.DELAY_COMP,
+            },
+            "exp1": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.BYPASSED,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+            "exp2": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.BYPASSED,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+            "exp3": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.BYPASSED,
+                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
+            },
+            "fir": {
+                "coeffs": None,
+                "config": QbloxFilterConfig.DELAY_COMP,
+                "marker_delay": QbloxFilterMarkerDelay.DELAY_COMP,
+            },
+        },
+    ]
+
+    assert corrections == ideal_corrections

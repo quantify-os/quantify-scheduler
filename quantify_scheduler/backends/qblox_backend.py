@@ -14,7 +14,7 @@ import numpy as np
 from pydantic import Field, model_validator
 
 from quantify_scheduler.backends.corrections import (
-    apply_distortion_corrections,
+    apply_software_distortion_corrections,
     determine_relative_latency_corrections,
 )
 from quantify_scheduler.backends.graph_compilation import (
@@ -524,10 +524,12 @@ def hardware_compile(
             hardware_cfg
         )
 
+    # Apply software distortion corrections. Hardware distortion corrections are
+    # compiled into the compiler container that follows.
     if (
         distortion_corrections := hardware_cfg.get("distortion_corrections")
     ) is not None:
-        replacing_schedule = apply_distortion_corrections(
+        replacing_schedule = apply_software_distortion_corrections(
             schedule, distortion_corrections
         )
         if replacing_schedule is not None:

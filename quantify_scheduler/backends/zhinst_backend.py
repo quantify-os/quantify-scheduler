@@ -33,7 +33,7 @@ from zhinst.toolkit.helpers import Waveform
 
 from quantify_scheduler import enums
 from quantify_scheduler.backends.corrections import (
-    apply_distortion_corrections,
+    apply_software_distortion_corrections,
     determine_relative_latency_corrections,
 )
 from quantify_scheduler.backends.graph_compilation import (
@@ -1336,7 +1336,7 @@ def compile_backend(  # noqa: PLR0912
     if (
         distortion_corrections := hardware_cfg.get("distortion_corrections")
     ) is not None:
-        replacing_schedule = apply_distortion_corrections(
+        replacing_schedule = apply_software_distortion_corrections(
             schedule, distortion_corrections
         )
         if replacing_schedule is not None:

@@ -3,6 +3,7 @@
 """Module containing quantify JSON utilities."""
 from __future__ import annotations
 
+from enum import Enum
 import functools
 import json
 import pathlib
@@ -356,7 +357,17 @@ class SchedulerJSONEncoder(json.JSONEncoder):
         check if the object is to be serialized to a string using repr. If not, try
         to use ``__getstate__``. Finally, try to serialize the ``__dict__`` property.
         """
-        if isinstance(o, (complex, np.int32, np.complex128, np.int64, enums.BinMode)):
+        if isinstance(
+            o,
+            (
+                complex,
+                np.int32,
+                np.complex128,
+                np.int64,
+                enums.StrEnum,
+                Enum,
+            ),
+        ):
             return {
                 "deserialization_type": type(o).__name__,
                 "mode": "__init__",

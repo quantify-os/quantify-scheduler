@@ -530,6 +530,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
                 hardware_config = utils.load_json_example_scheme(
                     "qblox_hardware_compilation_config.json"
                 )
+                hardware_config["hardware_options"].pop("distortion_corrections")
                 quantum_device.hardware_config(hardware_config)
 
                 compiler = SerialCompiler("compiler")

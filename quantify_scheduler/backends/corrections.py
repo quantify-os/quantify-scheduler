@@ -136,7 +136,7 @@ def _is_distortion_correctable(operation: Operation) -> bool:
     return operation.valid_pulse and not operation.has_voltage_offset
 
 
-def apply_distortion_corrections(
+def apply_software_distortion_corrections(  # noqa: PLR0912
     operation: Union[Operation, Schedule], distortion_corrections: dict
 ) -> Optional[Union[Operation, Schedule]]:
     """
@@ -199,7 +199,7 @@ def apply_distortion_corrections(
     """
     if isinstance(operation, ScheduleBase):
         for inner_operation_id in operation.operations.keys():
-            replacing_operation = apply_distortion_corrections(
+            replacing_operation = apply_software_distortion_corrections(
                 operation.operations[inner_operation_id], distortion_corrections
             )
             if replacing_operation is not None:
@@ -223,6 +223,26 @@ def apply_distortion_corrections(
                     continue
 
                 correction_cfg = distortion_corrections[portclock_key]
+
+                try:
+                    correction_type = correction_cfg.get("correction_type", "software")
+                except AttributeError:
+                    correction_type = correction_cfg[0].get(
+                        "correction_type", "software"
+                    )
+
+                if correction_type != "software":
+                    continue
+
+                try:
+                    correction_type = correction_cfg.get("correction_type", "software")
+                except AttributeError:
+                    correction_type = correction_cfg[0].get(
+                        "correction_type", "software"
+                    )
+
+                if correction_type != "software":
+                    continue
 
                 filter_func_name = correction_cfg.get("filter_func", None)
                 input_var_name = correction_cfg.get("input_var_name", None)

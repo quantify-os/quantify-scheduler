@@ -135,7 +135,7 @@ def test_distortion_correct_pulse(
         for use_numpy in [True, False]
     ],
 )
-def test_apply_distortion_corrections(
+def test_apply_software_distortion_corrections(
     mock_setup_basic_transmon_with_standard_params,
     hardware_options_distortion_corrections,
     two_qubit_gate_schedule,
@@ -273,7 +273,7 @@ def test_apply_latency_corrections_hardware_options_invalid_raises(
 
 
 @pytest.mark.parametrize("use_numpy_array", (True, False))
-def test_apply_distortion_corrections_stitched_pulse_warns(
+def test_apply_software_distortion_corrections_stitched_pulse_warns(
     mock_setup_basic_transmon,
     hardware_options_distortion_corrections,
     use_numpy_array,

@@ -18,6 +18,7 @@ from quantify_scheduler.backends.types.qblox import (
     ComplexChannelDescription,
     ComplexInputGain,
     OpInfo,
+    QbloxHardwareDistortionCorrection,
     RealChannelDescription,
     RealInputGain,
 )
@@ -830,6 +831,10 @@ def _generate_legacy_hardware_config(
             "real_output_3",
             "real_input_0",
             "real_input_1",
+            "digital_output_0",
+            "digital_output_1",
+            "digital_output_2",
+            "digital_output_3",
         ]:
             if (channel_description := getattr(description, key, None)) is None:
                 # No channel description to set
@@ -840,8 +845,12 @@ def _generate_legacy_hardware_config(
                 continue
 
             config[key][
-                "marker_debug_mode_enable"
-            ] = channel_description.marker_debug_mode_enable
+                "distortion_correction_latency_compensation"
+            ] = channel_description.distortion_correction_latency_compensation
+            if ChannelMode.DIGITAL not in key:
+                config[key][
+                    "marker_debug_mode_enable"
+                ] = channel_description.marker_debug_mode_enable
             if ChannelMode.COMPLEX in key:
                 config[key]["mix_lo"] = channel_description.mix_lo
                 config[key][
@@ -975,9 +984,32 @@ def _generate_legacy_hardware_config(
             "latency_corrections"
         ]
     if hardware_options.distortion_corrections is not None:
-        hardware_config["distortion_corrections"] = hardware_options.model_dump()[
-            "distortion_corrections"
-        ]
+        hardware_config["distortion_corrections"] = {}
+        used_keys = [f"{port}-{clock}" for port, clock in port_clocks]
+        for key in hardware_options.distortion_corrections:
+            if key not in used_keys:
+                warnings.warn(
+                    f"Distortion correction portclock {key} is not used in the schedule."
+                )
+            distortion_correction = hardware_options.distortion_corrections[key]
+            if isinstance(distortion_correction, list):
+                distortion_correction_list = []
+                for dc in distortion_correction:
+                    dc_dict = dc.model_dump()
+                    dc_dict["correction_type"] = "qblox"
+                    distortion_correction_list.append(dc_dict)
+                # Set the distortion correction in the hardware config:
+                hardware_config["distortion_corrections"][
+                    key
+                ] = distortion_correction_list
+            else:
+                distortion_correction_dict = distortion_correction.model_dump()
+                if isinstance(distortion_correction, QbloxHardwareDistortionCorrection):
+                    distortion_correction_dict["correction_type"] = "qblox"
+                # Set the distortion correction in the hardware config:
+                hardware_config["distortion_corrections"][
+                    key
+                ] = distortion_correction_dict
 
     # Set Hardware Options for all port-clock combinations in the Schedule:
     if hardware_options.modulation_frequencies is not None:

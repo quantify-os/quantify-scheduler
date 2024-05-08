@@ -68,10 +68,9 @@ operations in the schedule.
 """
 
 
-class DistortionCorrection(DataStructure):
+class SoftwareDistortionCorrection(DataStructure):
     """
-    Distortion correction information for a port-clock combination.
-
+    Software distortion correction information for a port-clock combination.
 
     .. admonition:: Example
         :class: dropdown
@@ -79,11 +78,11 @@ class DistortionCorrection(DataStructure):
         .. jupyter-execute::
 
             from quantify_scheduler.backends.types.common import (
-                DistortionCorrection
+                SoftwareDistortionCorrection
             )
 
             distortion_corrections = {
-                "q0:fl-cl0.baseband": DistortionCorrection(
+                "q0:fl-cl0.baseband": SoftwareDistortionCorrection(
                     filter_func="scipy.signal.lfilter",
                     input_var_name="x",
                     kwargs={
@@ -103,11 +102,66 @@ class DistortionCorrection(DataStructure):
     """The keyword arguments that are passed to the filter_func."""
     clipping_values: Optional[List] = None
     """
-    The optional boundaries to which the corrected pulses will be clipped, upon 
-    exceeding.
-    """
+    The optional boundaries to which the corrected pulses will be clipped,
+    upon exceeding."""
     sampling_rate: float = 1e9
     """The sample rate of the corrected pulse, in Hz."""
+
+
+# @deprecated does not work with pydantic models.
+class DistortionCorrection(DataStructure):
+    """
+    Software distortion correction information for a port-clock combination.
+
+    Note: deprecated and to be removed after 0.23.0. Please use
+    ``SoftwareDistortionCorrection`` instead.
+
+    .. admonition:: Example
+        :class: dropdown
+
+        .. jupyter-execute::
+
+            from quantify_scheduler.backends.types.common import (
+                SoftwareDistortionCorrection
+            )
+
+            distortion_corrections = {
+                "q0:fl-cl0.baseband": SoftwareDistortionCorrection(
+                    filter_func="scipy.signal.lfilter",
+                    input_var_name="x",
+                    kwargs={
+                        "b": [0, 0.25, 0.5],
+                        "a": [1]
+                    },
+                    clipping_values=[-2.5, 2.5]
+                )
+            }
+    """
+
+    def __init__(self, **data) -> None:
+        super().__init__(**data)
+        warnings.warn(
+            "DistortionCorrection is deprecated and will be removed from "
+            "quantify-scheduler after 0.23.0. "
+            "Please use SoftwareDistortionCorrection instead.",
+            FutureWarning,
+        )
+
+    filter_func: str
+    """The function applied to the waveforms."""
+    input_var_name: str
+    """The argument to which the waveforms will be passed in the filter_func."""
+    kwargs: Dict[str, Union[List, NDArray]]
+    """The keyword arguments that are passed to the filter_func."""
+    clipping_values: Optional[List] = None
+    """
+    The optional boundaries to which the corrected pulses will be clipped,
+    upon exceeding."""
+    sampling_rate: float = 1e9
+
+
+class HardwareDistortionCorrection(DataStructure):
+    """Parent class for hardware distortion correction."""
 
 
 class ModulationFrequencies(DataStructure):
@@ -186,7 +240,7 @@ class HardwareOptions(DataStructure):
     Dictionary containing the latency corrections (values) that should be applied
     to operations on a certain port-clock combination (keys).
     """
-    distortion_corrections: Optional[Dict[str, DistortionCorrection]] = None
+    distortion_corrections: Optional[Dict[str, SoftwareDistortionCorrection]] = None
     """
     Dictionary containing the distortion corrections (values) that should be applied
     to waveforms on a certain port-clock combination (keys).

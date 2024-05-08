@@ -18,7 +18,12 @@ from quantify_scheduler.backends.qblox.compiler_abc import (
     ClusterModuleCompiler,
     SequencerCompiler,
 )
-from quantify_scheduler.backends.qblox.enums import ChannelMode
+from quantify_scheduler.backends.qblox.enums import (
+    ChannelMode,
+    DistortionCorrectionLatencyEnum,
+    QbloxFilterConfig,
+    QbloxFilterMarkerDelay,
+)
 from quantify_scheduler.backends.qblox.operation_handling.acquisitions import (
     SquareAcquisitionStrategy,
 )
@@ -105,6 +110,7 @@ class AnalogSequencerCompiler(SequencerCompiler):
         static_hw_properties: StaticAnalogModuleProperties,
         settings: AnalogSequencerSettings,
         latency_corrections: dict[str, float],
+        distortion_corrections: dict[int, Any] | None = None,
         qasm_hook_func: Callable | None = None,
         lo_name: str | None = None,
         downconverter_freq: float | None = None,
@@ -120,6 +126,7 @@ class AnalogSequencerCompiler(SequencerCompiler):
             static_hw_properties=static_hw_properties,
             settings=settings,
             latency_corrections=latency_corrections,
+            distortion_corrections=distortion_corrections,
             qasm_hook_func=qasm_hook_func,
         )
         self.associated_ext_lo = lo_name
@@ -450,9 +457,11 @@ class AnalogSequencerCompiler(SequencerCompiler):
         # For RF modules, the first two indices correspond to path enable/disable.
         # Therefore, the index of the output is shifted by 2.
         elif instrument_type == "QCM_RF":
-            for output in self.connected_output_indices:
-                marker_bit_string |= 1 << (output + 2)
-                marker_bit_string |= self._default_marker
+            # connected outputs are either 0,1 or 2,3 corresponding to
+            # marker bitstrings 0b0100 and 0b1000 respectively
+            output = self.connected_output_indices[0] // 2
+            marker_bit_string |= 1 << (output + 2)
+            marker_bit_string |= self._default_marker
         elif instrument_type == "QRM_RF":
             marker_bit_string = (
                 0b1011 if operation.operation_info.is_acquisition else 0b0111
@@ -497,6 +506,7 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
         total_play_time: float,
         instrument_cfg: dict[str, Any],
         latency_corrections: dict[str, float] | None = None,
+        distortion_corrections: dict[int, Any] | None = None,
     ) -> None:
         super().__init__(
             parent=parent,
@@ -504,6 +514,7 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
             total_play_time=total_play_time,
             instrument_cfg=instrument_cfg,
             latency_corrections=latency_corrections,
+            distortion_corrections=distortion_corrections,
         )
         self.sequencers: dict[str, AnalogSequencerCompiler] = {}
 
@@ -631,6 +642,7 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
         """
         self._configure_input_gains()
         self._configure_mixer_offsets()
+        self._configure_hardware_distortion_corrections()
         self._construct_all_sequencer_compilers()
         for seq in self.sequencers.values():
             self.assign_frequencies(seq)
@@ -718,6 +730,110 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
                     voltage_range, self.name, "dc_mixer_offset_Q", output_cfg
                 )
 
+    def _configure_distortion_correction_latency_compensations(self) -> None:
+        channel_names = helpers.find_channel_names(self.instrument_cfg)
+        for channel_name in channel_names:
+            io_mapping = self.instrument_cfg.get(channel_name, None)
+            if io_mapping is None:
+                continue
+
+            dc_comp = io_mapping.pop(
+                "distortion_correction_latency_compensation",
+                DistortionCorrectionLatencyEnum.NO_DELAY_COMP,
+            )
+            marker_debug_mode_enable = io_mapping.get("marker_debug_mode_enable", False)
+            output_indices = self.static_hw_properties._get_connected_output_indices(
+                channel_name
+            )
+            if output_indices is None:
+                output_indices = ()
+            for output in output_indices:
+                if ChannelMode.DIGITAL in channel_name:
+                    self._configure_dc_latency_comp_for_marker(output, dc_comp)
+                else:
+                    if marker_debug_mode_enable:
+                        if f"digital_output_{output}" in channel_names:
+                            raise ValueError(
+                                f"digital_output_{output} cannot be used along with "
+                                "marker_debug_mode_enable on the same digital output."
+                            )
+                        else:
+                            if output in self.distortion_corrections:
+                                self.distortion_corrections[output][
+                                    "marker_debug_mode_enable"
+                                ] = True
+                            marker_output = output
+                            if (
+                                channel_name
+                                in self.static_hw_properties.channel_name_to_digital_marker
+                            ):
+                                marker_output = (
+                                    self.static_hw_properties.channel_name_to_digital_marker[
+                                        channel_name
+                                    ]
+                                    + 1
+                                ) % 2
+                            self._configure_dc_latency_comp_for_marker(
+                                marker_output, dc_comp
+                            )
+                    self._configure_dc_latency_comp_for_output(output, dc_comp)
+
+    def _configure_dc_latency_comp_for_output(self, output: int, dc_comp: int) -> None:
+        self._settings.distortion_corrections[output].bt.config = (
+            QbloxFilterConfig.DELAY_COMP
+            if dc_comp & DistortionCorrectionLatencyEnum.BT
+            else QbloxFilterConfig.BYPASSED
+        )
+        for i, mask in enumerate(
+            [
+                DistortionCorrectionLatencyEnum.EXP0,
+                DistortionCorrectionLatencyEnum.EXP1,
+                DistortionCorrectionLatencyEnum.EXP2,
+                DistortionCorrectionLatencyEnum.EXP3,
+            ]
+        ):
+            getattr(self._settings.distortion_corrections[output], f"exp{i}").config = (
+                QbloxFilterConfig.DELAY_COMP
+                if dc_comp & mask
+                else QbloxFilterConfig.BYPASSED
+            )
+        self._settings.distortion_corrections[output].fir.config = (
+            QbloxFilterConfig.DELAY_COMP
+            if dc_comp & DistortionCorrectionLatencyEnum.FIR
+            else QbloxFilterConfig.BYPASSED
+        )
+
+    def _configure_dc_latency_comp_for_marker(self, output: int, dc_comp: int) -> None:
+        self._settings.distortion_corrections[output].bt.marker_delay = (
+            QbloxFilterMarkerDelay.DELAY_COMP
+            if dc_comp & DistortionCorrectionLatencyEnum.BT
+            else QbloxFilterMarkerDelay.BYPASSED
+        )
+        for i, mask in enumerate(
+            [
+                DistortionCorrectionLatencyEnum.EXP0,
+                DistortionCorrectionLatencyEnum.EXP1,
+                DistortionCorrectionLatencyEnum.EXP2,
+                DistortionCorrectionLatencyEnum.EXP3,
+            ]
+        ):
+            getattr(
+                self._settings.distortion_corrections[output], f"exp{i}"
+            ).marker_delay = (
+                QbloxFilterMarkerDelay.DELAY_COMP
+                if dc_comp & mask
+                else QbloxFilterMarkerDelay.BYPASSED
+            )
+        self._settings.distortion_corrections[output].fir.marker_delay = (
+            QbloxFilterMarkerDelay.DELAY_COMP
+            if dc_comp & DistortionCorrectionLatencyEnum.FIR
+            else QbloxFilterMarkerDelay.BYPASSED
+        )
+
+    def _configure_hardware_distortion_corrections(self) -> None:
+        """Assign distortion corrections to settings of instrument compiler."""
+        self._configure_distortion_correction_latency_compensations()
+
     def _ensure_single_scope_mode_acquisition_sequencer(self) -> None:
         """
         Raises an error if multiple sequencers use scope mode acquisition,
@@ -769,6 +885,7 @@ class BasebandModuleCompiler(AnalogModuleCompiler):
         total_play_time: float,
         instrument_cfg: dict[str, Any],
         latency_corrections: dict[str, float] | None = None,
+        distortion_corrections: dict[int, Any] | None = None,
     ) -> None:
         super().__init__(
             parent=parent,
@@ -776,6 +893,7 @@ class BasebandModuleCompiler(AnalogModuleCompiler):
             total_play_time=total_play_time,
             instrument_cfg=instrument_cfg,
             latency_corrections=latency_corrections,
+            distortion_corrections=distortion_corrections,
         )
         self._settings: BasebandModuleSettings = (  # type: ignore
             BasebandModuleSettings.extract_settings_from_mapping(instrument_cfg)
@@ -844,6 +962,33 @@ class BasebandModuleCompiler(AnalogModuleCompiler):
         is any. For baseband modules there is no attenuation parameters currently.
         """
 
+    def _configure_dc_latency_comp_for_marker(self, output: int, dc_comp: int) -> None:
+        self._settings.distortion_corrections[output].bt.marker_delay = (
+            QbloxFilterMarkerDelay.DELAY_COMP
+            if dc_comp & DistortionCorrectionLatencyEnum.BT
+            else QbloxFilterMarkerDelay.BYPASSED
+        )
+        for i, mask in enumerate(
+            [
+                DistortionCorrectionLatencyEnum.EXP0,
+                DistortionCorrectionLatencyEnum.EXP1,
+                DistortionCorrectionLatencyEnum.EXP2,
+                DistortionCorrectionLatencyEnum.EXP3,
+            ]
+        ):
+            getattr(
+                self._settings.distortion_corrections[output], f"exp{i}"
+            ).marker_delay = (
+                QbloxFilterMarkerDelay.DELAY_COMP
+                if dc_comp & mask
+                else QbloxFilterMarkerDelay.BYPASSED
+            )
+        self._settings.distortion_corrections[output].fir.marker_delay = (
+            QbloxFilterMarkerDelay.DELAY_COMP
+            if dc_comp & DistortionCorrectionLatencyEnum.FIR
+            else QbloxFilterMarkerDelay.BYPASSED
+        )
+
 
 class RFModuleCompiler(AnalogModuleCompiler):
     """
@@ -858,6 +1003,7 @@ class RFModuleCompiler(AnalogModuleCompiler):
         total_play_time: float,
         instrument_cfg: dict[str, Any],
         latency_corrections: dict[str, float] | None = None,
+        distortion_corrections: dict[int, Any] | None = None,
     ) -> None:
         super().__init__(
             parent=parent,
@@ -865,6 +1011,7 @@ class RFModuleCompiler(AnalogModuleCompiler):
             total_play_time=total_play_time,
             instrument_cfg=instrument_cfg,
             latency_corrections=latency_corrections,
+            distortion_corrections=distortion_corrections,
         )
         self._settings: RFModuleSettings = (  # type: ignore
             RFModuleSettings.extract_settings_from_mapping(instrument_cfg)
@@ -958,4 +1105,32 @@ class RFModuleCompiler(AnalogModuleCompiler):
         self._settings.out1_att = _convert_to_int(
             complex_output_1.get("output_att", None),
             label="out1_att",
+        )
+
+    def _configure_dc_latency_comp_for_marker(self, output: int, dc_comp: int) -> None:
+        output += 2  # In RF modules, the two marker indices are 2 & 3.
+        self._settings.distortion_corrections[output].bt.marker_delay = (
+            QbloxFilterMarkerDelay.DELAY_COMP
+            if dc_comp & DistortionCorrectionLatencyEnum.BT
+            else QbloxFilterMarkerDelay.BYPASSED
+        )
+        for i, mask in enumerate(
+            [
+                DistortionCorrectionLatencyEnum.EXP0,
+                DistortionCorrectionLatencyEnum.EXP1,
+                DistortionCorrectionLatencyEnum.EXP2,
+                DistortionCorrectionLatencyEnum.EXP3,
+            ]
+        ):
+            getattr(
+                self._settings.distortion_corrections[output], f"exp{i}"
+            ).marker_delay = (
+                QbloxFilterMarkerDelay.DELAY_COMP
+                if dc_comp & mask
+                else QbloxFilterMarkerDelay.BYPASSED
+            )
+        self._settings.distortion_corrections[output].fir.marker_delay = (
+            QbloxFilterMarkerDelay.DELAY_COMP
+            if dc_comp & DistortionCorrectionLatencyEnum.FIR
+            else QbloxFilterMarkerDelay.BYPASSED
         )

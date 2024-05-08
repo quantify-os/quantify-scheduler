@@ -6,6 +6,8 @@ from __future__ import annotations
 from collections import abc, defaultdict
 from typing import TYPE_CHECKING, Any
 
+import numpy as np
+
 from quantify_scheduler.backends.qblox import compiler_abc
 from quantify_scheduler.backends.qblox.analog import (
     AnalogModuleCompiler,
@@ -20,6 +22,11 @@ from quantify_scheduler.backends.qblox.constants import (
     NUMBER_OF_SEQUENCERS_QRM,
     NUMBER_OF_SEQUENCERS_QTM,
 )
+from quantify_scheduler.backends.qblox.enums import (
+    ChannelMode,
+    QbloxFilterConfig,
+    QbloxFilterMarkerDelay,
+)
 from quantify_scheduler.backends.qblox.timetag import TimetagSequencerCompiler
 from quantify_scheduler.backends.types.qblox import (
     BoundedParameter,
@@ -30,6 +37,10 @@ from quantify_scheduler.backends.types.qblox import (
     TimetagModuleSettings,
     TimetagSequencerSettings,
 )
+from quantify_scheduler.helpers.collections import find_port_clock_path
+
+if TYPE_CHECKING:
+    from quantify_scheduler.backends.qblox import compiler_container
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.qblox import compiler_container
@@ -171,6 +182,54 @@ class QCMCompiler(BasebandModuleCompiler):
         },
     )
 
+    def _configure_hardware_distortion_corrections(self):
+        """Assign distortion corrections to settings of instrument compiler."""
+        super()._configure_hardware_distortion_corrections()
+
+        for output in self.distortion_corrections:
+            output_settings = self._settings.distortion_corrections[output]
+            marker_debug_mode_enable = self.distortion_corrections[output].get(
+                "marker_debug_mode_enable", False
+            )
+            if not isinstance(self.distortion_corrections[output], list):
+                dc_list = [self.distortion_corrections[output]]
+            else:
+                dc_list = self.distortion_corrections[output]
+            for dc in dc_list:
+                for key, value in dc.items():
+                    for i in range(4):
+                        if key == f"exp{i}_coeffs" and value is not None:
+                            if (
+                                len(value) != 2
+                                or value[0] < 6
+                                or value[1] < -1
+                                or value[1] >= 1
+                            ):
+                                raise ValueError(
+                                    "The exponential overshoot correction has two "
+                                    "coefficients with ranges of [6,inf) and [-1,1)."
+                                )
+                            self._configure_filter(
+                                getattr(output_settings, f"exp{i}"),
+                                value,
+                                marker_debug_mode_enable,
+                            )
+                    if key == "fir_coeffs" and value is not None:
+                        if len(value) != 32 or np.any(value) < -2 or np.any(value) >= 2:
+                            raise ValueError(
+                                "The FIR filter has 32 coefficients "
+                                "with a range of [-2,2) each."
+                            )
+                        self._configure_filter(
+                            output_settings.fir, value, marker_debug_mode_enable
+                        )
+
+    def _configure_filter(self, filt, coefficient, marker_debug_mode_enable):
+        filt.coeffs = coefficient
+        filt.config = QbloxFilterConfig.ENABLED
+        if marker_debug_mode_enable:
+            filt.marker_delay = QbloxFilterMarkerDelay.DELAY_COMP
+
 
 class QRMCompiler(BasebandModuleCompiler):
     """QRM specific implementation of the qblox compiler."""
@@ -271,6 +330,7 @@ class TimetagModuleCompiler(compiler_abc.ClusterModuleCompiler):
         total_play_time: float,
         instrument_cfg: dict[str, Any],
         latency_corrections: dict[str, float] | None = None,
+        distortion_corrections: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(
             parent=parent,
@@ -278,6 +338,7 @@ class TimetagModuleCompiler(compiler_abc.ClusterModuleCompiler):
             total_play_time=total_play_time,
             instrument_cfg=instrument_cfg,
             latency_corrections=latency_corrections,
+            distortion_corrections=distortion_corrections,
         )
         self.sequencers: dict[str, TimetagSequencerCompiler] = {}
 
@@ -388,6 +449,7 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
         total_play_time: float,
         instrument_cfg: dict[str, Any],
         latency_corrections: dict[str, float] | None = None,
+        distortion_corrections: dict[int, Any] | None = None,
     ):
         super().__init__(
             parent=parent,
@@ -395,6 +457,7 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
             total_play_time=total_play_time,
             instrument_cfg=instrument_cfg,
             latency_corrections=latency_corrections,
+            distortion_corrections=distortion_corrections,
         )
         self._op_infos: dict[tuple[str, str], list[OpInfo]] = defaultdict(list)
         self.instrument_compilers = self.construct_module_compilers()
@@ -444,7 +507,8 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
                     f"of: {self.compiler_classes.keys()}."
                 )
             compiler_type: type = self.compiler_classes[instrument_type]
-            instance = compiler_type(
+
+            compiler_kwargs = dict(
                 parent=self,
                 name=name,
                 total_play_time=self.total_play_time,
@@ -452,8 +516,62 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
                 latency_corrections=self.latency_corrections,
             )
 
+            if instrument_type == "QCM" and self.distortion_corrections is not None:
+                module_distortion_corrections = self._get_module_distortion_corrections(
+                    cfg
+                )
+                compiler_kwargs["distortion_corrections"] = (
+                    module_distortion_corrections
+                )
+
+            instance = compiler_type(**compiler_kwargs)
+
             instrument_compilers[name] = instance
         return instrument_compilers
+
+    def _get_module_distortion_corrections(self, cfg):
+        module_distortion_corrections = {}
+        for key in self.distortion_corrections:
+            try:
+                correction_type = self.distortion_corrections[key].get(
+                    "correction_type", "software"
+                )
+            except AttributeError:
+                correction_type = self.distortion_corrections[key][0].get(
+                    "correction_type", "software"
+                )
+            if correction_type != "qblox":
+                continue
+            port, clock = key.split("-")
+            try:
+                output_name = find_port_clock_path(
+                    hardware_config=cfg, port=port, clock=clock
+                )[0]
+            except KeyError:
+                continue
+            output_number = int(output_name.split("_")[-1])
+            if module_distortion_corrections.get(output_number) is None:
+                if output_name.startswith(ChannelMode.REAL):
+                    output_number = int(output_name.split("_")[-1])
+                    module_distortion_corrections[output_number] = (
+                        self.distortion_corrections[key]
+                    )
+                elif output_name.startswith(ChannelMode.COMPLEX):
+                    output_number = 2 * int(output_name.split("_")[-1])
+                    module_distortion_corrections[output_number] = (
+                        self.distortion_corrections[key][0]
+                    )
+                    output_number += 1
+                    module_distortion_corrections[output_number] = (
+                        self.distortion_corrections[key][1]
+                    )
+            else:
+                raise ValueError(
+                    f"Attempting to set distortion corrections to"
+                    f"{output_name} using portclock {key}, while it"
+                    f"has previously already been set on this output."
+                )
+        return module_distortion_corrections
 
     def prepare(self) -> None:
         """Prepares the instrument compiler for compilation by assigning the data."""
