@@ -419,16 +419,22 @@ def extract_acquisition_metadata_from_acquisition_protocols(
 
         # test limitation: all acquisition protocols in a schedule must be of
         # the same kind
-        if (
-            acq_protocol["protocol"] != protocol
-            or acq_protocol["bin_mode"] != bin_mode
-            or acq_protocol["acq_return_type"] != acq_return_type
-        ):
+        conflicts = []
+
+        if acq_protocol["protocol"] != protocol:
+            conflicts.append(
+                f'acquisition protocol: found {protocol} and {acq_protocol["protocol"]}'
+            )
+        if acq_protocol["bin_mode"] != bin_mode:
+            conflicts.append(
+                f"bin mode: found {bin_mode.__class__.__name__}.{bin_mode.name} and "
+                f'{acq_protocol["bin_mode"].__class__.__name__}.{acq_protocol["bin_mode"].name}'
+            )
+
+        if conflicts:
             raise RuntimeError(
-                "Acquisition protocols or bin mode or acquisition return type are not"
-                " of the same kind. "
-                f"Expected protocol: {acquisition_protocols[0]}. "
-                f"Offending: {i}, {acq_protocol} \n"
+                "All acquisitions in a Schedule must be of the same kind:\n"
+                + "\n".join(conflicts)
             )
 
         # add the individual channel

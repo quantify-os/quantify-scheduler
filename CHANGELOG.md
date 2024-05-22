@@ -10,6 +10,9 @@
 
 ### Merged branches and closed issues
 
+- Improved Error messages
+  - Improve error message for conflicting acquisition protocols (!982)
+
 
 ## 0.20.1 (2024-05-01)
 

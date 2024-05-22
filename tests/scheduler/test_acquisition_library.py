@@ -1,8 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Unit tests acquisition protocols for use with the quantify_scheduler."""
-
-
+from itertools import combinations
 import json
 from unittest import TestCase
 
@@ -11,6 +10,9 @@ import pytest
 
 from quantify_scheduler import Operation
 from quantify_scheduler.enums import BinMode
+from quantify_scheduler.helpers.schedule import (
+    extract_acquisition_metadata_from_schedule,
+)
 from quantify_scheduler.operations.acquisition_library import (
     NumericalSeparatedWeightedIntegration,
     NumericalWeightedIntegration,
@@ -23,6 +25,77 @@ from quantify_scheduler.operations.acquisition_library import (
 from quantify_scheduler.operations.gate_library import X90
 from quantify_scheduler.operations.pulse_library import DRAGPulse
 from quantify_scheduler.json_utils import SchedulerJSONEncoder, SchedulerJSONDecoder
+from quantify_scheduler.schedules.schedule import Schedule
+
+ALL_ACQUISITION_PROTOCOLS = [
+    Trace(
+        duration=16e-9,
+        port="q0:res",
+        clock="q0.ro",
+    ),
+    SSBIntegrationComplex(
+        port="q0:res",
+        clock="q0.ro",
+        duration=100e-9,
+    ),
+    NumericalSeparatedWeightedIntegration(
+        weights_a=np.zeros(3, dtype=complex),
+        weights_b=np.ones(3, dtype=complex),
+        port="q0:res",
+        clock="q0.ro",
+    ),
+    NumericalWeightedIntegration(
+        weights_a=np.zeros(3, dtype=complex),
+        weights_b=np.ones(3, dtype=complex),
+        port="q0:res",
+        clock="q0.ro",
+    ),
+    TriggerCount(
+        port="q0:res",
+        clock="q0.ro",
+        duration=100e-9,
+    ),
+    ThresholdedAcquisition(
+        port="q0:res",
+        clock="q0.ro",
+        duration=100e-9,
+    ),
+]
+
+ALL_BIN_MODES = [bin_mode for bin_mode in BinMode]  # type: ignore
+
+
+@pytest.mark.parametrize(
+    "operation_a, operation_b", combinations(ALL_ACQUISITION_PROTOCOLS, 2)
+)
+def test_conflicting_acquisitions_raises(operation_a, operation_b):
+    sched = Schedule("")
+    sched.add(operation_a)
+    sched.add(operation_b)
+    with pytest.raises(
+        RuntimeError, match="All acquisitions in a Schedule must be of the same kind"
+    ):
+        extract_acquisition_metadata_from_schedule(sched)
+
+
+@pytest.mark.parametrize("bin_mode_a, bin_mode_b", combinations(ALL_BIN_MODES, 2))
+def test_conflicting_bin_modes_raises(bin_mode_a, bin_mode_b):
+    sched = Schedule("")
+    sched.add(
+        SSBIntegrationComplex(
+            port="q0:res", clock="q0.ro", duration=100e-9, bin_mode=bin_mode_a
+        )
+    )
+    sched.add(
+        SSBIntegrationComplex(
+            port="q0:res", clock="q0.ro", duration=100e-9, bin_mode=bin_mode_b
+        )
+    )
+
+    with pytest.raises(
+        RuntimeError, match="All acquisitions in a Schedule must be of the same kind"
+    ):
+        extract_acquisition_metadata_from_schedule(sched)
 
 
 def test_ssb_integration_complex():
@@ -231,27 +304,7 @@ def test_weighted_acquisition():
     assert list(wf_b["t_samples"]) == [0.0e00, 1.0e-09, 2.0e-09, 3.0e-09]
 
 
-@pytest.mark.parametrize(
-    "operation",
-    [
-        Trace(duration=16e-9, port="q0:res", clock="q0.ro"),
-        SSBIntegrationComplex(
-            port="q0:res",
-            clock="q0.ro",
-            duration=100e-9,
-        ),
-        TriggerCount(
-            port="q0:res",
-            clock="q0.ro",
-            duration=100e-9,
-        ),
-        ThresholdedAcquisition(
-            port="q0:res",
-            clock="q0.ro",
-            duration=100e-9,
-        ),
-    ],
-)
+@pytest.mark.parametrize("operation", ALL_ACQUISITION_PROTOCOLS)
 def test__repr__(operation: Operation):
     # Arrange
     operation_state: str = json.dumps(operation, cls=SchedulerJSONEncoder)
@@ -261,84 +314,12 @@ def test__repr__(operation: Operation):
     assert obj == operation
 
 
-@pytest.mark.parametrize(
-    "operation",
-    [
-        Trace(
-            duration=16e-9,
-            port="q0:res",
-            clock="q0.ro",
-        ),
-        SSBIntegrationComplex(
-            port="q0:res",
-            clock="q0.ro",
-            duration=100e-9,
-        ),
-        NumericalSeparatedWeightedIntegration(
-            weights_a=np.zeros(3, dtype=complex),
-            weights_b=np.ones(3, dtype=complex),
-            port="q0:res",
-            clock="q0.ro",
-        ),
-        NumericalWeightedIntegration(
-            weights_a=np.zeros(3, dtype=complex),
-            weights_b=np.ones(3, dtype=complex),
-            port="q0:res",
-            clock="q0.ro",
-        ),
-        TriggerCount(
-            port="q0:res",
-            clock="q0.ro",
-            duration=100e-9,
-        ),
-        ThresholdedAcquisition(
-            port="q0:res",
-            clock="q0.ro",
-            duration=100e-9,
-        ),
-    ],
-)
+@pytest.mark.parametrize("operation", ALL_ACQUISITION_PROTOCOLS)
 def test__str__(operation: Operation):
     assert isinstance(eval(str(operation)), type(operation))
 
 
-@pytest.mark.parametrize(
-    "operation",
-    [
-        Trace(
-            duration=16e-9,
-            port="q0:res",
-            clock="q0.ro",
-        ),
-        SSBIntegrationComplex(
-            port="q0:res",
-            clock="q0.ro",
-            duration=100e-9,
-        ),
-        NumericalSeparatedWeightedIntegration(
-            weights_a=np.zeros(3, dtype=complex),
-            weights_b=np.ones(3, dtype=complex),
-            port="q0:res",
-            clock="q0.ro",
-        ),
-        NumericalWeightedIntegration(
-            weights_a=np.zeros(3, dtype=complex),
-            weights_b=np.ones(3, dtype=complex),
-            port="q0:res",
-            clock="q0.ro",
-        ),
-        TriggerCount(
-            port="q0:res",
-            clock="q0.ro",
-            duration=100e-9,
-        ),
-        ThresholdedAcquisition(
-            port="q0:res",
-            clock="q0.ro",
-            duration=100e-9,
-        ),
-    ],
-)
+@pytest.mark.parametrize("operation", ALL_ACQUISITION_PROTOCOLS)
 def test_deserialize(operation: Operation):
     # Arrange
     operation_state: str = json.dumps(operation, cls=SchedulerJSONEncoder)
@@ -375,31 +356,7 @@ def test_deserialize(operation: Operation):
     TestCase().assertDictEqual(obj.data, operation.data)
 
 
-@pytest.mark.parametrize(
-    "operation",
-    [
-        Trace(
-            duration=16e-9,
-            port="q0:res",
-            clock="q0.ro",
-        ),
-        SSBIntegrationComplex(
-            port="q0:res",
-            clock="q0.ro",
-            duration=100e-9,
-        ),
-        TriggerCount(
-            port="q0:res",
-            clock="q0.ro",
-            duration=100e-9,
-        ),
-        ThresholdedAcquisition(
-            port="q0:res",
-            clock="q0.ro",
-            duration=100e-9,
-        ),
-    ],
-)
+@pytest.mark.parametrize("operation", ALL_ACQUISITION_PROTOCOLS)
 def test__repr__modify_not_equal(operation: Operation):
     # Arrange
     operation_state: str = json.dumps(operation, cls=SchedulerJSONEncoder)
