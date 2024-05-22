@@ -310,16 +310,23 @@ def resolve_control_flow(
                 for port, clock in port_clocks
             ]
 
-            _move_to_end(schedule.schedulables, schedulable_key)
-
-            schedule.add(
+            control_flow_schedulable = schedule.add(
                 cf,
-                rel_time=-1e-12,
-                ref_op=str(schedulable),
-                ref_pt="start",
-                ref_pt_new="start",
                 validate=False,
             )
+            control_flow_schedulable["timing_constraints"] = schedulable[
+                "timing_constraints"
+            ]
+
+            _move_to_end(schedule.schedulables, schedulable_key)
+            schedulable["timing_constraints"] = [
+                {
+                    "rel_time": 0,
+                    "ref_schedulable": None,
+                    "ref_pt_new": None,
+                    "ref_pt": None,
+                }
+            ]
 
             # insert return stack op after the current operation
             schedule.add(

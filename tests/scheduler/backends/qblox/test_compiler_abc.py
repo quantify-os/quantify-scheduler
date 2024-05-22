@@ -2,10 +2,11 @@
 # Licensed according to the LICENCE file on the main branch
 """Tests for the InstrumentCompiler subclasses."""
 from itertools import permutations, product
-from typing import List
+from typing import List, Dict
 from unittest.mock import Mock
 
 import pytest
+import math
 
 from quantify_scheduler.backends.qblox import q1asm_instructions
 from quantify_scheduler.backends.qblox.analog import AnalogSequencerCompiler
@@ -21,7 +22,7 @@ from quantify_scheduler.backends.qblox.timetag import TimetagSequencerCompiler
 from quantify_scheduler.backends.types.qblox import AnalogSequencerSettings, OpInfo
 from quantify_scheduler.compilation import _ControlFlowReturn
 from quantify_scheduler.operations.acquisition_library import Trace
-from quantify_scheduler.operations.control_flow_library import Loop
+from quantify_scheduler.operations.control_flow_library import Loop, Conditional
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import (
     ResetClockPhase,
@@ -30,44 +31,449 @@ from quantify_scheduler.operations.pulse_library import (
     SquarePulse,
     VoltageOffset,
 )
+from quantify_scheduler import Schedule
+from quantify_scheduler.compilation import _determine_absolute_timing
+from quantify_scheduler.backends.qblox.helpers import _generate_legacy_hardware_config
+from quantify_scheduler.backends.qblox import compiler_container
+from quantify_scheduler.operations.pulse_library import DRAGPulse
+from quantify_scheduler.backends import SerialCompiler, corrections
+from quantify_scheduler.backends.qblox.helpers import (
+    assign_pulse_and_acq_info_to_devices,
+)
+from quantify_scheduler.resources import BasebandClockResource
+from quantify_scheduler.operations.gate_library import Measure, X
+from quantify_scheduler.backends.qblox.instrument_compilers import ClusterCompiler
+
+
+def _assert_update_parameters_op_list(
+    op_list: List[Operation],
+    expected_update_parameters: Dict[int, float],
+    hardware_cfg_cluster_legacy,
+) -> None:
+    schedule = Schedule("parameter update test")
+    for op in op_list:
+        schedule.add(op)
+    _assert_update_parameters_schedule(
+        schedule,
+        expected_update_parameters,
+        hardware_cfg_cluster_legacy,
+    )
+
+
+def _assert_update_parameters_schedule(
+    schedule: Schedule,
+    expected_update_parameters: Dict[int, float],
+    hardware_cfg_cluster_legacy,
+) -> None:
+    schedule = _determine_absolute_timing(schedule)
+    container = compiler_container.CompilerContainer.from_hardware_cfg(
+        schedule, hardware_cfg_cluster_legacy
+    )
+    assign_pulse_and_acq_info_to_devices(
+        schedule, container.clusters, hardware_cfg_cluster_legacy
+    )
+    container.prepare()
+
+    cluster0 = container.instrument_compilers["cluster0"]
+    assert isinstance(cluster0, ClusterCompiler)
+    op_strategies = (
+        cluster0.instrument_compilers["cluster0_module1"]
+        .sequencers["seq0"]
+        .op_strategies
+    )
+
+    assert len(expected_update_parameters) == len(
+        [op for op in op_strategies if isinstance(op, UpdateParameterStrategy)]
+    )
+
+    for index, op_strategy in enumerate(op_strategies):
+        if index in expected_update_parameters:
+            assert isinstance(op_strategy, UpdateParameterStrategy)
+            assert math.isclose(
+                op_strategy.operation_info.timing,
+                expected_update_parameters[index],
+                abs_tol=0,
+                rel_tol=1e-15,
+            )
+        else:
+            assert not isinstance(op_strategy, UpdateParameterStrategy)
+
+
+def square_pulse(duration: float, t0: float = 0) -> Operation:
+    return SquarePulse(
+        amp=0.5,
+        port="q0:mw",
+        duration=duration,
+        clock="q0.01",
+        t0=t0,
+    )
+
+
+def voltage_offset() -> Operation:
+    return VoltageOffset(
+        offset_path_I=0.5, offset_path_Q=0.0, port="q0:mw", clock="q0.01"
+    )
+
+
+def reset_clock_phase(t0: float = 0):
+    return ResetClockPhase(clock="q0.01", t0=t0)
+
+
+def shift_clock_phase(t0: float = 0):
+    return ShiftClockPhase(phase_shift=0.5, clock="q0.01", t0=t0)
+
+
+def set_clock_frequency(t0: float = 0):
+    return SetClockFrequency(clock="q0.01", clock_freq_new=7.5e9, t0=t0)
+
+
+@pytest.mark.parametrize(
+    "op_list, expected_update_parameters",
+    [
+        (
+            [
+                square_pulse(duration=20e-9),
+                voltage_offset(),
+                square_pulse(duration=20e-9, t0=20e-9),
+            ],
+            {2: 20e-9},
+        ),
+        (
+            [
+                square_pulse(duration=20e-9),
+                reset_clock_phase(),
+                square_pulse(duration=20e-9, t0=20e-9),
+            ],
+            {2: 20e-9},
+        ),
+        (
+            [
+                square_pulse(duration=20e-9),
+                shift_clock_phase(),
+                square_pulse(duration=20e-9, t0=20e-9),
+            ],
+            {2: 20e-9},
+        ),
+        (
+            [
+                square_pulse(duration=20e-9),
+                set_clock_frequency(),
+                square_pulse(duration=20e-9, t0=20e-9),
+            ],
+            {2: 20e-9},
+        ),
+    ],
+)
+def test_param_update_after_param_op(
+    op_list,
+    expected_update_parameters,
+    hardware_cfg_cluster_legacy,
+):
+    _assert_update_parameters_op_list(
+        op_list,
+        expected_update_parameters,
+        hardware_cfg_cluster_legacy,
+    )
+
+
+@pytest.mark.parametrize(
+    "op_list, expected_update_parameters",
+    [
+        (
+            [
+                square_pulse(duration=20e-9),
+                voltage_offset(),
+                square_pulse(duration=20e-9),
+            ],
+            {},
+        ),
+        (
+            [
+                square_pulse(duration=20e-9),
+                voltage_offset(),
+                square_pulse(duration=20e-9, t0=20e-9),
+            ],
+            {2: 20e-9},
+        ),
+        (
+            [
+                square_pulse(duration=20e-9),
+                reset_clock_phase(),
+                square_pulse(duration=20e-9),
+            ],
+            {},
+        ),
+        (
+            [
+                square_pulse(duration=20e-9),
+                reset_clock_phase(),
+                square_pulse(duration=20e-9, t0=20e-9),
+            ],
+            {2: 20e-9},
+        ),
+    ],
+)
+def test_param_update_after_param_op_except_if_simultaneous_play(
+    op_list,
+    expected_update_parameters,
+    hardware_cfg_cluster_legacy,
+):
+    _assert_update_parameters_op_list(
+        op_list,
+        expected_update_parameters,
+        hardware_cfg_cluster_legacy,
+    )
+
+
+@pytest.mark.parametrize(
+    "op_list, expected_update_parameters",
+    [
+        (
+            [
+                square_pulse(duration=20e-9),
+                voltage_offset(),
+                voltage_offset(),
+                voltage_offset(),
+                voltage_offset(),
+                voltage_offset(),
+                square_pulse(duration=20e-9),
+            ],
+            {},
+        ),
+        (
+            [
+                square_pulse(duration=20e-9),
+                voltage_offset(),
+                reset_clock_phase(),
+                voltage_offset(),
+                square_pulse(duration=20e-9, t0=20e-9),
+            ],
+            {4: 20e-9},
+        ),
+        (
+            [
+                voltage_offset(),
+                square_pulse(duration=20e-9),
+                voltage_offset(),
+                voltage_offset(),
+                voltage_offset(),
+                square_pulse(duration=20e-9),
+                voltage_offset(),
+                voltage_offset(),
+                voltage_offset(),
+                voltage_offset(),
+                voltage_offset(),
+                square_pulse(duration=20e-9),
+            ],
+            {},
+        ),
+        (
+            [
+                voltage_offset(),
+                square_pulse(duration=20e-9),
+                voltage_offset(),
+                voltage_offset(),
+                voltage_offset(),
+                square_pulse(duration=20e-9, t0=20e-9),
+                voltage_offset(),
+                voltage_offset(),
+                voltage_offset(),
+                voltage_offset(),
+                square_pulse(duration=20e-9, t0=20e-9),
+                voltage_offset(),
+                voltage_offset(),
+                voltage_offset(),
+                square_pulse(duration=20e-9),
+            ],
+            {5: 20e-9, 11: 60e-9},
+        ),
+    ],
+)
+def test_no_unnecessary_parameter_update(
+    op_list,
+    expected_update_parameters,
+    hardware_cfg_cluster_legacy,
+):
+    _assert_update_parameters_op_list(
+        op_list,
+        expected_update_parameters,
+        hardware_cfg_cluster_legacy,
+    )
+
+
+@pytest.mark.parametrize(
+    "parameter_op",
+    [
+        voltage_offset(),
+        reset_clock_phase(),
+        shift_clock_phase(),
+        set_clock_frequency(),
+    ],
+)
+def test_error_parameter_end_of_schedule(
+    parameter_op,
+    compile_config_basic_transmon_qblox_hardware,
+):
+    schedule = Schedule("schedule")
+    schedule.add(square_pulse(duration=20e-9))
+    schedule.add(square_pulse(duration=20e-9))
+    schedule.add(parameter_op)
+    compiler = SerialCompiler(name="compiler")
+    with pytest.raises(
+        RuntimeError,
+        match="Parameter operation .* with start time 4e-08 "
+        "cannot be scheduled at the very end of a Schedule. "
+        "The Schedule can be extended by adding an IdlePulse "
+        "operation with a duration of at least 4 ns, "
+        "or the Parameter operation can be replaced by another operation.",
+    ):
+        schedule = compiler.compile(
+            schedule=schedule,
+            config=compile_config_basic_transmon_qblox_hardware,
+        )
+
+
+@pytest.mark.parametrize(
+    "control_flow_op",
+    [Loop(3), Conditional("q0")],
+)
+def test_no_remove_parameter_update_before_control_flow_begin(
+    control_flow_op,
+    compile_config_basic_transmon_qblox_hardware,
+):
+    """
+    The compilation steps which removes the update parameter
+    instructions should remove update parameters that happen at the same
+    time, but it should not remove update parameters if a control flow
+    begins between them: in case the control flow's body does not run,
+    it should not remove the update parameter before the control flow.
+    """
+    schedule = Schedule("schedule")
+    schedule.add(
+        Measure(
+            "q0",
+            acq_protocol="ThresholdedAcquisition",
+            feedback_trigger_label="q0",
+        )
+    )
+    schedule.add(voltage_offset())
+
+    subschedule = Schedule("inner")
+    subschedule.add(voltage_offset())
+    subschedule.add(square_pulse(duration=20e-9))
+
+    schedule.add(
+        subschedule,
+        control_flow=control_flow_op,
+    )
+
+    schedule.add(square_pulse(duration=40e-9))
+
+    schedule.add(square_pulse(duration=20e-9))
+    compiler = SerialCompiler(name="compiler")
+
+    # The update parameter operation cannot happen just before
+    # the control flow begin, indicating that the update parameter
+    # is preserved, not removed.
+    with pytest.raises(
+        RuntimeError,
+        match='Parameter operation Pulse "UpdateParameters" '
+        r"\(t0=1.1e-06, duration=0\) with start time 1.1e-06 "
+        "cannot be scheduled exactly before the operation Pulse",
+    ):
+        schedule = compiler.compile(
+            schedule=schedule,
+            config=compile_config_basic_transmon_qblox_hardware,
+        )
+
+
+def test_no_remove_parameter_update_before_control_flow_end(
+    compile_config_basic_transmon_qblox_hardware,
+):
+    """
+    The compilation steps which removes the update parameter
+    instructions should remove update parameters that happen at the same
+    time, but it should not remove update parameters if a control flow
+    ends between them: in case the control flow's body does a loop,
+    it should not remove the update parameter before the control flow.
+    """
+    schedule = Schedule("schedule")
+
+    subschedule = Schedule("inner")
+    subschedule.add(square_pulse(duration=20e-9))
+    subschedule.add(voltage_offset())
+
+    schedule.add(
+        subschedule,
+        control_flow=Loop(3),
+    )
+
+    subschedule.add(voltage_offset())
+
+    schedule.add(square_pulse(duration=40e-9))
+
+    schedule.add(square_pulse(duration=20e-9))
+    compiler = SerialCompiler(name="compiler")
+
+    # The update parameter operation cannot happen just before
+    # the control flow end, indicating that the update parameter
+    # is preserved, not removed.
+    with pytest.raises(
+        RuntimeError,
+        match="Parameter operation .* with start time 2e-08 "
+        'cannot be scheduled exactly before the operation Pulse "ControlFlowReturn " '
+        r"\(t0=2e-08, duration=0.0\) with the same start time. "
+        "Insert an IdlePulse operation with a duration of at least 4 ns, "
+        "or the Parameter operation can be replaced by another operation.",
+    ):
+        schedule = compiler.compile(
+            schedule=schedule,
+            config=compile_config_basic_transmon_qblox_hardware,
+        )
+
+
+@pytest.mark.parametrize(
+    "parameter_op",
+    [
+        voltage_offset(),
+        reset_clock_phase(),
+        shift_clock_phase(),
+        set_clock_frequency(),
+    ],
+)
+def test_error_parameter_end_of_control_flow(
+    parameter_op,
+    compile_config_basic_transmon_qblox_hardware,
+):
+    schedule = Schedule("schedule")
+    subschedule = Schedule("inner")
+    subschedule.add(square_pulse(duration=20e-9))
+    subschedule.add(parameter_op)
+    schedule.add(
+        subschedule,
+        control_flow=Loop(3),
+    )
+    schedule.add(square_pulse(duration=20e-9))
+    compiler = SerialCompiler(name="compiler")
+    with pytest.raises(
+        RuntimeError,
+        match="Parameter operation .* with start time 2e-08 "
+        'cannot be scheduled exactly before the operation Pulse "ControlFlowReturn " '
+        r"\(t0=2e-08, duration=0.0\) with the same start time. "
+        "Insert an IdlePulse operation with a duration of at least 4 ns, "
+        "or the Parameter operation can be replaced by another operation.",
+    ):
+        schedule = compiler.compile(
+            schedule=schedule,
+            config=compile_config_basic_transmon_qblox_hardware,
+        )
+
 
 DEFAULT_PORT = "q0:res"
 DEFAULT_CLOCK = "q0.ro"
 
 
-@pytest.fixture
-def mock_sequencer(total_play_time) -> AnalogSequencerCompiler:
-    mod = Mock()
-    mod.configure_mock(total_play_time=total_play_time)
-    settings = AnalogSequencerSettings.initialize_from_config_dict(
-        {
-            "port": "q1:mw",
-            "clock": "q1.01",
-            "interm_freq": 50e6,
-        },
-        channel_name="complex_out_0",
-        connected_input_indices=(),
-        connected_output_indices=(0,),
-    )
-    return AnalogSequencerCompiler(
-        parent=mod,
-        index=0,
-        portclock=(DEFAULT_PORT, DEFAULT_CLOCK),
-        static_hw_properties=Mock(),
-        settings=settings,
-        latency_corrections={},
-    )
-
-
-def op_info_from_operation(operation: Operation, timing: float, data: dict) -> OpInfo:
-    return OpInfo(
-        name=operation.name,
-        data=data,
-        timing=timing,
-    )
-
-
-def pulse_with_waveform(
+def pulse_with_waveform_op_info(
     timing: float, duration: float = 1e-7, port: str = DEFAULT_PORT, clock=DEFAULT_CLOCK
 ) -> OpInfo:
     """Create an OpInfo object that is recognized as a non-idle pulse."""
@@ -77,7 +483,7 @@ def pulse_with_waveform(
     )
 
 
-def reset_clock_phase(
+def reset_clock_phase_op_info(
     timing: float, port: str = DEFAULT_PORT, clock=DEFAULT_CLOCK
 ) -> OpInfo:
     """Create an OpInfo object that is recognized as a virtual pulse."""
@@ -88,7 +494,7 @@ def reset_clock_phase(
     )
 
 
-def set_clock_frequency(
+def set_clock_frequency_op_info(
     timing: float, port: str = DEFAULT_PORT, clock=DEFAULT_CLOCK
 ) -> OpInfo:
     """Create an OpInfo object that is recognized as a virtual pulse."""
@@ -99,7 +505,7 @@ def set_clock_frequency(
     )
 
 
-def shift_clock_phase(
+def shift_clock_phase_op_info(
     timing: float, port: str = DEFAULT_PORT, clock=DEFAULT_CLOCK
 ) -> OpInfo:
     """Create an OpInfo object that is recognized as a virtual pulse."""
@@ -110,7 +516,7 @@ def shift_clock_phase(
     )
 
 
-def offset_instruction(
+def offset_instruction_op_info(
     timing: float, port: str = DEFAULT_PORT, clock=DEFAULT_CLOCK
 ) -> OpInfo:
     """Create an OpInfo object that is recognized as an offset instruction."""
@@ -122,17 +528,7 @@ def offset_instruction(
     )
 
 
-def acquisition(
-    timing: float, duration: float = 1e-7, port: str = DEFAULT_PORT, clock=DEFAULT_CLOCK
-) -> OpInfo:
-    """Create an OpInfo object that is recognized as an acquisition."""
-    operation = Trace(duration=duration, port=port, clock=clock)
-    return op_info_from_operation(
-        operation=operation, timing=timing, data=operation.data["acquisition_info"][0]
-    )
-
-
-def control_flow_return(timing: float) -> OpInfo:
+def control_flow_return_op_info(timing: float) -> OpInfo:
     """Create an OpInfo object that is recognized as a control flow return operation."""
     operation = _ControlFlowReturn()
     return op_info_from_operation(
@@ -140,292 +536,11 @@ def control_flow_return(timing: float) -> OpInfo:
     )
 
 
-def loop(timing: float, repetitions: int = 1) -> OpInfo:
+def loop_op_info(timing: float, repetitions: int = 1) -> OpInfo:
     """Create an OpInfo object that is recognized as a loop operation."""
     operation = Loop(repetitions=repetitions)
     return op_info_from_operation(
         operation=operation, timing=timing, data=operation.data["control_flow_info"]
-    )
-
-
-def upd_param(
-    timing: float, port: str = DEFAULT_PORT, clock: str = DEFAULT_CLOCK
-) -> OpInfo:
-    """Create an OpInfo object that is recognized as upd_param operation."""
-    return OpInfo(
-        name="UpdateParameters",
-        data={
-            "t0": 0,
-            "port": port,
-            "clock": clock,
-            "duration": 0,
-            "instruction": q1asm_instructions.UPDATE_PARAMETERS,
-        },
-        timing=timing,
-    )
-
-
-def ioperation_strategy_from_op_info(
-    op_info: OpInfo, channel_name: str
-) -> IOperationStrategy:
-    return get_operation_strategy(op_info, channel_name)
-
-
-@pytest.mark.parametrize(
-    "op_list, total_play_time",
-    list(
-        product(
-            permutations(
-                [
-                    pulse_with_waveform(0.0),
-                    offset_instruction(1e-7),
-                    offset_instruction(2e-7),
-                    pulse_with_waveform(2e-7),
-                    reset_clock_phase(1e-7),
-                ]
-            ),
-            [3e-7],
-        ),
-    ),
-)
-def test_param_update_after_param_op_except_if_simultaneous_play(
-    op_list: List[OpInfo], mock_sequencer: AnalogSequencerCompiler
-):
-    """Test if upd_param is inserted after a VoltageOffset in the correct places."""
-    iop_list = [ioperation_strategy_from_op_info(op, "complex_out_0") for op in op_list]
-
-    for op in iop_list:
-        mock_sequencer.op_strategies.append(op)
-    mock_sequencer._insert_update_parameters()
-
-    assert len(mock_sequencer.op_strategies) == 6
-    upd_param_inserted = next(
-        filter(
-            lambda x: isinstance(x, UpdateParameterStrategy),
-            mock_sequencer.op_strategies,
-        )
-    )
-    assert upd_param_inserted.operation_info == OpInfo(
-        name="UpdateParameters",
-        data={
-            "t0": 0,
-            "duration": 0.0,
-            "instruction": q1asm_instructions.UPDATE_PARAMETERS,
-            "port": DEFAULT_PORT,
-            "clock": DEFAULT_CLOCK,
-        },
-        timing=pytest.approx(1e-7),  # type: ignore
-    )
-
-
-@pytest.mark.parametrize(
-    "op_list, total_play_time",
-    list(
-        product(
-            permutations(
-                [
-                    pulse_with_waveform(0.0),
-                    offset_instruction(1e-7),
-                    acquisition(1e-7),
-                    reset_clock_phase(1e-7),
-                ]
-            ),
-            [2e-7],
-        ),
-    ),
-)
-def test_no_parameter_update(
-    op_list: List[OpInfo], mock_sequencer: AnalogSequencerCompiler
-):
-    """Test if no upd_param is inserted where it is not necessary."""
-    iop_list = [ioperation_strategy_from_op_info(op, "complex_out_0") for op in op_list]  # type: ignore
-
-    for op in iop_list:
-        mock_sequencer.op_strategies.append(op)
-
-    mock_sequencer._insert_update_parameters()
-
-    assert (
-        len(
-            [
-                op_strategy
-                for op_strategy in mock_sequencer.op_strategies
-                if not op_strategy.operation_info.is_acquisition
-            ]
-        )
-        == 3
-    )
-    assert (
-        len(
-            [
-                op_strategy
-                for op_strategy in mock_sequencer.op_strategies
-                if op_strategy.operation_info.is_acquisition
-            ]
-        )
-        == 1
-    )
-    for op in mock_sequencer.op_strategies:
-        assert op.operation_info.name != "UpdateParameters"
-
-
-@pytest.mark.parametrize("total_play_time", [2e-7])
-def test_only_one_param_update(mock_sequencer: AnalogSequencerCompiler):
-    """Test if no upd_param is inserted where it is not necessary."""
-    op_list = [
-        pulse_with_waveform(0.0),
-        set_clock_frequency(1e-7),
-        shift_clock_phase(1e-7),
-        offset_instruction(1e-7),
-        reset_clock_phase(1e-7),
-        acquisition(2e-7),
-    ]
-    iop_list = [ioperation_strategy_from_op_info(op, "complex_out_0") for op in op_list]  # type: ignore
-
-    for op in iop_list:
-        mock_sequencer.op_strategies.append(op)
-
-    mock_sequencer._insert_update_parameters()
-
-    assert (
-        len(
-            [
-                op_strategy
-                for op_strategy in mock_sequencer.op_strategies
-                if not op_strategy.operation_info.is_acquisition
-            ]
-        )
-        == 6
-    )
-    assert (
-        len(
-            [
-                op_strategy
-                for op_strategy in mock_sequencer.op_strategies
-                if op_strategy.operation_info.is_acquisition
-            ]
-        )
-        == 1
-    )
-    upd_params = [
-        op
-        for op in mock_sequencer.op_strategies
-        if op.operation_info.name == "UpdateParameters"
-    ]
-    assert len(upd_params) == 1
-
-
-@pytest.mark.parametrize(
-    "op_list, total_play_time",
-    list(
-        product(
-            permutations(
-                [
-                    pulse_with_waveform(0.0),
-                    offset_instruction(2e-7),
-                    acquisition(1e-7),
-                    reset_clock_phase(1e-7),
-                ]
-            ),
-            [2e-7],
-        ),
-    ),
-)
-def test_error_parameter_update_end_of_schedule(
-    op_list: List[OpInfo], mock_sequencer: AnalogSequencerCompiler
-):
-    """Test if no upd_param is inserted where it is not necessary."""
-    iop_list = [ioperation_strategy_from_op_info(op, "complex_out_0") for op in op_list]  # type: ignore
-
-    for op in iop_list:
-        mock_sequencer.op_strategies.append(op)
-
-    with pytest.raises(
-        RuntimeError,
-        match=f"start time {2e-7} cannot be scheduled at the very end of a Schedule",
-    ):
-        mock_sequencer._insert_update_parameters()
-
-
-@pytest.mark.parametrize("total_play_time", [3e-7])
-def test_error_parameter_update_at_control_flow_return(
-    mock_sequencer: AnalogSequencerCompiler,
-):
-    """Test if no upd_param is inserted where it is not necessary."""
-    op_list = [
-        offset_instruction(1e-7),
-        control_flow_return(1e-7),
-    ]
-
-    iop_list = [ioperation_strategy_from_op_info(op, "complex_out_0") for op in op_list]  # type: ignore
-
-    for op in iop_list:
-        mock_sequencer.op_strategies.append(op)
-
-    with pytest.raises(
-        RuntimeError,
-        match=f"with start time {1e-7} cannot be scheduled at the same time as the end "
-        "of a control-flow block",
-    ):
-        mock_sequencer._insert_update_parameters()
-
-
-@pytest.mark.parametrize(
-    "ordered_op_infos, op_index, expected",
-    [
-        (
-            [
-                offset_instruction(1 - 1e-12),
-                offset_instruction(1),
-                offset_instruction(1 + 1e-12),
-                offset_instruction(1 + 1e-12),
-            ],
-            1,
-            False,
-        ),
-        (
-            [
-                offset_instruction(1 - 1e-12),
-                offset_instruction(1),
-                offset_instruction(1 + 1e-12),
-                acquisition(1 + 1e-12),
-            ],
-            1,
-            True,
-        ),
-        (
-            [
-                acquisition(1 - 1e-12),
-                offset_instruction(1 - 1e-12),
-                offset_instruction(1),
-                offset_instruction(1 + 1e-12),
-            ],
-            2,
-            True,
-        ),
-        (
-            [
-                offset_instruction(1 - 1e-12),
-                offset_instruction(1),
-                offset_instruction(1 + 1e-12),
-                acquisition(1 + 1e-9),
-            ],
-            1,
-            False,
-        ),
-    ],
-)
-def test_any_other_updating_instruction_at_timing(
-    ordered_op_infos: List[OpInfo], op_index: int, expected: bool
-):
-    pulse_list = [
-        ioperation_strategy_from_op_info(op, "complex_out_0") for op in ordered_op_infos
-    ]
-    assert (
-        AnalogSequencerCompiler._any_other_updating_instruction_at_timing_for_parameter_instruction(
-            op_index=op_index, ordered_op_strategies=pulse_list
-        )
-        == expected
     )
 
 
@@ -440,7 +555,7 @@ def test_too_many_instructions_warns(mock_sequencer: AnalogSequencerCompiler):
     mock_sequencer._default_marker = 0
     operations = [
         ioperation_strategy_from_op_info(
-            offset_instruction(t * 8e-9), channel_name="real_output_0"
+            offset_instruction_op_info(t * 8e-9), channel_name="real_output_0"
         )
         for t in range(0, max_operations_num + 1)
     ]
@@ -521,20 +636,75 @@ def test_write_repetition_loop_header_equal_time():
     assert all(dur == durations[0] for dur in durations)
 
 
+def op_info_from_operation(operation: Operation, timing: float, data: dict) -> OpInfo:
+    return OpInfo(
+        name=operation.name,
+        data=data,
+        timing=timing,
+    )
+
+
+@pytest.fixture
+def mock_sequencer(total_play_time) -> AnalogSequencerCompiler:
+    mod = Mock()
+    mod.configure_mock(total_play_time=total_play_time)
+    settings = AnalogSequencerSettings.initialize_from_config_dict(
+        {
+            "port": "q1:mw",
+            "clock": "q1.01",
+            "interm_freq": 50e6,
+        },
+        channel_name="complex_out_0",
+        connected_input_indices=(),
+        connected_output_indices=(0,),
+    )
+    return AnalogSequencerCompiler(
+        parent=mod,
+        index=0,
+        portclock=(DEFAULT_PORT, DEFAULT_CLOCK),
+        static_hw_properties=Mock(),
+        settings=settings,
+        latency_corrections={},
+    )
+
+
+def ioperation_strategy_from_op_info(
+    op_info: OpInfo, channel_name: str
+) -> IOperationStrategy:
+    return get_operation_strategy(op_info, channel_name)
+
+
+def upd_param_op_info(
+    timing: float, port: str = DEFAULT_PORT, clock: str = DEFAULT_CLOCK
+) -> OpInfo:
+    """Create an OpInfo object that is recognized as upd_param operation."""
+    return OpInfo(
+        name="UpdateParameters",
+        data={
+            "t0": 0,
+            "port": port,
+            "clock": clock,
+            "duration": 0,
+            "instruction": q1asm_instructions.UPDATE_PARAMETERS,
+        },
+        timing=timing,
+    )
+
+
 @pytest.mark.parametrize("total_play_time", [2.08e-7])
 def test_get_ordered_operations(mock_sequencer: AnalogSequencerCompiler):
     op_list = [
-        reset_clock_phase(timing=0.0),
-        set_clock_frequency(timing=0.0),
-        shift_clock_phase(timing=4e-09),
-        loop(timing=4e-9 - 1e-12, repetitions=3),
-        pulse_with_waveform(timing=4e-09, duration=1e-07),
-        control_flow_return(timing=1.04e-07),
-        offset_instruction(timing=1.04e-07),
-        offset_instruction(timing=2.04e-07),
-        upd_param(timing=0.0),
-        upd_param(timing=2.04e-7),
-        upd_param(timing=1.04e-7),
+        reset_clock_phase_op_info(timing=0.0),
+        set_clock_frequency_op_info(timing=0.0),
+        upd_param_op_info(timing=0.0),
+        loop_op_info(timing=4e-9 - 1e-12, repetitions=3),
+        shift_clock_phase_op_info(timing=4e-09),
+        pulse_with_waveform_op_info(timing=4e-09, duration=1e-07),
+        control_flow_return_op_info(timing=1.04e-07),
+        offset_instruction_op_info(timing=1.04e-07),
+        upd_param_op_info(timing=1.04e-7),
+        offset_instruction_op_info(timing=2.04e-07),
+        upd_param_op_info(timing=2.04e-7),
     ]
     mock_sequencer.op_strategies = [
         ioperation_strategy_from_op_info(op, "complex_out_0") for op in op_list
@@ -543,15 +713,15 @@ def test_get_ordered_operations(mock_sequencer: AnalogSequencerCompiler):
     assert [
         op_strat.operation_info for op_strat in mock_sequencer._get_ordered_operations()
     ] == [
-        reset_clock_phase(timing=0.0),
-        set_clock_frequency(timing=0.0),
-        upd_param(timing=0.0),
-        loop(timing=4e-9 - 1e-12, repetitions=3),
-        shift_clock_phase(timing=4e-09),
-        pulse_with_waveform(timing=4e-09, duration=1e-07),
-        control_flow_return(timing=1.04e-07),
-        offset_instruction(timing=1.04e-07),
-        upd_param(timing=1.04e-7),
-        offset_instruction(timing=2.04e-07),
-        upd_param(timing=2.04e-7),
+        reset_clock_phase_op_info(timing=0.0),
+        set_clock_frequency_op_info(timing=0.0),
+        upd_param_op_info(timing=0.0),
+        loop_op_info(timing=4e-9 - 1e-12, repetitions=3),
+        shift_clock_phase_op_info(timing=4e-09),
+        pulse_with_waveform_op_info(timing=4e-09, duration=1e-07),
+        control_flow_return_op_info(timing=1.04e-07),
+        offset_instruction_op_info(timing=1.04e-07),
+        upd_param_op_info(timing=1.04e-7),
+        offset_instruction_op_info(timing=2.04e-07),
+        upd_param_op_info(timing=2.04e-7),
     ]

@@ -34,6 +34,7 @@ from quantify_scheduler.backends.qblox.operation_handling.virtual import (
     NcoPhaseShiftStrategy,
     NcoResetClockPhaseStrategy,
     NcoSetClockFrequencyStrategy,
+    UpdateParameterStrategy,
 )
 from quantify_scheduler.backends.types.qblox import (
     AnalogModuleSettings,
@@ -310,6 +311,21 @@ class AnalogSequencerCompiler(SequencerCompiler):
                         channel_name=op_strategy.channel_name,
                     )
                 )
+                new_op_strategies.append(
+                    UpdateParameterStrategy(
+                        OpInfo(
+                            name="UpdateParameters",
+                            data={
+                                "t0": 0,
+                                "port": high_op_info.data["port"],
+                                "clock": high_op_info.data["clock"],
+                                "duration": 0,
+                                "instruction": q1asm_instructions.UPDATE_PARAMETERS,
+                            },
+                            timing=high_op_info.timing,
+                        )
+                    )
+                )
 
                 low_op_info = OpInfo(
                     name=op_strategy.operation_info.name,
@@ -322,6 +338,21 @@ class AnalogSequencerCompiler(SequencerCompiler):
                     MarkerPulseStrategy(
                         operation_info=low_op_info,
                         channel_name=op_strategy.channel_name,
+                    )
+                )
+                new_op_strategies.append(
+                    UpdateParameterStrategy(
+                        OpInfo(
+                            name="UpdateParameters",
+                            data={
+                                "t0": 0,
+                                "port": low_op_info.data["port"],
+                                "clock": low_op_info.data["clock"],
+                                "duration": 0,
+                                "instruction": q1asm_instructions.UPDATE_PARAMETERS,
+                            },
+                            timing=low_op_info.timing,
+                        )
                     )
                 )
             else:

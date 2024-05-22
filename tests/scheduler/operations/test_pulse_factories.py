@@ -123,13 +123,13 @@ def test_long_square_pulse():
     pulse = long_square_pulse(amp=0.8, duration=1e-3, port=port, clock=clock)
     assert len(pulse["pulse_info"]) == 3
     assert (
-        pulse["pulse_info"][1]
+        pulse["pulse_info"][0]
         == VoltageOffset(
             offset_path_I=0.8, offset_path_Q=0.0, duration=0.0, port=port, clock=clock
         )["pulse_info"][0]
     )
     assert (
-        pulse["pulse_info"][2]
+        pulse["pulse_info"][1]
         == VoltageOffset(
             offset_path_I=0.0,
             offset_path_Q=0.0,
@@ -140,7 +140,7 @@ def test_long_square_pulse():
         )["pulse_info"][0]
     )
     assert (
-        pulse["pulse_info"][0]
+        pulse["pulse_info"][2]
         == SquarePulse(amp=0.8, duration=4e-9, port=port, clock=clock, t0=1e-3 - 4e-9)[
             "pulse_info"
         ][0]
@@ -159,14 +159,14 @@ def test_staircase():
     )
     amps = np.linspace(0.1, 0.9, 20)
     t0s = np.linspace(0, 0.95e-3, 20)
-    assert pulse["pulse_info"][0]["amp"] == 0.9
-    assert pulse["pulse_info"][0]["duration"] == 4e-9
-    assert pulse["pulse_info"][0]["t0"] == pytest.approx(1e-3 - 4e-9)
-    for amp, t0, pulse_inf in zip(amps, t0s, pulse["pulse_info"][1:-2]):
+    assert pulse["pulse_info"][-1]["amp"] == 0.9
+    assert pulse["pulse_info"][-1]["duration"] == 4e-9
+    assert pulse["pulse_info"][-1]["t0"] == pytest.approx(1e-3 - 4e-9)
+    for amp, t0, pulse_inf in zip(amps, t0s, pulse["pulse_info"][0:-3]):
         assert pulse_inf["offset_path_I"] == pytest.approx(amp)
         assert pulse_inf["t0"] == pytest.approx(t0)
-    assert pulse["pulse_info"][-2]["offset_path_I"] == 0.9
-    assert pulse["pulse_info"][-1]["offset_path_I"] == 0.0
+    assert pulse["pulse_info"][-3]["offset_path_I"] == 0.9
+    assert pulse["pulse_info"][-2]["offset_path_I"] == 0.0
 
 
 def test_staircase_raises_not_multiple_of_grid_time():

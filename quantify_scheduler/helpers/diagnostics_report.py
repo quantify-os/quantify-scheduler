@@ -29,7 +29,7 @@ from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
 )
 
 
-def _generate_diagnostics_report(  # noqa: PLR0915
+def _generate_diagnostics_report(  # noqa: PLR0912, PLR0915
     quantum_device: QuantumDevice,
     gettable_config: Dict[str, Any],
     schedule: Schedule,

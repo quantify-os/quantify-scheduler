@@ -562,6 +562,6 @@ class StitchedPulseBuilder:
         offsets = self._build_voltage_offset_operations()
         self._distribute_t0()
         stitched_pulse = StitchedPulse(self._name)
-        for op in self._pulses + offsets:
+        for op in offsets + self._pulses:
             stitched_pulse.add_pulse(op)
         return stitched_pulse

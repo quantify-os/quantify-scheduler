@@ -707,17 +707,7 @@ class SequencerCompiler(ABC):
         """Get the class' operation strategies in order of scheduled execution."""
         return sorted(
             self.op_strategies,
-            # Note: round to 12 digits below such that
-            # the control flow begin operation is always
-            # going to go first, but floating point precision
-            # issues do not cause any problems.
-            # See compilation.resolve_control_flow,
-            # which adds a small negative relative
-            # timing for control flow start.
-            key=lambda op: (
-                round(op.operation_info.timing, ndigits=12),
-                op.operation_info.is_real_time_io_operation,
-            ),
+            key=lambda op: helpers.to_grid_time(op.operation_info.timing),
         )
 
     def _initialize_append_mode_registers(
@@ -774,115 +764,122 @@ class SequencerCompiler(ABC):
 
         return latency_correction_ns
 
-    def _insert_update_parameters(self) -> None:
+    def _remove_redundant_update_parameters(self) -> None:
         """
-        Insert update parameter instructions to activate offsets, if they are not
-        already activated by a play, acquire or acquire_weighed instruction (see also
-        `the Q1ASM reference
-        <https://qblox-qblox-instruments.readthedocs-hosted.com/en/main/cluster/q1_sequence_processor.html#instructions>`_).
+        Removing redundant update parameter instructions.
+        If multiple update parameter instructions happen at the same time,
+        directly after each other in order, then it's safe to only keep one of them.
+
+        Also, real time io operations act as update parameter instructions too.
+        If a real time io operation happen ((just after or just before) and at the same time)
+        as an update parameter instruction, then the update parameter instruction is redundant.
         """
-        upd_params = self._get_new_update_parameters(self.op_strategies)
-        # This can be unsorted. The sorting step is in SequencerCompiler.generate_qasm_program()
-        self.op_strategies += upd_params
 
-    @staticmethod
-    def _any_other_updating_instruction_at_timing_for_parameter_instruction(
-        op_index: int, ordered_op_strategies: list[IOperationStrategy]
-    ) -> bool:
-        op = ordered_op_strategies[op_index]
-        if not op.operation_info.is_parameter_instruction:
-            return False
+        def _removal_pass(is_reversed: bool) -> None:
+            indices_to_be_removed: set[int] = set()
 
-        def iterate_other_ops(iterate_range, allow_return_stack: bool) -> bool:
-            for other_op_index in iterate_range:
-                other_op = ordered_op_strategies[other_op_index]
-                if helpers.to_grid_time(
-                    other_op.operation_info.timing
-                ) != helpers.to_grid_time(op.operation_info.timing):
-                    break
-                if other_op.operation_info.is_real_time_io_operation:
-                    return True
-                if not allow_return_stack and other_op.operation_info.is_return_stack:
-                    raise RuntimeError(
-                        f"Parameter operation {op.operation_info} with start time "
-                        f"{op.operation_info.timing} cannot be scheduled at the same "
-                        "time as the end of a control-flow block "
-                        f"{other_op.operation_info}, which ends at "
-                        f"{other_op.operation_info.timing}. The control-flow block can "
-                        "be extended by adding an IdlePulse operation with a duration "
-                        f"of at least {constants.MIN_TIME_BETWEEN_OPERATIONS} ns, or the Parameter "
-                        "operation can be replaced by another operation."
-                    )
-            return False
-
-        # Check all other operations behind the operation with op_index
-        # whether they're within half grid time
-        #
-        # We specifically allow an offset instruction to be after a return stack:
-        # the caller is free to start an offset instruction and a play signal after
-        # we return from a loop
-        if iterate_other_ops(
-            iterate_range=range(op_index - 1, -1, -1), allow_return_stack=True
-        ):
-            return True
-        # Check all other operations in front of the operation with op_index
-        # whether they're within half grid time
-        #
-        # We specifically disallow an offset instruction to be after a return stack:
-        # when the caller sets an offset, it might have an unknown effect depending
-        # on whether we actually exist the loop, or go the next cycle in the loop
-        if iterate_other_ops(
-            iterate_range=range(op_index + 1, len(ordered_op_strategies)),
-            allow_return_stack=False,
-        ):
-            return True
-
-        return False
-
-    def _get_new_update_parameters(
-        self,
-        pulses_and_acqs: list[IOperationStrategy],
-    ) -> list[IOperationStrategy]:
-        pulses_and_acqs.sort(key=lambda op: op.operation_info.timing)
-
-        # Collect all times (in ns, so that it's an integer) where an upd_param needs to
-        # be inserted.
-        upd_param_times_ns: set[int] = set()
-        for op_index, op in enumerate(pulses_and_acqs):
-            if not op.operation_info.is_parameter_instruction:
-                continue
-            if helpers.to_grid_time(
-                self.parent.total_play_time
-            ) == helpers.to_grid_time(op.operation_info.timing):
-                raise RuntimeError(
-                    f"Parameter operation {op.operation_info} with start time "
-                    f"{op.operation_info.timing} cannot be scheduled at the very end "
-                    "of a Schedule. The Schedule can be extended by adding an "
-                    "IdlePulse operation with a duration of at least "
-                    f"{constants.MIN_TIME_BETWEEN_OPERATIONS} ns, or the Parameter operation can be "
-                    "replaced by another operation."
-                )
-            if not self._any_other_updating_instruction_at_timing_for_parameter_instruction(
-                op_index=op_index, ordered_op_strategies=pulses_and_acqs
-            ):
-                upd_param_times_ns.add(round(op.operation_info.timing * 1e9))
-
-        return [
-            UpdateParameterStrategy(
-                OpInfo(
-                    name="UpdateParameters",
-                    data={
-                        "t0": 0,
-                        "port": self.port,
-                        "clock": self.clock,
-                        "duration": 0,
-                        "instruction": q1asm_instructions.UPDATE_PARAMETERS,
-                    },
-                    timing=time_ns * 1e-9,
-                )
+            last_updated_timing: int | None = None
+            sorted_op_strategies = sorted(
+                enumerate(self.op_strategies),
+                key=lambda op: helpers.to_grid_time(op[1].operation_info.timing),
             )
-            for time_ns in upd_param_times_ns
-        ]
+            if is_reversed:
+                sorted_op_strategies = reversed(sorted_op_strategies)
+            for index, op_strategy in sorted_op_strategies:
+                op_timing = helpers.to_grid_time(op_strategy.operation_info.timing)
+
+                if (
+                    op_strategy.operation_info.is_parameter_update
+                    or op_strategy.operation_info.is_real_time_io_operation
+                ):
+                    if (
+                        op_strategy.operation_info.is_parameter_update
+                        and last_updated_timing is not None
+                        and last_updated_timing == op_timing
+                    ):
+                        indices_to_be_removed.add(index)
+                    else:
+                        last_updated_timing = op_timing
+                elif (
+                    (
+                        not is_reversed
+                        and op_strategy.operation_info.is_parameter_instruction
+                    )
+                    or (is_reversed and isinstance(op_strategy, ConditionalStrategy))
+                    or isinstance(
+                        op_strategy, (LoopStrategy, ControlFlowReturnStrategy)
+                    )
+                ):
+                    # If a parameter instruction happens while we're iterating through the operations not in reverse,
+                    # that invalidates all the other update parameters (and real time io instructions) that were before it,
+                    # because that potentially means the parameter is not updated.
+                    #
+                    # For conditionals and loops we cannot eliminate the update parameter just before them,
+                    # because these control flows might not even run their bodies (for loops if repetition is 0).
+                    #
+                    # For loops, we cannot eliminate the first update parameter in the body,
+                    # because we directly can jump there from the end of the body,
+                    # not necessarily from the instruction just before the loop.
+
+                    last_updated_timing = None
+
+            self.op_strategies: list[IOperationStrategy] = [
+                op
+                for i, op in enumerate(self.op_strategies)
+                if i not in indices_to_be_removed
+            ]
+
+        # We can remove all redundant update parameters which
+        # happen at the same time and after each other,
+        # and remove all update parameters which happen **after** a real time io operation,
+        # if no parameter instruction is between them.
+        _removal_pass(is_reversed=False)
+        # We can remove all update parameters which
+        # happen **before** a real time io operation.
+        _removal_pass(is_reversed=True)
+
+    def _validate_update_parameters_alignment(self) -> None:
+        last_upd_params_incompatible_op_info: OpInfo | None = None
+        total_play_time = helpers.to_grid_time(self.parent.total_play_time)
+
+        sorted_op_strategies = sorted(
+            self.op_strategies, key=lambda op: op.operation_info.timing
+        )
+        for op_strategy in reversed(sorted_op_strategies):
+            op_timing = helpers.to_grid_time(op_strategy.operation_info.timing)
+
+            if op_strategy.operation_info.is_parameter_update:
+                if total_play_time == op_timing:
+                    raise RuntimeError(
+                        f"Parameter operation {op_strategy.operation_info} with start time "
+                        f"{op_strategy.operation_info.timing} cannot be scheduled at the very end "
+                        "of a Schedule. The Schedule can be extended by adding an "
+                        "IdlePulse operation with a duration of at least "
+                        f"{constants.MIN_TIME_BETWEEN_OPERATIONS} ns, or the Parameter operation can be "
+                        "replaced by another operation."
+                    )
+                elif (
+                    last_upd_params_incompatible_op_info is not None
+                    and helpers.to_grid_time(
+                        last_upd_params_incompatible_op_info.timing
+                    )
+                    == op_timing
+                ):
+                    raise RuntimeError(
+                        f"Parameter operation {op_strategy.operation_info} with start time "
+                        f"{op_strategy.operation_info.timing} cannot be scheduled exactly before "
+                        f"the operation {last_upd_params_incompatible_op_info} with the same start time. "
+                        "Insert an IdlePulse operation with a duration of at least "
+                        f"{constants.MIN_TIME_BETWEEN_OPERATIONS} ns, or the Parameter operation can be "
+                        "replaced by another operation."
+                    )
+            elif (
+                op_strategy.operation_info.is_return_stack
+                or op_strategy.operation_info.is_loop
+                or op_strategy.operation_info.data.get("feedback_trigger_address")
+                is not None
+            ):
+                last_upd_params_incompatible_op_info = op_strategy.operation_info
 
     @staticmethod
     def _generate_waveforms_and_program_dict(
@@ -963,7 +960,8 @@ class SequencerCompiler(ABC):
         Perform necessary operations on this sequencer's data before
         :meth:`~SequencerCompiler.compile` is called.
         """
-        self._insert_update_parameters()
+        self._remove_redundant_update_parameters()
+        self._validate_update_parameters_alignment()
 
     def compile(
         self,
@@ -1323,6 +1321,22 @@ class ClusterModuleCompiler(InstrumentCompiler, Generic[_SequencerT_co], ABC):
                                     seq.connected_output_indices[0]
                                 )
                             seq.op_strategies.append(op_strategy)
+
+                            if op_strategy.operation_info.is_parameter_instruction:
+                                update_parameters_strategy = UpdateParameterStrategy(
+                                    OpInfo(
+                                        name="UpdateParameters",
+                                        data={
+                                            "t0": 0,
+                                            "port": seq.port,
+                                            "clock": seq.clock,
+                                            "duration": 0,
+                                            "instruction": q1asm_instructions.UPDATE_PARAMETERS,
+                                        },
+                                        timing=op_strategy.operation_info.timing,
+                                    )
+                                )
+                                seq.op_strategies.append(update_parameters_strategy)
 
     def compile(
         self,

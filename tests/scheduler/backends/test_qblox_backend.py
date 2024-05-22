@@ -5452,3 +5452,49 @@ def test_distortion_correction_latency_compensation():
     ]
 
     assert corrections == ideal_corrections
+
+
+def test_invalid_parameter_ordering(
+    mock_setup_basic_transmon_with_standard_params,
+):
+    hardware_config_cluster = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "instrument_type": "Cluster",
+            "ref": "internal",
+            "cluster0_module1": {
+                "instrument_type": "QCM",
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "q1:mw",
+                            "clock": "q1.01",
+                        }
+                    ],
+                },
+            },
+        },
+    }
+
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+
+    schedule = Schedule("test valid channel names")
+    schedule.add(SquarePulse(port="q1:mw", clock="q1.01", amp=0.25, duration=60e-9))
+    schedule.add(SquarePulse(port="q1:mw", clock="q1.01", amp=0.25, duration=12e-9))
+    schedule.add(SetClockFrequency(clock="q1.01", clock_freq_new=5e8), rel_time=-12e-9)
+    schedule.add(
+        SquarePulse(port="q1:mw", clock="q1.01", amp=0.25, duration=12e-9),
+        rel_time=20e-9,
+    )
+
+    quantum_device.hardware_config(hardware_config_cluster)
+    compiler = SerialCompiler(name="compiler")
+    with pytest.raises(
+        ValueError,
+        match="Invalid timing. Pulse SetClockFrequency \\(t=6e-08 to 6e-08\\).*\n.* cannot be started at this order or time. "
+        "Please try to reorder your operations by adding this operation "
+        r"before any other operation \(possibly at the same time\) that happens at that time.",
+    ):
+        compiler.compile(
+            schedule=schedule, config=quantum_device.generate_compilation_config()
+        )

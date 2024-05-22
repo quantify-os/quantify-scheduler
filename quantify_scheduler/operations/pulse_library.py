@@ -491,7 +491,8 @@ class SquarePulse(Operation):
         self._update()
 
     def __str__(self) -> str:
-        pulse_info = self.data["pulse_info"][0]
+        # Some pulse infos do not have amps in them, we need to select the correct pulse info.
+        pulse_info = [d for d in self.data["pulse_info"] if "amp" in d][0]
         return self._get_signature(pulse_info)
 
 

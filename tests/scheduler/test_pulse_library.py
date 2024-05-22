@@ -349,11 +349,11 @@ def test_complex_square_pulse(mock_setup_basic_transmon_with_standard_params):
         clock=BasebandClockResource.IDENTITY,
     )
 
-    assert pulse1["pulse_info"][0]["amp"] == 1 + 1j
-    assert pulse1["pulse_info"][1]["offset_path_I"] == 1
-    assert pulse1["pulse_info"][1]["offset_path_Q"] == 1
-    assert pulse1["pulse_info"][2]["offset_path_I"] == 0
-    assert pulse1["pulse_info"][2]["offset_path_Q"] == 0
+    assert pulse1["pulse_info"][0]["offset_path_I"] == 1
+    assert pulse1["pulse_info"][0]["offset_path_Q"] == 1
+    assert pulse1["pulse_info"][1]["offset_path_I"] == 0
+    assert pulse1["pulse_info"][1]["offset_path_Q"] == 0
+    assert pulse1["pulse_info"][2]["amp"] == 1 + 1j
 
 
 def test_dc_compensation_pulse_amp() -> None:

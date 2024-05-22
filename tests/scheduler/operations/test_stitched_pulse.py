@@ -89,9 +89,10 @@ def test_set_port_clock_t0():
     builder.set_port("q0:mw")
     builder.set_t0(1e-6)
     pulse = builder.build()
-    assert pulse["pulse_info"][0]["t0"] == pytest.approx(1e-6)
-    assert pulse["pulse_info"][0]["port"] == "q0:mw"
-    assert pulse["pulse_info"][0]["clock"] == "q0.01"
+    for i, expected_t0 in enumerate([1.028e-6, 1.128e-6, 1e-6, 2e-6]):
+        assert pulse["pulse_info"][i]["t0"] == pytest.approx(expected_t0)
+        assert pulse["pulse_info"][i]["port"] == "q0:mw"
+        assert pulse["pulse_info"][i]["clock"] == "q0.01"
 
 
 def test_no_port_clock_fails():
@@ -137,25 +138,6 @@ def test_add_operations():
     )
     assert len(pulse.data["pulse_info"]) == 4
     assert pulse.data["pulse_info"][0] == {
-        "amp": 0.2,
-        "reference_magnitude": None,
-        "clock": "q0.01",
-        "duration": 1e-06,
-        "port": "q0:mw",
-        "t0": 0,
-        "wf_func": "quantify_scheduler.waveforms.square",
-    }
-    assert pulse.data["pulse_info"][1] == {
-        "amp": 0.5,
-        "reference_magnitude": None,
-        "clock": "q0.01",
-        "duration": 2.8e-08,
-        "offset": 0,
-        "port": "q0:mw",
-        "t0": 1e-06,
-        "wf_func": "quantify_scheduler.waveforms.ramp",
-    }
-    assert pulse.data["pulse_info"][2] == {
         "clock": "q0.01",
         "duration": 0.0,
         "offset_path_I": 0.5,
@@ -165,7 +147,7 @@ def test_add_operations():
         "wf_func": None,
         "reference_magnitude": ReferenceMagnitude(1, "V"),
     }
-    assert pulse.data["pulse_info"][3] == {
+    assert pulse.data["pulse_info"][1] == {
         "clock": "q0.01",
         "duration": 0.0,
         "offset_path_I": 0.0,
@@ -174,6 +156,25 @@ def test_add_operations():
         "t0": 1.128e-06,
         "wf_func": None,
         "reference_magnitude": ReferenceMagnitude(1, "V"),
+    }
+    assert pulse.data["pulse_info"][2] == {
+        "amp": 0.2,
+        "reference_magnitude": None,
+        "clock": "q0.01",
+        "duration": 1e-06,
+        "port": "q0:mw",
+        "t0": 0,
+        "wf_func": "quantify_scheduler.waveforms.square",
+    }
+    assert pulse.data["pulse_info"][3] == {
+        "amp": 0.5,
+        "reference_magnitude": None,
+        "clock": "q0.01",
+        "duration": 2.8e-08,
+        "offset": 0,
+        "port": "q0:mw",
+        "t0": 1e-06,
+        "wf_func": "quantify_scheduler.waveforms.ramp",
     }
 
 
@@ -190,25 +191,6 @@ def test_add_operations_insert_timing():
     )
     assert len(pulse.data["pulse_info"]) == 4
     assert pulse.data["pulse_info"][0] == {
-        "amp": 0.2,
-        "reference_magnitude": None,
-        "clock": "q0.01",
-        "duration": 1e-06,
-        "port": "q0:mw",
-        "t0": 0,
-        "wf_func": "quantify_scheduler.waveforms.square",
-    }
-    assert pulse.data["pulse_info"][1] == {
-        "amp": 0.5,
-        "reference_magnitude": None,
-        "clock": "q0.01",
-        "duration": 2.8e-08,
-        "offset": 0,
-        "port": "q0:mw",
-        "t0": 1e-06,
-        "wf_func": "quantify_scheduler.waveforms.ramp",
-    }
-    assert pulse.data["pulse_info"][2] == {
         "clock": "q0.01",
         "duration": 0.0,
         "offset_path_I": 0.5,
@@ -218,7 +200,7 @@ def test_add_operations_insert_timing():
         "wf_func": None,
         "reference_magnitude": None,
     }
-    assert pulse.data["pulse_info"][3] == {
+    assert pulse.data["pulse_info"][1] == {
         "clock": "q0.01",
         "duration": 0.0,
         "offset_path_I": 0.0,
@@ -227,6 +209,25 @@ def test_add_operations_insert_timing():
         "t0": 6e-7,
         "wf_func": None,
         "reference_magnitude": None,
+    }
+    assert pulse.data["pulse_info"][2] == {
+        "amp": 0.2,
+        "reference_magnitude": None,
+        "clock": "q0.01",
+        "duration": 1e-06,
+        "port": "q0:mw",
+        "t0": 0,
+        "wf_func": "quantify_scheduler.waveforms.square",
+    }
+    assert pulse.data["pulse_info"][3] == {
+        "amp": 0.5,
+        "reference_magnitude": None,
+        "clock": "q0.01",
+        "duration": 2.8e-08,
+        "offset": 0,
+        "port": "q0:mw",
+        "t0": 1e-06,
+        "wf_func": "quantify_scheduler.waveforms.ramp",
     }
 
 

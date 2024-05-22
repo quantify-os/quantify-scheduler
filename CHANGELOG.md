@@ -12,6 +12,8 @@
 
 - Improved Error messages
   - Improve error message for conflicting acquisition protocols (!982)
+- Qblox backend
+  - Change update param insertion logic. (!980)
 
 
 ## 0.20.1 (2024-05-01)

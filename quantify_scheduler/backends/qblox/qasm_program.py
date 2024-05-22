@@ -322,7 +322,15 @@ class QASMProgram:
         wait_time = start_time - self.elapsed_time
         if wait_time > 0:
             self.auto_wait(wait_time)
-        elif wait_time < 0:
+        elif wait_time < 0 and operation.is_parameter_instruction:
+            raise ValueError(
+                f"Invalid timing. {repr(operation)} cannot be started at this order or time. "
+                f"Please try to reorder your operations by adding this operation "
+                "before any other operation (possibly at the same time) that happens at that time."
+            )
+        elif wait_time < 0 and operation.name != "IdlePulse":
+            # The idle pulse is a no operation, if any other operation
+            # is simultaneously running, it is allowed.
             raise ValueError(
                 f"Invalid timing. Attempting to wait for {wait_time} "
                 f"ns before {repr(operation)}. Please note that a wait time of at least"
