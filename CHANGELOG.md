@@ -14,7 +14,8 @@
   - Improve error message for conflicting acquisition protocols (!982)
 - Qblox backend
   - Change update param insertion logic. (!980)
-
+- Tests
+  - Update test_compile_cz_gate with new style hardware config (!979)
 
 ## 0.20.1 (2024-05-01)
 

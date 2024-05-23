@@ -9,8 +9,8 @@ import math
 import os
 import re
 from contextlib import nullcontext
-from typing import Optional
 from copy import deepcopy
+from typing import Optional
 
 import networkx as nx
 import numpy as np
@@ -18,16 +18,13 @@ import pytest
 from pydantic import ValidationError
 from qblox_instruments import Cluster, ClusterType
 
-from quantify_scheduler.operations.gate_library import CZ
 import quantify_scheduler
 from quantify_scheduler import Schedule
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.backends import SerialCompiler, corrections
 from quantify_scheduler.backends.graph_compilation import (
     CompilationConfig,
     SimpleNodeConfig,
 )
-from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
 from quantify_scheduler.backends.qblox import (
     compiler_container,
     constants,
@@ -38,9 +35,14 @@ from quantify_scheduler.backends.qblox.analog import (
     AnalogSequencerCompiler,
     NcoOperationTimingError,
 )
+from quantify_scheduler.backends.qblox.enums import (
+    DistortionCorrectionLatencyEnum,
+    QbloxFilterConfig,
+    QbloxFilterMarkerDelay,
+)
 from quantify_scheduler.backends.qblox.helpers import (
-    assign_pulse_and_acq_info_to_devices,
     _generate_legacy_hardware_config,
+    assign_pulse_and_acq_info_to_devices,
     generate_port_clock_to_device_map,
     generate_uuid_from_wf_data,
     generate_waveform_data,
@@ -54,22 +56,31 @@ from quantify_scheduler.backends.qblox.instrument_compilers import (
     QRMCompiler,
     QRMRFCompiler,
 )
+from quantify_scheduler.backends.qblox.operations import (
+    long_ramp_pulse,
+    long_square_pulse,
+    staircase_pulse,
+)
+from quantify_scheduler.backends.qblox.operations.stitched_pulse import (
+    StitchedPulseBuilder,
+)
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox.qblox_hardware_config_old_style import (
     hardware_config as qblox_hardware_config_old_style,
 )
-from quantify_scheduler.backends.qblox_backend import find_qblox_instruments
-from quantify_scheduler.backends.types.common import HardwareDescription
-from quantify_scheduler.backends.qblox.enums import (
-    DistortionCorrectionLatencyEnum,
-    QbloxFilterConfig,
-    QbloxFilterMarkerDelay,
+from quantify_scheduler.backends.qblox_backend import (
+    QbloxHardwareCompilationConfig,
+    find_qblox_instruments,
 )
-from quantify_scheduler.backends.types.qblox import QbloxHardwareDistortionCorrection
 from quantify_scheduler.backends.types import qblox as types
-from quantify_scheduler.backends.types.qblox import BasebandModuleSettings
-from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
+from quantify_scheduler.backends.types.common import HardwareDescription
+from quantify_scheduler.backends.types.qblox import (
+    BasebandModuleSettings,
+    QbloxHardwareDistortionCorrection,
+)
 from quantify_scheduler.compilation import _determine_absolute_timing
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.helpers.collections import (
     find_all_port_clock_combinations,
     find_inner_dicts_containing_key,
@@ -80,13 +91,8 @@ from quantify_scheduler.operations.acquisition_library import (
     Trace,
 )
 from quantify_scheduler.operations.control_flow_library import Loop
-from quantify_scheduler.operations.gate_library import X90, Measure, Reset, X, Y
+from quantify_scheduler.operations.gate_library import CZ, X90, Measure, Reset, X, Y
 from quantify_scheduler.operations.operation import Operation
-from quantify_scheduler.backends.qblox.operations import (
-    long_square_pulse,
-    long_ramp_pulse,
-    staircase_pulse,
-)
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     IdlePulse,
@@ -94,14 +100,11 @@ from quantify_scheduler.operations.pulse_library import (
     NumericalPulse,
     RampPulse,
     ReferenceMagnitude,
+    ResetClockPhase,
     SetClockFrequency,
     ShiftClockPhase,
     SoftSquarePulse,
     SquarePulse,
-    ResetClockPhase,
-)
-from quantify_scheduler.backends.qblox.operations.stitched_pulse import (
-    StitchedPulseBuilder,
 )
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.schedules.timedomain_schedules import (
@@ -1252,23 +1255,35 @@ def test_compile_clock_operations(
 def test_compile_cz_gate(
     mock_setup_basic_transmon_with_standard_params,
 ):
-
-    # TODO: Adjust CZ implementation on the pulse level, fix this test and update hw cfg to new-style (SE-479)
     hardware_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            "instrument_type": "Cluster",
-            "ref": "internal",
-            "cluster0_module1": {
-                "instrument_type": "QCM",
-                "complex_output_0": {
-                    "portclock_configs": [
-                        {"port": f"{qubit}:fl", "clock": clock}
-                        for qubit in ["q2", "q3"]
-                        for clock in [BasebandClockResource.IDENTITY, f"{qubit}.01"]
-                    ]
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {
+                    1: {"instrument_type": "QCM"},
+                    2: {"instrument_type": "QCM_RF"},
                 },
+                "sequence_to_file": False,
+                "ref": "internal",
+            }
+        },
+        "hardware_options": {
+            "output_att": {},
+            "input_att": {},
+            "modulation_frequencies": {
+                "q2:mw-q2.01": {"interm_freq": 80000000.0},
+                "q3:mw-q3.01": {"interm_freq": 80000000.0},
             },
+            "mixer_corrections": {},
+        },
+        "connectivity": {
+            "graph": [
+                ("cluster0.module1.real_output_2", "q2:fl"),
+                ("cluster0.module1.real_output_3", "q3:fl"),
+                ("cluster0.module2.complex_output_0", "q2:mw"),
+                ("cluster0.module2.complex_output_1", "q3:mw"),
+            ]
         },
     }
 
@@ -1280,16 +1295,8 @@ def test_compile_cz_gate(
     sched = Schedule("schedule")
     sched.add(Reset("q2", "q3"))
     sched.add(CZ(qC="q2", qT="q3"))
-    sched.add(
-        SquarePulse(
-            amp=1, port="q2:fl", clock=BasebandClockResource.IDENTITY, duration=4e-9
-        )
-    )
-    sched.add(
-        SquarePulse(
-            amp=1, port="q3:fl", clock=BasebandClockResource.IDENTITY, duration=4e-9
-        )
-    )
+    sched.add(SquarePulse(amp=1, port="q2:mw", clock="q2.01", duration=4e-9))
+    sched.add(SquarePulse(amp=1, port="q3:mw", clock="q3.01", duration=4e-9))
 
     quantum_device = mock_setup["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
@@ -1299,25 +1306,31 @@ def test_compile_cz_gate(
         config=quantum_device.generate_compilation_config(),
     )
 
-    program_lines = {}
-    for seq in ["seq0", "seq1", "seq2", "seq3"]:
-        program_lines[seq] = compiled_sched.compiled_instructions["cluster0"][
-            "cluster0_module1"
-        ]["sequencers"][seq]["sequence"]["program"].splitlines()
+    program_lines = {
+        "q2:fl": compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"][
+            "sequencers"
+        ]["seq0"]["sequence"]["program"].splitlines(),
+        "q2:mw": compiled_sched.compiled_instructions["cluster0"]["cluster0_module2"][
+            "sequencers"
+        ]["seq0"]["sequence"]["program"].splitlines(),
+        "q3:mw": compiled_sched.compiled_instructions["cluster0"]["cluster0_module2"][
+            "sequencers"
+        ]["seq1"]["sequence"]["program"].splitlines(),
+    }
 
     assert any(
-        re.search(rf"^\s*play\s+0,0,4(\s|$)", line) for line in program_lines["seq0"]
-    ), "\n".join(line for line in program_lines["seq0"])
+        re.search(rf"^\s*play\s+0,0,4(\s|$)", line) for line in program_lines["q2:fl"]
+    ), "\n".join(line for line in program_lines["q2:fl"])
 
     assert any(
         re.search(rf"^\s*set_ph_delta\s+122222222(\s|$)", line)
-        for line in program_lines["seq1"]
-    ), "\n".join(line for line in program_lines["seq1"])
+        for line in program_lines["q2:mw"]
+    ), "\n".join(line for line in program_lines["q2:mw"])
 
     assert any(
         re.search(rf"^\s*set_ph_delta\s+175000000(\s|$)", line)
-        for line in program_lines["seq3"]
-    ), "\n".join(line for line in program_lines["seq3"])
+        for line in program_lines["q3:mw"]
+    ), "\n".join(line for line in program_lines["q3:mw"])
 
 
 def test_compile_simple_with_acq(
