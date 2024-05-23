@@ -22,7 +22,7 @@ See also [merge request guidelines](https://quantify-os.org/docs/quantify-core/d
 - [ ] Tested on hardware (or N/A).
 - [ ] `CHANGELOG.md` and `AUTHORS.md` have been updated (or N/A).
 - [ ] Update Hardware backends documentation if backend interface change or N/A
-- [ ] Performance tests: if changes can affect performance, trigger CI manually and evaluate results (or N/A).
+- [ ] Check whether performance is significantly affected by looking at the Performance metrics results.
 - [ ] Windows tests in CI pipeline pass (manually triggered by maintainers before merging).
    - _Maintainers do not hit Auto-merge, we need to actively check as manual tests do not block pipeline_
 ---
