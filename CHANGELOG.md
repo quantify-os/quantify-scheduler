@@ -16,6 +16,8 @@
   - Change update param insertion logic. (!980)
 - Tests
   - Update test_compile_cz_gate with new style hardware config (!979)
+- Docs - Fix the description for the `APPEND` bin mode of the `TriggerCount` acquisition protocol, both in the Acquisitions tutorial and in the Acquisition Protocols reference guide. (!986)
+
 
 ## 0.20.1 (2024-05-01)
 

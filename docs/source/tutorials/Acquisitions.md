@@ -832,18 +832,19 @@ The above schedule was run in the bin mode `BinMode.APPEND`, rerunning the sched
 The trigger count acquisition protocol is used for measuring how many times the input signal goes over some limit.
 This protocol is used, for example, in the case of an NV center type of qubit, or other types of qubit, where counting the number of photons (indirectly as an electrical signal) is important.
 
-The {class}`~quantify_scheduler.operations.acquisition_library.TriggerCount` protocol offers two bin modes: **average** and **append** bin mode.
-These bin modes function differently here compared to in the {ref}`single-sideband integration protocol <sec-ssb>`.
+Like the {ref}`single-sideband integration protocol <sec-ssb>`, the {class}`~quantify_scheduler.operations.acquisition_library.TriggerCount` protocol also offers two bin modes: **average** and **append**.
 
-In the **append** bin mode, the resulting data will be a _list_ of 1s, with the length of the list corresponding to the number of triggers that occurred during the acquisition.
-For example, if there were three triggers, the result would be a list with three 1s: `[1, 1, 1]`.
-
-In the **average** bin mode, the result is a _distribution_ that maps the trigger count numbers to the number of occurrences of each trigger count number.
-This provides insights into the overall occurrence of triggers when running the acquisition multiple times. Let's consider an example where we execute a schedule three times:
+The **append** bin mode is quite similar to the {ref}`single-sideband integration protocol <sec-ssb>` case. Instead of the integrated acquisition result, the data will consist of the total number of triggers counted during each acquisition.
+Let's consider an example where we execute a schedule three times:
 
 - during the 1st run, three triggers are acquired
 - during the 2nd run, one trigger is acquired,
 - during the 3rd run, one trigger is acquired.
+
+The result would then be the list `[3, 1, 1]`.
+
+In the **average** bin mode, the result is a _distribution_ that maps the trigger count numbers to the number of occurrences of each trigger count number.
+This provides insights into the overall occurrence of triggers when running the acquisition multiple times. Let's consider the exact same experimental example as above, where a schedule is executed three times.
 
 The overall distribution of triggers would be: trigger count of 1 occurred twice, and trigger count of 3 occurred once. Hence, the resulting dictionary would be: `{1: 2, 3: 1}`.
 The dictionary notation shows the number of triggers as keys and their corresponding frequencies as values.

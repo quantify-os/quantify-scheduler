@@ -214,7 +214,7 @@ Integration weights should normally be calibrated in a separate experiment
 (see, for example, {cite:t}`magesan2015machine`).
 
 (sec-acquisition-protocols-numerical-weighted-integration)=
-## Numerical Separated Weighted
+## Numerical Weighted Integration
 
 - Referred to as `"NumericalWeightedIntegration"`.
 - Supported by the {mod}`Qblox <quantify_scheduler.backends.qblox>` backend.
@@ -243,38 +243,16 @@ Integration weights should normally be calibrated in a separate experiment
 This acquisition protocol measures how many times a predefined voltage threshold has been
 passed. The threshold is set via {class}`~quantify_scheduler.backends.types.qblox.SequencerOptions.ttl_acq_threshold` (see also {ref}`sec-qblox-sequencer-options-new`).
 
-First, let's see an example when the bin mode is `BinMode.APPEND` and the schedule repeats once (`repetitions=1`).
-The returned data for the acquisition channel is a list, with as many elements as the number of times the trigger was activated. For each element, the value is `1`. In the following example, the threshold was passed 5 times for acquisition channel 0, and therefore `acq_index_0` goes from `0` to `4`, with values `1`.
-```{code-cell} ipython3
----
-tags: [hide-input]
----
-trigger_data = [1, 1, 1, 1, 1]
-xr.Dataset(
-    {0: xr.DataArray([trigger_data],
-            dims=["repetition", "acq_index_0"],
-            coords={"repetition": [0], "acq_index_0": range(len(trigger_data))},
-        )
-    }
-)
-```
+First, let's see an example when the bin mode is `BinMode.APPEND`.
+The returned data for the acquisition channel contains the number of triggers counted for each acquisition index. In the following example, suppose a schedule with one trigger count acquisition was executed 5 times (`repetitions=5`). In order, the number of triggers counted is `[6, 3, 8, 1, 3]`. The resulting dataset would then look like:
 
-If there are multiple repetitions of the schedule, the acquisition data is still a list for each channel.
-The list's first element is a number that counts how many times the threshold was passed **at least** once.
-The second element counts how many times the threshold was passed **at least** twice, and so on for the other elements.
-Don't be confused by the `repetition` dimension: for trigger count, this dimension has one coordinate, namely `0`.
-See an example below.
 ```{code-cell} ipython3
 ---
 tags: [hide-input]
 ---
-trigger_data = [8, 6, 3, 3, 1]
+trigger_data = np.array([6, 3, 8, 1, 3])
 xr.Dataset(
-    {0: xr.DataArray([trigger_data],
-            dims=["repetition", "acq_index_0"],
-            coords={"repetition": [0], "acq_index_0": range(len(trigger_data))},
-        )
-    }
+    {0: xr.DataArray(trigger_data.reshape(1, 5), dims = ['acq_index_0', 'repetitions'])}
 )
 ```
 
