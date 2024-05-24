@@ -14,7 +14,7 @@ kernelspec:
 (sec-control-flow)=
 # Control flow
 
-Complex schedules can be constructed from pulses, gates and schedules using control flow. When adding an Operation or Schedule to another Schedule, a `control_flow` argument can be specified.
+Complex schedules can be constructed from pulses, gates and schedules using control flow. The {class}`~.operations.control_flow_library.ConditionalOperation` can be added to a Schedule, or to another control flow operation. Note: {class}`~.operations.control_flow_library.ConditionalOperation` cannot be added to another conditional, because currently nested conditionals are not supported.
 
 (sec-control-flow-subschedule)=
 ## Adding schedules to a schedule ("subschedules")
@@ -22,7 +22,7 @@ Complex schedules can be constructed from pulses, gates and schedules using cont
 - Supported by {mod}`Qblox <quantify_scheduler.backends.qblox>` and
   {mod}`Zurich Instruments <quantify_scheduler.backends.zhinst>` backends.
 
-A schedule can be added to a schedule just like an operation. This does not require the use of the `control_flow` argument. 
+A schedule can be added to a schedule just like an operation.
 
 This is useful e.g. to define a custom composite gate:
 ```{code-cell} ipython3
@@ -47,13 +47,13 @@ Note: The `repetitions` argument of all but the outermost Schedules is ignored. 
 
 - Supported by {mod}`Qblox <quantify_scheduler.backends.qblox>` backend.
 
-If the `control_flow` argument of `Schedule.add` receives an instance of the `Loop` operation, the added Operation or Schedule will be repeated as specified.
+The `body` of a {class}`~.operations.control_flow_library.LoopOperation` will be repeated `repetitions` times.
 
 This can be used to efficiently implement sequential averaging without running over the instruction limit of the hardware:
 ```{code-cell} ipython3
 import numpy as np
 from typing import Union
-from quantify_scheduler.operations.control_flow_library import Loop
+from quantify_scheduler.operations.control_flow_library import LoopOperation
 from quantify_scheduler.operations.gate_library import Reset, Measure
 
 def t1_sched_sequential(
@@ -75,7 +75,7 @@ def t1_sched_sequential(
             rel_time=tau,
             label=f"Measurement {i}",
         )
-        schedule.add(inner, control_flow=Loop(repetitions))
+        schedule.add(LoopOperation(body=inner, repetitions=repetitions))
     return schedule
 ```
 Hardware averaging works as expected. In `BinMode.APPEND` binning mode, the data is returned in chronological order.
@@ -91,19 +91,21 @@ from quantify_scheduler.operations.pulse_library import SquarePulse
 
 schedule = Schedule("T1")
 schedule.add(
-    SquarePulse(
-        amp=0.3,
-        port="q0:res",
-        duration=2e-6,
-        clock="q0.ro",
-    ),
-    control_flow=Loop(3),
+    LoopOperation(
+        body=SquarePulse(
+            amp=0.3,
+            port="q0:res",
+            duration=2e-6,
+            clock="q0.ro",
+        ),
+        repetitions=3
+    )
 )
 ```
 2. Repetition loops act on all port-clock combinations present in the circuit. This means that both `X("q0")` and `Y90("q1")` in the following circuit are repeated three times:
 ```{code-cell} ipython3
 schedule = Schedule("T1")
-x = schedule.add(X("q0"), control_flow=Loop(3))
+x = schedule.add(LoopOperation(body=X("q0"), repetitions=3))
 schedule.add(Y90("q1"), ref_op=x, ref_pt="start", rel_time=0)
 ```
 ### Safe use with the limitations
@@ -128,7 +130,7 @@ inner_schedule.add(IdlePulse(16e-9))
 outer_schedule = Schedule("outer")
 # anything can go here
 outer_schedule.add(IdlePulse(16e-9))
-outer_schedule.add(inner_schedule, control_flow = Loop(5))
+outer_schedule.add(LoopOperation(body=inner_schedule, repetitions=5))
 outer_schedule.add(IdlePulse(16e-9))
 # anything can go here
 ```

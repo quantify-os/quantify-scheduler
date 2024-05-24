@@ -20,7 +20,12 @@ from quantify_scheduler.backends.types.qblox import (
     OpInfo,
     StaticAnalogModuleProperties,
 )
-from quantify_scheduler.operations.control_flow_library import Conditional, Loop
+from quantify_scheduler.operations.control_flow_library import (
+    Conditional,
+    ConditionalOperation,
+    Loop,
+    LoopOperation,
+)
 from quantify_scheduler.operations.gate_library import Measure, Rxy, X
 from quantify_scheduler.schedules.schedule import Schedule
 from quantify_scheduler.schemas.examples import utils
@@ -45,7 +50,6 @@ class TestSubschedules(_CompilesAllBackends):
         assert self.uncomp_sched.repetitions == 10
 
 
-@pytest.mark.filterwarnings("ignore:Loops and Conditionals:UserWarning")
 class TestLoops:
     @classmethod
     def setup_class(cls):
@@ -57,8 +61,7 @@ class TestLoops:
         ref = outer_schedule.add(Rxy(1, 0, "q0"), label="outer0")
 
         outer_schedule.add(
-            inner_schedule,
-            control_flow=Loop(repetitions=10),
+            LoopOperation(body=inner_schedule, repetitions=10),
             label="loop",
         )
 
@@ -69,7 +72,6 @@ class TestLoops:
         assert self.uncomp_sched.repetitions == 1
 
 
-@pytest.mark.filterwarnings("ignore:Loops and Conditionals:UserWarning")
 def test_multiple_conditional_without_acquisition_raises(
     mock_setup_basic_transmon_with_standard_params,
 ):
@@ -86,19 +88,22 @@ def test_multiple_conditional_without_acquisition_raises(
     schedule1.add(X("q0"))
 
     schedule.add(
-        schedule1,
-        control_flow=Conditional("q0"),
+        ConditionalOperation(body=schedule1, qubit_name="q0"),
     )
     schedule.add(
-        schedule1,
-        control_flow=Conditional("q0"),
+        ConditionalOperation(body=schedule1, qubit_name="q0"),
     )
 
     compiler = SerialCompiler(name="compiler")
     with pytest.raises(
         RuntimeError,
-        match=r"Conditional control flow, ``Conditional\(qubit_name='q0',t0=0\)``"  # noqa: W605
-        ",  found without a preceding Conditional acquisition",
+        match=(
+            "Conditional control flow, "
+            "``ConditionalOperation"
+            '\\(body=Schedule "" containing \\(1\\) 1  \\(unique\\) operations.'
+            ",qubit_name='q0',t0=0.0\\)``,  "
+            "found without a preceding Conditional acquisition. "
+        ),
     ):
         _ = compiler.compile(
             schedule,
@@ -165,8 +170,21 @@ def test_nested_conditional_control_flow_raises_runtime_warning():
         )
 
 
-def test_add_raises() -> None:
+def test_deprecated_control_flow_loop_warns():
     schedule = Schedule("Test")
-    with pytest.raises(ValueError):
-        schedule.add(Loop(1))
-    schedule.add(Measure("q0"))
+    with pytest.warns(
+        FutureWarning,
+        match="Using the `control_flow` argument in `Schedule.add` is deprecated, "
+        "and will be removed from the public interface",
+    ):
+        schedule.add(X("q0"), control_flow=Loop(3))
+
+
+def test_deprecated_control_flow_conditional_warns():
+    schedule = Schedule("Test")
+    with pytest.warns(
+        FutureWarning,
+        match="Using the `control_flow` argument in `Schedule.add` is deprecated, "
+        "and will be removed from the public interface",
+    ):
+        schedule.add(X("q0"), control_flow=Conditional("q0"))

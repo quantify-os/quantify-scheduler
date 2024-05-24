@@ -28,6 +28,11 @@ from quantify_scheduler.helpers.collections import (
 )
 from quantify_scheduler.helpers.schedule import _extract_port_clocks_used
 from quantify_scheduler.helpers.waveforms import exec_waveform_function
+from quantify_scheduler.operations.control_flow_library import (
+    ConditionalOperation,
+    ControlFlowOperation,
+    LoopOperation,
+)
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import WindowOperation
 from quantify_scheduler.resources import DigitalClockResource
@@ -536,6 +541,172 @@ def generate_port_clock_to_device_map(
     return portclock_map
 
 
+class LoopBegin(Operation):
+    """
+    Operation to indicate the beginning of a loop.
+
+    Parameters
+    ----------
+    repetitions : int
+        number of repetitions
+    t0 : float, optional
+        time offset, by default 0
+    """
+
+    def __init__(self, repetitions: int, t0: float = 0) -> None:
+        super().__init__(name="Loop")
+        self.data.update(
+            {
+                "name": "Loop",
+                "control_flow_info": {
+                    "t0": t0,
+                    "repetitions": repetitions,
+                },
+            }
+        )
+        self._update()
+
+    def __str__(self) -> str:
+        """
+        Represent the Operation as string.
+
+        Returns
+        -------
+        str
+            description
+
+        """
+        return self._get_signature(self.data["control_flow_info"])
+
+
+class ConditionalBegin(Operation):
+    """
+    Operation to indicate the beginning of a conditional.
+
+
+    Parameters
+    ----------
+    qubit_name
+        The name of the qubit to condition on.
+    feedback_trigger_address
+        Feedback trigger address
+    t0
+        Time offset, by default 0
+
+
+    """
+
+    def __init__(
+        self, qubit_name: str, feedback_trigger_address: int, t0: float
+    ) -> None:
+        class_name = self.__class__.__name__
+        super().__init__(name=class_name)
+        self.data.update(
+            {
+                "name": class_name,
+                "control_flow_info": {
+                    "qubit_name": qubit_name,
+                    "t0": t0,
+                    "feedback_trigger_address": feedback_trigger_address,
+                },
+            }
+        )
+        self._update()
+
+    def __str__(self) -> str:
+        """
+        Represent the Operation as string.
+
+        Returns
+        -------
+        str
+            The string representation of this operation.
+
+        """
+        return self._get_signature(self.data["control_flow_info"])
+
+
+def _get_control_flow_begin(
+    control_flow_operation: ControlFlowOperation,
+) -> Operation:
+    port_clocks = _extract_port_clocks_used(control_flow_operation)
+    if isinstance(control_flow_operation, LoopOperation):
+        begin_operation: Operation = LoopBegin(
+            control_flow_operation.data["control_flow_info"]["repetitions"],
+            control_flow_operation.data["control_flow_info"]["t0"],
+        )
+    elif isinstance(control_flow_operation, ConditionalOperation):
+        begin_operation: Operation = ConditionalBegin(
+            control_flow_operation.data["control_flow_info"]["qubit_name"],
+            control_flow_operation.data["control_flow_info"][
+                "feedback_trigger_address"
+            ],
+            control_flow_operation.data["control_flow_info"]["t0"],
+        )
+    begin_operation["pulse_info"] = [
+        {
+            "wf_func": None,
+            "clock": clock,
+            "port": port,
+            "duration": 0,
+            "control_flow_begin": True,
+            **begin_operation["control_flow_info"],
+        }
+        for port, clock in port_clocks
+    ]
+    return begin_operation
+
+
+class _ControlFlowReturn(Operation):
+    """
+    An operation that signals the end of the current control flow statement.
+
+    Cannot be added to Schedule manually.
+
+    Parameters
+    ----------
+    t0 : float, optional
+        time offset, by default 0
+    """
+
+    def __init__(self, t0: float = 0) -> None:
+        super().__init__(name="ControlFlowReturn")
+        self.data.update(
+            {
+                "name": "ControlFlowReturn",
+                "control_flow_info": {
+                    "t0": t0,
+                    "duration": 0.0,
+                    "return_stack": True,
+                },
+            }
+        )
+        self._update()
+
+    def __str__(self) -> str:
+        return self._get_signature(self.data["control_flow_info"])
+
+
+def _get_control_flow_end(
+    control_flow_operation: ControlFlowOperation,
+) -> Operation:
+    port_clocks = _extract_port_clocks_used(control_flow_operation)
+    if isinstance(control_flow_operation, (LoopOperation, ConditionalOperation)):
+        end_operation: Operation = _ControlFlowReturn()
+        end_operation["pulse_info"] = [
+            {
+                "wf_func": None,
+                "clock": clock,
+                "port": port,
+                "duration": 0,
+                "control_flow_end": True,
+                **end_operation["control_flow_info"],
+            }
+            for port, clock in port_clocks
+        ]
+        return end_operation
+
+
 def _get_list_of_operations_for_op_info_creation(
     operation: Operation | Schedule,
     time_offset: float,
@@ -548,8 +719,21 @@ def _get_list_of_operations_for_op_info_creation(
             _get_list_of_operations_for_op_info_creation(
                 inner_operation, time_offset + abs_time, accumulator
             )
+    elif isinstance(operation, ControlFlowOperation):
+        accumulator.append(
+            (to_grid_time(time_offset) * 1e-9, _get_control_flow_begin(operation))
+        )
+        _get_list_of_operations_for_op_info_creation(
+            operation.body, time_offset, accumulator
+        )
+        accumulator.append(
+            (
+                to_grid_time(time_offset + operation.body.duration) * 1e-9,
+                _get_control_flow_end(operation),
+            )
+        )
     else:
-        accumulator.append((time_offset, operation))
+        accumulator.append((to_grid_time(time_offset) * 1e-9, operation))
 
 
 def assign_pulse_and_acq_info_to_devices(
@@ -586,10 +770,9 @@ def assign_pulse_and_acq_info_to_devices(
 
     list_of_operations: list[tuple[float, Operation]] = list()
     _get_list_of_operations_for_op_info_creation(schedule, 0, list_of_operations)
+    list_of_operations.sort(key=lambda abs_time_and_op: abs_time_and_op[0])
 
     for operation_start_time, op_data in list_of_operations:
-        # FIXME #461 Help the type checker. Schedule should have been flattened at this
-        # point.
         assert isinstance(op_data, Operation)
 
         if isinstance(op_data, WindowOperation):

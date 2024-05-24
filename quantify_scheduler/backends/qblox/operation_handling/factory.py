@@ -97,7 +97,7 @@ def _get_pulse_strategy(
         return virtual.ConditionalStrategy(
             operation_info=operation_info, trigger_condition=trigger_condition
         )
-    elif operation_info.is_return_stack:
+    elif operation_info.is_control_flow_end:
         return virtual.ControlFlowReturnStrategy(operation_info)
     elif operation_info.data.get("name") == "LatchReset":
         return virtual.ResetFeedbackTriggersStrategy(operation_info=operation_info)

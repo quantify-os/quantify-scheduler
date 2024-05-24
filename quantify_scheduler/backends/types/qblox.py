@@ -198,12 +198,9 @@ class OpInfo(DataClassJsonMixin):
         return self.data.get("repetitions", None) is not None
 
     @property
-    def is_return_stack(self) -> bool:
-        """
-        Return ``True`` if the operation is a return stack, corresponding to the Q1ASM
-        instruction ``return_stack``.
-        """
-        return self.data.get("return_stack", None) is not None
+    def is_control_flow_end(self) -> bool:
+        """Return ``True`` if the operation is a control flow end."""
+        return self.data.get("control_flow_end", None) is True
 
     def __str__(self):
         type_label: str = "Acquisition" if self.is_acquisition else "Pulse"

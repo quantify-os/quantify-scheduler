@@ -9,6 +9,7 @@ import numpy as np
 from quantify_scheduler.schedules.schedule import Schedule, ScheduleBase
 from quantify_scheduler.helpers.importers import import_python_object_from_string
 from quantify_scheduler.helpers.waveforms import get_waveform
+from quantify_scheduler.operations.control_flow_library import ControlFlowOperation
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import NumericalPulse
 
@@ -204,6 +205,13 @@ def apply_software_distortion_corrections(  # noqa: PLR0912
             )
             if replacing_operation is not None:
                 operation.operations[inner_operation_id] = replacing_operation
+        return None
+    elif isinstance(operation, ControlFlowOperation):
+        replacing_operation = apply_software_distortion_corrections(
+            operation.body, distortion_corrections
+        )
+        if replacing_operation is not None:
+            operation.body = replacing_operation
         return None
     else:
         substitute_operation = None

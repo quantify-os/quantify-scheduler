@@ -6,59 +6,41 @@ from __future__ import annotations
 import logging
 import warnings
 from copy import deepcopy
-from typing import TYPE_CHECKING, Any, Literal
-from uuid import uuid4
+from typing import TYPE_CHECKING, Literal, overload
 
-from quantify_scheduler.helpers.schedule import _extract_port_clocks_used
 from quantify_scheduler.json_utils import load_json_schema, validate_json
+from quantify_scheduler.operations.control_flow_library import (
+    ControlFlowOperation,
+)
 from quantify_scheduler.operations.operation import Operation
-from quantify_scheduler.schedules.schedule import Schedulable, Schedule, ScheduleBase
+from quantify_scheduler.schedules.schedule import Schedule, ScheduleBase
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.graph_compilation import (
         CompilationConfig,
     )
+    from quantify_scheduler.operations.operation import Operation
 
 logger = logging.getLogger(__name__)
 
 
-class _ControlFlowReturn(Operation):
-    """
-    An operation that signals the end of the current control flow statement.
-
-    Cannot be added to Schedule manually.
-
-    Parameters
-    ----------
-    t0 : float, optional
-        time offset, by default 0
-    """
-
-    def __init__(self, t0: float = 0) -> None:
-        super().__init__(name="ControlFlowReturn")
-        self.data.update(
-            {
-                "name": "ControlFlowReturn ",
-                "control_flow_info": {
-                    "t0": t0,
-                    "duration": 0.0,
-                    "return_stack": True,
-                },
-            }
-        )
-        self._update()
-
-    def __str__(self) -> str:
-        return self._get_signature(self.data["control_flow_info"])
-
-
-def _determine_absolute_timing(  # noqa: PLR0912
-    schedule: Schedule | Operation,
-    time_unit: Literal[
-        "physical", "ideal", None
-    ] = "physical",  # should be included in CompilationConfig
+@overload
+def _determine_absolute_timing(
+    schedule: Schedule,
+    time_unit: Literal["physical", "ideal", None] = "physical",
     config: CompilationConfig | None = None,
-) -> Schedule:
+) -> Schedule: ...
+@overload
+def _determine_absolute_timing(
+    schedule: Operation,
+    time_unit: Literal["physical", "ideal", None] = "physical",
+    config: CompilationConfig | None = None,
+) -> Operation | Schedule: ...
+def _determine_absolute_timing(  # noqa: PLR0912
+    schedule,
+    time_unit="physical",  # should be included in CompilationConfig
+    config=None,
+):
     """
     Determine the absolute timing of a schedule based on the timing constraints.
 
@@ -108,6 +90,9 @@ def _determine_absolute_timing(  # noqa: PLR0912
 
     if isinstance(schedule, ScheduleBase):
         return _determine_absolute_timing_schedule(schedule, time_unit, config)
+    elif isinstance(schedule, ControlFlowOperation):
+        schedule.body = _determine_absolute_timing(schedule.body, time_unit, config)
+        return schedule
     elif schedule.duration is None:
         raise RuntimeError(
             f"Cannot determine timing for operation {schedule.name}."
@@ -117,7 +102,7 @@ def _determine_absolute_timing(  # noqa: PLR0912
         return schedule
 
 
-def _determine_absolute_timing_schedule(
+def _determine_absolute_timing_schedule(  # noqa: PLR0912
     schedule: Schedule,
     time_unit: Literal["physical", "ideal", None],
     config: CompilationConfig | None,
@@ -131,6 +116,13 @@ def _determine_absolute_timing_schedule(
                     config=config,
                 )
 
+        elif isinstance(schedule.operations[op_key], ControlFlowOperation):
+            schedule.operations[op_key] = _determine_absolute_timing(
+                schedule=schedule.operations[op_key],
+                time_unit=time_unit,
+                config=config,
+            )
+
         elif (
             time_unit == "physical"
             and not schedule.operations[op_key].valid_pulse
@@ -142,10 +134,6 @@ def _determine_absolute_timing_schedule(
                 f" Please check whether the device compilation has been performed."
                 f" Operation data: {repr(schedule.operations[op_key])}"
             )
-
-    # If called directly and not by the compiler, ensure control flow is resolved
-    if config is None and time_unit == "physical":
-        resolve_control_flow(schedule)
 
     scheduling_strategy = "asap"
     if config is not None:
@@ -247,183 +235,6 @@ def _get_start_time(
     return abs_time
 
 
-def resolve_control_flow(
-    schedule: Schedule,
-    config: CompilationConfig | None = None,
-    port_clocks: set | None = None,
-) -> Schedule:
-    """
-    If control flow is used, insert virtual operations before and after the schedulable.
-
-    Parameters
-    ----------
-    schedule
-        The schedule for which to fill relative timings.
-    config
-        Compilation config for
-        :class:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler`,
-        which is currently not used in this compilation step.
-    port_clocks
-        Port-clock combinations to be used for control flow. Determined automatically
-        for the outermost schedule.
-
-    Returns
-    -------
-    :
-        a new schedule object where the timing constraints for each operation have
-        been determined.
-    """
-    if not port_clocks:
-        port_clocks = _extract_port_clocks_used(schedule)
-    for op in schedule.operations.values():
-        if isinstance(op, ScheduleBase):
-            resolve_control_flow(op, config, port_clocks)
-
-    if not schedule.schedulables:
-        raise ValueError(f"schedule '{schedule.name}' contains no schedulables.")
-
-    # Iterating through the shallow copy of items, because
-    # we modify the schedulables dict.
-    for schedulable_key, schedulable in schedule.schedulables.copy().items():
-        cf = schedulable.get("control_flow", None)
-        if cf is not None:
-            cf["pulse_info"] = [
-                {
-                    "wf_func": None,
-                    "clock": clock,
-                    "port": port,
-                    "duration": 0,
-                    **cf["control_flow_info"],
-                }
-                for port, clock in port_clocks
-            ]
-
-            rst_op = _ControlFlowReturn()
-            rst_op["pulse_info"] = [
-                {
-                    "wf_func": None,
-                    "clock": clock,
-                    "port": port,
-                    "duration": 0,
-                    **rst_op["control_flow_info"],
-                }
-                for port, clock in port_clocks
-            ]
-
-            control_flow_schedulable = schedule.add(
-                cf,
-                validate=False,
-            )
-            control_flow_schedulable["timing_constraints"] = schedulable[
-                "timing_constraints"
-            ]
-
-            _move_to_end(schedule.schedulables, schedulable_key)
-            schedulable["timing_constraints"] = [
-                {
-                    "rel_time": 0,
-                    "ref_schedulable": None,
-                    "ref_pt_new": None,
-                    "ref_pt": None,
-                }
-            ]
-
-            # insert return stack op after the current operation
-            schedule.add(
-                rst_op,
-                rel_time=0,
-                ref_op=str(schedulable),
-                ref_pt="end",
-                ref_pt_new="start",
-                validate=False,
-            )
-        else:
-            _move_to_end(schedule.schedulables, schedulable_key)
-
-    return schedule
-
-
-def flatten_schedule(
-    schedule: Schedule, config: CompilationConfig | None = None
-) -> Schedule:
-    """
-    Recursively flatten subschedules based on the absolute timing.
-
-    Parameters
-    ----------
-    schedule : Schedule
-        schedule to be flattened
-    config : CompilationConfig | None, optional
-        Compilation config for
-        :class:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler`,
-        which is currently not only used to detect if the function is called directly.
-        by default None
-
-    Returns
-    -------
-    Schedule
-        Equivalent schedule without subschedules
-    """
-    # If called directly and not by the compiler, ensure timings are filled
-    if config is None and schedule.get("duration", None) is None:
-        _determine_absolute_timing(schedule)
-
-    all_resources = dict(schedule.resources)
-    for op in schedule.operations.values():
-        if isinstance(op, ScheduleBase):
-            flatten_schedule(op, config)
-            all_resources.update(op.resources)
-
-    op_keys_to_pop = set()
-    schedulable_keys_to_pop = set()
-    # we cannot use .items() directly since we modify schedule.schedulables in the loop
-    schedulable_iter = tuple(schedule.schedulables.items())
-    for schedulable_key, schedulable in schedulable_iter:
-        op_key = schedulable["operation_id"]
-        op = schedule.operations[op_key]
-        if isinstance(op, ScheduleBase):
-            offset = schedulable["abs_time"]
-
-            # insert new schedulables shifted by the correct offset
-            for inner_schedulable in op.schedulables.values():
-                inner_op = op.operations[inner_schedulable["operation_id"]]
-                _insert_op_at_time(
-                    schedule, inner_op, inner_schedulable["abs_time"] + offset
-                )
-
-            # mark the inner schedule for removal from the parent
-            op_keys_to_pop.add(op_key)
-            schedulable_keys_to_pop.add(schedulable_key)
-        else:
-            _move_to_end(schedule.schedulables, schedulable_key)
-
-    for key in op_keys_to_pop:
-        schedule["operation_dict"].pop(key)
-    for key in schedulable_keys_to_pop:
-        schedule["schedulables"].pop(key)
-
-    for resource in all_resources.values():
-        if resource.name not in schedule.resources:
-            schedule.add_resource(resource)
-
-    return schedule
-
-
-def _insert_op_at_time(
-    schedule: Schedule, operation: Operation, abs_time: float
-) -> None:
-    new_key = str(uuid4())
-    new_schedulable = Schedulable(
-        name=new_key,
-        operation_id=operation.hash,
-    )
-    # Timing constraints in the new schedulable are meaningless, so remove the list
-    new_schedulable["timing_constraints"] = None
-    new_schedulable["abs_time"] = abs_time
-    schedule["operation_dict"][operation.hash] = operation
-    schedule["schedulables"][new_key] = new_schedulable
-
-
 def validate_config(config: dict, scheme_fn: str) -> bool:
     """
     Validate a configuration using a schema.
@@ -443,13 +254,3 @@ def validate_config(config: dict, scheme_fn: str) -> bool:
     scheme = load_json_schema(__file__, scheme_fn)
     validate_json(config, scheme)
     return True
-
-
-def _move_to_end(ordered_dict: dict, key: Any) -> None:  # noqa: ANN401
-    """
-    Moves the element with ``key`` to the end of the dict.
-
-    Note: dictionaries from Python 3.7 are ordered.
-    """
-    value = ordered_dict.pop(key)
-    ordered_dict[key] = value

@@ -20,7 +20,6 @@ from quantify_scheduler import enums, json_utils, resources
 from quantify_scheduler.helpers.collections import make_hash
 from quantify_scheduler.helpers.importers import export_python_object_to_path_string
 from quantify_scheduler.json_utils import JSONSchemaValMixin
-from quantify_scheduler.operations.control_flow_library import Conditional, Loop
 from quantify_scheduler.operations.operation import Operation
 
 if TYPE_CHECKING:
@@ -28,6 +27,7 @@ if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from matplotlib.figure import Figure
 
+    from quantify_scheduler.operations.control_flow_library import ControlFlowSpec
     from quantify_scheduler.resources import Resource
 
 DictOrdered = dict
@@ -623,21 +623,8 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             timestamp = schedulable["abs_time"]
             operation_id = schedulable["operation_id"]
 
-            # find duration of last operation
             operation = self["operation_dict"][operation_id]
-            if isinstance(operation, Schedule):
-                final_op_len = operation.duration
-            else:
-                pulses_end_times = [
-                    pulse.get("duration") + pulse.get("t0")
-                    for pulse in operation["pulse_info"]
-                ]
-                acquisitions_end_times = [
-                    acquisition.get("duration") + acquisition.get("t0")
-                    for acquisition in operation["acquisition_info"]
-                ]
-                final_op_len = max(pulses_end_times + acquisitions_end_times, default=0)
-            tmp_time = timestamp + final_op_len
+            tmp_time = timestamp + operation.duration
 
             # keep track of longest found schedule
             if tmp_time > schedule_duration:
@@ -752,8 +739,7 @@ class Schedule(ScheduleBase):
         ref_pt: Literal["start", "center", "end"] | None = None,
         ref_pt_new: Literal["start", "center", "end"] | None = None,
         label: str | None = None,
-        control_flow: Conditional | Loop | None = None,
-        validate: bool = True,
+        control_flow: ControlFlowSpec | None = None,
     ) -> Schedulable:
         """
         Add an operation or a subschedule to the schedule.
@@ -790,9 +776,6 @@ class Schedule(ScheduleBase):
             flow (loop, conditional, ...). See
             :ref:`control flow reference documentation <sec-control-flow>`
             for a detailed explanation.
-        validate
-            Whether to validate arguments, used by the compiler. There is no benefit
-            to disable validation for users. USE AT OWN RISK.
 
         Returns
         -------
@@ -802,8 +785,7 @@ class Schedule(ScheduleBase):
         if label is None:
             label = str(uuid4())
 
-        if validate:
-            self._validate_add_arguments(operation, label, control_flow)
+        self._validate_add_arguments(operation, label, control_flow)
 
         # ensure the schedulable name is unique
         if label in self.schedulables:
@@ -824,12 +806,30 @@ class Schedule(ScheduleBase):
                 "    my_operation = schedule.add(operationA)\n"
                 "    schedule.add(operationB, ref_op=my_operation)."
             )
+        if control_flow is not None:
+            return self._add(
+                control_flow.create_operation(operation),
+                rel_time,
+                ref_op,
+                ref_pt,
+                ref_pt_new,
+                label,
+            )
+        else:
+            return self._add(operation, rel_time, ref_op, ref_pt, ref_pt_new, label)
 
+    def _add(
+        self,
+        operation: Operation | Schedule,
+        rel_time: float = 0,
+        ref_op: Schedulable | str | None = None,
+        ref_pt: Literal["start", "center", "end"] | None = None,
+        ref_pt_new: Literal["start", "center", "end"] | None = None,
+        label: str | None = None,
+    ) -> Schedulable:
         operation_id = operation.hash
         self["operation_dict"][operation_id] = operation
-        element = Schedulable(
-            name=label, operation_id=operation_id, control_flow=control_flow
-        )
+        element = Schedulable(name=label, operation_id=operation_id)
         element.add_timing_constraint(
             rel_time=rel_time,
             ref_schedulable=ref_op,
@@ -852,27 +852,13 @@ class Schedule(ScheduleBase):
                 f"The provided object '{operation=}' is not"
                 " an instance of Operation or Schedule"
             )
-        if operation.get("control_flow_info") is not None:
-            name = operation.__class__.__name__
-            raise ValueError(
-                f"Attempting to manually add control flow operation "
-                f"`{name}` to schedule. Please use "
-                f"the 'control_flow' kwarg instead, e.g. "
-                f"`schedule.add(..., control_flow={name}(...))`."
-            )
         if control_flow is not None:
-            if isinstance(control_flow, (Loop, Conditional)):
-                warnings.warn(
-                    "Loops and Conditionals are an experimental feature."
-                    " Please refer to the documentation:"
-                    " https://quantify-os.org/docs/quantify-scheduler/reference/control_flow.html"  # noqa: E501
-                )
-            else:
-                raise ValueError(
-                    f"Attempting to add operation other than control flow as control flow."
-                    f" Supplied: '{control_flow=}'.\n"
-                    f" Valid: 'Loop', 'Conditional' or 'None'."
-                )
+            warnings.warn(
+                "Using the `control_flow` argument in `Schedule.add` is deprecated, and "
+                "will be removed from the public interface in quantify-scheduler >= 0.23.0. "
+                "Please add control flow operations directly to the schedule instead.",
+                FutureWarning,
+            )
 
         # ensure the schedulable name is unique
         if label in self.schedulables:

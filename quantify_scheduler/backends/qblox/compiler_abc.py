@@ -566,6 +566,15 @@ class SequencerCompiler(ABC):
         # Program body. The operations must be ordered such that real-time IO operations
         # always come after any other operations. E.g., an offset instruction should
         # always come before the parameter update, play, or acquisition instruction.
+        op_list = sorted(
+            self.op_strategies,
+            key=lambda op: (
+                round(op.operation_info.timing, ndigits=9),
+                op.operation_info.is_real_time_io_operation,
+            ),
+        )
+
+        self._check_nco_operation_timing(op_list)
 
         # Adds the latency correction, this needs to be a minimum of 4 ns,
         # so all sequencers get delayed by at least that.
@@ -873,11 +882,8 @@ class SequencerCompiler(ABC):
                         f"{constants.MIN_TIME_BETWEEN_OPERATIONS} ns, or the Parameter operation can be "
                         "replaced by another operation."
                     )
-            elif (
-                op_strategy.operation_info.is_return_stack
-                or op_strategy.operation_info.is_loop
-                or op_strategy.operation_info.data.get("feedback_trigger_address")
-                is not None
+            elif op_strategy.operation_info.is_control_flow_end or isinstance(
+                op_strategy, (LoopStrategy, ConditionalStrategy)
             ):
                 last_upd_params_incompatible_op_info = op_strategy.operation_info
 

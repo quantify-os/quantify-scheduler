@@ -76,7 +76,7 @@ class ConditionalReset(Schedule):
         self.add(Measure(qubit_name, acq_protocol="ThresholdedAcquisition", feedback_trigger_label=qubit_name))
         cond_schedule = Schedule("conditional subschedule")
         cond_schedule.add(X(qubit_name))
-        self.add(cond_schedule, control_flow=Conditional(qubit_name))
+        self.add(ConditionalOperation(body=cond_schedule, qubit_name=qubit_name))
 ```
 
 where the Measure operation is given an additional trigger label
@@ -138,6 +138,7 @@ from quantify_scheduler.operations.gate_library import Measure
 from quantify_scheduler.operations.pulse_library import DRAGPulse
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.schedule import Schedule
+from quantify_scheduler.operations.control_flow_library import ConditionalOperation
 
 repetitions = 1024
 clock = "q0.r0"

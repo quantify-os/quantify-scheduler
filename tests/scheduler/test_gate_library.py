@@ -12,7 +12,7 @@ from quantify_scheduler.backends.qblox.operations.gate_library import Conditiona
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.json_utils import SchedulerJSONEncoder, SchedulerJSONDecoder
-from quantify_scheduler.operations.control_flow_library import Loop
+from quantify_scheduler.operations.control_flow_library import LoopOperation
 from quantify_scheduler.operations.gate_library import (
     CNOT,
     CZ,
@@ -259,7 +259,6 @@ def test_rotation_unitaries() -> None:
     )
 
 
-@pytest.mark.filterwarnings("ignore: Loops and Conditionals")
 def test_conditional_reset_inside_loop(mock_setup_basic_transmon_with_standard_params):
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
 
@@ -272,7 +271,7 @@ def test_conditional_reset_inside_loop(mock_setup_basic_transmon_with_standard_p
     schedule = Schedule("")
     inner = Schedule("test")
     inner.add(ConditionalReset("q0"))
-    schedule.add(inner, control_flow=Loop(1024))
+    schedule.add(LoopOperation(body=inner, repetitions=1024))
 
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(

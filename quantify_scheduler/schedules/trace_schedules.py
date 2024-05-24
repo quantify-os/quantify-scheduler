@@ -4,7 +4,7 @@
 
 import numpy as np
 
-from quantify_scheduler.operations.control_flow_library import Loop
+from quantify_scheduler.operations.control_flow_library import LoopOperation
 from quantify_scheduler.device_under_test.device_element import DeviceElement
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.schedules.schedule import Schedule
@@ -320,8 +320,7 @@ def long_time_trace(
     inner = Schedule("inner", repetitions=1)
     inner.add(op)
     schedule.add(
-        inner,
-        control_flow=Loop(num_points),
+        LoopOperation(body=inner, repetitions=num_points),
         rel_time=acquisition_delay,
         ref_pt="start",
     )

@@ -21,17 +21,19 @@ from quantify_scheduler.backends.zhinst import settings
 from quantify_scheduler.backends.zhinst.zhinst_hardware_config_old_style import (
     hardware_config as zhinst_hardware_config_old_style,
 )
+from quantify_scheduler.backends.zhinst_backend import flatten_schedule
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.helpers import waveforms as waveform_helpers
 from quantify_scheduler.helpers.collections import find_all_port_clock_combinations
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
-from quantify_scheduler.operations.pulse_library import SquarePulse
+from quantify_scheduler.operations.pulse_library import SquarePulse, SetClockFrequency
 from quantify_scheduler.operations.gate_library import X90, Measure, Reset
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules import spectroscopy_schedules, trace_schedules
 from quantify_scheduler.schedules.verification import acquisition_staircase_sched
 from quantify_scheduler.schemas.examples import utils
+from quantify_scheduler.compilation import _determine_absolute_timing
 
 ARRAY_DECIMAL_PRECISION = 16
 
@@ -1639,3 +1641,22 @@ def test_generate_new_style_hardware_compilation_config(
     assert (
         converted_new_style_hw_cfg.model_dump() == parsed_new_style_config.model_dump()
     )
+
+
+def test_flatten_schedule():
+    inner = Schedule("inner")
+    inner.add(SetClockFrequency(clock="q0.01", clock_freq_new=7.501e9))
+
+    inner2 = Schedule("inner2")
+    inner2.add(SetClockFrequency(clock="q0.01", clock_freq_new=7.502e9))
+
+    inner.add(inner2)
+
+    outer = Schedule("outer")
+    outer.add(SetClockFrequency(clock="q0.01", clock_freq_new=7.5e9))
+
+    outer.add(inner)
+    outer.add(inner2)
+    timed_sched = _determine_absolute_timing(outer, time_unit="ideal")
+    flat = flatten_schedule(timed_sched)
+    assert len(flat.data["schedulables"]) == 4

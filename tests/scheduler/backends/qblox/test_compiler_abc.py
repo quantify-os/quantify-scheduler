@@ -17,12 +17,16 @@ from quantify_scheduler.backends.qblox.operation_handling.factory import (
 from quantify_scheduler.backends.qblox.operation_handling.virtual import (
     UpdateParameterStrategy,
 )
+from quantify_scheduler.backends.types.qblox import SequencerSettings, OpInfo
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox.timetag import TimetagSequencerCompiler
-from quantify_scheduler.backends.types.qblox import AnalogSequencerSettings, OpInfo
-from quantify_scheduler.compilation import _ControlFlowReturn
+from quantify_scheduler.backends.types.qblox import AnalogSequencerSettings
 from quantify_scheduler.operations.acquisition_library import Trace
-from quantify_scheduler.operations.control_flow_library import Loop, Conditional
+from quantify_scheduler.backends.qblox.helpers import LoopBegin, _ControlFlowReturn
+from quantify_scheduler.operations.control_flow_library import (
+    LoopOperation,
+    ConditionalOperation,
+)
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import (
     ResetClockPhase,
@@ -334,11 +338,12 @@ def test_error_parameter_end_of_schedule(
 
 
 @pytest.mark.parametrize(
-    "control_flow_op",
-    [Loop(3), Conditional("q0")],
+    "control_flow_op, control_flow_kwargs",
+    [(LoopOperation, {"repetitions": 3}), (ConditionalOperation, {"qubit_name": "q0"})],
 )
 def test_no_remove_parameter_update_before_control_flow_begin(
     control_flow_op,
+    control_flow_kwargs,
     compile_config_basic_transmon_qblox_hardware,
 ):
     """
@@ -363,8 +368,7 @@ def test_no_remove_parameter_update_before_control_flow_begin(
     subschedule.add(square_pulse(duration=20e-9))
 
     schedule.add(
-        subschedule,
-        control_flow=control_flow_op,
+        control_flow_op(body=subschedule, **control_flow_kwargs),
     )
 
     schedule.add(square_pulse(duration=40e-9))
@@ -403,10 +407,7 @@ def test_no_remove_parameter_update_before_control_flow_end(
     subschedule.add(square_pulse(duration=20e-9))
     subschedule.add(voltage_offset())
 
-    schedule.add(
-        subschedule,
-        control_flow=Loop(3),
-    )
+    schedule.add(LoopOperation(body=subschedule, repetitions=3))
 
     subschedule.add(voltage_offset())
 
@@ -421,7 +422,7 @@ def test_no_remove_parameter_update_before_control_flow_end(
     with pytest.raises(
         RuntimeError,
         match="Parameter operation .* with start time 2e-08 "
-        'cannot be scheduled exactly before the operation Pulse "ControlFlowReturn " '
+        'cannot be scheduled exactly before the operation Pulse "ControlFlowReturn" '
         r"\(t0=2e-08, duration=0.0\) with the same start time. "
         "Insert an IdlePulse operation with a duration of at least 4 ns, "
         "or the Parameter operation can be replaced by another operation.",
@@ -449,16 +450,13 @@ def test_error_parameter_end_of_control_flow(
     subschedule = Schedule("inner")
     subschedule.add(square_pulse(duration=20e-9))
     subschedule.add(parameter_op)
-    schedule.add(
-        subschedule,
-        control_flow=Loop(3),
-    )
+    schedule.add(LoopOperation(body=subschedule, repetitions=3))
     schedule.add(square_pulse(duration=20e-9))
     compiler = SerialCompiler(name="compiler")
     with pytest.raises(
         RuntimeError,
         match="Parameter operation .* with start time 2e-08 "
-        'cannot be scheduled exactly before the operation Pulse "ControlFlowReturn " '
+        'cannot be scheduled exactly before the operation Pulse "ControlFlowReturn" '
         r"\(t0=2e-08, duration=0.0\) with the same start time. "
         "Insert an IdlePulse operation with a duration of at least 4 ns, "
         "or the Parameter operation can be replaced by another operation.",
@@ -528,17 +526,29 @@ def offset_instruction_op_info(
     )
 
 
-def control_flow_return_op_info(timing: float) -> OpInfo:
+def control_flow_return_op_info(
+    timing: float, port: str = DEFAULT_PORT, clock: str = DEFAULT_CLOCK
+) -> OpInfo:
     """Create an OpInfo object that is recognized as a control flow return operation."""
     operation = _ControlFlowReturn()
+    operation["pulse_info"] = [
+        {
+            "wf_func": None,
+            "clock": clock,
+            "port": port,
+            "duration": 0,
+            "control_flow_end": True,
+            **operation["control_flow_info"],
+        }
+    ]
     return op_info_from_operation(
-        operation=operation, timing=timing, data=operation.data["control_flow_info"]
+        operation=operation, timing=timing, data=operation.data["pulse_info"][0]
     )
 
 
 def loop_op_info(timing: float, repetitions: int = 1) -> OpInfo:
     """Create an OpInfo object that is recognized as a loop operation."""
-    operation = Loop(repetitions=repetitions)
+    operation = LoopBegin(repetitions=repetitions)
     return op_info_from_operation(
         operation=operation, timing=timing, data=operation.data["control_flow_info"]
     )

@@ -5,7 +5,7 @@ import pytest
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends.graph_compilation import SerialCompiler
-from quantify_scheduler.operations.control_flow_library import Loop
+from quantify_scheduler.operations.control_flow_library import LoopOperation
 from quantify_scheduler.operations.pulse_library import (
     IdlePulse,
     MarkerPulse,
@@ -120,7 +120,7 @@ def test_zero_duration_parameter_operations_with_loops(
     inner.add(ShiftClockPhase(phase_shift=120, clock="q0.01"))
     inner.add(SquarePulse(amp=0.5, duration=100e-9, port="q0:mw", clock="q0.01"))
 
-    sched.add(inner, control_flow=Loop(repetitions=3), rel_time=4e-9)
+    sched.add(LoopOperation(body=inner, repetitions=3), rel_time=4e-9)
     sched.add(
         VoltageOffset(offset_path_I=0.5, offset_path_Q=0.5, port="q0:mw", clock="q0.01")
     )
@@ -186,7 +186,7 @@ def test_marker_pulse_with_loop(
 
     sched = Schedule("test")
     sched.add(MarkerPulse(duration=80e-9, port="q0:switch"))
-    sched.add(inner, control_flow=Loop(repetitions=3), ref_pt="start", rel_time=40e-9)
+    sched.add(LoopOperation(body=inner, repetitions=3), ref_pt="start", rel_time=40e-9)
 
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
 

@@ -4,6 +4,7 @@
 import numpy as np
 
 from quantify_scheduler import Schedule
+from quantify_scheduler.operations.control_flow_library import LoopOperation
 from quantify_scheduler.schedules import trace_schedules
 
 
@@ -167,15 +168,17 @@ def test_long_trace_schedule() -> None:
     assert voltage_offset_op["pulse_info"][0]["offset_path_Q"] == np.imag(pulse_amp)
 
     # # Control Flow loop
-    control_flow_sched = list(schedule.schedulables.values())[1]
-    inner_sched = schedule.operations[control_flow_sched["operation_id"]]
-    assert isinstance(inner_sched, Schedule)
-    assert list(inner_sched.operations.values())[0]["name"] == "SSBIntegrationComplex"
-    assert control_flow_sched["timing_constraints"][0]["rel_time"] == acquisition_delay
-    assert control_flow_sched["control_flow"]["name"] == "Loop"
+    control_flow_schedulable = list(schedule.schedulables.values())[1]
+    inner_sched = schedule.operations[control_flow_schedulable["operation_id"]]
+    assert isinstance(inner_sched, LoopOperation)
+    assert inner_sched.data["control_flow_info"]["repetitions"] == num_points
+    assert isinstance(inner_sched.body, Schedule)
     assert (
-        control_flow_sched["control_flow"]["control_flow_info"]["repetitions"]
-        == num_points
+        list(inner_sched.body.operations.values())[0]["name"] == "SSBIntegrationComplex"
+    )
+    assert (
+        control_flow_schedulable["timing_constraints"][0]["rel_time"]
+        == acquisition_delay
     )
 
     # # VoltageOffset_off

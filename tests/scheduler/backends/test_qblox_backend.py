@@ -90,7 +90,7 @@ from quantify_scheduler.operations.acquisition_library import (
     ThresholdedAcquisition,
     Trace,
 )
-from quantify_scheduler.operations.control_flow_library import Loop
+from quantify_scheduler.operations.control_flow_library import LoopOperation
 from quantify_scheduler.operations.gate_library import CZ, X90, Measure, Reset, X, Y
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import (
@@ -3214,7 +3214,7 @@ def test_acq_declaration_dict_append_mode(
 
     ssro_sched = readout_calibration_sched("q0", [0, 1], repetitions=1)
     outer_sched = Schedule("outer", repetitions=repetitions)
-    outer_sched.add(ssro_sched, control_flow=Loop(3))
+    outer_sched.add(LoopOperation(body=ssro_sched, repetitions=3))
     compiler = SerialCompiler(name="compiler")
     compiled_ssro_sched = compiler.compile(
         outer_sched, compile_config_basic_transmon_qblox_hardware_cluster
@@ -4372,18 +4372,17 @@ class TestControlFlow:
         inner2.add(Y("q0"))
 
         inner.add(
-            inner2,
-            control_flow=Loop(repetitions=2),
+            LoopOperation(body=inner2, repetitions=2),
         )
         inner.add(Measure("q0"))
 
         sched = Schedule("amp_ref")
         sched.add(X90("q0"))
-        sched.add(inner, control_flow=Loop(repetitions=3))
+        sched.add(LoopOperation(body=inner, repetitions=3))
         sched.add(X90("q0"))
-        sched.add(inner2, control_flow=Loop(repetitions=4))
+        sched.add(LoopOperation(body=inner2, repetitions=4))
         sched.add(X90("q0"))
-        sched.add(X("q0"), control_flow=Loop(repetitions=2))
+        sched.add(LoopOperation(X("q0"), repetitions=2))
 
         compiler = SerialCompiler(name="compiler")
 
@@ -4448,11 +4447,7 @@ start:
     wait 20 # auto generated wait (20 ns)
     move 3,R1 # iterator for loop with label loop9
     loop9:
-        wait 20 # auto generated wait (20 ns)
-        move 2,R10 # iterator for loop with label loop12
-        loop12:
-            wait 20 # auto generated wait (20 ns)
-        loop R10,@loop12
+        wait 60 # auto generated wait (60 ns)
         reset_ph
         set_awg_gain 8192,0 # setting gain for Measure q0
         play 0,0,4 # play Measure q0 (300 ns)
@@ -4460,16 +4455,7 @@ start:
         acquire 0,0,4
         wait 996 # auto generated wait (996 ns)
     loop R1,@loop9
-    wait 20 # auto generated wait (20 ns)
-    move 4,R1 # iterator for loop with label loop24
-    loop24:
-        wait 20 # auto generated wait (20 ns)
-    loop R1,@loop24
-    wait 20 # auto generated wait (20 ns)
-    move 2,R1 # iterator for loop with label loop29
-    loop29:
-        wait 20 # auto generated wait (20 ns)
-    loop R1,@loop29
+    wait 160 # auto generated wait (160 ns)
     loop R0,@start
 stop
 """
@@ -4497,13 +4483,15 @@ stop
             )
         )
         sched.add(
-            SquarePulse(
-                amp=0.3,
-                port="q0:res",
-                duration=2e-6,
-                clock="q0.ro",
+            LoopOperation(
+                body=SquarePulse(
+                    amp=0.3,
+                    port="q0:res",
+                    duration=2e-6,
+                    clock="q0.ro",
+                ),
+                repetitions=3,
             ),
-            control_flow=Loop(3),
         )
         sched.add(
             SquarePulse(
@@ -4668,14 +4656,9 @@ def test_1_ns_time_grid_half_ns(compile_config_basic_transmon_qblox_hardware):
             config=compile_config_basic_transmon_qblox_hardware,
         )
     assert str(exception.value) == (
-        "An operation start time of 9.499999999999998 ns does not align with a grid "
-        "time of 1 ns. Please make sure the start time of all operations is a "
-        "multiple of 1 ns.\n"
-        "\n"
-        "Offending operation:\n"
-        "{'name': 'IdlePulse', 'gate_info': {}, 'pulse_info': [{'wf_func': None, "
-        "'t0': 0, 'duration': 5e-09, 'clock': 'cl0.baseband', 'port': None}], "
-        "'acquisition_info': [], 'logic_info': {}}."
+        "Attempting to use a time value of 9.499999999999998 ns. "
+        "Please ensure that the durations of operations and wait times "
+        "between operations are multiples of 1 ns (tolerance: 1e-03 ns)."
     )
 
 
@@ -5504,7 +5487,7 @@ def test_invalid_parameter_ordering(
     compiler = SerialCompiler(name="compiler")
     with pytest.raises(
         ValueError,
-        match="Invalid timing. Pulse SetClockFrequency \\(t=6e-08 to 6e-08\\).*\n.* cannot be started at this order or time. "
+        match="Invalid timing. Pulse SetClockFrequency \\(t=6.*e-08 to 6.*e-08\\).*\n.* cannot be started at this order or time. "
         "Please try to reorder your operations by adding this operation "
         r"before any other operation \(possibly at the same time\) that happens at that time.",
     ):

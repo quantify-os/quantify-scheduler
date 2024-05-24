@@ -6,7 +6,7 @@ from __future__ import annotations
 import warnings
 
 from quantify_scheduler.backends.qblox.constants import TRIGGER_DELAY
-from quantify_scheduler.operations.control_flow_library import Conditional
+from quantify_scheduler.operations.control_flow_library import ConditionalOperation
 from quantify_scheduler.operations.gate_library import Measure, X
 from quantify_scheduler.schedules.schedule import Schedule
 
@@ -98,7 +98,6 @@ class ConditionalReset(Schedule):
             sub_schedule = Schedule("")
             sub_schedule.add(X(qubit_name))
             self.add(
-                sub_schedule,
-                control_flow=Conditional(qubit_name),
+                ConditionalOperation(body=sub_schedule, qubit_name=qubit_name),
                 rel_time=TRIGGER_DELAY,
             )

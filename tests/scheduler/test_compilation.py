@@ -5,9 +5,11 @@ import pytest
 from quantify_scheduler import Operation, Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.circuit_to_device import ConfigKeyError
-from quantify_scheduler.compilation import _determine_absolute_timing, flatten_schedule
+from quantify_scheduler.compilation import _determine_absolute_timing
 from quantify_scheduler.enums import BinMode
-from quantify_scheduler.operations.control_flow_library import Loop
+from quantify_scheduler.operations.control_flow_library import (
+    LoopOperation,
+)
 from quantify_scheduler.operations.gate_library import (
     CNOT,
     CZ,
@@ -18,8 +20,9 @@ from quantify_scheduler.operations.gate_library import (
     H,
 )
 from quantify_scheduler.operations.composite_factories import hadamard_as_y90z
-from quantify_scheduler.operations.pulse_library import SquarePulse, SetClockFrequency
+from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import BasebandClockResource, ClockResource, Resource
+from quantify_scheduler.schedules.schedule import ScheduleBase
 
 
 def test_determine_absolute_timing_ideal_clock():
@@ -154,7 +157,7 @@ def test_compile_gates_to_subschedule(mock_setup_basic_transmon_with_standard_pa
     )
 
     # Add H constituent gates Y90 and Z to sched directly as subschedules
-    expected_inner_sched = Schedule("Inner sched H q0 q1")
+    expected_inner_sched = Schedule("Inner schedule for H('q0','q1')")
     ref_h = expected_inner_sched.add(hadamard_as_y90z("q0"))
     expected_inner_sched.add(hadamard_as_y90z("q1"), ref_op=ref_h, ref_pt="start")
 
@@ -168,17 +171,26 @@ def test_compile_gates_to_subschedule(mock_setup_basic_transmon_with_standard_pa
         ].generate_compilation_config(),
     )
 
-    assert len(compiled_sched) == len(expected_compiled_sched)
+    def _compare_op(op, expected_op):
+        assert type(op) == type(expected_op)
+        if isinstance(op, ScheduleBase):
+            assert len(op) == len(expected_op)
+            for schedulable, expected_schedulable in zip(
+                op.schedulables.values(),
+                expected_op.schedulables.values(),
+            ):
+                inner_op = op.operations[schedulable["operation_id"]]
+                inner_expected_op = expected_op.operations[
+                    expected_schedulable["operation_id"]
+                ]
+                _compare_op(inner_op, inner_expected_op)
+        elif isinstance(op, LoopOperation):
+            assert op.data["control_flow"] == expected_op["control_flow"]
+            _compare_op(op.body, expected_op.body)
+        else:
+            assert op == expected_op
 
-    for schedulable, expected_schedulable in zip(
-        compiled_sched.schedulables.values(),
-        expected_compiled_sched.schedulables.values(),
-    ):
-        op = compiled_sched.operations[schedulable["operation_id"]]
-        expected_op = expected_compiled_sched.operations[
-            expected_schedulable["operation_id"]
-        ]
-        assert op == expected_op
+    _compare_op(compiled_sched, expected_compiled_sched)
 
 
 def test_missing_edge(mock_setup_basic_transmon):
@@ -478,41 +490,17 @@ def test_determine_absolute_timing_subschedule():
     ]
     assert abs_times == [0, 1, 3, 3]
 
-    flatten_schedule(timed_sched)
-    abs_times = [
-        constr["abs_time"] for constr in timed_sched.data["schedulables"].values()
-    ]
-    assert abs_times == [0, 1, 2, 3, 3]
-
-
-def test_flatten_schedule():
-    inner = Schedule("inner")
-    inner.add(SetClockFrequency(clock="q0.01", clock_freq_new=7.501e9))
-
-    inner2 = Schedule("inner2")
-    inner2.add(SetClockFrequency(clock="q0.01", clock_freq_new=7.502e9))
-
-    inner.add(inner2)
-
-    outer = Schedule("outer")
-    outer.add(SetClockFrequency(clock="q0.01", clock_freq_new=7.5e9))
-
-    outer.add(inner)
-    outer.add(inner2)
-    timed_sched = _determine_absolute_timing(outer, time_unit="ideal")
-    flat = flatten_schedule(timed_sched)
-    assert len(flat.data["schedulables"]) == 4
-
 
 @pytest.mark.parametrize(
-    argnames="schedule_kwargs", argvalues=[{}, {"control_flow": Loop(1024)}]
+    argnames="operation",
+    argvalues=[X("q0"), LoopOperation(body=X("q0"), repetitions=1024)],
 )
-def test_flatten_schedule_gets_all_resources(
-    compile_config_basic_transmon_qblox_hardware, schedule_kwargs
+def test_schedule_gets_all_resources(
+    compile_config_basic_transmon_qblox_hardware, operation
 ):
     schedule1 = Schedule("")
     schedule2 = Schedule("")
-    schedule2.add(X("q0"), **schedule_kwargs)
+    schedule2.add(operation)
     schedule1.add(schedule2)
 
     compiler = SerialCompiler("")
@@ -541,4 +529,6 @@ def test_flatten_schedule_gets_all_resources(
             "phase": 0,
         },
     }
-    assert compiled_schedule.resources == expected_resources
+    assert (
+        list(compiled_schedule.operations.values())[0].resources == expected_resources
+    )

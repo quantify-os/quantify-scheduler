@@ -26,6 +26,7 @@ from typing import (
     Union,
     get_args,
 )
+from uuid import uuid4
 
 import numpy as np
 from pydantic import Field, TypeAdapter, model_validator
@@ -54,9 +55,14 @@ from quantify_scheduler.helpers.schedule import _extract_port_clocks_used
 from quantify_scheduler.instrument_coordinator.components.generic import (
     DEFAULT_NAME as GENERIC_ICC_DEFAULT_NAME,
 )
-from quantify_scheduler.operations.control_flow_library import Loop
+from quantify_scheduler.operations.control_flow_library import ControlFlowOperation
 from quantify_scheduler.operations.pulse_library import SetClockFrequency
-from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
+from quantify_scheduler.schedules.schedule import (
+    CompiledSchedule,
+    Schedulable,
+    Schedule,
+    ScheduleBase,
+)
 
 if TYPE_CHECKING:
     import pandas
@@ -550,7 +556,7 @@ def _validate_schedule(schedule: Schedule) -> None:
         for pulse_data in op.data["pulse_info"]:
             if pulse_data.get("reference_magnitude", None) is not None:
                 raise NotImplementedError
-        if isinstance(op, (Loop, SetClockFrequency)):
+        if isinstance(op, (ControlFlowOperation, SetClockFrequency)):
             raise NotImplementedError(
                 f"Operation '{op}' is not supported by the zhinst backend."
             )
@@ -1246,6 +1252,92 @@ def _generate_new_style_hardware_compilation_config(  # noqa: PLR0912, PLR0915
     )
 
 
+def flatten_schedule(
+    schedule: Schedule, config: CompilationConfig | None = None
+) -> Schedule:
+    """
+    Recursively flatten subschedules based on the absolute timing.
+
+    Parameters
+    ----------
+    schedule : Schedule
+        schedule to be flattened
+    config : CompilationConfig | None, optional
+        Compilation config for
+        :class:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler`,
+        which is currently not only used to detect if the function is called directly.
+        by default None
+
+    Returns
+    -------
+    Schedule
+        Equivalent schedule without subschedules
+    """
+
+    def _insert_op_at_time(
+        schedule: Schedule, operation: Operation, abs_time: float
+    ) -> None:
+        new_key = str(uuid4())
+        new_schedulable = Schedulable(
+            name=new_key,
+            operation_id=operation.hash,
+        )
+        # Timing constraints in the new schedulable are meaningless, so remove the list
+        new_schedulable["timing_constraints"] = None
+        new_schedulable["abs_time"] = abs_time
+        schedule["operation_dict"][operation.hash] = operation
+        schedule["schedulables"][new_key] = new_schedulable
+
+    def _move_to_end(ordered_dict: dict, key: Any) -> None:  # noqa: ANN401
+        """
+        Moves the element with ``key`` to the end of the dict.
+
+        Note: dictionaries from Python 3.7 are ordered.
+        """
+        value = ordered_dict.pop(key)
+        ordered_dict[key] = value
+
+    all_resources = dict(schedule.resources)
+    for op in schedule.operations.values():
+        if isinstance(op, ScheduleBase):
+            flatten_schedule(op, config)
+            all_resources.update(op.resources)
+
+    op_keys_to_pop = set()
+    schedulable_keys_to_pop = set()
+    # we cannot use .items() directly since we modify schedule.schedulables in the loop
+    schedulable_iter = tuple(schedule.schedulables.items())
+    for schedulable_key, schedulable in schedulable_iter:
+        op_key = schedulable["operation_id"]
+        op = schedule.operations[op_key]
+        if isinstance(op, ScheduleBase):
+            offset = schedulable["abs_time"]
+
+            # insert new schedulables shifted by the correct offset
+            for inner_schedulable in op.schedulables.values():
+                inner_op = op.operations[inner_schedulable["operation_id"]]
+                _insert_op_at_time(
+                    schedule, inner_op, inner_schedulable["abs_time"] + offset
+                )
+
+            # mark the inner schedule for removal from the parent
+            op_keys_to_pop.add(op_key)
+            schedulable_keys_to_pop.add(schedulable_key)
+        else:
+            _move_to_end(schedule.schedulables, schedulable_key)
+
+    for key in op_keys_to_pop:
+        schedule["operation_dict"].pop(key)
+    for key in schedulable_keys_to_pop:
+        schedule["schedulables"].pop(key)
+
+    for resource in all_resources.values():
+        if resource.name not in schedule.resources:
+            schedule.add_resource(resource)
+
+    return schedule
+
+
 def _get_operations_by_repr(schedule: Schedule) -> dict[str, Operation]:
     operations_dict_with_repr_keys = {
         str(op): op for op in schedule.operations.values()
@@ -1506,9 +1598,10 @@ class ZIHardwareCompilationConfig(common.HardwareCompilationConfig):
     :class:`~quantify_scheduler.backends.types.zhinst.OutputGain`.
     """
     compilation_passes: List[SimpleNodeConfig] = [  # noqa: UP006
+        SimpleNodeConfig(name="flatten_schedule", compilation_func=flatten_schedule),
         SimpleNodeConfig(
             name="zhinst_hardware_compile", compilation_func=compile_backend
-        )
+        ),
     ]
     """
     The list of compilation nodes that should be called in succession to compile a

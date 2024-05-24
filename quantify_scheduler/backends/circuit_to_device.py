@@ -14,6 +14,7 @@ from quantify_scheduler.backends.graph_compilation import (
     DeviceCompilationConfig,
     OperationCompilationConfig,
 )
+from quantify_scheduler.operations.control_flow_library import ControlFlowOperation
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.schedule import Schedule, Schedulable, ScheduleBase
@@ -100,6 +101,11 @@ def _compile_circuit_to_device(
             operation.operations[inner_op_key] = _compile_circuit_to_device(
                 operation=operation.operations[inner_op_key], device_cfg=device_cfg
             )
+        return operation
+    elif isinstance(operation, ControlFlowOperation):
+        operation.body = _compile_circuit_to_device(
+            operation=operation.body, device_cfg=device_cfg
+        )
         return operation
     elif not (operation.valid_pulse or operation.valid_acquisition):
         # If operation is a valid pulse or acquisition it will not attempt to
@@ -288,6 +294,13 @@ def _set_pulse_and_acquisition_clock(
                 operation=operation.operations[inner_op_key],
                 verified_clocks=verified_clocks,
             )
+    elif isinstance(operation, ControlFlowOperation):
+        operation.body = _set_pulse_and_acquisition_clock(
+            schedule=schedule,
+            operation=operation.body,
+            device_cfg=device_cfg,
+            verified_clocks=verified_clocks,
+        )
     else:
         _assert_operation_valid_device_level(operation)
 

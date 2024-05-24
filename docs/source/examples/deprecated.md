@@ -13,6 +13,7 @@ Download the notebook: {nb-download}`deprecated.ipynb`
 
 | **Target** | **Depr** | **Remv** | **Alternatives** |
 |---|---|---|---|
+| `control_flow` argument in `Schedule.add` | 0.20.1 | 0.23 | See {ref}`New control flow interface`|
 | `common.DistortionCorrection` | 0.20.1 | 0.23 | See {ref}`DistortionCorrection => SoftwareDistortionCorrection`|
 | `ScheduleGettable.generate_diagnostics_report()` | 0.17 | 0.18 | See {ref}`ScheduleGettable.generate_diagnostics_report()` |
 | `plot_kwargs` parameter in `ScheduleBase.plot_pulse_diagram()` | 0.15 | - | See {ref}`plot_kwargs parameter in ScheduleBase.plot_pulse_diagram()` |
@@ -131,6 +132,10 @@ hardware_cfg = {
                 "lo_freq": 2e9,
                 "portclock_configs": [
                     {
+                        "port": "q0:mw",
+                        "clock": "q0.01",
+                    },
+                    {
                         "port": "q0:res",
                         "clock": "q0.ro",
                     },
@@ -179,6 +184,37 @@ def simple_trace_sched(
 
 
 sched = simple_trace_sched(repetitions=1)
+```
+
+## New control flow interface
+
+This is an example for the loop control flow. For other control flow types, please use the respective operation classes in the same way.
+
+```{code-block} python
+# Old way:
+from quantify_scheduler.operations.control_flow_library import Loop
+
+schedule_with_loop = Schedule("Schedule with loop")
+
+subschedule = Schedule("Subschedule")
+subschedule.add(X("q0"))
+
+schedule_with_loop.add(subschedule, control_flow=Loop(3))
+```
+
+```{code-block} python
+# New way:
+from quantify_scheduler.operations.control_flow_library import LoopOperation
+from quantify_scheduler.operations.gate_library import X
+
+schedule_with_loop = Schedule("Schedule with loop")
+
+subschedule = Schedule("Subschedule")
+subschedule.add(X("q0"))
+
+loop_operation = LoopOperation(body=subschedule, repetitions=3)
+
+schedule_with_loop.add(loop_operation)
 ```
 
 ## DistortionCorrection => SoftwareDistortionCorrection

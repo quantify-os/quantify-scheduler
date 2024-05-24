@@ -11,7 +11,7 @@ import numpy as np
 from quantify_scheduler.schedules.schedule import Schedule
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
-from quantify_scheduler.operations.control_flow_library import Loop
+from quantify_scheduler.operations.control_flow_library import LoopOperation
 from quantify_scheduler.operations.gate_library import X90, Measure, Reset, Rxy, X, Y
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
@@ -333,8 +333,7 @@ def cpmg_sched(
             n_reps = int(n_gates / 2)
 
         schedule.add(
-            inner,
-            control_flow=Loop(n_reps),
+            LoopOperation(body=inner, repetitions=n_reps),
             label=f"loop {i}",
             ref_pt="start",
             # 4ns has to be added to not include the first X90 in the inner_loop,

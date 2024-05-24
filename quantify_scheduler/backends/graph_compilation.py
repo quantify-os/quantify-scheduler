@@ -186,16 +186,8 @@ class DeviceCompilationConfig(DataStructure):
                 + "set_pulse_and_acquisition_clock",
             },
             {
-                "name": "resolve_control_flow",
-                "compilation_func": "quantify_scheduler.compilation.resolve_control_flow",
-            },
-            {
                 "name": "determine_absolute_timing",
                 "compilation_func": "quantify_scheduler.compilation._determine_absolute_timing",
-            },
-            {
-                "name": "flatten",
-                "compilation_func": "quantify_scheduler.compilation.flatten_schedule",
             },
         ],
         validate_default=True,

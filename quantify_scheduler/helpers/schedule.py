@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Hashable
 import numpy as np
 
 from quantify_scheduler.helpers.collections import make_hash, without
+from quantify_scheduler.operations.control_flow_library import ControlFlowOperation
 from quantify_scheduler.schedules.schedule import (
     AcquisitionChannelMetadata,
     AcquisitionMetadata,
@@ -464,6 +465,9 @@ def _extract_port_clocks_used(operation: Operation | Schedule) -> set[tuple]:
         port_clocks_used = set()
         for op_data in operation.operations.values():
             port_clocks_used |= _extract_port_clocks_used(op_data)
+        return port_clocks_used
+    elif isinstance(operation, ControlFlowOperation):
+        port_clocks_used = _extract_port_clocks_used(operation.body)
         return port_clocks_used
     elif operation.valid_pulse or operation.valid_acquisition:
         port_clocks_used = set()

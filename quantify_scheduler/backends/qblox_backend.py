@@ -50,6 +50,11 @@ from quantify_scheduler.backends.types.qblox import (
 )
 from quantify_scheduler.helpers.collections import find_inner_dicts_containing_key
 from quantify_scheduler.helpers.schedule import _extract_port_clocks_used
+from quantify_scheduler.operations.control_flow_library import (
+    ConditionalOperation,
+    ControlFlowOperation,
+    LoopOperation,
+)
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.schedules.schedule import (
     CompiledSchedule,
@@ -83,6 +88,11 @@ def _replace_long_square_pulses_recursively(
             )
             if replacing_operation:
                 operation.operations[inner_operation_id] = replacing_operation
+        return None
+    elif isinstance(operation, ControlFlowOperation):
+        replacing_operation = _replace_long_square_pulses_recursively(operation.body)
+        if replacing_operation:
+            operation.body = replacing_operation
         return None
     else:
         square_pulse_idx_to_replace: list[int] = []
@@ -153,10 +163,15 @@ def _all_conditional_acqs_and_control_flows_and_latch_reset(
                 time_offset + abs_time,
                 accumulator,
             )
-    elif (
-        (operation.is_control_flow and operation.is_conditional)
-        or (operation.valid_acquisition and operation.is_conditional)
-        or isinstance(operation, LatchReset)
+    elif isinstance(operation, LoopOperation):
+        for i in range(operation.data["control_flow_info"]["repetitions"]):
+            _all_conditional_acqs_and_control_flows_and_latch_reset(
+                operation.body,
+                time_offset + i * operation.body.duration,
+                accumulator,
+            )
+    elif isinstance(operation, (ConditionalOperation, LatchReset)) or (
+        operation.valid_acquisition and operation.is_conditional_measure_or_acquisition
     ):
         accumulator.append((time_offset, operation))
 
@@ -198,6 +213,14 @@ def _is_other_operation_overlaps_with_latch_reset(
     time_offset: float,
     excluded_operation: Operation,
 ) -> bool:
+    """
+    The latch reset operation cannot overlap with other operations.
+    This function returns ``True`` if there's any other overlapping operation.
+    We check if ``operation`` overlaps with ``latch_reset_timing_info``,
+    or there is an suboperation within ``operation`` which overlaps with it.
+    Normally, ``excluded_operation`` is supposed to be the latch reset operation
+    itself, and we don't take that into account.
+    """
     if operation is excluded_operation:
         return False
 
@@ -212,12 +235,23 @@ def _is_other_operation_overlaps_with_latch_reset(
                 excluded_operation,
             ):
                 return True
-    elif not (operation.valid_acquisition and operation.is_conditional) and not (
-        operation.is_control_flow and operation.is_conditional
+    elif isinstance(operation, LoopOperation):
+        for i in range(operation.data["control_flow_info"]["repetitions"]):
+            if _is_other_operation_overlaps_with_latch_reset(
+                latch_reset_timing_info,
+                operation.body,
+                time_offset + i * operation.body.duration,
+                excluded_operation,
+            ):
+                return True
+    elif isinstance(operation, ConditionalOperation):
+        if _is_other_operation_overlaps_with_latch_reset(
+            latch_reset_timing_info, operation.body, time_offset, excluded_operation
+        ):
+            return True
+    elif not (
+        operation.valid_acquisition and operation.is_conditional_measure_or_acquisition
     ):
-        # Conditional acquisitions and conditional control flows
-        # can overlap with latch reset,
-        # but not any other operations.
         operation_timing_info = OperationTimingInfo(
             time_offset, time_offset + operation.duration
         )
@@ -259,16 +293,27 @@ def _set_trigger_address_and_insert_latch_reset(
                 address_map=address_map,
                 used_port_clocks=used_port_clocks,
             )
-    elif operation.is_control_flow and operation.is_conditional:
+    elif isinstance(operation, LoopOperation):
+        _set_trigger_address_and_insert_latch_reset(
+            operation=operation.body,
+            abs_time_relative_to_schedule=abs_time_relative_to_schedule,
+            schedule=schedule,
+            address_map=address_map,
+            used_port_clocks=used_port_clocks,
+        )
+    elif isinstance(operation, ConditionalOperation):
         # Store `feedback_trigger_address` in the pulse that corresponds
         # to a conditional control flow.
         # Note, we do not allow recursive conditional calls, so no need to
         # go recursively into conditionals.
         control_flow_info: dict = operation.data["control_flow_info"]
         feedback_trigger_label: str = control_flow_info["feedback_trigger_label"]
-        for info in operation.data["pulse_info"]:
-            info["feedback_trigger_address"] = address_map[feedback_trigger_label]
-    elif operation.valid_acquisition and operation.is_conditional:
+        control_flow_info["feedback_trigger_address"] = address_map[
+            feedback_trigger_label
+        ]
+    elif (
+        operation.valid_acquisition and operation.is_conditional_measure_or_acquisition
+    ):
         # Store `feedback_trigger_address` in the correct acquisition, so that it can
         # be passed to the correct Sequencer via ``SequencerSettings``.
         acq_info = operation["acquisition_info"]
@@ -361,7 +406,7 @@ def compile_conditional_playback(schedule: Schedule, **_: Any) -> Schedule:
         time,
         operation,
     ) in all_conditional_acqs_and_control_flows:
-        if operation.is_control_flow and operation.is_conditional:
+        if isinstance(operation, ConditionalOperation):
             if current_ongoing_conditional_acquire is None:
                 raise RuntimeError(
                     f"Conditional control flow, ``{operation}``,  found without a preceding "
@@ -372,7 +417,10 @@ def compile_conditional_playback(schedule: Schedule, **_: Any) -> Schedule:
                 )
             else:
                 current_ongoing_conditional_acquire = None
-        elif operation.valid_acquisition and operation.is_conditional:
+        elif (
+            operation.valid_acquisition
+            and operation.is_conditional_measure_or_acquisition
+        ):
             if current_ongoing_conditional_acquire is None:
                 current_ongoing_conditional_acquire = operation
             else:
@@ -963,6 +1011,19 @@ def _all_abs_times_ops_with_voltage_offsets_pulses(
             _all_abs_times_ops_with_voltage_offsets_pulses(
                 inner_operation, time_offset + abs_time, accumulator
             )
+    elif isinstance(operation, LoopOperation):
+        for i in range(operation.data["control_flow_info"]["repetitions"]):
+            _all_abs_times_ops_with_voltage_offsets_pulses(
+                operation.body,
+                time_offset + i * operation.body.duration,
+                accumulator,
+            )
+    elif isinstance(operation, ConditionalOperation):
+        _all_abs_times_ops_with_voltage_offsets_pulses(
+            operation.body,
+            time_offset,
+            accumulator,
+        )
     elif operation.valid_pulse or operation.has_voltage_offset:
         accumulator.append((time_offset, operation))
 
@@ -979,6 +1040,10 @@ def _add_clock_freqs_to_set_clock_frequency(
             _add_clock_freqs_to_set_clock_frequency(
                 operation=inner_operation, schedule=operation
             )
+    elif isinstance(operation, ControlFlowOperation):
+        _add_clock_freqs_to_set_clock_frequency(
+            operation=operation.body, schedule=schedule
+        )
     else:
         for pulse_info in operation["pulse_info"]:
             clock_freq = schedule.resources.get(pulse_info["clock"], {}).get(

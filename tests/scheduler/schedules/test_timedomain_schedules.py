@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from quantify_scheduler.backends import SerialCompiler
+from quantify_scheduler.operations.control_flow_library import LoopOperation
 from quantify_scheduler.schedules import timedomain_schedules as ts
 from quantify_scheduler.schedules.schedule import Schedule
 
@@ -281,20 +282,17 @@ class TestCPMGSched(_CompilesAllBackends):
         assert self.uncomp_sched.repetitions == self.sched_kwargs["repetitions"]
 
     def test_number_of_n_gates(self):
-        for key in self.uncomp_sched.schedulables.keys():
-            if "loop" in key:
+        for schedulable in self.uncomp_sched.schedulables.values():
+            operation = self.uncomp_sched.operations[schedulable["operation_id"]]
+            if isinstance(operation, LoopOperation):
                 if self.sched_kwargs["variant"] == "XY":
                     assert (
-                        self.uncomp_sched.schedulables[key]["control_flow"][
-                            "control_flow_info"
-                        ]["repetitions"]
+                        operation.data["control_flow_info"]["repetitions"]
                         == int(self.sched_kwargs["n_gates"]) / 2
                     )
                 else:
                     assert (
-                        self.uncomp_sched.schedulables[key]["control_flow"][
-                            "control_flow_info"
-                        ]["repetitions"]
+                        operation.data["control_flow_info"]["repetitions"]
                         == self.sched_kwargs["n_gates"]
                     )
 

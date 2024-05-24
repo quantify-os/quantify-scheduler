@@ -78,9 +78,6 @@ class QASMProgram:
         """Provides a summary of the used acquisition protocol, bin mode, acquisition
         channels, acquisition indices per channel, and repetitions."""
 
-        self.elapsed_time = 0
-        """The time elapsed after finishing the program in its current form. This is
-        used  to keep track of the overall timing and necessary waits."""
         self.time_last_acquisition_triggered: Optional[int] = None
         """Time on which the last acquisition was triggered. Is ``None`` if no previous
         acquisition was triggered."""
@@ -94,6 +91,26 @@ class QASMProgram:
         """The conditional manager that keeps track of the conditionals."""
         self._lock_conditional: bool = False
         """A lock to prevent nested conditionals."""
+        self._elapsed_times_in_loops: list[int] = [0]
+        """The time elapsed in its current form.
+        This is used  to keep track of the overall and nested loop timing and necessary waits."""
+
+    @property
+    def elapsed_time(self) -> int:
+        """
+        Current elapsed time of all the instructions in ns.
+        It needs to be manually adjusted after each modifications of the QASM program.
+        If the QASM program is in a loop,
+        only one repetition's worth of elapsed time should be registered.
+        After a loop is ended, ``QASMProgram`` will automatically adjust the correct
+        elapsed time with all repetitions.
+        """
+        return sum(self._elapsed_times_in_loops)
+
+    @elapsed_time.setter
+    def elapsed_time(self, value: int) -> None:
+        difference: int = value - self.elapsed_time
+        self._elapsed_times_in_loops[-1] += difference
 
     def _find_qblox_acq_index(self, acq_channel: Hashable) -> int:
         """
@@ -280,6 +297,8 @@ class QASMProgram:
                         constants.IMMEDIATE_MAX_WAIT_TIME,
                         comment=comment,
                     )
+                    if count_as_elapsed_time:
+                        self.elapsed_time += constants.IMMEDIATE_MAX_WAIT_TIME
                     self.conditional_manager.num_real_time_instructions += 1
             else:
                 for _ in range(repetitions):
@@ -288,6 +307,8 @@ class QASMProgram:
                         constants.IMMEDIATE_MAX_WAIT_TIME,
                         comment=comment,
                     )
+                    if count_as_elapsed_time:
+                        self.elapsed_time += constants.IMMEDIATE_MAX_WAIT_TIME
                     self.conditional_manager.num_real_time_instructions += 1
             time_left = wait_time % constants.IMMEDIATE_MAX_WAIT_TIME
         else:
@@ -299,10 +320,9 @@ class QASMProgram:
                 time_left,
                 comment=comment,
             )
+            if count_as_elapsed_time:
+                self.elapsed_time += time_left
             self.conditional_manager.num_real_time_instructions += 1
-
-        if count_as_elapsed_time:
-            self.elapsed_time += wait_time
 
     def wait_till_start_operation(self, operation: OpInfo) -> None:
         """
@@ -574,6 +594,8 @@ class QASMProgram:
         register = self.register_manager.allocate_register()
         comment = f"iterator for loop with label {label}"
 
+        self._elapsed_times_in_loops.append(0)
+
         self.emit(q1asm_instructions.MOVE, repetitions, register, comment=comment)
         self.emit(q1asm_instructions.NEW_LINE, label=label)
 
@@ -581,6 +603,9 @@ class QASMProgram:
 
         self.emit(q1asm_instructions.LOOP, register, f"@{label}")
         self.register_manager.free_register(register)
+
+        last_elapsed_time = self._elapsed_times_in_loops.pop()
+        self._elapsed_times_in_loops[-1] += last_elapsed_time * repetitions
 
     @contextmanager
     def temp_registers(self, amount: int = 1) -> Iterator[List[str]]:

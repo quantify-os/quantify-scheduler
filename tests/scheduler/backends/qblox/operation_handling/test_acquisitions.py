@@ -34,7 +34,7 @@ from quantify_scheduler.instrument_coordinator.components.qblox import (
     _ModuleComponentBase,
 )
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
-from quantify_scheduler.operations.control_flow_library import Loop
+from quantify_scheduler.operations.control_flow_library import LoopOperation
 from quantify_scheduler.operations.gate_library import Measure
 from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import ClockResource
@@ -2181,13 +2181,15 @@ def test_looped_measurements(mock_setup_basic_transmon, make_cluster_component):
     # Define experiment schedule
     schedule = Schedule("test multiple measurements", repetitions=2)
     schedule.add(
-        Measure(
-            "q0",
-            acq_index=0,
-            acq_protocol="SSBIntegrationComplex",
-            bin_mode=BinMode.APPEND,
-        ),
-        control_flow=Loop(3),
+        LoopOperation(
+            body=Measure(
+                "q0",
+                acq_index=0,
+                acq_protocol="SSBIntegrationComplex",
+                bin_mode=BinMode.APPEND,
+            ),
+            repetitions=3,
+        )
     )
 
     # Change acq delay, duration and channel
