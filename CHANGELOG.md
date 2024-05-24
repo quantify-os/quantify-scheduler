@@ -10,13 +10,15 @@
 
 ### Merged branches and closed issues
 
-- Improved Error messages
+- Error and Warning messages
   - Improve error message for conflicting acquisition protocols (!982)
+  - Fix overlapping operations warning due to floating point rounding errors (!989)
 - Qblox backend
   - Change update param insertion logic. (!980)
 - Tests
   - Update test_compile_cz_gate with new style hardware config (!979)
-- Docs - Fix the description for the `APPEND` bin mode of the `TriggerCount` acquisition protocol, both in the Acquisitions tutorial and in the Acquisition Protocols reference guide. (!986)
+- Docs
+  - Fix the description for the `APPEND` bin mode of the `TriggerCount` acquisition protocol, both in the Acquisitions tutorial and in the Acquisition Protocols reference guide. (!986)
 - Schedules
   - Introduce proper control flow handling. (!947)
 

@@ -597,7 +597,9 @@ class SequencerCompiler(ABC):
                 if operation.operation_info.is_real_time_io_operation:
                     start_time = operation.operation_info.timing
                     is_acquisition = operation.operation_info.is_acquisition
-                    if start_time < last_operation_end[is_acquisition]:
+                    if helpers.to_grid_time(start_time) < helpers.to_grid_time(
+                        last_operation_end[is_acquisition]
+                    ):
                         warnings.warn(
                             f"Operation is interrupting previous"
                             f" {'Acquisition' if is_acquisition else 'Pulse'}"
