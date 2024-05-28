@@ -236,9 +236,42 @@ def set_pulse_and_acquisition_clock(
 
     assert isinstance(device_cfg, DeviceCompilationConfig)
 
+    all_clock_freqs: Dict[str, float] = {}
+    _extract_clock_freqs(schedule, all_clock_freqs)
+    for clock, freq in device_cfg.clocks.items():
+        if clock in all_clock_freqs:
+            _clocks_compatible(clock, device_cfg, all_clock_freqs)
+        else:
+            all_clock_freqs[clock] = freq
+
     return _set_pulse_and_acquisition_clock(
-        schedule=schedule, operation=schedule, device_cfg=device_cfg, verified_clocks=[]
+        schedule=schedule,
+        operation=schedule,
+        all_clock_freqs=all_clock_freqs,
+        verified_clocks=[],
     )
+
+
+def _extract_clock_freqs(
+    operation: Operation | Schedule, all_clock_freqs: Dict[str, float]
+) -> None:
+    if isinstance(operation, ScheduleBase):
+        for inner_operation in operation.operations.values():
+            _extract_clock_freqs(
+                operation=inner_operation, all_clock_freqs=all_clock_freqs
+            )
+        for clock, clock_data in operation.resources.items():
+            if "freq" in clock_data:
+                freq = clock_data["freq"]
+                if clock in all_clock_freqs and freq != all_clock_freqs[clock]:
+                    raise ValueError(
+                        f"Inconsistent clock frequencies in the schedule. "
+                        f"Clock '{clock}' is defined with frequencies "
+                        f"{freq} Hz and {all_clock_freqs[clock]} Hz."
+                    )
+                all_clock_freqs[clock] = freq
+    elif isinstance(operation, ControlFlowOperation):
+        _extract_clock_freqs(operation=operation.body, all_clock_freqs=all_clock_freqs)
 
 
 # It is important that if the operation is a Schedule type, we always return a Schedule.
@@ -247,20 +280,20 @@ def set_pulse_and_acquisition_clock(
 def _set_pulse_and_acquisition_clock(
     schedule: Schedule,
     operation: Schedule,
-    device_cfg: DeviceCompilationConfig,
+    all_clock_freqs: Dict[str, float],
     verified_clocks: List,
 ) -> Schedule: ...
 @overload
 def _set_pulse_and_acquisition_clock(
     schedule: Schedule,
     operation: Operation | Schedule,
-    device_cfg: DeviceCompilationConfig,
+    all_clock_freqs: Dict[str, float],
     verified_clocks: List,
 ) -> Operation | Schedule: ...
 def _set_pulse_and_acquisition_clock(
     schedule,
     operation,
-    device_cfg,
+    all_clock_freqs,
     verified_clocks,
 ):
     """
@@ -273,8 +306,8 @@ def _set_pulse_and_acquisition_clock(
         if ``operation`` is not a ``Schedule``.
     operation
         The ``operation`` to collect resources from.
-    device_cfg
-        Device compilation config.
+    all_clock_freqs
+        All clock frequencies.
     verified_clocks
         Already verified clocks.
 
@@ -290,7 +323,7 @@ def _set_pulse_and_acquisition_clock(
             # Only if we have a valid device-level operation, we can assign clocks
             operation.operations[inner_op_key] = _set_pulse_and_acquisition_clock(
                 schedule=operation,
-                device_cfg=device_cfg,
+                all_clock_freqs=all_clock_freqs,
                 operation=operation.operations[inner_op_key],
                 verified_clocks=verified_clocks,
             )
@@ -298,7 +331,7 @@ def _set_pulse_and_acquisition_clock(
         operation.body = _set_pulse_and_acquisition_clock(
             schedule=schedule,
             operation=operation.body,
-            device_cfg=device_cfg,
+            all_clock_freqs=all_clock_freqs,
             verified_clocks=verified_clocks,
         )
     else:
@@ -311,10 +344,10 @@ def _set_pulse_and_acquisition_clock(
                 continue
             # raises ValueError if no clock found;
             # enters if condition if clock only in device config
-            if not _valid_clock_in_schedule(clock, device_cfg, schedule, operation):
-                clock_resource = ClockResource(
-                    name=clock, freq=device_cfg.clocks[clock]
-                )
+            if not _valid_clock_in_schedule(
+                clock, all_clock_freqs, schedule, operation
+            ):
+                clock_resource = ClockResource(name=clock, freq=all_clock_freqs[clock])
                 schedule.add_resource(clock_resource)
             verified_clocks.append(clock)
 
@@ -323,7 +356,7 @@ def _set_pulse_and_acquisition_clock(
 
 def _valid_clock_in_schedule(
     clock: str,
-    device_cfg: DeviceCompilationConfig,
+    all_clock_freqs: Dict[str, float],
     schedule: Schedule,
     operation: Operation,
 ) -> bool:
@@ -334,8 +367,8 @@ def _valid_clock_in_schedule(
     ----------
     clock
         Name of the clock
-    device_cfg
-        Device config that potentially contains the clock.
+    all_clock_freqs
+        All clock frequencies
     schedule
         Schedule that potentially has the clock in its resources
     operation
@@ -348,14 +381,11 @@ def _valid_clock_in_schedule(
         contains nan values or (ii) no clock is defined.
     """
     if clock in schedule.resources:
-        if clock in device_cfg.clocks:
-            # Test if clocks are compatible (emits a warning if not)
-            _ = _clocks_compatible(clock, device_cfg, schedule)
         return True
     else:
-        if clock in device_cfg.clocks:
+        if clock in all_clock_freqs:
             # Clock only in device config
-            if np.isnan(device_cfg.clocks[clock]).any():
+            if np.isnan(all_clock_freqs[clock]).any():
                 raise ValueError(
                     f"Operation '{operation}' contains clock '{clock}' with an "
                     f"undefined (initial) frequency; ensure this resource has been "
@@ -371,7 +401,11 @@ def _valid_clock_in_schedule(
         )
 
 
-def _clocks_compatible(clock, device_cfg: DeviceCompilationConfig, schedule) -> bool:
+def _clocks_compatible(
+    clock,
+    device_cfg: DeviceCompilationConfig,
+    schedule_clock_resources: Dict[str, float],
+) -> bool:
     """
     Compare device config and schedule resources for compatibility of their clocks.
 
@@ -391,15 +425,15 @@ def _clocks_compatible(clock, device_cfg: DeviceCompilationConfig, schedule) -> 
         Name of the clock found in the device config and schedule
     device_cfg
         Device config containing the ``clock``
-    schedule
-        Schedule containing the ``clock``
+    schedule_clock_resources
+        All clock resources in the schedule
 
     Returns
     -------
         True if the clock frequencies are consistent.
     """
     clock_freq_device_cfg = np.asarray(device_cfg.clocks[clock])
-    clock_freq_schedule = np.asarray(schedule.resources[clock]["freq"])
+    clock_freq_schedule = np.asarray(schedule_clock_resources[clock])
 
     is_nan = np.isnan(clock_freq_device_cfg)
     if is_nan.all():

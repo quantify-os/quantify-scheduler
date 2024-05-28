@@ -44,6 +44,7 @@ from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schemas.examples.device_example_cfgs import (
     example_transmon_cfg,
 )
+from quantify_scheduler.operations.control_flow_library import LoopOperation
 
 
 def test_compile_all_gates_example_transmon_cfg():
@@ -672,11 +673,14 @@ def test_clocks_compatible(schedule_freq, device_cfg_freq, compatible_exp: bool)
     # Arrange
     schedule, device_cfg, operation = schedule_for_clock_tests()
     schedule.add_resource(ClockResource("q0.01", schedule_freq))
+    schedule_clock_resources = {"q0.01": schedule_freq}
     device_cfg.clocks["q0.01"] = device_cfg_freq
 
     # Act
     compatible = _clocks_compatible(
-        clock="q0.01", device_cfg=device_cfg, schedule=schedule
+        clock="q0.01",
+        device_cfg=device_cfg,
+        schedule_clock_resources=schedule_clock_resources,
     )
     # Assert
     assert compatible_exp == compatible
@@ -684,7 +688,10 @@ def test_clocks_compatible(schedule_freq, device_cfg_freq, compatible_exp: bool)
     # Act & Assert
     # Even if clocks are not compatible, the schedule can be compiled
     assert _valid_clock_in_schedule(
-        clock="q0.01", device_cfg=device_cfg, schedule=schedule, operation=operation
+        clock="q0.01",
+        all_clock_freqs=schedule_clock_resources,
+        schedule=schedule,
+        operation=operation,
     )
 
 
@@ -692,34 +699,46 @@ def test_valid_clock_in_schedule():
     """Test whether a valid clock is in the schedule if they can be taken from the device config."""
     # Arrange
     schedule, device_cfg, operation = schedule_for_clock_tests()
-    device_cfg.clocks["q0.01"] = 1e9
+    all_clock_freqs = {"q0.01": 1e9}
 
     # Act & Assert
     assert not _valid_clock_in_schedule(
-        clock="q0.01", device_cfg=device_cfg, schedule=schedule, operation=operation
+        clock="q0.01",
+        all_clock_freqs=all_clock_freqs,
+        schedule=schedule,
+        operation=operation,
     )
 
     # Arrange
-    device_cfg.clocks["q0.01"] = np.asarray(1e9)
+    all_clock_freqs = {"q0.01": np.asarray(1e9)}
     # Act & Assert
     assert not _valid_clock_in_schedule(
-        clock="q0.01", device_cfg=device_cfg, schedule=schedule, operation=operation
+        clock="q0.01",
+        all_clock_freqs=all_clock_freqs,
+        schedule=schedule,
+        operation=operation,
     )
 
     # Arrange
-    device_cfg.clocks["q0.01"] = np.nan
+    all_clock_freqs = {"q0.01": np.nan}
     # Act & Assert
     with pytest.raises(ValueError):
         _valid_clock_in_schedule(
-            clock="q0.01", device_cfg=device_cfg, schedule=schedule, operation=operation
+            clock="q0.01",
+            all_clock_freqs=all_clock_freqs,
+            schedule=schedule,
+            operation=operation,
         )
 
     # Arrange
-    del device_cfg.clocks["q0.01"]
+    all_clock_freqs = {}
     # Act & Assert
     with pytest.raises(ValueError):
         _valid_clock_in_schedule(
-            clock="q0.01", device_cfg=device_cfg, schedule=schedule, operation=operation
+            clock="q0.01",
+            all_clock_freqs=all_clock_freqs,
+            schedule=schedule,
+            operation=operation,
         )
 
 
@@ -801,3 +820,72 @@ def test_operation_collision():
     sched.add(cz2)
 
     assert len(sched.operations) == 2
+
+
+def test_clock_resources_and_subschedules_compiles():
+    schedule = Schedule("test clock resource subschedule")
+    schedule.add_resource(ClockResource(name="qubit.ro", freq=50e6))
+
+    simple_config = DeviceCompilationConfig(
+        clocks={
+            "q0.01": 6020000000.0,
+        },
+        elements={
+            f"q{i}": {
+                "measure": {
+                    "factory_func": "quantify_scheduler.operations."
+                    + "measurement_factories.dispersive_measurement",
+                    "gate_info_factory_kwargs": [
+                        "acq_channel_override",
+                        "acq_index",
+                        "bin_mode",
+                        "acq_protocol",
+                    ],
+                    "factory_kwargs": {
+                        "port": f"q{i}:res",
+                        "clock": f"q{i}.ro",
+                        "pulse_type": "SquarePulse",
+                        "pulse_amp": 0.25,
+                        "pulse_duration": 1.6e-07,
+                        "acq_delay": 1.2e-07,
+                        "acq_duration": 3e-07,
+                        "acq_channel": 0,
+                    },
+                },
+            }
+            for i in range(3)
+        },
+        edges={},
+    )
+
+    sched = Schedule("Test schedule")
+
+    subsched = Schedule("Subschedule")
+    subsched.add(Measure("q0"))
+    subsched.add(Measure("q1"))
+    subsched.add(Measure("q2"))
+
+    subsubsched = Schedule("Subsubschedule")
+    subsubsched.add_resource(ClockResource(name="q1.ro", freq=5e9))
+    subsched.add(subsubsched)
+
+    siblingloopsched = Schedule("Sibling loop schedule")
+    siblingloopsched.add(Measure("q1"))
+    siblingloopsched.add_resource(ClockResource(name="q2.ro", freq=5e9))
+    sched.add(LoopOperation(body=siblingloopsched, repetitions=3))
+
+    sched.add_resource(ClockResource(name="q0.ro", freq=5e9))
+    sched.add(subsched)
+
+    dev_sched = compile_circuit_to_device_with_config_validation(
+        sched,
+        config=SerialCompilationConfig(
+            name="test", device_compilation_config=simple_config
+        ),
+    )
+    _ = set_pulse_and_acquisition_clock(
+        dev_sched,
+        config=SerialCompilationConfig(
+            name="test", device_compilation_config=simple_config
+        ),
+    )
