@@ -8,12 +8,11 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
 
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-from quantify_scheduler.operations.operation import Operation
 
 import quantify_scheduler.schedules._visualization.pulse_scheme as ps
 from quantify_scheduler.helpers.importers import import_python_object_from_string
+from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.schedules._visualization import constants
-
 
 if TYPE_CHECKING:
     from quantify_scheduler import Schedule

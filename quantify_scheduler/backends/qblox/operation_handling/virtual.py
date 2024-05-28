@@ -5,11 +5,12 @@
 from typing import Any, Dict
 
 import numpy as np
+
 from quantify_scheduler.backends.qblox import constants, helpers, q1asm_instructions
+from quantify_scheduler.backends.qblox.conditional import FeedbackTriggerCondition
 from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.types import qblox as types
-from quantify_scheduler.backends.qblox.conditional import FeedbackTriggerCondition
 
 
 class IdleStrategy(IOperationStrategy):

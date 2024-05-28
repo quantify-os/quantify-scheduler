@@ -9,11 +9,12 @@ Examples of waveforms that are too advanced are flux pulses that require knowled
 the flux sensitivity and interaction strengths and qubit frequencies.
 """
 from __future__ import annotations
-from typing import List, Optional, Union
+
 import warnings
+from typing import List, Optional, Union
 
 import numpy as np
-from scipy import signal, interpolate
+from scipy import interpolate, signal
 
 
 def square(t: Union[np.ndarray, List[float]], amp: Union[float, complex]) -> np.ndarray:

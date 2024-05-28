@@ -1,7 +1,7 @@
 from typing import Dict
-import pytest
 
 import numpy as np
+import pytest
 
 from quantify_scheduler.operations.measurement_factories import optical_measurement
 

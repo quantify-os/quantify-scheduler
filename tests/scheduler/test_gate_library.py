@@ -5,31 +5,31 @@ from unittest import TestCase
 import numpy as np
 import pytest
 
-from quantify_scheduler import Operation, Schedule, Schedulable
+from quantify_scheduler import Operation, Schedulable, Schedule
 from quantify_scheduler.backends.graph_compilation import SerialCompiler
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.qblox.operations.gate_library import ConditionalReset
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
-from quantify_scheduler.json_utils import SchedulerJSONEncoder, SchedulerJSONDecoder
-from quantify_scheduler.operations.control_flow_library import LoopOperation
+from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEncoder
+from quantify_scheduler.operations.control_flow_library import Loop, LoopOperation
 from quantify_scheduler.operations.gate_library import (
     CNOT,
     CZ,
+    X90,
+    Y90,
+    Z90,
+    H,
     Measure,
     Reset,
     Rxy,
     Rz,
     X,
-    X90,
     Y,
-    Y90,
     Z,
-    Z90,
-    H,
 )
-from quantify_scheduler.operations.shared_native_library import SpectroscopyOperation
 from quantify_scheduler.operations.nv_native_library import ChargeReset
+from quantify_scheduler.operations.shared_native_library import SpectroscopyOperation
 from quantify_scheduler.schemas.examples import utils
 
 

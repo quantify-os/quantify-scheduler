@@ -2,25 +2,26 @@ from copy import deepcopy
 
 import numpy as np
 import pytest
+
 from quantify_scheduler import Operation, Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.circuit_to_device import ConfigKeyError
 from quantify_scheduler.compilation import _determine_absolute_timing
 from quantify_scheduler.enums import BinMode
+from quantify_scheduler.operations.composite_factories import hadamard_as_y90z
 from quantify_scheduler.operations.control_flow_library import (
     LoopOperation,
 )
 from quantify_scheduler.operations.gate_library import (
     CNOT,
     CZ,
-    X,
+    H,
     Measure,
     Reset,
     Rxy,
-    H,
+    X,
 )
-from quantify_scheduler.operations.composite_factories import hadamard_as_y90z
-from quantify_scheduler.operations.pulse_library import SquarePulse
+from quantify_scheduler.operations.pulse_library import SetClockFrequency, SquarePulse
 from quantify_scheduler.resources import BasebandClockResource, ClockResource, Resource
 from quantify_scheduler.schedules.schedule import ScheduleBase
 

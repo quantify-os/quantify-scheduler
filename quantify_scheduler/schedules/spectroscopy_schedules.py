@@ -8,17 +8,17 @@ from typing import Optional
 import numpy as np
 
 from quantify_scheduler.enums import BinMode
-from quantify_scheduler.schedules.schedule import Schedule
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
+from quantify_scheduler.operations.gate_library import Measure, Reset
+from quantify_scheduler.operations.nv_native_library import ChargeReset, CRCount
 from quantify_scheduler.operations.pulse_library import (
     IdlePulse,
     SetClockFrequency,
     SquarePulse,
 )
-from quantify_scheduler.operations.gate_library import Reset, Measure
-from quantify_scheduler.operations.nv_native_library import ChargeReset, CRCount
 from quantify_scheduler.operations.shared_native_library import SpectroscopyOperation
 from quantify_scheduler.resources import ClockResource
+from quantify_scheduler.schedules.schedule import Schedule
 
 
 def heterodyne_spec_sched(

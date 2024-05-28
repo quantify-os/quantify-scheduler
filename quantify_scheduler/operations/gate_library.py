@@ -2,12 +2,13 @@
 # Licensed according to the LICENCE file on the main branch
 """Standard gateset for use with the quantify_scheduler."""
 from __future__ import annotations
-from typing import Literal, Optional, Tuple, Hashable
+
+from typing import Hashable, Literal, Optional, Tuple
 
 import numpy as np
 
-from .operation import Operation
 from ..enums import BinMode
+from .operation import Operation
 
 
 class Rxy(Operation):

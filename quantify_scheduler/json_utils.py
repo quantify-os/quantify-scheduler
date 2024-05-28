@@ -3,12 +3,12 @@
 """Module containing quantify JSON utilities."""
 from __future__ import annotations
 
-from enum import Enum
 import functools
 import json
 import pathlib
 import sys
 import warnings
+from enum import Enum
 from types import ModuleType
 from typing import Any, Callable, Dict, List, Type, Union
 

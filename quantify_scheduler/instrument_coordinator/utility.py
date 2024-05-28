@@ -7,9 +7,8 @@ from typing import Any
 
 import numpy as np
 import xarray
-
-from qcodes.instrument.base import InstrumentBase
 from qcodes.instrument import Parameter
+from qcodes.instrument.base import InstrumentBase
 
 logger = logging.getLogger(__name__)
 

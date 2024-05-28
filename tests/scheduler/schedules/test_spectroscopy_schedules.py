@@ -1,4 +1,5 @@
 import math
+
 import numpy as np
 import pytest
 from qcodes.instrument.parameter import ManualParameter
@@ -6,11 +7,10 @@ from xarray import Dataset
 
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.compilation import _determine_absolute_timing
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.schedules import spectroscopy_schedules as sps
-
 from tests.scheduler.instrument_coordinator.components.test_qblox import (
     make_cluster_component,
 )

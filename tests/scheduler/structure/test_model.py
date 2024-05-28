@@ -1,14 +1,14 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Unit tests for the DataStructure, and custom json (de)serialization."""
-import pytest
-
 from typing import Any, Callable, Type, Union
 
+import pytest
 from pydantic import field_serializer, field_validator
+
 from quantify_scheduler.helpers.importers import (
-    import_python_object_from_string,
     export_python_object_to_path_string,
+    import_python_object_from_string,
 )
 from quantify_scheduler.structure.model import (
     DataStructure,

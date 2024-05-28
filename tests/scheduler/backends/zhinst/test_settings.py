@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from pathlib import Path
 from unittest.mock import ANY, call
 
-from copy import deepcopy
 import numpy as np
 import pytest
 from zhinst.qcodes import base

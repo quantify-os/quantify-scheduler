@@ -1,15 +1,15 @@
 import json
+import math
 
 import numpy as np
 import pytest
-import math
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler.backends.graph_compilation import SerialCompiler
-from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.json_utils import SchedulerJSONEncoder, SchedulerJSONDecoder
+from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
+from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEncoder
 from quantify_scheduler.operations.gate_library import Measure
 
 

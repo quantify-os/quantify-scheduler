@@ -4,11 +4,10 @@
 Module containing schedules for common time domain experiments such as a Rabi and
 T1 measurement.
 """
-from typing import List, Union, Literal
+from typing import List, Literal, Union
 
 import numpy as np
 
-from quantify_scheduler.schedules.schedule import Schedule
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.control_flow_library import LoopOperation
@@ -19,6 +18,7 @@ from quantify_scheduler.operations.pulse_library import (
     SquarePulse,
 )
 from quantify_scheduler.resources import ClockResource
+from quantify_scheduler.schedules.schedule import Schedule
 
 
 def rabi_sched(

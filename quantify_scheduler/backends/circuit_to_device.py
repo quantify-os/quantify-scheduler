@@ -9,6 +9,7 @@ from itertools import permutations
 from typing import Dict, List, Sequence, overload
 
 import numpy as np
+
 from quantify_scheduler.backends.graph_compilation import (
     CompilationConfig,
     DeviceCompilationConfig,
@@ -17,7 +18,7 @@ from quantify_scheduler.backends.graph_compilation import (
 from quantify_scheduler.operations.control_flow_library import ControlFlowOperation
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.resources import ClockResource
-from quantify_scheduler.schedules.schedule import Schedule, Schedulable, ScheduleBase
+from quantify_scheduler.schedules.schedule import Schedulable, Schedule, ScheduleBase
 
 
 def compile_circuit_to_device_with_config_validation(

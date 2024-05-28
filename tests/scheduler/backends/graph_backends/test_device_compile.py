@@ -6,28 +6,29 @@ schedules.
 
 import pytest
 
-from quantify_scheduler import Schedule, CompiledSchedule
+from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends.graph_compilation import (
     DeviceCompilationConfig,
-    SerialCompiler,
     SerialCompilationConfig,
-)  # The module we are interested in testing
+    SerialCompiler,
+)
+
+# The module we are interested in testing
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.schemas.examples.device_example_cfgs import (
     example_transmon_cfg,
 )
-
 from tests.fixtures.mock_setup import close_instruments
 
 from .standard_schedules import (
-    single_qubit_schedule_circuit_level,
-    two_qubit_t1_schedule,
-    two_qubit_schedule_with_edge,
-    pulse_only_schedule,
-    parametrized_operation_schedule,
     hybrid_schedule_rabi,
+    parametrized_operation_schedule,
+    pulse_only_schedule,
+    single_qubit_schedule_circuit_level,
+    two_qubit_schedule_with_edge,
+    two_qubit_t1_schedule,
 )
 
 

@@ -9,20 +9,20 @@ Might be good to mark those tests in detail.
 
 import pytest
 
-from quantify_scheduler import Schedule, CompiledSchedule
+from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.resources import ClockResource
 
-from .standard_schedules import (
-    single_qubit_schedule_circuit_level,
-    two_qubit_t1_schedule,
-    two_qubit_schedule_with_edge,
-    pulse_only_schedule,
-    parametrized_operation_schedule,
-    hybrid_schedule_rabi,
-)
 from ....fixtures.mock_setup import ZHINST_HARDWARE_COMPILATION_CONFIG
+from .standard_schedules import (
+    hybrid_schedule_rabi,
+    parametrized_operation_schedule,
+    pulse_only_schedule,
+    single_qubit_schedule_circuit_level,
+    two_qubit_schedule_with_edge,
+    two_qubit_t1_schedule,
+)
 
 
 @pytest.mark.parametrize(

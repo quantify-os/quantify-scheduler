@@ -1,8 +1,8 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Unit tests acquisition protocols for use with the quantify_scheduler."""
-from itertools import combinations
 import json
+from itertools import combinations
 from unittest import TestCase
 
 import numpy as np
@@ -13,6 +13,7 @@ from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
 )
+from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEncoder
 from quantify_scheduler.operations.acquisition_library import (
     NumericalSeparatedWeightedIntegration,
     NumericalWeightedIntegration,
@@ -24,7 +25,6 @@ from quantify_scheduler.operations.acquisition_library import (
 )
 from quantify_scheduler.operations.gate_library import X90
 from quantify_scheduler.operations.pulse_library import DRAGPulse
-from quantify_scheduler.json_utils import SchedulerJSONEncoder, SchedulerJSONDecoder
 from quantify_scheduler.schedules.schedule import Schedule
 
 ALL_ACQUISITION_PROTOCOLS = [

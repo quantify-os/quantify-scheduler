@@ -6,10 +6,11 @@ from textwrap import dedent
 from typing import Any, Dict, Generator, List
 from unittest.mock import ANY, call
 
-from networkx import relabel_nodes
 import numpy as np
 import pytest
+from networkx import relabel_nodes
 from pydantic import ValidationError
+
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends import SerialCompiler, corrections, zhinst_backend
 from quantify_scheduler.backends.graph_compilation import (
@@ -22,18 +23,18 @@ from quantify_scheduler.backends.zhinst.zhinst_hardware_config_old_style import 
     hardware_config as zhinst_hardware_config_old_style,
 )
 from quantify_scheduler.backends.zhinst_backend import flatten_schedule
-from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
+from quantify_scheduler.compilation import _determine_absolute_timing
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.helpers import waveforms as waveform_helpers
 from quantify_scheduler.helpers.collections import find_all_port_clock_combinations
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
-from quantify_scheduler.operations.pulse_library import SquarePulse, SetClockFrequency
 from quantify_scheduler.operations.gate_library import X90, Measure, Reset
+from quantify_scheduler.operations.pulse_library import SetClockFrequency, SquarePulse
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules import spectroscopy_schedules, trace_schedules
 from quantify_scheduler.schedules.verification import acquisition_staircase_sched
 from quantify_scheduler.schemas.examples import utils
-from quantify_scheduler.compilation import _determine_absolute_timing
 
 ARRAY_DECIMAL_PRECISION = 16
 

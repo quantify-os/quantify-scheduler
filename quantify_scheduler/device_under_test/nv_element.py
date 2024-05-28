@@ -7,7 +7,7 @@ Currently only for the electronic qubit,
 but could be extended for other qubits (eg. carbon qubit).
 """
 import math
-from typing import Dict, Any
+from typing import Any, Dict
 
 from qcodes.instrument import InstrumentModule
 from qcodes.instrument.base import InstrumentBase
@@ -16,22 +16,23 @@ from qcodes.instrument.parameter import (
     Parameter,
 )
 from qcodes.utils import validators
+
 from quantify_scheduler.backends.graph_compilation import (
     DeviceCompilationConfig,
     OperationCompilationConfig,
 )
-from quantify_scheduler.helpers.validators import (
-    _Durations,
-    _Amplitudes,
-    _NonNegativeFrequencies,
-    _Delays,
-    _Hashable,
-)
 from quantify_scheduler.device_under_test.device_element import DeviceElement
+from quantify_scheduler.helpers.validators import (
+    _Amplitudes,
+    _Delays,
+    _Durations,
+    _Hashable,
+    _NonNegativeFrequencies,
+)
 from quantify_scheduler.operations import (
+    measurement_factories,
     pulse_factories,
     pulse_library,
-    measurement_factories,
 )
 
 

@@ -4,15 +4,13 @@
 
 import numpy as np
 
-from quantify_scheduler.operations.control_flow_library import LoopOperation
 from quantify_scheduler.device_under_test.device_element import DeviceElement
 from quantify_scheduler.enums import BinMode
-from quantify_scheduler.schedules.schedule import Schedule
 from quantify_scheduler.operations.acquisition_library import (
     SSBIntegrationComplex,
     Trace,
 )
-
+from quantify_scheduler.operations.control_flow_library import LoopOperation
 from quantify_scheduler.operations.gate_library import Measure
 from quantify_scheduler.operations.pulse_library import (
     IdlePulse,
@@ -20,6 +18,7 @@ from quantify_scheduler.operations.pulse_library import (
     VoltageOffset,
 )
 from quantify_scheduler.resources import ClockResource
+from quantify_scheduler.schedules.schedule import Schedule
 
 
 def trace_schedule(
@@ -31,7 +30,7 @@ def trace_schedule(
     integration_time: float,
     port: str,
     clock: str,
-    init_duration: int = 200e-6,
+    init_duration: float = 200e-6,
     repetitions: int = 1,
 ) -> Schedule:
     """

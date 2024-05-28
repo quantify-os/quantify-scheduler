@@ -1,15 +1,24 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Tests for the InstrumentCompiler subclasses."""
+import math
 from itertools import permutations, product
-from typing import List, Dict
+from typing import Dict, List
 from unittest.mock import Mock
 
 import pytest
-import math
 
-from quantify_scheduler.backends.qblox import q1asm_instructions
+from quantify_scheduler import Schedule
+from quantify_scheduler.backends import SerialCompiler, corrections
+from quantify_scheduler.backends.qblox import compiler_container, q1asm_instructions
 from quantify_scheduler.backends.qblox.analog import AnalogSequencerCompiler
+from quantify_scheduler.backends.qblox.helpers import (
+    LoopBegin,
+    _ControlFlowReturn,
+    _generate_legacy_hardware_config,
+    assign_pulse_and_acq_info_to_devices,
+)
+from quantify_scheduler.backends.qblox.instrument_compilers import ClusterCompiler
 from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
 from quantify_scheduler.backends.qblox.operation_handling.factory import (
     get_operation_strategy,
@@ -17,36 +26,32 @@ from quantify_scheduler.backends.qblox.operation_handling.factory import (
 from quantify_scheduler.backends.qblox.operation_handling.virtual import (
     UpdateParameterStrategy,
 )
-from quantify_scheduler.backends.types.qblox import SequencerSettings, OpInfo
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox.timetag import TimetagSequencerCompiler
-from quantify_scheduler.backends.types.qblox import AnalogSequencerSettings
-from quantify_scheduler.operations.acquisition_library import Trace
-from quantify_scheduler.backends.qblox.helpers import LoopBegin, _ControlFlowReturn
-from quantify_scheduler.operations.control_flow_library import (
-    LoopOperation,
-    ConditionalOperation,
+from quantify_scheduler.backends.types.qblox import (
+    AnalogSequencerSettings,
+    OpInfo,
+    SequencerSettings,
 )
+from quantify_scheduler.compilation import (
+    _determine_absolute_timing,
+)
+from quantify_scheduler.operations.acquisition_library import Trace
+from quantify_scheduler.operations.control_flow_library import (
+    ConditionalOperation,
+    LoopOperation,
+)
+from quantify_scheduler.operations.gate_library import Measure, X
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import (
+    DRAGPulse,
     ResetClockPhase,
     SetClockFrequency,
     ShiftClockPhase,
     SquarePulse,
     VoltageOffset,
 )
-from quantify_scheduler import Schedule
-from quantify_scheduler.compilation import _determine_absolute_timing
-from quantify_scheduler.backends.qblox.helpers import _generate_legacy_hardware_config
-from quantify_scheduler.backends.qblox import compiler_container
-from quantify_scheduler.operations.pulse_library import DRAGPulse
-from quantify_scheduler.backends import SerialCompiler, corrections
-from quantify_scheduler.backends.qblox.helpers import (
-    assign_pulse_and_acq_info_to_devices,
-)
 from quantify_scheduler.resources import BasebandClockResource
-from quantify_scheduler.operations.gate_library import Measure, X
-from quantify_scheduler.backends.qblox.instrument_compilers import ClusterCompiler
 
 
 def _assert_update_parameters_op_list(

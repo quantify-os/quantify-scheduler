@@ -4,8 +4,9 @@ file.
 """
 
 from copy import deepcopy
-import pytest
+
 import networkx as nx
+import pytest
 from matplotlib.axes import Axes
 
 from quantify_scheduler import Schedule

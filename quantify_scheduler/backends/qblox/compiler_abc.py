@@ -24,8 +24,8 @@ from typing import (
 
 from pathvalidate import sanitize_filename
 from qcodes.utils.helpers import NumpyJSONEncoder
-from quantify_core.data.handling import gen_tuid, get_datadir
 
+from quantify_core.data.handling import gen_tuid, get_datadir
 from quantify_scheduler.backends.qblox import (
     constants,
     driver_version_check,

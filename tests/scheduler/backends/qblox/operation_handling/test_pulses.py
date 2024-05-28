@@ -10,10 +10,10 @@ import pytest
 
 from quantify_scheduler import Schedule, waveforms
 from quantify_scheduler.backends import SerialCompiler
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.qblox.operation_handling import pulses
 from quantify_scheduler.backends.types import qblox as types
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.helpers.waveforms import normalize_waveform_data
 from quantify_scheduler.operations.gate_library import Measure
 from quantify_scheduler.operations.pulse_library import (

@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Any, Callable, Generator, Dict, List, Optional
+from typing import Any, Callable, Dict, Generator, List, Optional
 
 import numpy as np
 import pytest
@@ -17,12 +17,11 @@ from quantify_scheduler.backends.circuit_to_device import (
 )
 from quantify_scheduler.backends.graph_compilation import SerialCompilationConfig
 from quantify_scheduler.compilation import _determine_absolute_timing
-from quantify_scheduler.operations.gate_library import CZ, Measure, Reset, X, X90
+from quantify_scheduler.operations.gate_library import CZ, X90, Measure, Reset, X
 from quantify_scheduler.schemas.examples import utils
 from quantify_scheduler.schemas.examples.device_example_cfgs import (
     example_transmon_cfg,
 )
-
 
 ZHINST_HARDWARE_COMPILATION_CONFIG = utils.load_json_example_scheme(
     "zhinst_hardware_compilation_config.json"

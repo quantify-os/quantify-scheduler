@@ -7,9 +7,9 @@ from copy import deepcopy
 from typing import List, Optional
 from unittest.mock import MagicMock
 
-import xarray as xr
 import numpy as np
 import pytest
+import xarray as xr
 from qblox_instruments import (
     Cluster,
     ClusterType,
@@ -20,15 +20,18 @@ from qblox_instruments import (
     SequencerStatusFlags,
 )
 from qcodes.instrument import Instrument, InstrumentChannel, InstrumentModule
-from quantify_core.data.handling import get_datadir
 
+from quantify_core.data.handling import get_datadir
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.enums import BinMode
+from quantify_scheduler.helpers.qblox_dummy_instrument import (
+    start_dummy_cluster_armed_sequencers,
+)
 from quantify_scheduler.instrument_coordinator.components import qblox
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
-from quantify_scheduler.operations.gate_library import Reset, Measure, X90
+from quantify_scheduler.operations.gate_library import X90, Measure, Reset
 from quantify_scheduler.operations.pulse_library import (
     IdlePulse,
     MarkerPulse,
@@ -36,9 +39,6 @@ from quantify_scheduler.operations.pulse_library import (
 )
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.schedule import AcquisitionMetadata, Schedule
-from quantify_scheduler.helpers.qblox_dummy_instrument import (
-    start_dummy_cluster_armed_sequencers,
-)
 
 
 @pytest.fixture

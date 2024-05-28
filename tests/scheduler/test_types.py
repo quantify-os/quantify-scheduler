@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from quantify_scheduler import enums, json_utils, Operation
+from quantify_scheduler import Operation, enums, json_utils
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.json_utils import SchedulerJSONDecoder
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
@@ -24,11 +24,11 @@ from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.schedules import timedomain_schedules
 from quantify_scheduler.schedules.schedule import (
-    AcquisitionMetadata,
     AcquisitionChannelMetadata,
+    AcquisitionMetadata,
     CompiledSchedule,
-    Schedule,
     Schedulable,
+    Schedule,
 )
 from quantify_scheduler.schedules.spectroscopy_schedules import heterodyne_spec_sched
 

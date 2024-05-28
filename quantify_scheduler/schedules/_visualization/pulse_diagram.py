@@ -15,9 +15,9 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from quantify_core.visualization.SI_utilities import set_xlabel, set_ylabel
 
 import quantify_scheduler.operations.pulse_library as pl
+from quantify_core.visualization.SI_utilities import set_xlabel, set_ylabel
 from quantify_scheduler.helpers.waveforms import (
     exec_waveform_function,
     modulate_waveform,

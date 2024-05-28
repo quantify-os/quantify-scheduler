@@ -15,9 +15,8 @@ import json
 import os
 import time
 
-import numpy as np
 import matplotlib.pyplot as plt
-
+import numpy as np
 from qcodes import Instrument
 
 from quantify_scheduler.gettables import ScheduleGettable

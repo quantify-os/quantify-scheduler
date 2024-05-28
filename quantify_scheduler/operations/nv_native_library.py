@@ -2,9 +2,10 @@
 # Licensed according to the LICENCE file on the main branch
 
 """NV-center-specific operations for use with the quantify_scheduler."""
-from typing import Literal, Tuple, Union, Optional, Hashable
-from .operation import Operation
+from typing import Hashable, Literal, Optional, Tuple, Union
+
 from ..enums import BinMode
+from .operation import Operation
 
 
 class ChargeReset(Operation):

@@ -1,4 +1,5 @@
 import json
+
 import pytest
 
 from quantify_scheduler.backends.circuit_to_device import OperationCompilationConfig
@@ -6,7 +7,7 @@ from quantify_scheduler.device_under_test.composite_square_edge import (
     CompositeSquareEdge,
 )
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
-from quantify_scheduler.json_utils import SchedulerJSONEncoder, SchedulerJSONDecoder
+from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEncoder
 
 
 @pytest.fixture

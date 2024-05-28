@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import math
 import warnings
-from typing import List, Literal, Optional, Hashable
+from typing import Hashable, List, Literal, Optional
 
 import numpy as np
 
@@ -26,9 +26,9 @@ from quantify_scheduler.operations.acquisition_library import (
     TriggerCount,
 )
 from quantify_scheduler.operations.pulse_library import (
-    SquarePulse,
     ReferenceMagnitude,
     ResetClockPhase,
+    SquarePulse,
 )
 
 

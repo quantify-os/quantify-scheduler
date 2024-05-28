@@ -18,7 +18,6 @@ from quantify_scheduler.backends.types import zhinst as zi_types
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 from quantify_scheduler.helpers.collections import make_hash
 
-
 # same as backends.zhinst_backend.NUM_UHFQA_READOUT_CHANNELS
 # copied here to avoid a circular import
 NUM_UHFQA_READOUT_CHANNELS = 10

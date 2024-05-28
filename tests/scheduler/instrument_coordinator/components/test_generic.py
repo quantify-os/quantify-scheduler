@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import pytest
 
+from quantify_scheduler.helpers.mock_instruments import MockLocalOscillator
 from quantify_scheduler.instrument_coordinator.components.generic import (
     GenericInstrumentCoordinatorComponent,
 )
-from quantify_scheduler.helpers.mock_instruments import MockLocalOscillator
 
 
 @pytest.fixture

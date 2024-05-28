@@ -3,9 +3,8 @@
 """Helpers for various collections."""
 from __future__ import annotations
 
-import copy
 from collections import UserDict
-from typing import Any, List, Iterable, Tuple
+from typing import Any, Iterable, List, Tuple
 
 import numpy as np
 import xxhash

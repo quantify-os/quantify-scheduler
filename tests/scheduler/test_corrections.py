@@ -3,8 +3,8 @@
 """Tests for pulse and acquisition corrections."""
 import numpy as np
 import pytest
-
 from pydantic import ValidationError
+
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.corrections import (
     distortion_correct_pulse,
@@ -13,14 +13,13 @@ from quantify_scheduler.backends.qblox import constants as qblox_constants
 from quantify_scheduler.backends.qblox.operations.stitched_pulse import (
     StitchedPulseBuilder,
 )
+from quantify_scheduler.operations.gate_library import X
 from quantify_scheduler.operations.pulse_library import (
+    IdlePulse,
     NumericalPulse,
     SquarePulse,
-    IdlePulse,
 )
-from quantify_scheduler.operations.gate_library import X
 from quantify_scheduler.schedules.schedule import Schedule
-
 from tests import is_zhinst_available
 
 

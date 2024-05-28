@@ -23,7 +23,6 @@ from quantify_scheduler.instrument_coordinator import (
 from quantify_scheduler.instrument_coordinator.components import base as base_component
 from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
 from quantify_scheduler.operations.gate_library import Reset
-
 from tests.scheduler.backends.test_qblox_backend import (
     dummy_cluster,
 )

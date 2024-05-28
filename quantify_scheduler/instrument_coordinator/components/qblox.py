@@ -6,6 +6,7 @@ from __future__ import annotations
 import copy
 import logging
 import os
+import re
 import warnings
 from abc import abstractmethod
 from dataclasses import dataclass
@@ -23,7 +24,6 @@ from typing import (
     Union,
 )
 from uuid import uuid4
-import re
 
 import numpy as np
 from qblox_instruments import (
@@ -32,9 +32,9 @@ from qblox_instruments import (
     SequencerStates,
     SequencerStatus,
 )
-from quantify_core.data.handling import get_datadir
 from xarray import DataArray, Dataset
 
+from quantify_core.data.handling import get_datadir
 from quantify_scheduler.backends.qblox import constants, driver_version_check
 from quantify_scheduler.backends.qblox.enums import ChannelMode
 from quantify_scheduler.backends.qblox.helpers import (
@@ -56,6 +56,7 @@ from quantify_scheduler.instrument_coordinator.utility import (
 if TYPE_CHECKING:
     from qblox_instruments.qcodes_drivers.module import Module
     from qblox_instruments.qcodes_drivers.sequencer import Sequencer
+
     from quantify_scheduler.schedules.schedule import (
         AcquisitionMetadata,
         CompiledSchedule,

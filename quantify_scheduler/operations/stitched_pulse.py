@@ -6,7 +6,6 @@ from __future__ import annotations
 import warnings
 
 from quantify_core.utilities import deprecated
-
 from quantify_scheduler.backends.qblox.operations import (
     stitched_pulse as qblox_stitched_pulse,
 )

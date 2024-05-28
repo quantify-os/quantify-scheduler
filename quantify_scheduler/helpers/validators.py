@@ -1,11 +1,11 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Module containing pydantic validators."""
-import numpy as np
 from typing import Hashable
 
+import numpy as np
 from qcodes.utils import validators
-from qcodes.utils.validators import numbertypes, Validator
+from qcodes.utils.validators import Validator, numbertypes
 
 
 # this is a custom qcodes Numbers validator that allows for nan values.

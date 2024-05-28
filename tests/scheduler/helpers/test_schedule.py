@@ -10,21 +10,21 @@ from pytest import approx
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.enums import BinMode
+from quantify_scheduler.helpers.collections import make_hash
 from quantify_scheduler.helpers.schedule import (
+    _extract_port_clocks_used,
     extract_acquisition_metadata_from_schedule,
     get_acq_info_by_uuid,
     get_acq_uuid,
-    get_operation_start,
     get_operation_end,
+    get_operation_start,
     get_port_timeline,
     get_pulse_info_by_uuid,
     get_pulse_uuid,
     get_total_duration,
-    _extract_port_clocks_used,
 )
-from quantify_scheduler.helpers.collections import make_hash
-from quantify_scheduler.operations.gate_library import X90, Measure, Reset
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
+from quantify_scheduler.operations.gate_library import X90, Measure, Reset
 from quantify_scheduler.schedules import spectroscopy_schedules
 
 

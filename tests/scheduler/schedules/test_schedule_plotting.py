@@ -7,11 +7,11 @@ import pytest
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends import SerialCompiler
-from quantify_scheduler.compilation import _determine_absolute_timing
-from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.backends.qblox.operations.stitched_pulse import (
     StitchedPulseBuilder,
 )
+from quantify_scheduler.compilation import _determine_absolute_timing
+from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import ClockResource
 
 

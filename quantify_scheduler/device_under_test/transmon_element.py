@@ -1,8 +1,8 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """The module contains definitions related to transmon elements."""
-from typing import Any, Dict, Tuple
 import math
+from typing import Any, Dict, Tuple
 
 import numpy as np
 from qcodes.instrument import InstrumentChannel
@@ -12,17 +12,18 @@ from qcodes.instrument.parameter import (
     Parameter,
 )
 from qcodes.utils import validators
+
 from quantify_scheduler.backends.graph_compilation import (
     DeviceCompilationConfig,
     OperationCompilationConfig,
 )
-from quantify_scheduler.helpers.validators import Numbers, _Hashable
 from quantify_scheduler.device_under_test.device_element import DeviceElement
+from quantify_scheduler.helpers.validators import Numbers, _Hashable
 from quantify_scheduler.operations import (
+    composite_factories,
+    measurement_factories,
     pulse_factories,
     pulse_library,
-    measurement_factories,
-    composite_factories,
 )
 
 

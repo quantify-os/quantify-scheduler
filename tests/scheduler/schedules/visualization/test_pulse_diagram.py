@@ -16,14 +16,14 @@ from quantify_scheduler.operations.pulse_library import (
 )
 from quantify_scheduler.resources import BasebandClockResource
 from quantify_scheduler.schedules._visualization.pulse_diagram import (
+    SampledPulse,
     get_window_operations,
+    merge_pulses_and_offsets,
     plot_acquisition_operations,
     plot_window_operations,
     pulse_diagram_matplotlib,
     pulse_diagram_plotly,
     sample_schedule,
-    SampledPulse,
-    merge_pulses_and_offsets,
 )
 
 

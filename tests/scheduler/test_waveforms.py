@@ -1,18 +1,19 @@
 import itertools
+
 import numpy as np
 import numpy.testing as npt
 import pytest
 
+from quantify_scheduler.operations.pulse_library import SuddenNetZeroPulse
 from quantify_scheduler.waveforms import (
     drag,
     interpolated_complex_waveform,
     rotate_wave,
+    skewed_hermite,
     square,
     staircase,
     sudden_net_zero,
-    skewed_hermite,
 )
-from quantify_scheduler.operations.pulse_library import SuddenNetZeroPulse
 
 
 def test_square_wave() -> None:

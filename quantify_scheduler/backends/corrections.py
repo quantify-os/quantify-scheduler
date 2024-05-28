@@ -6,12 +6,13 @@ import warnings
 from typing import Any, Dict, Generator, Optional, Tuple, Union
 
 import numpy as np
-from quantify_scheduler.schedules.schedule import Schedule, ScheduleBase
+
 from quantify_scheduler.helpers.importers import import_python_object_from_string
 from quantify_scheduler.helpers.waveforms import get_waveform
 from quantify_scheduler.operations.control_flow_library import ControlFlowOperation
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import NumericalPulse
+from quantify_scheduler.schedules.schedule import Schedule, ScheduleBase
 
 logger = logging.getLogger(__name__)
 

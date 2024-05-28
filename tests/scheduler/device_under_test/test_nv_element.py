@@ -1,4 +1,5 @@
 import json
+
 import pytest
 from qcodes import Instrument
 from qcodes.instrument.channel import InstrumentModule
@@ -6,21 +7,21 @@ from qcodes.instrument.parameter import Parameter
 
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler.device_under_test.mock_setup import (
-    set_up_mock_basic_nv_setup,
     set_standard_params_basic_nv,
+    set_up_mock_basic_nv_setup,
 )
 from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.helpers.validators import (
-    _Durations,
     _Amplitudes,
-    _NonNegativeFrequencies,
     _Delays,
+    _Durations,
+    _NonNegativeFrequencies,
 )
 from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
     InstrumentCoordinator,
 )
-from quantify_scheduler.json_utils import SchedulerJSONEncoder, SchedulerJSONDecoder
+from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEncoder
 
 
 @pytest.fixture

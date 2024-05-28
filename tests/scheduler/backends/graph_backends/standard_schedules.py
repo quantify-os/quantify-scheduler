@@ -12,15 +12,16 @@ used to pin specific outcomes of the compiler.
 """
 
 import numpy as np
+
 from quantify_scheduler import Schedule
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.gate_library import (
+    CZ,
     Measure,
     Reset,
+    Rxy,
     X,
     Y,
-    CZ,
-    Rxy,
 )
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,

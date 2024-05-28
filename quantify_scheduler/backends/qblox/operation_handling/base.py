@@ -4,13 +4,11 @@
 
 from __future__ import annotations
 
-from typing import Dict, Any
-
 from abc import ABC, abstractmethod
+from typing import Any, Dict
 
-
-from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
+from quantify_scheduler.backends.types import qblox as types
 
 
 class IOperationStrategy(ABC):

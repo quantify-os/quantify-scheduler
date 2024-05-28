@@ -1,7 +1,7 @@
 from typing import List
 
-import pytest
 import numpy as np
+import pytest
 
 from quantify_scheduler import Operation, Schedule
 from quantify_scheduler.backends import SerialCompiler
@@ -9,39 +9,39 @@ from quantify_scheduler.backends.circuit_to_device import (
     ConfigKeyError,
     DeviceCompilationConfig,
     OperationCompilationConfig,
-    compile_circuit_to_device_with_config_validation,
-    set_pulse_and_acquisition_clock,
     _clocks_compatible,
     _valid_clock_in_schedule,
+    compile_circuit_to_device_with_config_validation,
+    set_pulse_and_acquisition_clock,
 )
-from quantify_scheduler.backends.qblox.operations.gate_library import ConditionalReset
 from quantify_scheduler.backends.graph_compilation import SerialCompilationConfig
+from quantify_scheduler.backends.qblox.operations.gate_library import ConditionalReset
 from quantify_scheduler.device_under_test.mock_setup import (
-    set_up_mock_transmon_setup,
     set_standard_params_transmon,
+    set_up_mock_transmon_setup,
 )
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.operations.control_flow_library import LoopOperation
 from quantify_scheduler.operations.gate_library import (
     CNOT,
     CZ,
+    Y90,
+    Z90,
+    H,
     Measure,
     Reset,
     Rxy,
     Rz,
     X,
     Y,
-    Y90,
     Z,
-    Z90,
-    H,
 )
 from quantify_scheduler.operations.pulse_factories import (
-    rxy_drag_pulse,
     composite_square_pulse,
+    rxy_drag_pulse,
 )
 from quantify_scheduler.operations.pulse_library import IdlePulse, ReferenceMagnitude
 from quantify_scheduler.resources import ClockResource
-from quantify_scheduler.operations.control_flow_library import LoopOperation
 
 
 def test_compile_all_gates_example_transmon_cfg(device_cfg_transmon_example):

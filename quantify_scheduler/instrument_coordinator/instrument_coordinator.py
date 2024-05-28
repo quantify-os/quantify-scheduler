@@ -3,7 +3,6 @@
 """Module containing the main InstrumentCoordinator Component."""
 from __future__ import annotations
 
-import copy
 import warnings
 from typing import Dict
 
