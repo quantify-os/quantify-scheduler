@@ -54,7 +54,9 @@ def create_schedule_with_pulse_info(
     ) -> Schedule:
         _schedule = schedule if schedule is not None else deepcopy(basic_schedule)
         _device_config = (
-            device_config if device_config is not None else device_cfg_transmon_example
+            DeviceCompilationConfig.model_validate(device_config)
+            if device_config is not None
+            else device_cfg_transmon_example
         )
         _schedule = compile_circuit_to_device_with_config_validation(
             schedule=_schedule,

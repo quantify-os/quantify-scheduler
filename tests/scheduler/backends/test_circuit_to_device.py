@@ -41,13 +41,10 @@ from quantify_scheduler.operations.pulse_factories import (
 )
 from quantify_scheduler.operations.pulse_library import IdlePulse, ReferenceMagnitude
 from quantify_scheduler.resources import ClockResource
-from quantify_scheduler.schemas.examples.device_example_cfgs import (
-    example_transmon_cfg,
-)
 from quantify_scheduler.operations.control_flow_library import LoopOperation
 
 
-def test_compile_all_gates_example_transmon_cfg():
+def test_compile_all_gates_example_transmon_cfg(device_cfg_transmon_example):
     """
     Test compiling all gates using example_transmon_cfg.
     """
@@ -83,7 +80,7 @@ def test_compile_all_gates_example_transmon_cfg():
     _ = compile_circuit_to_device_with_config_validation(
         sched,
         config=SerialCompilationConfig(
-            name="test", device_compilation_config=example_transmon_cfg
+            name="test", device_compilation_config=device_cfg_transmon_example
         ),
     )
 
@@ -156,7 +153,7 @@ def test_compile_asymmetric_gate(mock_setup_basic_transmon):
         )
 
 
-def test_measurement_compile():
+def test_measurement_compile(device_cfg_transmon_example):
     sched = Schedule("Test schedule")
     sched.add(Measure("q0", "q1"))  # acq_index should be 0 for both.
     sched.add(Measure("q0", acq_index=1))
@@ -166,7 +163,7 @@ def test_measurement_compile():
     new_dev_sched = compile_circuit_to_device_with_config_validation(
         sched,
         config=SerialCompilationConfig(
-            name="test", device_compilation_config=example_transmon_cfg
+            name="test", device_compilation_config=device_cfg_transmon_example
         ),
     )
 
@@ -215,20 +212,22 @@ def test_measurement_compile():
         ),
     ],
 )
-def test_only_add_clocks_used(operations: List[Operation], clocks_used: List[str]):
+def test_only_add_clocks_used(
+    operations: List[Operation], clocks_used: List[str], device_cfg_transmon_example
+):
     sched = Schedule("Test schedule")
     for operation in operations:
         sched.add(operation)
     dev_sched = compile_circuit_to_device_with_config_validation(
         sched,
         config=SerialCompilationConfig(
-            name="test", device_compilation_config=example_transmon_cfg
+            name="test", device_compilation_config=device_cfg_transmon_example
         ),
     )
     checked_dev_sched = set_pulse_and_acquisition_clock(
         dev_sched,
         config=SerialCompilationConfig(
-            name="test", device_compilation_config=example_transmon_cfg
+            name="test", device_compilation_config=device_cfg_transmon_example
         ),
     )
 
@@ -371,26 +370,26 @@ def test_clock_not_defined_raises():
     )
 
 
-def test_reset_operations_compile():
+def test_reset_operations_compile(device_cfg_transmon_example):
     sched = Schedule("Test schedule")
     sched.add(Reset("q0"))
     sched.add(Reset("q0", "q1"))
     _ = compile_circuit_to_device_with_config_validation(
         sched,
         config=SerialCompilationConfig(
-            name="test", device_compilation_config=example_transmon_cfg
+            name="test", device_compilation_config=device_cfg_transmon_example
         ),
     )
 
 
-def test_qubit_not_in_config_raises():
+def test_qubit_not_in_config_raises(device_cfg_transmon_example):
     sched = Schedule("Test schedule")
     sched.add(Rxy(90, 0, qubit="q20"))
     with pytest.raises(ConfigKeyError):
         _ = compile_circuit_to_device_with_config_validation(
             sched,
             config=SerialCompilationConfig(
-                name="test", device_compilation_config=example_transmon_cfg
+                name="test", device_compilation_config=device_cfg_transmon_example
             ),
         )
 
@@ -400,7 +399,7 @@ def test_qubit_not_in_config_raises():
         _ = compile_circuit_to_device_with_config_validation(
             sched,
             config=SerialCompilationConfig(
-                name="test", device_compilation_config=example_transmon_cfg
+                name="test", device_compilation_config=device_cfg_transmon_example
             ),
         )
 
@@ -410,31 +409,31 @@ def test_qubit_not_in_config_raises():
         _ = compile_circuit_to_device_with_config_validation(
             sched,
             config=SerialCompilationConfig(
-                name="test", device_compilation_config=example_transmon_cfg
+                name="test", device_compilation_config=device_cfg_transmon_example
             ),
         )
 
 
-def test_edge_not_in_config_raises():
+def test_edge_not_in_config_raises(device_cfg_transmon_example):
     sched = Schedule("Test schedule")
     sched.add(CZ("q0", "q3"))
     with pytest.raises(ConfigKeyError):
         _ = compile_circuit_to_device_with_config_validation(
             sched,
             config=SerialCompilationConfig(
-                name="test", device_compilation_config=example_transmon_cfg
+                name="test", device_compilation_config=device_cfg_transmon_example
             ),
         )
 
 
-def test_operation_not_in_config_raises():
+def test_operation_not_in_config_raises(device_cfg_transmon_example):
     sched = Schedule("Test schedule")
     sched.add(CNOT("q0", "q1"))
     with pytest.raises(ConfigKeyError):
         _ = compile_circuit_to_device_with_config_validation(
             sched,
             config=SerialCompilationConfig(
-                name="test", device_compilation_config=example_transmon_cfg
+                name="test", device_compilation_config=device_cfg_transmon_example
             ),
         )
 

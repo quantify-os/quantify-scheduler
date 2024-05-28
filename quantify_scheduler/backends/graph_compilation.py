@@ -221,7 +221,7 @@ class CompilationConfig(DataStructure):
     """
     backend: Type[QuantifyCompiler]
     """A reference string to the :class:`~QuantifyCompiler` class used in the compilation."""
-    device_compilation_config: Optional[Union[DeviceCompilationConfig, Dict]] = None
+    device_compilation_config: Optional[DeviceCompilationConfig] = None
     """
     The :class:`~DeviceCompilationConfig` used in the compilation from the quantum-circuit
     layer to the quantum-device layer.

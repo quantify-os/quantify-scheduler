@@ -22,11 +22,7 @@ from quantify_scheduler.schedules.schedule import Schedule, Schedulable, Schedul
 
 def compile_circuit_to_device_with_config_validation(
     schedule: Schedule,
-    config: CompilationConfig | DeviceCompilationConfig | Dict | None = None,
-    # config can be DeviceCompilationConfig and Dict to support (deprecated) calling
-    # with device_cfg as positional argument.
-    *,  # Support for (deprecated) calling with device_cfg as keyword argument:
-    device_cfg: DeviceCompilationConfig | Dict | None = None,
+    config: CompilationConfig,
 ) -> Schedule:
     """
     Add pulse information to all gates in the schedule.
@@ -48,36 +44,19 @@ def compile_circuit_to_device_with_config_validation(
         :class:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler`, of
         which only the :attr:`.CompilationConfig.device_compilation_config`
         is used in this compilation step.
-    device_cfg
-        (deprecated) Device compilation config. Pass a full compilation config instead
-        using ``config`` argument. Note, if a dictionary is passed, it will be parsed to a
-        :class:`~.DeviceCompilationConfig`.
 
     Returns
     -------
     :
-        The modified ``schedule`` with pulse information added to all gates.
+        The modified ``schedule`` with pulse information added to all gates, or the unmodified
+        schedule if circuit to device compilation is not necessary.
 
-    Raises
-    ------
-    ValueError
-        When both ``config`` and ``device_cfg`` are supplied.
     """
-    device_cfg = _validate_and_extract_device_cfg(
-        config=config,
-        device_cfg=device_cfg,
-        caller_function_name=compile_circuit_to_device_with_config_validation.__name__,
+    device_cfg = DeviceCompilationConfig.model_validate(
+        config.device_compilation_config
     )
 
-    if device_cfg is None:
-        # This is a special case to be supported to enable compilation for schedules
-        # that are defined completely at the quantum-device layer and require no
-        # circuit to device compilation.
-        # A better solution would be to omit skip this compile call in a backend,
-        # but this is supported for backwards compatibility reasons.
-        return schedule
-
-    return _compile_circuit_to_device(schedule, device_cfg)
+    return _compile_circuit_to_device(operation=schedule, device_cfg=device_cfg)
 
 
 # It is important that if the operation is a Schedule type, we always return a Schedule.
@@ -146,34 +125,9 @@ def _compile_circuit_to_device(
         return operation
 
 
-def compile_circuit_to_device(
-    schedule: Schedule,
-    config: CompilationConfig | DeviceCompilationConfig | Dict | None = None,
-    # config can be DeviceCompilationConfig and Dict to support (deprecated) calling
-    # with device_cfg as positional argument.
-    *,  # Support for (deprecated) calling with device_cfg as keyword argument:
-    device_cfg: DeviceCompilationConfig | Dict | None = None,
-) -> Schedule:
-    """Add pulse information to all gates in the schedule."""
-    warnings.warn(
-        f"Calling {compile_circuit_to_device.__name__} directly is deprecated "
-        f"and will be removed from the public interface in quantify-scheduler "
-        f">= 0.21.0. Please use `QuantifyCompiler` instead, which calls "
-        f"{compile_circuit_to_device_with_config_validation.__name__} as a compilation node.",
-        FutureWarning,
-    )
-    return compile_circuit_to_device_with_config_validation(
-        schedule=deepcopy(schedule), config=config, device_cfg=device_cfg
-    )
-
-
 def set_pulse_and_acquisition_clock(
     schedule: Schedule,
-    config: CompilationConfig | DeviceCompilationConfig | Dict | None = None,
-    # config can be DeviceCompilationConfig and Dict to support (deprecated) calling
-    # with device_cfg as positional argument.
-    *,  # Support for (deprecated) calling with device_cfg as keyword argument:
-    device_cfg: DeviceCompilationConfig | Dict | None = None,
+    config: CompilationConfig,
 ) -> Schedule:
     """
     Ensures that each pulse/acquisition-level clock resource is added to the schedule,
@@ -194,15 +148,12 @@ def set_pulse_and_acquisition_clock(
         :class:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler`, of
         which only the :attr:`.CompilationConfig.device_compilation_config`
         is used in this compilation step.
-    device_cfg
-        (deprecated) Device compilation config. Pass a full compilation config instead
-        using ``config`` argument. Note, if a dictionary is passed, it will be parsed to a
-        :class:`~.DeviceCompilationConfig`.
 
     Returns
     -------
     :
-        The modified ``schedule`` with all clock resources added.
+        The modified ``schedule`` with all clock resources added, or the unmodified
+        schedule if circuit to device compilation is not necessary.
 
     Warns
     -----
@@ -214,27 +165,13 @@ def set_pulse_and_acquisition_clock(
     RuntimeError
         When operation is not at pulse/acquisition-level.
     ValueError
-        When both ``config`` and ``device_cfg`` are supplied.
-    ValueError
         When clock frequency is unknown.
     ValueError
         When clock frequency is NaN.
     """
-    device_cfg = _validate_and_extract_device_cfg(
-        config=config,
-        device_cfg=device_cfg,
-        caller_function_name=set_pulse_and_acquisition_clock.__name__,
+    device_cfg = DeviceCompilationConfig.model_validate(
+        config.device_compilation_config
     )
-
-    if device_cfg is None:
-        # This is a special case to be supported to enable compilation for schedules
-        # that are defined completely at the quantum-device layer and require no
-        # circuit to device compilation.
-        # A better solution would be to omit skip this compile call in a backend,
-        # but this is supported for backwards compatibility reasons.
-        return schedule
-
-    assert isinstance(device_cfg, DeviceCompilationConfig)
 
     all_clock_freqs: Dict[str, float] = {}
     _extract_clock_freqs(schedule, all_clock_freqs)
@@ -641,9 +578,7 @@ def _compile_two_qubits(
     )
 
     if isinstance(device_op, ScheduleBase):
-        return compile_circuit_to_device_with_config_validation(
-            schedule=device_op, device_cfg=device_cfg
-        )
+        return _compile_circuit_to_device(operation=device_op, device_cfg=device_cfg)
     else:
         operation.add_device_representation(device_op)
         return operation
@@ -692,40 +627,6 @@ def _get_device_repr_from_cfg_multiplexed(
                 factory_kwargs[key] = gate_info
 
     return factory_func(**factory_kwargs)
-
-
-def _validate_and_extract_device_cfg(
-    config: CompilationConfig | DeviceCompilationConfig | Dict | None,
-    device_cfg: DeviceCompilationConfig | Dict | None,
-    caller_function_name: str,
-) -> DeviceCompilationConfig:
-    if (config is not None) and (device_cfg is not None):
-        raise ValueError(
-            f"`{caller_function_name}` was called with {config=} "
-            f"and {device_cfg=}. Please make sure this function is called with "
-            f"only one of the two (CompilationConfig recommended)."
-        )
-    if not isinstance(config, CompilationConfig):
-        warnings.warn(
-            f"`{caller_function_name}` will require a full "
-            f"CompilationConfig as input as of quantify-scheduler >= 0.19.0",
-            FutureWarning,
-        )
-    if isinstance(config, CompilationConfig):
-        device_cfg = config.device_compilation_config
-    elif config is not None:
-        # Support for (deprecated) calling with device_cfg as positional argument:
-        device_cfg = config
-
-    if not isinstance(device_cfg, DeviceCompilationConfig):
-        if "backend" in device_cfg:
-            raise ValueError(
-                f"`{DeviceCompilationConfig.__name__}` no longer takes a"
-                f" 'backend' field; please remove it."
-            )
-        device_cfg = DeviceCompilationConfig.model_validate(device_cfg)
-
-    return device_cfg
 
 
 class ConfigKeyError(KeyError):

@@ -974,6 +974,34 @@ def test_compile_simple(
     )
 
 
+def test_compile_empty_device_compilation_config(hardware_cfg_cluster_legacy):
+    """Tests if compilation without a device config finishes without exceptions"""
+
+    sched = Schedule("pulse_only_experiment")
+    sched.add(IdlePulse(duration=200e-6))
+    sched.add(
+        DRAGPulse(
+            G_amp=0.5,
+            D_amp=-0.2,
+            phase=90,
+            port="q0:mw",
+            duration=20e-9,
+            clock="q0.01",
+            t0=4e-9,
+        )
+    )
+    sched.add_resource(ClockResource("q0.01", freq=5e9))
+
+    quantum_device = QuantumDevice("quantum_device")
+    quantum_device.hardware_config(hardware_cfg_cluster_legacy)
+
+    compiler = SerialCompiler(name="compiler")
+    compiler.compile(
+        sched,
+        config=quantum_device.generate_compilation_config(),
+    )
+
+
 def test_compile_with_third_party_instrument(
     pulse_only_schedule, compile_config_basic_transmon_qblox_hardware
 ):

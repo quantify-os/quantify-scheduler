@@ -48,6 +48,8 @@ This release comes with an interface for configuring hardware distortion correct
   - Change the default value of `DispersiveMeasurement.acq_weights_a` and `DispersiveMeasurement.acq_weights_b` from `None` to `np.array([], dtype=np.float64)`, so that `load_settings_onto_instrument` from `quantify-core` correctly detects that these parameters take numpy arrays. (!977)
 - Tests 
   - Convert transmon-specific hardware configs in test suite and docs to new style. (!972)
+- Qblox backend - Remove deprecated code from circuit_to_device.py. (!973)
+- Compilation - Remove deprecated input options from `circuit_to_device.py` functions. (!973)
 
 ### Compatibility Info
 
