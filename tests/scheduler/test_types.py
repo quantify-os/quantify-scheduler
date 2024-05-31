@@ -9,6 +9,7 @@ from quantify_scheduler import Operation, enums, json_utils
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.json_utils import SchedulerJSONDecoder
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
+from quantify_scheduler.operations.control_flow_library import LoopOperation
 from quantify_scheduler.operations.gate_library import (
     CNOT,
     CZ,
@@ -483,3 +484,24 @@ def test_acquisition_metadata():
     assert metadata_copy == metadata
     assert enums.BinMode(metadata_copy.bin_mode)
     assert isinstance(metadata_copy.acq_return_type, type)
+
+
+def test_nested_schedule_to_from_json():
+    schedule = Schedule("schedule")
+
+    inner = Schedule("inner")
+    inner.add(X("q0"))
+    schedule.add(LoopOperation(body=inner, repetitions=3))
+    schedule.add(inner)
+
+    # Serialization/deserialization using Schedule.to_json and Schedule.from_json.
+    schedule_serialized_1 = schedule.to_json()
+    schedule_deserialized_1 = Schedule.from_json(schedule_serialized_1)
+    assert schedule == schedule_deserialized_1
+
+    # Serialization/deserialization using json.dumps and json.loads functions.
+    schedule_serialized_2 = json.dumps(schedule, cls=json_utils.SchedulerJSONEncoder)
+    schedule_deserialized_2 = json.loads(
+        schedule_serialized_2, cls=json_utils.SchedulerJSONDecoder
+    )
+    assert schedule == schedule_deserialized_2

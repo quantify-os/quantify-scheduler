@@ -190,7 +190,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         :
             The json string result.
         """
-        return json.dumps(self.data, cls=json_utils.SchedulerJSONEncoder)
+        return json.dumps(self, cls=json_utils.SchedulerJSONEncoder)
 
     @classmethod
     def from_json(cls, data: str) -> Schedule:
@@ -207,11 +207,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         :
             The Schedule object.
         """
-        schedule_data = json_utils.SchedulerJSONDecoder().decode(data)
-        sched = Schedule.__new__(Schedule)
-        sched.__setstate__(schedule_data)
-
-        return sched
+        return json_utils.SchedulerJSONDecoder().decode(data)
 
     def plot_circuit_diagram(
         self,
@@ -647,14 +643,24 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         # For serialization, we need to keep the order
         # of keys in the serialized data too.
         data["schedulables"] = list(data["schedulables"].items())
-        return data
+        return {
+            "deserialization_type": export_python_object_to_path_string(self.__class__),
+            "data": data,
+        }
 
     def __setstate__(self, state: dict[str, Any]) -> None:
-        if isinstance(state["schedulables"], list):
+        # Logic to allow legacy (old serialized, saved) and current serialization.
+        data = (
+            state["data"]
+            if ("deserialization_type" in state) and ("data" in state)
+            else state
+        )
+
+        if isinstance(data["schedulables"], list):
             # Schedulables can be a list of pair of key values to store
             # the order of schedulables too in the serialized data.
-            state["schedulables"] = {k: v for k, v in state["schedulables"]}
-        self.data = state
+            data["schedulables"] = {k: v for k, v in data["schedulables"]}
+        self.data = data
 
 
 class Schedule(ScheduleBase):

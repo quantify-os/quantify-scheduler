@@ -27,6 +27,7 @@
 - Schedules
   - Introduce proper control flow handling. (!947)
   - Quickfix resources for subschedules. (!990)
+  - Fix for serialization of subschedules. (!992)
 - Compilation 
   - Make nv center hardware configs compatible with new-style compilation configs, which includes defining a `OpticalModulator` hardware description, and convert all nv center hardware configs to new style. (!966)
 
