@@ -19,7 +19,7 @@ from quantify_scheduler.operations.pulse_library import (
 
 def test_zero_duration_parameter_operations(
     mock_setup_basic_transmon_with_standard_params,
-    hardware_compilation_config_qblox_example,
+    qblox_hardware_config_transmon,
     assert_equal_q1asm,
 ):
     sched = Schedule("test")
@@ -44,7 +44,7 @@ def test_zero_duration_parameter_operations(
 
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
 
-    quantum_device.hardware_config(hardware_compilation_config_qblox_example)
+    quantum_device.hardware_config(qblox_hardware_config_transmon)
 
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
@@ -109,7 +109,7 @@ start:
 
 def test_zero_duration_parameter_operations_with_loops(
     mock_setup_basic_transmon_with_standard_params,
-    hardware_compilation_config_qblox_example,
+    qblox_hardware_config_transmon,
     assert_equal_q1asm,
 ):
     sched = Schedule("test")
@@ -134,7 +134,7 @@ def test_zero_duration_parameter_operations_with_loops(
 
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
 
-    quantum_device.hardware_config(hardware_compilation_config_qblox_example)
+    quantum_device.hardware_config(qblox_hardware_config_transmon)
 
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
@@ -179,7 +179,7 @@ loop11:
 @pytest.mark.xfail(reason="Part of MarkerPulse is in the loop. Known issue #473.")
 def test_marker_pulse_with_loop(
     mock_setup_basic_transmon_with_standard_params,
-    hardware_compilation_config_qblox_example,
+    qblox_hardware_config_transmon,
 ):
     inner = Schedule("inner")
     inner.add(SquarePulse(amp=0.5, duration=100e-9, port="q0:mw", clock="q0.01"))
@@ -190,7 +190,7 @@ def test_marker_pulse_with_loop(
 
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
 
-    quantum_device.hardware_config(hardware_compilation_config_qblox_example)
+    quantum_device.hardware_config(qblox_hardware_config_transmon)
 
     compiler = SerialCompiler(name="compiler")
     # FIXME #473. When fixed, this exception type should be made more specific and the xfail removed

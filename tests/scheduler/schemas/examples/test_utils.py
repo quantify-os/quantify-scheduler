@@ -6,7 +6,7 @@ from quantify_scheduler.schemas.examples import utils
 @pytest.mark.parametrize(
     "filename",
     [
-        "qblox_hardware_compilation_config.json",
+        "qblox_hardware_config_transmon.json",
         "zhinst_hardware_compilation_config.json",
     ],
 )

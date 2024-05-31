@@ -745,6 +745,46 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
 
         return self
 
+    @model_validator(mode="after")
+    def _warn_mix_lo_false(
+        self,
+    ) -> QbloxHardwareCompilationConfig:
+        channels_with_laser = []
+
+        if isinstance(self.connectivity, Connectivity):
+            # Find channels coupled to lasers
+            for edge in self.connectivity.graph.edges:
+                source, target = edge
+                if len(source.split(".")) == 3 and "laser" in target:
+                    channels_with_laser.append(source)
+
+                # Sometimes source and target appear swapped. This block can be removed
+                # after making graph directed. (SE-477)
+                elif len(target.split(".")) == 3 and "laser" in source:
+                    channels_with_laser.append(target)
+
+            # Find mix_lo value in hardware description
+            for channel_path in channels_with_laser:
+                cluster, module, channel = channel_path.split(".")
+                module_idx = int(module.replace("module", ""))
+                module_description = (
+                    self.hardware_description[cluster]
+                    .modules[module_idx]
+                    .model_dump(exclude_unset=True)
+                )
+                channel_description = module_description.get(channel, None)
+                if channel_description is not None:
+                    mix_lo = channel_description.get("mix_lo", None)
+                    # FIXME: https://qblox.atlassian.net/browse/SE-490
+                    if mix_lo is not None and mix_lo is False:
+                        warnings.warn(
+                            "Using `mix_lo=False` in channels coupled to lasers might cause ill-behavior. "
+                            "Please use quantify_scheduler=0.20.1.",
+                            FutureWarning,
+                        )
+
+        return self
+
     @model_validator(mode="before")
     @classmethod
     def from_old_style_hardware_config(
@@ -781,7 +821,9 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
             return bool(re.match(r"^lo\d+\.output$", node))
 
         def _is_port(node: str) -> bool:
-            return len(node.split(":")) == 2
+            # Exclude special case of `optical_control` ports in nv centers. This will be fixed
+            # when making connectivity graph directed. (SE-477)
+            return bool(len(node.split(":")) == 2 and "optical_control" not in node)
 
         if isinstance(self.connectivity, Connectivity):
             for edge in self.connectivity.graph.edges:

@@ -40,6 +40,9 @@ from quantify_scheduler.backends.qblox.enums import (
     QbloxFilterConfig,
     QbloxFilterMarkerDelay,
 )
+from quantify_scheduler.backends.qblox.hardware_config_transmon_old_style import (
+    hardware_config as hardware_config_transmon_old_style,
+)
 from quantify_scheduler.backends.qblox.helpers import (
     _generate_legacy_hardware_config,
     assign_pulse_and_acq_info_to_devices,
@@ -65,9 +68,6 @@ from quantify_scheduler.backends.qblox.operations.stitched_pulse import (
     StitchedPulseBuilder,
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
-from quantify_scheduler.backends.qblox.qblox_hardware_config_old_style import (
-    hardware_config as qblox_hardware_config_old_style,
-)
 from quantify_scheduler.backends.qblox_backend import (
     QbloxHardwareCompilationConfig,
     find_qblox_instruments,
@@ -478,7 +478,7 @@ def test_find_all_port_clock_combinations(
 ):
     combined_hw_cfg = copy.deepcopy(hardware_cfg_cluster_legacy)
     combined_hw_cfg["cluster1"] = hardware_cfg_rf_legacy["cluster0"]
-    combined_hw_cfg["cluster2"] = qblox_hardware_config_old_style["cluster0"]
+    combined_hw_cfg["cluster2"] = hardware_config_transmon_old_style["cluster0"]
 
     assert set(find_all_port_clock_combinations(combined_hw_cfg)) == {
         ("q1:mw", "q1.01"),
@@ -530,7 +530,9 @@ def test_find_all_port_clock_combinations_generated_hardware_config(
 
 
 def test_generate_port_clock_to_device_map():
-    portclock_map = generate_port_clock_to_device_map(qblox_hardware_config_old_style)
+    portclock_map = generate_port_clock_to_device_map(
+        hardware_config_transmon_old_style
+    )
 
     assert set(portclock_map.keys()) == {
         ("q0:mw", "q0.01"),
@@ -726,11 +728,9 @@ def test_construct_sequencers_exceeds_seq(
     )
 
 
-def test_find_qblox_instruments(hardware_compilation_config_qblox_example):
+def test_find_qblox_instruments(qblox_hardware_config_transmon):
     clusters = find_qblox_instruments(
-        hardware_config=hardware_compilation_config_qblox_example[
-            "hardware_description"
-        ],
+        hardware_config=qblox_hardware_config_transmon["hardware_description"],
         instrument_type="Cluster",
     )
     assert list(clusters.keys()) == ["cluster0"]
@@ -774,6 +774,25 @@ def test_invalid_channel_names_connectivity(
         )
 
     assert "Invalid connectivity" in error.exconly()
+
+
+def test_warn_mix_lo_false(hardware_cfg_trigger_count_legacy):
+    hardware_config = deepcopy(hardware_cfg_trigger_count_legacy)
+
+    # All channel tags must be set before portclock_configs for successful conversion to new style config
+    portclock_configs = hardware_config["cluster0"]["cluster0_module3"][
+        "real_input_0"
+    ].pop("portclock_configs")
+
+    hardware_config["cluster0"]["cluster0_module3"]["real_input_0"]["mix_lo"] = False
+    hardware_config["cluster0"]["cluster0_module3"]["real_input_0"][
+        "portclock_configs"
+    ] = portclock_configs
+
+    with pytest.warns(FutureWarning) as warn:
+        _ = QbloxHardwareCompilationConfig.model_validate(hardware_config)
+
+    assert "Please use quantify_scheduler=0.20.1." in str(warn[0].message)
 
 
 @pytest.mark.parametrize(
@@ -1674,12 +1693,10 @@ def _func_for_hook_test(qasm: QASMProgram):
 def test_qasm_hook(
     pulse_only_schedule,
     mock_setup_basic_transmon_with_standard_params,
-    hardware_compilation_config_qblox_example,
+    qblox_hardware_config_transmon,
 ):
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    hardware_compilation_config = copy.deepcopy(
-        hardware_compilation_config_qblox_example
-    )
+    hardware_compilation_config = copy.deepcopy(qblox_hardware_config_transmon)
     hardware_compilation_config["hardware_options"]["sequencer_options"] = {
         "q0:mw-q0.01": {
             "qasm_hook_func": _func_for_hook_test,
@@ -2138,8 +2155,8 @@ def test_from_mapping(
         assert instr_name in container.instrument_compilers
 
 
-def test_extract_instrument_compiler_configs(hardware_compilation_config_qblox_example):
-    hardware_config = deepcopy(hardware_compilation_config_qblox_example)
+def test_extract_instrument_compiler_configs(qblox_hardware_config_transmon):
+    hardware_config = deepcopy(qblox_hardware_config_transmon)
 
     # Add additional clusters to compilation config
     hardware_config["hardware_description"]["cluster1"] = {
@@ -2648,7 +2665,7 @@ def test_assign_frequencies_rf(compile_config_basic_transmon_qblox_hardware):
     ],
 )
 def test_assign_frequencies_rf_downconverter(
-    hardware_compilation_config_qblox_example,
+    qblox_hardware_config_transmon,
     mock_setup_basic_transmon_elements,
     downconverter_freq0,
     downconverter_freq1,
@@ -2658,9 +2675,7 @@ def test_assign_frequencies_rf_downconverter(
     sched.add(X(element_names[0]))
     sched.add(X(element_names[1]))
 
-    hardware_compilation_config = copy.deepcopy(
-        hardware_compilation_config_qblox_example
-    )
+    hardware_compilation_config = copy.deepcopy(qblox_hardware_config_transmon)
     hardware_compilation_config["hardware_description"]["cluster0"]["modules"]["2"][
         "complex_output_0"
     ] = {"downconverter_freq": downconverter_freq0}
@@ -2776,7 +2791,7 @@ def test_assign_attenuation_old_style_hardware_config(
     Test function that checks if attenuation settings on a QRM-RF compile correctly.
     Also checks if floats are correctly converted to ints (if they are close to ints).
     """
-    hardware_cfg = copy.deepcopy(qblox_hardware_config_old_style)
+    hardware_cfg = copy.deepcopy(hardware_config_transmon_old_style)
 
     complex_input = hardware_cfg["cluster0"]["cluster0_module4"]["complex_input_0"]
     complex_output = hardware_cfg["cluster0"]["cluster0_module4"]["complex_output_0"]
@@ -2967,7 +2982,7 @@ def test_assign_gain(compile_config_basic_transmon_qblox_hardware):
 )
 def test_set_power_scaling_invalid(
     mock_setup_basic_transmon_with_standard_params,
-    hardware_compilation_config_qblox_example,
+    qblox_hardware_config_transmon,
     portclock,
     not_supported_option,
     value,
@@ -2976,9 +2991,7 @@ def test_set_power_scaling_invalid(
     sched.add(Measure("q0"))
 
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    hardware_compilation_config = copy.deepcopy(
-        hardware_compilation_config_qblox_example
-    )
+    hardware_compilation_config = copy.deepcopy(qblox_hardware_config_transmon)
     hardware_compilation_config["hardware_options"]["power_scaling"][portclock] = {
         not_supported_option: value
     }
@@ -3507,7 +3520,7 @@ def test_apply_mixer_corrections(
 
 def test_compile_sequencer_options(
     mock_setup_basic_transmon_with_standard_params,
-    hardware_compilation_config_qblox_example,
+    qblox_hardware_config_transmon,
 ):
     sched = Schedule("Simple experiment")
     sched.add(
@@ -3516,9 +3529,7 @@ def test_compile_sequencer_options(
     )
 
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    hardware_compilation_config = copy.deepcopy(
-        hardware_compilation_config_qblox_example
-    )
+    hardware_compilation_config = copy.deepcopy(qblox_hardware_config_transmon)
 
     hardware_compilation_config["hardware_options"]["sequencer_options"] = {
         "q4:res-q4.ro": {
@@ -4171,7 +4182,7 @@ def test_overlapping_operations_warn(
 
 @pytest.mark.parametrize("debug_mode", [True, False])
 def test_debug_mode_qasm_aligning(
-    hardware_compilation_config_qblox_example,
+    qblox_hardware_config_transmon,
     mock_setup_basic_transmon_with_standard_params,
     debug_mode,
 ):
@@ -4180,7 +4191,7 @@ def test_debug_mode_qasm_aligning(
     affects the compiled Q1ASM code. It should add proper aligning.
     """
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    quantum_device.hardware_config(hardware_compilation_config_qblox_example)
+    quantum_device.hardware_config(qblox_hardware_config_transmon)
     compilation_config = quantum_device.generate_compilation_config()
     compilation_config.debug_mode = debug_mode
 
@@ -4258,7 +4269,7 @@ start:
     ],
 )
 def test_overlapping_pulse_and_voltage_offset_raises1(
-    hardware_compilation_config_qblox_example,
+    qblox_hardware_config_transmon,
     mock_setup_basic_transmon_with_standard_params,
     op1,
     op2,
@@ -4266,7 +4277,7 @@ def test_overlapping_pulse_and_voltage_offset_raises1(
     rel_time2,
 ):
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    quantum_device.hardware_config(hardware_compilation_config_qblox_example)
+    quantum_device.hardware_config(qblox_hardware_config_transmon)
     compilation_config = quantum_device.generate_compilation_config()
 
     compiler = SerialCompiler(name="compiler")
@@ -4750,7 +4761,7 @@ def test_1_ns_time_grid_nco(compile_config_basic_transmon_qblox_hardware):
 
 @pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 def test_compile_hardware_distortion_corrections():
-    hardware_cfg = copy.deepcopy(qblox_hardware_config_old_style)
+    hardware_cfg = copy.deepcopy(hardware_config_transmon_old_style)
     hardware_cfg["cluster0"]["cluster0_module4"]["complex_input_0"].pop("input_att")
 
     sched = Schedule("Qblox hardware distortion corrections test", repetitions=1)

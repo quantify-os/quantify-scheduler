@@ -1,0 +1,120 @@
+{
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+    "hardware_description": {
+        "cluster0": {
+            "instrument_type": "Cluster",
+            "ref": "internal",
+            "modules": {
+                "1": {"instrument_type": "QCM_RF"},
+                "2": {"instrument_type": "QCM"},
+                "4": {"instrument_type": "QRM"}
+            }
+        },
+        "red_laser": {
+            "instrument_type": "LocalOscillator",
+            "power": 1
+        },
+        "spinpump_laser": {
+            "instrument_type": "LocalOscillator",
+            "power": 1
+        },
+        "green_laser": {
+            "instrument_type": "LocalOscillator",
+            "power": 1
+        },
+        "optical_mod_red_laser": {
+            "instrument_type": "OpticalModulator"
+        },
+        "optical_mod_spinpump_laser": {
+            "instrument_type": "OpticalModulator"
+        },
+        "optical_mod_green_laser": {
+            "instrument_type": "OpticalModulator"
+        }
+    },
+    "hardware_options": {
+        "modulation_frequencies": {
+            "qe0:mw-qe0.spec": {
+                "interm_freq": 200000000.0,
+                "lo_freq": null
+            },
+            "qe0:optical_control-qe0.ge1": {
+            	"interm_freq": 200e6,
+            	"lo_freq": null
+            },
+            "qe0:optical_control-qe0.ionization": {
+            	"interm_freq": 200e6,
+            	"lo_freq": null
+            },
+            "qe0:optical_control-qe0.ge0": {
+            	"interm_freq": 200e6,
+            	"lo_freq": null
+            },
+            "qe0:optical_readout-qe0.ge0": {
+            	"interm_freq": 0,
+            	"lo_freq": null
+            }
+        },
+        "mixer_corrections": {
+            "qe0:mw-qe0.spec": {
+                "dc_offset_i": 0.0,
+                "dc_offset_q": 0.0,
+                "amp_ratio": 0.9999,
+                "phase_error": -4.2
+            }
+       },
+        "sequencer_options": {
+            "qe0:optical_readout-qe0.ge0": {
+                "ttl_acq_threshold": 0.5
+            }
+        }
+    },
+    "connectivity": {
+        "graph": [
+            [
+                "cluster0.module1.complex_output_0",
+                "qe0:mw"
+            ],
+            [
+                "cluster0.module2.real_output_0",
+                "optical_mod_spinpump_laser.if"
+            ],
+            [
+                "spinpump_laser.output",
+                "optical_mod_spinpump_laser.lo"
+            ],
+            [
+                "optical_mod_spinpump_laser.out",
+                "qe0:optical_control"
+            ],
+	        [
+                "cluster0.module2.real_output_1",
+                "optical_mod_green_laser.if"
+            ],
+            [
+                "green_laser.output",
+                "optical_mod_green_laser.lo"
+            ],
+            [
+                "optical_mod_green_laser.out",
+                "qe0:optical_control"
+            ],
+            [
+                "cluster0.module2.real_output_2",
+                "optical_mod_red_laser.if"
+            ],
+            [
+                "red_laser.output",
+                "optical_mod_red_laser.lo"
+            ],
+            [
+                "optical_mod_red_laser.out",
+                "qe0:optical_control"
+            ],
+            [
+                "cluster0.module4.real_output_0",
+                "qe0:optical_readout"
+            ]
+        ]
+    }
+}

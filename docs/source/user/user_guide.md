@@ -376,7 +376,7 @@ Currently, this datastructure is parsed from a user-defined dict that should be 
 (user-guide-qblox-hardware-compilation-config)=
 ````{admonition} Example Qblox hardware compilation configuration file
 :class: dropdown
-```{literalinclude} ../../../quantify_scheduler/schemas/examples/qblox_hardware_compilation_config.json
+```{literalinclude} ../../../quantify_scheduler/schemas/examples/qblox_hardware_config_transmon.json
 :language: JSON
 ```
 ````

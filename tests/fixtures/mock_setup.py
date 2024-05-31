@@ -27,8 +27,8 @@ from tests import is_zhinst_available
 ZHINST_HARDWARE_COMPILATION_CONFIG = utils.load_json_example_scheme(
     "zhinst_hardware_compilation_config.json"
 )
-QBLOX_HARDWARE_COMPILATION_CONFIG = utils.load_json_example_scheme(
-    "qblox_hardware_compilation_config.json"
+QBLOX_HARDWARE_CONFIG_TRANSMON = utils.load_json_example_scheme(
+    "qblox_hardware_config_transmon.json"
 )
 
 
@@ -118,7 +118,7 @@ def mock_setup_basic_nv_qblox_hardware(mock_setup_basic_nv):
     """
 
     mock_setup_basic_nv["quantum_device"].hardware_config.set(
-        utils.load_json_example_scheme("qblox_test_mapping_nv_centers.json")
+        utils.load_json_example_scheme("qblox_hardware_config_nv_center.json")
     )
 
     yield mock_setup_basic_nv
@@ -190,7 +190,7 @@ def compile_config_basic_transmon_qblox_hardware(
     # as we separate the config up into a more fine grained config. For now it uses
     # the old JSON files to load settings from.
     mock_setup = mock_setup_basic_transmon_with_standard_params
-    mock_setup["quantum_device"].hardware_config(QBLOX_HARDWARE_COMPILATION_CONFIG)
+    mock_setup["quantum_device"].hardware_config(QBLOX_HARDWARE_CONFIG_TRANSMON)
 
     yield mock_setup["quantum_device"].generate_compilation_config()
 

@@ -263,7 +263,7 @@ def test_conditional_reset_inside_loop(mock_setup_basic_transmon_with_standard_p
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
 
     hardware_config = utils.load_json_example_scheme(
-        "qblox_hardware_compilation_config.json"
+        "qblox_hardware_config_transmon.json"
     )
     quantum_device.hardware_config(hardware_config)
     config = quantum_device.generate_compilation_config()
@@ -302,7 +302,7 @@ def test_conditional_reset_single_qubit(
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
 
     hardware_config = utils.load_json_example_scheme(
-        "qblox_hardware_compilation_config.json"
+        "qblox_hardware_config_transmon.json"
     )
     quantum_device.hardware_config(hardware_config)
     config = quantum_device.generate_compilation_config()
@@ -390,7 +390,7 @@ def test_conditional_acquire_without_control_flow_raises(
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
 
     hardware_config = utils.load_json_example_scheme(
-        "qblox_hardware_compilation_config.json"
+        "qblox_hardware_config_transmon.json"
     )
     quantum_device.hardware_config(hardware_config)
     config = quantum_device.generate_compilation_config()
@@ -484,7 +484,7 @@ def test_conditional_reset_multi_qubits(
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
 
     hardware_config = utils.load_json_example_scheme(
-        "qblox_hardware_compilation_config.json"
+        "qblox_hardware_config_transmon.json"
     )
     quantum_device.hardware_config(hardware_config)
     config = quantum_device.generate_compilation_config()

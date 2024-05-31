@@ -6,6 +6,10 @@
 
 ### Breaking changes
 
+- NV Centers
+  - clock names in the hardware configurtion require the format `<qubit>.<tag>` (!966)
+    - this is only a temporary convention until we finalize formalizing the new hardware config. 
+
 ### Deprecation
 
 ### Merged branches and closed issues
@@ -22,7 +26,8 @@
 - Schedules
   - Introduce proper control flow handling. (!947)
   - Quickfix resources for subschedules. (!990)
-
+- Compilation 
+  - Make nv center hardware configs compatible with new-style compilation configs, which includes defining a `OpticalModulator` hardware description, and convert all nv center hardware configs to new style. (!966)
 
 ## 0.20.1 (2024-05-01)
 

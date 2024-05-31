@@ -528,7 +528,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
                 device_config = quantum_device.generate_device_config()
                 hardware_config = utils.load_json_example_scheme(
-                    "qblox_hardware_compilation_config.json"
+                    "qblox_hardware_config_transmon.json"
                 )
                 hardware_config["hardware_options"].pop("distortion_corrections")
                 quantum_device.hardware_config(hardware_config)

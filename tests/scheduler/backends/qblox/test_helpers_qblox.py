@@ -10,22 +10,34 @@ import pytest
 
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.qblox import helpers
+from quantify_scheduler.backends.qblox.hardware_config_nv_center_old_style import (
+    hardware_config as hardware_config_nv_center_old_style,
+)
+from quantify_scheduler.backends.qblox.hardware_config_transmon_old_style import (
+    hardware_config as hardware_config_transmon_old_style,
+)
 from quantify_scheduler.backends.qblox.instrument_compilers import (
     QRMCompiler,
-)
-from quantify_scheduler.backends.qblox.qblox_hardware_config_old_style import (
-    hardware_config as qblox_hardware_config_old_style,
 )
 from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
 from quantify_scheduler.backends.types.qblox import (
     BasebandModuleSettings,
 )
+from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.helpers.collections import find_all_port_clock_combinations
 from quantify_scheduler.operations.gate_library import Measure
-from quantify_scheduler.operations.pulse_library import SquarePulse
+from quantify_scheduler.operations.pulse_library import MarkerPulse, SquarePulse
 from quantify_scheduler.schedules.schedule import Schedule
+from quantify_scheduler.schemas.examples import utils
+
+QBLOX_HARDWARE_CONFIG_TRANSMON = utils.load_json_example_scheme(
+    "qblox_hardware_config_transmon.json"
+)
+QBLOX_HARDWARE_CONFIG_NV_CENTER = utils.load_json_example_scheme(
+    "qblox_hardware_config_nv_center.json"
+)
 
 
 @pytest.mark.parametrize(
@@ -221,26 +233,31 @@ def test_Frequencies():
             freq.validate()
 
 
-def test_generate_legacy_hardware_config(hardware_compilation_config_qblox_example):
+@pytest.mark.parametrize(
+    "new_style_config, old_style_config",
+    [
+        (QBLOX_HARDWARE_CONFIG_TRANSMON, hardware_config_transmon_old_style),
+        (QBLOX_HARDWARE_CONFIG_NV_CENTER, hardware_config_nv_center_old_style),
+    ],
+)
+def test_generate_old_style_hardware_config(new_style_config, old_style_config):
     sched = Schedule("All portclocks schedule")
     quantum_device = QuantumDevice("All_portclocks_device")
-    quantum_device.hardware_config(hardware_compilation_config_qblox_example)
+    quantum_device.hardware_config(new_style_config)
 
     qubits = {}
     sched = Schedule("All portclocks schedule")
-    for port, clock in find_all_port_clock_combinations(
-        qblox_hardware_config_old_style
-    ):
+    for port, clock in find_all_port_clock_combinations(old_style_config):
         sched.add(SquarePulse(port=port, clock=clock, amp=0.25, duration=12e-9))
         if (qubit_name := port.split(":")[0]) not in quantum_device.elements():
-            qubits[qubit_name] = BasicTransmonElement(qubit_name)
+            qubits[qubit_name] = BasicElectronicNVElement(qubit_name)
             quantum_device.add_element(qubits[qubit_name])
 
     generated_hw_config = helpers._generate_legacy_hardware_config(
         schedule=sched, compilation_config=quantum_device.generate_compilation_config()
     )
 
-    assert generated_hw_config == qblox_hardware_config_old_style
+    assert generated_hw_config == old_style_config
 
 
 def test_preprocess_legacy_hardware_config(
@@ -352,15 +369,20 @@ def test_find_channel_names(hardware_cfg_rf_legacy):
     ]
 
 
-def test_generate_new_style_hardware_compilation_config(
-    hardware_compilation_config_qblox_example,
-):
+@pytest.mark.parametrize(
+    "new_style_config, old_style_config",
+    [
+        (QBLOX_HARDWARE_CONFIG_TRANSMON, hardware_config_transmon_old_style),
+        (QBLOX_HARDWARE_CONFIG_NV_CENTER, hardware_config_nv_center_old_style),
+    ],
+)
+def test_generate_new_style_hardware_config(new_style_config, old_style_config):
     parsed_new_style_config = QbloxHardwareCompilationConfig.model_validate(
-        hardware_compilation_config_qblox_example
+        new_style_config
     )
 
     converted_new_style_hw_cfg = QbloxHardwareCompilationConfig.model_validate(
-        qblox_hardware_config_old_style
+        old_style_config
     )
 
     # Partial checks

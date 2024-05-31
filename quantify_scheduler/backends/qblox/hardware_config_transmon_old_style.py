@@ -1,6 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-"""Example old-style Qblox hardware config dictionary for legacy support."""
+"""Example old-style Qblox hardware config dictionary of a transmon setup for legacy support."""
 
 from quantify_scheduler.backends.qblox.enums import DistortionCorrectionLatencyEnum
 

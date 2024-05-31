@@ -490,9 +490,11 @@ Clocks in digital channels serve simply as a label and are automatically set to 
 - a clock that is present by default in the schedule resources, i.e. {attr}`"digital" <quantify_scheduler.resources.DigitalClockResource.IDENTITY>` or {attr}`"cl0.baseband" <quantify_scheduler.resources.BasebandClockResource.IDENTITY>`.
 
 
-### External IQ mixers and local oscillators
+### External IQ mixers, optical modulators and local oscillators
 
-Baseband modules can be connected to external IQ mixers and local oscillators. To achieve this, you should add a {class}`~.quantify_scheduler.backends.types.common.IQMixerDescription` and {class}`~.quantify_scheduler.backends.types.common.LocalOscillatorDescription` to the `"hardware_description"` part of the hardware compilation config, and specify the connections of the `"if"`, `"lo"` and `"rf"` ports on the IQ mixer in the `"connectivity"` part of the hardware compilation config. The compiler will then use this information to assign the pulses and acquisitions to the port on the baseband module that is connected to the `"if"` port on the IQ mixer, and set the local oscillator and intermodulation frequencies accordingly.
+Baseband modules can be connected to external IQ mixers, optical modulators and local oscillators. For local oscillators coupled with IQ mixers, you should add a {class}`~.quantify_scheduler.backends.types.common.IQMixerDescription` and {class}`~.quantify_scheduler.backends.types.common.LocalOscillatorDescription` to the `"hardware_description"` part of the hardware compilation config, and specify the connections of the `"if"`, `"lo"` and `"rf"` ports on the IQ mixer in the `"connectivity"` part of the hardware compilation config. The compiler will then use this information to assign the pulses and acquisitions to the port on the baseband module that is connected to the `"if"` port on the IQ mixer, and set the local oscillator and intermodulation frequencies accordingly.
+
+For local oscillators coupled with optical modulators, you should instead add a {class}`~.quantify_scheduler.backends.types.common.OpticalModulatorDescription` and use the `"if"`, `"lo"` and `"out"` ports. For a qubit `"qi"`, local oscillators names must include `"green_laser"`, `"spinpump_laser"` or `"red_laser"` (these are associated with clocks `"qi.ionization"`, `"qi.ge1"` and `"qi.ge0"`, respectively).
 
 ```{admonition} Local Oscillator Description
 It is possible to add `"generic_icc_name"` as an optional parameter to the local oscillator hardware description, but only the default name `"generic"` is supported currently with the Qblox backend.
@@ -566,10 +568,10 @@ sched.add(
     SquarePulse(amp=1, duration=1e-6, port="q0:mw", clock="q0.01")
 )
 sched.add(
-    SquarePulse(amp=0.5, duration=1e-6, port="q0:mw", clock="some_other_clock")
+    SquarePulse(amp=0.5, duration=1e-6, port="q0:mw", clock="q0.some_other_clock")
 )
 sched.add_resource(ClockResource(name="q0.01", freq=200e6))
-sched.add_resource(ClockResource(name="some_other_clock", freq=100e6))
+sched.add_resource(ClockResource(name="q0.some_other_clock", freq=100e6))
 ```
 
 ```{code-cell} ipython3

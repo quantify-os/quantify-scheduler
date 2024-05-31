@@ -637,7 +637,7 @@ def test_prepare_baseband(  # noqa: PLR0915
 def test_prepare_rf(
     mocker,
     mock_setup_basic_transmon,
-    hardware_compilation_config_qblox_example,
+    qblox_hardware_config_transmon,
     make_cluster_component,
     force_set_parameters,
 ):
@@ -677,7 +677,7 @@ def test_prepare_rf(
     sched.add_resource(ClockResource("q0.ro", freq=8e9))
 
     quantum_device = mock_setup_basic_transmon["quantum_device"]
-    quantum_device.hardware_config(hardware_compilation_config_qblox_example)
+    quantum_device.hardware_config(qblox_hardware_config_transmon)
 
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
@@ -700,9 +700,9 @@ def test_prepare_rf(
         ("out1_att", ["output_att", "q6:mw-q6.01"]),
     ]:
         qcm_rf.parameters[qcodes_param].set.assert_any_call(
-            hardware_compilation_config_qblox_example["hardware_options"][
-                hw_options_param[0]
-            ][hw_options_param[1]]
+            qblox_hardware_config_transmon["hardware_options"][hw_options_param[0]][
+                hw_options_param[1]
+            ]
         )
     qcm_rf["sequencer0"].parameters[f"sync_en"].set.assert_called_with(True)
 
@@ -711,9 +711,9 @@ def test_prepare_rf(
         ("in0_att", ["input_att", "q0:res-q0.ro"]),
     ]:
         qrm_rf.parameters[qcodes_param].set.assert_any_call(
-            hardware_compilation_config_qblox_example["hardware_options"][
-                hw_options_param[0]
-            ][hw_options_param[1]]
+            qblox_hardware_config_transmon["hardware_options"][hw_options_param[0]][
+                hw_options_param[1]
+            ]
         )
     qrm_rf["sequencer0"].parameters[f"sync_en"].set.assert_called_with(True)
 

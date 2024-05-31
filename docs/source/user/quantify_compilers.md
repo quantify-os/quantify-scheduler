@@ -89,12 +89,12 @@ Note that in the future we want to improve how the hardware compilation config i
 ```{code-cell}
 from quantify_scheduler.schemas.examples import utils
 
-QBLOX_HARDWARE_COMP_CFG = utils.load_json_example_scheme("qblox_hardware_compilation_config.json")
+QBLOX_HARDWARE_CONFIG_TRANSMON = utils.load_json_example_scheme("qblox_hardware_config_transmon.json")
 ZHINST_HARDWARE_COMP_CFG = utils.load_json_example_scheme("zhinst_hardware_compilation_config.json")
 
 dev_cfg = quantum_device.generate_compilation_config()
 
-quantum_device.hardware_config(QBLOX_HARDWARE_COMP_CFG)
+quantum_device.hardware_config(QBLOX_HARDWARE_CONFIG_TRANSMON)
 qblox_cfg = quantum_device.generate_compilation_config()
 
 quantum_device.hardware_config(ZHINST_HARDWARE_COMP_CFG)

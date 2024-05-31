@@ -281,6 +281,13 @@ class IQMixerDescription(DataStructure):
     """The field discriminator for this HardwareDescription datastructure."""
 
 
+class OpticalModulatorDescription(DataStructure):
+    """Information needed to specify an optical modulator in the :class:`~.CompilationConfig`."""
+
+    instrument_type: Literal["OpticalModulator"]
+    """The field discriminator for this HardwareDescription datastructure."""
+
+
 class HardwareDescription(DataStructure):
     """
     Specifies a piece of hardware and its instrument-specific settings.

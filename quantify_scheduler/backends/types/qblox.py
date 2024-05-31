@@ -36,6 +36,7 @@ from quantify_scheduler.backends.types.common import (
     HardwareOptions,
     IQMixerDescription,
     LocalOscillatorDescription,
+    OpticalModulatorDescription,
     SoftwareDistortionCorrection,
 )
 from quantify_scheduler.structure.model import DataStructure
@@ -802,6 +803,8 @@ class RealChannelDescription(DataStructure):
     Setting to send 4 ns trigger pulse on the marker located next to the I/O port along with each operation.
     The marker will be pulled high at the same time as the module starts playing or acquiring.
     """
+    mix_lo: bool = True
+    """Whether IQ mixing with a local oscillator is enabled for this channel. Effectively always ``True`` for RF modules."""
     distortion_correction_latency_compensation: int = (
         DistortionCorrectionLatencyEnum.NO_DELAY_COMP
     )
@@ -969,6 +972,7 @@ QbloxHardwareDescription = Annotated[
         ClusterDescription,
         LocalOscillatorDescription,
         IQMixerDescription,
+        OpticalModulatorDescription,
     ],
     Field(discriminator="instrument_type"),
 ]
@@ -1157,7 +1161,7 @@ class QbloxHardwareOptions(HardwareOptions):
                 QbloxHardwareOptions
             )
             qblox_hw_options_dict = load_json_example_scheme(
-                "qblox_hardware_compilation_config.json")["hardware_options"]
+                "qblox_hardware_config_transmon.json")["hardware_options"]
             pprint.pprint(qblox_hw_options_dict)
 
         The dictionary can be parsed using the :code:`model_validate` method.

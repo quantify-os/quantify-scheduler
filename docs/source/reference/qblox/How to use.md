@@ -25,9 +25,9 @@ mystnb:
 
 import json
 
-from quantify_scheduler.backends.qblox.qblox_hardware_config_old_style import hardware_config as old_style_hardware_config
+from quantify_scheduler.backends.qblox.hardware_config_transmon_old_style import hardware_config as hardware_config_transmon_old_style
 
-print(json.dumps(old_style_hardware_config, indent=4, sort_keys=False))
+print(json.dumps(hardware_config_transmon_old_style, indent=4, sort_keys=False))
 ```
 
 
@@ -45,10 +45,10 @@ from pathlib import Path
 import quantify_scheduler.schemas.examples as es
 
 esp = inspect.getfile(es)
-cfg_f = Path(esp).parent / "qblox_hardware_compilation_config.json"
+cfg_f = Path(esp).parent / "qblox_hardware_config_transmon.json"
 
 with open(cfg_f, "r") as f:
-  qblox_hardware_compilation_config = json.load(f)
+  qblox_hardware_config_transmon = json.load(f)
 
-print(json.dumps(qblox_hardware_compilation_config, indent=4, sort_keys=False))  # Do not sort to retain the order as in the file
+print(json.dumps(qblox_hardware_config_transmon, indent=4, sort_keys=False))  # Do not sort to retain the order as in the file
 ```

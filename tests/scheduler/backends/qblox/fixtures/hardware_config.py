@@ -5,16 +5,22 @@ import pytest
 from quantify_scheduler.resources import BasebandClockResource
 from quantify_scheduler.schemas.examples import utils
 
-QBLOX_HARDWARE_COMPILATION_CONFIG = utils.load_json_example_scheme(
-    "qblox_hardware_compilation_config.json"
+QBLOX_HARDWARE_CONFIG_TRANSMON = utils.load_json_example_scheme(
+    "qblox_hardware_config_transmon.json"
+)
+QBLOX_HARDWARE_CONFIG_NV_CENTER = utils.load_json_example_scheme(
+    "qblox_hardware_config_nv_center.json"
 )
 
 
 @pytest.fixture
-def hardware_compilation_config_qblox_example() -> (
-    Generator[Dict[str, Any], None, None]
-):
-    yield dict(QBLOX_HARDWARE_COMPILATION_CONFIG)
+def qblox_hardware_config_transmon() -> Generator[Dict[str, Any], None, None]:
+    yield dict(QBLOX_HARDWARE_CONFIG_TRANSMON)
+
+
+@pytest.fixture
+def qblox_hardware_config_nv_center() -> Generator[Dict[str, Any], None, None]:
+    yield dict(QBLOX_HARDWARE_CONFIG_NV_CENTER)
 
 
 @pytest.fixture
@@ -264,8 +270,7 @@ def hardware_cfg_trigger_count_legacy():
             "cluster0_module3": {
                 "instrument_type": "QRM",
                 "real_input_0": {
-                    "lo_name": "laser_red",
-                    "mix_lo": False,
+                    "lo_name": "red_laser",
                     "portclock_configs": [
                         {
                             "port": "qe0:optical_readout",
@@ -276,6 +281,7 @@ def hardware_cfg_trigger_count_legacy():
                     ],
                 },
                 "real_output_0": {
+                    "lo_name": "red_laser_2",
                     "portclock_configs": [
                         {
                             "port": "qe0:optical_control",
@@ -286,7 +292,12 @@ def hardware_cfg_trigger_count_legacy():
                 },
             },
         },
-        "laser_red": {
+        "red_laser": {
+            "instrument_type": "LocalOscillator",
+            "frequency": None,
+            "power": 1,
+        },
+        "red_laser_2": {
             "instrument_type": "LocalOscillator",
             "frequency": None,
             "power": 1,

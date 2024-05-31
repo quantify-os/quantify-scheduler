@@ -697,12 +697,12 @@ def test_custom_long_trace_acquisition_measurement_control(
 )
 def test_thresholded_acquisition(
     mock_setup_basic_transmon_with_standard_params,
-    hardware_compilation_config_qblox_example,
+    qblox_hardware_config_transmon,
     qubit_name,
     rotation,
     threshold,
 ):
-    hardware_config = hardware_compilation_config_qblox_example
+    hardware_config = qblox_hardware_config_transmon
     mock_setup = mock_setup_basic_transmon_with_standard_params
     quantum_device = mock_setup["quantum_device"]
     quantum_device.hardware_config(hardware_config)
@@ -814,13 +814,16 @@ def test_trigger_count_append(
 ):
     # Setup objects needed for experiment
     ic_cluster0 = make_cluster_component("cluster0")
-    laser_red = MockLocalOscillator("laser_red")
-    ic_laser_red = GenericInstrumentCoordinatorComponent(laser_red)
+    red_laser = MockLocalOscillator("red_laser")
+    red_laser_2 = MockLocalOscillator("red_laser_2")
+    ic_red_laser = GenericInstrumentCoordinatorComponent(red_laser)
+    ic_red_laser_2 = GenericInstrumentCoordinatorComponent(red_laser_2)
     ic_generic = GenericInstrumentCoordinatorComponent("generic")
 
     instr_coordinator = mock_setup_basic_nv["instrument_coordinator"]
     instr_coordinator.add_component(ic_cluster0)
-    instr_coordinator.add_component(ic_laser_red)
+    instr_coordinator.add_component(ic_red_laser)
+    instr_coordinator.add_component(ic_red_laser_2)
     instr_coordinator.add_component(ic_generic)
 
     quantum_device = mock_setup_basic_nv["quantum_device"]
@@ -888,13 +891,16 @@ def test_trigger_count_append_gettables(
 ):
     # Setup objects needed for experiment
     ic_cluster0 = make_cluster_component("cluster0")
-    laser_red = MockLocalOscillator("laser_red")
-    ic_laser_red = GenericInstrumentCoordinatorComponent(laser_red)
+    red_laser = MockLocalOscillator("red_laser")
+    red_laser_2 = MockLocalOscillator("red_laser_2")
+    ic_red_laser = GenericInstrumentCoordinatorComponent(red_laser)
+    ic_red_laser_2 = GenericInstrumentCoordinatorComponent(red_laser_2)
     ic_generic = GenericInstrumentCoordinatorComponent("generic")
 
     instr_coordinator = mock_setup_basic_nv["instrument_coordinator"]
     instr_coordinator.add_component(ic_cluster0)
-    instr_coordinator.add_component(ic_laser_red)
+    instr_coordinator.add_component(ic_red_laser)
+    instr_coordinator.add_component(ic_red_laser_2)
     instr_coordinator.add_component(ic_generic)
 
     quantum_device = mock_setup_basic_nv["quantum_device"]
@@ -951,13 +957,16 @@ def test_trigger_count_average(
 ):
     # Setup objects needed for experiment
     ic_cluster0 = make_cluster_component("cluster0")
-    laser_red = MockLocalOscillator("laser_red")
-    ic_laser_red = GenericInstrumentCoordinatorComponent(laser_red)
+    red_laser = MockLocalOscillator("red_laser")
+    red_laser_2 = MockLocalOscillator("red_laser_2")
+    ic_red_laser = GenericInstrumentCoordinatorComponent(red_laser)
+    ic_red_laser_2 = GenericInstrumentCoordinatorComponent(red_laser_2)
     ic_generic = GenericInstrumentCoordinatorComponent("generic")
 
     instr_coordinator = mock_setup_basic_nv["instrument_coordinator"]
     instr_coordinator.add_component(ic_cluster0)
-    instr_coordinator.add_component(ic_laser_red)
+    instr_coordinator.add_component(ic_red_laser)
+    instr_coordinator.add_component(ic_red_laser_2)
     instr_coordinator.add_component(ic_generic)
 
     quantum_device = mock_setup_basic_nv["quantum_device"]
@@ -1016,13 +1025,16 @@ def test_trigger_count_average_gettables(
 ):
     # Setup objects needed for experiment
     ic_cluster0 = make_cluster_component("cluster0")
-    laser_red = MockLocalOscillator("laser_red")
-    ic_laser_red = GenericInstrumentCoordinatorComponent(laser_red)
+    red_laser = MockLocalOscillator("red_laser")
+    red_laser_2 = MockLocalOscillator("red_laser_2")
+    ic_red_laser = GenericInstrumentCoordinatorComponent(red_laser)
+    ic_red_laser_2 = GenericInstrumentCoordinatorComponent(red_laser_2)
     ic_generic = GenericInstrumentCoordinatorComponent("generic")
 
     instr_coordinator = mock_setup_basic_nv["instrument_coordinator"]
     instr_coordinator.add_component(ic_cluster0)
-    instr_coordinator.add_component(ic_laser_red)
+    instr_coordinator.add_component(ic_red_laser)
+    instr_coordinator.add_component(ic_red_laser_2)
     instr_coordinator.add_component(ic_generic)
 
     quantum_device = mock_setup_basic_nv["quantum_device"]
@@ -1441,72 +1453,59 @@ def test_multi_real_input_hardware_cfg_trigger_count(
     make_cluster_component, mock_setup_basic_nv
 ):
     hardware_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            "ref": "internal",
-            "instrument_type": "Cluster",
-            "cluster0_module3": {
-                "instrument_type": "QRM",
-                "real_output_0": {
-                    "lo_name": "laser_red",
-                    "mix_lo": False,
-                    "portclock_configs": [
-                        {
-                            "port": "qe0:optical_control",
-                            "clock": "qe0.ge0",
-                            "interm_freq": 200e6,
-                        },
-                    ],
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {3: {"instrument_type": "QRM"}},
+                "ref": "internal",
+            },
+            "optical_mod_red_laser_1": {"instrument_type": "OpticalModulator"},
+            "optical_mod_red_laser_2": {"instrument_type": "OpticalModulator"},
+            "red_laser_1": {"instrument_type": "LocalOscillator", "power": 1},
+            "red_laser_2": {"instrument_type": "LocalOscillator", "power": 1},
+        },
+        "hardware_options": {
+            "modulation_frequencies": {
+                "qe0:optical_control-qe0.ge0": {
+                    "lo_freq": None,
+                    "interm_freq": 200000000.0,
                 },
-                "real_output_1": {
-                    "lo_name": "laser_red",
-                    "mix_lo": False,
-                    "portclock_configs": [
-                        {
-                            "port": "qe1:optical_control",
-                            "clock": "qe1.ge0",
-                            "interm_freq": 200e6,
-                        },
-                    ],
+                "qe1:optical_control-qe1.ge0": {
+                    "lo_freq": None,
+                    "interm_freq": 200000000.0,
                 },
-                "real_input_0": {
-                    "portclock_configs": [
-                        {
-                            "port": "qe0:optical_readout",
-                            "clock": "qe0.ge0",
-                            "interm_freq": 0,
-                            "ttl_acq_threshold": 0.5,
-                        },
-                    ],
-                },
-                "real_input_1": {
-                    "portclock_configs": [
-                        {
-                            "port": "qe1:optical_readout",
-                            "clock": "qe1.ge0",
-                            "interm_freq": 0,
-                            "ttl_acq_threshold": 0.5,
-                        },
-                    ],
-                },
+                "qe0:optical_readout-qe0.ge0": {"interm_freq": 0},
+                "qe1:optical_readout-qe1.ge0": {"interm_freq": 0},
+            },
+            "sequencer_options": {
+                "qe0:optical_readout-qe0.ge0": {"ttl_acq_threshold": 0.5},
+                "qe1:optical_readout-qe1.ge0": {"ttl_acq_threshold": 0.5},
             },
         },
-        "laser_red": {
-            "instrument_type": "LocalOscillator",
-            "frequency": None,
-            "power": 1,
+        "connectivity": {
+            "graph": [
+                ("cluster0.module3.real_output_0", "optical_mod_red_laser_1.if"),
+                ("red_laser_1.output", "optical_mod_red_laser_1.lo"),
+                ("optical_mod_red_laser_1.out", "qe0:optical_control"),
+                ("cluster0.module3.real_output_1", "optical_mod_red_laser_2.if"),
+                ("red_laser_2.output", "optical_mod_red_laser_2.lo"),
+                ("optical_mod_red_laser_2.out", "qe1:optical_control"),
+                ("cluster0.module3.real_input_0", "qe0:optical_readout"),
+                ("cluster0.module3.real_input_1", "qe1:optical_readout"),
+            ]
         },
     }
 
     # Setup objects needed for experiment
     ic_cluster0 = make_cluster_component("cluster0")
-    laser_red = MockLocalOscillator("laser_red")
-    ic_laser_red = GenericInstrumentCoordinatorComponent(laser_red)
+    red_laser = MockLocalOscillator("red_laser")
+    ic_red_laser = GenericInstrumentCoordinatorComponent(red_laser)
     ic_generic = GenericInstrumentCoordinatorComponent("generic")
 
     instr_coordinator = mock_setup_basic_nv["instrument_coordinator"]
     instr_coordinator.add_component(ic_cluster0)
-    instr_coordinator.add_component(ic_laser_red)
+    instr_coordinator.add_component(ic_red_laser)
     instr_coordinator.add_component(ic_generic)
 
     quantum_device = mock_setup_basic_nv["quantum_device"]

@@ -875,37 +875,52 @@ qe0.clock_freqs.ge0.set(470.4e12)
 nv_device.add_element(qe0)
 nv_device.instr_instrument_coordinator("instrument_coordinator")
 
-laser_red = MockLocalOscillator("laser_red")
-ic_laser_red = GenericInstrumentCoordinatorComponent(laser_red)
-instrument_coordinator.add_component(ic_laser_red)
+red_laser = MockLocalOscillator("red_laser")
+ic_red_laser = GenericInstrumentCoordinatorComponent(red_laser)
+instrument_coordinator.add_component(ic_red_laser)
 
-hardware_cfg_trigger_count = {
-    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-    "cluster0": {
-        "ref": "internal",
-        "instrument_type": "Cluster",
-        "cluster0_module1": {
-            "instrument_type": "QRM",
-            "real_input_0": {
-                "lo_name": "laser_red",
-                "mix_lo": False,
-                "portclock_configs": [
-                    {
-                        "port": "qe0:optical_readout",
-                        "clock": "qe0.ge0",
-                        "interm_freq": 50e6,
-                        "ttl_acq_threshold": 0.5,
-                    },
-                ],
+hardware_cfg_trigger_count = config = {
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+    "hardware_description": {
+        "cluster0": {
+            "instrument_type": "Cluster",
+            "modules": {
+                1: {
+                    "instrument_type": "QRM"
+                }
             },
+            "ref": "internal"
         },
+        "optical_mod_red_laser": {
+            "instrument_type": "OpticalModulator"
+        },
+        "red_laser": {
+            "instrument_type": "LocalOscillator",
+            "power": 1
+        }
     },
-    "laser_red": {
-        "instrument_type": "LocalOscillator",
-        "frequency": None,
-        "power": 1,
+    "hardware_options": {
+        "modulation_frequencies": {
+            "qe0:optical_readout-qe0.ge0": {
+                "lo_freq": None,
+                "interm_freq": 50000000.0
+            }
+        },
+        "sequencer_options": {
+            "qe0:optical_readout-qe0.ge0": {
+                "ttl_acq_threshold": 0.5
+            }
+        }
     },
+    "connectivity": {
+        "graph": [
+            ("cluster0.module1.real_input_0", "optical_mod_red_laser.if"),
+            ("red_laser.output", "optical_mod_red_laser.lo"),
+            ("optical_mod_red_laser.out", "qe0:optical_readout")
+        ]
+    }
 }
+
 nv_device.hardware_config(hardware_cfg_trigger_count)
 ```
 

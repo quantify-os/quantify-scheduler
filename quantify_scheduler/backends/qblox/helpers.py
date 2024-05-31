@@ -1040,6 +1040,33 @@ def _generate_legacy_hardware_config(
                     "downconverter_freq"
                 ] = channel_description.downconverter_freq
 
+    def _get_legacy_optical_clock(clock: str, lo_name: str) -> str:
+        """Generate a clock name for NV center legacy hardware config."""
+        if lo_name is None:
+            clock_tag = "ge0"
+        elif "spinpump_laser" in lo_name:
+            clock_tag = "ge1"
+        elif "green_laser" in lo_name:
+            clock_tag = "ionization"
+        elif "red_laser" in lo_name:
+            clock_tag = "ge0"
+        elif "deadly_seagull_laser" in lo_name:
+            raise Warning("Please, handle the `deadly_seagull_laser` with care.")
+        else:
+            raise ValueError(
+                f"{lo_name} is not a valid local oscillator name for NV center setups. "
+                "Please use one of: 'spinpump_laser', 'green_laser', 'red_laser'."
+            )
+
+        try:
+            qubit, _ = clock.split(".")
+        except ValueError as e:
+            raise ValueError(
+                f"Clock {clock} must have the format `<qubit_name>.<clock_tag>`."
+            ) from e
+
+        return f"{qubit}.{clock_tag}"
+
     hardware_description = (
         compilation_config.hardware_compilation_config.hardware_description
     )
@@ -1066,6 +1093,9 @@ def _generate_legacy_hardware_config(
     connectivity_graph = (
         compilation_config.hardware_compilation_config.connectivity.graph
     )
+
+    # Prevent multiple assignment of same `connected_node` for repeated ports
+    used_portclocks = []
     for port, clock in sorted(port_clocks):
         # Find all nodes connected to quantum device port
         connected_nodes = {}
@@ -1074,41 +1104,63 @@ def _generate_legacy_hardware_config(
                 connected_nodes = connectivity_graph[node]
                 break
 
-        for connected_node in connected_nodes:
-            channel_path = connected_node.split(sep=".")
-            instrument = channel_path[0]
+        portclock = f"{port}-{clock}"
+        if portclock not in used_portclocks:
+            used_portclocks.append(portclock)
+            for connected_node in connected_nodes:
+                channel_path = connected_node.split(sep=".")
+                instrument = channel_path[0]
 
-            lo_name = None
-            if hardware_description[instrument].instrument_type == "IQMixer":
-                # Find which lo is used for this IQ mixer
-                lo_name = list(connectivity_graph[instrument + ".lo"])[0].split(
-                    sep="."
-                )[0]
-                # Find which instrument is connected to if port
-                channel_path = list(connectivity_graph[instrument + ".if"])[0].split(
-                    sep="."
+                # Prevent multiple portclock reassignment for `optical_control` ports
+                if "optical_control" in port:
+                    if "ge1" in clock and "spinpump_laser" not in instrument:
+                        continue
+                    if "ionization" in clock and "green_laser" not in instrument:
+                        continue
+                    if "ge0" in clock and "red_laser" not in instrument:
+                        continue
+
+                lo_name = None
+                if hardware_description[instrument].instrument_type in (
+                    "IQMixer",
+                    "OpticalModulator",
+                ):
+                    # Find which lo is used for this IQ mixer / optical modulator
+                    lo_name = list(connectivity_graph[instrument + ".lo"])[0].split(
+                        sep="."
+                    )[0]
+                    # Find which instrument is connected to if port
+                    channel_path = list(connectivity_graph[instrument + ".if"])[
+                        0
+                    ].split(sep=".")
+
+                if hardware_description[channel_path[0]].instrument_type == "Cluster":
+                    # Format the channel_path to match the hardware config:
+                    # e.g., ["cluster0", "cluster0_module1", "complex_output_0"]
+                    channel_path[1] = f"{channel_path[0]}_{channel_path[1]}"
+
+                # Set port-clock combination in channel config:
+                instr_config: dict = hardware_config
+                for key in channel_path[:-1]:
+                    if key not in instr_config:
+                        instr_config[key] = {}
+                    instr_config = instr_config[key]
+
+                instrument_channel = channel_path[-1]
+                if instrument_channel not in instr_config:
+                    instr_config[instrument_channel] = {"portclock_configs": []}
+
+                updated_clock = (
+                    _get_legacy_optical_clock(clock=clock, lo_name=lo_name)
+                    if "optical_control" in port
+                    else clock
                 )
 
-            if hardware_description[channel_path[0]].instrument_type == "Cluster":
-                # Format the channel_path to match the hardware config:
-                # e.g., ["cluster0", "cluster0_module1", "complex_output_0"]
-                channel_path[1] = f"{channel_path[0]}_{channel_path[1]}"
-
-            # Set port-clock combination in channel config:
-            instr_config: dict = hardware_config
-            for key in channel_path[:-1]:
-                if key not in instr_config:
-                    instr_config[key] = {}
-                instr_config = instr_config[key]
-
-            instrument_channel = channel_path[-1]
-            if instrument_channel not in instr_config:
-                instr_config[instrument_channel] = {"portclock_configs": []}
-            instr_config[instrument_channel]["portclock_configs"].append(
-                {"port": port, "clock": clock}
-            )
-            if lo_name is not None:
-                instr_config[instrument_channel]["lo_name"] = lo_name
+                instr_config[instrument_channel]["portclock_configs"].append(
+                    {"port": port, "clock": updated_clock}
+                )
+                if lo_name is not None:
+                    instr_config[instrument_channel]["lo_name"] = lo_name
 
     # Add info from hardware description to hardware config:
     for instr_name, instr_description in hardware_description.items():
@@ -1605,7 +1657,7 @@ def _generate_new_style_hardware_compilation_config(
                 f"{pc_cfg['port']}-{pc_cfg['clock']}"
                 for pc_cfg in old_channel_config["portclock_configs"]
             ]
-            if channel_cfg_key == "marker_debug_mode_enable":
+            if channel_cfg_key in ["marker_debug_mode_enable", "mix_lo"]:
                 new_style_config["hardware_description"][cluster_name]["modules"][
                     module_slot_idx
                 ][channel_name][channel_cfg_key] = channel_cfg_value
@@ -1615,32 +1667,6 @@ def _generate_new_style_hardware_compilation_config(
                     new_style_config["hardware_options"]["input_gain"][
                         port_clock
                     ] = channel_cfg_value
-            elif channel_cfg_key == "lo_name":
-                # Add IQ mixer to the hardware_description:
-                new_style_config["hardware_description"][
-                    f"iq_mixer_{channel_cfg_value}"
-                ] = {"instrument_type": "IQMixer"}
-                # Add LO and IQ mixer to connectivity graph:
-                new_style_config["connectivity"]["graph"].extend(
-                    [
-                        (
-                            port_name,
-                            f"iq_mixer_{channel_cfg_value}.if",
-                        ),
-                        (
-                            f"{channel_cfg_value}.output",
-                            f"iq_mixer_{channel_cfg_value}.lo",
-                        ),
-                    ]
-                )
-                # Overwrite port_name to IQ mixer RF output:
-                port_name = f"iq_mixer_{channel_cfg_value}.rf"
-                if "frequency" in old_style_config[channel_cfg_value]:
-                    # Set lo_freq for all port-clock combinations (external LO)
-                    for port_clock in channel_port_clocks:
-                        new_style_config["hardware_options"]["modulation_frequencies"][
-                            port_clock
-                        ]["lo_freq"] = old_style_config[channel_cfg_value]["frequency"]
             elif channel_cfg_key == "portclock_configs":
                 # Add connectivity information to connectivity graph:
                 for portclock_cfg in channel_cfg_value:
@@ -1650,6 +1676,15 @@ def _generate_new_style_hardware_compilation_config(
                             f"{portclock_cfg['port']}",
                         )
                     )
+                    port_clock = (
+                        f"{portclock_cfg.pop('port')}-{portclock_cfg.pop('clock')}"
+                    )
+
+                    if "interm_freq" in portclock_cfg:
+                        # Set intermodulation freqs from portclock config:
+                        new_style_config["hardware_options"]["modulation_frequencies"][
+                            port_clock
+                        ]["interm_freq"] = portclock_cfg.pop("interm_freq")
                     if "init_gain_awg_path_I" in portclock_cfg:
                         # Set init gain from portclock config:
                         new_style_config["hardware_options"]["sequencer_options"][
@@ -1664,6 +1699,57 @@ def _generate_new_style_hardware_compilation_config(
                         ]["init_gain_awg_path_Q"] = portclock_cfg.pop(
                             "init_gain_awg_path_Q"
                         )
+                    if any(
+                        option in portclock_cfg
+                        for option in [
+                            "init_gain_awg_path_I",
+                            "init_gain_awg_path_Q",
+                            "init_offset_awg_path_I",
+                            "init_offset_awg_path_Q",
+                            "qasm_hook_func",
+                            "ttl_acq_threshold",
+                        ]
+                    ):
+                        # Set remaining portclock config parameters to sequencer options:
+                        new_style_config["hardware_options"]["sequencer_options"][
+                            port_clock
+                        ] = portclock_cfg
+
+            if any("optical_control" in pc for pc in channel_port_clocks):
+                channel_mixer = "OpticalModulator"
+                mixer_tag = "optical_mod"
+                mixer_output_tag = "out"
+            else:
+                channel_mixer = "IQMixer"
+                mixer_tag = "iq_mixer"
+                mixer_output_tag = "rf"
+
+            if channel_cfg_key == "lo_name":
+                # Add optical/iq mixer to the hardware_description
+                new_style_config["hardware_description"][
+                    f"{mixer_tag}_{channel_cfg_value}"
+                ] = {"instrument_type": channel_mixer}
+                # Add LO and mixer to connectivity graph:
+                new_style_config["connectivity"]["graph"].extend(
+                    [
+                        (
+                            port_name,
+                            f"{mixer_tag}_{channel_cfg_value}.if",
+                        ),
+                        (
+                            f"{channel_cfg_value}.output",
+                            f"{mixer_tag}_{channel_cfg_value}.lo",
+                        ),
+                    ]
+                )
+                # Overwrite port_name to mixer output:
+                port_name = f"{mixer_tag}_{channel_cfg_value}.{mixer_output_tag}"
+                if "frequency" in old_style_config[channel_cfg_value]:
+                    # Set lo_freq for all port-clock combinations (external LO)
+                    for port_clock in channel_port_clocks:
+                        new_style_config["hardware_options"]["modulation_frequencies"][
+                            port_clock
+                        ]["lo_freq"] = old_style_config[channel_cfg_value]["frequency"]
 
     def _convert_digital_channel_config(
         cluster_name: str,
