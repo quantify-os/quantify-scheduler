@@ -38,12 +38,14 @@ from quantify_scheduler.backends.types.common import (
     HardwareOptions,
 )
 from quantify_scheduler.backends.types.qblox import (
+    ClusterDescription,
     QbloxHardwareDescription,
     QbloxHardwareOptions,
     QCMDescription,
     QCMRFDescription,
     QRMDescription,
     QRMRFDescription,
+    QTMDescription,
     _ClusterCompilerConfig,
     _ClusterModuleCompilerConfig,
     _LocalOscillatorCompilerConfig,
@@ -674,52 +676,16 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
     """
 
     @model_validator(mode="after")
-    def _validate_connectivity_channel_names(  # noqa: PLR0912
-        self,
-    ) -> QbloxHardwareCompilationConfig:
-        all_channel_names = []
-
-        # Fetch channel_names from connectivity datastructure
+    def _validate_connectivity_channel_names(self) -> QbloxHardwareCompilationConfig:
         if isinstance(self.connectivity, Connectivity):
-            for edge in self.connectivity.graph.edges:
-                for node in edge:
-                    try:
-                        cluster_name, module_name, channel_name = node.split(".")
-                        if (
-                            self.hardware_description[cluster_name].instrument_type
-                            == "Cluster"
-                        ):
-                            slot_idx = int(re.search(r"\d+$", module_name).group())
-                            module_type = (
-                                self.hardware_description[cluster_name]
-                                .modules[slot_idx]
-                                .instrument_type
-                            )
-                            all_channel_names.append(
-                                (
-                                    f"{cluster_name}.{module_name}",
-                                    module_type,
-                                    channel_name,
-                                )
-                            )
-                    except ValueError:
-                        pass
+            self._validate_channel_names_new_config()
 
-        # Fetch channel_names from legacy hardware config
         else:
-            for cluster_name, cluster_config in find_qblox_instruments(
-                hardware_config=self.connectivity, instrument_type="Cluster"
-            ).items():
-                for module_type in ["QCM", "QRM", "QCM_RF", "QRM_RF"]:
-                    for module_name, module in find_qblox_instruments(
-                        hardware_config=cluster_config, instrument_type=module_type
-                    ).items():
-                        for channel_name in find_channel_names(module):
-                            all_channel_names.append(
-                                (cluster_name, module_type, channel_name)
-                            )
+            self._validate_channel_names_old_config()
 
-        # Validate channel_names
+        return self
+
+    def _validate_channel_names_old_config(self) -> None:
         instrument_type_to_description = {
             description.get_instrument_type(): description
             for description in [
@@ -727,23 +693,73 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
                 QRMDescription,
                 QCMRFDescription,
                 QRMRFDescription,
+                QTMDescription,
             ]
         }
 
-        for instrument_name, instrument_type, channel_name in all_channel_names:
-            valid_channel_names = instrument_type_to_description[
-                instrument_type
-            ].get_valid_channels()
-            if channel_name not in valid_channel_names:
-                raise ValueError(
-                    f"Invalid connectivity: '{channel_name}' of "
-                    f"{instrument_name} ({instrument_type}) "
-                    f"is not a valid name of an input/output."
-                    f"\n\nSupported names for {instrument_type}:\n"
-                    f"{valid_channel_names}"
+        for cluster_name, cluster_config in find_qblox_instruments(
+            hardware_config=self.connectivity, instrument_type="Cluster"
+        ).items():
+            for instrument_type, class_ in instrument_type_to_description.items():
+                for module_name, module in find_qblox_instruments(
+                    hardware_config=cluster_config, instrument_type=instrument_type
+                ).items():
+                    try:
+                        class_.validate_channel_names(find_channel_names(module))
+                    except ValueError as exc:
+                        # Add some information to the raised exception. The original exception
+                        # is included in the message because pydantic suppresses the traceback.
+                        raise ValueError(
+                            "Error validating channel names for "
+                            f"{cluster_name}.{module_name} ({instrument_type}). Full "
+                            f"error message:\n{exc}\n\nSupported names for "
+                            f"{instrument_type}:\n{class_.get_valid_channels()}"
+                        ) from exc
+
+    def _validate_channel_names_new_config(self) -> None:
+        module_name_to_channel_names_map: dict[tuple[str, str], set[str]] = defaultdict(
+            set
+        )
+        for node in self.connectivity.graph.nodes:
+            try:
+                cluster_name, module_name, channel_name = node.split(".")
+            except ValueError:
+                continue
+
+            if isinstance(
+                self.hardware_description.get(cluster_name), ClusterDescription
+            ):
+                module_name_to_channel_names_map[cluster_name, module_name].add(
+                    channel_name
                 )
 
-        return self
+        for (
+            cluster_name,
+            module_name,
+        ), channel_names in module_name_to_channel_names_map.items():
+            module_idx = int(re.search(r"module(\d+)", module_name).group(1))
+            try:
+                self.hardware_description[cluster_name].modules[
+                    module_idx
+                ].validate_channel_names(channel_names)
+            except ValueError as exc:
+                instrument_type = (
+                    self.hardware_description[cluster_name]
+                    .modules[module_idx]
+                    .instrument_type
+                )
+                valid_channels = (
+                    self.hardware_description[cluster_name]
+                    .modules[module_idx]
+                    .get_valid_channels()
+                )
+                # Add some information to the raised exception. The original exception
+                # is included in the message because pydantic suppresses the traceback.
+                raise ValueError(
+                    f"Error validating channel names for {cluster_name}.{module_name} "
+                    f"({instrument_type}). Full error message:\n{exc}\n\nSupported "
+                    f"names for {instrument_type}:\n{valid_channels}."
+                ) from exc
 
     @model_validator(mode="after")
     def _warn_mix_lo_false(

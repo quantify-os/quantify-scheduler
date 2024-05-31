@@ -850,6 +850,17 @@ class DescriptionAnnotationsGettersMixin:
         """Return the instrument type indicated in this hardware description."""
         return get_args(cls.model_fields["instrument_type"].annotation)[0]
 
+    @classmethod
+    def validate_channel_names(cls, channel_names: list[str]) -> None:
+        """Validate channel names specified in the Connectivity."""
+        valid_names = cls.get_valid_channels()
+        for name in channel_names:
+            if name not in valid_names:
+                raise ValueError(
+                    "Invalid channel name specified for module of type "
+                    f"{cls.get_instrument_type()}: {name}"
+                )
+
 
 class QRMDescription(DataStructure, DescriptionAnnotationsGettersMixin):
     """Information needed to specify a QRM in the :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`."""
@@ -943,8 +954,75 @@ class QCMRFDescription(DataStructure, DescriptionAnnotationsGettersMixin):
     """Description of the digital (marker) output channel on this QRM, corresponding to port M2."""
 
 
+class QTMDescription(DataStructure, DescriptionAnnotationsGettersMixin):
+    """Information needed to specify a QTM in the :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`."""
+
+    instrument_type: Literal["QTM"]
+    """The instrument type of this module."""
+    sequence_to_file: bool = False
+    """Write sequencer programs to files, for this module."""
+    digital_input_0: Optional[DigitalChannelDescription] = None
+    """Description of the digital channel corresponding to port 1, specified as input."""
+    digital_input_1: Optional[DigitalChannelDescription] = None
+    """Description of the digital channel corresponding to port 2, specified as input."""
+    digital_input_2: Optional[DigitalChannelDescription] = None
+    """Description of the digital channel corresponding to port 3, specified as input."""
+    digital_input_3: Optional[DigitalChannelDescription] = None
+    """Description of the digital channel corresponding to port 4, specified as input."""
+    digital_input_4: Optional[DigitalChannelDescription] = None
+    """Description of the digital channel corresponding to port 5, specified as input."""
+    digital_input_5: Optional[DigitalChannelDescription] = None
+    """Description of the digital channel corresponding to port 6, specified as input."""
+    digital_input_6: Optional[DigitalChannelDescription] = None
+    """Description of the digital channel corresponding to port 7, specified as input."""
+    digital_input_7: Optional[DigitalChannelDescription] = None
+    """Description of the digital channel corresponding to port 8, specified as input."""
+    digital_output_0: Optional[DigitalChannelDescription] = None
+    """Description of the digital channel corresponding to port 1, specified as output."""
+    digital_output_1: Optional[DigitalChannelDescription] = None
+    """Description of the digital channel corresponding to port 2, specified as output."""
+    digital_output_2: Optional[DigitalChannelDescription] = None
+    """Description of the digital channel corresponding to port 3, specified as output."""
+    digital_output_3: Optional[DigitalChannelDescription] = None
+    """Description of the digital channel corresponding to port 4, specified as output."""
+    digital_output_4: Optional[DigitalChannelDescription] = None
+    """Description of the digital channel corresponding to port 5, specified as output."""
+    digital_output_5: Optional[DigitalChannelDescription] = None
+    """Description of the digital channel corresponding to port 6, specified as output."""
+    digital_output_6: Optional[DigitalChannelDescription] = None
+    """Description of the digital channel corresponding to port 7, specified as output."""
+    digital_output_7: Optional[DigitalChannelDescription] = None
+    """Description of the digital channel corresponding to port 8, specified as output."""
+
+    @classmethod
+    def validate_channel_names(cls, channel_names: list[str]) -> None:
+        """Validate channel names specified in the Connectivity."""
+        super().validate_channel_names(channel_names)
+
+        used_inputs = set(
+            int(n.lstrip("digital_input_")) for n in channel_names if "input" in n
+        )
+        used_outputs = set(
+            int(n.lstrip("digital_output_")) for n in channel_names if "output" in n
+        )
+
+        if overlap := used_inputs & used_outputs:
+            raise ValueError(
+                "The configuration for the QTM module contains channel names with port "
+                "numbers that are assigned as both input and output. This is not "
+                "allowed. Conflicting channel names:\n"
+                + "\n".join(f"digital_input_{n}\ndigital_output_{n}" for n in overlap)
+            )
+
+
 ClusterModuleDescription = Annotated[
-    Union[QRMDescription, QCMDescription, QRMRFDescription, QCMRFDescription],
+    Union[
+        QRMDescription,
+        QCMDescription,
+        QRMRFDescription,
+        QCMRFDescription,
+        QTMDescription,
+    ],
     Field(discriminator="instrument_type"),
 ]
 """
@@ -955,6 +1033,7 @@ The supported instrument types are:
 :class:`~.QCMDescription`,
 :class:`~.QRMRFDescription`,
 :class:`~.QCMRFDescription`,
+:class:`~.QTMDescription`,
 """
 
 
@@ -1237,7 +1316,11 @@ class _ClusterModuleCompilerConfig(DataStructure):
     """Configuration values for a :class:`~.ClusterModuleCompiler`."""
 
     instrument_type: Union[
-        Literal["QCM"], Literal["QRM"], Literal["QCM_RF"], Literal["QRM_RF"]
+        Literal["QCM"],
+        Literal["QRM"],
+        Literal["QCM_RF"],
+        Literal["QRM_RF"],
+        Literal["QTM"],
     ]
     """The type of the instrument described by this config."""
     hardware_description: ClusterModuleDescription

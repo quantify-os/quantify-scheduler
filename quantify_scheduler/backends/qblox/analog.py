@@ -27,14 +27,13 @@ from quantify_scheduler.backends.qblox.enums import (
 from quantify_scheduler.backends.qblox.operation_handling.acquisitions import (
     SquareAcquisitionStrategy,
 )
-from quantify_scheduler.backends.qblox.operation_handling.pulses import (
-    MarkerPulseStrategy,
+from quantify_scheduler.backends.qblox.operation_handling.factory_analog import (
+    get_operation_strategy,
 )
 from quantify_scheduler.backends.qblox.operation_handling.virtual import (
     NcoPhaseShiftStrategy,
     NcoResetClockPhaseStrategy,
     NcoSetClockFrequencyStrategy,
-    UpdateParameterStrategy,
 )
 from quantify_scheduler.backends.types.qblox import (
     AnalogModuleSettings,
@@ -276,7 +275,6 @@ class AnalogSequencerCompiler(SequencerCompiler):
         is called.
         """
         self._update_set_clock_frequency_operations()
-        self.op_strategies = self._replace_marker_pulses(self.op_strategies)
         self._check_nco_operation_timing(self._get_ordered_operations())
         super().prepare()
 
@@ -288,77 +286,6 @@ class AnalogSequencerCompiler(SequencerCompiler):
                         "interm_freq_old": self.frequency,
                     }
                 )
-
-    @staticmethod
-    def _replace_marker_pulses(
-        op_strategies: list[IOperationStrategy],
-    ) -> list[IOperationStrategy]:
-        """Replaces MarkerPulse operations by explicit high and low operations."""
-        new_op_strategies: list[IOperationStrategy] = []
-        for op_strategy in op_strategies:
-            if isinstance(op_strategy, MarkerPulseStrategy):
-                high_op_info = OpInfo(
-                    name=op_strategy.operation_info.name,
-                    data=op_strategy.operation_info.data.copy(),
-                    timing=op_strategy.operation_info.timing,
-                )
-                duration = op_strategy.operation_info.data["duration"]
-                high_op_info.data["enable"] = True
-                high_op_info.data["duration"] = 0
-                new_op_strategies.append(
-                    MarkerPulseStrategy(
-                        operation_info=high_op_info,
-                        channel_name=op_strategy.channel_name,
-                    )
-                )
-                new_op_strategies.append(
-                    UpdateParameterStrategy(
-                        OpInfo(
-                            name="UpdateParameters",
-                            data={
-                                "t0": 0,
-                                "port": high_op_info.data["port"],
-                                "clock": high_op_info.data["clock"],
-                                "duration": 0,
-                                "instruction": q1asm_instructions.UPDATE_PARAMETERS,
-                            },
-                            timing=high_op_info.timing,
-                        )
-                    )
-                )
-
-                low_op_info = OpInfo(
-                    name=op_strategy.operation_info.name,
-                    data=op_strategy.operation_info.data.copy(),
-                    timing=op_strategy.operation_info.timing + duration,
-                )
-                low_op_info.data["enable"] = False
-                low_op_info.data["duration"] = 0
-                new_op_strategies.append(
-                    MarkerPulseStrategy(
-                        operation_info=low_op_info,
-                        channel_name=op_strategy.channel_name,
-                    )
-                )
-                new_op_strategies.append(
-                    UpdateParameterStrategy(
-                        OpInfo(
-                            name="UpdateParameters",
-                            data={
-                                "t0": 0,
-                                "port": low_op_info.data["port"],
-                                "clock": low_op_info.data["clock"],
-                                "duration": 0,
-                                "instruction": q1asm_instructions.UPDATE_PARAMETERS,
-                            },
-                            timing=low_op_info.timing,
-                        )
-                    )
-                )
-            else:
-                new_op_strategies.append(op_strategy)
-
-        return new_op_strategies
 
     @staticmethod
     def _check_nco_operation_timing(
@@ -901,6 +828,28 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
                         module_name=self.name,
                     )
                 scope_acq_seq = seq.index
+
+    def _get_operation_strategy(
+        self,
+        operation_info: OpInfo,
+        channel_name: str,
+    ) -> IOperationStrategy:
+        """
+        Determines and instantiates the correct strategy object.
+
+        Parameters
+        ----------
+        operation_info
+            The operation we are building the strategy for.
+        channel_name
+            Specifies the channel identifier of the hardware config (e.g. `complex_output_0`).
+
+        Returns
+        -------
+        :
+            The instantiated strategy object.
+        """
+        return get_operation_strategy(operation_info, channel_name)
 
 
 class BasebandModuleCompiler(AnalogModuleCompiler):

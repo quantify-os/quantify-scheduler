@@ -20,7 +20,7 @@ from quantify_scheduler.backends.qblox.helpers import (
 )
 from quantify_scheduler.backends.qblox.instrument_compilers import ClusterCompiler
 from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
-from quantify_scheduler.backends.qblox.operation_handling.factory import (
+from quantify_scheduler.backends.qblox.operation_handling.factory_analog import (
     get_operation_strategy,
 )
 from quantify_scheduler.backends.qblox.operation_handling.virtual import (

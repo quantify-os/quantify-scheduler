@@ -38,8 +38,8 @@ from quantify_scheduler.backends.qblox.operation_handling.acquisitions import (
     AcquisitionStrategyPartial,
 )
 from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
-from quantify_scheduler.backends.qblox.operation_handling.factory import (
-    get_operation_strategy,
+from quantify_scheduler.backends.qblox.operation_handling.pulses import (
+    DigitalOutputStrategy,
 )
 from quantify_scheduler.backends.qblox.operation_handling.virtual import (
     ConditionalStrategy,
@@ -566,15 +566,6 @@ class SequencerCompiler(ABC):
         # Program body. The operations must be ordered such that real-time IO operations
         # always come after any other operations. E.g., an offset instruction should
         # always come before the parameter update, play, or acquisition instruction.
-        op_list = sorted(
-            self.op_strategies,
-            key=lambda op: (
-                round(op.operation_info.timing, ndigits=9),
-                op.operation_info.is_real_time_io_operation,
-            ),
-        )
-
-        self._check_nco_operation_timing(op_list)
 
         # Adds the latency correction, this needs to be a minimum of 4 ns,
         # so all sequencers get delayed by at least that.
@@ -790,6 +781,7 @@ class SequencerCompiler(ABC):
             indices_to_be_removed: set[int] = set()
 
             last_updated_timing: int | None = None
+            # Cannot use self._get_ordered_operations here because of the `enumerate`.
             sorted_op_strategies = sorted(
                 enumerate(self.op_strategies),
                 key=lambda op: helpers.to_grid_time(op[1].operation_info.timing),
@@ -853,9 +845,7 @@ class SequencerCompiler(ABC):
         last_upd_params_incompatible_op_info: OpInfo | None = None
         total_play_time = helpers.to_grid_time(self.parent.total_play_time)
 
-        sorted_op_strategies = sorted(
-            self.op_strategies, key=lambda op: op.operation_info.timing
-        )
+        sorted_op_strategies = self._get_ordered_operations()
         for op_strategy in reversed(sorted_op_strategies):
             op_timing = helpers.to_grid_time(op_strategy.operation_info.timing)
 
@@ -888,6 +878,77 @@ class SequencerCompiler(ABC):
                 op_strategy, (LoopStrategy, ConditionalStrategy)
             ):
                 last_upd_params_incompatible_op_info = op_strategy.operation_info
+
+    @staticmethod
+    def _replace_digital_pulses(
+        op_strategies: list[IOperationStrategy],
+    ) -> list[IOperationStrategy]:
+        """Replaces MarkerPulse operations by explicit high and low operations."""
+        new_op_strategies: list[IOperationStrategy] = []
+        for op_strategy in op_strategies:
+            if isinstance(op_strategy, DigitalOutputStrategy):
+                high_op_info = OpInfo(
+                    name=op_strategy.operation_info.name,
+                    data=op_strategy.operation_info.data.copy(),
+                    timing=op_strategy.operation_info.timing,
+                )
+                duration = op_strategy.operation_info.data["duration"]
+                high_op_info.data["enable"] = True
+                high_op_info.data["duration"] = 0
+                new_op_strategies.append(
+                    op_strategy.__class__(
+                        operation_info=high_op_info,
+                        channel_name=op_strategy.channel_name,
+                    )
+                )
+                new_op_strategies.append(
+                    UpdateParameterStrategy(
+                        OpInfo(
+                            name="UpdateParameters",
+                            data={
+                                "t0": 0,
+                                "port": high_op_info.data["port"],
+                                "clock": high_op_info.data["clock"],
+                                "duration": 0,
+                                "instruction": q1asm_instructions.UPDATE_PARAMETERS,
+                            },
+                            timing=high_op_info.timing,
+                        )
+                    )
+                )
+
+                low_op_info = OpInfo(
+                    name=op_strategy.operation_info.name,
+                    data=op_strategy.operation_info.data.copy(),
+                    timing=op_strategy.operation_info.timing + duration,
+                )
+                low_op_info.data["enable"] = False
+                low_op_info.data["duration"] = 0
+                new_op_strategies.append(
+                    op_strategy.__class__(
+                        operation_info=low_op_info,
+                        channel_name=op_strategy.channel_name,
+                    )
+                )
+                new_op_strategies.append(
+                    UpdateParameterStrategy(
+                        OpInfo(
+                            name="UpdateParameters",
+                            data={
+                                "t0": 0,
+                                "port": low_op_info.data["port"],
+                                "clock": low_op_info.data["clock"],
+                                "duration": 0,
+                                "instruction": q1asm_instructions.UPDATE_PARAMETERS,
+                            },
+                            timing=low_op_info.timing,
+                        )
+                    )
+                )
+            else:
+                new_op_strategies.append(op_strategy)
+
+        return new_op_strategies
 
     @staticmethod
     def _generate_waveforms_and_program_dict(
@@ -968,6 +1029,7 @@ class SequencerCompiler(ABC):
         Perform necessary operations on this sequencer's data before
         :meth:`~SequencerCompiler.compile` is called.
         """
+        self.op_strategies = self._replace_digital_pulses(self.op_strategies)
         self._remove_redundant_update_parameters()
         self._validate_update_parameters_alignment()
 
@@ -1318,7 +1380,7 @@ class ClusterModuleCompiler(InstrumentCompiler, Generic[_SequencerT_co], ABC):
                         if not op_info.is_acquisition or not (
                             portclock[0] is None and portclock[1] == seq.clock
                         ):
-                            op_strategy = get_operation_strategy(
+                            op_strategy = self._get_operation_strategy(
                                 operation_info=op_info,
                                 channel_name=seq._settings.channel_name,
                             )
@@ -1345,6 +1407,28 @@ class ClusterModuleCompiler(InstrumentCompiler, Generic[_SequencerT_co], ABC):
                                     )
                                 )
                                 seq.op_strategies.append(update_parameters_strategy)
+
+    @abstractmethod
+    def _get_operation_strategy(
+        self,
+        operation_info: OpInfo,
+        channel_name: str,
+    ) -> IOperationStrategy:
+        """
+        Determines and instantiates the correct strategy object.
+
+        Parameters
+        ----------
+        operation_info
+            The operation we are building the strategy for.
+        channel_name
+            Specifies the channel identifier of the hardware config (e.g. `complex_output_0`).
+
+        Returns
+        -------
+        :
+            The instantiated strategy object.
+        """
 
     def compile(
         self,

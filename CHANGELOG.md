@@ -19,6 +19,7 @@
   - Fix overlapping operations warning due to floating point rounding errors (!989)
 - Qblox backend
   - Change update param insertion logic. (!980)
+  - Add compilation of `MarkerPulse` to `set_digital` via the `DigitalPulseStrategy` for QTM modules. (!975)
 - Tests
   - Update test_compile_cz_gate with new style hardware config (!979)
 - Docs

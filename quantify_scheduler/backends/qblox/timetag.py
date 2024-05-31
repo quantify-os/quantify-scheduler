@@ -10,7 +10,7 @@ from quantify_scheduler.backends.qblox.compiler_abc import SequencerCompiler
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.qblox.instrument_compilers import (
-        TimetagModuleCompiler,
+        QTMCompiler,
     )
     from quantify_scheduler.backends.qblox.operation_handling.base import (
         IOperationStrategy,
@@ -50,7 +50,7 @@ class TimetagSequencerCompiler(SequencerCompiler):
 
     def __init__(
         self,
-        parent: TimetagModuleCompiler,
+        parent: QTMCompiler,
         index: int,
         portclock: tuple[str, str],
         static_hw_properties: StaticHardwareProperties,

@@ -11,7 +11,7 @@ from quantify_scheduler.backends.qblox import q1asm_instructions
 from quantify_scheduler.backends.qblox.operation_handling import (
     acquisitions,
     base,
-    factory,
+    factory_analog,
     pulses,
     virtual,
 )
@@ -147,7 +147,7 @@ def test_get_operation_strategy(
     operation_info: OpInfo,
     answer: Type[base.IOperationStrategy],
 ):
-    obj = factory.get_operation_strategy(
+    obj = factory_analog.get_operation_strategy(
         operation_info=operation_info,
         channel_name="complex_output_0",
     )
@@ -174,7 +174,7 @@ def test_invalid_protocol_exception():
 
     # act
     with pytest.raises(ValueError) as exc:
-        factory.get_operation_strategy(
+        factory_analog.get_operation_strategy(
             operation_info=operation_info,
             channel_name="complex_output_0",
         )
@@ -208,7 +208,7 @@ def test_trace_append_exception():
 
     # act
     with pytest.raises(ValueError) as exc:
-        factory.get_operation_strategy(
+        factory_analog.get_operation_strategy(
             operation_info=operation_info,
             channel_name="complex_output_0",
         )

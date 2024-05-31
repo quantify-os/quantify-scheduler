@@ -230,12 +230,23 @@ class GenericPulseStrategy(PulseStrategyPartial):
             qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
 
 
-class MarkerPulseStrategy(PulseStrategyPartial):
-    """If this strategy is used a digital pulse is played on the corresponding marker."""
+class DigitalOutputStrategy(PulseStrategyPartial):
+    """
+    Interface class for :class:`MarkerPulseStrategy` and :class:`DigitalPulseStrategy`.
+
+    Both classes work very similarly, since they are both strategy classes for the
+    `~quantify_scheduler.operations.pulse_library.MarkerPulse`. The
+    ``MarkerPulseStrategy`` is for the QCM/QRM modules, and the ``DigitalPulseStrategy``
+    for the QTM.
+    """
 
     def generate_data(self, wf_dict: Dict[str, Any]):
         """Returns None as no waveforms are generated in this strategy."""
         return None
+
+
+class MarkerPulseStrategy(DigitalOutputStrategy):
+    """If this strategy is used a digital pulse is played on the corresponding marker."""
 
     def insert_qasm(self, qasm_program: QASMProgram):
         """
@@ -252,7 +263,7 @@ class MarkerPulseStrategy(PulseStrategyPartial):
             clock = self.operation_info.data.get("clock")
 
             raise ValueError(
-                f"{MarkerPulseStrategy.__name__} can only be used with a "
+                f"{self.__class__.__name__} can only be used with a "
                 f"digital channel. Please make sure that "
                 f"'digital' keyword is included in the channel_name in the hardware configuration "
                 f"for port-clock combination '{port}-{clock}' (current channel_name is '{self.channel_name}')."
@@ -284,3 +295,36 @@ class MarkerPulseStrategy(PulseStrategyPartial):
             elif marker_bit_index == 3:
                 marker_bit_index = 2
         return marker_bit_index
+
+
+class DigitalPulseStrategy(DigitalOutputStrategy):
+    """If this strategy is used a digital pulse is played on the corresponding digital output channel."""
+
+    def insert_qasm(self, qasm_program: QASMProgram):
+        """
+        Inserts the QASM instructions to play the marker pulse.
+        Note that for RF modules the first two bits of set_mrk are used as switches for the RF outputs.
+
+        Parameters
+        ----------
+        qasm_program
+            The QASMProgram to add the assembly instructions to.
+        """
+        if ChannelMode.DIGITAL not in self.channel_name:
+            port = self.operation_info.data.get("port")
+            clock = self.operation_info.data.get("clock")
+
+            raise ValueError(
+                f"{self.__class__.__name__} can only be used with a "
+                f"digital channel. Please make sure that "
+                f"'digital' keyword is included in the channel_name in the hardware configuration "
+                f"for port-clock combination '{port}-{clock}' (current channel_name is '{self.channel_name}')."
+                f"Operation causing exception: {self.operation_info}"
+            )
+
+        qasm_program.emit(
+            q1asm_instructions.SET_DIGITAL,
+            int(self.operation_info.data["enable"]),
+            1,  # Mask. Reserved for future use, set to 1.
+            0,  # Fine delay. Hardcoded to 0 until we decide if/how we want to use it (SE-423)
+        )

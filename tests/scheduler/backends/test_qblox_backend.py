@@ -768,12 +768,52 @@ def test_invalid_channel_names_connectivity(
     schedule.add(SquarePulse(amp=0.5, duration=1e-6, port="q0:res", clock="q0.ro"))
 
     compiler = SerialCompiler(name="compiler")
-    with pytest.raises(ValueError) as error:
+    with pytest.raises(ValueError, match="Invalid channel name"):
         compiler.compile(
             schedule=schedule, config=quantum_device.generate_compilation_config()
         )
 
-    assert "Invalid connectivity" in error.exconly()
+
+def test_channel_as_both_input_and_output_qtm(
+    mock_setup_basic_transmon_with_standard_params,
+):
+    hardware_compilation_config = {
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "ref": "internal",
+                "modules": {
+                    "1": {
+                        "instrument_type": "QTM",
+                    },
+                },
+            },
+        },
+        "hardware_options": {},
+        "connectivity": {
+            "graph": [
+                ("cluster0.module1.digital_output_0", "q0:switch"),
+                ("cluster0.module1.digital_input_0", "q0:switch"),
+            ]
+        },
+    }
+
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.hardware_config(hardware_compilation_config)
+
+    schedule = Schedule("test channel names")
+
+    compiler = SerialCompiler(name="compiler")
+    with pytest.raises(
+        ValueError,
+        match="The configuration for the QTM module contains channel names with port "
+        "numbers that are assigned as both input and output. This is not "
+        "allowed. Conflicting channel names:\ndigital_input_0\ndigital_output_0",
+    ):
+        compiler.compile(
+            schedule=schedule, config=quantum_device.generate_compilation_config()
+        )
 
 
 def test_warn_mix_lo_false(hardware_cfg_trigger_count_legacy):
@@ -864,12 +904,10 @@ def test_invalid_channel_names_legacy_hardware_config(
 
     quantum_device.hardware_config(hardware_config_cluster)
     compiler = SerialCompiler(name="compiler")
-    with pytest.raises(ValueError) as error:
+    with pytest.raises(ValueError, match="Invalid channel name"):
         compiler.compile(
             schedule=schedule, config=quantum_device.generate_compilation_config()
         )
-
-    assert "Invalid connectivity" in error.exconly()
 
 
 def test_portclocks(

@@ -1,21 +1,24 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-"""Functions for producing operation handling strategies."""
+"""Functions for producing operation handling strategies for QCM/QRM modules."""
 
 from __future__ import annotations
 
-from quantify_scheduler.backends.qblox.conditional import (
-    FeedbackTriggerCondition,
-    FeedbackTriggerOperator,
-)
+from typing import TYPE_CHECKING
+
 from quantify_scheduler.backends.qblox.operation_handling import (
     acquisitions,
     base,
     pulses,
     virtual,
 )
-from quantify_scheduler.backends.types.qblox import OpInfo
+from quantify_scheduler.backends.qblox.operation_handling.factory_common import (
+    try_get_pulse_strategy_common,
+)
 from quantify_scheduler.enums import BinMode
+
+if TYPE_CHECKING:
+    from quantify_scheduler.backends.types.qblox import OpInfo
 
 
 def get_operation_strategy(
@@ -75,32 +78,15 @@ def _get_acquisition_strategy(
     )
 
 
-def _get_pulse_strategy(
+def _get_pulse_strategy(  # noqa: PLR0911  # too many return statements
     operation_info: OpInfo,
     channel_name: str,
 ) -> base.IOperationStrategy:
     """Handles the logic for determining the correct pulse type."""
     if operation_info.is_offset_instruction:
         return virtual.AwgOffsetStrategy(operation_info)
-    elif operation_info.is_parameter_update:
-        return virtual.UpdateParameterStrategy(operation_info)
-    elif operation_info.is_loop:
-        return virtual.LoopStrategy(operation_info)
-    elif (
-        feedback_trigger_address := operation_info.data.get("feedback_trigger_address")
-    ) is not None:
-        trigger_condition = FeedbackTriggerCondition(
-            enable=True,
-            operator=FeedbackTriggerOperator.OR,
-            addresses=[feedback_trigger_address],
-        )
-        return virtual.ConditionalStrategy(
-            operation_info=operation_info, trigger_condition=trigger_condition
-        )
-    elif operation_info.is_control_flow_end:
-        return virtual.ControlFlowReturnStrategy(operation_info)
-    elif operation_info.data.get("name") == "LatchReset":
-        return virtual.ResetFeedbackTriggersStrategy(operation_info=operation_info)
+    elif (strategy := try_get_pulse_strategy_common(operation_info)) is not None:
+        return strategy
     elif operation_info.data["port"] is None:
         if "phase_shift" in operation_info.data:
             return virtual.NcoPhaseShiftStrategy(operation_info)

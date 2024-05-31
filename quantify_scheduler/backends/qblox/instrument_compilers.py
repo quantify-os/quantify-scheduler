@@ -27,6 +27,9 @@ from quantify_scheduler.backends.qblox.enums import (
     QbloxFilterConfig,
     QbloxFilterMarkerDelay,
 )
+from quantify_scheduler.backends.qblox.operation_handling.factory_timetag import (
+    get_operation_strategy,
+)
 from quantify_scheduler.backends.qblox.timetag import TimetagSequencerCompiler
 from quantify_scheduler.backends.types.qblox import (
     BoundedParameter,
@@ -41,9 +44,9 @@ from quantify_scheduler.helpers.collections import find_port_clock_path
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.qblox import compiler_container
-
-if TYPE_CHECKING:
-    from quantify_scheduler.backends.qblox import compiler_container
+    from quantify_scheduler.backends.qblox.operation_handling.base import (
+        IOperationStrategy,
+    )
 
 
 class LocalOscillatorCompiler(compiler_abc.InstrumentCompiler):
@@ -300,7 +303,7 @@ class QRMRFCompiler(RFModuleCompiler):
     )
 
 
-class TimetagModuleCompiler(compiler_abc.ClusterModuleCompiler):
+class QTMCompiler(compiler_abc.ClusterModuleCompiler):
     """
     QTM specific implementation of the qblox compiler.
 
@@ -374,12 +377,31 @@ class TimetagModuleCompiler(compiler_abc.ClusterModuleCompiler):
 
     def _construct_sequencer_compiler(
         self,
-        index: int,
+        index: int,  # noqa: ARG002 ignore unused argument
         portclock: tuple[str, str],
         channel_name: str,
         sequencer_cfg: dict[str, Any],
         channel_cfg: dict[str, Any],  # noqa: ARG002 ignore unused argument
     ) -> TimetagSequencerCompiler:
+        def get_index_from_channel_name() -> int:
+            """
+            Get the sequencer index.
+
+            The QTM has no channel map yet, so the sequencer index = the channel index,
+            and there is always only one channel index.
+            """
+            input_idx = self.static_hw_properties._get_connected_input_indices(
+                channel_name
+            )
+            output_idx = self.static_hw_properties._get_connected_output_indices(
+                channel_name
+            )
+            if len(input_idx) > 0:
+                return input_idx[0]
+
+            # If it's not an input channel, it must be an output channel.
+            return output_idx[0]
+
         settings = TimetagSequencerSettings.initialize_from_config_dict(
             sequencer_cfg=sequencer_cfg,
             channel_name=channel_name,
@@ -392,7 +414,7 @@ class TimetagModuleCompiler(compiler_abc.ClusterModuleCompiler):
         )
         return TimetagSequencerCompiler(
             parent=self,
-            index=index,
+            index=get_index_from_channel_name(),
             portclock=portclock,
             static_hw_properties=self.static_hw_properties,
             settings=settings,
@@ -411,6 +433,28 @@ class TimetagModuleCompiler(compiler_abc.ClusterModuleCompiler):
         self.distribute_data()
         for seq in self.sequencers.values():
             seq.prepare()
+
+    def _get_operation_strategy(
+        self,
+        operation_info: OpInfo,
+        channel_name: str,
+    ) -> IOperationStrategy:
+        """
+        Determines and instantiates the correct strategy object.
+
+        Parameters
+        ----------
+        operation_info
+            The operation we are building the strategy for.
+        channel_name
+            Specifies the channel identifier of the hardware config (e.g. `complex_output_0`).
+
+        Returns
+        -------
+        :
+            The instantiated strategy object.
+        """
+        return get_operation_strategy(operation_info, channel_name)
 
 
 class ClusterCompiler(compiler_abc.InstrumentCompiler):
@@ -438,6 +482,7 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
         "QRM": QRMCompiler,
         "QCM_RF": QCMRFCompiler,
         "QRM_RF": QRMRFCompiler,
+        "QTM": QTMCompiler,
     }
     """References to the individual module compiler classes that can be used by the
     cluster."""

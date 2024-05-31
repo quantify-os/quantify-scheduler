@@ -22,9 +22,6 @@ from quantify_scheduler.operations.pulse_library import (
     SquarePulse,
 )
 from quantify_scheduler.resources import ClockResource
-from tests.scheduler.instrument_coordinator.components.test_qblox import (
-    make_cluster_component,
-)
 
 from .empty_qasm_program import (
     fixture_empty_qasm_program,
@@ -273,7 +270,7 @@ class TestMarkerPulseStrategy:
         assert data is None
 
     def test_marker_pulse_compilation_qrm(
-        self, mock_setup_basic_transmon_with_standard_params, make_cluster_component
+        self, mock_setup_basic_transmon_with_standard_params
     ):
         hardware_cfg = {
             "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
@@ -344,7 +341,7 @@ class TestMarkerPulseStrategy:
         assert re.search(r"^\s*set_mrk\s+0\s*($|#)", seq1_digital[idx + 3])
 
     def test_marker_pulse_compilation_qcm_rf(
-        self, mock_setup_basic_transmon_with_standard_params, make_cluster_component
+        self, mock_setup_basic_transmon_with_standard_params
     ):
         hardware_cfg = {
             "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
@@ -458,3 +455,62 @@ class TestMarkerPulseStrategy:
         _ = compiler.compile(
             schedule=schedule, config=quantum_device.generate_compilation_config()
         )
+
+
+class TestDigitalPulseStrategy:
+    def test_constructor(self):
+        pulses.DigitalPulseStrategy(
+            operation_info=types.OpInfo(name="", data={}, timing=0),
+            channel_name="digital_output_0",
+        )
+
+    def test_insert_qasm_exception(self, empty_qasm_program_qcm):
+        duration = 24e-9
+        wf_func_path = "quantify_scheduler.waveforms.drag"
+        wf_kwargs = {
+            "G_amp": 1.0,
+            "D_amp": 1.0,
+            "duration": 24e-9,
+            "nr_sigma": 4,
+            "phase": 0,
+        }
+        data = {"wf_func": wf_func_path, "duration": duration, **wf_kwargs}
+
+        strategy = pulses.DigitalPulseStrategy(
+            operation_info=types.OpInfo(name="test_pulse", data=data, timing=0),
+            channel_name="complex_output_0",
+        )
+        strategy.generate_data(wf_dict={})
+
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "DigitalPulseStrategy can only be used with a digital channel. "
+                "Please make sure that 'digital' keyword is included "
+                "in the channel_name in the hardware configuration for port-clock combination"
+                " 'None-None' (current channel_name is 'complex_output_0').Operation causing exception: Pulse \"test_pulse\" (t0=0, duration=2.4e-08)"
+            ),
+        ):
+            strategy.insert_qasm(empty_qasm_program_qcm)
+
+    def test_operation_info_property(self):
+        # arrange
+        operation_info = types.OpInfo(name="", data={}, timing=0)
+        strategy = pulses.DigitalPulseStrategy(
+            operation_info=operation_info,
+            channel_name="digital_output_0",
+        )
+
+        # act
+        from_property = strategy.operation_info
+
+        # assert
+        assert operation_info == from_property
+
+    def test_generate_data(self):
+        strategy = pulses.DigitalPulseStrategy(
+            operation_info=types.OpInfo(name="", data={}, timing=0),
+            channel_name="digital_output_0",
+        )
+
+        assert strategy.generate_data({}) is None
