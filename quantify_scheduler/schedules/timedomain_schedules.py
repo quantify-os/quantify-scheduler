@@ -120,7 +120,7 @@ def t1_sched(
     Parameters
     ----------
     times
-        an array of wait times tau between the pi-pulse and the measurement.
+        an array of wait times tau between the start of pi-pulse and the measurement.
     qubit
         the name of the qubit e.g., :code:`"q0"` to perform the T1 experiment on.
     repetitions
@@ -168,7 +168,8 @@ def ramsey_sched(
     Parameters
     ----------
     times
-        an array of wait times tau between the pi/2 pulses.
+        an array of wait times tau between the start of the first pi/2 pulse and
+        the start of the second pi/2 pulse.
     artificial_detuning
         frequency in Hz of the software emulated, or ``artificial`` qubit detuning, which is
         implemented by changing the phase of the second pi/2 (recovery) pulse. The
@@ -228,7 +229,9 @@ def echo_sched(
     qubit
         the name of the qubit e.g., "q0" to perform the echo experiment on.
     times
-        an array of wait times between the
+        an array of wait times. Used as
+        tau/2 wait time between the start of the first pi/2 pulse and pi pulse,
+        tau/2 wait time between the start of the pi pulse and the final pi/2 pulse.
     repetitions
         The amount of times the Schedule will be repeated.
 
