@@ -755,14 +755,6 @@ class SequencerCompiler(ABC):
             return 0
 
         latency_correction_ns = int(round(latency_correction * 1e9))
-        if latency_correction_ns % 4 != 0:
-            logger.warning(
-                f"Latency correction of {latency_correction_ns} ns specified"
-                f" for {self.name} of {self.parent.name}, which is not a"
-                f" multiple of {constants.MIN_TIME_BETWEEN_OPERATIONS} ns. This feature should"
-                f" be considered experimental and stable results are not guaranteed at "
-                f"this stage."
-            )
 
         return latency_correction_ns
 

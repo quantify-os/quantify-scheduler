@@ -3465,48 +3465,6 @@ def test_determine_relative_latency_corrections(
     assert generated_latency_dict == {"q0:mw-q0.01": 2.5e-08, "q1:mw-q1.01": 0.0}
 
 
-def test_apply_latency_corrections_warning(
-    compile_config_basic_transmon_qblox_hardware,
-    caplog,
-):
-    """
-    Checks if warning is raised for a latency correction
-    that is not a multiple of 4ns
-    """
-    compile_config_basic_transmon_qblox_hardware.hardware_compilation_config.hardware_options.latency_corrections = {
-        "q4:mw-q4.01": 5e-9
-    }
-
-    sched = Schedule("Two Pulses Experiment")
-    sched.add(
-        SquarePulse(port="q4:mw", clock="q4.01", amp=0.25, duration=12e-9),
-        ref_pt="start",
-    )
-    # Add a second pulse on a different port to make sure the compiled latency correction will not be 0.
-    # This is because `determine_relative_latency_corrections` will subtract the minimal latency correction
-    # from all port-clock combinations that are used in the schedule (since only these are added to the
-    # generated old-style hardware config). In this case, the latency correction for q4:res-q4.ro
-    # is not specified in the config so will default to 0, such that the latency correction
-    # for q4:mw-q4.01 will be 5 ns and a warning will be raised.
-    sched.add(
-        SquarePulse(port="q4:res", clock="q4.ro", amp=0.25, duration=12e-9),
-        ref_pt="start",
-    )
-    sched.add_resource(ClockResource("q4.01", freq=5e9))
-    sched.add_resource(ClockResource("q4.ro", freq=6e9))
-
-    warning = f"not a multiple of {constants.MIN_TIME_BETWEEN_OPERATIONS} ns"
-    with caplog.at_level(
-        logging.WARNING, logger="quantify_scheduler.backends.qblox.qblox_backend"
-    ):
-        compiler = SerialCompiler(name="compiler")
-        compiler.compile(
-            sched,
-            config=compile_config_basic_transmon_qblox_hardware,
-        )
-    assert any(warning in mssg for mssg in caplog.messages)
-
-
 def test_apply_mixer_corrections(
     compile_config_basic_transmon_qblox_hardware,
 ):
