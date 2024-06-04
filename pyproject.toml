@@ -82,6 +82,7 @@ docs = [
  "sphinx-design",
  "sphinx-jsonschema",
  "sphinx-togglebutton",
+ "sphinx-copybutton",
  "sphinxcontrib-bibtex",
  "sphinxcontrib-mermaid",
  "quantify_scheduler[zhinst]",

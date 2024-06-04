@@ -48,6 +48,7 @@ extensions = [
     "sphinx.ext.todo",
     "jupyter_sphinx",
     "sphinx_togglebutton",
+    "sphinx_copybutton",
     # fancy type hints in docs and
     # solves the same issue as "sphinx_automodapi.smart_resolver"
     # however the smart_resolver seems to fail for external packages like `zhinst`
@@ -58,6 +59,7 @@ extensions = [
     "sphinx_design",
 ]
 
+copybutton_prompt_text = "$ "
 
 # required to use sphinx_design in combination with myst
 myst_enable_extensions = ["colon_fence"]
