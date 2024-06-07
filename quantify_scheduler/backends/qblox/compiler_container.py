@@ -39,8 +39,7 @@ class CompilerContainer:
     def __init__(self, schedule: Schedule):
         self.total_play_time = get_total_duration(schedule)
         """
-        The total duration of the schedule in absolute time this class will be
-         compiling.
+        The total duration of a single repetition of the schedule.
         """
         self.resources = schedule.resources
         """

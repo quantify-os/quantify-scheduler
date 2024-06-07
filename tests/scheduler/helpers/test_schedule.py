@@ -26,6 +26,7 @@ from quantify_scheduler.helpers.schedule import (
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.gate_library import X90, Measure, Reset
 from quantify_scheduler.schedules import spectroscopy_schedules
+from quantify_scheduler.schedules.schedule import ScheduleBase
 
 
 def test_make_hash() -> None:
@@ -115,9 +116,9 @@ def test_get_acq_info_by_uuid(
         schedule=schedule_with_measurement, config=device_compile_config_basic_transmon
     )
 
-    operation_id = list(schedule.schedulables.values())[-1]["operation_id"]
-    operation = schedule.operations[operation_id]
-    acq_info_0 = operation["acquisition_info"][0]
+    acq_operation_id = list(schedule.schedulables.values())[-1]["operation_id"]
+    operation = schedule.operations[acq_operation_id]
+    acq_info_0 = operation.data["acquisition_info"][0]
     acq_pulse_infos = acq_info_0["waveforms"]
 
     acq_id = get_acq_uuid(acq_info_0)
@@ -154,8 +155,8 @@ def test_get_port_timeline(
     assert len(port_timeline_dict) == 1
     assert port in port_timeline_dict
     assert len(port_timeline_dict[port]) == 1
-    assert isinstance(port_timeline_dict[port][timeslot_index], list)
-    assert port_timeline_dict[port][timeslot_index][0] == pulse_id
+    assert isinstance(port_timeline_dict[port][(timeslot_index,)], list)
+    assert port_timeline_dict[port][(timeslot_index,)][0] == pulse_id
 
 
 def test_get_port_timeline_sorted(
@@ -212,11 +213,11 @@ def test_get_port_timeline_sorted(
         "q0:mw",
         "q0:res",
     ] == list(port_timeline_dict.keys())
-    assert list(port_timeline_dict["None"].items()) == [(0, [reset_pulse_id])]
-    assert list(port_timeline_dict["q0:mw"].items()) == [(1, [qubit_pulse_id])]
+    assert list(port_timeline_dict["None"].items()) == [((0,), [reset_pulse_id])]
+    assert list(port_timeline_dict["q0:mw"].items()) == [((1,), [qubit_pulse_id])]
     assert list(port_timeline_dict["q0:res"].items()) == [
-        (3, [acq_id]),
-        (2, [ro_pulse_id]),
+        ((3,), [acq_id]),
+        ((2,), [ro_pulse_id]),
     ]
 
 
@@ -265,9 +266,9 @@ def test_get_port_timeline_are_unique(device_compile_config_basic_transmon):
         "q0:mw",
         "q1:mw",
     ] == list(port_timeline_dict.keys())
-    assert port_timeline_dict["None"][0] == [reset_pulse_id_q0, reset_pulse_id_q1]
-    assert port_timeline_dict["q0:mw"][1] == [q0_pulse_id]
-    assert port_timeline_dict["q1:mw"][2] == [q1_pulse_id]
+    assert port_timeline_dict["None"][(0,)] == [reset_pulse_id_q0, reset_pulse_id_q1]
+    assert port_timeline_dict["q0:mw"][(1,)] == [q0_pulse_id]
+    assert port_timeline_dict["q1:mw"][(2,)] == [q1_pulse_id]
 
 
 def test_get_port_timeline_with_duplicate_op(device_compile_config_basic_transmon):
@@ -294,8 +295,8 @@ def test_get_port_timeline_with_duplicate_op(device_compile_config_basic_transmo
     assert [
         "q0:mw",
     ] == list(port_timeline_dict.keys())
-    assert port_timeline_dict["q0:mw"][0] == [X90_q0_pulse_id]
-    assert port_timeline_dict["q0:mw"][1] == [X90_q0_pulse_id]
+    assert port_timeline_dict["q0:mw"][(0,)] == [X90_q0_pulse_id]
+    assert port_timeline_dict["q0:mw"][(1,)] == [X90_q0_pulse_id]
 
 
 def test_get_port_timeline_with_acquisition(
@@ -318,15 +319,21 @@ def test_get_port_timeline_with_acquisition(
     q0_pulse_info = q0_operation["pulse_info"][0]
     q0_pulse_id = get_pulse_uuid(q0_pulse_info)
 
-    acq_operation_id = list(schedule.schedulables.values())[2]["operation_id"]
-    acq_operation = schedule.operations[acq_operation_id]
+    measure_operation_id = list(schedule.schedulables.values())[2]["operation_id"]
+    measure_operation = schedule.operations[measure_operation_id]
+
+    # measure_pulse_operation_id = list(measure_operation.schedulables.values())[1]["operation_id"]
+    # measure_pulse_operation = measure_operation.operations[measure_pulse_operation_id]
+
+    # measure_acq_operation_id = list(measure_operation.schedulables.values())[2]["operation_id"]
+    # measure_acq_operation = measure_operation.operations[measure_acq_operation_id]
 
     # Acquisition consists of a reset_clock_phase instruction
     # and a readout-pulse. We select here the actual readout-pulse.
-    ro_pulse_info = acq_operation["pulse_info"][1]
+    ro_pulse_info = measure_operation.data["pulse_info"][1]
     ro_pulse_id = get_pulse_uuid(ro_pulse_info)
 
-    acq_info = acq_operation["acquisition_info"][0]
+    acq_info = measure_operation.data["acquisition_info"][0]
     acq_id = get_acq_uuid(acq_info)
 
     # Act
@@ -339,9 +346,10 @@ def test_get_port_timeline_with_acquisition(
         "q0:mw",
         "q0:res",
     ] == list(port_timeline_dict.keys())
-    assert port_timeline_dict["None"][0] == [reset_pulse_id]
-    assert port_timeline_dict["q0:mw"][1] == [q0_pulse_id]
-    assert port_timeline_dict["q0:res"][2] == [ro_pulse_id, acq_id]
+    assert port_timeline_dict["None"][(0,)] == [reset_pulse_id]
+    assert port_timeline_dict["q0:mw"][(1,)] == [q0_pulse_id]
+    print(port_timeline_dict["q0:res"])
+    assert port_timeline_dict["q0:res"][(2,)] == [ro_pulse_id, acq_id]
 
 
 def test_get_total_duration(
@@ -407,13 +415,13 @@ def test_get_operation_start(empty_schedule: Schedule, create_schedule_with_puls
     schedule1 = create_schedule_with_pulse_info(schedule1)
 
     # Act
-    start_empty = get_operation_start(empty_schedule, timeslot_index=0)
+    start_empty = get_operation_start(empty_schedule, timeslot_index=(0,))
 
-    start0_x90 = get_operation_start(schedule0, timeslot_index=0)
-    start0_measure = get_operation_start(schedule0, timeslot_index=1)
+    start0_x90 = get_operation_start(schedule0, timeslot_index=(0,))
+    start0_measure = get_operation_start(schedule0, timeslot_index=(1,))
 
-    start1_measure = get_operation_start(schedule1, timeslot_index=0)
-    start1_x90 = get_operation_start(schedule1, timeslot_index=1)
+    start1_measure = get_operation_start(schedule1, timeslot_index=(0,))
+    start1_x90 = get_operation_start(schedule1, timeslot_index=(1,))
 
     # Assert
     assert start_empty == 0.0
@@ -441,13 +449,13 @@ def test_get_operation_end(empty_schedule: Schedule, create_schedule_with_pulse_
     schedule1 = create_schedule_with_pulse_info(schedule1)
 
     # Act
-    end_empty = get_operation_end(empty_schedule, timeslot_index=0)
+    end_empty = get_operation_end(empty_schedule, timeslot_index=(0,))
 
-    endt0_x90 = get_operation_end(schedule0, timeslot_index=0)
-    end0_measure = get_operation_end(schedule0, timeslot_index=1)
+    endt0_x90 = get_operation_end(schedule0, timeslot_index=(0,))
+    end0_measure = get_operation_end(schedule0, timeslot_index=(1,))
 
-    end1_measure = get_operation_end(schedule1, timeslot_index=0)
-    end1_x90 = get_operation_end(schedule0, timeslot_index=1)
+    end1_measure = get_operation_end(schedule1, timeslot_index=(0,))
+    end1_x90 = get_operation_end(schedule1, timeslot_index=(1,))
 
     # Assert
     assert end_empty == 0.0

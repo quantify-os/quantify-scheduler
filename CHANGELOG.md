@@ -32,6 +32,7 @@
   - Fix for serialization of subschedules. (!992)
 - Compilation 
   - Make nv center hardware configs compatible with new-style compilation configs, which includes defining a `OpticalModulator` hardware description, and convert all nv center hardware configs to new style. (!966)
+  - Adjust schedule helper functions for subschedules and control flows. (!998)
 
 ## 0.20.1 (2024-05-01)
 

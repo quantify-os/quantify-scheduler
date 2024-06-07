@@ -63,7 +63,7 @@ def get_acq_uuid(acq_info: dict[str, Any]) -> int:
 
 def get_total_duration(schedule: ScheduleBase) -> float:
     """
-    Return the total schedule duration in seconds.
+    Return the total schedule duration in seconds if repetitions=1 for the schedule.
 
     Parameters
     ----------
@@ -75,31 +75,49 @@ def get_total_duration(schedule: ScheduleBase) -> float:
     :
         Duration in seconds.
     """
-    if len(schedule.schedulables) == 0:
-        return 0.0
+    return schedule.get_schedule_duration() / schedule.repetitions
 
-    def _get_operation_end(pair: tuple[int, dict]) -> float:
-        """Return the operations end time in seconds."""
-        (timeslot_index, _) = pair
-        return get_operation_end(
-            schedule,
-            timeslot_index,
+
+def _get_operation_by_timeslot_index(
+    operation: Operation | CompiledSchedule,
+    timeslot_index_to_find: tuple[int],
+    timeslot_index: tuple[int] = (),
+    time_offset: float = 0,
+) -> tuple[float, Operation] | None:
+    """Return the absolute time and the operation for the timeslot_index_to_find."""
+    if isinstance(operation, ScheduleBase):
+        sorted_schedulables = sorted(
+            enumerate(operation.schedulables.values()),
+            key=lambda pair: pair[1]["abs_time"],
         )
-
-    operations_ends = map(
-        _get_operation_end,
-        enumerate(schedule.schedulables.values()),
-    )
-
-    return max(
-        operations_ends,
-        default=0,
-    )
+        for i, schedulable in sorted_schedulables:
+            inner_operation = operation.operations[schedulable["operation_id"]]
+            new_timeslot_index = timeslot_index + (i,)
+            found = _get_operation_by_timeslot_index(
+                inner_operation,
+                timeslot_index_to_find,
+                new_timeslot_index,
+                time_offset + schedulable["abs_time"],
+            )
+            if found is not None:
+                return found
+    elif isinstance(operation, ControlFlowOperation):
+        found = _get_operation_by_timeslot_index(
+            operation.body,
+            timeslot_index_to_find,
+            timeslot_index,
+            time_offset,
+        )
+        if found is not None:
+            return found
+    elif timeslot_index == timeslot_index_to_find:
+        return time_offset, operation
+    return None
 
 
 def get_operation_start(
     schedule: CompiledSchedule,
-    timeslot_index: int,
+    timeslot_index: tuple[int],
 ) -> float:
     """
     Return the start of an operation in seconds.
@@ -118,11 +136,12 @@ def get_operation_start(
     """
     if len(schedule.schedulables) == 0:
         return 0.0
-
-    schedulable = list(schedule.schedulables.values())[timeslot_index]
-    operation = schedule.operations[schedulable["operation_id"]]
-
-    t0: float = schedulable["abs_time"]
+    found_t0_operation = _get_operation_by_timeslot_index(
+        schedule, timeslot_index_to_find=timeslot_index
+    )
+    if found_t0_operation is None:
+        return None
+    t0, operation = found_t0_operation
 
     pulse_info: dict = (
         operation["pulse_info"][0]
@@ -145,7 +164,7 @@ def get_operation_start(
 
 def get_operation_end(
     schedule: ScheduleBase,
-    timeslot_index: int,
+    timeslot_index: tuple[int],
 ) -> float:
     """
     Return the end of an operation in seconds.
@@ -165,52 +184,35 @@ def get_operation_end(
     if len(schedule.schedulables) == 0:
         return 0.0
 
-    schedulable = list(schedule.schedulables.values())[timeslot_index]
-    operation: Operation = schedule.operations[schedulable["operation_id"]]
-    t0: float = schedulable["abs_time"]
+    found_t0_operation = _get_operation_by_timeslot_index(
+        schedule, timeslot_index_to_find=timeslot_index
+    )
+    if found_t0_operation is None:
+        return None
+    t0, operation = found_t0_operation
 
     return t0 + operation.duration
 
 
-def get_port_timeline(
-    schedule: CompiledSchedule,
-) -> dict[str, dict[int, list[int]]]:
-    """
-    Return a new dictionary containing the port timeline.
-
-    Using iterators on this collection enables sorting.
-
-    .. code-block::
-
-        print(port_timeline_dict)
-        # { {'q0:mw', {0, [123456789]}},
-        # ... }
-
-        # Sorted items.
-        print(port_timeline_dict.items())
-
-    Parameters
-    ----------
-    schedule
-        The schedule.
-    """
-    port_timeline_dict: dict[str, dict[int, list[int]]] = {}
-
-    # Sort timing constraints based on abs_time and keep the original index.
-    schedulables_map = dict(
-        sorted(
-            map(
-                lambda pair: (pair[0], pair[1]),
-                enumerate(schedule.schedulables.values()),
-            ),
+def _generate_port_timeline(
+    operation: Operation | ScheduleBase,
+    timeslot_index: tuple[int],
+    port_timeline_dict: dict[str, dict[tuple[int], list[int]]],
+) -> None:
+    if isinstance(operation, ScheduleBase):
+        sorted_schedulables = sorted(
+            list(enumerate(operation.schedulables.values())),
             key=lambda pair: pair[1]["abs_time"],
         )
-    )
-
-    for timeslot_index, schedulable in schedulables_map.items():
-        operation = schedule.operations[schedulable["operation_id"]]
-        abs_time = schedulable["abs_time"]
-
+        for i, schedulable in sorted_schedulables:
+            inner_operation = operation.operations[schedulable["operation_id"]]
+            new_timeslot_index = timeslot_index + (i,)
+            _generate_port_timeline(
+                inner_operation, new_timeslot_index, port_timeline_dict
+            )
+    elif isinstance(operation, ControlFlowOperation):
+        _generate_port_timeline(operation.body, timeslot_index, port_timeline_dict)
+    else:
         pulse_info_iter = map(
             lambda pulse_info: (get_pulse_uuid(pulse_info), pulse_info),
             operation["pulse_info"],
@@ -223,7 +225,7 @@ def get_port_timeline(
         # Sort pulses and acquisitions within an operation.
         for uuid, info in sorted(
             chain(pulse_info_iter, acq_info_iter),
-            key=lambda pair: abs_time + pair[1]["t0"],
+            key=lambda pair: pair[1]["t0"],
         ):
             port = str(info["port"])
             if port not in port_timeline_dict:
@@ -233,6 +235,35 @@ def get_port_timeline(
                 port_timeline_dict[port][timeslot_index] = []
 
             port_timeline_dict[port][timeslot_index].append(uuid)
+
+
+def get_port_timeline(
+    schedule: CompiledSchedule,
+) -> dict[str, dict[tuple[int], list[int]]]:
+    """
+    Return a new dictionary containing the port timeline.
+    Only schedules without subschedules are supported.
+
+    Using iterators on this collection enables sorting.
+
+    .. code-block::
+
+        print(port_timeline_dict)
+        # { {'q0:mw', {(0,), [123456789]}},
+        # ... }
+
+        # Sorted items.
+        print(port_timeline_dict.items())
+
+    Parameters
+    ----------
+    schedule
+        The schedule.
+    """
+    port_timeline_dict: dict[str, dict[int, list[int]]] = {}
+    _generate_port_timeline(schedule, (), port_timeline_dict)
+
+    # Sort timing constraints based on abs_time and keep the original index.
 
     return port_timeline_dict
 
@@ -308,6 +339,25 @@ def get_pulse_info_by_uuid(
     return pulseid_pulseinfo_dict
 
 
+def _generate_acq_info_by_uuid(
+    operation: Operation | ScheduleBase, acqid_acqinfo_dict: dict
+) -> None:
+    if isinstance(operation, ScheduleBase):
+        for schedulable in operation.schedulables.values():
+            inner_operation = operation.operations[schedulable["operation_id"]]
+            _generate_acq_info_by_uuid(inner_operation, acqid_acqinfo_dict)
+    elif isinstance(operation, ControlFlowOperation):
+        _generate_acq_info_by_uuid(operation.body, acqid_acqinfo_dict)
+    else:
+        for acq_info in operation["acquisition_info"]:
+            acq_id = get_acq_uuid(acq_info)
+            if acq_id in acqid_acqinfo_dict:
+                # Unique acquisition info already populated in the dictionary.
+                continue
+
+            acqid_acqinfo_dict[acq_id] = acq_info
+
+
 def get_acq_info_by_uuid(schedule: CompiledSchedule) -> dict[int, dict[str, Any]]:
     """
     Return a lookup dictionary of unique identifiers of acquisition information.
@@ -317,17 +367,8 @@ def get_acq_info_by_uuid(schedule: CompiledSchedule) -> dict[int, dict[str, Any]
     schedule
         The schedule.
     """
-    acqid_acqinfo_dict: dict[int, dict[str, Any]] = {}
-    for schedulable in schedule.schedulables.values():
-        operation = schedule.operations[schedulable["operation_id"]]
-
-        for acq_info in operation["acquisition_info"]:
-            acq_id = get_acq_uuid(acq_info)
-            if acq_id in acqid_acqinfo_dict:
-                # Unique acquisition info already populated in the dictionary.
-                continue
-
-            acqid_acqinfo_dict[acq_id] = acq_info
+    acqid_acqinfo_dict: dict[tuple[int], dict[str, Any]] = {}
+    _generate_acq_info_by_uuid(schedule, acqid_acqinfo_dict)
 
     return acqid_acqinfo_dict
 
