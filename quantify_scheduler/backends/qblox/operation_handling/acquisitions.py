@@ -372,7 +372,7 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
         qasm_program.auto_wait(
             wait_time=(
                 helpers.to_grid_time(self.operation_info.duration)
-                - constants.MIN_TIME_BETWEEN_OPERATIONS
+                - 2 * constants.MIN_TIME_BETWEEN_OPERATIONS
             )
         )
 
@@ -418,7 +418,7 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
         qasm_program.auto_wait(
             wait_time=(
                 helpers.to_grid_time(self.operation_info.duration)
-                - constants.MIN_TIME_BETWEEN_OPERATIONS
+                - 2 * constants.MIN_TIME_BETWEEN_OPERATIONS
             )
         )
 
@@ -431,6 +431,97 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
             comment=f"Disable TTL acquisition of acq_channel:{self.acq_channel}, "
             f"store in bin:{acq_bin_idx_reg}",
         )
+        qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
+
+        qasm_program.emit(
+            q1asm_instructions.ADD,
+            acq_bin_idx_reg,
+            1,  # increment
+            acq_bin_idx_reg,
+            comment=f"Increment bin_idx for ch{self.acq_channel} by 1",
+        )
+
+
+class TimetagAcquisitionStrategy(AcquisitionStrategyPartial):
+    """Performs a timetag acquisition."""
+
+    def generate_data(self, wf_dict: Dict[str, Any]) -> None:
+        """Returns None as no waveform is needed."""
+        return None
+
+    def _acquire_average(self, qasm_program: QASMProgram):
+        """
+        Add the assembly instructions for the Q1 sequence processor that corresponds to
+        this acquisition, assuming averaging is used.
+
+        Parameters
+        ----------
+        qasm_program
+            The QASMProgram to add the assembly instructions to.
+        """
+        raise NotImplementedError(
+            "TriggerCountAcquisition is not implemented for the QTM with AVERAGE bin mode."
+        )
+
+    def _acquire_append(self, qasm_program: QASMProgram):
+        """
+        Add the assembly instructions for the Q1 sequence processor that corresponds to
+        this acquisition, assuming append is used.
+
+        Parameters
+        ----------
+        qasm_program
+            The QASMProgram to add the assembly instructions to.
+        """
+        if self.bin_idx_register is None:
+            raise ValueError(
+                "Attempting to add acquisition with append binmode. "
+                "bin_idx_register cannot be None."
+            )
+
+        acq_bin_idx_reg = self.bin_idx_register
+
+        # Allocated because the Q1ASM operation signature requires it. Not used yet. See
+        # also SE-423.
+        fine_delay_reg = qasm_program.register_manager.allocate_register()
+
+        qasm_program.emit(
+            q1asm_instructions.MOVE,
+            0,
+            fine_delay_reg,
+        )
+
+        qasm_program.emit(
+            q1asm_instructions.ACQUIRE_TIMETAGS,
+            self.acq_channel,
+            acq_bin_idx_reg,
+            1,  # enable ttl acquisition
+            fine_delay_reg,
+            constants.MIN_TIME_BETWEEN_OPERATIONS,
+            comment=f"Enable TTL acquisition of acq_channel:{self.acq_channel}, "
+            f"store in bin:{acq_bin_idx_reg}",
+        )
+        qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
+
+        qasm_program.auto_wait(
+            wait_time=(
+                helpers.to_grid_time(self.operation_info.duration)
+                - 2 * constants.MIN_TIME_BETWEEN_OPERATIONS
+            )
+        )
+
+        qasm_program.emit(
+            q1asm_instructions.ACQUIRE_TIMETAGS,
+            self.acq_channel,
+            acq_bin_idx_reg,
+            0,  # disable ttl acquisition
+            fine_delay_reg,
+            constants.MIN_TIME_BETWEEN_OPERATIONS,
+            comment=f"Disable TTL acquisition of acq_channel:{self.acq_channel}, "
+            f"store in bin:{acq_bin_idx_reg}",
+        )
+        qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
+        qasm_program.register_manager.free_register(fine_delay_reg)
 
         qasm_program.emit(
             q1asm_instructions.ADD,

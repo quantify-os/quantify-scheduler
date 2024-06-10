@@ -827,6 +827,7 @@ print("state 1: ", sum(acquisition[0].values==1))
 
 The above schedule was run in the bin mode `BinMode.APPEND`, rerunning the schedule with `BinMode.AVERAGE` will average the thresholded values and in this case produce the single number, 0.5.
 
+(sec-acquisitions-trigger-count)=
 ### Trigger count acquisition
 
 The trigger count acquisition protocol is used for measuring how many times the input signal goes over some limit.
@@ -849,7 +850,7 @@ This provides insights into the overall occurrence of triggers when running the 
 The overall distribution of triggers would be: trigger count of 1 occurred twice, and trigger count of 3 occurred once. Hence, the resulting dictionary would be: `{1: 2, 3: 1}`.
 The dictionary notation shows the number of triggers as keys and their corresponding frequencies as values.
 
-The trigger count protocol is currently only implemented for the Qblox backend.
+The trigger count protocol is currently only implemented for the Qblox backend. Please also see {ref}`sec-qblox-trigger-count` for more information on Qblox module-specific behavior of this operation.
 
 Note, the threshold is set via {class}`~quantify_scheduler.backends.types.qblox.SequencerOptions.ttl_acq_threshold` (see also {ref}`sec-qblox-sequencer-options-new`).
 

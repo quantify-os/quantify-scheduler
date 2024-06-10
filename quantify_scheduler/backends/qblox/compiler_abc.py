@@ -33,7 +33,6 @@ from quantify_scheduler.backends.qblox import (
     q1asm_instructions,
     register_manager,
 )
-from quantify_scheduler.backends.qblox.enums import ChannelMode
 from quantify_scheduler.backends.qblox.operation_handling.acquisitions import (
     AcquisitionStrategyPartial,
 )
@@ -1377,7 +1376,9 @@ class ClusterModuleCompiler(InstrumentCompiler, Generic[_SequencerT_co], ABC):
                                 channel_name=seq._settings.channel_name,
                             )
 
-                            if ChannelMode.DIGITAL in seq._settings.channel_name:
+                            if op_strategy.operation_info.data.get(
+                                "marker_pulse", False
+                            ):
                                 # A digital pulse always uses one output.
                                 op_strategy.operation_info.data["output"] = (
                                     seq.connected_output_indices[0]

@@ -51,6 +51,10 @@ def _get_acquisition_strategy(
     operation_info: OpInfo,
 ) -> acquisitions.AcquisitionStrategyPartial:
     """Handles the logic for determining the correct acquisition type."""
+    protocol = operation_info.data["protocol"]
+    if protocol == "TriggerCount":
+        return acquisitions.TimetagAcquisitionStrategy(operation_info)
+
     raise ValueError(f"Operation info {operation_info} cannot be compiled for a QTM.")
 
 

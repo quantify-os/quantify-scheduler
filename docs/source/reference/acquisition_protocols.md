@@ -239,6 +239,7 @@ Integration weights should normally be calibrated in a separate experiment
 
 - Referred to as `"TriggerCount"`.
 - Supported by the {mod}`Qblox <quantify_scheduler.backends.qblox>` backend.
+  - Please also see {ref}`sec-qblox-trigger-count` for more information on Qblox module-specific behavior of this operation.
 
 This acquisition protocol measures how many times a predefined voltage threshold has been
 passed. The threshold is set via {class}`~quantify_scheduler.backends.types.qblox.SequencerOptions.ttl_acq_threshold` (see also {ref}`sec-qblox-sequencer-options-new`).

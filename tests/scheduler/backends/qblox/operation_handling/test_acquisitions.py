@@ -475,8 +475,8 @@ class TestTriggerCountStrategy:
                 "0,0,1,4",
                 "# Enable TTL acquisition of acq_channel:0, bin_mode:average",
             ],
-            ["", "wait", "65532", "# auto generated wait (99996 ns)"],
-            ["", "wait", "34464", "# auto generated wait (99996 ns)"],
+            ["", "wait", "65532", "# auto generated wait (99992 ns)"],
+            ["", "wait", "34460", "# auto generated wait (99992 ns)"],
             [
                 "",
                 "acquire_ttl",
@@ -511,8 +511,8 @@ class TestTriggerCountStrategy:
                 "0,R0,1,4",
                 "# Enable TTL acquisition of acq_channel:0, store in bin:R0",
             ],
-            ["", "wait", "65532", "# auto generated wait (99996 ns)"],
-            ["", "wait", "34464", "# auto generated wait (99996 ns)"],
+            ["", "wait", "65532", "# auto generated wait (99992 ns)"],
+            ["", "wait", "34460", "# auto generated wait (99992 ns)"],
             [
                 "",
                 "acquire_ttl",

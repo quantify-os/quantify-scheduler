@@ -84,7 +84,7 @@ class TimetagSequencerCompiler(SequencerCompiler):
         acq_metadata
             Acquisition metadata.
         """
-        # Work in progress: there are no acquisitions for the QTM yet.
+        # No action needed yet.
 
     def _write_pre_wait_sync_instructions(self, qasm: QASMProgram) -> None:
         """

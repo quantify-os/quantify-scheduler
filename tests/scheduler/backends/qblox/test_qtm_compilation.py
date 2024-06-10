@@ -11,7 +11,10 @@ from quantify_scheduler.backends.qblox.instrument_compilers import QTMCompiler
 from quantify_scheduler.backends.qblox.timetag import TimetagSequencerCompiler
 from quantify_scheduler.backends.types.qblox import TimetagSequencerSettings
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
+from quantify_scheduler.operations.acquisition_library import (
+    SSBIntegrationComplex,
+    TriggerCount,
+)
 from quantify_scheduler.operations.control_flow_library import LoopOperation
 from quantify_scheduler.operations.pulse_library import (
     IdlePulse,
@@ -298,3 +301,107 @@ def test_qtm_compile_unsupported_operations_raises(operation):
         _ = compiler.compile(
             schedule=schedule, config=quantum_device.generate_compilation_config()
         )
+
+
+@pytest.mark.parametrize("repetitions", [1, 10])
+def test_trigger_count_acq_qtm_compilation(repetitions, assert_equal_q1asm):
+    schedule = Schedule(name="Test", repetitions=repetitions)
+
+    tg = schedule.add(TriggerCount(port="q0:in", clock="digital", duration=100e-9))
+    schedule.add(
+        MarkerPulse(duration=4e-9, port="q0:out"), rel_time=0, ref_op=tg, ref_pt="start"
+    )
+    for _ in range(3):
+        schedule.add(MarkerPulse(duration=4e-9, port="q0:out"), rel_time=16e-9)
+
+    quantum_device = QuantumDevice(name="quantum_device")
+
+    hw_config = {
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {
+                    1: {"instrument_type": "QTM"},
+                },
+                "ref": "internal",
+            },
+        },
+        "hardware_options": {},
+        "connectivity": {
+            "graph": [
+                ("cluster0.module1.digital_output_0", "q0:out"),
+                ("cluster0.module1.digital_input_4", "q0:in"),
+            ]
+        },
+    }
+
+    quantum_device.hardware_config(hw_config)
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    assert (
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"][
+            "sequencers"
+        ]["seq4"]["sequence"]["acquisitions"]["0"]["num_bins"]
+        == repetitions
+    )
+
+    assert_equal_q1asm(
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"][
+            "sequencers"
+        ]["seq4"]["sequence"]["program"],
+        f""" wait_sync 4
+ upd_param 4
+ move 0,R0 # Initialize acquisition bin_idx for ch0
+ wait 4 # latency correction of 4 + 0 ns
+ move {repetitions},R1 # iterator for loop with label start
+start:
+ wait 4
+ move 0,R10
+ acquire_timetags 0,R0,1,R10,4 # Enable TTL acquisition of acq_channel:0, store in bin:R0
+ wait 92 # auto generated wait (92 ns)
+ acquire_timetags 0,R0,0,R10,4 # Disable TTL acquisition of acq_channel:0, store in bin:R0
+ add R0,1,R0 # Increment bin_idx for ch0 by 1
+ loop R1,@start
+ stop
+""",
+    )
+
+    assert_equal_q1asm(
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"][
+            "sequencers"
+        ]["seq0"]["sequence"]["program"],
+        f""" wait_sync 4
+ upd_param 4
+ wait 4 # latency correction of 4 + 0 ns
+ move {repetitions},R0 # iterator for loop with label start
+start:
+ wait 4
+ set_digital 1,1,0
+ upd_param 4
+ set_digital 0,1,0
+ upd_param 4
+ wait 12 # auto generated wait (12 ns)
+ set_digital 1,1,0
+ upd_param 4
+ set_digital 0,1,0
+ upd_param 4
+ wait 12 # auto generated wait (12 ns)
+ set_digital 1,1,0
+ upd_param 4
+ set_digital 0,1,0
+ upd_param 4
+ wait 12 # auto generated wait (12 ns)
+ set_digital 1,1,0
+ upd_param 4
+ set_digital 0,1,0
+ upd_param 4
+ wait 32 # auto generated wait (32 ns)
+ loop R0,@start
+ stop
+""",
+    )

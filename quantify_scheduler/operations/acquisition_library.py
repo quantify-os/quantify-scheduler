@@ -682,7 +682,14 @@ class TriggerCount(Acquisition):
     clock
         The clock used to demodulate the acquisition.
     duration
-        The acquisition duration in seconds.
+        The duration of the operation in seconds.
+
+        .. important::
+
+            Depending on the control hardware used, the actual acquisition may stop a
+            short time before the end of the scheduled duration. Please consult your
+            hardware vendor's reference guide for more information.
+
     acq_channel
         The data channel in which the acquisition is stored, by default 0.
         Describes the "where" information of the measurement, which typically
