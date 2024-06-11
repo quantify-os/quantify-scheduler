@@ -2193,7 +2193,10 @@ def test_from_mapping(
         assert instr_name in container.instrument_compilers
 
 
-def test_extract_instrument_compiler_configs(qblox_hardware_config_transmon):
+# Transmon-specific config
+# Main features of `_extract_instrument_compiler_configs` are tested in this block
+def test_extract_instrument_compiler_configs_transmon(qblox_hardware_config_transmon):
+
     hardware_config = deepcopy(qblox_hardware_config_transmon)
 
     # Add additional clusters to compilation config
@@ -2281,6 +2284,48 @@ def test_extract_instrument_compiler_configs(qblox_hardware_config_transmon):
     }
     assert compiler_configs["lo1"].hardware_description.instrument_name == "lo1"
     assert compiler_configs["lo1"].frequency == 7.2e9
+
+
+# NV-center-specific config (this is a sanity check because of common `optical_control`` port)
+def test_extract_instrument_compiler_configs_nv_center(qblox_hardware_config_nv_center):
+    hardware_config = QbloxHardwareCompilationConfig.model_validate(
+        deepcopy(qblox_hardware_config_nv_center)
+    )
+
+    portclocks_used = {
+        ("qe0:optical_control", "qe0.ge1"),
+        ("qe0:optical_control", "qe0.ionization"),
+        ("qe0:optical_control", "qe0.ge0"),
+    }
+
+    compiler_configs = hardware_config._extract_instrument_compiler_configs(
+        portclocks_used
+    )
+
+    assert list(compiler_configs.keys()) == [
+        "cluster0",
+        "red_laser",
+        "spinpump_laser",
+        "green_laser",
+    ]
+
+    assert ("qe0:optical_control", "qe0.ge1") in compiler_configs[
+        "cluster0"
+    ].portclock_to_path.keys()
+
+    cluster0_module2 = compiler_configs["cluster0"].modules[2]
+    assert cluster0_module2.hardware_description.instrument_type == "QCM"
+    assert cluster0_module2.hardware_options.modulation_frequencies[
+        "qe0:optical_control-qe0.ge1"
+    ].model_dump() == {"interm_freq": 200e6, "lo_freq": None}
+    assert any(
+        "qe0:optical_control" in node
+        for node in cluster0_module2.connectivity.graph.nodes
+    )
+    assert (
+        "qe0:optical_control",
+        "qe0.ge1",
+    ) in cluster0_module2.portclock_to_path.keys()
 
 
 def test_generate_uuid_from_wf_data():

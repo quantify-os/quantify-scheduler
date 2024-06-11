@@ -25,6 +25,7 @@
   - Fix a bug in `TriggerCount` where the compiled operation took 4ns longer than specified by the user, which was not bookkept by the compiler. (!976)
 - Tests
   - Update test_compile_cz_gate with new style hardware config (!979)
+  - Add nv centers to `test_extract_instrument_compiler_configs`. (!1003)
 - Docs
   - Fix the description for the `APPEND` bin mode of the `TriggerCount` acquisition protocol, both in the Acquisitions tutorial and in the Acquisition Protocols reference guide. (!986)
   - Fix tau definitions in documentation for time domain schedules. (!810)
