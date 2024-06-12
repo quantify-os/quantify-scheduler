@@ -12,7 +12,11 @@ from quantify_scheduler.backends.qblox.operations.gate_library import Conditiona
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEncoder
-from quantify_scheduler.operations.control_flow_library import Loop, LoopOperation
+from quantify_scheduler.operations.control_flow_library import (
+    ConditionalOperation,
+    Loop,
+    LoopOperation,
+)
 from quantify_scheduler.operations.gate_library import (
     CNOT,
     CZ,
@@ -29,6 +33,7 @@ from quantify_scheduler.operations.gate_library import (
     Z,
 )
 from quantify_scheduler.operations.nv_native_library import ChargeReset
+from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.operations.shared_native_library import SpectroscopyOperation
 from quantify_scheduler.schemas.examples import utils
 
@@ -349,7 +354,7 @@ def test_conditional_reset_single_qubit(
 
     pattern = r"^\s*latch_rst.*$"
     match = re.search(pattern, qrm_program, re.MULTILINE)
-    assert match is not None
+    assert match is None
 
     pattern = r"^\s*set_latch_en\s*(\d).*$"
     match = re.search(pattern, qcm_program, re.MULTILINE)
@@ -382,6 +387,42 @@ def test_conditional_reset_single_qubit(
     assert disable == "0"
     assert duration2 == "0"
     assert 2**expected_address - 1 == int(mask)
+
+
+def test_conditional_reset_with_overlapping_pulse_for_acq(
+    mock_setup_basic_transmon_with_standard_params,
+):
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+
+    hardware_config = utils.load_json_example_scheme(
+        "qblox_hardware_config_transmon.json"
+    )
+    quantum_device.hardware_config(hardware_config)
+    config = quantum_device.generate_compilation_config()
+
+    schedule = Schedule("test")
+    schedule.add(
+        Measure(
+            "q0",
+            acq_protocol="ThresholdedAcquisition",
+            feedback_trigger_label="q0",
+        )
+    )
+    schedule.add(
+        ConditionalOperation(body=X("q0"), qubit_name="q0"),
+        rel_time=364e-9,
+    )
+    schedule.add(
+        SquarePulse(amp=0.1, duration=16e-9, port="q0:res", clock="q0.ro"),
+        ref_pt="start",
+        rel_time=96e-9,
+    )
+
+    compiler = SerialCompiler(name="compiler")
+    compiler.compile(
+        schedule,
+        config=config,
+    )
 
 
 def test_conditional_acquire_without_control_flow_raises(

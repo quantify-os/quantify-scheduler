@@ -23,6 +23,7 @@
   - Add compilation of `MarkerPulse` to `set_digital` via the `DigitalPulseStrategy` for QTM modules. (!975)
   - Add compilation of `TriggerCount` to `acquire_timetags` via the `TimetagAcquisitionStrategy` for QTM modules. (!976)
   - Fix a bug in `TriggerCount` where the compiled operation took 4ns longer than specified by the user, which was not bookkept by the compiler. (!976)
+  - Insert `LatchReset` only on necessary portclocks and remove overlap check. (!991)
 - Tests
   - Update test_compile_cz_gate with new style hardware config (!979)
   - Add nv centers to `test_extract_instrument_compiler_configs`. (!1003)

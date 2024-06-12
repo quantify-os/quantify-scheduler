@@ -209,100 +209,26 @@ class OperationTimingInfo:
         )
 
 
-def _is_other_operation_overlaps_with_latch_reset(
-    latch_reset_timing_info: OperationTimingInfo,
+@dataclass
+class ConditionalAddress:
+    """Container for conditional address data."""
+
+    portclocks: set[tuple[str, str]]
+    address: int
+
+
+def _set_conditional_address_map(
     operation: Operation | Schedule,
-    time_offset: float,
-    excluded_operation: Operation,
-) -> bool:
-    """
-    The latch reset operation cannot overlap with other operations.
-    This function returns ``True`` if there's any other overlapping operation.
-    We check if ``operation`` overlaps with ``latch_reset_timing_info``,
-    or there is an suboperation within ``operation`` which overlaps with it.
-    Normally, ``excluded_operation`` is supposed to be the latch reset operation
-    itself, and we don't take that into account.
-    """
-    if operation is excluded_operation:
-        return False
-
-    if isinstance(operation, ScheduleBase):
-        for schedulable in operation.schedulables.values():
-            abs_time = schedulable.data["abs_time"]
-            inner_operation = operation.operations[schedulable["operation_id"]]
-            if _is_other_operation_overlaps_with_latch_reset(
-                latch_reset_timing_info,
-                inner_operation,
-                time_offset + abs_time,
-                excluded_operation,
-            ):
-                return True
-    elif isinstance(operation, LoopOperation):
-        for i in range(operation.data["control_flow_info"]["repetitions"]):
-            if _is_other_operation_overlaps_with_latch_reset(
-                latch_reset_timing_info,
-                operation.body,
-                time_offset + i * operation.body.duration,
-                excluded_operation,
-            ):
-                return True
-    elif isinstance(operation, ConditionalOperation):
-        if _is_other_operation_overlaps_with_latch_reset(
-            latch_reset_timing_info, operation.body, time_offset, excluded_operation
-        ):
-            return True
-    elif not (
-        operation.valid_acquisition and operation.is_conditional_measure_or_acquisition
-    ):
-        operation_timing_info = OperationTimingInfo(
-            time_offset, time_offset + operation.duration
-        )
-        if latch_reset_timing_info.overlaps_with(operation_timing_info):
-            return True
-
-    return False
-
-
-def _set_trigger_address_and_insert_latch_reset(
-    operation: Operation | Schedule,
-    abs_time_relative_to_schedule: float,
-    schedule: Schedule,
-    address_map: defaultdict[str, int],
-    used_port_clocks: list,
+    conditional_address_map: defaultdict[str, ConditionalAddress],
 ) -> None:
-    def _insert_latch_reset(at: float) -> None:
-        """
-        Attempt to insert ``LatchReset`` during a conditional acquisition acquire phase.
-
-        Parameters
-        ----------
-        at
-            Time at which to insert ``LatchReset``.
-
-        """
-        schedulable = schedule.add(LatchReset(portclocks=used_port_clocks))
-        schedulable.data["abs_time"] = at
-
     if isinstance(operation, ScheduleBase):
         schedulables = list(operation.schedulables.values())
         for schedulable in schedulables:
-            abs_time = schedulable.data["abs_time"]
             inner_operation = operation.operations[schedulable["operation_id"]]
-            _set_trigger_address_and_insert_latch_reset(
+            _set_conditional_address_map(
                 operation=inner_operation,
-                abs_time_relative_to_schedule=abs_time,
-                schedule=operation,
-                address_map=address_map,
-                used_port_clocks=used_port_clocks,
+                conditional_address_map=conditional_address_map,
             )
-    elif isinstance(operation, LoopOperation):
-        _set_trigger_address_and_insert_latch_reset(
-            operation=operation.body,
-            abs_time_relative_to_schedule=abs_time_relative_to_schedule,
-            schedule=schedule,
-            address_map=address_map,
-            used_port_clocks=used_port_clocks,
-        )
     elif isinstance(operation, ConditionalOperation):
         # Store `feedback_trigger_address` in the pulse that corresponds
         # to a conditional control flow.
@@ -310,9 +236,17 @@ def _set_trigger_address_and_insert_latch_reset(
         # go recursively into conditionals.
         control_flow_info: dict = operation.data["control_flow_info"]
         feedback_trigger_label: str = control_flow_info["feedback_trigger_label"]
-        control_flow_info["feedback_trigger_address"] = address_map[
+        control_flow_info["feedback_trigger_address"] = conditional_address_map[
             feedback_trigger_label
-        ]
+        ].address
+        conditional_address_map[
+            feedback_trigger_label
+        ].portclocks |= _extract_port_clocks_used(operation.body)
+    elif isinstance(operation, ControlFlowOperation):
+        _set_conditional_address_map(
+            operation=operation.body,
+            conditional_address_map=conditional_address_map,
+        )
     elif (
         operation.valid_acquisition and operation.is_conditional_measure_or_acquisition
     ):
@@ -323,16 +257,53 @@ def _set_trigger_address_and_insert_latch_reset(
             if (
                 feedback_trigger_label := info.get("feedback_trigger_label")
             ) is not None:
-                info["feedback_trigger_address"] = address_map[feedback_trigger_label]
+                info["feedback_trigger_address"] = conditional_address_map[
+                    feedback_trigger_label
+                ].address
 
-        # Insert LatchReset into the schedule.
-        _insert_latch_reset(
-            at=(
-                abs_time_relative_to_schedule
-                + +operation.data["acquisition_info"][0]["t0"]
-                + constants.MAX_MIN_INSTRUCTION_WAIT
+
+def _insert_latch_reset(
+    operation: Operation | Schedule,
+    abs_time_relative_to_schedule: float,
+    schedule: Schedule,
+    conditional_address_map: defaultdict[str, ConditionalAddress],
+) -> None:
+    if isinstance(operation, ScheduleBase):
+        schedulables = list(operation.schedulables.values())
+        for schedulable in schedulables:
+            abs_time = schedulable.data["abs_time"]
+            inner_operation = operation.operations[schedulable["operation_id"]]
+            _insert_latch_reset(
+                operation=inner_operation,
+                abs_time_relative_to_schedule=abs_time,
+                schedule=operation,
+                conditional_address_map=conditional_address_map,
             )
+    elif isinstance(operation, LoopOperation):
+        _insert_latch_reset(
+            operation=operation.body,
+            abs_time_relative_to_schedule=abs_time_relative_to_schedule,
+            schedule=schedule,
+            conditional_address_map=conditional_address_map,
         )
+    elif (
+        operation.valid_acquisition and operation.is_conditional_measure_or_acquisition
+    ):
+        acq_info = operation["acquisition_info"]
+        for info in acq_info:
+            if (
+                feedback_trigger_label := info.get("feedback_trigger_label")
+            ) is not None:
+                at = (
+                    abs_time_relative_to_schedule
+                    + info["t0"]
+                    + constants.MAX_MIN_INSTRUCTION_WAIT
+                )
+                for portclock in conditional_address_map[
+                    feedback_trigger_label
+                ].portclocks:
+                    schedulable = schedule.add(LatchReset(portclock=portclock))
+                    schedulable.data["abs_time"] = at
 
 
 def compile_conditional_playback(schedule: Schedule, **_: Any) -> Schedule:
@@ -383,12 +354,13 @@ def compile_conditional_playback(schedule: Schedule, **_: Any) -> Schedule:
     # this implementation the `address_map` is shared among multiple
     # clusters, but each cluster should have its own map. (SE-332)
     address_counter = itertools.count(1)
-    address_map = defaultdict(address_counter.__next__)
-    used_port_clocks = _extract_port_clocks_used(schedule)
-    _set_trigger_address_and_insert_latch_reset(
-        schedule, 0, schedule, address_map, used_port_clocks
+    conditional_address_map = defaultdict(
+        lambda: ConditionalAddress(portclocks=set(), address=address_counter.__next__())
     )
-    if max(address_map.values(), default=0) > constants.MAX_FEEDBACK_TRIGGER_ADDRESS:
+    _set_conditional_address_map(schedule, conditional_address_map)
+    _insert_latch_reset(schedule, 0, schedule, conditional_address_map)
+    address_map_addresses = [a.address for a in conditional_address_map.values()]
+    if max(address_map_addresses, default=0) > constants.MAX_FEEDBACK_TRIGGER_ADDRESS:
         raise ValueError(
             "Maximum number of feedback trigger addresses received. "
             "Currently a Qblox cluster can store a maximum of "
@@ -434,18 +406,6 @@ def compile_conditional_playback(schedule: Schedule, **_: Any) -> Schedule:
                     "The following two operations caused this problem: \n"
                     f"{current_ongoing_conditional_acquire}\nand\n"
                     f"{operation}\n"
-                )
-        elif isinstance(operation, LatchReset):
-            latch_reset_timing_info = OperationTimingInfo(
-                time, time + operation.duration
-            )
-            if _is_other_operation_overlaps_with_latch_reset(
-                latch_reset_timing_info, schedule, 0, operation
-            ):
-                raise RuntimeError(
-                    "Unable to insert latch reset during conditional acquisition. "
-                    f"Please ensure at least {int(2 * constants.MAX_MIN_INSTRUCTION_WAIT*1e9)}ns "
-                    f"of idle time during the start of the acquisition of {operation} on remaining sequencers."
                 )
 
     return schedule

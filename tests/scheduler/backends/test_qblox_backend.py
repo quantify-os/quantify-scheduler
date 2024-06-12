@@ -90,7 +90,10 @@ from quantify_scheduler.operations.acquisition_library import (
     ThresholdedAcquisition,
     Trace,
 )
-from quantify_scheduler.operations.control_flow_library import LoopOperation
+from quantify_scheduler.operations.control_flow_library import (
+    ConditionalOperation,
+    LoopOperation,
+)
 from quantify_scheduler.operations.gate_library import CZ, X90, Measure, Reset, X, Y
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import (
@@ -5573,4 +5576,58 @@ def test_invalid_parameter_ordering(
     ):
         compiler.compile(
             schedule=schedule, config=quantum_device.generate_compilation_config()
+        )
+
+
+@pytest.mark.parametrize(
+    ["pulse_rel_time", "expected_raises"],
+    [
+        (104e-9, True),
+        (100e-9, False),
+        (108e-9, False),
+    ],
+)
+def test_conditional_reset_with_overlapping_pulses_error(
+    mock_setup_basic_transmon_with_standard_params,
+    qblox_hardware_config_transmon,
+    pulse_rel_time,
+    expected_raises,
+):
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.hardware_config(qblox_hardware_config_transmon)
+    config = quantum_device.generate_compilation_config()
+
+    schedule = Schedule("test")
+    measure_schedulable = schedule.add(
+        Measure(
+            "q0",
+            acq_protocol="ThresholdedAcquisition",
+            feedback_trigger_label="q0",
+        )
+    )
+    schedule.add(
+        ConditionalOperation(body=X("q0"), qubit_name="q0"),
+        rel_time=364e-9,
+    )
+
+    schedule.add(
+        SquarePulse(amp=0.1, duration=16e-9, port="q0:mw", clock="q0.01"),
+        ref_pt="start",
+        rel_time=pulse_rel_time,
+        ref_op=measure_schedulable,
+    )
+
+    compiler = SerialCompiler(name="compiler")
+    if expected_raises:
+        with pytest.raises(
+            ValueError,
+        ):
+            compiler.compile(
+                schedule,
+                config=config,
+            )
+    else:
+        compiler.compile(
+            schedule,
+            config=config,
         )

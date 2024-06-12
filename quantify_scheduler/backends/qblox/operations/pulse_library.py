@@ -18,13 +18,11 @@ class LatchReset(Operation):
 
     def __init__(
         self,
+        portclock: tuple[str, str],
         t0: float = 0,
         duration: float = 4e-9,
-        portclocks: list[tuple[str, str]] | None = None,
     ) -> None:
         super().__init__(name=self.__class__.__name__)
-        if portclocks is None:
-            portclocks = []
         self.data["pulse_info"] = [
             {
                 "name": self.__class__.__name__,
@@ -34,7 +32,6 @@ class LatchReset(Operation):
                 "clock": portclock[1],
                 "duration": duration,
             }
-            for portclock in portclocks
         ]
         self._update()
 

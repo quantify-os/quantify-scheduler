@@ -322,12 +322,6 @@ def test_get_port_timeline_with_acquisition(
     measure_operation_id = list(schedule.schedulables.values())[2]["operation_id"]
     measure_operation = schedule.operations[measure_operation_id]
 
-    # measure_pulse_operation_id = list(measure_operation.schedulables.values())[1]["operation_id"]
-    # measure_pulse_operation = measure_operation.operations[measure_pulse_operation_id]
-
-    # measure_acq_operation_id = list(measure_operation.schedulables.values())[2]["operation_id"]
-    # measure_acq_operation = measure_operation.operations[measure_acq_operation_id]
-
     # Acquisition consists of a reset_clock_phase instruction
     # and a readout-pulse. We select here the actual readout-pulse.
     ro_pulse_info = measure_operation.data["pulse_info"][1]
