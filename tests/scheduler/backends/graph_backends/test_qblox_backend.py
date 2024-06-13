@@ -89,6 +89,8 @@ def test_compile_empty_device(hardware_cfg_cluster):
     assert len(compiled_sched.compiled_instructions) > 0
 
 
+# Using the old-style / legacy hardware config dict is deprecated
+@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 @pytest.mark.deprecated
 @pytest.mark.parametrize(
     "sequence_to_file",

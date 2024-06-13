@@ -7,7 +7,9 @@ kernelspec:
 (sec-hardware-config-migration)=
 # `HardwareCompilationConfig` migration guide
 
-The {class}`~.backends.types.common.HardwareCompilationConfig` replaces the old-style unvalidated JSON/dict hardware configuration, adding the validation of the contents and restructuring into `"hardware_description"`, `"hardware_options"` and `"connectivity"`. These parts are described in detail in the {ref}`sec-hardware-compilation-config` section in the User Guide. Here, we describe how to migrate from the old-style configuration to the new one for the current hardware backends, which each define their own {class}`~.backends.types.common.HardwareCompilationConfig` datastructure with backend-specific fields  (e.g., {class}`~.backends.qblox_backend.QbloxHardwareCompilationConfig` and {class}`~.backends.zhinst_backend.ZIHardwareCompilationConfig`).
+The {class}`~.backends.types.common.HardwareCompilationConfig` replaces the old-style unvalidated JSON/dict hardware configuration, and restructures the contents into `"hardware_description"`, `"hardware_options"` and `"connectivity"` (these fields are described in detail in {ref}`sec-hardware-compilation-config`). Using this new-style class has the advantage that all mutable and backend agnostic parameters for compiling between quantum-device and control-hardware layers are grouped in `"hardware_options"`, separated from static and backend specific parameters for compiling between control-hardware and hardware-instructions layers, which are grouped in `"hardware_options"` and `"connectivity"`. In addition, the new-style configuration is validated automatically.
+ 
+Here, we describe how to migrate from the old-style configuration to the new one for the current hardware backends, which each define their own {class}`~.backends.types.common.HardwareCompilationConfig` datastructure with backend-specific fields  (e.g., {class}`~.backends.qblox_backend.QbloxHardwareCompilationConfig` and {class}`~.backends.zhinst_backend.ZIHardwareCompilationConfig`).
 
 ```{admonition} Custom backends
 If you have implemented a custom backend, or have added custom instruments and/or options to the Qblox or Zurich Instruments backends, you will need to define your own {class}`~.backends.types.common.HardwareCompilationConfig` datastructure, as is already done for the Qblox and Zurich Instruments backends.
@@ -32,7 +34,7 @@ from quantify_scheduler.backends.qblox.hardware_config_transmon_old_style import
 rich.print(hardware_config_transmon_old_style)
 ```
 
-This config can be migrated to the new {class}`~.backends.qblox_backend.QbloxHardwareCompilationConfig` datastructure using the built-in validation, which will recognize the old-style config and convert it to the new-style config:
+This config can be migrated to the new {class}`~.backends.qblox_backend.QbloxHardwareCompilationConfig` datastructure using the built-in validation method `.model_validate`, which will recognize the old-style config and convert it to the new-style config:
 
 ```{code-cell} ipython3
 ---
@@ -47,6 +49,16 @@ rich.print(hardware_config_transmon_new_style)
 ```
 
 This new-style config can then be passed to the {class}`~.device_under_test.quantum_device.QuantumDevice` in order to compile a schedule for the Qblox backend, as is shown in the {ref}`sec-tutorial-compiling-to-hardware-compilation` section of the {ref}`sec-tutorial-compiling`.
+
+The config can also be JSON serialized and deserialized using the built-in methods `.model_dump_json` and `.model_validate_json`, respectively, to make storing, visualization and modification easier.
+
+```{code-cell} ipython3
+serialized_config = hardware_config_transmon_new_style.model_dump_json(exclude_unset=True)
+
+deserialized_config = QbloxHardwareCompilationConfig.model_validate_json(serialized_config)
+```
+
+Here we passed `exclude_unset=True` to `.model_dump_json` to prevent unnecessary clutter in the `json` (e.g. `None` and default settings). 
 
 ## Zurich Instruments
 The {class}`~.backends.zhinst_backend.ZIHardwareCompilationConfig` inherits from the {class}`~.backends.types.common.HardwareCompilationConfig` and contains the following backend-specific fields:

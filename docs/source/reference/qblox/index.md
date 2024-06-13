@@ -18,8 +18,7 @@ Functionality included in this backend:
 - Flexible configuration via JSON data structures.
 
 Simply specify {code}`"quantify_scheduler.backends.qblox_backend.hardware_compile"`
-in the hardware configuration to use this backend. Please see {ref}`Usage of the backend <sec-qblox-how-to-configure>`
-for information on how to set this up.
+in the hardware configuration to use this backend.
 After a schedule is compiled into a program, uploading to the control hardware can be done using the usual
 [qblox-instruments](https://pypi.org/project/qblox-instruments/) driver under the hood. The driver is automatically included in installing `quantify-scheduler`.
 Please visit the [Qblox Instruments setup documentation](https://qblox-qblox-instruments.readthedocs-hosted.com/en/main/getting_started/setup.html)
@@ -44,9 +43,7 @@ recent
 :hidden: true
 :maxdepth: 2
 
-How to use
 Cluster
-Cluster (HardwareCompilationConfig)
 Voltage offsets and long waveforms
 Trigger count
 ```

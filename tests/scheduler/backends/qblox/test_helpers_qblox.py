@@ -260,6 +260,8 @@ def test_generate_old_style_hardware_config(new_style_config, old_style_config):
     assert generated_hw_config == old_style_config
 
 
+# Using the old-style / legacy hardware config dict is deprecated
+@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 def test_preprocess_legacy_hardware_config(
     mock_setup_basic_transmon_with_standard_params,
 ):
@@ -305,8 +307,9 @@ def test_preprocess_legacy_hardware_config(
     schedule.add(Measure("q0", "q1", acq_protocol="ThresholdedAcquisition"))
 
     compiler = SerialCompiler("compiler", quantum_device=quantum_device)
-    with pytest.warns(FutureWarning, match="init_"):
+    with pytest.warns(FutureWarning) as warn:
         compiled_schedule = compiler.compile(schedule)
+    assert "init_" in str(warn[1].message)
 
     for key in [
         "init_offset_awg_path_I",
@@ -369,6 +372,8 @@ def test_find_channel_names(hardware_cfg_rf_legacy):
     ]
 
 
+# Using the old-style / legacy hardware config dict is deprecated
+@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 @pytest.mark.parametrize(
     "new_style_config, old_style_config",
     [

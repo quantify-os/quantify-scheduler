@@ -852,7 +852,7 @@ The dictionary notation shows the number of triggers as keys and their correspon
 
 The trigger count protocol is currently only implemented for the Qblox backend. Please also see {ref}`sec-qblox-trigger-count` for more information on Qblox module-specific behavior of this operation.
 
-Note, the threshold is set via {class}`~quantify_scheduler.backends.types.qblox.SequencerOptions.ttl_acq_threshold` (see also {ref}`sec-qblox-sequencer-options-new`).
+Note, the threshold is set via {class}`~quantify_scheduler.backends.types.qblox.SequencerOptions.ttl_acq_threshold` (see also {ref}`sec-qblox-sequencer-options`).
 
 #### Setup and schedule
 

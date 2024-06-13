@@ -441,45 +441,6 @@ def test_init_qcodes_settings(
             ].set.assert_called_once_with(qrm_gain[f"seq{seq}_path{path}"])
 
 
-def test_invalid_init_qcodes_settings(
-    mocker,
-    schedule_with_measurement,
-    hardware_cfg_cluster_legacy,
-    make_cluster_component,
-    mock_setup_basic_transmon_with_standard_params,
-):
-    # Arrange
-    cluster_name = "cluster0"
-    qcm_name = f"{cluster_name}_module1"
-    cluster = make_cluster_component(cluster_name)
-    qcm = cluster._cluster_modules[qcm_name]
-
-    for seq in range(qcm._hardware_properties.number_of_sequencers):
-        mocker.patch.object(
-            qcm.instrument[f"sequencer{seq}"].parameters["offset_awg_path0"],
-            "set",
-        )
-        mocker.patch.object(
-            qcm.instrument[f"sequencer{seq}"].parameters["offset_awg_path1"],
-            "set",
-        )
-
-    hardware_cfg = deepcopy(hardware_cfg_cluster_legacy)
-
-    # Act
-    hardware_cfg[cluster_name]["cluster0_module1"]["complex_output_0"][
-        "portclock_configs"
-    ][0]["init_offset_awg_path_I"] = 1.25
-
-    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    quantum_device.hardware_config(hardware_cfg)
-    config = quantum_device.generate_compilation_config()
-    with pytest.raises(ValueError):
-        _ = SerialCompiler(name="compiler").compile(
-            schedule=schedule_with_measurement, config=config
-        )
-
-
 @pytest.mark.parametrize(
     "set_offset, force_set_parameters",
     [(False, False), (False, True), (True, False), (True, True)],

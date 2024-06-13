@@ -9,6 +9,9 @@
 - NV Centers
   - clock names in the hardware configurtion require the format `<qubit>.<tag>` (!966)
     - this is only a temporary convention until we finalize formalizing the new hardware config. 
+- Compilation
+  - Make all hardware configs go through pydantic validation. (!1002)
+
 
 ### Deprecation
 
@@ -37,6 +40,7 @@
 - Compilation 
   - Make nv center hardware configs compatible with new-style compilation configs, which includes defining a `OpticalModulator` hardware description, and convert all nv center hardware configs to new style. (!966)
   - Adjust schedule helper functions for subschedules and control flows. (!998)
+  - Deprecate old-style hardware config dicts and restrict input of `hardware_compile` to a full `CompilationConfig`. (!1002)
 
 ## 0.20.1 (2024-05-01)
 

@@ -8,7 +8,7 @@ import re
 import warnings
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any, Dict, List, Literal, Optional, Tuple, Type, Union
+from typing import Any, Dict, List, Literal, Tuple, Type, Union
 
 import numpy as np
 from pydantic import Field, model_validator
@@ -25,7 +25,6 @@ from quantify_scheduler.backends.qblox import compiler_container, constants
 from quantify_scheduler.backends.qblox.helpers import (
     _generate_legacy_hardware_config,
     _generate_new_style_hardware_compilation_config,
-    _preprocess_legacy_hardware_config,
     assign_pulse_and_acq_info_to_devices,
     find_channel_names,
 )
@@ -50,7 +49,6 @@ from quantify_scheduler.backends.types.qblox import (
     _ClusterModuleCompilerConfig,
     _LocalOscillatorCompilerConfig,
 )
-from quantify_scheduler.helpers.collections import find_inner_dicts_containing_key
 from quantify_scheduler.helpers.schedule import _extract_port_clocks_used
 from quantify_scheduler.operations.control_flow_library import (
     ConditionalOperation,
@@ -447,11 +445,7 @@ def compile_long_square_pulses_to_awg_offsets(schedule: Schedule, **_: Any) -> S
 
 def hardware_compile(
     schedule: Schedule,
-    config: CompilationConfig | dict[str, Any] | None = None,
-    # config can be dict to support (deprecated) calling with hardware config
-    # as positional argument.
-    *,  # Support for (deprecated) calling with hardware_cfg as keyword argument:
-    hardware_cfg: Optional[dict[str, Any]] = None,
+    config: CompilationConfig,
 ) -> CompiledSchedule:
     """
     Generate qblox hardware instructions for executing the schedule.
@@ -473,55 +467,17 @@ def hardware_compile(
     config
         Compilation config for
         :class:`~quantify_scheduler.backends.graph_compilation.QuantifyCompiler`.
-    hardware_cfg
-        (deprecated) The hardware configuration of the setup. Pass a full compilation
-        config instead using ``config`` argument.
 
     Returns
     -------
     :
         The compiled schedule.
 
-    Raises
-    ------
-    ValueError
-        When both ``config`` and ``hardware_cfg`` are supplied.
     """
-    if not ((config is not None) ^ (hardware_cfg is not None)):
-        raise ValueError(
-            f"Qblox `{hardware_compile.__name__}` was called with {config=} and "
-            f"{hardware_cfg=}. Please make sure this function is called with "
-            f"one of the two (CompilationConfig recommended)."
-        )
-
-    if not isinstance(config, CompilationConfig):
-        warnings.warn(
-            f"Qblox `{hardware_compile.__name__}` will require a full "
-            f"CompilationConfig as input as of quantify-scheduler >= 0.19.0",
-            FutureWarning,
-        )
-        debug_mode = False
-    else:
-        debug_mode = config.debug_mode
-
-    if isinstance(config, CompilationConfig):
-        # Extract the hardware config from the CompilationConfig
-        hardware_cfg = _generate_legacy_hardware_config(
-            schedule=schedule, compilation_config=config
-        )
-    elif config is not None:
-        # Support for (deprecated) calling with hardware_cfg as positional argument.
-        hardware_cfg = _preprocess_legacy_hardware_config(config)
-
-    # To be removed when hardware config validation is implemented. See
-    # https://gitlab.com/groups/quantify-os/-/epics/1
-    for faulty_key in ["thresholded_acq_rotation", "thresholded_acq_threshold"]:
-        if find_inner_dicts_containing_key(hardware_cfg, faulty_key):
-            raise KeyError(
-                f"'{faulty_key}' found in hardware configuration. Please configure "
-                "thresholded acquisition via the device elements. See documentation "
-                "for `ThresholdedAcquisition` for more information."
-            )
+    # Extract the old-style hardware config from the CompilationConfig
+    hardware_cfg = _generate_legacy_hardware_config(
+        schedule=schedule, compilation_config=config
+    )
 
     if "latency_corrections" in hardware_cfg.keys():
         # Important: currently only used to validate the input, should also be
@@ -562,7 +518,7 @@ def hardware_compile(
     container.prepare()
 
     compiled_instructions = container.compile(
-        debug_mode=debug_mode, repetitions=schedule.repetitions
+        debug_mode=config.debug_mode, repetitions=schedule.repetitions
     )
     # Create compiled instructions key if not already present. This can happen if this
     # compilation function is called directly instead of through a `QuantifyCompiler`.

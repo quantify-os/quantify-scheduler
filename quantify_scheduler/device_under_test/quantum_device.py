@@ -18,7 +18,6 @@ from quantify_scheduler.backends.graph_compilation import (
     SerialCompilationConfig,
     SimpleNodeConfig,
 )
-from quantify_scheduler.backends.qblox.helpers import _preprocess_legacy_hardware_config
 from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
 from quantify_scheduler.backends.types.common import HardwareCompilationConfig
 from quantify_scheduler.device_under_test.device_element import DeviceElement
@@ -363,30 +362,10 @@ class QuantumDevice(Instrument):
                 hardware_config["backend"]
                 == "quantify_scheduler.backends.qblox_backend.hardware_compile"
             ):
-                hardware_config = _preprocess_legacy_hardware_config(hardware_config)
-
-                compilation_passes = [
-                    SimpleNodeConfig(
-                        name="compile_long_square_pulses_to_awg_offsets",
-                        compilation_func="quantify_scheduler.backends.qblox_backend"
-                        + ".compile_long_square_pulses_to_awg_offsets",
-                    ),
-                    SimpleNodeConfig(
-                        name="qblox_compile_conditional_playback",
-                        compilation_func="quantify_scheduler.backends.qblox_backend"
-                        + ".compile_conditional_playback",
-                    ),
-                    SimpleNodeConfig(
-                        name="qblox_hardware_compile",
-                        compilation_func=hardware_config["backend"],
-                    ),
-                ]
-                hardware_compilation_config = QbloxHardwareCompilationConfig(
-                    hardware_description={},
-                    hardware_options={},
-                    connectivity=hardware_config,
-                    compilation_passes=compilation_passes,
+                hardware_compilation_config = (
+                    QbloxHardwareCompilationConfig.model_validate(hardware_config)
                 )
+
             elif (
                 hardware_config["backend"]
                 == "quantify_scheduler.backends.zhinst_backend.compile_backend"

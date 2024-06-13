@@ -242,7 +242,7 @@ Integration weights should normally be calibrated in a separate experiment
   - Please also see {ref}`sec-qblox-trigger-count` for more information on Qblox module-specific behavior of this operation.
 
 This acquisition protocol measures how many times a predefined voltage threshold has been
-passed. The threshold is set via {class}`~quantify_scheduler.backends.types.qblox.SequencerOptions.ttl_acq_threshold` (see also {ref}`sec-qblox-sequencer-options-new`).
+passed. The threshold is set via {class}`~quantify_scheduler.backends.types.qblox.SequencerOptions.ttl_acq_threshold` (see also {ref}`sec-qblox-sequencer-options`).
 
 First, let's see an example when the bin mode is `BinMode.APPEND`.
 The returned data for the acquisition channel contains the number of triggers counted for each acquisition index. In the following example, suppose a schedule with one trigger count acquisition was executed 5 times (`repetitions=5`). In order, the number of triggers counted is `[6, 3, 8, 1, 3]`. The resulting dataset would then look like:

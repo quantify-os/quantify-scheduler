@@ -1880,6 +1880,14 @@ def _generate_new_style_hardware_compilation_config(
                     new_style_config=new_style_config,
                 )
 
+    warnings.warn(
+        "The hardware configuration dictionary is deprecated and will not be supported in "
+        "quantify-scheduler >= 1.0.0. Please use a `HardwareCompilationConfig` instead. For "
+        "more information on how to migrate from old- to new-style hardware specification, "
+        "please visit :ref:`sec-hardware-config-migration` in the documentation.",
+        FutureWarning,
+    )
+
     # Update deprecated keys and avoid modifying the original config
     old_style_config = _preprocess_legacy_hardware_config(old_style_config)
 

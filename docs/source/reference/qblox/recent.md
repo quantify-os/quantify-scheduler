@@ -16,7 +16,7 @@
 
 The {class}`~.backends.types.common.HardwareCompilationConfig` datastructure was introduced to structure the information that was previously stored in the hardware configuration dict.
 The information is now divided into sub-datastructures for the `"hardware_description"`, `"hardware_options"` and `"connectivity"`.
-For more information, see {ref}`sec-hardware-compilation-config` and {ref}`Cluster (HardwareCompilationConfig) <sec-qblox-cluster-new>`.
+For more information, see {ref}`sec-hardware-compilation-config` and {ref}`Cluster (HardwareCompilationConfig) <sec-qblox-cluster>`.
 
 ## 0.13.0: Long waveform support
 
@@ -67,7 +67,7 @@ The following parameters are available per device type:
   - `output_att` (for `complex_output_0`)
   - `output_att` (for `complex_output_1`)
 
-See `quantify_scheduler/schemas/examples/qblox_test_mapping.json` for concrete examples (see {ref}`sec-qblox-how-to-configure`).
+See `quantify_scheduler/schemas/examples/qblox_test_mapping.json` for concrete examples.  <!-- (see {ref}`sec-qblox-how-to-configure`) -->
 
 ## 0.8.0: Dynamic Sequencer Allocation
 

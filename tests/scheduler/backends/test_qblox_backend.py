@@ -819,6 +819,8 @@ def test_channel_as_both_input_and_output_qtm(
         )
 
 
+# Using the old-style / legacy hardware config dict is deprecated
+@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 def test_warn_mix_lo_false(hardware_cfg_trigger_count_legacy):
     hardware_config = deepcopy(hardware_cfg_trigger_count_legacy)
 
@@ -835,7 +837,7 @@ def test_warn_mix_lo_false(hardware_cfg_trigger_count_legacy):
     with pytest.warns(FutureWarning) as warn:
         _ = QbloxHardwareCompilationConfig.model_validate(hardware_config)
 
-    assert "Please use quantify_scheduler=0.20.1." in str(warn[0].message)
+    assert "Please use quantify_scheduler=0.20.1." in str(warn[1].message)
 
 
 @pytest.mark.parametrize(
@@ -873,44 +875,6 @@ def test_validate_connectivity_graph_structure(
         _ = QbloxHardwareCompilationConfig.model_validate(hardware_cfg)
 
     assert "is a source" in error.exconly()
-
-
-def test_invalid_channel_names_legacy_hardware_config(
-    mock_setup_basic_transmon_with_standard_params,
-):
-    hardware_config_cluster = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            "instrument_type": "Cluster",
-            "ref": "internal",
-            "cluster0_module1": {
-                "instrument_type": "QCM",
-                "wrong_key": {
-                    "portclock_configs": [
-                        {
-                            "port": "q1:mw",
-                            "clock": "q1.01",
-                        }
-                    ],
-                },
-            },
-        },
-    }
-
-    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-
-    schedule = Schedule("test valid channel names")
-    schedule.add(
-        SquarePulse(port="q1:mw", clock="q1.01", amp=0.25, duration=12e-9),
-        ref_pt="start",
-    )
-
-    quantum_device.hardware_config(hardware_config_cluster)
-    compiler = SerialCompiler(name="compiler")
-    with pytest.raises(ValueError, match="Invalid channel name"):
-        compiler.compile(
-            schedule=schedule, config=quantum_device.generate_compilation_config()
-        )
 
 
 def test_portclocks(
@@ -1034,6 +998,8 @@ def test_compile_simple(
     )
 
 
+# Using the old-style / legacy hardware config dict is deprecated
+@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 def test_compile_empty_device_compilation_config(hardware_cfg_cluster_legacy):
     """Tests if compilation without a device config finishes without exceptions"""
 
@@ -2117,6 +2083,8 @@ def test_multiple_trace_acquisition_error(
     )
 
 
+# Using the old-style / legacy hardware config dict is deprecated
+@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 def test_container_prepare_baseband(
     mock_setup_basic_transmon,
     baseband_square_pulse_schedule,
@@ -2344,6 +2312,8 @@ def test_generate_uuid_from_wf_data():
     assert hash1 != hash2
 
 
+# Using the old-style / legacy hardware config dict is deprecated
+@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 def test_real_mode_container(
     real_square_pulse_schedule,
     hardware_cfg_real_mode_legacy,
@@ -4053,106 +4023,6 @@ def test_zero_pulse_skip_timing(
     assert re.search(r"^\s*play\s+0,0,4\s+", seq_instructions[idx + 2])
 
 
-def test_set_thresholded_acquisition_via_new_style_config_raises(
-    mock_setup_basic_transmon_with_standard_params,
-):
-    """Defining thresholded acquisition through the device config is not
-    allowed and should throw a KeyError. This is a test to test a temporary
-    solution until hardware validation is implemented. See
-    https://gitlab.com/groups/quantify-os/-/epics/1
-    """
-    hardware_config = {
-        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
-        "hardware_description": {
-            "cluster0": {
-                "instrument_type": "Cluster",
-                "modules": {"3": {"instrument_type": "QRM"}},
-                "ref": "internal",
-            },
-            "iq_mixer_lo": {"instrument_type": "IQMixer"},
-            "lo": {"instrument_type": "LocalOscillator", "power": 1},
-        },
-        "hardware_options": {
-            "modulation_frequencies": {"q0:res-q0.ro": {"lo_freq": 7800000000.0}},
-            "sequencer_options": {
-                "q0:res-q0.ro": {
-                    "thresholded_acq_threshold": 20,
-                    "thresholded_acq_rotation": -0.2,
-                }
-            },
-        },
-        "connectivity": {
-            "graph": [
-                ["cluster0.module3.complex_output_0", "iq_mixer_lo.if"],
-                ["lo.output", "iq_mixer_lo.lo"],
-                ["iq_mixer_lo.rf", "q0:res"],
-            ]
-        },
-    }
-
-    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-
-    quantum_device.hardware_config(hardware_config)
-
-    # basic schedule
-    schedule = Schedule("thresholded acquisition")
-    schedule.add(ThresholdedAcquisition(port="q0:res", clock="q0.ro", duration=1e-6))
-
-    compiler = SerialCompiler(name="compiler", quantum_device=quantum_device)
-
-    with pytest.raises(ValidationError):
-        compiler.compile(schedule)
-
-
-def test_set_thresholded_acquisition_via_legacy_config_raises(
-    mock_setup_basic_transmon_with_standard_params,
-):
-    """Defining thresholded acquisition through the device config is not
-    allowed and should throw a KeyError. This is a test to test a temporary
-    solution until hardware validation is implemented. See
-    https://gitlab.com/groups/quantify-os/-/epics/1
-    """
-    hardware_config = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            "ref": "internal",
-            "instrument_type": "Cluster",
-            "cluster0_module3": {
-                "instrument_type": "QRM",
-                "complex_output_0": {
-                    "lo_name": "lo",
-                    "portclock_configs": [
-                        {
-                            "port": "q0:res",
-                            "clock": "q0.ro",
-                            "thresholded_acq_threshold": 20,
-                            "thresholded_acq_rotation": -0.2,
-                        },
-                    ],
-                },
-            },
-        },
-        "lo": {
-            "instrument_type": "LocalOscillator",
-            "frequency": 7.8e9,
-            "power": 1,
-        },
-    }
-
-    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-
-    quantum_device.hardware_config(hardware_config)
-
-    # basic schedule
-    schedule = Schedule("thresholded acquisition")
-    schedule.add(ThresholdedAcquisition(port="q0:res", clock="q0.ro", duration=1e-6))
-
-    compiler = SerialCompiler(name="compiler", quantum_device=quantum_device)
-
-    with pytest.raises(KeyError):
-        compiler.compile(schedule)
-
-
 @pytest.mark.parametrize(
     "pulse_offset, measure_offset, expected",
     [
@@ -4805,83 +4675,8 @@ def test_1_ns_time_grid_nco(compile_config_basic_transmon_qblox_hardware):
 
 @pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 def test_compile_hardware_distortion_corrections():
-    hardware_cfg = copy.deepcopy(hardware_config_transmon_old_style)
-    hardware_cfg["cluster0"]["cluster0_module4"]["complex_input_0"].pop("input_att")
-
-    sched = Schedule("Qblox hardware distortion corrections test", repetitions=1)
-    sched.add(
-        SquarePulse(
-            amp=0.1,
-            port="q0:fl",
-            duration=200e-9,
-            clock="cl0.baseband",
-            t0=0,
-        )
-    )
-
     quantum_device = QuantumDevice("qblox_distortions_device")
     compiler = SerialCompiler(name="compiler")
-
-    with pytest.raises(ValueError) as error:
-        hardware_cfg["distortion_corrections"] = {
-            "q0:fl-cl0.baseband": {
-                "correction_type": "qblox",
-                "exp1_coeffs": [-356, -0.1],
-            }
-        }
-
-        quantum_device.hardware_config(hardware_cfg)
-
-        sched = compiler.compile(
-            schedule=sched,
-            config=quantum_device.generate_compilation_config(),
-        )
-    assert (
-        "The exponential overshoot correction has two coefficients with ranges of [6,inf) and [-1,1)."
-        in str(error.value)
-    )
-
-    hardware_cfg["distortion_corrections"] = {
-        "q0:fl-cl0.baseband": {
-            "correction_type": "qblox",
-            "exp1_coeffs": [356, -0.1],
-            "fir_coeffs": [1.025] + [0.03, 0.02] * 15 + [0],
-        },
-        "q4:mw-q4.01": [
-            {
-                "correction_type": "qblox",
-                "exp1_coeffs": [13002, -0.5],
-                "fir_coeffs": [1.025] + [0.03, 0.02] * 15 + [0],
-            },
-            {
-                "correction_type": "qblox",
-                "exp1_coeffs": [18, -0.06],
-                "fir_coeffs": [1.025] + [0.03, 0.02] * 15 + [0],
-            },
-        ],
-    }
-    quantum_device.hardware_config(hardware_cfg)
-
-    sched = compiler.compile(
-        schedule=sched,
-        config=quantum_device.generate_compilation_config(),
-    )
-
-    assert sched.compiled_instructions["cluster0"]["cluster0_module1"]["settings"][
-        "distortion_corrections"
-    ][0]["exp1"]["coeffs"] == [13002, -0.5]
-    assert sched.compiled_instructions["cluster0"]["cluster0_module1"]["settings"][
-        "distortion_corrections"
-    ][1]["exp1"]["coeffs"] == [18, -0.06]
-    assert (
-        sched.compiled_instructions["cluster0"]["cluster0_module1"]["settings"][
-            "distortion_corrections"
-        ][2]["exp0"]["coeffs"]
-        is None
-    )
-    assert sched.compiled_instructions["cluster0"]["cluster0_module10"]["settings"][
-        "distortion_corrections"
-    ][0]["fir"]["coeffs"] == [1.025] + [0.03, 0.02] * 15 + [0]
 
     hardware_compilation_cfg = {
         "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
@@ -5533,6 +5328,8 @@ def test_distortion_correction_latency_compensation():
     assert corrections == ideal_corrections
 
 
+# Using the old-style / legacy hardware config dict is deprecated
+@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 def test_invalid_parameter_ordering(
     mock_setup_basic_transmon_with_standard_params,
 ):

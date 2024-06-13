@@ -809,6 +809,8 @@ def test_thresholded_acquisition_multiplex(
         assert sequencer_acquisition_metadata.acq_protocol == "ThresholdedAcquisition"
 
 
+# Using the old-style / legacy hardware config dict is deprecated
+@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 def test_trigger_count_append(
     mock_setup_basic_nv, make_cluster_component, hardware_cfg_trigger_count_legacy
 ):
@@ -886,6 +888,8 @@ def test_trigger_count_append(
     instr_coordinator.remove_component("ic_cluster0")
 
 
+# Using the old-style / legacy hardware config dict is deprecated
+@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 def test_trigger_count_append_gettables(
     mock_setup_basic_nv, make_cluster_component, hardware_cfg_trigger_count_legacy
 ):
@@ -952,6 +956,8 @@ def test_trigger_count_append_gettables(
     instr_coordinator.remove_component("ic_cluster0")
 
 
+# Using the old-style / legacy hardware config dict is deprecated
+@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 def test_trigger_count_average(
     mock_setup_basic_nv, make_cluster_component, hardware_cfg_trigger_count_legacy
 ):
@@ -1020,6 +1026,8 @@ def test_trigger_count_average(
     instr_coordinator.remove_component("ic_cluster0")
 
 
+# Using the old-style / legacy hardware config dict is deprecated
+@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 def test_trigger_count_average_gettables(
     mock_setup_basic_nv, make_cluster_component, hardware_cfg_trigger_count_legacy
 ):
