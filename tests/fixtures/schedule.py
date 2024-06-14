@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Any, Callable, Dict, Generator, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, Generator, List, Optional
 
 import numpy as np
 import pytest
@@ -18,10 +18,14 @@ from quantify_scheduler.backends.circuit_to_device import (
 from quantify_scheduler.backends.graph_compilation import SerialCompilationConfig
 from quantify_scheduler.compilation import _determine_absolute_timing
 from quantify_scheduler.operations.gate_library import CZ, X90, Measure, Reset, X
+from quantify_scheduler.schedules.schedule import ScheduleBase
 from quantify_scheduler.schemas.examples import utils
 from quantify_scheduler.schemas.examples.device_example_cfgs import (
     example_transmon_cfg,
 )
+
+if TYPE_CHECKING:
+    from quantify_scheduler.operations.operation import Operation
 
 ZHINST_HARDWARE_COMPILATION_CONFIG = utils.load_json_example_scheme(
     "zhinst_hardware_compilation_config.json"
@@ -182,3 +186,24 @@ def compiled_two_qubit_t1_schedule(mock_setup_basic_transmon_with_standard_param
         schedule, config=mock_setup["quantum_device"].generate_compilation_config()
     )
     return comp_t1_sched
+
+
+@pytest.fixture
+def get_subschedule_operation():
+    """
+    Circuit to device level compilation for the circuit_to_device
+    compilation backend.
+    """
+
+    def _get_subschedule_operation(
+        operation: ScheduleBase | Operation, indices: list[int]
+    ) -> ScheduleBase | Operation:
+        if isinstance(operation, ScheduleBase) and len(indices) > 0:
+            index: int = indices[0]
+            schedulable = list(operation.schedulables.values())[index]
+            inner_operation = operation.operations[schedulable["operation_id"]]
+            return _get_subschedule_operation(inner_operation, indices[1:])
+        else:
+            return operation
+
+    yield _get_subschedule_operation

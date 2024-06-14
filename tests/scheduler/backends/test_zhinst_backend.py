@@ -93,6 +93,9 @@ def create_typical_timing_table(
 ):
     def _create_test_compile_datastructure():
         schedule = make_schedule()
+        schedule = zhinst_backend.flatten_schedule(
+            schedule, config=compile_config_basic_transmon_zhinst_hardware
+        )
         hardware_config = zhinst_backend._generate_legacy_hardware_config(
             schedule=schedule,
             compilation_config=compile_config_basic_transmon_zhinst_hardware,
@@ -390,7 +393,8 @@ def test_compile_hardware_hdawg4_successfully_deprecated_hardware_config(
     }
 
     # Act
-    comp_sched = zhinst_backend.compile_backend(schedule, hdawg_hardware_cfg)
+    comp_sched = zhinst_backend.flatten_schedule(schedule, hdawg_hardware_cfg)
+    comp_sched = zhinst_backend.compile_backend(comp_sched, hdawg_hardware_cfg)
     device_configs = comp_sched["compiled_instructions"]
 
     # Assert
@@ -543,7 +547,8 @@ def test_compile_hardware_uhfqa_successfully_deprecated_hardware_config(
     }
 
     # Act
-    comp_sched = zhinst_backend.compile_backend(schedule, uhfqa_hardware_cfg)
+    comp_sched = zhinst_backend.flatten_schedule(schedule, uhfqa_hardware_cfg)
+    comp_sched = zhinst_backend.compile_backend(comp_sched, uhfqa_hardware_cfg)
     device_configs = comp_sched["compiled_instructions"]
 
     # Assert
@@ -652,7 +657,8 @@ def test_compile_invalid_latency_corrections_hardware_config_raises(
 
     # should raise a pydantic validation error
     with pytest.raises(ValidationError):
-        _ = zhinst_backend.compile_backend(schedule, hardware_cfg)
+        comp_sched = zhinst_backend.flatten_schedule(schedule, hardware_cfg)
+        _ = zhinst_backend.compile_backend(comp_sched, hardware_cfg)
 
 
 def test_compile_with_third_party_instrument(
@@ -992,8 +998,11 @@ def test_uhfqa_sequence1(
     ).lstrip("\n")
 
     # Act
-    comp_sched = zhinst_backend.compile_backend(
+    comp_sched = zhinst_backend.flatten_schedule(
         schedule, compile_config_basic_transmon_zhinst_hardware
+    )
+    comp_sched = zhinst_backend.compile_backend(
+        comp_sched, compile_config_basic_transmon_zhinst_hardware
     )
     device_configs = comp_sched["compiled_instructions"]
 
@@ -1184,7 +1193,7 @@ def test_compile_latency_corrections(
     # Extract timings before latency corrections
     timing_table = comp_sched.timing_table.data
     ro_pulse_time_before_corr = timing_table[
-        timing_table["operation"].str.startswith("Measure")
+        timing_table["operation"].str.startswith("SquarePulse")
     ]["abs_time"].values[0]
     mw_pulse_time_before_corr = timing_table[
         timing_table["operation"].str.startswith("X90")
@@ -1193,7 +1202,7 @@ def test_compile_latency_corrections(
     # Extract timings after latency corrections
     hw_timing_table = comp_sched.hardware_timing_table.data
     ro_pulse_time_after_corr = hw_timing_table[
-        hw_timing_table["operation"].str.startswith("Measure")
+        hw_timing_table["operation"].str.startswith("SquarePulse")
     ]["abs_time"].values[0]
     mw_pulse_time_after_corr = hw_timing_table[
         hw_timing_table["operation"].str.startswith("X90")

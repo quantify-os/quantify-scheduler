@@ -437,8 +437,22 @@ def test_conditional_acquire_without_control_flow_raises(
     config = quantum_device.generate_compilation_config()
 
     schedule = Schedule("test")
-    schedule.add(Measure("q0", feedback_trigger_label="q0", acq_index=0))
-    schedule.add(Measure("q0", feedback_trigger_label="q0", acq_index=1))
+    schedule.add(
+        Measure(
+            "q0",
+            feedback_trigger_label="q0",
+            acq_index=0,
+            acq_protocol="ThresholdedAcquisition",
+        )
+    )
+    schedule.add(
+        Measure(
+            "q0",
+            feedback_trigger_label="q0",
+            acq_index=1,
+            acq_protocol="ThresholdedAcquisition",
+        )
+    )
 
     compiler = SerialCompiler(name="compiler")
     with pytest.raises(

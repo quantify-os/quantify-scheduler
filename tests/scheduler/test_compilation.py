@@ -383,7 +383,9 @@ def test_measurement_specification_of_binmode(device_compile_config_basic_transm
             assert value.data["acquisition_info"][0]["bin_mode"] == BinMode.AVERAGE
 
 
-def test_compile_trace_acquisition(device_compile_config_basic_transmon):
+def test_compile_trace_acquisition(
+    device_compile_config_basic_transmon, get_subschedule_operation
+):
     sched = Schedule("Test schedule")
     q0 = "q0"
     sched.add(Reset(q0))
@@ -395,12 +397,15 @@ def test_compile_trace_acquisition(device_compile_config_basic_transmon):
         schedule=sched, config=device_compile_config_basic_transmon
     )
 
-    measure_repr = list(sched.schedulables.values())[-1]["operation_id"]
-    assert sched.operations[measure_repr]["acquisition_info"][0]["protocol"] == "Trace"
+    assert (
+        get_subschedule_operation(sched, [2, 2])["acquisition_info"][0]["protocol"]
+        == "Trace"
+    )
 
 
 def test_compile_weighted_acquisition(
     compile_config_basic_transmon_qblox_hardware_cluster,
+    get_subschedule_operation,
 ):
     sched = Schedule("Test schedule")
     q0 = "q0"
@@ -419,14 +424,12 @@ def test_compile_weighted_acquisition(
         config=compile_config_basic_transmon_qblox_hardware_cluster,
     )
 
-    measure_repr = list(sched.schedulables.values())[-2]["operation_id"]
     assert (
-        sched.operations[measure_repr]["acquisition_info"][0]["protocol"]
+        get_subschedule_operation(sched, [2, 2])["acquisition_info"][0]["protocol"]
         == "NumericalSeparatedWeightedIntegration"
     )
-    measure_repr = list(sched.schedulables.values())[-1]["operation_id"]
     assert (
-        sched.operations[measure_repr]["acquisition_info"][0]["protocol"]
+        get_subschedule_operation(sched, [3, 2])["acquisition_info"][0]["protocol"]
         == "NumericalWeightedIntegration"
     )
 

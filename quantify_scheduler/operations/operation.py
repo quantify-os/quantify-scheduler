@@ -282,22 +282,17 @@ class Operation(JSONSchemaValMixin, UserDict):
         return False
 
     @property
-    def is_conditional_measure_or_acquisition(self) -> bool:
+    def is_conditional_acquisition(self) -> bool:
         """
-        An operation is conditional if one of the following holds, ``self`` is a:
-        - a Measure gate with a ``feedback_trigger_label`` assigned to it, or
-        - an acquisition with a ``feedback_trigger_label`` assigned to it.
+        An operation is conditional if one of the following holds, ``self`` is an
+        an acquisition with a ``feedback_trigger_label`` assigned to it.
         """
-        is_conditional_measure = (
-            self.data["gate_info"].get("feedback_trigger_label") is not None
-        )
-        is_conditional_acquisition = False
         if (acq_info := self.data.get("acquisition_info")) is not None:
-            is_conditional_acquisition = len(acq_info) > 0 and (
+            return len(acq_info) > 0 and (
                 acq_info[0].get("feedback_trigger_label") is not None
             )
 
-        return is_conditional_measure or is_conditional_acquisition
+        return False
 
     @property
     def is_control_flow(self) -> bool:

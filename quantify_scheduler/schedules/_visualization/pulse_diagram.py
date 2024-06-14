@@ -23,6 +23,11 @@ from quantify_scheduler.helpers.waveforms import (
     modulate_waveform,
 )
 from quantify_scheduler.operations.acquisition_library import Acquisition
+from quantify_scheduler.operations.control_flow_library import (
+    ConditionalOperation,
+    LoopOperation,
+)
+from quantify_scheduler.schedules.schedule import ScheduleBase
 from quantify_scheduler.waveforms import interpolated_complex_waveform
 
 if TYPE_CHECKING:
@@ -323,6 +328,72 @@ def merge_pulses_and_offsets(operations: list[SampledPulse]) -> SampledPulse:
     )
 
 
+def _extract_schedule_infos(
+    operation: Operation | ScheduleBase,
+    port_list: list[str],
+    time_offset: float,
+    offset_infos: dict[str, dict[str, list[ScheduledInfo]]],
+    pulse_infos: dict[str, list[ScheduledInfo]],
+    acq_infos: dict[str, list[ScheduledInfo]],
+) -> None:
+    if isinstance(operation, ScheduleBase):
+        for schedulable in operation.schedulables.values():
+            inner_operation = operation.operations[schedulable["operation_id"]]
+            abs_time = schedulable["abs_time"]
+            _extract_schedule_infos(
+                inner_operation,
+                port_list,
+                time_offset + abs_time,
+                offset_infos,
+                pulse_infos,
+                acq_infos,
+            )
+    elif isinstance(operation, ConditionalOperation):
+        _extract_schedule_infos(
+            operation.body, port_list, time_offset, offset_infos, pulse_infos, acq_infos
+        )
+    elif isinstance(operation, LoopOperation):
+        for i in range(operation.repetitions):
+            _extract_schedule_infos(
+                operation.body,
+                port_list,
+                time_offset + i * operation.body.duration,
+                offset_infos,
+                pulse_infos,
+                acq_infos,
+            )
+    else:
+        for acq_info in operation["acquisition_info"]:
+            if port_list is not None and acq_info["port"] not in port_list:
+                continue
+            acq_info_cpy = ScheduledInfo(
+                op_info=acq_info,
+                time=time_offset + acq_info["t0"],
+                op_name=operation["name"],
+            )
+            acq_infos[acq_info["port"]].append(acq_info_cpy)
+
+        for pulse_info in operation["pulse_info"]:
+            if port_list is not None and pulse_info["port"] not in port_list:
+                continue
+            if pulse_info.get("wf_func") is not None:
+                pulse_info_cpy = ScheduledInfo(
+                    op_info=pulse_info,
+                    time=time_offset + pulse_info["t0"],
+                    op_name=operation["name"],
+                )
+                pulse_infos[pulse_info["port"]].append(pulse_info_cpy)
+            elif "offset_path_I" in pulse_info:
+                pulse_info_cpy = ScheduledInfo(
+                    op_info=pulse_info,
+                    time=time_offset + pulse_info["t0"],
+                    op_name=operation["name"],
+                )
+                offset_infos[pulse_info["port"]][pulse_info["clock"]].append(
+                    pulse_info_cpy
+                )
+
+
 def sample_schedule(
     schedule: Schedule | CompiledSchedule,
     port_list: list[str] | None = None,
@@ -368,45 +439,22 @@ def sample_schedule(
     dict[str, tuple[list[SampledPulse], list[SampledAcquisition]]] :
         SampledPulse and SampledAcquisition objects grouped by port.
     """
-    x_min, x_max = x_range
-
     offset_infos: dict[str, dict[str, list[ScheduledInfo]]] = defaultdict(
         lambda: defaultdict(list)
     )
     pulse_infos: dict[str, list[ScheduledInfo]] = defaultdict(list)
     acq_infos: dict[str, list[ScheduledInfo]] = defaultdict(list)
-    for schedulable in schedule.schedulables.values():
-        operation = schedule.operations[schedulable["operation_id"]]
 
-        for acq_info in operation["acquisition_info"]:
-            if port_list is not None and acq_info["port"] not in port_list:
-                continue
-            acq_info_cpy = ScheduledInfo(
-                op_info=acq_info,
-                time=schedulable["abs_time"] + acq_info["t0"],
-                op_name=operation["name"],
-            )
-            acq_infos[acq_info["port"]].append(acq_info_cpy)
+    _extract_schedule_infos(
+        schedule,
+        port_list,
+        0,
+        offset_infos,
+        pulse_infos,
+        acq_infos,
+    )
 
-        for pulse_info in operation["pulse_info"]:
-            if port_list is not None and pulse_info["port"] not in port_list:
-                continue
-            if pulse_info.get("wf_func") is not None:
-                pulse_info_cpy = ScheduledInfo(
-                    op_info=pulse_info,
-                    time=schedulable["abs_time"] + pulse_info["t0"],
-                    op_name=operation["name"],
-                )
-                pulse_infos[pulse_info["port"]].append(pulse_info_cpy)
-            elif "offset_path_I" in pulse_info:
-                pulse_info_cpy = ScheduledInfo(
-                    op_info=pulse_info,
-                    time=schedulable["abs_time"] + pulse_info["t0"],
-                    op_name=operation["name"],
-                )
-                offset_infos[pulse_info["port"]][pulse_info["clock"]].append(
-                    pulse_info_cpy
-                )
+    x_min, x_max = x_range
 
     sampled_pulses = get_sampled_pulses_from_voltage_offsets(
         schedule=schedule,

@@ -8,10 +8,10 @@
 
 - NV Centers
   - clock names in the hardware configurtion require the format `<qubit>.<tag>` (!966)
-    - this is only a temporary convention until we finalize formalizing the new hardware config. 
+    - This is only a temporary convention until we finalize formalizing the new hardware config.
 - Compilation
   - Make all hardware configs go through pydantic validation. (!1002)
-
+  - Compile dispersive measurements to subschedules. (997!)
 
 ### Deprecation
 

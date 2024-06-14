@@ -127,7 +127,9 @@ def test_basic_transmon_serialization(
                 )
 
 
-def test_basic_transmon_deserialization(q0: BasicTransmonElement, dev: QuantumDevice):
+def test_basic_transmon_deserialization(
+    q0: BasicTransmonElement, dev: QuantumDevice, get_subschedule_operation
+):
     """
     Tests the deserialization process of :class:`~BasicTransmonElement` by comparing the
     operations inside compiled schedules of the original and the deserialized
@@ -147,6 +149,8 @@ def test_basic_transmon_deserialization(q0: BasicTransmonElement, dev: QuantumDe
         schedule=sched, config=dev.generate_compilation_config()
     )
 
+    dev.remove_element("q0")
+
     q0_as_str = json.dumps(q0, cls=SchedulerJSONEncoder)
     assert q0_as_str.__class__ is str
 
@@ -155,12 +159,20 @@ def test_basic_transmon_deserialization(q0: BasicTransmonElement, dev: QuantumDe
     deserialized_q0 = json.loads(q0_as_str, cls=SchedulerJSONDecoder)
     assert deserialized_q0.__class__ is BasicTransmonElement
 
+    dev.add_element(deserialized_q0)
+
     compiled_sched_deserialized_q0 = compiler.compile(
         schedule=sched, config=dev.generate_compilation_config()
     )
-    assert compiled_sched_deserialized_q0.operations == compiled_sched_q0.operations, (
-        f"Compiled operations of deserialized '{deserialized_q0.name}' does not match "
-        f"the original's"
+    assert len(compiled_sched_deserialized_q0.schedulables) == len(
+        compiled_sched_q0.schedulables
+    )
+    assert (
+        get_subschedule_operation(compiled_sched_deserialized_q0, [0]).operations
+        == get_subschedule_operation(compiled_sched_q0, [0]).operations
+    ), (
+        f"Compiled operations of deserialized '{deserialized_q0.name}' "
+        f"does not match the original's"
     )
 
 

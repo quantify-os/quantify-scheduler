@@ -30,6 +30,7 @@ from quantify_scheduler.operations.pulse_library import (
     ResetClockPhase,
     SquarePulse,
 )
+from quantify_scheduler.schedules.schedule import Schedule
 
 
 def dispersive_measurement(
@@ -54,7 +55,7 @@ def dispersive_measurement(
     feedback_trigger_label: Optional[str] = None,
     acq_rotation: float | None = None,
     acq_threshold: float | None = None,
-) -> Operation:
+) -> Schedule:
     """
     Generator function for a standard dispersive measurement.
 
@@ -73,13 +74,21 @@ def dispersive_measurement(
     # this as a simple piece of code and accept that different protocols (e.g.,
     # using different measurement pulses) would require a different generator function.
 
+    subschedule = Schedule("dispersive_measurement")
+
+    if reset_clock_phase:
+        subschedule.add(ResetClockPhase(clock=clock))
+
     if pulse_type == "SquarePulse":
-        pulse_op = SquarePulse(
-            amp=pulse_amp,
-            duration=pulse_duration,
-            port=port,
-            clock=clock,
-            reference_magnitude=reference_magnitude,
+        subschedule.add(
+            SquarePulse(
+                amp=pulse_amp,
+                duration=pulse_duration,
+                port=port,
+                clock=clock,
+                reference_magnitude=reference_magnitude,
+            ),
+            ref_pt="start",
         )
     else:
         # here we need to add support for SoftSquarePulse
@@ -89,12 +98,6 @@ def dispersive_measurement(
             + ' allows "SquarePulse". Please correct your device config.'
         )
 
-    if reset_clock_phase:
-        device_op = ResetClockPhase(clock=clock)
-        device_op.add_pulse(pulse_op)
-    else:
-        device_op = pulse_op
-
     if acq_protocol is None:
         acq_protocol = acq_protocol_default
 
@@ -103,7 +106,7 @@ def dispersive_measurement(
 
     if acq_protocol == "SSBIntegrationComplex":
         # readout pulse
-        device_op.add_acquisition(
+        subschedule.add(
             SSBIntegrationComplex(
                 port=port,
                 clock=clock,
@@ -112,7 +115,8 @@ def dispersive_measurement(
                 acq_index=acq_index,
                 bin_mode=bin_mode,
                 t0=acq_delay,
-            )
+            ),
+            ref_pt="start",
         )
     elif acq_protocol in (
         "NumericalSeparatedWeightedIntegration",
@@ -141,7 +145,7 @@ def dispersive_measurement(
                 UserWarning,
             )
         if acq_protocol == "NumericalSeparatedWeightedIntegration":
-            device_op.add_acquisition(
+            subschedule.add(
                 NumericalSeparatedWeightedIntegration(
                     port=port,
                     clock=clock,
@@ -152,10 +156,11 @@ def dispersive_measurement(
                     acq_index=acq_index,
                     bin_mode=bin_mode,
                     t0=acq_delay,
-                )
+                ),
+                ref_pt="start",
             )
         elif acq_protocol == "NumericalWeightedIntegration":
-            device_op.add_acquisition(
+            subschedule.add(
                 NumericalWeightedIntegration(
                     port=port,
                     clock=clock,
@@ -166,10 +171,11 @@ def dispersive_measurement(
                     acq_index=acq_index,
                     bin_mode=bin_mode,
                     t0=acq_delay,
-                )
+                ),
+                ref_pt="start",
             )
         elif acq_protocol == "NumericalWeightedIntegrationComplex":
-            device_op.add_acquisition(
+            subschedule.add(
                 NumericalWeightedIntegrationComplex(
                     port=port,
                     clock=clock,
@@ -180,10 +186,11 @@ def dispersive_measurement(
                     acq_index=acq_index,
                     bin_mode=bin_mode,
                     t0=acq_delay,
-                )
+                ),
+                ref_pt="start",
             )
     elif acq_protocol == "ThresholdedAcquisition":
-        device_op.add_acquisition(
+        subschedule.add(
             ThresholdedAcquisition(
                 port=port,
                 clock=clock,
@@ -195,10 +202,11 @@ def dispersive_measurement(
                 feedback_trigger_label=feedback_trigger_label,
                 acq_rotation=acq_rotation,
                 acq_threshold=acq_threshold,
-            )
+            ),
+            ref_pt="start",
         )
     elif acq_protocol == "Trace":
-        device_op.add_acquisition(
+        subschedule.add(
             Trace(
                 port=port,
                 clock=clock,
@@ -206,12 +214,13 @@ def dispersive_measurement(
                 acq_channel=acq_channel,
                 acq_index=acq_index,
                 t0=acq_delay,
-            )
+            ),
+            ref_pt="start",
         )
     else:
         raise ValueError(f'Acquisition protocol "{acq_protocol}" is not supported.')
 
-    return device_op
+    return subschedule
 
 
 def optical_measurement(

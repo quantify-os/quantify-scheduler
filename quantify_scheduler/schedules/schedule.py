@@ -20,6 +20,10 @@ from quantify_scheduler import enums, json_utils, resources
 from quantify_scheduler.helpers.collections import make_hash
 from quantify_scheduler.helpers.importers import export_python_object_to_path_string
 from quantify_scheduler.json_utils import JSONSchemaValMixin
+from quantify_scheduler.operations.control_flow_library import (
+    ConditionalOperation,
+    LoopOperation,
+)
 from quantify_scheduler.operations.operation import Operation
 
 if TYPE_CHECKING:
@@ -468,6 +472,62 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             f"value given: {repr(plot_backend)}"
         )
 
+    @classmethod
+    def _generate_timing_table_list(
+        cls,
+        operation: Operation | ScheduleBase,
+        time_offset: float,
+        timing_table_list: list,
+        operation_id: str | None,
+    ) -> None:
+        if isinstance(operation, ScheduleBase):
+            for schedulable in operation.schedulables.values():
+                if "abs_time" not in schedulable:
+                    # when this exception is encountered
+                    raise ValueError(
+                        "Absolute time has not been determined yet. "
+                        "Please compile your schedule."
+                    )
+                cls._generate_timing_table_list(
+                    operation.operations[schedulable["operation_id"]],
+                    time_offset + schedulable["abs_time"],
+                    timing_table_list,
+                    schedulable["operation_id"],
+                )
+        elif isinstance(operation, LoopOperation):
+            for i in range(operation.data["control_flow_info"]["repetitions"]):
+                cls._generate_timing_table_list(
+                    operation.body,
+                    time_offset + i * operation.body.duration,
+                    timing_table_list,
+                    operation_id,
+                )
+        elif isinstance(operation, ConditionalOperation):
+            cls._generate_timing_table_list(
+                operation.body,
+                time_offset,
+                timing_table_list,
+                operation_id,
+            )
+        else:
+            for i, op_info in chain(
+                enumerate(operation["pulse_info"]),
+                enumerate(operation["acquisition_info"]),
+            ):
+                t0 = time_offset + op_info["t0"]
+                df_row = {
+                    "waveform_op_id": str(operation) + f"_acq_{i}",
+                    "port": op_info["port"],
+                    "clock": op_info["clock"],
+                    "abs_time": t0,
+                    "duration": op_info["duration"],
+                    "is_acquisition": "acq_channel" in op_info or "bin_mode" in op_info,
+                    "operation": str(operation),
+                    "wf_idx": i,
+                    "operation_hash": operation_id,
+                }
+                timing_table_list.append(pd.DataFrame(df_row, index=range(1)))
+
     @property
     def timing_table(self) -> pd.io.formats.style.Styler:
         """
@@ -563,32 +623,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             When the absolute timing has not been determined during compilation.
         """  # noqa: E501
         timing_table_list = []
-        for schedulable in self.schedulables.values():
-            if "abs_time" not in schedulable:
-                # when this exception is encountered
-                raise ValueError(
-                    "Absolute time has not been determined yet. "
-                    "Please compile your schedule."
-                )
-            operation = self.operations[schedulable["operation_id"]]
-
-            for i, op_info in chain(
-                enumerate(operation["pulse_info"]),
-                enumerate(operation["acquisition_info"]),
-            ):
-                abs_time = op_info["t0"] + schedulable["abs_time"]
-                df_row = {
-                    "waveform_op_id": str(operation) + f"_acq_{i}",
-                    "port": op_info["port"],
-                    "clock": op_info["clock"],
-                    "abs_time": abs_time,
-                    "duration": op_info["duration"],
-                    "is_acquisition": "acq_channel" in op_info or "bin_mode" in op_info,
-                    "operation": str(operation),
-                    "wf_idx": i,
-                    "operation_hash": schedulable["operation_id"],
-                }
-                timing_table_list.append(pd.DataFrame(df_row, index=range(1)))
+        self._generate_timing_table_list(self, 0, timing_table_list, None)
         timing_table = pd.concat(timing_table_list, ignore_index=True)
         timing_table = timing_table.sort_values(by="abs_time")
         # apply a style so that time is easy to read.

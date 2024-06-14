@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 
 import numpy as np
 import pytest
@@ -42,6 +42,7 @@ from quantify_scheduler.operations.pulse_factories import (
 )
 from quantify_scheduler.operations.pulse_library import IdlePulse, ReferenceMagnitude
 from quantify_scheduler.resources import ClockResource
+from quantify_scheduler.schedules.schedule import ScheduleBase
 
 
 def test_compile_all_gates_example_transmon_cfg(device_cfg_transmon_example):
@@ -153,7 +154,7 @@ def test_compile_asymmetric_gate(mock_setup_basic_transmon):
         )
 
 
-def test_measurement_compile(device_cfg_transmon_example):
+def test_measurement_compile(device_cfg_transmon_example, get_subschedule_operation):
     sched = Schedule("Test schedule")
     sched.add(Measure("q0", "q1"))  # acq_index should be 0 for both.
     sched.add(Measure("q0", acq_index=1))
@@ -167,53 +168,78 @@ def test_measurement_compile(device_cfg_transmon_example):
         ),
     )
 
-    operation_keys_list = list(new_dev_sched.operations.keys())
+    # Subschedule components for an acquisition are
+    # 0th: reset clock phase,
+    # 1th: readout pulse,
+    # 2nd: acquisition.
 
-    m0_acq = new_dev_sched.operations[operation_keys_list[0]]["acquisition_info"]
-    assert len(m0_acq) == 2  # both q0 and q1
-    assert m0_acq[0]["acq_channel"] == 0
-    assert m0_acq[1]["acq_channel"] == 1
-    assert m0_acq[0]["acq_index"] == 0
-    assert m0_acq[1]["acq_index"] == 0
+    m0_q0_acq = get_subschedule_operation(new_dev_sched, [0, 0, 2])["acquisition_info"]
+    assert len(m0_q0_acq) == 1
+    assert m0_q0_acq[0]["acq_channel"] == 0
+    assert m0_q0_acq[0]["acq_index"] == 0
 
-    m1_acq = new_dev_sched.operations[operation_keys_list[1]]["acquisition_info"]
+    m0_q1_acq = get_subschedule_operation(new_dev_sched, [0, 1, 2])["acquisition_info"]
+    assert len(m0_q1_acq) == 1
+    assert m0_q1_acq[0]["acq_channel"] == 1
+    assert m0_q1_acq[0]["acq_index"] == 0
+
+    m1_acq = get_subschedule_operation(new_dev_sched, [1, 2])["acquisition_info"]
     assert len(m1_acq) == 1
     assert m1_acq[0]["acq_channel"] == 0
     assert m1_acq[0]["acq_index"] == 1
 
-    m2_acq = new_dev_sched.operations[operation_keys_list[2]]["acquisition_info"]
+    m2_acq = get_subschedule_operation(new_dev_sched, [2, 2])["acquisition_info"]
     assert len(m2_acq) == 1
     assert m2_acq[0]["acq_channel"] == 1
     assert m2_acq[0]["acq_index"] == 2
 
-    m3_acq = new_dev_sched.operations[operation_keys_list[3]]["acquisition_info"]
+    m3_acq = get_subschedule_operation(new_dev_sched, [3, 2])["acquisition_info"]
     assert len(m3_acq) == 1
     assert m3_acq[0]["acq_channel"] == 2
     assert m3_acq[0]["acq_index"] == 0
 
-    m4_acq = new_dev_sched.operations[operation_keys_list[4]]["acquisition_info"]
-    assert len(m4_acq) == 2
-    assert m4_acq[0]["acq_channel"] == 0
-    assert m4_acq[1]["acq_channel"] == 1
-    assert m4_acq[0]["acq_index"] == 2
-    assert m4_acq[1]["acq_index"] == 2
+    m4_q0_acq = get_subschedule_operation(new_dev_sched, [4, 0, 2])["acquisition_info"]
+    assert len(m4_q0_acq) == 1
+    assert m4_q0_acq[0]["acq_channel"] == 0
+    assert m4_q0_acq[0]["acq_index"] == 2
+
+    m4_q1_acq = get_subschedule_operation(new_dev_sched, [4, 1, 2])["acquisition_info"]
+    assert len(m4_q1_acq) == 1
+    assert m4_q1_acq[0]["acq_channel"] == 1
+    assert m4_q1_acq[0]["acq_index"] == 2
 
 
 @pytest.mark.parametrize(
-    "operations, clocks_used",
+    "operations, subschedule_indices, clocks_used",
     [
-        ([], ["cl0.baseband", "digital"]),
-        ([X(qubit="q0")], ["cl0.baseband", "digital", "q0.01"]),
-        ([Z(qubit="q0")], ["cl0.baseband", "digital", "q0.01"]),
-        ([Measure("q0", "q1")], ["cl0.baseband", "digital", "q0.ro", "q1.ro"]),
+        ([], [], ["cl0.baseband", "digital"]),
+        ([X(qubit="q0")], [], ["cl0.baseband", "digital", "q0.01"]),
+        ([Z(qubit="q0")], [], ["cl0.baseband", "digital", "q0.01"]),
+        ([Measure("q0", "q1")], [0, 0], ["cl0.baseband", "digital", "q0.ro"]),
+        ([Measure("q0", "q1")], [0, 1], ["cl0.baseband", "digital", "q1.ro"]),
         (
             [X(qubit="q0"), Z(qubit="q1"), Measure("q0", "q1")],
-            ["cl0.baseband", "digital", "q0.01", "q1.01", "q0.ro", "q1.ro"],
+            [2, 0],
+            ["cl0.baseband", "digital", "q0.ro"],
+        ),
+        (
+            [X(qubit="q0"), Z(qubit="q1"), Measure("q0", "q1")],
+            [2, 1],
+            ["cl0.baseband", "digital", "q1.ro"],
+        ),
+        (
+            [X(qubit="q0"), Z(qubit="q1"), Measure("q0", "q1")],
+            [],
+            ["cl0.baseband", "digital", "q0.01", "q1.01"],
         ),
     ],
 )
 def test_only_add_clocks_used(
-    operations: List[Operation], clocks_used: List[str], device_cfg_transmon_example
+    operations: List[Operation],
+    clocks_used: List[str],
+    device_cfg_transmon_example,
+    subschedule_indices: List[int],
+    get_subschedule_operation,
 ):
     sched = Schedule("Test schedule")
     for operation in operations:
@@ -231,7 +257,11 @@ def test_only_add_clocks_used(
         ),
     )
 
-    assert set(checked_dev_sched.resources.keys()) == set(clocks_used)
+    assert set(
+        get_subschedule_operation(
+            checked_dev_sched, subschedule_indices
+        ).resources.keys()
+    ) == set(clocks_used)
 
 
 def test_set_gate_clock_raises(mock_setup_basic_transmon_with_standard_params):
@@ -364,7 +394,7 @@ def test_clock_not_defined_raises():
 
     assert (
         error.value.args[0]
-        == f"Operation '{operation}' contains an unknown clock '{clock}'; "
+        == f"Operation 'ResetClockPhase(clock='q0.ro',t0=0)' contains an unknown clock '{clock}'; "
         f"ensure this resource has been added to the schedule "
         f"or to the device config."
     )
@@ -741,7 +771,7 @@ def test_valid_clock_in_schedule():
         )
 
 
-def test_set_reference_magnitude(mock_setup_basic_transmon):
+def test_set_reference_magnitude(mock_setup_basic_transmon, get_subschedule_operation):
     """
     Test if compilation using the BasicTransmonElement reproduces old behaviour.
     """
@@ -782,13 +812,27 @@ def test_set_reference_magnitude(mock_setup_basic_transmon):
     assert operations_dict_with_repr_keys["Rxy(theta=12, phi=0, qubit='q3')"][
         "pulse_info"
     ][0]["reference_magnitude"] == ReferenceMagnitude(1e-3, "A")
-    assert operations_dict_with_repr_keys[
-        "Measure('q2','q3', acq_channel=None, acq_index=[0, 0], acq_protocol=\"None\", bin_mode=None, feedback_trigger_label=None)"
-    ]["pulse_info"][1]["reference_magnitude"] == ReferenceMagnitude(20, "dBm")
+
+    measure_q2_operations_dict_with_repr_keys = {
+        str(op): op
+        for op in get_subschedule_operation(
+            compiled_schedule, [8, 0]
+        ).operations.values()
+    }
+    assert measure_q2_operations_dict_with_repr_keys[
+        "SquarePulse(amp=0.25,duration=3e-07,port='q2:res',clock='q2.ro',reference_magnitude=ReferenceMagnitude(value=20, unit='dBm'),t0=0)"
+    ]["pulse_info"][0]["reference_magnitude"] == ReferenceMagnitude(20, "dBm")
+
+    measure_q3_operations_dict_with_repr_keys = {
+        str(op): op
+        for op in get_subschedule_operation(
+            compiled_schedule, [8, 1]
+        ).operations.values()
+    }
     assert (
-        operations_dict_with_repr_keys[
-            "Measure('q2','q3', acq_channel=None, acq_index=[0, 0], acq_protocol=\"None\", bin_mode=None, feedback_trigger_label=None)"
-        ]["pulse_info"][3]["reference_magnitude"]
+        measure_q3_operations_dict_with_repr_keys[
+            "SquarePulse(amp=0.25,duration=3e-07,port='q3:res',clock='q3.ro',reference_magnitude=None,t0=0)"
+        ]["pulse_info"][0]["reference_magnitude"]
         is None
     )
 

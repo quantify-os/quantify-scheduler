@@ -12,10 +12,14 @@ from quantify_scheduler.backends.qblox.instrument_compilers import (
     LocalOscillatorCompiler,
 )
 from quantify_scheduler.helpers.schedule import get_total_duration
+from quantify_scheduler.operations.control_flow_library import ControlFlowOperation
+from quantify_scheduler.schedules.schedule import ScheduleBase
 
 if TYPE_CHECKING:
     from quantify_scheduler import Schedule
     from quantify_scheduler.backends.qblox.compiler_abc import InstrumentCompiler
+    from quantify_scheduler.operations.operation import Operation
+    from quantify_scheduler.resources import Resource
 
 
 class CompilerContainer:
@@ -41,7 +45,7 @@ class CompilerContainer:
         """
         The total duration of a single repetition of the schedule.
         """
-        self.resources = schedule.resources
+        self.resources = _extract_all_resources(schedule)
         """
         The resources attribute of the schedule. Used for getting the information
          from the clocks.
@@ -181,3 +185,15 @@ class CompilerContainer:
                 )
 
         return composite
+
+
+def _extract_all_resources(operation: Operation | ScheduleBase) -> dict[str, Resource]:
+    if isinstance(operation, ScheduleBase):
+        resources: dict[str, Resource] = operation.resources
+        for inner_operation in operation.operations.values():
+            resources.update(_extract_all_resources(inner_operation))
+        return resources
+    elif isinstance(operation, ControlFlowOperation):
+        return _extract_all_resources(operation.body)
+    else:
+        return {}

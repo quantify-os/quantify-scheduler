@@ -171,7 +171,7 @@ def _all_conditional_acqs_and_control_flows_and_latch_reset(
                 accumulator,
             )
     elif isinstance(operation, (ConditionalOperation, LatchReset)) or (
-        operation.valid_acquisition and operation.is_conditional_measure_or_acquisition
+        operation.valid_acquisition and operation.is_conditional_acquisition
     ):
         accumulator.append((time_offset, operation))
 
@@ -245,9 +245,7 @@ def _set_conditional_address_map(
             operation=operation.body,
             conditional_address_map=conditional_address_map,
         )
-    elif (
-        operation.valid_acquisition and operation.is_conditional_measure_or_acquisition
-    ):
+    elif operation.valid_acquisition and operation.is_conditional_acquisition:
         # Store `feedback_trigger_address` in the correct acquisition, so that it can
         # be passed to the correct Sequencer via ``SequencerSettings``.
         acq_info = operation["acquisition_info"]
@@ -284,9 +282,7 @@ def _insert_latch_reset(
             schedule=schedule,
             conditional_address_map=conditional_address_map,
         )
-    elif (
-        operation.valid_acquisition and operation.is_conditional_measure_or_acquisition
-    ):
+    elif operation.valid_acquisition and operation.is_conditional_acquisition:
         acq_info = operation["acquisition_info"]
         for info in acq_info:
             if (
@@ -389,10 +385,7 @@ def compile_conditional_playback(schedule: Schedule, **_: Any) -> Schedule:
                 )
             else:
                 current_ongoing_conditional_acquire = None
-        elif (
-            operation.valid_acquisition
-            and operation.is_conditional_measure_or_acquisition
-        ):
+        elif operation.valid_acquisition and operation.is_conditional_acquisition:
             if current_ongoing_conditional_acquire is None:
                 current_ongoing_conditional_acquire = operation
             else:

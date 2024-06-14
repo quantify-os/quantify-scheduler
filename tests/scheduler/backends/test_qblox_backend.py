@@ -2593,7 +2593,6 @@ def test_assign_frequencies_baseband_downconverter(  # noqa: PLR0912, PLR0915
     if downconverter_freq1 is None:
         expected_if1 = q1_clock_freq - lo1
     else:
-        print(f"{downconverter_freq1=}, {q1_clock_freq=}, {lo1=}")
         expected_if1 = downconverter_freq1 - q1_clock_freq - lo1
 
     assert actual_lo0 == expected_lo0, (
@@ -3840,6 +3839,7 @@ def test_auto_compile_long_square_pulses(
 def test_long_acquisition(
     mixed_schedule_with_acquisition,
     compile_config_basic_transmon_qblox_hardware,
+    get_subschedule_operation,
 ):
     compile_config_basic_transmon_qblox_hardware.device_compilation_config.elements[
         "q0"
@@ -3850,18 +3850,9 @@ def test_long_acquisition(
         config=compile_config_basic_transmon_qblox_hardware,
     )
 
-    measure_op = next(
-        filter(
-            lambda op: op["name"] == "Measure q0", compiled_sched.operations.values()
-        )
-    )
-    pulse_info_without_reset_ph = list(
-        filter(
-            lambda x: not x.get("reset_clock_phase", False), measure_op["pulse_info"]
-        )
-    )
+    readout_pulse_operation = get_subschedule_operation(compiled_sched, [2, 1])
     assert (
-        pulse_info_without_reset_ph
+        readout_pulse_operation["pulse_info"]
         == long_square_pulse(amp=0.25, duration=3e-6, port="q0:res", clock="q0.ro")[
             "pulse_info"
         ]
@@ -4402,8 +4393,8 @@ start:
     loop9:
         wait 60 # auto generated wait (60 ns)
         reset_ph
-        set_awg_gain 8192,0 # setting gain for Measure q0
-        play 0,0,4 # play Measure q0 (300 ns)
+        set_awg_gain 8192,0 # setting gain for SquarePulse
+        play 0,0,4 # play SquarePulse (300 ns)
         wait 96 # auto generated wait (96 ns)
         acquire 0,0,4
         wait 996 # auto generated wait (996 ns)
