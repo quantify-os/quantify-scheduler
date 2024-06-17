@@ -3,8 +3,6 @@
 """Contains the gate library for the Qblox backend."""
 from __future__ import annotations
 
-import warnings
-
 from quantify_scheduler.backends.qblox.constants import TRIGGER_DELAY
 from quantify_scheduler.operations.control_flow_library import ConditionalOperation
 from quantify_scheduler.operations.gate_library import Measure, X
@@ -82,22 +80,15 @@ class ConditionalReset(Schedule):
         **kwargs,  # noqa: ANN003 (kwargs not annotated)
     ) -> None:
         super().__init__(name)
-        # `control_flow` operations warn the user about it being an experimental
-        # features and subject to potential interface changes. Silencing here,
-        # because the control flow interface is hidden from the user.
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", ".*experimental feature.*", UserWarning)
-            self.add(
-                Measure(
-                    qubit_name,
-                    acq_protocol="ThresholdedAcquisition",
-                    feedback_trigger_label=qubit_name,
-                    **kwargs,
-                )
+        self.add(
+            Measure(
+                qubit_name,
+                acq_protocol="ThresholdedAcquisition",
+                feedback_trigger_label=qubit_name,
+                **kwargs,
             )
-            sub_schedule = Schedule("")
-            sub_schedule.add(X(qubit_name))
-            self.add(
-                ConditionalOperation(body=sub_schedule, qubit_name=qubit_name),
-                rel_time=TRIGGER_DELAY,
-            )
+        )
+        self.add(
+            ConditionalOperation(body=X(qubit_name), qubit_name=qubit_name),
+            rel_time=TRIGGER_DELAY,
+        )
