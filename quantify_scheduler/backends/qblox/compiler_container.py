@@ -11,7 +11,6 @@ from quantify_scheduler.backends.qblox.instrument_compilers import (
     ClusterCompiler,
     LocalOscillatorCompiler,
 )
-from quantify_scheduler.helpers.schedule import get_total_duration
 from quantify_scheduler.operations.control_flow_library import ControlFlowOperation
 from quantify_scheduler.schedules.schedule import ScheduleBase
 
@@ -41,7 +40,7 @@ class CompilerContainer:
     """
 
     def __init__(self, schedule: Schedule):
-        self.total_play_time = get_total_duration(schedule)
+        self.total_play_time = schedule.get_schedule_duration() / schedule.repetitions
         """
         The total duration of a single repetition of the schedule.
         """
