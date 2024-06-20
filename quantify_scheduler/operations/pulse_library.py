@@ -9,7 +9,6 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Literal, Optional, Union
 
 import numpy as np
-from numpy.typing import NDArray
 from qcodes import InstrumentChannel, validators
 
 from quantify_scheduler import Operation
@@ -1055,7 +1054,7 @@ class NumericalPulse(Operation):
         interpolation: str = "linear",
     ):
         def make_list_from_array(
-            val: Union[NDArray[float], List[float]]
+            val: Union[np.ndarray[float], List[float]]
         ) -> List[float]:
             """Needed since numpy arrays break the (de)serialization code (#146)."""
             if isinstance(val, np.ndarray):

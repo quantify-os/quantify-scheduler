@@ -228,6 +228,61 @@ def composite_square_pulse(
     return composite_pulse
 
 
+def rxy_hermite_pulse(
+    amp180: float,
+    skewness: float,
+    theta: float,
+    phi: float,
+    port: str,
+    duration: float,
+    clock: str,
+    reference_magnitude: pulse_library.ReferenceMagnitude | None = None,
+) -> pulse_library.SkewedHermitePulse:
+    """
+    Generate a Gaussian drive with :class:`~.operations.pulse_library.GaussPulse` that achieves the right
+    rotation angle ``theta`` based on a calibrated pi-pulse amplitude.
+
+    Parameters
+    ----------
+    amp180
+        Unitless amplitude of excitation pulse to get the maximum 180 degree theta.
+    skewness
+        First-order amplitude correction to the Hermite pulse. Skewness of 0 returns a standard hermite pulse.
+    theta
+        Angle in degrees to rotate around an equatorial axis on the Bloch sphere.
+    phi
+        Phase of the pulse in degrees.
+    port
+        Name of the port where the pulse is played.
+    duration
+        Duration of the pulse in seconds.
+    clock
+        Name of the clock used to modulate the pulse.
+    reference_magnitude : :class:`~quantify_scheduler.operations.pulse_library.ReferenceMagnitude`, optional
+        Optional scaling value and unit for the unitless amplitude. Uses settings in
+        hardware config if not provided.
+
+    Returns
+    -------
+    :
+        GaussPulse operation.
+    """
+    # theta is in degrees, and
+    # amp180 is the amplitude necessary to get the
+    # maximum 180 degree theta (experimentally)
+    amp_theta = amp180 * theta / 180
+
+    return pulse_library.SkewedHermitePulse(
+        amplitude=amp_theta,
+        skewness=skewness,
+        phase=phi,
+        port=port,
+        duration=duration,
+        clock=clock,
+        reference_magnitude=reference_magnitude,
+    )
+
+
 def nv_spec_pulse_mw(
     duration: float,
     amplitude: float,

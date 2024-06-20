@@ -19,6 +19,7 @@ from quantify_scheduler.operations.pulse_factories import (
 from quantify_scheduler.operations.pulse_factories import (
     rxy_drag_pulse,
     rxy_gauss_pulse,
+    rxy_hermite_pulse,
 )
 from quantify_scheduler.operations.pulse_factories import (
     staircase_pulse as old_staircase_pulse,
@@ -76,6 +77,32 @@ def test_rxy_gauss_pulse():
             "clock": "q0.ro",
             "port": "q0:res",
             "t0": 0,
+        }
+    ]
+
+
+def test_rxy_hermite_pulse():
+    """Test the rxy_hermite_pulse"""
+    pulse = rxy_hermite_pulse(
+        amp180=0.8,
+        theta=180,
+        phi=10,
+        port="q0:res",
+        duration=100e-9,
+        clock="q0.ro",
+        skewness=0.0,
+    )
+    assert pulse.data["pulse_info"] == [
+        {
+            "wf_func": "quantify_scheduler.waveforms.skewed_hermite",
+            "duration": 100e-9,
+            "amplitude": 0.8,
+            "skewness": 0.0,
+            "phase": 10,
+            "port": "q0:res",
+            "clock": "q0.ro",
+            "reference_magnitude": None,
+            "t0": 0.0,
         }
     ]
 

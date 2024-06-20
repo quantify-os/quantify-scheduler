@@ -29,6 +29,7 @@
 - Mafalda Jotta Garcia ([GitLab](https://gitlab.com/mafaldajg))
 - Michiel Dubbelman ([GitLab](https://gitlab.com/MichielDubbelman))
 - Nicolas Piot ([GitLab](https://gitlab.com/npiot))
+- Shaurya Bhave([GitLab])(https://gitlab.com/sbhave1)
 - Pieter Eendebak ([GitLab](https://gitlab.com/peendebak))
 - Robert Sokolewicz ([GitLab](https://gitlab.com/rsokolewicz))
 - Rohit Navarathna ([GitLab](https://gitlab.com/rnavarathna))

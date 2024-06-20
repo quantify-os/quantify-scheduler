@@ -371,6 +371,43 @@ class CRCount(InstrumentModule):
         """
 
 
+class RxyHermite(InstrumentModule):
+    """
+    Submodule containing parameters to perform an Rxy operation
+    using a Hermite pulse.
+    """
+
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+        super().__init__(parent=parent, name=name)
+
+        self.amp180 = ManualParameter(
+            name="amp180",
+            instrument=self,
+            initial_value=kwargs.get("amp180", math.nan),
+            unit="",
+            vals=_Amplitudes(),
+        )
+        r"""Amplitude of :math:`\pi` pulse."""
+
+        self.skewness = ManualParameter(
+            name="skewness",
+            instrument=self,
+            initial_value=kwargs.get("skewness", 0),
+            unit="",
+            vals=validators.Numbers(min_value=-1, max_value=1),
+        )
+        """ First-order amplitude to the Hermite pulse envelope."""
+
+        self.duration = ManualParameter(
+            name="duration",
+            instrument=self,
+            initial_value=20e-9,
+            unit="s",
+            vals=_Durations(),
+        )
+        """Duration of the pi pulse."""
+
+
 class BasicElectronicNVElement(DeviceElement):
     """
     A device element representing an electronic qubit in an NV center.
@@ -406,6 +443,9 @@ class BasicElectronicNVElement(DeviceElement):
         self.add_submodule("cr_count", CRCount(self, "cr_count"))
         self.cr_count: CRCount
         """Submodule :class:`~.CRCount`."""
+        self.add_submodule("rxy", RxyHermite(self, "rxy"))
+        self.rxy: RxyHermite
+        """Submodule :class:`~.Rxy`."""
 
     def _generate_config(self) -> Dict[str, Dict[str, OperationCompilationConfig]]:
         """
@@ -497,6 +537,20 @@ class BasicElectronicNVElement(DeviceElement):
                         "acq_index",
                         "bin_mode",
                         "acq_protocol",
+                    ],
+                ),
+                "Rxy": OperationCompilationConfig(
+                    factory_func=pulse_factories.rxy_hermite_pulse,
+                    factory_kwargs={
+                        "amp180": self.rxy.amp180(),
+                        "skewness": self.rxy.skewness(),
+                        "port": self.ports.microwave(),
+                        "clock": f"{self.name}.spec",
+                        "duration": self.rxy.duration(),
+                    },
+                    gate_info_factory_kwargs=[
+                        "theta",
+                        "phi",
                     ],
                 ),
             }

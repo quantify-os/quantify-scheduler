@@ -5,6 +5,7 @@ from qcodes import Instrument
 from qcodes.instrument.channel import InstrumentModule
 from qcodes.instrument.parameter import Parameter
 
+from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler.device_under_test.mock_setup import (
     set_standard_params_basic_nv,
@@ -22,6 +23,8 @@ from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
     InstrumentCoordinator,
 )
 from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEncoder
+from quantify_scheduler.operations.gate_library import X, Y
+from quantify_scheduler.schedules.schedule import Schedule
 
 
 @pytest.fixture
@@ -189,6 +192,38 @@ def test_mock_nv_setup():
     set_standard_params_basic_nv(mock_nv_setup)
 
 
+def test_Rxy_compiles(mock_setup_basic_nv_qblox_hardware):
+    """Test Rxy operations compile using the skewed hermite pulse waveform"""
+
+    # Create test NV center element
+    qe0: BasicElectronicNVElement = mock_setup_basic_nv_qblox_hardware["qe0"]
+
+    qe0.clock_freqs.spec.set(2.2e9)
+
+    qe0.rxy.amp180(1)
+    qe0.rxy.duration(1e-6)
+
+    rxy_sched = Schedule("Rxy_Hermite")
+    rxy_sched.add(X("qe0"))
+
+    # Assert
+    abs_times = [0]
+    abs_times.append(abs_times[-1] + qe0.rxy.duration())
+
+    compiler = SerialCompiler(name="compiler")
+    schedule = compiler.compile(
+        schedule=rxy_sched,
+        config=mock_setup_basic_nv_qblox_hardware[
+            "quantum_device"
+        ].generate_compilation_config(),
+    )
+
+    for i, schedulable in enumerate(schedule.schedulables.values()):
+        assert schedulable["abs_time"] == abs_times[i]
+
+    assert schedule.compiled_instructions != {}
+
+
 @pytest.fixture
 def dev() -> QuantumDevice:
     """Fixture returning quantum device with instrument coordinator."""
@@ -290,6 +325,7 @@ def test_nv_center_serialization(electronic_q0):
     electronic_q0.clock_freqs.ge1.set(470.4e12 - 5e9)
     electronic_q0.reset.amplitude(1.0)
     electronic_q0.charge_reset.amplitude(1.0)
+    electronic_q0.rxy.amp180(0.5)
     electronic_q0.measure.pulse_amplitude(1.0)
     electronic_q0.cr_count.readout_pulse_amplitude(0.2)
     electronic_q0.cr_count.spinpump_pulse_amplitude(1.6)
