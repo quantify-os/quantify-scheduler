@@ -312,6 +312,18 @@ class DispersiveMeasurement(InstrumentChannel):
         is compared against. For more details see
         :class:`~quantify_scheduler.operations.acquisition_library.ThresholdedAcquisition`."""  # noqa
 
+        self.num_points = ManualParameter(
+            name="num_points",
+            instrument=self,
+            initial_value=kwargs.get("num_points", None),
+            vals=validators.Ints(min_value=1),
+        )
+        """
+        Number of data points to be acquired during the measurement.
+
+        This parameter defines how many discrete data points will be collected
+        in the course of a single measurement sequence. """
+
 
 class ReferenceMagnitude(InstrumentChannel):
     """
@@ -510,6 +522,7 @@ class BasicTransmonElement(DeviceElement):
                         "acq_weights_sampling_rate": self.measure.acq_weights_sampling_rate(),
                         "acq_rotation": self.measure.acq_rotation(),
                         "acq_threshold": self.measure.acq_threshold(),
+                        "num_points": self.measure.num_points(),
                     },
                     gate_info_factory_kwargs=[
                         "acq_channel_override",

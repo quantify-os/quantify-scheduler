@@ -25,15 +25,18 @@ from quantify_scheduler.operations.acquisition_library import (
     Trace,
     TriggerCount,
 )
+from quantify_scheduler.operations.control_flow_library import LoopOperation
 from quantify_scheduler.operations.pulse_library import (
+    IdlePulse,
     ReferenceMagnitude,
     ResetClockPhase,
     SquarePulse,
+    VoltageOffset,
 )
 from quantify_scheduler.schedules.schedule import Schedule
 
 
-def dispersive_measurement(
+def dispersive_measurement(  # noqa: PLR0915
     pulse_amp: float,
     pulse_duration: float,
     port: str,
@@ -55,6 +58,7 @@ def dispersive_measurement(
     feedback_trigger_label: Optional[str] = None,
     acq_rotation: float | None = None,
     acq_threshold: float | None = None,
+    num_points: float | None = None,
 ) -> Schedule:
     """
     Generator function for a standard dispersive measurement.
@@ -80,16 +84,17 @@ def dispersive_measurement(
         subschedule.add(ResetClockPhase(clock=clock))
 
     if pulse_type == "SquarePulse":
-        subschedule.add(
-            SquarePulse(
-                amp=pulse_amp,
-                duration=pulse_duration,
-                port=port,
-                clock=clock,
-                reference_magnitude=reference_magnitude,
-            ),
-            ref_pt="start",
-        )
+        if acq_protocol != "LongTimeTrace":
+            subschedule.add(
+                SquarePulse(
+                    amp=pulse_amp,
+                    duration=pulse_duration,
+                    port=port,
+                    clock=clock,
+                    reference_magnitude=reference_magnitude,
+                ),
+                ref_pt="start",
+            )
     else:
         # here we need to add support for SoftSquarePulse
         raise NotImplementedError(
@@ -217,6 +222,65 @@ def dispersive_measurement(
             ),
             ref_pt="start",
         )
+    elif acq_protocol == "LongTimeTrace":
+        if bin_mode != BinMode.APPEND:
+            raise ValueError(
+                f"For measurement protocol '{acq_protocol}' "
+                f"bin_mode set to '{bin_mode}', "
+                f"but only 'BinMode.APPEND' is supported."
+            )
+        if not isinstance(num_points, int):
+            raise ValueError(
+                f"For measurement protocol '{acq_protocol}', "
+                f"num_points is set to '{num_points}',"
+                f"but only integer values are supported."
+            )
+
+        pulse_op = VoltageOffset(
+            offset_path_I=np.real(pulse_amp),
+            offset_path_Q=np.imag(pulse_amp),
+            port=port,
+            clock=clock,
+        )
+
+        subschedule.add(pulse_op)
+
+        op = SSBIntegrationComplex(
+            port=port,
+            clock=clock,
+            duration=acq_duration,
+            acq_channel=0,
+            acq_index=acq_index,
+            bin_mode=bin_mode,
+            t0=0,
+        )
+
+        inner = Schedule("inner", repetitions=1)
+        inner.add(op)
+        subschedule.add(
+            LoopOperation(
+                inner,
+                repetitions=num_points,
+            ),
+            rel_time=acq_delay,
+            ref_pt="start",
+        )
+
+        pulse_op_off = VoltageOffset(
+            offset_path_I=0,
+            offset_path_Q=0,
+            port=port,
+            clock=clock,
+        )
+
+        subschedule.add(
+            pulse_op_off,
+        )
+
+        # Here a 4 ns idle pulse need to be added for voltage offset to take effect.
+        # On some backends, the voltage offset can never end a schedule.
+        subschedule.add(IdlePulse(duration=4e-9))
+
     else:
         raise ValueError(f'Acquisition protocol "{acq_protocol}" is not supported.')
 

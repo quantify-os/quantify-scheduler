@@ -735,6 +735,51 @@ def test_thresholded_acquisition(
     assert sequencer_acquisition_metadata.acq_protocol == "ThresholdedAcquisition"
 
 
+def test_longtimetrace_protocol(
+    mock_setup_basic_transmon_with_standard_params,
+    qblox_hardware_config_transmon,
+):
+
+    qubit_name = "q0"
+    num_points = 11
+    hardware_config = qblox_hardware_config_transmon
+    mock_setup = mock_setup_basic_transmon_with_standard_params
+    quantum_device = mock_setup["quantum_device"]
+    quantum_device.hardware_config(hardware_config)
+    qubit = mock_setup[qubit_name]
+    qubit.measure.num_points(num_points)
+
+    schedule = Schedule("LongTimeTrace")
+    schedule.add(
+        Measure(qubit_name, acq_protocol="LongTimeTrace", bin_mode=BinMode.APPEND)
+    )
+
+    compiler = SerialCompiler("compiler", quantum_device=quantum_device)
+    compiled_schedule = compiler.compile(schedule)
+
+    key_longtimetrace_sched = list(compiled_schedule.operations.keys())[0]
+    longtimetrace_schedule = compiled_schedule.operations[key_longtimetrace_sched]
+
+    assert longtimetrace_schedule.name == "dispersive_measurement"
+
+    key_loop_operation = list(longtimetrace_schedule.operations.keys())[2]
+    loop_operation = longtimetrace_schedule.operations[key_loop_operation]
+
+    assert loop_operation.name == "LoopOperation"
+    assert loop_operation["control_flow_info"]["repetitions"] == num_points
+
+    compiled_instructions = compiled_schedule.compiled_instructions["cluster0"][
+        "cluster0_module4"
+    ]
+    sequencer_compiled_instructions = compiled_instructions["sequencers"]["seq0"]
+    program = sequencer_compiled_instructions["sequence"]["program"]
+    string_to_check = f"move {num_points},R"
+    assert string_to_check in program
+
+    sequencer_acquisition_metadata = compiled_instructions["acq_metadata"]["seq0"]
+    assert sequencer_acquisition_metadata.acq_protocol == "SSBIntegrationComplex"
+
+
 def test_thresholded_acquisition_multiplex(
     mock_setup_basic_transmon_with_standard_params,
 ):
