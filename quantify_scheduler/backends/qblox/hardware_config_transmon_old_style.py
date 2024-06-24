@@ -2,7 +2,11 @@
 # Licensed according to the LICENCE file on the main branch
 """Example old-style Qblox hardware config dictionary of a transmon setup for legacy support."""
 
-from quantify_scheduler.backends.qblox.enums import DistortionCorrectionLatencyEnum
+from quantify_scheduler.backends.qblox.enums import (
+    DistortionCorrectionLatencyEnum,
+    LoCalEnum,
+    SidebandCalEnum,
+)
 
 hardware_config = {
     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
@@ -25,8 +29,9 @@ hardware_config = {
             "sequence_to_file": False,
             "complex_output_0": {
                 "lo_name": "lo0",
-                "dc_mixer_offset_I": 0.0,
-                "dc_mixer_offset_Q": 0.0,
+                "auto_lo_cal": LoCalEnum.OFF,
+                "dc_mixer_offset_I": None,
+                "dc_mixer_offset_Q": None,
                 "downconverter_freq": None,
                 "marker_debug_mode_enable": True,
                 "distortion_correction_latency_compensation": DistortionCorrectionLatencyEnum.NO_DELAY_COMP,  # noqa: E501
@@ -36,6 +41,7 @@ hardware_config = {
                         "port": "q4:mw",
                         "clock": "q4.01",
                         "interm_freq": 200e6,
+                        "auto_sideband_cal": SidebandCalEnum.OFF,
                         "mixer_amp_ratio": 0.9999,
                         "mixer_phase_error_deg": -4.2,
                     }
@@ -70,12 +76,14 @@ hardware_config = {
             "sequence_to_file": False,
             "complex_output_0": {
                 "lo_name": "lo1",
+                "auto_lo_cal": LoCalEnum.OFF,
                 "dc_mixer_offset_I": -0.054,
                 "dc_mixer_offset_Q": -0.034,
                 "input_gain_I": 2,
                 "input_gain_Q": 3,
                 "portclock_configs": [
                     {
+                        "auto_sideband_cal": SidebandCalEnum.OFF,
                         "mixer_amp_ratio": 0.9997,
                         "mixer_phase_error_deg": -4.0,
                         "port": "q4:res",

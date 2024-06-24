@@ -74,3 +74,18 @@ class DistortionCorrectionLatencyEnum(int, Enum):
     def __ror__(self, other: DistortionCorrectionLatencyEnum | int) -> int:
         """Support bitwise OR operations, other order."""
         return self.__or__(other)
+
+
+class LoCalEnum(str, Enum):
+    """Settings related to the LO part of automatic mixer corrections."""
+
+    OFF = "off"
+    ON_LO_FREQ_CHANGE = "on_lo_freq_change"
+    ON_LO_INTERM_FREQ_CHANGE = "on_lo_interm_freq_change"
+
+
+class SidebandCalEnum(str, Enum):
+    """Settings related to the NCO part of automatic mixer corrections."""
+
+    OFF = "off"
+    ON_INTERM_FREQ_CHANGE = "on_interm_freq_change"

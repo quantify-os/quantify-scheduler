@@ -21,6 +21,7 @@ from quantify_scheduler.backends.qblox.compiler_abc import (
 from quantify_scheduler.backends.qblox.enums import (
     ChannelMode,
     DistortionCorrectionLatencyEnum,
+    LoCalEnum,
     QbloxFilterConfig,
     QbloxFilterMarkerDelay,
 )
@@ -680,12 +681,18 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
                 self._settings.offset_ch0_path_Q = helpers.calc_from_units_volt(
                     voltage_range, self.name, "dc_mixer_offset_Q", output_cfg
                 )
+                self._settings.out0_lo_freq_cal_type_default = output_cfg.get(
+                    "auto_lo_cal", LoCalEnum.OFF
+                )
             else:
                 self._settings.offset_ch1_path_I = helpers.calc_from_units_volt(
                     voltage_range, self.name, "dc_mixer_offset_I", output_cfg
                 )
                 self._settings.offset_ch1_path_Q = helpers.calc_from_units_volt(
                     voltage_range, self.name, "dc_mixer_offset_Q", output_cfg
+                )
+                self._settings.out1_lo_freq_cal_type_default = output_cfg.get(
+                    "auto_lo_cal", LoCalEnum.OFF
                 )
 
     def _configure_distortion_correction_latency_compensations(self) -> None:

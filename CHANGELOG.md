@@ -29,6 +29,7 @@
   - Add compilation of `TriggerCount` to `acquire_timetags` via the `TimetagAcquisitionStrategy` for QTM modules. (!976)
   - Fix a bug in `TriggerCount` where the compiled operation took 4ns longer than specified by the user, which was not bookkept by the compiler. (!976)
   - Insert `LatchReset` only on necessary portclocks and remove overlap check. (!991)
+  - Add support for automatic mixer calibration (AMC). AMC can be configured to run upon changing LO frequency or intermodulation frequency. (!1007)
 - Tests
   - Update test_compile_cz_gate with new style hardware config (!979)
   - Add nv centers to `test_extract_instrument_compiler_configs`. (!1003)
