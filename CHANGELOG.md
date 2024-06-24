@@ -7,10 +7,10 @@
 ### Breaking changes
 
 - NV Centers
-  - clock names in the hardware configurtion require the format `<qubit>.<tag>` (!966)
+  - clock names in the hardware configuration require the format `<qubit>.<tag>` (!966)
     - This is only a temporary convention until we finalize formalizing the new hardware config.
 - Compilation
-  - Make all hardware configs go through pydantic validation. (!1002)
+  - Make all hardware configs go through Pydantic validation. (!1002)
   - Compile dispersive measurements to subschedules. (997!)
 
 ### Deprecation
@@ -28,6 +28,7 @@
   - Add compilation of `MarkerPulse` to `set_digital` via the `DigitalPulseStrategy` for QTM modules. (!975)
   - Add compilation of `TriggerCount` to `acquire_timetags` via the `TimetagAcquisitionStrategy` for QTM modules. (!976)
   - Fix a bug in `TriggerCount` where the compiled operation took 4ns longer than specified by the user, which was not bookkept by the compiler. (!976)
+  - Fix potential NCO grid time misalignment due to loops and latency corrections, by adding checks for this in the compiler and raising `NcoOperationTimingError` if misalignment could occur. (!996)
   - Insert `LatchReset` only on necessary portclocks and remove overlap check. (!991)
   - Changes to NV center backend such that Rxy gates use Hermite Pulse. (!1188)
 - Tests
@@ -35,14 +36,14 @@
   - Add nv centers to `test_extract_instrument_compiler_configs`. (!1003)
 - Docs
   - Fix the description for the `APPEND` bin mode of the `TriggerCount` acquisition protocol, both in the Acquisitions tutorial and in the Acquisition Protocols reference guide. (!986)
-  - Fix tau definitions in documentation for time domain schedules. (!810)
+  - Fix tau definitions in the documentation for time domain schedules. (!810)
 - Schedules
   - Introduce proper control flow handling. (!947)
   - Quickfix resources for subschedules. (!990)
   - Fix for serialization of subschedules. (!992)
   - Remove unnecessary schedule helper functions. (!1011)
 - Compilation 
-  - Make nv center hardware configs compatible with new-style compilation configs, which includes defining a `OpticalModulator` hardware description, and convert all nv center hardware configs to new style. (!966)
+  - Make nv center hardware configs compatible with new-style compilation configs, which includes defining a `OpticalModulator` hardware description, and convert all nv center hardware configs to the new style. (!966)
   - Adjust schedule helper functions for subschedules and control flows. (!998)
   - Deprecate old-style hardware config dicts and restrict input of `hardware_compile` to a full `CompilationConfig`. (!1002)
 - Operations 

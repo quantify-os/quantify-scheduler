@@ -25,7 +25,10 @@ from quantify_scheduler.backends.qblox.conditional import (
     ConditionalManager,
 )
 from quantify_scheduler.backends.qblox.register_manager import RegisterManager
-from quantify_scheduler.backends.types.qblox import OpInfo, StaticHardwareProperties
+from quantify_scheduler.backends.types.qblox import (
+    OpInfo,
+    StaticHardwareProperties,
+)
 from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 
 if TYPE_CHECKING:
@@ -605,6 +608,7 @@ class QASMProgram:
         self.register_manager.free_register(register)
 
         last_elapsed_time = self._elapsed_times_in_loops.pop()
+
         self._elapsed_times_in_loops[-1] += last_elapsed_time * repetitions
 
     @contextmanager

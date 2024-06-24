@@ -22,11 +22,13 @@ from quantify_scheduler.backends.graph_compilation import (
     SimpleNodeConfig,
 )
 from quantify_scheduler.backends.qblox import compiler_container, constants
+from quantify_scheduler.backends.qblox.exceptions import NcoOperationTimingError
 from quantify_scheduler.backends.qblox.helpers import (
     _generate_legacy_hardware_config,
     _generate_new_style_hardware_compilation_config,
     assign_pulse_and_acq_info_to_devices,
     find_channel_names,
+    to_grid_time,
 )
 from quantify_scheduler.backends.qblox.operations import long_square_pulse
 from quantify_scheduler.backends.qblox.operations.pulse_library import LatchReset
@@ -56,6 +58,11 @@ from quantify_scheduler.operations.control_flow_library import (
     LoopOperation,
 )
 from quantify_scheduler.operations.operation import Operation
+from quantify_scheduler.operations.pulse_library import (
+    ResetClockPhase,
+    SetClockFrequency,
+    ShiftClockPhase,
+)
 from quantify_scheduler.schedules.schedule import (
     CompiledSchedule,
     Schedulable,
@@ -497,6 +504,8 @@ def hardware_compile(
     _add_clock_freqs_to_set_clock_frequency(schedule)
 
     validate_non_overlapping_stitched_pulse(schedule)
+
+    _check_nco_operations_on_nco_time_grid(schedule)
 
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         schedule, hardware_cfg
@@ -1177,3 +1186,83 @@ def _operation_end(abs_time_and_operation: Tuple[float, Operation]) -> float:
     abs_time = abs_time_and_operation[0]
     operation = abs_time_and_operation[1]
     return abs_time + operation.duration
+
+
+def _check_nco_operations_on_nco_time_grid(schedule: Schedule, **_: Any) -> Schedule:
+    """
+    Check whether NCO operations are on the 4ns time grid _and_ sub-schedules (including
+    control-flow) containing NCO operations start/end on the 4 ns time grid.
+    """
+    _check_nco_operations_on_nco_time_grid_recursively(schedule)
+    return schedule
+
+
+def _check_nco_operations_on_nco_time_grid_recursively(
+    operation: Operation | Schedule, schedulable: Schedulable | None = None
+) -> bool:
+    contains_nco_op = False
+    if isinstance(operation, Schedule):
+        for schedulable in operation.schedulables.values():
+            sub_operation = operation.operations[schedulable["operation_id"]]
+            contains_nco_op = (
+                contains_nco_op
+                or _check_nco_operations_on_nco_time_grid_recursively(
+                    sub_operation, schedulable
+                )
+            )
+        if contains_nco_op:
+            _check_nco_grid_timing(schedulable, operation)
+    elif isinstance(operation, ControlFlowOperation):
+        contains_nco_op = _check_nco_operations_on_nco_time_grid_recursively(
+            operation.body
+        )
+        if contains_nco_op:
+            _check_nco_grid_timing(schedulable, operation)
+    elif _is_nco_operation(operation):
+        _check_nco_grid_timing(schedulable, operation)
+        contains_nco_op = True
+    return contains_nco_op
+
+
+def _check_nco_grid_timing(
+    schedulable: Schedulable | None, operation: Operation | Schedule
+) -> None:
+    abs_time = 0 if schedulable is None else schedulable["abs_time"]
+    start_time = abs_time + operation.get("t0", 0)
+    if isinstance(operation, Schedule):
+        try:
+            to_grid_time(start_time, constants.NCO_TIME_GRID)
+            to_grid_time(operation.duration, constants.NCO_TIME_GRID)
+        except ValueError as e:
+            raise NcoOperationTimingError(
+                f"Schedule {operation.name}, which contains NCO related operations, "
+                f"cannot start at t={round(start_time*1e9)} ns and end at "
+                f"t={round((start_time+operation.duration)*1e9)} ns. This schedule "
+                f"must start and end on the {constants.NCO_TIME_GRID} ns time grid."
+            ) from e
+
+    elif isinstance(operation, ControlFlowOperation):
+        try:
+            to_grid_time(start_time, constants.NCO_TIME_GRID)
+            to_grid_time(operation.duration, constants.NCO_TIME_GRID)
+        except ValueError as e:
+            raise NcoOperationTimingError(
+                f"ControlFlow operation {operation.name}, which contains NCO related "
+                f"operations, cannot start at t={round(start_time*1e9)} ns and end at "
+                f"t={round((start_time+operation.duration)*1e9)} ns. This operation "
+                f"must start and end on the {constants.NCO_TIME_GRID} ns time grid."
+            ) from e
+
+    elif _is_nco_operation(operation):
+        try:
+            to_grid_time(start_time, constants.NCO_TIME_GRID)
+        except ValueError as e:
+            raise NcoOperationTimingError(
+                f"NCO related operation {operation} cannot start at "
+                f"t={round(start_time*1e9)} ns. This operation must be on the "
+                f"{constants.NCO_TIME_GRID} ns time grid."
+            ) from e
+
+
+def _is_nco_operation(operation: Operation) -> bool:
+    return isinstance(operation, (ShiftClockPhase, ResetClockPhase, SetClockFrequency))

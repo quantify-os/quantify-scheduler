@@ -309,7 +309,7 @@ def hardware_cfg_trigger_count_legacy():
 def hardware_cfg_cluster_latency_corrections_legacy():
     yield {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "latency_corrections": {"q0:mw-q0.01": 2e-8, "q1:mw-q1.01": -5e-9},
+        "latency_corrections": {"q0:mw-q0.01": 2e-8, "q1:mw-q1.01": -4e-9},
         "cluster0": {
             "instrument_type": "Cluster",
             "ref": "internal",

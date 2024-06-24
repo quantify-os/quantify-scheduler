@@ -33,6 +33,7 @@ from quantify_scheduler.backends.qblox import (
     q1asm_instructions,
     register_manager,
 )
+from quantify_scheduler.backends.qblox.exceptions import NcoOperationTimingError
 from quantify_scheduler.backends.qblox.operation_handling.acquisitions import (
     AcquisitionStrategyPartial,
 )
@@ -617,6 +618,20 @@ class SequencerCompiler(ABC):
 
         # program footer
         qasm.emit(q1asm_instructions.STOP)
+
+        # If we loop, and the duration of the loop is not on the 4 ns grid, NCO
+        # operations may be misaligned with the grid. So we check for this.
+        if repetitions > 1:
+            try:
+                helpers.to_grid_time(total_sequence_time, constants.NCO_TIME_GRID)
+            except ValueError as e:
+                raise NcoOperationTimingError(
+                    f"The schedule is repeated with a duration of {end_time} ns per "
+                    "iteration, which does not align with the grid time of "
+                    f"{constants.NCO_TIME_GRID} ns for NCO operations. The duration "
+                    "must adhere to this grid time to ensure proper alignment of NCO "
+                    "operations for each iteration."
+                ) from e
 
         if self.qasm_hook_func:
             self.qasm_hook_func(qasm)

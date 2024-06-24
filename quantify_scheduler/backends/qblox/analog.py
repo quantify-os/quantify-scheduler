@@ -24,6 +24,7 @@ from quantify_scheduler.backends.qblox.enums import (
     QbloxFilterConfig,
     QbloxFilterMarkerDelay,
 )
+from quantify_scheduler.backends.qblox.exceptions import NcoOperationTimingError
 from quantify_scheduler.backends.qblox.operation_handling.acquisitions import (
     SquareAcquisitionStrategy,
 )
@@ -55,10 +56,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
-
-
-class NcoOperationTimingError(ValueError):
-    """Exception thrown if there are timing errors for NCO operations."""
 
 
 class AnalogSequencerCompiler(SequencerCompiler):
@@ -286,6 +283,25 @@ class AnalogSequencerCompiler(SequencerCompiler):
                         "interm_freq_old": self.frequency,
                     }
                 )
+
+    def _get_latency_correction_ns(self, latency_correction: float) -> int:
+        # NCO grid alignment for NCO operations, _without_ latency corrections, is
+        # already checked in `_check_nco_operation_timing`. Therefore here we only check
+        # the latency corrections. Method overridden from superclass because only
+        # QRM/QCM modules have NCO operations.
+        latency_correction = super()._get_latency_correction_ns(latency_correction)
+        try:
+            helpers.to_grid_time(latency_correction * 1e-9, constants.NCO_TIME_GRID)
+        except ValueError as e:
+            raise NcoOperationTimingError(
+                f"The latency correction value of {latency_correction} ns for "
+                f"{self.port}-{self.clock} does not align with the grid time of "
+                f"{constants.NCO_TIME_GRID} ns for NCO operations. The latency "
+                "corrections must adhere to this grid time to ensure proper alignment "
+                "of all later operations in the schedule."
+            ) from e
+        else:
+            return latency_correction
 
     @staticmethod
     def _check_nco_operation_timing(
