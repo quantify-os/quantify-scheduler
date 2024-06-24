@@ -197,13 +197,15 @@ def get_subschedule_operation():
 
     def _get_subschedule_operation(
         operation: ScheduleBase | Operation, indices: list[int]
-    ) -> ScheduleBase | Operation:
+    ) -> ScheduleBase | Operation | None:
         if isinstance(operation, ScheduleBase) and len(indices) > 0:
             index: int = indices[0]
             schedulable = list(operation.schedulables.values())[index]
             inner_operation = operation.operations[schedulable["operation_id"]]
             return _get_subschedule_operation(inner_operation, indices[1:])
-        else:
+        elif len(indices) == 0:
             return operation
+        else:
+            return None
 
     yield _get_subschedule_operation

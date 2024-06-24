@@ -21,6 +21,7 @@ from quantify_scheduler.device_under_test.mock_setup import (
     set_up_mock_transmon_setup,
 )
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.control_flow_library import LoopOperation
 from quantify_scheduler.operations.gate_library import (
     CNOT,
@@ -932,3 +933,66 @@ def test_clock_resources_and_subschedules_compiles():
             name="test", device_compilation_config=simple_config
         ),
     )
+
+
+def test_long_time_trace_protocol(
+    device_cfg_transmon_example,
+    mock_setup_basic_transmon,
+    get_subschedule_operation,
+):
+    schedule = Schedule("LongTimeTrace")
+    schedule.add(Measure("q0", acq_protocol="LongTimeTrace", bin_mode=BinMode.APPEND))
+
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    q0 = mock_setup_basic_transmon["q0"]
+    q0.measure.num_points(11)
+    compiled_schedule = compile_circuit_to_device_with_config_validation(
+        schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    assert len(compiled_schedule.schedulables) == 1
+
+    long_time_trace_schedule = get_subschedule_operation(compiled_schedule, [0])
+    assert long_time_trace_schedule.name == "dispersive_measurement"
+    assert len(long_time_trace_schedule.schedulables) == 5
+
+    reset_clock_phase_operation = get_subschedule_operation(compiled_schedule, [0, 0])
+    assert reset_clock_phase_operation.name == "ResetClockPhase"
+
+    voltage_offset_operation = get_subschedule_operation(compiled_schedule, [0, 1])
+    assert voltage_offset_operation.name == "VoltageOffset"
+
+    loop_operation = get_subschedule_operation(compiled_schedule, [0, 2])
+    assert loop_operation.name == "LoopOperation"
+    assert loop_operation["control_flow_info"]["repetitions"] == 11
+
+    acquisition_operation = get_subschedule_operation(compiled_schedule, [0, 2]).body
+    assert acquisition_operation.name == "SSBIntegrationComplex"
+
+    voltage_offset_0_operation = get_subschedule_operation(compiled_schedule, [0, 3])
+    assert voltage_offset_0_operation.name == "VoltageOffset"
+
+    idle_operation = get_subschedule_operation(compiled_schedule, [0, 4])
+    assert idle_operation.name == "IdlePulse"
+
+
+def test_long_time_trace_invalid_bin_mode(
+    device_cfg_transmon_example,
+    mock_setup_basic_transmon,
+):
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    q0 = mock_setup_basic_transmon["q0"]
+    q0.measure.num_points(11)
+
+    schedule = Schedule("LongTimeTrace")
+    schedule.add(Measure("q0", acq_protocol="LongTimeTrace", bin_mode=BinMode.AVERAGE))
+
+    with pytest.raises(
+        ValueError,
+        match="For measurement protocol 'LongTimeTrace' "
+        "bin_mode set to 'average', "
+        "but only 'BinMode.APPEND' is supported.",
+    ):
+        compile_circuit_to_device_with_config_validation(
+            schedule, config=quantum_device.generate_compilation_config()
+        )

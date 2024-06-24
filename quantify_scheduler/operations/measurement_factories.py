@@ -245,7 +245,7 @@ def dispersive_measurement(  # noqa: PLR0915
 
         subschedule.add(pulse_op)
 
-        op = SSBIntegrationComplex(
+        acquisition = SSBIntegrationComplex(
             port=port,
             clock=clock,
             duration=acq_duration,
@@ -255,11 +255,9 @@ def dispersive_measurement(  # noqa: PLR0915
             t0=0,
         )
 
-        inner = Schedule("inner", repetitions=1)
-        inner.add(op)
         subschedule.add(
             LoopOperation(
-                inner,
+                body=acquisition,
                 repetitions=num_points,
             ),
             rel_time=acq_delay,

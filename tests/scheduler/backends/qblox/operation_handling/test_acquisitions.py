@@ -735,49 +735,50 @@ def test_thresholded_acquisition(
     assert sequencer_acquisition_metadata.acq_protocol == "ThresholdedAcquisition"
 
 
-def test_longtimetrace_protocol(
+def test_long_time_trace_protocol(
     mock_setup_basic_transmon_with_standard_params,
     qblox_hardware_config_transmon,
+    get_subschedule_operation,
 ):
 
-    qubit_name = "q0"
-    num_points = 11
-    hardware_config = qblox_hardware_config_transmon
-    mock_setup = mock_setup_basic_transmon_with_standard_params
-    quantum_device = mock_setup["quantum_device"]
-    quantum_device.hardware_config(hardware_config)
-    qubit = mock_setup[qubit_name]
-    qubit.measure.num_points(num_points)
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.hardware_config(qblox_hardware_config_transmon)
+    qubit = mock_setup_basic_transmon_with_standard_params["q0"]
+    qubit.measure.num_points(11)
 
     schedule = Schedule("LongTimeTrace")
-    schedule.add(
-        Measure(qubit_name, acq_protocol="LongTimeTrace", bin_mode=BinMode.APPEND)
-    )
+    schedule.add(Measure("q0", acq_protocol="LongTimeTrace", bin_mode=BinMode.APPEND))
 
     compiler = SerialCompiler("compiler", quantum_device=quantum_device)
     compiled_schedule = compiler.compile(schedule)
 
-    key_longtimetrace_sched = list(compiled_schedule.operations.keys())[0]
-    longtimetrace_schedule = compiled_schedule.operations[key_longtimetrace_sched]
-
-    assert longtimetrace_schedule.name == "dispersive_measurement"
-
-    key_loop_operation = list(longtimetrace_schedule.operations.keys())[2]
-    loop_operation = longtimetrace_schedule.operations[key_loop_operation]
-
-    assert loop_operation.name == "LoopOperation"
-    assert loop_operation["control_flow_info"]["repetitions"] == num_points
-
     compiled_instructions = compiled_schedule.compiled_instructions["cluster0"][
         "cluster0_module4"
     ]
-    sequencer_compiled_instructions = compiled_instructions["sequencers"]["seq0"]
-    program = sequencer_compiled_instructions["sequence"]["program"]
-    string_to_check = f"move {num_points},R"
-    assert string_to_check in program
 
     sequencer_acquisition_metadata = compiled_instructions["acq_metadata"]["seq0"]
     assert sequencer_acquisition_metadata.acq_protocol == "SSBIntegrationComplex"
+
+    sequencer_compiled_instructions = compiled_instructions["sequencers"]["seq0"]
+    program = sequencer_compiled_instructions["sequence"]["program"]
+    start = r"^\s*"
+    end = r"\s*(#.*)*\s*"
+    assert re.search(
+        rf"{start}reset_ph{end}"
+        rf"{start}set_awg_offs 8192,0{end}"
+        rf"{start}upd_param 4{end}"
+        rf"{start}wait 96{end}"
+        rf"{start}move 11,R10{end}"
+        rf"{start}loop13:{end}"
+        rf"{start}acquire 0,R0,4{end}"
+        rf"{start}add R0,1,R0{end}"
+        rf"{start}wait 996{end}"
+        rf"{start}loop R10,@loop13{end}"
+        rf"{start}set_awg_offs 0,0{end}"
+        rf"{start}upd_param 4{end}",
+        program,
+        flags=re.MULTILINE,
+    )
 
 
 def test_thresholded_acquisition_multiplex(
