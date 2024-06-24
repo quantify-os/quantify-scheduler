@@ -1897,7 +1897,8 @@ def _generate_new_style_hardware_compilation_config(
         "The hardware configuration dictionary is deprecated and will not be supported in "
         "quantify-scheduler >= 1.0.0. Please use a `HardwareCompilationConfig` instead. For "
         "more information on how to migrate from old- to new-style hardware specification, "
-        "please visit :ref:`sec-hardware-config-migration` in the documentation.",
+        "please visit https://quantify-os.org/docs/quantify-scheduler/dev/examples/hardware_config_migration.html "
+        "in the documentation.",
         FutureWarning,
     )
 
