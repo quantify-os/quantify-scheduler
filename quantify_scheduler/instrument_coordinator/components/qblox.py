@@ -518,6 +518,30 @@ class _AnalogModuleComponent(_ModuleComponentBase):
                     settings.mixer_corr_gain_ratio,
                 )
 
+    def arm_all_sequencers_in_program(self) -> None:
+        """Arm all the sequencers that are part of the program."""
+        for seq_name in self._program.get("sequencers", {}):
+            if seq_name in self._seq_name_to_idx_map:
+                seq_idx = self._seq_name_to_idx_map[seq_name]
+                self.instrument.arm_sequencer(sequencer=seq_idx)
+
+    def start(self) -> None:
+        """Clear data, arm sequencers and start sequencers."""
+        self.clear_data()
+        self.arm_all_sequencers_in_program()
+        self._start_armed_sequencers()
+
+    def _start_armed_sequencers(self):
+        """Start execution of the schedule: start armed sequencers."""
+        for idx in range(self._hardware_properties.number_of_sequencers):
+            state = self.instrument.get_sequencer_status(idx)
+            if state.state is SequencerStates.ARMED:
+                self.instrument.start_sequencer(idx)
+
+    def clear_data(self) -> None:
+        """Clears remaining data on the module. Module type specific function."""
+        return None
+
     @property
     @abstractmethod
     def _hardware_properties(self) -> _StaticAnalogModuleProperties:
