@@ -1,14 +1,28 @@
 # Changelog
 
-## Unreleased
-
-# Release 0.21.0
+## Release 0.21.0
 
 ### Release highlights
 
+#### Insert `LatchReset` only on necessary portclocks and remove overlap check. (!991)
+
+This change allows the user to schedule operations in parallel to `ConditionalReset`. 
+
+#### Changes to NV center backend such that Rxy gates use Hermite Pulse. (!1009)
+
+`Rxy` gates that are used by the NV center backend will now use Hermite pulses instead of DRAG pulses. 
+
+#### Make nv center hardware configs compatible with new-style compilation configs, which includes defining a `OpticalModulator` hardware description (!966)
+
+With the development of the new style hardware configuration, we now also support NV centers. See [our migration guide](https://quantify-os.org/docs/quantify-scheduler/dev/examples/hardware_config_migration.html) for more information.
+
+#### New `LongTimeTrace` acquisition protocol. (!958)
+
+The new `LongTimeTrace` protocol allows you to perform long traces that consist of repeated `SSBIntegrationComplex` measurements. 
+
 ### Breaking changes
 
-#### NV Centers
+#### NV Centers (!966)
 
 We introduce a temporary convention for the naming of clocks in the hardware configuration. For example, when we have
 
@@ -30,9 +44,9 @@ the clocks `qe0.spec` and `qe0.ge1` are required to follow the format `<qubit>.<
 
 #### Compilation
 
-##### Validating hardware configurations
+##### Validating hardware configurations (!1002)
 
-We are adding validators to various parts of the hardware configuration. The validators may raise a Pydantic `ValidationError` for existing hardware configurations if they contain faulty, but unused, entries. E.g. miss-typing a key in an unused port-clock combination (`lofreq` rather than `lo_freq`)
+We are adding validators to various parts of the hardware configuration. The validators may raise a Pydantic `ValidationError` for existing hardware configurations if they contain faulty, but unused, entries. For example, miss-typing a key in an unused port-clock combination (`lofreq` rather than `lo_freq`)
 
 ```python
 
@@ -52,7 +66,7 @@ will now raise a `ValidationError`:
  For further information visit https://errors.pydantic.dev/2.7/v/extra_forbidden
 ```
 
-##### `dispersive_measurement` now returns a subschedule
+##### `dispersive_measurement` now returns a subschedule (997!)
 
 The factory function `quantify_scheduler.operations.measurement_factories.dispersive_measurement` now returns a `Schedule`. Before it returned a single `Operation`, with different pulses and acquisitions added to `Operation.pulse_info` and `Operation.acq_info`, now it returns a `Schedule` with each `Pulse` and `Acquisition` added to it as a separate `Operation`. 
 
@@ -77,19 +91,27 @@ specification, please visit :ref:`sec-hardware-config-migration` in the document
 Please visit our [migration guide](https://quantify-os.org/docs/quantify-scheduler/dev/examples/hardware_config_migration.html) for more information.
 
 ### Bug Fixes
-  - Fix a bug in `TriggerCount` where the compiled operation took 4ns longer than specified by the user, which was not bookkept by the compiler. (!976)
-  - Fix potential NCO grid time misalignment due to loops and latency corrections, by adding checks for this in the compiler and raising `NcoOperationTimingError` if misalignment could occur. (!996)
-  - Quickfix resources for subschedules. (!990)
-  - Fix for serialization of subschedules. (!992)
 
-### Improvements and New Features
+#### TriggerCount duration
+We fixed a bug in `TriggerCount` where the compiled operation took 4 ns longer than specified by the user. (!976)
 
-  - Improve error message for conflicting acquisition protocols (!982)
-  - Fix overlapping operations warning due to floating point rounding errors (!989)
-  - Insert `LatchReset` only on necessary portclocks and remove overlap check. (!991)
-  - Changes to NV center backend such that Rxy gates use Hermite Pulse. (!1188)
-  - Make nv center hardware configs compatible with new-style compilation configs, which includes defining a `OpticalModulator` hardware description, and convert all nv center hardware configs to the new style. (!966)
-  - Introduce `LongTimeTrace` acquisition protocol. (!958)
+#### NCO grid misalignment due to loops and latency corrections
+We fixed a potential NCO grid time misalignment due to loops and latency corrections. (!996)
+If a loop operation or a latency correction causes an NCO operation to fall outside of a 4 ns grid, it will now raise an `NcoOperationTimingError` (!996), e.g.
+
+```
+NcoOperationTimingError: The latency correction value of 30 ns for q0:res-q0.ro does not align with the grid time of 4 ns for NCO operations. The latency corrections must adhere to this grid time to ensure proper alignment of all later operations in the schedule.
+```
+
+#### Support for ClockResources in subschedules
+
+Defining a `ClockResource` inside a subschedule no longer leads to a `ValueError` (!990) during compilation, e.g.
+
+```
+ValueError: Operation 'Measure('q0', acq_channel=None, acq_index=0, acq_protocol="None", bin_mode=None, feedback_trigger_label=None)' contains an unknown clock 'q0.ro'; ensure this resource has been added to the schedule or to the device config.
+```
+
+
 
 
 ### Merged branches and closed issues
@@ -171,20 +193,20 @@ This release comes with an interface for configuring hardware distortion correct
 
 ### Breaking changes
 
-The Zhinst backend is now optional, meaning that installing `quantify-scheduler` no longer installs packages that are required by this backend. For users of the Zhinst backend that want to upgrade to `v0.20.0` via `pip install --upgrade quantify-scheduler` nothing will break, but for fresh environments, you will have to run `pip install quantify-scheduler[zhinst]`.
+The Zhinst backend is now optional, meaning that installing `quantify-scheduler` no longer installs packages that are required by this backend. For users of the Zhinst backend that want to upgrade to `v0.20.0` via `pip install --upgrade quantify-scheduler` nothing will break, but for fresh environments, you will have to run `pip install quantify-scheduler[zhinst]`. (!887)
 
 
 ### Release Highlights
 
-- `sigma` is a new parameter that can be passed to the operations `GaussPulse` and `DragPulse` which sets the width of the Gaussian envelope in seconds. 
+- `sigma` is a new parameter that can be passed to the operations `GaussPulse` and `DragPulse` which sets the width of the Gaussian envelope in seconds. (!926)
 
-- For the Qblox backend, operations are now allowed to live on a 1 ns time grid, except NCO-related instructions   (`set_ph`, `set_ph_delta`, `reset_ph` and `set_freq`) that still require to start on a 4 ns time grid.
+- For the Qblox backend, operations are now allowed to live on a 1 ns time grid, with the exception of NCO-related instructions   (`set_ph`, `set_ph_delta`, `reset_ph` and `set_freq`) that still require to start on 4 ns time grid. (!936)
 
-- `quantify-scheduler` is now compatible with Python 3.10, 3.11 and 3.12. The current Zhinst backend still requires 3.8 or 3.9.
+- `quantify-scheduler` is now compatible with Python 3.10, 3.11 and 3.12. The current Zhinst backend still requires 3.8 or 3.9. (!887)
 
-- Two new schedules are added to `quantify_scheduler.schedules` to perform long time-traces: `long_time_trace` and `long_time_trace_with_qubit`.
+- Two new schedules are added to `quantify_scheduler.schedules` to perform long time-traces: `long_time_trace` and `long_time_trace_with_qubit`. (!878)
 
-- The time between uploading and executing `Schedules` to a Qblox Cluster has reduced, leading to an execution speedup for experiments.
+- The time between uploading and executing `Schedules` to a Qblox Cluster has reduced, leading to an execution speedup for experiments. (!876, !955)
 
 
 
