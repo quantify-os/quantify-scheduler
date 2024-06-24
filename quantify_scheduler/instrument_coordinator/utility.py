@@ -66,6 +66,33 @@ def search_settable_param(
     return root_param
 
 
+def parameter_value_same_as_cache(
+    instrument: InstrumentBase, parameter_name: str, val: Any
+) -> bool:
+    """
+    Returns whether the value of a QCoDeS parameter is the same as the value in cache.
+
+    Parameters
+    ----------
+    instrument:
+        The QCoDeS instrument to set the parameter on.
+    parameter_name:
+        Name of the parameter to set.
+    val:
+        Value to set it to.
+
+    Returns
+    -------
+    bool
+
+    """
+    parameter = search_settable_param(
+        instrument=instrument, nested_parameter_name=parameter_name
+    )
+    # parameter.cache() throws for non-gettable parameters if the cache is invalid. This order prevents the exception.
+    return parameter.cache.valid and parameter.cache() == val
+
+
 def lazy_set(instrument: InstrumentBase, parameter_name: str, val: Any) -> None:
     """
     Set the value of a QCoDeS parameter only if it is different from the value in cache.
@@ -83,7 +110,7 @@ def lazy_set(instrument: InstrumentBase, parameter_name: str, val: Any) -> None:
         instrument=instrument, nested_parameter_name=parameter_name
     )
     # parameter.cache() throws for non-gettable parameters if the cache is invalid. This order prevents the exception.
-    if not parameter.cache.valid or parameter.cache() != val:
+    if not parameter_value_same_as_cache(instrument, parameter_name, val):
         parameter.set(val)
     else:
         logger.info(

@@ -738,6 +738,40 @@ hardware_compilation_cfg = {
 
 ```
 
+
+#### Automatic mixer calibration
+```{versionadded} 0.21.0
+Automatic mixer calibration was added.
+```
+The mixer correction settings above can also be automatically determined by the hardware. It is possible to calibrate only the LO leakage (controlled by `dc_offset_i` and `dc_offset_q`) automatically, or only the sidebands (controlled `amp_ratio` and `phase_error`), or both.
+
+Automatic LO leakage calibration can be turned on with the setting {attr}`~quantify_scheduler.backends.types.qblox.QbloxMixerCorrections.auto_lo_cal`, which can take the values `"off"`, `"on_interm_freq_change"` and `"on_lo_interm_freq_change"`. This will automatically find values for `"dc_offset_i"` and `"dc_offset_q"`, which means these fields should not be specified if using automatic calibration.
+
+Automatic sidebands calibration can be turned on with the setting {attr}`~quantify_scheduler.backends.types.qblox.QbloxMixerCorrections.auto_sideband_cal` which can take the values `"off"` and `"on_interm_freq_change"`. This will automatically find values for `"amp_ratio"` and `"phase_error"`, which means these fields should not be specified if using automatic calibration.
+
+The automatic mixer correction settings are also specified in the `"mixer_corrections"` field in the hardware options. See the following example.
+
+```{code-block} python
+---
+emphasize-lines: 8,9
+linenos: true
+---
+hardware_compilation_cfg = {
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+    "hardware_description": {...},
+    "connectivity": {...},
+    "hardware_options": {
+        "mixer_corrections": {
+            "q4:mw-q4.01": {
+                "auto_lo_cal": "on_lo_interm_freq_change",
+                "auto_sideband_cal": "on_interm_freq_change",
+            }
+        }
+    }
+}
+
+```
+
 ### Gain and attenuation
 
 For QRM, QRM-RF and QCM-RF modules you can set the gain and attenuation parameters in dB in the `"hardware_options"`.

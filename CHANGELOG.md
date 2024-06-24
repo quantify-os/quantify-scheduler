@@ -31,6 +31,7 @@
   - Fix potential NCO grid time misalignment due to loops and latency corrections, by adding checks for this in the compiler and raising `NcoOperationTimingError` if misalignment could occur. (!996)
   - Insert `LatchReset` only on necessary portclocks and remove overlap check. (!991)
   - Changes to NV center backend such that Rxy gates use Hermite Pulse. (!1188)
+  - Add support for automatic mixer calibration (AMC). AMC can be configured to run upon changing LO frequency or intermodulation frequency. (!1007)
 - Tests
   - Update test_compile_cz_gate with new style hardware config (!979)
   - Add nv centers to `test_extract_instrument_compiler_configs`. (!1003)
