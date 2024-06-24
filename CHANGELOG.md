@@ -2,18 +2,95 @@
 
 ## Unreleased
 
+# Release 0.21.0
+
 ### Release highlights
 
 ### Breaking changes
 
-- NV Centers
-  - clock names in the hardware configuration require the format `<qubit>.<tag>` (!966)
-    - This is only a temporary convention until we finalize formalizing the new hardware config.
-- Compilation
-  - Make all hardware configs go through Pydantic validation. (!1002)
-  - Compile dispersive measurements to subschedules. (997!)
+#### NV Centers
+
+We introduce a temporary convention for the naming of clocks in the hardware configuration. For example, when we have
+
+```python
+    "hardware_options": {
+        "modulation_frequencies": {
+            "qe0:mw-qe0.spec": {
+                "interm_freq": 200000000.0,
+                "lo_freq": null
+            },
+            "qe0:optical_control-qe0.ge1": {
+            	"interm_freq": 200e6,
+            	"lo_freq": null
+            },
+    ...
+```
+
+the clocks `qe0.spec` and `qe0.ge1` are required to follow the format `<qubit>.<tag>`.  As mentioned, this is only a temporary convention until we finalize our work on redesigning the hardware configuration.
+
+#### Compilation
+
+##### Validating hardware configurations
+
+We are adding validators to various parts of the hardware configuration. The validators may raise a Pydantic `ValidationError` for existing hardware configurations if they contain faulty, but unused, entries. E.g. miss-typing a key in an unused port-clock combination (`lofreq` rather than `lo_freq`)
+
+```python
+
+        "hardware_options": {
+            "modulation_frequencies": {
+                "q0:res-q0.ro": {"lo_freq": LO_FREQ_READOUT},
+                "q0:mw-q0.01": {"lo_freq": LO_FREQ_QUBIT},
+                "q1:res-q1.ro": {"lofreq": LO_FREQ_READOUT},
+```
+
+will now raise a `ValidationError`:
+
+```
+ 1 validation error for QbloxHardwareCompilationConfig
+ hardware_options.modulation_frequencies.`q1:mw-q1.01`.lofreq
+ Extra inputs are not permitted [type=extra_forbidden, input_value=3900000000.0, input_type=float]
+ For further information visit https://errors.pydantic.dev/2.7/v/extra_forbidden
+```
+
+##### `dispersive_measurement` now returns a subschedule
+
+The factory function `quantify_scheduler.operations.measurement_factories.dispersive_measurement` now returns a `Schedule`. Before it returned a single `Operation`, with different pulses and acquisitions added to `Operation.pulse_info` and `Operation.acq_info`, now it returns a `Schedule` with each `Pulse` and `Acquisition` added to it as a separate `Operation`. 
+
+##### `qblox-instruments` pinned to `0.14.0`
+
+Trying to import anything from the `qblox` backend, will raise a `DriverVersionError` if the `qblox-instruments` package is not upgraded to `0.14`, e.g.
+
+```
+DriverVersionError: The installed Qblox driver (qblox-instruments) version 0.13.0 is not supported by backend. 
+Please install one of the supported versions (0.14) in order to use this backend.
+```
 
 ### Deprecation
+Compiling and running schedules using the old-style hardware configuration will now raise a `FutureWarning`:
+
+```
+FutureWarning: The hardware configuration dictionary is deprecated and will not be supported in quantify-scheduler >= 1.0.0. 
+Please use a `HardwareCompilationConfig` instead. For more information on how to migrate from old- to new-style hardware 
+specification, please visit :ref:`sec-hardware-config-migration` in the documentation
+``` 
+
+Please visit our [migration guide](https://quantify-os.org/docs/quantify-scheduler/dev/examples/hardware_config_migration.html) for more information.
+
+### Bug Fixes
+  - Fix a bug in `TriggerCount` where the compiled operation took 4ns longer than specified by the user, which was not bookkept by the compiler. (!976)
+  - Fix potential NCO grid time misalignment due to loops and latency corrections, by adding checks for this in the compiler and raising `NcoOperationTimingError` if misalignment could occur. (!996)
+  - Quickfix resources for subschedules. (!990)
+  - Fix for serialization of subschedules. (!992)
+
+### Improvements and New Features
+
+  - Improve error message for conflicting acquisition protocols (!982)
+  - Fix overlapping operations warning due to floating point rounding errors (!989)
+  - Insert `LatchReset` only on necessary portclocks and remove overlap check. (!991)
+  - Changes to NV center backend such that Rxy gates use Hermite Pulse. (!1188)
+  - Make nv center hardware configs compatible with new-style compilation configs, which includes defining a `OpticalModulator` hardware description, and convert all nv center hardware configs to the new style. (!966)
+  - Introduce `LongTimeTrace` acquisition protocol. (!958)
+
 
 ### Merged branches and closed issues
 
@@ -22,7 +99,6 @@
 - Error and Warning messages
   - Improve error message for conflicting acquisition protocols (!982)
   - Fix overlapping operations warning due to floating point rounding errors (!989)
-  - Remove warning when latency corrections are not on a 4ns timegrid (!994)
 - Qblox backend
   - Change update param insertion logic. (!980)
   - Add compilation of `MarkerPulse` to `set_digital` via the `DigitalPulseStrategy` for QTM modules. (!975)
