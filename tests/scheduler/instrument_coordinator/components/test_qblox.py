@@ -3,9 +3,9 @@
 """Tests for Qblox instrument coordinator components."""
 import os
 from collections import defaultdict
-from copy import deepcopy
+from copy import copy, deepcopy
 from typing import List, Optional
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, call
 
 import numpy as np
 import pytest
@@ -22,7 +22,7 @@ from qblox_instruments import (
 from qcodes.instrument import Instrument, InstrumentChannel, InstrumentModule
 
 from quantify_core.data.handling import get_datadir
-from quantify_scheduler.backends import SerialCompiler
+from quantify_scheduler.backends.graph_compilation import SerialCompiler
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.enums import BinMode
@@ -1409,3 +1409,149 @@ def test_channel_map_off_with_marker_pulse(
     for param_name, param in seq0.parameters.items():
         if "connect" in param_name:
             assert param.get() == "off"
+
+
+def test_amc_setting_is_set_on_instrument(
+    mocker,
+    mock_setup_basic_transmon_with_standard_params,
+    schedule_with_measurement_q2,
+    hardware_cfg_rf,
+    make_cluster_component,
+):
+    hardware_config = copy(hardware_cfg_rf)
+    hardware_config["hardware_options"]["mixer_corrections"] = {
+        "q2:mw-q2.01": {
+            "auto_lo_cal": "on_lo_freq_change",
+            "auto_sideband_cal": "off",
+        },
+        "q2:res-q2.ro": {
+            "auto_lo_cal": "on_lo_interm_freq_change",
+            "auto_sideband_cal": "on_interm_freq_change",
+        },
+    }
+
+    cluster_name = "cluster0"
+    cluster = make_cluster_component(cluster_name)
+
+    mock_setup = mock_setup_basic_transmon_with_standard_params
+    mock_setup["quantum_device"].hardware_config(hardware_cfg_rf)
+    mock_setup["q2"].clock_freqs.readout(7.3e9)
+    mock_setup["q2"].clock_freqs.f01(6.03e9)
+    compilation_config = mock_setup["quantum_device"].generate_compilation_config()
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        schedule=schedule_with_measurement_q2, config=compilation_config
+    )
+    prog = compiled_schedule["compiled_instructions"]
+
+    qcm_rf = cluster._cluster_modules[f"{cluster_name}_module2"]
+    qrm_rf = cluster._cluster_modules[f"{cluster_name}_module4"]
+
+    try:
+        mocker.patch.object(qcm_rf.instrument, "out0_lo_cal")
+        mocker.patch.object(qcm_rf.instrument, "out1_lo_cal")
+        mocker.patch.object(qcm_rf.instrument.sequencer0, "sideband_cal")
+        mocker.patch.object(qrm_rf.instrument, "out0_in0_lo_cal")
+        mocker.patch.object(qrm_rf.instrument.sequencer0, "sideband_cal")
+    except AttributeError:
+        pytest.xfail(
+            reason="AMC is not available in the installed qblox-instruments version."
+        )
+
+    # Call it twice to check that calibration is only done once.
+    cluster.prepare(prog[cluster_name])
+    cluster.prepare(prog[cluster_name])
+
+    qcm_rf.instrument.out0_lo_cal.assert_called_once()
+    qcm_rf.instrument.out1_lo_cal.assert_not_called()  # Not used in schedule
+    qcm_rf.instrument.sequencer0.sideband_cal.assert_not_called()  # Turned off
+    qrm_rf.instrument.out0_in0_lo_cal.assert_called_once()
+    qrm_rf.instrument.sequencer0.sideband_cal.assert_called_once()
+
+
+def test_amc_setting_is_set_on_instrument_change_frequency(
+    mocker,
+    mock_setup_basic_transmon_with_standard_params,
+    schedule_with_measurement_q2,
+    hardware_cfg_rf,
+    make_cluster_component,
+):
+    hardware_config = copy(hardware_cfg_rf)
+    hardware_config["hardware_options"]["mixer_corrections"] = {
+        "q2:mw-q2.01": {
+            "auto_lo_cal": "on_lo_freq_change",
+            "auto_sideband_cal": "off",
+        },
+        "q2:res-q2.ro": {
+            "auto_lo_cal": "on_lo_interm_freq_change",
+            "auto_sideband_cal": "on_interm_freq_change",
+        },
+    }
+
+    cluster_name = "cluster0"
+    cluster = make_cluster_component(cluster_name)
+
+    mock_setup = mock_setup_basic_transmon_with_standard_params
+    mock_setup["quantum_device"].hardware_config(hardware_cfg_rf)
+    mock_setup["q2"].clock_freqs.readout(7.3e9)
+    mock_setup["q2"].clock_freqs.f01(6.03e9)
+    compilation_config = mock_setup["quantum_device"].generate_compilation_config()
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        schedule=schedule_with_measurement_q2, config=compilation_config
+    )
+    prog = compiled_schedule["compiled_instructions"]
+
+    qcm_rf = cluster._cluster_modules[f"{cluster_name}_module2"]
+    qrm_rf = cluster._cluster_modules[f"{cluster_name}_module4"]
+
+    try:
+        mocker.patch.object(qcm_rf.instrument, "out0_lo_cal")
+        mocker.patch.object(qcm_rf.instrument, "out1_lo_cal")
+        mocker.patch.object(qcm_rf.instrument.sequencer0, "sideband_cal")
+        mocker.patch.object(qrm_rf.instrument, "out0_in0_lo_cal")
+        mocker.patch.object(qrm_rf.instrument.sequencer0, "sideband_cal")
+    except AttributeError:
+        pytest.xfail(
+            reason="AMC is not available in the installed qblox-instruments version."
+        )
+
+    # First round:
+    # QRM has LO frequency 7.2e9, NCO frequency 1e8
+    # QCM has LO frequency 5.98e9, NCO frequency 5e7
+    cluster.prepare(prog[cluster_name])
+    cluster.start()
+
+    # Run a second time with different frequencies
+    mock_setup["q2"].clock_freqs.readout(7.2e9)
+    mock_setup["q2"].clock_freqs.f01(6.04e9)
+    compilation_config = mock_setup["quantum_device"].generate_compilation_config()
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        schedule=schedule_with_measurement_q2, config=compilation_config
+    )
+    prog = compiled_schedule["compiled_instructions"]
+
+    # Check calls and make fresh mocks for second round (only for methods expected to be
+    # called twice).
+    qcm_rf.instrument.out0_lo_cal.assert_called_once()
+    qrm_rf.instrument.out0_in0_lo_cal.assert_called_once()
+    qrm_rf.instrument.sequencer0.sideband_cal.assert_called_once()
+    mocker.patch.object(qcm_rf.instrument, "out0_lo_cal")
+    mocker.patch.object(qrm_rf.instrument, "out0_in0_lo_cal")
+    mocker.patch.object(qrm_rf.instrument.sequencer0, "sideband_cal")
+
+    # Second round:
+    # QRM has LO frequency 7.2e9, NCO frequency 0.0
+    # QCM has LO frequency 5.99e9, NCO frequency 5e7
+    cluster.prepare(prog[cluster_name])
+    cluster.start()
+
+    qcm_rf.instrument.out0_lo_cal.assert_called_once()
+    qcm_rf.instrument.out1_lo_cal.assert_not_called()
+    qcm_rf.instrument.sequencer0.sideband_cal.assert_not_called()  # Turned off
+    qrm_rf.instrument.out0_in0_lo_cal.assert_called_once()
+    qrm_rf.instrument.sequencer0.sideband_cal.assert_called_once()

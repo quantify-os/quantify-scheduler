@@ -2,6 +2,8 @@
 # Licensed according to the LICENCE file on the main branch
 """Example old-style Qblox hardware config dictionary of a nv-center setup for legacy support."""
 
+from quantify_scheduler.backends.qblox.enums import LoCalEnum, SidebandCalEnum
+
 hardware_config = {
     "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
     "cluster0": {
@@ -13,6 +15,7 @@ hardware_config = {
             "sequence_to_file": False,
             "complex_output_0": {
                 "lo_freq": None,
+                "auto_lo_cal": LoCalEnum.OFF,
                 "dc_mixer_offset_I": 0.0,
                 "dc_mixer_offset_Q": 0.0,
                 "portclock_configs": [
@@ -20,6 +23,7 @@ hardware_config = {
                         "port": "qe0:mw",
                         "clock": "qe0.spec",
                         "interm_freq": 200000000.0,
+                        "auto_sideband_cal": SidebandCalEnum.OFF,
                         "mixer_amp_ratio": 0.9999,
                         "mixer_phase_error_deg": -4.2,
                     }

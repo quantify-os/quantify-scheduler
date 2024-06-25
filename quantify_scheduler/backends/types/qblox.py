@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
 from dataclasses import field as dataclasses_field
 from typing import (
@@ -21,13 +22,16 @@ from typing import (
 
 from dataclasses_json import DataClassJsonMixin
 from pydantic import Field, field_validator
+from pydantic.functional_validators import model_validator
 from typing_extensions import Annotated
 
 from quantify_scheduler.backends.qblox import constants, q1asm_instructions
 from quantify_scheduler.backends.qblox.enums import (
     DistortionCorrectionLatencyEnum,
+    LoCalEnum,
     QbloxFilterConfig,
     QbloxFilterMarkerDelay,
+    SidebandCalEnum,
 )
 from quantify_scheduler.backends.types.common import (
     Connectivity,
@@ -36,10 +40,15 @@ from quantify_scheduler.backends.types.common import (
     HardwareOptions,
     IQMixerDescription,
     LocalOscillatorDescription,
+    MixerCorrections,
     OpticalModulatorDescription,
     SoftwareDistortionCorrection,
 )
 from quantify_scheduler.structure.model import DataStructure
+
+
+class ValidationWarning(UserWarning):
+    """Warning type for dubious arguments passed to pydantic models."""
 
 
 @dataclass(frozen=True)
@@ -365,6 +374,16 @@ class AnalogModuleSettings(BaseModuleSettings):
     """The DC offset on path_I of channel 1."""
     offset_ch1_path_Q: Optional[float] = None
     """The DC offset on path_Q of channel 1."""
+    out0_lo_freq_cal_type_default: LoCalEnum = LoCalEnum.OFF
+    """
+    Setting that controls whether the mixer of channel 0 is calibrated upon changing the
+    LO and/or intermodulation frequency.
+    """
+    out1_lo_freq_cal_type_default: LoCalEnum = LoCalEnum.OFF
+    """
+    Setting that controls whether the mixer of channel 1 is calibrated upon changing the
+    LO and/or intermodulation frequency.
+    """
     in0_gain: Optional[int] = None
     """The gain of input 0."""
     in1_gain: Optional[int] = None
@@ -551,12 +570,17 @@ class AnalogSequencerSettings(SequencerSettings):
     before the start of the experiment."""
     modulation_freq: Optional[float] = None
     """Specifies the frequency of the modulation."""
-    mixer_corr_phase_offset_degree: float = 0.0
+    mixer_corr_phase_offset_degree: Optional[float] = None
     """The phase shift to apply between the I and Q channels, to correct for quadrature
     errors."""
-    mixer_corr_gain_ratio: float = 1.0
+    mixer_corr_gain_ratio: Optional[float] = None
     """The gain ratio to apply in order to correct for imbalances between the I and Q
     paths of the mixer."""
+    auto_sideband_cal: SidebandCalEnum = SidebandCalEnum.OFF
+    """
+    Setting that controls whether the mixer is calibrated upon changing the
+    intermodulation frequency.
+    """
     integration_length_acq: Optional[int] = None
     """Integration length for acquisitions. Must be a multiple of 4 ns."""
     thresholded_acq_threshold: Optional[float] = None
@@ -672,6 +696,8 @@ class AnalogSequencerSettings(SequencerSettings):
             max_value=constants.MAX_MIXER_AMP_RATIO,
         )
 
+        auto_sideband_cal = sequencer_cfg.get("auto_sideband_cal", SidebandCalEnum.OFF)
+
         thresholded_acq_threshold = extract_and_verify_range(
             param_name="thresholded_acq_threshold",
             settings=sequencer_cfg,
@@ -706,6 +732,7 @@ class AnalogSequencerSettings(SequencerSettings):
             thresholded_acq_rotation=thresholded_acq_rotation,
             thresholded_acq_threshold=thresholded_acq_threshold,
             ttl_acq_threshold=ttl_acq_threshold,
+            auto_sideband_cal=auto_sideband_cal,
         )
 
 
@@ -1140,6 +1167,90 @@ port that is connected to this port-clock combination.
 """
 
 
+class QbloxMixerCorrections(MixerCorrections):
+    """
+    Mixer correction settings with defaults set to None, and extra mixer correction
+    settings for _automated_ mixer correction.
+
+    These settings will be set on each control-hardware output
+    port that is connected to this port-clock combination.
+
+    .. admonition:: Example
+        :class: dropdown
+
+        .. code-block:: python
+
+            hardware_compilation_config.hardware_options.mixer_corrections = {
+                "q0:res-q0.ro": {
+                    auto_lo_cal="on_lo_interm_freq_change",
+                    auto_sideband_cal="on_interm_freq_change"
+                },
+            }
+    """
+
+    dc_offset_i: Optional[float] = None
+    """The DC offset on the I channel used for this port-clock combination."""
+    dc_offset_q: Optional[float] = None
+    """The DC offset on the Q channel used for this port-clock combination."""
+    amp_ratio: Optional[float] = None
+    """The mixer gain ratio used for this port-clock combination."""
+    phase_error: Optional[float] = None
+    """The mixer phase error used for this port-clock combination."""
+    auto_lo_cal: LoCalEnum = LoCalEnum.OFF
+    """
+    Setting that controls whether the mixer is calibrated upon changing the LO and/or
+    intermodulation frequency.
+    """
+
+    auto_sideband_cal: SidebandCalEnum = SidebandCalEnum.OFF
+    """
+    Setting that controls whether the mixer is calibrated upon changing the
+    intermodulation frequency.
+    """
+
+    @model_validator(mode="before")
+    @classmethod
+    def warn_if_mixed_auto_and_manual_calibration(
+        cls, data: dict[str, Any]
+    ) -> dict[str, Any]:
+        """
+        Warn if there is mixed usage of automatic mixer calibration (the auto_*
+        settings) and manual mixer correction settings.
+        """
+        # This is a "before" mode pydantic validator because we use
+        # validate_assignment=True, which means an "after" mode validator would fall
+        # into an infinite recursion loop.
+        if data.get("auto_lo_cal", LoCalEnum.OFF) != LoCalEnum.OFF and not (
+            data.get("dc_offset_i") is None and data.get("dc_offset_q") is None
+        ):
+            warnings.warn(
+                f"Setting `auto_lo_cal={data['auto_lo_cal']}` will overwrite settings "
+                f"`dc_offset_i={data.get('dc_offset_i')}` and "
+                f"`dc_offset_q={data.get('dc_offset_q')}`. To suppress this warning, do not "
+                "set either `dc_offset_i` or `dc_offset_q` for this port-clock.",
+                ValidationWarning,
+            )
+            data["dc_offset_i"] = None
+            data["dc_offset_q"] = None
+
+        if data.get(
+            "auto_sideband_cal", SidebandCalEnum.OFF
+        ) != SidebandCalEnum.OFF and not (
+            data.get("amp_ratio") is None and data.get("phase_error") is None
+        ):
+            warnings.warn(
+                f"Setting `auto_sideband_cal={data['auto_sideband_cal']}` will "
+                f"overwrite settings `amp_ratio={data.get('amp_ratio')}` and "
+                f"`phase_error={data.get('phase_error')}`. To suppress this warning, do not "
+                "set either `amp_ratio` or `phase_error` for this port-clock.",
+                ValidationWarning,
+            )
+            data["amp_ratio"] = None
+            data["phase_error"] = None
+
+        return data
+
+
 class SequencerOptions(DataStructure):
     """
     Configuration options for a sequencer.
@@ -1265,6 +1376,11 @@ class QbloxHardwareOptions(HardwareOptions):
     """
     Dictionary containing the attenuation settings (values) that should be applied
     to the inputs that are connected to a certain port-clock combination (keys).
+    """
+    mixer_corrections: Optional[Dict[str, QbloxMixerCorrections]] = None
+    """
+    Dictionary containing the qblox-specific mixer corrections (values) that should be
+    used for signals on a certain port-clock combination (keys).
     """
     sequencer_options: Optional[Dict[str, SequencerOptions]] = None
     """

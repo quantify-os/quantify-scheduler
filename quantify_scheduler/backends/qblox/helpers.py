@@ -1311,8 +1311,10 @@ def _generate_legacy_hardware_config(
             for config, hw_config_key, hw_compilation_config_value in [
                 (pc_config, "mixer_amp_ratio", pc_mix_corr.amp_ratio),
                 (pc_config, "mixer_phase_error_deg", pc_mix_corr.phase_error),
+                (pc_config, "auto_sideband_cal", pc_mix_corr.auto_sideband_cal),
                 (channel_config, "dc_mixer_offset_I", pc_mix_corr.dc_offset_i),
                 (channel_config, "dc_mixer_offset_Q", pc_mix_corr.dc_offset_q),
+                (channel_config, "auto_lo_cal", pc_mix_corr.auto_lo_cal),
             ]:
                 config[hw_config_key] = hw_compilation_config_value
 
@@ -1567,6 +1569,12 @@ def _generate_new_style_hardware_compilation_config(
                     new_style_config["hardware_options"]["modulation_frequencies"][
                         port_clock
                     ]["lo_freq"] = channel_cfg_value
+            elif channel_cfg_key == "auto_lo_cal":
+                # Set auto_lo_cal for all port-clock combinations (RF modules)
+                for port_clock in channel_port_clocks:
+                    new_style_config["hardware_options"]["mixer_corrections"][
+                        port_clock
+                    ]["auto_lo_cal"] = channel_cfg_value
             elif channel_cfg_key == "dc_mixer_offset_I":
                 # Set mixer offsets for all port-clock combinations (RF modules)
                 for port_clock in channel_port_clocks:
@@ -1625,6 +1633,11 @@ def _generate_new_style_hardware_compilation_config(
                         new_style_config["hardware_options"]["mixer_corrections"][
                             port_clock
                         ]["amp_ratio"] = portclock_cfg.pop("mixer_amp_ratio")
+                    if "auto_sideband_cal" in portclock_cfg:
+                        # Set auto_sideband_cal from portclock config:
+                        new_style_config["hardware_options"]["mixer_corrections"][
+                            port_clock
+                        ]["auto_sideband_cal"] = portclock_cfg.pop("auto_sideband_cal")
                     if "mixer_phase_error_deg" in portclock_cfg:
                         # Set intermodulation freqs from portclock config:
                         new_style_config["hardware_options"]["mixer_corrections"][

@@ -36,7 +36,11 @@ from xarray import DataArray, Dataset
 
 from quantify_core.data.handling import get_datadir
 from quantify_scheduler.backends.qblox import constants, driver_version_check
-from quantify_scheduler.backends.qblox.enums import ChannelMode
+from quantify_scheduler.backends.qblox.enums import (
+    ChannelMode,
+    LoCalEnum,
+    SidebandCalEnum,
+)
 from quantify_scheduler.backends.qblox.helpers import (
     single_scope_mode_acquisition_raise,
 )
@@ -50,6 +54,7 @@ from quantify_scheduler.instrument_coordinator.components import base
 from quantify_scheduler.instrument_coordinator.utility import (
     check_already_existing_acquisition,
     lazy_set,
+    parameter_value_same_as_cache,
     search_settable_param,
 )
 
@@ -137,6 +142,12 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
         }
 
         self._program = {}
+
+        self._nco_frequency_changed: dict[int, bool] = {}
+        """
+        Private attribute for automatic mixer calibration. The keys are sequencer
+        indices. The `prepare` method resets this to an empty dictionary.
+        """
 
     # Necessary to override the `instrument` attr from `InstrumentCoordinatorComponentBase`,
     # `Module` is a qcodes `InstrumentModule` subclass
@@ -267,6 +278,7 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
     def prepare(self, program: Dict[str, dict]) -> None:
         """Store program containing sequencer settings."""
         self._program = program
+        self._nco_frequency_changed = {}
 
     def disable_sync(self) -> None:
         """Disable sync for all sequencers."""
@@ -310,12 +322,21 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
         self._set_parameter(
             self.instrument[f"sequencer{seq_idx}"], "mod_en_awg", settings.nco_en
         )
+
         if settings.nco_en:
+            self._nco_frequency_changed[seq_idx] = not parameter_value_same_as_cache(
+                self.instrument[f"sequencer{seq_idx}"],
+                "nco_freq",
+                settings.modulation_freq,
+            )
             self._set_parameter(
                 self.instrument[f"sequencer{seq_idx}"],
                 "nco_freq",
                 settings.modulation_freq,
             )
+        else:
+            # NCO off == no change.
+            self._nco_frequency_changed[seq_idx] = False
 
         self._set_parameter(
             self.instrument[f"sequencer{seq_idx}"],
@@ -337,17 +358,6 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
             self.instrument[f"sequencer{seq_idx}"],
             "gain_awg_path1",
             settings.init_gain_awg_path_Q,
-        )
-
-        self._set_parameter(
-            self.instrument[f"sequencer{seq_idx}"],
-            "mixer_corr_phase_offset_degree",
-            settings.mixer_corr_phase_offset_degree,
-        )
-        self._set_parameter(
-            self.instrument[f"sequencer{seq_idx}"],
-            "mixer_corr_gain_ratio",
-            settings.mixer_corr_gain_ratio,
         )
 
         channel_map_parameters = self._determine_channel_map_parameters(settings)
@@ -390,6 +400,28 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
             channel_map_parameters[f"connect_out{channel_idx}"] = param_setting
 
         return channel_map_parameters
+
+    def _configure_nco_mixer_calibration(
+        self, seq_idx: int, settings: AnalogSequencerSettings
+    ) -> None:
+        if (
+            settings.auto_sideband_cal == SidebandCalEnum.ON_INTERM_FREQ_CHANGE
+            and self._nco_frequency_changed[seq_idx]
+        ):
+            self.instrument[f"sequencer{seq_idx}"].sideband_cal()
+        else:
+            if settings.mixer_corr_phase_offset_degree is not None:
+                self._set_parameter(
+                    self.instrument[f"sequencer{seq_idx}"],
+                    "mixer_corr_phase_offset_degree",
+                    settings.mixer_corr_phase_offset_degree,
+                )
+            if settings.mixer_corr_gain_ratio is not None:
+                self._set_parameter(
+                    self.instrument[f"sequencer{seq_idx}"],
+                    "mixer_corr_gain_ratio",
+                    settings.mixer_corr_gain_ratio,
+                )
 
     def arm_all_sequencers_in_program(self) -> None:
         """Arm all the sequencers that are part of the program."""
@@ -492,6 +524,9 @@ class _QCMComponent(_ModuleComponentBase):
                 )
 
             self._configure_sequencer_settings(
+                seq_idx=seq_idx, settings=AnalogSequencerSettings.from_dict(seq_cfg)
+            )
+            self._configure_nco_mixer_calibration(
                 seq_idx=seq_idx, settings=AnalogSequencerSettings.from_dict(seq_cfg)
             )
 
@@ -629,6 +664,9 @@ class _QRMComponent(_ModuleComponentBase):
 
             settings = AnalogSequencerSettings.from_dict(seq_cfg)
             self._configure_sequencer_settings(seq_idx=seq_idx, settings=settings)
+            self._configure_nco_mixer_calibration(
+                seq_idx=seq_idx, settings=AnalogSequencerSettings.from_dict(seq_cfg)
+            )
             acq_duration[seq_name] = settings.integration_length_acq
 
         if (acq_metadata := program.get("acq_metadata")) is not None:
@@ -861,6 +899,49 @@ class _QRMComponent(_ModuleComponentBase):
 class _RFComponent(_ModuleComponentBase):
     """Mix-in for RF-module-specific InstrumentCoordinatorComponent behaviour."""
 
+    def prepare(self, program: Dict[str, dict]) -> None:
+        """
+        Uploads the waveforms and programs to the sequencers.
+
+        Overrides the parent method to additionally set LO settings for automatic mixer
+        calibration. This must be done _after_ all NCO frequencies have been set.
+
+        Parameters
+        ----------
+        program
+            Program to upload to the sequencers.
+            Under the key :code:`"sequencer"` you specify the sequencer specific
+            options for each sequencer, e.g. :code:`"seq0"`.
+            For global settings, the options are under different keys, e.g. :code:`"settings"`.
+        """
+        super().prepare(program)
+
+        lo_idx_to_connected_seq_idx: dict[int, list[int]] = {}
+        for seq_name, seq_cfg in program["sequencers"].items():
+            if seq_name in self._seq_name_to_idx_map:
+                seq_idx = self._seq_name_to_idx_map[seq_name]
+            else:
+                raise KeyError(
+                    f"Invalid program. Attempting to access non-existing sequencer "
+                    f'with name "{seq_name}".'
+                )
+
+            for lo_idx in self._get_connected_lo_idx_for_sequencer(
+                sequencer_settings=AnalogSequencerSettings.from_dict(seq_cfg)
+            ):
+                if lo_idx not in lo_idx_to_connected_seq_idx:
+                    lo_idx_to_connected_seq_idx[lo_idx] = []
+                lo_idx_to_connected_seq_idx[lo_idx].append(seq_idx)
+
+        if (settings_entry := program.get("settings")) is not None:
+            module_settings = self._hardware_properties.settings_type.from_dict(
+                settings_entry
+            )
+            self._configure_lo_settings(
+                settings=module_settings,
+                lo_idx_to_connected_seq_idx=lo_idx_to_connected_seq_idx,
+            )
+
     def _configure_sequencer_settings(
         self, seq_idx: int, settings: AnalogSequencerSettings
     ) -> None:
@@ -891,6 +972,30 @@ class _RFComponent(_ModuleComponentBase):
             channel_map_parameters[f"connect_out{channel_idx}"] = param_setting
         return channel_map_parameters
 
+    def _get_connected_lo_idx_for_sequencer(
+        self, sequencer_settings: AnalogSequencerSettings
+    ) -> list[int]:
+        """
+        Looks at the connected _output_ ports of the sequencer (if any) to determine
+        which LO this sequencer's output is coupled to.
+        """
+        connected_lo_idx = []
+        channel_map_parameters = self._determine_output_channel_map_parameters(
+            sequencer_settings, channel_map_parameters={}
+        )
+        for channel_idx in range(self._hardware_properties.number_of_output_channels):
+            if channel_map_parameters.get(f"connect_out{channel_idx}") == "IQ":
+                connected_lo_idx.append(channel_idx)
+        return connected_lo_idx
+
+    @abstractmethod
+    def _configure_lo_settings(
+        self,
+        settings: RFModuleSettings,
+        lo_idx_to_connected_seq_idx: dict[int, list[int]],
+    ) -> None:
+        """Configure the settings for LO frequency and automatic mixer calibration."""
+
 
 class _QCMRFComponent(_RFComponent, _QCMComponent):
     """QCM-RF specific InstrumentCoordinator component."""
@@ -906,11 +1011,6 @@ class _QCMRFComponent(_RFComponent, _QCMComponent):
         settings
             The settings to configure it to.
         """
-        if settings.lo0_freq is not None:
-            self._set_parameter(self.instrument, "out0_lo_freq", settings.lo0_freq)
-        if settings.lo1_freq is not None:
-            self._set_parameter(self.instrument, "out1_lo_freq", settings.lo1_freq)
-
         # configure mixer correction offsets
         if settings.offset_ch0_path_I is not None:
             self._set_parameter(
@@ -934,6 +1034,50 @@ class _QCMRFComponent(_RFComponent, _QCMComponent):
         if settings.out1_att is not None:
             self._set_parameter(self.instrument, "out1_att", settings.out1_att)
 
+    def _configure_lo_settings(
+        self,
+        settings: RFModuleSettings,
+        lo_idx_to_connected_seq_idx: dict[int, list[int]],
+    ) -> None:
+        """Configure the settings for LO frequency and automatic mixer calibration."""
+        lo0_freq_changed = False
+        lo1_freq_changed = False
+        if settings.lo0_freq is not None:
+            lo0_freq_changed = not parameter_value_same_as_cache(
+                self.instrument, "out0_lo_freq", settings.lo0_freq
+            )
+            self._set_parameter(self.instrument, "out0_lo_freq", settings.lo0_freq)
+        if settings.lo1_freq is not None:
+            lo1_freq_changed = not parameter_value_same_as_cache(
+                self.instrument, "out1_lo_freq", settings.lo1_freq
+            )
+            self._set_parameter(self.instrument, "out1_lo_freq", settings.lo1_freq)
+
+        any_nco_frequencies_changed_lo0 = any(
+            self._nco_frequency_changed[seq_idx]
+            for seq_idx in lo_idx_to_connected_seq_idx.get(0, [])
+        )
+        any_nco_frequencies_changed_lo1 = any(
+            self._nco_frequency_changed[seq_idx]
+            for seq_idx in lo_idx_to_connected_seq_idx.get(1, [])
+        )
+        if (
+            settings.out0_lo_freq_cal_type_default == LoCalEnum.ON_LO_FREQ_CHANGE
+            and lo0_freq_changed
+            or settings.out0_lo_freq_cal_type_default
+            == LoCalEnum.ON_LO_INTERM_FREQ_CHANGE
+            and (lo0_freq_changed or any_nco_frequencies_changed_lo0)
+        ):
+            self.instrument.out0_lo_cal()
+        if (
+            settings.out1_lo_freq_cal_type_default == LoCalEnum.ON_LO_FREQ_CHANGE
+            and lo1_freq_changed
+            or settings.out1_lo_freq_cal_type_default
+            == LoCalEnum.ON_LO_INTERM_FREQ_CHANGE
+            and (lo1_freq_changed or any_nco_frequencies_changed_lo1)
+        ):
+            self.instrument.out1_lo_cal()
+
 
 class _QRMRFComponent(_RFComponent, _QRMComponent):
     """QRM-RF specific InstrumentCoordinator component."""
@@ -949,9 +1093,6 @@ class _QRMRFComponent(_RFComponent, _QRMComponent):
         settings
             The settings to configure it to.
         """
-        if settings.lo0_freq is not None:
-            self._set_parameter(self.instrument, "out0_in0_lo_freq", settings.lo0_freq)
-
         # configure mixer correction offsets
         if settings.offset_ch0_path_I is not None:
             self._set_parameter(
@@ -966,6 +1107,32 @@ class _QRMRFComponent(_RFComponent, _QRMComponent):
             self._set_parameter(self.instrument, "out0_att", settings.out0_att)
         if settings.in0_att is not None:
             self._set_parameter(self.instrument, "in0_att", settings.in0_att)
+
+    def _configure_lo_settings(
+        self,
+        settings: RFModuleSettings,
+        lo_idx_to_connected_seq_idx: dict[int, list[int]],
+    ) -> None:
+        """Configure the settings for LO frequency and automatic mixer calibration."""
+        lo0_freq_changed = False
+        if settings.lo0_freq is not None:
+            lo0_freq_changed = not parameter_value_same_as_cache(
+                self.instrument, "out0_in0_lo_freq", settings.lo0_freq
+            )
+            self._set_parameter(self.instrument, "out0_in0_lo_freq", settings.lo0_freq)
+
+        any_nco_frequencies_changed_lo0 = any(
+            self._nco_frequency_changed[seq_idx]
+            for seq_idx in lo_idx_to_connected_seq_idx.get(0, [])
+        )
+        if (
+            settings.out0_lo_freq_cal_type_default == LoCalEnum.ON_LO_FREQ_CHANGE
+            and lo0_freq_changed
+            or settings.out0_lo_freq_cal_type_default
+            == LoCalEnum.ON_LO_INTERM_FREQ_CHANGE
+            and (lo0_freq_changed or any_nco_frequencies_changed_lo0)
+        ):
+            self.instrument.out0_in0_lo_cal()
 
     def _determine_input_channel_map_parameters(
         self, settings: AnalogSequencerSettings, channel_map_parameters: Dict[str, str]
