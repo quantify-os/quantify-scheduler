@@ -7,6 +7,7 @@ import itertools
 import re
 import warnings
 from collections import defaultdict
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, Dict, List, Literal, Tuple, Type, Union
 
@@ -24,10 +25,8 @@ from quantify_scheduler.backends.graph_compilation import (
 from quantify_scheduler.backends.qblox import compiler_container, constants
 from quantify_scheduler.backends.qblox.exceptions import NcoOperationTimingError
 from quantify_scheduler.backends.qblox.helpers import (
-    _generate_legacy_hardware_config,
     _generate_new_style_hardware_compilation_config,
     assign_pulse_and_acq_info_to_devices,
-    find_channel_names,
     to_grid_time,
 )
 from quantify_scheduler.backends.qblox.operations import long_square_pulse
@@ -36,17 +35,11 @@ from quantify_scheduler.backends.types.common import (
     Connectivity,
     HardwareCompilationConfig,
     HardwareDescription,
-    HardwareOptions,
 )
 from quantify_scheduler.backends.types.qblox import (
     ClusterDescription,
     QbloxHardwareDescription,
     QbloxHardwareOptions,
-    QCMDescription,
-    QCMRFDescription,
-    QRMDescription,
-    QRMRFDescription,
-    QTMDescription,
     _ClusterCompilerConfig,
     _ClusterModuleCompilerConfig,
     _LocalOscillatorCompilerConfig,
@@ -69,7 +62,6 @@ from quantify_scheduler.schedules.schedule import (
     Schedule,
     ScheduleBase,
 )
-from quantify_scheduler.structure.model import DataStructure
 
 
 def _replace_long_square_pulses_recursively(
@@ -474,29 +466,22 @@ def hardware_compile(
         The compiled schedule.
 
     """
-    # Extract the old-style hardware config from the CompilationConfig
-    hardware_cfg = _generate_legacy_hardware_config(
-        schedule=schedule, compilation_config=config
-    )
+    hardware_cfg = deepcopy(config.hardware_compilation_config)
 
-    if "latency_corrections" in hardware_cfg.keys():
-        # Important: currently only used to validate the input, should also be
-        # used for storing the latency corrections
-        # (see also https://gitlab.com/groups/quantify-os/-/epics/1)
-        HardwareOptions(latency_corrections=hardware_cfg["latency_corrections"])
-
+    if hardware_cfg.hardware_options.latency_corrections is not None:
         # Subtract minimum latency to allow for negative latency corrections
-        hardware_cfg["latency_corrections"] = determine_relative_latency_corrections(
-            hardware_cfg
+        hardware_cfg.hardware_options.latency_corrections = (
+            determine_relative_latency_corrections(
+                schedule=schedule,
+                hardware_cfg=hardware_cfg,
+            )
         )
 
     # Apply software distortion corrections. Hardware distortion corrections are
     # compiled into the compiler container that follows.
-    if (
-        distortion_corrections := hardware_cfg.get("distortion_corrections")
-    ) is not None:
+    if hardware_cfg.hardware_options.distortion_corrections is not None:
         replacing_schedule = apply_software_distortion_corrections(
-            schedule, distortion_corrections
+            schedule, hardware_cfg.hardware_options.distortion_corrections
         )
         if replacing_schedule is not None:
             schedule = replacing_schedule
@@ -513,7 +498,6 @@ def hardware_compile(
 
     assign_pulse_and_acq_info_to_devices(
         schedule=schedule,
-        hardware_cfg=hardware_cfg,
         device_compilers=container.clusters,
     )
 
@@ -595,46 +579,6 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
 
     @model_validator(mode="after")
     def _validate_connectivity_channel_names(self) -> QbloxHardwareCompilationConfig:
-        if isinstance(self.connectivity, Connectivity):
-            self._validate_channel_names_new_config()
-
-        else:
-            self._validate_channel_names_old_config()
-
-        return self
-
-    def _validate_channel_names_old_config(self) -> None:
-        instrument_type_to_description = {
-            description.get_instrument_type(): description
-            for description in [
-                QCMDescription,
-                QRMDescription,
-                QCMRFDescription,
-                QRMRFDescription,
-                QTMDescription,
-            ]
-        }
-
-        for cluster_name, cluster_config in find_qblox_instruments(
-            hardware_config=self.connectivity, instrument_type="Cluster"
-        ).items():
-            for instrument_type, class_ in instrument_type_to_description.items():
-                for module_name, module in find_qblox_instruments(
-                    hardware_config=cluster_config, instrument_type=instrument_type
-                ).items():
-                    try:
-                        class_.validate_channel_names(find_channel_names(module))
-                    except ValueError as exc:
-                        # Add some information to the raised exception. The original exception
-                        # is included in the message because pydantic suppresses the traceback.
-                        raise ValueError(
-                            "Error validating channel names for "
-                            f"{cluster_name}.{module_name} ({instrument_type}). Full "
-                            f"error message:\n{exc}\n\nSupported names for "
-                            f"{instrument_type}:\n{class_.get_valid_channels()}"
-                        ) from exc
-
-    def _validate_channel_names_new_config(self) -> None:
         module_name_to_channel_names_map: dict[tuple[str, str], set[str]] = defaultdict(
             set
         )
@@ -678,6 +622,8 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
                     f"({instrument_type}). Full error message:\n{exc}\n\nSupported "
                     f"names for {instrument_type}:\n{valid_channels}."
                 ) from exc
+
+        return self
 
     @model_validator(mode="after")
     def _warn_mix_lo_false(
@@ -781,7 +727,7 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
 
     def _extract_instrument_compiler_configs(  # noqa: PLR0912, PLR0915
         self, portclocks_used: set[tuple]
-    ) -> Dict[str, DataStructure]:
+    ) -> Dict[str, Any]:
         """
         Extract an instrument compiler config for each instrument mentioned in ``hardware_description``.
         Each instrument config has a similar structure than ``QbloxHardwareCompilationConfig``, but

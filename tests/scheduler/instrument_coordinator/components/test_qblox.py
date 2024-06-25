@@ -1237,7 +1237,7 @@ def test_get_hardware_log_component_base(
     quantum_device.hardware_config(hardware_cfg)
 
     sched = Schedule("sched")
-    sched.add(Reset("q1"))
+    sched.add(Measure("q1"))
 
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
@@ -1254,7 +1254,7 @@ def test_get_hardware_log_component_base(
 
 def test_get_hardware_log_cluster_component(
     example_ip,
-    hardware_cfg_qcm_rf,
+    hardware_cfg_cluster,
     make_cluster_component,
     mocker,
     mock_qblox_instruments_config_manager,
@@ -1272,12 +1272,12 @@ def test_get_hardware_log_cluster_component(
         return_value=mock_qblox_instruments_config_manager,
     )
 
-    hardware_cfg = hardware_cfg_qcm_rf
+    hardware_cfg = hardware_cfg_cluster
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
 
     sched = Schedule("sched")
-    sched.add(Reset("q1"))
+    sched.add(Measure("q1"))
 
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(

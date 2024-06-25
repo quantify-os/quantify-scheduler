@@ -24,7 +24,6 @@ from quantify_scheduler.backends.types.qblox import (
     RealInputGain,
 )
 from quantify_scheduler.helpers.collections import (
-    find_all_port_clock_combinations,
     find_port_clock_path,
 )
 from quantify_scheduler.helpers.schedule import _extract_port_clocks_used
@@ -40,8 +39,8 @@ from quantify_scheduler.resources import DigitalClockResource
 from quantify_scheduler.schedules.schedule import Schedule, ScheduleBase
 
 if TYPE_CHECKING:
-    from quantify_scheduler.backends.graph_compilation import CompilationConfig
     from quantify_scheduler.backends.qblox.instrument_compilers import ClusterCompiler
+    from quantify_scheduler.backends.types.common import HardwareCompilationConfig
 
 
 def generate_waveform_data(
@@ -495,7 +494,7 @@ def determine_clock_lo_interm_freqs(
 
 
 def generate_port_clock_to_device_map(
-    hardware_cfg: dict[str, Any]
+    device_compilers: dict[str, Any]
 ) -> dict[tuple[str, str], str]:
     """
     Generates a mapping that specifies which port-clock combinations belong to which
@@ -508,8 +507,9 @@ def generate_port_clock_to_device_map(
 
     Parameters
     ----------
-    hardware_cfg:
-        The hardware config dictionary.
+    device_compilers:
+        Dictionary containing compiler configs.
+
 
     Returns
     -------
@@ -524,20 +524,10 @@ def generate_port_clock_to_device_map(
         If a port-clock combination occurs multiple times in the hardware configuration.
     """
     portclock_map = {}
-    for device_name, device_info in hardware_cfg.items():
-        if not isinstance(device_info, dict):
-            continue
-
-        for portclock in find_all_port_clock_combinations(device_info):
-            if portclock in portclock_map:
-                raise ValueError(
-                    f"Port-clock combination '{portclock[0]}-{portclock[1]}'"
-                    f" occurs multiple times in the hardware configuration;"
-                    f" each port-clock combination may only occur once. When using"
-                    f" the same port-clock combination for output and input, assigning"
-                    f" only the output suffices."
-                )
-            portclock_map[portclock] = device_name
+    for device_name, device_compiler in device_compilers.items():
+        if hasattr(device_compiler, "portclock_to_path"):
+            for portclock in device_compiler.portclock_to_path.keys():
+                portclock_map[portclock] = device_name
 
     return portclock_map
 
@@ -740,7 +730,7 @@ def _get_list_of_operations_for_op_info_creation(
 def assign_pulse_and_acq_info_to_devices(
     schedule: Schedule,
     device_compilers: dict[str, ClusterCompiler],
-    hardware_cfg: dict[str, Any],
+    portclock_to_path: dict[tuple, str] | None = None,
 ):
     """
     Traverses the schedule and generates `OpInfo` objects for every pulse and
@@ -752,8 +742,8 @@ def assign_pulse_and_acq_info_to_devices(
         The schedule to extract the pulse and acquisition info from.
     device_compilers
         Dictionary containing InstrumentCompilers as values and their names as keys.
-    hardware_cfg
-        The hardware config dictionary.
+    portclock_to_path
+        Dictionary containing the hardware path to connected to each portclock.
 
     Raises
     ------
@@ -767,7 +757,16 @@ def assign_pulse_and_acq_info_to_devices(
         This exception is raised when attempting to assign an acquisition with a
         port-clock combination that is not defined in the hardware configuration.
     """
-    portclock_mapping = generate_port_clock_to_device_map(hardware_cfg)
+    portclock_mapping = generate_port_clock_to_device_map(device_compilers)
+
+    # This is a temporary hack to make `test_construct_sequencers` pass
+    # TODO: remove when passing the new compiler config to the module compilers
+    if not portclock_mapping and portclock_to_path is not None:
+        portclock_mapping = {}
+        for pc, path in portclock_to_path.items():
+            port, clock = pc.split("-")
+            cluster, module, _ = path.split(".")
+            portclock_mapping[(port, clock)] = f"{cluster}_{module}"
 
     list_of_operations: list[tuple[float, Operation]] = list()
     _get_list_of_operations_for_op_info_creation(schedule, 0, list_of_operations)
@@ -959,7 +958,7 @@ def single_scope_mode_acquisition_raise(sequencer_0, sequencer_1, module_name):
 
 
 def _generate_legacy_hardware_config(
-    schedule: Schedule, compilation_config: CompilationConfig
+    schedule: Schedule, hardware_cfg: HardwareCompilationConfig
 ) -> dict[str, Any]:
     """
     Extract the old-style Qblox hardware config from the CompilationConfig.
@@ -971,8 +970,8 @@ def _generate_legacy_hardware_config(
     ----------
     schedule: Schedule
         Schedule from which the port-clock combinations are extracted.
-    compilation_config : CompilationConfig
-        CompilationConfig from which hardware config is extracted.
+    hardware_cfg : HardwareCompilationConfig
+        Hardware info.
 
     Returns
     -------
@@ -1068,11 +1067,9 @@ def _generate_legacy_hardware_config(
 
         return f"{qubit}.{clock_tag}"
 
-    hardware_description = (
-        compilation_config.hardware_compilation_config.hardware_description
-    )
-    hardware_options = compilation_config.hardware_compilation_config.hardware_options
-    connectivity = compilation_config.hardware_compilation_config.connectivity
+    hardware_description = hardware_cfg.hardware_description
+    hardware_options = hardware_cfg.hardware_options
+    connectivity = hardware_cfg.connectivity
 
     if isinstance(connectivity, dict):
         if "graph" in connectivity:
@@ -1091,9 +1088,7 @@ def _generate_legacy_hardware_config(
     port_clocks = _extract_port_clocks_used(operation=schedule)
 
     # Add connectivity information to the hardware config:
-    connectivity_graph = (
-        compilation_config.hardware_compilation_config.connectivity.graph
-    )
+    connectivity_graph = hardware_cfg.connectivity.graph
 
     # Prevent multiple assignment of same `connected_node` for repeated ports
     used_portclocks = []

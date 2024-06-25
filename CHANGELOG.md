@@ -12,6 +12,9 @@
 - Compilation
   - Make all hardware configs go through Pydantic validation. (!1002)
   - Compile dispersive measurements to subschedules. (997!)
+  - Delete `LOSetting.from_mapping`. (!1013)
+- Qblox backend
+  - Change arguments of `ClusterCompiler`, `CompilerContainer.from_hardware_cfg`, `generate_port_clock_to_device_map`, `assign_pulse_and_acq_info_to_devices`, `distortion_correct_pulse`. (!1013)
 
 ### Deprecation
 
@@ -49,6 +52,7 @@
   - Make nv center hardware configs compatible with new-style compilation configs, which includes defining a `OpticalModulator` hardware description, and convert all nv center hardware configs to the new style. (!966)
   - Adjust schedule helper functions for subschedules and control flows. (!998)
   - Deprecate old-style hardware config dicts and restrict input of `hardware_compile` to a full `CompilationConfig`. (!1002)
+  - Lower conversion of hardware config in the qblox backend, convert back to old-style right before creation of cluster compiler. (!1013)
 - Operations 
   - Introduce `LongTimeTrace` acquisition protocol. (!958)
   - Small adjustments to `LongTimeTrace` and tests. (!1014)

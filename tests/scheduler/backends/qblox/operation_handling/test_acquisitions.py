@@ -856,9 +856,87 @@ def test_thresholded_acquisition_multiplex(
         assert sequencer_acquisition_metadata.acq_protocol == "ThresholdedAcquisition"
 
 
+def test_trigger_count_append(
+    mock_setup_basic_nv, make_cluster_component, hardware_cfg_trigger_count
+):
+    # Setup objects needed for experiment
+    ic_cluster0 = make_cluster_component("cluster0")
+    red_laser = MockLocalOscillator("red_laser")
+    red_laser_2 = MockLocalOscillator("red_laser_2")
+    ic_red_laser = GenericInstrumentCoordinatorComponent(red_laser)
+    ic_red_laser_2 = GenericInstrumentCoordinatorComponent(red_laser_2)
+    ic_generic = GenericInstrumentCoordinatorComponent("generic")
+
+    instr_coordinator = mock_setup_basic_nv["instrument_coordinator"]
+    instr_coordinator.add_component(ic_cluster0)
+    instr_coordinator.add_component(ic_red_laser)
+    instr_coordinator.add_component(ic_red_laser_2)
+    instr_coordinator.add_component(ic_generic)
+
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg_trigger_count)
+
+    # Define experiment schedule
+    schedule = Schedule("test multiple measurements")
+    schedule.add(
+        Measure(
+            "qe0", acq_index=0, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND
+        )
+    )
+    schedule.add(
+        Measure(
+            "qe0", acq_index=1, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND
+        )
+    )
+    schedule.add(
+        Measure(
+            "qe0", acq_index=2, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND
+        )
+    )
+
+    # Setup dummy acquisition data
+    ic_cluster0.instrument.set_dummy_binned_acquisition_data(
+        slot_idx=3,
+        sequencer=0,
+        acq_index_name="0",
+        data=[
+            DummyBinnedAcquisitionData(data=(10000, 15000), thres=0, avg_cnt=100),
+            DummyBinnedAcquisitionData(data=(20000, 25000), thres=0, avg_cnt=200),
+            DummyBinnedAcquisitionData(data=(20000, 25000), thres=0, avg_cnt=300),
+        ],
+    )
+
+    # Generate compiled schedule
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    # Upload schedule and run experiment
+    instr_coordinator.prepare(compiled_sched)
+    instr_coordinator.start()
+    data = instr_coordinator.retrieve_acquisition()
+    instr_coordinator.stop()
+
+    # Assert intended behaviour
+    assert isinstance(data, Dataset)
+    expected_dataarray = DataArray(
+        [[100, 200, 300]],
+        coords=[[0], [0, 1, 2]],
+        dims=["repetition", "acq_index_0"],
+        attrs={"acq_protocol": "TriggerCount"},
+    )
+    expected_dataset = Dataset({0: expected_dataarray})
+
+    xr.testing.assert_identical(data, expected_dataset)
+
+    instr_coordinator.remove_component("ic_cluster0")
+
+
+# Keep this test as extra coverage for old-to-new style conversion
 # Using the old-style / legacy hardware config dict is deprecated
 @pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
-def test_trigger_count_append(
+def test_trigger_count_append_legacy_hardware_cfg(
     mock_setup_basic_nv, make_cluster_component, hardware_cfg_trigger_count_legacy
 ):
     # Setup objects needed for experiment
@@ -935,14 +1013,54 @@ def test_trigger_count_append(
     instr_coordinator.remove_component("ic_cluster0")
 
 
-# Using the old-style / legacy hardware config dict is deprecated
-@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 def test_trigger_count_append_qtm(
     mocker,
     mock_setup_basic_nv,
     make_cluster_component,
-    hardware_cfg_trigger_count_legacy,
 ):
+    hardware_cfg = {
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {
+                    3: {"instrument_type": "QRM"},
+                    5: {"instrument_type": "QTM"},
+                },
+                "ref": "internal",
+            },
+            "iq_mixer_red_laser": {"instrument_type": "IQMixer"},
+            "optical_mod_red_laser_2": {"instrument_type": "OpticalModulator"},
+            "red_laser": {"instrument_type": "LocalOscillator", "power": 1},
+            "red_laser_2": {"instrument_type": "LocalOscillator", "power": 1},
+        },
+        "hardware_options": {
+            "modulation_frequencies": {
+                "qe0:optical_readout-qe0.ge0": {
+                    "lo_freq": None,
+                    "interm_freq": 50000000.0,
+                },
+                "qe0:optical_control-qe0.ge0": {"lo_freq": None, "interm_freq": 0},
+            },
+            "digitization_thresholds": {
+                "qe0:optical_readout-qe0.ge0": {"in_threshold_primary": 0.5}
+            },
+            "sequencer_options": {
+                "qe0:optical_readout-qe0.ge0": {"ttl_acq_threshold": 0.5}
+            },
+        },
+        "connectivity": {
+            "graph": [
+                ("cluster0.module5.digital_input_0", "iq_mixer_red_laser.if"),
+                ("red_laser.output", "iq_mixer_red_laser.lo"),
+                ("iq_mixer_red_laser.rf", "qe0:optical_readout"),
+                ("cluster0.module3.real_output_0", "optical_mod_red_laser_2.if"),
+                ("red_laser_2.output", "optical_mod_red_laser_2.lo"),
+                ("optical_mod_red_laser_2.out", "qe0:optical_control"),
+            ]
+        },
+    }
+
     # Setup objects needed for experiment
     ic_cluster0 = make_cluster_component("cluster0")
     red_laser = MockLocalOscillator("red_laser")
@@ -958,21 +1076,6 @@ def test_trigger_count_append_qtm(
     instr_coordinator.add_component(ic_generic)
 
     quantum_device = mock_setup_basic_nv["quantum_device"]
-    hardware_cfg = deepcopy(hardware_cfg_trigger_count_legacy)
-    del hardware_cfg["cluster0"]["cluster0_module3"]["real_input_0"]
-    hardware_cfg["cluster0"]["cluster0_module5"] = {
-        "instrument_type": "QTM",
-        "digital_input_0": {
-            "lo_name": "red_laser",
-            "portclock_configs": [
-                {
-                    "port": "qe0:optical_readout",
-                    "clock": "qe0.ge0",
-                    "in_threshold_primary": 0.5,
-                }
-            ],
-        },
-    }
     quantum_device.hardware_config(hardware_cfg)
 
     # Define experiment schedule
@@ -1056,10 +1159,8 @@ def test_trigger_count_append_qtm(
     instr_coordinator.remove_component("ic_cluster0")
 
 
-# Using the old-style / legacy hardware config dict is deprecated
-@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 def test_trigger_count_append_gettables(
-    mock_setup_basic_nv, make_cluster_component, hardware_cfg_trigger_count_legacy
+    mock_setup_basic_nv, make_cluster_component, hardware_cfg_trigger_count
 ):
     # Setup objects needed for experiment
     ic_cluster0 = make_cluster_component("cluster0")
@@ -1076,7 +1177,7 @@ def test_trigger_count_append_gettables(
     instr_coordinator.add_component(ic_generic)
 
     quantum_device = mock_setup_basic_nv["quantum_device"]
-    quantum_device.hardware_config(hardware_cfg_trigger_count_legacy)
+    quantum_device.hardware_config(hardware_cfg_trigger_count)
 
     # Define experiment schedule
     def _schedule_function(repetitions):
@@ -1124,10 +1225,8 @@ def test_trigger_count_append_gettables(
     instr_coordinator.remove_component("ic_cluster0")
 
 
-# Using the old-style / legacy hardware config dict is deprecated
-@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 def test_trigger_count_average(
-    mock_setup_basic_nv, make_cluster_component, hardware_cfg_trigger_count_legacy
+    mock_setup_basic_nv, make_cluster_component, hardware_cfg_trigger_count
 ):
     # Setup objects needed for experiment
     ic_cluster0 = make_cluster_component("cluster0")
@@ -1144,7 +1243,7 @@ def test_trigger_count_average(
     instr_coordinator.add_component(ic_generic)
 
     quantum_device = mock_setup_basic_nv["quantum_device"]
-    quantum_device.hardware_config(hardware_cfg_trigger_count_legacy)
+    quantum_device.hardware_config(hardware_cfg_trigger_count)
 
     # Define experiment schedule
     schedule = Schedule("test multiple measurements")
@@ -1194,10 +1293,8 @@ def test_trigger_count_average(
     instr_coordinator.remove_component("ic_cluster0")
 
 
-# Using the old-style / legacy hardware config dict is deprecated
-@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 def test_trigger_count_average_gettables(
-    mock_setup_basic_nv, make_cluster_component, hardware_cfg_trigger_count_legacy
+    mock_setup_basic_nv, make_cluster_component, hardware_cfg_trigger_count
 ):
     # Setup objects needed for experiment
     ic_cluster0 = make_cluster_component("cluster0")
@@ -1214,7 +1311,7 @@ def test_trigger_count_average_gettables(
     instr_coordinator.add_component(ic_generic)
 
     quantum_device = mock_setup_basic_nv["quantum_device"]
-    quantum_device.hardware_config(hardware_cfg_trigger_count_legacy)
+    quantum_device.hardware_config(hardware_cfg_trigger_count)
 
     # Define experiment schedule
     def _schedule_function(repetitions):

@@ -7,8 +7,10 @@ import pytest
 
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.qblox.compiler_container import CompilerContainer
+from quantify_scheduler.backends.qblox.enums import DistortionCorrectionLatencyEnum
 from quantify_scheduler.backends.qblox.instrument_compilers import QTMCompiler
 from quantify_scheduler.backends.qblox.timetag import TimetagSequencerCompiler
+from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
 from quantify_scheduler.backends.types.qblox import TimetagSequencerSettings
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.operations.acquisition_library import (
@@ -16,6 +18,7 @@ from quantify_scheduler.operations.acquisition_library import (
     TriggerCount,
 )
 from quantify_scheduler.operations.control_flow_library import LoopOperation
+from quantify_scheduler.operations.gate_library import Measure
 from quantify_scheduler.operations.pulse_library import (
     IdlePulse,
     MarkerPulse,
@@ -71,37 +74,46 @@ start:
     )
 
 
-def test_get_compiler_container():
-    hardware_cfg_old_style = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-        "cluster0": {
-            "instrument_type": "Cluster",
-            "ref": "internal",
-            "cluster0_module5": {
-                "instrument_type": "QTM",
-                "digital_output_0": {
-                    "portclock_configs": [
-                        {
-                            "port": "qe1:switch",
-                            "clock": "digital",
-                        }
-                    ],
+def test_get_compiler_container(create_schedule_with_pulse_info):
+    hardware_cfg = {
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {
+                    5: {
+                        "instrument_type": "QTM",
+                    }
                 },
-                "digital_input_4": {
-                    "portclock_configs": [
-                        {
-                            "port": "qe1:optical_readout",
-                            "clock": "qe1.ge0",
-                        }
-                    ],
-                },
-            },
+                "ref": "internal",
+            }
+        },
+        "hardware_options": {},
+        "connectivity": {
+            "graph": [
+                ("cluster0.module5.digital_output_0", "qe1:switch"),
+                ("cluster0.module5.digital_input_4", "qe1:optical_readout"),
+            ]
         },
     }
 
-    schedule = Schedule("Test")
+    hardware_cfg = QbloxHardwareCompilationConfig.model_validate(hardware_cfg)
 
-    container = CompilerContainer.from_hardware_cfg(schedule, hardware_cfg_old_style)
+    schedule = Schedule("Test")
+    schedule.add(
+        SquarePulse(amp=0.5, duration=40e-9, port="qe1:switch", clock="digital")
+    )
+    schedule.add(
+        SSBIntegrationComplex(
+            port="qe1:optical_readout", clock="qe1.ge0", duration=5e-6
+        )
+    )
+    schedule = create_schedule_with_pulse_info(schedule)
+
+    container = CompilerContainer.from_hardware_cfg(
+        schedule=schedule,
+        hardware_cfg=hardware_cfg,
+    )
 
     assert isinstance(
         container.instrument_compilers["cluster0"].instrument_compilers[  # type: ignore
@@ -113,6 +125,7 @@ def test_get_compiler_container():
         "cluster0_module5"
     ].instrument_cfg == {
         "instrument_type": "QTM",
+        "sequence_to_file": False,
         "digital_output_0": {
             "portclock_configs": [{"port": "qe1:switch", "clock": "digital"}]
         },
