@@ -590,7 +590,10 @@ class AnalogSequencerSettings(SequencerSettings):
     ttl_acq_input_select: Optional[int] = None
     """Selects the input used to compare against the threshold value in the TTL trigger acquisition path."""
     ttl_acq_threshold: Optional[float] = None
-    """Sets the threshold value with which to compare the input ADC values of the selected input path."""
+    """
+    For QRM modules only, sets the threshold value with which to compare the input ADC
+    values of the selected input path.
+    """
     ttl_acq_auto_bin_incr_en: Optional[bool] = None
     """Selects if the bin index is automatically incremented when acquiring multiple triggers."""
 
@@ -753,6 +756,34 @@ class TimetagSequencerSettings(SequencerSettings):
     port-clock key combination or in some cases through the device configuration
     (e.g. parameters related to thresholded acquisition).
     """
+
+    in_threshold_primary: Optional[float] = None
+
+    def __post_init__(self) -> None:
+        self._validate_io_indices_no_channel_map()
+
+    def _validate_io_indices_no_channel_map(self) -> None:
+        """
+        There is no channel map in the QTM yet, so there can be only one connected
+        index: either input or output.
+        """
+        if (
+            len(self.connected_input_indices) > 1
+            or len(self.connected_output_indices) > 1
+        ):
+            raise ValueError(
+                "Too many connected inputs or outputs for a QTM sequencer. "
+                f"{self.connected_input_indices=}, {self.connected_output_indices=}."
+            )
+
+        if (
+            len(self.connected_output_indices) == 1
+            and len(self.connected_input_indices) == 1
+        ):
+            raise ValueError(
+                "A QTM sequencer cannot be connected to both an output and an input "
+                "port."
+            )
 
     @classmethod
     def initialize_from_config_dict(
@@ -1288,7 +1319,10 @@ class SequencerOptions(DataStructure):
     """Specifies what value the sequencer gain for AWG path_Q will be reset to
     before the start of the experiment."""
     ttl_acq_threshold: Optional[float] = None
-    """Threshold value with which to compare the input ADC values of the selected input path."""
+    """
+    For QRM modules only, the threshold value with which to compare the input ADC values
+    of the selected input path.
+    """
     qasm_hook_func: Optional[Callable] = None
     """
     Function to inject custom qasm instructions after the compiler inserts the 
@@ -1326,6 +1360,16 @@ class QbloxHardwareDistortionCorrection(HardwareDistortionCorrection):
     """Coefficients of the exponential overshoot/undershoot correction 4."""
     fir_coeffs: Optional[List[float]] = None
     """Coefficients for the FIR filter."""
+
+
+class DigitizationThresholds(DataStructure):
+    """The settings that determine when an analog voltage is counted as a pulse."""
+
+    in_threshold_primary: Optional[float] = None
+    """
+    For QTM modules only, this is the voltage threshold above which an input signal is
+    registered as high.
+    """
 
 
 class QbloxHardwareOptions(HardwareOptions):
@@ -1397,9 +1441,12 @@ class QbloxHardwareOptions(HardwareOptions):
             ],
         ]
     ] = None
-
-
-QbloxHardwareOptions.model_rebuild()
+    digitization_thresholds: Optional[Dict[str, DigitizationThresholds]] = None
+    """
+    Dictionary containing the digitization threshold settings for QTM modules. These are
+    the settings that determine the voltage thresholds above which input signals are
+    registered as high.
+    """
 
 
 class _LocalOscillatorCompilerConfig(DataStructure):

@@ -4,7 +4,6 @@
 import copy
 import itertools
 import json
-import logging
 import math
 import os
 import re
@@ -87,7 +86,6 @@ from quantify_scheduler.helpers.collections import (
 )
 from quantify_scheduler.operations.acquisition_library import (
     SSBIntegrationComplex,
-    ThresholdedAcquisition,
     Trace,
 )
 from quantify_scheduler.operations.control_flow_library import (
@@ -777,9 +775,7 @@ def test_invalid_channel_names_connectivity(
         )
 
 
-def test_channel_as_both_input_and_output_qtm(
-    mock_setup_basic_transmon_with_standard_params,
-):
+def test_channel_as_both_input_and_output_qtm():
     hardware_compilation_config = {
         "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
         "hardware_description": {
@@ -802,7 +798,7 @@ def test_channel_as_both_input_and_output_qtm(
         },
     }
 
-    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device = QuantumDevice("quantum_device")
     quantum_device.hardware_config(hardware_compilation_config)
 
     schedule = Schedule("test channel names")

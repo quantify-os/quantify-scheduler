@@ -68,7 +68,6 @@ hardware_config = {
             },
             "digital_output_0": {
                 "portclock_configs": [{"port": "q0:switch", "clock": "digital"}],
-                "distortion_correction_latency_compensation": DistortionCorrectionLatencyEnum.NO_DELAY_COMP,  # noqa: E501
             },
         },
         "cluster0_module3": {

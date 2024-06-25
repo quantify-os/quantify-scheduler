@@ -103,7 +103,7 @@ def mock_setup_basic_transmon_with_standard_params(mock_setup_basic_transmon):
 @pytest.fixture(scope="function", autouse=False)
 def mock_setup_basic_nv():
     """
-    Returns a mock setup for a basic 1-qubit NV-center device.
+    Returns a mock setup for a basic 2-qubit NV-center device.
     """
     mock_setup = set_up_mock_basic_nv_setup()
     set_standard_params_basic_nv(mock_setup)
@@ -113,7 +113,7 @@ def mock_setup_basic_nv():
 @pytest.fixture(scope="function", autouse=False)
 def mock_setup_basic_nv_qblox_hardware(mock_setup_basic_nv):
     """
-    Returns a mock setup for a basic 1-qubit NV-center device with qblox hardware
+    Returns a mock setup for a basic 2-qubit NV-center device with qblox hardware
     config.
     """
 

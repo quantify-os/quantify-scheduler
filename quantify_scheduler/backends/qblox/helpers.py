@@ -17,6 +17,7 @@ from quantify_scheduler.backends.qblox.enums import ChannelMode
 from quantify_scheduler.backends.types.qblox import (
     ComplexChannelDescription,
     ComplexInputGain,
+    DigitalChannelDescription,
     OpInfo,
     QbloxHardwareDistortionCorrection,
     RealChannelDescription,
@@ -1423,6 +1424,24 @@ def _generate_legacy_hardware_config(
             )
             pc_config["qasm_hook_func"] = pc_sequencer_options.qasm_hook_func
 
+    digitization_thresholds = hardware_options.digitization_thresholds
+    if digitization_thresholds is not None:
+        for port, clock in port_clocks:
+            if (pc_dig_thr := digitization_thresholds.get(f"{port}-{clock}")) is None:
+                continue
+
+            # Find path to port-clock combination in the hardware config, e.g.,
+            # ["cluster0", "cluster0_module1", "complex_output_0", "portclock_configs", 1]
+            pc_path = find_port_clock_path(
+                hardware_config=hardware_config, port=port, clock=clock
+            )
+            # Extract the port-clock config:
+            pc_config = hardware_config
+            for key in pc_path:
+                pc_config = pc_config[key]
+
+            pc_config["in_threshold_primary"] = pc_dig_thr.in_threshold_primary
+
     # Add digital clock to digital channels, so that users don't have to specify it.
     _recursive_digital_channel_search(hardware_config)
 
@@ -1788,6 +1807,17 @@ def _generate_new_style_hardware_compilation_config(
                         )
                     )
 
+                    port_clock = (
+                        f"{portclock_cfg.pop('port')}-{portclock_cfg.pop('clock')}"
+                    )
+                    if "in_threshold_primary" in portclock_cfg:
+                        # Set init gain from portclock config:
+                        new_style_config["hardware_options"]["digitization_thresholds"][
+                            port_clock
+                        ]["in_threshold_primary"] = portclock_cfg.pop(
+                            "in_threshold_primary"
+                        )
+
     def _convert_cluster_module_config(
         cluster_name: str,
         module_slot_idx: int,
@@ -1871,6 +1901,19 @@ def _generate_new_style_hardware_compilation_config(
                     old_channel_config=module_cfg_value,
                     new_style_config=new_style_config,
                 )
+                # Remove channel description if only default values are set
+                parsed_channel_description = DigitalChannelDescription.model_validate(
+                    new_style_config["hardware_description"][cluster_name]["modules"][
+                        module_slot_idx
+                    ][module_cfg_key]
+                )
+                if (
+                    parsed_channel_description.model_dump()
+                    == DigitalChannelDescription().model_dump()
+                ):
+                    new_style_config["hardware_description"][cluster_name]["modules"][
+                        module_slot_idx
+                    ].pop(module_cfg_key)
 
     def _convert_cluster_config(
         cluster_name: str, old_cluster_config: dict, new_style_config: dict

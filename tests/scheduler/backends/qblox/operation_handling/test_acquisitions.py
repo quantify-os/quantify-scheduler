@@ -3,6 +3,7 @@
 """Tests for acquisitions module."""
 import pprint
 import re
+from copy import deepcopy
 from typing import Any, Dict
 
 import numpy as np
@@ -31,7 +32,7 @@ from quantify_scheduler.instrument_coordinator.components.generic import (
     GenericInstrumentCoordinatorComponent,
 )
 from quantify_scheduler.instrument_coordinator.components.qblox import (
-    _ModuleComponentBase,
+    _AnalogModuleComponent,
 )
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.control_flow_library import LoopOperation
@@ -936,6 +937,127 @@ def test_trigger_count_append(
 
 # Using the old-style / legacy hardware config dict is deprecated
 @pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
+def test_trigger_count_append_qtm(
+    mocker,
+    mock_setup_basic_nv,
+    make_cluster_component,
+    hardware_cfg_trigger_count_legacy,
+):
+    # Setup objects needed for experiment
+    ic_cluster0 = make_cluster_component("cluster0")
+    red_laser = MockLocalOscillator("red_laser")
+    red_laser_2 = MockLocalOscillator("red_laser_2")
+    ic_red_laser = GenericInstrumentCoordinatorComponent(red_laser)
+    ic_red_laser_2 = GenericInstrumentCoordinatorComponent(red_laser_2)
+    ic_generic = GenericInstrumentCoordinatorComponent("generic")
+
+    instr_coordinator = mock_setup_basic_nv["instrument_coordinator"]
+    instr_coordinator.add_component(ic_cluster0)
+    instr_coordinator.add_component(ic_red_laser)
+    instr_coordinator.add_component(ic_red_laser_2)
+    instr_coordinator.add_component(ic_generic)
+
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+    hardware_cfg = deepcopy(hardware_cfg_trigger_count_legacy)
+    del hardware_cfg["cluster0"]["cluster0_module3"]["real_input_0"]
+    hardware_cfg["cluster0"]["cluster0_module5"] = {
+        "instrument_type": "QTM",
+        "digital_input_0": {
+            "lo_name": "red_laser",
+            "portclock_configs": [
+                {
+                    "port": "qe0:optical_readout",
+                    "clock": "qe0.ge0",
+                    "in_threshold_primary": 0.5,
+                }
+            ],
+        },
+    }
+    quantum_device.hardware_config(hardware_cfg)
+
+    # Define experiment schedule
+    schedule = Schedule("test multiple measurements")
+    schedule.add(
+        Measure(
+            "qe0", acq_index=0, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND
+        )
+    )
+    schedule.add(
+        Measure(
+            "qe0", acq_index=1, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND
+        )
+    )
+    schedule.add(
+        Measure(
+            "qe0", acq_index=2, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND
+        )
+    )
+
+    # TODO remove these patches when the QTM dummy is available (SE-499)
+    mocker.patch.object(ic_cluster0.instrument.module5.sequencer0.sync_en, "set")
+    mocker.patch.object(ic_cluster0.instrument.module5.sequencer0.sequence, "set")
+    mocker.patch.object(ic_cluster0.instrument.module5.io_channel0.out_mode, "set")
+    mocker.patch.object(ic_cluster0.instrument.module5.io_channel0.out_mode, "get")
+    mocker.patch.object(ic_cluster0.instrument.module5.io_channel0.in_trigger_en, "set")
+    mocker.patch.object(
+        ic_cluster0.instrument.module5.io_channel0.binned_acq_time_ref, "set"
+    )
+    mocker.patch.object(
+        ic_cluster0.instrument.module5.io_channel0.binned_acq_time_source, "set"
+    )
+    mocker.patch.object(
+        ic_cluster0.instrument.module5.io_channel0.binned_acq_on_invalid_time_delta,
+        "set",
+    )
+    mocker.patch.object(
+        ic_cluster0.instrument.module5,
+        "get_acquisitions",
+        return_value={
+            "0": {
+                "index": 0,
+                "acquisition": {
+                    "scope": [],
+                    "bins": {
+                        "count": [100, 200, 300],
+                        "timedelta": [1, 2, 3],
+                        "threshold": [1, 2, 3],
+                        "valid": [True, True, True],
+                        "avg_cnt": [100, 200, 300],
+                    },
+                },
+            }
+        },
+    )
+
+    # Generate compiled schedule
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    # Upload schedule and run experiment
+    instr_coordinator.prepare(compiled_sched)
+    instr_coordinator.start()
+    data = instr_coordinator.retrieve_acquisition()
+    instr_coordinator.stop()
+
+    # Assert intended behaviour
+    assert isinstance(data, Dataset)
+    expected_dataarray = DataArray(
+        [[100, 200, 300]],
+        coords=[[0], [0, 1, 2]],
+        dims=["repetition", "acq_index_0"],
+        attrs={"acq_protocol": "TriggerCount"},
+    )
+    expected_dataset = Dataset({0: expected_dataarray})
+
+    xr.testing.assert_identical(data, expected_dataset)
+
+    instr_coordinator.remove_component("ic_cluster0")
+
+
+# Using the old-style / legacy hardware config dict is deprecated
+@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 def test_trigger_count_append_gettables(
     mock_setup_basic_nv, make_cluster_component, hardware_cfg_trigger_count_legacy
 ):
@@ -1697,7 +1819,7 @@ def test_trace_acquisition_instrument_coordinator(
         sequencer=None, data=dummy_scope_acquisition_data
     )
 
-    wrapped = _ModuleComponentBase._set_parameter
+    wrapped = _AnalogModuleComponent._set_parameter
     called_with = None
 
     def wrapper(*args, **kwargs):
@@ -1708,7 +1830,7 @@ def test_trace_acquisition_instrument_coordinator(
 
     with mocker.patch(
         "quantify_scheduler.instrument_coordinator.components.qblox."
-        "_ModuleComponentBase._set_parameter",
+        "_AnalogModuleComponent._set_parameter",
         wraps=wrapper,
     ):
         try:
