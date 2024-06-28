@@ -56,6 +56,7 @@
 - Operations 
   - Introduce `LongTimeTrace` acquisition protocol. (!958)
   - Small adjustments to `LongTimeTrace` and tests. (!1014)
+  - Make it possible to override gate operations with device level parameters. (!1018)
 
 ## 0.20.1 (2024-05-01)
 
