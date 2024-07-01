@@ -22,6 +22,8 @@
 
 - Numpy
   - pin numpy to <2.0 when using python 3.9 (!1010) 
+- Ruff
+  - Support ruff 0.5.0. (!1021)
 - Error and Warning messages
   - Improve error message for conflicting acquisition protocols (!982)
   - Fix overlapping operations warning due to floating point rounding errors (!989)

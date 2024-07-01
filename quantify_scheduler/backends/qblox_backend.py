@@ -1144,38 +1144,82 @@ def _check_nco_operations_on_nco_time_grid(schedule: Schedule, **_: Any) -> Sche
 
 
 def _check_nco_operations_on_nco_time_grid_recursively(
-    operation: Operation | Schedule, schedulable: Schedulable | None = None
+    operation: Operation | Schedule,
+    schedulable: Schedulable | None = None,
+    parent_control_flow_op: ControlFlowOperation | None = None,
 ) -> bool:
+    """
+    Check whether NCO operations, or Schedules/ControlFlowOperations containing NCO
+    operations, align with the NCO grid.
+
+    Parameters
+    ----------
+    operation : Operation | Schedule
+        The Operation or Schedule to be checked.
+    schedulable : Schedulable | None, optional
+        The Schedulable the operation is a part of. None if it is the top-level
+        Schedule.
+    parent_control_flow_op : ControlFlowOperation | None, optional
+        The ControlFlowOperation that the operation is part of, if any. This is used to
+        create the correct error message.
+
+    Returns
+    -------
+    bool
+        True if the operation is a, or contains NCO operation(s), else False.
+    """
     contains_nco_op = False
     if isinstance(operation, Schedule):
-        for schedulable in operation.schedulables.values():
-            sub_operation = operation.operations[schedulable["operation_id"]]
+        for sub_schedulable in operation.schedulables.values():
+            sub_operation = operation.operations[sub_schedulable["operation_id"]]
             contains_nco_op = (
                 contains_nco_op
                 or _check_nco_operations_on_nco_time_grid_recursively(
-                    sub_operation, schedulable
+                    operation=sub_operation,
+                    schedulable=sub_schedulable,
+                    parent_control_flow_op=None,
                 )
             )
         if contains_nco_op:
-            _check_nco_grid_timing(schedulable, operation)
+            _check_nco_grid_timing(
+                operation=operation,
+                schedulable=schedulable,
+                parent_control_flow_op=parent_control_flow_op,
+            )
     elif isinstance(operation, ControlFlowOperation):
         contains_nco_op = _check_nco_operations_on_nco_time_grid_recursively(
-            operation.body
+            operation=operation.body,
+            schedulable=schedulable,
+            parent_control_flow_op=operation,
         )
         if contains_nco_op:
-            _check_nco_grid_timing(schedulable, operation)
+            _check_nco_grid_timing(
+                operation=operation,
+                schedulable=schedulable,
+                parent_control_flow_op=parent_control_flow_op,
+            )
     elif _is_nco_operation(operation):
-        _check_nco_grid_timing(schedulable, operation)
+        _check_nco_grid_timing(
+            operation=operation,
+            schedulable=schedulable,
+            parent_control_flow_op=parent_control_flow_op,
+        )
         contains_nco_op = True
     return contains_nco_op
 
 
 def _check_nco_grid_timing(
-    schedulable: Schedulable | None, operation: Operation | Schedule
+    operation: Operation | Schedule,
+    schedulable: Schedulable | None,
+    parent_control_flow_op: ControlFlowOperation | None = None,
 ) -> None:
+    """
+    Assumes `operation` is a, or contains NCO operation(s), and checks the alignment
+    of the `operation` with the NCO grid.
+    """
     abs_time = 0 if schedulable is None else schedulable["abs_time"]
     start_time = abs_time + operation.get("t0", 0)
-    if isinstance(operation, Schedule):
+    if isinstance(operation, Schedule) and parent_control_flow_op is None:
         try:
             to_grid_time(start_time, constants.NCO_TIME_GRID)
             to_grid_time(operation.duration, constants.NCO_TIME_GRID)
@@ -1187,17 +1231,32 @@ def _check_nco_grid_timing(
                 f"must start and end on the {constants.NCO_TIME_GRID} ns time grid."
             ) from e
 
-    elif isinstance(operation, ControlFlowOperation):
+    elif (
+        isinstance(operation, ControlFlowOperation)
+        or parent_control_flow_op is not None
+    ):
         try:
             to_grid_time(start_time, constants.NCO_TIME_GRID)
             to_grid_time(operation.duration, constants.NCO_TIME_GRID)
         except ValueError as e:
-            raise NcoOperationTimingError(
-                f"ControlFlow operation {operation.name}, which contains NCO related "
-                f"operations, cannot start at t={round(start_time*1e9)} ns and end at "
-                f"t={round((start_time+operation.duration)*1e9)} ns. This operation "
-                f"must start and end on the {constants.NCO_TIME_GRID} ns time grid."
-            ) from e
+            if parent_control_flow_op is None:
+                raise NcoOperationTimingError(
+                    f"ControlFlow operation {operation.name}, which contains NCO "
+                    f"related operations, cannot start at t="
+                    f"{round(start_time*1e9)} ns and end at t="
+                    f"{round((start_time+operation.duration)*1e9)} ns. This operation "
+                    f"must start and end on the {constants.NCO_TIME_GRID} ns time grid."
+                ) from e
+            else:
+                raise NcoOperationTimingError(
+                    f"ControlFlow operation {parent_control_flow_op.name}, starting at "
+                    f"t={round(start_time*1e9)} ns and ending at t="
+                    f"{round((start_time+parent_control_flow_op.duration)*1e9)} ns, "
+                    "contains NCO related operations that may not be aligned with the "
+                    f"{constants.NCO_TIME_GRID} ns time grid. Please make sure all "
+                    "iterations and/or branches start and end on the "
+                    f"{constants.NCO_TIME_GRID} ns time grid."
+                ) from e
 
     elif _is_nco_operation(operation):
         try:

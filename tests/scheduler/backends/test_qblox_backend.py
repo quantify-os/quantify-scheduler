@@ -4718,9 +4718,10 @@ def test_1_ns_time_grid_loops_on_nco_grid_start_time(
     compiler = SerialCompiler(name="compiler")
     with pytest.raises(
         NcoOperationTimingError,
-        match="ControlFlow operation LoopOperation, which contains NCO related "
-        "operations, cannot start at t=9 ns and end at t=65 ns. This operation must "
-        "start and end on the 4 ns time grid.",
+        match="ControlFlow operation LoopOperation, starting at t=9 ns and ending at "
+        "t=65 ns, contains NCO related operations that may not be aligned with the 4 "
+        "ns time grid. Please make sure all iterations and/or branches start and end "
+        "on the 4 ns time grid.",
     ):
         _ = compiler.compile(sched, config=compile_config_basic_transmon_qblox_hardware)
 
@@ -4762,9 +4763,10 @@ def test_1_ns_time_grid_loops_on_nco_grid_duration(
     compiler = SerialCompiler(name="compiler")
     with pytest.raises(
         NcoOperationTimingError,
-        match="Schedule inner, which contains NCO related operations, cannot start at "
-        "t=12 ns and end at t=39 ns. This schedule must start and end on the 4 ns time "
-        "grid.",
+        match="ControlFlow operation LoopOperation, starting at t=12 ns and ending at "
+        "t=66 ns, contains NCO related operations that may not be aligned with the 4 "
+        "ns time grid. Please make sure all iterations and/or branches start and end "
+        "on the 4 ns time grid.",
     ):
         _ = compiler.compile(sched, config=compile_config_basic_transmon_qblox_hardware)
 
