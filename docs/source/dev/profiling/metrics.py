@@ -6,6 +6,7 @@ import inspect
 import numpy as np
 import sys
 import argparse
+from tqdm import tqdm
 
 
 # How many times each notebook is run. (The results are averaged.)
@@ -102,8 +103,7 @@ class Sums:
 def stat_experiment_detailed(experiment_notebook, samples, methods):
     total_time = Sums()
     times = [Sums() for _ in range(len(methods))]
-    for sample in range(samples):
-        print(f"Running notebook {experiment_notebook}    {sample + 1}/{samples}")
+    for sample in tqdm(range(samples), desc=experiment_notebook):
         stats = stat_experiment(experiment_notebook)
 
         for i, method in enumerate(methods):

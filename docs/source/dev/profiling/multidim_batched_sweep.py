@@ -39,7 +39,7 @@ from quantify_scheduler.operations.gate_library import Measure, Reset, Rxy
 from quantify_scheduler.operations.pulse_library import SoftSquarePulse
 
 # %%
-dh.set_datadir(dh.default_datadir())
+dh.set_datadir(dh.default_datadir(verbose=False))
 
 # %% [markdown]
 # # Connect to hardware
@@ -68,6 +68,7 @@ ic.add_component(ClusterComponent(cluster))
 
 # %%
 meas_ctrl = MeasurementControl("mc")
+meas_ctrl.verbose(False)
 
 # %%
 quantum_device = QuantumDevice("my_device")
@@ -321,7 +322,7 @@ spec_rotation.batched = True
 
 repetition_param = ManualParameter(name="repetition", unit="s", label="Repetition")
 repetition_param.batched = True
-repetitions = 200
+repetitions = 16
 
 schedule_kwargs = {
     "oscillation_qubit": q1.name,
@@ -354,7 +355,7 @@ meas_ctrl.setpoints_grid(
     [
         np.arange(repetitions),
         np.linspace(1, 2 * np.pi, 2),
-        np.linspace(1, 2 * np.pi, 40),
+        np.linspace(1, 2 * np.pi, 20),
     ]
 )
 meas_ctrl.gettables(gettable)

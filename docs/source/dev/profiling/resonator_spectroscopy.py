@@ -301,7 +301,7 @@ meas_ctrl.verbose(False)
 quantum_device.cfg_sched_repetitions(400)
 
 center = 7.7e9
-frequency_setpoints = np.linspace(center - 20e6, center + 20e6, 300)
+frequency_setpoints = np.linspace(center - 20e6, center + 20e6, 200)
 meas_ctrl.settables(freq)
 meas_ctrl.setpoints(frequency_setpoints)
 
