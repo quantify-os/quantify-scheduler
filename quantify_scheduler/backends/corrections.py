@@ -3,11 +3,17 @@
 """Pulse and acquisition corrections for hardware compilation."""
 import logging
 import warnings
-from typing import Any, Dict, Generator, Optional, Tuple, Union
+from typing import Any, Dict, Generator, Optional, Union
 
 import numpy as np
 
+from quantify_scheduler.backends.types.common import (
+    HardwareCompilationConfig,
+    HardwareDistortionCorrection,
+    SoftwareDistortionCorrection,
+)
 from quantify_scheduler.helpers.importers import import_python_object_from_string
+from quantify_scheduler.helpers.schedule import _extract_port_clocks_used
 from quantify_scheduler.helpers.waveforms import get_waveform
 from quantify_scheduler.operations.control_flow_library import ControlFlowOperation
 from quantify_scheduler.operations.operation import Operation
@@ -18,11 +24,12 @@ logger = logging.getLogger(__name__)
 
 
 def determine_relative_latency_corrections(
-    hardware_cfg: Dict[str, Any]
+    hardware_cfg: Union[HardwareCompilationConfig, Dict[str, Any]],
+    schedule: Schedule = None,
 ) -> Dict[str, float]:
     """
     Generates the latency configuration dict for all port-clock combinations that are present in
-    the hardware_cfg. This is done by first setting unspecified latency corrections to zero, and then
+    the schedule (or in the hardware config, if an old-style zhinst config is passed). This is done by first setting unspecified latency corrections to zero, and then
     subtracting the minimum latency from all latency corrections.
     """
 
@@ -46,36 +53,47 @@ def determine_relative_latency_corrections(
                         for port_clock in _extract_port_clocks(d):
                             yield port_clock
 
-    if (raw_latency_dict := hardware_cfg.get("latency_corrections")) is None:
+    if isinstance(hardware_cfg, HardwareCompilationConfig):
+        if schedule is None:
+            raise ValueError(
+                f"{determine_relative_latency_corrections.__name__} requires the `schedule` argument if `hardware_cfg` is a `HardwareCompilationConfig`."
+            )
+
+        port_clocks = [
+            "-".join(map(str, port_clock))
+            for port_clock in _extract_port_clocks_used(schedule)
+        ]
+
+        latency_corrections = hardware_cfg.hardware_options.latency_corrections
+    else:
+        # Support for legacy hardware config dict (zhinst backend only)
+        port_clocks = _extract_port_clocks(hardware_cfg=hardware_cfg)
+        latency_corrections = hardware_cfg.get("latency_corrections")
+
+    if latency_corrections is None:
         return {}
 
-    port_clocks = _extract_port_clocks(hardware_cfg=hardware_cfg)
-
-    latency_dict = {}
+    relative_latencies = {}
     for port_clock in port_clocks:
         # Set unspecified latency corrections to zero to avoid ending up with
         # negative latency corrections after subtracting minimum
-        latency_dict[port_clock] = raw_latency_dict.get(port_clock, 0)
+        relative_latencies[port_clock] = latency_corrections.get(port_clock, 0)
 
     # Subtract lowest value to ensure minimal latency is used and offset the latency
     # corrections to be relative to the minimum. Note that this supports negative delays
     # (which is useful for calibrating)
-    minimum_of_latency_corrections = min(latency_dict.values(), default=0)
-    for port_clock, latency_at_port_clock in latency_dict.items():
-        latency_dict[port_clock] = (
+    minimum_of_latency_corrections = min(relative_latencies.values(), default=0)
+    for port_clock, latency_at_port_clock in relative_latencies.items():
+        relative_latencies[port_clock] = (
             latency_at_port_clock - minimum_of_latency_corrections
         )
 
-    return latency_dict
+    return relative_latencies
 
 
 def distortion_correct_pulse(
     pulse_data: Dict[str, Any],
-    sampling_rate: int,
-    filter_func_name: str,
-    input_var_name: str,
-    kwargs_dict: Dict[str, Any],
-    clipping_values: Optional[Tuple[float]] = None,
+    distortion_correction: SoftwareDistortionCorrection,
 ) -> NumericalPulse:
     """
     Sample pulse and apply filter function to the sample to distortion correct it.
@@ -84,35 +102,33 @@ def distortion_correct_pulse(
     ----------
     pulse_data
         Definition of the pulse.
-    sampling_rate
-        The sampling rate used to generate the time axis values.
-    filter_func_name
-        The filter function path of the dynamically loaded filter function.
-        Example: ``"scipy.signal.lfilter"``.
-    input_var_name
-        The input variable name of the dynamically loaded filter function, most likely:
-        ``"x"``.
-    kwargs_dict
-        Dictionary containing kwargs for the dynamically loaded filter function.
-        Example: ``{"b": [0.0, 0.5, 1.0], "a": 1}``.
-    clipping_values
-        Min and max value to which the corrected pulse will be clipped, depending on
-        allowed output values for the instrument.
+    distortion_correction
+        The distortion_correction configuration for this pulse.
 
     Returns
     -------
     :
         The sampled, distortion corrected pulse wrapped in a ``NumericalPulse``.
     """
-    waveform_data = get_waveform(pulse_info=pulse_data, sampling_rate=sampling_rate)
+    waveform_data = get_waveform(
+        pulse_info=pulse_data, sampling_rate=distortion_correction.sampling_rate
+    )
 
-    filter_func = import_python_object_from_string(filter_func_name)
-    kwargs = {input_var_name: waveform_data, **kwargs_dict}
+    filter_func = import_python_object_from_string(distortion_correction.filter_func)
+    kwargs = {
+        distortion_correction.input_var_name: waveform_data,
+        **distortion_correction.kwargs,
+    }
     corrected_waveform_data = filter_func(**kwargs)
 
-    if clipping_values is not None and len(clipping_values) == 2:
+    if (
+        distortion_correction.clipping_values is not None
+        and len(distortion_correction.clipping_values) == 2
+    ):
         corrected_waveform_data = np.clip(
-            corrected_waveform_data, clipping_values[0], clipping_values[1]
+            corrected_waveform_data,
+            distortion_correction.clipping_values[0],
+            distortion_correction.clipping_values[1],
         )
 
     if corrected_waveform_data.size == 1:  # Interpolation requires two sample points
@@ -233,55 +249,30 @@ def apply_software_distortion_corrections(  # noqa: PLR0912
 
                 correction_cfg = distortion_corrections[portclock_key]
 
-                try:
-                    correction_type = correction_cfg.get("correction_type", "software")
-                except AttributeError:
-                    correction_type = correction_cfg[0].get(
-                        "correction_type", "software"
-                    )
-
-                if correction_type != "software":
+                if isinstance(correction_cfg, (HardwareDistortionCorrection, list)):
                     continue
 
-                try:
-                    correction_type = correction_cfg.get("correction_type", "software")
-                except AttributeError:
-                    correction_type = correction_cfg[0].get(
-                        "correction_type", "software"
-                    )
+                # Zhinst support (still uses old hw dict)
+                if not isinstance(
+                    correction_cfg, SoftwareDistortionCorrection
+                ) and not isinstance(correction_cfg, list):
+                    try:
+                        correction_type = correction_cfg.get(
+                            "correction_type", "software"
+                        )
+                    except AttributeError:
+                        correction_type = correction_cfg[0].get(
+                            "correction_type", "software"
+                        )
 
-                if correction_type != "software":
-                    continue
-
-                filter_func_name = correction_cfg.get("filter_func", None)
-                input_var_name = correction_cfg.get("input_var_name", None)
-                kwargs_dict = correction_cfg.get("kwargs", None)
-                clipping_values = correction_cfg.get("clipping_values", None)
-                sampling_rate = correction_cfg.get("sampling_rate")
-
-                if None in (filter_func_name, input_var_name, kwargs_dict):
-                    raise KeyError(
-                        f"One or more elements missing in distortion correction config "
-                        f'for "{portclock_key}"\n\n'
-                        f'"filter_func": {filter_func_name}\n'
-                        f'"input_var_name": {input_var_name}\n'
-                        f'"kwargs": {kwargs_dict}'
-                    )
-
-                if clipping_values and len(clipping_values) != 2:
-                    raise KeyError(
-                        f'Clipping values for "{portclock_key}" should contain two '
-                        "values, min and max.\n"
-                        f'"clipping_values": {clipping_values}'
-                    )
+                    if correction_type != "software":
+                        continue
 
                 corrected_pulse = distortion_correct_pulse(
                     pulse_data=pulse_data,
-                    sampling_rate=sampling_rate,
-                    filter_func_name=filter_func_name,
-                    input_var_name=input_var_name,
-                    kwargs_dict=kwargs_dict,
-                    clipping_values=clipping_values,
+                    distortion_correction=SoftwareDistortionCorrection.model_validate(
+                        correction_cfg
+                    ),
                 )
 
                 operation.data["pulse_info"][pulse_info_idx] = corrected_pulse.data[

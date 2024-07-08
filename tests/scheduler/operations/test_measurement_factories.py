@@ -120,7 +120,7 @@ def test_optical_measurement_trigger_count(
     assert isinstance(operation.data["acquisition_info"][0], dict)
     acq_info = operation.data["acquisition_info"][0]
     assert acq_info["protocol"] == "TriggerCount"
-    assert acq_info["acq_return_type"] == int
+    assert acq_info["acq_return_type"] is int
     assert_acquisition_equal(acq_info, kwargs)
 
 

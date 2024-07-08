@@ -57,7 +57,9 @@ def compile_circuit_to_device_with_config_validation(
         config.device_compilation_config
     )
 
-    return _compile_circuit_to_device(operation=schedule, device_cfg=device_cfg)
+    return _compile_circuit_to_device(
+        operation=schedule, device_cfg=device_cfg, device_overrides={}
+    )
 
 
 # It is important that if the operation is a Schedule type, we always return a Schedule.
@@ -66,25 +68,36 @@ def compile_circuit_to_device_with_config_validation(
 def _compile_circuit_to_device(
     operation: Schedule,
     device_cfg: DeviceCompilationConfig,
+    device_overrides: dict,
 ) -> Schedule: ...
 @overload
 def _compile_circuit_to_device(
     operation: Operation | Schedule,
     device_cfg: DeviceCompilationConfig,
+    device_overrides: dict,
 ) -> Operation | Schedule: ...
 def _compile_circuit_to_device(
     operation,
     device_cfg,
+    device_overrides,
 ):
+    device_overrides = {
+        **operation.data.get("gate_info", {}).get("device_overrides", {}),
+        **device_overrides,
+    }
     if isinstance(operation, ScheduleBase):
         for inner_op_key in operation.operations:
             operation.operations[inner_op_key] = _compile_circuit_to_device(
-                operation=operation.operations[inner_op_key], device_cfg=device_cfg
+                operation=operation.operations[inner_op_key],
+                device_cfg=device_cfg,
+                device_overrides=device_overrides,
             )
         return operation
     elif isinstance(operation, ControlFlowOperation):
         operation.body = _compile_circuit_to_device(
-            operation=operation.body, device_cfg=device_cfg
+            operation=operation.body,
+            device_cfg=device_cfg,
+            device_overrides=device_overrides,
         )
         return operation
     elif not (operation.valid_pulse or operation.valid_acquisition):
@@ -102,6 +115,7 @@ def _compile_circuit_to_device(
                 qubit=qubits[0],
                 operation_type=operation_type,
                 device_cfg=device_cfg,
+                device_overrides=device_overrides,
             )
 
         # it is a two-qubit operation if the operation not in the qubit config
@@ -111,6 +125,7 @@ def _compile_circuit_to_device(
                 qubits=qubits,
                 operation_type=operation_type,
                 device_cfg=device_cfg,
+                device_overrides=device_overrides,
             )
         # we only support 2-qubit operations and single-qubit operations.
         # some single-qubit operations (reset, measure) can be expressed as acting
@@ -121,6 +136,7 @@ def _compile_circuit_to_device(
                 qubits=qubits,
                 operation_type=operation_type,
                 device_cfg=device_cfg,
+                device_overrides=device_overrides,
             )
     else:
         return operation
@@ -425,6 +441,7 @@ def _compile_multiplexed(
     qubits: Sequence[str],
     operation_type: str,
     device_cfg: DeviceCompilationConfig,
+    device_overrides: dict,
 ) -> Operation | Schedule:
     """
     Compiles gate with multiple qubits.
@@ -452,12 +469,24 @@ def _compile_multiplexed(
             )
 
         device_op: Operation | Schedule = _get_device_repr_from_cfg_multiplexed(
-            operation, element_cfg[operation_type], mux_idx=mux_idx
+            operation,
+            element_cfg[operation_type],
+            mux_idx=mux_idx,
+            device_overrides=device_overrides,
         )
+
+        device_op_device_overrides = device_op.data.get("gate_info", {}).get(
+            "device_overrides", {}
+        )
+        new_device_overrides = {**device_op_device_overrides, **device_overrides}
 
         if isinstance(device_op, ScheduleBase):
             inner_subschedules.append(
-                _compile_circuit_to_device(operation=device_op, device_cfg=device_cfg)
+                _compile_circuit_to_device(
+                    operation=device_op,
+                    device_cfg=device_cfg,
+                    device_overrides=new_device_overrides,
+                )
             )
         else:
             operation.add_device_representation(device_op)
@@ -476,9 +505,7 @@ def _compile_multiplexed(
         for inner_subschedule in inner_subschedules:
             if ref_schedulable is not None:
                 inner_schedule.add(
-                    operation=_compile_circuit_to_device(
-                        operation=inner_subschedule, device_cfg=device_cfg
-                    ),
+                    operation=inner_subschedule,
                     rel_time=0,
                     ref_op=ref_schedulable,
                     ref_pt="start",
@@ -495,6 +522,7 @@ def _compile_single_qubit(
     qubit: str,
     operation_type: str,
     device_cfg: DeviceCompilationConfig,
+    device_overrides: dict,
 ) -> Operation | Schedule:
     """
     Compiles gate with multiple qubits.
@@ -519,10 +547,20 @@ def _compile_single_qubit(
     device_op: Operation | Schedule = _get_device_repr_from_cfg(
         operation=operation,
         operation_cfg=element_cfg[operation_type],
+        device_overrides=device_overrides,
     )
 
+    device_op_device_overrides = device_op.data.get("gate_info", {}).get(
+        "device_overrides", {}
+    )
+    new_device_overrides = {**device_op_device_overrides, **device_overrides}
+
     if isinstance(device_op, ScheduleBase):
-        return _compile_circuit_to_device(operation=device_op, device_cfg=device_cfg)
+        return _compile_circuit_to_device(
+            operation=device_op,
+            device_cfg=device_cfg,
+            device_overrides=new_device_overrides,
+        )
     else:
         operation.add_device_representation(device_op)
         return operation
@@ -533,6 +571,7 @@ def _compile_two_qubits(
     qubits: Sequence[str],
     operation_type: str,
     device_cfg: DeviceCompilationConfig,
+    device_overrides: dict,
 ) -> Operation | Schedule:
     """
     Compiles gate with multiple qubits.
@@ -575,18 +614,29 @@ def _compile_two_qubits(
         )
 
     device_op: Operation | Schedule = _get_device_repr_from_cfg(
-        operation, edge_config[operation_type]
+        operation, edge_config[operation_type], device_overrides
     )
 
+    device_op_device_overrides = device_op.data.get("gate_info", {}).get(
+        "device_overrides", {}
+    )
+    new_device_overrides = {**device_op_device_overrides, **device_overrides}
+
     if isinstance(device_op, ScheduleBase):
-        return _compile_circuit_to_device(operation=device_op, device_cfg=device_cfg)
+        return _compile_circuit_to_device(
+            operation=device_op,
+            device_cfg=device_cfg,
+            device_overrides=new_device_overrides,
+        )
     else:
         operation.add_device_representation(device_op)
         return operation
 
 
 def _get_device_repr_from_cfg(
-    operation: Operation, operation_cfg: OperationCompilationConfig
+    operation: Operation,
+    operation_cfg: OperationCompilationConfig,
+    device_overrides: dict,
 ) -> Operation | Schedule:
     # deepcopy because operation_type can occur multiple times
     # (e.g., parametrized operations).
@@ -600,11 +650,19 @@ def _get_device_repr_from_cfg(
         for key in operation_cfg.gate_info_factory_kwargs:
             factory_kwargs[key] = operation.data["gate_info"][key]
 
+    # Add operation defined custom device overrides.
+    for key, value in device_overrides.items():
+        if key in factory_kwargs:
+            factory_kwargs[key] = value
+
     return factory_func(**factory_kwargs)
 
 
 def _get_device_repr_from_cfg_multiplexed(
-    operation: Operation, operation_cfg: OperationCompilationConfig, mux_idx: int
+    operation: Operation,
+    operation_cfg: OperationCompilationConfig,
+    mux_idx: int,
+    device_overrides: dict,
 ) -> Operation | Schedule:
     operation_cfg = deepcopy(operation_cfg)
     factory_func = operation_cfg.factory_func
@@ -626,6 +684,11 @@ def _get_device_repr_from_cfg_multiplexed(
                 factory_kwargs[key] = gate_info[mux_idx]
             else:
                 factory_kwargs[key] = gate_info
+
+    # Add operation defined custom device overrides.
+    for key, value in device_overrides.items():
+        if key in factory_kwargs:
+            factory_kwargs[key] = value
 
     return factory_func(**factory_kwargs)
 

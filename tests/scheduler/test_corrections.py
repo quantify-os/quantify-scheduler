@@ -13,6 +13,11 @@ from quantify_scheduler.backends.qblox import constants as qblox_constants
 from quantify_scheduler.backends.qblox.operations.stitched_pulse import (
     StitchedPulseBuilder,
 )
+from quantify_scheduler.backends.types.common import (
+    HardwareCompilationConfig,
+    HardwareDistortionCorrection,
+    SoftwareDistortionCorrection,
+)
 from quantify_scheduler.operations.gate_library import X
 from quantify_scheduler.operations.pulse_library import (
     IdlePulse,
@@ -100,16 +105,22 @@ def test_distortion_correct_pulse(
 ):
     pulse = SquarePulse(amp=220e-3, duration=duration, port="", clock="")
 
+    distortion_correction = SoftwareDistortionCorrection.model_validate(
+        {
+            "sampling_rate": qblox_constants.SAMPLING_RATE,
+            "filter_func": "scipy.signal.lfilter",
+            "input_var_name": "x",
+            "kwargs": {
+                "b": filter_coefficients,
+                "a": np.array([1]) if use_numpy_array else [1],
+            },
+            "clipping_values": clipping_values,
+        }
+    )
+
     corrected_pulse = distortion_correct_pulse(
         pulse_data=pulse.data["pulse_info"][0],
-        sampling_rate=qblox_constants.SAMPLING_RATE,
-        filter_func_name="scipy.signal.lfilter",
-        input_var_name="x",
-        kwargs_dict={
-            "b": filter_coefficients,
-            "a": np.array([1]) if use_numpy_array else [1],
-        },
-        clipping_values=clipping_values,
+        distortion_correction=distortion_correction,
     )
 
     corrected_pulse_samples = corrected_pulse.data["pulse_info"][0]["samples"]
@@ -118,9 +129,9 @@ def test_distortion_correct_pulse(
         len(corrected_pulse_samples) > 1
     ), "Correction always generates at least 2 sample points"
 
-    if clipping_values:
-        assert min(corrected_pulse_samples) >= clipping_values[0]
-        assert max(corrected_pulse_samples) <= clipping_values[1]
+    if distortion_correction.clipping_values:
+        assert min(corrected_pulse_samples) >= distortion_correction.clipping_values[0]
+        assert max(corrected_pulse_samples) <= distortion_correction.clipping_values[1]
 
 
 @pytest.mark.parametrize(

@@ -118,7 +118,7 @@ def test_extract_acquisition_metadata_from_schedule(compiled_two_qubit_t1_schedu
 
     assert acq_metadata.acq_protocol == "SSBIntegrationComplex"
     assert acq_metadata.bin_mode == BinMode.AVERAGE
-    assert acq_metadata.acq_return_type == complex
+    assert acq_metadata.acq_return_type is complex
 
     # keys correspond to acquisition channels
     assert set(acq_metadata.acq_channels_metadata.keys()) == {0, 1}
