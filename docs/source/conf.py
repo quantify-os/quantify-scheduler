@@ -19,12 +19,7 @@
 #
 import os
 import re
-import sys
 from typing import Any, Dict
-
-package_path = os.path.abspath("..")
-sys.path.insert(0, package_path)
-
 
 # -- General configuration ---------------------------------------------
 
@@ -57,12 +52,13 @@ extensions = [
     "sphinxcontrib.mermaid",
     "autoapi.extension",
     "sphinx_design",
+    "awesome_code_block",
 ]
 
 copybutton_prompt_text = "$ "
 
 # required to use sphinx_design in combination with myst
-myst_enable_extensions = ["colon_fence"]
+myst_enable_extensions = ["colon_fence", "substitution", "attrs_block"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -275,10 +271,13 @@ autoapi_python_class_content = "class"
 
 # avoid duplicate label warning even when manual label has been used;
 suppress_warnings = [
+    "app.add_directive",
     "autosectionlabel.*",
     "mystnb.unknown_mime_type",
     "mystnb.mime_priority",
+    "autodoc.RemovedInSphinx80Warning",
 ]
+
 
 # avoid ugly very long module_a.module_b.module_c.module_d.module_e.module_d.MyClass
 # display in docs (very ugly when overflowing the html page width)
@@ -548,6 +547,12 @@ def maybe_skip_member(app, what, name, obj, skip, options):
     if str(name) in deprecated_objs:
         return True
     return skip
+
+
+autoapi_keep_files = True
+
+# Enable caching
+cache_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), "_build", "cache")
 
 
 def setup(app):

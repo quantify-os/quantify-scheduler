@@ -15,6 +15,9 @@
   - Delete `LOSetting.from_mapping`. (!1013)
 - Qblox backend
   - Change arguments of `ClusterCompiler`, `CompilerContainer.from_hardware_cfg`, `generate_port_clock_to_device_map`, `assign_pulse_and_acq_info_to_devices`, `distortion_correct_pulse`. (!1013)
+- Documentation
+  - Add tutorial for `ConditionalReset` (!984)
+  - Add sphinxawesome-codeblocks extension (!984)
 
 ### Deprecation
 

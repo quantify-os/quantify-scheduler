@@ -87,7 +87,8 @@ docs = [
  "sphinxcontrib-bibtex",
  "sphinxcontrib-mermaid",
  "quantify_scheduler[zhinst]",
-
+ "scikit-learn", # can be removed when quantify-core==0.8.0 is released
+ "awesome_code_block @ git+https://gitlab.com/quantify-os/awesome_code_block.git@main",
 ]
 
 dev = [

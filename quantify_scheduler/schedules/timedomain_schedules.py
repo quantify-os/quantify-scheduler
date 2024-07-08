@@ -433,8 +433,11 @@ def readout_calibration_sched(
     qubit: str,
     prepared_states: List[int],
     repetitions: int = 1,
+    acq_protocol: Literal[
+        "SSBIntegrationComplex", "ThresholdedAcquisition"
+    ] = "SSBIntegrationComplex",
 ) -> Schedule:
-    """
+    r"""
     A schedule for readout calibration. Prepares a state and immediately performs
     a measurement.
 
@@ -448,6 +451,12 @@ def readout_calibration_sched(
     repetitions
         The number of shots to acquire, sets the number of times the schedule will
         be repeated.
+    acq_protocol
+        The acquisition protocol used for the readout calibration. By default
+        "SSBIntegrationComplex", but "ThresholdedAcquisition" can be
+        used for verifying thresholded acquisition parameters with this function (see
+        :doc:`/tutorials/Conditional Reset`).
+
 
     Returns
     -------
@@ -477,7 +486,9 @@ def readout_calibration_sched(
         else:
             raise ValueError(f"Prepared state ({prep_state}) must be either 0, 1 or 2.")
         schedule.add(
-            Measure(qubit, acq_index=i, bin_mode=BinMode.APPEND),
+            Measure(
+                qubit, acq_index=i, bin_mode=BinMode.APPEND, acq_protocol=acq_protocol
+            ),
             label=f"Measurement {i}",
         )
     return schedule

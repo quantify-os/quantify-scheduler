@@ -636,6 +636,7 @@ As a final note, weighted integration can also be scheduled at the {ref}`gate-le
 <qubit>.measure.acq_weights_b(square_weights)
 ```
 
+(thresholded_acquisition_explanation)=
 ### Thresholded acquisition
 With thresholded acquisition, we can map a complex input signal to either a 0 or a 1, by comparing the data to a threshold value. It is similar to the {ref}`single-sideband integration protocol <sec-ssb>` described above, but after integration the I-Q data points are first rotated by an angle and then compared to a threshold value to assign the results to either a "0" or to a "1". See the illustration below.
 

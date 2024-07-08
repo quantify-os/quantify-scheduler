@@ -23,10 +23,6 @@ dl.xr-attrs {
     grid-template-columns: auto auto !important;
 }
 
-/* Code color highlights */
-.highlight .hll {
-    background-color: #d6ecaa
-}
 
 .sd-card-img-top {
     margin-top: 10px !important;
