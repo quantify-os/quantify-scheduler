@@ -8,7 +8,7 @@ import re
 import warnings
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any, Dict, List, Literal, Tuple, Type, Union
+from typing import Any, Dict, List, Literal, Optional, Tuple, Type, Union
 
 import numpy as np
 from pydantic import Field, model_validator
@@ -505,7 +505,8 @@ def hardware_compile(
 
     validate_non_overlapping_stitched_pulse(schedule)
 
-    _check_nco_operations_on_nco_time_grid(schedule)
+    if not config.hardware_compilation_config.allow_off_grid_nco_ops:
+        _check_nco_operations_on_nco_time_grid(schedule)
 
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         schedule, hardware_cfg
@@ -574,6 +575,11 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
     Options that are used in compiling the instructions for the hardware, such as
     :class:`~quantify_scheduler.backends.types.common.LatencyCorrection` or
     :class:`~quantify_scheduler.backends.types.qblox.SequencerOptions`.
+    """
+    allow_off_grid_nco_ops: Optional[bool] = None
+    """
+    Flag to allow NCO operations to play at times that are not aligned with the NCO
+    grid.
     """
     compilation_passes: List[SimpleNodeConfig] = [
         SimpleNodeConfig(

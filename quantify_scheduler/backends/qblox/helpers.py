@@ -1423,6 +1423,23 @@ def _generate_legacy_hardware_config(
             )
             pc_config["qasm_hook_func"] = pc_sequencer_options.qasm_hook_func
 
+    # `allow_off_grid_nco_ops` is a global setting that must be applied to all
+    # port-clocks. To facilitate tests that compare old and new hardware config, it is
+    # only added to the old config if it is True.
+    if compilation_config.hardware_compilation_config.allow_off_grid_nco_ops:
+        for port, clock in port_clocks:
+            pc_path = find_port_clock_path(
+                hardware_config=hardware_config, port=port, clock=clock
+            )
+            # Extract the port-clock config:
+            pc_config = hardware_config
+            for key in pc_path:
+                pc_config = pc_config[key]
+
+            pc_config["allow_off_grid_nco_ops"] = (
+                compilation_config.hardware_compilation_config.allow_off_grid_nco_ops
+            )
+
     # Add digital clock to digital channels, so that users don't have to specify it.
     _recursive_digital_channel_search(hardware_config)
 

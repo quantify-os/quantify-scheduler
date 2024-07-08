@@ -593,6 +593,11 @@ class AnalogSequencerSettings(SequencerSettings):
     """Sets the threshold value with which to compare the input ADC values of the selected input path."""
     ttl_acq_auto_bin_incr_en: Optional[bool] = None
     """Selects if the bin index is automatically incremented when acquiring multiple triggers."""
+    allow_off_grid_nco_ops: Optional[bool] = None
+    """
+    Flag to allow NCO operations to play at times that are not aligned with the NCO
+    grid.
+    """
 
     @classmethod
     def initialize_from_config_dict(
@@ -715,6 +720,7 @@ class AnalogSequencerSettings(SequencerSettings):
         )
 
         ttl_acq_threshold = sequencer_cfg.get("ttl_acq_threshold")
+        allow_off_grid_nco_ops = sequencer_cfg.get("allow_off_grid_nco_ops")
 
         return cls(
             nco_en=nco_en,
@@ -733,6 +739,7 @@ class AnalogSequencerSettings(SequencerSettings):
             thresholded_acq_threshold=thresholded_acq_threshold,
             ttl_acq_threshold=ttl_acq_threshold,
             auto_sideband_cal=auto_sideband_cal,
+            allow_off_grid_nco_ops=allow_off_grid_nco_ops,
         )
 
 
