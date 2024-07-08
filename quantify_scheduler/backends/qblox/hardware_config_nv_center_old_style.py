@@ -83,22 +83,6 @@ hardware_config = {
                 ]
             },
         },
-        "cluster0_module5": {
-            "instrument_type": "QTM",
-            "sequence_to_file": False,
-            "digital_output_0": {
-                "portclock_configs": [{"port": "qe1:switch", "clock": "digital"}],
-            },
-            "digital_input_4": {
-                "portclock_configs": [
-                    {
-                        "port": "qe1:optical_readout",
-                        "clock": "qe1.ge0",
-                        "in_threshold_primary": 0.5,
-                    }
-                ],
-            },
-        },
     },
     "red_laser": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
     "spinpump_laser": {

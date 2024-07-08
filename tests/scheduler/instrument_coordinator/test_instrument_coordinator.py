@@ -15,8 +15,6 @@ from xarray import DataArray, Dataset
 
 from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends import SerialCompiler
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.gettables_profiled import ProfiledInstrumentCoordinator
 from quantify_scheduler.instrument_coordinator import (
     InstrumentCoordinator,
@@ -24,7 +22,7 @@ from quantify_scheduler.instrument_coordinator import (
 )
 from quantify_scheduler.instrument_coordinator.components import base as base_component
 from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
-from quantify_scheduler.operations.gate_library import Measure, Reset, X
+from quantify_scheduler.operations.gate_library import Reset
 from tests.scheduler.backends.test_qblox_backend import (
     dummy_cluster,
 )
@@ -443,6 +441,7 @@ def test_profiled_instrument_coordinator(mock_setup_basic_transmon, dummy_compon
 def test_retrieve_hardware_logs__qblox_hardware(
     example_ip,
     dummy_cluster,
+    mock_setup_basic_transmon_with_standard_params,
     mocker,
     mock_qblox_instruments_config_manager,
 ):
@@ -453,15 +452,22 @@ def test_retrieve_hardware_logs__qblox_hardware(
             f"{cluster_name}": {
                 "instrument_type": "Cluster",
                 "modules": {
-                    "2": {"instrument_type": "QRM"},
+                    "2": {"instrument_type": "QCM"},
+                    "4": {"instrument_type": "QRM"},
                 },
                 "ref": "internal",
             }
         },
-        "hardware_options": {},
+        "hardware_options": {
+            "modulation_frequencies": {
+                "q3:res-q3.ro": {"interm_freq": 300000000.0},
+                "q3:mw-q3.01": {"interm_freq": 50000000.0},
+            }
+        },
         "connectivity": {
             "graph": [
                 [f"{cluster_name}.module2.complex_output_0", "q3:res"],
+                [f"{cluster_name}.module4.complex_output_0", "q3:mw"],
             ]
         },
     }
@@ -469,12 +475,7 @@ def test_retrieve_hardware_logs__qblox_hardware(
     ic = InstrumentCoordinator("ic")
     ic.add_component(ClusterComponent(dummy_cluster()))
 
-    q3 = BasicTransmonElement("q3")
-    q3.clock_freqs.f01(300000000.0)
-    q3.clock_freqs.readout(8.5e7)
-    q3.measure.acq_delay(100e-9)
-    quantum_device = QuantumDevice("basic_transmon_quantum_device")
-    quantum_device.add_element(q3)
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
 
     ic.get_component(f"ic_{cluster_name}").instrument.get_ip_config = MagicMock(
@@ -489,7 +490,7 @@ def test_retrieve_hardware_logs__qblox_hardware(
     )
 
     sched = Schedule("sched")
-    sched.add(Measure("q3"), rel_time=4e-9)
+    sched.add(Reset("q3"))
 
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(

@@ -7,7 +7,6 @@ import itertools
 import re
 import warnings
 from collections import defaultdict
-from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, Dict, List, Literal, Tuple, Type, Union
 
@@ -25,8 +24,10 @@ from quantify_scheduler.backends.graph_compilation import (
 from quantify_scheduler.backends.qblox import compiler_container, constants
 from quantify_scheduler.backends.qblox.exceptions import NcoOperationTimingError
 from quantify_scheduler.backends.qblox.helpers import (
+    _generate_legacy_hardware_config,
     _generate_new_style_hardware_compilation_config,
     assign_pulse_and_acq_info_to_devices,
+    find_channel_names,
     to_grid_time,
 )
 from quantify_scheduler.backends.qblox.operations import long_square_pulse
@@ -35,11 +36,17 @@ from quantify_scheduler.backends.types.common import (
     Connectivity,
     HardwareCompilationConfig,
     HardwareDescription,
+    HardwareOptions,
 )
 from quantify_scheduler.backends.types.qblox import (
     ClusterDescription,
     QbloxHardwareDescription,
     QbloxHardwareOptions,
+    QCMDescription,
+    QCMRFDescription,
+    QRMDescription,
+    QRMRFDescription,
+    QTMDescription,
     _ClusterCompilerConfig,
     _ClusterModuleCompilerConfig,
     _LocalOscillatorCompilerConfig,
@@ -62,6 +69,7 @@ from quantify_scheduler.schedules.schedule import (
     Schedule,
     ScheduleBase,
 )
+from quantify_scheduler.structure.model import DataStructure
 
 
 def _replace_long_square_pulses_recursively(
@@ -466,22 +474,29 @@ def hardware_compile(
         The compiled schedule.
 
     """
-    hardware_cfg = deepcopy(config.hardware_compilation_config)
+    # Extract the old-style hardware config from the CompilationConfig
+    hardware_cfg = _generate_legacy_hardware_config(
+        schedule=schedule, compilation_config=config
+    )
 
-    if hardware_cfg.hardware_options.latency_corrections is not None:
+    if "latency_corrections" in hardware_cfg.keys():
+        # Important: currently only used to validate the input, should also be
+        # used for storing the latency corrections
+        # (see also https://gitlab.com/groups/quantify-os/-/epics/1)
+        HardwareOptions(latency_corrections=hardware_cfg["latency_corrections"])
+
         # Subtract minimum latency to allow for negative latency corrections
-        hardware_cfg.hardware_options.latency_corrections = (
-            determine_relative_latency_corrections(
-                schedule=schedule,
-                hardware_cfg=hardware_cfg,
-            )
+        hardware_cfg["latency_corrections"] = determine_relative_latency_corrections(
+            hardware_cfg
         )
 
     # Apply software distortion corrections. Hardware distortion corrections are
     # compiled into the compiler container that follows.
-    if hardware_cfg.hardware_options.distortion_corrections is not None:
+    if (
+        distortion_corrections := hardware_cfg.get("distortion_corrections")
+    ) is not None:
         replacing_schedule = apply_software_distortion_corrections(
-            schedule, hardware_cfg.hardware_options.distortion_corrections
+            schedule, distortion_corrections
         )
         if replacing_schedule is not None:
             schedule = replacing_schedule
@@ -498,6 +513,7 @@ def hardware_compile(
 
     assign_pulse_and_acq_info_to_devices(
         schedule=schedule,
+        hardware_cfg=hardware_cfg,
         device_compilers=container.clusters,
     )
 
@@ -579,6 +595,46 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
 
     @model_validator(mode="after")
     def _validate_connectivity_channel_names(self) -> QbloxHardwareCompilationConfig:
+        if isinstance(self.connectivity, Connectivity):
+            self._validate_channel_names_new_config()
+
+        else:
+            self._validate_channel_names_old_config()
+
+        return self
+
+    def _validate_channel_names_old_config(self) -> None:
+        instrument_type_to_description = {
+            description.get_instrument_type(): description
+            for description in [
+                QCMDescription,
+                QRMDescription,
+                QCMRFDescription,
+                QRMRFDescription,
+                QTMDescription,
+            ]
+        }
+
+        for cluster_name, cluster_config in find_qblox_instruments(
+            hardware_config=self.connectivity, instrument_type="Cluster"
+        ).items():
+            for instrument_type, class_ in instrument_type_to_description.items():
+                for module_name, module in find_qblox_instruments(
+                    hardware_config=cluster_config, instrument_type=instrument_type
+                ).items():
+                    try:
+                        class_.validate_channel_names(find_channel_names(module))
+                    except ValueError as exc:
+                        # Add some information to the raised exception. The original exception
+                        # is included in the message because pydantic suppresses the traceback.
+                        raise ValueError(
+                            "Error validating channel names for "
+                            f"{cluster_name}.{module_name} ({instrument_type}). Full "
+                            f"error message:\n{exc}\n\nSupported names for "
+                            f"{instrument_type}:\n{class_.get_valid_channels()}"
+                        ) from exc
+
+    def _validate_channel_names_new_config(self) -> None:
         module_name_to_channel_names_map: dict[tuple[str, str], set[str]] = defaultdict(
             set
         )
@@ -622,8 +678,6 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
                     f"({instrument_type}). Full error message:\n{exc}\n\nSupported "
                     f"names for {instrument_type}:\n{valid_channels}."
                 ) from exc
-
-        return self
 
     @model_validator(mode="after")
     def _warn_mix_lo_false(
@@ -727,7 +781,7 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
 
     def _extract_instrument_compiler_configs(  # noqa: PLR0912, PLR0915
         self, portclocks_used: set[tuple]
-    ) -> Dict[str, Any]:
+    ) -> Dict[str, DataStructure]:
         """
         Extract an instrument compiler config for each instrument mentioned in ``hardware_description``.
         Each instrument config has a similar structure than ``QbloxHardwareCompilationConfig``, but
@@ -1144,82 +1198,38 @@ def _check_nco_operations_on_nco_time_grid(schedule: Schedule, **_: Any) -> Sche
 
 
 def _check_nco_operations_on_nco_time_grid_recursively(
-    operation: Operation | Schedule,
-    schedulable: Schedulable | None = None,
-    parent_control_flow_op: ControlFlowOperation | None = None,
+    operation: Operation | Schedule, schedulable: Schedulable | None = None
 ) -> bool:
-    """
-    Check whether NCO operations, or Schedules/ControlFlowOperations containing NCO
-    operations, align with the NCO grid.
-
-    Parameters
-    ----------
-    operation : Operation | Schedule
-        The Operation or Schedule to be checked.
-    schedulable : Schedulable | None, optional
-        The Schedulable the operation is a part of. None if it is the top-level
-        Schedule.
-    parent_control_flow_op : ControlFlowOperation | None, optional
-        The ControlFlowOperation that the operation is part of, if any. This is used to
-        create the correct error message.
-
-    Returns
-    -------
-    bool
-        True if the operation is a, or contains NCO operation(s), else False.
-    """
     contains_nco_op = False
     if isinstance(operation, Schedule):
-        for sub_schedulable in operation.schedulables.values():
-            sub_operation = operation.operations[sub_schedulable["operation_id"]]
+        for schedulable in operation.schedulables.values():
+            sub_operation = operation.operations[schedulable["operation_id"]]
             contains_nco_op = (
                 contains_nco_op
                 or _check_nco_operations_on_nco_time_grid_recursively(
-                    operation=sub_operation,
-                    schedulable=sub_schedulable,
-                    parent_control_flow_op=None,
+                    sub_operation, schedulable
                 )
             )
         if contains_nco_op:
-            _check_nco_grid_timing(
-                operation=operation,
-                schedulable=schedulable,
-                parent_control_flow_op=parent_control_flow_op,
-            )
+            _check_nco_grid_timing(schedulable, operation)
     elif isinstance(operation, ControlFlowOperation):
         contains_nco_op = _check_nco_operations_on_nco_time_grid_recursively(
-            operation=operation.body,
-            schedulable=schedulable,
-            parent_control_flow_op=operation,
+            operation.body
         )
         if contains_nco_op:
-            _check_nco_grid_timing(
-                operation=operation,
-                schedulable=schedulable,
-                parent_control_flow_op=parent_control_flow_op,
-            )
+            _check_nco_grid_timing(schedulable, operation)
     elif _is_nco_operation(operation):
-        _check_nco_grid_timing(
-            operation=operation,
-            schedulable=schedulable,
-            parent_control_flow_op=parent_control_flow_op,
-        )
+        _check_nco_grid_timing(schedulable, operation)
         contains_nco_op = True
     return contains_nco_op
 
 
 def _check_nco_grid_timing(
-    operation: Operation | Schedule,
-    schedulable: Schedulable | None,
-    parent_control_flow_op: ControlFlowOperation | None = None,
+    schedulable: Schedulable | None, operation: Operation | Schedule
 ) -> None:
-    """
-    Assumes `operation` is a, or contains NCO operation(s), and checks the alignment
-    of the `operation` with the NCO grid.
-    """
     abs_time = 0 if schedulable is None else schedulable["abs_time"]
     start_time = abs_time + operation.get("t0", 0)
-    if isinstance(operation, Schedule) and parent_control_flow_op is None:
+    if isinstance(operation, Schedule):
         try:
             to_grid_time(start_time, constants.NCO_TIME_GRID)
             to_grid_time(operation.duration, constants.NCO_TIME_GRID)
@@ -1231,32 +1241,17 @@ def _check_nco_grid_timing(
                 f"must start and end on the {constants.NCO_TIME_GRID} ns time grid."
             ) from e
 
-    elif (
-        isinstance(operation, ControlFlowOperation)
-        or parent_control_flow_op is not None
-    ):
+    elif isinstance(operation, ControlFlowOperation):
         try:
             to_grid_time(start_time, constants.NCO_TIME_GRID)
             to_grid_time(operation.duration, constants.NCO_TIME_GRID)
         except ValueError as e:
-            if parent_control_flow_op is None:
-                raise NcoOperationTimingError(
-                    f"ControlFlow operation {operation.name}, which contains NCO "
-                    f"related operations, cannot start at t="
-                    f"{round(start_time*1e9)} ns and end at t="
-                    f"{round((start_time+operation.duration)*1e9)} ns. This operation "
-                    f"must start and end on the {constants.NCO_TIME_GRID} ns time grid."
-                ) from e
-            else:
-                raise NcoOperationTimingError(
-                    f"ControlFlow operation {parent_control_flow_op.name}, starting at "
-                    f"t={round(start_time*1e9)} ns and ending at t="
-                    f"{round((start_time+parent_control_flow_op.duration)*1e9)} ns, "
-                    "contains NCO related operations that may not be aligned with the "
-                    f"{constants.NCO_TIME_GRID} ns time grid. Please make sure all "
-                    "iterations and/or branches start and end on the "
-                    f"{constants.NCO_TIME_GRID} ns time grid."
-                ) from e
+            raise NcoOperationTimingError(
+                f"ControlFlow operation {operation.name}, which contains NCO related "
+                f"operations, cannot start at t={round(start_time*1e9)} ns and end at "
+                f"t={round((start_time+operation.duration)*1e9)} ns. This operation "
+                f"must start and end on the {constants.NCO_TIME_GRID} ns time grid."
+            ) from e
 
     elif _is_nco_operation(operation):
         try:

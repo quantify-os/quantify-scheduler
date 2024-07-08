@@ -28,7 +28,6 @@ from quantify_scheduler.backends.qblox.operation_handling.virtual import (
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox.timetag import TimetagSequencerCompiler
-from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
 from quantify_scheduler.backends.types.qblox import (
     AnalogSequencerSettings,
     OpInfo,
@@ -58,7 +57,7 @@ from quantify_scheduler.resources import BasebandClockResource
 def _assert_update_parameters_op_list(
     op_list: List[Operation],
     expected_update_parameters: Dict[int, float],
-    hardware_cfg_cluster,
+    hardware_cfg_cluster_legacy,
 ) -> None:
     schedule = Schedule("parameter update test")
     for op in op_list:
@@ -66,20 +65,22 @@ def _assert_update_parameters_op_list(
     _assert_update_parameters_schedule(
         schedule,
         expected_update_parameters,
-        hardware_cfg_cluster,
+        hardware_cfg_cluster_legacy,
     )
 
 
 def _assert_update_parameters_schedule(
     schedule: Schedule,
     expected_update_parameters: Dict[int, float],
-    hardware_cfg_cluster,
+    hardware_cfg_cluster_legacy,
 ) -> None:
     schedule = _determine_absolute_timing(schedule)
     container = compiler_container.CompilerContainer.from_hardware_cfg(
-        schedule, hardware_cfg_cluster
+        schedule, hardware_cfg_cluster_legacy
     )
-    assign_pulse_and_acq_info_to_devices(schedule, container.clusters)
+    assign_pulse_and_acq_info_to_devices(
+        schedule, container.clusters, hardware_cfg_cluster_legacy
+    )
     container.prepare()
 
     cluster0 = container.instrument_compilers["cluster0"]
@@ -175,12 +176,12 @@ def set_clock_frequency(t0: float = 0):
 def test_param_update_after_param_op(
     op_list,
     expected_update_parameters,
-    hardware_cfg_cluster,
+    hardware_cfg_cluster_legacy,
 ):
     _assert_update_parameters_op_list(
         op_list,
         expected_update_parameters,
-        QbloxHardwareCompilationConfig.model_validate(hardware_cfg_cluster),
+        hardware_cfg_cluster_legacy,
     )
 
 
@@ -224,12 +225,12 @@ def test_param_update_after_param_op(
 def test_param_update_after_param_op_except_if_simultaneous_play(
     op_list,
     expected_update_parameters,
-    hardware_cfg_cluster,
+    hardware_cfg_cluster_legacy,
 ):
     _assert_update_parameters_op_list(
         op_list,
         expected_update_parameters,
-        QbloxHardwareCompilationConfig.model_validate(hardware_cfg_cluster),
+        hardware_cfg_cluster_legacy,
     )
 
 
@@ -300,12 +301,12 @@ def test_param_update_after_param_op_except_if_simultaneous_play(
 def test_no_unnecessary_parameter_update(
     op_list,
     expected_update_parameters,
-    hardware_cfg_cluster,
+    hardware_cfg_cluster_legacy,
 ):
     _assert_update_parameters_op_list(
         op_list,
         expected_update_parameters,
-        QbloxHardwareCompilationConfig.model_validate(hardware_cfg_cluster),
+        hardware_cfg_cluster_legacy,
     )
 
 

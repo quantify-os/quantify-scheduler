@@ -12,7 +12,8 @@
                     }
                 },
                 "2": {
-                    "instrument_type": "QCM_RF"
+                    "instrument_type": "QCM_RF",
+                    "digital_output_0": {}
                 },
                 "3": {
                     "instrument_type": "QRM"
@@ -115,7 +116,7 @@
                 "phase_error": -4.2
             },
             "q4:res-q4.ro": {
-                "dc_offset_i": -0.054,
+                                "dc_offset_i": -0.054,
                 "dc_offset_q": -0.034,
                 "amp_ratio": 0.9997,
                 "phase_error": -4.0
@@ -129,7 +130,7 @@
         },
         "input_gain": {
             "q4:res-q4.ro": {
-                "gain_I": 2,
+                                "gain_I": 2,
                 "gain_Q": 3
             }
         },

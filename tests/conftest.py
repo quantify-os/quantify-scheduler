@@ -22,4 +22,6 @@ def pytest_collection_modifyitems(config, items):  # noqa: ARG001
 
 
 def pytest_ignore_collect(collection_path: Path, config):  # noqa: ARG001
-    return not is_zhinst_available() and "zhinst" in str(collection_path)  # noqa: F405
+    if not is_zhinst_available() and "zhinst" in str(collection_path):  # noqa: F405
+        return True
+    return False

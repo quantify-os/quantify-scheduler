@@ -47,9 +47,6 @@ if TYPE_CHECKING:
     from quantify_scheduler.backends.qblox.operation_handling.base import (
         IOperationStrategy,
     )
-from quantify_scheduler.backends.types.qblox import (
-    _LocalOscillatorCompilerConfig,
-)
 
 
 class LocalOscillatorCompiler(compiler_abc.InstrumentCompiler):
@@ -71,7 +68,7 @@ class LocalOscillatorCompiler(compiler_abc.InstrumentCompiler):
         rates, can work in a synchronized way when performing multiple executions of
         the schedule.
     instrument_cfg
-        The compiler config referring to this instrument.
+        The part of the hardware mapping dict referring to this instrument.
     """
 
     def __init__(
@@ -79,7 +76,7 @@ class LocalOscillatorCompiler(compiler_abc.InstrumentCompiler):
         parent: compiler_container.CompilerContainer,
         name: str,
         total_play_time: float,
-        instrument_cfg: _LocalOscillatorCompilerConfig,
+        instrument_cfg: dict[str, Any],
     ):
         def _extract_parameter(
             parameter_dict: dict[str, float | None]
@@ -93,10 +90,7 @@ class LocalOscillatorCompiler(compiler_abc.InstrumentCompiler):
             total_play_time=total_play_time,
             instrument_cfg=instrument_cfg,
         )
-        self._settings = LOSettings(
-            power={"power": instrument_cfg.hardware_description.power},
-            frequency={"frequency": instrument_cfg.frequency},
-        )
+        self._settings = LOSettings.from_mapping(instrument_cfg)
         self.freq_param_name, self._frequency = _extract_parameter(
             self._settings.frequency
         )
@@ -475,8 +469,6 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
         Name of the `QCoDeS` instrument this compiler object corresponds to.
     total_play_time
         Total time execution of the schedule should go on for.
-    portclock_to_path
-        Dictionary containing the hardware path to connected to each portclock.
     instrument_cfg
         The part of the hardware configuration dictionary referring to this device. This is one
         of the inner dictionaries of the overall hardware config.
@@ -501,7 +493,6 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
         name: str,
         total_play_time: float,
         instrument_cfg: dict[str, Any],
-        portclock_to_path: dict[str, str],
         latency_corrections: dict[str, float] | None = None,
         distortion_corrections: dict[int, Any] | None = None,
     ):
@@ -515,7 +506,6 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
         )
         self._op_infos: dict[tuple[str, str], list[OpInfo]] = defaultdict(list)
         self.instrument_compilers = self.construct_module_compilers()
-        self.portclock_to_path = portclock_to_path
         self.latency_corrections = latency_corrections
 
     def add_op_info(self, port: str, clock: str, op_info: OpInfo) -> None:

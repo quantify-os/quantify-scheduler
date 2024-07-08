@@ -446,7 +446,7 @@ def test_awg_indexes(mocker):
     zi_settings = settings.ZISettings([], awg_settings)
 
     # Assert
-    assert zi_settings.awg_indexes == [0, 1]
+    assert [0, 1] == zi_settings.awg_indexes
 
 
 def test_deserialize(mocker):

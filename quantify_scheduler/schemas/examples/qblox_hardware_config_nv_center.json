@@ -7,8 +7,7 @@
             "modules": {
                 "1": {"instrument_type": "QCM_RF"},
                 "2": {"instrument_type": "QCM"},
-                "4": {"instrument_type": "QRM"},
-                "5": {"instrument_type": "QTM"}
+                "4": {"instrument_type": "QRM"}
             }
         },
         "red_laser": {
@@ -64,11 +63,6 @@
                 "phase_error": -4.2
             }
        },
-        "digitization_thresholds": {
-            "qe1:optical_readout-qe1.ge0": {
-                "in_threshold_primary": 0.5
-            }
-        },
         "sequencer_options": {
             "qe0:optical_readout-qe0.ge0": {
                 "ttl_acq_threshold": 0.5
@@ -120,14 +114,6 @@
             [
                 "cluster0.module4.real_output_0",
                 "qe0:optical_readout"
-            ],
-            [
-                "cluster0.module5.digital_output_0",
-                "qe1:switch"
-            ],
-            [
-                "cluster0.module5.digital_input_4",
-                "qe1:optical_readout"
             ]
         ]
     }

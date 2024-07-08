@@ -155,7 +155,7 @@ def set_standard_params_transmon(mock_setup):
 
 def set_up_mock_basic_nv_setup() -> Dict:
     """
-    Set up a system containing 2 electronic qubits in an NV center.
+    Set up a system containing 1 electronic qubit in an NV center.
 
     After usage, close all instruments.
 

@@ -17,13 +17,13 @@ from quantify_scheduler.backends.qblox.enums import ChannelMode
 from quantify_scheduler.backends.types.qblox import (
     ComplexChannelDescription,
     ComplexInputGain,
-    DigitalChannelDescription,
     OpInfo,
     QbloxHardwareDistortionCorrection,
     RealChannelDescription,
     RealInputGain,
 )
 from quantify_scheduler.helpers.collections import (
+    find_all_port_clock_combinations,
     find_port_clock_path,
 )
 from quantify_scheduler.helpers.schedule import _extract_port_clocks_used
@@ -39,8 +39,8 @@ from quantify_scheduler.resources import DigitalClockResource
 from quantify_scheduler.schedules.schedule import Schedule, ScheduleBase
 
 if TYPE_CHECKING:
+    from quantify_scheduler.backends.graph_compilation import CompilationConfig
     from quantify_scheduler.backends.qblox.instrument_compilers import ClusterCompiler
-    from quantify_scheduler.backends.types.common import HardwareCompilationConfig
 
 
 def generate_waveform_data(
@@ -494,7 +494,7 @@ def determine_clock_lo_interm_freqs(
 
 
 def generate_port_clock_to_device_map(
-    device_compilers: dict[str, Any]
+    hardware_cfg: dict[str, Any]
 ) -> dict[tuple[str, str], str]:
     """
     Generates a mapping that specifies which port-clock combinations belong to which
@@ -507,9 +507,8 @@ def generate_port_clock_to_device_map(
 
     Parameters
     ----------
-    device_compilers:
-        Dictionary containing compiler configs.
-
+    hardware_cfg:
+        The hardware config dictionary.
 
     Returns
     -------
@@ -524,10 +523,20 @@ def generate_port_clock_to_device_map(
         If a port-clock combination occurs multiple times in the hardware configuration.
     """
     portclock_map = {}
-    for device_name, device_compiler in device_compilers.items():
-        if hasattr(device_compiler, "portclock_to_path"):
-            for portclock in device_compiler.portclock_to_path.keys():
-                portclock_map[portclock] = device_name
+    for device_name, device_info in hardware_cfg.items():
+        if not isinstance(device_info, dict):
+            continue
+
+        for portclock in find_all_port_clock_combinations(device_info):
+            if portclock in portclock_map:
+                raise ValueError(
+                    f"Port-clock combination '{portclock[0]}-{portclock[1]}'"
+                    f" occurs multiple times in the hardware configuration;"
+                    f" each port-clock combination may only occur once. When using"
+                    f" the same port-clock combination for output and input, assigning"
+                    f" only the output suffices."
+                )
+            portclock_map[portclock] = device_name
 
     return portclock_map
 
@@ -730,7 +739,7 @@ def _get_list_of_operations_for_op_info_creation(
 def assign_pulse_and_acq_info_to_devices(
     schedule: Schedule,
     device_compilers: dict[str, ClusterCompiler],
-    portclock_to_path: dict[tuple, str] | None = None,
+    hardware_cfg: dict[str, Any],
 ):
     """
     Traverses the schedule and generates `OpInfo` objects for every pulse and
@@ -742,8 +751,8 @@ def assign_pulse_and_acq_info_to_devices(
         The schedule to extract the pulse and acquisition info from.
     device_compilers
         Dictionary containing InstrumentCompilers as values and their names as keys.
-    portclock_to_path
-        Dictionary containing the hardware path to connected to each portclock.
+    hardware_cfg
+        The hardware config dictionary.
 
     Raises
     ------
@@ -757,16 +766,7 @@ def assign_pulse_and_acq_info_to_devices(
         This exception is raised when attempting to assign an acquisition with a
         port-clock combination that is not defined in the hardware configuration.
     """
-    portclock_mapping = generate_port_clock_to_device_map(device_compilers)
-
-    # This is a temporary hack to make `test_construct_sequencers` pass
-    # TODO: remove when passing the new compiler config to the module compilers
-    if not portclock_mapping and portclock_to_path is not None:
-        portclock_mapping = {}
-        for pc, path in portclock_to_path.items():
-            port, clock = pc.split("-")
-            cluster, module, _ = path.split(".")
-            portclock_mapping[(port, clock)] = f"{cluster}_{module}"
+    portclock_mapping = generate_port_clock_to_device_map(hardware_cfg)
 
     list_of_operations: list[tuple[float, Operation]] = list()
     _get_list_of_operations_for_op_info_creation(schedule, 0, list_of_operations)
@@ -958,7 +958,7 @@ def single_scope_mode_acquisition_raise(sequencer_0, sequencer_1, module_name):
 
 
 def _generate_legacy_hardware_config(
-    schedule: Schedule, hardware_cfg: HardwareCompilationConfig
+    schedule: Schedule, compilation_config: CompilationConfig
 ) -> dict[str, Any]:
     """
     Extract the old-style Qblox hardware config from the CompilationConfig.
@@ -970,8 +970,8 @@ def _generate_legacy_hardware_config(
     ----------
     schedule: Schedule
         Schedule from which the port-clock combinations are extracted.
-    hardware_cfg : HardwareCompilationConfig
-        Hardware info.
+    compilation_config : CompilationConfig
+        CompilationConfig from which hardware config is extracted.
 
     Returns
     -------
@@ -1067,9 +1067,11 @@ def _generate_legacy_hardware_config(
 
         return f"{qubit}.{clock_tag}"
 
-    hardware_description = hardware_cfg.hardware_description
-    hardware_options = hardware_cfg.hardware_options
-    connectivity = hardware_cfg.connectivity
+    hardware_description = (
+        compilation_config.hardware_compilation_config.hardware_description
+    )
+    hardware_options = compilation_config.hardware_compilation_config.hardware_options
+    connectivity = compilation_config.hardware_compilation_config.connectivity
 
     if isinstance(connectivity, dict):
         if "graph" in connectivity:
@@ -1088,7 +1090,9 @@ def _generate_legacy_hardware_config(
     port_clocks = _extract_port_clocks_used(operation=schedule)
 
     # Add connectivity information to the hardware config:
-    connectivity_graph = hardware_cfg.connectivity.graph
+    connectivity_graph = (
+        compilation_config.hardware_compilation_config.connectivity.graph
+    )
 
     # Prevent multiple assignment of same `connected_node` for repeated ports
     used_portclocks = []
@@ -1418,24 +1422,6 @@ def _generate_legacy_hardware_config(
                 pc_sequencer_options.init_gain_awg_path_Q
             )
             pc_config["qasm_hook_func"] = pc_sequencer_options.qasm_hook_func
-
-    digitization_thresholds = hardware_options.digitization_thresholds
-    if digitization_thresholds is not None:
-        for port, clock in port_clocks:
-            if (pc_dig_thr := digitization_thresholds.get(f"{port}-{clock}")) is None:
-                continue
-
-            # Find path to port-clock combination in the hardware config, e.g.,
-            # ["cluster0", "cluster0_module1", "complex_output_0", "portclock_configs", 1]
-            pc_path = find_port_clock_path(
-                hardware_config=hardware_config, port=port, clock=clock
-            )
-            # Extract the port-clock config:
-            pc_config = hardware_config
-            for key in pc_path:
-                pc_config = pc_config[key]
-
-            pc_config["in_threshold_primary"] = pc_dig_thr.in_threshold_primary
 
     # Add digital clock to digital channels, so that users don't have to specify it.
     _recursive_digital_channel_search(hardware_config)
@@ -1802,17 +1788,6 @@ def _generate_new_style_hardware_compilation_config(
                         )
                     )
 
-                    port_clock = (
-                        f"{portclock_cfg.pop('port')}-{portclock_cfg.pop('clock')}"
-                    )
-                    if "in_threshold_primary" in portclock_cfg:
-                        # Set init gain from portclock config:
-                        new_style_config["hardware_options"]["digitization_thresholds"][
-                            port_clock
-                        ]["in_threshold_primary"] = portclock_cfg.pop(
-                            "in_threshold_primary"
-                        )
-
     def _convert_cluster_module_config(
         cluster_name: str,
         module_slot_idx: int,
@@ -1896,19 +1871,6 @@ def _generate_new_style_hardware_compilation_config(
                     old_channel_config=module_cfg_value,
                     new_style_config=new_style_config,
                 )
-                # Remove channel description if only default values are set
-                parsed_channel_description = DigitalChannelDescription.model_validate(
-                    new_style_config["hardware_description"][cluster_name]["modules"][
-                        module_slot_idx
-                    ][module_cfg_key]
-                )
-                if (
-                    parsed_channel_description.model_dump()
-                    == DigitalChannelDescription().model_dump()
-                ):
-                    new_style_config["hardware_description"][cluster_name]["modules"][
-                        module_slot_idx
-                    ].pop(module_cfg_key)
 
     def _convert_cluster_config(
         cluster_name: str, old_cluster_config: dict, new_style_config: dict

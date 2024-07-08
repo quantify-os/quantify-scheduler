@@ -198,41 +198,64 @@ def hardware_cfg_rf_two_clusters():
 
 
 @pytest.fixture
-def hardware_cfg_trigger_count():
+def hardware_cfg_rf_two_clusters_legacy():
     yield {
-        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
-        "hardware_description": {
-            "cluster0": {
-                "instrument_type": "Cluster",
-                "modules": {3: {"instrument_type": "QRM"}},
-                "ref": "internal",
-            },
-            "iq_mixer_red_laser": {"instrument_type": "IQMixer"},
-            "optical_mod_red_laser_2": {"instrument_type": "OpticalModulator"},
-            "red_laser": {"instrument_type": "LocalOscillator", "power": 1},
-            "red_laser_2": {"instrument_type": "LocalOscillator", "power": 1},
-        },
-        "hardware_options": {
-            "modulation_frequencies": {
-                "qe0:optical_readout-qe0.ge0": {
-                    "lo_freq": None,
-                    "interm_freq": 50000000.0,
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster1": {
+            "instrument_type": "Cluster",
+            "ref": "internal",
+            "cluster1_module1": {
+                "instrument_type": "QCM_RF",
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "q2:mw",
+                            "clock": "q2.01",
+                            "interm_freq": 50e6,
+                        },
+                    ],
                 },
-                "qe0:optical_control-qe0.ge0": {"lo_freq": None, "interm_freq": 0},
             },
-            "sequencer_options": {
-                "qe0:optical_readout-qe0.ge0": {"ttl_acq_threshold": 0.5}
+            "cluster1_module2": {
+                "instrument_type": "QRM_RF",
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "q2:res",
+                            "clock": "q2.ro",
+                            "interm_freq": 300e6,
+                        }
+                    ],
+                },
             },
         },
-        "connectivity": {
-            "graph": [
-                ("cluster0.module3.real_input_0", "iq_mixer_red_laser.if"),
-                ("red_laser.output", "iq_mixer_red_laser.lo"),
-                ("iq_mixer_red_laser.rf", "qe0:optical_readout"),
-                ("cluster0.module3.real_output_0", "optical_mod_red_laser_2.if"),
-                ("red_laser_2.output", "optical_mod_red_laser_2.lo"),
-                ("optical_mod_red_laser_2.out", "qe0:optical_control"),
-            ]
+        "cluster2": {
+            "instrument_type": "Cluster",
+            "ref": "internal",
+            "cluster2_module1": {
+                "instrument_type": "QCM_RF",
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "q3:mw",
+                            "clock": "q3.01",
+                            "interm_freq": 50e6,
+                        },
+                    ],
+                },
+            },
+            "cluster2_module2": {
+                "instrument_type": "QRM_RF",
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "q3:res",
+                            "clock": "q3.ro",
+                            "interm_freq": 300e6,
+                        }
+                    ],
+                },
+            },
         },
     }
 
@@ -283,24 +306,32 @@ def hardware_cfg_trigger_count_legacy():
 
 
 @pytest.fixture
-def hardware_cfg_cluster_latency_corrections():
+def hardware_cfg_cluster_latency_corrections_legacy():
     yield {
-        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
-        "hardware_description": {
-            "cluster0": {
-                "instrument_type": "Cluster",
-                "modules": {1: {"instrument_type": "QCM"}},
-                "ref": "internal",
-            }
-        },
-        "hardware_options": {
-            "latency_corrections": {"q0:mw-q0.01": 2e-08, "q1:mw-q1.01": -4e-09}
-        },
-        "connectivity": {
-            "graph": [
-                ("cluster0.module1.complex_output_0", "q0:mw"),
-                ("cluster0.module1.complex_output_1", "q1:mw"),
-            ]
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "latency_corrections": {"q0:mw-q0.01": 2e-8, "q1:mw-q1.01": -4e-9},
+        "cluster0": {
+            "instrument_type": "Cluster",
+            "ref": "internal",
+            "cluster0_module1": {
+                "instrument_type": "QCM",
+                "complex_output_0": {
+                    "portclock_configs": [
+                        {
+                            "port": "q0:mw",
+                            "clock": "q0.01",
+                        }
+                    ],
+                },
+                "complex_output_1": {
+                    "portclock_configs": [
+                        {
+                            "port": "q1:mw",
+                            "clock": "q1.01",
+                        }
+                    ],
+                },
+            },
         },
     }
 
@@ -589,6 +620,32 @@ def hardware_cfg_cluster_test_component():
 
 
 @pytest.fixture
+def hardware_cfg_qcm_legacy():
+    yield {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "instrument_type": "Cluster",
+            "ref": "internal",
+            "cluster0_module1": {
+                "instrument_type": "QCM",
+                "complex_output_0": {
+                    "mix_lo": True,
+                    "lo_name": "lo0",
+                    "portclock_configs": [
+                        {
+                            "port": "q0:mw",
+                            "clock": "cl0.baseband",
+                            "interm_freq": 50e6,
+                        }
+                    ],
+                },
+            },
+        },
+        "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
+    }
+
+
+@pytest.fixture
 def hardware_cfg_qcm():
     yield {
         "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
@@ -611,29 +668,6 @@ def hardware_cfg_qcm():
                 ["cluster0.module1.complex_output_0", "iq_mixer_lo0.if"],
                 ["lo0.output", "iq_mixer_lo0.lo"],
                 ["iq_mixer_lo0.rf", "q0:mw"],
-            ]
-        },
-    }
-
-
-@pytest.fixture
-def hardware_cfg_real_mode():
-    yield {
-        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
-        "hardware_description": {
-            "cluster0": {
-                "instrument_type": "Cluster",
-                "modules": {"1": {"instrument_type": "QCM"}},
-                "ref": "internal",
-            }
-        },
-        "hardware_options": {},
-        "connectivity": {
-            "graph": [
-                ["cluster0.module1.real_output_0", "q0:fl"],
-                ["cluster0.module1.real_output_1", "q1:fl"],
-                ["cluster0.module1.real_output_2", "q2:fl"],
-                ["cluster0.module1.real_output_3", "q3:fl"],
             ]
         },
     }
@@ -681,6 +715,29 @@ def hardware_cfg_real_mode_legacy():
                     ],
                 },
             },
+        },
+    }
+
+
+@pytest.fixture
+def hardware_cfg_real_mode():
+    yield {
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {"1": {"instrument_type": "QCM"}},
+                "ref": "internal",
+            }
+        },
+        "hardware_options": {},
+        "connectivity": {
+            "graph": [
+                ["cluster0.module1.real_output_0", "q0:fl"],
+                ["cluster0.module1.real_output_1", "q1:fl"],
+                ["cluster0.module1.real_output_2", "q2:fl"],
+                ["cluster0.module1.real_output_3", "q3:fl"],
+            ]
         },
     }
 

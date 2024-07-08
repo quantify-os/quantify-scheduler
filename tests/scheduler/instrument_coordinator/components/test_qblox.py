@@ -30,10 +30,7 @@ from quantify_scheduler.helpers.qblox_dummy_instrument import (
     start_dummy_cluster_armed_sequencers,
 )
 from quantify_scheduler.instrument_coordinator.components import qblox
-from quantify_scheduler.operations.acquisition_library import (
-    SSBIntegrationComplex,
-    TriggerCount,
-)
+from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.gate_library import X90, Measure, Reset
 from quantify_scheduler.operations.pulse_library import (
     IdlePulse,
@@ -42,11 +39,6 @@ from quantify_scheduler.operations.pulse_library import (
 )
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.schedule import AcquisitionMetadata, Schedule
-from quantify_scheduler.schemas.examples import utils
-
-EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER = utils.load_json_example_scheme(
-    "qblox_hardware_config_nv_center.json"
-)
 
 
 @pytest.fixture
@@ -58,7 +50,6 @@ def make_cluster_component(mocker):
         "2": "QCM_RF",
         "3": "QRM",
         "4": "QRM_RF",
-        "5": "QTM",
         "7": "QCM",
         "10": "QCM",  # for flux pulsing q0_q3
         "12": "QCM",  # for flux pulsing q4
@@ -79,7 +70,6 @@ def make_cluster_component(mocker):
             "QCM_RF": ClusterType.CLUSTER_QCM_RF,
             "QRM": ClusterType.CLUSTER_QRM,
             "QRM_RF": ClusterType.CLUSTER_QRM_RF,
-            "QTM": ClusterType.CLUSTER_QTM,
         }
         cluster = Cluster(
             name=name,
@@ -113,7 +103,7 @@ def make_cluster_component(mocker):
             mocker.patch.object(
                 instrument, "stop_sequencer", wraps=instrument.stop_sequencer
             )
-            if not instrument.is_rf_type and not instrument.is_qtm_type:
+            if not instrument.is_rf_type:
                 mocker.patch.object(
                     instrument, "out0_offset", wraps=instrument.out0_offset
                 )
@@ -130,12 +120,11 @@ def make_cluster_component(mocker):
                     sequencer_logs if sequencer_logs else [],
                 ),
             )
-            if not instrument.is_qtm_type:
-                mocker.patch.object(
-                    instrument,
-                    "store_scope_acquisition",
-                    wraps=instrument.store_scope_acquisition,
-                )
+            mocker.patch.object(
+                instrument,
+                "store_scope_acquisition",
+                wraps=instrument.store_scope_acquisition,
+            )
 
         return cluster_component
 
@@ -690,72 +679,6 @@ def test_prepare_rf(
     qrm_rf["sequencer0"].parameters[f"sync_en"].set.assert_called_with(True)
 
 
-@pytest.mark.parametrize("force_set_parameters", [False, True])
-def test_prepare_qtm(
-    mocker,
-    mock_setup_basic_nv,
-    make_cluster_component,
-    force_set_parameters,
-):
-    # Arrange
-    out_seq_no = 0
-    in_seq_no = 4
-    cluster_name = "cluster0"
-    ic_cluster = make_cluster_component(cluster_name)
-
-    qtm = ic_cluster.instrument.module5
-    # TODO remove these patches when the QTM dummy is available (SE-499)
-    for seq_no in (out_seq_no, in_seq_no):
-        mocker.patch.object(qtm[f"sequencer{seq_no}"].parameters["sync_en"], "set")
-        mocker.patch.object(qtm[f"sequencer{seq_no}"].parameters["sequence"], "set")
-        mocker.patch.object(qtm[f"io_channel{seq_no}"].parameters["out_mode"], "set")
-        mocker.patch.object(qtm[f"io_channel{seq_no}"].parameters["out_mode"], "get")
-        mocker.patch.object(
-            qtm[f"io_channel{seq_no}"].parameters["in_trigger_en"], "set"
-        )
-        mocker.patch.object(
-            qtm[f"io_channel{seq_no}"].parameters["binned_acq_time_ref"], "set"
-        )
-        mocker.patch.object(
-            qtm[f"io_channel{seq_no}"].parameters["binned_acq_time_source"], "set"
-        )
-        mocker.patch.object(
-            qtm[f"io_channel{seq_no}"].parameters["binned_acq_on_invalid_time_delta"],
-            "set",
-        )
-
-    ic_cluster.force_set_parameters(force_set_parameters)
-    ic_cluster.instrument.reference_source("internal")  # Put it in a known state
-
-    sched = Schedule("pulse_sequence")
-    sched.add(MarkerPulse(duration=40e-9, port="qe1:switch"))
-    sched.add(TriggerCount(duration=1e-6, port="qe1:optical_readout", clock="qe1.ge0"))
-
-    quantum_device = mock_setup_basic_nv["quantum_device"]
-    quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
-
-    compiler = SerialCompiler(name="compiler")
-    compiled_schedule = compiler.compile(
-        sched,
-        config=quantum_device.generate_compilation_config(),
-    )
-    compiled_schedule_before_prepare = deepcopy(compiled_schedule)
-
-    prog = compiled_schedule["compiled_instructions"]
-    ic_cluster.prepare(prog[cluster_name])
-
-    # Assert
-    assert compiled_schedule == compiled_schedule_before_prepare
-
-    # Assert it's only set in initialization
-    ic_cluster.instrument.reference_source.assert_called_once()
-
-    qtm[f"sequencer{in_seq_no}"].parameters["sync_en"].set.assert_called_with(True)
-    qtm[f"sequencer{in_seq_no}"].parameters["sequence"].set.assert_called_once()
-    qtm[f"sequencer{out_seq_no}"].parameters["sync_en"].set.assert_called_with(True)
-    qtm[f"sequencer{out_seq_no}"].parameters["sequence"].set.assert_called_once()
-
-
 def test_prepare_exception(make_cluster_component):
     # Arrange
     cluster = make_cluster_component(
@@ -875,122 +798,6 @@ def test_retrieve_acquisition(
     xr.testing.assert_identical(qrm_rf.retrieve_acquisition(), expected_dataset)
 
 
-def test_retrieve_acquisition_qtm(
-    mock_setup_basic_nv,
-    make_cluster_component,
-    mocker,
-):
-    cluster_name = "cluster0"
-    qtm_name = f"{cluster_name}_module5"
-
-    cluster = make_cluster_component(cluster_name)
-    qtm = cluster._cluster_modules[qtm_name]
-
-    # qblox-instruments test assembler does not work for QTM commands yet.
-    qtm_instrument = cluster.instrument.module5
-    for seq_no in (0, 4):
-        mocker.patch.object(
-            qtm_instrument[f"sequencer{seq_no}"].parameters["sync_en"], "set"
-        )
-        mocker.patch.object(
-            qtm_instrument[f"sequencer{seq_no}"].parameters["sequence"], "set"
-        )
-        mocker.patch.object(
-            qtm_instrument[f"io_channel{seq_no}"].parameters["out_mode"], "set"
-        )
-        mocker.patch.object(
-            qtm_instrument[f"io_channel{seq_no}"].parameters["out_mode"], "get"
-        )
-        mocker.patch.object(
-            qtm_instrument[f"io_channel{seq_no}"].parameters["in_trigger_en"], "set"
-        )
-        mocker.patch.object(
-            qtm_instrument[f"io_channel{seq_no}"].parameters["binned_acq_time_ref"],
-            "set",
-        )
-        mocker.patch.object(
-            qtm_instrument[f"io_channel{seq_no}"].parameters["binned_acq_time_source"],
-            "set",
-        )
-        mocker.patch.object(
-            qtm_instrument[f"io_channel{seq_no}"].parameters[
-                "binned_acq_on_invalid_time_delta"
-            ],
-            "set",
-        )
-
-    # Dummy data taken directly from hardware test, does not correspond to schedule below
-    dummy_data = {
-        "0": {
-            "index": 0,
-            "acquisition": {
-                "bins": {
-                    "count": [
-                        28.0,
-                        28.0,
-                        29.0,
-                        28.0,
-                        27.0,
-                        30.0,
-                        27.0,
-                        28.0,
-                        29.0,
-                        28.0,
-                    ],
-                    "timedelta": [
-                        1898975.0,
-                        326098.0,
-                        809414.0,
-                        2333191.0,
-                        760258.0,
-                        203253.0,
-                        2767205.0,
-                        154074.0,
-                        637301.0,
-                        104949.0,
-                    ],
-                    "threshold": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
-                    "avg_cnt": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                }
-            },
-        }
-    }
-
-    count = np.array(dummy_data["0"]["acquisition"]["bins"]["count"]).astype(int)
-    dataarray = xr.DataArray(
-        [count],
-        dims=["repetition", "acq_index_0"],
-        coords={"repetition": [0], "acq_index_0": range(len(count))},
-        attrs={"acq_protocol": "TriggerCount"},
-    )
-    expected_dataset = xr.Dataset({0: dataarray})
-
-    quantum_device = mock_setup_basic_nv["quantum_device"]
-    quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
-
-    sched = Schedule("digital_pulse_and_acq")
-    sched.add(MarkerPulse(duration=40e-9, port="qe1:switch"))
-    sched.add(TriggerCount(duration=1e-6, port="qe1:optical_readout", clock="qe1.ge0"))
-
-    mocker.patch.object(
-        cluster.instrument.module5,
-        "get_acquisitions",
-        return_value=dummy_data,
-    )
-
-    compiler = SerialCompiler(name="compiler")
-    compiled_schedule = compiler.compile(
-        schedule=sched,
-        config=quantum_device.generate_compilation_config(),
-    )
-    prog = compiled_schedule["compiled_instructions"][cluster_name]
-
-    cluster.prepare(prog)
-    cluster.start()
-
-    xr.testing.assert_identical(qtm.retrieve_acquisition(), expected_dataset)
-
-
 def test_start_baseband(
     schedule_with_measurement,
     hardware_cfg_cluster,
@@ -1065,61 +872,6 @@ def test_start_cluster(
     cluster.instrument.start_sequencer.assert_called()
 
 
-def test_start_qtm(
-    mock_setup_basic_nv,
-    make_cluster_component,
-    mocker,
-):
-    cluster_name = "cluster0"
-    qtm_name = f"{cluster_name}_module5"
-
-    cluster = make_cluster_component(cluster_name)
-    qtm = cluster._cluster_modules[qtm_name]
-
-    # TODO remove these patches when the QTM dummy is available (SE-499)
-    qtm_instrument = cluster.instrument.module5
-    mocker.patch.object(qtm_instrument["sequencer0"].parameters["sync_en"], "set")
-    mocker.patch.object(qtm_instrument["sequencer0"].parameters["sequence"], "set")
-    mocker.patch.object(qtm_instrument["io_channel0"].parameters["out_mode"], "set")
-    mocker.patch.object(qtm_instrument["io_channel0"].parameters["out_mode"], "get")
-    mocker.patch.object(
-        qtm_instrument["io_channel0"].parameters["in_trigger_en"], "set"
-    )
-    mocker.patch.object(
-        qtm_instrument["io_channel0"].parameters["binned_acq_time_ref"], "set"
-    )
-    mocker.patch.object(
-        qtm_instrument["io_channel0"].parameters["binned_acq_time_source"], "set"
-    )
-    mocker.patch.object(
-        qtm_instrument["io_channel0"].parameters["binned_acq_on_invalid_time_delta"],
-        "set",
-    )
-
-    quantum_device = mock_setup_basic_nv["quantum_device"]
-    quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
-
-    sched = Schedule("digital_pulse_and_acq")
-    sched.add(MarkerPulse(duration=40e-9, port="qe1:switch"))
-    sched.add(IdlePulse(duration=4e-9))
-
-    compiler = SerialCompiler(name="compiler")
-    compiled_schedule = compiler.compile(
-        sched, config=quantum_device.generate_compilation_config()
-    )
-
-    prog = compiled_schedule["compiled_instructions"][cluster_name]
-
-    qtm.prepare(prog[qtm_name])
-
-    qtm.start()
-
-    # Assert
-    qtm.instrument.arm_sequencer.assert_called_with(sequencer=0)
-
-    qtm.instrument.start_sequencer.assert_called()
-
-
 def test_stop_cluster(make_cluster_component):
     # Arrange
     cluster = make_cluster_component("cluster0")
@@ -1138,16 +890,6 @@ def test_qrm_acquisition_manager__init__(make_cluster_component):
         parent=cluster._cluster_modules["cluster0_module1"],
         acquisition_metadata=dict(),
         scope_mode_sequencer_and_qblox_acq_index=None,
-        acquisition_duration={},
-        seq_name_to_idx_map={},
-    )
-
-
-def test_qtm_acquisition_manager__init__(make_cluster_component):
-    cluster = make_cluster_component("cluster0")
-    qblox._QTMAcquisitionManager(
-        parent=cluster._cluster_modules["cluster0_module5"],
-        acquisition_metadata=dict(),
         acquisition_duration={},
         seq_name_to_idx_map={},
     )
@@ -1187,7 +929,6 @@ def test_instrument_module():
     instrument_module = InstrumentModule(instrument, "test_instr_module")
     instrument_module.is_qcm_type = True
     instrument_module.is_rf_type = False
-    instrument_module.is_qtm_type = False
 
     # Act
     component = qblox._QCMComponent(instrument_module)
@@ -1204,7 +945,6 @@ def test_instrument_channel():
     instrument_channel = InstrumentChannel(instrument, "test_instr_channel")
     instrument_channel.is_qcm_type = True
     instrument_channel.is_rf_type = False
-    instrument_channel.is_qtm_type = False
 
     # Act
     component = qblox._QCMComponent(instrument_channel)
@@ -1237,7 +977,7 @@ def test_get_hardware_log_component_base(
     quantum_device.hardware_config(hardware_cfg)
 
     sched = Schedule("sched")
-    sched.add(Measure("q1"))
+    sched.add(Reset("q1"))
 
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
@@ -1254,7 +994,7 @@ def test_get_hardware_log_component_base(
 
 def test_get_hardware_log_cluster_component(
     example_ip,
-    hardware_cfg_cluster,
+    hardware_cfg_qcm_rf,
     make_cluster_component,
     mocker,
     mock_qblox_instruments_config_manager,
@@ -1272,12 +1012,12 @@ def test_get_hardware_log_cluster_component(
         return_value=mock_qblox_instruments_config_manager,
     )
 
-    hardware_cfg = hardware_cfg_cluster
+    hardware_cfg = hardware_cfg_qcm_rf
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
 
     sched = Schedule("sched")
-    sched.add(Measure("q1"))
+    sched.add(Reset("q1"))
 
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(

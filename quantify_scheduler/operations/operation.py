@@ -263,17 +263,23 @@ class Operation(JSONSchemaValMixin, UserDict):
     @property
     def valid_gate(self) -> bool:
         """An operation is a valid gate if it has gate-level representation details."""
-        return len(self.data["gate_info"]) > 0
+        if self.data["gate_info"]:
+            return True
+        return False
 
     @property
     def valid_pulse(self) -> bool:
         """An operation is a valid pulse if it has pulse-level representation details."""
-        return len(self.data["pulse_info"]) > 0
+        if self.data["pulse_info"]:
+            return True
+        return False
 
     @property
     def valid_acquisition(self) -> bool:
         """An operation is a valid acquisition if it has pulse-level acquisition representation details."""
-        return len(self.data["acquisition_info"]) > 0
+        if len(self.data["acquisition_info"]) > 0:
+            return True
+        return False
 
     @property
     def is_conditional_acquisition(self) -> bool:
@@ -303,7 +309,9 @@ class Operation(JSONSchemaValMixin, UserDict):
     @property
     def has_voltage_offset(self) -> bool:
         """Checks if the operation contains information for a voltage offset."""
-        return any(
+        if any(
             "offset_path_I" in pulse_info or "offset_path_Q" in pulse_info
             for pulse_info in self.data["pulse_info"]
-        )
+        ):
+            return True
+        return False

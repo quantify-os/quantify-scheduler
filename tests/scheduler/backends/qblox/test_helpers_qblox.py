@@ -254,8 +254,7 @@ def test_generate_old_style_hardware_config(new_style_config, old_style_config):
             quantum_device.add_element(qubits[qubit_name])
 
     generated_hw_config = helpers._generate_legacy_hardware_config(
-        schedule=sched,
-        hardware_cfg=quantum_device.generate_compilation_config().hardware_compilation_config,
+        schedule=sched, compilation_config=quantum_device.generate_compilation_config()
     )
 
     assert generated_hw_config == old_style_config
