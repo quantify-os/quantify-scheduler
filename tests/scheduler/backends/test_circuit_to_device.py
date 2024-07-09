@@ -351,7 +351,7 @@ def test_clock_not_defined_raises():
             "q0": {
                 "measure": {
                     "factory_func": "quantify_scheduler.operations."
-                    + "measurement_factories.dispersive_measurement",
+                    + "measurement_factories.dispersive_measurement_transmon",
                     "gate_info_factory_kwargs": [
                         "acq_channel_override",
                         "acq_index",
@@ -480,7 +480,7 @@ def test_compile_schedule_with_trace_acq_protocol():
             "q0": {
                 "measure": {
                     "factory_func": "quantify_scheduler.operations."
-                    + "measurement_factories.dispersive_measurement",
+                    + "measurement_factories.dispersive_measurement_transmon",
                     "gate_info_factory_kwargs": [
                         "acq_channel_override",
                         "acq_index",
@@ -524,7 +524,7 @@ def test_compile_schedule_with_invalid_pulse_type_raises():
             "q0": {
                 "measure": {
                     "factory_func": "quantify_scheduler.operations."
-                    + "measurement_factories.dispersive_measurement",
+                    + "measurement_factories.dispersive_measurement_transmon",
                     "gate_info_factory_kwargs": [
                         "acq_channel_override",
                         "acq_index",
@@ -879,7 +879,7 @@ def test_clock_resources_and_subschedules_compiles():
             f"q{i}": {
                 "measure": {
                     "factory_func": "quantify_scheduler.operations."
-                    + "measurement_factories.dispersive_measurement",
+                    + "measurement_factories.dispersive_measurement_transmon",
                     "gate_info_factory_kwargs": [
                         "acq_channel_override",
                         "acq_index",

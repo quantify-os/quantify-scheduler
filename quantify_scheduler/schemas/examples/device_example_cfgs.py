@@ -46,7 +46,7 @@ example_transmon_cfg = {
             },
             "measure": {
                 "factory_func": "quantify_scheduler.operations."
-                + "measurement_factories.dispersive_measurement",
+                + "measurement_factories.dispersive_measurement_transmon",
                 "gate_info_factory_kwargs": [
                     "acq_channel_override",
                     "acq_index",
@@ -92,7 +92,7 @@ example_transmon_cfg = {
             },
             "measure": {
                 "factory_func": "quantify_scheduler.operations."
-                + "measurement_factories.dispersive_measurement",
+                + "measurement_factories.dispersive_measurement_transmon",
                 "gate_info_factory_kwargs": [
                     "acq_channel_override",
                     "acq_index",
