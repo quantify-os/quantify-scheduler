@@ -6,7 +6,6 @@ from __future__ import annotations
 import copy
 import logging
 import os
-import re
 import warnings
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -193,27 +192,10 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
         val
             The new value of the parameter.
         """
-        # TODO: these qcodes parameters already exist in the development branch
-        # of qblox-instruments, but will be released in 0.13.0 when RTP is
-        # officially supported. Until then, catching the value error is needed.
-        try:
-            search_settable_param(
-                instrument=instrument, nested_parameter_name=parameter_name
-            )
-        except ValueError as e:
-            if (
-                re.search(
-                    r".*(out|marker)[0-9]_(exp|bt|fir)[0-9]?_config", parameter_name
-                )
-                and val == "bypassed"
-            ):
-                return
-            if re.search(
-                r".*(out|marker)[0-9]_(exp|bt|fir)[0-9]?_(time_constant|amplitude|coeffs)",
-                parameter_name,
-            ):
-                return
-            raise e
+        search_settable_param(
+            instrument=instrument, nested_parameter_name=parameter_name
+        )
+
         if self.force_set_parameters():
             instrument.set(parameter_name, val)
         else:
