@@ -219,7 +219,6 @@ def test_compile_backend_unsupported_devices(
     assert unsupported_device_type.value in str(execinfo.value)
 
 
-@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 @pytest.fixture(scope="function", autouse=False)
 def deprecated_zhinst_hardware_config_example():
     return {

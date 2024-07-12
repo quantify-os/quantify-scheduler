@@ -320,7 +320,7 @@ def merge_pulses_and_offsets(operations: list[SampledPulse]) -> SampledPulse:
 
     return SampledPulse(
         time=result_time,
-        signal=np.sum(
+        signal=sum(
             np.interp(result_time, op.time, op.signal, left=0.0, right=0.0)
             for op in operations
         ),  # type: ignore

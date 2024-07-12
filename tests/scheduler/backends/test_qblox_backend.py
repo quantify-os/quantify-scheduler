@@ -1544,6 +1544,9 @@ def test_acquisitions_back_to_back(
     )
 
 
+@pytest.mark.filterwarnings(
+    "ignore:.*The specified weights and sampling rate lead to a weighted integration.*"
+)
 def test_deprecated_weighted_acquisition_end_to_end(
     pulse_only_schedule_with_operation_timing,
     compile_config_basic_transmon_qblox_hardware,
@@ -1570,6 +1573,9 @@ def test_deprecated_weighted_acquisition_end_to_end(
     )
 
 
+@pytest.mark.filterwarnings(
+    "ignore:.*The specified weights and sampling rate lead to a weighted integration.*"
+)
 def test_separated_weighted_acquisition_end_to_end(
     pulse_only_schedule_with_operation_timing,
     compile_config_basic_transmon_qblox_hardware_cluster,
@@ -1592,6 +1598,9 @@ def test_separated_weighted_acquisition_end_to_end(
     )
 
 
+@pytest.mark.filterwarnings(
+    "ignore:.*The specified weights and sampling rate lead to a weighted integration.*"
+)
 def test_weighted_acquisition_end_to_end(
     pulse_only_schedule_with_operation_timing,
     compile_config_basic_transmon_qblox_hardware_cluster,
@@ -1614,6 +1623,9 @@ def test_weighted_acquisition_end_to_end(
     )
 
 
+@pytest.mark.filterwarnings(
+    "ignore:.*The specified weights and sampling rate lead to a weighted integration.*"
+)
 def test_separated_weighted_acquisition_too_high_sampling_rate_raises(
     pulse_only_schedule_with_operation_timing,
     compile_config_basic_transmon_qblox_hardware_cluster,
@@ -1641,6 +1653,9 @@ def test_separated_weighted_acquisition_too_high_sampling_rate_raises(
     )
 
 
+@pytest.mark.filterwarnings(
+    "ignore:.*The specified weights and sampling rate lead to a weighted integration.*"
+)
 def test_weighted_acquisition_too_high_sampling_rate_raises(
     pulse_only_schedule_with_operation_timing,
     compile_config_basic_transmon_qblox_hardware,
@@ -2533,6 +2548,7 @@ def test_assign_frequencies_baseband(compile_config_basic_transmon_qblox_hardwar
     )
 
 
+@pytest.mark.filterwarnings("ignore:Downconverter frequency 0 supplied.*")
 @pytest.mark.parametrize(
     "downconverter_freq0, downconverter_freq1",
     list(itertools.product([None, 0, 9e9], repeat=2)) + [(-1, None), (1e6, None)],
@@ -2759,6 +2775,7 @@ def test_assign_frequencies_rf(compile_config_basic_transmon_qblox_hardware):
     )
 
 
+@pytest.mark.filterwarnings("ignore:Downconverter frequency 0 supplied.*")
 @pytest.mark.parametrize(
     "downconverter_freq0, downconverter_freq1, element_names",
     [
