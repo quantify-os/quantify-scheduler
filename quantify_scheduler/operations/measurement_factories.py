@@ -36,10 +36,12 @@ from quantify_scheduler.operations.pulse_library import (
 from quantify_scheduler.schedules.schedule import Schedule
 
 
-def dispersive_measurement(  # noqa: PLR0915
+def _dispersive_measurement(
     pulse_amp: float,
     pulse_duration: float,
     port: str,
+    gate_pulse_amp: float | None,
+    gate_port: str | None,
     clock: str,
     acq_duration: float,
     acq_delay: float,
@@ -47,44 +49,92 @@ def dispersive_measurement(  # noqa: PLR0915
     acq_channel_override: Hashable | None,
     acq_index: int,
     acq_protocol: str | None,
-    pulse_type: Literal["SquarePulse"] = "SquarePulse",
-    bin_mode: BinMode | None = BinMode.AVERAGE,
-    acq_protocol_default: str = "SSBIntegrationComplex",
-    reset_clock_phase: bool = True,
-    reference_magnitude: Optional[ReferenceMagnitude] = None,
-    acq_weights_a: List[complex] | np.ndarray | None = None,
-    acq_weights_b: List[complex] | np.ndarray | None = None,
-    acq_weights_sampling_rate: float | None = None,
-    feedback_trigger_label: Optional[str] = None,
-    acq_rotation: float | None = None,
-    acq_threshold: float | None = None,
-    num_points: float | None = None,
+    pulse_type: Literal["SquarePulse"],
+    bin_mode: BinMode | None,
+    acq_protocol_default: str,
+    reset_clock_phase: bool,
+    reference_magnitude: Optional[ReferenceMagnitude],
+    acq_weights_a: List[complex] | np.ndarray | None,
+    acq_weights_b: List[complex] | np.ndarray | None,
+    acq_weights_sampling_rate: float | None,
+    feedback_trigger_label: Optional[str],
+    acq_rotation: float | None,
+    acq_threshold: float | None,
+    num_points: float | None,
 ) -> Schedule:
     """
     Generator function for a standard dispersive measurement.
 
-    A dispersive measurement (typically) exists of a pulse being applied to the device
+    A dispersive measurement (typically) consists of a pulse being applied to the device
     followed by an acquisition protocol to interpret the signal coming back from the
     device.
+
+    Parameters
+    ----------
+    pulse_amp
+        The amplitude of the pulse.
+    pulse_duration
+        The duration of the pulse.
+    port
+        The port for the pulse.
+    gate_pulse_amp
+        Optional amplitude for the gate pulse.
+    gate_port
+        Optional port for the gate pulse.
+    clock
+        The clock for the pulse.
+    acq_duration
+        The duration of the acquisition.
+    acq_delay
+        The delay before the acquisition starts.
+    acq_channel
+        The acquisition channel.
+    acq_channel_override
+        An optional override for the acquisition channel.
+    acq_index
+        The index of the acquisition.
+    acq_protocol
+        The acquisition protocol to use.
+    pulse_type
+        The type of pulse to use. Default is "SquarePulse".
+    bin_mode
+        The binning mode for the acquisition. Default is BinMode.AVERAGE.
+    acq_protocol_default
+        The default acquisition protocol to use. Default is "SSBIntegrationComplex".
+    reset_clock_phase
+        Whether to reset the clock phase. Default is True.
+    reference_magnitude
+        An optional reference magnitude.
+    acq_weights_a
+        Optional acquisition weights A.
+    acq_weights_b
+        Optional acquisition weights B.
+    acq_weights_sampling_rate
+        The sampling rate for the acquisition weights.
+    feedback_trigger_label
+        Optional feedback trigger label.
+    acq_rotation
+        Optional acquisition rotation.
+    acq_threshold
+        Optional acquisition threshold.
+    num_points
+        Optional number of points for the acquisition.
+
+    Returns
+    -------
+        Schedule:
+            The resulting schedule for the dispersive measurement.
     """
-    # ensures default argument is used if not specified at gate level.
-    # ideally, this input would not be accepted, but this is a workaround for #267
     if bin_mode is None:
         bin_mode = BinMode.AVERAGE
-
-    # Note that the funny structure here comes from the fact that the measurement
-    # is a composite operation. We need to either introduce some level of nesting
-    # in the structure of arguments (to re-use our custom structure), or just keep
-    # this as a simple piece of code and accept that different protocols (e.g.,
-    # using different measurement pulses) would require a different generator function.
 
     subschedule = Schedule("dispersive_measurement")
 
     if reset_clock_phase:
         subschedule.add(ResetClockPhase(clock=clock))
 
-    if pulse_type == "SquarePulse":
-        if acq_protocol != "LongTimeTrace":
+    if acq_protocol != "LongTimeTrace":
+        if pulse_type == "SquarePulse":
             subschedule.add(
                 SquarePulse(
                     amp=pulse_amp,
@@ -95,13 +145,24 @@ def dispersive_measurement(  # noqa: PLR0915
                 ),
                 ref_pt="start",
             )
-    else:
-        # here we need to add support for SoftSquarePulse
-        raise NotImplementedError(
-            f'Invalid pulse_type "{pulse_type}" specified as argument to '
-            + "dispersive_measurement. Currently dispersive_measurement only"
-            + ' allows "SquarePulse". Please correct your device config.'
-        )
+        else:
+            raise NotImplementedError(
+                f'Invalid pulse_type "{pulse_type}" specified as argument to '
+                "dispersive_measurement. Currently dispersive_measurement only"
+                ' allows "SquarePulse". Please correct your device config.'
+            )
+
+        if gate_pulse_amp is not None or gate_port is not None:
+            subschedule.add(
+                SquarePulse(
+                    amp=gate_pulse_amp,
+                    duration=pulse_duration,
+                    port=gate_port,
+                    clock="cl0.baseband",
+                    reference_magnitude=reference_magnitude,
+                ),
+                ref_pt="start",
+            )
 
     if acq_protocol is None:
         acq_protocol = acq_protocol_default
@@ -110,7 +171,6 @@ def dispersive_measurement(  # noqa: PLR0915
         acq_channel = acq_channel_override
 
     if acq_protocol == "SSBIntegrationComplex":
-        # readout pulse
         subschedule.add(
             SSBIntegrationComplex(
                 port=port,
@@ -275,14 +335,232 @@ def dispersive_measurement(  # noqa: PLR0915
             pulse_op_off,
         )
 
-        # Here a 4 ns idle pulse need to be added for voltage offset to take effect.
-        # On some backends, the voltage offset can never end a schedule.
         subschedule.add(IdlePulse(duration=4e-9))
 
     else:
         raise ValueError(f'Acquisition protocol "{acq_protocol}" is not supported.')
 
     return subschedule
+
+
+def dispersive_measurement_transmon(
+    pulse_amp: float,
+    pulse_duration: float,
+    port: str,
+    clock: str,
+    acq_duration: float,
+    acq_delay: float,
+    acq_channel: Hashable,
+    acq_channel_override: Hashable | None,
+    acq_index: int,
+    acq_protocol: str | None,
+    pulse_type: Literal["SquarePulse"] = "SquarePulse",
+    bin_mode: BinMode | None = BinMode.AVERAGE,
+    acq_protocol_default: str = "SSBIntegrationComplex",
+    reset_clock_phase: bool = True,
+    reference_magnitude: Optional[ReferenceMagnitude] = None,
+    acq_weights_a: List[complex] | np.ndarray | None = None,
+    acq_weights_b: List[complex] | np.ndarray | None = None,
+    acq_weights_sampling_rate: float | None = None,
+    feedback_trigger_label: Optional[str] = None,
+    acq_rotation: float | None = None,
+    acq_threshold: float | None = None,
+    num_points: float | None = None,
+) -> Schedule:
+    """
+    Creates a dispersive measurement schedule for a transmon qubit.
+
+    Parameters
+    ----------
+    pulse_amp
+        The amplitude of the pulse.
+    pulse_duration
+        The duration of the pulse.
+    port
+        The port for the pulse.
+    clock
+        The clock for the pulse.
+    acq_duration
+        The duration of the acquisition.
+    acq_delay
+        The delay before the acquisition starts.
+    acq_channel
+        The acquisition channel.
+    acq_channel_override
+        An optional override for the acquisition channel.
+    acq_index
+        The index of the acquisition.
+    acq_protocol
+        The acquisition protocol to use.
+    pulse_type
+        The type of pulse to use. Default is "SquarePulse".
+    bin_mode
+        The binning mode for the acquisition. Default is BinMode.AVERAGE.
+    acq_protocol_default
+        The default acquisition protocol to use. Default is "SSBIntegrationComplex".
+    reset_clock_phase
+        Whether to reset the clock phase. Default is True.
+    reference_magnitude
+        An optional reference magnitude.
+    acq_weights_a
+        Optional acquisition weights A.
+    acq_weights_b
+        Optional acquisition weights B.
+    acq_weights_sampling_rate
+        The sampling rate for the acquisition weights.
+    feedback_trigger_label
+        Optional feedback trigger label.
+    acq_rotation
+        Optional acquisition rotation.
+    acq_threshold
+        Optional acquisition threshold.
+    num_points
+        Optional number of points for the acquisition.
+
+    Returns
+    -------
+        Schedule:
+            The resulting schedule for the dispersive measurement.
+    """
+    return _dispersive_measurement(
+        pulse_amp=pulse_amp,
+        pulse_duration=pulse_duration,
+        port=port,
+        gate_pulse_amp=None,
+        gate_port=None,
+        clock=clock,
+        acq_duration=acq_duration,
+        acq_delay=acq_delay,
+        acq_channel=acq_channel,
+        acq_channel_override=acq_channel_override,
+        acq_index=acq_index,
+        acq_protocol=acq_protocol,
+        pulse_type=pulse_type,
+        bin_mode=bin_mode,
+        acq_protocol_default=acq_protocol_default,
+        reset_clock_phase=reset_clock_phase,
+        reference_magnitude=reference_magnitude,
+        acq_weights_a=acq_weights_a,
+        acq_weights_b=acq_weights_b,
+        acq_weights_sampling_rate=acq_weights_sampling_rate,
+        feedback_trigger_label=feedback_trigger_label,
+        acq_rotation=acq_rotation,
+        acq_threshold=acq_threshold,
+        num_points=num_points,
+    )
+
+
+def dispersive_measurement_spin(
+    pulse_amp: float,
+    pulse_duration: float,
+    port: str,
+    gate_pulse_amp: float | None,
+    gate_port: str | None,
+    clock: str,
+    acq_duration: float,
+    acq_delay: float,
+    acq_channel: Hashable,
+    acq_channel_override: Hashable | None,
+    acq_index: int,
+    acq_protocol: str | None,
+    pulse_type: Literal["SquarePulse"] = "SquarePulse",
+    bin_mode: BinMode | None = BinMode.AVERAGE,
+    acq_protocol_default: str = "SSBIntegrationComplex",
+    reset_clock_phase: bool = True,
+    reference_magnitude: Optional[ReferenceMagnitude] = None,
+    acq_weights_a: List[complex] | np.ndarray | None = None,
+    acq_weights_b: List[complex] | np.ndarray | None = None,
+    acq_weights_sampling_rate: float | None = None,
+    feedback_trigger_label: Optional[str] = None,
+    acq_rotation: float | None = None,
+    acq_threshold: float | None = None,
+    num_points: float | None = None,
+) -> Schedule:
+    """
+    Creates a dispersive measurement schedule for a spin qubit.
+
+    Parameters
+    ----------
+    pulse_amp
+        The amplitude of the pulse.
+    pulse_duration
+        The duration of the pulse.
+    port
+        The port for the pulse.
+    clock
+        The clock for the pulse.
+    acq_duration
+        The duration of the acquisition.
+    acq_delay
+        The delay before the acquisition starts.
+    acq_channel
+        The acquisition channel.
+    acq_channel_override
+        An optional override for the acquisition channel.
+    acq_index
+        The index of the acquisition.
+    acq_protocol
+        The acquisition protocol to use.
+    pulse_type
+        The type of pulse to use. Default is "SquarePulse".
+    bin_mode
+        The binning mode for the acquisition. Default is BinMode.AVERAGE.
+    acq_protocol_default
+        The default acquisition protocol to use. Default is "SSBIntegrationComplex".
+    reset_clock_phase
+        Whether to reset the clock phase. Default is True.
+    reference_magnitude
+        An optional reference magnitude.
+    acq_weights_a
+        Optional acquisition weights A.
+    acq_weights_b
+        Optional acquisition weights B.
+    acq_weights_sampling_rate
+        The sampling rate for the acquisition weights.
+    feedback_trigger_label
+        Optional feedback trigger label.
+    acq_rotation
+        Optional acquisition rotation.
+    acq_threshold
+        Optional acquisition threshold.
+    num_points
+        Optional number of points for the acquisition.
+    gate_pulse_amp
+        Optional amplitude for the gate pulse.
+    gate_port
+        Optional port for the gate pulse.
+
+    Returns
+    -------
+        Schedule:
+            The resulting schedule for the dispersive measurement.
+    """
+    return _dispersive_measurement(
+        pulse_amp=pulse_amp,
+        pulse_duration=pulse_duration,
+        port=port,
+        gate_pulse_amp=gate_pulse_amp,
+        gate_port=gate_port,
+        clock=clock,
+        acq_duration=acq_duration,
+        acq_delay=acq_delay,
+        acq_channel=acq_channel,
+        acq_channel_override=acq_channel_override,
+        acq_index=acq_index,
+        acq_protocol=acq_protocol,
+        pulse_type=pulse_type,
+        bin_mode=bin_mode,
+        acq_protocol_default=acq_protocol_default,
+        reset_clock_phase=reset_clock_phase,
+        reference_magnitude=reference_magnitude,
+        acq_weights_a=acq_weights_a,
+        acq_weights_b=acq_weights_b,
+        acq_weights_sampling_rate=acq_weights_sampling_rate,
+        feedback_trigger_label=feedback_trigger_label,
+        acq_rotation=acq_rotation,
+        acq_threshold=acq_threshold,
+        num_points=num_points,
+    )
 
 
 def optical_measurement(

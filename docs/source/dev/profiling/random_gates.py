@@ -49,9 +49,6 @@ my_instr_coord = InstrumentCoordinator("my_instr_coord")
 my_instr_coord.add_component(ic_cluster0)
 
 # %%
-print(ic_cluster0.name)
-
-# %%
 my_device = QuantumDevice("my_device")
 
 # %%
@@ -146,7 +143,7 @@ def create_schedule(
 
     sched = Schedule("Complex Sequencing")
     sched.add(Reset("q0"))
-    for _ in range(5000):
+    for _ in range(4000):
         gate = random.choice(OPERATIONS)  # nosec
         sched.add(gate("q0"))
 

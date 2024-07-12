@@ -49,7 +49,7 @@ dependencies = [
  "pathvalidate",
  "plotly",
  "pydantic>=2.0",
- "qblox-instruments==0.14", # Prevent upgrade upon minor release while allowing for installing patch releases
+ "qblox-instruments>=0.12.0,<0.14.0", # Prevent upgrade upon minor release while allowing for installing patch releases
  "quantify-core>=0.7.1", # For the fix (!438) in quantify_core.utilities.general.without()
  "qcodes>=0.32.0", # 0.32.0: introduces InstrumentModule
  "scipy",
@@ -87,7 +87,8 @@ docs = [
  "sphinxcontrib-bibtex",
  "sphinxcontrib-mermaid",
  "quantify_scheduler[zhinst]",
-
+ "scikit-learn", # can be removed when quantify-core==0.8.0 is released
+ "awesome_code_block @ git+https://gitlab.com/quantify-os/awesome_code_block.git@main",
 ]
 
 dev = [
@@ -230,6 +231,7 @@ extend-ignore-names = ["path_I", "path_Q", "offset_path_I", "offset_path_Q"]
 "quantify_scheduler/device_under_test/nv_element.py" = ['ANN003', 'ANN204', 'ANN401', 'ARG002']
 "quantify_scheduler/device_under_test/quantum_device.py" = ['ANN102']
 "quantify_scheduler/device_under_test/transmon_element.py" = ['ANN003', 'ANN202', 'ANN204', 'ANN401', 'SIM118']
+"quantify_scheduler/device_under_test/spin_element.py" = ['ANN401']
 "quantify_scheduler/enums.py" = ['ANN204']
 "quantify_scheduler/gettables.py" = ['D101', 'D202', 'D213', 'D400', 'D404', 'D405', 'D407', 'D410', 'D411', 'D414', 'D415', 'D417']
 "quantify_scheduler/gettables_profiled.py" = ['ANN001', 'ANN002', 'ANN003', 'ANN201', 'ANN202', 'ANN204', 'ARG002', 'D102', 'D404']
@@ -375,6 +377,7 @@ exclude = [
  "tests/scheduler/device_under_test/test_composite_square_edge.py",
  "tests/scheduler/device_under_test/test_nv_element.py",
  "tests/scheduler/device_under_test/test_transmon_element.py",
+ "tests/scheduler/device_under_test/test_spin_element.py",
  "tests/scheduler/helpers/test_schedule.py",
  "tests/scheduler/helpers/test_waveforms.py",
  "tests/scheduler/instrument_coordinator/test_instrument_coordinator.py",

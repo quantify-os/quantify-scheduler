@@ -636,6 +636,7 @@ As a final note, weighted integration can also be scheduled at the {ref}`gate-le
 <qubit>.measure.acq_weights_b(square_weights)
 ```
 
+(thresholded_acquisition_explanation)=
 ### Thresholded acquisition
 With thresholded acquisition, we can map a complex input signal to either a 0 or a 1, by comparing the data to a threshold value. It is similar to the {ref}`single-sideband integration protocol <sec-ssb>` described above, but after integration the I-Q data points are first rotated by an angle and then compared to a threshold value to assign the results to either a "0" or to a "1". See the illustration below.
 
@@ -833,12 +834,14 @@ The above schedule was run in the bin mode `BinMode.APPEND`, rerunning the sched
 The trigger count acquisition protocol is used for measuring how many times the input signal goes over some limit.
 This protocol is used, for example, in the case of an NV center type of qubit, or other types of qubit, where counting the number of photons (indirectly as an electrical signal) is important.
 
-Like the {ref}`single-sideband integration protocol <sec-ssb>`, the {class}`~quantify_scheduler.operations.acquisition_library.TriggerCount` protocol also offers two bin modes: **average** and **append**.
+The trigger count protocol is currently only implemented for the Qblox backend, and it is available on two module types: the **QRM** (baseband) and the **QTM**. Please also see {ref}`sec-qblox-trigger-count` for more information on Qblox module-specific behavior of this operation.
+
+Like the {ref}`single-sideband integration protocol <sec-ssb>`, the {class}`~quantify_scheduler.operations.acquisition_library.TriggerCount` protocol also offers two bin modes: **average** and **append**. The **average** mode can only be used with the QRM, and the **append** mode can be used with both the QRM and the QTM.
 
 The **append** bin mode is quite similar to the {ref}`single-sideband integration protocol <sec-ssb>` case. Instead of the integrated acquisition result, the data will consist of the total number of triggers counted during each acquisition.
 Let's consider an example where we execute a schedule three times:
 
-- during the 1st run, three triggers are acquired
+- during the 1st run, three triggers are acquired,
 - during the 2nd run, one trigger is acquired,
 - during the 3rd run, one trigger is acquired.
 
@@ -850,9 +853,7 @@ This provides insights into the overall occurrence of triggers when running the 
 The overall distribution of triggers would be: trigger count of 1 occurred twice, and trigger count of 3 occurred once. Hence, the resulting dictionary would be: `{1: 2, 3: 1}`.
 The dictionary notation shows the number of triggers as keys and their corresponding frequencies as values.
 
-The trigger count protocol is currently only implemented for the Qblox backend. Please also see {ref}`sec-qblox-trigger-count` for more information on Qblox module-specific behavior of this operation.
-
-Note, the threshold is set via {class}`~quantify_scheduler.backends.types.qblox.SequencerOptions.ttl_acq_threshold` (see also {ref}`sec-qblox-sequencer-options`).
+Note, the threshold is set for the QRM via the field {class}`~quantify_scheduler.backends.types.qblox.SequencerOptions.ttl_acq_threshold` in {ref}`sec-qblox-sequencer-options`, while for the QTM this threshold is set via the field `in_threshold_primary` in the {ref}`sec-qblox-digitization-thresholds` hardware option.
 
 #### Setup and schedule
 

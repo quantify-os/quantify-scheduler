@@ -103,28 +103,6 @@ are used:
 - The interval between the end of an acquisition and the start of a conditional
   operation must be at least 364 ns, as specified by 
   {class}`~quantify_scheduler.backends.qblox.constants.TRIGGER_DELAY`.
-- The conditionality of the {class}`~quantify_scheduler.backends.qblox.operations.gate_library.ConditionalReset` extends to all sequencers. If an
-  operation is executed on another sequencer that overlaps in time with the {class}`~quantify_scheduler.backends.qblox.operations.gate_library.ConditionalReset`
-  block, that operation will also be conditional.
-
-For example:
-
-```python
-schedule = Schedule()
-schedule.add(ConditionalReset("q0"))
-schedule.add(X("q4"), ref_pt_new="end")
-schedule.add(Measure("q4"))
-```
-
-as illustrated below, `X("q4")` is scheduled simultaneously with `ConditionalReset("q0")`
-
-:::{figure} /images/conditional_schedule.svg
-:align: center
-:::
-
-In this case, however, `X("q4")` will be executed on the condition that qubit "q0" is in a "1" state. In other words, a {math}`\pi` pulse will be applied to both qubits `q0` and `q4` if qubit `q0` is in state
-"1". If the qubit `q0` is in state "0", no pulses will be played.
-
 - The measurement result of {class}`~quantify_scheduler.backends.qblox.operations.gate_library.ConditionalReset` is saved inside the dataset as well, potentially obscuring interesting data. For example, including the {class}`~quantify_scheduler.backends.qblox.operations.gate_library.ConditionalReset` inside a basic Rabi schedule, we could have the following implementation:
 
 ```{code-cell} ipython3

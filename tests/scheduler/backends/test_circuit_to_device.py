@@ -1,3 +1,4 @@
+import math
 from typing import List, Union
 
 import numpy as np
@@ -350,7 +351,7 @@ def test_clock_not_defined_raises():
             "q0": {
                 "measure": {
                     "factory_func": "quantify_scheduler.operations."
-                    + "measurement_factories.dispersive_measurement",
+                    + "measurement_factories.dispersive_measurement_transmon",
                     "gate_info_factory_kwargs": [
                         "acq_channel_override",
                         "acq_index",
@@ -479,7 +480,7 @@ def test_compile_schedule_with_trace_acq_protocol():
             "q0": {
                 "measure": {
                     "factory_func": "quantify_scheduler.operations."
-                    + "measurement_factories.dispersive_measurement",
+                    + "measurement_factories.dispersive_measurement_transmon",
                     "gate_info_factory_kwargs": [
                         "acq_channel_override",
                         "acq_index",
@@ -523,7 +524,7 @@ def test_compile_schedule_with_invalid_pulse_type_raises():
             "q0": {
                 "measure": {
                     "factory_func": "quantify_scheduler.operations."
-                    + "measurement_factories.dispersive_measurement",
+                    + "measurement_factories.dispersive_measurement_transmon",
                     "gate_info_factory_kwargs": [
                         "acq_channel_override",
                         "acq_index",
@@ -878,7 +879,7 @@ def test_clock_resources_and_subschedules_compiles():
             f"q{i}": {
                 "measure": {
                     "factory_func": "quantify_scheduler.operations."
-                    + "measurement_factories.dispersive_measurement",
+                    + "measurement_factories.dispersive_measurement_transmon",
                     "gate_info_factory_kwargs": [
                         "acq_channel_override",
                         "acq_index",
@@ -996,3 +997,49 @@ def test_long_time_trace_invalid_bin_mode(
         compile_circuit_to_device_with_config_validation(
             schedule, config=quantum_device.generate_compilation_config()
         )
+
+
+def test_device_overrides_dispersive_measure(
+    mock_setup_basic_transmon,
+    get_subschedule_operation,
+):
+    schedule = Schedule("test")
+    schedule.add(Measure("q0", acq_protocol="SSBIntegrationComplex"))
+    schedule.add(Measure("q0", acq_protocol="SSBIntegrationComplex", acq_duration=4e-6))
+
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    compiled_schedule = compile_circuit_to_device_with_config_validation(
+        schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    acq_operation_0 = get_subschedule_operation(compiled_schedule, [0, 2])
+    duration_0 = acq_operation_0["acquisition_info"][0]["duration"]
+    acq_operation_1 = get_subschedule_operation(compiled_schedule, [1, 2])
+    duration_1 = acq_operation_1["acquisition_info"][0]["duration"]
+
+    assert not math.isclose(duration_0, duration_1)
+    assert math.isclose(duration_0, 1e-6)
+    assert math.isclose(duration_1, 4e-6)
+
+
+def test_device_overrides_multiple_levels_hamilton(
+    mock_setup_basic_transmon,
+    get_subschedule_operation,
+):
+    schedule = Schedule("test")
+    schedule.add(H("q0"))
+    schedule.add(H("q0", duration=4e-6))
+
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    compiled_schedule = compile_circuit_to_device_with_config_validation(
+        schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    operation_0 = get_subschedule_operation(compiled_schedule, [0, 1])
+    duration_0 = operation_0["pulse_info"][0]["duration"]
+    operation_1 = get_subschedule_operation(compiled_schedule, [1, 1])
+    duration_1 = operation_1["pulse_info"][0]["duration"]
+
+    assert not math.isclose(duration_0, duration_1)
+    assert math.isclose(duration_0, 2e-8)
+    assert math.isclose(duration_1, 4e-6)

@@ -23,6 +23,7 @@ from matplotlib.axes import Axes
 from matplotlib.patches import Rectangle
 from pydantic import Field, field_serializer, field_validator, model_validator
 
+from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.helpers.importers import export_python_object_to_path_string
 from quantify_scheduler.schedules.schedule import Schedule
 from quantify_scheduler.structure.model import (
@@ -106,6 +107,15 @@ class SoftwareDistortionCorrection(DataStructure):
     upon exceeding."""
     sampling_rate: float = 1e9
     """The sample rate of the corrected pulse, in Hz."""
+
+    @field_validator("clipping_values")
+    def _only_two_clipping_values(cls, clipping_values):
+        if clipping_values and len(clipping_values) != 2:
+            raise KeyError(
+                f"Clipping values should contain only two values, min and max.\n"
+                f"clipping_values: {clipping_values}"
+            )
+        return clipping_values
 
 
 # @deprecated does not work with pydantic models.
@@ -272,6 +282,20 @@ class LocalOscillatorDescription(DataStructure):
     """The QCoDeS parameter that is used to set the LO power."""
     power: Optional[int] = None
     """The power setting for this Local Oscillator."""
+
+    @field_validator("generic_icc_name")
+    def _only_default_generic_icc_name(cls, generic_icc_name):
+        if (
+            generic_icc_name is not None
+            and generic_icc_name != constants.GENERIC_IC_COMPONENT_NAME
+        ):
+            raise NotImplementedError(
+                f"Specified name '{generic_icc_name}' as a generic instrument "
+                f"coordinator component, but the Qblox backend currently only "
+                f"supports using the default name "
+                f"'{constants.GENERIC_IC_COMPONENT_NAME}'"
+            )
+        return generic_icc_name
 
 
 class IQMixerDescription(DataStructure):

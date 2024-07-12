@@ -3,7 +3,7 @@
 """Standard gateset for use with the quantify_scheduler."""
 from __future__ import annotations
 
-from typing import Hashable, Literal, Optional, Tuple
+from typing import Any, Hashable, Literal, Optional, Tuple
 
 import numpy as np
 
@@ -34,6 +34,9 @@ class Rxy(Operation):
         Phase of the rotation axis, will be casted to the [0, 360) domain.
     qubit
         The target qubit.
+    device_overrides
+        Device level parameters that override device configuration values
+        when compiling from circuit to device level.
 
     """
 
@@ -42,6 +45,7 @@ class Rxy(Operation):
         theta: float,
         phi: float,
         qubit: str,
+        **device_overrides: Any,  # noqa: ANN401
     ):
         if not isinstance(theta, float):
             theta = float(theta)
@@ -85,6 +89,7 @@ class Rxy(Operation):
             "operation_type": "Rxy",
             "theta": theta,
             "phi": phi,
+            "device_overrides": device_overrides,
         }
         self._update()
 
@@ -112,11 +117,14 @@ class X(Rxy):
     ----------
     qubit
         The target qubit.
+    device_overrides
+        Device level parameters that override device configuration values
+        when compiling from circuit to device level.
 
     """
 
-    def __init__(self, qubit: str):
-        super().__init__(theta=180.0, phi=0, qubit=qubit)
+    def __init__(self, qubit: str, **device_overrides: Any):  # noqa: ANN401
+        super().__init__(theta=180.0, phi=0, qubit=qubit, **device_overrides)
         self.data["name"] = f"X {qubit}"
         self.data["gate_info"]["tex"] = r"$X_{\pi}$"
         self._update()
@@ -143,10 +151,17 @@ class X90(Rxy):
     ----------
     qubit
         The target qubit.
+    device_overrides
+        Device level parameters that override device configuration values
+        when compiling from circuit to device level.
     """
 
-    def __init__(self, qubit: str):
-        super().__init__(theta=90.0, phi=0.0, qubit=qubit)
+    def __init__(
+        self,
+        qubit: str,
+        **device_overrides: Any,  # noqa: ANN401
+    ):
+        super().__init__(theta=90.0, phi=0.0, qubit=qubit, **device_overrides)
         self.qubit = qubit
         self.data["name"] = f"X_90 {qubit}"
         self.data["gate_info"]["tex"] = r"$X_{\pi/2}$"
@@ -174,10 +189,17 @@ class Y(Rxy):
     ----------
     qubit
         The target qubit.
+    device_overrides
+        Device level parameters that override device configuration values
+        when compiling from circuit to device level.
     """
 
-    def __init__(self, qubit: str):
-        super().__init__(theta=180.0, phi=90.0, qubit=qubit)
+    def __init__(
+        self,
+        qubit: str,
+        **device_overrides: Any,  # noqa: ANN401
+    ):
+        super().__init__(theta=180.0, phi=90.0, qubit=qubit, **device_overrides)
         self.data["name"] = f"Y {qubit}"
         self.data["gate_info"]["tex"] = r"$Y_{\pi}$"
         self._update()
@@ -205,10 +227,13 @@ class Y90(Rxy):
     ----------
     qubit
         The target qubit.
+    device_overrides
+        Device level parameters that override device configuration values
+        when compiling from circuit to device level.
     """
 
-    def __init__(self, qubit: str):
-        super().__init__(theta=90.0, phi=90.0, qubit=qubit)
+    def __init__(self, qubit: str, **device_overrides: Any):  # noqa: ANN401
+        super().__init__(theta=90.0, phi=90.0, qubit=qubit, **device_overrides)
         self.data["name"] = f"Y_90 {qubit}"
         self.data["gate_info"]["tex"] = r"$Y_{\pi/2}$"
         self._update()
@@ -248,9 +273,14 @@ class Rz(Operation):
         Rotation angle in degrees, will be cast to the [-180, 180) domain.
     qubit
         The target qubit.
+    device_overrides
+        Device level parameters that override device configuration values
+        when compiling from circuit to device level.
     """
 
-    def __init__(self, theta: float, qubit: str):
+    def __init__(
+        self, theta: float, qubit: str, **device_overrides: Any  # noqa: ANN401
+    ):
         if not isinstance(theta, float):
             theta = float(theta)
 
@@ -281,6 +311,7 @@ class Rz(Operation):
             "qubits": [qubit],
             "operation_type": "Rz",
             "theta": theta,
+            "device_overrides": device_overrides,
         }
         self._update()
 
@@ -308,11 +339,14 @@ class Z(Rz):
     ----------
     qubit
         The target qubit.
+    device_overrides
+        Device level parameters that override device configuration values
+        when compiling from circuit to device level.
 
     """
 
-    def __init__(self, qubit: str):
-        super().__init__(theta=180.0, qubit=qubit)
+    def __init__(self, qubit: str, **device_overrides: Any):  # noqa: ANN401
+        super().__init__(theta=180.0, qubit=qubit, **device_overrides)
         self.data["name"] = f"Z {qubit}"
         self.data["gate_info"]["tex"] = r"$Z_{\pi}$"
         self._update()
@@ -338,11 +372,14 @@ class Z90(Rz):
     ----------
     qubit
         The target qubit.
+    device_overrides
+        Device level parameters that override device configuration values
+        when compiling from circuit to device level.
 
     """
 
-    def __init__(self, qubit: str):
-        super().__init__(theta=90.0, qubit=qubit)
+    def __init__(self, qubit: str, **device_overrides: Any):  # noqa: ANN401
+        super().__init__(theta=90.0, qubit=qubit, **device_overrides)
         self.data["name"] = f"Z_90 {qubit}"
         self.data["gate_info"]["tex"] = r"$Z_{\pi/2}$"
         self._update()
@@ -369,10 +406,13 @@ class H(Operation):
     ----------
     qubit
         The target qubit.
+    device_overrides
+        Device level parameters that override device configuration values
+        when compiling from circuit to device level.
 
     """
 
-    def __init__(self, *qubits: str):
+    def __init__(self, *qubits: str, **device_overrides: Any):  # noqa: ANN401
         tex = r"$H$"
         plot_func = (
             "quantify_scheduler.schedules._visualization.circuit_diagram.gate_box"
@@ -386,6 +426,7 @@ class H(Operation):
             "plot_func": plot_func,
             "qubits": list(qubits),
             "operation_type": "H",
+            "device_overrides": device_overrides,
         }
         self._update()
 
@@ -417,10 +458,13 @@ class CNOT(Operation):
         The control qubit.
     qT
         The target qubit
+    device_overrides
+        Device level parameters that override device configuration values
+        when compiling from circuit to device level.
 
     """
 
-    def __init__(self, qC: str, qT: str):
+    def __init__(self, qC: str, qT: str, **device_overrides: Any):  # noqa: ANN401
         plot_func = "quantify_scheduler.schedules._visualization.circuit_diagram.cnot"
         super().__init__(f"CNOT ({qC}, {qT})")
         self.data.update(
@@ -435,6 +479,7 @@ class CNOT(Operation):
                     "qubits": [qC, qT],
                     "symmetric": False,
                     "operation_type": "CNOT",
+                    "device_overrides": device_overrides,
                 },
             }
         )
@@ -470,10 +515,13 @@ class CZ(Operation):
         The control qubit.
     qT
         The target qubit        
+    device_overrides
+        Device level parameters that override device configuration values
+        when compiling from circuit to device level.
     
     """
 
-    def __init__(self, qC: str, qT: str):
+    def __init__(self, qC: str, qT: str, **device_overrides: Any):  # noqa: ANN401
         plot_func = "quantify_scheduler.schedules._visualization.circuit_diagram.cz"
         super().__init__(f"CZ ({qC}, {qT})")
         self.data.update(
@@ -488,6 +536,7 @@ class CZ(Operation):
                     "qubits": [qC, qT],
                     "symmetric": True,
                     "operation_type": "CZ",
+                    "device_overrides": device_overrides,
                 },
             }
         )
@@ -530,9 +579,12 @@ class Reset(Operation):
     qubits
         The qubit(s) to reset. NB one or more qubits can be specified, e.g.,
         :code:`Reset("q0")`, :code:`Reset("q0", "q1", "q2")`, etc..
+    device_overrides
+        Device level parameters that override device configuration values
+        when compiling from circuit to device level.
     """
 
-    def __init__(self, *qubits: str):
+    def __init__(self, *qubits: str, **device_overrides: Any):  # noqa: ANN401
         super().__init__(f"Reset {', '.join(qubits)}")
         plot_func = "quantify_scheduler.schedules._visualization.circuit_diagram.reset"
         self.data.update(
@@ -544,6 +596,7 @@ class Reset(Operation):
                     "plot_func": plot_func,
                     "qubits": list(qubits),
                     "operation_type": "reset",
+                    "device_overrides": device_overrides,
                 },
             }
         )
@@ -591,6 +644,9 @@ class Measure(Operation):
     feedback_trigger_label : str
         The label corresponding to the feedback trigger, which is mapped by the
         compiler to a feedback trigger address on hardware, by default None.
+    device_overrides
+        Device level parameters that override device configuration values
+        when compiling from circuit to device level.
 
     """
 
@@ -612,6 +668,7 @@ class Measure(Operation):
         ] = None,
         bin_mode: BinMode | None = None,
         feedback_trigger_label: Optional[str] = None,
+        **device_overrides: Any,  # noqa: ANN401
     ):
         # this if else statement a workaround to support multiplexed measurements (#262)
 
@@ -647,6 +704,7 @@ class Measure(Operation):
                     "bin_mode": bin_mode,
                     "operation_type": "measure",
                     "feedback_trigger_label": feedback_trigger_label,
+                    "device_overrides": device_overrides,
                 },
             }
         )

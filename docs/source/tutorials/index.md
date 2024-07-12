@@ -9,4 +9,5 @@ Compiling to Hardware
 Operations and Qubits
 Acquisitions
 ScheduleGettable
+Conditional Reset
 ```

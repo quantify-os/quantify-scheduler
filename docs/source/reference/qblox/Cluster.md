@@ -294,10 +294,11 @@ hardware_compilation_cfg = {
 The {class}`~.backends.types.common.Connectivity` describes how the inputs/outputs of the cluster modules are connected to ports on the {class}`~.device_under_test.quantum_device.QuantumDevice`. As described in {ref}`sec-connectivity` in the User guide, the connectivity datastructure can be parsed from a list of edges, which are described by a pair of strings that each specify a port on the quantum device, on the cluster modules, or on other auxiliary instruments (like external IQ mixers).
 
 Each input/output node of the cluster should be specified in the connectivity as `"{cluster_name}.module{module_slot_index}.{channel_name}"`. For each module, the possible input/output names are the same as the allowed fields in the corresponding {obj}`~.backends.types.qblox.ClusterModuleDescription` datastructure:
-- for `"QCM"`: `"complex_output_{0,1}"`, `"real_output_{0,1,2,3}"`,
-- for `"QRM"`: `"complex_{output,input}_0"`, `"real_{output,input}_{0,1}"`,
-- for `"QCM_RF"`: `"complex_output_{0,1}"`,
-- for `"QRM_RF"`: `"complex_{output,input}_0"`.
+- for `"QCM"`: `"complex_output_{0,1}"`, `"real_output_{0,1,2,3}"`, `"digital_output_{0,1,2,3}"`,
+- for `"QRM"`: `"complex_{output,input}_0"`, `"real_{output,input}_{0,1}"`, `"digital_output_{0,1,2,3}"`,
+- for `"QCM_RF"`: `"complex_output_{0,1}"`, `"digital_output_{0,1}"`,
+- for `"QRM_RF"`: `"complex_{output,input}_0"`, `"digital_output_{0,1}"`,
+- for `"QTM"`: `"digital_{output,input}_{0,1,2,3,4,5,6,7}"`.
 
 ```{note}
 For RF hardware, if an output is unused, it will be turned off. This is to ensure that unused local oscillators do not interfere with used outputs.
@@ -451,9 +452,7 @@ hardware_compilation_cfg = {
 
 ### Digital channel
 
-The markers can be controlled by defining a digital channel, and adding a `MarkerPulse` on this channel.
-A digital channel is defined by adding a `"digital_output_n"` to the connectivity. `n` is the number of the digital output port.
-For a digital channel only a port is required, no clocks or other parameters are needed.
+The inputs and outputs of the QTM and the markers of QCM/QRM (RF) can be controlled by defining a digital channel. Only certain operations are possible on digital channels, such as the `MarkerPulse`. A digital channel is defined by adding a `"digital_output_n"` or `"digital_input_n"` to the connectivity, where `n` corresponds to port `n+1` on the device.
 
 ```{code-block} python
 ---
@@ -473,13 +472,14 @@ hardware_compilation_cfg = {
 ```
 
 The `MarkerPulse` is defined by adding a `MarkerPulse` to the sequence in question. It takes the same parameters as any other pulse.
+
 ```{code-block} python
 schedule.add(MarkerPulse(duration=52e-9, port="q0:switch"))
 ```
 
 #### Clock names
 
-Clocks in digital channels serve simply as a label and are automatically set to {attr}`"digital" <quantify_scheduler.resources.DigitalClockResource.IDENTITY>` at `MarkerPulse` initialization, but it is also possible to specify a custom clock name (for example, a clock name from the device configuration, like `qe0.ge0`). This makes it possible to connect a digital channel to a given port-clock combination in a device element, for example. Similar to clocks for non-digital channels, the clock must be either
+Clocks in digital channels serve simply as a label and are automatically set to {attr}`"digital" <quantify_scheduler.resources.DigitalClockResource.IDENTITY>` at initialization of digital-channel-only operations, such as the :class:`~quantify_scheduler.operations.pulse_library.MarkerPulse`. However, it is also possible to specify a custom clock name (for example, a clock name from the device configuration, like `qe0.ge0`). This makes it possible to connect a digital channel to a given port-clock combination in a device element, for example. Similar to clocks for non-digital channels, the clock must be either
 
 - specified in the device configuration,
 - added to the {class}`~quantify_scheduler.schedules.schedule.Schedule` as a {class}`~quantify_scheduler.resources.ClockResource`, or
@@ -593,7 +593,7 @@ The {class}`~.backends.types.qblox.QbloxHardwareOptions` datastructure contains 
 ```{eval-rst}
 .. autoapiclass:: quantify_scheduler.backends.types.qblox.QbloxHardwareOptions
     :noindex:
-    :members: latency_corrections, distortion_corrections, modulation_frequencies, mixer_corrections, input_gain, output_att, input_att, sequencer_options
+    :members: latency_corrections, distortion_corrections, modulation_frequencies, mixer_corrections, input_gain, output_att, input_att, digitization_thresholds, sequencer_options
 
 ```
 
@@ -934,6 +934,41 @@ upon exceeding, these are optional to supply.
 
 The `"filter_func"` is a python function that we apply with `"kwargs"` arguments. The waveform to be modified will be passed to this function in the argument name specified by `"input_var_name"`. The waveform will be passed as a `np.ndarray`.
 
+(sec-qblox-digitization-thresholds)=
+### Digitization thresholds
+
+For the QTM, you can specify the threshold voltage above which an incoming signal is registered as a digital `high` signal. The corresponding hardware option is `"digitization_thresholds"`, which has a single field `"in_threshold_primary"`. See the following example.
+
+```{code-block} python
+---
+emphasize-lines: 18-22
+linenos: true
+---
+hardware_compilation_cfg = {
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+    "hardware_description": {
+        "cluster0": {
+            "instrument_type": "Cluster",
+            "modules": {
+                5: {"instrument_type": "QTM"},
+            },
+            "ref": "internal",
+        },
+    },
+    "connectivity": {
+        "graph": [
+            ("cluster0.module5.digital_input_0", "qe0:optical_readout"),
+        ]
+    },
+    "hardware_options": {
+        "digitization_thresholds": {
+            "qe0:optical_readout-qe0.ge0": {
+                "in_threshold_primary": 0.5,
+            }
+        }
+    }
+}
+```
 
 (sec-qblox-sequencer-options)=
 ### Sequencer options

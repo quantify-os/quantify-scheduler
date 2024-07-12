@@ -5,7 +5,7 @@
 # For a reference of the different sphinxopts flags,
 # see https://www.sphinx-doc.org/en/master/man/sphinx-build.html
 #
-SPHINXOPTS    = --keep-going -n -w build_errors.log -v -P -W --color
+SPHINXOPTS    = --keep-going -n -w build_errors.log -v -W --color
 SPHINXBUILD   = python -msphinx
 SPHINXPROJ    = quantify
 SOURCEDIR     = source

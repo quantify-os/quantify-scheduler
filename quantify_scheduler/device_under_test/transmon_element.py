@@ -166,7 +166,7 @@ class DispersiveMeasurement(InstrumentChannel):
     Submodule containing parameters to perform a measurement.
 
     The measurement that is performed is using
-    :func:`~quantify_scheduler.operations.measurement_factories.dispersive_measurement`.
+    :func:`~quantify_scheduler.operations.measurement_factories.dispersive_measurement_transmon`.
     """
 
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
@@ -502,7 +502,7 @@ class BasicTransmonElement(DeviceElement):
                 # the measurement also has a parametrized mapping, and uses a
                 # factory function.
                 "measure": OperationCompilationConfig(
-                    factory_func=measurement_factories.dispersive_measurement,
+                    factory_func=measurement_factories.dispersive_measurement_transmon,
                     factory_kwargs={
                         "port": self.ports.readout(),
                         "clock": f"{self.name}.ro",

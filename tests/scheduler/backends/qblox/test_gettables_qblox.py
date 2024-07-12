@@ -19,7 +19,7 @@ from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 from quantify_scheduler.instrument_coordinator.components.qblox import (
     ClusterComponent,
 )
-from quantify_scheduler.operations.gate_library import Reset
+from quantify_scheduler.operations.gate_library import Measure, Reset
 from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 from quantify_scheduler.schedules.spectroscopy_schedules import (
     heterodyne_spec_sched,
@@ -694,8 +694,8 @@ def test_initialize_and_get_with_report__two_clusters(
 
     def schedule_function(times, repetitions=1):  # noqa: ARG001
         sched = Schedule("sched")
-        sched.add(Reset("q2"))
-        sched.add(Reset("q3"))
+        sched.add(Measure("q2"))
+        sched.add(Measure("q3"))
         return sched
 
     gettable = ScheduleGettable(

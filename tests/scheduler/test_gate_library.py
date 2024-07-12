@@ -14,7 +14,6 @@ from quantify_scheduler.device_under_test.transmon_element import BasicTransmonE
 from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEncoder
 from quantify_scheduler.operations.control_flow_library import (
     ConditionalOperation,
-    Loop,
     LoopOperation,
 )
 from quantify_scheduler.operations.gate_library import (

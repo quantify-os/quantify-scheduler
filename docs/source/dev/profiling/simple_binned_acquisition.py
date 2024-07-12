@@ -52,9 +52,6 @@ my_instr_coord = InstrumentCoordinator("my_instr_coord")
 my_instr_coord.add_component(ic_cluster0)
 
 # %%
-print(ic_cluster0.name)
-
-# %%
 my_device = QuantumDevice("my_device")
 
 # %%
