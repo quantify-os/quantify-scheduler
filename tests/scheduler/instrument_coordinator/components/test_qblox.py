@@ -2,6 +2,7 @@
 # Licensed according to the LICENCE file on the main branch
 """Tests for Qblox instrument coordinator components."""
 import os
+import re
 from collections import defaultdict
 from copy import copy, deepcopy
 from typing import List, Optional
@@ -1805,3 +1806,55 @@ def test_amc_setting_is_set_on_instrument_change_frequency(
     qcm_rf.instrument.sequencer0.sideband_cal.assert_not_called()  # Turned off
     qrm_rf.instrument.out0_in0_lo_cal.assert_called_once()
     qrm_rf.instrument.sequencer0.sideband_cal.assert_called_once()
+
+
+def test_missing_acq_index(
+    mocker,
+    mock_setup_basic_transmon_with_standard_params,
+    make_cluster_component,
+    hardware_cfg_cluster_test_component,
+):
+    cluster_name = "cluster0"
+    qrm_name = f"{cluster_name}_module3"
+
+    cluster = make_cluster_component(
+        name=cluster_name,
+        modules={"1": "QCM", "2": "QCM_RF", "3": "QRM", "4": "QRM_RF"},
+    )
+    qrm = cluster._cluster_modules[qrm_name]
+
+    mock_setup = mock_setup_basic_transmon_with_standard_params
+    mock_setup["quantum_device"].hardware_config(hardware_cfg_cluster_test_component)
+    mock_setup["q0"].clock_freqs.readout(4.5e8)
+    mock_setup["q2"].clock_freqs.readout(7.3e9)
+
+    schedule = Schedule(f"Retrieve acq sched")
+
+    schedule.add(Measure("q0"))
+    schedule.add(Measure("q2"))
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        schedule=schedule,
+        config=mock_setup["quantum_device"].generate_compilation_config(),
+    )
+    prog = compiled_schedule["compiled_instructions"][cluster_name]
+
+    mocker.patch.object(
+        qrm.instrument,
+        "get_acquisitions",
+        return_value={},
+    )
+
+    cluster.prepare(prog)
+    cluster.start()
+
+    with pytest.raises(
+        KeyError,
+        match=re.escape(
+            "The acquisition data retrieved from the hardware does not contain data "
+            r"for acquisition channel 0 (referred to by Qblox acquisition index 0).\n"
+            r"hardware_retrieved_acquisitions={}"
+        ),
+    ):
+        _ = qrm.retrieve_acquisition()

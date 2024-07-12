@@ -1492,6 +1492,10 @@ class _AcquisitionManagerBase(ABC):
             ) in acquisition_metadata.acq_channels_metadata.items():
                 acq_channel: Hashable = acq_channel_metadata.acq_channel
                 acq_indices: list[int] = acq_channel_metadata.acq_indices
+
+                self._assert_acquisition_data_exists(
+                    hardware_retrieved_acquisitions, qblox_acq_index, acq_channel
+                )
                 # the acquisition_function retrieves the right part of the acquisitions
                 # data structure returned by the qrm
                 formatted_acquisitions = acquisition_function(
@@ -1512,6 +1516,22 @@ class _AcquisitionManagerBase(ABC):
                 dataset = dataset.merge(formatted_acquisitions_dataset)
 
         return dataset
+
+    def _assert_acquisition_data_exists(
+        self,
+        hardware_retrieved_acquisitions: dict,
+        qblox_acq_index: int,
+        acq_channel: Hashable,
+    ) -> None:
+        """Assert that the qblox_acq_index is in the acquisition data."""
+        qblox_acq_name = self._qblox_acq_index_to_qblox_acq_name(qblox_acq_index)
+        if qblox_acq_name not in hardware_retrieved_acquisitions:
+            raise KeyError(
+                f"The acquisition data retrieved from the hardware does not contain "
+                f"data for acquisition channel {acq_channel} (referred to by Qblox "
+                f"acquisition index {qblox_acq_index}).\n"
+                f"{hardware_retrieved_acquisitions=}"
+            )
 
     @staticmethod
     def _acq_channel_attrs(
@@ -2116,18 +2136,21 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         self._cluster_modules: Dict[str, _ClusterModule] = {}
         self._program = {}
 
+        # Important: a tuple with only False may not occur as a key, because new
+        # unsupported module types may return False on all is_..._type functions.
         module_type_map = {
-            (True, False, False): _QCMComponent,
-            (True, True, False): _QCMRFComponent,
-            (False, False, False): _QRMComponent,
-            (False, True, False): _QRMRFComponent,
-            (False, False, True): _QTMComponent,
+            (True, False, False, False): _QCMComponent,
+            (True, False, True, False): _QCMRFComponent,
+            (False, True, False, False): _QRMComponent,
+            (False, True, True, False): _QRMRFComponent,
+            (False, False, False, True): _QTMComponent,
         }
         for instrument_module in instrument.modules:
             try:
                 icc_class: type = module_type_map[
                     (
                         instrument_module.is_qcm_type,
+                        instrument_module.is_qrm_type,
                         instrument_module.is_rf_type,
                         getattr(instrument_module, "is_qtm_type", False),
                     )

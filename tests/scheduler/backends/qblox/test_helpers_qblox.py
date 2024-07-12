@@ -106,6 +106,8 @@ def __get_frequencies(
     return freqs
 
 
+@pytest.mark.filterwarnings(r"ignore:Overriding freqs.LO.*")
+@pytest.mark.filterwarnings(r"ignore:Downconverter frequency 0 supplied*")
 @pytest.mark.parametrize(
     "clock_freq, lo_freq, interm_freq, downconverter_freq, mix_lo, expected_freqs",
     [  # General test cases with positive frequencies

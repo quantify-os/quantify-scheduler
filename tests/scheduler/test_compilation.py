@@ -403,6 +403,7 @@ def test_compile_trace_acquisition(
     )
 
 
+@pytest.mark.filterwarnings("ignore:.*The specified weights and sampling rate lead.*")
 def test_compile_weighted_acquisition(
     compile_config_basic_transmon_qblox_hardware_cluster,
     get_subschedule_operation,
