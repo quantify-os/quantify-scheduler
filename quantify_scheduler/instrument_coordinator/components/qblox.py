@@ -1486,6 +1486,10 @@ class _AcquisitionManagerBase(ABC):
             ) in acquisition_metadata.acq_channels_metadata.items():
                 acq_channel: Hashable = acq_channel_metadata.acq_channel
                 acq_indices: list[int] = acq_channel_metadata.acq_indices
+
+                self._assert_acquisition_data_exists(
+                    hardware_retrieved_acquisitions, qblox_acq_index, acq_channel
+                )
                 # the acquisition_function retrieves the right part of the acquisitions
                 # data structure returned by the qrm
                 formatted_acquisitions = acquisition_function(
@@ -1506,6 +1510,22 @@ class _AcquisitionManagerBase(ABC):
                 dataset = dataset.merge(formatted_acquisitions_dataset)
 
         return dataset
+
+    def _assert_acquisition_data_exists(
+        self,
+        hardware_retrieved_acquisitions: dict,
+        qblox_acq_index: int,
+        acq_channel: Hashable,
+    ) -> None:
+        """Assert that the qblox_acq_index is in the acquisition data."""
+        qblox_acq_name = self._qblox_acq_index_to_qblox_acq_name(qblox_acq_index)
+        if qblox_acq_name not in hardware_retrieved_acquisitions:
+            raise KeyError(
+                f"The acquisition data retrieved from the hardware does not contain "
+                f"data for acquisition channel {acq_channel} (referred to by Qblox "
+                f"acquisition index {qblox_acq_index}).\n"
+                f"{hardware_retrieved_acquisitions=}"
+            )
 
     @staticmethod
     def _acq_channel_attrs(

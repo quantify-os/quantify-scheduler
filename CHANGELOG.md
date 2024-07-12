@@ -42,6 +42,7 @@
   - Allow QTM to be used through the `InstrumentCoordinator`. (!1006)
   - Add documentation URL to hardware config deprecation message. (!1016)
   - Add support for automatic mixer calibration (AMC). AMC can be configured to run upon changing LO frequency or intermodulation frequency. (!1007)
+  - Improve error message for when the acquisition data returned by the hardware does not contain the expected acquisition channels. (!1034)
   - Fix the `ClusterComponent` initializer such that new, unsupported modules are ignored. (!1019)
 - Tests
   - Update test_compile_cz_gate with new style hardware config (!979)
