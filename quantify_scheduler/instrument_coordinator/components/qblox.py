@@ -2110,18 +2110,21 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         self._cluster_modules: Dict[str, _ClusterModule] = {}
         self._program = {}
 
+        # Important: a tuple with only False may not occur as a key, because new
+        # unsupported module types may return False on all is_..._type functions.
         module_type_map = {
-            (True, False, False): _QCMComponent,
-            (True, True, False): _QCMRFComponent,
-            (False, False, False): _QRMComponent,
-            (False, True, False): _QRMRFComponent,
-            (False, False, True): _QTMComponent,
+            (True, False, False, False): _QCMComponent,
+            (True, False, True, False): _QCMRFComponent,
+            (False, True, False, False): _QRMComponent,
+            (False, True, True, False): _QRMRFComponent,
+            (False, False, False, True): _QTMComponent,
         }
         for instrument_module in instrument.modules:
             try:
                 icc_class: type = module_type_map[
                     (
                         instrument_module.is_qcm_type,
+                        instrument_module.is_qrm_type,
                         instrument_module.is_rf_type,
                         getattr(instrument_module, "is_qtm_type", False),
                     )
