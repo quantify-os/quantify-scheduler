@@ -456,7 +456,7 @@ class Connectivity(DataStructure):
             instrument_anchor = (min_node_pos_x - 0.05, min_node_pos_y - 0.05)  # type: ignore
             instrument_width = max_node_pos_x - min_node_pos_x + 0.1  # type: ignore
             instrument_height = max_node_pos_y - min_node_pos_y + 0.1  # type: ignore
-            ax.add_patch(
+            ax.add_patch(  # type: ignore
                 Rectangle(
                     xy=instrument_anchor,
                     width=instrument_width,
@@ -468,9 +468,9 @@ class Connectivity(DataStructure):
             ax.text(x=min_node_pos_x, y=max_node_pos_y + 0.1, s=instrument, color="b")  # type: ignore
 
         nx.draw_networkx(self.graph, pos=pos, ax=ax, labels=node_labels, **options_dict)
-        ax.set_axis_off()
+        ax.set_axis_off()  # type: ignore
 
-        return ax
+        return ax  # type: ignore
 
 
 class HardwareCompilationConfig(DataStructure):

@@ -14,7 +14,7 @@ from typing import Any, Callable, Dict, List, Type, Union
 
 import fastjsonschema
 import numpy as np
-from qcodes import Instrument
+from qcodes.instrument import Instrument
 
 from quantify_scheduler import enums
 from quantify_scheduler.helpers import inspect as inspect_helpers
@@ -93,7 +93,7 @@ def load_json_validator(
     """
     definition = load_json_schema(relative_to, filename)
     validator = fastjsonschema.compile(definition, handlers={}, formats={})
-    return validator
+    return validator  # type: ignore  (complicated return type)
 
 
 class UnknownDeserializationTypeError(Exception):
@@ -107,6 +107,8 @@ class JSONSchemaValMixin:
 
     This requires the class to have a class variable "schema_filename"
     """
+
+    schema_filename: str
 
     @classmethod
     def is_valid(cls, object_to_be_validated) -> bool:
@@ -180,7 +182,7 @@ class SchedulerJSONDecoder(json.JSONDecoder):
 
     def decode_dict(
         self, obj: Dict[str, Any]
-    ) -> Union[Dict[str, Any], np.ndarray, type]:
+    ) -> Union[Dict[str, Any], np.ndarray, type, Instrument]:
         """
         Returns the deserialized JSON dictionary.
 
@@ -215,7 +217,7 @@ class SchedulerJSONDecoder(json.JSONDecoder):
             if "mode" in obj and obj["mode"] == "type":
                 return class_type
 
-            new_obj = class_type.__new__(class_type)
+            new_obj = class_type.__new__(class_type)  # type: ignore
             new_obj.__setstate__(obj)
             return new_obj
 
@@ -359,7 +361,7 @@ class SchedulerJSONEncoder(json.JSONEncoder):
         """
         if isinstance(
             o,
-            (
+            (  # type: ignore  (type checker cannot deal with numpy types)
                 complex,
                 np.int32,
                 np.complex128,

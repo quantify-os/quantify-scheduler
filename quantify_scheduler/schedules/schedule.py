@@ -314,7 +314,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         plot_backend: Literal["mpl", "plotly"] = "mpl",
         x_range: tuple[float, float] = (-np.inf, np.inf),
         combine_waveforms_on_same_port: bool = False,
-        **backend_kwargs: Any,  # noqa: ANN401
+        **backend_kwargs,
     ) -> tuple[Figure, Axes] | go.Figure:
         """
         Create a visualization of all the pulses in a schedule using the specified plotting backend.

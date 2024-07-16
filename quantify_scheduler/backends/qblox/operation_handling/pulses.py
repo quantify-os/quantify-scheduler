@@ -12,7 +12,10 @@ import numpy as np
 from quantify_scheduler.backends.qblox import constants, helpers, q1asm_instructions
 from quantify_scheduler.backends.qblox.enums import ChannelMode
 from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
-from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
+from quantify_scheduler.backends.qblox.qasm_program import (
+    QASMProgram,
+    get_marker_binary,
+)
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.helpers.waveforms import normalize_waveform_data
 
@@ -31,6 +34,9 @@ class PulseStrategyPartial(IOperationStrategy):
         Specifies the channel identifier of the hardware config (e.g. `complex_output_0`).
     """
 
+    _amplitude_path_I: float | None  # noqa: N815  (mixed case)
+    _amplitude_path_Q: float | None  # noqa: N815  (mixed case)
+
     def __init__(self, operation_info: types.OpInfo, channel_name: str):
         self._pulse_info: types.OpInfo = operation_info
         self.channel_name = channel_name
@@ -39,12 +45,6 @@ class PulseStrategyPartial(IOperationStrategy):
     def operation_info(self) -> types.OpInfo:
         """Property for retrieving the operation info."""
         return self._pulse_info
-
-    def _check_amplitudes_set(self):
-        if self._amplitude_path_I is None:
-            raise ValueError("Amplitude for path_I is None.")
-        if self._amplitude_path_Q is None:
-            raise ValueError("Amplitude for path_Q is None.")
 
 
 class GenericPulseStrategy(PulseStrategyPartial):
@@ -205,13 +205,14 @@ class GenericPulseStrategy(PulseStrategyPartial):
                 f"{repr(self.operation_info)}."
             )
         qasm_program.time_last_pulse_triggered = qasm_program.elapsed_time
-        self._check_amplitudes_set()
 
         # Only emit play command if at least one path has a signal
         # else auto-generate wait command
         index0 = self._waveform_index0
         index1 = self._waveform_index1
         if (index0 is not None) or (index1 is not None):
+            assert self._amplitude_path_I is not None
+            assert self._amplitude_path_Q is not None
             qasm_program.set_gain_from_amplitude(
                 self._amplitude_path_I, self._amplitude_path_Q, self.operation_info
             )
@@ -270,7 +271,8 @@ class MarkerPulseStrategy(DigitalOutputStrategy):
                 f"Operation causing exception: {self.operation_info}"
             )
         marker_bit_index = int(self.operation_info.data["output"])
-        default_marker = qasm_program.static_hw_properties.default_marker
+        default_marker = self.operation_info.data["default_marker"]
+
         # RF modules use first 2 bits of marker bitstring as output/input switch.
         if qasm_program.static_hw_properties.instrument_type in ("QRM_RF", "QCM_RF"):
             marker_bit_index += 2
@@ -280,9 +282,18 @@ class MarkerPulseStrategy(DigitalOutputStrategy):
         )
 
         if self.operation_info.data["enable"]:
-            qasm_program.set_marker((1 << marker_bit_index) | default_marker)
+            marker = (1 << marker_bit_index) | default_marker
+            qasm_program.emit(
+                q1asm_instructions.SET_MARKER,
+                get_marker_binary(marker),
+                comment=f"set markers to {marker}",
+            )
         else:
-            qasm_program.set_marker(default_marker)
+            qasm_program.emit(
+                q1asm_instructions.SET_MARKER,
+                get_marker_binary(default_marker),
+                comment=f"set markers to {default_marker}",
+            )
 
     @staticmethod
     def _fix_marker_bit_output_addressing_qcm_rf(

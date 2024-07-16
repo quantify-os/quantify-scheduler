@@ -19,7 +19,10 @@ from quantify_scheduler.backends.graph_compilation import (
     SimpleNodeConfig,
 )
 from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
-from quantify_scheduler.backends.types.common import HardwareCompilationConfig
+from quantify_scheduler.backends.types.common import (
+    HardwareCompilationConfig,
+    HardwareOptions,
+)
 from quantify_scheduler.device_under_test.device_element import DeviceElement
 from quantify_scheduler.device_under_test.edge import Edge
 from quantify_scheduler.helpers.importers import (
@@ -128,12 +131,12 @@ class QuantumDevice(Instrument):
 
         self._instrument_references = {}
 
-    def __getstate__(self) -> dict[str, Any]:
+    def __getstate__(self) -> dict[str, Any]:  # type: ignore
         """
         Serializes :class:`~QuantumDevice` into a dict containing serialized :class:`~DeviceElement`
         and :class:`~Edge` objects plus ``cfg_sched_repetitions``.
         """
-        data = {"name": self.name}
+        data: dict[str, Any] = {"name": self.name}
 
         data["elements"] = {
             element_name: json.dumps(
@@ -378,7 +381,7 @@ class QuantumDevice(Instrument):
                 ]
                 hardware_compilation_config = HardwareCompilationConfig(
                     hardware_description={},
-                    hardware_options={},
+                    hardware_options=HardwareOptions(),
                     connectivity=hardware_config,
                     compilation_passes=compilation_passes,
                 )
@@ -392,7 +395,7 @@ class QuantumDevice(Instrument):
                 ]
                 hardware_compilation_config = HardwareCompilationConfig(
                     hardware_description={},
-                    hardware_options={},
+                    hardware_options=HardwareOptions(),
                     connectivity=hardware_config,
                     compilation_passes=compilation_passes,
                 )
@@ -435,7 +438,7 @@ class QuantumDevice(Instrument):
             If key ``name`` is not present in `self.elements`.
         """
         if name in self.elements():
-            return self.find_instrument(name)
+            return self.find_instrument(name)  # type: ignore
         raise KeyError(f"'{name}' is not an element of {self.name}.")
 
     def add_element(

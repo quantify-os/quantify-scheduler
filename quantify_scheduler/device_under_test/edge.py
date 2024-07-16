@@ -11,7 +11,7 @@ from quantify_scheduler.device_under_test.device_element import DeviceElement
 from quantify_scheduler.helpers.importers import export_python_object_to_path_string
 
 if TYPE_CHECKING:
-    from quantify_scheduler.backends.graph_compilation import DeviceCompilationConfig
+    from quantify_scheduler.backends.graph_compilation import OperationCompilationConfig
 
 
 class Edge(Instrument):
@@ -36,7 +36,7 @@ class Edge(Instrument):
 
         super().__init__(name=f"{parent_element_name}_{child_element_name}", **kwargs)
 
-    def __getstate__(self) -> dict[str, Any]:
+    def __getstate__(self) -> dict[str, Any]:  # type: ignore
         """
         Serialize :class:`~Edge` into a dictionary.
 
@@ -47,7 +47,7 @@ class Edge(Instrument):
         """
         snapshot = self.snapshot()
 
-        edge_data = {
+        edge_data: dict[str, Any] = {
             "parent_element_name": self._parent_element_name,
             "child_element_name": self._child_element_name,
         }
@@ -79,7 +79,7 @@ class Edge(Instrument):
             name=self._child_element_name, instrument_class=DeviceElement
         )
 
-    def generate_edge_config(self) -> DeviceCompilationConfig:
+    def generate_edge_config(self) -> dict[str, dict[str, OperationCompilationConfig]]:
         """
         Generate the device configuration for an edge.
 

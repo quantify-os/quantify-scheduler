@@ -18,7 +18,7 @@ from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 
 
 def set_up_mock_transmon_setup() -> Dict:
-    """
+    r"""
     Set up a system containing 5 transmon qubits connected in a star shape.
 
     .. code-block::

@@ -67,7 +67,7 @@ class NcoPhaseShiftStrategy(IdleStrategy):
         qasm_program
             The QASMProgram to add the assembly instructions to.
         """
-        phase = self.operation_info.data.get("phase_shift")
+        phase: float = self.operation_info.data["phase_shift"]
         if phase != 0:
             phase_arg = helpers.get_nco_phase_arguments(phase)
             qasm_program.emit(
@@ -195,7 +195,7 @@ class ResetFeedbackTriggersStrategy(IdleStrategy):
             The QASMProgram to add the assembly instructions to.
 
         """
-        duration = round(1e9 * self.operation_info.data.get("duration"))
+        duration = round(1e9 * self.operation_info.data["duration"])
         qasm_program.emit(
             q1asm_instructions.FEEDBACK_TRIGGERS_RST,
             duration,

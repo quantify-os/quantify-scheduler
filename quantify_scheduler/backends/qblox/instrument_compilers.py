@@ -3,7 +3,7 @@
 """Compiler classes for Qblox backend."""
 from __future__ import annotations
 
-from collections import abc, defaultdict
+from collections import defaultdict
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -27,13 +27,9 @@ from quantify_scheduler.backends.qblox.enums import (
     QbloxFilterConfig,
     QbloxFilterMarkerDelay,
 )
-from quantify_scheduler.backends.qblox.operation_handling.factory_timetag import (
-    get_operation_strategy,
-)
 from quantify_scheduler.backends.qblox.timetag import TimetagSequencerCompiler
 from quantify_scheduler.backends.types.qblox import (
     BoundedParameter,
-    LOSettings,
     OpInfo,
     StaticAnalogModuleProperties,
     StaticTimetagModuleProperties,
@@ -44,9 +40,6 @@ from quantify_scheduler.helpers.collections import find_port_clock_path
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.qblox import compiler_container
-    from quantify_scheduler.backends.qblox.operation_handling.base import (
-        IOperationStrategy,
-    )
 from quantify_scheduler.backends.types.qblox import (
     _LocalOscillatorCompilerConfig,
 )
@@ -81,26 +74,16 @@ class LocalOscillatorCompiler(compiler_abc.InstrumentCompiler):
         total_play_time: float,
         instrument_cfg: _LocalOscillatorCompilerConfig,
     ):
-        def _extract_parameter(
-            parameter_dict: dict[str, float | None]
-        ) -> tuple[str, float | None]:
-            items: abc.ItemsView = parameter_dict.items()
-            return list(items)[0]
-
         super().__init__(
             parent=parent,
             name=name,
             total_play_time=total_play_time,
-            instrument_cfg=instrument_cfg,
+            instrument_cfg=instrument_cfg.model_dump(),
         )
-        self._settings = LOSettings(
-            power={"power": instrument_cfg.hardware_description.power},
-            frequency={"frequency": instrument_cfg.frequency},
-        )
-        self.freq_param_name, self._frequency = _extract_parameter(
-            self._settings.frequency
-        )
-        self.power_param_name, self._power = _extract_parameter(self._settings.power)
+        self.freq_param_name = "frequency"
+        self._frequency = instrument_cfg.frequency
+        self.power_param_name = "power"
+        self._power = instrument_cfg.hardware_description.power
 
     @property
     def frequency(self) -> float | None:
@@ -170,9 +153,10 @@ class LocalOscillatorCompiler(compiler_abc.InstrumentCompiler):
 class QCMCompiler(BasebandModuleCompiler):
     """QCM specific implementation of the qblox compiler."""
 
-    supports_acquisition = False
-    max_number_of_instructions = MAX_NUMBER_OF_INSTRUCTIONS_QCM
-    static_hw_properties = StaticAnalogModuleProperties(
+    # Ignore pyright because a "static property" does not exist (in the standard library).
+    supports_acquisition = False  # type: ignore
+    max_number_of_instructions = MAX_NUMBER_OF_INSTRUCTIONS_QCM  # type: ignore
+    static_hw_properties = StaticAnalogModuleProperties(  # type: ignore
         instrument_type="QCM",
         max_sequencers=NUMBER_OF_SEQUENCERS_QCM,
         max_awg_output_voltage=2.5,
@@ -243,9 +227,10 @@ class QCMCompiler(BasebandModuleCompiler):
 class QRMCompiler(BasebandModuleCompiler):
     """QRM specific implementation of the qblox compiler."""
 
-    supports_acquisition = True
-    max_number_of_instructions = MAX_NUMBER_OF_INSTRUCTIONS_QRM
-    static_hw_properties = StaticAnalogModuleProperties(
+    # Ignore pyright because a "static property" does not exist (in the standard library).
+    supports_acquisition = True  # type: ignore
+    max_number_of_instructions = MAX_NUMBER_OF_INSTRUCTIONS_QRM  # type: ignore
+    static_hw_properties = StaticAnalogModuleProperties(  # type: ignore
         instrument_type="QRM",
         max_sequencers=NUMBER_OF_SEQUENCERS_QRM,
         max_awg_output_voltage=0.5,
@@ -268,9 +253,10 @@ class QRMCompiler(BasebandModuleCompiler):
 class QCMRFCompiler(RFModuleCompiler):
     """QCM-RF specific implementation of the qblox compiler."""
 
-    supports_acquisition = False
-    max_number_of_instructions = MAX_NUMBER_OF_INSTRUCTIONS_QCM
-    static_hw_properties = StaticAnalogModuleProperties(
+    # Ignore pyright because a "static property" does not exist (in the standard library).
+    supports_acquisition = False  # type: ignore
+    max_number_of_instructions = MAX_NUMBER_OF_INSTRUCTIONS_QCM  # type: ignore
+    static_hw_properties = StaticAnalogModuleProperties(  # type: ignore
         instrument_type="QCM_RF",
         max_sequencers=NUMBER_OF_SEQUENCERS_QCM,
         max_awg_output_voltage=None,
@@ -292,9 +278,10 @@ class QCMRFCompiler(RFModuleCompiler):
 class QRMRFCompiler(RFModuleCompiler):
     """QRM-RF specific implementation of the qblox compiler."""
 
-    supports_acquisition = True
-    max_number_of_instructions = MAX_NUMBER_OF_INSTRUCTIONS_QRM
-    static_hw_properties = StaticAnalogModuleProperties(
+    # Ignore pyright because a "static property" does not exist (in the standard library).
+    supports_acquisition = True  # type: ignore
+    max_number_of_instructions = MAX_NUMBER_OF_INSTRUCTIONS_QRM  # type: ignore
+    static_hw_properties = StaticAnalogModuleProperties(  # type: ignore
         instrument_type="QRM_RF",
         max_sequencers=NUMBER_OF_SEQUENCERS_QRM,
         max_awg_output_voltage=None,
@@ -339,7 +326,7 @@ class QTMCompiler(compiler_abc.ClusterModuleCompiler):
         total_play_time: float,
         instrument_cfg: dict[str, Any],
         latency_corrections: dict[str, float] | None = None,
-        distortion_corrections: dict[str, Any] | None = None,
+        distortion_corrections: dict[int, Any] | None = None,
     ) -> None:
         super().__init__(
             parent=parent,
@@ -440,28 +427,6 @@ class QTMCompiler(compiler_abc.ClusterModuleCompiler):
         for seq in self.sequencers.values():
             seq.prepare()
 
-    def _get_operation_strategy(
-        self,
-        operation_info: OpInfo,
-        channel_name: str,
-    ) -> IOperationStrategy:
-        """
-        Determines and instantiates the correct strategy object.
-
-        Parameters
-        ----------
-        operation_info
-            The operation we are building the strategy for.
-        channel_name
-            Specifies the channel identifier of the hardware config (e.g. `complex_output_0`).
-
-        Returns
-        -------
-        :
-            The instantiated strategy object.
-        """
-        return get_operation_strategy(operation_info, channel_name)
-
 
 class ClusterCompiler(compiler_abc.InstrumentCompiler):
     """
@@ -483,6 +448,9 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
     latency_corrections
         Dict containing the delays for each port-clock combination. This is
         specified in the top layer of hardware config.
+    distortion_corrections
+        Dict containing the distortion corrections for each port-clock combination. This
+        is specified in the top layer of hardware config.
     """
 
     compiler_classes: dict[str, type] = {
@@ -503,7 +471,7 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
         instrument_cfg: dict[str, Any],
         portclock_to_path: dict[str, str],
         latency_corrections: dict[str, float] | None = None,
-        distortion_corrections: dict[int, Any] | None = None,
+        distortion_corrections: dict[str, Any] | None = None,
     ):
         super().__init__(
             parent=parent,
@@ -511,9 +479,9 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
             total_play_time=total_play_time,
             instrument_cfg=instrument_cfg,
             latency_corrections=latency_corrections,
-            distortion_corrections=distortion_corrections,
         )
         self._op_infos: dict[tuple[str, str], list[OpInfo]] = defaultdict(list)
+        self.distortion_corrections = distortion_corrections or {}
         self.instrument_compilers = self.construct_module_compilers()
         self.portclock_to_path = portclock_to_path
         self.latency_corrections = latency_corrections
@@ -584,7 +552,7 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
             instrument_compilers[name] = instance
         return instrument_compilers
 
-    def _get_module_distortion_corrections(self, cfg):
+    def _get_module_distortion_corrections(self, cfg: dict[str, Any]) -> dict[int, Any]:
         module_distortion_corrections = {}
         for key in self.distortion_corrections:
             try:

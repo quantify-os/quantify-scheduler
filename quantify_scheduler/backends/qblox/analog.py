@@ -37,6 +37,7 @@ from quantify_scheduler.backends.qblox.operation_handling.virtual import (
     NcoResetClockPhaseStrategy,
     NcoSetClockFrequencyStrategy,
 )
+from quantify_scheduler.backends.qblox.qasm_program import get_marker_binary
 from quantify_scheduler.backends.types.qblox import (
     AnalogModuleSettings,
     AnalogSequencerSettings,
@@ -108,7 +109,6 @@ class AnalogSequencerCompiler(SequencerCompiler):
         static_hw_properties: StaticAnalogModuleProperties,
         settings: AnalogSequencerSettings,
         latency_corrections: dict[str, float],
-        distortion_corrections: dict[int, Any] | None = None,
         qasm_hook_func: Callable | None = None,
         lo_name: str | None = None,
         downconverter_freq: float | None = None,
@@ -124,7 +124,6 @@ class AnalogSequencerCompiler(SequencerCompiler):
             static_hw_properties=static_hw_properties,
             settings=settings,
             latency_corrections=latency_corrections,
-            distortion_corrections=distortion_corrections,
             qasm_hook_func=qasm_hook_func,
         )
         self.associated_ext_lo = lo_name
@@ -179,6 +178,45 @@ class AnalogSequencerCompiler(SequencerCompiler):
 
         self._settings.modulation_freq = freq
         self._settings.nco_en = freq is not None
+
+    def get_operation_strategy(
+        self,
+        operation_info: OpInfo,
+    ) -> IOperationStrategy:
+        """
+        Determines and instantiates the correct strategy object.
+
+        Parameters
+        ----------
+        operation_info
+            The operation we are building the strategy for.
+        channel_name
+            Specifies the channel identifier of the hardware config (e.g. `complex_output_0`).
+
+        Returns
+        -------
+        :
+            The instantiated strategy object.
+        """
+        return get_operation_strategy(operation_info, self.settings.channel_name)
+
+    def add_operation_strategy(self, op_strategy: IOperationStrategy) -> None:
+        """
+        Adds the operation strategy to the sequencer compiler.
+
+        Parameters
+        ----------
+        op_strategy
+            The operation strategy.
+        """
+        if op_strategy.operation_info.data.get("marker_pulse", False):
+            # A digital pulse always uses one output.
+            op_strategy.operation_info.data["output"] = self.connected_output_indices[0]
+            op_strategy.operation_info.data["default_marker"] = (
+                self.static_hw_properties.default_marker
+            )
+
+        super().add_operation_strategy(op_strategy)
 
     def _prepare_acq_settings(
         self,
@@ -358,7 +396,11 @@ class AnalogSequencerCompiler(SequencerCompiler):
 
         The duration must be equal for all module types.
         """
-        qasm.set_marker(self._default_marker)
+        qasm.emit(
+            q1asm_instructions.SET_MARKER,
+            get_marker_binary(self._default_marker),
+            comment=f"set markers to {self._default_marker}",
+        )
 
     def _write_repetition_loop_header(self, qasm: QASMProgram) -> None:
         """
@@ -387,9 +429,18 @@ class AnalogSequencerCompiler(SequencerCompiler):
                 or op_strategy.operation_info.data.get("wf_func") is not None
             )
             if valid_operation:
-                qasm_program.set_marker(self._decide_markers(op_strategy))
+                marker = self._decide_markers(op_strategy)
+                qasm_program.emit(
+                    q1asm_instructions.SET_MARKER,
+                    get_marker_binary(marker),
+                    comment=f"set markers to {marker}",
+                )
                 op_strategy.insert_qasm(qasm_program)
-                qasm_program.set_marker(self._default_marker)
+                qasm_program.emit(
+                    q1asm_instructions.SET_MARKER,
+                    get_marker_binary(self._default_marker),
+                    comment=f"set markers to {self._default_marker}",
+                )
                 qasm_program.emit(
                     q1asm_instructions.UPDATE_PARAMETERS,
                     constants.MIN_TIME_BETWEEN_OPERATIONS,
@@ -470,6 +521,8 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
     latency_corrections
         Dict containing the delays for each port-clock combination. This is specified in
         the top layer of hardware config.
+    distortion_corrections
+        Dict containing the distortion corrections for each output.
     """
 
     _settings: AnalogModuleSettings  # type: ignore
@@ -851,28 +904,6 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
                         module_name=self.name,
                     )
                 scope_acq_seq = seq.index
-
-    def _get_operation_strategy(
-        self,
-        operation_info: OpInfo,
-        channel_name: str,
-    ) -> IOperationStrategy:
-        """
-        Determines and instantiates the correct strategy object.
-
-        Parameters
-        ----------
-        operation_info
-            The operation we are building the strategy for.
-        channel_name
-            Specifies the channel identifier of the hardware config (e.g. `complex_output_0`).
-
-        Returns
-        -------
-        :
-            The instantiated strategy object.
-        """
-        return get_operation_strategy(operation_info, channel_name)
 
 
 class BasebandModuleCompiler(AnalogModuleCompiler):

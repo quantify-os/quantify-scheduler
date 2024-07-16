@@ -132,9 +132,7 @@ def generate_uuid_from_wf_data(wf_data: np.ndarray, decimals: int = 12) -> str:
     return str(waveform_hash)
 
 
-def add_to_wf_dict_if_unique(
-    wf_dict: dict[str, Any], waveform: np.ndarray
-) -> tuple[dict[str, Any], str, int]:
+def add_to_wf_dict_if_unique(wf_dict: dict[str, Any], waveform: np.ndarray) -> int:
     """
     Adds a waveform to the waveform dictionary if it is not yet in there and returns the
     uuid and index. If it is already present it simply returns the uuid and index.

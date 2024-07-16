@@ -121,7 +121,7 @@ class CompilerContainer:
         instrument_cfg: dict[str, Any],
         portclock_to_path: dict[str, str],
         latency_corrections: dict[str, float] | None = None,
-        distortion_corrections: dict[int, Any] | None = None,
+        distortion_corrections: dict[str, Any] | None = None,
     ) -> None:
         self.clusters[name] = ClusterCompiler(
             parent=self,

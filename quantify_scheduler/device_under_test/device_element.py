@@ -3,7 +3,7 @@
 """The module contains definitions for device elements."""
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from qcodes.instrument.base import Instrument
 
@@ -30,7 +30,7 @@ class DeviceElement(Instrument):
             )
         super().__init__(name, **kwargs)
 
-    def __getstate__(self) -> dict:
+    def __getstate__(self) -> dict:  # type: ignore
         """
         Serialize :class:`~DeviceElement` and derived classes.
 
@@ -40,7 +40,7 @@ class DeviceElement(Instrument):
         """
         snapshot = self.snapshot()
 
-        element_data = {"name": self.name}
+        element_data: dict[str, Any] = {"name": self.name}
         for submodule_name, submodule_data in snapshot["submodules"].items():
             element_data[submodule_name] = {
                 name: data["value"]

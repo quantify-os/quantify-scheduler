@@ -175,7 +175,7 @@ lint.select = [
 # ANN101: Missing type annotation for `self` in method
 # PLR2004: Magic value used in comparison, consider replacing `...` with a constant variable
 # PLR0912: Too many branches (... > 12)
-lint.ignore = ["D105", "D107", "D203", "D212", "D401", "D413", "E741", "N806", "PLR0913", "A003", "ANN101", "PLR2004", "PLR0912"]
+lint.ignore = ["D105", "D107", "D203", "D212", "D401", "D413", "E741", "N806", "PLR0913", "A003", "ANN101", "PLR2004", "PLR0912", "ANN003"]
 extend-exclude = [
  "docs",
 ]
@@ -204,7 +204,7 @@ extend-ignore-names = ["path_I", "path_Q", "offset_path_I", "offset_path_Q"]
 "quantify_scheduler/_version.py" = ['ANN001', 'ANN202', 'N801', 'PLR0912', 'SIM105', 'UP032']
 "quantify_scheduler/backends/circuit_to_device.py" = ['ANN001', 'ANN202', 'ANN204', 'PLR0912', 'TCH001', 'UP006']
 "quantify_scheduler/backends/corrections.py" = ['E501', 'SIM118']
-"quantify_scheduler/backends/graph_compilation.py" = ['ANN001', 'ANN003', 'ANN201', 'ANN202', 'ANN204', 'TCH001', 'TCH002', 'UP006', 'UP007']
+"quantify_scheduler/backends/graph_compilation.py" = ['ANN001', 'ANN201', 'ANN202', 'ANN204', 'TCH001', 'TCH002', 'UP006', 'UP007']
 "quantify_scheduler/backends/qblox/compiler_abc.py" = ['ANN001', 'ANN202', 'ANN204', 'ANN401', 'E501', 'F821', 'SIM108', 'TCH001', 'TCH003']
 "quantify_scheduler/backends/qblox/compiler_container.py" = ['ANN102', 'ANN201', 'ANN204']
 "quantify_scheduler/backends/qblox/constants.py" = ['E501']
@@ -216,9 +216,9 @@ extend-ignore-names = ["path_I", "path_Q", "offset_path_I", "offset_path_Q"]
 "quantify_scheduler/backends/qblox/operation_handling/factory.py" = ['PLR0911', 'TCH001']
 "quantify_scheduler/backends/qblox/operation_handling/pulses.py" = ['ANN201', 'ANN202', 'ANN204', 'ANN205', 'ARG002', 'E501', 'E713', 'E731', 'TCH001', 'UP006', 'UP007', 'W291', 'W293']
 "quantify_scheduler/backends/qblox/operation_handling/virtual.py" = ['ANN201', 'ANN204', 'ARG002']
-"quantify_scheduler/backends/qblox/qasm_program.py" = ['ANN002', 'ANN003', 'ANN201', 'ANN204', 'ANN205', 'E501', 'F821', 'N803', 'PLR1714', 'TCH001', 'UP006', 'UP007']
+"quantify_scheduler/backends/qblox/qasm_program.py" = ['ANN002', 'ANN201', 'ANN204', 'ANN205', 'E501', 'F821', 'N803', 'PLR1714', 'TCH001', 'UP006', 'UP007']
 "quantify_scheduler/backends/qblox_backend.py" = ['ANN401', 'E501', 'SIM118', 'TCH001', 'UP006', 'UP007', 'W291']
-"quantify_scheduler/backends/types/common.py" = ['ANN001', 'ANN003', 'ANN202', 'E501', 'N805', 'TCH001', 'TCH002', 'UP006', 'UP007', 'UP037', 'W291']
+"quantify_scheduler/backends/types/common.py" = ['ANN001', 'ANN202', 'E501', 'N805', 'TCH001', 'TCH002', 'UP006', 'UP007', 'UP037', 'W291']
 "quantify_scheduler/backends/types/qblox.py" = ['ANN001', 'ANN102', 'ANN202', 'ANN204', 'E501', 'N815', 'PLR1714', 'UP006', 'UP007', 'W291']
 "quantify_scheduler/backends/types/zhinst.py" = ['ANN001', 'ANN201', 'ANN204', 'ANN205', 'ARG002', 'E501', 'N805', 'N815', 'W291']
 "quantify_scheduler/backends/zhinst/helpers.py" = ['ANN001', 'ANN201', 'D417', 'TCH002', 'UP006', 'UP007']
@@ -226,15 +226,15 @@ extend-ignore-names = ["path_I", "path_Q", "offset_path_I", "offset_path_Q"]
 "quantify_scheduler/backends/zhinst/seqc_il_generator.py" = ['ANN201', 'D100', 'D417', 'UP004', 'UP006', 'UP007']
 "quantify_scheduler/backends/zhinst/settings.py" = ['ANN001', 'ANN102', 'ANN201', 'ANN202', 'ANN204', 'ARG001', 'D417', 'PLR0912', 'TCH002', 'UP006', 'UP007']
 "quantify_scheduler/backends/zhinst_backend.py" = ['D202', 'D417', 'D419']
-"quantify_scheduler/device_under_test/composite_square_edge.py" = ['ANN003', 'ANN204', 'ANN401']
+"quantify_scheduler/device_under_test/composite_square_edge.py" = ['ANN204', 'ANN401']
 "quantify_scheduler/device_under_test/mock_setup.py" = ['ANN001', 'ANN201', 'W605']
-"quantify_scheduler/device_under_test/nv_element.py" = ['ANN003', 'ANN204', 'ANN401', 'ARG002']
+"quantify_scheduler/device_under_test/nv_element.py" = ['ANN204', 'ANN401', 'ARG002']
 "quantify_scheduler/device_under_test/quantum_device.py" = ['ANN102']
 "quantify_scheduler/device_under_test/transmon_element.py" = ['ANN003', 'ANN202', 'ANN204', 'ANN401', 'SIM118']
 "quantify_scheduler/device_under_test/spin_element.py" = ['ANN401']
 "quantify_scheduler/enums.py" = ['ANN204']
 "quantify_scheduler/gettables.py" = ['D101', 'D202', 'D213', 'D400', 'D404', 'D405', 'D407', 'D410', 'D411', 'D414', 'D415', 'D417']
-"quantify_scheduler/gettables_profiled.py" = ['ANN001', 'ANN002', 'ANN003', 'ANN201', 'ANN202', 'ANN204', 'ARG002', 'D102', 'D404']
+"quantify_scheduler/gettables_profiled.py" = ['ANN001', 'ANN002', 'ANN201', 'ANN202', 'ANN204', 'ARG002', 'D102', 'D404']
 "quantify_scheduler/helpers/collections.py" = ['ANN001', 'ANN401', 'SIM102', 'UP006']
 "quantify_scheduler/helpers/importers.py" = ['ANN401', 'SIM108']
 "quantify_scheduler/helpers/inspect.py" = ['TCH003', 'UP006', 'UP007']
@@ -244,31 +244,31 @@ extend-ignore-names = ["path_I", "path_Q", "offset_path_I", "offset_path_Q"]
 "quantify_scheduler/instrument_coordinator/components/__init__.py" = ['E501']
 "quantify_scheduler/instrument_coordinator/components/base.py" = ['ANN401', 'TCH001', 'UP006']
 "quantify_scheduler/instrument_coordinator/components/generic.py" = ['ANN001', 'ANN201', 'ANN401', 'ARG002', 'E501', 'TCH001', 'UP006', 'UP007']
-"quantify_scheduler/instrument_coordinator/components/qblox.py" = ['ANN001', 'ANN003', 'ANN102', 'ANN202', 'ANN204', 'ANN401', 'ARG002', 'E501', 'F821', 'SIM102', 'SIM118', 'TCH001', 'UP006', 'UP007', 'UP015']
+"quantify_scheduler/instrument_coordinator/components/qblox.py" = ['ANN001', 'ANN102', 'ANN202', 'ANN204', 'ANN401', 'ARG002', 'E501', 'F821', 'SIM102', 'SIM118', 'TCH001', 'UP006', 'UP007', 'UP015']
 "quantify_scheduler/instrument_coordinator/components/zhinst.py" = ['D101', 'D102']
-"quantify_scheduler/instrument_coordinator/instrument_coordinator.py" = ['ANN001', 'ANN002', 'ANN003', 'ANN202', 'E501', 'SIM118', 'UP006']
+"quantify_scheduler/instrument_coordinator/instrument_coordinator.py" = ['ANN001', 'ANN002', 'ANN202', 'E501', 'SIM118', 'UP006']
 "quantify_scheduler/instrument_coordinator/utility.py" = ['ANN001', 'ANN201', 'ANN202', 'ANN401', 'E501', 'E731']
-"quantify_scheduler/json_utils.py" = ['ANN001', 'ANN002', 'ANN003', 'ANN102', 'ANN201', 'UP006', 'UP007']
-"quantify_scheduler/operations/acquisition_library.py" = ['ANN002', 'ANN003']
+"quantify_scheduler/json_utils.py" = ['ANN001', 'ANN002', 'ANN102', 'ANN201', 'UP006', 'UP007']
+"quantify_scheduler/operations/acquisition_library.py" = ['ANN002']
 "quantify_scheduler/operations/gate_library.py" = ['ANN204', 'E501', 'N803', 'PLR5501', 'TCH001', 'TID252', 'UP006', 'UP007', 'W291', 'W293']
 "quantify_scheduler/operations/measurement_factories.py" = ['ARG001', 'PLR0912', 'TCH002', 'UP006', 'UP007']
 "quantify_scheduler/operations/nv_native_library.py" = ['ANN204', 'PLR5501', 'TID252']
 "quantify_scheduler/operations/operation.py" = ['ANN001', 'ANN102', 'ANN204', 'E501']
 "quantify_scheduler/operations/pulse_factories.py" = ['E501', 'TCH001']
-"quantify_scheduler/operations/pulse_library.py" = ['ANN002', 'ANN003', 'ANN102', 'ANN204', 'ANN206', 'ARG001', 'E501', 'N803', 'SIM108', 'TCH002', 'UP006', 'UP007']
+"quantify_scheduler/operations/pulse_library.py" = ['ANN002', 'ANN102', 'ANN204', 'ANN206', 'ARG001', 'E501', 'N803', 'SIM108', 'TCH002', 'UP006', 'UP007']
 "quantify_scheduler/operations/shared_native_library.py" = ['ANN204']
-"quantify_scheduler/operations/stitched_pulse.py" = ['ANN002', 'ANN003', 'ANN201']
+"quantify_scheduler/operations/stitched_pulse.py" = ['ANN002', 'ANN201']
 "quantify_scheduler/resources.py" = ['ANN001', 'ANN102', 'ANN204']
-"quantify_scheduler/schedules/_visualization/circuit_diagram.py" = ['ANN001', 'ANN003', 'ANN202', 'ARG001', 'PLR0912', 'PLR0915', 'TCH002', 'UP006', 'UP007']
-"quantify_scheduler/schedules/_visualization/pulse_diagram.py" = ['ANN001', 'ANN003', 'ANN202', 'PLR0912', 'PLR0915', 'SIM102', 'SIM118', 'UP006', 'UP007']
-"quantify_scheduler/schedules/_visualization/pulse_scheme.py" = ['ANN001', 'ANN002', 'ANN003', 'D417', 'N802', 'SIM108', 'TCH002', 'UP006', 'UP007']
+"quantify_scheduler/schedules/_visualization/circuit_diagram.py" = ['ANN001', 'ANN202', 'ARG001', 'PLR0912', 'PLR0915', 'TCH002', 'UP006', 'UP007']
+"quantify_scheduler/schedules/_visualization/pulse_diagram.py" = ['ANN001', 'ANN202', 'PLR0912', 'PLR0915', 'SIM102', 'SIM118', 'UP006', 'UP007']
+"quantify_scheduler/schedules/_visualization/pulse_scheme.py" = ['ANN001', 'ANN002', 'D417', 'N802', 'SIM108', 'TCH002', 'UP006', 'UP007']
 "quantify_scheduler/schedules/schedule.py" = ['ANN102']
 "quantify_scheduler/schedules/spectroscopy_schedules.py" = ['E501', 'TCH002', 'UP007']
 "quantify_scheduler/schedules/timedomain_schedules.py" = ['E501', 'N803']
 "quantify_scheduler/schedules/verification.py" = ['ANN001', 'ANN202', 'TCH002']
 "quantify_scheduler/schemas/examples/device_example_cfgs.py" = ['E501']
 "quantify_scheduler/structure/model.py" = ['ANN401']
-"quantify_scheduler/waveforms.py" = ['ANN001', 'ANN003', 'ANN201', 'E501', 'N803', 'UP006', 'UP007', 'UP032']
+"quantify_scheduler/waveforms.py" = ['ANN001', 'ANN201', 'E501', 'N803', 'UP006', 'UP007', 'UP032']
 "tests/conftest.py" = ['F403', 'UP009']
 "tests/fixtures/mock_setup.py" = [ 'SIM105']
 "tests/fixtures/schedule.py" = [ 'UP006', 'UP007']
@@ -303,32 +303,15 @@ exclude = [
  "docs",
  "setup.py",
  # All files below are temporarily excluded explicitly and expected to be gradually turned into pyright-compliancy
- "quantify_scheduler/compilation.py",
  "quantify_scheduler/gettables_profiled.py",
- "quantify_scheduler/json_utils.py",
- "quantify_scheduler/backends/circuit_to_device.py",
- "quantify_scheduler/backends/corrections.py",
  "quantify_scheduler/backends/graph_compilation.py",
  "quantify_scheduler/backends/qblox_backend.py",
  "quantify_scheduler/backends/zhinst_backend.py",
- "quantify_scheduler/backends/qblox/compiler_abc.py",
- "quantify_scheduler/backends/qblox/driver_version_check.py",
  "quantify_scheduler/backends/qblox/helpers.py",
- "quantify_scheduler/backends/qblox/instrument_compilers.py",
- "quantify_scheduler/backends/qblox/qasm_program.py",
- "quantify_scheduler/backends/qblox/operation_handling/pulses.py",
- "quantify_scheduler/backends/qblox/operation_handling/virtual.py",
- "quantify_scheduler/backends/types/common.py",
- "quantify_scheduler/backends/types/qblox.py",
  "quantify_scheduler/backends/types/zhinst.py",
  "quantify_scheduler/backends/zhinst/helpers.py",
  "quantify_scheduler/backends/zhinst/seqc_il_generator.py",
  "quantify_scheduler/backends/zhinst/settings.py",
- "quantify_scheduler/device_under_test/composite_square_edge.py",
- "quantify_scheduler/device_under_test/device_element.py",
- "quantify_scheduler/device_under_test/edge.py",
- "quantify_scheduler/device_under_test/mock_setup.py",
- "quantify_scheduler/device_under_test/quantum_device.py",
  "quantify_scheduler/helpers/collections.py",
  "quantify_scheduler/helpers/inspect.py",
  "quantify_scheduler/helpers/mock_instruments.py",

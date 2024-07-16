@@ -173,7 +173,7 @@ def test_compile_gates_to_subschedule(mock_setup_basic_transmon_with_standard_pa
     )
 
     def _compare_op(op, expected_op):
-        assert type(op) == type(expected_op)
+        assert type(op) is type(expected_op)
         if isinstance(op, ScheduleBase):
             assert len(op) == len(expected_op)
             for schedulable, expected_schedulable in zip(

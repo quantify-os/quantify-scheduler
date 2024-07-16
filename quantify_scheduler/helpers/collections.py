@@ -139,7 +139,7 @@ def find_all_port_clock_combinations(d: dict) -> List[Tuple[str, str]]:
     return port_clocks
 
 
-def find_port_clock_path(hardware_config: dict, port: str, clock: str) -> list | None:
+def find_port_clock_path(hardware_config: dict, port: str, clock: str) -> list:
     """
     Find the path to a port-clock combination in a nested dictionary.
 
@@ -188,6 +188,7 @@ def find_port_clock_path(hardware_config: dict, port: str, clock: str) -> list |
                 if found_path:
                     return found_path
                 path.pop()  # Remove dict key if port-clock not found in this dict.
+        return None
 
     port_clock_path = recursive_find(hardware_config, port, clock, path=[])
     if port_clock_path is None:

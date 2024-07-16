@@ -245,11 +245,11 @@ def _set_pulse_and_acquisition_clock(
     verified_clocks: List,
 ) -> Operation | Schedule: ...
 def _set_pulse_and_acquisition_clock(
-    schedule,
-    operation,
-    all_clock_freqs,
-    verified_clocks,
-):
+    schedule: Schedule,
+    operation: Operation | Schedule,
+    all_clock_freqs: Dict[str, float],
+    verified_clocks: List,
+) -> Operation | Schedule:
     """
     Ensures that each pulse/acquisition-level clock resource is added to the schedule.
 

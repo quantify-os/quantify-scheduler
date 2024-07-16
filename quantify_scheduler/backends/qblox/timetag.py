@@ -7,6 +7,9 @@ from typing import TYPE_CHECKING, Callable
 
 from quantify_scheduler.backends.qblox import constants, q1asm_instructions
 from quantify_scheduler.backends.qblox.compiler_abc import SequencerCompiler
+from quantify_scheduler.backends.qblox.operation_handling.factory_timetag import (
+    get_operation_strategy,
+)
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.qblox.instrument_compilers import (
@@ -17,6 +20,7 @@ if TYPE_CHECKING:
     )
     from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
     from quantify_scheduler.backends.types.qblox import (
+        OpInfo,
         StaticHardwareProperties,
         TimetagSequencerSettings,
     )
@@ -67,6 +71,25 @@ class TimetagSequencerCompiler(SequencerCompiler):
             latency_corrections=latency_corrections,
             qasm_hook_func=qasm_hook_func,
         )
+
+    def get_operation_strategy(
+        self,
+        operation_info: OpInfo,
+    ) -> IOperationStrategy:
+        """
+        Determines and instantiates the correct strategy object.
+
+        Parameters
+        ----------
+        operation_info
+            The operation we are building the strategy for.
+
+        Returns
+        -------
+        :
+            The instantiated strategy object.
+        """
+        return get_operation_strategy(operation_info, self.settings.channel_name)
 
     def _prepare_acq_settings(
         self,

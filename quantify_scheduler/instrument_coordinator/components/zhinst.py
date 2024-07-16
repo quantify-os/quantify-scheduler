@@ -12,7 +12,7 @@ check_zhinst_compatibility()
 import logging
 import shutil
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Hashable
+from typing import TYPE_CHECKING, Hashable
 
 import xarray
 from zhinst import qcodes
@@ -45,7 +45,7 @@ class ZIInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
     def __init__(
         self,
         instrument: ZIBaseInstrument,
-        **kwargs: Any,  # noqa: ANN401 # Need to fix that in the parent class first.
+        **kwargs,
     ) -> None:
         super().__init__(instrument, **kwargs)
         self.zi_device_config: ZIDeviceConfig | None = None
@@ -116,7 +116,7 @@ class HDAWGInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
     def __init__(
         self,
         instrument: qcodes.HDAWG,
-        **kwargs: Any,  # noqa: ANN401 # Need to fix that in the parent class first.
+        **kwargs,
     ) -> None:
         assert isinstance(instrument, qcodes.HDAWG)
         super().__init__(instrument, **kwargs)
@@ -178,7 +178,7 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
     def __init__(
         self,
         instrument: qcodes.UHFQA,
-        **kwargs: Any,  # noqa: ANN401  # Need to fix that in the parent class first.
+        **kwargs,
     ) -> None:
         if not isinstance(instrument, qcodes.UHFQA):
             raise ValueError("`instrument` must be an instance of UHFQA.")

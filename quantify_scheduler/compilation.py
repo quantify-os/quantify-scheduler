@@ -37,9 +37,11 @@ def _determine_absolute_timing(
     config: CompilationConfig | None = None,
 ) -> Operation | Schedule: ...
 def _determine_absolute_timing(  # noqa: PLR0912
-    schedule,
-    time_unit="physical",  # should be included in CompilationConfig
-    config=None,
+    schedule: Operation | Schedule,
+    time_unit: Literal[
+        "physical", "ideal", None
+    ] = "physical",  # should be included in CompilationConfig
+    config: CompilationConfig | None = None,
 ):
     """
     Determine the absolute timing of a schedule based on the timing constraints.
@@ -108,7 +110,7 @@ def _determine_absolute_timing_schedule(  # noqa: PLR0912
     config: CompilationConfig | None,
 ) -> Schedule:
     for op_key in schedule.operations:
-        if isinstance(schedule.operations[op_key], ScheduleBase):
+        if isinstance(schedule.operations[op_key], Schedule):
             if schedule.operations[op_key].get("duration", None) is None:
                 schedule.operations[op_key] = _determine_absolute_timing(
                     schedule=schedule.operations[op_key],
@@ -123,10 +125,12 @@ def _determine_absolute_timing_schedule(  # noqa: PLR0912
                 config=config,
             )
 
-        elif (
+        # Note: type checker cannot reason that schedule.operations[op_key] can only be
+        # an Operation after the `or`.
+        elif isinstance(schedule.operations[op_key], Schedule) or (
             time_unit == "physical"
-            and not schedule.operations[op_key].valid_pulse
-            and not schedule.operations[op_key].valid_acquisition
+            and not schedule.operations[op_key].valid_pulse  # type: ignore
+            and not schedule.operations[op_key].valid_acquisition  # type: ignore
         ):
             # Gates do not have a defined duration, so only ideal timing is defined
             raise RuntimeError(
@@ -136,7 +140,7 @@ def _determine_absolute_timing_schedule(  # noqa: PLR0912
             )
 
     scheduling_strategy = "asap"
-    if config is not None:
+    if config is not None and config.device_compilation_config is not None:
         scheduling_strategy = config.device_compilation_config.scheduling_strategy
 
     if scheduling_strategy != "asap":
@@ -198,7 +202,7 @@ def _get_start_time(
     schedule: Schedule,
     t_constr: dict[str, str | float],
     curr_op: Operation | Schedule,
-    time_unit: str,
+    time_unit: Literal["physical", "ideal", None],
 ) -> float:
     # this assumes the reference op exists. This is ensured in schedule.add
     ref_schedulable = schedule.schedulables[str(t_constr["ref_schedulable"])]
@@ -208,6 +212,9 @@ def _get_start_time(
     duration_ref_op = (
         ref_op.duration if time_unit == "physical" else ref_op.get("depth", 1)
     )
+    # Type checker does not know that ref_op.duration is not None if time_unit ==
+    # "physical"
+    assert duration_ref_op is not None
 
     ref_pt = t_constr["ref_pt"] or "end"
     if ref_pt == "start":
@@ -222,6 +229,7 @@ def _get_start_time(
     duration_new_op = (
         curr_op.duration if time_unit == "physical" else curr_op.get("depth", 1)
     )
+    assert duration_new_op is not None
 
     ref_pt_new = t_constr["ref_pt_new"] or "start"
     if ref_pt_new == "start":

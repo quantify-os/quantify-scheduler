@@ -1,9 +1,11 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Pulse and acquisition corrections for hardware compilation."""
+from __future__ import annotations
+
 import logging
 import warnings
-from typing import Any, Dict, Generator, Optional, Union
+from typing import TYPE_CHECKING, Any, Generator
 
 import numpy as np
 
@@ -16,24 +18,26 @@ from quantify_scheduler.helpers.importers import import_python_object_from_strin
 from quantify_scheduler.helpers.schedule import _extract_port_clocks_used
 from quantify_scheduler.helpers.waveforms import get_waveform
 from quantify_scheduler.operations.control_flow_library import ControlFlowOperation
-from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import NumericalPulse
 from quantify_scheduler.schedules.schedule import Schedule, ScheduleBase
+
+if TYPE_CHECKING:
+    from quantify_scheduler.operations.operation import Operation
 
 logger = logging.getLogger(__name__)
 
 
 def determine_relative_latency_corrections(
-    hardware_cfg: Union[HardwareCompilationConfig, Dict[str, Any]],
-    schedule: Schedule = None,
-) -> Dict[str, float]:
+    hardware_cfg: HardwareCompilationConfig | dict[str, Any],
+    schedule: Schedule | None = None,
+) -> dict[str, float]:
     """
     Generates the latency configuration dict for all port-clock combinations that are present in
     the schedule (or in the hardware config, if an old-style zhinst config is passed). This is done by first setting unspecified latency corrections to zero, and then
     subtracting the minimum latency from all latency corrections.
     """
 
-    def _extract_port_clocks(hardware_cfg: Dict[str, Any]) -> Generator:
+    def _extract_port_clocks(hardware_cfg: dict[str, Any]) -> Generator:
         """
         Extracts all port-clock combinations that are present in a hardware configuration.
         Based on: https://stackoverflow.com/questions/9807634/find-all-occurrences-of-a-key-in-nested-dictionaries-and-lists.
@@ -92,7 +96,7 @@ def determine_relative_latency_corrections(
 
 
 def distortion_correct_pulse(
-    pulse_data: Dict[str, Any],
+    pulse_data: dict[str, Any],
     distortion_correction: SoftwareDistortionCorrection,
 ) -> NumericalPulse:
     """
@@ -155,8 +159,8 @@ def _is_distortion_correctable(operation: Operation) -> bool:
 
 
 def apply_software_distortion_corrections(  # noqa: PLR0912
-    operation: Union[Operation, Schedule], distortion_corrections: dict
-) -> Optional[Union[Operation, Schedule]]:
+    operation: Operation | Schedule, distortion_corrections: dict
+) -> Operation | Schedule | None:
     """
     Apply distortion corrections to operations in the schedule.
 

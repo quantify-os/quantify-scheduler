@@ -3,7 +3,7 @@
 """Standard gateset for use with the quantify_scheduler."""
 from __future__ import annotations
 
-from typing import Any, Hashable, Literal, Optional, Tuple
+from typing import Hashable, Literal, Optional, Tuple
 
 import numpy as np
 
@@ -45,7 +45,7 @@ class Rxy(Operation):
         theta: float,
         phi: float,
         qubit: str,
-        **device_overrides: Any,  # noqa: ANN401
+        **device_overrides,
     ):
         if not isinstance(theta, float):
             theta = float(theta)
@@ -123,7 +123,7 @@ class X(Rxy):
 
     """
 
-    def __init__(self, qubit: str, **device_overrides: Any):  # noqa: ANN401
+    def __init__(self, qubit: str, **device_overrides):
         super().__init__(theta=180.0, phi=0, qubit=qubit, **device_overrides)
         self.data["name"] = f"X {qubit}"
         self.data["gate_info"]["tex"] = r"$X_{\pi}$"
@@ -159,7 +159,7 @@ class X90(Rxy):
     def __init__(
         self,
         qubit: str,
-        **device_overrides: Any,  # noqa: ANN401
+        **device_overrides,
     ):
         super().__init__(theta=90.0, phi=0.0, qubit=qubit, **device_overrides)
         self.qubit = qubit
@@ -197,7 +197,7 @@ class Y(Rxy):
     def __init__(
         self,
         qubit: str,
-        **device_overrides: Any,  # noqa: ANN401
+        **device_overrides,
     ):
         super().__init__(theta=180.0, phi=90.0, qubit=qubit, **device_overrides)
         self.data["name"] = f"Y {qubit}"
@@ -232,7 +232,7 @@ class Y90(Rxy):
         when compiling from circuit to device level.
     """
 
-    def __init__(self, qubit: str, **device_overrides: Any):  # noqa: ANN401
+    def __init__(self, qubit: str, **device_overrides):
         super().__init__(theta=90.0, phi=90.0, qubit=qubit, **device_overrides)
         self.data["name"] = f"Y_90 {qubit}"
         self.data["gate_info"]["tex"] = r"$Y_{\pi/2}$"
@@ -278,9 +278,7 @@ class Rz(Operation):
         when compiling from circuit to device level.
     """
 
-    def __init__(
-        self, theta: float, qubit: str, **device_overrides: Any  # noqa: ANN401
-    ):
+    def __init__(self, theta: float, qubit: str, **device_overrides):
         if not isinstance(theta, float):
             theta = float(theta)
 
@@ -345,7 +343,7 @@ class Z(Rz):
 
     """
 
-    def __init__(self, qubit: str, **device_overrides: Any):  # noqa: ANN401
+    def __init__(self, qubit: str, **device_overrides):
         super().__init__(theta=180.0, qubit=qubit, **device_overrides)
         self.data["name"] = f"Z {qubit}"
         self.data["gate_info"]["tex"] = r"$Z_{\pi}$"
@@ -378,7 +376,7 @@ class Z90(Rz):
 
     """
 
-    def __init__(self, qubit: str, **device_overrides: Any):  # noqa: ANN401
+    def __init__(self, qubit: str, **device_overrides):
         super().__init__(theta=90.0, qubit=qubit, **device_overrides)
         self.data["name"] = f"Z_90 {qubit}"
         self.data["gate_info"]["tex"] = r"$Z_{\pi/2}$"
@@ -412,7 +410,7 @@ class H(Operation):
 
     """
 
-    def __init__(self, *qubits: str, **device_overrides: Any):  # noqa: ANN401
+    def __init__(self, *qubits: str, **device_overrides):
         tex = r"$H$"
         plot_func = (
             "quantify_scheduler.schedules._visualization.circuit_diagram.gate_box"
@@ -464,7 +462,7 @@ class CNOT(Operation):
 
     """
 
-    def __init__(self, qC: str, qT: str, **device_overrides: Any):  # noqa: ANN401
+    def __init__(self, qC: str, qT: str, **device_overrides):
         plot_func = "quantify_scheduler.schedules._visualization.circuit_diagram.cnot"
         super().__init__(f"CNOT ({qC}, {qT})")
         self.data.update(
@@ -521,7 +519,7 @@ class CZ(Operation):
     
     """
 
-    def __init__(self, qC: str, qT: str, **device_overrides: Any):  # noqa: ANN401
+    def __init__(self, qC: str, qT: str, **device_overrides):
         plot_func = "quantify_scheduler.schedules._visualization.circuit_diagram.cz"
         super().__init__(f"CZ ({qC}, {qT})")
         self.data.update(
@@ -584,7 +582,7 @@ class Reset(Operation):
         when compiling from circuit to device level.
     """
 
-    def __init__(self, *qubits: str, **device_overrides: Any):  # noqa: ANN401
+    def __init__(self, *qubits: str, **device_overrides):
         super().__init__(f"Reset {', '.join(qubits)}")
         plot_func = "quantify_scheduler.schedules._visualization.circuit_diagram.reset"
         self.data.update(
@@ -668,7 +666,7 @@ class Measure(Operation):
         ] = None,
         bin_mode: BinMode | None = None,
         feedback_trigger_label: Optional[str] = None,
-        **device_overrides: Any,  # noqa: ANN401
+        **device_overrides,
     ):
         # this if else statement a workaround to support multiplexed measurements (#262)
 

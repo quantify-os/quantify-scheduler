@@ -23,7 +23,7 @@ from typing import (
 )
 
 from pathvalidate import sanitize_filename
-from qcodes.utils.helpers import NumpyJSONEncoder
+from qcodes.utils.json_utils import NumpyJSONEncoder
 
 from quantify_core.data.handling import gen_tuid, get_datadir
 from quantify_scheduler.backends.qblox import (
@@ -104,14 +104,12 @@ class InstrumentCompiler(ABC):
         total_play_time: float,
         instrument_cfg: dict[str, Any],
         latency_corrections: dict[str, float] | None = None,
-        distortion_corrections: dict[int, Any] | None = None,
     ) -> None:
         self.parent = parent
         self.name = name
         self.total_play_time = total_play_time
         self.instrument_cfg = instrument_cfg
         self.latency_corrections = latency_corrections or {}
-        self.distortion_corrections = distortion_corrections or {}
 
     def prepare(self) -> None:
         """
@@ -179,7 +177,6 @@ class SequencerCompiler(ABC):
         static_hw_properties: StaticHardwareProperties,
         settings: SequencerSettings,
         latency_corrections: dict[str, float],
-        distortion_corrections: dict[int, Any] | None = None,
         qasm_hook_func: Callable | None = None,
     ) -> None:
         self.parent = parent
@@ -202,8 +199,6 @@ class SequencerCompiler(ABC):
         portclock_key = f"{self.port}-{self.clock}"
         self.latency_correction: float = latency_corrections.get(portclock_key, 0)
         """Latency correction accounted for by delaying the start of the program."""
-
-        self.distortion_correction: float = distortion_corrections
 
     @property
     def connected_output_indices(self) -> tuple[int, ...]:
@@ -282,6 +277,51 @@ class SequencerCompiler(ABC):
             Has data been assigned to this sequencer?
         """
         return len(self.op_strategies) > 0
+
+    @abstractmethod
+    def get_operation_strategy(
+        self,
+        operation_info: OpInfo,
+    ) -> IOperationStrategy:
+        """
+        Determines and instantiates the correct strategy object.
+
+        Parameters
+        ----------
+        operation_info
+            The operation we are building the strategy for.
+
+        Returns
+        -------
+        :
+            The instantiated strategy object.
+        """
+
+    def add_operation_strategy(self, op_strategy: IOperationStrategy) -> None:
+        """
+        Adds the operation strategy to the sequencer compiler.
+
+        Parameters
+        ----------
+        op_strategy
+            The operation strategy.
+        """
+        self.op_strategies.append(op_strategy)
+        if op_strategy.operation_info.is_parameter_instruction:
+            update_parameters_strategy = UpdateParameterStrategy(
+                OpInfo(
+                    name="UpdateParameters",
+                    data={
+                        "t0": 0,
+                        "port": self.port,
+                        "clock": self.clock,
+                        "duration": 0,
+                        "instruction": q1asm_instructions.UPDATE_PARAMETERS,
+                    },
+                    timing=op_strategy.operation_info.timing,
+                )
+            )
+            self.op_strategies.append(update_parameters_strategy)
 
     def _generate_awg_dict(self) -> dict[str, Any]:
         """
@@ -727,7 +767,7 @@ class SequencerCompiler(ABC):
         )
 
     def _initialize_append_mode_registers(
-        self, qasm: QASMProgram, op_strategies: list[AcquisitionStrategyPartial]
+        self, qasm: QASMProgram, op_strategies: list[IOperationStrategy]
     ) -> None:
         """
         Adds the instructions to initialize the registers needed to use the append
@@ -744,6 +784,8 @@ class SequencerCompiler(ABC):
         for op_strategy in op_strategies:
             if not op_strategy.operation_info.is_acquisition:
                 continue
+            # Help the type checker.
+            assert isinstance(op_strategy, AcquisitionStrategyPartial)
 
             if op_strategy.operation_info.data["bin_mode"] != BinMode.APPEND:
                 continue
@@ -832,7 +874,7 @@ class SequencerCompiler(ABC):
 
                     last_updated_timing = None
 
-            self.op_strategies: list[IOperationStrategy] = [
+            self.op_strategies = [
                 op
                 for i, op in enumerate(self.op_strategies)
                 if i not in indices_to_be_removed
@@ -1146,6 +1188,7 @@ class _ModuleSettingsType(Protocol):
 
     def to_dict(self) -> dict[str, Any]:
         """Convert the settings to a dictionary."""
+        ...
 
 
 class ClusterModuleCompiler(InstrumentCompiler, Generic[_SequencerT_co], ABC):
@@ -1175,6 +1218,8 @@ class ClusterModuleCompiler(InstrumentCompiler, Generic[_SequencerT_co], ABC):
     latency_corrections
         Dict containing the delays for each port-clock combination. This is specified in
         the top layer of hardware config.
+    distortion_corrections
+        Dict containing the distortion corrections for each output.
     """
 
     _settings: _ModuleSettingsType
@@ -1195,8 +1240,8 @@ class ClusterModuleCompiler(InstrumentCompiler, Generic[_SequencerT_co], ABC):
             total_play_time=total_play_time,
             instrument_cfg=instrument_cfg,
             latency_corrections=latency_corrections,
-            distortion_corrections=distortion_corrections,
         )
+        self.distortion_corrections = distortion_corrections or {}
         self._op_infos: dict[tuple[str, str], list[OpInfo]] = defaultdict(list)
 
         self.sequencers: dict[str, _SequencerT_co] = {}
@@ -1386,57 +1431,11 @@ class ClusterModuleCompiler(InstrumentCompiler, Generic[_SequencerT_co], ABC):
                         if not op_info.is_acquisition or not (
                             portclock[0] is None and portclock[1] == seq.clock
                         ):
-                            op_strategy = self._get_operation_strategy(
+                            op_strategy = seq.get_operation_strategy(
                                 operation_info=op_info,
-                                channel_name=seq._settings.channel_name,
                             )
 
-                            if op_strategy.operation_info.data.get(
-                                "marker_pulse", False
-                            ):
-                                # A digital pulse always uses one output.
-                                op_strategy.operation_info.data["output"] = (
-                                    seq.connected_output_indices[0]
-                                )
-                            seq.op_strategies.append(op_strategy)
-
-                            if op_strategy.operation_info.is_parameter_instruction:
-                                update_parameters_strategy = UpdateParameterStrategy(
-                                    OpInfo(
-                                        name="UpdateParameters",
-                                        data={
-                                            "t0": 0,
-                                            "port": seq.port,
-                                            "clock": seq.clock,
-                                            "duration": 0,
-                                            "instruction": q1asm_instructions.UPDATE_PARAMETERS,
-                                        },
-                                        timing=op_strategy.operation_info.timing,
-                                    )
-                                )
-                                seq.op_strategies.append(update_parameters_strategy)
-
-    @abstractmethod
-    def _get_operation_strategy(
-        self,
-        operation_info: OpInfo,
-        channel_name: str,
-    ) -> IOperationStrategy:
-        """
-        Determines and instantiates the correct strategy object.
-
-        Parameters
-        ----------
-        operation_info
-            The operation we are building the strategy for.
-        channel_name
-            Specifies the channel identifier of the hardware config (e.g. `complex_output_0`).
-
-        Returns
-        -------
-        :
-            The instantiated strategy object.
-        """
+                            seq.add_operation_strategy(op_strategy)
 
     def compile(
         self,
@@ -1475,7 +1474,8 @@ class ClusterModuleCompiler(InstrumentCompiler, Generic[_SequencerT_co], ABC):
 
         # `sequence_to_file` of a module can be `True` even if its `False` for a cluster
         if sequence_to_file is None or sequence_to_file is False:
-            sequence_to_file = self.instrument_cfg.get("sequence_to_file", False)
+            # Explicit cast to bool to help type checker.
+            sequence_to_file = bool(self.instrument_cfg.get("sequence_to_file", False))
 
         align_qasm_fields = debug_mode
 

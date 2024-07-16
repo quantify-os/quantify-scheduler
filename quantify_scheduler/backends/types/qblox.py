@@ -302,7 +302,9 @@ class BaseModuleSettings(DataClassJsonMixin):
 
     @classmethod
     def extract_settings_from_mapping(
-        cls: type[_ModuleSettingsT], mapping: Dict[str, Any], **kwargs: Optional[dict]
+        cls: type[_ModuleSettingsT],
+        mapping: Dict[str, Any],
+        **kwargs,
     ) -> _ModuleSettingsT:
         """
         Factory method that takes all the settings defined in the mapping and generates
@@ -864,7 +866,7 @@ class DescriptionAnnotationsGettersMixin:
     @classmethod
     def get_instrument_type(cls) -> str:
         """Return the instrument type indicated in this hardware description."""
-        return get_args(cls.model_fields["instrument_type"].annotation)[0]
+        return get_args(cls.model_fields["instrument_type"].annotation)[0]  # type: ignore
 
     @classmethod
     def validate_channel_names(cls, channel_names: list[str]) -> None:
@@ -1056,7 +1058,7 @@ The supported instrument types are:
 class ClusterDescription(QbloxBaseDescription):
     """Information needed to specify a Cluster in the :class:`~.CompilationConfig`."""
 
-    instrument_type: Literal["Cluster"]
+    instrument_type: Literal["Cluster"]  # type: ignore  (valid override)
     """The instrument type, used to select this datastructure when parsing a :class:`~.CompilationConfig`."""
     modules: Dict[int, ClusterModuleDescription] = {}
     """Description of the modules of this Cluster, using slot index as key."""
@@ -1177,13 +1179,13 @@ class QbloxMixerCorrections(MixerCorrections):
             }
     """
 
-    dc_offset_i: Optional[float] = None
+    dc_offset_i: Optional[float] = None  # type: ignore  (optional due to AMC)
     """The DC offset on the I channel used for this port-clock combination."""
-    dc_offset_q: Optional[float] = None
+    dc_offset_q: Optional[float] = None  # type: ignore  (optional due to AMC)
     """The DC offset on the Q channel used for this port-clock combination."""
-    amp_ratio: Optional[float] = None
+    amp_ratio: Optional[float] = None  # type: ignore  (optional due to AMC)
     """The mixer gain ratio used for this port-clock combination."""
-    phase_error: Optional[float] = None
+    phase_error: Optional[float] = None  # type: ignore  (optional due to AMC)
     """The mixer phase error used for this port-clock combination."""
     auto_lo_cal: LoCalEnum = LoCalEnum.OFF
     """
@@ -1379,7 +1381,7 @@ class QbloxHardwareOptions(HardwareOptions):
     Dictionary containing the attenuation settings (values) that should be applied
     to the inputs that are connected to a certain port-clock combination (keys).
     """
-    mixer_corrections: Optional[Dict[str, QbloxMixerCorrections]] = None
+    mixer_corrections: Optional[Dict[str, QbloxMixerCorrections]] = None  # type: ignore
     """
     Dictionary containing the qblox-specific mixer corrections (values) that should be
     used for signals on a certain port-clock combination (keys).
@@ -1389,7 +1391,7 @@ class QbloxHardwareOptions(HardwareOptions):
     Dictionary containing the options (values) that should be set
     on the sequencer that is used for a certain port-clock combination (keys).
     """
-    distortion_corrections: Optional[
+    distortion_corrections: Optional[  # type: ignore
         Dict[
             str,
             Union[

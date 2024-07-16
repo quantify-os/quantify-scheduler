@@ -40,6 +40,29 @@ if TYPE_CHECKING:
     )
 
 
+def get_marker_binary(marker_setting: str | int) -> int:
+    """
+    Sets the marker from a string representing a binary number. Each digit
+    corresponds to a marker e.g. '0010' sets the second marker to True.
+
+    If the marker setting is already an integer, the function checks whether it is a
+    4-bit integer.
+
+    Parameters
+    ----------
+    marker_setting
+        The string representing a binary number.
+    """
+    if isinstance(marker_setting, str):
+        if len(marker_setting) != 4:
+            raise ValueError("4 marker values are expected.")
+        return int(marker_setting, 2)
+    else:
+        if marker_setting > 0b1111:
+            raise ValueError(f"Invalid marker setting: {marker_setting=}.")
+        return marker_setting
+
+
 class QASMProgram:
     """
     Class that holds the compiled Q1ASM program that is to be executed by the sequencer.
@@ -122,6 +145,7 @@ class QASMProgram:
         """
         # This function is a temporary solution.
         # Proper solution: SE-298.
+        assert self.acq_metadata is not None
         for (
             qblox_acq_index,
             acq_channel_metadata,
@@ -203,30 +227,6 @@ class QASMProgram:
         return self.instructions[-1]
 
     # --- QOL functions -----
-
-    def set_marker(self, marker_setting: Union[str, int] = "0000") -> None:
-        """
-        Sets the marker from a string representing a binary number. Each digit
-        corresponds to a marker e.g. '0010' sets the second marker to True.
-
-        Parameters
-        ----------
-        marker_setting
-            The string representing a binary number.
-        """
-        if isinstance(marker_setting, str):
-            if len(marker_setting) != 4:
-                raise ValueError("4 marker values are expected.")
-            marker_binary = int(marker_setting, 2)
-        else:
-            if marker_setting > 0b1111:
-                raise ValueError(f"Invalid marker setting: {marker_setting=}.")
-            marker_binary = marker_setting
-        self.emit(
-            q1asm_instructions.SET_MARKER,
-            marker_binary,
-            comment=f"set markers to {marker_setting}",
-        )
 
     def set_latch(self, op_strategies: Sequence[IOperationStrategy]) -> None:
         """
