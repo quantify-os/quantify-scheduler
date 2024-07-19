@@ -3,13 +3,21 @@
 """Utilty classes for Qblox timetag module."""
 from __future__ import annotations
 
+import warnings
 from typing import TYPE_CHECKING, Callable
 
 from quantify_scheduler.backends.qblox import constants, q1asm_instructions
 from quantify_scheduler.backends.qblox.compiler_abc import SequencerCompiler
+from quantify_scheduler.backends.qblox.operation_handling.acquisitions import (
+    TimetagAcquisitionStrategy,
+)
 from quantify_scheduler.backends.qblox.operation_handling.factory_timetag import (
     get_operation_strategy,
 )
+from quantify_scheduler.backends.qblox.operation_handling.virtual import (
+    TimestampStrategy,
+)
+from quantify_scheduler.enums import TimeRef
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.qblox.instrument_compilers import (
@@ -62,6 +70,7 @@ class TimetagSequencerCompiler(SequencerCompiler):
         latency_corrections: dict[str, float],
         qasm_hook_func: Callable | None = None,
     ) -> None:
+        self._settings: TimetagSequencerSettings  # Help the type checker
         super().__init__(
             parent=parent,
             index=index,
@@ -71,6 +80,59 @@ class TimetagSequencerCompiler(SequencerCompiler):
             latency_corrections=latency_corrections,
             qasm_hook_func=qasm_hook_func,
         )
+
+    def prepare(self) -> None:
+        """
+        Perform necessary operations on this sequencer's data before
+        :meth:`~quantify_scheduler.backends.qblox.compiler_abc.SequencerCompiler.compile`
+        is called.
+        """
+        super().prepare()
+        self._assert_correct_time_ref_used_with_timestamp()
+
+    def _assert_correct_time_ref_used_with_timestamp(self) -> None:
+        """
+        Assert that the Timestamp operation is present if the user specified the
+        appropriate argument for the Timetag acquisition, or vice-versa that there is no
+        Timestamp operation present if the user specified another time reference.
+
+        Warn if this is not the case.
+        """
+        # It is enough to check the first acquisition, since it is enforced in
+        # _prepare_acq_settings that all timetag acquisitions have the same time
+        # reference.
+        try:
+            first_timetag = next(
+                op
+                for op in self.op_strategies
+                if isinstance(op, TimetagAcquisitionStrategy)
+                and op.operation_info.data["protocol"] == "Timetag"
+            )
+        except StopIteration:
+            # Early return because Timetag is not used.
+            return
+
+        timestamp_in_arg = (
+            first_timetag.operation_info.data["time_ref"] == TimeRef.TIMESTAMP
+        )
+        timestamp_operation_present = any(
+            op for op in self.op_strategies if isinstance(op, TimestampStrategy)
+        )
+
+        if timestamp_in_arg and not timestamp_operation_present:
+            warnings.warn(
+                "A Timetag acquisition was scheduled with argument 'time_ref="
+                f"TimeRef.TIMESTAMP' on port '{self.port}' and clock '{self.clock}', "
+                "but no Timestamp operation was found with the same port and clock.",
+                UserWarning,
+            )
+        if not timestamp_in_arg and timestamp_operation_present:
+            warnings.warn(
+                f"A Timestamp operation was found on port '{self.port}' and clock "
+                f"'{self.clock}', but no Timetag acquisition was scheduled with "
+                "argument 'time_ref=TimeRef.TIMESTAMP'.",
+                UserWarning,
+            )
 
     def get_operation_strategy(
         self,
@@ -107,7 +169,22 @@ class TimetagSequencerCompiler(SequencerCompiler):
         acq_metadata
             Acquisition metadata.
         """
-        # No action needed yet.
+
+        def assert_all_op_info_values_equal(key: str) -> None:
+            unique_op_infos = set(acq.operation_info.data[key] for acq in acquisitions)
+            if len(unique_op_infos) != 1:
+                raise ValueError(
+                    f"{key} must be the same for all acquisitions on a port-clock "
+                    "combination."
+                )
+
+        if acq_metadata.acq_protocol == "Timetag":
+            assert_all_op_info_values_equal("time_source")
+            assert_all_op_info_values_equal("time_ref")
+            self._settings.time_source = acquisitions[0].operation_info.data[
+                "time_source"
+            ]
+            self._settings.time_ref = acquisitions[0].operation_info.data["time_ref"]
 
     def _write_pre_wait_sync_instructions(self, qasm: QASMProgram) -> None:
         """

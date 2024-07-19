@@ -524,12 +524,109 @@ class TestTriggerCountStrategy:
         ]
 
 
+class TestTimetagStrategy:
+    @pytest.mark.parametrize("bin_mode", [BinMode.AVERAGE, BinMode.APPEND])
+    def test_constructor(self, bin_mode):
+        data = {"bin_mode": bin_mode, "acq_channel": 0, "acq_index": 0}
+        acquisitions.TimetagAcquisitionStrategy(
+            types.OpInfo(name="", data=data, timing=0)
+        )
+
+    def test_generate_data(self):
+        # arrange
+        data = {"bin_mode": None, "acq_channel": 0, "acq_index": 0}
+        strategy = acquisitions.TimetagAcquisitionStrategy(
+            types.OpInfo(name="", data=data, timing=0)
+        )
+        wf_dict = {}
+
+        # act
+        strategy.generate_data(wf_dict)
+
+        # assert
+        assert len(wf_dict) == 0
+
+    def test_acquire_average(self, empty_qasm_program_qrm):
+        # arrange
+        qasm = empty_qasm_program_qrm
+        data = {
+            "bin_mode": None,
+            "acq_channel": 0,
+            "acq_index": 0,
+            "duration": 100e-6,
+        }
+        strategy = acquisitions.TimetagAcquisitionStrategy(
+            types.OpInfo(name="", data=data, timing=0)
+        )
+        strategy.generate_data({})
+
+        # act
+        strategy._acquire_average(qasm)
+
+        # assert
+        assert qasm.instructions == [
+            [
+                "",
+                "acquire_timetags",
+                "0,0,1,0,4",
+                "# Enable timetag acquisition of acq_channel:0, bin_mode:average",
+            ],
+            ["", "wait", "65532", "# auto generated wait (99992 ns)"],
+            ["", "wait", "34460", "# auto generated wait (99992 ns)"],
+            [
+                "",
+                "acquire_timetags",
+                "0,0,0,0,4",
+                "# Disable timetag acquisition of acq_channel:0, bin_mode:average",
+            ],
+        ]
+
+    def test_acquire_append(self, empty_qasm_program_qrm):
+        # arrange
+        qasm = empty_qasm_program_qrm
+        data = {
+            "bin_mode": None,
+            "acq_channel": 0,
+            "acq_index": 5,
+            "duration": 100e-6,
+        }
+        strategy = acquisitions.TimetagAcquisitionStrategy(
+            types.OpInfo(name="", data=data, timing=0)
+        )
+        strategy.bin_idx_register = qasm.register_manager.allocate_register()
+        strategy.generate_data({})
+
+        # act
+        strategy._acquire_append(qasm)
+
+        # assert
+        assert qasm.instructions == [
+            ["", "move", "0,R1", ""],
+            [
+                "",
+                "acquire_timetags",
+                "0,R0,1,R1,4",
+                "# Enable timetag acquisition of acq_channel:0, store in bin:R0",
+            ],
+            ["", "wait", "65532", "# auto generated wait (99992 ns)"],
+            ["", "wait", "34460", "# auto generated wait (99992 ns)"],
+            [
+                "",
+                "acquire_timetags",
+                "0,R0,0,R1,4",
+                "# Disable timetag acquisition of acq_channel:0, store in bin:R0",
+            ],
+            ["", "add", "R0,1,R0", "# Increment bin_idx for ch0 by 1"],
+        ]
+
+
 @pytest.mark.parametrize(
     "acquisition_strategy",
     [
         acquisitions.SquareAcquisitionStrategy,
         acquisitions.WeightedAcquisitionStrategy,
         acquisitions.TriggerCountAcquisitionStrategy,
+        acquisitions.TimetagAcquisitionStrategy,
     ],
 )
 def test_acquire_append_invalid_bin_idx(acquisition_strategy, empty_qasm_program_qrm):
@@ -678,7 +775,7 @@ def test_custom_long_trace_acquisition_measurement_control(
     meas_ctrl.gettables(sched_gettable)
     with pytest.warns(
         FutureWarning,
-        match="The format of acquisition data of looped measurements in APPEND mode will change in quantify-scheduler>=0.18.0",
+        match="The format of acquisition data of looped measurements in APPEND mode will change in a future quantify-scheduler revision.",
     ):
         dataset = meas_ctrl.run(f"Readout long trace schedule of {q2.name}")
 
@@ -2496,7 +2593,7 @@ def test_looped_measurements(mock_setup_basic_transmon, make_cluster_component):
 
     with pytest.warns(
         FutureWarning,
-        match="The format of acquisition data of looped measurements in APPEND mode will change in quantify-scheduler>=0.18.0",
+        match="The format of acquisition data of looped measurements in APPEND mode will change in a future quantify-scheduler revision.",
     ):
         data = instr_coordinator.retrieve_acquisition()
 

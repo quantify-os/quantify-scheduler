@@ -6,7 +6,7 @@ import re
 from collections import defaultdict
 from copy import copy, deepcopy
 from typing import List, Optional
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
@@ -26,13 +26,14 @@ from quantify_core.data.handling import get_datadir
 from quantify_scheduler.backends.graph_compilation import SerialCompiler
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
-from quantify_scheduler.enums import BinMode
+from quantify_scheduler.enums import BinMode, TimeRef, TimeSource
 from quantify_scheduler.helpers.qblox_dummy_instrument import (
     start_dummy_cluster_armed_sequencers,
 )
 from quantify_scheduler.instrument_coordinator.components import qblox
 from quantify_scheduler.operations.acquisition_library import (
     SSBIntegrationComplex,
+    Timetag,
     TriggerCount,
 )
 from quantify_scheduler.operations.gate_library import X90, Measure, Reset
@@ -48,6 +49,44 @@ from quantify_scheduler.schemas.examples import utils
 EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER = utils.load_json_example_scheme(
     "qblox_hardware_config_nv_center.json"
 )
+
+
+def patch_qtm_parameters(mocker, module):
+    """
+    Patch QTM QCoDeS parameters.
+
+    This is necessary until the QTM dummy is available in qblox-instruments. (SE-499)
+    """
+    for seq_no in range(8):
+        mocker.patch.object(module[f"sequencer{seq_no}"].parameters["sync_en"], "set")
+        mocker.patch.object(module[f"sequencer{seq_no}"].parameters["sequence"], "set")
+        mocker.patch.object(module[f"io_channel{seq_no}"].parameters["out_mode"], "set")
+        mocker.patch.object(module[f"io_channel{seq_no}"].parameters["out_mode"], "get")
+        mocker.patch.object(
+            module[f"io_channel{seq_no}"].parameters["in_trigger_en"], "set"
+        )
+        mocker.patch.object(
+            module[f"io_channel{seq_no}"].parameters["binned_acq_time_ref"],
+            "set",
+        )
+        mocker.patch.object(
+            module[f"io_channel{seq_no}"].parameters["binned_acq_time_source"],
+            "set",
+        )
+        mocker.patch.object(
+            module[f"io_channel{seq_no}"].parameters[
+                "binned_acq_on_invalid_time_delta"
+            ],
+            "set",
+        )
+        mocker.patch.object(
+            module[f"io_channel{seq_no}"].parameters["scope_trigger_mode"],
+            "set",
+        )
+        mocker.patch.object(
+            module[f"io_channel{seq_no}"].parameters["scope_mode"],
+            "set",
+        )
 
 
 @pytest.fixture
@@ -137,6 +176,8 @@ def make_cluster_component(mocker):
                     "store_scope_acquisition",
                     wraps=instrument.store_scope_acquisition,
                 )
+            else:
+                patch_qtm_parameters(mocker, instrument)
 
         return cluster_component
 
@@ -169,6 +210,26 @@ def fixture_mock_acquisition_data():
                         "path1": [0.0] * acq_index_len,
                     },
                     "threshold": [0.12] * acq_index_len,
+                    "avg_cnt": [avg_count] * acq_index_len,
+                },
+            },
+        }
+    }
+    yield data
+
+
+@pytest.fixture
+def mock_qtm_acquisition_data():
+    acq_channel, acq_index_len = 0, 10  # mock 1 channel, N indices
+    avg_count = 10
+    data = {
+        str(acq_channel): {
+            "index": acq_channel,
+            "acquisition": {
+                "bins": {
+                    "count": [4.0] * acq_index_len,
+                    "timedelta": [236942.66] * acq_index_len,
+                    "threshold": [1.0] * acq_index_len,
                     "avg_cnt": [avg_count] * acq_index_len,
                 },
             },
@@ -705,25 +766,6 @@ def test_prepare_qtm(
     ic_cluster = make_cluster_component(cluster_name)
 
     qtm = ic_cluster.instrument.module5
-    # TODO remove these patches when the QTM dummy is available (SE-499)
-    for seq_no in (out_seq_no, in_seq_no):
-        mocker.patch.object(qtm[f"sequencer{seq_no}"].parameters["sync_en"], "set")
-        mocker.patch.object(qtm[f"sequencer{seq_no}"].parameters["sequence"], "set")
-        mocker.patch.object(qtm[f"io_channel{seq_no}"].parameters["out_mode"], "set")
-        mocker.patch.object(qtm[f"io_channel{seq_no}"].parameters["out_mode"], "get")
-        mocker.patch.object(
-            qtm[f"io_channel{seq_no}"].parameters["in_trigger_en"], "set"
-        )
-        mocker.patch.object(
-            qtm[f"io_channel{seq_no}"].parameters["binned_acq_time_ref"], "set"
-        )
-        mocker.patch.object(
-            qtm[f"io_channel{seq_no}"].parameters["binned_acq_time_source"], "set"
-        )
-        mocker.patch.object(
-            qtm[f"io_channel{seq_no}"].parameters["binned_acq_on_invalid_time_delta"],
-            "set",
-        )
 
     ic_cluster.force_set_parameters(force_set_parameters)
     ic_cluster.instrument.reference_source("internal")  # Put it in a known state
@@ -887,39 +929,6 @@ def test_retrieve_acquisition_qtm(
     cluster = make_cluster_component(cluster_name)
     qtm = cluster._cluster_modules[qtm_name]
 
-    # qblox-instruments test assembler does not work for QTM commands yet.
-    qtm_instrument = cluster.instrument.module5
-    for seq_no in (0, 4):
-        mocker.patch.object(
-            qtm_instrument[f"sequencer{seq_no}"].parameters["sync_en"], "set"
-        )
-        mocker.patch.object(
-            qtm_instrument[f"sequencer{seq_no}"].parameters["sequence"], "set"
-        )
-        mocker.patch.object(
-            qtm_instrument[f"io_channel{seq_no}"].parameters["out_mode"], "set"
-        )
-        mocker.patch.object(
-            qtm_instrument[f"io_channel{seq_no}"].parameters["out_mode"], "get"
-        )
-        mocker.patch.object(
-            qtm_instrument[f"io_channel{seq_no}"].parameters["in_trigger_en"], "set"
-        )
-        mocker.patch.object(
-            qtm_instrument[f"io_channel{seq_no}"].parameters["binned_acq_time_ref"],
-            "set",
-        )
-        mocker.patch.object(
-            qtm_instrument[f"io_channel{seq_no}"].parameters["binned_acq_time_source"],
-            "set",
-        )
-        mocker.patch.object(
-            qtm_instrument[f"io_channel{seq_no}"].parameters[
-                "binned_acq_on_invalid_time_delta"
-            ],
-            "set",
-        )
-
     # Dummy data taken directly from hardware test, does not correspond to schedule below
     dummy_data = {
         "0": {
@@ -990,6 +999,160 @@ def test_retrieve_acquisition_qtm(
     cluster.start()
 
     xr.testing.assert_identical(qtm.retrieve_acquisition(), expected_dataset)
+
+
+def test_timetag_acquisition_qtm_average(
+    mock_setup_basic_nv,
+    make_cluster_component,
+    mocker,
+):
+    cluster_name = "cluster0"
+    qtm_name = f"{cluster_name}_module5"
+
+    cluster = make_cluster_component(cluster_name)
+    qtm = cluster._cluster_modules[qtm_name]
+
+    qtm_instrument = cluster.instrument.module5
+
+    # Dummy data does not necessarily correspond to schedule below
+    dataarray = xr.DataArray(
+        np.array([-65145 / 2048]),
+        dims=["acq_index_0"],
+        coords={"acq_index_0": [0]},
+        attrs={"acq_protocol": "Timetag"},
+    )
+    expected_dataset = xr.Dataset({0: dataarray})
+
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+    quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
+
+    sched = Schedule("digital_pulse_and_acq", repetitions=3)
+    sched.add(MarkerPulse(duration=40e-9, port="qe1:switch"))
+    sched.add(
+        Timetag(
+            duration=1e-6,
+            port="qe1:optical_readout",
+            clock="qe1.ge0",
+            time_source=TimeSource.SECOND,
+            time_ref=TimeRef.END,
+            bin_mode=BinMode.AVERAGE,
+        )
+    )
+
+    mocker.patch.object(
+        cluster.instrument.module5,
+        "get_acquisitions",
+        return_value={
+            "0": {
+                "index": 0,
+                "acquisition": {
+                    "bins": {
+                        "count": [5],
+                        "timedelta": [-65145],
+                        "threshold": [1.0],
+                        "avg_cnt": [3],
+                    }
+                },
+            }
+        },
+    )
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        schedule=sched,
+        config=quantum_device.generate_compilation_config(),
+    )
+    prog = compiled_schedule["compiled_instructions"][cluster_name]
+
+    cluster.prepare(prog)
+    cluster.start()
+
+    xr.testing.assert_identical(qtm.retrieve_acquisition(), expected_dataset)
+
+    qtm_instrument.io_channel4.binned_acq_time_source.set.assert_called_with(
+        str(TimeSource.SECOND)
+    )
+    qtm_instrument.io_channel4.binned_acq_time_ref.set.assert_called_with(
+        str(TimeRef.END)
+    )
+
+
+def test_timetag_acquisition_qtm_append(
+    mock_setup_basic_nv,
+    make_cluster_component,
+    mocker,
+):
+    cluster_name = "cluster0"
+    qtm_name = f"{cluster_name}_module5"
+
+    cluster = make_cluster_component(cluster_name)
+    qtm = cluster._cluster_modules[qtm_name]
+
+    # qblox-instruments test assembler does not work for QTM commands yet.
+    qtm_instrument = cluster.instrument.module5
+
+    # Dummy data does not necessarily correspond to schedule below
+    raw_timetags = [65145, 46403, 34199]
+    dataarray = xr.DataArray(
+        np.array([t / 2048 for t in raw_timetags]).reshape(3, 1),
+        dims=["repetition", "acq_index_0"],
+        coords={"acq_index_0": [0]},
+        attrs={"acq_protocol": "Timetag"},
+    )
+    expected_dataset = xr.Dataset({0: dataarray})
+
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+    quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
+
+    sched = Schedule("digital_pulse_and_acq", repetitions=3)
+    sched.add(MarkerPulse(duration=40e-9, port="qe1:switch"))
+    sched.add(
+        Timetag(
+            duration=1e-6,
+            port="qe1:optical_readout",
+            clock="qe1.ge0",
+            time_source=TimeSource.SECOND,
+            time_ref=TimeRef.START,
+            bin_mode=BinMode.APPEND,
+        )
+    )
+
+    mocker.patch.object(
+        cluster.instrument.module5,
+        "get_acquisitions",
+        return_value={
+            "0": {
+                "index": 0,
+                "acquisition": {
+                    "bins": {
+                        "count": [5, 2, 7],
+                        "timedelta": raw_timetags,
+                        "threshold": [1.0, 1.0, 1.0],
+                        "avg_cnt": [1, 1, 1],
+                    }
+                },
+            }
+        },
+    )
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        schedule=sched,
+        config=quantum_device.generate_compilation_config(),
+    )
+    prog = compiled_schedule["compiled_instructions"][cluster_name]
+
+    cluster.prepare(prog)
+    cluster.start()
+
+    xr.testing.assert_identical(qtm.retrieve_acquisition(), expected_dataset)
+
+    qtm_instrument.io_channel4.binned_acq_time_source.set.assert_called_with(
+        str(TimeSource.SECOND)
+    )
+    qtm_instrument.io_channel4.binned_acq_time_ref.set.assert_called_with(
+        str(TimeRef.START)
+    )
 
 
 def test_start_baseband(
@@ -1076,26 +1239,6 @@ def test_start_qtm(
 
     cluster = make_cluster_component(cluster_name)
     qtm = cluster._cluster_modules[qtm_name]
-
-    # TODO remove these patches when the QTM dummy is available (SE-499)
-    qtm_instrument = cluster.instrument.module5
-    mocker.patch.object(qtm_instrument["sequencer0"].parameters["sync_en"], "set")
-    mocker.patch.object(qtm_instrument["sequencer0"].parameters["sequence"], "set")
-    mocker.patch.object(qtm_instrument["io_channel0"].parameters["out_mode"], "set")
-    mocker.patch.object(qtm_instrument["io_channel0"].parameters["out_mode"], "get")
-    mocker.patch.object(
-        qtm_instrument["io_channel0"].parameters["in_trigger_en"], "set"
-    )
-    mocker.patch.object(
-        qtm_instrument["io_channel0"].parameters["binned_acq_time_ref"], "set"
-    )
-    mocker.patch.object(
-        qtm_instrument["io_channel0"].parameters["binned_acq_time_source"], "set"
-    )
-    mocker.patch.object(
-        qtm_instrument["io_channel0"].parameters["binned_acq_on_invalid_time_delta"],
-        "set",
-    )
 
     quantum_device = mock_setup_basic_nv["quantum_device"]
     quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
@@ -1868,3 +2011,81 @@ def test_missing_acq_index(
         ),
     ):
         _ = qrm.retrieve_acquisition()
+
+
+@pytest.mark.parametrize(
+    ["protocol", "bin_mode"],
+    [
+        ("Trace", BinMode.APPEND),
+        ("SSBIntegrationComplex", "foo"),
+        ("ThresholdedAcquisition", "foo"),
+        ("TriggerCount", "foo"),
+    ],
+)
+def test_unsupported_bin_modes_qrm(
+    make_cluster_component, mock_acquisition_data, protocol, bin_mode
+):
+    cluster = make_cluster_component("cluster0")
+    acq_manager = qblox._QRMAcquisitionManager(
+        parent=cluster._cluster_modules["cluster0_module1"],
+        acquisition_metadata=dict(),
+        scope_mode_sequencer_and_qblox_acq_index=(0, 0),
+        acquisition_duration={0: 10},
+        seq_name_to_idx_map={"seq0": 0},
+    )
+    acq_metadata = AcquisitionMetadata(protocol, bin_mode, np.ndarray, {0: [0]}, 1)
+    acq_indices = [0] if protocol == "Trace" else list(range(10))
+    get_data_fn_map = {
+        "Trace": acq_manager._get_scope_data,
+        "SSBIntegrationComplex": acq_manager._get_integration_data,
+        "ThresholdedAcquisition": acq_manager._get_threshold_data,
+        "TriggerCount": acq_manager._get_trigger_count_data,
+    }
+    with pytest.raises(
+        RuntimeError,
+        match=f"{protocol} acquisition protocol does not support bin mode {bin_mode}",
+    ):
+        _ = get_data_fn_map[protocol](
+            acq_indices=acq_indices,
+            hardware_retrieved_acquisitions=mock_acquisition_data,
+            acquisition_metadata=acq_metadata,
+            acq_duration=10,
+            qblox_acq_index=0,
+            acq_channel=0,
+        )
+
+
+@pytest.mark.parametrize(
+    ["protocol", "bin_mode"],
+    [
+        ("TriggerCount", BinMode.AVERAGE),
+        ("Timetag", "foo"),
+    ],
+)
+def test_unsupported_bin_modes_qtm(
+    make_cluster_component, mock_qtm_acquisition_data, protocol, bin_mode
+):
+    cluster = make_cluster_component("cluster0")
+    acq_manager = qblox._QTMAcquisitionManager(
+        parent=cluster._cluster_modules["cluster0_module5"],
+        acquisition_metadata=dict(),
+        acquisition_duration={0: 10},
+        seq_name_to_idx_map={"seq0": 0},
+    )
+    acq_metadata = AcquisitionMetadata(protocol, bin_mode, np.ndarray, {0: [0]}, 1)
+    get_data_fn_map = {
+        "TriggerCount": acq_manager._get_trigger_count_data,
+        "Timetag": acq_manager._get_timetag_data,
+    }
+    with pytest.raises(
+        RuntimeError,
+        match=f"{protocol} acquisition protocol does not support bin mode {bin_mode}",
+    ):
+        _ = get_data_fn_map[protocol](
+            acq_indices=list(range(10)),
+            hardware_retrieved_acquisitions=mock_qtm_acquisition_data,
+            acquisition_metadata=acq_metadata,
+            acq_duration=10,
+            qblox_acq_index=0,
+            acq_channel=0,
+        )

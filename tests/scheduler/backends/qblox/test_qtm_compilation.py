@@ -7,22 +7,23 @@ import pytest
 
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.qblox.compiler_container import CompilerContainer
-from quantify_scheduler.backends.qblox.enums import DistortionCorrectionLatencyEnum
 from quantify_scheduler.backends.qblox.instrument_compilers import QTMCompiler
 from quantify_scheduler.backends.qblox.timetag import TimetagSequencerCompiler
 from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
 from quantify_scheduler.backends.types.qblox import TimetagSequencerSettings
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.enums import BinMode, TimeRef, TimeSource
 from quantify_scheduler.operations.acquisition_library import (
     SSBIntegrationComplex,
+    Timetag,
     TriggerCount,
 )
 from quantify_scheduler.operations.control_flow_library import LoopOperation
-from quantify_scheduler.operations.gate_library import Measure
 from quantify_scheduler.operations.pulse_library import (
     IdlePulse,
     MarkerPulse,
     SquarePulse,
+    Timestamp,
 )
 from quantify_scheduler.schedules.schedule import Schedule
 from quantify_scheduler.schemas.examples import utils
@@ -366,3 +367,218 @@ start:
  stop
 """,
     )
+
+
+@pytest.mark.parametrize("bin_mode", [BinMode.APPEND, BinMode.AVERAGE])
+def test_timetag_acq_compilation(mock_setup_basic_nv, assert_equal_q1asm, bin_mode):
+    schedule = Schedule(name="Test", repetitions=1)
+
+    schedule.add(Timestamp(port="qe1:optical_readout", clock="qe1.ge0"))
+    schedule.add(
+        Timetag(
+            duration=100e-9,
+            port="qe1:optical_readout",
+            clock="qe1.ge0",
+            bin_mode=bin_mode,
+            time_source=TimeSource.FIRST,
+            time_ref=TimeRef.TIMESTAMP,
+        ),
+        rel_time=100e-9,
+    )
+
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+
+    quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    assert (
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
+            "sequencers"
+        ]["seq4"]["time_source"]
+        == TimeSource.FIRST
+    )
+    assert (
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
+            "sequencers"
+        ]["seq4"]["time_ref"]
+        == TimeRef.TIMESTAMP
+    )
+
+    if bin_mode == BinMode.APPEND:
+        append_mode_init_str = "move 0,R0 # Initialize acquisition bin_idx for ch0"
+        append_mode_update_str = "add R0,1,R0 # Increment bin_idx for ch0 by 1"
+        bin_idx = "R0"
+        fine_delay_init_str = "move 0,R10"
+        fine_delay = "R10"
+        loop_reg = 1
+    else:
+        append_mode_init_str = ""
+        append_mode_update_str = ""
+        bin_idx = "0"
+        fine_delay_init_str = ""
+        fine_delay = "0"
+        loop_reg = 0
+    assert_equal_q1asm(
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
+            "sequencers"
+        ]["seq4"]["sequence"]["program"],
+        f""" wait_sync 4
+ upd_param 4
+ {append_mode_init_str}
+ wait 4 # latency correction of 4 + 0 ns
+ move 1,R{loop_reg} # iterator for loop with label start
+start:
+ wait 4
+ set_time_ref
+ upd_param 4
+ wait 96 # auto generated wait (96 ns)
+ {fine_delay_init_str}
+ acquire_timetags 0,{bin_idx},1,{fine_delay},4 # Enable timetag acquisition of acq_channel:0
+ wait 92 # auto generated wait (92 ns)
+ acquire_timetags 0,{bin_idx},0,{fine_delay},4 # Disable timetag acquisition of acq_channel:0
+ {append_mode_update_str}
+ loop R{loop_reg},@start
+ stop
+""",
+    )
+
+
+def test_timetag_different_source(mock_setup_basic_nv):
+    schedule = Schedule(name="Test", repetitions=1)
+
+    schedule.add(Timestamp(port="qe1:optical_readout", clock="qe1.ge0"))
+    schedule.add(
+        Timetag(
+            duration=100e-9,
+            port="qe1:optical_readout",
+            clock="qe1.ge0",
+            time_source=TimeSource.FIRST,
+            time_ref=TimeRef.TIMESTAMP,
+        ),
+        rel_time=100e-9,
+    )
+    schedule.add(
+        Timetag(
+            duration=100e-9,
+            port="qe1:optical_readout",
+            clock="qe1.ge0",
+            time_source=TimeSource.SECOND,
+            time_ref=TimeRef.TIMESTAMP,
+        ),
+        rel_time=100e-9,
+    )
+
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+
+    quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
+
+    compiler = SerialCompiler(name="compiler")
+    with pytest.raises(
+        ValueError,
+        match="time_source must be the same for all acquisitions on a port-clock combination.",
+    ):
+        _ = compiler.compile(
+            schedule=schedule, config=quantum_device.generate_compilation_config()
+        )
+
+
+def test_timetag_different_ref(mock_setup_basic_nv):
+    schedule = Schedule(name="Test", repetitions=1)
+
+    schedule.add(Timestamp(port="qe1:optical_readout", clock="qe1.ge0"))
+    schedule.add(
+        Timetag(
+            duration=100e-9,
+            port="qe1:optical_readout",
+            clock="qe1.ge0",
+            time_source=TimeSource.FIRST,
+            time_ref=TimeRef.TIMESTAMP,
+        ),
+        rel_time=100e-9,
+    )
+    schedule.add(
+        Timetag(
+            duration=100e-9,
+            port="qe1:optical_readout",
+            clock="qe1.ge0",
+            time_source=TimeSource.FIRST,
+            time_ref=TimeRef.END,
+        ),
+        rel_time=100e-9,
+    )
+
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+
+    quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
+
+    compiler = SerialCompiler(name="compiler")
+    with pytest.raises(
+        ValueError,
+        match="time_ref must be the same for all acquisitions on a port-clock combination.",
+    ):
+        _ = compiler.compile(
+            schedule=schedule, config=quantum_device.generate_compilation_config()
+        )
+
+
+def test_timestamp_arg_but_no_operation(mock_setup_basic_nv):
+    schedule = Schedule(name="Test", repetitions=1)
+
+    schedule.add(
+        Timetag(
+            duration=100e-9,
+            port="qe1:optical_readout",
+            clock="qe1.ge0",
+            time_source=TimeSource.FIRST,
+            time_ref=TimeRef.TIMESTAMP,
+        ),
+    )
+
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+
+    quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
+
+    compiler = SerialCompiler(name="compiler")
+    with pytest.warns(
+        UserWarning,
+        match="A Timetag acquisition was scheduled with argument 'time_ref="
+        "TimeRef.TIMESTAMP' on port 'qe1:optical_readout' and clock 'qe1.ge0', but no "
+        "Timestamp operation was found with the same port and clock.",
+    ):
+        _ = compiler.compile(
+            schedule=schedule, config=quantum_device.generate_compilation_config()
+        )
+
+
+def test_timestamp_operation_but_no_arg(mock_setup_basic_nv):
+    schedule = Schedule(name="Test", repetitions=1)
+
+    schedule.add(Timestamp(port="qe1:optical_readout", clock="qe1.ge0"))
+    schedule.add(
+        Timetag(
+            duration=100e-9,
+            port="qe1:optical_readout",
+            clock="qe1.ge0",
+            time_source=TimeSource.FIRST,
+            time_ref=TimeRef.START,
+        ),
+    )
+
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+
+    quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
+
+    compiler = SerialCompiler(name="compiler")
+    with pytest.warns(
+        UserWarning,
+        match="A Timestamp operation was found on port 'qe1:optical_readout' and clock "
+        "'qe1.ge0', but no Timetag acquisition was scheduled with argument 'time_ref="
+        "TimeRef.TIMESTAMP'.",
+    ):
+        _ = compiler.compile(
+            schedule=schedule, config=quantum_device.generate_compilation_config()
+        )

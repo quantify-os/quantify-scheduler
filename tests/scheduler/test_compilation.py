@@ -21,7 +21,7 @@ from quantify_scheduler.operations.gate_library import (
     Rxy,
     X,
 )
-from quantify_scheduler.operations.pulse_library import SetClockFrequency, SquarePulse
+from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import BasebandClockResource, ClockResource, Resource
 from quantify_scheduler.schedules.schedule import ScheduleBase
 

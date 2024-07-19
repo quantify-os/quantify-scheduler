@@ -65,6 +65,7 @@
   - Small adjustments to `LongTimeTrace` and tests. (!1014)
   - Make it possible to override gate operations with device level parameters. (!1018)
   - New schedule `cnot_as_h_cz_h` in composite_factory. (!1020)
+  - Introduce `Timetag` acquisition protocol and `Timestamp` operation. (!1023)
 - QuantumDevice
   - Introduce BasicSpinElement spin device element. (!1015)
 

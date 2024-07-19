@@ -20,6 +20,7 @@ from quantify_scheduler.operations.acquisition_library import (
     NumericalWeightedIntegrationComplex,
     SSBIntegrationComplex,
     ThresholdedAcquisition,
+    Timetag,
     Trace,
     TriggerCount,
 )
@@ -56,6 +57,11 @@ ALL_ACQUISITION_PROTOCOLS = [
         duration=100e-9,
     ),
     ThresholdedAcquisition(
+        port="q0:res",
+        clock="q0.ro",
+        duration=100e-9,
+    ),
+    Timetag(
         port="q0:res",
         clock="q0.ro",
         duration=100e-9,

@@ -26,6 +26,7 @@ from quantify_scheduler.operations.pulse_library import (
     SquarePulse,
     StaircasePulse,
     SuddenNetZeroPulse,
+    Timestamp,
     VoltageOffset,
     create_dc_compensation_pulse,
     decompose_long_square_pulse,
@@ -243,6 +244,10 @@ def test_decompose_long_square_pulse() -> None:
                 port=port,
                 clock=clock,
             ),
+            Timestamp(
+                port=port,
+                clock=clock,
+            ),
         ]
         for clock in ["q0.01"]
         for port in ["q0:mw"]
@@ -271,6 +276,7 @@ class TestPulseLevelOperation:
             ShiftClockPhase,
             ResetClockPhase,
             VoltageOffset,
+            Timestamp,
         ]:
             assert operation.duration == 0, operation
         elif operation.__class__ is SuddenNetZeroPulse:

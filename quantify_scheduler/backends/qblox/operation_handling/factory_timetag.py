@@ -14,6 +14,7 @@ from quantify_scheduler.backends.qblox.operation_handling import (
 from quantify_scheduler.backends.qblox.operation_handling.factory_common import (
     try_get_pulse_strategy_common,
 )
+from quantify_scheduler.enums import BinMode
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.types.qblox import OpInfo
@@ -52,7 +53,15 @@ def _get_acquisition_strategy(
 ) -> acquisitions.AcquisitionStrategyPartial:
     """Handles the logic for determining the correct acquisition type."""
     protocol = operation_info.data["protocol"]
-    if protocol == "TriggerCount":
+    if protocol in ("TriggerCount", "Timetag"):
+        if (
+            protocol == "TriggerCount"
+            and operation_info.data["bin_mode"] == BinMode.AVERAGE
+        ):
+            raise ValueError(
+                f"TriggerCount acquisition on the QTM does not support AVERAGE bin "
+                f"mode.\n\n{repr(operation_info)} caused this exception to occur."
+            )
         return acquisitions.TimetagAcquisitionStrategy(operation_info)
 
     raise ValueError(f"Operation info {operation_info} cannot be compiled for a QTM.")
@@ -72,6 +81,10 @@ def _get_pulse_strategy(
         return pulses.DigitalPulseStrategy(
             operation_info=operation_info,
             channel_name=channel_name,
+        )
+    elif operation_info.data.get("timestamp", False):
+        return virtual.TimestampStrategy(
+            operation_info=operation_info,
         )
 
     raise ValueError(f"Operation info {operation_info} cannot be compiled for a QTM.")

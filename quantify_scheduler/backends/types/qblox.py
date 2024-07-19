@@ -44,6 +44,10 @@ from quantify_scheduler.backends.types.common import (
     OpticalModulatorDescription,
     SoftwareDistortionCorrection,
 )
+from quantify_scheduler.enums import (
+    TimeRef,  # noqa: TCH001 pydantic needs them
+    TimeSource,  # noqa: TCH001 pydantic needs them
+)
 from quantify_scheduler.structure.model import DataStructure
 
 
@@ -189,6 +193,7 @@ class OpInfo(DataClassJsonMixin):
             or "reset_clock_phase" in self.data
             or "clock_freq_new" in self.data
             or "marker_pulse" in self.data
+            or "timestamp" in self.data
         )
 
     @property
@@ -718,6 +723,11 @@ class TimetagSequencerSettings(SequencerSettings):
     """
 
     in_threshold_primary: Optional[float] = None
+    """The voltage threshold above which an input signal is registered as high."""
+    time_source: Optional[TimeSource] = None
+    """Selects the timetag data source for timetag acquisitions."""
+    time_ref: Optional[TimeRef] = None
+    """Selects the time reference that the timetag is recorded in relation to."""
 
     def __post_init__(self) -> None:
         self._validate_io_indices_no_channel_map()

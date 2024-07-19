@@ -53,7 +53,7 @@ from quantify_scheduler.backends.types.qblox import (
     TimetagModuleSettings,
     TimetagSequencerSettings,
 )
-from quantify_scheduler.enums import BinMode
+from quantify_scheduler.enums import BinMode, TimeRef
 from quantify_scheduler.instrument_coordinator.components import base
 from quantify_scheduler.instrument_coordinator.utility import (
     check_already_existing_acquisition,
@@ -1291,7 +1291,6 @@ class _QTMComponent(_ModuleComponentBase):
             settings = TimetagSequencerSettings.from_dict(seq_cfg)
             self._configure_sequencer_settings(seq_idx=seq_idx, settings=settings)
             self._configure_io_channel_settings(seq_idx=seq_idx, settings=settings)
-            # acq_duration is not used in trigger count / thresholded trigger count acqs
             acq_duration[seq_name] = None
 
         if (acq_metadata := program.get("acq_metadata")) is not None:
@@ -1385,6 +1384,23 @@ class _QTMComponent(_ModuleComponentBase):
             "binned_acq_on_invalid_time_delta",
             "record_0",
         )
+
+        if settings.time_source is not None:
+            self._set_parameter(
+                self.instrument[f"io_channel{seq_idx}"],
+                "binned_acq_time_source",
+                str(settings.time_source),
+            )
+        if settings.time_ref is not None:
+            if settings.time_ref == TimeRef.TIMESTAMP:
+                time_ref = "sequencer"
+            else:
+                time_ref = str(settings.time_ref)
+            self._set_parameter(
+                self.instrument[f"io_channel{seq_idx}"],
+                "binned_acq_time_ref",
+                time_ref,
+            )
 
     def clear_data(self) -> None:
         """Clears remaining data on the module. Module type specific function."""
@@ -1684,7 +1700,7 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
         """
         if acquisition_metadata.bin_mode != BinMode.AVERAGE:
             raise RuntimeError(
-                f"{acquisition_metadata.acq_protocol} acquisition protocol does not"
+                f"{acquisition_metadata.acq_protocol} acquisition protocol does not "
                 f"support bin mode {acquisition_metadata.bin_mode}"
             )
         if (
@@ -1797,7 +1813,7 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
             else:
                 warnings.warn(
                     "The format of acquisition data of looped measurements in APPEND mode"
-                    " will change in quantify-scheduler>=0.18.0",
+                    " will change in a future quantify-scheduler revision.",
                     FutureWarning,
                 )
                 acq_data = acquisitions_data.reshape(
@@ -2020,7 +2036,7 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
             )
         else:
             raise RuntimeError(
-                f"{acquisition_metadata.acq_protocol} acquisition protocol does not"
+                f"{acquisition_metadata.acq_protocol} acquisition protocol does not "
                 f"support bin mode {acquisition_metadata.bin_mode}"
             )
 
@@ -2049,6 +2065,7 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
     def _protocol_to_acq_function_map(self) -> dict[str, Callable]:
         return {
             "TriggerCount": self._get_trigger_count_data,
+            "Timetag": self._get_timetag_data,
         }
 
     def _get_trigger_count_data(
@@ -2101,8 +2118,62 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
             )
         else:
             raise RuntimeError(
-                f"{acquisition_metadata.acq_protocol} acquisition protocol does not"
+                f"{acquisition_metadata.acq_protocol} acquisition protocol does not "
                 f"support bin mode {acquisition_metadata.bin_mode}"
+            )
+
+    def _get_timetag_data(
+        self,
+        acq_indices: list,
+        hardware_retrieved_acquisitions: dict,
+        acquisition_metadata: AcquisitionMetadata,
+        acq_duration: int,
+        qblox_acq_index: int,
+        acq_channel: Hashable,
+    ) -> DataArray:
+        bin_data = self._get_bin_data(hardware_retrieved_acquisitions, qblox_acq_index)
+
+        timetags_ns = np.array(bin_data["timedelta"]) / 2048
+
+        acq_index_dim_name = f"acq_index_{acq_channel}"
+
+        if acquisition_metadata.bin_mode == BinMode.AVERAGE:
+            return DataArray(
+                timetags_ns.reshape((len(acq_indices),)),
+                dims=[acq_index_dim_name],
+                coords={acq_index_dim_name: acq_indices},
+                attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
+            )
+        elif acquisition_metadata.bin_mode == BinMode.APPEND:
+            if acquisition_metadata.repetitions * len(acq_indices) == timetags_ns.size:
+                acq_data = timetags_ns.reshape(
+                    (acquisition_metadata.repetitions, len(acq_indices))
+                )
+                return DataArray(
+                    acq_data,
+                    dims=["repetition", acq_index_dim_name],
+                    coords={acq_index_dim_name: acq_indices},
+                    attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
+                )
+
+            # There is control flow containing measurements, skip reshaping
+            else:
+                warnings.warn(
+                    "The format of acquisition data of looped measurements in APPEND mode"
+                    " will change in a future quantify-scheduler revision.",
+                    FutureWarning,
+                )
+                acq_data = timetags_ns.reshape((acquisition_metadata.repetitions, -1))
+                return DataArray(
+                    acq_data,
+                    dims=["repetition", "loop_repetition"],
+                    coords=None,
+                    attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
+                )
+        else:
+            raise RuntimeError(
+                f"{acquisition_metadata.acq_protocol} acquisition protocol does not"
+                f" support bin mode {acquisition_metadata.bin_mode}."
             )
 
 

@@ -385,6 +385,7 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
             comment=f"Disable TTL acquisition of acq_channel:{self.acq_channel}, "
             f"bin_mode:{BinMode.AVERAGE}",
         )
+        qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
 
     def _acquire_append(self, qasm_program: QASMProgram):
         """
@@ -459,9 +460,38 @@ class TimetagAcquisitionStrategy(AcquisitionStrategyPartial):
         qasm_program
             The QASMProgram to add the assembly instructions to.
         """
-        raise NotImplementedError(
-            "TriggerCountAcquisition is not implemented for the QTM with AVERAGE bin mode."
+        bin_idx = self.operation_info.data["acq_index"]
+
+        qasm_program.emit(
+            q1asm_instructions.ACQUIRE_TIMETAGS,
+            self.acq_channel,
+            bin_idx,
+            1,  # enable timetags acquisition
+            0,  # fine delay hardcoded to 0
+            constants.MIN_TIME_BETWEEN_OPERATIONS,
+            comment=f"Enable timetag acquisition of acq_channel:{self.acq_channel}, "
+            f"bin_mode:{BinMode.AVERAGE}",
         )
+        qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
+
+        qasm_program.auto_wait(
+            wait_time=(
+                helpers.to_grid_time(self.operation_info.duration)
+                - 2 * constants.MIN_TIME_BETWEEN_OPERATIONS
+            )
+        )
+
+        qasm_program.emit(
+            q1asm_instructions.ACQUIRE_TIMETAGS,
+            self.acq_channel,
+            bin_idx,
+            0,  # disable timetags acquisition
+            0,  # fine delay hardcoded to 0
+            constants.MIN_TIME_BETWEEN_OPERATIONS,
+            comment=f"Disable timetag acquisition of acq_channel:{self.acq_channel}, "
+            f"bin_mode:{BinMode.AVERAGE}",
+        )
+        qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
 
     def _acquire_append(self, qasm_program: QASMProgram):
         """
@@ -498,7 +528,7 @@ class TimetagAcquisitionStrategy(AcquisitionStrategyPartial):
             1,  # enable ttl acquisition
             fine_delay_reg,
             constants.MIN_TIME_BETWEEN_OPERATIONS,
-            comment=f"Enable TTL acquisition of acq_channel:{self.acq_channel}, "
+            comment=f"Enable timetag acquisition of acq_channel:{self.acq_channel}, "
             f"store in bin:{acq_bin_idx_reg}",
         )
         qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
@@ -517,7 +547,7 @@ class TimetagAcquisitionStrategy(AcquisitionStrategyPartial):
             0,  # disable ttl acquisition
             fine_delay_reg,
             constants.MIN_TIME_BETWEEN_OPERATIONS,
-            comment=f"Disable TTL acquisition of acq_channel:{self.acq_channel}, "
+            comment=f"Disable timetag acquisition of acq_channel:{self.acq_channel}, "
             f"store in bin:{acq_bin_idx_reg}",
         )
         qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS

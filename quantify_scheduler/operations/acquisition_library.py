@@ -10,7 +10,8 @@ import numpy as np
 
 from quantify_core.utilities import deprecated
 from quantify_scheduler import Operation
-from quantify_scheduler.enums import BinMode
+from quantify_scheduler.enums import BinMode, TimeRef, TimeSource
+from quantify_scheduler.resources import DigitalClockResource
 
 
 class Acquisition(Operation):
@@ -740,6 +741,96 @@ class TriggerCount(Acquisition):
                 "bin_mode": bin_mode,
                 "acq_return_type": int,
                 "protocol": "TriggerCount",
+            }
+        ]
+        self._update()
+
+    def __str__(self) -> str:
+        acq_info = self.data["acquisition_info"][0]
+        return self._get_signature(acq_info)
+
+
+class Timetag(Acquisition):
+    """
+    Acquire a single timetag per acquisition index.
+
+    Parameters
+    ----------
+    port
+        The acquisition port.
+    clock
+        The clock used to demodulate the acquisition.
+    duration
+        The acquisition duration in seconds.
+    acq_channel
+        The data channel in which the acquisition is stored, by default 0.
+        Describes the "where" information of the  measurement, which typically
+        corresponds to a qubit idx.
+    acq_index
+        The data register in which the acquisition is stored, by default 0.
+        Describes the "when" information of the measurement, used to label or
+        tag individual measurements in a large circuit. Typically corresponds
+        to the setpoints of a schedule (e.g., tau in a T1 experiment).
+    bin_mode
+        Describes what is done when data is written to a register that already
+        contains a value. Options are "append" which appends the result to the
+        list or "average" which stores the weighted average value of the
+        new result and the old register value, by default BinMode.APPEND.
+    time_source
+        Selects the timetag data source for this acquisition type. String enumeration,
+        one of:
+
+        * ``first`` (default): record the first timetag in the window.
+        * ``second``: record the second timetag in the window. Can be used to measure
+          pulse distance when combined with first as reference.
+        * ``last``: record the last timetag in the window.
+    time_ref
+        Selects the time reference that the timetag is recorded in relation to. String
+        enumeration, one of:
+
+        * ``start`` (default): record relative to the start of the window.
+        * ``end``: record relative to the end of the window. Note that this always
+          yields a negative timetag.
+        * ``first``: record relative to the first timetag in the window.
+        * ``command``: record relative to the timestamp marked using the
+          :class:`~quantify_scheduler.operations.pulse_library.Timestamp` operation.
+    t0
+        The acquisition start time in seconds, by default 0.
+    """
+
+    def __init__(
+        self,
+        duration: float,
+        port: str,
+        clock: str = DigitalClockResource.IDENTITY,
+        acq_channel: int = 0,
+        acq_index: int = 0,
+        bin_mode: Union[BinMode, str] = BinMode.APPEND,
+        time_source: Union[TimeSource, str] = TimeSource.FIRST,
+        time_ref: Union[TimeRef, str] = TimeRef.START,
+        t0: float = 0,
+    ) -> None:
+        super().__init__(name=self.__class__.__name__)
+
+        if isinstance(time_source, str):
+            time_source = TimeSource(time_source)
+        if isinstance(time_ref, str):
+            time_ref = TimeRef(time_ref)
+
+        self.data["acquisition_info"] = [
+            {
+                "waveforms": [],
+                "t0": t0,
+                "clock": clock,
+                "port": port,
+                "duration": duration,
+                "acq_channel": acq_channel,
+                "acq_index": acq_index,
+                "bin_mode": bin_mode,
+                "time_source": time_source,
+                "time_ref": time_ref,
+                "acq_return_type": float,
+                "protocol": "Timetag",
             }
         ]
         self._update()

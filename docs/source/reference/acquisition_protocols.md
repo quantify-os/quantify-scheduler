@@ -239,7 +239,10 @@ Integration weights should normally be calibrated in a separate experiment
 
 - Referred to as `"TriggerCount"`.
 - Supported by the {mod}`Qblox <quantify_scheduler.backends.qblox>` backend.
-  - Please also see {ref}`sec-qblox-trigger-count` for more information on Qblox module-specific behavior of this operation.
+
+```{admonition} Note
+Please also see {ref}`sec-qblox-trigger-count` for more information on Qblox module-specific behavior of this operation.
+```
 
 This acquisition protocol measures how many times a predefined voltage threshold has been
 passed. For the QRM, the threshold is set via {class}`~quantify_scheduler.backends.types.qblox.SequencerOptions.ttl_acq_threshold` (see also {ref}`sec-qblox-sequencer-options`), while for the QTM this threshold setting is a dedicated hardware option called `in_threshold_primary`, see {ref}`sec-qblox-digitization-thresholds`.
@@ -281,4 +284,58 @@ xr.Dataset(
         )
     }
 )
+```
+
+(sec-acquisition-protocols-timetag)=
+## Timetag acquisition
+
+- Supported by the {mod}`Qblox <quantify_scheduler.backends.qblox>` backend, only on QTM modules.
+
+```{admonition} Note
+Please also see {ref}`sec-qblox-trigger-count` for more information on Qblox module-specific behavior of this operation.
+```
+
+The {class}`~quantify_scheduler.operations.acquisition_library.Timetag` acquisition protocol (referred to as `"Timetag"`) measures the point in time at which a voltage threshold was passed. This voltage threshold setting is a dedicated hardware option called `in_threshold_primary`, see {ref}`sec-qblox-digitization-thresholds`. The timetag is the difference between a time source and a time reference.
+
+The source of the timetag itself can be one of:
+
+- The first recorded rising edge,
+- The second recorded rising edge,
+- The last recorded rising edge.
+
+The time reference can be one of:
+
+- The start of the acquisition window,
+- The end of the acquisition window,
+- The first measured rising edge,
+- A scheduled {class}`~quantify_scheduler.operations.pulse_library.Timestamp` operation.
+
+The protocol always returns one timetag per acquisition bin. If `BinMode.APPEND` is used, the acquisition bin index is incremented automatically and each timetag measurement is put in a separate bin. A measurement repeated three times will therefore return a dataset that may look like this:
+
+```{code-cell} ipython3
+---
+tags: [hide-input]
+---
+data_array = xr.DataArray(
+        np.array([5438.2, 756.16, 1059.2]).reshape((3, 1)),
+        dims=["repetition", "acq_index_0"],
+        coords={"acq_index_0": [0]},
+        attrs={"acq_protocol": "Timetag"},
+    )
+xr.Dataset({0: data_array})
+```
+
+If `BinMode.AVERAGE` is used, the acquisition data will contain the average of the timetags recorded in each bin. If only bin index 0 was used for the three acquisitions in the above example, the data set may look like this:
+
+```{code-cell} ipython3
+---
+tags: [hide-input]
+---
+data_array = xr.DataArray(
+        [2417.853333333333],
+        dims=["acq_index_0"],
+        coords={"acq_index_0": [0]},
+        attrs={"acq_protocol": "Timetag"},
+    )
+xr.Dataset({0: data_array})
 ```

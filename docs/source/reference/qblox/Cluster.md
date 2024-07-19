@@ -450,6 +450,7 @@ hardware_compilation_cfg = {
 }
 ```
 
+(sec-qblox-connectivity-digital)=
 ### Digital channel
 
 The inputs and outputs of the QTM and the markers of QCM/QRM (RF) can be controlled by defining a digital channel. Only certain operations are possible on digital channels, such as the `MarkerPulse`. A digital channel is defined by adding a `"digital_output_n"` or `"digital_input_n"` to the connectivity, where `n` corresponds to port `n+1` on the device.

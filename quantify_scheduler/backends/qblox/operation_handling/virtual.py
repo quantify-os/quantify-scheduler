@@ -247,3 +247,22 @@ class ControlFlowReturnStrategy(IdleStrategy):
 
     Empty as it is used for isinstance.
     """
+
+
+class TimestampStrategy(IdleStrategy):
+    """
+    Strategy for compiling
+    :class:`~quantify_scheduler.operations.pulse_library.Timestamp`.
+    """
+
+    def insert_qasm(self, qasm_program: QASMProgram):
+        """
+        Inserts the instructions needed insert a time reference.
+
+        Parameters
+        ----------
+        qasm_program
+            The QASMProgram to add the assembly instructions to.
+        """
+        assert "timestamp" in self.operation_info.data
+        qasm_program.emit(q1asm_instructions.SET_TIME_REF)

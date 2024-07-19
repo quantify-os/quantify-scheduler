@@ -248,9 +248,6 @@ class IdlePulse(Operation):
     """
     The IdlePulse Operation is a placeholder for a specified duration of time.
 
-    The IdlePulse Operation is a placeholder for a specified duration
-    of time.
-
     Parameters
     ----------
     duration
@@ -1138,6 +1135,50 @@ class SkewedHermitePulse(Operation):
                 "clock": clock,
                 "port": port,
                 "t0": t0,
+            }
+        ]
+        self._update()
+
+    def __str__(self) -> str:
+        pulse_info = self.data["pulse_info"][0]
+        return self._get_signature(pulse_info)
+
+
+class Timestamp(Operation):
+    """
+    Operation that marks a time reference for timetags.
+
+    Specifically, all timetags in
+    :class:`~quantify_scheduler.operations.acquisition_library.Timetag` are
+    measured relative to the timing of this operation, if they have a matching port and
+    clock, and if ``time_ref=TimeRef.TIMESTAMP`` is given as an argument.
+
+    Parameters
+    ----------
+    port
+        The same port that the timetag acquisition is defined on.
+    clock
+        The same clock that the timetag acquisition is defined on.
+    t0
+        Time offset (in seconds) of this Operation, relative to the start time in the
+        Schedule. By default 0.
+    """
+
+    def __init__(
+        self,
+        port: str,
+        t0: float = 0,
+        clock: str = DigitalClockResource.IDENTITY,
+    ):
+        super().__init__(name=self.__class__.__name__)
+        self.data["pulse_info"] = [
+            {
+                "wf_func": None,
+                "t0": t0,
+                "duration": 0,
+                "clock": clock,
+                "port": port,
+                "timestamp": True,
             }
         ]
         self._update()

@@ -1004,6 +1004,150 @@ acquisition
 
 There were three trigger acquisitions overall. In the first acquisition 3 triggers were sent-out, and in the second and third case, only one. So, we expect to see that one trigger was measured twice, and 3 triggers were measured only once. The data shows exactly this. At `acq_channel=0` (corresponding to the `0` key in the `Dataset`) the values are `2` and `1`, with `counts` for `1` and `3` respectively.
 
+(sec-acquisitions-timetag)=
+### Timetag acquisition
+
+
+```{admonition} Note
+The timetag protocol is currently only implemented for the Qblox backend, and it is available on the **QTM**. Please also see {ref}`sec-qblox-trigger-count` for more information on Qblox module-specific behavior of this operation.
+```
+
+The {class}`~quantify_scheduler.operations.acquisition_library.Timetag` acquisition protocol is used for measuring the time difference between a timetag source and a time reference.
+
+The source of the timetag can be one of:
+
+* The first recorded rising edge,
+* The second recorded rising edge,
+* The last recorded rising edge.
+
+The time reference can be one of:
+
+* The start of the acquisition window,
+* The end of the acquisition window,
+* The first measured rising edge,
+* The time of the {class}`~quantify_scheduler.operations.pulse_library.Timestamp` operation in the schedule.
+
+The acquisition data will contain the timetag value as `timetag = (time_source - time_reference)` in nanoseconds.
+
+In QTM modules, the timetag originates from the digitization of an analog pulse (triggered on the rising edge). The digitization threshold is set via the field `in_threshold_primary` in the {ref}`sec-qblox-digitization-thresholds` hardware option.
+
+The two bin modes, **average** and **append**, can both be used. In the **append** bin mode, the data will consist of one timetag per acquisition index, whereas in the **average** bin mode, the timetag is averaged each time an acquisition index is re-used.
+
+#### Setup and schedule
+
+In this tutorial, we will show the usage of the {class}`~quantify_scheduler.operations.acquisition_library.Timetag` protocol together with the {class}`~quantify_scheduler.operations.pulse_library.Timestamp` operation. Our example setup has a QTM with port 5 connected to a source of pulses, which is specified with `"cluster0.module1.digital_input_4"` in the connectivity of the hardware configuration below (note that the hardware configuration starts counting channels from 0).
+
+We mock the measurement of pulses by providing some dummy data, but in an actual setup these pulses could, for example, come from {class}`MarkerPulses <quantify_scheduler.operations.pulse_library.MarkerPulse>` from another QTM port (see {ref}`sec-qblox-connectivity-digital`), or a photodetector.
+
+We'll re-use the same quantum device from the {ref}`TriggerCount example <sec-acquisitions-trigger-count>`, but modify the hardware configuration to use a QTM. Note also that the digitization threshold is now set with `"in_threshold_primary"`, under the `"digitization_thresholds"` hardware option.
+
+```{code-cell} ipython3
+---
+mystnb:
+  remove_code_outputs: true
+---
+hardware_cfg_timetag = config = {
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+    "hardware_description": {
+        "cluster0": {
+            "instrument_type": "Cluster",
+            "modules": {
+                1: {
+                    "instrument_type": "QTM"
+                }
+            },
+            "ref": "internal"
+        },
+    },
+    "hardware_options": {
+        "digitization_thresholds": {
+            "qe0:optical_readout-qe0.ge0": {
+                "in_threshold_primary": 0.5
+            }
+        }
+    },
+    "connectivity": {
+        "graph": [
+            ("cluster0.module1.digital_input_4", "qe0:optical_readout")
+        ]
+    }
+}
+
+nv_device.hardware_config(hardware_cfg_timetag)
+```
+
+In this example, we create a schedule containing one timetag acquisition and repeat it three times to get three timetags. We therefore set `repetitions=3` for the schedule.
+
+```{code-cell} ipython3
+---
+mystnb:
+  remove_code_outputs: true
+---
+from quantify_scheduler import Schedule
+from quantify_scheduler.operations.pulse_library import Timestamp
+from quantify_scheduler.operations.acquisition_library import Timetag
+from quantify_scheduler.enums import BinMode, TimeRef, TimeSource
+
+acq_duration = 10e-6
+
+schedule = Schedule("timetag_acquisition_tutorial", repetitions=3)
+schedule.add(Timestamp(port="qe0:optical_readout", clock="qe0.ge0"))
+schedule.add(
+    Timetag(
+        t0=0,
+        duration=acq_duration,
+        port="qe0:optical_readout",
+        clock="qe0.ge0",
+        acq_channel=0,
+        bin_mode=BinMode.APPEND,
+        time_source=TimeSource.FIRST,
+        time_ref=TimeRef.TIMESTAMP,
+    ),
+    rel_time=1e-6
+)
+```
+
+Let's compile the schedule.
+
+```{code-cell} ipython3
+from quantify_scheduler.backends import SerialCompiler
+
+compiler = SerialCompiler(name="compiler")
+compiled_schedule = compiler.compile(schedule=schedule, config=nv_device.generate_compilation_config())
+```
+
+#### Running the schedule, retrieving acquisition
+
+Finally, let's run the schedule and retrieve the acquisitions:
+
+```{code-cell} ipython3
+:tags: [skip-execution]
+instrument_coordinator.prepare(compiled_schedule)
+instrument_coordinator.start()
+instrument_coordinator.wait_done(timeout_sec=10)
+
+acquisition = instrument_coordinator.retrieve_acquisition()
+```
+
+```{code-cell} ipython3
+:tags: [remove-cell]
+import xarray as xr
+
+data_array = xr.DataArray(
+        np.array([5438.2, 756.16, 1059.2]).reshape((3, 1)),
+        dims=["repetition", "acq_index_0"],
+        coords={"acq_index_0": [0]},
+        attrs={"acq_protocol": "Timetag"},
+    )
+acquisition = xr.Dataset({0: data_array})
+```
+
+The data set below shows 3 timetags, from the 3 repetitions of the schedule:
+
+```{code-cell} ipython3
+acquisition
+```
+
 ## Gate-level acquisitions
 
 In the previous section the schedule was defined on the hardware level, in terms of signals and pulses. In this section we will address the acquisitions in terms of qubits. To do that, first, we need to set up a qubit. See {ref}`sec-tutorial-ops-qubits` for an introduction to how to set up a schedule on the gate-level. Integration type acquisitions and trigger count acquisitions make sense on the gate-level, depending on the physical implementation of your qubit.
