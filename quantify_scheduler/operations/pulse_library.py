@@ -137,7 +137,7 @@ class SetClockFrequency(Operation):
     clock
         The clock for which a new frequency is to be set.
     clock_freq_new
-        The new frequency in Hz.
+        The new frequency in Hz. If None, it will reset to the clock frequency set by the configuration or resource.
     t0
         Time in seconds when to execute the command relative to the start time of
         the Operation in the Schedule.
@@ -148,7 +148,7 @@ class SetClockFrequency(Operation):
     def __init__(
         self,
         clock: str,
-        clock_freq_new: float,
+        clock_freq_new: float | None,
         t0: float = 0,
         duration: float = 0.0,
     ):

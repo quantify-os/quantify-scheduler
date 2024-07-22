@@ -1218,32 +1218,36 @@ def test_compile_measure(
 # for users with old-style configs
 @pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 @pytest.mark.parametrize(
-    "operation, instruction_to_check, clock_freq_old",
+    "operation, instruction_to_check, clock_freq_old, lo1_freq",
     [
-        [
-            (IdlePulse(duration=64e-9), r"^\s*wait\s+64(\s+|$)", None),
-            (Reset("q1"), r"^\s*wait\s+65532", None),
-            (
-                ShiftClockPhase(clock=clock, phase_shift=180.0),
-                r"^\s*set_ph_delta\s+500000000(\s+|$)",
-                None,
-            ),
-            (
-                SetClockFrequency(clock=clock, clock_freq_new=clock_freq_new),
-                rf"^\s*set_freq\s+{round((2e8 + clock_freq_new - clock_freq_old) * 4)}(\s+|$)",
-                clock_freq_old,
-            ),
-        ]
-        for clock in ["q1.01"]
-        for clock_freq_old in [5e9]
-        for clock_freq_new in [5.001e9]
-    ][0],
+        (IdlePulse(duration=64e-9), r"^\s*wait\s+64(\s+|$)", None, 4.8e9),
+        (Reset("q1"), r"^\s*wait\s+65532", None, 4.8e9),
+        (
+            ShiftClockPhase(clock="q1.01", phase_shift=180.0),
+            r"^\s*set_ph_delta\s+500000000(\s+|$)",
+            None,
+            4.8e9,
+        ),
+        (
+            SetClockFrequency(clock="q1.01", clock_freq_new=5.001e9),
+            rf"^\s*set_freq\s+{round((2e8 + 5.001e9 - 5e9) * 4)}(\s+|$)",
+            5e9,
+            4.8e9,
+        ),
+        (
+            SetClockFrequency(clock="q1.01", clock_freq_new=None),
+            rf"^\s*set_freq\s+{round((2e8) * 4)}(\s+|$)",
+            7e9,
+            7.05e9,
+        ),
+    ],
 )
 def test_compile_clock_operations(
     mock_setup_basic_transmon_with_standard_params,
     operation: Operation,
     instruction_to_check: str,
     clock_freq_old: Optional[float],
+    lo1_freq: float,
 ):
     hardware_cfg = {
         "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
@@ -1270,7 +1274,11 @@ def test_compile_clock_operations(
             },
         },
         "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
-        "lo1": {"instrument_type": "LocalOscillator", "frequency": 4.8e9, "power": 1},
+        "lo1": {
+            "instrument_type": "LocalOscillator",
+            "frequency": lo1_freq,
+            "power": 1,
+        },
     }
 
     sched = Schedule("compile_clock_operations")

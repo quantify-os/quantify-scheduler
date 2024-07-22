@@ -42,7 +42,11 @@ from quantify_scheduler.operations.pulse_factories import (
     composite_square_pulse,
     rxy_drag_pulse,
 )
-from quantify_scheduler.operations.pulse_library import IdlePulse, ReferenceMagnitude
+from quantify_scheduler.operations.pulse_library import (
+    IdlePulse,
+    ReferenceMagnitude,
+    SetClockFrequency,
+)
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.schedule import ScheduleBase
 
@@ -1043,3 +1047,37 @@ def test_device_overrides_multiple_levels_hamilton(
     assert not math.isclose(duration_0, duration_1)
     assert math.isclose(duration_0, 2e-8)
     assert math.isclose(duration_1, 4e-6)
+
+
+def test_measurement_freq_override(
+    device_cfg_transmon_example, get_subschedule_operation
+):
+    sched = Schedule("Test schedule")
+    sched.add(Measure("q0"))
+    sched.add(Measure("q1", freq=5e9))
+    new_dev_sched = compile_circuit_to_device_with_config_validation(
+        sched,
+        config=SerialCompilationConfig(
+            name="test", device_compilation_config=device_cfg_transmon_example
+        ),
+    )
+
+    m0_without_freq = get_subschedule_operation(new_dev_sched, [0])
+    assert all(
+        not isinstance(op, SetClockFrequency) for op in m0_without_freq.operations
+    )
+
+    # Subschedule components for an acquisition are (if there is frequency override):
+    # 0th: frequency override,
+    # 1st: reset clock phase,
+    # 2nd: readout pulse,
+    # 3rd: acquisition,
+    # 4th: frequency reset.
+
+    m1_set_freq = get_subschedule_operation(new_dev_sched, [1, 0])
+    assert isinstance(m1_set_freq, SetClockFrequency)
+    assert m1_set_freq.data["pulse_info"][0]["clock_freq_new"] == 5e9
+
+    m1_reset_freq = get_subschedule_operation(new_dev_sched, [1, 4])
+    assert isinstance(m1_reset_freq, SetClockFrequency)
+    assert m1_reset_freq.data["pulse_info"][0]["clock_freq_new"] is None

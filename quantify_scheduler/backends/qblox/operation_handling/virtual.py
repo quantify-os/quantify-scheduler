@@ -135,13 +135,18 @@ class NcoSetClockFrequencyStrategy(IdleStrategy):
                 f"sure an 'interm_freq' is supplied or that 'mix_lo' is set to true in "
                 f"the hardware config."
             )
-        iterm_freq_new = interm_freq_old + clock_freq_new - clock_freq_old
 
-        frequency_args = helpers.get_nco_set_frequency_arguments(iterm_freq_new)
+        interm_freq_new = (
+            (interm_freq_old + clock_freq_new - clock_freq_old)
+            if (clock_freq_new is not None)
+            else interm_freq_old
+        )
+
+        frequency_args = helpers.get_nco_set_frequency_arguments(interm_freq_new)
         qasm_program.emit(
             q1asm_instructions.SET_FREQUENCY,
             frequency_args,
-            comment=f"set nco frequency to {iterm_freq_new:e} Hz",
+            comment=f"set nco frequency to {interm_freq_new:e} Hz",
         )
 
 

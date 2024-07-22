@@ -223,18 +223,14 @@ class TestNcoSetClockFrequencyStrategy:
         _assert_none_data(strategy)
 
     @pytest.mark.parametrize(
-        "clock_freq_new, clock_freq_old, interm_freq_old, expected_instruction",
+        "clock_freq_new, clock_freq_old, interm_freq_old",
         [
             (
                 clock_freq_new,
                 clock_freq_old,
                 interm_freq_old,
-                (
-                    "set_freq",
-                    f"{round((interm_freq_old + clock_freq_new - clock_freq_old)*4)}",
-                ),
             )
-            for clock_freq_new in [-2e9, 0, 600]
+            for clock_freq_new in [-2e9, 0, 600, None]
             for clock_freq_old in [-1000e6, 500]
             for interm_freq_old in [-123, 50e6]
         ],
@@ -244,7 +240,6 @@ class TestNcoSetClockFrequencyStrategy:
         clock_freq_new: float,
         clock_freq_old: float,
         interm_freq_old: float,
-        expected_instruction: Tuple[str, str],
         empty_qasm_program_qcm: QASMProgram,
     ):
         def extract_instruction_and_args(
@@ -273,7 +268,11 @@ class TestNcoSetClockFrequencyStrategy:
 
         # act
         context_mngr = nullcontext()
-        interm_freq_new = interm_freq_old + clock_freq_new - clock_freq_old
+        interm_freq_new = (
+            (interm_freq_old + clock_freq_new - clock_freq_old)
+            if (clock_freq_new is not None)
+            else interm_freq_old
+        )
         limit = 500e6
         if interm_freq_new < -limit or interm_freq_new > limit:
             context_mngr = pytest.raises(ValueError)
@@ -289,4 +288,5 @@ class TestNcoSetClockFrequencyStrategy:
                 f"Got {interm_freq_new:e} Hz."
             )
         else:
+            expected_instruction = ("set_freq", f"{round(interm_freq_new*4)}")
             assert extract_instruction_and_args(qasm) == expected_instruction

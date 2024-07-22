@@ -30,13 +30,14 @@ from quantify_scheduler.operations.pulse_library import (
     IdlePulse,
     ReferenceMagnitude,
     ResetClockPhase,
+    SetClockFrequency,
     SquarePulse,
     VoltageOffset,
 )
 from quantify_scheduler.schedules.schedule import Schedule
 
 
-def _dispersive_measurement(
+def _dispersive_measurement(  # noqa: PLR0915
     pulse_amp: float,
     pulse_duration: float,
     port: str,
@@ -61,6 +62,7 @@ def _dispersive_measurement(
     acq_rotation: float | None,
     acq_threshold: float | None,
     num_points: float | None,
+    freq: float | None,
 ) -> Schedule:
     """
     Generator function for a standard dispersive measurement.
@@ -119,16 +121,21 @@ def _dispersive_measurement(
         Optional acquisition threshold.
     num_points
         Optional number of points for the acquisition.
+    freq
+        Optional frequency to override clock for this operation.
 
     Returns
     -------
-        Schedule:
-            The resulting schedule for the dispersive measurement.
+    :
+        The resulting schedule for the dispersive measurement.
     """
     if bin_mode is None:
         bin_mode = BinMode.AVERAGE
 
     subschedule = Schedule("dispersive_measurement")
+
+    if freq is not None:
+        subschedule.add(SetClockFrequency(clock=clock, clock_freq_new=freq))
 
     if reset_clock_phase:
         subschedule.add(ResetClockPhase(clock=clock))
@@ -340,6 +347,9 @@ def _dispersive_measurement(
     else:
         raise ValueError(f'Acquisition protocol "{acq_protocol}" is not supported.')
 
+    if freq is not None:
+        subschedule.add(SetClockFrequency(clock=clock, clock_freq_new=None))
+
     return subschedule
 
 
@@ -366,6 +376,7 @@ def dispersive_measurement_transmon(
     acq_rotation: float | None = None,
     acq_threshold: float | None = None,
     num_points: float | None = None,
+    freq: float | None = None,
 ) -> Schedule:
     """
     Creates a dispersive measurement schedule for a transmon qubit.
@@ -416,11 +427,13 @@ def dispersive_measurement_transmon(
         Optional acquisition threshold.
     num_points
         Optional number of points for the acquisition.
+    freq
+        Optional frequency to override clock for this operation.
 
     Returns
     -------
-        Schedule:
-            The resulting schedule for the dispersive measurement.
+    :
+        The resulting schedule for the dispersive measurement.
     """
     return _dispersive_measurement(
         pulse_amp=pulse_amp,
@@ -447,6 +460,7 @@ def dispersive_measurement_transmon(
         acq_rotation=acq_rotation,
         acq_threshold=acq_threshold,
         num_points=num_points,
+        freq=freq,
     )
 
 
@@ -475,6 +489,7 @@ def dispersive_measurement_spin(
     acq_rotation: float | None = None,
     acq_threshold: float | None = None,
     num_points: float | None = None,
+    freq: float | None = None,
 ) -> Schedule:
     """
     Creates a dispersive measurement schedule for a spin qubit.
@@ -529,11 +544,13 @@ def dispersive_measurement_spin(
         Optional amplitude for the gate pulse.
     gate_port
         Optional port for the gate pulse.
+    freq
+        Optional frequency to override clock for this operation.
 
     Returns
     -------
-        Schedule:
-            The resulting schedule for the dispersive measurement.
+    :
+        The resulting schedule for the dispersive measurement.
     """
     return _dispersive_measurement(
         pulse_amp=pulse_amp,
@@ -560,6 +577,7 @@ def dispersive_measurement_spin(
         acq_rotation=acq_rotation,
         acq_threshold=acq_threshold,
         num_points=num_points,
+        freq=freq,
     )
 
 
