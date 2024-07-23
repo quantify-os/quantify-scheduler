@@ -1069,15 +1069,13 @@ def test_measurement_freq_override(
 
     # Subschedule components for an acquisition are (if there is frequency override):
     # 0th: frequency override,
-    # 1st: reset clock phase,
-    # 2nd: readout pulse,
-    # 3rd: acquisition,
-    # 4th: frequency reset.
+    # 1st: subschedule for readout pulse, measure operation, etc.,
+    # 2th: frequency reset.
 
     m1_set_freq = get_subschedule_operation(new_dev_sched, [1, 0])
     assert isinstance(m1_set_freq, SetClockFrequency)
     assert m1_set_freq.data["pulse_info"][0]["clock_freq_new"] == 5e9
 
-    m1_reset_freq = get_subschedule_operation(new_dev_sched, [1, 4])
+    m1_reset_freq = get_subschedule_operation(new_dev_sched, [1, 2])
     assert isinstance(m1_reset_freq, SetClockFrequency)
     assert m1_reset_freq.data["pulse_info"][0]["clock_freq_new"] is None

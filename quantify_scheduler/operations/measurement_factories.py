@@ -134,9 +134,6 @@ def _dispersive_measurement(  # noqa: PLR0915
 
     subschedule = Schedule("dispersive_measurement")
 
-    if freq is not None:
-        subschedule.add(SetClockFrequency(clock=clock, clock_freq_new=freq))
-
     if reset_clock_phase:
         subschedule.add(ResetClockPhase(clock=clock))
 
@@ -348,9 +345,13 @@ def _dispersive_measurement(  # noqa: PLR0915
         raise ValueError(f'Acquisition protocol "{acq_protocol}" is not supported.')
 
     if freq is not None:
-        subschedule.add(SetClockFrequency(clock=clock, clock_freq_new=None))
-
-    return subschedule
+        subschedule_with_freq = Schedule("dispersive_measurement_with_freq")
+        subschedule_with_freq.add(SetClockFrequency(clock=clock, clock_freq_new=freq))
+        subschedule_with_freq.add(subschedule)
+        subschedule_with_freq.add(SetClockFrequency(clock=clock, clock_freq_new=None))
+        return subschedule_with_freq
+    else:
+        return subschedule
 
 
 def dispersive_measurement_transmon(

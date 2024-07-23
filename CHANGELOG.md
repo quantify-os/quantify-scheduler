@@ -67,6 +67,7 @@
   - New schedule `cnot_as_h_cz_h` in composite_factory. (!1020)
   - Introduce `Timetag` acquisition protocol and `Timestamp` operation. (!1023)
   - Add ability to override frequency for some gate-level operations. (!1039)
+  - Bugfix for frequency override for measure operations. (!1042)
 - QuantumDevice
   - Introduce BasicSpinElement spin device element. (!1015)
 
