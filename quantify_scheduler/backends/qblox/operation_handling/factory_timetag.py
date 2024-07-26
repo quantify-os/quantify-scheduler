@@ -56,13 +56,28 @@ def _get_acquisition_strategy(
     if protocol in ("TriggerCount", "Timetag"):
         if (
             protocol == "TriggerCount"
-            and operation_info.data["bin_mode"] == BinMode.AVERAGE
+            and operation_info.data["bin_mode"] != BinMode.APPEND
         ):
             raise ValueError(
-                f"TriggerCount acquisition on the QTM does not support AVERAGE bin "
-                f"mode.\n\n{repr(operation_info)} caused this exception to occur."
+                f"{protocol} acquisition on the QTM does not support bin mode "
+                f"{operation_info.data['bin_mode']}.\n\n{repr(operation_info)} caused "
+                "this exception to occur."
             )
         return acquisitions.TimetagAcquisitionStrategy(operation_info)
+
+    if protocol in ("Trace", "TimetagTrace"):
+        if (
+            protocol == "Trace"
+            and operation_info.data["bin_mode"] != BinMode.FIRST
+            or protocol == "TimetagTrace"
+            and operation_info.data["bin_mode"] != BinMode.APPEND
+        ):
+            raise ValueError(
+                f"{protocol} acquisition on the QTM does not support bin mode "
+                f"{operation_info.data['bin_mode']}.\n\n{repr(operation_info)} caused "
+                "this exception to occur."
+            )
+        return acquisitions.ScopedTimetagAcquisitionStrategy(operation_info)
 
     raise ValueError(f"Operation info {operation_info} cannot be compiled for a QTM.")
 

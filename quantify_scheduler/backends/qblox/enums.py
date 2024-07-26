@@ -89,3 +89,10 @@ class SidebandCalEnum(str, Enum):
 
     OFF = "off"
     ON_INTERM_FREQ_CHANGE = "on_interm_freq_change"
+
+
+class TimetagTraceType(str, Enum):
+    """Types trace acquisition possible for a QTM."""
+
+    SCOPE = "scope"
+    TIMETAG = "timetag"

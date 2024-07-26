@@ -1,12 +1,14 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Tests for the QTM."""
+import re
 from unittest.mock import Mock
 
 import pytest
 
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.qblox.compiler_container import CompilerContainer
+from quantify_scheduler.backends.qblox.enums import TimetagTraceType
 from quantify_scheduler.backends.qblox.instrument_compilers import QTMCompiler
 from quantify_scheduler.backends.qblox.timetag import TimetagSequencerCompiler
 from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
@@ -16,6 +18,8 @@ from quantify_scheduler.enums import BinMode, TimeRef, TimeSource
 from quantify_scheduler.operations.acquisition_library import (
     SSBIntegrationComplex,
     Timetag,
+    TimetagTrace,
+    Trace,
     TriggerCount,
 )
 from quantify_scheduler.operations.control_flow_library import LoopOperation
@@ -447,6 +451,206 @@ start:
     )
 
 
+def test_trace_acq_qtm_compilation(mock_setup_basic_nv, assert_equal_q1asm):
+    schedule = Schedule(name="Test")
+
+    tg = schedule.add(
+        Trace(
+            duration=16e-6,
+            port="qe1:optical_readout",
+            clock="qe1.ge0",
+            bin_mode=BinMode.FIRST,
+        )
+    )
+    schedule.add(
+        MarkerPulse(duration=4e-9, port="qe1:switch"),
+        rel_time=0,
+        ref_op=tg,
+        ref_pt="start",
+    )
+    for _ in range(3):
+        schedule.add(MarkerPulse(duration=4e-9, port="qe1:switch"), rel_time=16e-9)
+
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+
+    quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    assert (
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
+            "sequencers"
+        ]["seq4"]["sequence"]["acquisitions"]["0"]["num_bins"]
+        == 1
+    )
+
+    assert (
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
+            "sequencers"
+        ]["seq4"]["scope_trace_type"]
+        == TimetagTraceType.SCOPE
+    )
+
+    assert_equal_q1asm(
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
+            "sequencers"
+        ]["seq4"]["sequence"]["program"],
+        """ wait_sync 4
+ upd_param 4
+ wait 4 # latency correction of 4 + 0 ns
+ move 1,R0 # iterator for loop with label start
+start:
+ wait 4
+ set_scope_en 1
+ acquire_timetags 0,0,1,0,4 # Enable timetag acquisition of acq_channel:0, bin_mode:average
+ wait 15992 # auto generated wait (15992 ns)
+ acquire_timetags 0,0,0,0,4 # Disable timetag acquisition of acq_channel:0, bin_mode:average
+ set_scope_en 0
+ loop R0,@start
+ stop
+""",
+    )
+
+    assert_equal_q1asm(
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
+            "sequencers"
+        ]["seq0"]["sequence"]["program"],
+        """ wait_sync 4
+ upd_param 4
+ wait 4 # latency correction of 4 + 0 ns
+ move 1,R0 # iterator for loop with label start
+start:
+ wait 4
+ set_digital 1,1,0
+ upd_param 4
+ set_digital 0,1,0
+ upd_param 4
+ wait 12 # auto generated wait (12 ns)
+ set_digital 1,1,0
+ upd_param 4
+ set_digital 0,1,0
+ upd_param 4
+ wait 12 # auto generated wait (12 ns)
+ set_digital 1,1,0
+ upd_param 4
+ set_digital 0,1,0
+ upd_param 4
+ wait 12 # auto generated wait (12 ns)
+ set_digital 1,1,0
+ upd_param 4
+ set_digital 0,1,0
+ upd_param 4
+ wait 15932 # auto generated wait (15932 ns)
+ loop R0,@start
+ stop
+""",
+    )
+
+
+def test_timetagtrace_acq_qtm_compilation(mock_setup_basic_nv, assert_equal_q1asm):
+    schedule = Schedule(name="Test")
+
+    tg = schedule.add(
+        TimetagTrace(
+            duration=16e-6,
+            port="qe1:optical_readout",
+            clock="qe1.ge0",
+        )
+    )
+    schedule.add(
+        MarkerPulse(duration=4e-9, port="qe1:switch"),
+        rel_time=0,
+        ref_op=tg,
+        ref_pt="start",
+    )
+    for _ in range(3):
+        schedule.add(MarkerPulse(duration=4e-9, port="qe1:switch"), rel_time=16e-9)
+
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+
+    quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    assert (
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
+            "sequencers"
+        ]["seq4"]["sequence"]["acquisitions"]["0"]["num_bins"]
+        == 1
+    )
+
+    assert (
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
+            "sequencers"
+        ]["seq4"]["scope_trace_type"]
+        == TimetagTraceType.TIMETAG
+    )
+
+    assert_equal_q1asm(
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
+            "sequencers"
+        ]["seq4"]["sequence"]["program"],
+        """ wait_sync 4
+ upd_param 4
+ move 0,R0 # Initialize acquisition bin_idx for ch0
+ wait 4 # latency correction of 4 + 0 ns
+ move 1,R1 # iterator for loop with label start
+start:
+ wait 4
+ set_scope_en 1
+ move 0,R10
+ acquire_timetags 0,R0,1,R10,4 # Enable timetag acquisition of acq_channel:0, store in bin:R0
+ wait 15992 # auto generated wait (15992 ns)
+ acquire_timetags 0,R0,0,R10,4 # Disable timetag acquisition of acq_channel:0, store in bin:R0
+ add R0,1,R0 # Increment bin_idx for ch0 by 1
+ set_scope_en 0
+ loop R1,@start
+ stop
+""",
+    )
+
+    assert_equal_q1asm(
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
+            "sequencers"
+        ]["seq0"]["sequence"]["program"],
+        """ wait_sync 4
+ upd_param 4
+ wait 4 # latency correction of 4 + 0 ns
+ move 1,R0 # iterator for loop with label start
+start:
+ wait 4
+ set_digital 1,1,0
+ upd_param 4
+ set_digital 0,1,0
+ upd_param 4
+ wait 12 # auto generated wait (12 ns)
+ set_digital 1,1,0
+ upd_param 4
+ set_digital 0,1,0
+ upd_param 4
+ wait 12 # auto generated wait (12 ns)
+ set_digital 1,1,0
+ upd_param 4
+ set_digital 0,1,0
+ upd_param 4
+ wait 12 # auto generated wait (12 ns)
+ set_digital 1,1,0
+ upd_param 4
+ set_digital 0,1,0
+ upd_param 4
+ wait 15932 # auto generated wait (15932 ns)
+ loop R0,@start
+ stop
+""",
+    )
+
+
 def test_timetag_different_source(mock_setup_basic_nv):
     schedule = Schedule(name="Test", repetitions=1)
 
@@ -519,6 +723,187 @@ def test_timetag_different_ref(mock_setup_basic_nv):
     with pytest.raises(
         ValueError,
         match="time_ref must be the same for all acquisitions on a port-clock combination.",
+    ):
+        _ = compiler.compile(
+            schedule=schedule, config=quantum_device.generate_compilation_config()
+        )
+
+
+def test_multiple_trace_acq(mock_setup_basic_nv, assert_equal_q1asm):
+    schedule = Schedule(name="Test")
+
+    schedule.add(
+        Trace(
+            duration=16e-6,
+            port="qe1:optical_readout",
+            clock="qe1.ge0",
+            acq_index=0,
+            bin_mode=BinMode.FIRST,
+        )
+    )
+    schedule.add(
+        Trace(
+            duration=16e-6,
+            port="qe1:optical_readout",
+            clock="qe1.ge0",
+            acq_index=1,
+            bin_mode=BinMode.FIRST,
+        ),
+        rel_time=20e-9,
+    )
+
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+
+    quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    assert (
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
+            "sequencers"
+        ]["seq4"]["sequence"]["acquisitions"]["0"]["num_bins"]
+        == 2
+    )
+
+    assert (
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
+            "sequencers"
+        ]["seq4"]["scope_trace_type"]
+        == TimetagTraceType.SCOPE
+    )
+
+    assert_equal_q1asm(
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
+            "sequencers"
+        ]["seq4"]["sequence"]["program"],
+        """ wait_sync 4
+ upd_param 4
+ wait 4 # latency correction of 4 + 0 ns
+ move 1,R0 # iterator for loop with label start
+start:
+ wait 4
+ set_scope_en 1
+ acquire_timetags 0,0,1,0,4 # Enable timetag acquisition of acq_channel:0, bin_mode:average
+ wait 15992 # auto generated wait (15992 ns)
+ acquire_timetags 0,0,0,0,4 # Disable timetag acquisition of acq_channel:0, bin_mode:average
+ set_scope_en 0
+ wait 20 # auto generated wait (20 ns)
+ set_scope_en 1
+ acquire_timetags 0,1,1,0,4 # Enable timetag acquisition of acq_channel:0, bin_mode:average
+ wait 15992 # auto generated wait (15992 ns)
+ acquire_timetags 0,1,0,0,4 # Disable timetag acquisition of acq_channel:0, bin_mode:average
+ set_scope_en 0
+ loop R0,@start
+ stop
+""",
+    )
+
+
+def test_multiple_timetagtrace_acq(mock_setup_basic_nv, assert_equal_q1asm):
+    schedule = Schedule(name="Test")
+
+    schedule.add(
+        TimetagTrace(
+            duration=16e-6,
+            port="qe1:optical_readout",
+            clock="qe1.ge0",
+            acq_index=0,
+        )
+    )
+    schedule.add(
+        TimetagTrace(
+            duration=16e-6, port="qe1:optical_readout", clock="qe1.ge0", acq_index=1
+        ),
+        rel_time=20e-9,
+    )
+
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+
+    quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    assert (
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
+            "sequencers"
+        ]["seq4"]["sequence"]["acquisitions"]["0"]["num_bins"]
+        == 2
+    )
+
+    assert (
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
+            "sequencers"
+        ]["seq4"]["scope_trace_type"]
+        == TimetagTraceType.TIMETAG
+    )
+
+    assert_equal_q1asm(
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
+            "sequencers"
+        ]["seq4"]["sequence"]["program"],
+        """ wait_sync 4
+ upd_param 4
+ move 0,R0 # Initialize acquisition bin_idx for ch0
+ wait 4 # latency correction of 4 + 0 ns
+ move 1,R1 # iterator for loop with label start
+start:
+ wait 4
+ set_scope_en 1
+ move 0,R10
+ acquire_timetags 0,R0,1,R10,4 # Enable timetag acquisition of acq_channel:0, store in bin:R0
+ wait 15992 # auto generated wait (15992 ns)
+ acquire_timetags 0,R0,0,R10,4 # Disable timetag acquisition of acq_channel:0, store in bin:R0
+ add R0,1,R0 # Increment bin_idx for ch0 by 1
+ set_scope_en 0
+ wait 20 # auto generated wait (20 ns)
+ set_scope_en 1
+ move 0,R10
+ acquire_timetags 0,R0,1,R10,4 # Enable timetag acquisition of acq_channel:0, store in bin:R0
+ wait 15992 # auto generated wait (15992 ns)
+ acquire_timetags 0,R0,0,R10,4 # Disable timetag acquisition of acq_channel:0, store in bin:R0
+ add R0,1,R0 # Increment bin_idx for ch0 by 1
+ set_scope_en 0
+ loop R1,@start
+ stop
+""",
+    )
+
+
+def test_multiple_acq_channel_timetagtrace(mock_setup_basic_nv, assert_equal_q1asm):
+    schedule = Schedule(name="Test")
+
+    schedule.add(
+        TimetagTrace(
+            duration=16e-6,
+            port="qe1:optical_readout",
+            clock="qe1.ge0",
+        )
+    )
+    schedule.add(
+        TimetagTrace(
+            duration=16e-6, port="qe1:optical_readout", clock="qe1.ge0", acq_channel=1
+        ),
+        rel_time=20e-9,
+    )
+
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+
+    quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
+
+    compiler = SerialCompiler(name="compiler")
+    with pytest.raises(
+        RuntimeError,
+        match=re.escape(
+            "Only one acquisition channel per port-clock can be specified, if the "
+            "TimetagTrace acquisition protocol is used.\nAcquisition channels [0, 1] "
+            "were found on port-clock qe1:optical_readout-qe1.ge0."
+        ),
     ):
         _ = compiler.compile(
             schedule=schedule, config=quantum_device.generate_compilation_config()

@@ -44,6 +44,7 @@
   - Add support for automatic mixer calibration (AMC). AMC can be configured to run upon changing LO frequency or intermodulation frequency. (!1007)
   - Improve error message for when the acquisition data returned by the hardware does not contain the expected acquisition channels. (!1034)
   - Fix the `ClusterComponent` initializer such that new, unsupported modules are ignored. (!1019)
+  - Implement compilation of `Trace` for QTM modules. (!1037)
 - Tests
   - Update test_compile_cz_gate with new style hardware config (!979)
   - Add nv centers to `test_extract_instrument_compiler_configs`. (!1003)
@@ -68,6 +69,7 @@
   - Introduce `Timetag` acquisition protocol and `Timestamp` operation. (!1023)
   - Add ability to override frequency for some gate-level operations. (!1039)
   - Bugfix for frequency override for measure operations. (!1042)
+  - Introduce `TimetagTrace` acquisition protocol and bin mode `BinMode.FIRST`. (!1037)
 - QuantumDevice
   - Introduce BasicSpinElement spin device element. (!1015)
 

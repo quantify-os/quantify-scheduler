@@ -55,10 +55,11 @@ def _get_acquisition_strategy(
     """Handles the logic for determining the correct acquisition type."""
     protocol = operation_info.data["protocol"]
     if protocol in ("Trace", "SSBIntegrationComplex", "ThresholdedAcquisition"):
-        if protocol == "Trace" and operation_info.data["bin_mode"] == BinMode.APPEND:
+        if protocol == "Trace" and operation_info.data["bin_mode"] != BinMode.AVERAGE:
             raise ValueError(
-                f"Trace acquisition does not support APPEND bin mode.\n\n"
-                f"{repr(operation_info)} caused this exception to occur."
+                f"{protocol} acquisition does not support bin mode "
+                f"{operation_info.data['bin_mode']}.\n\n{repr(operation_info)} caused "
+                "this exception to occur."
             )
         return acquisitions.SquareAcquisitionStrategy(operation_info)
 

@@ -4,10 +4,11 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 from quantify_scheduler.backends.qblox import constants, q1asm_instructions
 from quantify_scheduler.backends.qblox.compiler_abc import SequencerCompiler
+from quantify_scheduler.backends.qblox.enums import TimetagTraceType
 from quantify_scheduler.backends.qblox.operation_handling.acquisitions import (
     TimetagAcquisitionStrategy,
 )
@@ -178,7 +179,17 @@ class TimetagSequencerCompiler(SequencerCompiler):
                     "combination."
                 )
 
-        if acq_metadata.acq_protocol == "Timetag":
+        if acq_metadata.acq_protocol == "Trace":
+            self._settings.scope_trace_type = TimetagTraceType.SCOPE
+            # Trace acquisitions have bin mode FIRST, meaning only the first acquisition
+            # has any effect. Therefore we take the duration from the first acquisition.
+            self._settings.trace_acq_duration = round(
+                acquisitions[0].operation_info.duration * 1e9
+            )
+        elif acq_metadata.acq_protocol == "TimetagTrace":
+            self._settings.scope_trace_type = TimetagTraceType.TIMETAG
+
+        if acq_metadata.acq_protocol in ("Timetag", "TimetagTrace"):
             assert_all_op_info_values_equal("time_source")
             assert_all_op_info_values_equal("time_ref")
             self._settings.time_source = acquisitions[0].operation_info.data[
@@ -207,3 +218,43 @@ class TimetagSequencerCompiler(SequencerCompiler):
     ) -> None:
         """Get Q1ASM instruction(s) from ``op_strategy`` and insert them into ``qasm_program``."""
         op_strategy.insert_qasm(qasm_program)
+
+    def _generate_acq_declaration_dict(
+        self,
+        repetitions: int,
+        acq_metadata: AcquisitionMetadata,
+    ) -> dict[str, Any]:
+        """
+        Generates the "acquisitions" entry of the program json. It contains declaration
+        of the acquisitions along with the number of bins and the corresponding index.
+
+        Overrides the superclass implementation to check additionally that only one
+        acquisition channel is used if Trace or TimetagTrace acquisitions are present.
+
+        Parameters
+        ----------
+        repetitions
+            The number of times to repeat execution of the schedule.
+        acq_metadata
+            Acquisition metadata.
+
+        Returns
+        -------
+        :
+            The "acquisitions" entry of the program json as a dict. The keys correspond
+            to the names of the acquisitions (i.e. the acq_channel in the scheduler).
+        """
+        # This restriction is necessary because there will be only one set of trace data
+        # per sequencer, regardless of acquisition channels.
+        if (
+            acq_metadata.acq_protocol in ("Trace", "TimetagTrace")
+            and len(acq_metadata.acq_channels_metadata) > 1
+        ):
+            raise RuntimeError(
+                "Only one acquisition channel per port-clock can be specified, if the "
+                f"{acq_metadata.acq_protocol} acquisition protocol is used.\n"
+                "Acquisition channels "
+                f"{list(acq_metadata.acq_channels_metadata.keys())} were "
+                f"found on port-clock {self.port}-{self.clock}."
+            )
+        return super()._generate_acq_declaration_dict(repetitions, acq_metadata)

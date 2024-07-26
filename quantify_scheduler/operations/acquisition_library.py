@@ -65,10 +65,13 @@ class Trace(Acquisition):
         tag individual measurements in a large circuit. Typically corresponds
         to the setpoints of a schedule (e.g., tau in a T1 experiment).
     bin_mode
-        Describes what is done when data is written to a register that already
-        contains a value. Only "BinMode.AVERAGE" option is available at the moment;
-        this option stores the weighted average value of the new result and the old
-        register value.
+        Describes what is done when data is written to a memory location that already
+        contains values. Which bin mode can be used for Trace acquisitions may depend on
+        the hardware. ``BinMode.AVERAGE``, the default, works on most hardware. This bin
+        mode stores the weighted average value of the new result and the old values.
+        ``BinMode.FIRST`` is used for hardware where only the result of the first
+        acquisition in a Schedule is stored, e.g. for a Trace acquisition with Qblox QTM
+        modules.
     t0
         The acquisition start time in seconds, by default 0.
     """
@@ -741,6 +744,89 @@ class TriggerCount(Acquisition):
                 "bin_mode": bin_mode,
                 "acq_return_type": int,
                 "protocol": "TriggerCount",
+            }
+        ]
+        self._update()
+
+    def __str__(self) -> str:
+        acq_info = self.data["acquisition_info"][0]
+        return self._get_signature(acq_info)
+
+
+class TimetagTrace(Acquisition):
+    """
+    The TimetagTrace acquisition protocol records timetags within an acquisition window.
+
+    Parameters
+    ----------
+    port
+        The acquisition port.
+    clock
+        The clock used to demodulate the acquisition.
+    duration
+        The acquisition duration in seconds.
+    acq_channel
+        The data channel in which the acquisition is stored, is by default 0.
+        Describes the "where" information of the  measurement, which typically
+        corresponds to a qubit idx.
+    acq_index
+        The data register in which the acquisition is stored, by default 0.
+        Describes the "when" information of the measurement, used to label or
+        tag individual measurements in a large circuit. Typically corresponds
+        to the setpoints of a schedule (e.g., tau in a T1 experiment).
+    bin_mode
+        Describes what is done when data is written to a register that already
+        contains a value. Only "BinMode.APPEND" option is available at the moment;
+        this option stores the weighted average value of the new result and the old
+        register value.
+    time_ref
+        Selects the time reference that the timetag is recorded in relation to. String
+        enumeration, one of:
+
+        * start (default): record relative to the start of the window.
+        * end: record relative to the end of the window. Note that this always yields a
+          negative timetag.
+        * first: syntactic sugar for first#, where # is the current channel.
+        * command: record relative to the timestamp marked using the ``Timestamp`` operation.
+    t0
+        The acquisition start time in seconds, by default 0.
+    """
+
+    def __init__(
+        self,
+        duration: float,
+        port: str,
+        clock: str = DigitalClockResource.IDENTITY,
+        acq_channel: int = 0,
+        acq_index: int = 0,
+        bin_mode: Union[BinMode, str] = BinMode.APPEND,
+        time_ref: Union[TimeRef, str] = TimeRef.START,
+        t0: float = 0,
+    ) -> None:
+        if not isinstance(duration, float):
+            duration = float(duration)
+        if isinstance(bin_mode, str):
+            bin_mode = BinMode(bin_mode)
+
+        super().__init__(name=self.__class__.__name__)
+        self.data["acquisition_info"] = [
+            {
+                "waveforms": [],
+                "duration": duration,
+                "t0": t0,
+                "port": port,
+                "clock": clock,
+                "acq_channel": acq_channel,
+                "acq_index": acq_index,
+                "bin_mode": bin_mode,
+                # time_source is not settable, because all timetags will be returned
+                # instead of just one. It is fixed to TimeSource.FIRST
+                # because the instrument coordinator uses this to calculate the
+                # relative timestamps.
+                "time_source": TimeSource.FIRST,
+                "time_ref": time_ref,
+                "protocol": "TimetagTrace",
+                "acq_return_type": np.ndarray,
             }
         ]
         self._update()

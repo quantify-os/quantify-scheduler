@@ -438,6 +438,7 @@ linkcheck_ignore = [
 
 nitpicky = True  # equivalent to `-n` option in the docs Makefile
 nitpick_ignore = [
+    ("py:class", "F"),
     ("py:class", "_ClusterModule"),
     ("py:class", "quantify_scheduler.device_under_test.composite_square_edge"),
     (

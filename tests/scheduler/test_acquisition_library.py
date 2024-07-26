@@ -21,6 +21,7 @@ from quantify_scheduler.operations.acquisition_library import (
     SSBIntegrationComplex,
     ThresholdedAcquisition,
     Timetag,
+    TimetagTrace,
     Trace,
     TriggerCount,
 )
@@ -62,6 +63,11 @@ ALL_ACQUISITION_PROTOCOLS = [
         duration=100e-9,
     ),
     Timetag(
+        port="q0:res",
+        clock="q0.ro",
+        duration=100e-9,
+    ),
+    TimetagTrace(
         port="q0:res",
         clock="q0.ro",
         duration=100e-9,

@@ -34,6 +34,8 @@ from quantify_scheduler.instrument_coordinator.components import qblox
 from quantify_scheduler.operations.acquisition_library import (
     SSBIntegrationComplex,
     Timetag,
+    TimetagTrace,
+    Trace,
     TriggerCount,
 )
 from quantify_scheduler.operations.gate_library import X90, Measure, Reset
@@ -754,7 +756,6 @@ def test_prepare_rf(
 
 @pytest.mark.parametrize("force_set_parameters", [False, True])
 def test_prepare_qtm(
-    mocker,
     mock_setup_basic_nv,
     make_cluster_component,
     force_set_parameters,
@@ -1155,6 +1156,273 @@ def test_timetag_acquisition_qtm_append(
     )
 
 
+def test_retrieve_trace_acquisition_qtm(
+    mock_setup_basic_nv,
+    make_cluster_component,
+    mocker,
+):
+    cluster_name = "cluster0"
+    qtm_name = f"{cluster_name}_module5"
+
+    cluster = make_cluster_component(cluster_name)
+    qtm = cluster._cluster_modules[qtm_name]
+
+    # Dummy data does not necessarily correspond to schedule below
+    dummy_data = [0] * 1000
+
+    dataarray = xr.DataArray(
+        np.array(dummy_data, dtype=int).reshape(1, -1),
+        dims=["acq_index_0", "trace_index_0"],
+        coords={"acq_index_0": [0], "trace_index_0": list(range(1000))},
+        attrs={"acq_protocol": "Trace"},
+    )
+    expected_dataset = xr.Dataset({0: dataarray})
+
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+    quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
+
+    sched = Schedule("digital_pulse_and_acq")
+    sched.add(MarkerPulse(duration=40e-9, port="qe1:switch"))
+    sched.add(
+        Trace(
+            duration=1e-6,
+            port="qe1:optical_readout",
+            clock="qe1.ge0",
+            bin_mode=BinMode.FIRST,
+        )
+    )
+
+    mocker.patch.object(
+        cluster.instrument.module5,
+        "get_acquisitions",
+        return_value={
+            "0": {
+                "index": 0,
+                "acquisition": {
+                    "bins": {
+                        "count": [],
+                        "timedelta": [],
+                        "threshold": [],
+                        "avg_cnt": [],
+                    }
+                },
+            }
+        },
+    )
+    mocker.patch.object(
+        cluster.instrument.module5.io_channel4,
+        "get_scope_data",
+        return_value=dummy_data,
+    )
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        schedule=sched,
+        config=quantum_device.generate_compilation_config(),
+    )
+    prog = compiled_schedule["compiled_instructions"][cluster_name]
+
+    cluster.prepare(prog)
+    cluster.start()
+
+    xr.testing.assert_identical(qtm.retrieve_acquisition(), expected_dataset)
+
+
+def test_retrieve_timetag_trace_acquisition_qtm(
+    mock_setup_basic_nv,
+    make_cluster_component,
+    mocker,
+):
+    cluster_name = "cluster0"
+    qtm_name = f"{cluster_name}_module5"
+
+    cluster = make_cluster_component(cluster_name)
+    qtm = cluster._cluster_modules[qtm_name]
+
+    # Dummy data taken directly from hardware test, does not necessarily correspond to
+    # schedule below.
+    dummy_data = {
+        "0": {
+            "index": 0,
+            "acquisition": {
+                "bins": {
+                    "count": [
+                        28.0,
+                    ],
+                    "timedelta": [
+                        1898975.0,
+                    ],
+                    "threshold": [1.0],
+                    "avg_cnt": [4],
+                }
+            },
+        }
+    }
+    dummy_scope_data = [
+        ["OPEN", 322053621179604992],
+        ["RISE", 322053621179644241],
+        ["RISE", 322053621181692230],
+        ["RISE", 322053621185788284],
+        ["RISE", 322053621191932191],
+        ["CLOSE", 322053621200494592],
+    ]
+
+    timedelta = dummy_data["0"]["acquisition"]["bins"]["timedelta"][0]
+    rel_times = np.array(
+        [
+            (timedelta + data[1] - dummy_scope_data[1][1]) / 2048
+            for data in dummy_scope_data[1:-1]
+        ]
+    )
+
+    dataarray = xr.DataArray(
+        rel_times.reshape((1, 1, 4)),
+        dims=["repetition", "acq_index_0", "trace_index_0"],
+        coords={"acq_index_0": [0], "trace_index_0": list(range(4))},
+        attrs={"acq_protocol": "TimetagTrace"},
+    )
+    expected_dataset = xr.Dataset({0: dataarray})
+
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+    quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
+
+    sched = Schedule("digital_pulse_and_acq")
+    sched.add(
+        TimetagTrace(
+            duration=10e-6,
+            port="qe1:optical_readout",
+            clock="qe1.ge0",
+            time_ref=TimeRef.START,
+        )
+    )
+
+    mocker.patch.object(
+        cluster.instrument.module5,
+        "get_acquisitions",
+        return_value=dummy_data,
+    )
+    mocker.patch.object(
+        cluster.instrument.module5.io_channel4,
+        "get_scope_data",
+        return_value=dummy_scope_data,
+    )
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        schedule=sched,
+        config=quantum_device.generate_compilation_config(),
+    )
+    prog = compiled_schedule["compiled_instructions"][cluster_name]
+
+    cluster.prepare(prog)
+    cluster.start()
+
+    xr.testing.assert_identical(qtm.retrieve_acquisition(), expected_dataset)
+
+
+def test_multiple_retrieve_timetag_trace_acquisition_qtm(
+    mock_setup_basic_nv,
+    make_cluster_component,
+    mocker,
+):
+    cluster_name = "cluster0"
+    qtm_name = f"{cluster_name}_module5"
+
+    cluster = make_cluster_component(cluster_name)
+    qtm = cluster._cluster_modules[qtm_name]
+
+    # Dummy data taken directly from hardware test, does not necessarily correspond to
+    # schedule below.
+    dummy_data = {
+        "0": {
+            "index": 0,
+            "acquisition": {
+                "bins": {
+                    "count": [
+                        4.0,
+                        3.0,
+                    ],
+                    "timedelta": [
+                        1898975.0,
+                        1898980.0,
+                    ],
+                    "threshold": [1.0, 1.0],
+                    "avg_cnt": [4, 3],
+                }
+            },
+        }
+    }
+    dummy_scope_data = [
+        ["OPEN", 322053621179604992],
+        ["RISE", 322053621179644241],
+        ["RISE", 322053621181692230],
+        ["RISE", 322053621185788284],
+        ["RISE", 322053621191932191],
+        ["CLOSE", 322053621200494592],
+        ["OPEN", 322053621179604992],
+        ["RISE", 322053621181692230],
+        ["RISE", 322053621185788284],
+        ["RISE", 322053621191932191],
+        ["CLOSE", 322053621200494592],
+    ]
+
+    timedelta_0 = dummy_data["0"]["acquisition"]["bins"]["timedelta"][0]
+    rel_times_0 = [
+        (timedelta_0 + data[1] - dummy_scope_data[1][1]) / 2048
+        for data in dummy_scope_data[1:5]
+    ]
+    timedelta_1 = dummy_data["0"]["acquisition"]["bins"]["timedelta"][1]
+    rel_times_1 = [
+        (timedelta_1 + data[1] - dummy_scope_data[7][1]) / 2048
+        for data in dummy_scope_data[7:-1]
+    ]
+    rel_times = np.array([rel_times_0, rel_times_1 + [np.nan]])
+
+    dataarray = xr.DataArray(
+        rel_times.reshape((2, 1, 4)),
+        dims=["repetition", "acq_index_0", "trace_index_0"],
+        coords={"acq_index_0": [0], "trace_index_0": list(range(4))},
+        attrs={"acq_protocol": "TimetagTrace"},
+    )
+    expected_dataset = xr.Dataset({0: dataarray})
+
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+    quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
+
+    sched = Schedule("digital_pulse_and_acq", repetitions=2)
+    sched.add(
+        TimetagTrace(
+            duration=10e-6,
+            port="qe1:optical_readout",
+            clock="qe1.ge0",
+            time_ref=TimeRef.START,
+        )
+    )
+
+    mocker.patch.object(
+        cluster.instrument.module5,
+        "get_acquisitions",
+        return_value=dummy_data,
+    )
+    mocker.patch.object(
+        cluster.instrument.module5.io_channel4,
+        "get_scope_data",
+        return_value=dummy_scope_data,
+    )
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        schedule=sched,
+        config=quantum_device.generate_compilation_config(),
+    )
+    prog = compiled_schedule["compiled_instructions"][cluster_name]
+
+    cluster.prepare(prog)
+    cluster.start()
+
+    xr.testing.assert_identical(qtm.retrieve_acquisition(), expected_dataset)
+
+
 def test_start_baseband(
     schedule_with_measurement,
     hardware_cfg_cluster,
@@ -1232,7 +1500,6 @@ def test_start_cluster(
 def test_start_qtm(
     mock_setup_basic_nv,
     make_cluster_component,
-    mocker,
 ):
     cluster_name = "cluster0"
     qtm_name = f"{cluster_name}_module5"
@@ -2060,6 +2327,8 @@ def test_unsupported_bin_modes_qrm(
     [
         ("TriggerCount", BinMode.AVERAGE),
         ("Timetag", "foo"),
+        ("TimetagTrace", BinMode.AVERAGE),
+        ("Trace", BinMode.APPEND),
     ],
 )
 def test_unsupported_bin_modes_qtm(
@@ -2076,6 +2345,8 @@ def test_unsupported_bin_modes_qtm(
     get_data_fn_map = {
         "TriggerCount": acq_manager._get_trigger_count_data,
         "Timetag": acq_manager._get_timetag_data,
+        "TimetagTrace": acq_manager._get_timetag_trace_data,
+        "Trace": acq_manager._get_digital_trace_data,
     }
     with pytest.raises(
         RuntimeError,

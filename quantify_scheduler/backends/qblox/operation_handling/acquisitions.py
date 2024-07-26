@@ -37,10 +37,8 @@ class AcquisitionStrategyPartial(IOperationStrategy):
     def insert_qasm(self, qasm_program: QASMProgram):
         """
         Add the assembly instructions for the Q1 sequence processor that corresponds to
-        this acquisition. This function calls either _acquire_average or _acquire_append,
-        depending on the bin mode.
-
-        The _acquire_average and _acquire_append are to be implemented in the subclass.
+        this acquisition. This function calls the appropriate method to generate
+        assembly, depending on the bin mode.
 
         Parameters
         ----------
@@ -64,20 +62,20 @@ class AcquisitionStrategyPartial(IOperationStrategy):
 
         qasm_program.time_last_acquisition_triggered = qasm_program.elapsed_time
 
-        if self.bin_mode == BinMode.AVERAGE:
+        if self.bin_mode in (BinMode.AVERAGE, BinMode.FIRST):
             if self.bin_idx_register is not None:
                 raise ValueError(
-                    "Attempting to add acquisition with average binmode. "
+                    f"Attempting to add acquisition with binmode {self.bin_mode}. "
                     "bin_idx_register must be None."
                 )
-            self._acquire_average(qasm_program)
+            self._acquire_with_immediate_bin_index(qasm_program)
         elif self.bin_mode == BinMode.APPEND:
             if self.bin_idx_register is None:
                 raise ValueError(
-                    "Attempting to add acquisition with append binmode. "
+                    f"Attempting to add acquisition with binmode {self.bin_mode}. "
                     "bin_idx_register cannot be None."
                 )
-            self._acquire_append(qasm_program)
+            self._acquire_with_register_bin_index(qasm_program)
         else:
             raise RuntimeError(
                 f"Attempting to process an acquisition with unknown bin "
@@ -85,12 +83,18 @@ class AcquisitionStrategyPartial(IOperationStrategy):
             )
 
     @abstractmethod
-    def _acquire_average(self, qasm_program: QASMProgram):
-        """Adds the assembly to the program for a bin_mode==AVERAGE acquisition."""
+    def _acquire_with_immediate_bin_index(self, qasm_program: QASMProgram):
+        """
+        Adds the assembly to the program for an acquisition with an immediate value for
+        the bin index.
+        """
 
     @abstractmethod
-    def _acquire_append(self, qasm_program: QASMProgram):
-        """Adds the assembly to the program for a bin_mode==APPEND acquisition."""
+    def _acquire_with_register_bin_index(self, qasm_program: QASMProgram):
+        """
+        Adds the assembly to the program for an acquisition with a register value for
+        the bin index, and assembly for incrementing the bin index by 1.
+        """
 
     @property
     def operation_info(self) -> types.OpInfo:
@@ -105,10 +109,10 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
         """Returns None as no waveform is needed."""
         return None
 
-    def _acquire_average(self, qasm_program: QASMProgram):
+    def _acquire_with_immediate_bin_index(self, qasm_program: QASMProgram):
         """
-        Add the assembly instructions for the Q1 sequence processor that corresponds to
-        this acquisition, assuming averaging is used.
+        Adds the assembly to the program for an acquisition with an immediate value for
+        the bin index.
 
         Parameters
         ----------
@@ -118,33 +122,28 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
         bin_idx = self.operation_info.data["acq_index"]
         self._acquire_square(qasm_program, bin_idx)
 
-    def _acquire_append(self, qasm_program: QASMProgram):
+    def _acquire_with_register_bin_index(self, qasm_program: QASMProgram):
         """
-        Add the assembly instructions for the Q1 sequence processor that corresponds to
-        this acquisition, assuming append is used.
+        Adds the assembly to the program for an acquisition with a register value for
+        the bin index, and assembly for incrementing the bin index by 1.
 
         Parameters
         ----------
         qasm_program
             The QASMProgram to add the assembly instructions to.
         """
-        if self.bin_idx_register is None:
-            raise ValueError(
-                "Attempting to add acquisition with append binmode. "
-                "bin_idx_register cannot be None."
-            )
-
-        acq_bin_idx_reg = self.bin_idx_register
+        # Already checked in insert_qasm, but this helps the type checker
+        assert self.bin_idx_register is not None
 
         qasm_program.emit(q1asm_instructions.NEW_LINE)
 
-        self._acquire_square(qasm_program, acq_bin_idx_reg)
+        self._acquire_square(qasm_program, self.bin_idx_register)
 
         qasm_program.emit(
             q1asm_instructions.ADD,
-            acq_bin_idx_reg,
+            self.bin_idx_register,
             1,
-            acq_bin_idx_reg,
+            self.bin_idx_register,
             comment=f"Increment bin_idx for ch{self.acq_channel}",
         )
         qasm_program.emit(q1asm_instructions.NEW_LINE)
@@ -261,10 +260,10 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
 
         self.waveform_index0, self.waveform_index1 = waveform_indices
 
-    def _acquire_average(self, qasm_program: QASMProgram):
+    def _acquire_with_immediate_bin_index(self, qasm_program: QASMProgram):
         """
-        Add the assembly instructions for the Q1 sequence processor that corresponds to
-        this acquisition, assuming averaging is used.
+        Adds the assembly to the program for an acquisition with an immediate value for
+        the bin index.
 
         Parameters
         ----------
@@ -284,23 +283,17 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
         )
         qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
 
-    def _acquire_append(self, qasm_program: QASMProgram):
+    def _acquire_with_register_bin_index(self, qasm_program: QASMProgram):
         """
-        Add the assembly instructions for the Q1 sequence processor that corresponds to
-        this acquisition, assuming append is used. Registers will be used for the weight
-        indexes and the bin index.
+        Adds the assembly to the program for an acquisition with a register value for
+        the bin index, and assembly for incrementing the bin index by 1. Registers will
+        be used for the weight indexes and the bin index.
 
         Parameters
         ----------
         qasm_program
             The QASMProgram to add the assembly instructions to.
         """
-        if self.bin_idx_register is None:
-            raise ValueError(
-                "Attempting to add acquisition with append binmode. "
-                "bin_idx_register cannot be None."
-            )
-
         acq_bin_idx_reg = self.bin_idx_register
 
         with qasm_program.temp_registers(2) as (acq_idx0_reg, acq_idx1_reg):
@@ -346,10 +339,10 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
         """Returns None as no waveform is needed."""
         return None
 
-    def _acquire_average(self, qasm_program: QASMProgram):
+    def _acquire_with_immediate_bin_index(self, qasm_program: QASMProgram):
         """
-        Add the assembly instructions for the Q1 sequence processor that corresponds to
-        this acquisition, assuming averaging is used.
+        Adds the assembly to the program for an acquisition with an immediate value for
+        the bin index.
 
         Parameters
         ----------
@@ -387,22 +380,16 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
         )
         qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
 
-    def _acquire_append(self, qasm_program: QASMProgram):
+    def _acquire_with_register_bin_index(self, qasm_program: QASMProgram):
         """
-        Add the assembly instructions for the Q1 sequence processor that corresponds to
-        this acquisition, assuming append is used.
+        Adds the assembly to the program for an acquisition with a register value for
+        the bin index, and assembly for incrementing the bin index by 1.
 
         Parameters
         ----------
         qasm_program
             The QASMProgram to add the assembly instructions to.
         """
-        if self.bin_idx_register is None:
-            raise ValueError(
-                "Attempting to add acquisition with append binmode. "
-                "bin_idx_register cannot be None."
-            )
-
         acq_bin_idx_reg = self.bin_idx_register
 
         qasm_program.emit(
@@ -450,10 +437,10 @@ class TimetagAcquisitionStrategy(AcquisitionStrategyPartial):
         """Returns None as no waveform is needed."""
         return None
 
-    def _acquire_average(self, qasm_program: QASMProgram):
+    def _acquire_with_immediate_bin_index(self, qasm_program: QASMProgram):
         """
-        Add the assembly instructions for the Q1 sequence processor that corresponds to
-        this acquisition, assuming averaging is used.
+        Adds the assembly to the program for an acquisition with an immediate value for
+        the bin index.
 
         Parameters
         ----------
@@ -493,22 +480,16 @@ class TimetagAcquisitionStrategy(AcquisitionStrategyPartial):
         )
         qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
 
-    def _acquire_append(self, qasm_program: QASMProgram):
+    def _acquire_with_register_bin_index(self, qasm_program: QASMProgram):
         """
-        Add the assembly instructions for the Q1 sequence processor that corresponds to
-        this acquisition, assuming append is used.
+        Adds the assembly to the program for an acquisition with a register value for
+        the bin index, and assembly for incrementing the bin index by 1.
 
         Parameters
         ----------
         qasm_program
             The QASMProgram to add the assembly instructions to.
         """
-        if self.bin_idx_register is None:
-            raise ValueError(
-                "Attempting to add acquisition with append binmode. "
-                "bin_idx_register cannot be None."
-            )
-
         acq_bin_idx_reg = self.bin_idx_register
 
         # Allocated because the Q1ASM operation signature requires it. Not used yet. See
@@ -560,3 +541,38 @@ class TimetagAcquisitionStrategy(AcquisitionStrategyPartial):
             acq_bin_idx_reg,
             comment=f"Increment bin_idx for ch{self.acq_channel} by 1",
         )
+
+
+class ScopedTimetagAcquisitionStrategy(TimetagAcquisitionStrategy):
+    """
+    An acquisition strategy that wraps the emitted Q1ASM of
+    ``TimetagAcquisitionStrategy`` in ``set_scope_en`` instructions.
+    """
+
+    def _acquire_with_immediate_bin_index(self, qasm_program: QASMProgram):
+        """
+        Adds the assembly to the program for an acquisition with an immediate value for
+        the bin index.
+
+        Parameters
+        ----------
+        qasm_program
+            The QASMProgram to add the assembly instructions to.
+        """
+        qasm_program.emit(q1asm_instructions.SET_SCOPE_EN, 1)
+        super()._acquire_with_immediate_bin_index(qasm_program)
+        qasm_program.emit(q1asm_instructions.SET_SCOPE_EN, 0)
+
+    def _acquire_with_register_bin_index(self, qasm_program: QASMProgram):
+        """
+        Adds the assembly to the program for an acquisition with a register value for
+        the bin index, and assembly for incrementing the bin index by 1.
+
+        Parameters
+        ----------
+        qasm_program
+            The QASMProgram to add the assembly instructions to.
+        """
+        qasm_program.emit(q1asm_instructions.SET_SCOPE_EN, 1)
+        super()._acquire_with_register_bin_index(qasm_program)
+        qasm_program.emit(q1asm_instructions.SET_SCOPE_EN, 0)

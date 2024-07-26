@@ -3,7 +3,6 @@
 """Tests for acquisitions module."""
 import pprint
 import re
-from copy import deepcopy
 from typing import Any, Dict
 
 import numpy as np
@@ -65,10 +64,10 @@ class MockAcquisition(acquisitions.AcquisitionStrategyPartial):
     def generate_data(self, wf_dict: Dict[str, Any]):
         pass
 
-    def _acquire_append(self, qasm_program: QASMProgram):
+    def _acquire_with_immediate_bin_index(self, qasm_program: QASMProgram):
         pass
 
-    def _acquire_average(self, qasm_program: QASMProgram):
+    def _acquire_with_register_bin_index(self, qasm_program: QASMProgram):
         pass
 
 
@@ -96,8 +95,10 @@ class TestAcquisitionStrategyPartial:
         data = {"bin_mode": bin_mode, "acq_channel": 0, "acq_index": 0}
         op_info = types.OpInfo(name="", data=data, timing=0)
         strategy = MockAcquisition(op_info)
-        append_mock = mocker.patch.object(strategy, "_acquire_append")
-        average_mock = mocker.patch.object(strategy, "_acquire_average")
+        append_mock = mocker.patch.object(strategy, "_acquire_with_register_bin_index")
+        average_mock = mocker.patch.object(
+            strategy, "_acquire_with_immediate_bin_index"
+        )
 
         strategy.bin_idx_register = "R0" if bin_mode == BinMode.APPEND else None
 
@@ -170,7 +171,7 @@ class TestAcquisitionStrategyPartial:
         # assert
         assert (
             exc.value.args[0] == f"Attempting to add acquisition with "
-            f"{'append' if bin_mode == BinMode.APPEND else 'average'} binmode. "
+            f"binmode {bin_mode}. "
             f"bin_idx_register {'cannot' if bin_mode == BinMode.APPEND else 'must'} "
             f"be None."
         )
@@ -198,7 +199,7 @@ class TestSquareAcquisitionStrategy:
         # assert
         assert len(wf_dict) == 0
 
-    def test_acquire_average(self, empty_qasm_program_qrm):
+    def test_acquire_with_register_bin_index(self, empty_qasm_program_qrm):
         # arrange
         qasm = empty_qasm_program_qrm
         data = {
@@ -213,12 +214,12 @@ class TestSquareAcquisitionStrategy:
         strategy.generate_data({})
 
         # act
-        strategy._acquire_average(qasm)
+        strategy._acquire_with_register_bin_index(qasm)
 
         # assert
         assert qasm.instructions == [["", "acquire", "0,0,4", ""]]
 
-    def test_acquire_append(self, empty_qasm_program_qrm):
+    def test_acquire_with_register_bin_index(self, empty_qasm_program_qrm):
         # arrange
         qasm = empty_qasm_program_qrm
         data = {
@@ -234,7 +235,7 @@ class TestSquareAcquisitionStrategy:
         strategy.generate_data({})
 
         # act
-        strategy._acquire_append(qasm)
+        strategy._acquire_with_register_bin_index(qasm)
 
         # assert
         assert qasm.instructions == [
@@ -291,7 +292,7 @@ class TestWeightedAcquisitionStrategy:
         for idx, waveform in enumerate(wf_dict.values()):
             assert waveform["data"] == answers[idx]
 
-    def test_acquire_average(self, empty_qasm_program_qrm):
+    def test_acquire_with_immediate_bin_index(self, empty_qasm_program_qrm):
         # arrange
         qasm = empty_qasm_program_qrm
         weights = [
@@ -318,7 +319,7 @@ class TestWeightedAcquisitionStrategy:
         strategy.generate_data({})
 
         # act
-        strategy._acquire_average(qasm)
+        strategy._acquire_with_immediate_bin_index(qasm)
 
         # assert
         assert qasm.instructions == [
@@ -356,7 +357,7 @@ class TestWeightedAcquisitionStrategy:
         with pytest.raises(KeyError):
             strategy.generate_data({})
 
-    def test_acquire_append(self, empty_qasm_program_qrm):
+    def test_acquire_with_register_bin_index(self, empty_qasm_program_qrm):
         # arrange
         qasm = empty_qasm_program_qrm
         weights = [
@@ -384,7 +385,7 @@ class TestWeightedAcquisitionStrategy:
         strategy.generate_data({})
 
         # act
-        strategy._acquire_append(qasm)
+        strategy._acquire_with_register_bin_index(qasm)
 
         assert qasm.instructions == [
             ["", "", "", ""],
@@ -451,7 +452,7 @@ class TestTriggerCountStrategy:
         # assert
         assert len(wf_dict) == 0
 
-    def test_acquire_average(self, empty_qasm_program_qrm):
+    def test_acquire_with_immediate_bin_index(self, empty_qasm_program_qrm):
         # arrange
         qasm = empty_qasm_program_qrm
         data = {
@@ -466,7 +467,7 @@ class TestTriggerCountStrategy:
         strategy.generate_data({})
 
         # act
-        strategy._acquire_average(qasm)
+        strategy._acquire_with_immediate_bin_index(qasm)
 
         # assert
         assert qasm.instructions == [
@@ -486,7 +487,7 @@ class TestTriggerCountStrategy:
             ],
         ]
 
-    def test_acquire_append(self, empty_qasm_program_qrm):
+    def test_acquire_with_register_bin_index(self, empty_qasm_program_qrm):
         # arrange
         qasm = empty_qasm_program_qrm
         data = {
@@ -502,7 +503,7 @@ class TestTriggerCountStrategy:
         strategy.generate_data({})
 
         # act
-        strategy._acquire_append(qasm)
+        strategy._acquire_with_register_bin_index(qasm)
 
         # assert
         assert qasm.instructions == [
@@ -546,7 +547,7 @@ class TestTimetagStrategy:
         # assert
         assert len(wf_dict) == 0
 
-    def test_acquire_average(self, empty_qasm_program_qrm):
+    def test_acquire_with_immediate_bin_index(self, empty_qasm_program_qrm):
         # arrange
         qasm = empty_qasm_program_qrm
         data = {
@@ -561,7 +562,7 @@ class TestTimetagStrategy:
         strategy.generate_data({})
 
         # act
-        strategy._acquire_average(qasm)
+        strategy._acquire_with_immediate_bin_index(qasm)
 
         # assert
         assert qasm.instructions == [
@@ -581,7 +582,7 @@ class TestTimetagStrategy:
             ],
         ]
 
-    def test_acquire_append(self, empty_qasm_program_qrm):
+    def test_acquire_with_register_bin_index(self, empty_qasm_program_qrm):
         # arrange
         qasm = empty_qasm_program_qrm
         data = {
@@ -597,7 +598,7 @@ class TestTimetagStrategy:
         strategy.generate_data({})
 
         # act
-        strategy._acquire_append(qasm)
+        strategy._acquire_with_register_bin_index(qasm)
 
         # assert
         assert qasm.instructions == [
@@ -620,6 +621,106 @@ class TestTimetagStrategy:
         ]
 
 
+class TestScopedTimetagStrategy:
+    @pytest.mark.parametrize("bin_mode", [BinMode.AVERAGE, BinMode.APPEND])
+    def test_constructor(self, bin_mode):
+        data = {"bin_mode": bin_mode, "acq_channel": 0, "acq_index": 0}
+        acquisitions.ScopedTimetagAcquisitionStrategy(
+            types.OpInfo(name="", data=data, timing=0)
+        )
+
+    def test_generate_data(self):
+        # arrange
+        data = {"bin_mode": None, "acq_channel": 0, "acq_index": 0}
+        strategy = acquisitions.ScopedTimetagAcquisitionStrategy(
+            types.OpInfo(name="", data=data, timing=0)
+        )
+        wf_dict = {}
+
+        # act
+        strategy.generate_data(wf_dict)
+
+        # assert
+        assert len(wf_dict) == 0
+
+    def test_acquire_with_immediate_bin_index(self, empty_qasm_program_qrm):
+        # arrange
+        qasm = empty_qasm_program_qrm
+        data = {
+            "bin_mode": None,
+            "acq_channel": 0,
+            "acq_index": 0,
+            "duration": 100e-6,
+        }
+        strategy = acquisitions.ScopedTimetagAcquisitionStrategy(
+            types.OpInfo(name="", data=data, timing=0)
+        )
+        strategy.generate_data({})
+
+        # act
+        strategy._acquire_with_immediate_bin_index(qasm)
+
+        # assert
+        assert qasm.instructions == [
+            ["", "set_scope_en", "1", ""],
+            [
+                "",
+                "acquire_timetags",
+                "0,0,1,0,4",
+                "# Enable timetag acquisition of acq_channel:0, bin_mode:average",
+            ],
+            ["", "wait", "65532", "# auto generated wait (99992 ns)"],
+            ["", "wait", "34460", "# auto generated wait (99992 ns)"],
+            [
+                "",
+                "acquire_timetags",
+                "0,0,0,0,4",
+                "# Disable timetag acquisition of acq_channel:0, bin_mode:average",
+            ],
+            ["", "set_scope_en", "0", ""],
+        ]
+
+    def test_acquire_with_register_bin_index(self, empty_qasm_program_qrm):
+        # arrange
+        qasm = empty_qasm_program_qrm
+        data = {
+            "bin_mode": None,
+            "acq_channel": 0,
+            "acq_index": 5,
+            "duration": 100e-6,
+        }
+        strategy = acquisitions.ScopedTimetagAcquisitionStrategy(
+            types.OpInfo(name="", data=data, timing=0)
+        )
+        strategy.bin_idx_register = qasm.register_manager.allocate_register()
+        strategy.generate_data({})
+
+        # act
+        strategy._acquire_with_register_bin_index(qasm)
+
+        # assert
+        assert qasm.instructions == [
+            ["", "set_scope_en", "1", ""],
+            ["", "move", "0,R1", ""],
+            [
+                "",
+                "acquire_timetags",
+                "0,R0,1,R1,4",
+                "# Enable timetag acquisition of acq_channel:0, store in bin:R0",
+            ],
+            ["", "wait", "65532", "# auto generated wait (99992 ns)"],
+            ["", "wait", "34460", "# auto generated wait (99992 ns)"],
+            [
+                "",
+                "acquire_timetags",
+                "0,R0,0,R1,4",
+                "# Disable timetag acquisition of acq_channel:0, store in bin:R0",
+            ],
+            ["", "add", "R0,1,R0", "# Increment bin_idx for ch0 by 1"],
+            ["", "set_scope_en", "0", ""],
+        ]
+
+
 @pytest.mark.parametrize(
     "acquisition_strategy",
     [
@@ -627,9 +728,12 @@ class TestTimetagStrategy:
         acquisitions.WeightedAcquisitionStrategy,
         acquisitions.TriggerCountAcquisitionStrategy,
         acquisitions.TimetagAcquisitionStrategy,
+        acquisitions.ScopedTimetagAcquisitionStrategy,
     ],
 )
-def test_acquire_append_invalid_bin_idx(acquisition_strategy, empty_qasm_program_qrm):
+def test_acquire_with_register_bin_index_invalid_bin_idx(
+    acquisition_strategy, empty_qasm_program_qrm
+):
     # arrange
     data = {
         "bin_mode": BinMode.APPEND,
@@ -644,7 +748,7 @@ def test_acquire_append_invalid_bin_idx(acquisition_strategy, empty_qasm_program
         strategy.insert_qasm(empty_qasm_program_qrm)
 
     assert (
-        exc.value.args[0] == "Attempting to add acquisition with append binmode. "
+        exc.value.args[0] == "Attempting to add acquisition with binmode append. "
         "bin_idx_register cannot be None."
     )
 

@@ -511,6 +511,12 @@ class SequencerCompiler(ABC):
                     num_bins = constants.MAX_NUMBER_OF_BINS
                 else:
                     num_bins = max(acq_indices) + 1
+            elif acq_metadata.bin_mode == BinMode.FIRST:
+                # In BinMode.FIRST (currently only implemented for digital Trace
+                # acquisitions on the QTM), the binned data is ignored by quantify.
+                # However, should it happen that any extra acq_indices were specified,
+                # we must allocate memory for them on the hardware.
+                num_bins = max(acq_indices) + 1
             else:
                 # currently the BinMode enum only has average and append.
                 # this check exists to catch unexpected errors if we add more

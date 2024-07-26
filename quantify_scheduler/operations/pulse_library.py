@@ -1149,7 +1149,8 @@ class Timestamp(Operation):
     Operation that marks a time reference for timetags.
 
     Specifically, all timetags in
-    :class:`~quantify_scheduler.operations.acquisition_library.Timetag` are
+    :class:`~quantify_scheduler.operations.acquisition_library.Timetag` and
+    :class:`~quantify_scheduler.operations.acquisition_library.TimetagTrace` are
     measured relative to the timing of this operation, if they have a matching port and
     clock, and if ``time_ref=TimeRef.TIMESTAMP`` is given as an argument.
 

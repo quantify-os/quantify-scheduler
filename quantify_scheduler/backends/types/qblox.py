@@ -32,6 +32,7 @@ from quantify_scheduler.backends.qblox.enums import (
     QbloxFilterConfig,
     QbloxFilterMarkerDelay,
     SidebandCalEnum,
+    TimetagTraceType,
 )
 from quantify_scheduler.backends.types.common import (
     Connectivity,
@@ -728,6 +729,10 @@ class TimetagSequencerSettings(SequencerSettings):
     """Selects the timetag data source for timetag acquisitions."""
     time_ref: Optional[TimeRef] = None
     """Selects the time reference that the timetag is recorded in relation to."""
+    scope_trace_type: Optional[TimetagTraceType] = None
+    """Set to True if the program on this sequencer contains a scope/trace acquisition."""
+    trace_acq_duration: Optional[int] = None
+    """Duration of the trace acquisition (if any) done with this sequencer."""
 
     def __post_init__(self) -> None:
         self._validate_io_indices_no_channel_map()

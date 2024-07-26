@@ -38,6 +38,7 @@ class BinMode(StrEnum):  # type: ignore
 
     APPEND = "append"
     AVERAGE = "average"
+    FIRST = "first"
     # N.B. in principle it is possible to specify other behaviours for
     # BinMode such as `SUM` or `OVERWRITE` but these are not
     # currently supported by any backend.
@@ -47,7 +48,8 @@ class TimeSource(StrEnum):  # type: ignore
     """
     Selects the timetag data source for timetag (trace) acquisitions.
 
-    See :class:`~quantify_scheduler.operations.acquisition_library.Timetag`.
+    See :class:`~quantify_scheduler.operations.acquisition_library.Timetag` and
+    :class:`~quantify_scheduler.operations.acquisition_library.TimetagTrace`.
     """
 
     FIRST = "first"
@@ -59,7 +61,8 @@ class TimeRef(StrEnum):  # type: ignore
     """
     Selects the event that counts as a time reference (i.e. t=0) for timetags.
 
-    See :class:`~quantify_scheduler.operations.acquisition_library.Timetag`.
+    See :class:`~quantify_scheduler.operations.acquisition_library.Timetag` and
+    :class:`~quantify_scheduler.operations.acquisition_library.TimetagTrace`.
     """
 
     START = "start"

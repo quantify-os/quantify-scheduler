@@ -10,7 +10,7 @@ import re
 import warnings
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from functools import partial
+from functools import partial, wraps
 from math import isnan
 from typing import (
     TYPE_CHECKING,
@@ -19,9 +19,12 @@ from typing import (
     Dict,
     Hashable,
     Optional,
+    Sequence,
     Tuple,
     Type,
+    TypeVar,
     Union,
+    cast,
 )
 from uuid import uuid4
 
@@ -40,6 +43,7 @@ from quantify_scheduler.backends.qblox.enums import (
     ChannelMode,
     LoCalEnum,
     SidebandCalEnum,
+    TimetagTraceType,
 )
 from quantify_scheduler.backends.qblox.helpers import (
     single_scope_mode_acquisition_raise,
@@ -1277,7 +1281,7 @@ class _QTMComponent(_ModuleComponentBase):
                 self.instrument[f"sequencer{seq_idx}"], "sync_en", False
             )
 
-        acq_duration = {}
+        trace_acq_duration = {}
         for seq_name, seq_cfg in program["sequencers"].items():
             if seq_name in self._seq_name_to_idx_map:
                 seq_idx = self._seq_name_to_idx_map[seq_name]
@@ -1291,13 +1295,13 @@ class _QTMComponent(_ModuleComponentBase):
             settings = TimetagSequencerSettings.from_dict(seq_cfg)
             self._configure_sequencer_settings(seq_idx=seq_idx, settings=settings)
             self._configure_io_channel_settings(seq_idx=seq_idx, settings=settings)
-            acq_duration[seq_name] = None
+            trace_acq_duration[seq_name] = settings.trace_acq_duration
 
         if (acq_metadata := program.get("acq_metadata")) is not None:
             self._acquisition_manager = _QTMAcquisitionManager(
                 parent=self,
                 acquisition_metadata=acq_metadata,
-                acquisition_duration=acq_duration,
+                acquisition_duration=trace_acq_duration,
                 seq_name_to_idx_map=self._seq_name_to_idx_map,
             )
         else:
@@ -1385,6 +1389,28 @@ class _QTMComponent(_ModuleComponentBase):
             "record_0",
         )
 
+        if settings.scope_trace_type == TimetagTraceType.SCOPE:
+            self._set_parameter(
+                self.instrument[f"io_channel{seq_idx}"],
+                "scope_trigger_mode",
+                "sequencer",
+            )
+            self._set_parameter(
+                self.instrument[f"io_channel{seq_idx}"],
+                "scope_mode",
+                "scope",
+            )
+        elif settings.scope_trace_type == TimetagTraceType.TIMETAG:
+            self._set_parameter(
+                self.instrument[f"io_channel{seq_idx}"],
+                "scope_trigger_mode",
+                "sequencer",
+            )
+            self._set_parameter(
+                self.instrument[f"io_channel{seq_idx}"],
+                "scope_mode",
+                "timetags-windowed",
+            )
         if settings.time_source is not None:
             self._set_parameter(
                 self.instrument[f"io_channel{seq_idx}"],
@@ -1493,8 +1519,9 @@ class _AcquisitionManagerBase(ABC):
                 acquisition_metadata.acq_protocol
             ]
             # retrieve the raw data from the qrm sequencer module
-            hardware_retrieved_acquisitions = self.instrument.get_acquisitions(
-                self._seq_name_to_idx_map[sequencer_name]
+            hardware_retrieved_acquisitions = self._get_acquisitions_from_instrument(
+                seq_idx=self._seq_name_to_idx_map[sequencer_name],
+                acquisition_metadata=acquisition_metadata,
             )
             for (
                 qblox_acq_index,
@@ -1543,6 +1570,11 @@ class _AcquisitionManagerBase(ABC):
                 f"{hardware_retrieved_acquisitions=}"
             )
 
+    def _get_acquisitions_from_instrument(
+        self, seq_idx: int, acquisition_metadata: AcquisitionMetadata
+    ) -> dict:
+        return self.instrument.get_acquisitions(seq_idx)
+
     @staticmethod
     def _acq_channel_attrs(
         protocol: str,
@@ -1567,6 +1599,27 @@ class _AcquisitionManagerBase(ABC):
     def _qblox_acq_index_to_qblox_acq_name(qblox_acq_index: int) -> str:
         """Returns the name of the acquisition from the qblox_acq_index."""
         return str(qblox_acq_index)
+
+
+F = TypeVar("F", bound=Callable[..., DataArray])
+
+
+def _supported_bin_modes(bin_modes: Sequence[BinMode | str]) -> Callable[[F], F]:
+    def decorator(function: F) -> F:
+        @wraps(function)
+        def wrapper(*args, **kwargs) -> DataArray:
+            acquisition_metadata = kwargs["acquisition_metadata"]
+            bin_mode = acquisition_metadata.bin_mode
+            if bin_mode not in bin_modes:
+                raise RuntimeError(
+                    f"{acquisition_metadata.acq_protocol} acquisition protocol does not "
+                    f"support bin mode {acquisition_metadata.bin_mode}"
+                )
+            return function(*args, **kwargs)
+
+        return cast(F, wrapper)
+
+    return decorator
 
 
 class _QRMAcquisitionManager(_AcquisitionManagerBase):
@@ -1666,8 +1719,10 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
         qblox_acq_name = self._qblox_acq_index_to_qblox_acq_name(qblox_acq_index)
         self.instrument.store_scope_acquisition(sequencer_index, qblox_acq_name)
 
+    @_supported_bin_modes([BinMode.AVERAGE])
     def _get_scope_data(
         self,
+        *,
         acq_indices: list,
         hardware_retrieved_acquisitions: dict,
         acquisition_metadata: AcquisitionMetadata,
@@ -1698,11 +1753,6 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
         :
             The scope mode data.
         """
-        if acquisition_metadata.bin_mode != BinMode.AVERAGE:
-            raise RuntimeError(
-                f"{acquisition_metadata.acq_protocol} acquisition protocol does not "
-                f"support bin mode {acquisition_metadata.bin_mode}"
-            )
         if (
             acq_duration < 0
             or acq_duration > constants.MAX_SAMPLE_SIZE_SCOPE_ACQUISITIONS
@@ -1739,8 +1789,10 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
             attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
         )
 
+    @_supported_bin_modes([BinMode.AVERAGE, BinMode.APPEND])
     def _get_integration_data(
         self,
+        *,
         acq_indices: list,
         hardware_retrieved_acquisitions: dict,
         acquisition_metadata: AcquisitionMetadata,
@@ -1794,41 +1846,33 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
                 coords={acq_index_dim_name: acq_indices},
                 attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
             )
-        elif acquisition_metadata.bin_mode == BinMode.APPEND:
-            if (
-                acquisition_metadata.repetitions * len(acq_indices)
-                == acquisitions_data.size
-            ):
-                acq_data = acquisitions_data.reshape(
-                    (acquisition_metadata.repetitions, len(acq_indices))
-                )
-                return DataArray(
-                    acq_data,
-                    dims=["repetition", acq_index_dim_name],
-                    coords={acq_index_dim_name: acq_indices},
-                    attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
-                )
+        elif (
+            acquisition_metadata.repetitions * len(acq_indices)
+            == acquisitions_data.size
+        ):
+            acq_data = acquisitions_data.reshape(
+                (acquisition_metadata.repetitions, len(acq_indices))
+            )
+            return DataArray(
+                acq_data,
+                dims=["repetition", acq_index_dim_name],
+                coords={acq_index_dim_name: acq_indices},
+                attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
+            )
 
-            # There is control flow containing measurements, skip reshaping
-            else:
-                warnings.warn(
-                    "The format of acquisition data of looped measurements in APPEND mode"
-                    " will change in a future quantify-scheduler revision.",
-                    FutureWarning,
-                )
-                acq_data = acquisitions_data.reshape(
-                    (acquisition_metadata.repetitions, -1)
-                )
-                return DataArray(
-                    acq_data,
-                    dims=["repetition", "loop_repetition"],
-                    coords=None,
-                    attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
-                )
+        # There is control flow containing measurements, skip reshaping
         else:
-            raise RuntimeError(
-                f"{acquisition_metadata.acq_protocol} acquisition protocol does not"
-                f" support bin mode {acquisition_metadata.bin_mode}."
+            warnings.warn(
+                "The format of acquisition data of looped measurements in APPEND mode"
+                " will change in a future quantify-scheduler revision.",
+                FutureWarning,
+            )
+            acq_data = acquisitions_data.reshape((acquisition_metadata.repetitions, -1))
+            return DataArray(
+                acq_data,
+                dims=["repetition", "loop_repetition"],
+                coords=None,
+                attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
             )
 
     def _get_integration_amplitude_data(
@@ -1884,8 +1928,10 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
 
         return formatted_data
 
+    @_supported_bin_modes([BinMode.AVERAGE, BinMode.APPEND])
     def _get_threshold_data(
         self,
+        *,
         acq_indices: list,
         hardware_retrieved_acquisitions: dict,
         acquisition_metadata: AcquisitionMetadata,
@@ -1936,7 +1982,7 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
                 coords={acq_index_dim_name: acq_indices},
                 attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
             )
-        elif acquisition_metadata.bin_mode == BinMode.APPEND:
+        else:
             acquisitions_data = np.array(
                 bin_data["threshold"], dtype=acquisition_metadata.acq_return_type
             )
@@ -1948,14 +1994,11 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
                 coords={acq_index_dim_name: acq_indices},
                 attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
             )
-        else:
-            raise RuntimeError(
-                f"{acquisition_metadata.acq_protocol} acquisition protocol does not"
-                f" support bin mode {acquisition_metadata.bin_mode}."
-            )
 
+    @_supported_bin_modes([BinMode.AVERAGE, BinMode.APPEND])
     def _get_trigger_count_data(
         self,
+        *,
         acq_indices: list,
         hardware_retrieved_acquisitions: dict,
         acquisition_metadata: AcquisitionMetadata,
@@ -2026,18 +2069,13 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
                 coords={"repetition": [0], "counts": list(result.keys())[::-1]},
                 attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
             )
-        elif acquisition_metadata.bin_mode == BinMode.APPEND:
+        else:
             counts = np.array(bin_data["avg_cnt"]).astype(int)
             return DataArray(
                 [counts],
                 dims=["repetition", acq_index_dim_name],
                 coords={"repetition": [0], acq_index_dim_name: range(len(counts))},
                 attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
-            )
-        else:
-            raise RuntimeError(
-                f"{acquisition_metadata.acq_protocol} acquisition protocol does not "
-                f"support bin mode {acquisition_metadata.bin_mode}"
             )
 
 
@@ -2066,10 +2104,31 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
         return {
             "TriggerCount": self._get_trigger_count_data,
             "Timetag": self._get_timetag_data,
+            "Trace": self._get_digital_trace_data,
+            "TimetagTrace": self._get_timetag_trace_data,
         }
 
+    def _get_acquisitions_from_instrument(
+        self, seq_idx: int, acquisition_metadata: AcquisitionMetadata
+    ) -> dict:
+        data = super()._get_acquisitions_from_instrument(seq_idx, acquisition_metadata)
+        if acquisition_metadata.acq_protocol in ("Trace", "TimetagTrace"):
+            # We add this scope data in the same format as QRM acquisitions.
+            scope_data = self.instrument[f"io_channel{seq_idx}"].get_scope_data()
+
+            # For (timetag)trace acquisitions, there is only one acq channel per
+            # sequencer/io_channel (enforced by compiler). We just take the first one.
+            qblox_acq_index = next(
+                iter(acquisition_metadata.acq_channels_metadata.keys())
+            )
+            qblox_acq_name = self._qblox_acq_index_to_qblox_acq_name(qblox_acq_index)
+            data[qblox_acq_name]["acquisition"]["scope"] = scope_data
+        return data
+
+    @_supported_bin_modes([BinMode.APPEND])
     def _get_trigger_count_data(
         self,
+        *,
         acq_indices: list,
         hardware_retrieved_acquisitions: dict,
         acquisition_metadata: AcquisitionMetadata,
@@ -2108,22 +2167,155 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
         bin_data = self._get_bin_data(hardware_retrieved_acquisitions, qblox_acq_index)
         acq_index_dim_name = f"acq_index_{acq_channel}"
 
-        if acquisition_metadata.bin_mode == BinMode.APPEND:
-            counts = np.array(bin_data["count"]).astype(int)
+        counts = np.array(bin_data["count"]).astype(int)
+        return DataArray(
+            [counts],
+            dims=["repetition", acq_index_dim_name],
+            coords={"repetition": [0], acq_index_dim_name: range(len(counts))},
+            attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
+        )
+
+    @_supported_bin_modes([BinMode.FIRST])
+    def _get_digital_trace_data(
+        self,
+        *,
+        acq_indices: list,
+        hardware_retrieved_acquisitions: dict,
+        acquisition_metadata: AcquisitionMetadata,
+        acq_duration: int,
+        qblox_acq_index: int,
+        acq_channel: Hashable,
+    ) -> DataArray:
+        qblox_acq_name = self._qblox_acq_index_to_qblox_acq_name(qblox_acq_index)
+        scope_data = np.array(
+            hardware_retrieved_acquisitions[qblox_acq_name]["acquisition"]["scope"][
+                :acq_duration
+            ]
+        )
+
+        acq_index_dim_name = f"acq_index_{acq_channel}"
+        trace_index_dim_name = f"trace_index_{acq_channel}"
+        return DataArray(
+            scope_data.reshape((1, -1)),
+            dims=[acq_index_dim_name, trace_index_dim_name],
+            coords={
+                acq_index_dim_name: acq_indices,
+                trace_index_dim_name: list(range(acq_duration)),
+            },
+            attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
+        )
+
+    @_supported_bin_modes([BinMode.APPEND])
+    def _get_timetag_trace_data(
+        self,
+        *,
+        acq_indices: list,
+        hardware_retrieved_acquisitions: dict,
+        acquisition_metadata: AcquisitionMetadata,
+        acq_duration: int,
+        qblox_acq_index: int,
+        acq_channel: Hashable,
+    ) -> DataArray:
+        qblox_acq_name = self._qblox_acq_index_to_qblox_acq_name(qblox_acq_index)
+        scope_data = hardware_retrieved_acquisitions[qblox_acq_name]["acquisition"][
+            "scope"
+        ]
+
+        timetag_traces = self._split_timetag_trace_data_per_window(
+            timetags=hardware_retrieved_acquisitions[qblox_acq_name]["acquisition"][
+                "bins"
+            ]["timedelta"],
+            scope_data=scope_data,
+        )
+
+        # Turn the inhomogeneous 2D array into a rectangular matrix compatible with
+        # xarray. Pad with NaN to make it rectangular.
+        rect_array = np.empty(
+            [len(timetag_traces), max(len(t) for t in timetag_traces)],
+            dtype=np.float64,
+        )
+        rect_array[:] = np.nan
+        for i, j in enumerate(timetag_traces):
+            rect_array[i][0 : len(j)] = j
+
+        acq_index_dim_name = f"acq_index_{acq_channel}"
+        trace_index_dim_name = f"trace_index_{acq_channel}"
+        if acquisition_metadata.repetitions * len(acq_indices) == len(rect_array):
             return DataArray(
-                [counts],
-                dims=["repetition", acq_index_dim_name],
-                coords={"repetition": [0], acq_index_dim_name: range(len(counts))},
+                rect_array.reshape(
+                    (
+                        acquisition_metadata.repetitions,
+                        len(acq_indices),
+                        len(rect_array[0]),
+                    )
+                ),
+                dims=["repetition", acq_index_dim_name, trace_index_dim_name],
+                coords={
+                    acq_index_dim_name: acq_indices,
+                    trace_index_dim_name: list(range(len(rect_array[0]))),
+                },
                 attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
             )
+        # There is control flow containing measurements, skip reshaping
         else:
-            raise RuntimeError(
-                f"{acquisition_metadata.acq_protocol} acquisition protocol does not "
-                f"support bin mode {acquisition_metadata.bin_mode}"
+            warnings.warn(
+                "The format of acquisition data of looped measurements in APPEND mode"
+                " will change in a future quantify-scheduler revision.",
+                FutureWarning,
+            )
+            return DataArray(
+                rect_array.reshape(
+                    (acquisition_metadata.repetitions, -1, len(rect_array[0]))
+                ),
+                dims=["repetition", "loop_repetition", trace_index_dim_name],
+                coords=None,
+                attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
             )
 
+    def _split_timetag_trace_data_per_window(
+        self,
+        timetags: list[int],
+        scope_data: list[tuple[str, int]],
+    ) -> list[list[float]]:
+        """
+        Split the long array of ``scope_data`` on acquisition windows.
+
+        The scope_data is formatted like [[TYPE, TIME],[TYPE,TIME],...], where TYPE is one of
+        "OPEN", "RISE", "CLOSE". The TIME is absolute (cluster system time).
+
+        Each acquisition window starts with "OPEN" and ends with "CLOSE". This method
+        uses that information to divide the long ``scope_data`` array up into smaller
+        arrays for each acquisition window.
+
+        Furthermore, the ``timetags`` list contains the *relative* timetags of the
+        *first* pulse recorded in each window. This data is used to calculate the
+        relative timetags for all timetags in the trace.
+        """
+        timetag_traces = []
+        last_close_idx = 0
+        for ref_timetag in timetags:
+            for i, (event, _) in enumerate(scope_data[last_close_idx:]):
+                if event == "OPEN":
+                    break
+            open_idx = last_close_idx + i
+            for i, (event, _) in enumerate(scope_data[open_idx:]):
+                if event == "CLOSE":
+                    break
+            close_idx = open_idx + i
+
+            rel_times_ns = [
+                (ref_timetag + event[1] - scope_data[open_idx + 1][1]) / 2048
+                for event in scope_data[open_idx + 1 : close_idx]
+            ]
+            timetag_traces.append(rel_times_ns)
+            last_close_idx = close_idx
+
+        return timetag_traces
+
+    @_supported_bin_modes([BinMode.AVERAGE, BinMode.APPEND])
     def _get_timetag_data(
         self,
+        *,
         acq_indices: list,
         hardware_retrieved_acquisitions: dict,
         acquisition_metadata: AcquisitionMetadata,
@@ -2144,36 +2336,30 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
                 coords={acq_index_dim_name: acq_indices},
                 attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
             )
-        elif acquisition_metadata.bin_mode == BinMode.APPEND:
-            if acquisition_metadata.repetitions * len(acq_indices) == timetags_ns.size:
-                acq_data = timetags_ns.reshape(
-                    (acquisition_metadata.repetitions, len(acq_indices))
-                )
-                return DataArray(
-                    acq_data,
-                    dims=["repetition", acq_index_dim_name],
-                    coords={acq_index_dim_name: acq_indices},
-                    attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
-                )
+        elif acquisition_metadata.repetitions * len(acq_indices) == timetags_ns.size:
+            acq_data = timetags_ns.reshape(
+                (acquisition_metadata.repetitions, len(acq_indices))
+            )
+            return DataArray(
+                acq_data,
+                dims=["repetition", acq_index_dim_name],
+                coords={acq_index_dim_name: acq_indices},
+                attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
+            )
 
-            # There is control flow containing measurements, skip reshaping
-            else:
-                warnings.warn(
-                    "The format of acquisition data of looped measurements in APPEND mode"
-                    " will change in a future quantify-scheduler revision.",
-                    FutureWarning,
-                )
-                acq_data = timetags_ns.reshape((acquisition_metadata.repetitions, -1))
-                return DataArray(
-                    acq_data,
-                    dims=["repetition", "loop_repetition"],
-                    coords=None,
-                    attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
-                )
+        # There is control flow containing measurements, skip reshaping
         else:
-            raise RuntimeError(
-                f"{acquisition_metadata.acq_protocol} acquisition protocol does not"
-                f" support bin mode {acquisition_metadata.bin_mode}."
+            warnings.warn(
+                "The format of acquisition data of looped measurements in APPEND mode"
+                " will change in a future quantify-scheduler revision.",
+                FutureWarning,
+            )
+            acq_data = timetags_ns.reshape((acquisition_metadata.repetitions, -1))
+            return DataArray(
+                acq_data,
+                dims=["repetition", "loop_repetition"],
+                coords=None,
+                attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
             )
 
 
