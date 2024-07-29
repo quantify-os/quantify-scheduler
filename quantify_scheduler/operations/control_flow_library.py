@@ -239,33 +239,3 @@ class Conditional(ControlFlowSpec):
     def create_operation(self, body: Operation | Schedule) -> Operation | Schedule:
         """Transform the control flow specification to an operation or schedule."""
         return ConditionalOperation(body, self.qubit_name, self.t0)
-
-
-class _ControlFlowReturn(Operation):
-    """
-    An operation that signals the end of the current control flow statement.
-
-    Cannot be added to Schedule manually.
-
-    Parameters
-    ----------
-    t0 : float, optional
-        time offset, by default 0
-    """
-
-    def __init__(self, t0: float = 0) -> None:
-        super().__init__(name="ControlFlowReturn")
-        self.data.update(
-            {
-                "name": "ControlFlowReturn",
-                "control_flow_info": {
-                    "t0": t0,
-                    "duration": 0.0,
-                    "return_stack": True,
-                },
-            }
-        )
-        self._update()
-
-    def __str__(self) -> str:
-        return self._get_signature(self.data["control_flow_info"])
