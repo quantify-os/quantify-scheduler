@@ -272,6 +272,7 @@ class BasicSpinElement(DeviceElement):
                         "acq_weights_sampling_rate": self.measure.acq_weights_sampling_rate(),
                         "acq_rotation": self.measure.acq_rotation(),
                         "acq_threshold": self.measure.acq_threshold(),
+                        "num_points": self.measure.num_points(),
                         "freq": None,
                     },
                     gate_info_factory_kwargs=[
