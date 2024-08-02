@@ -726,6 +726,37 @@ def test_invalid_channel_names_connectivity(
         )
 
 
+def test_missing_module_in_description_raises(
+    mock_setup_basic_transmon_with_standard_params,
+):
+    hardware_compilation_config = {
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "ref": "internal",
+                "modules": {
+                    "2": {
+                        "instrument_type": "QCM",
+                    },
+                },
+            },
+        },
+        "hardware_options": {},
+        "connectivity": {
+            "graph": [
+                [f"cluster0.module1.complex_output_0", "q0:res"],
+            ]
+        },
+    }
+
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.hardware_config(hardware_compilation_config)
+
+    with pytest.raises(KeyError, match="not found in the hardware description"):
+        quantum_device.generate_compilation_config()
+
+
 def test_channel_as_both_input_and_output_qtm():
     hardware_compilation_config = {
         "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",

@@ -634,7 +634,13 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
                     f"({instrument_type}). Full error message:\n{exc}\n\nSupported "
                     f"names for {instrument_type}:\n{valid_channels}."
                 ) from exc
-
+            except KeyError:
+                raise KeyError(
+                    f"""Module '{module_idx}' of cluster
+                        '{cluster_name}' not found in the hardware description. Please
+                        ensure all modules mentioned in the connectivity are
+                        present in the hardware description. """
+                )
         return self
 
     @model_validator(mode="after")

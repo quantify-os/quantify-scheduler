@@ -32,6 +32,7 @@
   - Improve error message for conflicting acquisition protocols (!982)
   - Fix overlapping operations warning due to floating point rounding errors (!989)
   - Remove warning when latency corrections are not on a 4ns timegrid (!994)
+  - Improve error message when module is missing from hardware config (!1044)
 - Qblox backend
   - Change update param insertion logic. (!980)
   - Add compilation of `MarkerPulse` to `set_digital` via the `DigitalPulseStrategy` for QTM modules. (!975)
