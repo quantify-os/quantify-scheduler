@@ -36,15 +36,16 @@ from quantify_scheduler.backends.qblox.analog import (
 from quantify_scheduler.backends.qblox.compiler_container import CompilerContainer
 from quantify_scheduler.backends.qblox.enums import (
     DistortionCorrectionLatencyEnum,
+    LoCalEnum,
     QbloxFilterConfig,
     QbloxFilterMarkerDelay,
+    SidebandCalEnum,
 )
 from quantify_scheduler.backends.qblox.exceptions import NcoOperationTimingError
 from quantify_scheduler.backends.qblox.hardware_config_transmon_old_style import (
     hardware_config as hardware_config_transmon_old_style,
 )
 from quantify_scheduler.backends.qblox.helpers import (
-    _generate_legacy_hardware_config,
     assign_pulse_and_acq_info_to_devices,
     generate_port_clock_to_device_map,
     generate_uuid_from_wf_data,
@@ -70,6 +71,8 @@ from quantify_scheduler.backends.qblox.operations.stitched_pulse import (
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox_backend import (
     QbloxHardwareCompilationConfig,
+    _ClusterCompilationConfig,
+    _ClusterModuleCompilationConfig,
     find_qblox_instruments,
 )
 from quantify_scheduler.backends.types import qblox as types
@@ -85,6 +88,7 @@ from quantify_scheduler.helpers.collections import (
     find_all_port_clock_combinations,
     find_inner_dicts_containing_key,
 )
+from quantify_scheduler.helpers.schedule import _extract_port_clocks_used
 from quantify_scheduler.operations.acquisition_library import (
     SSBIntegrationComplex,
     Trace,
@@ -508,30 +512,6 @@ def test_find_all_port_clock_combinations(
     }
 
 
-def test_find_all_port_clock_combinations_generated_hardware_config(
-    make_schedule_with_measurement, compile_config_basic_transmon_qblox_hardware
-):
-    sched = make_schedule_with_measurement("q0")
-    sched.add(SquarePulse(amp=0.5, duration=1e-6, port="q0:fl", clock="cl0.baseband"))
-    compiler = SerialCompiler("compiler")
-    compiled_sched = compiler.compile(
-        sched, compile_config_basic_transmon_qblox_hardware
-    )
-
-    hardware_config = _generate_legacy_hardware_config(
-        compiled_sched,
-        compile_config_basic_transmon_qblox_hardware.hardware_compilation_config,
-    )
-
-    portclocks = find_all_port_clock_combinations(hardware_config)
-    portclocks = set(portclocks)
-    assert portclocks == {
-        ("q0:mw", "q0.01"),
-        ("q0:res", "q0.ro"),
-        ("q0:fl", "cl0.baseband"),
-    }
-
-
 def test_generate_port_clock_to_device_map(
     compile_config_basic_transmon_qblox_hardware, create_schedule_with_pulse_info
 ):
@@ -553,21 +533,21 @@ def test_generate_port_clock_to_device_map(
     portclock_map = generate_port_clock_to_device_map(instrument_compilers)
 
     assert set(portclock_map.keys()) == {
-        ("q0:mw", "q0.01"),
-        ("q4:mw", "q4.01"),
-        ("q5:mw", "q5.01"),
-        ("q6:mw", "q6.01"),
-        ("q7:mw", "q7.01"),
-        ("q4:res", "q4.ro"),
-        ("q5:res", "q5.ro"),
-        ("q0:res", "q0.ro"),
-        ("q0:fl", "cl0.baseband"),
-        ("q1:fl", "cl0.baseband"),
-        ("q2:fl", "cl0.baseband"),
-        ("q3:fl", "cl0.baseband"),
-        ("q4:fl", "cl0.baseband"),
-        ("qe0:optical_readout", "qe0.ge0"),
-        ("q0:switch", "digital"),
+        ("q0:mw-q0.01"),
+        ("q4:mw-q4.01"),
+        ("q5:mw-q5.01"),
+        ("q6:mw-q6.01"),
+        ("q7:mw-q7.01"),
+        ("q4:res-q4.ro"),
+        ("q5:res-q5.ro"),
+        ("q0:res-q0.ro"),
+        ("q0:fl-cl0.baseband"),
+        ("q1:fl-cl0.baseband"),
+        ("q2:fl-cl0.baseband"),
+        ("q3:fl-cl0.baseband"),
+        ("q4:fl-cl0.baseband"),
+        ("qe0:optical_readout-qe0.ge0"),
+        ("q0:switch-digital"),
     }
 
 
@@ -591,9 +571,9 @@ def test_generate_port_clock_to_device_map_generated_hardware_config(
 
     assert (None, None) not in portclock_map.keys()
     assert set(portclock_map.keys()) == {
-        ("q0:fl", "cl0.baseband"),
-        ("q0:mw", "q0.01"),
-        ("q0:res", "q0.ro"),
+        ("q0:fl-cl0.baseband"),
+        ("q0:mw-q0.01"),
+        ("q0:res-q0.ro"),
     }
 
 
@@ -603,24 +583,23 @@ def test_generate_port_clock_to_device_map_generated_hardware_config(
 def test_construct_sequencers(
     make_basic_multi_qubit_schedule,
     compile_config_basic_transmon_qblox_hardware_cluster,
-    hardware_cfg_cluster_legacy,
+    hardware_cfg_cluster,
     create_schedule_with_pulse_info,
 ):
-    portclock_to_path = {
-        "q0:mw-q0.01": "cluster0.module1.complex_output_0",
-        "q1:mw-q1.01": "cluster0.module1.complex_output_1",
-    }
-
     sched = create_schedule_with_pulse_info(
         make_basic_multi_qubit_schedule(["q0", "q1"])
     )
 
+    hardware_cfg = QbloxHardwareCompilationConfig.model_validate(hardware_cfg_cluster)
+    instrument_configs = hardware_cfg._extract_instrument_compilation_configs(
+        _extract_port_clocks_used(sched)
+    )
+
     test_cluster = ClusterCompiler(
         parent=None,
-        name="tester",
+        name="cluster0",
         total_play_time=1,
-        instrument_cfg=hardware_cfg_cluster_legacy["cluster0"],
-        portclock_to_path=portclock_to_path,
+        instrument_cfg=instrument_configs["cluster0"],
     )
     test_module = test_cluster.instrument_compilers["cluster0_module1"]
     sched = make_basic_multi_qubit_schedule(["q0", "q1"])
@@ -633,7 +612,6 @@ def test_construct_sequencers(
     assign_pulse_and_acq_info_to_devices(
         schedule=sched,
         device_compilers={"cluster0_module1": test_module},
-        portclock_to_path=portclock_to_path,
     )
 
     test_module._construct_all_sequencer_compilers()
@@ -641,43 +619,6 @@ def test_construct_sequencers(
 
     assert len(seq_keys) == 2
     assert isinstance(test_module.sequencers[seq_keys[0]], AnalogSequencerCompiler)
-
-
-def test_construct_sequencers_repeated_portclocks_error(
-    hardware_cfg_rf_legacy,
-    mocker,
-):
-    port, clock = "q0:mw", "q0.01"
-    instrument_cfg = hardware_cfg_rf_legacy["cluster0"]["cluster0_module2"]
-    instrument_cfg["complex_output_0"]["portclock_configs"] = [
-        {
-            "port": port,
-            "clock": clock,
-        },
-        {
-            "port": port,
-            "clock": clock,
-        },
-    ]
-    test_module = QCMRFCompiler(
-        parent=None,
-        name="tester",
-        total_play_time=1,
-        instrument_cfg=instrument_cfg,
-    )
-    mocker.patch(
-        "quantify_scheduler.backends.qblox.instrument_compilers.QCMRFCompiler._portclocks_with_data",
-        new_callable=mocker.PropertyMock,
-        return_value={(port, clock)},
-    )
-
-    with pytest.raises(ValueError) as error:
-        test_module.sequencers = test_module._construct_all_sequencer_compilers()
-
-    assert (
-        f"Portclock {(port, clock)} was assigned to multiple portclock_configs"
-        in str(error.value)
-    )
 
 
 def test_construct_sequencers_exceeds_seq(
@@ -921,8 +862,8 @@ def test_portclocks(
     )
 
     compilers = container.instrument_compilers["cluster0"].instrument_compilers
-    assert compilers["cluster0_module1"].portclocks == [("q4:mw", "q4.01")]
-    assert compilers["cluster0_module2"].portclocks == [("q0:mw", "q0.01")]
+    assert compilers["cluster0_module1"].portclocks == [("q4:mw-q4.01")]
+    assert compilers["cluster0_module2"].portclocks == [("q0:mw-q0.01")]
 
 
 @pytest.mark.parametrize(
@@ -1157,8 +1098,8 @@ def test_compile_cluster(
     if delete_lo0:
         assert (
             error.value.args[0]
-            == "External local oscillator 'lo0' set to be used for port='q4:mw' and "
-            "clock='q4.01' not found! Make sure it is present in the hardware "
+            == "External local oscillator 'lo0' set to be used for port 'q4:mw' "
+            "not found! Make sure it is present in the hardware "
             "configuration."
         )
 
@@ -1808,16 +1749,29 @@ def test_qasm_hook_hardware_config(
     assert q1asm_instructions.NOP == program_lines[0].strip()
 
 
-def test_qcm_acquisition_error(hardware_cfg_cluster_legacy):
+def test_qcm_acquisition_error(
+    hardware_cfg_cluster,
+    make_schedule_with_measurement,
+    create_schedule_with_pulse_info,
+):
+    sched = create_schedule_with_pulse_info(make_schedule_with_measurement("q0"))
+    hardware_cfg = QbloxHardwareCompilationConfig.model_validate(hardware_cfg_cluster)
+    instrument_configs = hardware_cfg._extract_instrument_compilation_configs(
+        _extract_port_clocks_used(sched)
+    )
+    module_configs = instrument_configs[
+        "cluster0"
+    ]._extract_module_compilation_configs()
+
     qcm = QCMCompiler(
         parent=None,
-        name="qcm0",
+        name="cluster0_module1",
         total_play_time=10,
-        instrument_cfg=hardware_cfg_cluster_legacy["cluster0"]["cluster0_module1"],
+        instrument_cfg=module_configs[1],
     )
     with pytest.raises(
         RuntimeError,
-        match="QCMCompiler qcm0 does not support acquisitions. "
+        match="QCMCompiler cluster0_module1 does not support acquisitions. "
         "Attempting to add acquisition Acquisition",
     ):
         qcm.add_op_info(
@@ -2229,109 +2183,381 @@ def test_from_mapping(
         pulse_only_schedule, hardware_cfg
     )
     for instr_name in hardware_cfg.hardware_description.keys():
-        if instr_name in ["iq_mixer_lo0", "iq_mixer_lo1", "iq_mixer_lo_real"]:
+        if instr_name in [
+            "iq_mixer_lo0",
+            "iq_mixer_lo1",
+            "iq_mixer_lo_real",
+            "lo0",
+            "lo1",
+            "lo_real",
+        ]:
             continue
         assert instr_name in container.instrument_compilers
 
 
 # Transmon-specific config
-# Main features of `_extract_instrument_compiler_configs` are tested in this block
-def test_extract_instrument_compiler_configs_transmon(qblox_hardware_config_transmon):
-
-    hardware_config = deepcopy(qblox_hardware_config_transmon)
-
-    # Add additional clusters to compilation config
-    hardware_config["hardware_description"]["cluster1"] = {
-        "instrument_type": "Cluster",
-        "ref": "internal",
-        "modules": {
-            "1": {"instrument_type": "QRM_RF"},
-            "2": {"instrument_type": "QCM_RF"},
+def test_extract_instrument_compilation_configs_cluster():
+    hardware_config = {
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "ref": "internal",
+                "modules": {
+                    "1": {
+                        "instrument_type": "QCM",
+                        "complex_output_0": {"marker_debug_mode_enable": True},
+                    },
+                },
+            },
+            "cluster1": {
+                "instrument_type": "Cluster",
+                "ref": "internal",
+                "modules": {
+                    "1": {"instrument_type": "QRM_RF"},
+                    "2": {"instrument_type": "QCM_RF"},
+                },
+            },
+            "cluster2": {
+                "instrument_type": "Cluster",
+                "ref": "internal",
+                "modules": {
+                    "1": {"instrument_type": "QCM"},
+                },
+            },
+        },
+        "hardware_options": {
+            "latency_corrections": {
+                "q4:mw-q4.01": 8e-9,
+            },
+            "modulation_frequencies": {
+                "q4:mw-q4.01": {
+                    "interm_freq": 200e6,
+                    "lo_freq": None,
+                },
+                "q7:res-q7.ro": {"interm_freq": 52e6},
+            },
+            "mixer_corrections": {
+                "q4:mw-q4.01": {"amp_ratio": 0.9999, "phase_error": -4.2},
+            },
+            "input_att": {"q7:res-q7.ro": 12},
+            "sequencer_options": {
+                "qe0:optical_readout-qe0.ge0": {"ttl_acq_threshold": 0.5}
+            },
+        },
+        "connectivity": {
+            "graph": [
+                ["cluster0.module1.complex_output_0", "q4:mw"],
+                ["cluster1.module1.complex_input_0", "q7:res"],
+            ]
         },
     }
-    hardware_config["hardware_description"]["cluster2"] = {
-        "instrument_type": "Cluster",
-        "ref": "internal",
-        "modules": {
-            "1": {"instrument_type": "QCM"},
-        },
-    }
-    hardware_config["hardware_options"]["modulation_frequencies"]["q7:res-q7.ro"] = {
-        "interm_freq": 52e6
-    }
-    hardware_config["hardware_options"]["input_att"]["q7:res-q7.ro"] = 12
-    hardware_config["connectivity"]["graph"].extend(
-        [("cluster1.module1.complex_input_0", "q7:res")]
-    )
-    hardware_config["connectivity"]["graph"].extend(
-        [("cluster1.module1.complex_input_0", "q7:res")]
-    )
 
     hardware_config = QbloxHardwareCompilationConfig.model_validate(hardware_config)
 
     portclocks_used = {
         ("q4:mw", "q4.01"),
-        ("q4:res", "q4.ro"),
-        ("q5:res", "q5.ro"),
         ("q7:res", "q7.ro"),
     }
 
-    compiler_configs = hardware_config._extract_instrument_compiler_configs(
+    instrument_configs = hardware_config._extract_instrument_compilation_configs(
         portclocks_used
     )
 
-    assert list(compiler_configs.keys()) == [
+    assert list(instrument_configs.keys()) == [
         "cluster0",
-        "lo0",
-        "lo1",
-        "lo_real",
         "cluster1",
     ]
 
-    assert ("q4:res", "q4.ro") in compiler_configs["cluster0"].portclock_to_path.keys()
+    cluster0 = instrument_configs["cluster0"]
+    cluster1 = instrument_configs["cluster1"]
 
-    cluster0_module4 = compiler_configs["cluster0"].modules[4]
-    assert cluster0_module4.hardware_description.instrument_type == "QRM_RF"
-    assert cluster0_module4.hardware_options.modulation_frequencies[
-        "q5:res-q5.ro"
-    ].model_dump() == {"interm_freq": 50e6, "lo_freq": None}
-    assert cluster0_module4.hardware_options.input_att["q5:res-q5.ro"] == 10
-    assert any("q5:res" in node for node in cluster0_module4.connectivity.graph.nodes)
-    assert ("q5:res", "q5.ro") in cluster0_module4.portclock_to_path.keys()
-
-    cluster0_module1 = compiler_configs["cluster0"].modules[1]
-    for node in [
-        "cluster0.module1.complex_output_0",
-        "iq_mixer_lo0.if",
-        "lo0.output",
-        "iq_mixer_lo0.lo",
-    ]:
-        assert node in cluster0_module1.connectivity.graph.nodes
-
-    assert list(compiler_configs["cluster1"].modules.keys()) == [1]
-
-    cluster1_module1 = compiler_configs["cluster1"].modules[1]
-    assert cluster1_module1.hardware_description.instrument_type == "QRM_RF"
-    assert cluster1_module1.hardware_options.modulation_frequencies[
-        "q7:res-q7.ro"
-    ].model_dump() == {"interm_freq": 52e6, "lo_freq": None}
-    assert cluster1_module1.hardware_options.input_att["q7:res-q7.ro"] == 12
-    assert any("q7:res" in node for node in cluster1_module1.connectivity.graph.nodes)
-    assert ("q7:res", "q7.ro") in cluster1_module1.portclock_to_path.keys()
-
-    assert compiler_configs["lo0"].hardware_description.model_dump(
-        exclude_unset=True
-    ) == {
-        "instrument_type": "LocalOscillator",
-        "instrument_name": "lo0",
-        "power": 1,
+    assert cluster0.hardware_description.model_dump(exclude_unset=True) == {
+        "instrument_type": "Cluster",
+        "ref": "internal",
+        "modules": {
+            1: {
+                "instrument_type": "QCM",
+                "complex_output_0": {"marker_debug_mode_enable": True},
+            },
+        },
     }
-    assert compiler_configs["lo1"].hardware_description.instrument_name == "lo1"
-    assert compiler_configs["lo1"].frequency == 7.2e9
+
+    assert cluster0.hardware_options.model_dump(exclude_unset=True) == {
+        "latency_corrections": {"q4:mw-q4.01": 8e-09},
+        "modulation_frequencies": {
+            "q4:mw-q4.01": {"interm_freq": 200000000.0, "lo_freq": None},
+        },
+        "mixer_corrections": {
+            "q4:mw-q4.01": {
+                "amp_ratio": 0.9999,
+                "phase_error": -4.2,
+            },
+        },
+    }
+
+    assert cluster0.portclock_to_path == {
+        ("q4:mw-q4.01"): "cluster0.module1.complex_output_0",
+    }
+
+    assert cluster0.lo_to_path == {}
+
+    assert cluster1.hardware_description.model_dump(exclude_unset=True) == {
+        "instrument_type": "Cluster",
+        "ref": "internal",
+        "modules": {1: {"instrument_type": "QRM_RF"}},
+    }
+
+    assert cluster1.hardware_options.model_dump(exclude_unset=True) == {
+        "modulation_frequencies": {"q7:res-q7.ro": {"interm_freq": 52000000.0}},
+        "input_att": {"q7:res-q7.ro": 12},
+    }
+
+    assert cluster1.portclock_to_path == {
+        ("q7:res-q7.ro"): "cluster1.module1.complex_input_0"
+    }
+    assert cluster1.lo_to_path == {}
+
+
+def test_extract_instrument_compilation_configs_lo():
+
+    hardware_config = {
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "ref": "internal",
+                "modules": {
+                    "3": {"instrument_type": "QRM"},
+                },
+            },
+            "lo1": {"instrument_type": "LocalOscillator", "power": 1},
+            "iq_mixer_lo1": {"instrument_type": "IQMixer"},
+        },
+        "hardware_options": {
+            "modulation_frequencies": {
+                "q4:res-q4.ro": {"interm_freq": None, "lo_freq": 7.2e9},
+            },
+        },
+        "connectivity": {
+            "graph": [
+                ["cluster0.module3.complex_output_0", "iq_mixer_lo1.if"],
+                ["lo1.output", "iq_mixer_lo1.lo"],
+                ["iq_mixer_lo1.rf", "q4:res"],
+            ]
+        },
+    }
+
+    hardware_config = QbloxHardwareCompilationConfig.model_validate(hardware_config)
+
+    portclocks_used = {("q4:res", "q4.ro")}
+
+    instrument_configs = hardware_config._extract_instrument_compilation_configs(
+        portclocks_used
+    )
+
+    assert list(instrument_configs.keys()) == ["cluster0", "lo1"]
+
+    cluster0 = instrument_configs["cluster0"]
+    lo1 = instrument_configs["lo1"]
+
+    assert cluster0.hardware_options.model_dump(exclude_unset=True) == {
+        "modulation_frequencies": {
+            "q4:res-q4.ro": {"interm_freq": None, "lo_freq": 7200000000.0},
+        },
+    }
+
+    assert cluster0.lo_to_path == {
+        "lo1": "cluster0.module3.complex_output_0",
+    }
+
+    assert lo1.model_dump() == {
+        "hardware_description": {
+            "instrument_type": "LocalOscillator",
+            "instrument_name": "lo1",
+            "generic_icc_name": None,
+            "frequency_param": "frequency",
+            "power_param": "power",
+            "power": 1,
+        },
+        "frequency": 7200000000.0,
+    }
+
+
+def test_extract_module_compilation_configs():
+    cluster_compilation_config = {
+        "hardware_description": {
+            "instrument_type": "Cluster",
+            "ref": "internal",
+            "sequence_to_file": False,
+            "modules": {
+                2: {
+                    "instrument_type": "QCM_RF",
+                },
+                3: {
+                    "instrument_type": "QRM",
+                },
+            },
+        },
+        "hardware_options": {
+            "modulation_frequencies": {
+                "q0:mw-q0.01": {"interm_freq": 50000000.0, "lo_freq": None},
+                "q4:res-q4.ro": {"interm_freq": None, "lo_freq": 7200000000.0},
+            },
+            "mixer_corrections": {
+                "q4:res-q4.ro": {
+                    "dc_offset_i": -0.054,
+                    "dc_offset_q": -0.034,
+                    "amp_ratio": 0.9997,
+                    "phase_error": -4.0,
+                }
+            },
+            "input_gain": {"q4:res-q4.ro": {"gain_I": 2, "gain_Q": 3}},
+            "output_att": {"q0:mw-q0.01": 4},
+        },
+        "portclock_to_path": {
+            "q0:mw-q0.01": "cluster0.module2.complex_output_0",
+            "q4:res-q4.ro": "cluster0.module3.complex_output_0",
+        },
+        "lo_to_path": {"lo1": "cluster0.module3.complex_output_0"},
+    }
+
+    cluster_compilation_config = _ClusterCompilationConfig.model_validate(
+        cluster_compilation_config
+    )
+    module_configs = cluster_compilation_config._extract_module_compilation_configs()
+
+    assert list(module_configs.keys()) == [2, 3]
+
+    module2 = module_configs[2]
+    module3 = module_configs[3]
+
+    assert module2.hardware_description.model_dump(exclude_unset=True) == {
+        "instrument_type": "QCM_RF"
+    }
+    assert module2.hardware_options.model_dump(exclude_unset=True) == {
+        "modulation_frequencies": {
+            "q0:mw-q0.01": {"interm_freq": 50000000.0, "lo_freq": None}
+        },
+        "output_att": {"q0:mw-q0.01": 4},
+    }
+
+    assert module2.portclock_to_path == {
+        ("q0:mw-q0.01"): "cluster0.module2.complex_output_0"
+    }
+    assert module2.lo_to_path == {}
+
+    assert module3.hardware_description.model_dump(exclude_unset=True) == {
+        "instrument_type": "QRM"
+    }
+    assert module3.hardware_options.model_dump(exclude_unset=True) == {
+        "modulation_frequencies": {
+            "q4:res-q4.ro": {"interm_freq": None, "lo_freq": 7200000000.0}
+        },
+        "mixer_corrections": {
+            "q4:res-q4.ro": {
+                "dc_offset_i": -0.054,
+                "dc_offset_q": -0.034,
+                "amp_ratio": 0.9997,
+                "phase_error": -4.0,
+            }
+        },
+        "input_gain": {"q4:res-q4.ro": {"gain_I": 2, "gain_Q": 3}},
+    }
+
+    assert module3.portclock_to_path == {
+        ("q4:res-q4.ro"): "cluster0.module3.complex_output_0"
+    }
+    assert module3.lo_to_path == {"lo1": "cluster0.module3.complex_output_0"}
+
+
+def test_extract_sequencer_compilation_configs():
+    module_compilation_config = {
+        "hardware_description": {
+            "instrument_type": "QCM",
+            "complex_output_0": {
+                "marker_debug_mode_enable": True,
+            },
+        },
+        "hardware_options": {
+            "latency_corrections": {"q0:mw-q0.01": 8e-09},
+            "distortion_corrections": {
+                "q0:mw-q0.01": {
+                    "filter_func": "scipy.signal.lfilter",
+                    "input_var_name": "x",
+                    "kwargs": {"b": [0, 0.25, 0.5], "a": [1]},
+                    "clipping_values": [-2.5, 2.5],
+                    "sampling_rate": 1000000000.0,
+                }
+            },
+            "modulation_frequencies": {
+                "q0:mw-q0.01": {"interm_freq": None, "lo_freq": 7800000000.0},
+                "q1:mw-q1.01": {"interm_freq": 50000000.0, "lo_freq": None},
+            },
+            "mixer_corrections": {
+                "q0:mw-q0.01": {
+                    "amp_ratio": 0.9999,
+                    "phase_error": -4.2,
+                }
+            },
+            "sequencer_options": {
+                "q0:mw-q0.01": {
+                    "ttl_acq_threshold": 0.5,
+                }
+            },
+        },
+        "portclock_to_path": {
+            "q1:mw-q1.01": "cluster0.module1.complex_output_1",
+            "q0:mw-q0.01": "cluster0.module1.complex_output_0",
+        },
+        "lo_to_path": {"lo0": "cluster0.module1.complex_output_0"},
+    }
+
+    module_compilation_config = _ClusterModuleCompilationConfig.model_validate(
+        module_compilation_config
+    )
+
+    sequencer_configs = (
+        module_compilation_config._extract_sequencer_compilation_configs()
+    )
+
+    assert list(sequencer_configs.keys()) == [0, 1]
+
+    assert sequencer_configs[0].model_dump(exclude_unset=True) == {
+        "sequencer_options": {"ttl_acq_threshold": 0.5},
+        "hardware_description": {"marker_debug_mode_enable": True},
+        "portclock": "q0:mw-q0.01",
+        "channel_name": "complex_output_0",
+        "latency_correction": 8e-09,
+        "distortion_correction": {
+            "filter_func": "scipy.signal.lfilter",
+            "input_var_name": "x",
+            "kwargs": {"b": [0, 0.25, 0.5], "a": [1]},
+            "clipping_values": [-2.5, 2.5],
+            "sampling_rate": 1e9,
+        },
+        "lo_name": "lo0",
+        "modulation_frequencies": {"interm_freq": None, "lo_freq": 7800000000.0},
+        "mixer_corrections": {"amp_ratio": 0.9999, "phase_error": -4.2},
+    }
+
+    assert sequencer_configs[1].model_dump(exclude_unset=True) == {
+        "sequencer_options": {},
+        "hardware_description": {},
+        "portclock": "q1:mw-q1.01",
+        "channel_name": "complex_output_1",
+        "latency_correction": 0.0,
+        "distortion_correction": None,
+        "lo_name": None,
+        "modulation_frequencies": {"interm_freq": 50000000.0, "lo_freq": None},
+        "mixer_corrections": None,
+    }
 
 
 # NV-center-specific config (this is a sanity check because of common `optical_control`` port)
-def test_extract_instrument_compiler_configs_nv_center(qblox_hardware_config_nv_center):
+def test_extract_instrument_compilation_configs_nv_center(
+    qblox_hardware_config_nv_center,
+):
     hardware_config = QbloxHardwareCompilationConfig.model_validate(
         deepcopy(qblox_hardware_config_nv_center)
     )
@@ -2342,34 +2568,53 @@ def test_extract_instrument_compiler_configs_nv_center(qblox_hardware_config_nv_
         ("qe0:optical_control", "qe0.ge0"),
     }
 
-    compiler_configs = hardware_config._extract_instrument_compiler_configs(
+    instrument_configs = hardware_config._extract_instrument_compilation_configs(
         portclocks_used
     )
 
-    assert list(compiler_configs.keys()) == [
+    assert list(instrument_configs.keys()) == [
         "cluster0",
         "red_laser",
         "spinpump_laser",
         "green_laser",
     ]
 
-    assert ("qe0:optical_control", "qe0.ge1") in compiler_configs[
-        "cluster0"
-    ].portclock_to_path.keys()
+    cluster0 = instrument_configs["cluster0"]
 
-    cluster0_module2 = compiler_configs["cluster0"].modules[2]
-    assert cluster0_module2.hardware_description.instrument_type == "QCM"
-    assert cluster0_module2.hardware_options.modulation_frequencies[
-        "qe0:optical_control-qe0.ge1"
-    ].model_dump() == {"interm_freq": 200e6, "lo_freq": None}
-    assert any(
-        "qe0:optical_control" in node
-        for node in cluster0_module2.connectivity.graph.nodes
-    )
-    assert (
-        "qe0:optical_control",
-        "qe0.ge1",
-    ) in cluster0_module2.portclock_to_path.keys()
+    assert cluster0.hardware_description.model_dump(exclude_unset=True) == {
+        "instrument_type": "Cluster",
+        "ref": "internal",
+        "modules": {2: {"instrument_type": "QCM"}},
+    }
+
+    assert cluster0.hardware_options.model_dump(exclude_unset=True) == {
+        "modulation_frequencies": {
+            "qe0:optical_control-qe0.ge1": {
+                "interm_freq": 200000000.0,
+                "lo_freq": None,
+            },
+            "qe0:optical_control-qe0.ionization": {
+                "interm_freq": 200000000.0,
+                "lo_freq": None,
+            },
+            "qe0:optical_control-qe0.ge0": {
+                "interm_freq": 200000000.0,
+                "lo_freq": None,
+            },
+        }
+    }
+
+    assert cluster0.portclock_to_path == {
+        ("qe0:optical_control-qe0.ge1"): "cluster0.module2.real_output_0",
+        ("qe0:optical_control-qe0.ionization"): "cluster0.module2.real_output_1",
+        ("qe0:optical_control-qe0.ge0"): "cluster0.module2.real_output_2",
+    }
+
+    assert cluster0.lo_to_path == {
+        "spinpump_laser": "cluster0.module2.real_output_0",
+        "green_laser": "cluster0.module2.real_output_1",
+        "red_laser": "cluster0.module2.real_output_2",
+    }
 
 
 def test_generate_uuid_from_wf_data():
@@ -2494,7 +2739,7 @@ def test_external_lo_not_present_raises(compile_config_basic_transmon_qblox_hard
     with pytest.raises(
         RuntimeError,
         match="External local oscillator 'non_existent_lo' set to "
-        "be used for port='q4:mw' and clock='q4.01' not found! Make "
+        "be used for port 'q4:mw' not found! Make "
         "sure it is present in the hardware configuration.",
     ):
         compiler = SerialCompiler(name="compiler")
@@ -3208,19 +3453,67 @@ def test_markers(mock_setup_basic_transmon, hardware_cfg_cluster, hardware_cfg_r
     _confirm_correct_markers(qrm_rf_program, 0b0011, is_rf=True)
 
 
-def test_extract_settings_from_mapping(hardware_cfg_rf_legacy, hardware_cfg_cluster):
-    types.BasebandModuleSettings.extract_settings_from_mapping(
-        hardware_cfg_rf_legacy["cluster0"]
+def test_extract_settings_from_mapping(
+    make_schedule_with_measurement, create_schedule_with_pulse_info
+):
+    hardware_cfg = {
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "ref": "internal",
+                "modules": {"1": {"instrument_type": "QRM_RF"}},
+            },
+            "lo0": {"instrument_type": "LocalOscillator", "power": 1},
+            "iq_mixer_lo0": {"instrument_type": "IQMixer"},
+        },
+        "hardware_options": {
+            "modulation_frequencies": {
+                "q0:res-q0.ro": {"interm_freq": None, "lo_freq": 7.8e9},
+            },
+        },
+        "connectivity": {
+            "graph": [
+                ["cluster0.module1.complex_output_0", "iq_mixer_lo0.if"],
+                ["lo0.output", "iq_mixer_lo0.lo"],
+                ["iq_mixer_lo0.rf", "q0:res"],
+            ]
+        },
+    }
+
+    hardware_cfg = QbloxHardwareCompilationConfig.model_validate(hardware_cfg)
+    sched = create_schedule_with_pulse_info(make_schedule_with_measurement("q0"))
+    instrument_configs = hardware_cfg._extract_instrument_compilation_configs(
+        _extract_port_clocks_used(sched)
     )
-    types.RFModuleSettings.extract_settings_from_mapping(
-        hardware_cfg_rf_legacy["cluster0"]
-    )
+    module_configs = instrument_configs[
+        "cluster0"
+    ]._extract_module_compilation_configs()
+
+    types.BasebandModuleSettings.extract_settings_from_mapping(module_configs[1])
+    types.RFModuleSettings.extract_settings_from_mapping(module_configs[1])
 
 
 def test_cluster_settings(
-    pulse_only_schedule, compile_config_basic_transmon_qblox_hardware
+    compile_config_basic_transmon_qblox_hardware, create_schedule_with_pulse_info
 ):
-    pulse_only_schedule = _determine_absolute_timing(pulse_only_schedule)
+    sched = Schedule("pulse_only_experiment")
+    sched.add(IdlePulse(duration=200e-6))
+    sched.add(
+        DRAGPulse(
+            G_amp=0.5,
+            D_amp=-0.2,
+            phase=90,
+            port="q0:mw",
+            duration=20e-9,
+            clock="q0.01",
+            t0=4e-9,
+        )
+    )
+    sched.add(RampPulse(t0=2e-3, amp=0.5, duration=28e-9, port="q4:mw", clock="q0.04"))
+    pulse_only_schedule = create_schedule_with_pulse_info(
+        _determine_absolute_timing(sched)
+    )
 
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         pulse_only_schedule,
@@ -5059,7 +5352,7 @@ def test_compile_hardware_distortion_corrections():
                     exp1_coeffs=[2000, -0.1],
                     fir_coeffs=[1.025] + [0.03, 0.02] * 15 + [0],
                 ),
-                "iq_mixer0.if-iq_mixer01": [
+                "q4:mw-q4.01": [
                     QbloxHardwareDistortionCorrection(
                         exp1_coeffs=[200, -0.1],
                         fir_coeffs=[1.025] + [0.03, 0.02] * 15 + [0],
@@ -5074,17 +5367,17 @@ def test_compile_hardware_distortion_corrections():
         "connectivity": {
             "graph": [
                 ("cluster0.module1.complex_output_0", "iq_mixer0.if"),
-                ("cluster0.module1.real_output_2", "q0:fl"),
-                ("cluster0.module1.real_output_3", "q1:fl"),
                 ("lo0.output", "iq_mixer0.lo"),
                 ("iq_mixer0.rf", "q4:mw"),
+                ("cluster0.module1.real_output_2", "q0:fl"),
+                ("cluster0.module1.real_output_3", "q1:fl"),
                 ("cluster0.module2.complex_output_0", "q5:mw"),
             ]
         },
     }
 
     sched = Schedule("Qblox hardware distortion corrections test", repetitions=1)
-    sched.add_resource(ClockResource(name="iq_mixer01", freq=5e6))
+    sched.add_resource(ClockResource(name="q4.01", freq=5e6))
     sched.add(
         SquarePulse(
             amp=0.1,
@@ -5097,9 +5390,9 @@ def test_compile_hardware_distortion_corrections():
     sched.add(
         SquarePulse(
             amp=0.1,
-            port="iq_mixer0.if",
+            port="q4:mw",
             duration=200e-9,
-            clock="iq_mixer01",
+            clock="q4.01",
             t0=0,
         )
     )
@@ -5120,6 +5413,160 @@ def test_compile_hardware_distortion_corrections():
     assert sched.compiled_instructions["cluster0"]["cluster0_module1"]["settings"][
         "distortion_corrections"
     ][1]["exp1"]["coeffs"] == [20, -0.1]
+
+
+@pytest.mark.parametrize(
+    "portclock, distortion_correction, error_msg",
+    [
+        (
+            "q0:mw-q0.01",
+            QbloxHardwareDistortionCorrection(
+                exp1_coeffs=[2000, -0.1],
+                fir_coeffs=[1.025] + [0.03, 0.02] * 15 + [0],
+            ),
+            "two corrections are required",
+        ),
+        (
+            "q1:mw-q1.01",
+            [
+                QbloxHardwareDistortionCorrection(
+                    exp1_coeffs=[200, -0.1],
+                    fir_coeffs=[1.025] + [0.03, 0.02] * 15 + [0],
+                ),
+                QbloxHardwareDistortionCorrection(
+                    exp1_coeffs=[20, -0.1],
+                    fir_coeffs=[1.025] + [0.03, 0.02] * 15 + [0],
+                ),
+            ],
+            "one correction is required",
+        ),
+    ],
+)
+def test_validate_hardware_distortion_corrections_mode(
+    portclock, distortion_correction, error_msg
+):
+    quantum_device = QuantumDevice("qblox_distortions_device")
+    compiler = SerialCompiler(name="compiler")
+
+    hardware_compilation_cfg = {
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "ref": "internal",
+                "modules": {
+                    "1": {"instrument_type": "QCM"},
+                },
+            },
+        },
+        "hardware_options": {
+            "distortion_corrections": {
+                portclock: distortion_correction,
+            },
+        },
+        "connectivity": {
+            "graph": [
+                ("cluster0.module1.complex_output_0", "q0:mw"),
+                ("cluster0.module1.real_output_2", "q1:mw"),
+            ]
+        },
+    }
+
+    port, clock = portclock.split("-")
+
+    sched = Schedule("Qblox hardware distortion corrections test", repetitions=1)
+    sched.add_resource(ClockResource(name=clock, freq=5e6))
+    sched.add(
+        SquarePulse(
+            amp=0.1,
+            port=port,
+            duration=200e-9,
+            clock=clock,
+            t0=0,
+        )
+    )
+
+    quantum_device.hardware_config(hardware_compilation_cfg)
+
+    with pytest.raises(ValueError) as error:
+        sched = compiler.compile(
+            schedule=sched,
+            config=quantum_device.generate_compilation_config(),
+        )
+
+    assert error_msg in error.value.args[0]
+
+
+@pytest.mark.parametrize(
+    "input_gain, error_msg",
+    [
+        (
+            {"q0:mw-q0.01": 2},
+            "A real input gain",
+        ),
+        (
+            {"q1:mw-q1.01": {"gain_I": 2, "gain_Q": 3}},
+            "A complex input gain",
+        ),
+        (
+            {"q1:mw-q1.01": 2, "q3:mw-q3.01": {"gain_I": 3, "gain_Q": 2}},
+            "Found non-unique input gains",
+        ),
+    ],
+)
+def test_validate_input_gain(input_gain, error_msg):
+    quantum_device = QuantumDevice("qblox_distortions_device")
+    compiler = SerialCompiler(name="compiler")
+
+    hardware_compilation_cfg = {
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "ref": "internal",
+                "modules": {
+                    "1": {"instrument_type": "QRM"},
+                    "2": {"instrument_type": "QRM"},
+                },
+            },
+        },
+        "hardware_options": {
+            "input_gain": input_gain,
+        },
+        "connectivity": {
+            "graph": [
+                ("cluster0.module1.complex_input_0", "q0:mw"),
+                ("cluster0.module2.real_input_0", "q1:mw"),
+                ("cluster0.module2.real_input_1", "q2:mw"),
+                ("cluster0.module2.complex_output_0", "q3:mw"),
+            ]
+        },
+    }
+
+    sched = Schedule("Qblox input gain test", repetitions=1)
+
+    for portclock in input_gain:
+        port, clock = portclock.split("-")
+        sched.add_resource(ClockResource(name=clock, freq=5e6))
+        sched.add(
+            SquarePulse(
+                amp=0.1,
+                port=port,
+                duration=200e-9,
+                clock=clock,
+                t0=0,
+            )
+        )
+
+    quantum_device.hardware_config(hardware_compilation_cfg)
+
+    with pytest.raises(ValueError) as error:
+        sched = compiler.compile(
+            schedule=sched,
+            config=quantum_device.generate_compilation_config(),
+        )
+
+    assert error_msg in error.value.args[0]
 
 
 def test_distortion_correction_latency_compensation():
@@ -5201,7 +5648,7 @@ def test_distortion_correction_latency_compensation():
                     exp1_coeffs=[2000, -0.1],
                     fir_coeffs=[1.025] + [0.03, 0.02] * 15 + [0],
                 ),
-                "iq_mixer0.if-iq_mixer01": [
+                "q4:mw-q4.01": [
                     QbloxHardwareDistortionCorrection(
                         exp1_coeffs=[200, -0.1],
                         fir_coeffs=[1.025] + [0.03, 0.02] * 15 + [0],
@@ -5216,10 +5663,10 @@ def test_distortion_correction_latency_compensation():
         "connectivity": {
             "graph": [
                 ("cluster0.module1.complex_output_0", "iq_mixer0.if"),
-                ("cluster0.module1.real_output_2", "q0:fl"),
-                ("cluster0.module1.real_output_3", "q1:fl"),
                 ("lo0.output", "iq_mixer0.lo"),
                 ("iq_mixer0.rf", "q4:mw"),
+                ("cluster0.module1.real_output_2", "q0:fl"),
+                ("cluster0.module1.real_output_3", "q1:fl"),
                 ("cluster0.module2.complex_output_0", "q5:mw"),
                 ("cluster0.module2.complex_output_1", "q6:mw"),
                 ("cluster0.module1.digital_output_0", "q0:marker"),
@@ -5233,7 +5680,7 @@ def test_distortion_correction_latency_compensation():
     }
 
     sched = Schedule("Qblox hardware distortion corrections test", repetitions=1)
-    sched.add_resource(ClockResource(name="iq_mixer01", freq=5e6))
+    sched.add_resource(ClockResource(name="q4.01", freq=5e6))
     sched.add_resource(ClockResource(name="q5.01", freq=5e6))
     sched.add_resource(ClockResource(name="q6.01", freq=5e9))
     sched.add(
@@ -5257,9 +5704,9 @@ def test_distortion_correction_latency_compensation():
     sched.add(
         SquarePulse(
             amp=0.1,
-            port="iq_mixer0.if",
+            port="q4:mw",
             duration=200e-9,
-            clock="iq_mixer01",
+            clock="q4.01",
             t0=0,
         )
     )

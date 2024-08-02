@@ -8,6 +8,7 @@ import warnings
 from dataclasses import dataclass
 from dataclasses import field as dataclasses_field
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
@@ -25,7 +26,15 @@ from pydantic import Field, field_validator
 from pydantic.functional_validators import model_validator
 from typing_extensions import Annotated
 
-from quantify_scheduler.backends.qblox import constants, q1asm_instructions
+from quantify_scheduler.backends.qblox import q1asm_instructions
+from quantify_scheduler.backends.qblox.constants import (
+    DEFAULT_MIXER_AMP_RATIO,
+    DEFAULT_MIXER_PHASE_ERROR_DEG,
+    MAX_MIXER_AMP_RATIO,
+    MAX_MIXER_PHASE_ERROR_DEG,
+    MIN_MIXER_AMP_RATIO,
+    MIN_MIXER_PHASE_ERROR_DEG,
+)
 from quantify_scheduler.backends.qblox.enums import (
     DistortionCorrectionLatencyEnum,
     LoCalEnum,
@@ -35,7 +44,6 @@ from quantify_scheduler.backends.qblox.enums import (
     TimetagTraceType,
 )
 from quantify_scheduler.backends.types.common import (
-    Connectivity,
     HardwareDescription,
     HardwareDistortionCorrection,
     HardwareOptions,
@@ -50,6 +58,12 @@ from quantify_scheduler.enums import (
     TimeSource,  # noqa: TCH001 pydantic needs them
 )
 from quantify_scheduler.structure.model import DataStructure
+
+if TYPE_CHECKING:
+    from quantify_scheduler.backends.qblox_backend import (
+        _ClusterModuleCompilationConfig,
+        _SequencerCompilationConfig,
+    )
 
 
 class ValidationWarning(UserWarning):
@@ -309,7 +323,7 @@ class BaseModuleSettings(DataClassJsonMixin):
     @classmethod
     def extract_settings_from_mapping(
         cls: type[_ModuleSettingsT],
-        mapping: Dict[str, Any],
+        mapping: _ClusterModuleCompilationConfig,
         **kwargs,
     ) -> _ModuleSettingsT:
         """
@@ -389,7 +403,7 @@ class RFModuleSettings(AnalogModuleSettings):
 
     @classmethod
     def extract_settings_from_mapping(
-        cls, mapping: Dict[str, Any], **kwargs: Optional[dict]
+        cls, mapping: _ClusterModuleCompilationConfig, **kwargs: Optional[dict]
     ) -> RFModuleSettings:
         """
         Factory method that takes all the settings defined in the mapping and generates
@@ -398,19 +412,24 @@ class RFModuleSettings(AnalogModuleSettings):
         Parameters
         ----------
         mapping
-            The mapping dict to extract the settings from
+            The compiler config to extract the settings from
         **kwargs
             Additional keyword arguments passed to the constructor. Can be used to
             override parts of the mapping dict.
         """
         rf_settings = {}
 
-        complex_output_0 = mapping.get("complex_output_0")
-        complex_output_1 = mapping.get("complex_output_1")
-        if complex_output_0:
-            rf_settings["lo0_freq"] = complex_output_0.get("lo_freq")
-        if complex_output_1:
-            rf_settings["lo1_freq"] = complex_output_1.get("lo_freq")
+        for portclock, channel_name_path in mapping.portclock_to_path.items():
+            channel_name = channel_name_path.split(".")[-1]
+            modulation_frequencies = mapping.hardware_options.modulation_frequencies
+
+            if modulation_frequencies is not None:
+                pc_freqs = modulation_frequencies.get(portclock)
+                lo_freq = pc_freqs.lo_freq if pc_freqs is not None else None
+                if channel_name == "complex_output_0":
+                    rf_settings["lo0_freq"] = lo_freq
+                elif channel_name == "complex_output_1":
+                    rf_settings["lo1_freq"] = lo_freq
 
         combined_settings = {**rf_settings, **kwargs}
         return cls(**combined_settings)
@@ -469,7 +488,7 @@ class SequencerSettings(DataClassJsonMixin):
     @classmethod
     def initialize_from_config_dict(
         cls,
-        sequencer_cfg: Dict[str, Any],  # noqa: ARG003 ignore unused argument
+        sequencer_cfg: _SequencerCompilationConfig,  # noqa: ARG003 ignore unused argument
         channel_name: str,
         connected_output_indices: tuple[int, ...],
         connected_input_indices: tuple[int, ...],
@@ -566,7 +585,7 @@ class AnalogSequencerSettings(SequencerSettings):
     @classmethod
     def initialize_from_config_dict(
         cls,
-        sequencer_cfg: Dict[str, Any],
+        sequencer_cfg: _SequencerCompilationConfig,
         channel_name: str,
         connected_output_indices: tuple[int, ...],
         connected_input_indices: tuple[int, ...],
@@ -577,8 +596,8 @@ class AnalogSequencerSettings(SequencerSettings):
 
         Parameters
         ----------
-        sequencer_cfg : dict
-            The sequencer configuration dict.
+        sequencer_cfg
+            The sequencer compilation_config.
         channel_name
             Specifies the channel identifier of the hardware config (e.g. `complex_output_0`).
         connected_output_indices
@@ -591,99 +610,56 @@ class AnalogSequencerSettings(SequencerSettings):
         : AnalogSequencerSettings
             A AnalogSequencerSettings instance with initial values.
         """
-        T = TypeVar("T", int, float)
-
-        def extract_and_verify_range(
-            param_name: str,
-            settings: Dict[str, Any],
-            default_value: T | None,
-            min_value: T,
-            max_value: T,
-        ) -> T:
-            val = settings.get(param_name, default_value)
-            if val is None:
-                return val
-            elif val < min_value or val > max_value:
-                raise ValueError(
-                    f"Attempting to configure {param_name} to {val} for the sequencer "
-                    f"specified with port {settings.get('port', '[port invalid!]')} and"
-                    f" clock {settings.get('clock', '[clock invalid!]')}, while the "
-                    f"hardware requires it to be between {min_value} and {max_value}."
-                )
-            return val
-
-        modulation_freq: Optional[float] = sequencer_cfg.get("interm_freq")
+        modulation_freq = (
+            sequencer_cfg.modulation_frequencies.interm_freq
+            if sequencer_cfg.modulation_frequencies is not None
+            else None
+        )
         nco_en: bool = (
             modulation_freq is not None and modulation_freq != 0
         )  # Allow NCO to be permanently disabled via `"interm_freq": 0` in the hardware config
 
-        init_offset_awg_path_I = extract_and_verify_range(
-            param_name="init_offset_awg_path_I",
-            settings=sequencer_cfg,
-            default_value=cls.init_offset_awg_path_I,
-            min_value=-1.0,
-            max_value=1.0,
+        # TODO: there must be a way to make this nicer
+        init_offset_awg_path_I = (
+            sequencer_cfg.sequencer_options.init_offset_awg_path_I
+            if sequencer_cfg.sequencer_options is not None
+            else 0.0
         )
-
-        init_offset_awg_path_Q = extract_and_verify_range(
-            param_name="init_offset_awg_path_Q",
-            settings=sequencer_cfg,
-            default_value=cls.init_offset_awg_path_Q,
-            min_value=-1.0,
-            max_value=1.0,
+        init_offset_awg_path_Q = (
+            sequencer_cfg.sequencer_options.init_offset_awg_path_Q
+            if sequencer_cfg.sequencer_options is not None
+            else 0.0
         )
-
-        init_gain_awg_path_I = extract_and_verify_range(
-            param_name="init_gain_awg_path_I",
-            settings=sequencer_cfg,
-            default_value=cls.init_gain_awg_path_I,
-            min_value=-1.0,
-            max_value=1.0,
+        init_gain_awg_path_I = (
+            sequencer_cfg.sequencer_options.init_gain_awg_path_I
+            if sequencer_cfg.sequencer_options is not None
+            else 1.0
         )
-
-        init_gain_awg_path_Q = extract_and_verify_range(
-            param_name="init_gain_awg_path_Q",
-            settings=sequencer_cfg,
-            default_value=cls.init_gain_awg_path_Q,
-            min_value=-1.0,
-            max_value=1.0,
+        init_gain_awg_path_Q = (
+            sequencer_cfg.sequencer_options.init_gain_awg_path_Q
+            if sequencer_cfg.sequencer_options is not None
+            else 1.0
         )
-
-        mixer_phase_error = extract_and_verify_range(
-            param_name="mixer_phase_error_deg",
-            settings=sequencer_cfg,
-            default_value=0.0,
-            min_value=constants.MIN_MIXER_PHASE_ERROR_DEG,
-            max_value=constants.MAX_MIXER_PHASE_ERROR_DEG,
+        mixer_phase_error = (
+            sequencer_cfg.mixer_corrections.phase_error
+            if sequencer_cfg.mixer_corrections is not None
+            else None
         )
-
-        mixer_amp_ratio = extract_and_verify_range(
-            param_name="mixer_amp_ratio",
-            settings=sequencer_cfg,
-            default_value=1.0,
-            min_value=constants.MIN_MIXER_AMP_RATIO,
-            max_value=constants.MAX_MIXER_AMP_RATIO,
+        mixer_amp_ratio = (
+            sequencer_cfg.mixer_corrections.amp_ratio
+            if sequencer_cfg.mixer_corrections is not None
+            else None
         )
-
-        auto_sideband_cal = sequencer_cfg.get("auto_sideband_cal", SidebandCalEnum.OFF)
-
-        thresholded_acq_threshold = extract_and_verify_range(
-            param_name="thresholded_acq_threshold",
-            settings=sequencer_cfg,
-            default_value=cls.thresholded_acq_threshold,
-            min_value=constants.MIN_DISCRETIZATION_THRESHOLD_ACQ,
-            max_value=constants.MAX_DISCRETIZATION_THRESHOLD_ACQ,
+        auto_sideband_cal = (
+            sequencer_cfg.mixer_corrections.auto_sideband_cal
+            if sequencer_cfg.mixer_corrections is not None
+            else SidebandCalEnum.OFF
         )
-
-        thresholded_acq_rotation = extract_and_verify_range(
-            param_name="thresholded_acq_rotation",
-            settings=sequencer_cfg,
-            default_value=cls.thresholded_acq_rotation,
-            min_value=constants.MIN_PHASE_ROTATION_ACQ,
-            max_value=constants.MAX_PHASE_ROTATION_ACQ,
+        ttl_acq_threshold = (
+            sequencer_cfg.sequencer_options.ttl_acq_threshold
+            if sequencer_cfg.sequencer_options is not None
+            else None
         )
-
-        ttl_acq_threshold = sequencer_cfg.get("ttl_acq_threshold")
 
         return cls(
             nco_en=nco_en,
@@ -698,8 +674,6 @@ class AnalogSequencerSettings(SequencerSettings):
             modulation_freq=modulation_freq,
             mixer_corr_phase_offset_degree=mixer_phase_error,
             mixer_corr_gain_ratio=mixer_amp_ratio,
-            thresholded_acq_rotation=thresholded_acq_rotation,
-            thresholded_acq_threshold=thresholded_acq_threshold,
             ttl_acq_threshold=ttl_acq_threshold,
             auto_sideband_cal=auto_sideband_cal,
         )
@@ -763,7 +737,7 @@ class TimetagSequencerSettings(SequencerSettings):
     @classmethod
     def initialize_from_config_dict(
         cls,
-        sequencer_cfg: Dict[str, Any],  # noqa: ARG003 ignore unused argument
+        sequencer_cfg: _SequencerCompilationConfig,  # noqa: ARG003 ignore unused argument
         channel_name: str,
         connected_output_indices: tuple[int, ...],
         connected_input_indices: tuple[int, ...],
@@ -1113,7 +1087,7 @@ that are connected to this port-clock combination.
 
 class ComplexInputGain(DataStructure):
     """
-    Input gain settings for a real input connected to a port-clock combination.
+    Input gain settings for a complex input connected to a port-clock combination.
 
     This gain value will be set on the QRM input ports
     that are connected to this port-clock combination.
@@ -1198,9 +1172,15 @@ class QbloxMixerCorrections(MixerCorrections):
     """The DC offset on the I channel used for this port-clock combination."""
     dc_offset_q: Optional[float] = None  # type: ignore  (optional due to AMC)
     """The DC offset on the Q channel used for this port-clock combination."""
-    amp_ratio: Optional[float] = None  # type: ignore  (optional due to AMC)
+    amp_ratio: float = Field(
+        default=DEFAULT_MIXER_AMP_RATIO, ge=MIN_MIXER_AMP_RATIO, le=MAX_MIXER_AMP_RATIO
+    )
     """The mixer gain ratio used for this port-clock combination."""
-    phase_error: Optional[float] = None  # type: ignore  (optional due to AMC)
+    phase_error: float = Field(
+        default=DEFAULT_MIXER_PHASE_ERROR_DEG,
+        ge=MIN_MIXER_PHASE_ERROR_DEG,
+        le=MAX_MIXER_PHASE_ERROR_DEG,
+    )
     """The mixer phase error used for this port-clock combination."""
     auto_lo_cal: LoCalEnum = LoCalEnum.OFF
     """
@@ -1251,8 +1231,8 @@ class QbloxMixerCorrections(MixerCorrections):
                 "set either `amp_ratio` or `phase_error` for this port-clock.",
                 ValidationWarning,
             )
-            data["amp_ratio"] = None
-            data["phase_error"] = None
+            data["amp_ratio"] = DEFAULT_MIXER_AMP_RATIO
+            data["phase_error"] = DEFAULT_MIXER_PHASE_ERROR_DEG
 
         return data
 
@@ -1281,16 +1261,16 @@ class SequencerOptions(DataStructure):
             }
     """
 
-    init_offset_awg_path_I: float = 0.0
+    init_offset_awg_path_I: float = Field(default=0.0, ge=-1.0, le=1.0)
     """Specifies what value the sequencer offset for AWG path_I will be reset to
     before the start of the experiment."""
-    init_offset_awg_path_Q: float = 0.0
+    init_offset_awg_path_Q: float = Field(default=0.0, ge=-1.0, le=1.0)
     """Specifies what value the sequencer offset for AWG path_Q will be reset to
     before the start of the experiment."""
-    init_gain_awg_path_I: float = 1.0
+    init_gain_awg_path_I: float = Field(default=1.0, ge=-1.0, le=1.0)
     """Specifies what value the sequencer gain for AWG path_I will be reset to
     before the start of the experiment."""
-    init_gain_awg_path_Q: float = 1.0
+    init_gain_awg_path_Q: float = Field(default=1.0, ge=-1.0, le=1.0)
     """Specifies what value the sequencer gain for AWG path_Q will be reset to
     before the start of the experiment."""
     ttl_acq_threshold: Optional[float] = None
@@ -1422,52 +1402,3 @@ class QbloxHardwareOptions(HardwareOptions):
     the settings that determine the voltage thresholds above which input signals are
     registered as high.
     """
-
-
-class _LocalOscillatorCompilerConfig(DataStructure):
-    """Configuration values for a :class:`quantify_scheduler.backends.qblox.instrument_compilers.LocalOscillatorCompiler`."""
-
-    instrument_type: Literal["LocalOscillator"]
-    """The type of the instrument described by this config."""
-    hardware_description: LocalOscillatorDescription
-    """Description of the physical setup of this local oscillator."""
-    frequency: Union[float, None] = None
-    """The frequency of this local oscillator."""
-
-
-class _ClusterCompilerConfig(DataStructure):
-    """Configuration values for a :class:`~.ClusterCompiler`."""
-
-    instrument_type: Literal["Cluster"]
-    """The type of the instrument described by this config."""
-    ref: Union[Literal["internal"], Literal["external"]]
-    """The reference source for the cluster."""
-    sequence_to_file: bool = False
-    """Write sequencer programs to files for (all modules in this) cluster."""
-    modules: Dict[int, _ClusterModuleCompilerConfig] = {}
-    """Compiler configs of the modules of this cluster, using slot index as key."""
-    portclock_to_path: Dict[str, str] = {}
-    """Mapping between portclocks and their associated channel name paths (e.g. cluster0.module1.complex_output_0)."""
-
-
-class _ClusterModuleCompilerConfig(DataStructure):
-    """Configuration values for a :class:`~.ClusterModuleCompiler`."""
-
-    instrument_type: Union[
-        Literal["QCM"],
-        Literal["QRM"],
-        Literal["QCM_RF"],
-        Literal["QRM_RF"],
-        Literal["QTM"],
-    ]
-    """The type of the instrument described by this config."""
-    hardware_description: ClusterModuleDescription
-    """Description of the physical setup of this module."""
-    hardware_options: QbloxHardwareOptions
-    """Options that are used in compiling the instructions for the hardware."""
-    connectivity: Connectivity
-    """Datastructure representing how ports on the quantum device are connected to ports on the control hardware."""
-    portclock_to_path: Dict[str, str] = {}
-    """Mapping between portclocks and their associated channel name paths (e.g. cluster0.module1.complex_output_0)."""
-    channel_to_lo: Dict[str, str] = {}
-    """Mapping between channel names and the name of the local oscillator they are connected to."""

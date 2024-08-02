@@ -23,6 +23,7 @@ from quantify_scheduler.backends.graph_compilation import (
     SimpleNodeConfig,
 )
 from quantify_scheduler.backends.qblox import compiler_container, constants
+from quantify_scheduler.backends.qblox.enums import ChannelMode
 from quantify_scheduler.backends.qblox.exceptions import NcoOperationTimingError
 from quantify_scheduler.backends.qblox.helpers import (
     _generate_new_style_hardware_compilation_config,
@@ -35,14 +36,24 @@ from quantify_scheduler.backends.types.common import (
     Connectivity,
     HardwareCompilationConfig,
     HardwareDescription,
+    LatencyCorrection,
+    LocalOscillatorDescription,
+    ModulationFrequencies,
+    SoftwareDistortionCorrection,
 )
 from quantify_scheduler.backends.types.qblox import (
     ClusterDescription,
+    ClusterModuleDescription,
+    ComplexChannelDescription,
+    ComplexInputGain,
+    DigitalChannelDescription,
     QbloxHardwareDescription,
+    QbloxHardwareDistortionCorrection,
     QbloxHardwareOptions,
-    _ClusterCompilerConfig,
-    _ClusterModuleCompilerConfig,
-    _LocalOscillatorCompilerConfig,
+    QbloxMixerCorrections,
+    RealChannelDescription,
+    RealInputGain,
+    SequencerOptions,
 )
 from quantify_scheduler.helpers.schedule import _extract_port_clocks_used
 from quantify_scheduler.operations.control_flow_library import (
@@ -62,6 +73,7 @@ from quantify_scheduler.schedules.schedule import (
     Schedule,
     ScheduleBase,
 )
+from quantify_scheduler.structure.model import DataStructure
 
 
 def _replace_long_square_pulses_recursively(
@@ -689,6 +701,7 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
         EXC_MESSAGE = (
             "Channels, rf-signals of iq mixers and lo outputs must be source nodes "
             "(left), and ports and if/lo-signals of iq mixers must be target nodes (right)."
+            "This error might be caused by duplicated ports in connectivity."
         )
 
         def _is_channel(node: str) -> bool:
@@ -725,7 +738,7 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
 
         return self
 
-    def _extract_instrument_compiler_configs(  # noqa: PLR0912, PLR0915
+    def _extract_instrument_compilation_configs(  # noqa: PLR0912, PLR0915
         self, portclocks_used: set[tuple]
     ) -> Dict[str, Any]:
         """
@@ -734,7 +747,28 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
         contains only the settings related to their related instrument. Each config must contain at least one
         portclock referenced in ``portclocks_used``, otherwise the config is deleted.
         """
-        compiler_configs = {}
+
+        def _correct_edge(edge: tuple) -> tuple:
+            # Sometimes source and target appear swapped. This block can be removed
+            # after making graph directed. (SE-477)
+            source, target = edge
+            if len(source.split(":")) == 2 and "laser" in target:
+                source, target = target, source
+
+            return source, target
+
+        def _get_optical_control_clock(modulator_name: str) -> str | None:
+            optical_control_clock = None
+            for laser, clock in {
+                "spinpump_laser": "ge1",
+                "green_laser": "ionization",
+                "red_laser": "ge0",
+            }.items():
+                if laser in modulator_name:
+                    optical_control_clock = clock
+            return optical_control_clock
+
+        instrument_configs = {}
 
         # Extract instrument hardware descriptions
         for (
@@ -742,183 +776,418 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
             instrument_description,
         ) in self.hardware_description.items():
             if instrument_description.instrument_type == "Cluster":
-                cluster_config = _ClusterCompilerConfig(
-                    instrument_type="Cluster",
-                    ref=instrument_description.ref,
-                    sequence_to_file=instrument_description.sequence_to_file,
+                instrument_configs[instrument_name] = _ClusterCompilationConfig(
+                    hardware_description=instrument_description,
+                    hardware_options=QbloxHardwareOptions(),
                 )
-                for (
-                    module_idx,
-                    module_description,
-                ) in instrument_description.modules.items():
-                    cluster_config.modules[module_idx] = _ClusterModuleCompilerConfig(
-                        instrument_type=instrument_description.modules[
-                            module_idx
-                        ].instrument_type,
-                        hardware_description=module_description,
-                        hardware_options={},
-                        connectivity={"graph": []},
-                    )
-
-                compiler_configs[instrument_name] = cluster_config
 
             elif instrument_description.instrument_type == "LocalOscillator":
-                compiler_configs[instrument_name] = _LocalOscillatorCompilerConfig(
-                    instrument_type="LocalOscillator",
+                instrument_configs[instrument_name] = _LocalOscillatorCompilationConfig(
                     hardware_description=instrument_description,
                     frequency=None,
                 )
 
-        # Distribute connectivity edges to the different cluster modules
-        # and get portclock to module / lo_name mappings
-        portclock_to_path = {}
-
+        # Get all `portclock_to_path`
+        # Get all `lo_to_path` and add it to the cluster modules
         mixers_and_ports = []
-        for edge in self.connectivity.graph.edges:
+        for edge_graph in self.connectivity.graph.edges:
+            edge = _correct_edge(edge_graph)
             instr_source = edge[0].split(".")[0]
             target_0 = edge[1].split(".")[0]
 
             edge_portclocks = [pc for pc in portclocks_used if target_0 in pc[0]]
             if len(edge_portclocks) > 0:
                 if self.hardware_description[instr_source].instrument_type == "Cluster":
-                    module_idx = int(edge[0].split(".")[1].replace("module", ""))
-                    compiler_configs[instr_source].modules[
-                        module_idx
-                    ].connectivity.graph.add_edge(*edge)
                     for pc in edge_portclocks:
-                        portclock_to_path[f"{pc[0]}-{pc[1]}"] = edge[0]
+                        instrument_configs[instr_source].portclock_to_path[
+                            f"{pc[0]}-{pc[1]}"
+                        ] = edge[0]
                 else:
                     mixers_and_ports.append(edge)
 
         for edge_with_mixer in mixers_and_ports:
             edge_with_lo, edge_with_channel = None, None
 
-            for edge in self.connectivity.graph.edges:
+            for edge_graph in self.connectivity.graph.edges:
+                edge = _correct_edge(edge_graph)
                 instr_source = edge[0].split(".")[0]
                 target_0 = edge[1].split(".")[0]
 
                 if target_0 in edge_with_mixer[0]:
+                    if instr_source not in self.hardware_description:
+                        raise RuntimeError(
+                            f"External local oscillator '{instr_source}' set to "
+                            f"be used for port '{edge_with_mixer[1]}' not found! Make "
+                            f"sure it is present in the hardware configuration."
+                        )
                     if (
                         self.hardware_description[instr_source].instrument_type
                         == "Cluster"
                     ):
                         cluster_name = instr_source
-                        module_idx = int(edge[0].split(".")[1].replace("module", ""))
                         edge_with_channel = edge
                     else:
                         edge_with_lo = edge
 
                 if edge_with_channel and edge_with_lo:
-                    compiler_configs[cluster_name].modules[
-                        module_idx
-                    ].connectivity.graph.add_edges_from(
-                        [
-                            edge_with_channel,
-                            edge_with_lo,
-                            edge_with_mixer,
-                        ]
-                    )
-
-                    channel_name = edge_with_channel[0].split(".")[-1]
+                    path = edge_with_channel[0]
                     lo_name = edge_with_lo[0].split(".")[0]
-                    compiler_configs[cluster_name].modules[module_idx].channel_to_lo[
-                        channel_name
-                    ] = lo_name
+                    instrument_configs[cluster_name].lo_to_path[lo_name] = path
+
+                    optical_control_clock = _get_optical_control_clock(
+                        edge_with_channel[1]
+                    )
 
                     edge_portclocks = [
                         pc for pc in portclocks_used if edge_with_mixer[1] in pc[0]
                     ]
                     for pc in edge_portclocks:
                         portclock = f"{pc[0]}-{pc[1]}"
-                        portclock_to_path[portclock] = edge_with_channel[0]
+                        if optical_control_clock is not None:
+                            if optical_control_clock in portclock:
+                                instrument_configs[cluster_name].portclock_to_path[
+                                    portclock
+                                ] = edge_with_channel[0]
+                        else:
+                            instrument_configs[cluster_name].portclock_to_path[
+                                portclock
+                            ] = edge_with_channel[0]
+
                     break
 
+        # Add name to LO hardware description and add frequency to LO compiler config
+        modulation_frequencies = (
+            self.hardware_options.modulation_frequencies
+            if self.hardware_options is not None
+            else None
+        )
+
+        if modulation_frequencies is not None:
+            for (
+                portclock,
+                frequencies,
+            ) in self.hardware_options.modulation_frequencies.items():
+                for instr_name, cfg in instrument_configs.items():
+                    if cfg.hardware_description.instrument_type != "Cluster":
+                        continue
+
+                    if portclock in cfg.portclock_to_path:
+                        path = cfg.portclock_to_path[portclock]
+
+                        lo_to_path = instrument_configs[instr_name].lo_to_path
+                        for lo_name, lo_path in lo_to_path.items():
+                            if path in lo_path:
+                                lo_config = instrument_configs[lo_name]
+                                if (
+                                    lo_config.hardware_description.instrument_name
+                                    is None
+                                ):
+                                    lo_config.hardware_description.instrument_name = (
+                                        lo_name
+                                    )
+                                    lo_config.frequency = frequencies.lo_freq
+
         # Extract hardware options
-        hardware_options = self.hardware_options.model_dump()
-        modules_hardware_options = {}
+        clusters_hardware_options = {}
 
         for (
             instrument_name,
             instrument_description,
         ) in self.hardware_description.items():
             if instrument_description.instrument_type == "Cluster":
-                modules_hardware_options[instrument_name] = {}
-                for module_idx in instrument_description.modules.keys():
-                    modules_hardware_options[instrument_name][module_idx] = {}
+                clusters_hardware_options[instrument_name] = {}
 
-        for option, values in hardware_options.items():
-            if values is not None:
+        for option in self.hardware_options.model_fields_set:
+            if (values := getattr(self.hardware_options, option, None)) is not None:
                 for portclock, option_value in values.items():
-                    if portclock in portclock_to_path:
-                        path = portclock_to_path[portclock]
-                        cluster_name, module_name, channel_name = path.split(".")
-                        module_idx = int(module_name.replace("module", ""))
-                        if not modules_hardware_options[cluster_name][module_idx].get(
-                            option
-                        ):
-                            modules_hardware_options[cluster_name][module_idx][
-                                option
-                            ] = {}
-                        modules_hardware_options[cluster_name][module_idx][option][
-                            portclock
-                        ] = option_value
+                    for instr_name, cfg in instrument_configs.items():
+                        if cfg.hardware_description.instrument_type != "Cluster":
+                            continue
 
-                        # Populate LO hardware description
-                        channel_to_lo = (
-                            compiler_configs[cluster_name]
-                            .modules[module_idx]
-                            .channel_to_lo
-                        )
-                        if (
-                            option == "modulation_frequencies"
-                            and channel_name in channel_to_lo.keys()
-                        ):
-                            lo_name = channel_to_lo[channel_name]
-                            lo_config = compiler_configs[lo_name]
-                            if lo_config.hardware_description.instrument_name is None:
-                                lo_config.hardware_description.instrument_name = lo_name
-                                lo_config.frequency = option_value.get("lo_freq")
+                        if portclock in cfg.portclock_to_path:
+                            path = cfg.portclock_to_path[portclock]
 
-        for cluster_name, value in modules_hardware_options.items():
-            for module_idx, options in value.items():
-                compiler_configs[cluster_name].modules[module_idx].hardware_options = (
-                    QbloxHardwareOptions.model_validate(options)
-                )
+                            if not clusters_hardware_options[instr_name].get(option):
+                                clusters_hardware_options[instr_name][option] = {}
+                            clusters_hardware_options[instr_name][option][
+                                portclock
+                            ] = option_value
 
-        # Distribute portclock paths and channel LOs between the different clusters and modules
-        for portclock, path in portclock_to_path.items():
-            cluster_name = path.split(".")[0]
-            module_idx = int(path.split(".")[1].replace("module", ""))
-            portclock_tuple = tuple(portclock.split("-"))
-            compiler_configs[cluster_name].portclock_to_path[portclock_tuple] = path
-            compiler_configs[cluster_name].modules[module_idx].portclock_to_path[
-                portclock_tuple
-            ] = path
+        for cluster_name, options in clusters_hardware_options.items():
+            instrument_configs[cluster_name].hardware_options = (
+                QbloxHardwareOptions.model_validate(options)
+            )
 
-        # Delete empty configs of unused modules
-        cluster_names = []
+        # Delete hardware descriptions of unused modules
         unused_modules = defaultdict(list)
-        for instrument_name, cfg in compiler_configs.items():
-            if cfg.instrument_type == "Cluster":
-                cluster_names.append(instrument_name)
-                for module_idx in cfg.modules.keys():
-                    if len(cfg.modules[module_idx].portclock_to_path) == 0:
+        for instrument_name, cfg in instrument_configs.items():
+            if cfg.hardware_description.instrument_type == "Cluster":
+                used_modules_idx = [
+                    path.split(".")[1].replace("module", "")
+                    for path in cfg.portclock_to_path.values()
+                ]
+                for module_idx in cfg.hardware_description.modules.keys():
+                    if str(module_idx) not in used_modules_idx:
                         unused_modules[instrument_name].append(module_idx)
 
         for cluster_name, indices in unused_modules.items():
             for module_idx in indices:
-                del compiler_configs[cluster_name].modules[module_idx]
+                del instrument_configs[cluster_name].hardware_description.modules[
+                    module_idx
+                ]
 
         # Delete empty configs of unused clusters
         unused_clusters = []
-        for cluster_name in cluster_names:
-            if len(compiler_configs[cluster_name].modules) == 0:
-                unused_clusters.append(cluster_name)
+        for instrument_name, cfg in instrument_configs.items():
+            if cfg.hardware_description.instrument_type != "Cluster":
+                continue
+            if not instrument_configs[instrument_name].portclock_to_path:
+                unused_clusters.append(instrument_name)
 
         for cluster_name in unused_clusters:
-            del compiler_configs[cluster_name]
+            del instrument_configs[cluster_name]
 
-        return compiler_configs
+        # Delete empty configs of unused local oscillators
+        unused_los = []
+        for instrument_name, cfg in instrument_configs.items():
+            if (
+                cfg.hardware_description.instrument_type == "LocalOscillator"
+                and cfg.hardware_description.instrument_name is None
+            ):
+                unused_los.append(instrument_name)
+
+        for lo_name in unused_los:
+            del instrument_configs[lo_name]
+
+        return instrument_configs
+
+
+class _LocalOscillatorCompilationConfig(DataStructure):
+    """Configuration values for a :class:`quantify_scheduler.backends.qblox.instrument_compilers.LocalOscillatorCompiler`."""
+
+    hardware_description: LocalOscillatorDescription
+    """Description of the physical setup of this local oscillator."""
+    frequency: Union[float, None] = None
+    """The frequency of this local oscillator."""
+
+
+class _ClusterCompilationConfig(DataStructure):
+    """Configuration values for a :class:`~.ClusterCompiler`."""
+
+    hardware_description: ClusterDescription
+    """Description of the physical setup of this cluster."""
+    hardware_options: QbloxHardwareOptions
+    """Options that are used in compiling the instructions for the hardware."""
+    portclock_to_path: Dict[str, str] = {}
+    """Mapping between portclocks and their associated channel name paths (e.g. cluster0.module1.complex_output_0)."""
+    lo_to_path: Dict[str, str] = {}
+    """Mapping between lo names and their associated channel name paths (e.g. cluster0.module1.complex_output_0)."""
+
+    def _extract_module_compilation_configs(
+        self,
+    ) -> Dict[int, _ClusterModuleCompilationConfig]:
+
+        module_configs = {}
+
+        # Create configs and distribute `hardware_description`
+        for module_idx, module_description in self.hardware_description.modules.items():
+            module_configs[module_idx] = _ClusterModuleCompilationConfig(
+                hardware_description=module_description,
+                hardware_options=QbloxHardwareOptions(),
+            )
+
+        # Distribute module `hardware_options`
+        modules_hardware_options = {module_idx: {} for module_idx in module_configs}
+
+        for option, values in self.hardware_options.model_dump(
+            exclude_unset=True
+        ).items():
+            for pc, option_value in values.items():
+                module_idx = int(
+                    self.portclock_to_path[pc].split(".")[1].replace("module", "")
+                )
+                if not modules_hardware_options[module_idx].get(option):
+                    modules_hardware_options[module_idx][option] = {}
+                modules_hardware_options[module_idx][option][pc] = option_value
+
+        for module_idx, options in modules_hardware_options.items():
+            module_configs[module_idx].hardware_options = (
+                QbloxHardwareOptions.model_validate(options)
+            )
+
+        # Distribute `portclock_to_path`
+        for portclock, path in self.portclock_to_path.items():
+            module_idx = int(path.split(".")[1].replace("module", ""))
+            module_configs[module_idx].portclock_to_path[portclock] = path
+
+        # Distribute `lo_to_path`
+        for lo_name, path in self.lo_to_path.items():
+            module_idx = int(path.split(".")[1].replace("module", ""))
+            module_configs[module_idx].lo_to_path[lo_name] = path
+
+        # Validate channel-dependent hardware options
+        for cfg in module_configs.values():
+            cfg._validate_input_gain_mode()
+            cfg._validate_hardware_distortion_corrections_mode()
+
+        return module_configs
+
+
+class _ClusterModuleCompilationConfig(DataStructure):
+    """Configuration values for a :class:`~.ClusterModuleCompiler`."""
+
+    hardware_description: ClusterModuleDescription
+    """Description of the physical setup of this module."""
+    hardware_options: QbloxHardwareOptions
+    """Options that are used in compiling the instructions for the hardware."""
+    portclock_to_path: Dict[str, str] = {}
+    """Mapping between portclocks and their associated channel name paths (e.g. cluster0.module1.complex_output_0)."""
+    lo_to_path: Dict[str, str] = {}
+    """Mapping between lo names and their associated channel name paths (e.g. cluster0.module1.complex_output_0)."""
+
+    def _extract_sequencer_compilation_configs(
+        self,
+    ) -> Dict[int, _SequencerCompilationConfig]:
+
+        sequencer_configs = {}
+        path_to_lo = {v: k for k, v in self.lo_to_path.items()}
+
+        # Sort to ensure deterministic order in sequencer instantiation
+        for seq_idx, portclock in enumerate(sorted(self.portclock_to_path)):
+            path = self.portclock_to_path[portclock]
+            sequencer_options = (
+                self.hardware_options.sequencer_options.get(portclock, {})
+                if self.hardware_options.sequencer_options is not None
+                else {}
+            )
+            hardware_description = {}
+            for description in self.hardware_description.model_fields_set:
+                channel_name = path.split(".")[-1]
+                if channel_name == description:
+                    hardware_description = getattr(
+                        self.hardware_description,
+                        description,
+                    )
+            latency_correction = (
+                self.hardware_options.latency_corrections.get(portclock, 0)
+                if self.hardware_options.latency_corrections is not None
+                else 0
+            )
+            distortion_correction = (
+                self.hardware_options.distortion_corrections.get(portclock, None)
+                if self.hardware_options.distortion_corrections is not None
+                else None
+            )
+            if isinstance(
+                distortion_correction,
+                (list, QbloxHardwareDistortionCorrection),
+            ):
+                distortion_correction = None
+            modulation_frequencies = (
+                self.hardware_options.modulation_frequencies.get(portclock, {})
+                if self.hardware_options.modulation_frequencies is not None
+                else {}
+            )
+            mixer_corrections = (
+                self.hardware_options.mixer_corrections.get(portclock, None)
+                if self.hardware_options.mixer_corrections is not None
+                else None
+            )
+            sequencer_configs[seq_idx] = _SequencerCompilationConfig(
+                sequencer_options=sequencer_options,
+                hardware_description=hardware_description,
+                portclock=portclock,
+                channel_name=channel_name,
+                latency_correction=latency_correction,
+                distortion_correction=distortion_correction,
+                lo_name=path_to_lo.get(path),
+                modulation_frequencies=modulation_frequencies,
+                mixer_corrections=mixer_corrections,
+            )
+
+        return sequencer_configs
+
+    # This is a temporary solution until distortion corrections are
+    # properly defined (SE-544)
+    def _validate_hardware_distortion_corrections_mode(
+        self,
+    ) -> _ClusterModuleCompilationConfig:
+
+        distortion_corrections = (
+            self.hardware_options.distortion_corrections
+            if self.hardware_options is not None
+            else None
+        )
+
+        if distortion_corrections is not None:
+            for portclock, corrections in distortion_corrections.items():
+                channel_name = self.portclock_to_path[portclock].split(".")[-1]
+                if ChannelMode.REAL in channel_name and isinstance(corrections, list):
+                    raise ValueError(
+                        f"Several distortion corrections were assigned to portclock '{portclock}' which is a real channel, but only one correction is required."
+                    )
+                elif ChannelMode.COMPLEX in channel_name and isinstance(
+                    corrections, QbloxHardwareDistortionCorrection
+                ):
+                    raise ValueError(
+                        f"One distortion correction was assigned to portclock '{portclock}' which is a complex channel, but two corrections are required."
+                    )
+
+        return self
+
+    def _validate_input_gain_mode(
+        self,
+    ) -> _ClusterModuleCompilationConfig:
+
+        input_gain = (
+            self.hardware_options.input_gain
+            if self.hardware_options is not None
+            else None
+        )
+
+        if input_gain is not None:
+            for portclock, gain in input_gain.items():
+                channel_name = self.portclock_to_path[portclock].split(".")[-1]
+
+                if ChannelMode.REAL in channel_name and isinstance(
+                    gain, ComplexInputGain
+                ):
+                    raise ValueError(
+                        f"A complex input gain was assigned to portclock '{portclock}', which is a real channel."
+                    )
+                elif ChannelMode.COMPLEX in channel_name and isinstance(
+                    gain, RealInputGain
+                ):
+                    raise ValueError(
+                        f"A real input gain was assigned to portclock '{portclock}', which is a complex channel."
+                    )
+
+        return self
+
+
+class _SequencerCompilationConfig(DataStructure):
+    """Configuration values for a :class:`~.SequencerCompiler`."""
+
+    hardware_description: Union[
+        ComplexChannelDescription, RealChannelDescription, DigitalChannelDescription
+    ]
+    """Information needed to specify a complex/real/digital input/output."""
+    sequencer_options: SequencerOptions
+    """Configuration options for this sequencer."""
+    portclock: str
+    """Portclock associated to this sequencer."""
+    channel_name: str
+    """Channel name associated to this sequencer."""
+    latency_correction: LatencyCorrection
+    """Latency correction that should be applied to operations on this sequencer."""
+    distortion_correction: Union[SoftwareDistortionCorrection, None]
+    """Distortion corrections that should be applied to waveforms on this sequencer."""
+    lo_name: Union[str, None]
+    """Local oscilator associated to this sequencer."""
+    modulation_frequencies: ModulationFrequencies
+    """Modulation frequencies associated to this sequencer."""
+    mixer_corrections: Union[QbloxMixerCorrections, None]
+    """Mixer correction settings."""
 
 
 def _all_abs_times_ops_with_voltage_offsets_pulses(

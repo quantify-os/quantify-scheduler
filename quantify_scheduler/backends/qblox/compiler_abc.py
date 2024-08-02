@@ -14,7 +14,6 @@ from os import makedirs, path
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Generic,
     Hashable,
     Iterator,
@@ -59,6 +58,12 @@ from quantify_scheduler.helpers.schedule import (
 )
 
 if TYPE_CHECKING:
+    from quantify_scheduler.backends.qblox_backend import (
+        _ClusterCompilationConfig,
+        _ClusterModuleCompilationConfig,
+        _LocalOscillatorCompilationConfig,
+        _SequencerCompilationConfig,
+    )
     from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 
 logger = logging.getLogger(__name__)
@@ -89,11 +94,7 @@ class InstrumentCompiler(ABC):
         rates, can work in a synchronized way when performing multiple executions of
         the schedule.
     instrument_cfg
-        The part of the hardware configuration dictionary referring to this device. This is one
-        of the inner dictionaries of the overall hardware config.
-    latency_corrections
-        Dict containing the delays for each port-clock combination. This is specified in
-        the top layer of hardware config.
+        The compilation config referring to this device.
 
     """
 
@@ -102,14 +103,16 @@ class InstrumentCompiler(ABC):
         parent,  # No type hint due to circular import, added to docstring
         name: str,
         total_play_time: float,
-        instrument_cfg: dict[str, Any],
-        latency_corrections: dict[str, float] | None = None,
+        instrument_cfg: (
+            _ClusterModuleCompilationConfig
+            | _ClusterCompilationConfig
+            | _LocalOscillatorCompilationConfig
+        ),
     ) -> None:
         self.parent = parent
         self.name = name
         self.total_play_time = total_play_time
         self.instrument_cfg = instrument_cfg
-        self.latency_corrections = latency_corrections or {}
 
     def prepare(self) -> None:
         """
@@ -154,35 +157,29 @@ class SequencerCompiler(ABC):
         A reference to the module compiler this sequencer belongs to.
     index
         Index of the sequencer.
-    portclock
-        Tuple that specifies the unique port and clock combination for this
-        sequencer. The first value is the port, second is the clock.
     static_hw_properties
         The static properties of the hardware. This effectively gathers all the
         differences between the different modules.
     settings
         The settings set to this sequencer.
-    latency_corrections
-        Dict containing the delays for each port-clock combination.
-    qasm_hook_func
-        Allows the user to inject custom Q1ASM code into the compilation, just prior to
-        returning the final string.
+    sequencer_cfg
+        The instrument compiler config associated to this instrument.
     """
 
     def __init__(
         self,
         parent: ClusterModuleCompiler,
         index: int,
-        portclock: tuple[str, str],
         static_hw_properties: StaticHardwareProperties,
         settings: SequencerSettings,
-        latency_corrections: dict[str, float],
-        qasm_hook_func: Callable | None = None,
+        sequencer_cfg: _SequencerCompilationConfig,
     ) -> None:
+        port, clock = sequencer_cfg.portclock.split("-")
+
         self.parent = parent
         self.index = index
-        self.port = portclock[0]
-        self.clock = portclock[1]
+        self.port = port
+        self.clock = clock
         self.op_strategies: list[IOperationStrategy] = []
         self._num_acquisitions = 0
 
@@ -192,13 +189,11 @@ class SequencerCompiler(ABC):
 
         self._settings = settings
 
-        self.qasm_hook_func = qasm_hook_func
-        """Allows the user to inject custom Q1ASM code into the compilation, just prior
-         to returning the final string."""
+        self.qasm_hook_func = sequencer_cfg.sequencer_options.qasm_hook_func
 
-        portclock_key = f"{self.port}-{self.clock}"
-        self.latency_correction: float = latency_corrections.get(portclock_key, 0)
-        """Latency correction accounted for by delaying the start of the program."""
+        self.latency_correction = sequencer_cfg.latency_correction
+
+        self.distortion_correction = sequencer_cfg.distortion_correction
 
     @property
     def connected_output_indices(self) -> tuple[int, ...]:
@@ -1219,13 +1214,7 @@ class ClusterModuleCompiler(InstrumentCompiler, Generic[_SequencerT_co], ABC):
         rates, can work in a synchronized way when performing multiple executions of
         the schedule.
     instrument_cfg
-        The part of the hardware configuration dictionary referring to this device. This is one
-        of the inner dictionaries of the overall hardware config.
-    latency_corrections
-        Dict containing the delays for each port-clock combination. This is specified in
-        the top layer of hardware config.
-    distortion_corrections
-        Dict containing the distortion corrections for each output.
+        The instrument compiler config referring to this device.
     """
 
     _settings: _ModuleSettingsType
@@ -1235,9 +1224,7 @@ class ClusterModuleCompiler(InstrumentCompiler, Generic[_SequencerT_co], ABC):
         parent,  # No type hint due to circular import, added to docstring
         name: str,
         total_play_time: float,
-        instrument_cfg: dict[str, Any],
-        latency_corrections: dict[str, float] | None = None,
-        distortion_corrections: dict[int, Any] | None = None,
+        instrument_cfg: _ClusterModuleCompilationConfig,
     ) -> None:
         driver_version_check.verify_qblox_instruments_version()
         super().__init__(
@@ -1245,32 +1232,16 @@ class ClusterModuleCompiler(InstrumentCompiler, Generic[_SequencerT_co], ABC):
             name=name,
             total_play_time=total_play_time,
             instrument_cfg=instrument_cfg,
-            latency_corrections=latency_corrections,
         )
-        self.distortion_corrections = distortion_corrections or {}
+        self.instrument_cfg: _ClusterModuleCompilationConfig  # Help typechecker
         self._op_infos: dict[tuple[str, str], list[OpInfo]] = defaultdict(list)
-
+        self.portclock_to_path = instrument_cfg.portclock_to_path
         self.sequencers: dict[str, _SequencerT_co] = {}
 
     @property
-    def portclocks(self) -> list[tuple[str, str]]:
+    def portclocks(self) -> list[str]:
         """Returns all the port-clock combinations that this device can target."""
-        portclocks = []
-
-        for channel_name in helpers.find_channel_names(self.instrument_cfg):
-            portclock_configs = self.instrument_cfg[channel_name].get(
-                "portclock_configs", []
-            )
-            if not portclock_configs:
-                raise KeyError(
-                    f"No 'portclock_configs' entry found in '{channel_name}' of {self.name}."
-                )
-
-            portclocks += [
-                (target["port"], target["clock"]) for target in portclock_configs
-            ]
-
-        return portclocks
+        return list(self.portclock_to_path.keys())
 
     @property
     @abstractmethod
@@ -1340,62 +1311,21 @@ class ClusterModuleCompiler(InstrumentCompiler, Generic[_SequencerT_co], ABC):
         Raises
         ------
         ValueError
-            When the output names do not conform to the
-            `complex_output_X`/`real_output_X` norm,
-            where X is the index of the output.
-        KeyError
-            Raised if no 'portclock_configs' entry is found in the specific outputs of
-            the hardware config.
-        ValueError
-            Raised when the same port-clock is multiply assigned in the hardware config.
-        ValueError
             Attempting to use more sequencers than available.
 
         """
         # Setup each sequencer.
         sequencers: dict[str, _SequencerT_co] = {}
-        portclock_to_channel: dict[tuple, str] = {}
+        sequencer_configs = self.instrument_cfg._extract_sequencer_compilation_configs()
 
-        for channel_name, channel_cfg in sorted(
-            self.instrument_cfg.items()
-        ):  # Sort to ensure deterministic sequencer order
-            if not isinstance(channel_cfg, dict):
-                continue
-
-            portclock_configs: list[dict[str, Any]] = channel_cfg.get(
-                "portclock_configs", []
-            )
-
-            if not portclock_configs:
-                raise KeyError(
-                    f"No 'portclock_configs' entry found in '{channel_name}' of {self.name}."
+        for seq_idx, sequencer_cfg in sequencer_configs.items():
+            port, clock = sequencer_cfg.portclock.split("-")
+            if (port, clock) in self._portclocks_with_data:
+                new_seq = self._construct_sequencer_compiler(
+                    index=seq_idx,
+                    sequencer_cfg=sequencer_cfg,
                 )
-
-            for sequencer_cfg in portclock_configs:
-                portclock = (sequencer_cfg["port"], sequencer_cfg["clock"])
-
-                if portclock in self._portclocks_with_data:
-                    new_seq = self._construct_sequencer_compiler(
-                        index=len(sequencers),
-                        portclock=portclock,
-                        channel_name=channel_name,
-                        sequencer_cfg=sequencer_cfg,
-                        channel_cfg=channel_cfg,
-                    )
-                    sequencers[new_seq.name] = new_seq
-
-                    # Check if the portclock was not multiply specified, which is not allowed
-                    if portclock in portclock_to_channel:
-                        raise ValueError(
-                            f"Portclock {portclock} was assigned to multiple "
-                            f"portclock_configs of {self.name}. This portclock was "
-                            f"used in channel '{channel_name}' despite being already previously "
-                            f"used in channel '{portclock_to_channel[portclock]}'. When using "
-                            f"the same portclock for output and input, assigning only "
-                            f"the output suffices."
-                        )
-
-                    portclock_to_channel[portclock] = channel_name
+                sequencers[new_seq.name] = new_seq
 
         # Check if more portclock_configs than sequencers are active
         if len(sequencers) > self.static_hw_properties.max_sequencers:
@@ -1412,10 +1342,7 @@ class ClusterModuleCompiler(InstrumentCompiler, Generic[_SequencerT_co], ABC):
     def _construct_sequencer_compiler(
         self,
         index: int,
-        portclock: tuple[str, str],
-        channel_name: str,
-        sequencer_cfg: dict[str, Any],
-        channel_cfg: dict[str, Any],
+        sequencer_cfg: _SequencerCompilationConfig,
     ) -> _SequencerT_co:
         """Create the sequencer object of the correct sequencer type belonging to the module."""
 
@@ -1481,7 +1408,9 @@ class ClusterModuleCompiler(InstrumentCompiler, Generic[_SequencerT_co], ABC):
         # `sequence_to_file` of a module can be `True` even if its `False` for a cluster
         if sequence_to_file is None or sequence_to_file is False:
             # Explicit cast to bool to help type checker.
-            sequence_to_file = bool(self.instrument_cfg.get("sequence_to_file", False))
+            sequence_to_file = bool(
+                self.instrument_cfg.hardware_description.sequence_to_file
+            )
 
         align_qasm_fields = debug_mode
 

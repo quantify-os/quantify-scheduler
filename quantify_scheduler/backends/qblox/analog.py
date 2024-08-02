@@ -6,7 +6,8 @@ from __future__ import annotations
 import logging
 import math
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Callable, Iterator
+from copy import deepcopy
+from typing import TYPE_CHECKING, Any, Iterator
 
 from quantify_scheduler.backends.qblox import (
     constants,
@@ -21,7 +22,6 @@ from quantify_scheduler.backends.qblox.compiler_abc import (
 from quantify_scheduler.backends.qblox.enums import (
     ChannelMode,
     DistortionCorrectionLatencyEnum,
-    LoCalEnum,
     QbloxFilterConfig,
     QbloxFilterMarkerDelay,
 )
@@ -42,7 +42,13 @@ from quantify_scheduler.backends.types.qblox import (
     AnalogModuleSettings,
     AnalogSequencerSettings,
     BasebandModuleSettings,
+    ComplexChannelDescription,
+    ComplexInputGain,
+    DigitalChannelDescription,
+    InputAttenuation,
     OpInfo,
+    OutputAttenuation,
+    RealInputGain,
     RFModuleSettings,
     StaticAnalogModuleProperties,
 )
@@ -54,6 +60,10 @@ if TYPE_CHECKING:
         IOperationStrategy,
     )
     from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
+    from quantify_scheduler.backends.qblox_backend import (
+        _ClusterModuleCompilationConfig,
+        _SequencerCompilationConfig,
+    )
     from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 
 logger = logging.getLogger(__name__)
@@ -71,65 +81,52 @@ class AnalogSequencerCompiler(SequencerCompiler):
         A reference to the module compiler this sequencer belongs to.
     index
         Index of the sequencer.
-    portclock
-        Tuple that specifies the unique port and clock combination for this
-        sequencer. The first value is the port, second is the clock.
     static_hw_properties
         The static properties of the hardware. This effectively gathers all the
         differences between the different modules.
     settings
         The settings set to this sequencer.
-    latency_corrections
-        Dict containing the delays for each port-clock combination.
-    qasm_hook_func
-        Allows the user to inject custom Q1ASM code into the compilation, just prior to
-        returning the final string.
-    lo_name
-        The name of the local oscillator instrument connected to the same output via
-        an IQ mixer. This is used for frequency calculations.
-    downconverter_freq
-        .. warning::
-            Using ``downconverter_freq`` requires custom Qblox hardware, do not use otherwise.
-
-        Frequency of the external downconverter if one is being used.
-        Defaults to ``None``, in which case the downconverter is inactive.
-    mix_lo
-        Boolean flag for IQ mixing with LO.
-        Defaults to ``True`` meaning IQ mixing is applied.
-    marker_debug_mode_enable
-        Boolean flag to indicate if markers should be pulled high at the start of operations.
-        Defaults to False, which means the markers will not be used during the sequence.
+    sequencer_cfg
+        The instrument compiler config associated to this device.
     """
 
     def __init__(
         self,
         parent: AnalogModuleCompiler,
         index: int,
-        portclock: tuple[str, str],
         static_hw_properties: StaticAnalogModuleProperties,
         settings: AnalogSequencerSettings,
-        latency_corrections: dict[str, float],
-        qasm_hook_func: Callable | None = None,
-        lo_name: str | None = None,
-        downconverter_freq: float | None = None,
-        mix_lo: bool = True,
-        marker_debug_mode_enable: bool = False,
+        sequencer_cfg: _SequencerCompilationConfig,
     ) -> None:
         self.static_hw_properties: StaticAnalogModuleProperties  # help type checker
         self._settings: AnalogSequencerSettings  # help type checker
         super().__init__(
             parent=parent,
             index=index,
-            portclock=portclock,
             static_hw_properties=static_hw_properties,
             settings=settings,
-            latency_corrections=latency_corrections,
-            qasm_hook_func=qasm_hook_func,
+            sequencer_cfg=sequencer_cfg,
         )
-        self.associated_ext_lo = lo_name
-        self.downconverter_freq = downconverter_freq
-        self.mix_lo = mix_lo
-        self._marker_debug_mode_enable = marker_debug_mode_enable
+        self.associated_ext_lo = sequencer_cfg.lo_name
+        self.downconverter_freq = (
+            sequencer_cfg.hardware_description.downconverter_freq
+            if isinstance(sequencer_cfg.hardware_description, ComplexChannelDescription)
+            else None
+        )
+        self.mix_lo = (
+            sequencer_cfg.hardware_description.mix_lo
+            if not isinstance(
+                sequencer_cfg.hardware_description, DigitalChannelDescription
+            )
+            else None
+        )
+        self._marker_debug_mode_enable = (
+            (sequencer_cfg.hardware_description.marker_debug_mode_enable)
+            if not isinstance(
+                sequencer_cfg.hardware_description, DigitalChannelDescription
+            )
+            else None
+        )
 
         self._default_marker = (
             self.static_hw_properties.channel_name_to_digital_marker.get(
@@ -234,6 +231,24 @@ class AnalogSequencerCompiler(SequencerCompiler):
         acq_metadata
             Acquisition metadata.
         """
+
+        def _verify_param_range(
+            param_name: str,
+            val: float | None,
+            min_value: float,
+            max_value: float,
+            portclock: tuple[str, str],
+        ) -> None:
+            if val is None:
+                return
+
+            if val < min_value or val > max_value:
+                raise ValueError(
+                    f"Attempting to configure {param_name} to {val} for the sequencer "
+                    f"specified with portclock '{portclock}' and while the "
+                    f"hardware requires it to be between {min_value} and {max_value}."
+                )
+
         acquisition_infos: list[OpInfo] = list(
             map(lambda acq: acq.operation_info, acquisitions)
         )
@@ -255,14 +270,29 @@ class AnalogSequencerCompiler(SequencerCompiler):
                 )
 
         elif acq_metadata.acq_protocol == "ThresholdedAcquisition":
-            self._settings.thresholded_acq_rotation = acquisition_infos[0].data.get(
-                "acq_rotation"
+            acq_rotation = acquisition_infos[0].data.get("acq_rotation")
+            _verify_param_range(
+                param_name="acq_rotation",
+                val=acq_rotation,
+                min_value=constants.MIN_PHASE_ROTATION_ACQ,
+                max_value=constants.MAX_PHASE_ROTATION_ACQ,
+                portclock=self.portclock,
             )
+            self._settings.thresholded_acq_rotation = acq_rotation
 
+            acq_threshold = acquisition_infos[0].data.get("acq_threshold", 0.0)
+            _verify_param_range(
+                param_name="acq_threshold",
+                val=acq_threshold,
+                min_value=constants.MIN_DISCRETIZATION_THRESHOLD_ACQ,
+                max_value=constants.MAX_DISCRETIZATION_THRESHOLD_ACQ,
+                portclock=self.portclock,
+            )
             integration_length = acquisition_infos[0].data.get("duration", 0.0) * 1e9
             self._settings.thresholded_acq_threshold = (
-                acquisition_infos[0].data.get("acq_threshold", 0.0) * integration_length
+                acq_threshold * integration_length
             )
+
             for info in acquisition_infos:
                 if (address := info.data.get("feedback_trigger_address")) is not None:
                     self._settings.thresholded_acq_trigger_en = True
@@ -516,13 +546,7 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
         rates, can work in a synchronized way when performing multiple executions of
         the schedule.
     instrument_cfg
-        The part of the hardware configuration dictionary referring to this device. This is one
-        of the inner dictionaries of the overall hardware config.
-    latency_corrections
-        Dict containing the delays for each port-clock combination. This is specified in
-        the top layer of hardware config.
-    distortion_corrections
-        Dict containing the distortion corrections for each output.
+        The instrument compiler config referring to this device.
     """
 
     _settings: AnalogModuleSettings  # type: ignore
@@ -532,17 +556,13 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
         parent: instrument_compilers.ClusterCompiler,
         name: str,
         total_play_time: float,
-        instrument_cfg: dict[str, Any],
-        latency_corrections: dict[str, float] | None = None,
-        distortion_corrections: dict[int, Any] | None = None,
+        instrument_cfg: _ClusterModuleCompilationConfig,
     ) -> None:
         super().__init__(
             parent=parent,
             name=name,
             total_play_time=total_play_time,
             instrument_cfg=instrument_cfg,
-            latency_corrections=latency_corrections,
-            distortion_corrections=distortion_corrections,
         )
         self.sequencers: dict[str, AnalogSequencerCompiler] = {}
 
@@ -555,36 +575,25 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
         """
 
     def _construct_sequencer_compiler(
-        self,
-        index: int,
-        portclock: tuple[str, str],
-        channel_name: str,
-        sequencer_cfg: dict[str, Any],
-        channel_cfg: dict[str, Any],
+        self, index: int, sequencer_cfg: _SequencerCompilationConfig
     ) -> AnalogSequencerCompiler:
         """Create an instance of :class:`AnalogSequencerCompiler`."""
         settings = AnalogSequencerSettings.initialize_from_config_dict(
             sequencer_cfg=sequencer_cfg,
-            channel_name=channel_name,
+            channel_name=sequencer_cfg.channel_name,
             connected_output_indices=self.static_hw_properties._get_connected_output_indices(
-                channel_name
+                sequencer_cfg.channel_name
             ),
             connected_input_indices=self.static_hw_properties._get_connected_input_indices(
-                channel_name
+                sequencer_cfg.channel_name
             ),
         )
         return AnalogSequencerCompiler(
             parent=self,
             index=index,
-            portclock=portclock,
             static_hw_properties=self.static_hw_properties,
             settings=settings,
-            latency_corrections=self.latency_corrections,
-            qasm_hook_func=sequencer_cfg.get("qasm_hook_func"),
-            lo_name=channel_cfg.get("lo_name"),
-            mix_lo=channel_cfg.get("mix_lo", True),
-            marker_debug_mode_enable=channel_cfg.get("marker_debug_mode_enable", False),
-            downconverter_freq=channel_cfg.get("downconverter_freq"),
+            sequencer_cfg=sequencer_cfg,
         )
 
     @abstractmethod
@@ -684,98 +693,140 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
         """
         Configures input gain of module settings.
         Loops through all valid channel names and checks for gain values in hw config.
-        Throws a ValueError if a gain value gets modified.
         """
         in0_gain, in1_gain = None, None
+        # These variables are for checking if gain is being overwritten
+        init_in0_gain, init_in1_gain = None, None
+        init_portclock = None
 
-        for channel_name in helpers.find_channel_names(self.instrument_cfg):
-            channel_mapping = self.instrument_cfg.get(channel_name, None)
+        for portclock, pc_path in self.portclock_to_path.items():
+            if self.instrument_cfg.hardware_options is None:
+                continue
 
-            if channel_name.startswith(ChannelMode.COMPLEX):
-                in0_gain = channel_mapping.get("input_gain_I", None)
-                in1_gain = channel_mapping.get("input_gain_Q", None)
+            channel_name = pc_path.split(".")[-1]
+            input_gains = self.instrument_cfg.hardware_options.input_gain
+            if input_gains is None:
+                continue
 
-            elif channel_name.startswith(ChannelMode.REAL):
-                # The next code block is for backwards compatibility.
-                in_gain = channel_mapping.get("input_gain", None)
-                if in_gain is None:
-                    in0_gain = channel_mapping.get("input_gain_0", None)
-                    in1_gain = channel_mapping.get("input_gain_1", None)
-                else:
-                    in0_gain = in_gain
-                    in1_gain = in_gain
+            if portclock in input_gains:
+                input_gain = input_gains[portclock]
+                if isinstance(input_gain, ComplexInputGain):
+                    in0_gain = input_gain.gain_I
+                    in1_gain = input_gain.gain_Q
+                elif isinstance(input_gain, RealInputGain):
+                    if int(channel_name[-1]) == 0:
+                        in0_gain = input_gain
+                    elif int(channel_name[-1]) == 1:
+                        in1_gain = input_gain
 
-            if in0_gain is not None:
-                if (
-                    self._settings.in0_gain is None
-                    or in0_gain == self._settings.in0_gain
+                if init_portclock and (
+                    (
+                        in0_gain is not None
+                        and init_in0_gain is not None
+                        and in0_gain != init_in0_gain
+                    )
+                    or (
+                        in1_gain is not None
+                        and init_in1_gain is not None
+                        and in1_gain != init_in1_gain
+                    )
                 ):
-                    self._settings.in0_gain = in0_gain
-                else:
                     raise ValueError(
-                        f"Overwriting gain of {channel_name} of module {self.name} "
-                        f"to in0_gain: {in0_gain}.\nIt was previously set to "
-                        f"in0_gain: {self._settings.in0_gain}."
+                        f"Found non-unique input gains on module {self.name}. "
+                        f"Please ensure that all `input_gain` values on the input `I` channel are "
+                        f"the same, and all `input_gain` values on the input `Q` channel are the "
+                        f"same in the hardware options for all port clock combinations with this "
+                        f"module. \n\n"
+                        f"For more information, please visit "
+                        f"https://quantify-os.org/docs/quantify-scheduler/latest/reference/qblox/Cluster.html#gain-configuration"
                     )
 
-            if in1_gain is not None:
-                if (
-                    self._settings.in1_gain is None
-                    or in1_gain == self._settings.in1_gain
-                ):
-                    self._settings.in1_gain = in1_gain
-                else:
-                    raise ValueError(
-                        f"Overwriting gain of {channel_name} of module {self.name} "
-                        f"to in1_gain: {in1_gain}.\nIt was previously set to "
-                        f"in1_gain: {self._settings.in1_gain}."
-                    )
+                init_in0_gain = in0_gain
+                init_in1_gain = in1_gain
+                init_portclock = deepcopy(portclock)
+
+            self._settings.in0_gain = in0_gain
+            self._settings.in1_gain = in1_gain
 
     def _configure_mixer_offsets(self) -> None:
         """
         Configures offset of input, uses calc_from_units_volt found in helper file.
         Raises an exception if a value outside the accepted voltage range is given.
         """
-        supported_channels = ("complex_output_0", "complex_output_1")
-        for output_idx, channel_name in enumerate(supported_channels):
-            if channel_name not in self.instrument_cfg:
+        supported_outputs = ("complex_output_0", "complex_output_1")
+        for output_idx, output_label in enumerate(supported_outputs):
+            for portclock, channel_name_path in self.portclock_to_path.items():
+                if output_label in channel_name_path:
+                    if (
+                        self.instrument_cfg.hardware_options.mixer_corrections
+                        is not None
+                    ):
+                        mixer_corrections = (
+                            self.instrument_cfg.hardware_options.mixer_corrections.get(
+                                portclock, None
+                            )
+                            if output_label in channel_name_path
+                            else None
+                        )
+                    else:
+                        mixer_corrections = None
+
+                    if mixer_corrections:
+                        offset_i = mixer_corrections.dc_offset_i
+                        offset_q = mixer_corrections.dc_offset_q
+                        voltage_range = self.static_hw_properties.mixer_dc_offset_range
+                        if output_idx == 0:
+                            self._settings.offset_ch0_path_I = (
+                                helpers.calc_from_units_volt(
+                                    voltage_range,
+                                    self.name,
+                                    "dc_mixer_offset_I",
+                                    offset_i,
+                                )
+                            )
+                            self._settings.offset_ch0_path_Q = (
+                                helpers.calc_from_units_volt(
+                                    voltage_range,
+                                    self.name,
+                                    "dc_mixer_offset_Q",
+                                    offset_q,
+                                )
+                            )
+                        else:
+                            self._settings.offset_ch1_path_I = (
+                                helpers.calc_from_units_volt(
+                                    voltage_range,
+                                    self.name,
+                                    "dc_mixer_offset_I",
+                                    offset_i,
+                                )
+                            )
+                            self._settings.offset_ch1_path_Q = (
+                                helpers.calc_from_units_volt(
+                                    voltage_range,
+                                    self.name,
+                                    "dc_mixer_offset_Q",
+                                    offset_q,
+                                )
+                            )
+
+    def _configure_distortion_correction_latency_compensations(
+        self, distortion_configs: dict[int, Any] | None = None
+    ) -> None:
+        channel_names = [path.split(".")[2] for path in self.portclock_to_path.values()]
+        hardware_description = self.instrument_cfg.hardware_description
+
+        for description in hardware_description.model_fields_set:
+            channel_name = ""
+            channel_description = None
+            if description in channel_names:
+                channel_name = description
+                channel_description = getattr(hardware_description, description)
+
+            if channel_description is None:
                 continue
 
-            output_cfg = self.instrument_cfg[channel_name]
-            voltage_range = self.static_hw_properties.mixer_dc_offset_range
-            if output_idx == 0:
-                self._settings.offset_ch0_path_I = helpers.calc_from_units_volt(
-                    voltage_range, self.name, "dc_mixer_offset_I", output_cfg
-                )
-                self._settings.offset_ch0_path_Q = helpers.calc_from_units_volt(
-                    voltage_range, self.name, "dc_mixer_offset_Q", output_cfg
-                )
-                self._settings.out0_lo_freq_cal_type_default = output_cfg.get(
-                    "auto_lo_cal", LoCalEnum.OFF
-                )
-            else:
-                self._settings.offset_ch1_path_I = helpers.calc_from_units_volt(
-                    voltage_range, self.name, "dc_mixer_offset_I", output_cfg
-                )
-                self._settings.offset_ch1_path_Q = helpers.calc_from_units_volt(
-                    voltage_range, self.name, "dc_mixer_offset_Q", output_cfg
-                )
-                self._settings.out1_lo_freq_cal_type_default = output_cfg.get(
-                    "auto_lo_cal", LoCalEnum.OFF
-                )
-
-    def _configure_distortion_correction_latency_compensations(self) -> None:
-        channel_names = helpers.find_channel_names(self.instrument_cfg)
-        for channel_name in channel_names:
-            io_mapping = self.instrument_cfg.get(channel_name, None)
-            if io_mapping is None:
-                continue
-
-            dc_comp = io_mapping.pop(
-                "distortion_correction_latency_compensation",
-                DistortionCorrectionLatencyEnum.NO_DELAY_COMP,
-            )
-            marker_debug_mode_enable = io_mapping.get("marker_debug_mode_enable", False)
+            dc_comp = channel_description.distortion_correction_latency_compensation
             output_indices = self.static_hw_properties._get_connected_output_indices(
                 channel_name
             )
@@ -785,31 +836,34 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
                 if ChannelMode.DIGITAL in channel_name:
                     self._configure_dc_latency_comp_for_marker(output, dc_comp)
                 else:
-                    if marker_debug_mode_enable:
+                    if channel_description.marker_debug_mode_enable:
                         if f"digital_output_{output}" in channel_names:
                             raise ValueError(
                                 f"digital_output_{output} cannot be used along with "
                                 "marker_debug_mode_enable on the same digital output."
                             )
-                        else:
-                            if output in self.distortion_corrections:
-                                self.distortion_corrections[output][
-                                    "marker_debug_mode_enable"
-                                ] = True
-                            marker_output = output
-                            if (
-                                channel_name
-                                in self.static_hw_properties.channel_name_to_digital_marker
-                            ):
-                                marker_output = (
-                                    self.static_hw_properties.channel_name_to_digital_marker[
-                                        channel_name
-                                    ]
-                                    + 1
-                                ) % 2
-                            self._configure_dc_latency_comp_for_marker(
-                                marker_output, dc_comp
-                            )
+                        else:  # noqa: PLR5501
+                            if isinstance(
+                                distortion_configs, dict
+                            ):  #  Help typeckecker
+                                if output in distortion_configs:
+                                    distortion_configs[output][
+                                        "marker_debug_mode_enable"
+                                    ] = True
+                                marker_output = output
+                                if (
+                                    channel_name
+                                    in self.static_hw_properties.channel_name_to_digital_marker
+                                ):
+                                    marker_output = (
+                                        self.static_hw_properties.channel_name_to_digital_marker[
+                                            channel_name
+                                        ]
+                                        + 1
+                                    ) % 2
+                                self._configure_dc_latency_comp_for_marker(
+                                    marker_output, dc_comp
+                                )
                     self._configure_dc_latency_comp_for_output(output, dc_comp)
 
     def _configure_dc_latency_comp_for_output(self, output: int, dc_comp: int) -> None:
@@ -864,9 +918,11 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
             else QbloxFilterMarkerDelay.BYPASSED
         )
 
-    def _configure_hardware_distortion_corrections(self) -> None:
+    def _configure_hardware_distortion_corrections(
+        self, distortion_configs: dict[int, Any] | None = {}
+    ) -> None:
         """Assign distortion corrections to settings of instrument compiler."""
-        self._configure_distortion_correction_latency_compensations()
+        self._configure_distortion_correction_latency_compensations(distortion_configs)
 
     def _ensure_single_scope_mode_acquisition_sequencer(self) -> None:
         """
@@ -917,17 +973,13 @@ class BasebandModuleCompiler(AnalogModuleCompiler):
         parent: instrument_compilers.ClusterCompiler,
         name: str,
         total_play_time: float,
-        instrument_cfg: dict[str, Any],
-        latency_corrections: dict[str, float] | None = None,
-        distortion_corrections: dict[int, Any] | None = None,
+        instrument_cfg: _ClusterModuleCompilationConfig,
     ) -> None:
         super().__init__(
             parent=parent,
             name=name,
             total_play_time=total_play_time,
             instrument_cfg=instrument_cfg,
-            latency_corrections=latency_corrections,
-            distortion_corrections=distortion_corrections,
         )
         self._settings: BasebandModuleSettings = (  # type: ignore
             BasebandModuleSettings.extract_settings_from_mapping(instrument_cfg)
@@ -961,16 +1013,10 @@ class BasebandModuleCompiler(AnalogModuleCompiler):
         else:
             # In using external local oscillator, determine clock and LO/IF freqs,
             # and then set LO/IF freqs, and enable NCO (via setter)
-            if (
-                compiler_lo := compiler_container.instrument_compilers.get(
-                    sequencer.associated_ext_lo
-                )
-            ) is None:
-                raise RuntimeError(
-                    f"External local oscillator '{sequencer.associated_ext_lo}' set to "
-                    f"be used by '{sequencer.name}' of '{self.name}' not found! Make "
-                    f"sure it is present in the hardware configuration."
-                )
+            compiler_lo = compiler_container.instrument_compilers.get(
+                sequencer.associated_ext_lo
+            )
+
             try:
                 freqs = helpers.determine_clock_lo_interm_freqs(
                     freqs=helpers.Frequencies(
@@ -1035,17 +1081,13 @@ class RFModuleCompiler(AnalogModuleCompiler):
         parent: instrument_compilers.ClusterCompiler,
         name: str,
         total_play_time: float,
-        instrument_cfg: dict[str, Any],
-        latency_corrections: dict[str, float] | None = None,
-        distortion_corrections: dict[int, Any] | None = None,
+        instrument_cfg: _ClusterModuleCompilationConfig,
     ) -> None:
         super().__init__(
             parent=parent,
             name=name,
             total_play_time=total_play_time,
             instrument_cfg=instrument_cfg,
-            latency_corrections=latency_corrections,
-            distortion_corrections=distortion_corrections,
         )
         self._settings: RFModuleSettings = (  # type: ignore
             RFModuleSettings.extract_settings_from_mapping(instrument_cfg)
@@ -1109,7 +1151,9 @@ class RFModuleCompiler(AnalogModuleCompiler):
         converts setpoints to floats when using an attenuation as settable.
         """
 
-        def _convert_to_int(value: float, label: str) -> int | None:
+        def _convert_to_int(
+            value: InputAttenuation | OutputAttenuation | None, label: str
+        ) -> int | None:
             if value is not None:
                 if not math.isclose(value % 1, 0):
                     raise ValueError(
@@ -1117,29 +1161,46 @@ class RFModuleCompiler(AnalogModuleCompiler):
                     )
                 return int(value)
 
-        complex_input_0 = self.instrument_cfg.get("complex_input_0", {})
-        complex_output_0 = self.instrument_cfg.get("complex_output_0", {})
+        in0_att = out0_att = out1_att = None
 
-        input_att = complex_input_0.get("input_att", None)
-        if (input_att_output := complex_output_0.get("input_att", None)) is not None:
-            if input_att is not None:
-                raise ValueError(
-                    f"'input_att' is defined for both 'complex_input_0' and "
-                    f"'complex_output_0' on module '{self.name}', which is prohibited. "
-                    f"Make sure you define it at a single place."
-                )
-            input_att = input_att_output
-        self._settings.in0_att = _convert_to_int(input_att, label="in0_att")
+        input_att_cfg = self.instrument_cfg.hardware_options.input_att
 
-        self._settings.out0_att = _convert_to_int(
-            complex_output_0.get("output_att", None),
-            label="out0_att",
-        )
-        complex_output_1 = self.instrument_cfg.get("complex_output_1", {})
-        self._settings.out1_att = _convert_to_int(
-            complex_output_1.get("output_att", None),
-            label="out1_att",
-        )
+        output_att_cfg = self.instrument_cfg.hardware_options.output_att
+
+        for (
+            portclock,
+            channel_name_path,
+        ) in self.instrument_cfg.portclock_to_path.items():
+            channel_name = channel_name_path.split(".")[-1]
+            if channel_name in "complex_input_0" and input_att_cfg is not None:
+                in0_att = input_att_cfg.get(portclock)
+
+        for (
+            portclock,
+            channel_name_path,
+        ) in self.instrument_cfg.portclock_to_path.items():
+            channel_name = channel_name_path.split(".")[-1]
+            if channel_name == "complex_output_0":
+                if input_att_cfg is not None:
+                    in0_att_from_output = input_att_cfg.get(portclock)
+                    if in0_att_from_output is not None:
+                        if in0_att is not None:
+                            raise ValueError(
+                                f"'input_att' is defined for both 'complex_input_0' and "
+                                f"'complex_output_0' on module '{self.name}', which is prohibited. "
+                                f"Make sure you define it at a single place."
+                            )
+                        in0_att = in0_att_from_output
+
+                if output_att_cfg is not None:
+                    out0_att = output_att_cfg.get(portclock)
+
+            if channel_name == "complex_output_1" and output_att_cfg is not None:
+                out1_att = output_att_cfg.get(portclock)
+
+        self._settings.in0_att = _convert_to_int(in0_att, label="in0_att")
+        self._settings.out0_att = _convert_to_int(out0_att, label="out0_att")
+        self._settings.out1_att = _convert_to_int(out1_att, label="out1_att")
 
     def _configure_dc_latency_comp_for_marker(self, output: int, dc_comp: int) -> None:
         output += 2  # In RF modules, the two marker indices are 2 & 3.

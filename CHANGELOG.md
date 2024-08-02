@@ -15,6 +15,7 @@
   - Delete `LOSetting.from_mapping`. (!1013)
 - Qblox backend
   - Change arguments of `ClusterCompiler`, `CompilerContainer.from_hardware_cfg`, `generate_port_clock_to_device_map`, `assign_pulse_and_acq_info_to_devices`, `distortion_correct_pulse`. (!1013)
+  - Sequencer instantiation order changed (order based now on portclocks and not on channel names). (!1036)
 - Documentation
   - Add tutorial for `ConditionalReset` (!984)
   - Add sphinxawesome-codeblocks extension (!984)
@@ -44,6 +45,7 @@
   - Add support for automatic mixer calibration (AMC). AMC can be configured to run upon changing LO frequency or intermodulation frequency. (!1007)
   - Improve error message for when the acquisition data returned by the hardware does not contain the expected acquisition channels. (!1034)
   - Fix the `ClusterComponent` initializer such that new, unsupported modules are ignored. (!1019)
+  - Establish the new-style hardware config everywhere in the qblox backend. Rename `...CompilerConfig` classes to `...CompilationConfig` and move to qblox backend. (!1036)
   - Implement compilation of `Trace` for QTM modules. (!1037)
 - Tests
   - Update test_compile_cz_gate with new style hardware config (!979)

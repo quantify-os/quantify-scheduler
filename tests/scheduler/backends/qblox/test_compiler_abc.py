@@ -15,7 +15,6 @@ from quantify_scheduler.backends.qblox.analog import AnalogSequencerCompiler
 from quantify_scheduler.backends.qblox.helpers import (
     LoopBegin,
     _ControlFlowReturn,
-    _generate_legacy_hardware_config,
     assign_pulse_and_acq_info_to_devices,
 )
 from quantify_scheduler.backends.qblox.instrument_compilers import ClusterCompiler
@@ -28,11 +27,19 @@ from quantify_scheduler.backends.qblox.operation_handling.virtual import (
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox.timetag import TimetagSequencerCompiler
-from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
+from quantify_scheduler.backends.qblox_backend import (
+    QbloxHardwareCompilationConfig,
+    _SequencerCompilationConfig,
+)
+from quantify_scheduler.backends.types.common import ModulationFrequencies
 from quantify_scheduler.backends.types.qblox import (
     AnalogSequencerSettings,
+    BoundedParameter,
+    ComplexChannelDescription,
     OpInfo,
+    SequencerOptions,
     SequencerSettings,
+    StaticAnalogModuleProperties,
 )
 from quantify_scheduler.compilation import (
     _determine_absolute_timing,
@@ -609,22 +616,31 @@ def _get_instruction_duration(instruction: str, arguments: str) -> int:
 
 
 def test_write_repetition_loop_header_equal_time():
+    sequencer_cfg = _SequencerCompilationConfig(
+        sequencer_options=SequencerOptions(),
+        hardware_description=ComplexChannelDescription(),
+        portclock="port-clock",
+        channel_name="channel_name",
+        latency_correction=0,
+        distortion_correction=None,
+        lo_name=None,
+        modulation_frequencies=ModulationFrequencies(),
+        mixer_corrections=None,
+    )
     analog_sequencer = AnalogSequencerCompiler(
         parent=Mock(),
         index=0,
-        portclock=("foo", "bar"),
         static_hw_properties=Mock(),
         settings=Mock(),
-        latency_corrections={},
+        sequencer_cfg=sequencer_cfg,
     )
     analog_sequencer._default_marker = 0b1000
     timetag_sequencer = TimetagSequencerCompiler(
         parent=Mock(),
         index=0,
-        portclock=("foo", "bar"),
         static_hw_properties=Mock(),
         settings=Mock(),
-        latency_corrections={},
+        sequencer_cfg=sequencer_cfg,
     )
 
     durations = []
@@ -662,23 +678,31 @@ def op_info_from_operation(operation: Operation, timing: float, data: dict) -> O
 def mock_sequencer(total_play_time) -> AnalogSequencerCompiler:
     mod = Mock()
     mod.configure_mock(total_play_time=total_play_time)
+    sequencer_cfg = _SequencerCompilationConfig(
+        sequencer_options=SequencerOptions(),
+        hardware_description=ComplexChannelDescription(),
+        portclock="q1:mw-q1.01",
+        channel_name="channel_name",
+        latency_correction=0,
+        distortion_correction=None,
+        lo_name=None,
+        modulation_frequencies=ModulationFrequencies.model_validate(
+            {"lo_freq": None, "interm_freq": 50e6}
+        ),
+        mixer_corrections=None,
+    )
     settings = AnalogSequencerSettings.initialize_from_config_dict(
-        {
-            "port": "q1:mw",
-            "clock": "q1.01",
-            "interm_freq": 50e6,
-        },
-        channel_name="complex_out_0",
+        sequencer_cfg=sequencer_cfg,
+        channel_name="channel_name",
         connected_input_indices=(),
         connected_output_indices=(0,),
     )
     return AnalogSequencerCompiler(
         parent=mod,
         index=0,
-        portclock=(DEFAULT_PORT, DEFAULT_CLOCK),
         static_hw_properties=Mock(),
         settings=settings,
-        latency_corrections={},
+        sequencer_cfg=sequencer_cfg,
     )
 
 

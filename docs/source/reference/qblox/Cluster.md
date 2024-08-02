@@ -2,7 +2,7 @@
 file_format: mystnb
 kernelspec:
     name: python3
-
+    display_name: python3
 ---
 (sec-qblox-cluster)=
 
@@ -315,6 +315,10 @@ connectivity.draw()
 
 ### Ports and clocks
 Each module can target at most 6 port-clock combinations within a schedule. Each of these port-clock combinations is associated with one sequencer in the Qblox hardware. See the {ref}`sec-user-guide-ports-clocks` section in the User guide for more information on the role of ports and clocks within `quantify-scheduler`.
+
+```{versionchanged} 0.21.0
+The alphabetical order of the module portclocks determines the order of sequencer instantiation (e.g. the sequencer associated with `q0:mw-q0.01` is instantiated before the sequencer of `q0:res-q0.ro`).
+```
 
 ```{code-cell} ipython3
 ---

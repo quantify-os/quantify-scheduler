@@ -14,10 +14,14 @@ from quantify_scheduler.backends.qblox.conditional import (
 from quantify_scheduler.backends.qblox.operation_handling.virtual import (
     ConditionalStrategy,
 )
+from quantify_scheduler.backends.qblox_backend import _SequencerCompilationConfig
+from quantify_scheduler.backends.types.common import ModulationFrequencies
 from quantify_scheduler.backends.types.qblox import (
     AnalogSequencerSettings,
     BoundedParameter,
+    ComplexChannelDescription,
     OpInfo,
+    SequencerOptions,
     StaticAnalogModuleProperties,
 )
 from quantify_scheduler.operations.control_flow_library import (
@@ -122,12 +126,21 @@ def test_nested_conditional_control_flow_raises_runtime_warning():
         },
     )
     mock_parent_module = Mock(BasebandModuleCompiler)
+    sequencer_cfg = _SequencerCompilationConfig(
+        sequencer_options=SequencerOptions(),
+        hardware_description=ComplexChannelDescription(),
+        portclock="q1:mw-q1.01",
+        channel_name="complex_out_0",
+        latency_correction=0,
+        distortion_correction=None,
+        lo_name=None,
+        modulation_frequencies=ModulationFrequencies.model_validate(
+            {"lo_freq": None, "interm_freq": 50e6}
+        ),
+        mixer_corrections=None,
+    )
     settings = AnalogSequencerSettings.initialize_from_config_dict(
-        {
-            "port": "q1:mw",
-            "clock": "q1.01",
-            "interm_freq": 50e6,
-        },
+        sequencer_cfg=sequencer_cfg,
         channel_name="complex_out_0",
         connected_input_indices=(),
         connected_output_indices=(0,),
@@ -135,10 +148,9 @@ def test_nested_conditional_control_flow_raises_runtime_warning():
     sequencer = AnalogSequencerCompiler(
         parent=mock_parent_module,
         index=0,
-        portclock=("", ""),
         static_hw_properties=static_hw_properties,
         settings=settings,
-        latency_corrections={},
+        sequencer_cfg=sequencer_cfg,
     )
 
     sequencer.op_strategies = [

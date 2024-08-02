@@ -5,6 +5,10 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from quantify_scheduler.backends.qblox.constants import (
+    DEFAULT_MIXER_AMP_RATIO,
+    DEFAULT_MIXER_PHASE_ERROR_DEG,
+)
 from quantify_scheduler.backends.qblox.enums import LoCalEnum, SidebandCalEnum
 from quantify_scheduler.backends.types.qblox import ValidationWarning
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
@@ -100,11 +104,11 @@ def test_conflicting_settings_warns_nco():
         )
     assert (
         hw_config_class.hardware_options.mixer_corrections["q0:res-q0.ro"].amp_ratio  # type: ignore
-        is None
+        is DEFAULT_MIXER_AMP_RATIO
     )
     assert (
         hw_config_class.hardware_options.mixer_corrections["q0:res-q0.ro"].phase_error  # type: ignore
-        is None
+        is DEFAULT_MIXER_PHASE_ERROR_DEG
     )
     assert (
         hw_config_class.hardware_options.mixer_corrections["q0:res-q0.ro"].auto_lo_cal  # type: ignore
@@ -113,7 +117,7 @@ def test_conflicting_settings_warns_nco():
     assert (
         hw_config_class.hardware_options.mixer_corrections[  # type: ignore
             "q0:res-q0.ro"
-        ].auto_sideband_cal
+        ].auto_sideband_cal  # type: ignore
         == SidebandCalEnum.ON_INTERM_FREQ_CHANGE
     )
 

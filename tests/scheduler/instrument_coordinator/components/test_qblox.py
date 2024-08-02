@@ -1633,8 +1633,8 @@ def test_get_hardware_log_component_base(
     mock_setup_basic_transmon_with_standard_params,
 ):
     cluster = make_cluster_component("cluster0")
-    module1 = cluster._cluster_modules["cluster0_module1"]
-    module1.instrument.get_ip_config = MagicMock(return_value=example_ip)
+    module4 = cluster._cluster_modules["cluster0_module4"]
+    module4.instrument.get_ip_config = MagicMock(return_value=example_ip)
 
     # ConfigurationManager belongs to qblox-instruments, but was already imported
     # in quantify_scheduler
@@ -1656,11 +1656,11 @@ def test_get_hardware_log_component_base(
     )
 
     # Create compiled schedule for module
-    compiled_sched.compiled_instructions["cluster0_module1"] = deepcopy(
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"]
+    compiled_sched.compiled_instructions["cluster0_module4"] = deepcopy(
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module4"]
     )
-    module1_log = module1.get_hardware_log(compiled_sched)
-    assert module1_log["app_log"] == f"Mock hardware log for app"
+    module4_log = module4.get_hardware_log(compiled_sched)
+    assert module4_log["app_log"] == f"Mock hardware log for app"
 
 
 def test_get_hardware_log_cluster_component(
@@ -1704,7 +1704,7 @@ def test_get_hardware_log_cluster_component(
         == f"Mock hardware log for {source}"
     )
     assert (
-        cluster0_log["cluster0_module1"][f"{source}_log"]
+        cluster0_log["cluster0_module4"][f"{source}_log"]
         == f"Mock hardware log for {source}"
     )
     assert "cluster0_module17" not in cluster0_log

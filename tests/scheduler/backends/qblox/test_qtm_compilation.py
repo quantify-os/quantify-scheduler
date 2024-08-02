@@ -11,8 +11,21 @@ from quantify_scheduler.backends.qblox.compiler_container import CompilerContain
 from quantify_scheduler.backends.qblox.enums import TimetagTraceType
 from quantify_scheduler.backends.qblox.instrument_compilers import QTMCompiler
 from quantify_scheduler.backends.qblox.timetag import TimetagSequencerCompiler
-from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
-from quantify_scheduler.backends.types.qblox import TimetagSequencerSettings
+from quantify_scheduler.backends.qblox_backend import (
+    QbloxHardwareCompilationConfig,
+    _SequencerCompilationConfig,
+)
+from quantify_scheduler.backends.types.common import ModulationFrequencies
+from quantify_scheduler.backends.types.qblox import (
+    AnalogSequencerSettings,
+    BoundedParameter,
+    DigitalChannelDescription,
+    OpInfo,
+    SequencerOptions,
+    SequencerSettings,
+    StaticAnalogModuleProperties,
+    TimetagSequencerSettings,
+)
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.enums import BinMode, TimeRef, TimeSource
 from quantify_scheduler.operations.acquisition_library import (
@@ -40,11 +53,21 @@ EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER = utils.load_json_example_scheme(
 def test_generate_qasm_empty_program_qtm(assert_equal_q1asm):
     mod = Mock()
     mod.configure_mock(max_number_of_instructions=100)
+    sequencer_cfg = _SequencerCompilationConfig(
+        sequencer_options=SequencerOptions(),
+        hardware_description=DigitalChannelDescription(),
+        portclock="q1:mw-q1.01",
+        channel_name="digital_output_1",
+        latency_correction=0,
+        distortion_correction=None,
+        lo_name=None,
+        modulation_frequencies=ModulationFrequencies.model_validate(
+            {"lo_freq": None, "interm_freq": 50e6}
+        ),
+        mixer_corrections=None,
+    )
     settings = TimetagSequencerSettings.initialize_from_config_dict(
-        {
-            "port": "p_test",
-            "clock": "c_test",
-        },
+        sequencer_cfg=sequencer_cfg,
         channel_name="digital_output_1",
         connected_input_indices=(),
         connected_output_indices=(0,),
@@ -52,10 +75,9 @@ def test_generate_qasm_empty_program_qtm(assert_equal_q1asm):
     component = TimetagSequencerCompiler(
         parent=mod,
         index=0,
-        portclock=("p_test", "c_test"),
         static_hw_properties=Mock(),
         settings=settings,
-        latency_corrections={},
+        sequencer_cfg=sequencer_cfg,
     )
 
     assert_equal_q1asm(
@@ -126,44 +148,54 @@ def test_get_compiler_container(create_schedule_with_pulse_info):
         ],
         QTMCompiler,
     )
-    assert container.instrument_compilers["cluster0"].instrument_compilers[  # type: ignore
-        "cluster0_module5"
-    ].instrument_cfg == {
-        "instrument_type": "QTM",
-        "sequence_to_file": False,
-        "digital_output_0": {
-            "portclock_configs": [{"port": "qe1:switch", "clock": "digital"}]
-        },
-        "digital_input_4": {
-            "portclock_configs": [{"port": "qe1:optical_readout", "clock": "qe1.ge0"}]
-        },
+    module_compilation_config = (
+        container.instrument_compilers["cluster0"]
+        .instrument_compilers["cluster0_module5"]  # type: ignore
+        .instrument_cfg
+    )
+
+    assert module_compilation_config.hardware_description.instrument_type == "QTM"
+    assert module_compilation_config.hardware_description.sequence_to_file is False
+    assert (
+        module_compilation_config.hardware_options.model_dump(exclude_unset=True) == {}
+    )
+    assert module_compilation_config.portclock_to_path == {
+        ("qe1:switch-digital"): "cluster0.module5.digital_output_0",
+        ("qe1:optical_readout-qe1.ge0"): "cluster0.module5.digital_input_4",
     }
 
 
 def test_construct_sequencer_compilers():
+    hardware_cfg = {
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {1: {"instrument_type": "QTM"}},
+                "ref": "internal",
+            }
+        },
+        "hardware_options": {},
+        "connectivity": {
+            "graph": [
+                ("cluster0.module1.digital_output_0", "q0:switch"),
+                ("cluster0.module1.digital_input_1", "q0:readout"),
+            ]
+        },
+    }
+    hardware_cfg = QbloxHardwareCompilationConfig.model_validate(hardware_cfg)
+    compilation_configs = hardware_cfg._extract_instrument_compilation_configs(
+        {("q0:switch", "digital"), ("q0:readout", "digital")}
+    )
+    module_configs = compilation_configs[
+        "cluster0"
+    ]._extract_module_compilation_configs()
+
     test_module = QTMCompiler(
         parent=Mock(),
         name="cluster0_module1",
         total_play_time=100e-9,
-        instrument_cfg={
-            "instrument_type": "QTM",
-            "digital_output_0": {
-                "portclock_configs": [
-                    {
-                        "port": "q0:switch",
-                        "clock": "digital",
-                    }
-                ]
-            },
-            "digital_input_1": {
-                "portclock_configs": [
-                    {
-                        "port": "q0:readout",
-                        "clock": "digital",
-                    }
-                ]
-            },
-        },
+        instrument_cfg=module_configs[1],
     )
 
     test_module._op_infos = {

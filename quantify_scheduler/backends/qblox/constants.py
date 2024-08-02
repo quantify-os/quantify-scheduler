@@ -53,12 +53,18 @@ stitched waveform. See
 example."""
 PULSE_STITCHING_DURATION = 1e-6
 """Duration of the individual pulses when pulse stitching is used."""
+DEFAULT_MIXER_PHASE_ERROR_DEG = 0.0
+"""Default phase shift in the instruments for mixer corrections.
+"""
 MIN_MIXER_PHASE_ERROR_DEG = -45
 """Lowest phase shift that can be configured in the instruments for mixer corrections.
 """
 MAX_MIXER_PHASE_ERROR_DEG = 45
-"""Lowest phase shift that can be configured in the instruments for mixer corrections.
+"""Highest phase shift that can be configured in the instruments for mixer corrections.
 """
+DEFAULT_MIXER_AMP_RATIO = 1.0
+"""Default value of the amplitude correction. N.B. This correction is defined
+as Q/I."""
 MIN_MIXER_AMP_RATIO = 0.5
 """Lowest value the amplitude correction can be set to. N.B. This correction is defined
 as Q/I."""

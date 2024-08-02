@@ -711,8 +711,6 @@ def test_initialize_and_get_with_report__two_clusters(
         "cmm_app_log.txt",
         "cmm_system_log.txt",
         "cmm_cfg_man_log.txt",
-        "module1_app_log.txt",
-        "module1_system_log.txt",
         "module2_app_log.txt",
         "module2_system_log.txt",
     ]

@@ -7,7 +7,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from quantify_scheduler.backends.qblox import constants
-from quantify_scheduler.backends.qblox.helpers import _generate_legacy_hardware_config
 from quantify_scheduler.backends.qblox.instrument_compilers import (
     ClusterCompiler,
     LocalOscillatorCompiler,
@@ -19,9 +18,10 @@ from quantify_scheduler.schedules.schedule import ScheduleBase
 if TYPE_CHECKING:
     from quantify_scheduler import Schedule
     from quantify_scheduler.backends.qblox.compiler_abc import InstrumentCompiler
-    from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
-    from quantify_scheduler.backends.types.qblox import (
-        _LocalOscillatorCompilerConfig,
+    from quantify_scheduler.backends.qblox_backend import (
+        QbloxHardwareCompilationConfig,
+        _ClusterCompilationConfig,
+        _LocalOscillatorCompilationConfig,
     )
     from quantify_scheduler.operations.operation import Operation
     from quantify_scheduler.resources import Resource
@@ -118,23 +118,17 @@ class CompilerContainer:
     def _add_cluster(
         self,
         name: str,
-        instrument_cfg: dict[str, Any],
-        portclock_to_path: dict[str, str],
-        latency_corrections: dict[str, float] | None = None,
-        distortion_corrections: dict[str, Any] | None = None,
+        instrument_cfg: _ClusterCompilationConfig,
     ) -> None:
         self.clusters[name] = ClusterCompiler(
             parent=self,
             name=name,
             total_play_time=self.total_play_time,
             instrument_cfg=instrument_cfg,
-            portclock_to_path=portclock_to_path,
-            latency_corrections=latency_corrections,
-            distortion_corrections=distortion_corrections,
         )
 
     def _add_local_oscillator(
-        self, name: str, instrument_cfg: _LocalOscillatorCompilerConfig
+        self, name: str, instrument_cfg: _LocalOscillatorCompilationConfig
     ) -> None:
         self.local_oscillators[name] = LocalOscillatorCompiler(
             parent=self,
@@ -158,43 +152,27 @@ class CompilerContainer:
         hardware_cfg
             The hardware compilation config.
         """
-        # Extract the old-style hardware config from the CompilationConfig
-        hardware_cfg_legacy = _generate_legacy_hardware_config(
-            schedule=schedule, hardware_cfg=hardware_cfg
-        )
-
-        distortion_corrections = hardware_cfg_legacy.get("distortion_corrections", {})
-        latency_corrections = hardware_cfg_legacy.get("latency_corrections", {})
-
         composite = cls(schedule)
-        compiler_configs = hardware_cfg._extract_instrument_compiler_configs(
+        instrument_configs = hardware_cfg._extract_instrument_compilation_configs(
             _extract_port_clocks_used(schedule)
         )
 
         for (
             instrument_name,
-            instrument_cfg,
-        ) in compiler_configs.items():
+            cfg,
+        ) in instrument_configs.items():
 
-            instrument_type = instrument_cfg.instrument_type
-
-            instrument_distortion_corrections = None
-
-            if instrument_type == "Cluster":
-                instrument_distortion_corrections = distortion_corrections
+            instrument_type = cfg.hardware_description.instrument_type
 
             if instrument_type == "Cluster":
                 composite._add_cluster(
                     name=instrument_name,
-                    instrument_cfg=hardware_cfg_legacy[instrument_name],
-                    portclock_to_path=instrument_cfg.portclock_to_path,
-                    latency_corrections=latency_corrections,
-                    distortion_corrections=instrument_distortion_corrections,
+                    instrument_cfg=cfg,
                 )
             elif instrument_type == "LocalOscillator":
                 composite._add_local_oscillator(
                     name=instrument_name,
-                    instrument_cfg=instrument_cfg,
+                    instrument_cfg=cfg,
                 )
             else:
                 raise ValueError(

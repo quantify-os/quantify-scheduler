@@ -937,6 +937,39 @@ def test_thresholded_acquisition(
     assert sequencer_acquisition_metadata.acq_protocol == "ThresholdedAcquisition"
 
 
+@pytest.mark.parametrize(
+    "rotation, threshold",
+    [
+        (0, 1e9),
+        (400, 0),
+    ],
+)
+def test_thresholded_acquisition_wrong_values(
+    mock_setup_basic_transmon_with_standard_params,
+    qblox_hardware_config_transmon,
+    rotation,
+    threshold,
+):
+    hardware_config = qblox_hardware_config_transmon
+    mock_setup = mock_setup_basic_transmon_with_standard_params
+    quantum_device = mock_setup["quantum_device"]
+    quantum_device.hardware_config(hardware_config)
+
+    qubit = mock_setup["q0"]
+    qubit.measure.acq_rotation(rotation)
+    qubit.measure.acq_threshold(threshold)
+
+    schedule = Schedule("Thresholded acquisition")
+    schedule.add(Measure("q0", acq_protocol="ThresholdedAcquisition"))
+
+    compiler = SerialCompiler("compiler", quantum_device=quantum_device)
+
+    with pytest.raises(ValueError) as error:
+        _ = compiler.compile(schedule)
+
+    assert "Attempting to configure" in error.value.args[0]
+
+
 def test_long_time_trace_protocol(
     mock_setup_basic_transmon_with_standard_params,
     qblox_hardware_config_transmon,
@@ -1098,7 +1131,7 @@ def test_trigger_count_append(
     # Setup dummy acquisition data
     ic_cluster0.instrument.set_dummy_binned_acquisition_data(
         slot_idx=3,
-        sequencer=0,
+        sequencer=1,
         acq_index_name="0",
         data=[
             DummyBinnedAcquisitionData(data=(10000, 15000), thres=0, avg_cnt=100),
@@ -1178,7 +1211,7 @@ def test_trigger_count_append_legacy_hardware_cfg(
     # Setup dummy acquisition data
     ic_cluster0.instrument.set_dummy_binned_acquisition_data(
         slot_idx=3,
-        sequencer=0,
+        sequencer=1,
         acq_index_name="0",
         data=[
             DummyBinnedAcquisitionData(data=(10000, 15000), thres=0, avg_cnt=100),
@@ -1403,7 +1436,7 @@ def test_trigger_count_append_gettables(
     # Setup dummy acquisition data
     ic_cluster0.instrument.set_dummy_binned_acquisition_data(
         slot_idx=3,
-        sequencer=0,
+        sequencer=1,
         acq_index_name="0",
         data=[
             DummyBinnedAcquisitionData(data=(10000, 15000), thres=0, avg_cnt=100),
@@ -1454,7 +1487,7 @@ def test_trigger_count_average(
     # Setup dummy acquisition data
     ic_cluster0.instrument.set_dummy_binned_acquisition_data(
         slot_idx=3,
-        sequencer=0,
+        sequencer=1,
         acq_index_name="0",
         data=[
             DummyBinnedAcquisitionData(data=(10000, 15000), thres=0, avg_cnt=100),
@@ -1524,7 +1557,7 @@ def test_trigger_count_average_gettables(
     # Setup dummy acquisition data
     ic_cluster0.instrument.set_dummy_binned_acquisition_data(
         slot_idx=3,
-        sequencer=0,
+        sequencer=1,
         acq_index_name="0",
         data=[
             DummyBinnedAcquisitionData(data=(10000, 15000), thres=0, avg_cnt=100),
@@ -2010,14 +2043,14 @@ def test_multi_real_input_hardware_cfg_trigger_count(
         "sequencers"
     ]["seq3"]
 
-    assert seq_0["connected_input_indices"] == [0]
-    assert seq_0["ttl_acq_auto_bin_incr_en"] is False
-    assert seq_1["connected_input_indices"] == [1]
-    assert seq_1["ttl_acq_auto_bin_incr_en"] is True
-    assert seq_2["connected_output_indices"] == [0]
+    assert seq_0["connected_output_indices"] == [0]
+    assert seq_0["nco_en"] is True
+    assert seq_1["connected_input_indices"] == [0]
+    assert seq_1["ttl_acq_auto_bin_incr_en"] is False
+    assert seq_2["connected_output_indices"] == [1]
     assert seq_2["nco_en"] is True
-    assert seq_3["connected_output_indices"] == [1]
-    assert seq_3["nco_en"] is True
+    assert seq_3["connected_input_indices"] == [1]
+    assert seq_3["ttl_acq_auto_bin_incr_en"] is True
 
     instr_coordinator.remove_component("ic_cluster0")
 

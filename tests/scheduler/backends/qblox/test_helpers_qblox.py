@@ -235,34 +235,6 @@ def test_Frequencies():
             freq.validate()
 
 
-@pytest.mark.parametrize(
-    "new_style_config, old_style_config",
-    [
-        (QBLOX_HARDWARE_CONFIG_TRANSMON, hardware_config_transmon_old_style),
-        (QBLOX_HARDWARE_CONFIG_NV_CENTER, hardware_config_nv_center_old_style),
-    ],
-)
-def test_generate_old_style_hardware_config(new_style_config, old_style_config):
-    sched = Schedule("All portclocks schedule")
-    quantum_device = QuantumDevice("All_portclocks_device")
-    quantum_device.hardware_config(new_style_config)
-
-    qubits = {}
-    sched = Schedule("All portclocks schedule")
-    for port, clock in find_all_port_clock_combinations(old_style_config):
-        sched.add(SquarePulse(port=port, clock=clock, amp=0.25, duration=12e-9))
-        if (qubit_name := port.split(":")[0]) not in quantum_device.elements():
-            qubits[qubit_name] = BasicElectronicNVElement(qubit_name)
-            quantum_device.add_element(qubits[qubit_name])
-
-    generated_hw_config = helpers._generate_legacy_hardware_config(
-        schedule=sched,
-        hardware_cfg=quantum_device.generate_compilation_config().hardware_compilation_config,
-    )
-
-    assert generated_hw_config == old_style_config
-
-
 # Using the old-style / legacy hardware config dict is deprecated
 @pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 def test_preprocess_legacy_hardware_config(
@@ -326,53 +298,6 @@ def test_preprocess_legacy_hardware_config(
                 "sequencers"
             ]["seq0"]
         )
-
-
-def test_configure_input_gains_overwrite_gain():
-    # Partial test of overwriting gain setting. Note: In using the new
-    # QbloxHardwareOptions collisions like these are no longer possible,
-    # so after migrating to the new-style hardware compilation config
-    # this test can be removed
-
-    instrument_cfg = {
-        "instrument_type": "QRM",
-        "real_output_1": {
-            "input_gain_1": 10,
-            "portclock_configs": [
-                {"port": "q0:res", "clock": "q0.ro"},
-            ],
-        },
-    }
-
-    test_module = QRMCompiler(
-        parent=None,
-        name="tester",
-        total_play_time=1,
-        instrument_cfg=instrument_cfg,
-    )
-
-    test_module._settings = BasebandModuleSettings.extract_settings_from_mapping(
-        instrument_cfg
-    )
-    test_module._settings.in1_gain = 5
-
-    with pytest.raises(ValueError) as error:
-        test_module._configure_input_gains()
-
-    assert (
-        str(error.value)
-        == "Overwriting gain of real_output_1 of module tester to in1_gain: 10."
-        "\nIt was previously set to in1_gain: 5."
-    )
-
-
-def test_find_channel_names(hardware_cfg_rf_legacy):
-    assert helpers.find_channel_names(
-        hardware_cfg_rf_legacy["cluster0"]["cluster0_module2"]
-    ) == [
-        "complex_output_0",
-        "complex_output_1",
-    ]
 
 
 # Using the old-style / legacy hardware config dict is deprecated

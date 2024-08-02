@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 from quantify_scheduler.backends.qblox import constants, q1asm_instructions
 from quantify_scheduler.backends.qblox.compiler_abc import SequencerCompiler
@@ -28,6 +28,7 @@ if TYPE_CHECKING:
         IOperationStrategy,
     )
     from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
+    from quantify_scheduler.backends.qblox_backend import _SequencerCompilationConfig
     from quantify_scheduler.backends.types.qblox import (
         OpInfo,
         StaticHardwareProperties,
@@ -46,40 +47,30 @@ class TimetagSequencerCompiler(SequencerCompiler):
         A reference to the module compiler this sequencer belongs to.
     index
         Index of the sequencer.
-    portclock
-        Tuple that specifies the unique port and clock combination for this
-        sequencer. The first value is the port, second is the clock.
     static_hw_properties
         The static properties of the hardware. This effectively gathers all the
         differences between the different modules.
     settings
         The settings set to this sequencer.
-    latency_corrections
-        Dict containing the delays for each port-clock combination.
-    qasm_hook_func
-        Allows the user to inject custom Q1ASM code into the compilation, just prior to
-        returning the final string.
+    sequencer_cfg
+        The instrument compiler config associated to this device.
     """
 
     def __init__(
         self,
         parent: QTMCompiler,
         index: int,
-        portclock: tuple[str, str],
         static_hw_properties: StaticHardwareProperties,
         settings: TimetagSequencerSettings,
-        latency_corrections: dict[str, float],
-        qasm_hook_func: Callable | None = None,
+        sequencer_cfg: _SequencerCompilationConfig,
     ) -> None:
         self._settings: TimetagSequencerSettings  # Help the type checker
         super().__init__(
             parent=parent,
             index=index,
-            portclock=portclock,
             static_hw_properties=static_hw_properties,
             settings=settings,
-            latency_corrections=latency_corrections,
-            qasm_hook_func=qasm_hook_func,
+            sequencer_cfg=sequencer_cfg,
         )
 
     def prepare(self) -> None:
