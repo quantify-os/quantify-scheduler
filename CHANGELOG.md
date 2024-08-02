@@ -48,6 +48,7 @@
   - Fix the `ClusterComponent` initializer such that new, unsupported modules are ignored. (!1019)
   - Establish the new-style hardware config everywhere in the qblox backend. Rename `...CompilerConfig` classes to `...CompilationConfig` and move to qblox backend. (!1036)
   - Implement compilation of `Trace` for QTM modules. (!1037)
+  - Fix `marker_debug_mode_enable` such that Q1ASM is correctly generated if it is `True`. (!1048)
 - Tests
   - Update test_compile_cz_gate with new style hardware config (!979)
   - Add nv centers to `test_extract_instrument_compiler_configs`. (!1003)

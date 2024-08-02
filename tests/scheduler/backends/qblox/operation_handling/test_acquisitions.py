@@ -36,7 +36,7 @@ from quantify_scheduler.instrument_coordinator.components.qblox import (
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.control_flow_library import LoopOperation
 from quantify_scheduler.operations.gate_library import Measure
-from quantify_scheduler.operations.pulse_library import SquarePulse
+from quantify_scheduler.operations.pulse_library import ShiftClockPhase, SquarePulse
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.trace_schedules import (
     long_time_trace_with_qubit,
@@ -2270,7 +2270,9 @@ def test_mix_lo_flag(
 
 
 def test_marker_debug_mode_enable(
-    mock_setup_basic_transmon_with_standard_params, make_cluster_component
+    mock_setup_basic_transmon_with_standard_params,
+    make_cluster_component,
+    assert_equal_q1asm,
 ):
     hardware_cfg = {
         "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
@@ -2302,7 +2304,8 @@ def test_marker_debug_mode_enable(
 
     # Define experiment schedule
     schedule = Schedule("test marker_enable")
-    schedule.add(Measure("q0", acq_protocol="SSBIntegrationComplex"))
+    schedule.add(ShiftClockPhase(phase_shift=20, clock="q0.ro"))
+    schedule.add(Measure("q0", acq_protocol="SSBIntegrationComplex"), rel_time=20e-9)
     schedule.add_resource(ClockResource(name="q0.res", freq=50e6))
 
     # Generate compiled schedule for QRM
@@ -2320,31 +2323,71 @@ def test_marker_debug_mode_enable(
     )
 
     # Assert markers were set correctly, and wait time is correct for both modules.
-    seq0_qrm = compiled_sched_qrm.compiled_instructions["cluster0"]["cluster0_module1"][
-        "sequencers"
-    ]["seq0"]["sequence"]["program"].splitlines()
-    idx = 0
-    for i, string in enumerate(seq0_qrm):
-        if re.search(r"^\s*set_mrk\s+3", string):
-            idx = i
-            break
-    # 2 instructions after set mrk are set_awg_gain and play
-    assert re.search(r"^\s*set_mrk\s+0", seq0_qrm[idx + 3])
-    assert re.search(r"^\s*upd_param\s+4", seq0_qrm[idx + 4])
-    assert re.search(r"^\s*wait\s+92", seq0_qrm[idx + 5])
+    assert_equal_q1asm(
+        compiled_sched_qrm.compiled_instructions["cluster0"]["cluster0_module1"][
+            "sequencers"
+        ]["seq0"]["sequence"]["program"],
+        """
+ set_mrk 0 # set markers to 0
+ wait_sync 4
+ upd_param 4
+ wait 4 # latency correction of 4 + 0 ns
+ move 1,R0 # iterator for loop with label start
+start:
+ reset_ph
+ upd_param 4
+ set_ph_delta 55555556 # increment nco phase by 20.00 deg
+ upd_param 4
+ wait 16 # auto generated wait (16 ns)
+ reset_ph
+ set_mrk 3 # set markers to 3
+ set_awg_gain 8192,0 # setting gain for SquarePulse
+ play 0,0,4 # play SquarePulse (300 ns)
+ set_mrk 0 # set markers to 0
+ upd_param 4
+ wait 92 # auto generated wait (92 ns)
+ set_mrk 12 # set markers to 12
+ acquire 0,0,4
+ set_mrk 0 # set markers to 0
+ upd_param 4
+ wait 992 # auto generated wait (992 ns)
+ loop R0,@start
+ stop
+        """,
+    )
 
-    seq0_qrm_rf = compiled_sched_qrm_rf.compiled_instructions["cluster0"][
-        "cluster0_module1"
-    ]["sequencers"]["seq0"]["sequence"]["program"].splitlines()
-    idx = 0
-    for i, string in enumerate(seq0_qrm_rf):
-        if re.search(r"^\s*set_mrk\s+7", string):
-            idx = i
-            break
-    # 2 instructions after set mrk are set_awg_gain and play
-    assert re.search(r"^\s*set_mrk\s+3", seq0_qrm_rf[idx + 3])
-    assert re.search(r"^\s*upd_param\s+4", seq0_qrm_rf[idx + 4])
-    assert re.search(r"^\s*wait\s+92", seq0_qrm_rf[idx + 5])
+    assert_equal_q1asm(
+        compiled_sched_qrm_rf.compiled_instructions["cluster0"]["cluster0_module1"][
+            "sequencers"
+        ]["seq0"]["sequence"]["program"],
+        """
+ set_mrk 3 # set markers to 3
+ wait_sync 4
+ upd_param 4
+ wait 4 # latency correction of 4 + 0 ns
+ move 1,R0 # iterator for loop with label start
+start:
+ reset_ph
+ upd_param 4
+ set_ph_delta 55555556 # increment nco phase by 20.00 deg
+ upd_param 4
+ wait 16 # auto generated wait (16 ns)
+ reset_ph
+ set_mrk 7 # set markers to 7
+ set_awg_gain 8192,0 # setting gain for SquarePulse
+ play 0,0,4 # play SquarePulse (300 ns)
+ set_mrk 3 # set markers to 3
+ upd_param 4
+ wait 92 # auto generated wait (92 ns)
+ set_mrk 11 # set markers to 11
+ acquire 0,0,4
+ set_mrk 3 # set markers to 3
+ upd_param 4
+ wait 992 # auto generated wait (992 ns)
+ loop R0,@start
+ stop
+        """,
+    )
 
     instr_coordinator.remove_component("ic_cluster0")
 

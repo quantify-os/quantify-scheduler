@@ -453,29 +453,27 @@ class AnalogSequencerCompiler(SequencerCompiler):
         Optionally wrap pulses and acquisitions in marker pulses depending on the
         ``marker_debug_mode_enable`` setting.
         """
-        if self._marker_debug_mode_enable:
-            valid_operation = (
-                op_strategy.operation_info.is_acquisition
-                or op_strategy.operation_info.data.get("wf_func") is not None
+        if self._marker_debug_mode_enable and (
+            op_strategy.operation_info.is_acquisition
+            or op_strategy.operation_info.data.get("wf_func") is not None
+        ):
+            marker = self._decide_markers(op_strategy)
+            qasm_program.emit(
+                q1asm_instructions.SET_MARKER,
+                get_marker_binary(marker),
+                comment=f"set markers to {marker}",
             )
-            if valid_operation:
-                marker = self._decide_markers(op_strategy)
-                qasm_program.emit(
-                    q1asm_instructions.SET_MARKER,
-                    get_marker_binary(marker),
-                    comment=f"set markers to {marker}",
-                )
-                op_strategy.insert_qasm(qasm_program)
-                qasm_program.emit(
-                    q1asm_instructions.SET_MARKER,
-                    get_marker_binary(self._default_marker),
-                    comment=f"set markers to {self._default_marker}",
-                )
-                qasm_program.emit(
-                    q1asm_instructions.UPDATE_PARAMETERS,
-                    constants.MIN_TIME_BETWEEN_OPERATIONS,
-                )
-                qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
+            op_strategy.insert_qasm(qasm_program)
+            qasm_program.emit(
+                q1asm_instructions.SET_MARKER,
+                get_marker_binary(self._default_marker),
+                comment=f"set markers to {self._default_marker}",
+            )
+            qasm_program.emit(
+                q1asm_instructions.UPDATE_PARAMETERS,
+                constants.MIN_TIME_BETWEEN_OPERATIONS,
+            )
+            qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
 
         else:
             op_strategy.insert_qasm(qasm_program)
