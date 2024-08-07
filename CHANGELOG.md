@@ -74,6 +74,7 @@
   - Add ability to override frequency for some gate-level operations. (!1039)
   - Bugfix for frequency override for measure operations. (!1042)
   - Introduce `TimetagTrace` acquisition protocol and bin mode `BinMode.FIRST`. (!1037)
+  - `LongTimeTrace` dispersive measurement compilation fixes with reset clock phase and gate pulse amp. (!1053)
 - QuantumDevice
   - Introduce BasicSpinElement spin device element. (!1015)
 

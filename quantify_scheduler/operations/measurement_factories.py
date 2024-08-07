@@ -134,10 +134,11 @@ def _dispersive_measurement(  # noqa: PLR0915
 
     subschedule = Schedule("dispersive_measurement")
 
-    if reset_clock_phase:
-        subschedule.add(ResetClockPhase(clock=clock))
-
     if acq_protocol != "LongTimeTrace":
+
+        if reset_clock_phase:
+            subschedule.add(ResetClockPhase(clock=clock))
+
         if pulse_type == "SquarePulse":
             subschedule.add(
                 SquarePulse(
@@ -309,6 +310,17 @@ def _dispersive_measurement(  # noqa: PLR0915
 
         subschedule.add(pulse_op)
 
+        if gate_pulse_amp is not None or gate_port is not None:
+            gate_pulse_op = SquarePulse(
+                amp=np.real(gate_pulse_amp),
+                duration=num_points * acq_duration,
+                port=gate_port,
+                clock="cl0.baseband",
+            )
+            subschedule.add(gate_pulse_op)
+
+        loop_subschedule = Schedule("loop_SSB")
+
         acquisition = SSBIntegrationComplex(
             port=port,
             clock=clock,
@@ -319,9 +331,12 @@ def _dispersive_measurement(  # noqa: PLR0915
             t0=0,
         )
 
+        loop_subschedule.add(ResetClockPhase(clock=clock))
+        loop_subschedule.add(acquisition, ref_pt="start")
+
         subschedule.add(
             LoopOperation(
-                body=acquisition,
+                body=loop_subschedule,
                 repetitions=num_points,
             ),
             rel_time=acq_delay,
@@ -334,10 +349,7 @@ def _dispersive_measurement(  # noqa: PLR0915
             port=port,
             clock=clock,
         )
-
-        subschedule.add(
-            pulse_op_off,
-        )
+        subschedule.add(pulse_op_off)
 
         subschedule.add(IdlePulse(duration=4e-9))
 

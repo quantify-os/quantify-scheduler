@@ -36,7 +36,11 @@ from quantify_scheduler.instrument_coordinator.components.qblox import (
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.control_flow_library import LoopOperation
 from quantify_scheduler.operations.gate_library import Measure
-from quantify_scheduler.operations.pulse_library import ShiftClockPhase, SquarePulse
+from quantify_scheduler.operations.pulse_library import (
+    IdlePulse,
+    ShiftClockPhase,
+    SquarePulse,
+)
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.trace_schedules import (
     long_time_trace_with_qubit,
@@ -983,6 +987,7 @@ def test_long_time_trace_protocol(
 
     schedule = Schedule("LongTimeTrace")
     schedule.add(Measure("q0", acq_protocol="LongTimeTrace", bin_mode=BinMode.APPEND))
+    schedule.add(IdlePulse(duration=4e-9))
 
     compiler = SerialCompiler("compiler", quantum_device=quantum_device)
     compiled_schedule = compiler.compile(schedule)
@@ -1000,15 +1005,17 @@ def test_long_time_trace_protocol(
     end = r"\s*(#.*)*\s*"
     assert re.search(
         rf"{start}reset_ph{end}"
+        rf"{start}upd_param 4{end}"
         rf"{start}set_awg_offs 8192,0{end}"
         rf"{start}upd_param 4{end}"
         rf"{start}wait 96{end}"
         rf"{start}move 11,R10{end}"
-        rf"{start}loop13:{end}"
+        rf"{start}loop12:{end}"
+        rf"{start}reset_ph{end}"
         rf"{start}acquire 0,R0,4{end}"
         rf"{start}add R0,1,R0{end}"
         rf"{start}wait 996{end}"
-        rf"{start}loop R10,@loop13{end}"
+        rf"{start}loop R10,@loop12{end}"
         rf"{start}set_awg_offs 0,0{end}"
         rf"{start}upd_param 4{end}",
         program,

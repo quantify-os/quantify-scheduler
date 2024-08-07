@@ -959,26 +959,23 @@ def test_long_time_trace_protocol(
 
     long_time_trace_schedule = get_subschedule_operation(compiled_schedule, [0])
     assert long_time_trace_schedule.name == "dispersive_measurement"
-    assert len(long_time_trace_schedule.schedulables) == 5
+    assert len(long_time_trace_schedule.schedulables) == 4
 
-    reset_clock_phase_operation = get_subschedule_operation(compiled_schedule, [0, 0])
-    assert reset_clock_phase_operation.name == "ResetClockPhase"
-
-    voltage_offset_operation = get_subschedule_operation(compiled_schedule, [0, 1])
+    voltage_offset_operation = get_subschedule_operation(compiled_schedule, [0, 0])
     assert voltage_offset_operation.name == "VoltageOffset"
 
-    loop_operation = get_subschedule_operation(compiled_schedule, [0, 2])
+    loop_operation = get_subschedule_operation(compiled_schedule, [0, 1])
     assert loop_operation.name == "LoopOperation"
     assert loop_operation["control_flow_info"]["repetitions"] == 11
 
-    acquisition_operation = get_subschedule_operation(compiled_schedule, [0, 2]).body
-    assert acquisition_operation.name == "SSBIntegrationComplex"
+    loop_schedule = get_subschedule_operation(compiled_schedule, [0, 1]).body
+    reset_clock_phase_operation = get_subschedule_operation(loop_schedule, [0])
+    assert reset_clock_phase_operation.name == "ResetClockPhase"
+    ssb_integration_operation = get_subschedule_operation(loop_schedule, [1])
+    assert ssb_integration_operation.name == "SSBIntegrationComplex"
 
-    voltage_offset_0_operation = get_subschedule_operation(compiled_schedule, [0, 3])
+    voltage_offset_0_operation = get_subschedule_operation(compiled_schedule, [0, 2])
     assert voltage_offset_0_operation.name == "VoltageOffset"
-
-    idle_operation = get_subschedule_operation(compiled_schedule, [0, 4])
-    assert idle_operation.name == "IdlePulse"
 
 
 def test_long_time_trace_invalid_bin_mode(
