@@ -65,6 +65,7 @@
   - Adjust schedule helper functions for subschedules and control flows. (!998)
   - Deprecate old-style hardware config dicts and restrict input of `hardware_compile` to a full `CompilationConfig`. (!1002)
   - Lower conversion of hardware config in the qblox backend, convert back to old-style right before creation of cluster compiler. (!1013)
+  - Optimize `validate_overlapping_pulses` and introduce new performance notebook. (!1056)
 - Operations 
   - Introduce `LongTimeTrace` acquisition protocol. (!958)
   - Small adjustments to `LongTimeTrace` and tests. (!1014)

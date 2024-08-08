@@ -1332,7 +1332,9 @@ def _exists_pulse_starting_before_current_end(
     abs_times_and_operations: list[Tuple[float, Operation]], current_idx: int
 ) -> Tuple[float, Operation] | Literal[False]:
     current_end = _operation_end(abs_times_and_operations[current_idx])
-    for abs_time, operation in abs_times_and_operations[current_idx + 1 :]:
+    for i in range(current_idx + 1, len(abs_times_and_operations)):
+        abs_time = abs_times_and_operations[i][0]
+        operation = abs_times_and_operations[i][1]
         # Schedulable starting at the exact time a previous one ends does not count as
         # overlapping. Subtract 1e-10 for possible floating point errors.
         if abs_time >= current_end - 1e-10:
