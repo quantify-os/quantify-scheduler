@@ -4,7 +4,8 @@
 """NV-center-specific operations for use with the quantify_scheduler."""
 from typing import Hashable, Literal, Optional, Tuple, Union
 
-from ..enums import BinMode
+from quantify_scheduler.enums import BinMode
+
 from .operation import Operation
 
 
@@ -22,7 +23,7 @@ class ChargeReset(Operation):
         :code:`ChargeReset("qe0")`, :code:`ChargeReset("qe0", "qe1", "qe2")`, etc..
     """
 
-    def __init__(self, *qubits: str):
+    def __init__(self, *qubits: str) -> None:
         super().__init__(name=f"ChargeReset {', '.join(qubits)}")
         self.data.update(
             {
@@ -86,7 +87,7 @@ class CRCount(Operation):
             None,
         ] = None,
         bin_mode: BinMode = None,
-    ):
+    ) -> None:
         # this if else statement a workaround to support multiplexed measurements (#262)
 
         # this snippet has some automatic behaviour that is error prone.
@@ -94,16 +95,15 @@ class CRCount(Operation):
         if len(qubits) == 1:
             if acq_index is None:
                 acq_index = 0
-        else:
-            if isinstance(acq_index, int):
-                acq_index = [
-                    acq_index,
-                ] * len(qubits)
-            elif acq_index is None:
-                # defaults to writing the result of all qubits to acq_index 0.
-                # note that this will result in averaging data together if multiple
-                # measurements are present in the same schedule (#262)
-                acq_index = list(0 for i in range(len(qubits)))
+        elif isinstance(acq_index, int):
+            acq_index = [
+                acq_index,
+            ] * len(qubits)
+        elif acq_index is None:
+            # defaults to writing the result of all qubits to acq_index 0.
+            # note that this will result in averaging data together if multiple
+            # measurements are present in the same schedule (#262)
+            acq_index = list(0 for i in range(len(qubits)))
 
         plot_func = (
             "quantify_scheduler.schedules._visualization.circuit_diagram.acq_meter_text"
