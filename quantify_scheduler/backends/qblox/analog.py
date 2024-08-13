@@ -341,7 +341,8 @@ class AnalogSequencerCompiler(SequencerCompiler):
         is called.
         """
         self._update_set_clock_frequency_operations()
-        self._check_nco_operation_timing(self._get_ordered_operations())
+        if not self._settings.allow_off_grid_nco_ops:
+            self._assert_nco_operation_timing_on_grid(self._get_ordered_operations())
         super().prepare()
 
     def _update_set_clock_frequency_operations(self) -> None:
@@ -355,25 +356,26 @@ class AnalogSequencerCompiler(SequencerCompiler):
 
     def _get_latency_correction_ns(self, latency_correction: float) -> int:
         # NCO grid alignment for NCO operations, _without_ latency corrections, is
-        # already checked in `_check_nco_operation_timing`. Therefore here we only check
-        # the latency corrections. Method overridden from superclass because only
-        # QRM/QCM modules have NCO operations.
+        # already checked in `_assert_nco_operation_timing_on_grid`. Therefore here we
+        # only check the latency corrections. Method overridden from superclass because
+        # only QRM/QCM modules have NCO operations.
         latency_correction = super()._get_latency_correction_ns(latency_correction)
-        try:
-            helpers.to_grid_time(latency_correction * 1e-9, constants.NCO_TIME_GRID)
-        except ValueError as e:
-            raise NcoOperationTimingError(
-                f"The latency correction value of {latency_correction} ns for "
-                f"{self.port}-{self.clock} does not align with the grid time of "
-                f"{constants.NCO_TIME_GRID} ns for NCO operations. The latency "
-                "corrections must adhere to this grid time to ensure proper alignment "
-                "of all later operations in the schedule."
-            ) from e
-        else:
-            return latency_correction
+        if not self._settings.allow_off_grid_nco_ops:
+            try:
+                helpers.to_grid_time(latency_correction * 1e-9, constants.NCO_TIME_GRID)
+            except ValueError as e:
+                raise NcoOperationTimingError(
+                    f"The latency correction value of {latency_correction} ns for "
+                    f"{self.port}-{self.clock} does not align with the grid time of "
+                    f"{constants.NCO_TIME_GRID} ns for NCO operations. The latency "
+                    "corrections must adhere to this grid time to ensure proper "
+                    "alignment of all later operations in the schedule."
+                ) from e
+
+        return latency_correction
 
     @staticmethod
-    def _check_nco_operation_timing(
+    def _assert_nco_operation_timing_on_grid(
         ordered_op_strategies: list[IOperationStrategy],
     ) -> None:
         """Check whether this sequencer's operation adhere to NCO timing restrictions."""
@@ -419,6 +421,22 @@ class AnalogSequencerCompiler(SequencerCompiler):
                         f"NCO related operation {op.operation_info} must be on "
                         f"{constants.NCO_TIME_GRID} ns time grid"
                     ) from e
+
+    def _assert_total_play_time_on_nco_grid(self) -> None:
+        if self._settings.allow_off_grid_nco_ops:
+            return
+
+        try:
+            helpers.to_grid_time(self.parent.total_play_time, constants.NCO_TIME_GRID)
+        except ValueError as e:
+            raise NcoOperationTimingError(
+                "The schedule is repeated with a duration of "
+                f"{round(self.parent.total_play_time * 1e9)} ns per iteration, "
+                "which does not align with the grid time of "
+                f"{constants.NCO_TIME_GRID} ns for NCO operations. The duration "
+                "must adhere to this grid time to ensure proper alignment of NCO "
+                "operations for each iteration."
+            ) from e
 
     def _write_pre_wait_sync_instructions(self, qasm: QASMProgram) -> None:
         """

@@ -9,7 +9,7 @@ import warnings
 from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, Dict, List, Literal, Tuple, Type, Union
+from typing import Any, Dict, List, Literal, Optional, Tuple, Type, Union
 
 import numpy as np
 from pydantic import Field, model_validator
@@ -502,7 +502,8 @@ def hardware_compile(
 
     validate_non_overlapping_stitched_pulse(schedule)
 
-    _check_nco_operations_on_nco_time_grid(schedule)
+    if not config.hardware_compilation_config.allow_off_grid_nco_ops:
+        _check_nco_operations_on_nco_time_grid(schedule)
 
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         schedule, hardware_cfg
@@ -570,6 +571,11 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
     Options that are used in compiling the instructions for the hardware, such as
     :class:`~quantify_scheduler.backends.types.common.LatencyCorrection` or
     :class:`~quantify_scheduler.backends.types.qblox.SequencerOptions`.
+    """
+    allow_off_grid_nco_ops: Optional[bool] = None
+    """
+    Flag to allow NCO operations to play at times that are not aligned with the NCO
+    grid.
     """
     compilation_passes: List[SimpleNodeConfig] = [
         SimpleNodeConfig(
@@ -774,7 +780,9 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
                     optical_control_clock = clock
             return optical_control_clock
 
-        instrument_configs = {}
+        instrument_configs: dict[
+            str, _ClusterCompilationConfig | _LocalOscillatorCompilationConfig
+        ] = {}
 
         # Extract instrument hardware descriptions
         for (
@@ -924,6 +932,10 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
                 QbloxHardwareOptions.model_validate(options)
             )
 
+        for instr_cfg in instrument_configs.values():
+            if instr_cfg.hardware_description.instrument_type == "Cluster":
+                instr_cfg.allow_off_grid_nco_ops = self.allow_off_grid_nco_ops
+
         # Delete hardware descriptions of unused modules
         unused_modules = defaultdict(list)
         for instrument_name, cfg in instrument_configs.items():
@@ -988,12 +1000,17 @@ class _ClusterCompilationConfig(DataStructure):
     """Mapping between portclocks and their associated channel name paths (e.g. cluster0.module1.complex_output_0)."""
     lo_to_path: Dict[str, str] = {}
     """Mapping between lo names and their associated channel name paths (e.g. cluster0.module1.complex_output_0)."""
+    allow_off_grid_nco_ops: Optional[bool] = None
+    """
+    Flag to allow NCO operations to play at times that are not aligned with the NCO
+    grid.
+    """
 
     def _extract_module_compilation_configs(
         self,
     ) -> Dict[int, _ClusterModuleCompilationConfig]:
 
-        module_configs = {}
+        module_configs: dict[str, _ClusterModuleCompilationConfig] = {}
 
         # Create configs and distribute `hardware_description`
         for module_idx, module_description in self.hardware_description.modules.items():
@@ -1031,6 +1048,10 @@ class _ClusterCompilationConfig(DataStructure):
             module_idx = int(path.split(".")[1].replace("module", ""))
             module_configs[module_idx].lo_to_path[lo_name] = path
 
+        # Distribute `allow_off_grid_nco_ops`
+        for module_cfg in module_configs.values():
+            module_cfg.allow_off_grid_nco_ops = self.allow_off_grid_nco_ops
+
         # Validate channel-dependent hardware options
         for cfg in module_configs.values():
             cfg._validate_input_gain_mode()
@@ -1050,6 +1071,11 @@ class _ClusterModuleCompilationConfig(DataStructure):
     """Mapping between portclocks and their associated channel name paths (e.g. cluster0.module1.complex_output_0)."""
     lo_to_path: Dict[str, str] = {}
     """Mapping between lo names and their associated channel name paths (e.g. cluster0.module1.complex_output_0)."""
+    allow_off_grid_nco_ops: Optional[bool] = None
+    """
+    Flag to allow NCO operations to play at times that are not aligned with the NCO
+    grid.
+    """
 
     def _extract_sequencer_compilation_configs(
         self,
@@ -1109,6 +1135,7 @@ class _ClusterModuleCompilationConfig(DataStructure):
                 lo_name=path_to_lo.get(path),
                 modulation_frequencies=modulation_frequencies,
                 mixer_corrections=mixer_corrections,
+                allow_off_grid_nco_ops=self.allow_off_grid_nco_ops,
             )
 
         return sequencer_configs
@@ -1194,6 +1221,11 @@ class _SequencerCompilationConfig(DataStructure):
     """Modulation frequencies associated to this sequencer."""
     mixer_corrections: Union[QbloxMixerCorrections, None]
     """Mixer correction settings."""
+    allow_off_grid_nco_ops: Optional[bool] = None
+    """
+    Flag to allow NCO operations to play at times that are not aligned with the NCO
+    grid.
+    """
 
 
 def _all_abs_times_ops_with_voltage_offsets_pulses(

@@ -32,7 +32,6 @@ from quantify_scheduler.backends.qblox import (
     q1asm_instructions,
     register_manager,
 )
-from quantify_scheduler.backends.qblox.exceptions import NcoOperationTimingError
 from quantify_scheduler.backends.qblox.operation_handling.acquisitions import (
     AcquisitionStrategyPartial,
 )
@@ -660,19 +659,11 @@ class SequencerCompiler(ABC):
         # program footer
         qasm.emit(q1asm_instructions.STOP)
 
-        # If we loop, and the duration of the loop is not on the 4 ns grid, NCO
-        # operations may be misaligned with the grid. So we check for this.
         if repetitions > 1:
-            try:
-                helpers.to_grid_time(total_sequence_time, constants.NCO_TIME_GRID)
-            except ValueError as e:
-                raise NcoOperationTimingError(
-                    f"The schedule is repeated with a duration of {end_time} ns per "
-                    "iteration, which does not align with the grid time of "
-                    f"{constants.NCO_TIME_GRID} ns for NCO operations. The duration "
-                    "must adhere to this grid time to ensure proper alignment of NCO "
-                    "operations for each iteration."
-                ) from e
+            # Because reset_ph will be called at the start of each repetition (on
+            # analog modules), we need to assert that each repetition starts on the NCO
+            # grid if there is more than 1 repetition.
+            self._assert_total_play_time_on_nco_grid()
 
         if self.qasm_hook_func:
             self.qasm_hook_func(qasm)
@@ -690,6 +681,15 @@ class SequencerCompiler(ABC):
             )
 
         return str(qasm)
+
+    def _assert_total_play_time_on_nco_grid(self) -> None:
+        """
+        Raises an error if the total play time does not align with the NCO grid time.
+
+        Method is implemented on the base class instead of the `AnalogSequencerCompiler`
+        subclass because it is called by `generate_qasm_program`.
+        """
+        pass
 
     class ParseOperationStatus(Enum):
         """Return status of the stack."""

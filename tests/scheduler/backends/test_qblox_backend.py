@@ -2555,6 +2555,7 @@ def test_extract_sequencer_compilation_configs():
     assert list(sequencer_configs.keys()) == [0, 1]
 
     assert sequencer_configs[0].model_dump(exclude_unset=True) == {
+        "allow_off_grid_nco_ops": None,
         "sequencer_options": {"ttl_acq_threshold": 0.5},
         "hardware_description": {"marker_debug_mode_enable": True},
         "portclock": "q0:mw-q0.01",
@@ -2573,6 +2574,7 @@ def test_extract_sequencer_compilation_configs():
     }
 
     assert sequencer_configs[1].model_dump(exclude_unset=True) == {
+        "allow_off_grid_nco_ops": None,
         "sequencer_options": {},
         "hardware_description": {},
         "portclock": "q1:mw-q1.01",
@@ -4994,11 +4996,15 @@ def test_1_ns_time_grid(compile_config_basic_transmon_qblox_hardware):
     assert round(compiled.duration, 12) == 21e-9
 
 
+@pytest.mark.parametrize("allow_off_grid_nco_ops", [True, False])
 def test_1_ns_time_grid_repetition_loop_on_nco_grid(
-    compile_config_basic_transmon_qblox_hardware,
+    compile_config_basic_transmon_qblox_hardware, allow_off_grid_nco_ops
 ):
     # In the second repetition, the NCO operations would be misaligned with the 4 ns
     # grid.
+    compile_config_basic_transmon_qblox_hardware.hardware_compilation_config.allow_off_grid_nco_ops = (
+        allow_off_grid_nco_ops
+    )
     sched = Schedule("1 ns timegrid", repetitions=2)
     sched.add(
         SquarePulse(
@@ -5020,19 +5026,28 @@ def test_1_ns_time_grid_repetition_loop_on_nco_grid(
         )
     )
     compiler = SerialCompiler(name="compiler")
-    with pytest.raises(
-        NcoOperationTimingError,
-        match="The schedule is repeated with a duration of 21 ns per iteration, which "
-        "does not align with the grid time of 4 ns for NCO operations. The duration "
-        "must adhere to this grid time to ensure proper alignment of NCO operations "
-        "for each iteration.",
-    ):
+    if allow_off_grid_nco_ops:
         _ = compiler.compile(sched, config=compile_config_basic_transmon_qblox_hardware)
+    else:
+        with pytest.raises(
+            NcoOperationTimingError,
+            match="The schedule is repeated with a duration of 21 ns per iteration, which "
+            "does not align with the grid time of 4 ns for NCO operations. The duration "
+            "must adhere to this grid time to ensure proper alignment of NCO operations "
+            "for each iteration.",
+        ):
+            _ = compiler.compile(
+                sched, config=compile_config_basic_transmon_qblox_hardware
+            )
 
 
+@pytest.mark.parametrize("allow_off_grid_nco_ops", [True, False])
 def test_1_ns_time_grid_loops_on_nco_grid_start_time(
-    compile_config_basic_transmon_qblox_hardware,
+    compile_config_basic_transmon_qblox_hardware, allow_off_grid_nco_ops
 ):
+    compile_config_basic_transmon_qblox_hardware.hardware_compilation_config.allow_off_grid_nco_ops = (
+        allow_off_grid_nco_ops
+    )
     sched = Schedule("1 ns timegrid")
     sched.add(
         SquarePulse(
@@ -5065,19 +5080,28 @@ def test_1_ns_time_grid_loops_on_nco_grid_start_time(
     )
     sched.add(LoopOperation(body=inner, repetitions=2))
     compiler = SerialCompiler(name="compiler")
-    with pytest.raises(
-        NcoOperationTimingError,
-        match="ControlFlow operation LoopOperation, starting at t=9 ns and ending at "
-        "t=65 ns, contains NCO related operations that may not be aligned with the 4 "
-        "ns time grid. Please make sure all iterations and/or branches start and end "
-        "on the 4 ns time grid.",
-    ):
+    if allow_off_grid_nco_ops:
         _ = compiler.compile(sched, config=compile_config_basic_transmon_qblox_hardware)
+    else:
+        with pytest.raises(
+            NcoOperationTimingError,
+            match="ControlFlow operation LoopOperation, starting at t=9 ns and ending at "
+            "t=65 ns, contains NCO related operations that may not be aligned with the 4 "
+            "ns time grid. Please make sure all iterations and/or branches start and end "
+            "on the 4 ns time grid.",
+        ):
+            _ = compiler.compile(
+                sched, config=compile_config_basic_transmon_qblox_hardware
+            )
 
 
+@pytest.mark.parametrize("allow_off_grid_nco_ops", [True, False])
 def test_1_ns_time_grid_loops_on_nco_grid_duration(
-    compile_config_basic_transmon_qblox_hardware,
+    compile_config_basic_transmon_qblox_hardware, allow_off_grid_nco_ops
 ):
+    compile_config_basic_transmon_qblox_hardware.hardware_compilation_config.allow_off_grid_nco_ops = (
+        allow_off_grid_nco_ops
+    )
     sched = Schedule("1 ns timegrid")
     sched.add(
         SquarePulse(
@@ -5110,14 +5134,19 @@ def test_1_ns_time_grid_loops_on_nco_grid_duration(
     )
     sched.add(LoopOperation(body=inner, repetitions=2))
     compiler = SerialCompiler(name="compiler")
-    with pytest.raises(
-        NcoOperationTimingError,
-        match="ControlFlow operation LoopOperation, starting at t=12 ns and ending at "
-        "t=66 ns, contains NCO related operations that may not be aligned with the 4 "
-        "ns time grid. Please make sure all iterations and/or branches start and end "
-        "on the 4 ns time grid.",
-    ):
+    if allow_off_grid_nco_ops:
         _ = compiler.compile(sched, config=compile_config_basic_transmon_qblox_hardware)
+    else:
+        with pytest.raises(
+            NcoOperationTimingError,
+            match="ControlFlow operation LoopOperation, starting at t=12 ns and ending at "
+            "t=66 ns, contains NCO related operations that may not be aligned with the 4 "
+            "ns time grid. Please make sure all iterations and/or branches start and end "
+            "on the 4 ns time grid.",
+        ):
+            _ = compiler.compile(
+                sched, config=compile_config_basic_transmon_qblox_hardware
+            )
 
 
 def test_1_ns_time_grid_loops_no_nco(
@@ -5220,9 +5249,14 @@ def test_1_ns_time_grid_less_than_min_op(
         )
 
 
+@pytest.mark.parametrize("allow_off_grid_nco_ops", [True, False])
 def test_1_ns_time_grid_nco_too_close_set_freq(
     compile_config_basic_transmon_qblox_hardware,
+    allow_off_grid_nco_ops,
 ):
+    compile_config_basic_transmon_qblox_hardware.hardware_compilation_config.allow_off_grid_nco_ops = (
+        allow_off_grid_nco_ops
+    )
     sched = Schedule("1 ns timegrid")
     pulse = SquarePulse(
         amp=0.5,
@@ -5234,24 +5268,32 @@ def test_1_ns_time_grid_nco_too_close_set_freq(
     sched.add(pulse)
     sched.add(SetClockFrequency(clock="q0.01", clock_freq_new=7.32e9))
     sched.add(pulse)
-    with pytest.raises(
-        NcoOperationTimingError,
-        match=re.escape(
-            'Operation Pulse "SetClockFrequency" (t0=4e-09, duration=0) occurred 4 ns '
-            "after the previous frequency update. The minimum time between frequency "
-            "updates must be 8 ns."
-        ),
-    ):
-        compiler = SerialCompiler(name="compiler")
-        _ = compiler.compile(
-            schedule=sched,
-            config=compile_config_basic_transmon_qblox_hardware,
-        )
+    compiler = SerialCompiler(name="compiler")
+    if allow_off_grid_nco_ops:
+        _ = compiler.compile(sched, config=compile_config_basic_transmon_qblox_hardware)
+    else:
+        with pytest.raises(
+            NcoOperationTimingError,
+            match=re.escape(
+                'Operation Pulse "SetClockFrequency" (t0=4e-09, duration=0) occurred 4 ns '
+                "after the previous frequency update. The minimum time between frequency "
+                "updates must be 8 ns."
+            ),
+        ):
+            _ = compiler.compile(
+                schedule=sched,
+                config=compile_config_basic_transmon_qblox_hardware,
+            )
 
 
+@pytest.mark.parametrize("allow_off_grid_nco_ops", [True, False])
 def test_1_ns_time_grid_nco_too_close_set_phase(
     compile_config_basic_transmon_qblox_hardware,
+    allow_off_grid_nco_ops,
 ):
+    compile_config_basic_transmon_qblox_hardware.hardware_compilation_config.allow_off_grid_nco_ops = (
+        allow_off_grid_nco_ops
+    )
     sched = Schedule("1 ns timegrid")
     pulse = SquarePulse(
         amp=0.5,
@@ -5263,22 +5305,31 @@ def test_1_ns_time_grid_nco_too_close_set_phase(
     sched.add(ShiftClockPhase(phase_shift=20, clock="q0.01"))
     sched.add(ShiftClockPhase(phase_shift=20, clock="q0.01"))
     sched.add(pulse)
-    with pytest.raises(
-        NcoOperationTimingError,
-        match=re.escape(
-            'Operation Pulse "ShiftClockPhase" (t0=4e-09, duration=0) occurred 0 ns after '
-            "the previous phase update. The minimum time between phase updates must be 4 "
-            "ns."
-        ),
-    ):
-        compiler = SerialCompiler(name="compiler")
-        _ = compiler.compile(
-            schedule=sched,
-            config=compile_config_basic_transmon_qblox_hardware,
-        )
+    compiler = SerialCompiler(name="compiler")
+    if allow_off_grid_nco_ops:
+        _ = compiler.compile(sched, config=compile_config_basic_transmon_qblox_hardware)
+    else:
+        with pytest.raises(
+            NcoOperationTimingError,
+            match=re.escape(
+                'Operation Pulse "ShiftClockPhase" (t0=4e-09, duration=0) occurred 0 ns after '
+                "the previous phase update. The minimum time between phase updates must be 4 "
+                "ns."
+            ),
+        ):
+            _ = compiler.compile(
+                schedule=sched,
+                config=compile_config_basic_transmon_qblox_hardware,
+            )
 
 
-def test_1_ns_time_grid_nco(compile_config_basic_transmon_qblox_hardware):
+@pytest.mark.parametrize("allow_off_grid_nco_ops", [True, False])
+def test_1_ns_time_grid_nco(
+    compile_config_basic_transmon_qblox_hardware, allow_off_grid_nco_ops
+):
+    compile_config_basic_transmon_qblox_hardware.hardware_compilation_config.allow_off_grid_nco_ops = (
+        allow_off_grid_nco_ops
+    )
     sched = Schedule("1 ns timegrid")
     pulse = SquarePulse(
         amp=0.5,
@@ -5290,23 +5341,28 @@ def test_1_ns_time_grid_nco(compile_config_basic_transmon_qblox_hardware):
     sched.add(pulse)
     sched.add(ResetClockPhase(clock="q0.01"))
     sched.add(pulse)
-    with pytest.raises(
-        NcoOperationTimingError,
-        match=re.escape(
-            "NCO related operation ResetClockPhase(clock='q0.01',t0=0) cannot start at "
-            "t=9 ns. This operation must be on the 4 ns time grid."
-        ),
-    ):
-        compiler = SerialCompiler(name="compiler")
-        _ = compiler.compile(
-            schedule=sched,
-            config=compile_config_basic_transmon_qblox_hardware,
-        )
+    compiler = SerialCompiler(name="compiler")
+    if allow_off_grid_nco_ops:
+        _ = compiler.compile(sched, config=compile_config_basic_transmon_qblox_hardware)
+    else:
+        with pytest.raises(
+            NcoOperationTimingError,
+            match=re.escape(
+                "NCO related operation ResetClockPhase(clock='q0.01',t0=0) cannot start at "
+                "t=9 ns. This operation must be on the 4 ns time grid."
+            ),
+        ):
+            _ = compiler.compile(
+                schedule=sched,
+                config=compile_config_basic_transmon_qblox_hardware,
+            )
 
 
+@pytest.mark.parametrize("allow_off_grid_nco_ops", [True, False])
 def test_1_ns_time_grid_latency_corrections(
     mock_setup_basic_transmon_with_standard_params,
     hardware_cfg_cluster,
+    allow_off_grid_nco_ops,
 ):
     """
     NCO operations are checked for whether they are on the 4 ns grid, but this does
@@ -5318,6 +5374,7 @@ def test_1_ns_time_grid_latency_corrections(
         "q0:mw-q0.01": 3e-9,
         "q0:res-q0.ro": 0,
     }
+    hardware_cfg["allow_off_grid_nco_ops"] = allow_off_grid_nco_ops
     mock_setup_basic_transmon_with_standard_params["quantum_device"].hardware_config(
         hardware_cfg
     )
@@ -5334,21 +5391,29 @@ def test_1_ns_time_grid_latency_corrections(
     sched.add(ResetClockPhase(clock="q0.01"))
     sched.add(Measure("q0"))
 
-    with pytest.raises(
-        NcoOperationTimingError,
-        match="The latency correction value of 3 ns for "
-        "q0:mw-q0.01 does not align with the grid time of "
-        "4 ns for NCO operations. The latency "
-        "corrections must adhere to this grid time to ensure proper alignment "
-        "of all later operations in the schedule.",
-    ):
-        compiler = SerialCompiler(name="compiler")
+    compiler = SerialCompiler(name="compiler")
+    if allow_off_grid_nco_ops:
         _ = compiler.compile(
             schedule=sched,
             config=mock_setup_basic_transmon_with_standard_params[
                 "quantum_device"
             ].generate_compilation_config(),
         )
+    else:
+        with pytest.raises(
+            NcoOperationTimingError,
+            match="The latency correction value of 3 ns for "
+            "q0:mw-q0.01 does not align with the grid time of "
+            "4 ns for NCO operations. The latency "
+            "corrections must adhere to this grid time to ensure proper alignment "
+            "of all later operations in the schedule.",
+        ):
+            _ = compiler.compile(
+                schedule=sched,
+                config=mock_setup_basic_transmon_with_standard_params[
+                    "quantum_device"
+                ].generate_compilation_config(),
+            )
 
 
 @pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")

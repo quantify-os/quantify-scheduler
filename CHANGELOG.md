@@ -7,6 +7,8 @@
 
 ### Merged branches and closed issues
 
+- Qblox backend
+  - Add option `allow_off_grid_nco_ops` to allow NCO operations that do not conform to the NCO timing constrictions. (!1058)
 
 ## 0.21.0 (2024-08-13)
 
