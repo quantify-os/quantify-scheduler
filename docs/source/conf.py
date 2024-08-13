@@ -52,7 +52,6 @@ extensions = [
     "sphinxcontrib.mermaid",
     "autoapi.extension",
     "sphinx_design",
-    "awesome_code_block",
 ]
 
 copybutton_prompt_text = "$ "

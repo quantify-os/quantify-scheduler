@@ -395,11 +395,8 @@ As expected, the threshold that we set did a good job of discriminating the qubi
 The conditional reset is implemented in Quantify as a gate. When we have a single {{ Reset }} at the beginning of a schedule, we simply replace the {{ Reset }} gate with the {{ ConditionalReset }} gate, for example
 
 ```{code-block} python
-:emphasize-removed: 2
-:emphasize-added: 3
-
 schedule = Schedule()
-schedule.add(Reset("q0"))
+#schedule.add(Reset("q0"))
 schedule.add(ConditionalReset("q0"))
 ...
 ```

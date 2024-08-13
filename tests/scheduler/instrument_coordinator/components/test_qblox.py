@@ -2119,16 +2119,11 @@ def test_amc_setting_is_set_on_instrument(
     qcm_rf = cluster._cluster_modules[f"{cluster_name}_module2"]
     qrm_rf = cluster._cluster_modules[f"{cluster_name}_module4"]
 
-    try:
-        mocker.patch.object(qcm_rf.instrument, "out0_lo_cal")
-        mocker.patch.object(qcm_rf.instrument, "out1_lo_cal")
-        mocker.patch.object(qcm_rf.instrument.sequencer0, "sideband_cal")
-        mocker.patch.object(qrm_rf.instrument, "out0_in0_lo_cal")
-        mocker.patch.object(qrm_rf.instrument.sequencer0, "sideband_cal")
-    except AttributeError:
-        pytest.xfail(
-            reason="AMC is not available in the installed qblox-instruments version."
-        )
+    mocker.patch.object(qcm_rf.instrument, "out0_lo_cal")
+    mocker.patch.object(qcm_rf.instrument, "out1_lo_cal")
+    mocker.patch.object(qcm_rf.instrument.sequencer0, "sideband_cal")
+    mocker.patch.object(qrm_rf.instrument, "out0_in0_lo_cal")
+    mocker.patch.object(qrm_rf.instrument.sequencer0, "sideband_cal")
 
     # Call it twice to check that calibration is only done once.
     cluster.prepare(prog[cluster_name])
@@ -2178,16 +2173,11 @@ def test_amc_setting_is_set_on_instrument_change_frequency(
     qcm_rf = cluster._cluster_modules[f"{cluster_name}_module2"]
     qrm_rf = cluster._cluster_modules[f"{cluster_name}_module4"]
 
-    try:
-        mocker.patch.object(qcm_rf.instrument, "out0_lo_cal")
-        mocker.patch.object(qcm_rf.instrument, "out1_lo_cal")
-        mocker.patch.object(qcm_rf.instrument.sequencer0, "sideband_cal")
-        mocker.patch.object(qrm_rf.instrument, "out0_in0_lo_cal")
-        mocker.patch.object(qrm_rf.instrument.sequencer0, "sideband_cal")
-    except AttributeError:
-        pytest.xfail(
-            reason="AMC is not available in the installed qblox-instruments version."
-        )
+    mocker.patch.object(qcm_rf.instrument, "out0_lo_cal")
+    mocker.patch.object(qcm_rf.instrument, "out1_lo_cal")
+    mocker.patch.object(qcm_rf.instrument.sequencer0, "sideband_cal")
+    mocker.patch.object(qrm_rf.instrument, "out0_in0_lo_cal")
+    mocker.patch.object(qrm_rf.instrument.sequencer0, "sideband_cal")
 
     # First round:
     # QRM has LO frequency 7.2e9, NCO frequency 1e8

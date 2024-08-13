@@ -790,6 +790,9 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
                                     offset_q,
                                 )
                             )
+                            self._settings.out0_lo_freq_cal_type_default = (
+                                mixer_corrections.auto_lo_cal
+                            )
                         else:
                             self._settings.offset_ch1_path_I = (
                                 helpers.calc_from_units_volt(
@@ -806,6 +809,9 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
                                     "dc_mixer_offset_Q",
                                     offset_q,
                                 )
+                            )
+                            self._settings.out1_lo_freq_cal_type_default = (
+                                mixer_corrections.auto_lo_cal
                             )
 
     def _configure_distortion_correction_latency_compensations(

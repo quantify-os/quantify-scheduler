@@ -240,6 +240,11 @@ def apply_software_distortion_corrections(  # noqa: PLR0912
             portclock_key = f"{pulse_data['port']}-{pulse_data['clock']}"
 
             if portclock_key in distortion_corrections:
+                correction_cfg = distortion_corrections[portclock_key]
+
+                if isinstance(correction_cfg, (HardwareDistortionCorrection, list)):
+                    continue
+
                 if not _is_distortion_correctable(operation):
                     warnings.warn(
                         f"Schedule contains an operation, for which distortion "
@@ -249,11 +254,6 @@ def apply_software_distortion_corrections(  # noqa: PLR0912
                         f"operation: {operation}",
                         RuntimeWarning,
                     )
-                    continue
-
-                correction_cfg = distortion_corrections[portclock_key]
-
-                if isinstance(correction_cfg, (HardwareDistortionCorrection, list)):
                     continue
 
                 # Zhinst support (still uses old hw dict)
