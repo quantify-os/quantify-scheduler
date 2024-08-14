@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from collections import UserDict
+from functools import lru_cache
 
 from quantify_scheduler.helpers.collections import make_hash
 from quantify_scheduler.helpers.importers import export_python_object_to_path_string
@@ -27,8 +28,9 @@ class Resource(UserDict):
         super().__init__()
         self.data["name"] = name
 
-    @classmethod
-    def is_valid(cls, operation: Resource) -> bool:
+    @staticmethod
+    @lru_cache
+    def is_valid(operation: Resource) -> bool:
         """
         Validates the Resource against the schemas/resource.json fastjsonschema.
 

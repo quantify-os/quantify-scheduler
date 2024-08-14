@@ -9,6 +9,7 @@
 
 - Qblox backend
   - Add option `allow_off_grid_nco_ops` to allow NCO operations that do not conform to the NCO timing constrictions. (!1058)
+  - Add caching to `Resource.is_valid` and do not check every loop iteration in `_all_abs_times_ops_with_voltage_offsets_pulses` to improve performance. (!1060)
 
 ## 0.21.0 (2024-08-13)
 

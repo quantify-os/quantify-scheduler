@@ -1240,14 +1240,10 @@ def _all_abs_times_ops_with_voltage_offsets_pulses(
             _all_abs_times_ops_with_voltage_offsets_pulses(
                 inner_operation, time_offset + abs_time, accumulator
             )
-    elif isinstance(operation, LoopOperation):
-        for i in range(operation.data["control_flow_info"]["repetitions"]):
-            _all_abs_times_ops_with_voltage_offsets_pulses(
-                operation.body,
-                time_offset + i * operation.body.duration,
-                accumulator,
-            )
-    elif isinstance(operation, ConditionalOperation):
+    elif isinstance(operation, (ConditionalOperation, LoopOperation)):
+        # Note: we don't need to check every cycle of the loop,
+        # only the first one, because if it fails for any cycle,
+        # it should also fail for the first cyce (we check each sequencer separately).
         _all_abs_times_ops_with_voltage_offsets_pulses(
             operation.body,
             time_offset,
