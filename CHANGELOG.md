@@ -35,7 +35,7 @@ With the development of the new style hardware configuration, we now also suppor
 
 The new `LongTimeTrace` protocol allows you to perform long traces that consist of repeated `SSBIntegrationComplex` measurements. It is practical for spin qubit backends.
 
-For the Qblox Qubit Timetag Module (QTM), we introduce a new acquisition protocol, the `TimetagTrace`. This acquisition is similar to the normal `Trace` acquisition protocol, but will return a sequence of time tags when the recorded voltage crossed a threshold. The `Timetag` protocol on the othe other hand will return the first time tag where the voltage crossed a threshold. See [tutorial:Acquisitions](https://quantify-os.org/docs/quantify-scheduler/dev/tutorials/Acquisitions.html#trigger-count-acquisition) and our [reference guide](https://quantify-os.org/docs/quantify-scheduler/dev/reference/qblox/Trigger%20count%20and%20timetag.html#sec-qblox-trigger-count) for more information.
+For the Qblox Qubit Timetag Module (QTM), we introduce a new acquisition protocol, the `TimetagTrace`. This acquisition is similar to the normal `Trace` acquisition protocol, but will return a sequence of time tags when the recorded voltage crossed a threshold. The `Timetag` protocol on the othe other hand will return the first time tag where the voltage crossed a threshold. See [tutorial:Acquisitions](https://quantify-os.org/docs/quantify-scheduler/dev/tutorials/Acquisitions.html#trigger-count-acquisition) and our [reference guide](https://quantify-os.org/docs/quantify-scheduler/dev/reference/acquisition_protocols.html#trigger-count) for more information.
 
 #### Passing device parameters to gates (!1018, !1039)
 

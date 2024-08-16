@@ -1420,10 +1420,8 @@ def _get_pulse_start_ends(
         ]
         new_start = abs_time + pulse_info["t0"]
         new_end = new_start + pulse_info["duration"]
-        if new_start < prev_start:
-            prev_start = new_start
-        if new_end > prev_end:
-            prev_end = new_end
+        prev_start = min(new_start, prev_start)
+        prev_end = max(new_end, prev_end)
         pulse_start_ends_per_port[f"{pulse_info['port']}_{pulse_info['clock']}"] = (
             prev_start,
             prev_end,

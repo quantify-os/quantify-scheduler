@@ -658,8 +658,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             tmp_time = timestamp + operation.duration
 
             # keep track of longest found schedule
-            if tmp_time > schedule_duration:
-                schedule_duration = tmp_time
+            schedule_duration = max(tmp_time, schedule_duration)
 
         schedule_duration *= self.repetitions
         return schedule_duration
