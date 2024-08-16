@@ -99,8 +99,23 @@ hardware_config = {
                 ],
             },
         },
+        "cluster0_module7": {
+            "instrument_type": "QCM",
+            "sequence_to_file": False,
+            "real_output_2": {
+                "lo_name": "red_laser2",
+                "portclock_configs": [
+                    {
+                        "port": "qe1:optical_control",
+                        "clock": "qe1.ge0",
+                        "interm_freq": 200e6,
+                    }
+                ],
+            },
+        },
     },
     "red_laser": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
+    "red_laser2": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
     "spinpump_laser": {
         "instrument_type": "LocalOscillator",
         "frequency": None,

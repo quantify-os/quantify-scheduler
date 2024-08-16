@@ -809,7 +809,7 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
             instr_source = edge[0].split(".")[0]
             target_0 = edge[1].split(".")[0]
 
-            edge_portclocks = [pc for pc in portclocks_used if target_0 in pc[0]]
+            edge_portclocks = [pc for pc in portclocks_used if pc[0] == edge[1]]
             if len(edge_portclocks) > 0:
                 if self.hardware_description[instr_source].instrument_type == "Cluster":
                     for pc in edge_portclocks:
@@ -827,7 +827,7 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
                 instr_source = edge[0].split(".")[0]
                 target_0 = edge[1].split(".")[0]
 
-                if target_0 in edge_with_mixer[0]:
+                if target_0 == edge_with_mixer[0].split(".")[0]:
                     if instr_source not in self.hardware_description:
                         raise RuntimeError(
                             f"External local oscillator '{instr_source}' set to "
@@ -853,16 +853,14 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
                     )
 
                     edge_portclocks = [
-                        pc for pc in portclocks_used if edge_with_mixer[1] in pc[0]
+                        pc for pc in portclocks_used if edge_with_mixer[1] == pc[0]
                     ]
                     for pc in edge_portclocks:
                         portclock = f"{pc[0]}-{pc[1]}"
-                        if optical_control_clock is not None:
-                            if optical_control_clock in portclock:
-                                instrument_configs[cluster_name].portclock_to_path[
-                                    portclock
-                                ] = edge_with_channel[0]
-                        else:
+                        if (
+                            optical_control_clock is None
+                            or optical_control_clock in portclock
+                        ):
                             instrument_configs[cluster_name].portclock_to_path[
                                 portclock
                             ] = edge_with_channel[0]

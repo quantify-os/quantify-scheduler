@@ -657,6 +657,8 @@ class Measure(Operation):
         acq_protocol: Optional[
             Literal[
                 "SSBIntegrationComplex",
+                "Timetag",
+                "TimetagTrace",
                 "Trace",
                 "TriggerCount",
                 "NumericalSeparatedWeightedIntegration",
@@ -664,7 +666,7 @@ class Measure(Operation):
                 "ThresholdedAcquisition",
             ]
         ] = None,
-        bin_mode: BinMode | None = None,
+        bin_mode: BinMode | str | None = None,
         feedback_trigger_label: Optional[str] = None,
         **device_overrides,
     ):

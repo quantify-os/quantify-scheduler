@@ -342,6 +342,15 @@ def test_nv_center_serialization(electronic_q0):
     # Check that all original submodule params match their serialized counterpart
     for submodule_name, submodule in electronic_q0.submodules.items():
         for parameter_name in submodule.parameters:
+            if (
+                isinstance(
+                    electronic_q0_as_dict["data"][submodule_name][parameter_name], dict
+                )
+                and "deserialization_type"
+                in electronic_q0_as_dict["data"][submodule_name][parameter_name]
+            ):
+                # This is a custom type which will not have equal contents in the serialized and deserialized versions.
+                continue
             assert (
                 electronic_q0_as_dict["data"][submodule_name][parameter_name]
                 == electronic_q0.submodules[submodule_name][parameter_name]()
@@ -356,6 +365,12 @@ def test_nv_center_serialization(electronic_q0):
         if submodule_name == "name":
             continue
         for parameter_name, parameter_val in submodule_data.items():
+            if (
+                isinstance(parameter_val, dict)
+                and "deserialization_type" in parameter_val
+            ):
+                # This is a custom type which will not have equal contents in the serialized and deserialized versions.
+                continue
             assert (
                 parameter_val
                 == electronic_q0.submodules[submodule_name][parameter_name]()
@@ -365,14 +380,13 @@ def test_nv_center_serialization(electronic_q0):
             )
 
 
-@pytest.mark.xfail(
-    reason="SchedulerJSONDecoder needs to be adapted to include BasicElectronicNVElement deserialization."
-)
-def test_nv_center_deserialization(mock_setup_basic_nv_with_standard_params):
-    electronic_q0 = mock_setup_basic_nv_with_standard_params["qe0"]
+def test_nv_center_deserialization(mock_setup_basic_nv_qblox_hardware):
+    electronic_q0 = mock_setup_basic_nv_qblox_hardware["qe0"]
 
     electronic_q0_serialized = json.dumps(electronic_q0, cls=SchedulerJSONEncoder)
 
     assert electronic_q0_serialized.__class__ is str
+
+    electronic_q0.close()
 
     json.loads(electronic_q0_serialized, cls=SchedulerJSONDecoder)

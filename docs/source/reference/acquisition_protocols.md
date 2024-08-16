@@ -241,7 +241,7 @@ Integration weights should normally be calibrated in a separate experiment
 - Supported by the {mod}`Qblox <quantify_scheduler.backends.qblox>` backend.
 
 ```{admonition} Note
-Please also see {ref}`sec-qblox-trigger-count` for more information on Qblox module-specific behavior of this operation.
+Please also see {ref}`sec-qblox-acquisition-details` for more information on Qblox module-specific behavior of this operation.
 ```
 
 This acquisition protocol measures how many times a predefined voltage threshold has been
@@ -292,10 +292,10 @@ xr.Dataset(
 - Supported by the {mod}`Qblox <quantify_scheduler.backends.qblox>` backend, only on QTM modules.
 
 ```{admonition} Note
-Please also see {ref}`sec-qblox-trigger-count` for more information on Qblox module-specific behavior of this operation.
+Please also see {ref}`sec-qblox-acquisition-details` for more information on Qblox module-specific behavior of this operation.
 ```
 
-The {class}`~quantify_scheduler.operations.acquisition_library.Timetag` acquisition protocol (referred to as `"Timetag"`) measures the point in time at which a voltage threshold was passed. This voltage threshold setting is a dedicated hardware option called `in_threshold_primary`, see {ref}`sec-qblox-digitization-thresholds`. The timetag is the difference between a time source and a time reference.
+The {class}`~quantify_scheduler.operations.acquisition_library.Timetag` acquisition protocol (referred to as `"Timetag"`) measures the point in time at which a voltage threshold was passed with a rising edge (for Qblox QTM modules, this voltage threshold is set with the {ref}`sec-qblox-digitization-thresholds` hardware option). The timetag is the difference between a time source and a time reference.
 
 The source of the timetag itself can be one of:
 
@@ -310,7 +310,35 @@ The time reference can be one of:
 - The first measured rising edge,
 - A scheduled {class}`~quantify_scheduler.operations.pulse_library.Timestamp` operation.
 
-The protocol always returns one timetag per acquisition bin. If `BinMode.APPEND` is used, the acquisition bin index is incremented automatically and each timetag measurement is put in a separate bin. A measurement repeated three times will therefore return a dataset that may look like this:
+The protocol always returns one timetag per acquisition bin. If `BinMode.APPEND` is used, the acquisition bin index is incremented automatically and each timetag measurement is put in a separate bin. For example, let's look at the schedule below, which is repeated three times.
+
+```{code-cell} ipython3
+---
+mystnb:
+  remove_code_outputs: true
+---
+from quantify_scheduler import Schedule
+from quantify_scheduler.enums import BinMode, TimeSource, TimeRef
+from quantify_scheduler.operations.pulse_library import Timestamp
+from quantify_scheduler.operations.acquisition_library import Timetag
+
+sched = Schedule("Timetag", repetitions=3)
+
+sched.add(Timestamp(port="qe0:optical_readout", clock="qe0.ge0"))
+sched.add(
+    Timetag(
+        duration=10e-6,
+        port="qe0:optical_readout",
+        clock="qe0.ge0",
+        time_source=TimeSource.FIRST,
+        time_ref=TimeRef.TIMESTAMP,
+        bin_mode=BinMode.APPEND,
+    ),
+    rel_time=500e-9,
+)
+```
+
+An experiment with this schedule will return a dataset that may look like this:
 
 ```{code-cell} ipython3
 ---
@@ -336,6 +364,67 @@ data_array = xr.DataArray(
         dims=["acq_index_0"],
         coords={"acq_index_0": [0]},
         attrs={"acq_protocol": "Timetag"},
+    )
+xr.Dataset({0: data_array})
+```
+
+(sec-acquisition-protocols-timetag-trace)=
+## TimetagTrace acquisition
+
+- Supported by the {mod}`Qblox <quantify_scheduler.backends.qblox>` backend, only on QTM modules.
+
+```{admonition} Note
+Please also see {ref}`sec-qblox-acquisition-details` for more information on Qblox module-specific behavior of this operation.
+```
+
+The {class}`~quantify_scheduler.operations.acquisition_library.TimetagTrace` acquisition protocol (referred to as `"TimetagTrace"`) measures all points in time at which a voltage threshold is passed (with a rising edge), while the acquisition window is active. For Qblox QTM modules, this voltage threshold is set with the {ref}`sec-qblox-digitization-thresholds` hardware option. Each timetag value is the difference between the time of the rising edge and a time reference.
+
+The time reference can be one of:
+
+- The start of the acquisition window,
+- The end of the acquisition window,
+- The first measured rising edge,
+- A scheduled {class}`~quantify_scheduler.operations.pulse_library.Timestamp` operation.
+
+The only usable bin mode at this moment is `BinMode.APPEND`. If the schedule is repeated multiple times, timetags of each repetition will be appended to the acquisition data. Please note that the returned xarray Dataset is always **rectangular**. This means that in the case that different amount of pulses are timetagged in each repetition, the sub-arrays are padded with `np.NaN` to ensure uniformity.
+
+For example, let's take the following schedule:
+
+```{code-cell} ipython3
+---
+mystnb:
+  remove_code_outputs: true
+---
+from quantify_scheduler import Schedule
+from quantify_scheduler.enums import BinMode, TimeSource, TimeRef
+from quantify_scheduler.operations.pulse_library import Timestamp
+from quantify_scheduler.operations.acquisition_library import TimetagTrace
+
+sched = Schedule("Timetag", repetitions=3)
+
+sched.add(Timestamp(port="qe0:optical_readout", clock="qe0.ge0"))
+sched.add(
+    TimetagTrace(
+        duration=10e-6,
+        port="qe0:optical_readout",
+        clock="qe0.ge0",
+        time_ref=TimeRef.TIMESTAMP,
+    ),
+    rel_time=500e-9,
+)
+```
+
+This schedule could produce data that looks like this:
+
+```{code-cell} ipython3
+---
+tags: [hide-input]
+---
+data_array = xr.DataArray(
+        np.array([1227.94775391, 605.43261719, 3720.31591797, np.nan, np.nan, 4307.07177734, 6605.31689453, np.nan, np.nan, np.nan, 2063.68652344, 3743.87255859, 3121.44726562, 1534.71484375, 3273.87792969]).reshape((3, 1, 5)),
+        dims=["repetition", "acq_index_0", "trace_index_0"],
+        coords={"acq_index_0": [0], "trace_index_0": list(range(5))},
+        attrs={"acq_protocol": "TimetagTrace"},
     )
 xr.Dataset({0: data_array})
 ```

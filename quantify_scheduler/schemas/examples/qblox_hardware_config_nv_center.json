@@ -8,10 +8,15 @@
                 "1": {"instrument_type": "QCM_RF"},
                 "2": {"instrument_type": "QCM"},
                 "4": {"instrument_type": "QRM"},
-                "5": {"instrument_type": "QTM"}
+                "5": {"instrument_type": "QTM"},
+                "7": {"instrument_type": "QCM"}
             }
         },
         "red_laser": {
+            "instrument_type": "LocalOscillator",
+            "power": 1
+        },
+        "red_laser2": {
             "instrument_type": "LocalOscillator",
             "power": 1
         },
@@ -24,6 +29,9 @@
             "power": 1
         },
         "optical_mod_red_laser": {
+            "instrument_type": "OpticalModulator"
+        },
+        "optical_mod_red_laser2": {
             "instrument_type": "OpticalModulator"
         },
         "optical_mod_spinpump_laser": {
@@ -53,6 +61,10 @@
             },
             "qe0:optical_readout-qe0.ge0": {
             	"interm_freq": 0,
+            	"lo_freq": null
+            },
+            "qe1:optical_control-qe1.ge0": {
+            	"interm_freq": 200e6,
             	"lo_freq": null
             }
         },
@@ -128,6 +140,18 @@
             [
                 "cluster0.module5.digital_input_4",
                 "qe1:optical_readout"
+            ],
+            [
+                "cluster0.module7.real_output_2",
+                "optical_mod_red_laser2.if"
+            ],
+            [
+                "red_laser2.output",
+                "optical_mod_red_laser2.lo"
+            ],
+            [
+                "optical_mod_red_laser2.out",
+                "qe1:optical_control"
             ]
         ]
     }

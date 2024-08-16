@@ -33,7 +33,9 @@ class BinMode(StrEnum):  # type: ignore
     into one value.
 
     Note that not all `AcquisitionProtocols` and backends support all possible
-    BinModes.
+    BinModes. For more information, please see the :ref:`sec-acquisition-protocols`
+    reference guide and some of the Qblox-specific :ref:`acquisition details
+    <sec-qblox-acquisition-details>`.
     """
 
     APPEND = "append"

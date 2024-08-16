@@ -45,5 +45,5 @@ recent
 
 Cluster
 Voltage offsets and long waveforms
-Trigger count and timetag
+Acquisition details
 ```

@@ -241,7 +241,8 @@ class ScheduleGettable:
     def _reshape_data(self, acq_protocol: str, vals: NDArray) -> list[NDArray]:
         if acq_protocol == "TriggerCount":
             return [vals.real.astype(np.uint64)]
-
+        if acq_protocol == "Timetag":
+            return [vals.real.astype(np.float64)]
         if acq_protocol == "ThresholdedAcquisition":
             return [vals.real.astype(np.uint32)]
         if acq_protocol in (
@@ -296,9 +297,7 @@ class ScheduleGettable:
             acq_protocol = acq_channel_data.attrs["acq_protocol"]
 
             num_dims = len(acq_channel_data.dims)
-            if acq_protocol == "Trace" and (
-                num_dims != 2 or not np.iscomplexobj(acq_channel_data)
-            ):
+            if acq_protocol == "Trace" and num_dims != 2:
                 raise AcquisitionProtocolError(
                     f"Data returned by an instrument coordinator component for "
                     f"{acq_protocol} acquisition protocol is expected to be an "
@@ -332,6 +331,7 @@ class ScheduleGettable:
                 )
             if acq_protocol not in (
                 "TriggerCount",
+                "Timetag",
                 "Trace",
                 "SSBIntegrationComplex",
                 "WeightedIntegratedSeparated",

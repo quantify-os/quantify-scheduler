@@ -10,4 +10,5 @@ Operations and Qubits
 Acquisitions
 ScheduleGettable
 Conditional Reset
+Timetagging
 ```

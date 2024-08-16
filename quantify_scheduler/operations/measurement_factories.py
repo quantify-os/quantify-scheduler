@@ -15,13 +15,15 @@ from typing import Hashable, List, Literal, Optional
 import numpy as np
 
 from quantify_scheduler import Operation
-from quantify_scheduler.enums import BinMode
+from quantify_scheduler.enums import BinMode, TimeRef, TimeSource
 from quantify_scheduler.operations.acquisition_library import (
     NumericalSeparatedWeightedIntegration,
     NumericalWeightedIntegration,
     NumericalWeightedIntegrationComplex,
     SSBIntegrationComplex,
     ThresholdedAcquisition,
+    Timetag,
+    TimetagTrace,
     Trace,
     TriggerCount,
 )
@@ -607,9 +609,11 @@ def optical_measurement(
     acq_channel_override: Hashable | None,
     acq_index: int,
     bin_mode: BinMode | None,
-    acq_protocol: Literal["Trace", "TriggerCount"] | None,
+    acq_protocol: Literal["Trace", "TriggerCount", "Timetag", "TimetagTrace"] | None,
     acq_protocol_default: Literal["Trace", "TriggerCount"],
     pulse_type: Literal["SquarePulse"],
+    acq_time_source: TimeSource | None = None,
+    acq_time_ref: TimeRef | None = None,
 ) -> Operation:
     """
     Generator function for an optical measurement with multiple excitation pulses.
@@ -662,6 +666,10 @@ def optical_measurement(
         Acquisition protocol if ``acq_protocol`` is None
     pulse_type
         Shape of the pulse to be generated
+    acq_time_source
+        Selects the timetag data source for this acquisition type.
+    acq_time_ref
+        Selects the time reference that the timetag is recorded in relation to.
 
     Returns
     -------
@@ -749,6 +757,44 @@ def optical_measurement(
                 t0=t0_acquisition,
                 acq_channel=acq_channel,
                 acq_index=acq_index,
+                bin_mode=bin_mode,
+            )
+        )
+    elif acq_protocol == "Timetag":
+        # Add time_source and time_ref to the dict only if they are not None, so that
+        # they do not override operation defaults (these variables are passed as an
+        # unpacked **dict below).
+        timetag_args = {}
+        if acq_time_source is not None:
+            timetag_args["time_source"] = acq_time_source
+        if acq_time_ref is not None:
+            timetag_args["time_ref"] = acq_time_ref
+        device_op.add_acquisition(
+            Timetag(
+                port=acq_port,
+                clock=acq_clock,
+                duration=acq_duration,
+                t0=t0_acquisition,
+                acq_channel=acq_channel,
+                acq_index=acq_index,
+                bin_mode=bin_mode,
+                **timetag_args,
+            )
+        )
+    elif acq_protocol == "TimetagTrace":
+        timetag_args = {}
+        if acq_time_ref is not None:
+            timetag_args["time_ref"] = acq_time_ref
+        device_op.add_acquisition(
+            TimetagTrace(
+                port=acq_port,
+                clock=acq_clock,
+                duration=acq_duration,
+                t0=t0_acquisition,
+                acq_channel=acq_channel,
+                acq_index=acq_index,
+                bin_mode=bin_mode,
+                **timetag_args,
             )
         )
     else:

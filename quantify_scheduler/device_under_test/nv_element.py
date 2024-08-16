@@ -22,6 +22,7 @@ from quantify_scheduler.backends.graph_compilation import (
     OperationCompilationConfig,
 )
 from quantify_scheduler.device_under_test.device_element import DeviceElement
+from quantify_scheduler.enums import TimeRef, TimeSource
 from quantify_scheduler.helpers.validators import (
     _Amplitudes,
     _Delays,
@@ -147,7 +148,7 @@ class SpectroscopyOperationHermiteMW(InstrumentModule):
     """
 
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
-        super().__init__(parent=parent, name=name, **kwargs)
+        super().__init__(parent=parent, name=name)
 
         self.amplitude = ManualParameter(
             name="amplitude",
@@ -178,7 +179,7 @@ class ResetSpinpump(InstrumentModule):
     """
 
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
-        super().__init__(parent=parent, name=name, **kwargs)
+        super().__init__(parent=parent, name=name)
 
         self.amplitude = ManualParameter(
             name="amplitude",
@@ -208,7 +209,7 @@ class Measure(InstrumentModule):
     """
 
     def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
-        super().__init__(parent=parent, name=name, **kwargs)
+        super().__init__(parent=parent, name=name)
 
         self.pulse_amplitude = ManualParameter(
             name="pulse_amplitude",
@@ -259,6 +260,35 @@ class Measure(InstrumentModule):
         )
         """
         Acquisition channel of this device element.
+        """
+
+        # Optional timetag-related parameters.
+
+        self.time_source = ManualParameter(
+            name="time_source",
+            instrument=self,
+            initial_value=TimeSource.FIRST,
+            unit="",
+            vals=_Hashable(),
+        )
+        """
+        Optional time source, in case the
+        :class:`~quantify_scheduler.operations.acquisition_library.Timetag` acquisition
+        protocols are used. Please see that protocol for more information.
+        """
+
+        self.time_ref = ManualParameter(
+            name="time_ref",
+            instrument=self,
+            initial_value=TimeRef.START,
+            unit="",
+            vals=_Hashable(),
+        )
+        """
+        Optional time reference, in case
+        :class:`~quantify_scheduler.operations.acquisition_library.Timetag` or
+        :class:`~quantify_scheduler.operations.acquisition_library.TimetagTrace`
+        acquisition protocols are used. Please see those protocols for more information.
         """
 
 
@@ -417,33 +447,43 @@ class BasicElectronicNVElement(DeviceElement):
     """
 
     def __init__(self, name: str, **kwargs):
+        submodules_to_add = {
+            "spectroscopy_operation": SpectroscopyOperationHermiteMW,
+            "ports": Ports,
+            "clock_freqs": ClockFrequencies,
+            "reset": ResetSpinpump,
+            "charge_reset": ChargeReset,
+            "measure": Measure,
+            "cr_count": CRCount,
+            "rxy": RxyHermite,
+        }
+        submodule_data = {
+            sub_name: kwargs.pop(sub_name, {}) for sub_name in submodules_to_add
+        }
         super().__init__(name, **kwargs)
 
-        self.add_submodule(
-            "spectroscopy_operation",
-            SpectroscopyOperationHermiteMW(self, "spectroscopy_operation"),
-        )
+        for sub_name, sub_class in submodules_to_add.items():
+            self.add_submodule(
+                sub_name,
+                sub_class(
+                    parent=self, name=sub_name, **submodule_data.get(sub_name, {})
+                ),
+            )
+
         self.spectroscopy_operation: SpectroscopyOperationHermiteMW
         """Submodule :class:`~.SpectroscopyOperationHermiteMW`."""
-        self.add_submodule("ports", Ports(self, "ports"))
         self.ports: Ports
         """Submodule :class:`~.Ports`."""
-        self.add_submodule("clock_freqs", ClockFrequencies(self, "clock_freqs"))
         self.clock_freqs: ClockFrequencies
         """Submodule :class:`~.ClockFrequencies`."""
-        self.add_submodule("reset", ResetSpinpump(self, "reset"))
         self.reset: ResetSpinpump
         """Submodule :class:`~.ResetSpinpump`."""
-        self.add_submodule("charge_reset", ChargeReset(self, "charge_reset"))
         self.charge_reset: ChargeReset
         """Submodule :class:`~.ChargeReset`."""
-        self.add_submodule("measure", Measure(self, "measure"))
         self.measure: Measure
         """Submodule :class:`~.Measure`."""
-        self.add_submodule("cr_count", CRCount(self, "cr_count"))
         self.cr_count: CRCount
         """Submodule :class:`~.CRCount`."""
-        self.add_submodule("rxy", RxyHermite(self, "rxy"))
         self.rxy: RxyHermite
         """Submodule :class:`~.Rxy`."""
 
@@ -495,6 +535,8 @@ class BasicElectronicNVElement(DeviceElement):
                         "acq_channel": self.measure.acq_channel(),
                         "acq_port": self.ports.optical_readout(),
                         "acq_clock": f"{self.name}.ge0",
+                        "acq_time_source": self.measure.time_source(),
+                        "acq_time_ref": self.measure.time_ref(),
                         "pulse_type": "SquarePulse",
                         "acq_protocol_default": "TriggerCount",
                     },

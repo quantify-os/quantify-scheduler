@@ -47,6 +47,12 @@ class Trace(Acquisition):
     this array depends on the sampling rate of the acquisition
     device.
 
+    .. important::
+
+        The exact duration of this operation, and the possible bin modes may depend on
+        the control hardware. Please consult your hardware vendor's :ref:`Reference
+        guide` for more information.
+
     Parameters
     ----------
     port
@@ -679,6 +685,12 @@ class TriggerCount(Acquisition):
     many times the trigger level is surpassed. The level is set
     in the hardware configuration.
 
+    .. important::
+
+        The exact duration of this operation, and the possible bin modes may depend on
+        the control hardware. Please consult your hardware vendor's :ref:`Reference
+        guide` for more information.
+
     Parameters
     ----------
     port
@@ -687,13 +699,6 @@ class TriggerCount(Acquisition):
         The clock used to demodulate the acquisition.
     duration
         The duration of the operation in seconds.
-
-        .. important::
-
-            Depending on the control hardware used, the actual acquisition may stop a
-            short time before the end of the scheduled duration. Please consult your
-            hardware vendor's reference guide for more information.
-
     acq_channel
         The data channel in which the acquisition is stored, by default 0.
         Describes the "where" information of the measurement, which typically
@@ -757,6 +762,12 @@ class TimetagTrace(Acquisition):
     """
     The TimetagTrace acquisition protocol records timetags within an acquisition window.
 
+    .. important::
+
+        The exact duration of this operation, and the possible bin modes may depend on
+        the control hardware. Please consult your hardware vendor's :ref:`Reference
+        guide` for more information.
+
     Parameters
     ----------
     port
@@ -776,9 +787,8 @@ class TimetagTrace(Acquisition):
         to the setpoints of a schedule (e.g., tau in a T1 experiment).
     bin_mode
         Describes what is done when data is written to a register that already
-        contains a value. Only "BinMode.APPEND" option is available at the moment;
-        this option stores the weighted average value of the new result and the old
-        register value.
+        contains a value. Only "BinMode.APPEND" is available at the moment; this option
+        concatenates timetag results with the same acquisition channel and index.
     time_ref
         Selects the time reference that the timetag is recorded in relation to. String
         enumeration, one of:
@@ -787,7 +797,7 @@ class TimetagTrace(Acquisition):
         * end: record relative to the end of the window. Note that this always yields a
           negative timetag.
         * first: syntactic sugar for first#, where # is the current channel.
-        * command: record relative to the timestamp marked using the ``Timestamp`` operation.
+        * timestamp: record relative to the timestamp marked using the ``Timestamp`` operation.
     t0
         The acquisition start time in seconds, by default 0.
     """
@@ -840,6 +850,12 @@ class Timetag(Acquisition):
     """
     Acquire a single timetag per acquisition index.
 
+    .. important::
+
+        The exact duration of this operation, and the possible bin modes may depend on
+        the control hardware. Please consult your hardware vendor's :ref:`Reference
+        guide` for more information.
+
     Parameters
     ----------
     port
@@ -878,7 +894,7 @@ class Timetag(Acquisition):
         * ``end``: record relative to the end of the window. Note that this always
           yields a negative timetag.
         * ``first``: record relative to the first timetag in the window.
-        * ``command``: record relative to the timestamp marked using the
+        * ``timestamp``: record relative to the timestamp marked using the
           :class:`~quantify_scheduler.operations.pulse_library.Timestamp` operation.
     t0
         The acquisition start time in seconds, by default 0.
