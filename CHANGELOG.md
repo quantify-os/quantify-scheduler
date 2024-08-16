@@ -1,19 +1,52 @@
 # Changelog
 
-## Unreleased
+## 0.21.1 (2024-08-16)
 
-### Breaking changes
+### Release highlights
 
+#### In Qblox backend, option to allow NCO operations to not conform to NCO timing constraints (!1058)
+
+In some cases it is required that NCO operation be allowed on the 1 ns timegrid instead of the NCO 4 ns timegrid.
+In this case, the user can set the hardware option `allow_off_grid_nco_ops` to `True`. (By default, the compiler acts as if it was `False`.)
+
+```
+hardware_compilation_cfg = {
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+    ...
+    "allow_off_grid_nco_ops": True,
+    ...
+}
+```
+
+#### Documentation update for `Timetag`, `TimetagTrace` and `Trace` protocols on the QTM (!1046)
+
+Tutorial for the `Timetag`, `TimetagTrace` and `Trace` for QTM has been moved to a dedicated place.
+For these acquisition protocols, the reference pages adds additional info: detailed list of options for the parameters, and which protocols and bin modes are supported on which Qblox devices.
+
+#### Performance improvements for compilation for schedules with loops and acquisitions (!1060)
+
+For schedules with loops and acquisitions, the compilation time can improve as much as 70 %. It is thanks to caching resource validation and removing some unnecessary checks for stitched pulses.
 
 ### Merged branches and closed issues
 
+- Docs
+  - Add documentation for the `Timetag`, `TimetagTrace` and `Trace` protocols on the QTM. (!1046)
 - Qblox backend
   - Add option `allow_off_grid_nco_ops` to allow NCO operations that do not conform to the NCO timing constrictions. (!1058)
   - Add caching to `Resource.is_valid` and do not check every loop iteration in `_all_abs_times_ops_with_voltage_offsets_pulses` to improve performance. (!1060)
-- Docs
-  - Add documentation for the `Timetag`, `TimetagTrace` and `Trace` protocols on the QTM. (!1046)
 - QuantumDevice
   - Fix deserialization of `BasicElectronicNVElement`. (!1046)
+
+### Compatibility Info
+
+**Qblox**
+
+| quantify-scheduler |                      qblox-instruments                       |                               Cluster firmware                                |
+|--------------------|:------------------------------------------------------------:|:-----------------------------------------------------------------------------:|
+| v0.21.1            | [0.14.0](https://pypi.org/project/qblox-instruments/0.14.0/) | [0.9.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.9.0) |
+
+**Zurich Instruments**
+- `zhinst==21.8.20515`, `zhinst-qcodes==0.1.4`, `zhinst-toolkit==0.1.5`
 
 ## 0.21.0 (2024-08-13)
 
