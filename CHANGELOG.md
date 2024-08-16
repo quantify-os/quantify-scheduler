@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Breaking changes
+
+
+### Merged branches and closed issues
+
+
 ## 0.21.1 (2024-08-16)
 
 ### Release highlights
