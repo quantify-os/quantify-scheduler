@@ -194,7 +194,8 @@ class VoltageOffset(Operation):
     port : str
         Port of the voltage offset.
     clock : str, optional
-        Clock used to modulate the voltage offset. By default a BasebandClock is used.
+        Clock used to modulate the voltage offset.
+        By default the baseband clock.
     duration : float, optional
         (deprecated) The time to hold the offset for (in seconds).
     t0 : float, optional
@@ -294,8 +295,8 @@ class RampPulse(Operation):
     port
         Port of the pulse.
     clock
-        Clock used to modulate the pulse, by default a
-        BasebandClock is used.
+        Clock used to modulate the pulse.
+        By default the baseband clock.
     reference_magnitude
         Scaling value and unit for the unitless amplitude. Uses settings in
         hardware config if not provided.
@@ -355,6 +356,7 @@ class StaircasePulse(Operation):
         Port of the pulse.
     clock
         Clock used to modulate the pulse.
+        By default the baseband clock.
     reference_magnitude
         Scaling value and unit for the unitless amplitude. Uses settings in
         hardware config if not provided.
@@ -455,6 +457,7 @@ class SquarePulse(Operation):
         Port of the pulse, must be capable of playing a complex waveform.
     clock
         Clock used to modulate the pulse.
+        By default the baseband clock.
     reference_magnitude
         Scaling value and unit for the unitless amplitude. Uses settings in
         hardware config if not provided.
@@ -519,6 +522,7 @@ class SuddenNetZeroPulse(Operation):
         Port of the pulse, must be capable of playing a complex waveform.
     clock
         Clock used to modulate the pulse.
+        By default the baseband clock.
     reference_magnitude
         Scaling value and unit for the unitless amplitude. Uses settings in
         hardware config if not provided.
@@ -628,6 +632,7 @@ class SoftSquarePulse(Operation):
         Port of the pulse, must be capable of playing a complex waveform.
     clock
         Clock used to modulate the pulse.
+        By default the baseband clock.
     reference_magnitude
         Scaling value and unit for the unitless amplitude. Uses settings in
         hardware config if not provided.
@@ -641,7 +646,7 @@ class SoftSquarePulse(Operation):
         amp: float,
         duration: float,
         port: str,
-        clock: str,
+        clock: str = BasebandClockResource.IDENTITY,
         reference_magnitude: Optional[ReferenceMagnitude] = None,
         t0: float = 0,
     ):
@@ -813,6 +818,7 @@ class GaussPulse(Operation):
         Phase of the pulse in degrees.
     clock
         Clock used to modulate the pulse.
+        By default the baseband clock.
     port
         Port of the pulse, must be capable of carrying a complex waveform.
     reference_magnitude
@@ -832,7 +838,7 @@ class GaussPulse(Operation):
         phase: float,
         duration: float,
         port: str,
-        clock: str,
+        clock: str = BasebandClockResource.IDENTITY,
         reference_magnitude: Optional[ReferenceMagnitude] = None,
         sigma: float = None,
         t0: float = 0,
@@ -1029,6 +1035,7 @@ class NumericalPulse(Operation):
         The port that the pulse should be played on.
     clock
         Clock used to (de)modulate the pulse.
+        By default the baseband clock.
     reference_magnitude
         Scaling value and unit for the unitless samples. Uses settings in
         hardware config if not provided.
@@ -1045,7 +1052,7 @@ class NumericalPulse(Operation):
         samples: Union[np.ndarray, list],
         t_samples: Union[np.ndarray, list],
         port: str,
-        clock: str,
+        clock: str = BasebandClockResource.IDENTITY,
         reference_magnitude: Optional[ReferenceMagnitude] = None,
         t0: float = 0,
         interpolation: str = "linear",

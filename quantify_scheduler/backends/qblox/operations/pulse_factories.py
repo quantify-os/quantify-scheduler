@@ -258,7 +258,7 @@ def long_ramp_pulse(
     offset : float, optional
         Starting point of the ramp pulse. By default 0.
     clock : str, optional
-        Clock used to modulate the pulse, by default a BasebandClock is used.
+        Clock used to modulate the pulse, by default the baseband clock.
     t0 : float, optional
         Time in seconds when to start the pulses relative to the start time of the
         Operation in the Schedule. By default 0.
