@@ -9,6 +9,8 @@
 
 - Pyright
   - Unignore files. (!1033, !1054)
+- Serialization
+  - Make timestamp in filename for `QuantumDevice.to_json_file` optional. (!1063)
 
 ## 0.21.1 (2024-08-16)
 

@@ -217,7 +217,7 @@ class QuantumDevice(Instrument):
 
         return json.dumps(self, cls=SchedulerJSONEncoder)
 
-    def to_json_file(self, path: str | None = None) -> str:
+    def to_json_file(self, path: str | None = None, add_timestamp: bool = True) -> str:
         """
         Convert the `QuantumDevice` data structure to a JSON string and store it in a file.
 
@@ -225,6 +225,10 @@ class QuantumDevice(Instrument):
         ----------
         path
             The path to the directory where the file is created.
+
+        add_timestamp
+            Specify whether or not to append timestamp to the filename.
+            Default is True.
 
         Returns
         -------
@@ -234,9 +238,12 @@ class QuantumDevice(Instrument):
         if path is None:
             path = get_datadir()
 
-        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S_%Z")
+        if add_timestamp:
+            timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S_%Z")
+            filename = os.path.join(path, f"{self.name}_{timestamp}.json")
+        else:
+            filename = os.path.join(path, f"{self.name}.json")
 
-        filename = os.path.join(path, f"{self.name}_{timestamp}.json")
         with open(filename, "w") as file:
             file.write(self.to_json())
 

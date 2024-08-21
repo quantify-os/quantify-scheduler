@@ -1,3 +1,4 @@
+import datetime
 import os
 import re
 from pathlib import Path
@@ -148,10 +149,12 @@ def test_add_and_get_unbound_edges(dev):
         Edge.find_instrument("parent_child")
 
 
-@pytest.mark.parametrize("to_file", (True, False))
+@pytest.mark.parametrize(
+    "to_file, add_utc_timestamp",
+    [(True, True), (True, False), (False, True), (False, False)],
+)
 def test_quantum_device_serialization(
-    mock_setup_basic_transmon_with_standard_params,
-    to_file,
+    mock_setup_basic_transmon_with_standard_params, to_file, add_utc_timestamp
 ):
     # Prepare to be serialized quantum device
     amp180_test = 0.250
@@ -174,7 +177,23 @@ def test_quantum_device_serialization(
 
     # Serialize, close all instruments, deserialize
     if to_file:
-        path_serialized_quantum_device = quantum_device.to_json_file(path=get_datadir())
+        path_serialized_quantum_device = quantum_device.to_json_file(
+            path=None, add_timestamp=add_utc_timestamp
+        )
+
+        # Assert that UTC timestamp is indeed appended to file name
+        if add_utc_timestamp:
+            basename_of_saved_file = os.path.basename(path_serialized_quantum_device)
+            assert datetime.datetime.strptime(
+                basename_of_saved_file.split(".json", 1)[0].split(
+                    quantum_device.name + "_", 1
+                )[1],
+                "%Y-%m-%d_%H-%M-%S_%Z",
+            )
+        else:
+            assert path_serialized_quantum_device == os.path.join(
+                get_datadir(), quantum_device.name + ".json"
+            )
 
         # Ensure exceptions are thrown when trying to serialize after closing instruments
         # (filename is modified to prevent rewriting of file containing the serialized device)
@@ -191,7 +210,9 @@ def test_quantum_device_serialization(
                     "`QuantumDevice.remove_edge`."
                 ),
             ):
-                _ = quantum_device.to_json_file(path=get_datadir())
+                _ = quantum_device.to_json_file(
+                    path=get_datadir(), add_timestamp=add_utc_timestamp
+                )
 
             QuantumDevice.close_all()  # This closes *any* open instrument
             with pytest.raises(
@@ -199,7 +220,9 @@ def test_quantum_device_serialization(
                 match="Cannot serialize 'quantum_device'. All attached instruments have been "
                 "closed and their information cannot be retrieved any longer.",
             ):
-                _ = quantum_device.to_json_file(path=get_datadir())
+                _ = quantum_device.to_json_file(
+                    path=get_datadir(), add_timestamp=add_utc_timestamp
+                )
 
         assert path_serialized_quantum_device.__class__ is str
 
