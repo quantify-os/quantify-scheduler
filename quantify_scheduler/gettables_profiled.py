@@ -17,7 +17,8 @@ import time
 
 import matplotlib.pyplot as plt
 import numpy as np
-from qcodes import Instrument
+from qcodes.instrument.instrument import Instrument
+from xarray import Dataset
 
 from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
@@ -112,8 +113,8 @@ class ProfiledInstrumentCoordinator(InstrumentCoordinator):
         self.parent_ic.stop()
 
     @profiler
-    def retrieve_acquisition(self):
-        self.parent_ic.retrieve_acquisition()
+    def retrieve_acquisition(self) -> Dataset:
+        return self.parent_ic.retrieve_acquisition()
 
     @profiler
     def wait_done(self, timeout_sec: int = 10):
@@ -134,7 +135,7 @@ class ProfiledScheduleGettable(ScheduleGettable):
         self.plot = None
 
         # Overwrite linked IC to a profiled IC
-        self.instr_coordinator = (
+        self.instr_coordinator: InstrumentCoordinator = (  # type: ignore
             self.quantum_device.instr_instrument_coordinator.get_instr()
         )
         self.profiled_instr_coordinator = ProfiledInstrumentCoordinator(

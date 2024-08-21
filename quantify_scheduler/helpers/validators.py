@@ -5,7 +5,8 @@ from typing import Hashable
 
 import numpy as np
 from qcodes.utils import validators
-from qcodes.utils.validators import Validator, numbertypes
+from qcodes.utils.validators import Validator
+from qcodes.validators.validators import numbertypes
 
 
 # this is a custom qcodes Numbers validator that allows for nan values.

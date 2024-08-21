@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from collections import UserDict
-from typing import Any, Iterable, List, Tuple
+from typing import Any, Iterable, List, MutableMapping, Tuple
 
 import numpy as np
 import xxhash
@@ -32,7 +32,7 @@ def make_hash(obj: Any) -> int:
 
     if isinstance(obj, np.ndarray):
         # numpy arrays behave funny for hashing
-        new_hash.update(obj)
+        new_hash.update(obj)  # type: ignore
         val = new_hash.intdigest()
         new_hash.reset()
         return val
@@ -68,7 +68,7 @@ def without(dict_in: dict, keys: list) -> dict:
     return new_d
 
 
-def find_inner_dicts_containing_key(d: dict, key: Any) -> List[dict]:
+def find_inner_dicts_containing_key(d: MutableMapping, key: Any) -> List[dict]:
     """
     Generate a list of the first dictionaries encountered that contain a certain key.
 

@@ -34,6 +34,7 @@ class GetWaveformPartial(Protocol):  # typing.Protocol
         :
             The waveform array.
         """
+        ...
 
 
 def get_waveform_size(waveform: np.ndarray, granularity: int) -> int:
@@ -269,7 +270,7 @@ def exec_waveform_function(wf_func: str, t: np.ndarray, pulse_info: dict) -> np.
     """
     whitelist: List[str] = ["square", "ramp", "soft_square", "drag"]
     fn_name: str = wf_func.split(".")[-1]
-    waveform: np.ndarray = []
+    waveform: np.ndarray | None = None
     if wf_func.startswith("quantify_scheduler.waveforms") and fn_name in whitelist:
         if fn_name == "square":
             waveform = waveforms.square(t=t, amp=pulse_info["amp"])
@@ -295,6 +296,8 @@ def exec_waveform_function(wf_func: str, t: np.ndarray, pulse_info: dict) -> np.
     else:
         waveform = exec_custom_waveform_function(wf_func, t, pulse_info)
 
+    if waveform is None:
+        raise RuntimeError(f"Could not create a waveform from {wf_func}")
     return waveform
 
 

@@ -48,7 +48,7 @@ def get_classes(*modules: ModuleType) -> Dict[str, Type[Any]]:
 def make_uml_diagram(
     obj_to_plot: Union[ModuleType, Type[Any]],
     options: list[str],
-) -> str:
+) -> str | None:
     """
     Generate a UML diagram of a given module or class.
 
@@ -68,7 +68,6 @@ def make_uml_diagram(
     """
     basic_options = ["--colorized", "-m", "n"]
 
-    sp_args = {"stdout": sp.DEVNULL, "stderr": sp.STDOUT}
     sp_err = (
         f"Something went wrong in the plotting backend. "
         f"Please make sure pylint is installed and the provided options have the "
@@ -77,6 +76,7 @@ def make_uml_diagram(
     dot_err = "Error running 'dot': is 'graphviz' installed?"
 
     if inspect.ismodule(obj_to_plot):
+        assert obj_to_plot.__file__ is not None
         abs_module_path = Path(obj_to_plot.__file__).parent
 
         try:
@@ -89,7 +89,8 @@ def make_uml_diagram(
                     abs_module_path,
                 ],
                 check=True,
-                **sp_args,
+                stdout=sp.DEVNULL,
+                stderr=sp.STDOUT,
             )
         except (sp.CalledProcessError, FileNotFoundError):
             # FileNotFoundError is raised, as opposed to CalledProcessError,
@@ -113,6 +114,7 @@ def make_uml_diagram(
         class_path_str = f"{class_module_str}.{class_name_str}"
 
         class_module = sys.modules[class_module_str]
+        assert class_module.__file__ is not None
         repo_path = str(Path(class_module.__file__).parent)
 
         try:
@@ -126,7 +128,8 @@ def make_uml_diagram(
                     repo_path,
                 ],
                 check=True,
-                **sp_args,
+                stdout=sp.DEVNULL,
+                stderr=sp.STDOUT,
             )
         except (sp.CalledProcessError, FileNotFoundError):
             print(sp_err)

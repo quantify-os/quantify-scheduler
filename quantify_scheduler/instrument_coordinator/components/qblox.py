@@ -155,6 +155,11 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
     def __init__(self, instrument: Module) -> None:
         super().__init__(instrument)
 
+        # The base class `InstrumentCoordinatorComponentBase` expects `instrument` to
+        # be a subclass of `Instrument`, _This_ class expects `instrument` to be a
+        # `Module` (for legacy reasons?), which does not subclass `Instrument` but
+        # `InstrumentChannel`, and is therefore not globally findable. Ergo, we store a
+        # reference here directly.
         self._instrument_module = instrument
 
         self._seq_name_to_idx_map = {
@@ -170,10 +175,10 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
         indices. The `prepare` method resets this to an empty dictionary.
         """
 
-    # Necessary to override the `instrument` attr from `InstrumentCoordinatorComponentBase`,
-    # `Module` is a qcodes `InstrumentModule` subclass
+    # See the comment on self._instrument_module in __init__. Base class is incorrectly
+    # overridden, so we silence pyright.
     @property
-    def instrument(self) -> Module:
+    def instrument(self) -> Module:  # type: ignore
         """Returns a reference to the module instrument."""
         return self._instrument_module
 
@@ -295,7 +300,9 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
 
         return _download_log(_get_configuration_manager(_get_instrument_ip(self)))
 
-    def prepare(self, program: Dict[str, dict]) -> None:
+    # Parameter name is different from base class. We ignore it because it is legacy
+    # code.
+    def prepare(self, program: Dict[str, dict]) -> None:  # type: ignore
         """Store program containing sequencer settings."""
         self._program = program
         self._nco_frequency_changed = {}
@@ -304,7 +311,7 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
         """Disable sync for all sequencers."""
         for idx in range(self._hardware_properties.number_of_sequencers):
             # Prevent hanging on next run if instrument is not used.
-            self._set_parameter(self.instrument[f"sequencer{idx}"], "sync_en", False)
+            self._set_parameter(self.instrument.sequencers[idx], "sync_en", False)
 
     def stop(self) -> None:
         """Stops all execution."""
@@ -336,11 +343,11 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
             The settings to configure it to.
         """
         self._set_parameter(
-            self.instrument[f"sequencer{seq_idx}"], "sync_en", settings.sync_en
+            self.instrument.sequencers[seq_idx], "sync_en", settings.sync_en
         )
 
         self._set_parameter(
-            self.instrument[f"sequencer{seq_idx}"], "sequence", settings.sequence
+            self.instrument.sequencers[seq_idx], "sequence", settings.sequence
         )
 
     def arm_all_sequencers_in_program(self) -> None:
@@ -419,17 +426,17 @@ class _AnalogModuleComponent(_ModuleComponentBase):
             The settings to configure it to.
         """
         self._set_parameter(
-            self.instrument[f"sequencer{seq_idx}"], "mod_en_awg", settings.nco_en
+            self.instrument.sequencers[seq_idx], "mod_en_awg", settings.nco_en
         )
 
         if settings.nco_en:
             self._nco_frequency_changed[seq_idx] = not parameter_value_same_as_cache(
-                self.instrument[f"sequencer{seq_idx}"],
+                self.instrument.sequencers[seq_idx],
                 "nco_freq",
                 settings.modulation_freq,
             )
             self._set_parameter(
-                self.instrument[f"sequencer{seq_idx}"],
+                self.instrument.sequencers[seq_idx],
                 "nco_freq",
                 settings.modulation_freq,
             )
@@ -438,23 +445,23 @@ class _AnalogModuleComponent(_ModuleComponentBase):
             self._nco_frequency_changed[seq_idx] = False
 
         self._set_parameter(
-            self.instrument[f"sequencer{seq_idx}"],
+            self.instrument.sequencers[seq_idx],
             "offset_awg_path0",
             settings.init_offset_awg_path_I,
         )
         self._set_parameter(
-            self.instrument[f"sequencer{seq_idx}"],
+            self.instrument.sequencers[seq_idx],
             "offset_awg_path1",
             settings.init_offset_awg_path_Q,
         )
 
         self._set_parameter(
-            self.instrument[f"sequencer{seq_idx}"],
+            self.instrument.sequencers[seq_idx],
             "gain_awg_path0",
             settings.init_gain_awg_path_I,
         )
         self._set_parameter(
-            self.instrument[f"sequencer{seq_idx}"],
+            self.instrument.sequencers[seq_idx],
             "gain_awg_path1",
             settings.init_gain_awg_path_Q,
         )
@@ -462,7 +469,7 @@ class _AnalogModuleComponent(_ModuleComponentBase):
         channel_map_parameters = self._determine_channel_map_parameters(settings)
         for channel_param, channel_setting in channel_map_parameters.items():
             self._set_parameter(
-                self.instrument[f"sequencer{seq_idx}"],
+                self.instrument.sequencers[seq_idx],
                 channel_param,
                 channel_setting,
             )
@@ -505,17 +512,17 @@ class _AnalogModuleComponent(_ModuleComponentBase):
             settings.auto_sideband_cal == SidebandCalEnum.ON_INTERM_FREQ_CHANGE
             and self._nco_frequency_changed[seq_idx]
         ):
-            self.instrument[f"sequencer{seq_idx}"].sideband_cal()
+            self.instrument.sequencers[seq_idx].sideband_cal()
         else:
             if settings.mixer_corr_phase_offset_degree is not None:
                 self._set_parameter(
-                    self.instrument[f"sequencer{seq_idx}"],
+                    self.instrument.sequencers[seq_idx],
                     "mixer_corr_phase_offset_degree",
                     settings.mixer_corr_phase_offset_degree,
                 )
             if settings.mixer_corr_gain_ratio is not None:
                 self._set_parameter(
-                    self.instrument[f"sequencer{seq_idx}"],
+                    self.instrument.sequencers[seq_idx],
                     "mixer_corr_gain_ratio",
                     settings.mixer_corr_gain_ratio,
                 )
@@ -583,9 +590,7 @@ class _QCMComponent(_AnalogModuleComponent):
             self._configure_global_settings(module_settings)
 
         for seq_idx in range(self._hardware_properties.number_of_sequencers):
-            self._set_parameter(
-                self.instrument[f"sequencer{seq_idx}"], "sync_en", False
-            )
+            self._set_parameter(self.instrument.sequencers[seq_idx], "sync_en", False)
 
         for seq_name, seq_cfg in program["sequencers"].items():
             if seq_name in self._seq_name_to_idx_map:
@@ -721,9 +726,7 @@ class _QRMComponent(_AnalogModuleComponent):
         super().prepare(program)
 
         for seq_idx in range(self._hardware_properties.number_of_sequencers):
-            self._set_parameter(
-                self.instrument[f"sequencer{seq_idx}"], "sync_en", False
-            )
+            self._set_parameter(self.instrument.sequencers[seq_idx], "sync_en", False)
 
         acq_duration = {}
         for seq_name, seq_cfg in program["sequencers"].items():
@@ -827,58 +830,58 @@ class _QRMComponent(_AnalogModuleComponent):
 
         if settings.integration_length_acq is not None:
             self._set_parameter(
-                self.instrument[f"sequencer{seq_idx}"],
+                self.instrument.sequencers[seq_idx],
                 "integration_length_acq",
                 settings.integration_length_acq,
             )
 
         self._set_parameter(
-            self.instrument[f"sequencer{seq_idx}"], "demod_en_acq", settings.nco_en
+            self.instrument.sequencers[seq_idx], "demod_en_acq", settings.nco_en
         )
         if settings.ttl_acq_auto_bin_incr_en is not None:
             self._set_parameter(
-                self.instrument[f"sequencer{seq_idx}"],
+                self.instrument.sequencers[seq_idx],
                 "ttl_acq_auto_bin_incr_en",
                 settings.ttl_acq_auto_bin_incr_en,
             )
         if settings.ttl_acq_threshold is not None:
             self._set_parameter(
-                self.instrument[f"sequencer{seq_idx}"],
+                self.instrument.sequencers[seq_idx],
                 "ttl_acq_threshold",
                 settings.ttl_acq_threshold,
             )
         if settings.ttl_acq_input_select is not None:
             self._set_parameter(
-                self.instrument[f"sequencer{seq_idx}"],
+                self.instrument.sequencers[seq_idx],
                 "ttl_acq_input_select",
                 settings.ttl_acq_input_select,
             )
         if settings.thresholded_acq_rotation is not None:
             self._set_parameter(
-                self.instrument[f"sequencer{seq_idx}"],
+                self.instrument.sequencers[seq_idx],
                 "thresholded_acq_rotation",
                 settings.thresholded_acq_rotation,
             )
         if settings.thresholded_acq_threshold is not None:
             self._set_parameter(
-                self.instrument[f"sequencer{seq_idx}"],
+                self.instrument.sequencers[seq_idx],
                 "thresholded_acq_threshold",
                 settings.thresholded_acq_threshold,
             )
         if settings.thresholded_acq_trigger_address is not None:
             self._set_parameter(
-                self.instrument[f"sequencer{seq_idx}"],
+                self.instrument.sequencers[seq_idx],
                 "thresholded_acq_trigger_address",
                 settings.thresholded_acq_trigger_address,
             )
         if settings.thresholded_acq_trigger_en is not None:
             self._set_parameter(
-                self.instrument[f"sequencer{seq_idx}"],
+                self.instrument.sequencers[seq_idx],
                 "thresholded_acq_trigger_en",
                 settings.thresholded_acq_trigger_en,
             )
             self._set_parameter(
-                self.instrument[f"sequencer{seq_idx}"],
+                self.instrument.sequencers[seq_idx],
                 "thresholded_acq_trigger_invert",
                 settings.thresholded_acq_trigger_invert,
             )
@@ -1021,7 +1024,7 @@ class _RFComponent(_AnalogModuleComponent):
         super()._configure_sequencer_settings(seq_idx, settings)
         # Always set override to False.
         self._set_parameter(
-            self.instrument[f"sequencer{seq_idx}"],
+            self.instrument.sequencers[seq_idx],
             "marker_ovr_en",
             False,
         )
@@ -1275,9 +1278,7 @@ class _QTMComponent(_ModuleComponentBase):
         super().prepare(program)
 
         for seq_idx in range(self._hardware_properties.number_of_sequencers):
-            self._set_parameter(
-                self.instrument[f"sequencer{seq_idx}"], "sync_en", False
-            )
+            self._set_parameter(self.instrument.sequencers[seq_idx], "sync_en", False)
 
         trace_acq_duration = {}
         for seq_name, seq_cfg in program["sequencers"].items():
@@ -1358,31 +1359,31 @@ class _QTMComponent(_ModuleComponentBase):
         # mapping and does no further validation.
         for channel_idx in settings.connected_input_indices:
             self._set_parameter(
-                self.instrument[f"io_channel{channel_idx}"],
+                self.instrument.io_channels[channel_idx],
                 "out_mode",
                 "disabled",
             )
         for channel_idx in settings.connected_output_indices:
             self._set_parameter(
-                self.instrument[f"io_channel{channel_idx}"],
+                self.instrument.io_channels[channel_idx],
                 "out_mode",
                 "sequencer",
             )
 
         if settings.in_threshold_primary is not None:
             self._set_parameter(
-                self.instrument[f"io_channel{seq_idx}"],
+                self.instrument.io_channels[seq_idx],
                 "in_threshold_primary",
                 settings.in_threshold_primary,
             )
         self._set_parameter(
-            self.instrument[f"io_channel{seq_idx}"],
+            self.instrument.io_channels[seq_idx],
             "in_trigger_en",
             False,
         )
 
         self._set_parameter(
-            self.instrument[f"io_channel{seq_idx}"],
+            self.instrument.io_channels[seq_idx],
             "binned_acq_on_invalid_time_delta",
             "record_0",
         )
@@ -2479,7 +2480,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
                     f" module has not been added to the cluster component."
                 )
 
-    def retrieve_acquisition(self) -> Optional[Dict[Tuple[int, int], Any]]:
+    def retrieve_acquisition(self) -> Optional[Dataset]:
         """
         Retrieves all the data from the instruments.
 
@@ -2488,7 +2489,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         :
             The acquired data or ``None`` if no acquisitions have been performed.
         """
-        acquisitions: Dict[Tuple[int, int], Any] = {}
+        acquisitions = Dataset()
         for comp_name, comp in self._cluster_modules.items():
             if comp_name not in self._program:
                 continue

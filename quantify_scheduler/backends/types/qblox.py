@@ -12,6 +12,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Iterable,
     List,
     Literal,
     Optional,
@@ -866,7 +867,7 @@ class DescriptionAnnotationsGettersMixin:
         return get_args(cls.model_fields["instrument_type"].annotation)[0]  # type: ignore
 
     @classmethod
-    def validate_channel_names(cls, channel_names: list[str]) -> None:
+    def validate_channel_names(cls, channel_names: Iterable[str]) -> None:
         """Validate channel names specified in the Connectivity."""
         valid_names = cls.get_valid_channels()
         for name in channel_names:
@@ -1010,7 +1011,7 @@ class QTMDescription(DataStructure, DescriptionAnnotationsGettersMixin):
     """Description of the digital channel corresponding to port 8, specified as output."""
 
     @classmethod
-    def validate_channel_names(cls, channel_names: list[str]) -> None:
+    def validate_channel_names(cls, channel_names: Iterable[str]) -> None:
         """Validate channel names specified in the Connectivity."""
         super().validate_channel_names(channel_names)
 

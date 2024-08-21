@@ -345,7 +345,7 @@ class MockROMHardwareCompilationConfig(HardwareCompilationConfig):
     hardware_options: MockROMHardwareOptions
     compilation_passes: list[SimpleNodeConfig] = [  # noqa: UP006
         SimpleNodeConfig(
-            name="mock_rom_hardware_compile", compilation_func=hardware_compile
+            name="mock_rom_hardware_compile", compilation_func=hardware_compile  # type: ignore
         )
     ]
 

@@ -25,7 +25,11 @@ from pydantic import Field, field_serializer, field_validator
 from quantify_scheduler.backends.types.common import HardwareCompilationConfig
 from quantify_scheduler.helpers.importers import export_python_object_to_path_string
 from quantify_scheduler.operations.operation import Operation
-from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
+from quantify_scheduler.schedules.schedule import (
+    CompiledSchedule,
+    Schedule,
+    ScheduleBase,
+)
 from quantify_scheduler.structure.model import (
     DataStructure,
     deserialize_class,
@@ -49,7 +53,7 @@ class SimpleNodeConfig(DataStructure):
 
     name: str
     """The name of the compilation pass."""
-    compilation_func: Callable[[Schedule, Any], Schedule]
+    compilation_func: Callable[[Schedule, Union[DataStructure, dict]], ScheduleBase]
     """
     The function to perform the compilation pass as an
     importable string (e.g., "package_name.my_module.function_name").

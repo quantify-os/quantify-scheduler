@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 import warnings
-from typing import TYPE_CHECKING, Any, Generator
+from typing import TYPE_CHECKING, Any, Generator, overload
 
 import numpy as np
 
@@ -158,7 +158,15 @@ def _is_distortion_correctable(operation: Operation) -> bool:
     return operation.valid_pulse and not operation.has_voltage_offset
 
 
-def apply_software_distortion_corrections(  # noqa: PLR0912
+@overload
+def apply_software_distortion_corrections(
+    operation: Operation, distortion_corrections: dict
+) -> Operation | None: ...
+@overload
+def apply_software_distortion_corrections(
+    operation: Schedule, distortion_corrections: dict
+) -> None: ...
+def apply_software_distortion_corrections(
     operation: Operation | Schedule, distortion_corrections: dict
 ) -> Operation | Schedule | None:
     """

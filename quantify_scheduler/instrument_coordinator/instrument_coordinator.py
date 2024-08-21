@@ -138,13 +138,13 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             for c_name in self.components()
         )
 
-    def get_component(self, name: str) -> base.InstrumentCoordinatorComponentBase:
+    def get_component(self, full_name: str) -> base.InstrumentCoordinatorComponentBase:
         """
         Returns the InstrumentCoordinator component by name.
 
         Parameters
         ----------
-        name
+        full_name
             The component name.
 
         Returns
@@ -157,10 +157,12 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         KeyError
             If key ``name`` is not present in ``self.components``.
         """
-        if name in self.components():
-            return self.find_instrument(name)
+        if full_name in self.components():
+            # If the instrument is a component of this class, its type will be a
+            # derivative of InstrumentCoordinatorComponentBase.
+            return self.find_instrument(full_name)  # type: ignore
         raise KeyError(
-            f"'{name.split('ic_')[1]}' appears in the hardware config,"
+            f"'{full_name.split('ic_')[1]}' appears in the hardware config,"
             f" but was not added as a component to InstrumentCoordinator '{self.name}'."
         )
 
@@ -312,6 +314,15 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             The acquisition data in an :code:`xarray.Dataset`.
             For each acquisition channel it contains an :code:`xarray.DataArray`.
         """
+        if self._compiled_schedule is None:
+            raise ValueError(
+                "`InstrumentCoordinator` cannot retrieve acquisitions without a compiled "
+                "schedule. Please pass a compiled schedule to `.prepare` and "
+                "start the `InstrumentCoordinator`. e.g. \n"
+                " > ic.prepare(compiled_schedule)\n"
+                " > ic.start()\n"
+                " > ic.retrieve_acquisition()\n"
+            )
         self.wait_done(timeout_sec=self.timeout())
 
         acquisitions: Dataset = Dataset()

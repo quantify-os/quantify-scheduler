@@ -524,7 +524,6 @@ def test_generate_port_clock_to_device_map(
         hardware_config_transmon_old_style
     ):
         sched.add(SquarePulse(port=port, clock=clock, amp=0.25, duration=12e-9))
-    sched.add(SquarePulse(port="q7:res", clock="q7.ro", amp=0.25, duration=12e-9))
     sched = create_schedule_with_pulse_info(sched)
 
     instrument_compilers = CompilerContainer.from_hardware_cfg(
@@ -1129,9 +1128,10 @@ def test_compile_cluster(
     if delete_lo0:
         assert (
             error.value.args[0]
-            == "External local oscillator 'lo0' set to be used for port 'q4:mw' "
-            "not found! Make sure it is present in the hardware "
-            "configuration."
+            == "Could not find local oscillator device for 'iq_mixer_lo0', which is "
+            "connected to cluster module port 'cluster0.module1.complex_output_0' and "
+            "port 'q4:mw' in the connectivity. Did find unidentified nodes "
+            "['lo0.output']. Make sure these are specified in the hardware description."
         )
 
 
@@ -2771,9 +2771,12 @@ def test_external_lo_not_present_raises(compile_config_basic_transmon_qblox_hard
 
     with pytest.raises(
         RuntimeError,
-        match="External local oscillator 'non_existent_lo' set to "
-        "be used for port 'q4:mw' not found! Make "
-        "sure it is present in the hardware configuration.",
+        match=re.escape(
+            "Could not find local oscillator device for 'iq_mixer_lo0', which is "
+            "connected to cluster module port 'cluster0.module1.complex_output_0' and "
+            "port 'q4:mw' in the connectivity. Did find unidentified nodes "
+            "['non_existent_lo.output']. Make sure these are specified in the hardware description."
+        ),
     ):
         compiler = SerialCompiler(name="compiler")
         _ = compiler.compile(sched, config=compile_config)
@@ -3495,7 +3498,10 @@ def test_extract_settings_from_mapping(
             "cluster0": {
                 "instrument_type": "Cluster",
                 "ref": "internal",
-                "modules": {"1": {"instrument_type": "QRM_RF"}},
+                "modules": {
+                    "1": {"instrument_type": "QRM_RF"},
+                    "2": {"instrument_type": "QCM_RF"},
+                },
             },
             "lo0": {"instrument_type": "LocalOscillator", "power": 1},
             "iq_mixer_lo0": {"instrument_type": "IQMixer"},
@@ -3510,6 +3516,7 @@ def test_extract_settings_from_mapping(
                 ["cluster0.module1.complex_output_0", "iq_mixer_lo0.if"],
                 ["lo0.output", "iq_mixer_lo0.lo"],
                 ["iq_mixer_lo0.rf", "q0:res"],
+                ["cluster0.module2.complex_output_0", "q0:mw"],
             ]
         },
     }

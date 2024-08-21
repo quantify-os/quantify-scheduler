@@ -63,16 +63,15 @@ def generate_waveform_data(
         If ``data_dict`` does not contain a ``'duration'`` entry and ``duration is
         None``.
     """
-    if duration is None:
-        try:
-            duration = data_dict["duration"]
-        except KeyError as exc:
-            raise TypeError(
-                "Parameter 'duration' has value None. If 'data_dict' does not contain "
-                "'duration', the function parameter can be used instead."
-            ) from exc
+    try:
+        duration_validated = duration or data_dict["duration"]
+    except KeyError as exc:
+        raise TypeError(
+            "Parameter 'duration' has value None. If 'data_dict' does not contain "
+            "'duration', the function parameter can be used instead."
+        ) from exc
 
-    num_samples = round(duration * sampling_rate)
+    num_samples = round(duration_validated * sampling_rate)
     t = np.arange(start=0, stop=num_samples, step=1) / sampling_rate
 
     wf_data = exec_waveform_function(
@@ -484,7 +483,7 @@ def determine_clock_lo_interm_freqs(
 
 def generate_port_clock_to_device_map(
     device_compilers: dict[str, Any]
-) -> dict[tuple[str, str], str]:
+) -> dict[str, str]:
     """
     Generates a mapping that specifies which port-clock combinations belong to which
     device.
@@ -609,14 +608,16 @@ class ConditionalBegin(Operation):
 def _get_control_flow_begin(
     control_flow_operation: ControlFlowOperation,
 ) -> Operation:
+    assert isinstance(control_flow_operation, (LoopOperation, ConditionalOperation))
+
     port_clocks = _extract_port_clocks_used(control_flow_operation)
     if isinstance(control_flow_operation, LoopOperation):
         begin_operation: Operation = LoopBegin(
             control_flow_operation.data["control_flow_info"]["repetitions"],
             control_flow_operation.data["control_flow_info"]["t0"],
         )
-    elif isinstance(control_flow_operation, ConditionalOperation):
-        begin_operation: Operation = ConditionalBegin(
+    else:
+        begin_operation = ConditionalBegin(
             control_flow_operation.data["control_flow_info"]["qubit_name"],
             control_flow_operation.data["control_flow_info"][
                 "feedback_trigger_address"
@@ -670,21 +671,22 @@ class _ControlFlowReturn(Operation):
 def _get_control_flow_end(
     control_flow_operation: ControlFlowOperation,
 ) -> Operation:
+    assert isinstance(control_flow_operation, (LoopOperation, ConditionalOperation))
+
     port_clocks = _extract_port_clocks_used(control_flow_operation)
-    if isinstance(control_flow_operation, (LoopOperation, ConditionalOperation)):
-        end_operation: Operation = _ControlFlowReturn()
-        end_operation["pulse_info"] = [
-            {
-                "wf_func": None,
-                "clock": clock,
-                "port": port,
-                "duration": 0,
-                "control_flow_end": True,
-                **end_operation["control_flow_info"],
-            }
-            for port, clock in port_clocks
-        ]
-        return end_operation
+    end_operation: Operation = _ControlFlowReturn()
+    end_operation["pulse_info"] = [
+        {
+            "wf_func": None,
+            "clock": clock,
+            "port": port,
+            "duration": 0,
+            "control_flow_end": True,
+            **end_operation["control_flow_info"],
+        }
+        for port, clock in port_clocks
+    ]
+    return end_operation
 
 
 def _get_list_of_operations_for_op_info_creation(
@@ -706,6 +708,7 @@ def _get_list_of_operations_for_op_info_creation(
         _get_list_of_operations_for_op_info_creation(
             operation.body, time_offset, accumulator
         )
+        assert operation.body.duration is not None
         accumulator.append(
             (
                 to_grid_time(time_offset + operation.body.duration) * 1e-9,

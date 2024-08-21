@@ -7,6 +7,8 @@
 
 ### Merged branches and closed issues
 
+- Pyright
+  - Unignore files. (!1033, !1054)
 
 ## 0.21.1 (2024-08-16)
 

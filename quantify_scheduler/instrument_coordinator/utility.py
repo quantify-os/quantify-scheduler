@@ -7,8 +7,8 @@ from typing import Any
 
 import numpy as np
 import xarray
-from qcodes.instrument import Parameter
 from qcodes.instrument.base import InstrumentBase
+from qcodes.parameters.parameter import Parameter
 
 logger = logging.getLogger(__name__)
 
@@ -48,10 +48,12 @@ def search_settable_param(
     # Search for the parameter within the parameter, function
     # or submodule delegate_attrs_dict of the instrument
     for child_parameter_name in split_params:
+        # On the types: _search_next_level returns either None or an object that has the
+        # parameters below. Types are omitted because of their complexity.
         root_attr_dicts_list = [
-            root_param.parameters,
-            root_param.submodules,
-            root_param.functions,
+            root_param.parameters,  # type: ignore
+            root_param.submodules,  # type: ignore
+            root_param.functions,  # type: ignore
         ]
         root_param = _search_next_level(child_parameter_name, root_attr_dicts_list)
         if root_param is None:
@@ -63,7 +65,9 @@ def search_settable_param(
             f'"{nested_parameter_name}" in instrument "{instrument}"'
         )
 
-    return root_param
+    # If the return type is not a Parameter, then we assume it is a structural subtype
+    # (duck typing) of a Parameter.
+    return root_param  # type: ignore
 
 
 def parameter_value_same_as_cache(

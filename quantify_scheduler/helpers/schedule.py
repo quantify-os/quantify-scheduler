@@ -11,7 +11,6 @@ from quantify_scheduler.operations.control_flow_library import ControlFlowOperat
 from quantify_scheduler.schedules.schedule import (
     AcquisitionChannelMetadata,
     AcquisitionMetadata,
-    CompiledSchedule,
     Schedule,
     ScheduleBase,
 )
@@ -20,7 +19,9 @@ if TYPE_CHECKING:
     from quantify_scheduler.operations.operation import Operation
 
 
-def get_pulse_uuid(pulse_info: dict[str, Any], excludes: list[str] = None) -> int:
+def get_pulse_uuid(
+    pulse_info: dict[str, Any], excludes: list[str] | None = None
+) -> int:
     """
     Return an unique identifier for a pulse.
 
@@ -78,7 +79,7 @@ def _generate_acq_info_by_uuid(
             acqid_acqinfo_dict[acq_id] = acq_info
 
 
-def get_acq_info_by_uuid(schedule: CompiledSchedule) -> dict[int, dict[str, Any]]:
+def get_acq_info_by_uuid(schedule: Schedule) -> dict[int, dict[str, Any]]:
     """
     Return a lookup dictionary of unique identifiers of acquisition information.
 
@@ -87,7 +88,7 @@ def get_acq_info_by_uuid(schedule: CompiledSchedule) -> dict[int, dict[str, Any]
     schedule
         The schedule.
     """
-    acqid_acqinfo_dict: dict[tuple[int], dict[str, Any]] = {}
+    acqid_acqinfo_dict: dict[int, dict[str, Any]] = {}
     _generate_acq_info_by_uuid(schedule, acqid_acqinfo_dict)
 
     return acqid_acqinfo_dict
@@ -172,13 +173,12 @@ def extract_acquisition_metadata_from_acquisition_protocols(
             acq_channel_to_numeric_key[acq_channel] = next(numeric_key_counter)
         return acq_channel_to_numeric_key[acq_channel]
 
-    for i, acq_protocol in enumerate(acquisition_protocols):
-        if i == 0:
-            # the protocol and bin mode of the first
-            protocol = acq_protocol["protocol"]
-            bin_mode = acq_protocol["bin_mode"]
-            acq_return_type = acq_protocol["acq_return_type"]
+    # Extract information from first protocol
+    protocol = acquisition_protocols[0]["protocol"]
+    bin_mode = acquisition_protocols[0]["bin_mode"]
+    acq_return_type = acquisition_protocols[0]["acq_return_type"]
 
+    for acq_protocol in acquisition_protocols:
         # test limitation: all acquisition protocols in a schedule must be of
         # the same kind
         conflicts = []

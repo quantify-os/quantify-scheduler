@@ -60,16 +60,6 @@ class GenericInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentB
         super().__init__(instrument)
 
     @property
-    def instrument(self):
-        """
-        Overwrite the instrument method.
-
-        There is no instrument for the
-        GenericInstrumentCoordinatorComponent class.
-        """
-        raise NotImplementedError
-
-    @property
     def is_running(self) -> bool:
         """
         A state whether an instrument is capable of running in a program.
@@ -87,7 +77,9 @@ class GenericInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentB
         """Stop the instrument."""
         pass
 
-    def prepare(self, params_config: Dict[str, Any]) -> None:
+    # Parameter name is different from base class. We ignore it because it is legacy
+    # code.
+    def prepare(self, params_config: Dict[str, Any]) -> None:  # type: ignore
         """
         Prepare the instrument.
 

@@ -2,7 +2,7 @@
 # Licensed according to the LICENCE file on the main branch
 """Module containing Mock Instruments."""
 
-from qcodes import Instrument
+from qcodes.instrument.instrument import Instrument
 from qcodes.instrument.parameter import ManualParameter
 from qcodes.utils import validators
 
