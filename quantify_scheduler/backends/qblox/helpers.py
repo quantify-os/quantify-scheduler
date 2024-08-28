@@ -8,7 +8,7 @@ import math
 import warnings
 from collections import defaultdict
 from copy import deepcopy
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -733,8 +733,6 @@ def assign_pulse_and_acq_info_to_devices(
         The schedule to extract the pulse and acquisition info from.
     device_compilers
         Dictionary containing InstrumentCompilers as values and their names as keys.
-    portclock_to_path
-        Dictionary containing the hardware path to connected to each portclock.
 
     Raises
     ------
@@ -940,54 +938,6 @@ def single_scope_mode_acquisition_raise(sequencer_0, sequencer_1, module_name):
         f"trigger raw trace capture.\n\nPlease ensure that "
         f"only one port-clock combination performs "
         f"raw trace acquisition per instrument."
-    )
-
-
-def _preprocess_legacy_hardware_config(
-    hardware_config: dict[str, Any]
-) -> dict[str, Any]:
-    """Modify a legacy hardware config into a form that is compatible with the current backend."""
-
-    def _modify_inner_dicts(
-        config: dict[str, Any], target_key: str, value_modifier: Callable
-    ) -> dict[str, Any]:
-        for key, value in config.items():
-            if key == target_key:
-                config[key] = value_modifier(value)
-            elif isinstance(config[key], dict):
-                config[key] = _modify_inner_dicts(
-                    config=value, target_key=target_key, value_modifier=value_modifier
-                )
-
-        return config
-
-    def _replace_deprecated_portclock_keys(
-        portclock_configs: list[dict],
-    ) -> list[dict]:
-        for portclock_config in portclock_configs:
-            for deprecated_key, updated_key in {
-                "init_offset_awg_path_0": "init_offset_awg_path_I",
-                "init_offset_awg_path_1": "init_offset_awg_path_Q",
-                "init_gain_awg_path_0": "init_gain_awg_path_I",
-                "init_gain_awg_path_1": "init_gain_awg_path_Q",
-            }.items():
-                if deprecated_key in portclock_config:
-                    warnings.warn(
-                        f"'{deprecated_key}' is deprecated and will be removed from the public "
-                        f"interface in quantify-scheduler >= 0.20.0. Please use "
-                        f"'{updated_key}' instead.",
-                        FutureWarning,
-                    )
-                    portclock_config[updated_key] = portclock_config[deprecated_key]
-                    del portclock_config[deprecated_key]
-
-        return portclock_configs
-
-    # Preprocessed config is a deepcopy of original config
-    return _modify_inner_dicts(
-        config=deepcopy(hardware_config),
-        target_key="portclock_configs",
-        value_modifier=_replace_deprecated_portclock_keys,
     )
 
 
@@ -1427,8 +1377,7 @@ def _generate_new_style_hardware_compilation_config(
         FutureWarning,
     )
 
-    # Update deprecated keys and avoid modifying the original config
-    old_style_config = _preprocess_legacy_hardware_config(old_style_config)
+    old_style_config = deepcopy(old_style_config)
 
     # Initialize new-style hardware compilation config dictionary
     new_style_config = {

@@ -238,7 +238,7 @@ class QCMCompiler(BasebandModuleCompiler):
                     correction_cfg = corrections[portclock]
                     # `correction_cfg` can also be a `SoftwareDistortionCorrection`
                     if isinstance(correction_cfg, (HardwareDistortionCorrection, list)):
-                        _, _, output_name = path.split(".")
+                        output_name = path.channel_name
                         output_number = int(output_name.split("_")[-1])
                         channel_description = getattr(
                             self.instrument_cfg.hardware_description, output_name
@@ -442,9 +442,8 @@ class QTMCompiler(compiler_abc.ClusterModuleCompiler):
             return output_idx[0]
 
         channel_name = sequencer_cfg.channel_name
-        settings = TimetagSequencerSettings.initialize_from_config_dict(
+        settings = TimetagSequencerSettings.initialize_from_compilation_config(
             sequencer_cfg=sequencer_cfg,
-            channel_name=channel_name,
             connected_output_indices=self.static_hw_properties._get_connected_output_indices(
                 channel_name
             ),

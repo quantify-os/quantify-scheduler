@@ -139,9 +139,8 @@ def test_nested_conditional_control_flow_raises_runtime_warning():
         ),
         mixer_corrections=None,
     )
-    settings = AnalogSequencerSettings.initialize_from_config_dict(
+    settings = AnalogSequencerSettings.initialize_from_compilation_config(
         sequencer_cfg=sequencer_cfg,
-        channel_name="complex_out_0",
         connected_input_indices=(),
         connected_output_indices=(0,),
     )

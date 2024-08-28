@@ -691,9 +691,8 @@ def mock_sequencer(total_play_time) -> AnalogSequencerCompiler:
         ),
         mixer_corrections=None,
     )
-    settings = AnalogSequencerSettings.initialize_from_config_dict(
+    settings = AnalogSequencerSettings.initialize_from_compilation_config(
         sequencer_cfg=sequencer_cfg,
-        channel_name="channel_name",
         connected_input_indices=(),
         connected_output_indices=(0,),
     )

@@ -594,9 +594,8 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
         self, index: int, sequencer_cfg: _SequencerCompilationConfig
     ) -> AnalogSequencerCompiler:
         """Create an instance of :class:`AnalogSequencerCompiler`."""
-        settings = AnalogSequencerSettings.initialize_from_config_dict(
+        settings = AnalogSequencerSettings.initialize_from_compilation_config(
             sequencer_cfg=sequencer_cfg,
-            channel_name=sequencer_cfg.channel_name,
             connected_output_indices=self.static_hw_properties._get_connected_output_indices(
                 sequencer_cfg.channel_name
             ),
@@ -715,11 +714,10 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
         init_in0_gain, init_in1_gain = None, None
         init_portclock = None
 
-        for portclock, pc_path in self.portclock_to_path.items():
+        for portclock, path in self.portclock_to_path.items():
             if self.instrument_cfg.hardware_options is None:
                 continue
 
-            channel_name = pc_path.split(".")[-1]
             input_gains = self.instrument_cfg.hardware_options.input_gain
             if input_gains is None:
                 continue
@@ -730,9 +728,9 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
                     in0_gain = input_gain.gain_I
                     in1_gain = input_gain.gain_Q
                 elif isinstance(input_gain, RealInputGain):
-                    if int(channel_name[-1]) == 0:
+                    if int(path.channel_name[-1]) == 0:
                         in0_gain = input_gain
-                    elif int(channel_name[-1]) == 1:
+                    elif int(path.channel_name[-1]) == 1:
                         in1_gain = input_gain
 
                 if init_portclock and (
@@ -771,8 +769,8 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
         """
         supported_outputs = ("complex_output_0", "complex_output_1")
         for output_idx, output_label in enumerate(supported_outputs):
-            for portclock, channel_name_path in self.portclock_to_path.items():
-                if output_label in channel_name_path:
+            for portclock, path in self.portclock_to_path.items():
+                if output_label == path.channel_name:
                     if (
                         self.instrument_cfg.hardware_options.mixer_corrections
                         is not None
@@ -781,7 +779,7 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
                             self.instrument_cfg.hardware_options.mixer_corrections.get(
                                 portclock, None
                             )
-                            if output_label in channel_name_path
+                            if output_label == path.channel_name
                             else None
                         )
                     else:
@@ -835,7 +833,7 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
     def _configure_distortion_correction_latency_compensations(
         self, distortion_configs: dict[int, Any] | None = None
     ) -> None:
-        channel_names = [path.split(".")[2] for path in self.portclock_to_path.values()]
+        channel_names = [path.channel_name for path in self.portclock_to_path.values()]
         hardware_description = self.instrument_cfg.hardware_description
 
         for description in hardware_description.model_fields_set:
@@ -1191,18 +1189,16 @@ class RFModuleCompiler(AnalogModuleCompiler):
 
         for (
             portclock,
-            channel_name_path,
+            path,
         ) in self.instrument_cfg.portclock_to_path.items():
-            channel_name = channel_name_path.split(".")[-1]
-            if channel_name in "complex_input_0" and input_att_cfg is not None:
+            if path.channel_name == "complex_input_0" and input_att_cfg is not None:
                 in0_att = input_att_cfg.get(portclock)
 
         for (
             portclock,
-            channel_name_path,
+            path,
         ) in self.instrument_cfg.portclock_to_path.items():
-            channel_name = channel_name_path.split(".")[-1]
-            if channel_name == "complex_output_0":
+            if path.channel_name == "complex_output_0":
                 if input_att_cfg is not None:
                     in0_att_from_output = input_att_cfg.get(portclock)
                     if in0_att_from_output is not None:
@@ -1217,7 +1213,7 @@ class RFModuleCompiler(AnalogModuleCompiler):
                 if output_att_cfg is not None:
                     out0_att = output_att_cfg.get(portclock)
 
-            if channel_name == "complex_output_1" and output_att_cfg is not None:
+            if path.channel_name == "complex_output_1" and output_att_cfg is not None:
                 out1_att = output_att_cfg.get(portclock)
 
         self._settings.in0_att = _convert_to_int(in0_att, label="in0_att")

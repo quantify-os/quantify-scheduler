@@ -420,16 +420,15 @@ class RFModuleSettings(AnalogModuleSettings):
         """
         rf_settings = {}
 
-        for portclock, channel_name_path in mapping.portclock_to_path.items():
-            channel_name = channel_name_path.split(".")[-1]
+        for portclock, path in mapping.portclock_to_path.items():
             modulation_frequencies = mapping.hardware_options.modulation_frequencies
 
             if modulation_frequencies is not None:
                 pc_freqs = modulation_frequencies.get(portclock)
                 lo_freq = pc_freqs.lo_freq if pc_freqs is not None else None
-                if channel_name == "complex_output_0":
+                if path.channel_name == "complex_output_0":
                     rf_settings["lo0_freq"] = lo_freq
-                elif channel_name == "complex_output_1":
+                elif path.channel_name == "complex_output_1":
                     rf_settings["lo1_freq"] = lo_freq
 
         combined_settings = {**rf_settings, **kwargs}
@@ -487,23 +486,20 @@ class SequencerSettings(DataClassJsonMixin):
     """
 
     @classmethod
-    def initialize_from_config_dict(
+    def initialize_from_compilation_config(
         cls,
-        sequencer_cfg: _SequencerCompilationConfig,  # noqa: ARG003 ignore unused argument
-        channel_name: str,
+        sequencer_cfg: _SequencerCompilationConfig,
         connected_output_indices: tuple[int, ...],
         connected_input_indices: tuple[int, ...],
     ) -> SequencerSettings:
         """
         Instantiates an instance of this class, with initial parameters determined from
-        the sequencer configuration dictionary.
+        the sequencer compilation config.
 
         Parameters
         ----------
         sequencer_cfg : dict
-            The sequencer configuration dict.
-        channel_name
-            Specifies the channel identifier of the hardware config (e.g. `complex_output_0`).
+            The sequencer compilation_config.
         connected_output_indices
             Specifies the indices of the outputs this sequencer produces waveforms for.
         connected_input_indices
@@ -516,7 +512,7 @@ class SequencerSettings(DataClassJsonMixin):
         """
         return cls(
             sync_en=True,
-            channel_name=channel_name,
+            channel_name=sequencer_cfg.channel_name,
             connected_output_indices=connected_output_indices,
             connected_input_indices=connected_input_indices,
         )
@@ -589,23 +585,20 @@ class AnalogSequencerSettings(SequencerSettings):
     """
 
     @classmethod
-    def initialize_from_config_dict(
+    def initialize_from_compilation_config(
         cls,
         sequencer_cfg: _SequencerCompilationConfig,
-        channel_name: str,
         connected_output_indices: tuple[int, ...],
         connected_input_indices: tuple[int, ...],
     ) -> AnalogSequencerSettings:
         """
         Instantiates an instance of this class, with initial parameters determined from
-        the sequencer configuration dictionary.
+        the sequencer compilation config.
 
         Parameters
         ----------
         sequencer_cfg
             The sequencer compilation_config.
-        channel_name
-            Specifies the channel identifier of the hardware config (e.g. `complex_output_0`).
         connected_output_indices
             Specifies the indices of the outputs this sequencer produces waveforms for.
         connected_input_indices
@@ -672,7 +665,7 @@ class AnalogSequencerSettings(SequencerSettings):
         return cls(
             nco_en=nco_en,
             sync_en=True,
-            channel_name=channel_name,
+            channel_name=sequencer_cfg.channel_name,
             connected_output_indices=connected_output_indices,
             connected_input_indices=connected_input_indices,
             init_offset_awg_path_I=init_offset_awg_path_I,
@@ -744,23 +737,20 @@ class TimetagSequencerSettings(SequencerSettings):
             )
 
     @classmethod
-    def initialize_from_config_dict(
+    def initialize_from_compilation_config(
         cls,
-        sequencer_cfg: _SequencerCompilationConfig,  # noqa: ARG003 ignore unused argument
-        channel_name: str,
+        sequencer_cfg: _SequencerCompilationConfig,
         connected_output_indices: tuple[int, ...],
         connected_input_indices: tuple[int, ...],
     ) -> TimetagSequencerSettings:
         """
         Instantiates an instance of this class, with initial parameters determined from
-        the sequencer configuration dictionary.
+        the sequencer compilation config.
 
         Parameters
         ----------
         sequencer_cfg : dict
-            The sequencer configuration dict.
-        channel_name
-            Specifies the channel identifier of the hardware config (e.g. `complex_output_0`).
+            The sequencer compilation config.
         connected_output_indices
             Specifies the indices of the outputs this sequencer produces waveforms for.
         connected_input_indices
@@ -773,7 +763,7 @@ class TimetagSequencerSettings(SequencerSettings):
         """
         return cls(
             sync_en=True,
-            channel_name=channel_name,
+            channel_name=sequencer_cfg.channel_name,
             connected_output_indices=connected_output_indices,
             connected_input_indices=connected_input_indices,
         )

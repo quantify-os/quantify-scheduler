@@ -12,6 +12,7 @@ from quantify_scheduler.backends.qblox.enums import TimetagTraceType
 from quantify_scheduler.backends.qblox.instrument_compilers import QTMCompiler
 from quantify_scheduler.backends.qblox.timetag import TimetagSequencerCompiler
 from quantify_scheduler.backends.qblox_backend import (
+    ChannelPath,
     QbloxHardwareCompilationConfig,
     _SequencerCompilationConfig,
 )
@@ -66,9 +67,8 @@ def test_generate_qasm_empty_program_qtm(assert_equal_q1asm):
         ),
         mixer_corrections=None,
     )
-    settings = TimetagSequencerSettings.initialize_from_config_dict(
+    settings = TimetagSequencerSettings.initialize_from_compilation_config(
         sequencer_cfg=sequencer_cfg,
-        channel_name="digital_output_1",
         connected_input_indices=(),
         connected_output_indices=(0,),
     )
@@ -160,8 +160,12 @@ def test_get_compiler_container(create_schedule_with_pulse_info):
         module_compilation_config.hardware_options.model_dump(exclude_unset=True) == {}
     )
     assert module_compilation_config.portclock_to_path == {
-        ("qe1:switch-digital"): "cluster0.module5.digital_output_0",
-        ("qe1:optical_readout-qe1.ge0"): "cluster0.module5.digital_input_4",
+        ("qe1:switch-digital"): ChannelPath.from_path(
+            "cluster0.module5.digital_output_0"
+        ),
+        ("qe1:optical_readout-qe1.ge0"): ChannelPath.from_path(
+            "cluster0.module5.digital_input_4"
+        ),
     }
 
 

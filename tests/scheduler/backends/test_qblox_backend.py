@@ -70,10 +70,10 @@ from quantify_scheduler.backends.qblox.operations.stitched_pulse import (
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox_backend import (
+    ChannelPath,
     QbloxHardwareCompilationConfig,
     _ClusterCompilationConfig,
     _ClusterModuleCompilationConfig,
-    find_qblox_instruments,
 )
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.backends.types.common import HardwareDescription
@@ -677,15 +677,6 @@ def test_construct_sequencers_exceeds_seq(
         "Number of simultaneously active port-clock combinations exceeds number of sequencers"
         in test_error.exconly()
     )
-
-
-def test_find_qblox_instruments(qblox_hardware_config_transmon):
-    clusters = find_qblox_instruments(
-        hardware_config=qblox_hardware_config_transmon["hardware_description"],
-        instrument_type="Cluster",
-    )
-    assert list(clusters.keys()) == ["cluster0"]
-    assert clusters["cluster0"]["modules"]["1"]["instrument_type"] == "QCM"
 
 
 def test_invalid_channel_names_connectivity(
@@ -2328,7 +2319,7 @@ def test_extract_instrument_compilation_configs_cluster():
     }
 
     assert cluster0.portclock_to_path == {
-        ("q4:mw-q4.01"): "cluster0.module1.complex_output_0",
+        ("q4:mw-q4.01"): ChannelPath.from_path("cluster0.module1.complex_output_0"),
     }
 
     assert cluster0.lo_to_path == {}
@@ -2345,7 +2336,7 @@ def test_extract_instrument_compilation_configs_cluster():
     }
 
     assert cluster1.portclock_to_path == {
-        ("q7:res-q7.ro"): "cluster1.module1.complex_input_0"
+        ("q7:res-q7.ro"): ChannelPath.from_path("cluster1.module1.complex_input_0")
     }
     assert cluster1.lo_to_path == {}
 
@@ -2399,7 +2390,7 @@ def test_extract_instrument_compilation_configs_lo():
     }
 
     assert cluster0.lo_to_path == {
-        "lo1": "cluster0.module3.complex_output_0",
+        "lo1": ChannelPath.from_path("cluster0.module3.complex_output_0"),
     }
 
     assert lo1.model_dump() == {
@@ -2447,10 +2438,12 @@ def test_extract_module_compilation_configs():
             "output_att": {"q0:mw-q0.01": 4},
         },
         "portclock_to_path": {
-            "q0:mw-q0.01": "cluster0.module2.complex_output_0",
-            "q4:res-q4.ro": "cluster0.module3.complex_output_0",
+            "q0:mw-q0.01": ChannelPath.from_path("cluster0.module2.complex_output_0"),
+            "q4:res-q4.ro": ChannelPath.from_path("cluster0.module3.complex_output_0"),
         },
-        "lo_to_path": {"lo1": "cluster0.module3.complex_output_0"},
+        "lo_to_path": {
+            "lo1": ChannelPath.from_path("cluster0.module3.complex_output_0")
+        },
     }
 
     cluster_compilation_config = _ClusterCompilationConfig.model_validate(
@@ -2474,7 +2467,7 @@ def test_extract_module_compilation_configs():
     }
 
     assert module2.portclock_to_path == {
-        ("q0:mw-q0.01"): "cluster0.module2.complex_output_0"
+        ("q0:mw-q0.01"): ChannelPath.from_path("cluster0.module2.complex_output_0")
     }
     assert module2.lo_to_path == {}
 
@@ -2497,9 +2490,11 @@ def test_extract_module_compilation_configs():
     }
 
     assert module3.portclock_to_path == {
-        ("q4:res-q4.ro"): "cluster0.module3.complex_output_0"
+        ("q4:res-q4.ro"): ChannelPath.from_path("cluster0.module3.complex_output_0")
     }
-    assert module3.lo_to_path == {"lo1": "cluster0.module3.complex_output_0"}
+    assert module3.lo_to_path == {
+        "lo1": ChannelPath.from_path("cluster0.module3.complex_output_0")
+    }
 
 
 def test_extract_sequencer_compilation_configs():
@@ -2538,10 +2533,12 @@ def test_extract_sequencer_compilation_configs():
             },
         },
         "portclock_to_path": {
-            "q1:mw-q1.01": "cluster0.module1.complex_output_1",
-            "q0:mw-q0.01": "cluster0.module1.complex_output_0",
+            "q1:mw-q1.01": ChannelPath.from_path("cluster0.module1.complex_output_1"),
+            "q0:mw-q0.01": ChannelPath.from_path("cluster0.module1.complex_output_0"),
         },
-        "lo_to_path": {"lo0": "cluster0.module1.complex_output_0"},
+        "lo_to_path": {
+            "lo0": ChannelPath.from_path("cluster0.module1.complex_output_0")
+        },
     }
 
     module_compilation_config = _ClusterModuleCompilationConfig.model_validate(
@@ -2636,17 +2633,22 @@ def test_extract_instrument_compilation_configs_nv_center(
             },
         }
     }
-
     assert cluster0.portclock_to_path == {
-        ("qe0:optical_control-qe0.ge1"): "cluster0.module2.real_output_0",
-        ("qe0:optical_control-qe0.ionization"): "cluster0.module2.real_output_1",
-        ("qe0:optical_control-qe0.ge0"): "cluster0.module2.real_output_2",
+        ("qe0:optical_control-qe0.ge1"): ChannelPath.from_path(
+            "cluster0.module2.real_output_0"
+        ),
+        ("qe0:optical_control-qe0.ionization"): ChannelPath.from_path(
+            "cluster0.module2.real_output_1"
+        ),
+        ("qe0:optical_control-qe0.ge0"): ChannelPath.from_path(
+            "cluster0.module2.real_output_2"
+        ),
     }
 
     assert cluster0.lo_to_path == {
-        "spinpump_laser": "cluster0.module2.real_output_0",
-        "green_laser": "cluster0.module2.real_output_1",
-        "red_laser": "cluster0.module2.real_output_2",
+        "spinpump_laser": ChannelPath.from_path("cluster0.module2.real_output_0"),
+        "green_laser": ChannelPath.from_path("cluster0.module2.real_output_1"),
+        "red_laser": ChannelPath.from_path("cluster0.module2.real_output_2"),
     }
 
 

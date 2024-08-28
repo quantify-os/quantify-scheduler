@@ -536,21 +536,6 @@ def hardware_compile(
     return CompiledSchedule(schedule)
 
 
-def find_qblox_instruments(
-    hardware_config: Dict[str, Any], instrument_type: str
-) -> Dict[str, Any]:
-    """Find all inner dictionaries representing a qblox instrument of the given type."""
-    instruments = {}
-    for key, value in hardware_config.items():
-        try:
-            if value["instrument_type"] == instrument_type:
-                instruments[key] = value
-        except (KeyError, TypeError):
-            pass
-
-    return instruments
-
-
 class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
     """
     Datastructure containing the information needed to compile to the Qblox backend.
@@ -664,24 +649,24 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
             for edge in self.connectivity.graph.edges:
                 source, target = edge
                 if len(source.split(".")) == 3 and "laser" in target:
-                    channels_with_laser.append(source)
+                    channels_with_laser.append(ChannelPath.from_path(source))
 
                 # Sometimes source and target appear swapped. This block can be removed
                 # after making graph directed. (SE-477)
                 elif len(target.split(".")) == 3 and "laser" in source:
-                    channels_with_laser.append(target)
+                    channels_with_laser.append(ChannelPath.from_path(target))
 
             # Find mix_lo value in hardware description
             for channel_path in channels_with_laser:
-                cluster, module, channel = channel_path.split(".")
-                module_idx = int(module.replace("module", ""))
                 # New variable to help pyright.
-                cluster_descr = self.hardware_description[cluster]
+                cluster_descr = self.hardware_description[channel_path.cluster_name]
                 assert isinstance(cluster_descr, ClusterDescription)
-                module_description = cluster_descr.modules[module_idx].model_dump(
-                    exclude_unset=True
+                module_description = cluster_descr.modules[
+                    channel_path.module_idx
+                ].model_dump(exclude_unset=True)
+                channel_description = module_description.get(
+                    channel_path.channel_name, None
                 )
-                channel_description = module_description.get(channel, None)
                 if channel_description is not None:
                     mix_lo = channel_description.get("mix_lo", None)
                     # FIXME: https://qblox.atlassian.net/browse/SE-490
@@ -799,7 +784,7 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
                         continue
 
                     for lo_name, lo_path in cfg.lo_to_path.items():
-                        if cfg.portclock_to_path[portclock] in lo_path:
+                        if cfg.portclock_to_path[portclock] == lo_path:
                             lo_config = lo_configs[lo_name]
                             if lo_config.hardware_description.instrument_name is None:
                                 lo_config.hardware_description.instrument_name = lo_name
@@ -836,11 +821,10 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
         unused_modules = defaultdict(list)
         for instrument_name, cfg in cluster_configs.items():
             used_modules_idx = [
-                path.split(".")[1].replace("module", "")
-                for path in cfg.portclock_to_path.values()
+                path.module_idx for path in cfg.portclock_to_path.values()
             ]
             for module_idx in cfg.hardware_description.modules.keys():
-                if str(module_idx) not in used_modules_idx:
+                if module_idx not in used_modules_idx:
                     unused_modules[instrument_name].append(module_idx)
 
         for cluster_name, indices in unused_modules.items():
@@ -876,8 +860,8 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
         lo_configs: dict[str, _LocalOscillatorCompilationConfig],
     ) -> None:
         assert isinstance(self.connectivity, Connectivity)
-        cluster_pc_to_path: dict[str, dict[str, str]] = {}
-        cluster_lo_to_path: dict[str, dict[str, str]] = {}
+        cluster_pc_to_path: dict[str, dict[str, ChannelPath]] = {}
+        cluster_lo_to_path: dict[str, dict[str, ChannelPath]] = {}
         for instr in cluster_configs:
             cluster_pc_to_path[instr] = {}
             cluster_lo_to_path[instr] = {}
@@ -967,22 +951,22 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
                 raise KeyError(f"{port} was not found in the connectivity.")
             for port_nbr in self.connectivity.graph.neighbors(port):
                 if is_path(port_nbr):
-                    cluster = port_nbr.split(".")[0]
+                    path = ChannelPath.from_path(port_nbr)
                     for clock in port_to_clocks[port]:
-                        cluster_pc_to_path[cluster][f"{port}-{clock}"] = port_nbr
+                        cluster_pc_to_path[path.cluster_name][f"{port}-{clock}"] = path
                 elif "." in port_nbr:
                     mixer = port_nbr[: port_nbr.rindex(".")]
                     mixer_path, mixer_lo = get_module_and_lo_for_mixer(mixer)
-                    cluster = mixer_path.split(".")[0]
-                    cluster_lo_to_path[cluster][mixer_lo] = mixer_path
+                    path = ChannelPath.from_path(mixer_path)
+                    cluster_lo_to_path[path.cluster_name][mixer_lo] = path
                     for clock in port_to_clocks[port]:
                         # NV center hack:
                         fixed_clock = (
                             get_optical_clock(mixer, port_to_clocks[port]) or clock
                         )
-                        cluster_pc_to_path[cluster][
+                        cluster_pc_to_path[path.cluster_name][
                             f"{port}-{fixed_clock}"
-                        ] = mixer_path
+                        ] = path
 
         for cluster_name, pc_to_path in cluster_pc_to_path.items():
             cluster_configs[cluster_name].portclock_to_path = pc_to_path
@@ -1006,9 +990,9 @@ class _ClusterCompilationConfig(DataStructure):
     """Description of the physical setup of this cluster."""
     hardware_options: QbloxHardwareOptions
     """Options that are used in compiling the instructions for the hardware."""
-    portclock_to_path: Dict[str, str] = {}
+    portclock_to_path: Dict[str, ChannelPath] = {}
     """Mapping between portclocks and their associated channel name paths (e.g. cluster0.module1.complex_output_0)."""
-    lo_to_path: Dict[str, str] = {}
+    lo_to_path: Dict[str, ChannelPath] = {}
     """Mapping between lo names and their associated channel name paths (e.g. cluster0.module1.complex_output_0)."""
     allow_off_grid_nco_ops: Optional[bool] = None
     """
@@ -1038,9 +1022,8 @@ class _ClusterCompilationConfig(DataStructure):
             exclude_unset=True
         ).items():
             for pc, option_value in values.items():
-                module_idx = int(
-                    self.portclock_to_path[pc].split(".")[1].replace("module", "")
-                )
+                module_idx = self.portclock_to_path[pc].module_idx
+
                 if not modules_hardware_options[module_idx].get(option):
                     modules_hardware_options[module_idx][option] = {}
                 modules_hardware_options[module_idx][option][pc] = option_value
@@ -1052,13 +1035,11 @@ class _ClusterCompilationConfig(DataStructure):
 
         # Distribute `portclock_to_path`
         for portclock, path in self.portclock_to_path.items():
-            module_idx = int(path.split(".")[1].replace("module", ""))
-            module_configs[module_idx].portclock_to_path[portclock] = path
+            module_configs[path.module_idx].portclock_to_path[portclock] = path
 
         # Distribute `lo_to_path`
         for lo_name, path in self.lo_to_path.items():
-            module_idx = int(path.split(".")[1].replace("module", ""))
-            module_configs[module_idx].lo_to_path[lo_name] = path
+            module_configs[path.module_idx].lo_to_path[lo_name] = path
 
         # Distribute `allow_off_grid_nco_ops`
         for module_cfg in module_configs.values():
@@ -1079,9 +1060,9 @@ class _ClusterModuleCompilationConfig(DataStructure):
     """Description of the physical setup of this module."""
     hardware_options: QbloxHardwareOptions
     """Options that are used in compiling the instructions for the hardware."""
-    portclock_to_path: Dict[str, str] = {}
+    portclock_to_path: Dict[str, ChannelPath] = {}
     """Mapping between portclocks and their associated channel name paths (e.g. cluster0.module1.complex_output_0)."""
-    lo_to_path: Dict[str, str] = {}
+    lo_to_path: Dict[str, ChannelPath] = {}
     """Mapping between lo names and their associated channel name paths (e.g. cluster0.module1.complex_output_0)."""
     allow_off_grid_nco_ops: Optional[bool] = None
     """
@@ -1094,7 +1075,9 @@ class _ClusterModuleCompilationConfig(DataStructure):
     ) -> Dict[int, _SequencerCompilationConfig]:
 
         sequencer_configs = {}
-        path_to_lo = {v: k for k, v in self.lo_to_path.items()}
+        channel_to_lo = {
+            path.channel_name: lo_name for lo_name, path in self.lo_to_path.items()
+        }
 
         # Sort to ensure deterministic order in sequencer instantiation
         for seq_idx, portclock in enumerate(sorted(self.portclock_to_path)):
@@ -1105,9 +1088,8 @@ class _ClusterModuleCompilationConfig(DataStructure):
                 else {}
             )
             hardware_description = {}
-            channel_name = path.split(".")[-1]
             for description in self.hardware_description.model_fields_set:
-                if description == channel_name:
+                if description == path.channel_name:
                     hardware_description = getattr(
                         self.hardware_description,
                         description,
@@ -1142,10 +1124,10 @@ class _ClusterModuleCompilationConfig(DataStructure):
                 sequencer_options=sequencer_options,  # type: ignore
                 hardware_description=hardware_description,  # type: ignore
                 portclock=portclock,
-                channel_name=channel_name,
+                channel_name=path.channel_name,
                 latency_correction=latency_correction,
                 distortion_correction=distortion_correction,
-                lo_name=path_to_lo.get(path),
+                lo_name=channel_to_lo.get(path.channel_name),
                 modulation_frequencies=modulation_frequencies,  # type: ignore
                 mixer_corrections=mixer_corrections,
                 allow_off_grid_nco_ops=self.allow_off_grid_nco_ops,
@@ -1167,7 +1149,7 @@ class _ClusterModuleCompilationConfig(DataStructure):
 
         if distortion_corrections is not None:
             for portclock, corrections in distortion_corrections.items():
-                channel_name = self.portclock_to_path[portclock].split(".")[-1]
+                channel_name = self.portclock_to_path[portclock].channel_name
                 if ChannelMode.REAL in channel_name and isinstance(corrections, list):
                     raise ValueError(
                         f"Several distortion corrections were assigned to portclock '{portclock}' which is a real channel, but only one correction is required."
@@ -1193,7 +1175,7 @@ class _ClusterModuleCompilationConfig(DataStructure):
 
         if input_gain is not None:
             for portclock, gain in input_gain.items():
-                channel_name = self.portclock_to_path[portclock].split(".")[-1]
+                channel_name = self.portclock_to_path[portclock].channel_name
 
                 if ChannelMode.REAL in channel_name and isinstance(
                     gain, ComplexInputGain
@@ -1239,6 +1221,28 @@ class _SequencerCompilationConfig(DataStructure):
     Flag to allow NCO operations to play at times that are not aligned with the NCO
     grid.
     """
+
+
+@dataclass
+class ChannelPath:
+    """Path of a sequencer channel."""
+
+    cluster_name: str
+    module_name: str
+    channel_name: str
+    module_idx: int
+
+    @classmethod
+    def from_path(cls: Type[ChannelPath], path: str) -> ChannelPath:
+        """Instantiate a `ChannelPath` object from a path string."""
+        cluster_name, module_name, channel_name = path.split(".")
+        module_idx = int(module_name.replace("module", ""))
+        return cls(
+            cluster_name=cluster_name,
+            module_name=module_name,
+            channel_name=channel_name,
+            module_idx=module_idx,
+        )
 
 
 def _all_abs_times_ops_with_voltage_offsets_pulses(
