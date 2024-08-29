@@ -503,8 +503,8 @@ class HardwareCompilationConfig(DataStructure):
     """
     hardware_options: HardwareOptions
     """
-    The :class:`~HardwareOptions` used in the compilation from the quantum-device layer to
-    the control-hardware layer.
+    The :class:`~quantify_scheduler.backends.types.common.HardwareOptions` used in the
+    compilation from the quantum-device layer to the control-hardware layer.
     """
     connectivity: Union[
         Connectivity, Dict
