@@ -13,6 +13,8 @@
   - Make timestamp in filename for `QuantumDevice.to_json_file` optional. (!1063)
 - Qblox backend
   - Cleanup after hardware config redesign. Add `ChannelPath` class. (!1066)
+- Compilation
+  - Add internal logic to calculate pulse compensations. (!1070)
 
 ## 0.21.1 (2024-08-16)
 

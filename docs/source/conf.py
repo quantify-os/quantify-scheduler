@@ -489,6 +489,7 @@ nitpick_ignore = [
     ("py:obj", "quantify_scheduler.schedules.trace_schedule"),
     ("py:obj", "quantify_scheduler.schedules.trace_schedule_circuit_layer"),
     ("py:obj", "quantify_scheduler.schedules.two_tone_trace_schedule"),
+    ("py:class", "PortClock"),
     ("py:class", "SUPPORTED_ACQ_PROTOCOLS"),
     ("py:class", "HardwareDescription"),
     ("py:class", "LatencyCorrection"),
