@@ -15,6 +15,7 @@
   - Cleanup after hardware config redesign. Add `ChannelPath` class. (!1066)
 - Compilation
   - Add internal logic to calculate pulse compensations. (!1070)
+  - Refactor parts of the NCO/LO frequency determining logic, and remove the `parent` attribute from `InstrumentCompiler` and all subclasses. (!1069)
 - Schedules
   - Change CPMG schedule to enable Ramsey style decoupling measurements. (!1041)
 

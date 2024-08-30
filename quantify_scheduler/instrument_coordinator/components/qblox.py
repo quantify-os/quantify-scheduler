@@ -1232,9 +1232,7 @@ class _QTMComponent(_ModuleComponentBase):
     _hardware_properties = _QTM_PROPERTIES
 
     def __init__(self, instrument: Module) -> None:
-        # TODO the hasattr check is for backwards compatibility with qblox-instruments
-        # 0.12. Remove when no longer needed.
-        if hasattr(instrument, "is_qtm_type") and not instrument.is_qtm_type:
+        if not instrument.is_qtm_type:
             raise TypeError(
                 f"Trying to create _QTMComponent from non-QTM instrument "
                 f'of type "{type(instrument)}".'

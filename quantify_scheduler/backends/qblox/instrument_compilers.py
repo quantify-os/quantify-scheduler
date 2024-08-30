@@ -40,13 +40,13 @@ from quantify_scheduler.backends.types.qblox import (
 )
 
 if TYPE_CHECKING:
-    from quantify_scheduler.backends.qblox import compiler_container
     from quantify_scheduler.backends.qblox_backend import (
         _ClusterCompilationConfig,
         _ClusterModuleCompilationConfig,
         _LocalOscillatorCompilationConfig,
         _SequencerCompilationConfig,
     )
+    from quantify_scheduler.resources import Resource
 
 
 class LocalOscillatorCompiler(compiler_abc.InstrumentCompiler):
@@ -58,8 +58,6 @@ class LocalOscillatorCompiler(compiler_abc.InstrumentCompiler):
 
     Parameters
     ----------
-    parent
-        Reference to the parent container object.
     name
         QCoDeS name of the device it compiles for.
     total_play_time
@@ -73,13 +71,11 @@ class LocalOscillatorCompiler(compiler_abc.InstrumentCompiler):
 
     def __init__(
         self,
-        parent: compiler_container.CompilerContainer,
         name: str,
         total_play_time: float,
         instrument_cfg: _LocalOscillatorCompilationConfig,
     ):
         super().__init__(
-            parent=parent,
             name=name,
             total_play_time=total_play_time,
             instrument_cfg=instrument_cfg,
@@ -179,12 +175,10 @@ class QCMCompiler(BasebandModuleCompiler):
         },
     )
 
-    def _configure_hardware_distortion_corrections(
-        self, distortion_configs: dict[int, Any] | None = {}
-    ):  # Unused arg to help type checker
+    def _configure_hardware_distortion_corrections(self):
         """Assign distortion corrections to settings of instrument compiler."""
         distortion_configs = self._get_distortion_configs_per_output()
-        super()._configure_hardware_distortion_corrections(distortion_configs)
+        self._configure_distortion_correction_latency_compensations(distortion_configs)
 
         for output in distortion_configs:
             output_settings = self._settings.distortion_corrections[output]
@@ -359,8 +353,6 @@ class QTMCompiler(compiler_abc.ClusterModuleCompiler):
 
     Parameters
     ----------
-    parent: :class:`quantify_scheduler.backends.qblox.instrument_compilers.ClusterCompiler`
-        Reference to the parent object.
     name
         Name of the `QCoDeS` instrument this compiler object corresponds to.
     total_play_time
@@ -374,13 +366,11 @@ class QTMCompiler(compiler_abc.ClusterModuleCompiler):
 
     def __init__(
         self,
-        parent: ClusterCompiler,
         name: str,
         total_play_time: float,
         instrument_cfg: _ClusterModuleCompilationConfig,
     ) -> None:
         super().__init__(
-            parent=parent,
             name=name,
             total_play_time=total_play_time,
             instrument_cfg=instrument_cfg,
@@ -459,7 +449,7 @@ class QTMCompiler(compiler_abc.ClusterModuleCompiler):
             sequencer_cfg=sequencer_cfg,
         )
 
-    def prepare(self) -> None:
+    def prepare(self, **kwargs) -> None:
         """
         Performs the logic needed before being able to start the compilation. In effect,
         this means assigning the pulses and acquisitions to the sequencers and
@@ -478,8 +468,6 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
 
     Parameters
     ----------
-    parent
-        Reference to the parent object.
     name
         Name of the `QCoDeS` instrument this compiler object corresponds to.
     total_play_time
@@ -500,20 +488,18 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
 
     def __init__(
         self,
-        parent: compiler_container.CompilerContainer,
         name: str,
         total_play_time: float,
         instrument_cfg: _ClusterCompilationConfig,
     ):
         super().__init__(
-            parent=parent,
             name=name,
             total_play_time=total_play_time,
             instrument_cfg=instrument_cfg,
         )
         self.instrument_cfg: _ClusterCompilationConfig  # Help typechecker
         self._op_infos: dict[tuple[str, str], list[OpInfo]] = defaultdict(list)
-        self.instrument_compilers = self.construct_module_compilers()
+        self.instrument_compilers = self._construct_module_compilers()
         self.portclock_to_path = instrument_cfg.portclock_to_path
 
     def add_op_info(self, port: str, clock: str, op_info: OpInfo) -> None:
@@ -532,7 +518,7 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
         """
         self._op_infos[(port, clock)].append(op_info)
 
-    def construct_module_compilers(self) -> dict[str, AnalogModuleCompiler]:
+    def _construct_module_compilers(self) -> dict[str, AnalogModuleCompiler]:
         """
         Constructs the compilers for the modules inside the cluster.
 
@@ -552,18 +538,36 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
             ]
 
             module_compilers[module_name] = compiler_type(
-                parent=self,
                 name=module_name,
                 total_play_time=self.total_play_time,
                 instrument_cfg=cfg,
             )
         return module_compilers
 
-    def prepare(self) -> None:
-        """Prepares the instrument compiler for compilation by assigning the data."""
+    def prepare(
+        self,
+        external_los: dict[str, LocalOscillatorCompiler] | None = None,
+        schedule_resources: dict[str, Resource] | None = None,
+        **kwargs,
+    ) -> None:
+        """
+        Prepares the instrument compiler for compilation by assigning the data.
+
+        Parameters
+        ----------
+        external_los
+            Optional LO compiler objects representing external LOs, whose LO frequency
+            will be determined and set.
+        schedule_resources
+            Mapping from clock name to clock resource, which contains the clock frequency.
+        kwargs:
+            Potential keyword arguments for other compiler classes.
+        """
         self.distribute_data()
         for compiler in self.instrument_compilers.values():
-            compiler.prepare()
+            compiler.prepare(
+                external_los=external_los, schedule_resources=schedule_resources
+            )
 
     def distribute_data(self) -> None:
         """

@@ -73,6 +73,18 @@ class TimetagSequencerCompiler(SequencerCompiler):
             sequencer_cfg=sequencer_cfg,
         )
 
+    @property
+    def settings(self) -> TimetagSequencerSettings:
+        """
+        Gives the current settings. Overridden from the parent class for type hinting.
+
+        Returns
+        -------
+        :
+            The settings set to this sequencer.
+        """
+        return self._settings
+
     def prepare(self) -> None:
         """
         Perform necessary operations on this sequencer's data before

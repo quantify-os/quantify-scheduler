@@ -64,6 +64,7 @@ if TYPE_CHECKING:
         _ClusterModuleCompilationConfig,
         _SequencerCompilationConfig,
     )
+    from quantify_scheduler.resources import Resource
     from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 
 logger = logging.getLogger(__name__)
@@ -135,6 +136,18 @@ class AnalogSequencerCompiler(SequencerCompiler):
         )
 
     @property
+    def settings(self) -> AnalogSequencerSettings:
+        """
+        Gives the current settings. Overridden from the parent class for type hinting.
+
+        Returns
+        -------
+        :
+            The settings set to this sequencer.
+        """
+        return self._settings
+
+    @property
     def frequency(self) -> float | None:
         """
         The frequency used for modulation of the pulses.
@@ -174,7 +187,6 @@ class AnalogSequencerCompiler(SequencerCompiler):
             )
 
         self._settings.modulation_freq = freq
-        self._settings.nco_en = freq is not None
 
     def get_operation_strategy(
         self,
@@ -552,8 +564,6 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
 
     Parameters
     ----------
-    parent: :class:`quantify_scheduler.backends.qblox.instrument_compilers.ClusterCompiler`
-        Reference to the parent object.
     name
         Name of the `QCoDeS` instrument this compiler object corresponds to.
     total_play_time
@@ -569,13 +579,11 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
 
     def __init__(
         self,
-        parent: instrument_compilers.ClusterCompiler,
         name: str,
         total_play_time: float,
         instrument_cfg: _ClusterModuleCompilationConfig,
     ) -> None:
         super().__init__(
-            parent=parent,
             name=name,
             total_play_time=total_play_time,
             instrument_cfg=instrument_cfg,
@@ -612,71 +620,26 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
         )
 
     @abstractmethod
-    def assign_frequencies(self, sequencer: AnalogSequencerCompiler) -> None:
+    def assign_frequencies(
+        self,
+        sequencer: AnalogSequencerCompiler,
+        external_lo: instrument_compilers.LocalOscillatorCompiler | None,
+        clock_frequency: float,
+    ) -> None:
         """
         An abstract method that should be overridden. Meant to assign an IF frequency
         to each sequencer, and an LO frequency to each output (if applicable).
-        """
-
-    def _set_lo_interm_freqs(
-        self,
-        freqs: helpers.Frequencies,
-        sequencer: AnalogSequencerCompiler,
-        compiler_lo_baseband: (
-            instrument_compilers.LocalOscillatorCompiler | None
-        ) = None,
-        lo_freq_setting_rf: str | None = None,
-    ) -> None:
-        """
-        Sets the LO/IF frequencies, for baseband and RF modules.
 
         Parameters
         ----------
-        freqs
-            LO, IF, and clock frequencies, supplied via an :class:`.helpers.Frequencies`
-            object.
         sequencer
-            The sequencer for which frequences are to be set.
-        compiler_lo_baseband
-            For baseband modules, supply the
-            :class:`.instrument_compilers.LocalOscillatorCompiler` instrument compiler
-            of which the frequency is to be set.
-        lo_freq_setting_rf
-            For RF modules, supply the name of the LO frequency param from the
-            :class:`.RFModuleSettings` that is to be set.
-
-        Raises
-        ------
-        ValueError
-            In case neither LO frequency nor IF has been supplied.
-        ValueError
-            In case both LO frequency and IF have been supplied and do not adhere to
-            :math:`f_{RF} = f_{LO} + f_{IF}`.
-        ValueError
-            In case of RF, when the LO frequency was already set to a different value.
+            Sequencer compiler object whose NCO frequency will be determined and set.
+        external_lo
+            Optional LO compiler object representing an external LO, whose LO frequency
+            will be determined and set.
+        clock_frequency
+            Clock frequency of the clock assigned to the sequencer compiler.
         """
-        if freqs.LO is not None:
-            if compiler_lo_baseband is not None:
-                compiler_lo_baseband.frequency = freqs.LO
-
-            elif lo_freq_setting_rf is not None:
-                previous_lo_freq = getattr(self._settings, lo_freq_setting_rf)
-
-                if (
-                    previous_lo_freq is not None
-                    and not math.isnan(previous_lo_freq)
-                    and not math.isclose(freqs.LO, previous_lo_freq)
-                ):
-                    raise ValueError(
-                        f"Attempting to set '{lo_freq_setting_rf}' to frequency "
-                        f"'{freqs.LO:e}', while it has previously already been set to "
-                        f"'{previous_lo_freq:e}'!"
-                    )
-
-                setattr(self._settings, lo_freq_setting_rf, freqs.LO)
-
-        if freqs.IF is not None:
-            sequencer.frequency = freqs.IF
 
     @abstractmethod
     def assign_attenuation(self) -> None:
@@ -685,19 +648,49 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
         attenuation settings from the hardware configuration if there is any.
         """
 
-    def prepare(self) -> None:
+    def prepare(
+        self,
+        external_los: (
+            dict[str, instrument_compilers.LocalOscillatorCompiler] | None
+        ) = None,
+        schedule_resources: dict[str, Resource] | None = None,
+        **kwargs,  # noqa: ARG002  (unused arg necessary to fit signature)
+    ) -> None:
         """
         Performs the logic needed before being able to start the compilation. In effect,
         this means assigning the pulses and acquisitions to the sequencers and
         calculating the relevant frequencies in case an external local oscillator is
         used.
+
+        Parameters
+        ----------
+        external_los
+            Optional LO compiler objects representing external LOs, whose LO frequency
+            will be determined and set.
+        schedule_resources
+            Mapping from clock name to clock resource, which contains the clock frequency.
+        kwargs:
+            Potential keyword arguments for other compiler classes.
         """
         self._configure_input_gains()
         self._configure_mixer_offsets()
         self._configure_hardware_distortion_corrections()
         self._construct_all_sequencer_compilers()
         for seq in self.sequencers.values():
-            self.assign_frequencies(seq)
+            if (
+                schedule_resources is not None
+                and seq.clock in schedule_resources
+                and ChannelMode.DIGITAL not in seq.settings.channel_name
+            ):
+                if seq.associated_ext_lo is None or external_los is None:
+                    external_lo = None
+                else:
+                    external_lo = external_los[seq.associated_ext_lo]
+                self.assign_frequencies(
+                    seq,
+                    external_lo,
+                    schedule_resources[seq.clock]["freq"],
+                )
         self.distribute_data()
         for seq in self.sequencers.values():
             seq.prepare()
@@ -862,28 +855,26 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
                                 f"digital_output_{output} cannot be used along with "
                                 "marker_debug_mode_enable on the same digital output."
                             )
-                        else:  # noqa: PLR5501
-                            if isinstance(
-                                distortion_configs, dict
-                            ):  #  Help typeckecker
-                                if output in distortion_configs:
-                                    distortion_configs[output][
-                                        "marker_debug_mode_enable"
-                                    ] = True
-                                marker_output = output
-                                if (
+
+                        distortion_configs = distortion_configs or {}
+                        if output in distortion_configs:
+                            distortion_configs[output][
+                                "marker_debug_mode_enable"
+                            ] = True
+                        marker_output = output
+                        if (
+                            channel_name
+                            in self.static_hw_properties.channel_name_to_digital_marker
+                        ):
+                            marker_output = (
+                                self.static_hw_properties.channel_name_to_digital_marker[
                                     channel_name
-                                    in self.static_hw_properties.channel_name_to_digital_marker
-                                ):
-                                    marker_output = (
-                                        self.static_hw_properties.channel_name_to_digital_marker[
-                                            channel_name
-                                        ]
-                                        + 1
-                                    ) % 2
-                                self._configure_dc_latency_comp_for_marker(
-                                    marker_output, dc_comp
-                                )
+                                ]
+                                + 1
+                            ) % 2
+                        self._configure_dc_latency_comp_for_marker(
+                            marker_output, dc_comp
+                        )
                     self._configure_dc_latency_comp_for_output(output, dc_comp)
 
     def _configure_dc_latency_comp_for_output(self, output: int, dc_comp: int) -> None:
@@ -938,11 +929,9 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
             else QbloxFilterMarkerDelay.BYPASSED
         )
 
-    def _configure_hardware_distortion_corrections(
-        self, distortion_configs: dict[int, Any] | None = {}
-    ) -> None:
+    def _configure_hardware_distortion_corrections(self) -> None:
         """Assign distortion corrections to settings of instrument compiler."""
-        self._configure_distortion_correction_latency_compensations(distortion_configs)
+        self._configure_distortion_correction_latency_compensations()
 
     def _ensure_single_scope_mode_acquisition_sequencer(self) -> None:
         """
@@ -990,13 +979,11 @@ class BasebandModuleCompiler(AnalogModuleCompiler):
 
     def __init__(
         self,
-        parent: instrument_compilers.ClusterCompiler,
         name: str,
         total_play_time: float,
         instrument_cfg: _ClusterModuleCompilationConfig,
     ) -> None:
         super().__init__(
-            parent=parent,
             name=name,
             total_play_time=total_play_time,
             instrument_cfg=instrument_cfg,
@@ -1005,7 +992,12 @@ class BasebandModuleCompiler(AnalogModuleCompiler):
             BasebandModuleSettings.extract_settings_from_mapping(instrument_cfg)
         )
 
-    def assign_frequencies(self, sequencer: AnalogSequencerCompiler) -> None:
+    def assign_frequencies(
+        self,
+        sequencer: AnalogSequencerCompiler,
+        external_lo: instrument_compilers.LocalOscillatorCompiler | None,
+        clock_frequency: float,
+    ) -> None:
         """
         Determines LO/IF frequencies and assigns them, for baseband modules.
 
@@ -1016,45 +1008,51 @@ class BasebandModuleCompiler(AnalogModuleCompiler):
         In case of **an** external local oscillator and `sequencer.mix_lo` is
         ``False``, the LO is given the same frequency as the clock
         (via :func:`.helpers.determine_clock_lo_interm_freqs`).
+
+        Parameters
+        ----------
+        sequencer
+            Sequencer compiler object whose NCO frequency will be determined and set.
+        external_lo
+            Optional LO compiler object representing an external LO, whose LO frequency
+            will be determined and set.
+        clock_frequency
+            Clock frequency of the clock assigned to the sequencer compiler.
+
+        Raises
+        ------
+        ValueError
+            If the NCO and/or LO frequencies cannot be determined, are invalid, or are
+            inconsistent with the clock frequency.
         """
-        compiler_container = self.parent.parent
-        if (
-            sequencer.clock not in compiler_container.resources
-            or ChannelMode.DIGITAL in sequencer.settings.channel_name
-        ):
+        if external_lo is None:
+            if sequencer.settings.nco_en:
+                sequencer.frequency = clock_frequency
+            # Early return: we do not validate further since there is no way we could
+            # retrieve an NCO frequency if it was not already set, and if it was not set
+            # then nco_en was set to False.
             return
 
-        clock_freq = compiler_container.resources[sequencer.clock]["freq"]
-        if sequencer.associated_ext_lo is None:
-            # Set NCO frequency to the clock frequency, unless NCO was permanently
-            # disabled via `"interm_freq": 0` in the hardware config
-            if sequencer.frequency != 0:
-                sequencer.frequency = clock_freq
-        else:
-            # In using external local oscillator, determine clock and LO/IF freqs,
-            # and then set LO/IF freqs, and enable NCO (via setter)
-            compiler_lo = compiler_container.instrument_compilers.get(
-                sequencer.associated_ext_lo
+        # In using external local oscillator, determine clock and LO/IF freqs,
+        # and then set LO/IF freqs, and enable NCO (via setter)
+        try:
+            freqs = helpers.determine_clock_lo_interm_freqs(
+                freqs=helpers.Frequencies(
+                    clock=clock_frequency,
+                    LO=external_lo.frequency,
+                    IF=sequencer.frequency,
+                ),
+                downconverter_freq=sequencer.downconverter_freq,
+                mix_lo=sequencer.mix_lo,
+            )
+        except Exception as error:  # Adding sequencer info to exception message
+            raise error.__class__(
+                f"{error} (for '{sequencer.name}' of '{self.name}' "
+                f"with port '{sequencer.port}' and clock '{sequencer.clock}')"
             )
 
-            try:
-                freqs = helpers.determine_clock_lo_interm_freqs(
-                    freqs=helpers.Frequencies(
-                        clock=clock_freq,
-                        LO=compiler_lo.frequency,
-                        IF=sequencer.frequency,
-                    ),
-                    downconverter_freq=sequencer.downconverter_freq,
-                    mix_lo=sequencer.mix_lo,
-                )
-            except Exception as error:  # Adding sequencer info to exception message
-                raise error.__class__(
-                    f"{error} (for '{sequencer.name}' of '{self.name}' "
-                    f"with port '{sequencer.port}' and clock '{sequencer.clock}')"
-                )
-            self._set_lo_interm_freqs(
-                freqs=freqs, sequencer=sequencer, compiler_lo_baseband=compiler_lo
-            )
+        external_lo.frequency = freqs.LO
+        sequencer.frequency = freqs.IF
 
     def assign_attenuation(self) -> None:
         """
@@ -1098,13 +1096,11 @@ class RFModuleCompiler(AnalogModuleCompiler):
 
     def __init__(
         self,
-        parent: instrument_compilers.ClusterCompiler,
         name: str,
         total_play_time: float,
         instrument_cfg: _ClusterModuleCompilationConfig,
     ) -> None:
         super().__init__(
-            parent=parent,
             name=name,
             total_play_time=total_play_time,
             instrument_cfg=instrument_cfg,
@@ -1113,23 +1109,39 @@ class RFModuleCompiler(AnalogModuleCompiler):
             RFModuleSettings.extract_settings_from_mapping(instrument_cfg)
         )
 
-    def assign_frequencies(self, sequencer: AnalogSequencerCompiler) -> None:
-        """Determines LO/IF frequencies and assigns them for RF modules."""
-        compiler_container = self.parent.parent
-        if (
-            not sequencer.connected_output_indices
-            or sequencer.clock not in compiler_container.resources
-            or ChannelMode.DIGITAL in sequencer.settings.channel_name
-        ):
-            return
+    def assign_frequencies(
+        self,
+        sequencer: AnalogSequencerCompiler,
+        external_lo: (  # noqa: ARG002
+            instrument_compilers.LocalOscillatorCompiler | None
+        ),
+        clock_frequency: float,
+    ) -> None:
+        """
+        Determines LO/IF frequencies and assigns them for RF modules.
 
+        Parameters
+        ----------
+        sequencer
+            Sequencer compiler object whose NCO frequency will be determined and set.
+        external_lo
+            Optional LO compiler object representing an external LO. Not used for RF
+            modules, since they use the LO frequency in the module settings.
+        clock_frequency
+            Clock frequency of the clock assigned to the sequencer compiler.
+
+        Raises
+        ------
+        ValueError
+            If the NCO and/or LO frequencies cannot be determined, are invalid, or are
+            inconsistent with the clock frequency.
+        """
         for lo_idx in RFModuleCompiler._get_connected_lo_indices(sequencer):
-            lo_freq_setting_name = f"lo{lo_idx}_freq"
             try:
                 freqs = helpers.determine_clock_lo_interm_freqs(
                     freqs=helpers.Frequencies(
-                        clock=compiler_container.resources[sequencer.clock]["freq"],
-                        LO=getattr(self._settings, lo_freq_setting_name),
+                        clock=clock_frequency,
+                        LO=self._get_lo_frequency(lo_idx),
                         IF=sequencer.frequency,
                     ),
                     downconverter_freq=sequencer.downconverter_freq,
@@ -1140,11 +1152,12 @@ class RFModuleCompiler(AnalogModuleCompiler):
                     f"{error} (for '{sequencer.name}' of '{self.name}' "
                     f"with port '{sequencer.port}' and clock '{sequencer.clock}')"
                 )
-            self._set_lo_interm_freqs(
-                freqs=freqs,
-                sequencer=sequencer,
-                lo_freq_setting_rf=lo_freq_setting_name,
-            )
+
+            self._set_lo_frequency(lo_idx, freqs.LO)
+
+            # Calling the frequency setter inside the for-loop helps catch bugs where
+            # two different frequencies could accidentally be set on the same sequencer.
+            sequencer.frequency = freqs.IF
 
     @staticmethod
     def _get_connected_lo_indices(sequencer: AnalogSequencerCompiler) -> Iterator[int]:
@@ -1162,6 +1175,76 @@ class RFModuleCompiler(AnalogModuleCompiler):
             module_output_index = 0 if sequencer_output_index == 0 else 1
             yield module_output_index
 
+    def _get_lo_frequency(self, lo_idx: int) -> float | None:
+        """
+        Get the LO frequency from the settings.
+
+        Parameters
+        ----------
+        lo_idx : int
+            The LO index.
+
+        Returns
+        -------
+        float | None
+            The frequency, or None if it has not been determined yet.
+
+        Raises
+        ------
+        IndexError
+            If the derived class instance does not contain an LO with that index.
+        """
+        if lo_idx == 0:
+            return self._settings.lo0_freq
+        if lo_idx == 1 and self.static_hw_properties.instrument_type == "QCM_RF":
+            return self._settings.lo1_freq
+        raise IndexError(
+            f"Module {self.name} of type "
+            f"{self.static_hw_properties.instrument_type} does not have an LO "
+            f"index {lo_idx}."
+        )
+
+    def _set_lo_frequency(self, lo_idx: int, frequency: float) -> None:
+        """
+        Set the LO frequency from the settings.
+
+        Parameters
+        ----------
+        lo_idx : int
+            The LO index.
+
+        frequency : float
+            The frequency.
+
+        Raises
+        ------
+        IndexError
+            If the derived class instance does not contain an LO with that index.
+        """
+        previous_lo_freq = self._get_lo_frequency(lo_idx)
+
+        if (
+            previous_lo_freq is not None
+            and not math.isnan(previous_lo_freq)
+            and not math.isclose(frequency, previous_lo_freq)
+        ):
+            raise ValueError(
+                f"Attempting to set 'lo{lo_idx}' to frequency "
+                f"'{frequency:e}', while it has previously already been set to "
+                f"'{previous_lo_freq:e}'!"
+            )
+
+        if lo_idx == 0:
+            self._settings.lo0_freq = frequency
+        elif lo_idx == 1 and self.static_hw_properties.instrument_type == "QCM_RF":
+            self._settings.lo1_freq = frequency
+        else:
+            raise IndexError(
+                f"Module {self.name} of type "
+                f"{self.static_hw_properties.instrument_type} does not have an LO "
+                f"index {lo_idx}."
+            )
+
     def assign_attenuation(self) -> None:
         """
         Assigns attenuation settings from the hardware configuration.
@@ -1174,12 +1257,13 @@ class RFModuleCompiler(AnalogModuleCompiler):
         def _convert_to_int(
             value: InputAttenuation | OutputAttenuation | None, label: str
         ) -> int | None:
-            if value is not None:
-                if not math.isclose(value % 1, 0):
-                    raise ValueError(
-                        f'Trying to set "{label}" to non-integer value {value}'
-                    )
-                return int(value)
+            if value is None:
+                return None
+            if not math.isclose(value % 1, 0):
+                raise ValueError(
+                    f'Trying to set "{label}" to non-integer value {value}'
+                )
+            return int(value)
 
         in0_att = out0_att = out1_att = None
 

@@ -595,7 +595,6 @@ def test_construct_sequencers(
     )
 
     test_cluster = ClusterCompiler(
-        parent=None,
         name="cluster0",
         total_play_time=1,
         instrument_cfg=instrument_configs["cluster0"],
@@ -1786,7 +1785,6 @@ def test_qcm_acquisition_error(
     ]._extract_module_compilation_configs()
 
     qcm = QCMCompiler(
-        parent=None,
         name="cluster0_module1",
         total_play_time=10,
         instrument_cfg=module_configs[1],
@@ -2093,9 +2091,6 @@ def test_container_prepare(
     )
     assign_pulse_and_acq_info_to_devices(sched, container.clusters)
     container.prepare()
-
-    for instr in container.instrument_compilers.values():
-        instr.prepare()
 
     assert (
         container.instrument_compilers["cluster0"]
@@ -3562,7 +3557,9 @@ def test_cluster_settings(
         compile_config_basic_transmon_qblox_hardware.hardware_compilation_config,
     )
     cluster_compiler = container.instrument_compilers["cluster0"]
-    cluster_compiler.prepare()
+    cluster_compiler.prepare(
+        external_los=container.local_oscillators, schedule_resources=container.resources
+    )
     cl_qcm0 = cluster_compiler.instrument_compilers["cluster0_module1"]
     assert isinstance(cl_qcm0._settings, BasebandModuleSettings)
 

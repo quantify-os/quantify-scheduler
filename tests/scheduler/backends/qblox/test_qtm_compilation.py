@@ -196,7 +196,6 @@ def test_construct_sequencer_compilers():
     ]._extract_module_compilation_configs()
 
     test_module = QTMCompiler(
-        parent=Mock(),
         name="cluster0_module1",
         total_play_time=100e-9,
         instrument_cfg=module_configs[1],

@@ -79,7 +79,7 @@ def test_invalid_get_nco_set_frequency_arguments(frequency: float):
 
 def __get_frequencies(
     clock_freq, lo_freq, interm_freq, downconverter_freq, mix_lo
-) -> Union[helpers.Frequencies, str]:
+) -> Union[helpers.ValidatedFrequencies, str]:
     if downconverter_freq is None or downconverter_freq == 0:
         freqs = helpers.Frequencies(clock=clock_freq)
     else:
@@ -87,6 +87,8 @@ def __get_frequencies(
 
     if mix_lo is False:
         freqs.LO = freqs.clock
+        if interm_freq is None:
+            return "underconstrained"
         freqs.IF = interm_freq
     else:
         if lo_freq is None and interm_freq is None:
@@ -103,7 +105,7 @@ def __get_frequencies(
                 freqs.LO = lo_freq
             else:
                 return "overconstrained"
-    return freqs
+    return helpers.ValidatedFrequencies(clock=freqs.clock, IF=freqs.IF, LO=freqs.LO)
 
 
 @pytest.mark.filterwarnings(r"ignore:Overriding freqs.LO.*")
@@ -160,7 +162,7 @@ def __get_frequencies(
             interm_freq := 5,
             downconverter_freq := None,
             mix_lo := True,
-            helpers.Frequencies(clock=100, LO=95, IF=5),
+            helpers.ValidatedFrequencies(clock=100, LO=95, IF=5),
         )
     ],
 )
@@ -193,10 +195,17 @@ def test_determine_clock_lo_interm_freqs(
     if error is not None:
         possible_errors = []
         if expected_freqs == "underconstrained":
-            possible_errors.append(
-                f"Frequency settings underconstrained for {freqs.clock=}."
-                f" Neither LO nor IF supplied ({freqs.LO=}, {freqs.IF=})."
-            )
+            if mix_lo:
+                possible_errors.append(
+                    f"Frequency settings underconstrained for {freqs.clock=}."
+                    f" Neither LO nor IF supplied ({freqs.LO=}, {freqs.IF=})."
+                )
+            else:
+                possible_errors.append(
+                    f"Frequency settings underconstrained for {freqs.clock=}. "
+                    "If mix_lo=False is specified, the IF must also be supplied "
+                    f"({freqs.IF=})."
+                )
         elif expected_freqs == "overconstrained":
             possible_errors.append(
                 f"Frequency settings overconstrained."
@@ -218,21 +227,11 @@ def test_determine_clock_lo_interm_freqs(
 
 def test_Frequencies():
     freq = helpers.Frequencies(clock=100, LO=float("nan"), IF=float("nan"))
-    freq.validate()
     assert freq.LO is None
     assert freq.IF is None
 
-    invalid_freqs = [
-        helpers.Frequencies(clock=100, LO=None, IF=None),
-        helpers.Frequencies(clock=100, LO=None, IF=None),
-        helpers.Frequencies(clock=None, LO=None, IF=None),
-    ]
-    invalid_freqs[0].LO = float("nan")
-    invalid_freqs[1].IF = float("nan")
-
-    for freq in invalid_freqs:
-        with pytest.raises(ValueError):
-            freq.validate()
+    with pytest.raises(ValueError):
+        helpers.Frequencies(clock=None, LO=None, IF=None)
 
 
 # Using the old-style / legacy hardware config dict is deprecated

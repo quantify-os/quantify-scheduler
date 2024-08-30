@@ -65,8 +65,12 @@ class CompilerContainer:
         Prepares all the instrument compilers contained in the class,
         by running their respective :code:`prepare` methods.
         """
-        for compiler in self.instrument_compilers.values():
-            compiler.prepare()
+        for lo_compiler in self.local_oscillators.values():
+            lo_compiler.prepare()
+        for cluster_compiler in self.clusters.values():
+            cluster_compiler.prepare(
+                external_los=self.local_oscillators, schedule_resources=self.resources
+            )
 
     @property
     def instrument_compilers(self) -> dict[str, InstrumentCompiler]:
@@ -121,7 +125,6 @@ class CompilerContainer:
         instrument_cfg: _ClusterCompilationConfig,
     ) -> None:
         self.clusters[name] = ClusterCompiler(
-            parent=self,
             name=name,
             total_play_time=self.total_play_time,
             instrument_cfg=instrument_cfg,
@@ -131,7 +134,6 @@ class CompilerContainer:
         self, name: str, instrument_cfg: _LocalOscillatorCompilationConfig
     ) -> None:
         self.local_oscillators[name] = LocalOscillatorCompiler(
-            parent=self,
             name=name,
             total_play_time=self.total_play_time,
             instrument_cfg=instrument_cfg,

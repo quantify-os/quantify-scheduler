@@ -614,9 +614,12 @@ class AnalogSequencerSettings(SequencerSettings):
             if sequencer_cfg.modulation_frequencies is not None
             else None
         )
-        nco_en: bool = (
-            modulation_freq is not None and modulation_freq != 0
-        )  # Allow NCO to be permanently disabled via `"interm_freq": 0` in the hardware config
+        # Allow NCO to be permanently disabled via `"interm_freq": 0` in the hardware config
+        nco_en: bool = not (
+            modulation_freq == 0
+            or isinstance(sequencer_cfg.hardware_description, DigitalChannelDescription)
+            or len(connected_output_indices) == 0
+        )
 
         # TODO: there must be a way to make this nicer
         init_offset_awg_path_I = (

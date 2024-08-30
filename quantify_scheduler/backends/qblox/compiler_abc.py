@@ -83,8 +83,6 @@ class InstrumentCompiler(ABC):
 
     Parameters
     ----------
-    parent: :class:`~quantify_scheduler.backends.qblox.compiler_container.CompilerContainer`
-        Reference to the parent object.
     name
         Name of the `QCoDeS` instrument this compiler object corresponds to.
     total_play_time
@@ -99,7 +97,6 @@ class InstrumentCompiler(ABC):
 
     def __init__(
         self,
-        parent,  # No type hint due to circular import, added to docstring
         name: str,
         total_play_time: float,
         instrument_cfg: (
@@ -108,12 +105,11 @@ class InstrumentCompiler(ABC):
             | _LocalOscillatorCompilationConfig
         ),
     ) -> None:
-        self.parent = parent
         self.name = name
         self.total_play_time = total_play_time
         self.instrument_cfg = instrument_cfg
 
-    def prepare(self) -> None:
+    def prepare(self, **kwargs) -> None:
         """
         Method that can be overridden to implement logic before the main compilation
         starts. This step is to extract all settings for the devices that are dependent
@@ -1204,8 +1200,6 @@ class ClusterModuleCompiler(InstrumentCompiler, Generic[_SequencerT_co], ABC):
 
     Parameters
     ----------
-    parent: :class:`~quantify_scheduler.backends.qblox.compiler_container.CompilerContainer`
-        Reference to the parent object.
     name
         Name of the `QCoDeS` instrument this compiler object corresponds to.
     total_play_time
@@ -1221,14 +1215,12 @@ class ClusterModuleCompiler(InstrumentCompiler, Generic[_SequencerT_co], ABC):
 
     def __init__(
         self,
-        parent,  # No type hint due to circular import, added to docstring
         name: str,
         total_play_time: float,
         instrument_cfg: _ClusterModuleCompilationConfig,
     ) -> None:
         driver_version_check.verify_qblox_instruments_version()
         super().__init__(
-            parent=parent,
             name=name,
             total_play_time=total_play_time,
             instrument_cfg=instrument_cfg,

@@ -353,27 +353,28 @@ class Frequencies:
     IF: float | None = None
 
     def __post_init__(self):
+        if self.clock is None or math.isnan(self.clock):
+            raise ValueError(f"Clock frequency must be specified ({self.clock=}).")
         if self.LO is not None and math.isnan(self.LO):
             self.LO = None
         if self.IF is not None and math.isnan(self.IF):
             self.IF = None
 
-    def validate(self):
-        """Validates frequencies."""
-        if self.clock is None or math.isnan(self.clock):
-            raise ValueError(f"Clock frequency must be specified ({self.clock=}).")
-        for freq in [self.LO, self.IF]:
-            if freq is not None and math.isnan(freq):
-                raise ValueError(
-                    f"Frequencies must be a number or None, not NaN ({self.LO=}, {self.IF=})."
-                )
+
+@dataclasses.dataclass(frozen=True)
+class ValidatedFrequencies:
+    """Simple dataclass that holds immutable frequencies after validation."""
+
+    clock: float
+    LO: float
+    IF: float
 
 
 def determine_clock_lo_interm_freqs(
     freqs: Frequencies,
     downconverter_freq: float | None = None,
     mix_lo: bool | None = True,
-) -> Frequencies:
+) -> ValidatedFrequencies:
     r"""
     From known frequency for the local oscillator or known intermodulation frequency,
     determine any missing frequency, after optionally applying ``downconverter_freq`` to
@@ -402,8 +403,8 @@ def determine_clock_lo_interm_freqs(
     Returns
     -------
     :
-        :class:`.Frequencies` object containing the determined LO and IF frequencies and
-        the optionally downconverted clock frequency.
+        :class:`.ValidatedFrequencies` object containing the determined LO and IF
+        frequencies and the optionally downconverted clock frequency.
 
     Warns
     -----
@@ -448,8 +449,6 @@ def determine_clock_lo_interm_freqs(
 
         return downconverter_freq - clock_freq
 
-    freqs.validate()
-
     if downconverter_freq is not None:
         freqs.clock = _downconvert_clock(
             downconverter_freq=downconverter_freq,
@@ -461,6 +460,12 @@ def determine_clock_lo_interm_freqs(
                 f"Overriding {freqs.LO=} to {freqs.clock=} due to mix_lo=False."
             )
         freqs.LO = freqs.clock
+        if freqs.IF is None:
+            raise ValueError(
+                f"Frequency settings underconstrained for {freqs.clock=}. "
+                "If mix_lo=False is specified, the IF must also be supplied "
+                f"({freqs.IF=})."
+            )
     else:
         if freqs.LO is None and freqs.IF is None:
             raise ValueError(
@@ -478,7 +483,7 @@ def determine_clock_lo_interm_freqs(
         elif freqs.LO is not None and freqs.IF is None:
             freqs.IF = freqs.clock - freqs.LO
 
-    return freqs
+    return ValidatedFrequencies(clock=freqs.clock, LO=freqs.LO, IF=freqs.IF)  # type: ignore
 
 
 def generate_port_clock_to_device_map(
