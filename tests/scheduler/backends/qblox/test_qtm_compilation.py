@@ -25,6 +25,7 @@ from quantify_scheduler.backends.types.qblox import (
     SequencerOptions,
     SequencerSettings,
     StaticAnalogModuleProperties,
+    StaticTimetagModuleProperties,
     TimetagSequencerSettings,
 )
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
@@ -67,16 +68,18 @@ def test_generate_qasm_empty_program_qtm(assert_equal_q1asm):
         ),
         mixer_corrections=None,
     )
-    settings = TimetagSequencerSettings.initialize_from_compilation_config(
-        sequencer_cfg=sequencer_cfg,
-        connected_input_indices=(),
-        connected_output_indices=(0,),
+    static_hw_properties = StaticTimetagModuleProperties(
+        instrument_type="QTM",
+        max_sequencers=8,
+        channel_name_to_connected_io_indices={
+            "digital_output_1": (1,),
+            "digital_input_1": (1,),
+        },
     )
     component = TimetagSequencerCompiler(
         parent=mod,
         index=0,
-        static_hw_properties=Mock(),
-        settings=settings,
+        static_hw_properties=static_hw_properties,
         sequencer_cfg=sequencer_cfg,
     )
 

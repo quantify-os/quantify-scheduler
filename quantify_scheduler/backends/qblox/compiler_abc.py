@@ -155,18 +155,17 @@ class SequencerCompiler(ABC):
     static_hw_properties
         The static properties of the hardware. This effectively gathers all the
         differences between the different modules.
-    settings
-        The settings set to this sequencer.
     sequencer_cfg
         The instrument compiler config associated to this instrument.
     """
+
+    _settings: SequencerSettings
 
     def __init__(
         self,
         parent: ClusterModuleCompiler,
         index: int,
         static_hw_properties: StaticHardwareProperties,
-        settings: SequencerSettings,
         sequencer_cfg: _SequencerCompilationConfig,
     ) -> None:
         port, clock = sequencer_cfg.portclock.split("-")
@@ -181,8 +180,6 @@ class SequencerCompiler(ABC):
         self.static_hw_properties = static_hw_properties
 
         self.register_manager = register_manager.RegisterManager()
-
-        self._settings = settings
 
         self.qasm_hook_func = sequencer_cfg.sequencer_options.qasm_hook_func
 

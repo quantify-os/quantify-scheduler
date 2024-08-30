@@ -18,6 +18,11 @@ from quantify_scheduler.backends.qblox.operation_handling.factory_timetag import
 from quantify_scheduler.backends.qblox.operation_handling.virtual import (
     TimestampStrategy,
 )
+from quantify_scheduler.backends.types.qblox import (
+    OpInfo,
+    StaticHardwareProperties,
+    TimetagSequencerSettings,
+)
 from quantify_scheduler.enums import TimeRef
 
 if TYPE_CHECKING:
@@ -29,11 +34,6 @@ if TYPE_CHECKING:
     )
     from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
     from quantify_scheduler.backends.qblox_backend import _SequencerCompilationConfig
-    from quantify_scheduler.backends.types.qblox import (
-        OpInfo,
-        StaticHardwareProperties,
-        TimetagSequencerSettings,
-    )
     from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 
 
@@ -50,8 +50,6 @@ class TimetagSequencerCompiler(SequencerCompiler):
     static_hw_properties
         The static properties of the hardware. This effectively gathers all the
         differences between the different modules.
-    settings
-        The settings set to this sequencer.
     sequencer_cfg
         The instrument compiler config associated to this device.
     """
@@ -61,16 +59,24 @@ class TimetagSequencerCompiler(SequencerCompiler):
         parent: QTMCompiler,
         index: int,
         static_hw_properties: StaticHardwareProperties,
-        settings: TimetagSequencerSettings,
         sequencer_cfg: _SequencerCompilationConfig,
     ) -> None:
-        self._settings: TimetagSequencerSettings  # Help the type checker
         super().__init__(
             parent=parent,
             index=index,
             static_hw_properties=static_hw_properties,
-            settings=settings,
             sequencer_cfg=sequencer_cfg,
+        )
+        self._settings: TimetagSequencerSettings = (  # type: ignore  (override type)
+            TimetagSequencerSettings.initialize_from_compilation_config(
+                sequencer_cfg=sequencer_cfg,
+                connected_output_indices=static_hw_properties._get_connected_output_indices(
+                    sequencer_cfg.channel_name
+                ),
+                connected_input_indices=static_hw_properties._get_connected_input_indices(
+                    sequencer_cfg.channel_name
+                ),
+            )
         )
 
     @property

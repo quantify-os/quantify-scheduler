@@ -498,7 +498,7 @@ class SequencerSettings(DataClassJsonMixin):
 
         Parameters
         ----------
-        sequencer_cfg : dict
+        sequencer_cfg
             The sequencer compilation_config.
         connected_output_indices
             Specifies the indices of the outputs this sequencer produces waveforms for.
@@ -752,7 +752,7 @@ class TimetagSequencerSettings(SequencerSettings):
 
         Parameters
         ----------
-        sequencer_cfg : dict
+        sequencer_cfg
             The sequencer compilation config.
         connected_output_indices
             Specifies the indices of the outputs this sequencer produces waveforms for.

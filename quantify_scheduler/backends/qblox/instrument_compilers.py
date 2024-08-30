@@ -36,7 +36,6 @@ from quantify_scheduler.backends.types.qblox import (
     StaticAnalogModuleProperties,
     StaticTimetagModuleProperties,
     TimetagModuleSettings,
-    TimetagSequencerSettings,
 )
 
 if TYPE_CHECKING:
@@ -432,20 +431,10 @@ class QTMCompiler(compiler_abc.ClusterModuleCompiler):
             return output_idx[0]
 
         channel_name = sequencer_cfg.channel_name
-        settings = TimetagSequencerSettings.initialize_from_compilation_config(
-            sequencer_cfg=sequencer_cfg,
-            connected_output_indices=self.static_hw_properties._get_connected_output_indices(
-                channel_name
-            ),
-            connected_input_indices=self.static_hw_properties._get_connected_input_indices(
-                channel_name
-            ),
-        )
         return TimetagSequencerCompiler(
             parent=self,
             index=get_index_from_channel_name(),
             static_hw_properties=self.static_hw_properties,
-            settings=settings,
             sequencer_cfg=sequencer_cfg,
         )
 

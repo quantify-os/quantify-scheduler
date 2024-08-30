@@ -40,6 +40,7 @@ from quantify_scheduler.backends.types.qblox import (
     SequencerOptions,
     SequencerSettings,
     StaticAnalogModuleProperties,
+    StaticTimetagModuleProperties,
 )
 from quantify_scheduler.compilation import (
     _determine_absolute_timing,
@@ -630,16 +631,29 @@ def test_write_repetition_loop_header_equal_time():
     analog_sequencer = AnalogSequencerCompiler(
         parent=Mock(),
         index=0,
-        static_hw_properties=Mock(),
-        settings=Mock(),
+        static_hw_properties=StaticAnalogModuleProperties(
+            instrument_type="QRM",
+            max_sequencers=6,
+            max_awg_output_voltage=None,
+            mixer_dc_offset_range=BoundedParameter(0, 0, ""),
+            channel_name_to_connected_io_indices={
+                "complex_output_0": (0, 1),
+            },
+        ),
         sequencer_cfg=sequencer_cfg,
     )
     analog_sequencer._default_marker = 0b1000
     timetag_sequencer = TimetagSequencerCompiler(
         parent=Mock(),
         index=0,
-        static_hw_properties=Mock(),
-        settings=Mock(),
+        static_hw_properties=StaticTimetagModuleProperties(
+            instrument_type="QTM",
+            max_sequencers=8,
+            channel_name_to_connected_io_indices={
+                "digital_output_1": (1,),
+                "digital_input_1": (1,),
+            },
+        ),
         sequencer_cfg=sequencer_cfg,
     )
 
@@ -691,16 +705,18 @@ def mock_sequencer(total_play_time) -> AnalogSequencerCompiler:
         ),
         mixer_corrections=None,
     )
-    settings = AnalogSequencerSettings.initialize_from_compilation_config(
-        sequencer_cfg=sequencer_cfg,
-        connected_input_indices=(),
-        connected_output_indices=(0,),
-    )
     return AnalogSequencerCompiler(
         parent=mod,
         index=0,
-        static_hw_properties=Mock(),
-        settings=settings,
+        static_hw_properties=StaticAnalogModuleProperties(
+            instrument_type="QRM",
+            max_sequencers=6,
+            max_awg_output_voltage=None,
+            mixer_dc_offset_range=BoundedParameter(0, 0, ""),
+            channel_name_to_connected_io_indices={
+                "complex_output_0": (0, 1),
+            },
+        ),
         sequencer_cfg=sequencer_cfg,
     )
 

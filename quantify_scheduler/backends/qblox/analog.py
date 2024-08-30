@@ -85,8 +85,6 @@ class AnalogSequencerCompiler(SequencerCompiler):
     static_hw_properties
         The static properties of the hardware. This effectively gathers all the
         differences between the different modules.
-    settings
-        The settings set to this sequencer.
     sequencer_cfg
         The instrument compiler config associated to this device.
     """
@@ -96,18 +94,28 @@ class AnalogSequencerCompiler(SequencerCompiler):
         parent: AnalogModuleCompiler,
         index: int,
         static_hw_properties: StaticAnalogModuleProperties,
-        settings: AnalogSequencerSettings,
         sequencer_cfg: _SequencerCompilationConfig,
     ) -> None:
         self.static_hw_properties: StaticAnalogModuleProperties  # help type checker
-        self._settings: AnalogSequencerSettings  # help type checker
         super().__init__(
             parent=parent,
             index=index,
             static_hw_properties=static_hw_properties,
-            settings=settings,
             sequencer_cfg=sequencer_cfg,
         )
+
+        self._settings: AnalogSequencerSettings = (  # type: ignore  (override type)
+            AnalogSequencerSettings.initialize_from_compilation_config(
+                sequencer_cfg=sequencer_cfg,
+                connected_output_indices=static_hw_properties._get_connected_output_indices(
+                    sequencer_cfg.channel_name
+                ),
+                connected_input_indices=static_hw_properties._get_connected_input_indices(
+                    sequencer_cfg.channel_name
+                ),
+            )
+        )
+
         self.associated_ext_lo = sequencer_cfg.lo_name
         self.downconverter_freq = (
             sequencer_cfg.hardware_description.downconverter_freq
@@ -131,7 +139,8 @@ class AnalogSequencerCompiler(SequencerCompiler):
 
         self._default_marker = (
             self.static_hw_properties.channel_name_to_digital_marker.get(
-                self._settings.channel_name, self.static_hw_properties.default_marker
+                self._settings.channel_name,
+                self.static_hw_properties.default_marker,
             )
         )
 
@@ -602,20 +611,10 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
         self, index: int, sequencer_cfg: _SequencerCompilationConfig
     ) -> AnalogSequencerCompiler:
         """Create an instance of :class:`AnalogSequencerCompiler`."""
-        settings = AnalogSequencerSettings.initialize_from_compilation_config(
-            sequencer_cfg=sequencer_cfg,
-            connected_output_indices=self.static_hw_properties._get_connected_output_indices(
-                sequencer_cfg.channel_name
-            ),
-            connected_input_indices=self.static_hw_properties._get_connected_input_indices(
-                sequencer_cfg.channel_name
-            ),
-        )
         return AnalogSequencerCompiler(
             parent=self,
             index=index,
             static_hw_properties=self.static_hw_properties,
-            settings=settings,
             sequencer_cfg=sequencer_cfg,
         )
 

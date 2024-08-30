@@ -139,16 +139,10 @@ def test_nested_conditional_control_flow_raises_runtime_warning():
         ),
         mixer_corrections=None,
     )
-    settings = AnalogSequencerSettings.initialize_from_compilation_config(
-        sequencer_cfg=sequencer_cfg,
-        connected_input_indices=(),
-        connected_output_indices=(0,),
-    )
     sequencer = AnalogSequencerCompiler(
         parent=mock_parent_module,
         index=0,
         static_hw_properties=static_hw_properties,
-        settings=settings,
         sequencer_cfg=sequencer_cfg,
     )
 
