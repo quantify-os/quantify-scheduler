@@ -270,13 +270,19 @@ class TestCPMGSched(_CompilesAllBackends):
             "qubit": "q0",
             "variant": "X",
             "repetitions": 1,
+            "artificial_detuning": 0,
         }
         cls.uncomp_sched = ts.cpmg_sched(**cls.sched_kwargs)
 
     def test_operations(self):
-        assert len(self.uncomp_sched.operations) == 2 + 2 * len(
-            self.sched_kwargs["times"]
-        )  # 2 for (init + X90) and then 2*(number of loop and measure)
+        if self.sched_kwargs["artificial_detuning"] == 0:
+            assert len(self.uncomp_sched.operations) == 3 + 2 * len(
+                self.sched_kwargs["times"]
+            )  # 3 for (init + X90 + Rxy90) and then 2*(number of loop and measure)
+        else:
+            assert len(self.uncomp_sched.operations) == 2 + 3 * len(
+                self.sched_kwargs["times"]
+            )  # 3 for (init + X90 + Rxy90) and then 3*(number of loop and measure and Rxy)
 
     def test_repetitions(self):
         assert self.uncomp_sched.repetitions == self.sched_kwargs["repetitions"]
@@ -341,6 +347,7 @@ class TestCPMGSched_y(TestCPMGSched):
             "qubit": "q0",
             "variant": "Y",
             "repetitions": 7,
+            "artificial_detuning": 5,
         }
         cls.uncomp_sched = ts.cpmg_sched(**cls.sched_kwargs)
 
@@ -357,6 +364,7 @@ class TestCPMGSched_xy(TestCPMGSched):
             "qubit": "q0",
             "variant": "XY",
             "repetitions": 10,
+            "artificial_detuning": 5,
         }
         cls.uncomp_sched = ts.cpmg_sched(**cls.sched_kwargs)
 

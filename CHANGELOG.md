@@ -15,6 +15,8 @@
   - Cleanup after hardware config redesign. Add `ChannelPath` class. (!1066)
 - Compilation
   - Add internal logic to calculate pulse compensations. (!1070)
+- Schedules
+  - Change CPMG schedule to enable Ramsey style decoupling measurements. (!1041)
 
 ## 0.21.1 (2024-08-16)
 

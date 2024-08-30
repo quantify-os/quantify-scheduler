@@ -259,6 +259,7 @@ def cpmg_sched(
     times: Union[np.ndarray, float],
     qubit: str,
     variant: Literal["X", "Y", "XY"] = "X",
+    artificial_detuning: float = 0,
     repetitions: int = 1,
 ) -> Schedule:
     """
@@ -283,6 +284,13 @@ def cpmg_sched(
         time.
     variant
         CPMG using either pi_x ("X"), pi_y ("Y") or interleaved pi_x/pi_y ("XY") gates, default is "X".
+    artificial_detuning:
+        The frequency in Hz of the software emulated, or ``artificial`` qubit detuning, which is
+        implemented by changing the phase of the second pi/2 (recovery) pulse. The
+        artificial detuning changes the observed frequency of the Ramsey oscillation,
+        which can be useful to distinguish a slow oscillation due to a small physical
+        detuning from the decay of the dephasing noise.
+
     repetitions
         The amount of times the Schedule will be repeated, default is 1.
 
@@ -343,8 +351,8 @@ def cpmg_sched(
             # otherwise inner schedule and X90 would begin at the same time.
             rel_time=4e-9,
         )
-
-        schedule.add(X90(qubit))
+        recovery_phase = np.rad2deg(2 * np.pi * artificial_detuning * tau)
+        schedule.add(Rxy(theta=90, phi=recovery_phase, qubit=qubit))
         schedule.add(Measure(qubit, acq_index=i), label=f"Measurement {i}")
 
     return schedule
