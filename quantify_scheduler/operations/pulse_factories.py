@@ -8,12 +8,18 @@ and use that to create an instance of the operation itself.
 """
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from quantify_core.utilities import deprecated
 from quantify_scheduler.backends.qblox.operations import (
     pulse_factories as qblox_pulse_factories,
 )
-from quantify_scheduler.backends.qblox.operations.stitched_pulse import StitchedPulse
 from quantify_scheduler.operations import pulse_library
+
+if TYPE_CHECKING:
+    from quantify_scheduler.backends.qblox.operations.stitched_pulse import (
+        StitchedPulse,
+    )
 
 
 def rxy_drag_pulse(
@@ -47,7 +53,7 @@ def rxy_drag_pulse(
         Duration of the pulse in seconds.
     clock
         Name of the clock used to modulate the pulse.
-    reference_magnitude : :class:`~quantify_scheduler.operations.pulse_library.ReferenceMagnitude`, optional
+    reference_magnitude : :class:`~quantify_scheduler.operations.pulse_library.ReferenceMagnitude`,
         Optional scaling value and unit for the unitless amplitude. Uses settings in
         hardware config if not provided.
 
@@ -85,8 +91,8 @@ def rxy_gauss_pulse(
     reference_magnitude: pulse_library.ReferenceMagnitude | None = None,
 ) -> pulse_library.GaussPulse:
     """
-    Generate a Gaussian drive with :class:`~.operations.pulse_library.GaussPulse` that achieves the right
-    rotation angle ``theta`` based on a calibrated pi-pulse amplitude.
+    Generate a Gaussian drive with :class:`~.operations.pulse_library.GaussPulse` that achieves
+    the right rotation angle ``theta`` based on a calibrated pi-pulse amplitude.
 
     Parameters
     ----------
@@ -102,7 +108,7 @@ def rxy_gauss_pulse(
         Duration of the pulse in seconds.
     clock
         Name of the clock used to modulate the pulse.
-    reference_magnitude : :class:`~quantify_scheduler.operations.pulse_library.ReferenceMagnitude`, optional
+    reference_magnitude : :class:`~quantify_scheduler.operations.pulse_library.ReferenceMagnitude`,
         Optional scaling value and unit for the unitless amplitude. Uses settings in
         hardware config if not provided.
 
@@ -131,7 +137,8 @@ def phase_shift(
     clock: str,
 ) -> pulse_library.ShiftClockPhase:
     """
-    Generate a :class:`~.operations.pulse_library.ShiftClockPhase` that shifts the phase of the ``clock`` by an angle `theta`.
+    Generate a :class:`~.operations.pulse_library.ShiftClockPhase` that shifts the phase of the
+    ``clock`` by an angle `theta`.
 
     Parameters
     ----------
@@ -187,8 +194,8 @@ def composite_square_pulse(
         The phase shift in degrees applied to the child qubit.
     virt_z_child_qubit_clock
         The clock of which to shift the phase applied to the child qubit.
-    reference_magnitude : :class:`~quantify_scheduler.operations.pulse_library.ReferenceMagnitude`, optional
-        Scaling value and unit for the unitless amplitude. Uses settings in
+    reference_magnitude : :class:`~quantify_scheduler.operations.pulse_library.ReferenceMagnitude`,
+        Optional scaling value and unit for the unitless amplitude. Uses settings in
         hardware config if not provided.
     t0
         Time in seconds when to start the pulses relative to the start time
@@ -239,15 +246,16 @@ def rxy_hermite_pulse(
     reference_magnitude: pulse_library.ReferenceMagnitude | None = None,
 ) -> pulse_library.SkewedHermitePulse:
     """
-    Generate a Gaussian drive with :class:`~.operations.pulse_library.GaussPulse` that achieves the right
-    rotation angle ``theta`` based on a calibrated pi-pulse amplitude.
+    Generate a Gaussian drive with :class:`~.operations.pulse_library.GaussPulse` that achieves
+    the right rotation angle ``theta`` based on a calibrated pi-pulse amplitude.
 
     Parameters
     ----------
     amp180
         Unitless amplitude of excitation pulse to get the maximum 180 degree theta.
     skewness
-        First-order amplitude correction to the Hermite pulse. Skewness of 0 returns a standard hermite pulse.
+        First-order amplitude correction to the Hermite pulse. Skewness of 0 returns a standard
+        hermite pulse.
     theta
         Angle in degrees to rotate around an equatorial axis on the Bloch sphere.
     phi
@@ -258,8 +266,7 @@ def rxy_hermite_pulse(
         Duration of the pulse in seconds.
     clock
         Name of the clock used to modulate the pulse.
-    reference_magnitude : :class:`~quantify_scheduler.operations.pulse_library.ReferenceMagnitude`, optional
-        Optional scaling value and unit for the unitless amplitude. Uses settings in
+    reference_magnitude : :class:`~quantify_scheduler.operations.pulse_library.ReferenceMagnitude`,
         hardware config if not provided.
 
     Returns
@@ -309,8 +316,8 @@ def nv_spec_pulse_mw(
         Name of clock for frequency modulation of hermite pulse
     port
         Name of port where hermite pulse is applied
-    reference_magnitude : :class:`~quantify_scheduler.operations.pulse_library.ReferenceMagnitude`, optional
-        Scaling value and unit for the unitless amplitude. Uses settings in
+    reference_magnitude : :class:`~quantify_scheduler.operations.pulse_library.ReferenceMagnitude`,
+        Optional scaling value and unit for the unitless amplitude. Uses settings in
         hardware config if not provided.
 
     Returns
