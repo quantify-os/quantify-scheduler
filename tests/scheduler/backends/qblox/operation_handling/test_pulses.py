@@ -10,8 +10,11 @@ import pytest
 
 from quantify_scheduler import Schedule, waveforms
 from quantify_scheduler.backends import SerialCompiler
-from quantify_scheduler.backends.qblox import constants
+from quantify_scheduler.backends.qblox import constants, helpers
 from quantify_scheduler.backends.qblox.operation_handling import pulses
+from quantify_scheduler.backends.qblox.operations.pulse_library import (
+    SimpleNumericalPulse,
+)
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.helpers.waveforms import normalize_waveform_data
@@ -514,3 +517,27 @@ class TestDigitalPulseStrategy:
         )
 
         assert strategy.generate_data({}) is None
+
+
+def test_simple_numerical_pulse():
+    values = [0.2, 0.3, 0.4, 0.5]
+    num_pulse = SimpleNumericalPulse(
+        samples=values, port="q0:mw", clock="q0.01", t0=4e-9
+    )
+    waveform = helpers.generate_waveform_data(
+        num_pulse.data["pulse_info"][0], sampling_rate=constants.SAMPLING_RATE
+    )
+    np.testing.assert_array_equal(values, waveform)
+
+
+def test_simple_numerical_pulse_empty():
+    values = []
+    num_pulse = SimpleNumericalPulse(
+        samples=values, port="q0:mw", clock="q0.01", t0=4e-9
+    )
+    with pytest.raises(IndexError) as error:
+        helpers.generate_waveform_data(
+            num_pulse.data["pulse_info"][0], sampling_rate=constants.SAMPLING_RATE
+        )
+
+    assert error.value.args[0] == "list index out of range"

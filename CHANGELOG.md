@@ -14,6 +14,7 @@
 - Qblox backend
   - Cleanup after hardware config redesign. Add `ChannelPath` class. (!1066)
   - Remove `"settings"` parameter from `SequencerCompiler.__init__` to prevent confusion with `sequencer_cfg`. (!1068)
+  - Add SimpleNumericalPulse to the Qblox pulse library. (!1074)
 - Compilation
   - Add internal logic to calculate pulse compensations. (!1070)
   - Refactor parts of the NCO/LO frequency determining logic, and remove the `parent` attribute from `InstrumentCompiler` and all subclasses. (!1069)
