@@ -1053,6 +1053,8 @@ class ClusterDescription(QbloxBaseDescription):
     """The instrument type, used to select this datastructure when parsing a :class:`~.CompilationConfig`."""
     modules: Dict[int, ClusterModuleDescription] = {}
     """Description of the modules of this Cluster, using slot index as key."""
+    ip: Optional[str] = None
+    """Unique identifier (typically the ip address) used to connect to the cluster"""
 
 
 QbloxHardwareDescription = Annotated[

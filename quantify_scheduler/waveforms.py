@@ -11,33 +11,34 @@ the flux sensitivity and interaction strengths and qubit frequencies.
 from __future__ import annotations
 
 import warnings
-from typing import List, Optional, Union
+from typing import TYPE_CHECKING, Sized
 
 import numpy as np
 from scipy import interpolate, signal
 
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
 
-def square(t: Union[np.ndarray, List[float]], amp: Union[float, complex]) -> np.ndarray:
+
+def square(t: np.ndarray | list[float], amp: float | complex) -> np.ndarray:
     """Generate a square pulse."""
     return amp * np.ones(len(t))
 
 
-def square_imaginary(
-    t: Union[np.ndarray, List[float]], amp: Union[float, complex]
-) -> np.ndarray:
+def square_imaginary(t: np.ndarray | list[float], amp: float | complex) -> np.ndarray:
     """Generate a square pulse with imaginary amplitude."""
     return square(t, 1j * amp)
 
 
-def ramp(t, amp, offset=0) -> np.ndarray:
+def ramp(t: Sized, amp: float, offset: float = 0) -> np.ndarray:
     """Generate a ramp pulse."""
     return np.linspace(offset, amp + offset, len(t), endpoint=False)
 
 
 def staircase(
-    t: Union[np.ndarray, List[float]],
-    start_amp: Union[float, complex],
-    final_amp: Union[float, complex],
+    t: np.ndarray | list[float],
+    start_amp: float | complex,
+    final_amp: float | complex,
     num_steps: int,
 ) -> np.ndarray:
     """
@@ -78,7 +79,7 @@ def staircase(
     return waveform
 
 
-def soft_square(t, amp):
+def soft_square(t: NDArray | list[float], amp: float | complex) -> NDArray:
     """
     A softened square pulse.
 
@@ -221,9 +222,7 @@ def drag(
         deriv_gauss_env -= deriv_gauss_env[-1]
     else:
         raise ValueError(
-            'Unknown value "{}" for keyword argument subtract_offset".'.format(
-                subtract_offset
-            )
+            f'Unknown value "{subtract_offset}" for keyword argument subtract_offset".'
         )
 
     # generate pulses
@@ -243,7 +242,7 @@ def sudden_net_zero(
     t_pulse: float,
     t_phi: float,
     t_integral_correction: float,
-):
+) -> NDArray:
     """
     Generates the sudden net zero waveform from :cite:t:`negirneac_high_fidelity_2021`.
 
@@ -368,7 +367,8 @@ def interpolated_complex_waveform(
 
     if ("bounds_error" in kwargs) or ("fill_value" in kwargs):
         warnings.warn(
-            "Extrapolation should not be used, and the `bounds_error` and `fill_value` parameters can no longer be specified as of quantify-scheduler >= 0.19.0",
+            "Extrapolation should not be used, and the `bounds_error` and `fill_value` parameters"
+            " can no longer be specified as of quantify-scheduler >= 0.19.0",
             FutureWarning,
         )
     else:
@@ -380,7 +380,8 @@ def interpolated_complex_waveform(
             or t[-1] > t_samples[-1] + delta_t_samples
         ):
             raise ValueError(
-                "Interpolation out of bounds: 't' should start at or after the first 't_sample' and end at or before the last 't_sample'"
+                "Interpolation out of bounds: 't' should start at or after the first 't_sample'"
+                " and end at or before the last 't_sample'"
             )
 
     bounds_error = kwargs.pop("bounds_error", False)
@@ -445,7 +446,7 @@ def skewed_hermite(
     skewness: float,
     phase: float,
     pi2_pulse: bool = False,
-    center: Optional[float] = None,
+    center: float | None = None,
     duration_over_char_time: float = 6.0,
 ) -> np.ndarray:
     """

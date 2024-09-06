@@ -4,6 +4,7 @@
         "cluster0": {
             "instrument_type": "Cluster",
             "ref": "internal",
+            "ip": null,
             "modules": {
                 "1": {
                     "instrument_type": "QCM",
