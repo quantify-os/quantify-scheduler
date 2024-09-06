@@ -12,7 +12,10 @@ from quantify_scheduler.backends.qblox.driver_version_check import (
 )
 
 
-def test_verify_qblox_instruments_version():
+def test_verify_qblox_instruments_version(request):
+    if request.config.getoption("--skip_qblox_driver_version_check"):
+        pytest.xfail("Skipping test due to --skip_qblox_driver_version_check flag.")
+
     verify_qblox_instruments_version(build.__version__)
 
     version_numbers = build.__version__.split(".")
