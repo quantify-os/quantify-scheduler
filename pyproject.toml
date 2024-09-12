@@ -62,6 +62,7 @@ dependencies = [
 test = [
  "pytest",
  "pytest-mock",
+ "diff-cover",
 ]
 
 docs = [
