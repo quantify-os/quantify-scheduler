@@ -189,11 +189,11 @@ class DeviceCompilationConfig(DataStructure):
                 "compilation_func": "quantify_scheduler.backends.circuit_to_device."
                 + "set_pulse_and_acquisition_clock",
             },
-            # TODO in SE-540.
-            # {
-            #    "name": "insert_compensating_pulse",
-            #    "compilation_func": to_be_determined
-            # }
+            {
+                "name": "process_compensation_pulses",
+                "compilation_func": "quantify_scheduler.pulse_compensation."
+                + "process_compensation_pulses",
+            },
             {
                 "name": "determine_absolute_timing",
                 "compilation_func": "quantify_scheduler.compilation._determine_absolute_timing",

@@ -182,7 +182,7 @@ class SchedulerJSONDecoder(json.JSONDecoder):
 
     def decode_dict(
         self, obj: Dict[str, Any]
-    ) -> Union[Dict[str, Any], np.ndarray, type, Instrument]:
+    ) -> Union[Dict[str, Any], np.ndarray, object, Instrument]:
         """
         Returns the deserialized JSON dictionary.
 
@@ -210,9 +210,10 @@ class SchedulerJSONDecoder(json.JSONDecoder):
             if "mode" in obj and obj["mode"] == "__init__":
                 if class_type == np.ndarray:
                     return np.array(obj["data"])
-                if issubclass(class_type, Instrument):
+                elif issubclass(class_type, Instrument):
                     return class_type(**obj["data"])
-                return class_type(obj["data"])
+                else:
+                    return class_type(obj["data"])  # type: ignore
 
             if "mode" in obj and obj["mode"] == "type":
                 return class_type
