@@ -4,5 +4,5 @@ variables:
 
 include:
   - project: "quantify-os/ci"
-    ref: main
+    ref: SE-579-coverage-diff
     file: "/python-quantify.yml"

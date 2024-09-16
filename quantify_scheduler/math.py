@@ -32,3 +32,13 @@ def closest_number_ceil(number: int | float, multiple: int | float) -> int:
     closest_number = multiple * (quotient + 1)
 
     return int(closest_number)
+
+
+def add(x: int, y: int) -> int:
+    """
+
+    :param x:
+    :param y:
+    :return:
+    """
+    return x + y
