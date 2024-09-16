@@ -6,3 +6,10 @@ include:
   - project: "quantify-os/ci"
     ref: SE-579-coverage-diff
     file: "/python-quantify.yml"
+
+job:
+  stage: Test
+  script:
+    - echo "Merge request pipeline"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
