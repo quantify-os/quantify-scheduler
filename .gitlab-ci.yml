@@ -7,9 +7,25 @@ include:
     ref: SE-579-coverage-diff
     file: "/python-quantify.yml"
 
-job:
-  stage: Test
+
+always_run:
+  stage: Build
+  script:
+    - echo "Always run pipeline"
+    - echo $CI_PIPELINE_SOURCE
+  rules:
+    - when: always
+
+merge_run:
+  stage: Build
   script:
     - echo "Merge request pipeline"
   rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+push_run:
+  stage: Build
+  script:
+    - echo "Merge request pipeline"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
