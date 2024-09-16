@@ -17,6 +17,7 @@ from quantify_scheduler.backends.graph_compilation import (
 )
 from quantify_scheduler.operations.control_flow_library import ControlFlowOperation
 from quantify_scheduler.operations.operation import Operation
+from quantify_scheduler.operations.pulse_compensation_library import PulseCompensation
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.schedule import Schedulable, Schedule, ScheduleBase
 
@@ -76,7 +77,7 @@ def _compile_circuit_to_device(
     device_cfg: DeviceCompilationConfig,
     device_overrides: dict,
 ) -> Operation | Schedule: ...
-def _compile_circuit_to_device(
+def _compile_circuit_to_device(  # noqa: PLR0911
     operation,
     device_cfg,
     device_overrides,
@@ -99,6 +100,8 @@ def _compile_circuit_to_device(
             device_cfg=device_cfg,
             device_overrides=device_overrides,
         )
+        return operation
+    elif isinstance(operation, PulseCompensation):
         return operation
     elif not (operation.valid_pulse or operation.valid_acquisition):
         # If operation is a valid pulse or acquisition it will not attempt to
@@ -281,7 +284,7 @@ def _set_pulse_and_acquisition_clock(
                 operation=operation.operations[inner_op_key],
                 verified_clocks=verified_clocks,
             )
-    elif isinstance(operation, ControlFlowOperation):
+    elif isinstance(operation, (ControlFlowOperation, PulseCompensation)):
         operation.body = _set_pulse_and_acquisition_clock(
             schedule=schedule,
             operation=operation.body,

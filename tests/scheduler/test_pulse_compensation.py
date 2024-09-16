@@ -3,6 +3,9 @@ import math
 import pytest
 
 from quantify_scheduler import Schedule
+from quantify_scheduler.backends.graph_compilation import (
+    SerialCompiler,
+)
 from quantify_scheduler.operations.control_flow_library import (
     ConditionalOperation,
     LoopOperation,
@@ -146,19 +149,21 @@ def test_determine_compensation_pulse_error(operation, expected_error):
     assert exception.value.args[0] == expected_error
 
 
-def test_insert_compensation_pulses(get_subschedule_operation):
-    schedule = Schedule("Schedule")
-    schedule.add(
+def test_insert_compensation_pulses(
+    device_compile_config_basic_transmon, get_subschedule_operation
+):
+    body = Schedule("schedule")
+    body.add(
         SquarePulse(
             amp=0.8, duration=1e-8, port="q0:gt", clock=BasebandClockResource.IDENTITY
         )
     )
-    schedule.add(
+    body.add(
         RampPulse(
             amp=0.5, duration=1e-8, port="q1:gt", clock=BasebandClockResource.IDENTITY
         )
     )
-    schedule.add(
+    body.add(
         LoopOperation(
             body=RampPulse(
                 amp=0.3,
@@ -175,31 +180,41 @@ def test_insert_compensation_pulses(get_subschedule_operation):
         PortClock("q1:gt", BasebandClockResource.IDENTITY): 0.7,
     }
 
-    compensated_schedule = process_compensation_pulses(
+    schedule = Schedule("compensated_schedule")
+    schedule.add(
         PulseCompensation(
-            body=schedule,
+            body=body,
             max_compensation_amp=max_compensation_amp,
             time_grid=4e-9,
             sampling_rate=1e9,
         )
     )
 
+    compiler = SerialCompiler(name="compiler")
+    _ = compiler.compile(schedule, config=device_compile_config_basic_transmon)
+
+    compensated_schedule = process_compensation_pulses(schedule)
+
     assert isinstance(compensated_schedule, Schedule)
 
-    subschedule_schedulable = list(compensated_schedule.schedulables.values())[0][
+    compensated_subschedule = get_subschedule_operation(compensated_schedule, [0])
+
+    assert isinstance(compensated_subschedule, Schedule)
+
+    subschedule_schedulable = list(compensated_subschedule.schedulables.values())[0][
         "name"
     ]
 
     compensation_pulse_q0_schedulable = list(
-        compensated_schedule.schedulables.values()
+        compensated_subschedule.schedulables.values()
     )[1]
-    compensation_pulse_q0 = compensated_schedule.operations[
+    compensation_pulse_q0 = compensated_subschedule.operations[
         compensation_pulse_q0_schedulable["operation_id"]
     ]
     compensation_pulse_q1_schedulable = list(
-        compensated_schedule.schedulables.values()
+        compensated_subschedule.schedulables.values()
     )[2]
-    compensation_pulse_q1 = compensated_schedule.operations[
+    compensation_pulse_q1 = compensated_subschedule.operations[
         compensation_pulse_q1_schedulable["operation_id"]
     ]
 
