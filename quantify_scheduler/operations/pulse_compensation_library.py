@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-from collections import namedtuple
 from typing import TYPE_CHECKING
 
 from quantify_scheduler.operations.operation import Operation
@@ -12,26 +11,28 @@ from quantify_scheduler.operations.operation import Operation
 if TYPE_CHECKING:
     from quantify_scheduler.schedules.schedule import Schedule
 
-PortClock = namedtuple("PortClock", ["port", "clock"])
+Port = str
+"""Port on the hardware; this is an alias to str."""
 
 
 class PulseCompensation(Operation):
     """
     Apply pulse compensation to an operation or schedule.
 
-    Inserts a pulse at the end of the operation or schedule set in ``body`` for each portclock.
+    Inserts a pulse at the end of the operation or schedule set in ``body`` for each port.
     The compensation pulses are calculated so that the integral of all pulses
-    (including the compensation pulses) are zero for each portclock.
+    (including the compensation pulses) are zero for each port.
     Moreover, the compensating pulses are square pulses, and start just after the last
-    pulse on each portclock individually, and their maximum amplitude is the one
+    pulse on each port individually, and their maximum amplitude is the one
     specified in the ``max_compensation_amp``. Their duration is divisible by ``duration_grid``.
+    The clock is assumed to be the baseband clock; any other clock is not allowed.
 
     Parameters
     ----------
     body
         Operation to be pulse-compensated
     max_compensation_amp
-        Dictionary for each portclock the maximum allowed amplitude for the compensation pulse.
+        Dictionary for each port the maximum allowed amplitude for the compensation pulse.
     time_grid
         Grid time of the duration of the compensation pulse.
     sampling_rate
@@ -41,7 +42,7 @@ class PulseCompensation(Operation):
     def __init__(
         self,
         body: Operation | Schedule,
-        max_compensation_amp: dict[PortClock, float],
+        max_compensation_amp: dict[Port, float],
         time_grid: float,
         sampling_rate: float,
     ) -> None:
@@ -69,8 +70,8 @@ class PulseCompensation(Operation):
         self.data["pulse_compensation_info"]["body"] = value
 
     @property
-    def max_compensation_amp(self) -> dict[PortClock, float]:
-        """For each portclock the maximum allowed amplitude for the compensation pulse."""
+    def max_compensation_amp(self) -> dict[Port, float]:
+        """For each port the maximum allowed amplitude for the compensation pulse."""
         return self.data["pulse_compensation_info"]["max_compensation_amp"]
 
     @property

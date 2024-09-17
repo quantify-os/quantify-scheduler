@@ -14,7 +14,6 @@ from quantify_scheduler.operations.gate_library import (
     X,
 )
 from quantify_scheduler.operations.pulse_compensation_library import (
-    PortClock,
     PulseCompensation,
 )
 from quantify_scheduler.operations.pulse_library import (
@@ -54,53 +53,32 @@ def test_determine_compensation_pulse():
     )
 
     max_compensation_amp = {
-        PortClock("q0:gt", BasebandClockResource.IDENTITY): 0.6,
-        PortClock("q1:gt", BasebandClockResource.IDENTITY): 0.7,
+        "q0:gt": 0.6,
+        "q1:gt": 0.7,
     }
     compensation_pulses_start_duration_amp = _determine_compensation_pulse(
         schedule, max_compensation_amp, 4e-9, sampling_rate=1e9
     )
 
     assert compensation_pulses_start_duration_amp.keys() == {
-        PortClock("q1:gt", BasebandClockResource.IDENTITY),
-        PortClock("q0:gt", BasebandClockResource.IDENTITY),
+        "q1:gt",
+        "q0:gt",
     }
 
-    assert (
-        compensation_pulses_start_duration_amp[
-            PortClock("q0:gt", BasebandClockResource.IDENTITY)
-        ].start
-        == 8e-8
-    )
+    assert compensation_pulses_start_duration_amp["q0:gt"].start == 8e-8
     assert math.isclose(
-        compensation_pulses_start_duration_amp[
-            PortClock("q0:gt", BasebandClockResource.IDENTITY)
-        ].duration,
+        compensation_pulses_start_duration_amp["q0:gt"].duration,
         2.8e-8,
     )
     assert math.isclose(
-        compensation_pulses_start_duration_amp[
-            PortClock("q0:gt", BasebandClockResource.IDENTITY)
-        ].amp,
+        compensation_pulses_start_duration_amp["q0:gt"].amp,
         -0.5910714285714285,
     )
 
-    assert (
-        compensation_pulses_start_duration_amp[
-            PortClock("q1:gt", BasebandClockResource.IDENTITY)
-        ].start
-        == 2e-8
-    )
-    assert (
-        compensation_pulses_start_duration_amp[
-            PortClock("q1:gt", BasebandClockResource.IDENTITY)
-        ].duration
-        == 4e-9
-    )
+    assert compensation_pulses_start_duration_amp["q1:gt"].start == 2e-8
+    assert compensation_pulses_start_duration_amp["q1:gt"].duration == 4e-9
     assert math.isclose(
-        compensation_pulses_start_duration_amp[
-            PortClock("q1:gt", BasebandClockResource.IDENTITY)
-        ].amp,
+        compensation_pulses_start_duration_amp["q1:gt"].amp,
         -0.5625,
     )
 
@@ -138,7 +116,7 @@ def test_determine_compensation_pulse_error(operation, expected_error):
     schedule.add(operation)
 
     max_compensation_amp = {
-        PortClock("q0:gt", BasebandClockResource.IDENTITY): 0.6,
+        "q0:gt": 0.6,
     }
 
     with pytest.raises(ValueError) as exception:
@@ -176,8 +154,8 @@ def test_insert_compensation_pulses(
     )
 
     max_compensation_amp = {
-        PortClock("q0:gt", BasebandClockResource.IDENTITY): 0.6,
-        PortClock("q1:gt", BasebandClockResource.IDENTITY): 0.7,
+        "q0:gt": 0.6,
+        "q1:gt": 0.7,
     }
 
     schedule = Schedule("compensated_schedule")

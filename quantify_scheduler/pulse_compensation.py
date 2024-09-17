@@ -15,7 +15,7 @@ from quantify_scheduler.operations.control_flow_library import (
     LoopOperation,
 )
 from quantify_scheduler.operations.pulse_compensation_library import (
-    PortClock,
+    Port,
     PulseCompensation,
 )
 from quantify_scheduler.operations.pulse_library import SquarePulse
@@ -45,20 +45,20 @@ class SumEnd:
 
 
 def _merge_sum_and_end(
-    pulses_sum_end_1: dict[PortClock, SumEnd], pulses_sum_end_2: dict[PortClock, SumEnd]
-) -> dict[PortClock, SumEnd]:
-    merged_pulses_sum_end: dict[PortClock, SumEnd] = {}
+    pulses_sum_end_1: dict[Port, SumEnd], pulses_sum_end_2: dict[Port, SumEnd]
+) -> dict[Port, SumEnd]:
+    merged_pulses_sum_end: dict[Port, SumEnd] = {}
 
-    all_port_clocks: set[PortClock] = pulses_sum_end_1.keys() | pulses_sum_end_2.keys()
-    for port_clock in all_port_clocks:
-        if (port_clock in pulses_sum_end_1) and (port_clock in pulses_sum_end_2):
-            merged_pulses_sum_end[port_clock] = pulses_sum_end_1[port_clock].merge(
-                pulses_sum_end_2[port_clock]
+    all_ports: set[Port] = pulses_sum_end_1.keys() | pulses_sum_end_2.keys()
+    for port in all_ports:
+        if (port in pulses_sum_end_1) and (port in pulses_sum_end_2):
+            merged_pulses_sum_end[port] = pulses_sum_end_1[port].merge(
+                pulses_sum_end_2[port]
             )
-        elif port_clock in pulses_sum_end_1:
-            merged_pulses_sum_end[port_clock] = pulses_sum_end_1[port_clock]
-        elif port_clock in pulses_sum_end_2:
-            merged_pulses_sum_end[port_clock] = pulses_sum_end_2[port_clock]
+        elif port in pulses_sum_end_1:
+            merged_pulses_sum_end[port] = pulses_sum_end_1[port]
+        elif port in pulses_sum_end_2:
+            merged_pulses_sum_end[port] = pulses_sum_end_2[port]
     return merged_pulses_sum_end
 
 
@@ -66,7 +66,7 @@ def _determine_sum_and_end_of_all_pulses(
     operation: Schedule | Operation,
     sampling_rate: float,
     time_offset: float,
-) -> dict[PortClock, SumEnd]:
+) -> dict[Port, SumEnd]:
     """
     Calculates the sum (or integral) of the amplitudes of all pulses in the operation,
     and the end time of the last pulse in the operation.
@@ -90,11 +90,11 @@ def _determine_sum_and_end_of_all_pulses(
     assert not isinstance(operation, PulseCompensation)
 
     if isinstance(operation, ScheduleBase):
-        pulses_sum_end: dict[PortClock, SumEnd] = {}
+        pulses_sum_end: dict[Port, SumEnd] = {}
         for schedulable in operation.schedulables.values():
             abs_time = schedulable["abs_time"]
             inner_operation = operation.operations[schedulable["operation_id"]]
-            new_pulses_sum_end: dict[PortClock, SumEnd] = (
+            new_pulses_sum_end: dict[Port, SumEnd] = (
                 _determine_sum_and_end_of_all_pulses(
                     inner_operation, sampling_rate, time_offset + abs_time
                 )
@@ -103,16 +103,16 @@ def _determine_sum_and_end_of_all_pulses(
         return pulses_sum_end
     elif isinstance(operation, ControlFlowOperation):
         if isinstance(operation, LoopOperation):
-            body_pulses_sum_end: dict[PortClock, SumEnd] = (
+            body_pulses_sum_end: dict[Port, SumEnd] = (
                 _determine_sum_and_end_of_all_pulses(
                     operation.body, sampling_rate, time_offset
                 )
             )
             repetitions = operation.data["control_flow_info"]["repetitions"]
             assert repetitions != 0
-            looped_pulses_sum_end: dict[PortClock, SumEnd] = {}
-            for port_clock, body_sum_end in body_pulses_sum_end.items():
-                looped_pulses_sum_end[port_clock] = SumEnd(
+            looped_pulses_sum_end: dict[Port, SumEnd] = {}
+            for port, body_sum_end in body_pulses_sum_end.items():
+                looped_pulses_sum_end[port] = SumEnd(
                     sum=(repetitions * body_sum_end.sum),
                     end=(repetitions - 1) * operation.body.duration + body_sum_end.end,
                 )
@@ -130,16 +130,16 @@ def _determine_sum_and_end_of_all_pulses(
             f"in a pulse compensation structure. "
         )
     elif operation.valid_pulse:
-        pulses_sum_end: dict[PortClock, SumEnd] = {}
+        pulses_sum_end: dict[Port, SumEnd] = {}
         for pulse_info in operation["pulse_info"]:
             if pulse_info["clock"] != BasebandClockResource.IDENTITY:
                 raise ValueError(
                     f"Error calculating compensation pulse amplitude for '{operation}'. "
                     f"Clock must be the baseband clock. "
                 )
-            port_clock: PortClock = PortClock(pulse_info["port"], pulse_info["clock"])
-            new_pulse_sum_end: dict[PortClock, SumEnd] = {
-                port_clock: SumEnd(
+            port: Port = pulse_info["port"]
+            new_pulse_sum_end: dict[Port, SumEnd] = {
+                port: SumEnd(
                     sum=area_pulse(pulse_info, sampling_rate),
                     end=(time_offset + pulse_info["t0"] + pulse_info["duration"]),
                 )
@@ -161,12 +161,12 @@ class CompensationPulseParams:
 
 def _determine_compensation_pulse(
     operation: Schedule | Operation,
-    max_compensation_amp: dict[PortClock, float],
+    max_compensation_amp: dict[Port, float],
     time_grid: float,
     sampling_rate: float,
-) -> dict[PortClock, CompensationPulseParams]:
+) -> dict[Port, CompensationPulseParams]:
     """
-    Calculates the timing and the amplitude of a compensation pulse for each port clock.
+    Calculates the timing and the amplitude of a compensation pulse for each port.
     The `duration` and `amp` are calculated, with the requirements, that
     if a compensation square pulse is inserted in the schedule at `start` with duration `duration`,
     and amplitude `amp`, then
@@ -175,6 +175,7 @@ def _determine_compensation_pulse(
     * the compensation pulse is the last pulse in the operation, and
     * the compensation pulse starts just after the previous pulse.
     The function assumes there is no operation which needs to be pulse compensated inside.
+    The clock is assumed to be the baseband clock.
 
     Parameters
     ----------
@@ -191,29 +192,28 @@ def _determine_compensation_pulse(
     -------
     :
         The start, duration and amp of a compensation pulse
-        with the given requirements as a `CompensationPulseParams` for each port clock.
+        with the given requirements as a `CompensationPulseParams` for each port.
     """
-    pulses_start_duration_amp: dict[PortClock, CompensationPulseParams] = {}
+    pulses_start_duration_amp: dict[Port, CompensationPulseParams] = {}
 
     operation_with_abs_times = (
         operation
         if not isinstance(operation, Schedule)
         else _determine_absolute_timing(deepcopy(operation), None)
     )
-    pulses_sum_end: dict[PortClock, SumEnd] = _determine_sum_and_end_of_all_pulses(
+    pulses_sum_end: dict[Port, SumEnd] = _determine_sum_and_end_of_all_pulses(
         operation_with_abs_times, sampling_rate, 0
     )
 
-    for port_clock, pulse_sum_end in pulses_sum_end.items():
-        if pulse_sum_end.sum != 0 and port_clock in max_compensation_amp:
+    for port, pulse_sum_end in pulses_sum_end.items():
+        if pulse_sum_end.sum != 0 and port in max_compensation_amp:
             sum_abs: float = abs(pulse_sum_end.sum)
 
             duration: float = (
-                math.ceil(sum_abs / time_grid / max_compensation_amp[port_clock])
-                * time_grid
+                math.ceil(sum_abs / time_grid / max_compensation_amp[port]) * time_grid
             )
             amp: float = -pulse_sum_end.sum / duration
-            pulses_start_duration_amp[port_clock] = CompensationPulseParams(
+            pulses_start_duration_amp[port] = CompensationPulseParams(
                 start=pulse_sum_end.end, duration=duration, amp=amp
             )
 
@@ -250,7 +250,7 @@ def process_compensation_pulses(
     -------
     :
         The start, duration and amp of a compensation pulse
-        with the given requirements as a `CompensationPulseParams` for each port clock.
+        with the given requirements as a `CompensationPulseParams` for each port.
     """
     operation: Operation | Schedule = schedule
     if isinstance(operation, ScheduleBase):
@@ -272,7 +272,7 @@ def process_compensation_pulses(
     elif isinstance(operation, PulseCompensation):
         # Inner pulse compensated blocks need to be resolved first.
         resolved_body = process_compensation_pulses(operation.body)
-        all_compensation_pulse_params: dict[PortClock, CompensationPulseParams] = (
+        all_compensation_pulse_params: dict[Port, CompensationPulseParams] = (
             _determine_compensation_pulse(
                 resolved_body,
                 operation.max_compensation_amp,
@@ -285,15 +285,15 @@ def process_compensation_pulses(
         first_op_schedulable = pulse_compensated_schedule.add(resolved_body)
 
         for (
-            port_clock,
+            port,
             compensation_pulse_params,
         ) in all_compensation_pulse_params.items():
             pulse_compensated_schedule.add(
                 operation=SquarePulse(
                     amp=compensation_pulse_params.amp,
                     duration=compensation_pulse_params.duration,
-                    port=port_clock.port,
-                    clock=port_clock.clock,
+                    port=port,
+                    clock=BasebandClockResource.IDENTITY,
                 ),
                 rel_time=compensation_pulse_params.start,
                 ref_op=first_op_schedulable,
