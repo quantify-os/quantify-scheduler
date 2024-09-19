@@ -35,6 +35,18 @@ def test_constructors():
     _ = StitchedPulseBuilder(port="q0:mw", clock="q0.01")
 
 
+def test_init():
+    """Test whether the constructor parameters are correctly used."""
+    builder = StitchedPulseBuilder(
+        name="spb", clock="q0.01", port="q0:mw", t0=1e-6
+    ).add_pulse(SquarePulse(amp=0.2, duration=1000e-9, port="q0:mw"))
+    pulse = builder.build()
+    assert pulse.name == "spb"
+    assert pulse["pulse_info"][0]["t0"] == 1e-6
+    assert pulse["pulse_info"][0]["port"] == "q0:mw"
+    assert pulse["pulse_info"][0]["clock"] == "q0.01"
+
+
 def test_str():
     """Test the string representation."""
     pulse = (
@@ -81,18 +93,107 @@ def test_set_port_clock_t0():
     """Test that you can set the port, clock and t0."""
     builder = (
         StitchedPulseBuilder()
-        .add_pulse(SquarePulse(amp=0.2, duration=1e-6, port="q0:mw"))
+        .add_pulse(SquarePulse(amp=0.2, duration=1000e-9, port="q0:mw"))
         .add_pulse(RampPulse(amp=0.5, duration=28e-9, port="q0:mw"))
-        .add_voltage_offset(path_I=0.5, path_Q=0.0, duration=1e-7)
+        .add_voltage_offset(path_I=0.5, path_Q=0.0, duration=100e-9)
     )
     builder.set_clock("q0.01")
     builder.set_port("q0:mw")
     builder.set_t0(1e-6)
     pulse = builder.build()
-    for i, expected_t0 in enumerate([1.028e-6, 1.128e-6, 1e-6, 2e-6]):
+    for i, expected_t0 in enumerate([2028e-9, 2128e-9, 1000e-9, 2000e-9]):
         assert pulse["pulse_info"][i]["t0"] == pytest.approx(expected_t0)
         assert pulse["pulse_info"][i]["port"] == "q0:mw"
         assert pulse["pulse_info"][i]["clock"] == "q0.01"
+
+
+def test_t0_applied_to_pulses():
+    """Test to see if t0 is applied properly"""
+    pulse = (
+        StitchedPulseBuilder(
+            t0=100,
+            port="q0:mw",
+            clock="q0.01",
+        )
+        .add_pulse(SquarePulse(amp=0.2, duration=1000, port="q0:mw", t0=200))
+        .add_pulse(SquarePulse(amp=0.4, duration=500, port="q0:mw", t0=900))
+        .build()
+    )
+    assert len(pulse["pulse_info"]) == 2
+    assert pulse["pulse_info"][0]["t0"] == 100 + 200
+    assert pulse["pulse_info"][1]["t0"] == 100 + 200 + 1000 + 900
+
+
+def test_operation_end_empty_builder():
+    builder = StitchedPulseBuilder(
+        t0=100,
+        port="q0:mw",
+        clock="q0.01",
+    )
+    assert builder.operation_end == 0
+
+
+def test_operation_end_pulses_only():
+    builder = (
+        StitchedPulseBuilder(
+            t0=100,
+            port="q0:mw",
+            clock="q0.01",
+        )
+        .add_pulse(SquarePulse(amp=0.2, duration=1000, port="q0:mw", t0=200))
+        .add_pulse(SquarePulse(amp=0.4, duration=500, port="q0:mw", t0=900))
+        .add_pulse(
+            SquarePulse(amp=0.3, duration=100, port="q0:mw", t0=300), append=False
+        )
+    )
+    assert builder.operation_end == 200 + 1000 + 500 + 900
+
+
+def test_operation_end_offsets_only():
+    builder = (
+        StitchedPulseBuilder(
+            t0=100,
+            port="q0:mw",
+            clock="q0.01",
+        )
+        .add_voltage_offset(path_I=0, path_Q=0, duration=500, rel_time=100)
+        .add_voltage_offset(path_I=0, path_Q=0, duration=200, rel_time=90)
+    )
+    assert builder.operation_end == 500 + 200 + 100 + 90
+
+
+def test_operation_end_mix_pulses_and_operations():
+    builder = (
+        StitchedPulseBuilder(
+            t0=100,
+            port="q0:mw",
+            clock="q0.01",
+        )
+        .add_pulse(SquarePulse(amp=0.2, duration=1000, port="q0:mw", t0=200))
+        .add_voltage_offset(path_I=0, path_Q=0, duration=500, rel_time=90)
+        .add_pulse(SquarePulse(amp=0.4, duration=500, port="q0:mw", t0=900))
+        .add_pulse(
+            SquarePulse(amp=0.3, duration=100, port="q0:mw", t0=300), append=False
+        )
+        .add_voltage_offset(path_I=0, path_Q=0, duration=200)
+    )
+    assert builder.operation_end == 200 + 1000 + 500 + 90 + 900 + 500 + 200
+
+
+def test_operation_end_long_pulse_inserted_at_start():
+    builder = (
+        StitchedPulseBuilder(
+            t0=100,
+            port="q0:mw",
+            clock="q0.01",
+        )
+        .add_pulse(SquarePulse(amp=0.2, duration=1000, port="q0:mw", t0=200))
+        .add_voltage_offset(path_I=0, path_Q=0, duration=500)
+        .add_pulse(
+            SquarePulse(amp=0.3, duration=100000, port="q0:mw", t0=10), append=False
+        )
+    )
+    assert builder.operation_end == 100010
 
 
 def test_no_port_clock_fails():

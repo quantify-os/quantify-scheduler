@@ -5,6 +5,7 @@ from functools import partial
 import numpy as np
 import pytest
 
+from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.qblox.operations import (
     long_ramp_pulse,
     long_square_pulse,
@@ -172,6 +173,35 @@ def test_long_square_pulse():
             "pulse_info"
         ][0]
     )
+
+
+def test_long_square_pulse_that_is_too_short():
+    """A square pulse less than `constants.MIN_TIME_BETWEEN_OPERATIONS` should error"""
+    with pytest.raises(ValueError, match=f"{constants.MIN_TIME_BETWEEN_OPERATIONS}"):
+        long_square_pulse(amp=0.8, duration=1e-9, port="", clock="")
+
+
+def test_long_square_pulse_that_is_exactly_long_enough():
+    """A square pulse less than `constants.MIN_TIME_BETWEEN_OPERATIONS` should error"""
+    pulse = long_square_pulse(amp=0.8, duration=4e-9, port="", clock="")
+    assert len(pulse["pulse_info"]) == 3
+    p0, p1, p2 = pulse["pulse_info"]
+    assert p0["t0"] == 0
+    assert p1["t0"] == 0
+    assert p2["t0"] == 0
+    assert p2["duration"] == 4e-9
+
+
+def test_long_square_pulse_with_t0():
+    port = "q0:res"
+    clock = "q0.ro"
+    pulse = long_square_pulse(amp=0.8, duration=1e-3, port=port, clock=clock, t0=100e-9)
+    assert len(pulse["pulse_info"]) == 3
+    p0, p1, p2 = pulse["pulse_info"]
+    assert p0["t0"] == 100e-9
+    assert p1["t0"] == 1e-3 - 4e-9 + 100e-9
+    assert p2["t0"] == 1e-3 - 4e-9 + 100e-9
+    assert p2["duration"] == 4e-9
 
 
 def test_staircase():

@@ -53,9 +53,6 @@ def long_square_pulse(
     t0 : float, optional
         Time in seconds when to start the pulses relative to the start time
         of the Operation in the Schedule. By default 0.
-    min_operation_time_ns : int, optional
-        Min operation time in ns. The duration of the long_square_pulse must be a multiple
-        of this. By default equal to the min operation time time of Qblox modules.
     reference_magnitude : optional
         Scaling value and unit for the unitless amplitude. Uses settings in
         hardware config if not provided.

@@ -432,20 +432,18 @@ class StitchedPulseBuilder:
         :
             The maximum end time considering all pulses and offsets.
         """
-        max_from_pulses: float = (
-            0.0
-            if len(self._pulses) == 0
-            else max(
+        max_from_pulses: float = max(
+            (
                 pulse_info["t0"] + pulse_info["duration"]
                 for op in self._pulses
                 for pulse_info in op.data["pulse_info"]
-            )
+            ),
+            default=0,
         )
-        max_from_offsets: float = (
-            0.0
-            if len(self._offsets) == 0
-            else max(offs.t0 + (offs.duration or 0.0) for offs in self._offsets)
+        max_from_offsets: float = max(
+            (offs.t0 + (offs.duration or 0.0) for offs in self._offsets), default=0
         )
+
         return max(max_from_pulses, max_from_offsets)
 
     def _distribute_port_clock(self) -> None:
@@ -458,8 +456,8 @@ class StitchedPulseBuilder:
                 pulse_info["port"] = self._port
                 pulse_info["clock"] = self._clock
 
-    def _distribute_t0(self) -> None:
-        for op in self._pulses:
+    def _distribute_t0(self, offsets: list[VoltageOffset]) -> None:
+        for op in offsets + self._pulses:
             for pulse_info in op.data["pulse_info"]:
                 pulse_info["t0"] += self._t0
 
@@ -486,7 +484,7 @@ class StitchedPulseBuilder:
             return VoltageOffset(
                 offset_path_I=info.path_I,
                 offset_path_Q=info.path_Q,
-                port=self._port,  # type: ignore (_distribute_port_clock runs first)
+                port=self._port,  # type: ignore #(_distribute_port_clock runs first)
                 clock=self._clock,  # type: ignore
                 t0=info.t0,
                 reference_magnitude=info.reference_magnitude,
@@ -560,7 +558,7 @@ class StitchedPulseBuilder:
         """
         self._distribute_port_clock()
         offsets = self._build_voltage_offset_operations()
-        self._distribute_t0()
+        self._distribute_t0(offsets)
         stitched_pulse = StitchedPulse(self._name)
         for op in offsets + self._pulses:
             stitched_pulse.add_pulse(op)
