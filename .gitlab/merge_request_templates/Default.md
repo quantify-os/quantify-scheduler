@@ -10,7 +10,7 @@ Motivate why the particular solution was chosen.
 --------------------
 
 ## Merge checklist
-See also [merge request guidelines](https://quantify-os.org/docs/quantify-core/dev/contributing.html#merge-request-guidelines)
+See also [merge request guidelines](https://quantify-os.org/docs/quantify-core/dev/dev/guide.html#merge-request-guidelines)
 
 - [ ] Merge request has been reviewed (in-depth by a knowledgeable contributor), and is approved by a project maintainer.
 - [ ] New code is covered by unit tests (or N/A).
@@ -20,11 +20,11 @@ See also [merge request guidelines](https://quantify-os.org/docs/quantify-core/d
 - [ ] Newly added/adjusted documentation and docstrings render properly (or N/A).
 - [ ] Pipeline fix or dependency update: post in `#software-for-developers` channel to merge `main` back in or [update local packages](https://quantify-os.org/docs/quantify-scheduler/dev/user/installation.html#setting-up-for-local-development) (or N/A).
 - [ ] Tested on hardware (or N/A).
-- [ ] `CHANGELOG.md` and `AUTHORS.md` have been updated (or N/A).
+- [ ] `CHANGELOG.md` for breaking changes and `AUTHORS.md` have been updated (or N/A).
 - [ ] Update Hardware backends documentation if backend interface change or N/A
 - [ ] Check whether performance is significantly affected by looking at the Performance metrics results.
 - [ ] Windows tests in CI pipeline pass (manually triggered by maintainers before merging).
    - _Maintainers do not hit Auto-merge, we need to actively check as manual tests do not block pipeline_
 ---
 
-For reference, the issues workflow is described in the [contribution guidelines](https://quantify-os.org/docs/quantify-core/dev/contributing.html#merge-requests-workflow).
+For reference, the issues workflow is described in the [contribution guidelines](https://quantify-os.org/docs/quantify-core/dev/dev/guide.html#contributing).
