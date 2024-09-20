@@ -172,9 +172,10 @@ lint.select = [
 # PLR0913: Too many arguments to function call (.../5)
 # A003: Class attribute `compile` is shadowing a python builtin
 # ANN101: Missing type annotation for `self` in method
+# ANN102: Missing type annotation for `cls` in class method
 # PLR2004: Magic value used in comparison, consider replacing `...` with a constant variable
 # PLR0912: Too many branches (... > 12)
-lint.ignore = ["D105", "D107", "D203", "D212", "D401", "D413", "E741", "N806", "PLR0913", "A003", "ANN101", "PLR2004", "PLR0912", "ANN002", "ANN003"]
+lint.ignore = ["D105", "D107", "D203", "D212", "D401", "D413", "E741", "N806", "PLR0913", "A003", "ANN101", "ANN102", "PLR2004", "PLR0912", "ANN002", "ANN003"]
 extend-exclude = [
  "docs",
 ]
@@ -243,7 +244,6 @@ extend-ignore-names = ["path_I", "path_Q", "offset_path_I", "offset_path_Q"]
 "quantify_scheduler/instrument_coordinator/components/__init__.py" = ['E501']
 "quantify_scheduler/instrument_coordinator/components/base.py" = ['ANN401', 'TCH001', 'UP006']
 "quantify_scheduler/instrument_coordinator/components/generic.py" = ['ANN001', 'ANN201', 'ANN401', 'ARG002', 'E501', 'TCH001', 'UP006', 'UP007']
-"quantify_scheduler/instrument_coordinator/components/qblox.py" = ['ANN001', 'ANN102', 'ANN202', 'ANN204', 'ANN401', 'ARG002', 'E501', 'F821', 'SIM102', 'SIM118', 'TCH001', 'UP006', 'UP007', 'UP015']
 "quantify_scheduler/instrument_coordinator/components/zhinst.py" = ['D101', 'D102']
 "quantify_scheduler/instrument_coordinator/instrument_coordinator.py" = ['ANN001', 'ANN202', 'E501', 'SIM118', 'UP006']
 "quantify_scheduler/instrument_coordinator/utility.py" = ['ANN001', 'ANN201', 'ANN202', 'ANN401', 'E501', 'E731']

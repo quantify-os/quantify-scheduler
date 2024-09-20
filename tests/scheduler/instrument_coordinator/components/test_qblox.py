@@ -6,7 +6,7 @@ import re
 from collections import defaultdict
 from copy import copy, deepcopy
 from typing import List, Optional
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
@@ -2350,3 +2350,58 @@ def test_unsupported_bin_modes_qtm(
             qblox_acq_index=0,
             acq_channel=0,
         )
+
+
+class MockModuleComponent(qblox._ModuleComponentBase):
+    """
+    A Mock Module Component for testing purposes. n.b. Mock() doesn't work well with
+    abstract base classes, so we need to implement this.
+    """
+
+    def _configure_global_settings(self):  # type: ignore incompatible override abstract method
+        pass
+
+    @property
+    def _hardware_properties(self):
+        return MagicMock(number_of_sequencers=4)
+
+    def retrieve_acquisition(self):
+        pass
+
+
+@pytest.fixture
+def mock_module_component():
+    mock_module = MagicMock()
+    mock_module.name = "test_module"
+
+    component = MockModuleComponent(mock_module)
+    return component
+
+
+# _ModuleComponentBase._set_parameter temporarily catches value errors related
+# to realtime predistortion (RTP) filters. This was a request from Orange until
+# we have official RTP support in Qblox instruments. This test can be removed
+# when that is the case.
+def test_set_parameter_value_error_is_passed(mock_module_component):
+    mock_instrument = MagicMock()
+
+    with patch(
+        "quantify_scheduler.instrument_coordinator.components.qblox.search_settable_param"
+    ) as mock_search_settable_param:
+        mock_search_settable_param.side_effect = ValueError("Test error")
+
+        # Test case where the ValueError should be passed through
+        with pytest.raises(ValueError, match="Test error"):
+            mock_module_component._set_parameter(
+                mock_instrument, "some_invalid_param", "some_value"
+            )
+
+        # Test case where ValueError should NOT be passed because it's handled internally
+        mock_module_component._set_parameter(
+            mock_instrument, "out0_bt_config", "bypassed"
+        )
+        mock_module_component._set_parameter(
+            mock_instrument, "out0_bt_time_constant", "some_value"
+        )
+
+        assert mock_search_settable_param.called

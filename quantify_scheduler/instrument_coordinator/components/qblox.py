@@ -6,6 +6,7 @@ from __future__ import annotations
 import copy
 import logging
 import os
+import re
 import warnings
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -15,12 +16,8 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Dict,
     Hashable,
-    Optional,
     Sequence,
-    Tuple,
-    Type,
     TypeVar,
     Union,
     cast,
@@ -85,7 +82,7 @@ driver_version_check.verify_qblox_instruments_version()
 class _StaticHardwareProperties:
     """Dataclass for storing configuration differences across Qblox devices."""
 
-    settings_type: Type[BaseModuleSettings]
+    settings_type: type[BaseModuleSettings]
     """The settings dataclass to use that the hardware needs to configure to."""
     number_of_sequencers: int
     """The number of sequencers the hardware has available."""
@@ -99,7 +96,7 @@ class _StaticHardwareProperties:
 class _StaticAnalogModuleProperties(_StaticHardwareProperties):
     """Dataclass for storing configuration differences across Qblox devices."""
 
-    settings_type: Type[AnalogModuleSettings]
+    settings_type: type[AnalogModuleSettings]
     """The settings dataclass to use that the hardware needs to configure to."""
     has_internal_lo: bool
     """Specifies if an internal lo source is available."""
@@ -109,7 +106,7 @@ class _StaticAnalogModuleProperties(_StaticHardwareProperties):
 class _StaticTimetagModuleProperties(_StaticHardwareProperties):
     """Dataclass for storing configuration differences across Qblox devices."""
 
-    settings_type: Type[TimetagModuleSettings]
+    settings_type: type[TimetagModuleSettings]
     """The settings dataclass to use that the hardware needs to configure to."""
 
 
@@ -184,9 +181,9 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
 
     def _set_parameter(
         self,
-        instrument: Union[Module, Sequencer],
+        instrument: Module | Sequencer,
         parameter_name: str,
-        val: Any,
+        val: Any,  # noqa: ANN401, disallow Any as type
     ) -> None:
         """
         Set the parameter directly or using the lazy set.
@@ -295,14 +292,14 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
             A dict containing the hardware log of the Qblox instrument, in case the
             component was referenced; else None.
         """
-        if self.instrument.name not in compiled_schedule.compiled_instructions.keys():
+        if self.instrument.name not in compiled_schedule.compiled_instructions:
             return None
 
         return _download_log(_get_configuration_manager(_get_instrument_ip(self)))
 
     # Parameter name is different from base class. We ignore it because it is legacy
     # code.
-    def prepare(self, program: Dict[str, dict]) -> None:  # type: ignore
+    def prepare(self, program: dict[str, dict]) -> None:  # type: ignore
         """Store program containing sequencer settings."""
         self._program = program
         self._nco_frequency_changed = {}
@@ -363,7 +360,7 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
         self.arm_all_sequencers_in_program()
         self._start_armed_sequencers()
 
-    def _start_armed_sequencers(self):
+    def _start_armed_sequencers(self) -> None:
         """Start execution of the schedule: start armed sequencers."""
         for idx in range(self._hardware_properties.number_of_sequencers):
             state = self.instrument.get_sequencer_status(idx)
@@ -478,7 +475,7 @@ class _AnalogModuleComponent(_ModuleComponentBase):
 
     def _determine_channel_map_parameters(
         self, settings: AnalogSequencerSettings
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """Returns a dictionary with the channel map parameters for this module."""
         channel_map_parameters = {}
         self._determine_output_channel_map_parameters(settings, channel_map_parameters)
@@ -486,20 +483,21 @@ class _AnalogModuleComponent(_ModuleComponentBase):
         return channel_map_parameters
 
     def _determine_output_channel_map_parameters(
-        self, settings: AnalogSequencerSettings, channel_map_parameters: Dict[str, str]
-    ) -> Dict[str, str]:
+        self, settings: AnalogSequencerSettings, channel_map_parameters: dict[str, str]
+    ) -> dict[str, str]:
         """Adds the outputs to the channel map parameters dict."""
         for channel_idx in range(self._hardware_properties.number_of_output_channels):
             param_setting = "off"
+            # For baseband, output indices map 1-to-1 to channel map indices
             if (
                 len(settings.connected_output_indices) > 0
                 and channel_idx in settings.connected_output_indices
-            ):  # For baseband, output indices map 1-to-1 to channel map indices
-                if channel_idx in settings.connected_output_indices:
-                    if ChannelMode.COMPLEX in settings.channel_name:
-                        param_setting = ["I", "Q", "I", "Q"][channel_idx]
-                    elif ChannelMode.REAL in settings.channel_name:
-                        param_setting = "I"
+                and channel_idx in settings.connected_output_indices
+            ):
+                if ChannelMode.COMPLEX in settings.channel_name:
+                    param_setting = ["I", "Q", "I", "Q"][channel_idx]
+                elif ChannelMode.REAL in settings.channel_name:
+                    param_setting = "I"
 
             channel_map_parameters[f"connect_out{channel_idx}"] = param_setting
 
@@ -564,7 +562,7 @@ class _QCMComponent(_AnalogModuleComponent):
         """
         return None
 
-    def prepare(self, program: Dict[str, dict]) -> None:
+    def prepare(self, program: dict[str, dict]) -> None:
         """
         Uploads the waveforms and programs to the sequencers.
 
@@ -608,7 +606,7 @@ class _QCMComponent(_AnalogModuleComponent):
                 seq_idx=seq_idx, settings=AnalogSequencerSettings.from_dict(seq_cfg)
             )
 
-    def _configure_global_settings(self, settings: AnalogModuleSettings):
+    def _configure_global_settings(self, settings: AnalogModuleSettings) -> None:
         """
         Configures all settings that are set globally for the whole instrument.
 
@@ -689,10 +687,10 @@ class _QRMComponent(_AnalogModuleComponent):
             )
         super().__init__(instrument)
 
-        self._acquisition_manager: Optional[_QRMAcquisitionManager] = None
+        self._acquisition_manager: _QRMAcquisitionManager | None = None
         """Holds all the acquisition related logic."""
 
-    def retrieve_acquisition(self) -> Optional[Dataset]:
+    def retrieve_acquisition(self) -> Dataset | None:
         """
         Retrieves the latest acquisition results.
 
@@ -706,7 +704,7 @@ class _QRMComponent(_AnalogModuleComponent):
         else:
             return None
 
-    def prepare(self, program: Dict[str, dict]) -> None:
+    def prepare(self, program: dict[str, dict]) -> None:
         """
         Uploads the waveforms and programs to the sequencers.
 
@@ -784,7 +782,7 @@ class _QRMComponent(_AnalogModuleComponent):
                 self.instrument, f"scope_acq_avg_mode_en_path{path}", True
             )
 
-    def _configure_global_settings(self, settings: AnalogModuleSettings):
+    def _configure_global_settings(self, settings: AnalogModuleSettings) -> None:
         """
         Configures all settings that are set globally for the whole instrument.
 
@@ -888,7 +886,7 @@ class _QRMComponent(_AnalogModuleComponent):
 
     def _determine_channel_map_parameters(
         self, settings: AnalogSequencerSettings
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """Returns a dictionary with the channel map parameters for this module."""
         channel_map_parameters = {}
         self._determine_output_channel_map_parameters(settings, channel_map_parameters)
@@ -897,8 +895,8 @@ class _QRMComponent(_AnalogModuleComponent):
         return channel_map_parameters
 
     def _determine_input_channel_map_parameters(
-        self, settings: AnalogSequencerSettings, channel_map_parameters: Dict[str, str]
-    ) -> Dict[str, str]:
+        self, settings: AnalogSequencerSettings, channel_map_parameters: dict[str, str]
+    ) -> dict[str, str]:
         """Adds the inputs to the channel map parameters dict."""
         param_name = {0: "connect_acq_I", 1: "connect_acq_Q"}
 
@@ -920,8 +918,8 @@ class _QRMComponent(_AnalogModuleComponent):
         return channel_map_parameters
 
     def _determine_scope_mode_acquisition_sequencer_and_qblox_acq_index(
-        self, acquisition_metadata: Dict[str, AcquisitionMetadata]
-    ) -> Optional[Tuple[int, int]]:
+        self, acquisition_metadata: dict[str, AcquisitionMetadata]
+    ) -> tuple[int, int] | None:
         """
         Finds the sequencer and qblox_acq_index that performs the raw trace acquisition.
 
@@ -939,7 +937,8 @@ class _QRMComponent(_AnalogModuleComponent):
         Returns
         -------
         :
-            The sequencer and qblox_acq_channel for the trace acquisition, if there is any, otherwise None, None.
+            The sequencer and qblox_acq_channel for the trace acquisition, if there is any,
+            otherwise None.
         """
         sequencer_and_qblox_acq_index = None
         for (
@@ -958,7 +957,8 @@ class _QRMComponent(_AnalogModuleComponent):
                         sequencer_1=sequencer_and_qblox_acq_index[0],
                         module_name=self.name,
                     )
-                # For scope protocol, only one channel makes sense, we only need the first key in dict
+                # For scope protocol, only one channel makes sense,
+                # we only need the first key in dict
                 qblox_acq_index = next(
                     iter(current_acquisition_metadata.acq_channels_metadata.keys())
                 )
@@ -975,7 +975,7 @@ class _QRMComponent(_AnalogModuleComponent):
 class _RFComponent(_AnalogModuleComponent):
     """Mix-in for RF-module-specific InstrumentCoordinatorComponent behaviour."""
 
-    def prepare(self, program: Dict[str, dict]) -> None:
+    def prepare(self, program: dict[str, dict]) -> None:
         """
         Uploads the waveforms and programs to the sequencers.
 
@@ -1030,8 +1030,8 @@ class _RFComponent(_AnalogModuleComponent):
         )
 
     def _determine_output_channel_map_parameters(
-        self, settings: AnalogSequencerSettings, channel_map_parameters: Dict[str, str]
-    ) -> Dict[str, str]:
+        self, settings: AnalogSequencerSettings, channel_map_parameters: dict[str, str]
+    ) -> dict[str, str]:
         """Adds the outputs to the channel map parameters dict."""
         expected_output_indices = {0: (0, 1), 1: (2, 3)}
 
@@ -1078,7 +1078,7 @@ class _QCMRFComponent(_RFComponent, _QCMComponent):
 
     _hardware_properties = _QCM_RF_PROPERTIES
 
-    def _configure_global_settings(self, settings: RFModuleSettings):
+    def _configure_global_settings(self, settings: RFModuleSettings) -> None:
         """
         Configures all settings that are set globally for the whole instrument.
 
@@ -1160,7 +1160,7 @@ class _QRMRFComponent(_RFComponent, _QRMComponent):
 
     _hardware_properties = _QRM_RF_PROPERTIES
 
-    def _configure_global_settings(self, settings: RFModuleSettings):
+    def _configure_global_settings(self, settings: RFModuleSettings) -> None:
         """
         Configures all settings that are set globally for the whole instrument.
 
@@ -1211,8 +1211,8 @@ class _QRMRFComponent(_RFComponent, _QRMComponent):
             self.instrument.out0_in0_lo_cal()
 
     def _determine_input_channel_map_parameters(
-        self, settings: AnalogSequencerSettings, channel_map_parameters: Dict[str, str]
-    ) -> Dict[str, str]:
+        self, settings: AnalogSequencerSettings, channel_map_parameters: dict[str, str]
+    ) -> dict[str, str]:
         """Adds the inputs to the channel map parameters dict."""
         channel_map_parameters["connect_acq"] = (
             "in0" if tuple(settings.connected_input_indices) == (0, 1) else "off"
@@ -1242,7 +1242,7 @@ class _QTMComponent(_ModuleComponentBase):
         self._acquisition_manager: _QTMAcquisitionManager | None = None
         """Holds all the acquisition related logic."""
 
-    def retrieve_acquisition(self) -> Optional[Dataset]:
+    def retrieve_acquisition(self) -> Dataset | None:
         """
         Retrieves the latest acquisition results.
 
@@ -1256,7 +1256,7 @@ class _QTMComponent(_ModuleComponentBase):
         else:
             return None
 
-    def prepare(self, program: Dict[str, dict]) -> None:
+    def prepare(self, program: dict[str, dict]) -> None:
         """
         Uploads the waveforms and programs to the sequencers.
 
@@ -1288,7 +1288,8 @@ class _QTMComponent(_ModuleComponentBase):
                     f'with name "{seq_name}".'
                 )
 
-            # 1-1 Sequencer-io_channel coupling, the io_channel settings are inside SequencerSettings
+            # 1-1 Sequencer-io_channel coupling,
+            # the io_channel settings are inside SequencerSettings
             settings = TimetagSequencerSettings.from_dict(seq_cfg)
             self._configure_sequencer_settings(seq_idx=seq_idx, settings=settings)
             self._configure_io_channel_settings(seq_idx=seq_idx, settings=settings)
@@ -1310,7 +1311,7 @@ class _QTMComponent(_ModuleComponentBase):
             )
             self._configure_global_settings(module_settings)
 
-    def _configure_global_settings(self, settings: TimetagModuleSettings):
+    def _configure_global_settings(self, settings: TimetagModuleSettings) -> None:
         """
         Configures all settings that are set globally for the whole instrument.
 
@@ -1457,9 +1458,9 @@ class _AcquisitionManagerBase(ABC):
     def __init__(
         self,
         parent: _ReadoutModuleComponentT,
-        acquisition_metadata: Dict[str, AcquisitionMetadata],
-        acquisition_duration: Dict[str, int],
-        seq_name_to_idx_map: Dict[str, int],
+        acquisition_metadata: dict[str, AcquisitionMetadata],
+        acquisition_duration: dict[str, int],
+        seq_name_to_idx_map: dict[str, int],
     ) -> None:
         self.parent = parent
         self._acquisition_metadata = acquisition_metadata
@@ -1468,7 +1469,7 @@ class _AcquisitionManagerBase(ABC):
         self._seq_name_to_idx_map = seq_name_to_idx_map
 
     @property
-    def instrument(self):
+    def instrument(self) -> Module:
         """Returns the QRM driver from the parent IC component."""
         return self.parent.instrument
 
@@ -1506,8 +1507,9 @@ class _AcquisitionManagerBase(ABC):
             The acquisitions with the protocols specified in the `acquisition_metadata`.
             Each `xarray.DataArray` in the `xarray.Dataset` corresponds to one `acq_channel`.
             The ``acq_channel`` is the name of each `xarray.DataArray` in the `xarray.Dataset`.
-            Each `xarray.DataArray` is a two-dimensional array, with ``acq_index`` and ``repetition`` as
-            dimensions.
+            Each `xarray.DataArray` is a two-dimensional array, with ``acq_index`` and
+            Each `xarray.DataArray` is a two-dimensional array,
+            with ``acq_index`` and ``repetition`` as dimensions.
         """
         dataset = Dataset()
 
@@ -1568,7 +1570,9 @@ class _AcquisitionManagerBase(ABC):
             )
 
     def _get_acquisitions_from_instrument(
-        self, seq_idx: int, acquisition_metadata: AcquisitionMetadata
+        self,
+        seq_idx: int,
+        acquisition_metadata: AcquisitionMetadata,  # noqa: ARG002, unused parameter
     ) -> dict:
         return self.instrument.get_acquisitions(seq_idx)
 
@@ -1644,11 +1648,11 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
     def __init__(
         self,
         parent: _QRMComponent,
-        acquisition_metadata: Dict[str, AcquisitionMetadata],
-        acquisition_duration: Dict[str, int],
-        seq_name_to_idx_map: Dict[str, int],
-        scope_mode_sequencer_and_qblox_acq_index: Optional[Tuple[int, int]] = None,
-    ):
+        acquisition_metadata: dict[str, AcquisitionMetadata],
+        acquisition_duration: dict[str, int],
+        seq_name_to_idx_map: dict[str, int],
+        scope_mode_sequencer_and_qblox_acq_index: tuple[int, int] | None = None,
+    ) -> None:
         super().__init__(
             parent=parent,
             acquisition_metadata=acquisition_metadata,
@@ -1687,13 +1691,13 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
             The acquisitions with the protocols specified in the `acquisition_metadata`.
             Each `xarray.DataArray` in the `xarray.Dataset` corresponds to one `acq_channel`.
             The ``acq_channel`` is the name of each `xarray.DataArray` in the `xarray.Dataset`.
-            Each `xarray.DataArray` is a two-dimensional array, with ``acq_index`` and ``repetition`` as
-            dimensions.
+            Each `xarray.DataArray` is a two-dimensional array,
+            with ``acq_index`` and ``repetition`` as dimensions.
         """
         self._store_scope_acquisition()
         return super().retrieve_acquisition()
 
-    def _store_scope_acquisition(self):
+    def _store_scope_acquisition(self) -> None:
         """
         Calls :code:`store_scope_acquisition` function on the Qblox instrument.
 
@@ -1793,7 +1797,7 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
         acq_indices: list,
         hardware_retrieved_acquisitions: dict,
         acquisition_metadata: AcquisitionMetadata,
-        acq_duration: int,
+        acq_duration: int,  # noqa: ARG002, unused argument
         qblox_acq_index: int,
         acq_channel: Hashable,
         multiplier: float = 1,
@@ -1996,10 +2000,10 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
     def _get_trigger_count_data(
         self,
         *,
-        acq_indices: list,
+        acq_indices: list,  # noqa: ARG002 unused argument
         hardware_retrieved_acquisitions: dict,
         acquisition_metadata: AcquisitionMetadata,
-        acq_duration: int,
+        acq_duration: int,  # noqa: ARG002 unused argument
         qblox_acq_index: int,
         acq_channel: Hashable,
     ) -> DataArray:
@@ -2036,7 +2040,9 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
 
         if acquisition_metadata.bin_mode == BinMode.AVERAGE:
 
-            def _convert_from_cumulative(cumulative_values):
+            def _convert_from_cumulative(
+                cumulative_values: list[int],
+            ) -> dict[int, int]:
                 """
                 Return the distribution of counts from a cumulative distribution.
 
@@ -2048,7 +2054,7 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
                 result = {}
 
                 last_cumulative_value = 0
-                for count, current_cumulative_value in reversed(cumulative_values):
+                for count, current_cumulative_value in reversed(cumulative_values):  # type: ignore
                     if (not isnan(current_cumulative_value)) and (
                         last_cumulative_value != current_cumulative_value
                     ):
@@ -2126,10 +2132,10 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
     def _get_trigger_count_data(
         self,
         *,
-        acq_indices: list,
+        acq_indices: list,  # noqa: ARG002, unused argument
         hardware_retrieved_acquisitions: dict,
         acquisition_metadata: AcquisitionMetadata,
-        acq_duration: int,
+        acq_duration: int,  # noqa: ARG002, unused argument
         qblox_acq_index: int,
         acq_channel: Hashable,
     ) -> DataArray:
@@ -2209,7 +2215,7 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
         acq_indices: list,
         hardware_retrieved_acquisitions: dict,
         acquisition_metadata: AcquisitionMetadata,
-        acq_duration: int,
+        acq_duration: int,  # noqa: ARG002, unused argument
         qblox_acq_index: int,
         acq_channel: Hashable,
     ) -> DataArray:
@@ -2316,7 +2322,7 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
         acq_indices: list,
         hardware_retrieved_acquisitions: dict,
         acquisition_metadata: AcquisitionMetadata,
-        acq_duration: int,
+        acq_duration: int,  # noqa: ARG002, unused argument
         qblox_acq_index: int,
         acq_channel: Hashable,
     ) -> DataArray:
@@ -2381,7 +2387,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
 
     def __init__(self, instrument: Cluster) -> None:
         super().__init__(instrument)
-        self._cluster_modules: Dict[str, _ClusterModule] = {}
+        self._cluster_modules: dict[str, _ClusterModule] = {}
         self._program = {}
 
         # Important: a tuple with only False may not occur as a key, because new
@@ -2436,7 +2442,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         # Stops all sequencers in the cluster, time efficiently.
         self.instrument.stop_sequencer()
 
-    def _configure_cmm_settings(self, settings: Dict[str, Any]):
+    def _configure_cmm_settings(self, settings: dict[str, Any]) -> None:
         """
         Set all the settings of the Cluster Management Module.
 
@@ -2456,7 +2462,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
                     self.instrument, "reference_source", settings["reference_source"]
                 )
 
-    def prepare(self, options: Dict[str, dict]) -> None:
+    def prepare(self, options: dict[str, dict]) -> None:
         """
         Prepares the cluster component for execution of a schedule.
 
@@ -2478,7 +2484,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
                     f" module has not been added to the cluster component."
                 )
 
-    def retrieve_acquisition(self) -> Optional[Dataset]:
+    def retrieve_acquisition(self) -> Dataset | None:
         """
         Retrieves all the data from the instruments.
 
@@ -2536,7 +2542,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
             component was referenced; else None.
         """
         cluster = self.instrument
-        if cluster.name not in compiled_schedule.compiled_instructions.keys():
+        if cluster.name not in compiled_schedule.compiled_instructions:
             return None
 
         cluster_ip = _get_instrument_ip(self)
@@ -2590,7 +2596,7 @@ def _get_configuration_manager(instrument_ip: str) -> ConfigurationManager:
 
 def _download_log(
     config_manager: ConfigurationManager,
-    is_cluster: Optional[bool] = False,
+    is_cluster: bool | None = False,
 ) -> dict:
     hardware_log = {}
 
@@ -2603,9 +2609,7 @@ def _download_log(
         temp_log_file_name = os.path.join(get_datadir(), f"{source}_{uuid4()}")
         config_manager.download_log(source=source, fmt="txt", file=temp_log_file_name)
         if os.path.isfile(temp_log_file_name):
-            with open(
-                temp_log_file_name, "r", encoding="utf-8", errors="replace"
-            ) as file:
+            with open(temp_log_file_name, encoding="utf-8", errors="replace") as file:
                 log = file.read()
             os.remove(temp_log_file_name)
             hardware_log[f"{source}_log"] = log
