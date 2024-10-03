@@ -584,28 +584,30 @@ def _compile_two_qubits(
     parent_qubit, child_qubit = qubits
     edge = f"{parent_qubit}_{child_qubit}"
 
-    symmetric_operation = operation.get("gate_info", {}).get("symmetric", False)
+    if edge not in device_cfg.edges:
+        symmetric_operation = operation.get("gate_info", {}).get("symmetric", False)
 
-    if symmetric_operation:
-        possible_permutations = permutations(qubits, 2)
-        operable_edges = {
-            f"{permutation[0]}_{permutation[1]}"
-            for permutation in possible_permutations
-        }
-        valid_edge_list = list(operable_edges.intersection(device_cfg.edges))
-        if len(valid_edge_list) == 1:
-            edge = valid_edge_list[0]
-        elif len(valid_edge_list) < 1:
+        if symmetric_operation:
+            possible_permutations = permutations(qubits, 2)
+            operable_edges = {
+                f"{permutation[0]}_{permutation[1]}"
+                for permutation in possible_permutations
+            }
+            valid_edge_list = list(operable_edges.intersection(device_cfg.edges))
+            if len(valid_edge_list) == 1:
+                edge = valid_edge_list[0]
+            elif len(valid_edge_list) < 1:
+                raise ConfigKeyError(
+                    kind="edge", missing=edge, allowed=list(device_cfg.edges.keys())
+                )
+            elif len(valid_edge_list) > 1:
+                raise MultipleKeysError(
+                    operation=operation_type, matches=valid_edge_list
+                )
+        else:
             raise ConfigKeyError(
                 kind="edge", missing=edge, allowed=list(device_cfg.edges.keys())
             )
-        elif len(valid_edge_list) > 1:
-            raise MultipleKeysError(operation=operation_type, matches=valid_edge_list)
-
-    if edge not in device_cfg.edges:
-        raise ConfigKeyError(
-            kind="edge", missing=edge, allowed=list(device_cfg.edges.keys())
-        )
 
     edge_config = device_cfg.edges[edge]
     if operation_type not in edge_config:

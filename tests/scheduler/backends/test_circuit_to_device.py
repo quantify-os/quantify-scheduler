@@ -17,6 +17,9 @@ from quantify_scheduler.backends.circuit_to_device import (
 )
 from quantify_scheduler.backends.graph_compilation import SerialCompilationConfig
 from quantify_scheduler.backends.qblox.operations.gate_library import ConditionalReset
+from quantify_scheduler.device_under_test.composite_square_edge import (
+    CompositeSquareEdge,
+)
 from quantify_scheduler.device_under_test.mock_setup import (
     set_standard_params_transmon,
     set_up_mock_transmon_setup,
@@ -158,6 +161,44 @@ def test_compile_asymmetric_gate(mock_setup_basic_transmon):
         _ = compile_circuit_to_device_with_config_validation(
             sched, config=quantum_device.generate_compilation_config()
         )
+
+
+def test_compile_symmetric_gate_distinguished_qubits(mock_setup_basic_transmon):
+    """
+    Test if the compilation finds the exact match of edge
+    even if the gate is symmetric by default.
+    """
+
+    # define the resources
+    q2, q3 = ("q2", "q3")
+
+    edge_q3_q2 = CompositeSquareEdge(parent_element_name=q3, child_element_name=q2)
+
+    # test that all these operations compile correctly.
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+    quantum_device.add_edge(edge_q3_q2)
+
+    def compile_schedule(q_c, q_t):
+        schedule = Schedule("Test schedule")
+        cz = CZ(qC=q_c, qT=q_t)
+        cz.data["gate_info"]["symmetric"] = True
+        schedule.add(operation=cz)
+
+        return compile_circuit_to_device_with_config_validation(
+            schedule, config=quantum_device.generate_compilation_config()
+        )
+
+    compiled_schedule_q2_q3 = compile_schedule(q2, q3)
+    assert (
+        list(compiled_schedule_q2_q3.operations.values())[0]["pulse_info"][0]["port"]
+        == "q2:fl"
+    )
+
+    compiled_schedule_q3_q2 = compile_schedule(q3, q2)
+    assert (
+        list(compiled_schedule_q3_q2.operations.values())[0]["pulse_info"][0]["port"]
+        == "q3:fl"
+    )
 
 
 def test_measurement_compile(device_cfg_transmon_example, get_subschedule_operation):
