@@ -4,7 +4,6 @@
 
 ### Breaking changes
 
-
 ### Merged branches and closed issues
 
 - Pyright

@@ -25,6 +25,7 @@ from quantify_scheduler.operations.control_flow_library import (
     LoopOperation,
 )
 from quantify_scheduler.operations.operation import Operation
+from quantify_scheduler.resources import Resource
 
 if TYPE_CHECKING:
     import plotly.graph_objects as go
@@ -32,7 +33,6 @@ if TYPE_CHECKING:
     from matplotlib.figure import Figure
 
     from quantify_scheduler.operations.control_flow_library import ControlFlowSpec
-    from quantify_scheduler.resources import Resource
 
 DictOrdered = dict
 """
@@ -761,10 +761,10 @@ class Schedule(ScheduleBase):
 
     def add_resource(self, resource: Resource) -> None:
         """Add a resource such as a channel or qubit to the schedule."""
-        if not resources.Resource.is_valid(resource):
+        if not isinstance(resource, Resource):
             raise ValueError(
                 f"Attempting to add resource to schedule. "
-                f"Resource '{resource}' is not valid."
+                f"'{resource}' is not a Resource instance."
             )
         if resource.name in self["resource_dict"]:
             raise ValueError(f"Key {resource.name} is already present")

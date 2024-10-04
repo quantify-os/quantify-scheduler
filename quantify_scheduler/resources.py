@@ -5,11 +5,9 @@
 from __future__ import annotations
 
 from collections import UserDict
-from functools import lru_cache
 
 from quantify_scheduler.helpers.collections import make_hash
 from quantify_scheduler.helpers.importers import export_python_object_to_path_string
-from quantify_scheduler.json_utils import load_json_schema, validate_json
 
 
 class Resource(UserDict):
@@ -27,33 +25,6 @@ class Resource(UserDict):
     def __init__(self, name: str) -> None:
         super().__init__()
         self.data["name"] = name
-
-    @staticmethod
-    @lru_cache
-    def is_valid(operation: Resource) -> bool:
-        """
-        Validates the Resource against the schemas/resource.json fastjsonschema.
-
-        Parameters
-        ----------
-        operation :
-            The operation to validate.
-
-        Raises
-        ------
-        fastjsonschema.JsonSchemaException
-            if the instance is invalid
-        fastjsonschema.JsonSchemaDefinitionException
-            if the schema itself is invalid
-
-        Returns
-        -------
-        bool
-            If the validation was successful.
-        """
-        scheme = load_json_schema(__file__, "resource.json")
-        validate_json(operation.data, scheme)
-        return True  # if not exception was raised during validation
 
     @property
     def name(self) -> str:
