@@ -127,7 +127,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         return self["operation_dict"]
 
     @property
-    def schedulables(self) -> DictOrdered[str, Any]:
+    def schedulables(self) -> DictOrdered[str, Schedulable]:
         """
         Ordered dictionary of schedulables describing timing and order of operations.
 

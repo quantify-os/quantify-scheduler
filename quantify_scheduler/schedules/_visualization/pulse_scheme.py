@@ -8,7 +8,7 @@ using matplotlib.
 from __future__ import annotations
 
 import logging
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Tuple
 
 import matplotlib.patches
 import matplotlib.pyplot as plt
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 def new_pulse_fig(
     figsize: Optional[Tuple[int, int]] = None, ax: Optional[Axes] = None
-) -> Tuple[Figure, Union[Axes, List[Axes]]]:
+) -> Tuple[Optional[Figure], Axes]:
     """
     Open a new figure and configure it to plot pulse schemes.
 
@@ -54,7 +54,6 @@ def new_pulse_fig(
     ax.spines["left"].set_visible(False)
     if fig is not None:
         fig.patch.set_alpha(0)
-    ax.axhline(0, color="0.75")
 
     return fig, ax
 

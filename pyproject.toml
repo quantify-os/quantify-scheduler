@@ -63,6 +63,7 @@ test = [
  "pytest",
  "pytest-mock",
  "diff-cover",
+ "pytest-mpl",
 ]
 
 docs = [
@@ -255,7 +256,7 @@ extend-ignore-names = ["path_I", "path_Q", "offset_path_I", "offset_path_Q"]
 "quantify_scheduler/operations/shared_native_library.py" = ['ANN204']
 "quantify_scheduler/operations/stitched_pulse.py" = ['ANN201']
 "quantify_scheduler/resources.py" = ['ANN001', 'ANN102', 'ANN204']
-"quantify_scheduler/schedules/_visualization/circuit_diagram.py" = ['ANN001', 'ANN202', 'ARG001', 'PLR0912', 'PLR0915', 'TCH002', 'UP006', 'UP007']
+"quantify_scheduler/schedules/_visualization/circuit_diagram.py" = ['ARG001']
 "quantify_scheduler/schedules/_visualization/pulse_diagram.py" = ['ANN001', 'ANN202', 'PLR0912', 'PLR0915', 'SIM102', 'SIM118', 'UP006', 'UP007']
 "quantify_scheduler/schedules/_visualization/pulse_scheme.py" = ['ANN001', 'D417', 'N802', 'SIM108', 'TCH002', 'UP006', 'UP007']
 "quantify_scheduler/schedules/schedule.py" = ['ANN102']
@@ -317,7 +318,6 @@ exclude = [
  "quantify_scheduler/schedules/timedomain_schedules.py",
  "quantify_scheduler/schedules/trace_schedules.py",
  "quantify_scheduler/schedules/verification.py",
- "quantify_scheduler/schedules/_visualization/circuit_diagram.py",
  "quantify_scheduler/schedules/_visualization/pulse_diagram.py",
  "quantify_scheduler/schedules/_visualization/pulse_scheme.py",
  "tests/fixtures/mock_setup.py",

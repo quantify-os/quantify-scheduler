@@ -209,9 +209,14 @@ def _get_start_time(
     ref_op = schedule.operations[ref_schedulable["operation_id"]]
 
     # duration = 1 is useful when e.g., drawing a circuit diagram.
-    duration_ref_op = (
-        ref_op.duration if time_unit == "physical" else ref_op.get("depth", 1)
-    )
+    if time_unit == "physical":
+        duration_ref_op = ref_op.duration
+    else:
+        duration_ref_op = (
+            ref_op.body.get("depth", 1)
+            if isinstance(ref_op, ControlFlowOperation)
+            else ref_op.get("depth", 1)
+        )
     # Type checker does not know that ref_op.duration is not None if time_unit ==
     # "physical"
     assert duration_ref_op is not None
@@ -226,9 +231,14 @@ def _get_start_time(
     else:
         raise NotImplementedError(f'Timing "{ref_pt=}" not supported by backend.')
 
-    duration_new_op = (
-        curr_op.duration if time_unit == "physical" else curr_op.get("depth", 1)
-    )
+    if time_unit == "physical":
+        duration_new_op = curr_op.duration
+    else:
+        duration_new_op = (
+            curr_op.body.get("depth", 1)
+            if isinstance(curr_op, ControlFlowOperation)
+            else curr_op.get("depth", 1)
+        )
     assert duration_new_op is not None
 
     ref_pt_new = t_constr["ref_pt_new"] or "start"

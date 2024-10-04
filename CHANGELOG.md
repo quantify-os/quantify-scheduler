@@ -21,6 +21,8 @@
   - Refactor parts of the NCO/LO frequency determining logic, and remove the `parent` attribute from `InstrumentCompiler` and all subclasses. (!1069)
 - Schedules
   - Change CPMG schedule to enable Ramsey style decoupling measurements. (!1041)
+- Circuit diagrams
+  - Support sub-schedules and control-flow in circuit diagrams. (!1071)
 
 ## 0.21.1 (2024-08-16)
 
