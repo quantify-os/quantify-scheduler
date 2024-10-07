@@ -81,7 +81,7 @@ class OperationCompilationConfig(DataStructure):
     defined on a quantum-device layer.
     """
 
-    factory_func: Callable[..., Union[Operation, Schedule]]
+    factory_func: Union[Callable[..., Union[Operation, Schedule]], None]
     """
     A callable designating a factory function used to create the representation
     of the operation at the quantum-device level.
@@ -99,7 +99,10 @@ class OperationCompilationConfig(DataStructure):
 
     @field_serializer("factory_func")
     def _serialize_factory_func(self, v):
-        return export_python_object_to_path_string(v)
+        if v is None:
+            return None
+        else:
+            return export_python_object_to_path_string(v)
 
     @field_validator("factory_func", mode="before")
     def _import_factory_func_if_str(

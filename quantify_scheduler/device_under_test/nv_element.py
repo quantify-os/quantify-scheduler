@@ -22,6 +22,9 @@ from quantify_scheduler.backends.graph_compilation import (
     OperationCompilationConfig,
 )
 from quantify_scheduler.device_under_test.device_element import DeviceElement
+from quantify_scheduler.device_under_test.transmon_element import (
+    PulseCompensationModule,
+)
 from quantify_scheduler.enums import TimeRef, TimeSource
 from quantify_scheduler.helpers.validators import (
     _Amplitudes,
@@ -454,6 +457,7 @@ class BasicElectronicNVElement(DeviceElement):
             "reset": ResetSpinpump,
             "charge_reset": ChargeReset,
             "measure": Measure,
+            "pulse_compensation": PulseCompensationModule,
             "cr_count": CRCount,
             "rxy": RxyHermite,
         }
@@ -482,6 +486,8 @@ class BasicElectronicNVElement(DeviceElement):
         """Submodule :class:`~.ChargeReset`."""
         self.measure: Measure
         """Submodule :class:`~.Measure`."""
+        self.pulse_compensation: PulseCompensationModule
+        """Submodule :class:`~.PulseCompensationModule`."""
         self.cr_count: CRCount
         """Submodule :class:`~.CRCount`."""
         self.rxy: RxyHermite
@@ -546,6 +552,16 @@ class BasicElectronicNVElement(DeviceElement):
                         "bin_mode",
                         "acq_protocol",
                     ],
+                ),
+                "pulse_compensation": OperationCompilationConfig(
+                    factory_func=None,
+                    factory_kwargs={
+                        "port": self.ports.microwave(),
+                        "clock": f"{self.name}.f_larmor",
+                        "max_compensation_amp": self.pulse_compensation.max_compensation_amp(),
+                        "time_grid": self.pulse_compensation.time_grid(),
+                        "sampling_rate": self.pulse_compensation.sampling_rate(),
+                    },
                 ),
                 "cr_count": OperationCompilationConfig(
                     factory_func=measurement_factories.optical_measurement,

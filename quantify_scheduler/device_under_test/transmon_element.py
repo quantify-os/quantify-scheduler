@@ -161,6 +161,39 @@ class RxyDRAG(InstrumentChannel):
         )
 
 
+class PulseCompensationModule(InstrumentChannel):
+    """Submodule containing parameters for performing a PulseCompensation operation."""
+
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+        super().__init__(parent=parent, name=name)
+        self.max_compensation_amp = ManualParameter(
+            name="max_compensation_amp",
+            instrument=self,
+            initial_value=kwargs.get("max_compensation_amp", math.nan),
+            unit="",
+            vals=Numbers(min_value=0, allow_nan=True),
+        )
+        r"""Maximum amplitude for the pulse compensation."""
+
+        self.time_grid = ManualParameter(
+            name="time_grid",
+            instrument=self,
+            initial_value=kwargs.get("time_grid", math.nan),
+            unit="",
+            vals=Numbers(min_value=0, allow_nan=True),
+        )
+        r"""Time grid for the duration of the compensating pulse."""
+
+        self.sampling_rate = ManualParameter(
+            name="sampling_rate",
+            instrument=self,
+            initial_value=kwargs.get("sampling_rate", math.nan),
+            unit="",
+            vals=Numbers(min_value=0, allow_nan=True),
+        )
+        r"""Sampling rate of the pulses."""
+
+
 class DispersiveMeasurement(InstrumentChannel):
     """
     Submodule containing parameters to perform a measurement.
@@ -424,6 +457,7 @@ class BasicTransmonElement(DeviceElement):
             "reset": IdlingReset,
             "rxy": RxyDRAG,
             "measure": DispersiveMeasurement,
+            "pulse_compensation": PulseCompensationModule,
             "ports": Ports,
             "clock_freqs": ClocksFrequencies,
         }
@@ -446,6 +480,8 @@ class BasicTransmonElement(DeviceElement):
         """Submodule :class:`~.RxyDRAG`."""
         self.measure: DispersiveMeasurement
         """Submodule :class:`~.DispersiveMeasurement`."""
+        self.pulse_compensation: PulseCompensationModule
+        """Submodule :class:`~.PulseCompensationModule`."""
         self.ports: Ports
         """Submodule :class:`~.Ports`."""
         self.clock_freqs: ClocksFrequencies
@@ -497,6 +533,16 @@ class BasicTransmonElement(DeviceElement):
                     factory_func=composite_factories.hadamard_as_y90z,
                     factory_kwargs={
                         "qubit": f"{self.name}",
+                    },
+                ),
+                "pulse_compensation": OperationCompilationConfig(
+                    factory_func=None,
+                    factory_kwargs={
+                        "port": self.ports.microwave(),
+                        "clock": f"{self.name}.01",
+                        "max_compensation_amp": self.pulse_compensation.max_compensation_amp(),
+                        "time_grid": self.pulse_compensation.time_grid(),
+                        "sampling_rate": self.pulse_compensation.sampling_rate(),
                     },
                 ),
                 # the measurement also has a parametrized mapping, and uses a

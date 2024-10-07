@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable
 
 from quantify_scheduler.operations.operation import Operation
 
@@ -31,6 +31,8 @@ class PulseCompensation(Operation):
     ----------
     body
         Operation to be pulse-compensated
+    qubits
+        For circuit-level operations, this is a list of device element names.
     max_compensation_amp
         Dictionary for each port the maximum allowed amplitude for the compensation pulse.
     time_grid
@@ -42,21 +44,46 @@ class PulseCompensation(Operation):
     def __init__(
         self,
         body: Operation | Schedule,
-        max_compensation_amp: dict[Port, float],
-        time_grid: float,
-        sampling_rate: float,
+        qubits: str | Iterable[str] | None = None,
+        max_compensation_amp: dict[Port, float] | None = None,
+        time_grid: float | None = None,
+        sampling_rate: float | None = None,
     ) -> None:
         super().__init__(name="PulseCompensation")
-        self.data.update(
-            {
-                "pulse_compensation_info": {
-                    "body": body,
-                    "max_compensation_amp": max_compensation_amp,
-                    "time_grid": time_grid,
-                    "sampling_rate": sampling_rate,
-                },
-            }
-        )
+        if qubits is not None:
+            if (
+                max_compensation_amp is not None
+                or time_grid is not None
+                or sampling_rate is not None
+            ):
+                raise ValueError(
+                    "PulseCompensation can only be defined on gate-level or device-level, "
+                    "but not both. If 'qubit' is defined, then 'max_compensation_amp', "
+                    "'time_grid' and 'sampling_rate' must be 'None'."
+                )
+
+            if isinstance(qubits, str):
+                qubits = [qubits]
+
+            self.data.update(
+                {
+                    "pulse_compensation_info": {
+                        "body": body,
+                        "qubits": qubits,
+                    },
+                }
+            )
+        else:
+            self.data.update(
+                {
+                    "pulse_compensation_info": {
+                        "body": body,
+                        "max_compensation_amp": max_compensation_amp,
+                        "time_grid": time_grid,
+                        "sampling_rate": sampling_rate,
+                    },
+                }
+            )
         self._update()
 
     @property

@@ -20,6 +20,7 @@ from quantify_scheduler.device_under_test.device_element import DeviceElement
 from quantify_scheduler.device_under_test.transmon_element import (
     DispersiveMeasurement,
     IdlingReset,
+    PulseCompensationModule,
     ReferenceMagnitude,
 )
 from quantify_scheduler.helpers.validators import Numbers
@@ -173,6 +174,7 @@ class BasicSpinElement(DeviceElement):
             "reset": IdlingReset,
             "rxy": RxyGaussian,
             "measure": DispersiveMeasurementSpin,
+            "pulse_compensation": PulseCompensationModule,
             "ports": PortsSpin,
             "clock_freqs": ClocksFrequenciesSpin,
         }
@@ -195,6 +197,8 @@ class BasicSpinElement(DeviceElement):
         """Submodule :class:`~.RxyGaussian`."""
         self.measure: DispersiveMeasurementSpin
         """Submodule :class:`~.DispersiveMeasurementSpin`."""
+        self.pulse_compensation: PulseCompensationModule
+        """Submodule :class:`~.PulseCompensationModule`."""
         self.ports: PortsSpin
         """Submodule :class:`~.PortsSpin`."""
         self.clock_freqs: ClocksFrequenciesSpin
@@ -282,6 +286,16 @@ class BasicSpinElement(DeviceElement):
                         "acq_protocol",
                         "feedback_trigger_label",
                     ],
+                ),
+                "pulse_compensation": OperationCompilationConfig(
+                    factory_func=None,
+                    factory_kwargs={
+                        "port": self.ports.microwave(),
+                        "clock": f"{self.name}.f_larmor",
+                        "max_compensation_amp": self.pulse_compensation.max_compensation_amp(),
+                        "time_grid": self.pulse_compensation.time_grid(),
+                        "sampling_rate": self.pulse_compensation.sampling_rate(),
+                    },
                 ),
             }
         }

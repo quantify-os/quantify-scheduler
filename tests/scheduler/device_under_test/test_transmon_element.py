@@ -99,13 +99,16 @@ def test_basic_transmon_serialization(
                     q0.submodules[submodule_name][parameter_name](),
                 )
             else:
-                assert (
-                    q0_as_dict["data"][submodule_name][parameter_name]
-                    == q0.submodules[submodule_name][parameter_name]()
+                val = q0_as_dict["data"][submodule_name][parameter_name]
+                expected_val = q0.submodules[submodule_name][parameter_name]()
+                assert (val == expected_val) or (
+                    isinstance(val, float)
+                    and isinstance(expected_val, float)
+                    and math.isnan(val)
+                    and math.isnan(expected_val)
                 ), (
-                    f"Expected value {q0.submodules[submodule_name][parameter_name]()} for "
-                    f"{submodule_name}.{parameter_name} but got "
-                    f"{q0_as_dict['data'][submodule_name][parameter_name]}"
+                    f"Expected value {expected_val} for "
+                    f"{submodule_name}.{parameter_name} but got {val}"
                 )
 
     # Check that all serialized submodule params match the original
@@ -119,10 +122,14 @@ def test_basic_transmon_serialization(
                     q0.submodules[submodule_name][parameter_name](),
                 )
             else:
-                assert (
-                    parameter_val == q0.submodules[submodule_name][parameter_name]()
+                expected_parameter_val = q0.submodules[submodule_name][parameter_name]()
+                assert (parameter_val == expected_parameter_val) or (
+                    isinstance(parameter_val, float)
+                    and isinstance(expected_parameter_val, float)
+                    and math.isnan(parameter_val)
+                    and math.isnan(expected_parameter_val)
                 ), (
-                    f"Expected value {q0.submodules[submodule_name][parameter_name]()} for "
+                    f"Expected value {expected_parameter_val} for "
                     f"{submodule_name}.{parameter_name} but got {parameter_val}"
                 )
 

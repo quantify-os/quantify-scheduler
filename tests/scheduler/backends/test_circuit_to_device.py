@@ -41,6 +41,9 @@ from quantify_scheduler.operations.gate_library import (
     Y,
     Z,
 )
+from quantify_scheduler.operations.pulse_compensation_library import (
+    PulseCompensation,
+)
 from quantify_scheduler.operations.pulse_factories import (
     composite_square_pulse,
     rxy_drag_pulse,
@@ -49,8 +52,9 @@ from quantify_scheduler.operations.pulse_library import (
     IdlePulse,
     ReferenceMagnitude,
     SetClockFrequency,
+    SquarePulse,
 )
-from quantify_scheduler.resources import ClockResource
+from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.schedules.schedule import ScheduleBase
 
 
@@ -1117,3 +1121,44 @@ def test_measurement_freq_override(
     m1_reset_freq = get_subschedule_operation(new_dev_sched, [1, 2])
     assert isinstance(m1_reset_freq, SetClockFrequency)
     assert m1_reset_freq.data["pulse_info"][0]["clock_freq_new"] is None
+
+
+def test_pulse_compensation_error_factory_func(
+    mock_setup_basic_transmon_with_standard_params,
+):
+    body = Schedule("schedule")
+    body.add(
+        SquarePulse(
+            amp=0.8, duration=1e-8, port="q0:mw", clock=BasebandClockResource.IDENTITY
+        )
+    )
+
+    schedule = Schedule("compensated_schedule")
+    schedule.add(PulseCompensation(body=body, qubits=["q0"]))
+
+    compiler = SerialCompiler(name="compiler")
+
+    q0 = mock_setup_basic_transmon_with_standard_params["q0"]
+    q0.pulse_compensation.max_compensation_amp(0.6)
+    q0.pulse_compensation.time_grid(1e-9)
+    q0.pulse_compensation.sampling_rate(1e9)
+
+    compilation_config = mock_setup_basic_transmon_with_standard_params[
+        "quantum_device"
+    ].generate_compilation_config()
+
+    compilation_config.device_compilation_config.elements["q0"][
+        "pulse_compensation"
+    ].factory_func = lambda x: x
+
+    with pytest.raises(ValueError) as exception:
+        compiler.compile(
+            schedule,
+            config=compilation_config,
+        )
+
+    assert exception.value.args[0] == (
+        "'factory_func' in the device configuration for pulse compensation "
+        "for device element 'q0' is not 'None'. "
+        "Only 'None' is allowed for 'factory_func' for pulse compensation."
+    )

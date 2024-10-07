@@ -1,4 +1,5 @@
 import json
+import math
 
 import pytest
 from qcodes import Instrument
@@ -351,13 +352,17 @@ def test_nv_center_serialization(electronic_q0):
             ):
                 # This is a custom type which will not have equal contents in the serialized and deserialized versions.
                 continue
-            assert (
-                electronic_q0_as_dict["data"][submodule_name][parameter_name]
-                == electronic_q0.submodules[submodule_name][parameter_name]()
+            expected_val = electronic_q0.submodules[submodule_name][parameter_name]()
+            val = electronic_q0_as_dict["data"][submodule_name][parameter_name]
+            assert (val == expected_val) or (
+                isinstance(val, float)
+                and isinstance(expected_val, float)
+                and math.isnan(val)
+                and math.isnan(expected_val)
             ), (
-                f"Expected value {electronic_q0.submodules[submodule_name][parameter_name]()} for "
+                f"Expected value {expected_val} for "
                 f"{submodule_name}.{parameter_name} but got "
-                f"{electronic_q0_as_dict['data'][submodule_name][parameter_name]}"
+                f"{val}"
             )
 
     # Check that all serialized submodule params match the original
@@ -371,11 +376,17 @@ def test_nv_center_serialization(electronic_q0):
             ):
                 # This is a custom type which will not have equal contents in the serialized and deserialized versions.
                 continue
-            assert (
-                parameter_val
-                == electronic_q0.submodules[submodule_name][parameter_name]()
+            expected_parameter_val = electronic_q0.submodules[submodule_name][
+                parameter_name
+            ]()
+            val = electronic_q0_as_dict["data"][submodule_name][parameter_name]
+            assert (parameter_val == expected_parameter_val) or (
+                isinstance(parameter_val, float)
+                and isinstance(expected_parameter_val, float)
+                and math.isnan(parameter_val)
+                and math.isnan(expected_parameter_val)
             ), (
-                f"Expected value {electronic_q0.submodules[submodule_name][parameter_name]()} for "
+                f"Expected value {expected_parameter_val} for "
                 f"{submodule_name}.{parameter_name} but got {parameter_val}"
             )
 

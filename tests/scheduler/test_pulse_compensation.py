@@ -127,18 +127,21 @@ def test_determine_compensation_pulse_error(operation, expected_error):
     assert exception.value.args[0] == expected_error
 
 
+@pytest.mark.parametrize("is_circuit_level", [False, True])
 def test_insert_compensation_pulses(
-    device_compile_config_basic_transmon, get_subschedule_operation
+    is_circuit_level,
+    mock_setup_basic_transmon_with_standard_params,
+    get_subschedule_operation,
 ):
     body = Schedule("schedule")
     body.add(
         SquarePulse(
-            amp=0.8, duration=1e-8, port="q0:gt", clock=BasebandClockResource.IDENTITY
+            amp=0.8, duration=1e-8, port="q0:mw", clock=BasebandClockResource.IDENTITY
         )
     )
     body.add(
         RampPulse(
-            amp=0.5, duration=1e-8, port="q1:gt", clock=BasebandClockResource.IDENTITY
+            amp=0.5, duration=1e-8, port="q1:mw", clock=BasebandClockResource.IDENTITY
         )
     )
     body.add(
@@ -146,36 +149,48 @@ def test_insert_compensation_pulses(
             body=RampPulse(
                 amp=0.3,
                 duration=2e-8,
-                port="q0:gt",
+                port="q0:mw",
                 clock=BasebandClockResource.IDENTITY,
             ),
             repetitions=3,
         )
     )
 
-    max_compensation_amp = {
-        "q0:gt": 0.6,
-        "q1:gt": 0.7,
-    }
-
     schedule = Schedule("compensated_schedule")
-    schedule.add(
-        PulseCompensation(
-            body=body,
-            max_compensation_amp=max_compensation_amp,
-            time_grid=4e-9,
-            sampling_rate=1e9,
+
+    if is_circuit_level:
+        schedule.add(PulseCompensation(body=body, qubits=["q0", "q1"]))
+
+        q0 = mock_setup_basic_transmon_with_standard_params["q0"]
+        q0.pulse_compensation.max_compensation_amp(0.6)
+        q0.pulse_compensation.time_grid(4e-9)
+        q0.pulse_compensation.sampling_rate(1e9)
+        q1 = mock_setup_basic_transmon_with_standard_params["q1"]
+        q1.pulse_compensation.max_compensation_amp(0.7)
+        q1.pulse_compensation.time_grid(4e-9)
+        q1.pulse_compensation.sampling_rate(1e9)
+    else:
+        schedule.add(
+            PulseCompensation(
+                body=body,
+                max_compensation_amp={
+                    "q0:mw": 0.6,
+                    "q1:mw": 0.7,
+                },
+                time_grid=4e-9,
+                sampling_rate=1e9,
+            )
         )
-    )
 
     compiler = SerialCompiler(name="compiler")
-    _ = compiler.compile(schedule, config=device_compile_config_basic_transmon)
+    compiled_schedule = compiler.compile(
+        schedule,
+        config=mock_setup_basic_transmon_with_standard_params[
+            "quantum_device"
+        ].generate_compilation_config(),
+    )
 
-    compensated_schedule = process_compensation_pulses(schedule)
-
-    assert isinstance(compensated_schedule, Schedule)
-
-    compensated_subschedule = get_subschedule_operation(compensated_schedule, [0])
+    compensated_subschedule = get_subschedule_operation(compiled_schedule, [0])
 
     assert isinstance(compensated_subschedule, Schedule)
 
@@ -196,7 +211,7 @@ def test_insert_compensation_pulses(
         compensation_pulse_q1_schedulable["operation_id"]
     ]
 
-    if compensation_pulse_q0["pulse_info"][0]["port"] == "q1:gt":
+    if compensation_pulse_q0["pulse_info"][0]["port"] == "q1:mw":
         compensation_pulse_q0_schedulable, compensation_pulse_q1_schedulable = (
             compensation_pulse_q1_schedulable,
             compensation_pulse_q0_schedulable,
@@ -227,7 +242,7 @@ def test_insert_compensation_pulses(
     )
     assert compensation_pulse_q0["pulse_info"][0]["reference_magnitude"] is None
     assert compensation_pulse_q0["pulse_info"][0]["t0"] == 0
-    assert compensation_pulse_q0["pulse_info"][0]["port"] == "q0:gt"
+    assert compensation_pulse_q0["pulse_info"][0]["port"] == "q0:mw"
     assert math.isclose(
         compensation_pulse_q0["pulse_info"][0]["amp"], -0.5910714285714285
     )
@@ -240,6 +255,81 @@ def test_insert_compensation_pulses(
     )
     assert compensation_pulse_q1["pulse_info"][0]["reference_magnitude"] is None
     assert compensation_pulse_q1["pulse_info"][0]["t0"] == 0
-    assert compensation_pulse_q1["pulse_info"][0]["port"] == "q1:gt"
+    assert compensation_pulse_q1["pulse_info"][0]["port"] == "q1:mw"
     assert math.isclose(compensation_pulse_q1["pulse_info"][0]["amp"], -0.5625)
     assert math.isclose(compensation_pulse_q1["pulse_info"][0]["duration"], 4e-9)
+
+
+def test_pulse_compensation_invalid_operation():
+    with pytest.raises(ValueError) as exception:
+        PulseCompensation(body=X("q0"), qubits=["q0"], time_grid=4e-9)
+
+    assert exception.value.args[0] == (
+        "PulseCompensation can only be defined on gate-level or device-level, "
+        "but not both. If 'qubit' is defined, then 'max_compensation_amp', "
+        "'time_grid' and 'sampling_rate' must be 'None'."
+    )
+
+
+def test_pulse_compensation_inconsistent_parameters(
+    mock_setup_basic_transmon_with_standard_params,
+):
+    body = Schedule("schedule")
+    body.add(
+        SquarePulse(
+            amp=0.8, duration=1e-8, port="q0:mw", clock=BasebandClockResource.IDENTITY
+        )
+    )
+    body.add(
+        RampPulse(
+            amp=0.5, duration=1e-8, port="q1:mw", clock=BasebandClockResource.IDENTITY
+        )
+    )
+
+    schedule = Schedule("compensated_schedule")
+    schedule.add(PulseCompensation(body=body, qubits=["q0", "q1"]))
+
+    compiler = SerialCompiler(name="compiler")
+
+    q0 = mock_setup_basic_transmon_with_standard_params["q0"]
+    q1 = mock_setup_basic_transmon_with_standard_params["q1"]
+
+    q0.pulse_compensation.max_compensation_amp(0.6)
+    q0.pulse_compensation.time_grid(1e-9)
+    q0.pulse_compensation.sampling_rate(1e9)
+    q1.pulse_compensation.max_compensation_amp(0.7)
+    q1.pulse_compensation.time_grid(4e-9)
+    q1.pulse_compensation.sampling_rate(1e9)
+    with pytest.raises(ValueError) as exception:
+        compiler.compile(
+            schedule,
+            config=mock_setup_basic_transmon_with_standard_params[
+                "quantum_device"
+            ].generate_compilation_config(),
+        )
+
+    assert exception.value.args[0] == (
+        "'time_grid' must be the same for every device element "
+        "for pulse compensation. 'time_grid' for "
+        "device element 'q1' is '4e-09', "
+        "for others it is '1e-09'."
+    )
+
+    q0.pulse_compensation.time_grid(4e-9)
+    q0.pulse_compensation.sampling_rate(2e9)
+    q1.pulse_compensation.time_grid(4e-9)
+    q1.pulse_compensation.sampling_rate(1e9)
+    with pytest.raises(ValueError) as exception:
+        compiler.compile(
+            schedule,
+            config=mock_setup_basic_transmon_with_standard_params[
+                "quantum_device"
+            ].generate_compilation_config(),
+        )
+
+    assert exception.value.args[0] == (
+        "'sampling_rate' must be the same for every device element "
+        "for pulse compensation. 'sampling_rate' for "
+        "device element 'q1' is '1000000000.0', "
+        "for others it is '2000000000.0'."
+    )

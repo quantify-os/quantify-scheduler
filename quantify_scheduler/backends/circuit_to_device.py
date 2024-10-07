@@ -17,7 +17,10 @@ from quantify_scheduler.backends.graph_compilation import (
 )
 from quantify_scheduler.operations.control_flow_library import ControlFlowOperation
 from quantify_scheduler.operations.operation import Operation
-from quantify_scheduler.operations.pulse_compensation_library import PulseCompensation
+from quantify_scheduler.operations.pulse_compensation_library import (
+    Port,
+    PulseCompensation,
+)
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.schedule import Schedulable, Schedule, ScheduleBase
 
@@ -102,7 +105,7 @@ def _compile_circuit_to_device(  # noqa: PLR0911
         )
         return operation
     elif isinstance(operation, PulseCompensation):
-        return operation
+        return _compile_circuit_to_device_pulse_compensation(operation, device_cfg)
     elif not (operation.valid_pulse or operation.valid_acquisition):
         # If operation is a valid pulse or acquisition it will not attempt to
         # add pulse/acquisition info in the lines below (if operation.valid_gate
@@ -638,6 +641,71 @@ def _compile_two_qubits(
         return operation
 
 
+def _compile_circuit_to_device_pulse_compensation(
+    operation: PulseCompensation, device_cfg: DeviceCompilationConfig
+) -> PulseCompensation:
+    """Compiles circuit-level pulse compensation operation to device-level."""
+    if (
+        qubits := operation.data.get("pulse_compensation_info", {}).get("qubits")
+    ) is not None:
+
+        max_compensation_amp: dict[Port, float] = {}
+        time_grid: float | None = None
+        sampling_rate: float | None = None
+
+        for qubit in qubits:
+            if (
+                pulse_compensation_element := device_cfg.elements.get(qubit, {}).get(
+                    "pulse_compensation"
+                )
+            ) is not None:
+                if pulse_compensation_element.factory_func is not None:
+                    raise ValueError(
+                        f"'factory_func' in the device configuration for pulse compensation "
+                        f"for device element '{qubit}' is not 'None'. "
+                        f"Only 'None' is allowed for 'factory_func' for pulse compensation."
+                    )
+                current_time_grid = pulse_compensation_element.factory_kwargs[
+                    "time_grid"
+                ]
+                if (time_grid != current_time_grid) and (time_grid is not None):
+                    raise ValueError(
+                        f"'time_grid' must be the same for every device element "
+                        f"for pulse compensation. 'time_grid' for "
+                        f"device element '{qubit}' is '{current_time_grid}', "
+                        f"for others it is '{time_grid}'."
+                    )
+                time_grid = current_time_grid
+
+                current_sampling_rate = pulse_compensation_element.factory_kwargs[
+                    "sampling_rate"
+                ]
+                if (sampling_rate != current_sampling_rate) and (
+                    sampling_rate is not None
+                ):
+                    raise ValueError(
+                        f"'sampling_rate' must be the same for "
+                        f"every device element for pulse compensation. "
+                        f"'sampling_rate' for device element '{qubit}' is "
+                        f"'{current_sampling_rate}', for others it is '{sampling_rate}'."
+                    )
+                sampling_rate = current_sampling_rate
+
+                port = pulse_compensation_element.factory_kwargs["port"]
+                max_compensation_amp[port] = pulse_compensation_element.factory_kwargs[
+                    "max_compensation_amp"
+                ]
+
+        return PulseCompensation(
+            body=operation.body,
+            max_compensation_amp=max_compensation_amp,
+            time_grid=time_grid,
+            sampling_rate=sampling_rate,
+        )
+    else:
+        return operation
+
+
 def _get_device_repr_from_cfg(
     operation: Operation,
     operation_cfg: OperationCompilationConfig,
@@ -660,6 +728,7 @@ def _get_device_repr_from_cfg(
         if key in factory_kwargs:
             factory_kwargs[key] = value
 
+    assert factory_func is not None
     return factory_func(**factory_kwargs)
 
 
@@ -695,6 +764,7 @@ def _get_device_repr_from_cfg_multiplexed(
         if key in factory_kwargs:
             factory_kwargs[key] = value
 
+    assert factory_func is not None
     return factory_func(**factory_kwargs)
 
 

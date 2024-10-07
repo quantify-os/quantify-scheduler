@@ -66,6 +66,7 @@ def _determine_sum_and_end_of_all_pulses(
     operation: Schedule | Operation,
     sampling_rate: float,
     time_offset: float,
+    ports: set[str],
 ) -> dict[Port, SumEnd]:
     """
     Calculates the sum (or integral) of the amplitudes of all pulses in the operation,
@@ -81,6 +82,8 @@ def _determine_sum_and_end_of_all_pulses(
         Sampling rate of the pulses.
     time_offset
         Time offset for the operation with regards to the start of the whole schedule.
+    ports
+        Set of ports for which we need to calculate the pulse compensations.
 
     Returns
     -------
@@ -96,7 +99,7 @@ def _determine_sum_and_end_of_all_pulses(
             inner_operation = operation.operations[schedulable["operation_id"]]
             new_pulses_sum_end: dict[Port, SumEnd] = (
                 _determine_sum_and_end_of_all_pulses(
-                    inner_operation, sampling_rate, time_offset + abs_time
+                    inner_operation, sampling_rate, time_offset + abs_time, ports
                 )
             )
             pulses_sum_end = _merge_sum_and_end(pulses_sum_end, new_pulses_sum_end)
@@ -105,7 +108,7 @@ def _determine_sum_and_end_of_all_pulses(
         if isinstance(operation, LoopOperation):
             body_pulses_sum_end: dict[Port, SumEnd] = (
                 _determine_sum_and_end_of_all_pulses(
-                    operation.body, sampling_rate, time_offset
+                    operation.body, sampling_rate, time_offset, ports
                 )
             )
             repetitions = operation.data["control_flow_info"]["repetitions"]
@@ -132,19 +135,20 @@ def _determine_sum_and_end_of_all_pulses(
     elif operation.valid_pulse:
         pulses_sum_end: dict[Port, SumEnd] = {}
         for pulse_info in operation["pulse_info"]:
-            if pulse_info["clock"] != BasebandClockResource.IDENTITY:
-                raise ValueError(
-                    f"Error calculating compensation pulse amplitude for '{operation}'. "
-                    f"Clock must be the baseband clock. "
-                )
             port: Port = pulse_info["port"]
-            new_pulse_sum_end: dict[Port, SumEnd] = {
-                port: SumEnd(
-                    sum=area_pulse(pulse_info, sampling_rate),
-                    end=(time_offset + pulse_info["t0"] + pulse_info["duration"]),
-                )
-            }
-            pulses_sum_end = _merge_sum_and_end(pulses_sum_end, new_pulse_sum_end)
+            if port in ports:
+                if pulse_info["clock"] != BasebandClockResource.IDENTITY:
+                    raise ValueError(
+                        f"Error calculating compensation pulse amplitude for '{operation}'. "
+                        f"Clock must be the baseband clock. "
+                    )
+                new_pulse_sum_end: dict[Port, SumEnd] = {
+                    port: SumEnd(
+                        sum=area_pulse(pulse_info, sampling_rate),
+                        end=(time_offset + pulse_info["t0"] + pulse_info["duration"]),
+                    )
+                }
+                pulses_sum_end = _merge_sum_and_end(pulses_sum_end, new_pulse_sum_end)
         return pulses_sum_end
     else:
         return {}
@@ -201,8 +205,9 @@ def _determine_compensation_pulse(
         if not isinstance(operation, Schedule)
         else _determine_absolute_timing(deepcopy(operation), None)
     )
+    ports: set[str] = set(max_compensation_amp.keys())
     pulses_sum_end: dict[Port, SumEnd] = _determine_sum_and_end_of_all_pulses(
-        operation_with_abs_times, sampling_rate, 0
+        operation_with_abs_times, sampling_rate, 0, ports
     )
 
     for port, pulse_sum_end in pulses_sum_end.items():
