@@ -1,7 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Automatic mixer calibration tests."""
-from typing import TYPE_CHECKING
 
 import pytest
 
@@ -12,9 +11,6 @@ from quantify_scheduler.backends.qblox.constants import (
 from quantify_scheduler.backends.qblox.enums import LoCalEnum, SidebandCalEnum
 from quantify_scheduler.backends.types.qblox import ValidationWarning
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-
-if TYPE_CHECKING:
-    from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
 
 
 def test_string_literal_works():

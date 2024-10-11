@@ -2,14 +2,16 @@
 # Licensed according to the LICENCE file on the main branch
 """Module containing example schedule utility functions."""
 
+from __future__ import annotations
+
 import json
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from quantify_scheduler.schemas import examples
 
 
-def load_json_example_scheme(filename: str) -> Dict[str, Any]:
+def load_json_example_scheme(filename: str) -> dict[str, Any]:
     """
     Returns a JSON-file by name as a python dictionary.
 

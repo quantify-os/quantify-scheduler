@@ -19,11 +19,8 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Dict,
     List,
     Literal,
-    Type,
-    Union,
     get_args,
 )
 from uuid import uuid4
@@ -333,7 +330,7 @@ def _determine_measurement_fixpoint_correction(
 
     Returns
     -------
-    Tuple[float, int]
+    tuple[float, int]
         The time correction to be applied in seconds.
         The correction in the number of samples.
     """
@@ -1578,7 +1575,7 @@ class ZIHardwareCompilationConfig(common.HardwareCompilationConfig):
     contains fields for hardware-specific settings.
     """
 
-    config_type: Type[ZIHardwareCompilationConfig] = Field(  # noqa: UP006
+    config_type: type[ZIHardwareCompilationConfig] = Field(
         default="quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig",
         validate_default=True,
     )
@@ -1586,9 +1583,9 @@ class ZIHardwareCompilationConfig(common.HardwareCompilationConfig):
     A reference to the ``HardwareCompilationConfig`` DataStructure for the
     Zurich Instruments backend.
     """
-    hardware_description: Dict[  # noqa: UP006
+    hardware_description: dict[
         str,
-        Union[zhinst.ZIHardwareDescription, common.HardwareDescription],  # noqa: UP007
+        zhinst.ZIHardwareDescription | common.HardwareDescription,
     ]
     """Description of the instruments in the physical setup."""
     hardware_options: zhinst.ZIHardwareOptions
@@ -1597,7 +1594,7 @@ class ZIHardwareCompilationConfig(common.HardwareCompilationConfig):
     :class:`~quantify_scheduler.backends.types.common.LatencyCorrection` or
     :class:`~quantify_scheduler.backends.types.zhinst.OutputGain`.
     """
-    compilation_passes: List[SimpleNodeConfig] = [  # noqa: UP006
+    compilation_passes: list[SimpleNodeConfig] = [
         SimpleNodeConfig(name="flatten_schedule", compilation_func=flatten_schedule),
         SimpleNodeConfig(
             name="zhinst_hardware_compile", compilation_func=compile_backend

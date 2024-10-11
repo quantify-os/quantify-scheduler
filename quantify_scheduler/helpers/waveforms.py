@@ -6,7 +6,7 @@ from __future__ import annotations
 import inspect
 import math
 from functools import partial
-from typing import Any, Dict, List, Protocol, Tuple
+from typing import Any, Protocol
 
 import numpy as np
 
@@ -56,7 +56,7 @@ def get_waveform_size(waveform: np.ndarray, granularity: int) -> int:
     return max(size, granularity)
 
 
-def resize_waveforms(waveforms_dict: Dict[int, np.ndarray], granularity: int) -> None:
+def resize_waveforms(waveforms_dict: dict[int, np.ndarray], granularity: int) -> None:
     """
     Resizes the waveforms to a multiple of the given granularity.
 
@@ -106,7 +106,7 @@ def resize_waveform(waveform: np.ndarray, granularity: int) -> np.ndarray:
 
 def shift_waveform(
     waveform: np.ndarray, start_in_seconds: float, sampling_rate: int, resolution: int
-) -> Tuple[int, np.ndarray]:
+) -> tuple[int, np.ndarray]:
     """
     Return the waveform shifted with a number of samples.
 
@@ -151,7 +151,7 @@ def shift_waveform(
 
 
 def get_waveform(
-    pulse_info: Dict[str, Any],
+    pulse_info: dict[str, Any],
     sampling_rate: float,
 ) -> np.ndarray:
     """
@@ -178,7 +178,7 @@ def get_waveform(
 
 def get_waveform_by_pulseid(
     schedule: Schedule,
-) -> Dict[int, GetWaveformPartial]:
+) -> dict[int, GetWaveformPartial]:
     """
     Return a lookup dictionary of pulse_id and its partial waveform function.
 
@@ -190,7 +190,7 @@ def get_waveform_by_pulseid(
     schedule
         The schedule.
     """
-    pulseid_waveformfn_dict: Dict[int, GetWaveformPartial] = {}
+    pulseid_waveformfn_dict: dict[int, GetWaveformPartial] = {}
     for schedulable in schedule.schedulables.values():
         operation = schedule.operations[schedulable["operation_id"]]
         for pulse_info in operation["pulse_info"]:
@@ -215,7 +215,7 @@ def get_waveform_by_pulseid(
 
 def exec_waveform_partial(
     pulse_id: int,
-    pulseid_waveformfn_dict: Dict[int, GetWaveformPartial],
+    pulseid_waveformfn_dict: dict[int, GetWaveformPartial],
     sampling_rate: int,
 ) -> np.ndarray:
     """
@@ -268,7 +268,7 @@ def exec_waveform_function(wf_func: str, t: np.ndarray, pulse_info: dict) -> np.
     :
         Returns the computed waveform.
     """
-    whitelist: List[str] = ["square", "ramp", "soft_square", "drag"]
+    whitelist: list[str] = ["square", "ramp", "soft_square", "drag"]
     fn_name: str = wf_func.split(".")[-1]
     waveform: np.ndarray | None = None
     if wf_func.startswith("quantify_scheduler.waveforms") and fn_name in whitelist:
@@ -439,7 +439,7 @@ def modulate_waveform(
     return envelope * modulation
 
 
-def normalize_waveform_data(data: np.ndarray) -> Tuple[np.ndarray, float, float]:
+def normalize_waveform_data(data: np.ndarray) -> tuple[np.ndarray, float, float]:
     """
     Normalize waveform data, such that the value is +1.0 where the absolute value is
     maximal.
@@ -481,7 +481,7 @@ def normalize_waveform_data(data: np.ndarray) -> Tuple[np.ndarray, float, float]
     return rescaled_data, amp_real, amp_imag
 
 
-def area_pulses(pulses: List[Dict[str, Any]], sampling_rate: float) -> float:
+def area_pulses(pulses: list[dict[str, Any]], sampling_rate: float) -> float:
     """
     Calculate the area of a set of pulses.
 
@@ -505,7 +505,7 @@ def area_pulses(pulses: List[Dict[str, Any]], sampling_rate: float) -> float:
     return area
 
 
-def area_pulse(pulse: Dict[str, Any], sampling_rate: float) -> float:
+def area_pulse(pulse: dict[str, Any], sampling_rate: float) -> float:
     """
     Calculate the area of a single pulse.
 

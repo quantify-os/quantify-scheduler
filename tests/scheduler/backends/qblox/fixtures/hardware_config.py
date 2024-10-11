@@ -1,8 +1,9 @@
-from typing import Any, Dict, Generator
+from __future__ import annotations
+
+from typing import Any, Generator
 
 import pytest
 
-from quantify_scheduler.resources import BasebandClockResource
 from quantify_scheduler.schemas.examples import utils
 
 QBLOX_HARDWARE_CONFIG_TRANSMON = utils.load_json_example_scheme(
@@ -14,12 +15,12 @@ QBLOX_HARDWARE_CONFIG_NV_CENTER = utils.load_json_example_scheme(
 
 
 @pytest.fixture
-def qblox_hardware_config_transmon() -> Generator[Dict[str, Any], None, None]:
+def qblox_hardware_config_transmon() -> Generator[dict[str, Any], None, None]:
     yield dict(QBLOX_HARDWARE_CONFIG_TRANSMON)
 
 
 @pytest.fixture
-def qblox_hardware_config_nv_center() -> Generator[Dict[str, Any], None, None]:
+def qblox_hardware_config_nv_center() -> Generator[dict[str, Any], None, None]:
     yield dict(QBLOX_HARDWARE_CONFIG_NV_CENTER)
 
 

@@ -1,11 +1,13 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """The module contains definitions related to spin qubit elements."""
+
+from __future__ import annotations
+
 import math
-from typing import Any, Dict
+from typing import TYPE_CHECKING, Any
 
 from qcodes.instrument import InstrumentChannel
-from qcodes.instrument.base import InstrumentBase
 from qcodes.instrument.parameter import (
     ManualParameter,
     Parameter,
@@ -30,6 +32,9 @@ from quantify_scheduler.operations import (
     pulse_factories,
     pulse_library,
 )
+
+if TYPE_CHECKING:
+    from qcodes.instrument.base import InstrumentBase
 
 
 class PortsSpin(InstrumentChannel):
@@ -204,7 +209,7 @@ class BasicSpinElement(DeviceElement):
         self.clock_freqs: ClocksFrequenciesSpin
         """Submodule :class:`~.ClocksFrequenciesSpin`."""
 
-    def _generate_config(self) -> Dict[str, Dict[str, OperationCompilationConfig]]:
+    def _generate_config(self) -> dict[str, dict[str, OperationCompilationConfig]]:
         """
         Generate part of the device configuration specific to a single qubit.
 

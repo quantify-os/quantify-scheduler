@@ -6,7 +6,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any
 
 import numpy as np
 from zhinst import qcodes
@@ -62,7 +62,7 @@ def set_value(
 
 def set_values(
     instrument: base.ZIBaseInstrument,
-    value: List[Tuple[str, Any]],
+    value: list[tuple[str, Any]],
 ) -> None:
     """
     Sets the value of a ZI node.
@@ -81,7 +81,7 @@ def set_values(
 def set_vector(
     instrument: base.ZIBaseInstrument,
     node: str,
-    value: Union[List, str],
+    value: list | str,
 ) -> None:
     """
     Sets the vector value of a ZI node.
@@ -107,7 +107,7 @@ def set_awg_value(
     instrument: base.ZIBaseInstrument,
     awg_index: int,
     node: str,
-    value: Union[int, str],
+    value: int | str,
 ) -> None:
     """
     Sets the value of a AWG module node.
@@ -193,7 +193,7 @@ def set_wave_vector(
     instrument: base.ZIBaseInstrument,
     awg_index: int,
     wave_index: int,
-    vector: Union[List, str],
+    vector: list | str,
 ) -> None:
     """
     Sets the command table wave vector for an awg of an instrument.
@@ -216,7 +216,7 @@ def set_wave_vector(
 def set_commandtable_data(
     instrument: base.ZIBaseInstrument,
     awg_index: int,
-    json_data: Union[Dict[str, Any], str],
+    json_data: dict[str, Any] | str,
 ) -> None:
     """
     Sets the commandtable JSON for an AWG.
@@ -314,8 +314,8 @@ def write_seqc_file(awg: qcodes.hdawg.AWG, contents: str, filename: str) -> Path
 
 
 def get_waveform_table(
-    pulse_ids: List[int], pulseid_pulseinfo_dict: Dict[int, Dict[str, Any]]
-) -> Dict[int, int]:
+    pulse_ids: list[int], pulseid_pulseinfo_dict: dict[int, dict[str, Any]]
+) -> dict[int, int]:
     """
     Returns a dictionary that contains the locations of
     pulses in the AWG waveform table.
@@ -332,7 +332,7 @@ def get_waveform_table(
     :
         The waveform table dictionary.
     """
-    waveform_table: Dict[int, int] = dict()
+    waveform_table: dict[int, int] = dict()
     index = 0
     for pulse_id in pulse_ids:
         if pulse_id in waveform_table:
@@ -378,7 +378,7 @@ def get_readout_channel_bitmask(readout_channels_count: int) -> str:
     return f"0b{bitmask}"
 
 
-def get_sampling_rates(base_sampling_rate: float) -> Dict[int, int]:
+def get_sampling_rates(base_sampling_rate: float) -> dict[int, int]:
     """
     Returns the allowed sampling rate values.
     See zhinst User manuals, section /DEV..../AWGS/n/TIME.
@@ -390,7 +390,7 @@ def get_sampling_rates(base_sampling_rate: float) -> Dict[int, int]:
 
     Returns
     -------
-    Dict[int, int]
+    dict[int, int]
         The node value and corresponding sampling rate.
         e.g. {0: 2400000, 1:1200000, ...} for the HDAWG.
     """

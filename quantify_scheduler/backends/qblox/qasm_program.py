@@ -10,10 +10,7 @@ from typing import (
     Generator,
     Hashable,
     Iterator,
-    List,
-    Optional,
     Sequence,
-    Union,
 )
 
 import numpy as np
@@ -89,7 +86,7 @@ class QASMProgram:
         static_hw_properties: StaticHardwareProperties,
         register_manager: RegisterManager,
         align_fields: bool,
-        acq_metadata: Optional[AcquisitionMetadata],
+        acq_metadata: AcquisitionMetadata | None,
     ):
         self.static_hw_properties = static_hw_properties
         """Dataclass holding the properties of the hardware that this program is to be
@@ -104,13 +101,13 @@ class QASMProgram:
         """Provides a summary of the used acquisition protocol, bin mode, acquisition
         channels, acquisition indices per channel, and repetitions."""
 
-        self.time_last_acquisition_triggered: Optional[int] = None
+        self.time_last_acquisition_triggered: int | None = None
         """Time on which the last acquisition was triggered. Is ``None`` if no previous
         acquisition was triggered."""
-        self.time_last_pulse_triggered: Optional[int] = None
+        self.time_last_pulse_triggered: int | None = None
         """Time on which the last operation was triggered. Is ``None`` if no previous
         operation was triggered."""
-        self.instructions: List[list] = list()
+        self.instructions: list[list] = list()
         """A list containing the instructions added to the program. The instructions
         added are in turn a list of the instruction string with arguments."""
         self.conditional_manager = ConditionalManager()
@@ -157,10 +154,10 @@ class QASMProgram:
     @staticmethod
     def get_instruction_as_list(
         instruction: str,
-        *args: Union[int, str],
-        label: Optional[str] = None,
-        comment: Optional[str] = None,
-    ) -> List[Union[str, int]]:
+        *args: int | str,
+        label: str | None = None,
+        comment: str | None = None,
+    ) -> list[str | int]:
         """
         Takes an instruction with arguments, label and comment and turns it into the
         list required by the class.
@@ -253,7 +250,7 @@ class QASMProgram:
         self,
         wait_time: int,
         count_as_elapsed_time: bool = True,
-        comment: Optional[str] = None,
+        comment: str | None = None,
     ) -> None:
         """
         Automatically emits a correct wait command. If the wait time is longer than
@@ -365,7 +362,7 @@ class QASMProgram:
         self,
         amplitude_path_I: float,
         amplitude_path_Q: float,
-        operation: Optional[OpInfo],
+        operation: OpInfo | None,
     ) -> None:
         """
         Sets the gain such that a 1.0 in waveform memory corresponds to the full awg gain.
@@ -403,8 +400,8 @@ class QASMProgram:
     def expand_awg_from_normalised_range(
         val: float,
         immediate_size: int,
-        param: Optional[str] = None,
-        operation: Optional[OpInfo] = None,
+        param: str | None = None,
+        operation: OpInfo | None = None,
     ):
         """
         Takes the value of an awg gain or offset parameter in normalized form (abs(param) <= 1.0), and
@@ -612,7 +609,7 @@ class QASMProgram:
         self._elapsed_times_in_loops[-1] += last_elapsed_time * repetitions
 
     @contextmanager
-    def temp_registers(self, amount: int = 1) -> Iterator[List[str]]:
+    def temp_registers(self, amount: int = 1) -> Iterator[list[str]]:
         """
         Context manager for using a register temporarily. Frees up the register
         afterwards.
@@ -627,7 +624,7 @@ class QASMProgram:
         :
             Either a single register or a list of registers.
         """
-        registers: List[str] = list()
+        registers: list[str] = list()
         for _ in range(amount):
             registers.append(self.register_manager.allocate_register())
         yield registers

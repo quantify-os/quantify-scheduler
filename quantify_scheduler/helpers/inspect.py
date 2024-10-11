@@ -9,10 +9,10 @@ import subprocess as sp  # nosec B404
 import sys
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Dict, Type, Union
+from typing import Any
 
 
-def get_classes(*modules: ModuleType) -> Dict[str, Type[Any]]:
+def get_classes(*modules: ModuleType) -> dict[str, type[Any]]:
     """
     Return a dictionary of class names by class types.
 
@@ -21,7 +21,7 @@ def get_classes(*modules: ModuleType) -> Dict[str, Type[Any]]:
         from quantify_scheduler.helpers import inspect
         from my_module import foo
 
-        class_dict: Dict[str, type] = inspect.get_classes(foo)
+        class_dict: dict[str, type] = inspect.get_classes(foo)
         print(class_dict)
         // { 'Bar': my_module.foo.Bar }
 
@@ -46,7 +46,7 @@ def get_classes(*modules: ModuleType) -> Dict[str, Type[Any]]:
 
 
 def make_uml_diagram(
-    obj_to_plot: Union[ModuleType, Type[Any]],
+    obj_to_plot: ModuleType | type[Any],
     options: list[str],
 ) -> str | None:
     """

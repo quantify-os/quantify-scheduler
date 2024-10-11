@@ -4,7 +4,9 @@
 Module containing schedules for common time domain experiments such as a Rabi and
 T1 measurement.
 """
-from typing import List, Literal, Union
+from __future__ import annotations
+
+from typing import Literal
 
 import numpy as np
 
@@ -22,8 +24,8 @@ from quantify_scheduler.schedules.schedule import Schedule
 
 
 def rabi_sched(
-    pulse_amp: Union[np.ndarray, float],
-    pulse_duration: Union[np.ndarray, float],
+    pulse_amp: np.ndarray | float,
+    pulse_duration: np.ndarray | float,
     frequency: float,
     qubit: str,
     port: str = None,
@@ -103,7 +105,7 @@ def rabi_sched(
 
 
 def t1_sched(
-    times: Union[np.ndarray, float],
+    times: np.ndarray | float,
     qubit: str,
     repetitions: int = 1,
 ) -> Schedule:
@@ -150,7 +152,7 @@ def t1_sched(
 
 
 def ramsey_sched(
-    times: Union[np.ndarray, float],
+    times: np.ndarray | float,
     qubit: str,
     artificial_detuning: float = 0,
     repetitions: int = 1,
@@ -210,7 +212,7 @@ def ramsey_sched(
 
 
 def echo_sched(
-    times: Union[np.ndarray, float],
+    times: np.ndarray | float,
     qubit: str,
     repetitions: int = 1,
 ) -> Schedule:
@@ -256,7 +258,7 @@ def echo_sched(
 
 def cpmg_sched(
     n_gates: int,
-    times: Union[np.ndarray, float],
+    times: np.ndarray | float,
     qubit: str,
     variant: Literal["X", "Y", "XY"] = "X",
     artificial_detuning: float = 0,
@@ -360,7 +362,7 @@ def cpmg_sched(
 
 def allxy_sched(
     qubit: str,
-    element_select_idx: Union[np.ndarray, int] = np.arange(21),
+    element_select_idx: np.ndarray | int = np.arange(21),
     repetitions: int = 1,
 ) -> Schedule:
     """
@@ -439,7 +441,7 @@ def allxy_sched(
 
 def readout_calibration_sched(
     qubit: str,
-    prepared_states: List[int],
+    prepared_states: list[int],
     repetitions: int = 1,
     acq_protocol: Literal[
         "SSBIntegrationComplex", "ThresholdedAcquisition"

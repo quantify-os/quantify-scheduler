@@ -1,4 +1,4 @@
-from typing import Dict
+from __future__ import annotations
 
 import numpy as np
 import pytest
@@ -56,7 +56,7 @@ def typical_kwargs_optical_measurement_multiple_pulses():
     }
 
 
-def assert_pulse_equal(pulse_info: Dict, optical_meas_kwargs: Dict, index: int):
+def assert_pulse_equal(pulse_info: dict, optical_meas_kwargs: dict, index: int):
     """Assert that info of pulse is equal to arguments used as input to
     optical_meas_kwargs."""
     assert isinstance(pulse_info, dict)
@@ -70,7 +70,7 @@ def assert_pulse_equal(pulse_info: Dict, optical_meas_kwargs: Dict, index: int):
         assert pulse_info["t0"] == -optical_meas_kwargs["acq_delay"]
 
 
-def assert_acquisition_equal(acq_info: Dict, optical_meas_kwargs: Dict):
+def assert_acquisition_equal(acq_info: dict, optical_meas_kwargs: dict):
     """Assert that info of acquisition is equal to arguments used as input to
     optical_meas_kwargs."""
     assert acq_info["duration"] == optical_meas_kwargs["acq_duration"]

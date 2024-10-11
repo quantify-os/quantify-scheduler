@@ -3,8 +3,6 @@
 """Module containing schedules for common spectroscopy experiments."""
 from __future__ import annotations
 
-from typing import Optional
-
 import numpy as np
 
 from quantify_scheduler.enums import BinMode
@@ -31,7 +29,7 @@ def heterodyne_spec_sched(
     clock: str,
     init_duration: float = 10e-6,
     repetitions: int = 1,
-    port_out: Optional[str] = None,
+    port_out: str | None = None,
 ) -> Schedule:
     """
     Generate a schedule for performing heterodyne spectroscopy.
@@ -106,7 +104,7 @@ def heterodyne_spec_sched_nco(
     clock: str,
     init_duration: float = 10e-6,
     repetitions: int = 1,
-    port_out: Optional[str] = None,
+    port_out: str | None = None,
 ) -> Schedule:
     """
     Generate a batched schedule for performing fast heterodyne spectroscopy

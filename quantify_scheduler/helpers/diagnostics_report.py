@@ -2,6 +2,7 @@
 # Licensed according to the LICENCE file on the main branch
 
 """Helper functions for debugging experiments."""
+from __future__ import annotations
 
 import json
 import os
@@ -12,8 +13,7 @@ import zipfile
 from datetime import datetime, timezone
 from importlib.metadata import distribution
 from importlib.metadata import version as get_version
-from types import TracebackType
-from typing import Any, Dict, Optional, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
 import numpy as np
@@ -21,29 +21,31 @@ from qcodes.utils.json_utils import NumpyJSONEncoder
 
 from quantify_core._version import __version__ as __core_version__
 from quantify_core.data.handling import get_datadir, snapshot
-from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler._version import __version__ as __scheduler_version__
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
-    InstrumentCoordinator,
-)
+
+if TYPE_CHECKING:
+    from types import TracebackType
+
+    from quantify_scheduler import CompiledSchedule, Schedule
+    from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+    from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
+        InstrumentCoordinator,
+    )
 
 
 def _generate_diagnostics_report(  # noqa: PLR0912, PLR0915
     quantum_device: QuantumDevice,
-    gettable_config: Dict[str, Any],
+    gettable_config: dict[str, Any],
     schedule: Schedule,
     instrument_coordinator: InstrumentCoordinator,
     initialized: bool,
-    compiled_schedule: Union[CompiledSchedule, None],
-    acquisition_data: Union[Tuple[np.ndarray, ...], None],
-    experiment_exception: Union[
-        Union[
-            Tuple[Type[BaseException], BaseException, TracebackType],
-            Tuple[None, None, None],
-        ],
-        None,
-    ],
+    compiled_schedule: CompiledSchedule | None,
+    acquisition_data: tuple[np.ndarray, ...] | None,
+    experiment_exception: (
+        tuple[type[BaseException], BaseException, TracebackType]
+        | tuple[None, None, None]
+        | None
+    ),
 ) -> str:
     """
     Generate a report with the current state of an experiment for debugging.
@@ -55,7 +57,7 @@ def _generate_diagnostics_report(  # noqa: PLR0912, PLR0915
     """
 
     def _flatten_hardware_logs_dict(
-        hw_logs: dict, extracted_hw_logs: dict, prefix: Optional[str] = None
+        hw_logs: dict, extracted_hw_logs: dict, prefix: str | None = None
     ) -> dict:
         for key, value in hw_logs.items():
             if isinstance(value, dict):

@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 import math
-from typing import List, Union
 
 import numpy as np
 import pytest
@@ -286,10 +287,10 @@ def test_measurement_compile(device_cfg_transmon_example, get_subschedule_operat
     ],
 )
 def test_only_add_clocks_used(
-    operations: List[Operation],
-    clocks_used: List[str],
+    operations: list[Operation],
+    clocks_used: list[str],
     device_cfg_transmon_example,
-    subschedule_indices: List[int],
+    subschedule_indices: list[int],
     get_subschedule_operation,
 ):
     sched = Schedule("Test schedule")

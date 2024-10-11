@@ -1,12 +1,14 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """The module contains definitions related to transmon elements."""
+
+from __future__ import annotations
+
 import math
-from typing import Any, Dict, Tuple
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from qcodes.instrument import InstrumentChannel
-from qcodes.instrument.base import InstrumentBase
 from qcodes.instrument.parameter import (
     ManualParameter,
     Parameter,
@@ -25,6 +27,9 @@ from quantify_scheduler.operations import (
     pulse_factories,
     pulse_library,
 )
+
+if TYPE_CHECKING:
+    from qcodes.instrument.base import InstrumentBase
 
 
 class Ports(InstrumentChannel):
@@ -410,7 +415,7 @@ class ReferenceMagnitude(InstrumentChannel):
             elif not math.isnan(value):
                 par.cache.set(math.nan)
 
-    def get_val_unit(self) -> Tuple[float, str]:
+    def get_val_unit(self) -> tuple[float, str]:
         """
         Get the value of the amplitude reference and its unit, if one is defined.
 
@@ -487,7 +492,7 @@ class BasicTransmonElement(DeviceElement):
         self.clock_freqs: ClocksFrequencies
         """Submodule :class:`~.ClocksFrequencies`."""
 
-    def _generate_config(self) -> Dict[str, Dict[str, OperationCompilationConfig]]:
+    def _generate_config(self) -> dict[str, dict[str, OperationCompilationConfig]]:
         """
         Generate part of the device configuration specific to a single qubit.
 

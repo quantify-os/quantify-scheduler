@@ -136,7 +136,7 @@ def add_to_wf_dict_if_unique(wf_dict: dict[str, Any], waveform: np.ndarray) -> i
 
     Returns
     -------
-    Dict[str, Any]
+    dict[str, Any]
         The (updated) wf_dict.
     str
         The uuid of the waveform.

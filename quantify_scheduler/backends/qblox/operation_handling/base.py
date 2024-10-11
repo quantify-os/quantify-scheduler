@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Any
 
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.types import qblox as types
@@ -20,7 +20,7 @@ class IOperationStrategy(ABC):
         """Returns the pulse/acquisition information extracted from the schedule."""
 
     @abstractmethod
-    def generate_data(self, wf_dict: Dict[str, Any]):
+    def generate_data(self, wf_dict: dict[str, Any]):
         """
         Generates the waveform data and adds them to the wf_dict (if not already
         present). This is either the awg data, or the acquisition weights.

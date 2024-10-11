@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import gc
 from dataclasses import dataclass
-from typing import List
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -129,7 +128,7 @@ def test_constructor(instrument_coordinator):
 def test_is_running(
     instrument_coordinator,
     dummy_components,
-    states: List[bool],
+    states: list[bool],
     expected: bool,
     mocker,
 ):

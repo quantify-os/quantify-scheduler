@@ -1,13 +1,16 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Python dataclasses for quantify-scheduler json-schemas."""
+
+from __future__ import annotations
+
 from quantify_scheduler.compatibility_check import check_zhinst_compatibility
 
 check_zhinst_compatibility()
 
 from dataclasses import dataclass, field
 from enum import Enum, unique
-from typing import Dict, List, Literal, Optional, Union
+from typing import Literal, Union
 
 from pydantic import Field, field_validator
 from typing_extensions import Annotated
@@ -114,17 +117,17 @@ class LocalOscillator(DataStructure):
     """The unique name identifying the combination of instrument and channel/parameters."""
     instrument_name: str
     """The QCodes name of the LocalOscillator."""
-    generic_icc_name: Optional[str] = None
+    generic_icc_name: str | None = None
     """The name of the GenericInstrumentCoordinatorComponent attached to this device."""
-    frequency: Optional[dict] = None
+    frequency: dict | None = None
     """A dict which tells the generic icc what parameter maps to the local oscillator (LO) frequency in Hz."""
-    frequency_param: Optional[str] = None
+    frequency_param: str | None = None
     """The parameter on the LO instrument used to control the frequency."""
-    power: Optional[dict] = None
+    power: dict | None = None
     """A dict which tells the generic icc what parameter maps to the local oscillator (LO) power in dBm."""
-    phase: Optional[dict] = None
+    phase: dict | None = None
     """A dict which tells the generic icc what parameter maps to the local oscillator (LO) phase in radians."""
-    parameters: Optional[dict] = None
+    parameters: dict | None = None
     """
     A dict which allows setting of channel specific parameters of the device. Cannot
     be used together with frequency and power.
@@ -147,22 +150,22 @@ class Output(DataStructure):
     """The output mode type."""
     modulation: Modulation = Modulation()
     """The modulation settings."""
-    local_oscillator: Optional[str] = None
+    local_oscillator: str | None = None
     """The LocalOscillator name."""
-    clock_frequency: Optional[float] = None
+    clock_frequency: float | None = None
     """The frequency for the clock resource (AKA RF/signal frequency)."""
     gain1: int = 0
     """The output1 IQ modulation gain. Accepted value between -1 and + 1. (default = 1.0)"""
     gain2: int = 0
     """The output2 IQ modulation gain. Accepted value between -1 and + 1. (default = 1.0)"""
-    trigger: Optional[int] = None
+    trigger: int | None = None
     """
     The ZI Instrument input trigger. (default = None)
     Setting this will declare the device secondary.
     """
-    markers: List[Union[str, int]] = []
+    markers: list[str | int] = []
     """The ZI Instrument output triggers. (default = [])"""
-    mixer_corrections: Optional[common.MixerCorrections] = None
+    mixer_corrections: common.MixerCorrections | None = None
     """The output mixer corrections."""
 
     @field_validator("mixer_corrections", mode="before")
@@ -198,15 +201,15 @@ class Device(DataStructure):
     """The reference source type."""
     channel_0: Output
     """The first physical channel properties."""
-    channel_1: Optional[Output] = None
+    channel_1: Output | None = None
     """The second physical channel properties."""
-    channel_2: Optional[Output] = None
+    channel_2: Output | None = None
     """The third physical channel properties."""
-    channel_3: Optional[Output] = None
+    channel_3: Output | None = None
     """The fourth physical channel properties."""
-    channels: List[Output] = Field(default=[], validate_default=True)
+    channels: list[Output] = Field(default=[], validate_default=True)
     """The list of channels. (auto generated)"""
-    clock_select: Optional[int] = 0
+    clock_select: int | None = 0
     """
     The clock rate divisor which will be used to get
     the instruments clock rate from the lookup dictionary in
@@ -230,12 +233,12 @@ class Device(DataStructure):
     The Zurich Instruments hardware type. (default = DeviceType.NONE)
     This field is automatically populated.
     """
-    sample_rate: Optional[int] = None
+    sample_rate: int | None = None
     """
     The Instruments sampling clock rate.
     This field is automatically populated.
     """
-    n_channels: Optional[int] = Field(default=None, validate_default=True)
+    n_channels: int | None = Field(default=None, validate_default=True)
     """
     The number of physical channels of this ZI Instrument.
     This field is automatically populated.
@@ -309,14 +312,14 @@ class CommandTableEntry(DataStructure):
     """The definition of a single CommandTable entry."""
 
     index: int
-    waveform: "CommandTableWaveform"
+    waveform: CommandTableWaveform
 
 
 class CommandTable(DataStructure):
     """The CommandTable definition for ZI HDAWG."""
 
-    header: Optional["CommandTableHeader"] = Field(default=None, validate_default=True)
-    table: List["CommandTableEntry"]
+    header: CommandTableHeader | None = Field(default=None, validate_default=True)
+    table: list[CommandTableEntry]
 
     @field_validator("header", mode="before")
     def generate_command_table_header(cls, v, values):
@@ -447,14 +450,14 @@ class ZIChannelDescription(DataStructure):
     the Instrument.
     """
 
-    mode: Union[Literal["real"], Literal["complex"]]
+    mode: Literal["real"] | Literal["complex"]
     """The output mode type."""
-    markers: List[str] = []
+    markers: list[str] = []
     """
     Property that specifies which markers to trigger on each sequencer iteration.
     The values are used as input for the ``setTrigger`` sequencer instruction.
     """
-    trigger: Optional[int] = None
+    trigger: int | None = None
     """
     The ``trigger`` property specifies for a sequencer which digital trigger to wait for.
     This value is used as the input parameter for the ``waitDigTrigger`` sequencer instruction.
@@ -465,7 +468,7 @@ class ZIChannelDescription(DataStructure):
 class ZIBaseDescription(common.HardwareDescription):
     """Base class for a Zurich Instrument hardware description."""
 
-    ref: Union[Literal["int"], Literal["ext"], Literal["none"]]
+    ref: Literal["int"] | Literal["ext"] | Literal["none"]
     """
     Property that describes if the instrument uses Markers or Triggers.
     - ``int`` Enables sending Marker
@@ -494,9 +497,9 @@ class ZIHDAWG4Description(ZIBaseDescription):
     For information see zhinst User manuals, section /DEV..../AWGS/n/TIME
     Examples: base sampling rate (1.8 GHz) divided by 2^clock_select. (default = 0)
     """
-    channel_0: Optional[ZIChannelDescription] = None
+    channel_0: ZIChannelDescription | None = None
     """Description of the first channel on this HDAWG (corresponding to 1 or 2 physical output ports)."""
-    channel_1: Optional[ZIChannelDescription] = None
+    channel_1: ZIChannelDescription | None = None
     """Description of the second channel on this HDAWG (corresponding to 1 or 2 physical output ports)."""
 
 
@@ -505,9 +508,9 @@ class ZIHDAWG8Description(ZIHDAWG4Description):
 
     instrument_type: Literal["HDAWG8"]
     """The instrument type, used to select this datastructure when parsing a :class:`~.quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig`."""
-    channel_2: Optional[ZIChannelDescription] = None
+    channel_2: ZIChannelDescription | None = None
     """Description of the third channel on this HDAWG (corresponding to 1 or 2 physical output ports)."""
-    channel_3: Optional[ZIChannelDescription] = None
+    channel_3: ZIChannelDescription | None = None
     """Description of the fourth channel on this HDAWG (corresponding to 1 or 2 physical output ports)."""
 
 
@@ -516,7 +519,7 @@ class ZIUHFQADescription(ZIBaseDescription):
 
     instrument_type: Literal["UHFQA"]
     """The instrument type, used to select this datastructure when parsing a :class:`~.quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig`."""
-    channel_0: Optional[ZIChannelDescription] = None
+    channel_0: ZIChannelDescription | None = None
     """Description of the readout channel on this UHFQA."""
 
 
@@ -595,7 +598,7 @@ class ZIHardwareOptions(common.HardwareOptions):
             zi_hw_options
     """
 
-    output_gain: Optional[Dict[str, OutputGain]] = None
+    output_gain: dict[str, OutputGain] | None = None
     """
     Dictionary containing the gain settings (values) that should be applied
     to the outputs that are connected to a certain port-clock combination (keys).

@@ -3,19 +3,25 @@
 """Tests for virtual strategy module."""
 
 
+from __future__ import annotations
+
 from contextlib import nullcontext
-from typing import Tuple
+from typing import TYPE_CHECKING
 
 import pytest
 
 from quantify_scheduler.backends.qblox import constants, q1asm_instructions
 from quantify_scheduler.backends.qblox.instrument_compilers import QCMCompiler
 from quantify_scheduler.backends.qblox.operation_handling import virtual
-from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.qblox.register_manager import RegisterManager
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.operations.pulse_library import SetClockFrequency
+
+if TYPE_CHECKING:
+    from quantify_scheduler.backends.qblox.operation_handling.base import (
+        IOperationStrategy,
+    )
 
 
 @pytest.fixture(name="empty_qasm_program_qcm")
@@ -113,10 +119,10 @@ class TestNcoPhaseShiftStrategy:
     def test_generate_qasm_program(
         self,
         phase_shift: float,
-        answer: Tuple[str, str],
+        answer: tuple[str, str],
         empty_qasm_program_qcm: QASMProgram,
     ):
-        def extract_instruction_and_args(qasm_prog: QASMProgram) -> Tuple[str, str]:
+        def extract_instruction_and_args(qasm_prog: QASMProgram) -> tuple[str, str]:
             return qasm_prog.instructions[0][1], qasm_prog.instructions[0][2]
 
         # arrange
@@ -244,7 +250,7 @@ class TestNcoSetClockFrequencyStrategy:
     ):
         def extract_instruction_and_args(
             qasm_prog: QASMProgram,
-        ) -> Tuple[str, str]:
+        ) -> tuple[str, str]:
             return (
                 qasm_prog.instructions[0][1],
                 qasm_prog.instructions[0][2],

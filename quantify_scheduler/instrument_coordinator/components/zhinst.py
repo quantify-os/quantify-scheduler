@@ -276,7 +276,7 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
                 " UHFQAInstrumentCoordinatorComponent.prepare(zi_device_config) first."
             )
 
-        # acq_channel_results: Dict[int, np.ndarray] = dict()
+        # acq_channel_results: dict[int, np.ndarray] = dict()
         acq_channel_results: list[dict[Hashable, xarray.DataArray]] = []
         for acq_channel, resolve in acq_config.resolvers.items():
             data: NDArray = resolve(uhfqa=self.instrument)

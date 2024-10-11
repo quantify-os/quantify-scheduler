@@ -6,11 +6,12 @@ Device elements for NV centers.
 Currently only for the electronic qubit,
 but could be extended for other qubits (eg. carbon qubit).
 """
+from __future__ import annotations
+
 import math
-from typing import Any, Dict
+from typing import TYPE_CHECKING, Any
 
 from qcodes.instrument import InstrumentModule
-from qcodes.instrument.base import InstrumentBase
 from qcodes.instrument.parameter import (
     ManualParameter,
     Parameter,
@@ -38,6 +39,9 @@ from quantify_scheduler.operations import (
     pulse_factories,
     pulse_library,
 )
+
+if TYPE_CHECKING:
+    from qcodes.instrument.base import InstrumentBase
 
 
 class Ports(InstrumentModule):
@@ -493,7 +497,7 @@ class BasicElectronicNVElement(DeviceElement):
         self.rxy: RxyHermite
         """Submodule :class:`~.Rxy`."""
 
-    def _generate_config(self) -> Dict[str, Dict[str, OperationCompilationConfig]]:
+    def _generate_config(self) -> dict[str, dict[str, OperationCompilationConfig]]:
         """
         Generate part of the device configuration specific to a single qubit.
 

@@ -361,7 +361,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
         Returns
         -------
-        Union[Tuple[Figure, Axes], :class:`!plotly.graph_objects.Figure`]
+        Union[tuple[Figure, Axes], :class:`!plotly.graph_objects.Figure`]
             the plot
 
 

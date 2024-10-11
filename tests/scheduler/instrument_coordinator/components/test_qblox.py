@@ -1,11 +1,12 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Tests for Qblox instrument coordinator components."""
+from __future__ import annotations
+
 import os
 import re
 from collections import defaultdict
 from copy import copy, deepcopy
-from typing import List, Optional
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -111,10 +112,10 @@ def make_cluster_component(mocker):
         modules: dict = default_modules,
         sequencer_status: SequencerStatuses = SequencerStatuses.OKAY,
         sequencer_state: SequencerStates = SequencerStates.ARMED,
-        info_flags: Optional[List[SequencerStatusFlags]] = None,
-        warn_flags: Optional[List[SequencerStatusFlags]] = None,
-        err_flags: Optional[List[SequencerStatusFlags]] = None,
-        sequencer_logs: Optional[List[str]] = None,
+        info_flags: list[SequencerStatusFlags] | None = None,
+        warn_flags: list[SequencerStatusFlags] | None = None,
+        err_flags: list[SequencerStatusFlags] | None = None,
+        sequencer_logs: list[str] | None = None,
     ) -> qblox.ClusterComponent:
         qblox_types = {
             "QCM": ClusterType.CLUSTER_QCM,

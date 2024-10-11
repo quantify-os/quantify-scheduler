@@ -6,7 +6,7 @@
 """Compiler backend for a mock readout module."""
 from __future__ import annotations
 
-from typing import Dict, Hashable, Literal, Optional, Type
+from typing import Hashable, Literal
 
 import numpy as np
 import xarray as xr
@@ -53,7 +53,7 @@ class MockReadoutModule:
         self.gain = gain
         self.sampling_rate = sampling_rate
 
-    def upload_waveforms(self, waveforms: Dict[str, NDArray]) -> None:
+    def upload_waveforms(self, waveforms: dict[str, NDArray]) -> None:
         """Upload a dictionary of waveforms defined on a 1 ns grid."""
         self.waveforms = waveforms
 
@@ -89,7 +89,7 @@ class MockROMGettable:
     def __init__(
         self,
         mock_rom: MockReadoutModule,
-        waveforms: Dict[str, NDArray],
+        waveforms: dict[str, NDArray],
         instructions: list[str],
         sampling_rate: float = 1e9,
         gain: float = 1.0,
@@ -123,14 +123,14 @@ class MockROMAcquisitionConfig(DataStructure):
     """
 
     n_acquisitions: int
-    acq_protocols: Dict[int, str]
+    acq_protocols: dict[int, str]
     bin_mode: BinMode
 
 
 class MockROMSettings(DataStructure):
     """Settings that can be uploaded to the mock readout module."""
 
-    waveforms: Dict[str, NDArray]
+    waveforms: dict[str, NDArray]
     instructions: list[str]
     sampling_rate: float = 1e9
     gain: float = 1.0
@@ -189,7 +189,7 @@ class MockROMInstrumentCoordinatorComponent(InstrumentCoordinatorComponentBase):
                 " component that was not prepared. Execute"
                 " MockROMInstrumentCoordinatorComponent.prepare(mock_rom_settings) first."
             )
-        acq_channel_results: list[Dict[Hashable, xr.DataArray]] = []
+        acq_channel_results: list[dict[Hashable, xr.DataArray]] = []
         for acq_channel, acq_protocol in acq_config.acq_protocols.items():
             if acq_protocol == "Trace":
                 complex_data = data[2 * acq_channel] + 1j * data[2 * acq_channel + 1]
@@ -328,11 +328,11 @@ class MockROMDescription(HardwareDescription):
 
 
 class MockROMHardwareOptions(HardwareOptions):
-    gain: Optional[Dict[str, float]] = None  # noqa: UP007
+    gain: dict[str, float] | None = None
 
 
 class MockROMHardwareCompilationConfig(HardwareCompilationConfig):
-    config_type: Type[MockROMHardwareCompilationConfig] = Field(  # noqa: UP006
+    config_type: type[MockROMHardwareCompilationConfig] = Field(
         default="quantify_scheduler.backends.mock.mock_rom.MockROMHardwareCompilationConfig",
         validate_default=True,
     )
@@ -341,9 +341,9 @@ class MockROMHardwareCompilationConfig(HardwareCompilationConfig):
     :class:`~quantify_scheduler.backends.types.common.HardwareCompilationConfig`
     DataStructure for the Mock ROM backend.
     """
-    hardware_description: Dict[str, MockROMDescription]
+    hardware_description: dict[str, MockROMDescription]
     hardware_options: MockROMHardwareOptions
-    compilation_passes: list[SimpleNodeConfig] = [  # noqa: UP006
+    compilation_passes: list[SimpleNodeConfig] = [
         SimpleNodeConfig(
             name="mock_rom_hardware_compile", compilation_func=hardware_compile  # type: ignore
         )

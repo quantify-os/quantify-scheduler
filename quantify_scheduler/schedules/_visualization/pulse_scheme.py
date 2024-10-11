@@ -8,7 +8,6 @@ using matplotlib.
 from __future__ import annotations
 
 import logging
-from typing import Optional, Tuple
 
 import matplotlib.patches
 import matplotlib.pyplot as plt
@@ -24,8 +23,8 @@ logger = logging.getLogger(__name__)
 
 
 def new_pulse_fig(
-    figsize: Optional[Tuple[int, int]] = None, ax: Optional[Axes] = None
-) -> Tuple[Optional[Figure], Axes]:
+    figsize: tuple[int, int] | None = None, ax: Axes | None = None
+) -> tuple[Figure | None, Axes]:
     """
     Open a new figure and configure it to plot pulse schemes.
 
@@ -92,7 +91,7 @@ def mwPulse(
     y_offs: float = 0.0,
     width: float = 1.5,
     amp: float = 1,
-    label: Optional[str] = None,
+    label: str | None = None,
     phase=0,
     label_height: float = 1.3,
     color: str = constants.COLOR_ORANGE,
@@ -170,7 +169,7 @@ def fluxPulse(
     width: float = 2.5,
     s: float = 0.1,
     amp: float = 1.5,
-    label: Optional[str] = None,
+    label: str | None = None,
     label_height: float = 1.7,
     color: str = constants.COLOR_ORANGE,
     **plot_kws,
@@ -299,8 +298,8 @@ def interval(
     stop: float,
     y_offs: float = 0.0,
     height: float = 1.5,
-    label: Optional[str] = None,
-    label_height: Optional[str] = None,
+    label: str | None = None,
+    label_height: str | None = None,
     vlines: bool = True,
     color: str = "k",
     arrowstyle: str = "<|-|>",
@@ -371,7 +370,7 @@ def meter(
     height: float = 0.8,
     color: str = "black",
     framewidth: float = 0.0,
-    fillcolor: Optional[str] = None,
+    fillcolor: str | None = None,
 ) -> None:
     """
     Draws a measurement meter on the specified position.
@@ -448,9 +447,9 @@ def box_text(
     width: float = 1.1,
     height: float = 0.8,
     color: str = "black",
-    fillcolor: Optional[str] = None,
+    fillcolor: str | None = None,
     textcolor: str = "black",
-    fontsize: Optional[int] = None,
+    fontsize: int | None = None,
 ) -> None:
     """
     Draws a box filled with text at the specified position.

@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import json
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import numpy as np
 import pytest
@@ -255,12 +257,12 @@ def test_write_seqc_file(mocker):
     ],
 )
 def test_get_commandtable_map(
-    pulse_ids: List[int],
-    pulseid_pulseinfo_dict: Dict[int, Dict[str, Any]],
+    pulse_ids: list[int],
+    pulseid_pulseinfo_dict: dict[int, dict[str, Any]],
     expected,
 ):
     # Act
-    commandtable_map: Dict[int, int] = zi_helpers.get_waveform_table(
+    commandtable_map: dict[int, int] = zi_helpers.get_waveform_table(
         pulse_ids, pulseid_pulseinfo_dict
     )
 
@@ -328,7 +330,7 @@ def test_get_readout_channel_bitmask(readout_channels_count: int, expected: str)
         ),
     ],
 )
-def test_get_sampling_rates(base_sampling_rate: float, expected: Dict[int, int]):
+def test_get_sampling_rates(base_sampling_rate: float, expected: dict[int, int]):
     # Act
     values = zi_helpers.get_sampling_rates(base_sampling_rate)
 

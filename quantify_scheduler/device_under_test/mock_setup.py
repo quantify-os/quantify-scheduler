@@ -3,7 +3,9 @@
 
 """Code to set up a mock setup for use in tutorials and testing."""
 
-from typing import Any, Dict
+from __future__ import annotations
+
+from typing import Any
 
 import numpy as np
 
@@ -17,7 +19,7 @@ from quantify_scheduler.device_under_test.transmon_element import BasicTransmonE
 from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 
 
-def set_up_mock_transmon_setup() -> Dict:
+def set_up_mock_transmon_setup() -> dict:
     r"""
     Set up a system containing 5 transmon qubits connected in a star shape.
 
@@ -153,7 +155,7 @@ def set_standard_params_transmon(mock_setup):
         qi.measure.acq_weight_type("Numerical")
 
 
-def set_up_mock_basic_nv_setup() -> Dict:
+def set_up_mock_basic_nv_setup() -> dict:
     """
     Set up a system containing 2 electronic qubits in an NV center.
 
@@ -190,7 +192,7 @@ def set_up_mock_basic_nv_setup() -> Dict:
     }
 
 
-def set_standard_params_basic_nv(mock_nv_device: Dict[str, Any]) -> None:
+def set_standard_params_basic_nv(mock_nv_device: dict[str, Any]) -> None:
     """
     Set somewhat standard parameters to the mock setup generated above.
 

@@ -3,8 +3,10 @@
 
 """Standard acquisition protocols for use with the quantify_scheduler."""
 
+from __future__ import annotations
+
 import warnings
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import numpy as np
 
@@ -89,7 +91,7 @@ class Trace(Acquisition):
         clock: str,
         acq_channel: int = 0,
         acq_index: int = 0,
-        bin_mode: Union[BinMode, str] = BinMode.AVERAGE,
+        bin_mode: BinMode | str = BinMode.AVERAGE,
         t0: float = 0,
     ) -> None:
         if not isinstance(duration, float):
@@ -173,14 +175,14 @@ class WeightedIntegratedSeparated(Acquisition):
 
     def __init__(
         self,
-        waveform_a: Dict[str, Any],
-        waveform_b: Dict[str, Any],
+        waveform_a: dict[str, Any],
+        waveform_b: dict[str, Any],
         port: str,
         clock: str,
         duration: float,
         acq_channel: int = 0,
         acq_index: int = 0,
-        bin_mode: Union[BinMode, str] = BinMode.APPEND,
+        bin_mode: BinMode | str = BinMode.APPEND,
         phase: float = 0,
         t0: float = 0,
     ) -> None:
@@ -259,7 +261,7 @@ class SSBIntegrationComplex(Acquisition):
         duration: float,
         acq_channel: int = 0,
         acq_index: int = 0,
-        bin_mode: Union[BinMode, str] = BinMode.AVERAGE,
+        bin_mode: BinMode | str = BinMode.AVERAGE,
         phase: float = 0,
         t0: float = 0,
     ) -> None:
@@ -393,8 +395,8 @@ class ThresholdedAcquisition(Acquisition):
         duration: float,
         acq_channel: int = 0,
         acq_index: int = 0,
-        bin_mode: Union[BinMode, str] = BinMode.AVERAGE,
-        feedback_trigger_label: Optional[str] = None,
+        bin_mode: BinMode | str = BinMode.AVERAGE,
+        feedback_trigger_label: str | None = None,
         phase: float = 0,
         t0: float = 0,
         acq_rotation: float = 0,
@@ -507,13 +509,13 @@ class NumericalSeparatedWeightedIntegration(WeightedIntegratedSeparated):
         self,
         port: str,
         clock: str,
-        weights_a: Union[List[complex], np.ndarray],
-        weights_b: Union[List[complex], np.ndarray],
+        weights_a: list[complex] | np.ndarray,
+        weights_b: list[complex] | np.ndarray,
         weights_sampling_rate: float = 1e9,
         interpolation: str = "linear",
         acq_channel: int = 0,
         acq_index: int = 0,
-        bin_mode: Union[BinMode, str] = BinMode.APPEND,
+        bin_mode: BinMode | str = BinMode.APPEND,
         phase: float = 0,
         t0: float = 0,
     ) -> None:
@@ -650,13 +652,13 @@ class NumericalWeightedIntegration(NumericalSeparatedWeightedIntegration):
         self,
         port: str,
         clock: str,
-        weights_a: Union[List[complex], np.ndarray],
-        weights_b: Union[List[complex], np.ndarray],
+        weights_a: list[complex] | np.ndarray,
+        weights_b: list[complex] | np.ndarray,
         weights_sampling_rate: float = 1e9,
         interpolation: str = "linear",
         acq_channel: int = 0,
         acq_index: int = 0,
-        bin_mode: Union[BinMode, str] = BinMode.APPEND,
+        bin_mode: BinMode | str = BinMode.APPEND,
         phase: float = 0,
         t0: float = 0,
     ) -> None:
@@ -724,7 +726,7 @@ class TriggerCount(Acquisition):
         duration: float,
         acq_channel: int = 0,
         acq_index: int = 0,
-        bin_mode: Union[BinMode, str] = BinMode.APPEND,
+        bin_mode: BinMode | str = BinMode.APPEND,
         t0: float = 0,
     ) -> None:
         if bin_mode == BinMode.AVERAGE and acq_index != 0:
@@ -809,8 +811,8 @@ class TimetagTrace(Acquisition):
         clock: str = DigitalClockResource.IDENTITY,
         acq_channel: int = 0,
         acq_index: int = 0,
-        bin_mode: Union[BinMode, str] = BinMode.APPEND,
-        time_ref: Union[TimeRef, str] = TimeRef.START,
+        bin_mode: BinMode | str = BinMode.APPEND,
+        time_ref: TimeRef | str = TimeRef.START,
         t0: float = 0,
     ) -> None:
         if not isinstance(duration, float):
@@ -907,9 +909,9 @@ class Timetag(Acquisition):
         clock: str = DigitalClockResource.IDENTITY,
         acq_channel: int = 0,
         acq_index: int = 0,
-        bin_mode: Union[BinMode, str] = BinMode.APPEND,
-        time_source: Union[TimeSource, str] = TimeSource.FIRST,
-        time_ref: Union[TimeRef, str] = TimeRef.START,
+        bin_mode: BinMode | str = BinMode.APPEND,
+        time_source: TimeSource | str = TimeSource.FIRST,
+        time_ref: TimeRef | str = TimeRef.START,
         t0: float = 0,
     ) -> None:
         super().__init__(name=self.__class__.__name__)

@@ -3,7 +3,7 @@
 """Standard gateset for use with the quantify_scheduler."""
 from __future__ import annotations
 
-from typing import Hashable, Literal, Optional, Tuple
+from typing import Hashable, Literal
 
 import numpy as np
 
@@ -652,9 +652,9 @@ class Measure(Operation):
         self,
         *qubits: str,
         acq_channel: Hashable | None = None,
-        acq_index: Tuple[int, ...] | int | None = None,
+        acq_index: tuple[int, ...] | int | None = None,
         # These are the currently supported acquisition protocols.
-        acq_protocol: Optional[
+        acq_protocol: (
             Literal[
                 "SSBIntegrationComplex",
                 "Timetag",
@@ -665,9 +665,10 @@ class Measure(Operation):
                 "NumericalWeightedIntegration",
                 "ThresholdedAcquisition",
             ]
-        ] = None,
+            | None
+        ) = None,
         bin_mode: BinMode | str | None = None,
-        feedback_trigger_label: Optional[str] = None,
+        feedback_trigger_label: str | None = None,
         **device_overrides,
     ):
         # this if else statement a workaround to support multiplexed measurements (#262)

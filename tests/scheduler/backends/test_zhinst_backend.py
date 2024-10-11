@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from copy import deepcopy
 from textwrap import dedent
-from typing import Any, Dict, Generator, List
+from typing import Any, Generator
 from unittest.mock import ANY, call
 
 import numpy as np
@@ -45,7 +45,7 @@ ZHINST_HARDWARE_COMPILATION_CONFIG = utils.load_json_example_scheme(
 
 @pytest.fixture
 def hardware_compilation_config_zhinst_example() -> (
-    Generator[Dict[str, Any], None, None]
+    Generator[dict[str, Any], None, None]
 ):
     yield dict(ZHINST_HARDWARE_COMPILATION_CONFIG)
 
@@ -348,7 +348,7 @@ def deprecated_zhinst_hardware_config_example():
 def test_compile_hardware_hdawg4_successfully_deprecated_hardware_config(
     mocker,
     create_schedule_with_pulse_info,
-    deprecated_zhinst_hardware_config_example: Dict[str, Any],
+    deprecated_zhinst_hardware_config_example: dict[str, Any],
 ) -> None:
     hdawg_hardware_cfg = deprecated_zhinst_hardware_config_example
     # Arrange
@@ -496,7 +496,7 @@ def test_compile_hardware_hdawg4_successfully(
 def test_compile_hardware_uhfqa_successfully_deprecated_hardware_config(
     mocker,
     make_schedule,
-    deprecated_zhinst_hardware_config_example: Dict[str, Any],
+    deprecated_zhinst_hardware_config_example: dict[str, Any],
 ) -> None:
     uhfqa_hardware_cfg = deprecated_zhinst_hardware_config_example
     # Arrange
@@ -775,7 +775,7 @@ def test__program_hdawg4_channelgrouping(
     mocker,
     create_typical_timing_table,
     channelgrouping: int,
-    enabled_channels: List[int],
+    enabled_channels: list[int],
 ):
     test_config_dict = create_typical_timing_table()
     schedule = test_config_dict["schedule"]

@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import TYPE_CHECKING, Any, Callable, Dict, Generator, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Generator
 
 import numpy as np
 import pytest
@@ -43,7 +43,7 @@ def device_cfg_transmon_example() -> Generator[DeviceCompilationConfig, None, No
 
 @pytest.fixture
 def hardware_compilation_config_zhinst_example() -> (
-    Generator[Dict[str, Any], None, None]
+    Generator[dict[str, Any], None, None]
 ):
     yield dict(ZHINST_HARDWARE_COMPILATION_CONFIG)
 
@@ -53,7 +53,7 @@ def create_schedule_with_pulse_info(
     device_cfg_transmon_example, basic_schedule: Schedule
 ):
     def _create_schedule_with_pulse_info(
-        schedule: Optional[Schedule] = None, device_config: Optional[dict] = None
+        schedule: Schedule | None = None, device_config: dict | None = None
     ) -> Schedule:
         _schedule = schedule if schedule is not None else deepcopy(basic_schedule)
         _device_config = (
@@ -94,8 +94,8 @@ def make_basic_schedule() -> Callable[[str], Schedule]:
 
 
 @pytest.fixture
-def make_basic_multi_qubit_schedule() -> Callable[[List[str]], Schedule]:
-    def _make_basic_schedule(qubits: List[str]) -> Schedule:
+def make_basic_multi_qubit_schedule() -> Callable[[list[str]], Schedule]:
+    def _make_basic_schedule(qubits: list[str]) -> Schedule:
         schedule = Schedule(f"Basic schedule {qubits}")
         for qubit in qubits:
             schedule.add(X90(qubit))

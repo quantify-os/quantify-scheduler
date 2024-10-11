@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import warnings
 from dataclasses import dataclass
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Literal
 
 import numpy as np
 from qcodes import InstrumentChannel, validators
@@ -312,7 +312,7 @@ class RampPulse(Operation):
         duration: float,
         port: str,
         clock: str = BasebandClockResource.IDENTITY,
-        reference_magnitude: Optional[ReferenceMagnitude] = None,
+        reference_magnitude: ReferenceMagnitude | None = None,
         offset: float = 0,
         t0: float = 0,
     ):
@@ -373,7 +373,7 @@ class StaircasePulse(Operation):
         duration: float,
         port: str,
         clock: str = BasebandClockResource.IDENTITY,
-        reference_magnitude: Optional[ReferenceMagnitude] = None,
+        reference_magnitude: ReferenceMagnitude | None = None,
         t0: float = 0,
     ):
         super().__init__(name=self.__class__.__name__)
@@ -472,7 +472,7 @@ class SquarePulse(Operation):
         duration: float,
         port: str,
         clock: str = BasebandClockResource.IDENTITY,
-        reference_magnitude: Optional[ReferenceMagnitude] = None,
+        reference_magnitude: ReferenceMagnitude | None = None,
         t0: float = 0,
     ):
         super().__init__(name=self.__class__.__name__)
@@ -541,7 +541,7 @@ class SuddenNetZeroPulse(Operation):
         t_integral_correction: float,
         port: str,
         clock: str = BasebandClockResource.IDENTITY,
-        reference_magnitude: Optional[ReferenceMagnitude] = None,
+        reference_magnitude: ReferenceMagnitude | None = None,
         t0: float = 0,
     ):
         duration = t_pulse + t_phi + t_integral_correction
@@ -647,7 +647,7 @@ class SoftSquarePulse(Operation):
         duration: float,
         port: str,
         clock: str = BasebandClockResource.IDENTITY,
-        reference_magnitude: Optional[ReferenceMagnitude] = None,
+        reference_magnitude: ReferenceMagnitude | None = None,
         t0: float = 0,
     ):
         super().__init__(name=self.__class__.__name__)
@@ -703,7 +703,7 @@ class ChirpPulse(Operation):
         clock: str,
         start_freq: float,
         end_freq: float,
-        reference_magnitude: Optional[ReferenceMagnitude] = None,
+        reference_magnitude: ReferenceMagnitude | None = None,
         t0: float = 0,
     ):
         super().__init__(name=self.__class__.__name__)
@@ -773,7 +773,7 @@ class DRAGPulse(Operation):
         duration: float,
         port: str,
         clock: str,
-        reference_magnitude: Optional[ReferenceMagnitude] = None,
+        reference_magnitude: ReferenceMagnitude | None = None,
         sigma: float = None,
         t0: float = 0,
     ):
@@ -839,7 +839,7 @@ class GaussPulse(Operation):
         duration: float,
         port: str,
         clock: str = BasebandClockResource.IDENTITY,
-        reference_magnitude: Optional[ReferenceMagnitude] = None,
+        reference_magnitude: ReferenceMagnitude | None = None,
         sigma: float = None,
         t0: float = 0,
     ):
@@ -867,13 +867,13 @@ class GaussPulse(Operation):
 
 
 def create_dc_compensation_pulse(
-    pulses: List[Operation],
+    pulses: list[Operation],
     sampling_rate: float,
     port: str,
     t0: float = 0,
-    amp: Optional[float] = None,
-    reference_magnitude: Optional[ReferenceMagnitude] = None,
-    duration: Optional[float] = None,
+    amp: float | None = None,
+    reference_magnitude: ReferenceMagnitude | None = None,
+    duration: float | None = None,
 ) -> SquarePulse:
     """
     Calculates a SquarePulse to counteract charging effects based on a list of pulses.
@@ -922,9 +922,9 @@ def create_dc_compensation_pulse(
         Returns a SquarePulse object that compensates all pulses passed as argument.
     """
 
-    def _extract_pulses(pulses: List[Operation], port: str) -> List[Dict[str, Any]]:
+    def _extract_pulses(pulses: list[Operation], port: str) -> list[dict[str, Any]]:
         # Collect all pulses for the given port
-        pulse_info_list: List[Dict[str, Any]] = []
+        pulse_info_list: list[dict[str, Any]] = []
 
         for pulse in pulses:
             for pulse_info in pulse["pulse_info"]:
@@ -943,7 +943,7 @@ def create_dc_compensation_pulse(
             "At least one pulse is necessary."
         )
 
-    pulse_info_list: List[Dict[str, Any]] = _extract_pulses(pulses, port)
+    pulse_info_list: list[dict[str, Any]] = _extract_pulses(pulses, port)
 
     # Calculate the area given by the list of pulses
     area: float = area_pulses(pulse_info_list, sampling_rate)
@@ -1049,20 +1049,18 @@ class NumericalPulse(Operation):
 
     def __init__(
         self,
-        samples: Union[np.ndarray, list],
-        t_samples: Union[np.ndarray, list],
+        samples: np.ndarray | list,
+        t_samples: np.ndarray | list,
         port: str,
         clock: str = BasebandClockResource.IDENTITY,
-        reference_magnitude: Optional[ReferenceMagnitude] = None,
+        reference_magnitude: ReferenceMagnitude | None = None,
         t0: float = 0,
         interpolation: str = "linear",
     ):
-        def make_list_from_array(
-            val: Union[np.ndarray[float], List[float]]
-        ) -> List[float]:
+        def make_list_from_array(val: np.ndarray[float] | list[float]) -> list[float]:
             """Needed since numpy arrays break the (de)serialization code (#146)."""
             if isinstance(val, np.ndarray):
-                new_val: List[float] = val.tolist()
+                new_val: list[float] = val.tolist()
                 return new_val
             return val
 
@@ -1127,7 +1125,7 @@ class SkewedHermitePulse(Operation):
         phase: float,
         port: str,
         clock: str,
-        reference_magnitude: Optional[ReferenceMagnitude] = None,
+        reference_magnitude: ReferenceMagnitude | None = None,
         t0: float = 0,
     ):
         super().__init__(name=self.__class__.__name__)

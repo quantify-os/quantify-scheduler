@@ -1,9 +1,11 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Tests for acquisitions module."""
+from __future__ import annotations
+
 import pprint
 import re
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 import pytest
@@ -65,7 +67,7 @@ def fixture_empty_qasm_program():
 class MockAcquisition(acquisitions.AcquisitionStrategyPartial):
     """Used for TestAcquisitionStrategyPartial."""
 
-    def generate_data(self, wf_dict: Dict[str, Any]):
+    def generate_data(self, wf_dict: dict[str, Any]):
         pass
 
     def _acquire_with_immediate_bin_index(self, qasm_program: QASMProgram):

@@ -8,13 +8,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Dict,
-    List,
     Literal,
-    Optional,
-    Tuple,
-    Type,
-    Union,
 )
 
 import matplotlib.pyplot as plt
@@ -53,7 +47,7 @@ class SimpleNodeConfig(DataStructure):
 
     name: str
     """The name of the compilation pass."""
-    compilation_func: Callable[[Schedule, Union[DataStructure, dict]], ScheduleBase]
+    compilation_func: Callable[[Schedule, DataStructure | dict], ScheduleBase]
     """
     The function to perform the compilation pass as an
     importable string (e.g., "package_name.my_module.function_name").
@@ -81,17 +75,17 @@ class OperationCompilationConfig(DataStructure):
     defined on a quantum-device layer.
     """
 
-    factory_func: Union[Callable[..., Union[Operation, Schedule]], None]
+    factory_func: Callable[..., Operation | Schedule] | None
     """
     A callable designating a factory function used to create the representation
     of the operation at the quantum-device level.
     """
-    factory_kwargs: Dict[str, Any]
+    factory_kwargs: dict[str, Any]
     """
     A dictionary containing the keyword arguments and corresponding values to use
     when creating the operation by evaluating the factory function.
     """
-    gate_info_factory_kwargs: Optional[List[str]] = None
+    gate_info_factory_kwargs: list[str] | None = None
     """
     A list of keyword arguments of the factory function for which the value must
     be retrieved from the ``gate_info`` of the operation.
@@ -106,7 +100,7 @@ class OperationCompilationConfig(DataStructure):
 
     @field_validator("factory_func", mode="before")
     def _import_factory_func_if_str(
-        cls, fun: Union[str, Callable[..., Operation]]  # noqa: N805
+        cls, fun: str | Callable[..., Operation]  # noqa: N805
     ) -> Callable[..., Operation]:
         if isinstance(fun, str):
             return deserialize_function(fun)
@@ -159,17 +153,17 @@ class DeviceCompilationConfig(DataStructure):
             device_cfg
     """
 
-    clocks: Dict[str, float]
+    clocks: dict[str, float]
     """
     A dictionary specifying the clock frequencies available on the device e.g.,
     :code:`{"q0.01": 6.123e9}`.
     """
-    elements: Dict[str, Dict[str, OperationCompilationConfig]]
+    elements: dict[str, dict[str, OperationCompilationConfig]]
     """
     A dictionary specifying the elements on the device, what operations can be
     applied to them and how to compile these.
     """
-    edges: Dict[str, Dict[str, OperationCompilationConfig]]
+    edges: dict[str, dict[str, OperationCompilationConfig]]
     """
     A dictionary specifying the edges, links between elements on the device to which
     operations can be applied, and the operations that can be applied to them and how
@@ -180,7 +174,7 @@ class DeviceCompilationConfig(DataStructure):
     The scheduling strategy used when determining the absolute timing of each
     operation of the schedule.
     """
-    compilation_passes: List[SimpleNodeConfig] = Field(
+    compilation_passes: list[SimpleNodeConfig] = Field(
         default=[
             {
                 "name": "circuit_to_device",
@@ -231,14 +225,14 @@ class CompilationConfig(DataStructure):
     references objects from the original schedule, please refrain from modifying
     the original schedule after compilation in this case!
     """
-    backend: Type[QuantifyCompiler]
+    backend: type[QuantifyCompiler]
     """A reference string to the :class:`~QuantifyCompiler` class used in the compilation."""
-    device_compilation_config: Optional[DeviceCompilationConfig] = None
+    device_compilation_config: DeviceCompilationConfig | None = None
     """
     The :class:`~DeviceCompilationConfig` used in the compilation from the quantum-circuit
     layer to the quantum-device layer.
     """
-    hardware_compilation_config: Optional[HardwareCompilationConfig] = None
+    hardware_compilation_config: HardwareCompilationConfig | None = None
     """
     The ``HardwareCompilationConfig`` used in the compilation from the quantum-device
     layer to the control-hardware layer.
@@ -255,8 +249,8 @@ class CompilationConfig(DataStructure):
 
     @field_validator("backend", mode="before")
     def _import_backend_if_str(
-        cls, class_: Union[Type[QuantifyCompiler], str]  # noqa: N805
-    ) -> Type[QuantifyCompiler]:
+        cls, class_: type[QuantifyCompiler] | str  # noqa: N805
+    ) -> type[QuantifyCompiler]:
         if isinstance(class_, str):
             return deserialize_class(class_)
         return class_  # type: ignore
@@ -290,8 +284,8 @@ class CompilationNode:
         return self.name
 
     def _compilation_func(
-        self, schedule: Union[Schedule, DataStructure], config: DataStructure
-    ) -> Union[Schedule, DataStructure]:
+        self, schedule: Schedule | DataStructure, config: DataStructure
+    ) -> Schedule | DataStructure:
         """
         Private compilation method of this CompilationNode.
 
@@ -308,8 +302,8 @@ class CompilationNode:
         raise NotImplementedError
 
     def compile(
-        self, schedule: Union[Schedule, DataStructure], config: DataStructure
-    ) -> Union[Schedule, DataStructure]:
+        self, schedule: Schedule | DataStructure, config: DataStructure
+    ) -> Schedule | DataStructure:
         """
         Execute a compilation pass.
 
@@ -350,7 +344,7 @@ class SimpleNode(CompilationNode):
         self.compilation_func = compilation_func
 
     def _compilation_func(
-        self, schedule: Schedule, config: Union[DataStructure, dict]
+        self, schedule: Schedule, config: DataStructure | dict
     ) -> Schedule:
         # note that in contrast to the CompilationNode parent class, the compilation
         # function has a much stricter type hint as this is for use in a SerialCompiler
@@ -379,7 +373,7 @@ class QuantifyCompiler(CompilationNode):
         if None is provided for the compile step
     """
 
-    def __init__(self, name, quantum_device: Optional[QuantumDevice] = None) -> None:
+    def __init__(self, name, quantum_device: QuantumDevice | None = None) -> None:
         super().__init__(name=name)
 
         # current implementations use networkx directed graph to store the task graph
@@ -396,7 +390,7 @@ class QuantifyCompiler(CompilationNode):
     def compile(
         self,
         schedule: Schedule,
-        config: Optional[CompilationConfig] = None,
+        config: CompilationConfig | None = None,
     ) -> CompiledSchedule:
         """
         Compile a :class:`~.Schedule` using the information provided in the config.
@@ -456,7 +450,7 @@ class QuantifyCompiler(CompilationNode):
         raise NotImplementedError
 
     def draw(
-        self, ax: Axes = None, figsize: Tuple[float, float] = (20, 10), **options
+        self, ax: Axes = None, figsize: tuple[float, float] = (20, 10), **options
     ) -> Axes:
         """
         Draws the graph defined by this backend using matplotlib.
@@ -604,7 +598,7 @@ class SerialCompilationConfig(CompilationConfig):
     Specifies compilation as a list of compilation passes.
     """
 
-    backend: Type[SerialCompiler] = SerialCompiler
+    backend: type[SerialCompiler] = SerialCompiler
 
     @field_serializer("backend")
     def _serialize_backend_func(self, v):
@@ -612,8 +606,8 @@ class SerialCompilationConfig(CompilationConfig):
 
     @field_validator("backend", mode="before")
     def _import_backend_if_str(
-        cls, class_: Union[Type[SerialCompiler], str]  # noqa: N805
-    ) -> Type[SerialCompiler]:
+        cls, class_: type[SerialCompiler] | str  # noqa: N805
+    ) -> type[SerialCompiler]:
         if isinstance(class_, str):
             return deserialize_class(class_)
         return class_  # type: ignore

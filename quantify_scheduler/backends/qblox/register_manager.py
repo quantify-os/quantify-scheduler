@@ -1,7 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Utility class for dynamically allocating registers for Qblox sequencers."""
-from typing import Set
+from __future__ import annotations
 
 from quantify_scheduler.backends.qblox import constants
 
@@ -10,7 +10,7 @@ class RegisterManager:
     """Utility class that keeps track of all the registers that are still available."""
 
     def __init__(self) -> None:
-        self._available_registers: Set[str] = {
+        self._available_registers: set[str] = {
             f"R{idx}" for idx in range(constants.NUMBER_OF_REGISTERS)
         }
 
@@ -65,7 +65,7 @@ class RegisterManager:
         self._available_registers.add(register)
 
     @property
-    def available_registers(self) -> Set[str]:
+    def available_registers(self) -> set[str]:
         """
         Getter for the available registers.
 

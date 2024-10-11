@@ -9,7 +9,7 @@ import json
 from copy import deepcopy
 from functools import partial
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Tuple, Union, cast
+from typing import Any, Callable, Dict, cast
 
 import numpy as np
 from zhinst.qcodes import base
@@ -43,7 +43,7 @@ class ZISetting:
     value: Any
     apply_fn: Callable[[base.ZIBaseInstrument, str, Any], None]
 
-    def as_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> dict[str, Any]:
         """
         Returns the key-value pair as a dictionary.
 
@@ -78,11 +78,11 @@ class ZISettings:
 
     def __init__(
         self,
-        daq_settings: List[ZISetting],
-        awg_settings: Dict[int, ZISetting],
+        daq_settings: list[ZISetting],
+        awg_settings: dict[int, ZISetting],
     ):
-        self._daq_settings: List[ZISetting] = daq_settings
-        self._awg_settings: Dict[int, ZISetting] = awg_settings
+        self._daq_settings: list[ZISetting] = daq_settings
+        self._awg_settings: dict[int, ZISetting] = awg_settings
         self._awg_indexes = list(self._awg_settings.keys())
 
     def __eq__(self, other):
@@ -94,11 +94,11 @@ class ZISettings:
         return settings_equal
 
     @property
-    def awg_indexes(self) -> List[int]:
+    def awg_indexes(self) -> list[int]:
         """Returns a list of enabled AWG indexes."""
         return self._awg_indexes
 
-    def as_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> dict[str, Any]:
         """
         Returns the ZISettings as a dictionary.
 
@@ -106,7 +106,7 @@ class ZISettings:
         -------
         :
         """
-        settings_dict: Dict[str, Any] = dict()
+        settings_dict: dict[str, Any] = dict()
         for setting in self._daq_settings:
             settings_dict = {**settings_dict, **setting.as_dict()}
 
@@ -130,7 +130,7 @@ class ZISettings:
 
         for apply_fn, group in itertools.groupby(self._daq_settings, sort_by_fn):
             if apply_fn is zi_helpers.set_value:
-                values: List[Tuple[str, Any]] = list()
+                values: list[tuple[str, Any]] = list()
                 for setting in group:
                     node = f"/{instrument._serial}/{setting.node}"
                     values.append((node, setting.value))
@@ -257,7 +257,7 @@ class ZISettings:
                 "provide path to '{instrument}_settings.json'"
             )
 
-        settings_data: Dict[str, Any] = json.loads(settings_path.read_text())
+        settings_data: dict[str, Any] = json.loads(settings_path.read_text())
         settings_data.pop("name")
         settings_data.pop("serial")
         device_type_str: str = settings_data.pop("type")
@@ -298,7 +298,9 @@ class ZISettings:
                 complex_value = complex(value.replace(" ", ""))
                 builder.with_qas_rotations(channel_index, complex_value)
             elif node == "compiler/sourcestring":
-                seqc_per_awg = cast(Dict[int, str], value)
+                seqc_per_awg = cast(
+                    Dict[int, str], value
+                )  # noqa: UP006  # (Casting to dict[int,str] doesn't work in python 3.8)
 
                 for awg_index, seqc_file in seqc_per_awg.items():
                     seqc_path = Path(seqc_file)
@@ -329,8 +331,8 @@ class ZISettingsBuilder:
 
     """
 
-    _daq_settings: List[ZISetting]
-    _awg_settings: List[Tuple[str, Tuple[int, ZISetting]]]
+    _daq_settings: list[ZISetting]
+    _awg_settings: list[tuple[str, tuple[int, ZISetting]]]
 
     def __init__(self):
         self._daq_settings = list()
@@ -367,9 +369,7 @@ class ZISettingsBuilder:
         self._awg_settings.append((setting.node, (awg_index, setting)))
         return self
 
-    def with_defaults(
-        self, defaults: List[Tuple[str, Union[str, int]]]
-    ) -> ZISettingsBuilder:
+    def with_defaults(self, defaults: list[tuple[str, str | int]]) -> ZISettingsBuilder:
         """
         Adds the Instruments default settings.
 
@@ -386,7 +386,7 @@ class ZISettingsBuilder:
         return self
 
     def with_wave_vector(
-        self, awg_index: int, wave_index: int, vector: Union[List, str]
+        self, awg_index: int, wave_index: int, vector: list | str
     ) -> ZISettingsBuilder:
         """
         Adds the Instruments waveform vector setting
@@ -411,7 +411,7 @@ class ZISettingsBuilder:
         )
 
     def with_csv_wave_vector(
-        self, awg_index: int, wave_index: int, vector: Union[List, str]
+        self, awg_index: int, wave_index: int, vector: list | str
     ) -> ZISettingsBuilder:
         """
         Adds the Instruments waveform vector setting
@@ -445,7 +445,7 @@ class ZISettingsBuilder:
         )
 
     def with_commandtable_data(
-        self, awg_index: int, json_data: Union[Dict[str, Any], str]
+        self, awg_index: int, json_data: dict[str, Any] | str
     ) -> ZISettingsBuilder:
         """
         Adds the Instruments CommandTable
@@ -691,8 +691,8 @@ class ZISettingsBuilder:
 
     def with_qas_integration_weights_real(
         self,
-        channels: Union[int, List[int]],
-        real: Union[List[int], np.ndarray],
+        channels: int | list[int],
+        real: list[int] | np.ndarray,
     ) -> ZISettingsBuilder:
         """
         Adds the Instruments QAS Monitor integration real weights setting.
@@ -733,8 +733,8 @@ class ZISettingsBuilder:
 
     def with_qas_integration_weights_imag(
         self,
-        channels: Union[int, List[int]],
-        imag: Union[List[int], np.ndarray],
+        channels: int | list[int],
+        imag: list[int] | np.ndarray,
     ) -> ZISettingsBuilder:
         """
         Adds the Instruments QAS Monitor integration imaginary weights setting.
@@ -854,7 +854,7 @@ class ZISettingsBuilder:
         )
 
     def with_qas_rotations(
-        self, channels: Union[int, List[int]], value: Union[int, complex]
+        self, channels: int | list[int], value: int | complex
     ) -> ZISettingsBuilder:
         """
         Adds the Instruments QAS rotation setting.
@@ -905,7 +905,7 @@ class ZISettingsBuilder:
         )
 
     def with_sigouts(
-        self, awg_index: int, outputs: Tuple[int, int]
+        self, awg_index: int, outputs: tuple[int, int]
     ) -> ZISettingsBuilder:
         """
         Adds the channel sigouts setting
@@ -954,7 +954,7 @@ class ZISettingsBuilder:
             )
         )
 
-    def with_gain(self, awg_index: int, gain: Tuple[float, float]) -> ZISettingsBuilder:
+    def with_gain(self, awg_index: int, gain: tuple[float, float]) -> ZISettingsBuilder:
         """
         Adds the gain settings
         for the Instruments awg by index.

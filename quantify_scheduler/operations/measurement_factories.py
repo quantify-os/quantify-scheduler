@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import math
 import warnings
-from typing import Hashable, List, Literal, Optional
+from typing import Hashable, Literal
 
 import numpy as np
 
@@ -56,11 +56,11 @@ def _dispersive_measurement(  # noqa: PLR0915
     bin_mode: BinMode | None,
     acq_protocol_default: str,
     reset_clock_phase: bool,
-    reference_magnitude: Optional[ReferenceMagnitude],
-    acq_weights_a: List[complex] | np.ndarray | None,
-    acq_weights_b: List[complex] | np.ndarray | None,
+    reference_magnitude: ReferenceMagnitude | None,
+    acq_weights_a: list[complex] | np.ndarray | None,
+    acq_weights_b: list[complex] | np.ndarray | None,
     acq_weights_sampling_rate: float | None,
-    feedback_trigger_label: Optional[str],
+    feedback_trigger_label: str | None,
     acq_rotation: float | None,
     acq_threshold: float | None,
     num_points: float | None,
@@ -383,11 +383,11 @@ def dispersive_measurement_transmon(
     bin_mode: BinMode | None = BinMode.AVERAGE,
     acq_protocol_default: str = "SSBIntegrationComplex",
     reset_clock_phase: bool = True,
-    reference_magnitude: Optional[ReferenceMagnitude] = None,
-    acq_weights_a: List[complex] | np.ndarray | None = None,
-    acq_weights_b: List[complex] | np.ndarray | None = None,
+    reference_magnitude: ReferenceMagnitude | None = None,
+    acq_weights_a: list[complex] | np.ndarray | None = None,
+    acq_weights_b: list[complex] | np.ndarray | None = None,
     acq_weights_sampling_rate: float | None = None,
-    feedback_trigger_label: Optional[str] = None,
+    feedback_trigger_label: str | None = None,
     acq_rotation: float | None = None,
     acq_threshold: float | None = None,
     num_points: float | None = None,
@@ -496,11 +496,11 @@ def dispersive_measurement_spin(
     bin_mode: BinMode | None = BinMode.AVERAGE,
     acq_protocol_default: str = "SSBIntegrationComplex",
     reset_clock_phase: bool = True,
-    reference_magnitude: Optional[ReferenceMagnitude] = None,
-    acq_weights_a: List[complex] | np.ndarray | None = None,
-    acq_weights_b: List[complex] | np.ndarray | None = None,
+    reference_magnitude: ReferenceMagnitude | None = None,
+    acq_weights_a: list[complex] | np.ndarray | None = None,
+    acq_weights_b: list[complex] | np.ndarray | None = None,
     acq_weights_sampling_rate: float | None = None,
-    feedback_trigger_label: Optional[str] = None,
+    feedback_trigger_label: str | None = None,
     acq_rotation: float | None = None,
     acq_threshold: float | None = None,
     num_points: float | None = None,
@@ -597,10 +597,10 @@ def dispersive_measurement_spin(
 
 
 def optical_measurement(
-    pulse_amplitudes: List[float],
-    pulse_durations: List[float],
-    pulse_ports: List[str],
-    pulse_clocks: List[str],
+    pulse_amplitudes: list[float],
+    pulse_durations: list[float],
+    pulse_ports: list[str],
+    pulse_clocks: list[str],
     acq_duration: float,
     acq_delay: float,
     acq_port: str,

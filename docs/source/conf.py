@@ -17,9 +17,10 @@
 # relative to the documentation root, use os.path.abspath to make it
 # absolute, like shown here.
 #
+from __future__ import annotations
 import os
 import re
-from typing import Any, Dict
+from typing import Any
 
 # -- General configuration ---------------------------------------------
 
@@ -159,7 +160,7 @@ html_favicon = "images/QUANTIFY-FAVICON_16.png"
 # theme further.  For a list of options available for each theme, see the
 # documentation.
 #
-html_theme_options: Dict[str, Any] = {
+html_theme_options: dict[str, Any] = {
     "header_links_before_dropdown": 6,
     "navbar_align": "left",
     "logo": {
@@ -512,7 +513,7 @@ nitpick_ignore = [
     ("py:obj", "quantify_scheduler.structure.Graph"),
     ("py:attr", "BasicTransmonElement.measure.acq_threshold"),
     ("py:attr", "BasicTransmonElement.measure.acq_rotation"),
-]  # Tuple[str, str], ignore certain warnings
+]  # tuple[str, str], ignore certain warnings
 
 nitpick_ignore_regex = [
     ("py:class", r"numpy.*"),

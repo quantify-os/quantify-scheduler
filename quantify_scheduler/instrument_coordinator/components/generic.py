@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Union
+from typing import Any
 
 from qcodes.instrument.base import InstrumentBase
 
@@ -29,10 +29,10 @@ class GenericInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentB
     """
 
     # NB `_instances` also used by `Instrument` class
-    _no_gc_instances: Dict[str, base.InstrumentCoordinatorComponentBase] = dict()
+    _no_gc_instances: dict[str, base.InstrumentCoordinatorComponentBase] = dict()
 
     def __new__(
-        cls, instrument_reference: Union[str, InstrumentBase] = DEFAULT_NAME
+        cls, instrument_reference: str | InstrumentBase = DEFAULT_NAME
     ) -> base.InstrumentCoordinatorComponentBase:
         """
         Keeps track of the instances of this class.
@@ -50,7 +50,7 @@ class GenericInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentB
         return instance
 
     def __init__(
-        self, instrument_reference: Union[str, InstrumentBase] = DEFAULT_NAME
+        self, instrument_reference: str | InstrumentBase = DEFAULT_NAME
     ) -> None:
         if isinstance(instrument_reference, InstrumentBase):
             instrument = instrument_reference
@@ -79,7 +79,7 @@ class GenericInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentB
 
     # Parameter name is different from base class. We ignore it because it is legacy
     # code.
-    def prepare(self, params_config: Dict[str, Any]) -> None:  # type: ignore
+    def prepare(self, params_config: dict[str, Any]) -> None:  # type: ignore
         """
         Prepare the instrument.
 

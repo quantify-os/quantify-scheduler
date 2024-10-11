@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Any, Dict
+from typing import Any
 
 from qcodes.instrument import base, parameter
 from qcodes.utils import validators
@@ -34,7 +34,7 @@ class InstrumentCoordinatorComponentBase(base.Instrument):
     """The InstrumentCoordinator component abstract interface."""
 
     # NB `_instances` also used by `Instrument` class
-    _no_gc_instances: Dict[str, InstrumentCoordinatorComponentBase] = dict()
+    _no_gc_instances: dict[str, InstrumentCoordinatorComponentBase] = dict()
 
     def __new__(
         cls, instrument: base.InstrumentBase

@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from collections import UserDict
-from typing import Any, Iterable, List, MutableMapping, Tuple
+from typing import Any, Iterable, MutableMapping
 
 import numpy as np
 import xxhash
@@ -68,7 +68,7 @@ def without(dict_in: dict, keys: list) -> dict:
     return new_d
 
 
-def find_inner_dicts_containing_key(d: MutableMapping, key: Any) -> List[dict]:
+def find_inner_dicts_containing_key(d: MutableMapping, key: Any) -> list[dict]:
     """
     Generate a list of the first dictionaries encountered that contain a certain key.
 
@@ -107,7 +107,7 @@ def find_inner_dicts_containing_key(d: MutableMapping, key: Any) -> List[dict]:
     return dicts_found
 
 
-def find_all_port_clock_combinations(d: dict) -> List[Tuple[str, str]]:
+def find_all_port_clock_combinations(d: dict) -> list[tuple[str, str]]:
     """
     Generate a list with all port-clock combinations found in a nested dictionary.
 

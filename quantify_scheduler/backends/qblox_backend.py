@@ -9,7 +9,7 @@ import warnings
 from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, List, Literal, Optional, Tuple, Type, Union
+from typing import Any, Iterable, Literal
 
 import numpy as np
 from pydantic import Field, model_validator
@@ -163,7 +163,7 @@ def _replace_long_square_pulses(
 def _all_conditional_acqs_and_control_flows_and_latch_reset(
     operation: Operation | Schedule,
     time_offset: float,
-    accumulator: List[Tuple[float, Operation]],
+    accumulator: list[tuple[float, Operation]],
 ) -> None:
     if isinstance(operation, ScheduleBase):
         for schedulable in operation.schedulables.values():
@@ -375,7 +375,7 @@ def compile_conditional_playback(  # noqa: D417
             f"{constants.MAX_FEEDBACK_TRIGGER_ADDRESS} addresses."
         )
 
-    all_conditional_acqs_and_control_flows: List[Tuple[float, Operation]] = list()
+    all_conditional_acqs_and_control_flows: list[tuple[float, Operation]] = list()
     _all_conditional_acqs_and_control_flows_and_latch_reset(
         schedule, 0, all_conditional_acqs_and_control_flows
     )
@@ -545,7 +545,7 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
     contains fields for hardware-specific settings.
     """
 
-    config_type: Type[QbloxHardwareCompilationConfig] = Field(  # type: ignore
+    config_type: type[QbloxHardwareCompilationConfig] = Field(  # type: ignore
         default="quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
         validate_default=True,
     )
@@ -554,8 +554,8 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
     :class:`~quantify_scheduler.backends.types.common.HardwareCompilationConfig`
     DataStructure for the Qblox backend.
     """
-    hardware_description: Dict[  # type: ignore
-        str, Union[QbloxHardwareDescription, HardwareDescription]
+    hardware_description: dict[  # type: ignore
+        str, QbloxHardwareDescription | HardwareDescription
     ]
     """Description of the instruments in the physical setup."""
     hardware_options: QbloxHardwareOptions  # type: ignore
@@ -564,12 +564,12 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
     :class:`~quantify_scheduler.backends.types.common.LatencyCorrection` or
     :class:`~quantify_scheduler.backends.types.qblox.SequencerOptions`.
     """
-    allow_off_grid_nco_ops: Optional[bool] = None
+    allow_off_grid_nco_ops: bool | None = None
     """
     Flag to allow NCO operations to play at times that are not aligned with the NCO
     grid.
     """
-    compilation_passes: List[SimpleNodeConfig] = [
+    compilation_passes: list[SimpleNodeConfig] = [
         SimpleNodeConfig(
             name="compile_long_square_pulses_to_awg_offsets",
             compilation_func=compile_long_square_pulses_to_awg_offsets,
@@ -742,7 +742,7 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
 
     def _extract_instrument_compilation_configs(
         self, portclocks_used: set[tuple]
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Extract an instrument compiler config for each instrument mentioned in ``hardware_description``.
         Each instrument config has a similar structure than ``QbloxHardwareCompilationConfig``, but
@@ -979,7 +979,7 @@ class _LocalOscillatorCompilationConfig(DataStructure):
 
     hardware_description: LocalOscillatorDescription
     """Description of the physical setup of this local oscillator."""
-    frequency: Union[float, None] = None
+    frequency: float | None = None
     """The frequency of this local oscillator."""
 
 
@@ -990,11 +990,11 @@ class _ClusterCompilationConfig(DataStructure):
     """Description of the physical setup of this cluster."""
     hardware_options: QbloxHardwareOptions
     """Options that are used in compiling the instructions for the hardware."""
-    portclock_to_path: Dict[str, ChannelPath] = {}
+    portclock_to_path: dict[str, ChannelPath] = {}
     """Mapping between portclocks and their associated channel name paths (e.g. cluster0.module1.complex_output_0)."""
-    lo_to_path: Dict[str, ChannelPath] = {}
+    lo_to_path: dict[str, ChannelPath] = {}
     """Mapping between lo names and their associated channel name paths (e.g. cluster0.module1.complex_output_0)."""
-    allow_off_grid_nco_ops: Optional[bool] = None
+    allow_off_grid_nco_ops: bool | None = None
     """
     Flag to allow NCO operations to play at times that are not aligned with the NCO
     grid.
@@ -1002,7 +1002,7 @@ class _ClusterCompilationConfig(DataStructure):
 
     def _extract_module_compilation_configs(
         self,
-    ) -> Dict[int, _ClusterModuleCompilationConfig]:
+    ) -> dict[int, _ClusterModuleCompilationConfig]:
 
         module_configs: dict[int, _ClusterModuleCompilationConfig] = {}
 
@@ -1060,11 +1060,11 @@ class _ClusterModuleCompilationConfig(DataStructure):
     """Description of the physical setup of this module."""
     hardware_options: QbloxHardwareOptions
     """Options that are used in compiling the instructions for the hardware."""
-    portclock_to_path: Dict[str, ChannelPath] = {}
+    portclock_to_path: dict[str, ChannelPath] = {}
     """Mapping between portclocks and their associated channel name paths (e.g. cluster0.module1.complex_output_0)."""
-    lo_to_path: Dict[str, ChannelPath] = {}
+    lo_to_path: dict[str, ChannelPath] = {}
     """Mapping between lo names and their associated channel name paths (e.g. cluster0.module1.complex_output_0)."""
-    allow_off_grid_nco_ops: Optional[bool] = None
+    allow_off_grid_nco_ops: bool | None = None
     """
     Flag to allow NCO operations to play at times that are not aligned with the NCO
     grid.
@@ -1072,7 +1072,7 @@ class _ClusterModuleCompilationConfig(DataStructure):
 
     def _extract_sequencer_compilation_configs(
         self,
-    ) -> Dict[int, _SequencerCompilationConfig]:
+    ) -> dict[int, _SequencerCompilationConfig]:
 
         sequencer_configs = {}
         channel_to_lo = {
@@ -1196,9 +1196,9 @@ class _ClusterModuleCompilationConfig(DataStructure):
 class _SequencerCompilationConfig(DataStructure):
     """Configuration values for a :class:`~.SequencerCompiler`."""
 
-    hardware_description: Union[
-        ComplexChannelDescription, RealChannelDescription, DigitalChannelDescription
-    ]
+    hardware_description: (
+        ComplexChannelDescription | RealChannelDescription | DigitalChannelDescription
+    )
     """Information needed to specify a complex/real/digital input/output."""
     sequencer_options: SequencerOptions
     """Configuration options for this sequencer."""
@@ -1208,15 +1208,15 @@ class _SequencerCompilationConfig(DataStructure):
     """Channel name associated to this sequencer."""
     latency_correction: LatencyCorrection
     """Latency correction that should be applied to operations on this sequencer."""
-    distortion_correction: Union[SoftwareDistortionCorrection, None]
+    distortion_correction: SoftwareDistortionCorrection | None
     """Distortion corrections that should be applied to waveforms on this sequencer."""
-    lo_name: Union[str, None]
+    lo_name: str | None
     """Local oscilator associated to this sequencer."""
     modulation_frequencies: ModulationFrequencies
     """Modulation frequencies associated to this sequencer."""
-    mixer_corrections: Union[QbloxMixerCorrections, None]
+    mixer_corrections: QbloxMixerCorrections | None
     """Mixer correction settings."""
-    allow_off_grid_nco_ops: Optional[bool] = None
+    allow_off_grid_nco_ops: bool | None = None
     """
     Flag to allow NCO operations to play at times that are not aligned with the NCO
     grid.
@@ -1233,7 +1233,7 @@ class ChannelPath:
     module_idx: int
 
     @classmethod
-    def from_path(cls: Type[ChannelPath], path: str) -> ChannelPath:
+    def from_path(cls: type[ChannelPath], path: str) -> ChannelPath:
         """Instantiate a `ChannelPath` object from a path string."""
         cluster_name, module_name, channel_name = path.split(".")
         module_idx = int(module_name.replace("module", ""))
@@ -1248,7 +1248,7 @@ class ChannelPath:
 def _all_abs_times_ops_with_voltage_offsets_pulses(
     operation: Operation | Schedule,
     time_offset: float,
-    accumulator: List[Tuple[float, Operation]],
+    accumulator: list[tuple[float, Operation]],
 ) -> None:
     if isinstance(operation, ScheduleBase):
         for schedulable in operation.schedulables.values():
@@ -1331,7 +1331,7 @@ def validate_non_overlapping_stitched_pulse(schedule: Schedule, **_: Any) -> Non
         If the schedule contains overlapping pulses (containing voltage offsets) on the
         same port and clock.
     """
-    abs_times_and_operations: list[Tuple[float, Operation]] = list()
+    abs_times_and_operations: list[tuple[float, Operation]] = list()
     _all_abs_times_ops_with_voltage_offsets_pulses(
         schedule, 0, abs_times_and_operations
     )
@@ -1380,8 +1380,8 @@ def validate_non_overlapping_stitched_pulse(schedule: Schedule, **_: Any) -> Non
 
 
 def _exists_pulse_starting_before_current_end(
-    abs_times_and_operations: list[Tuple[float, Operation]], current_idx: int
-) -> Tuple[float, Operation] | Literal[False]:
+    abs_times_and_operations: list[tuple[float, Operation]], current_idx: int
+) -> tuple[float, Operation] | Literal[False]:
     current_end = _operation_end(abs_times_and_operations[current_idx])
     for i in range(current_idx + 1, len(abs_times_and_operations)):
         abs_time = abs_times_and_operations[i][0]
@@ -1454,7 +1454,7 @@ def _get_pulse_start_ends(
     return pulse_start_ends_per_port
 
 
-def _operation_end(abs_time_and_operation: Tuple[float, Operation]) -> float:
+def _operation_end(abs_time_and_operation: tuple[float, Operation]) -> float:
     abs_time = abs_time_and_operation[0]
     operation = abs_time_and_operation[1]
     return abs_time + operation.duration

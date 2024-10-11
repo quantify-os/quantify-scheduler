@@ -2,15 +2,19 @@
 # Licensed according to the LICENCE file on the main branch
 """Classes for handling operations that are neither pulses nor acquisitions."""
 
-from typing import Any, Dict
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
 from quantify_scheduler.backends.qblox import constants, helpers, q1asm_instructions
-from quantify_scheduler.backends.qblox.conditional import FeedbackTriggerCondition
 from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
-from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
-from quantify_scheduler.backends.types import qblox as types
+
+if TYPE_CHECKING:
+    from quantify_scheduler.backends.qblox.conditional import FeedbackTriggerCondition
+    from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
+    from quantify_scheduler.backends.types import qblox as types
 
 
 class IdleStrategy(IOperationStrategy):
@@ -31,7 +35,7 @@ class IdleStrategy(IOperationStrategy):
         """Property for retrieving the operation info."""
         return self._op_info
 
-    def generate_data(self, wf_dict: Dict[str, Any]):
+    def generate_data(self, wf_dict: dict[str, Any]):
         """Returns None as no waveforms are generated in this strategy."""
         return None
 

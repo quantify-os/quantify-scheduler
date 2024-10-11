@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
 
@@ -68,15 +68,15 @@ class GenericPulseStrategy(PulseStrategyPartial):
             channel_name=channel_name,
         )
 
-        self._amplitude_path_I: Optional[float] = None
-        self._amplitude_path_Q: Optional[float] = None
+        self._amplitude_path_I: float | None = None
+        self._amplitude_path_Q: float | None = None
 
-        self._waveform_index0: Optional[int] = None
-        self._waveform_index1: Optional[int] = None
+        self._waveform_index0: int | None = None
+        self._waveform_index1: int | None = None
 
-        self._waveform_len: Optional[int] = None
+        self._waveform_len: int | None = None
 
-    def generate_data(self, wf_dict: Dict[str, Any]):
+    def generate_data(self, wf_dict: dict[str, Any]):
         """
         Generates the data and adds them to the ``wf_dict`` (if not already present).
 
@@ -241,7 +241,7 @@ class DigitalOutputStrategy(PulseStrategyPartial):
     for the QTM.
     """
 
-    def generate_data(self, wf_dict: Dict[str, Any]):
+    def generate_data(self, wf_dict: dict[str, Any]):
         """Returns None as no waveforms are generated in this strategy."""
         return None
 

@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-from typing import Tuple
-
 import numpy as np
 from zhinst import qcodes
 
@@ -12,7 +10,7 @@ from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 
 
 def monitor_acquisition_resolver(
-    uhfqa: qcodes.UHFQA, monitor_nodes: Tuple[str, str]
+    uhfqa: qcodes.UHFQA, monitor_nodes: tuple[str, str]
 ) -> np.ndarray:
     """
     Returns complex value of UHFQA Monitor nodes.
@@ -32,7 +30,7 @@ def monitor_acquisition_resolver(
 
 
 def result_acquisition_resolver(
-    uhfqa: qcodes.UHFQA, result_nodes: Tuple[str, str]
+    uhfqa: qcodes.UHFQA, result_nodes: tuple[str, str]
 ) -> np.ndarray:
     """
     Returns complex value of UHFQA Result nodes.

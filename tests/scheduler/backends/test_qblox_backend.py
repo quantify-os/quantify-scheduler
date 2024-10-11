@@ -1,6 +1,8 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Tests for Qblox backend."""
+from __future__ import annotations
+
 import copy
 import itertools
 import json
@@ -9,7 +11,7 @@ import os
 import re
 from contextlib import nullcontext
 from copy import deepcopy
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import networkx as nx
 import numpy as np
@@ -98,7 +100,6 @@ from quantify_scheduler.operations.control_flow_library import (
     LoopOperation,
 )
 from quantify_scheduler.operations.gate_library import CZ, X90, Measure, Reset, X, Y
-from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     IdlePulse,
@@ -118,6 +119,9 @@ from quantify_scheduler.schedules.timedomain_schedules import (
     readout_calibration_sched,
 )
 
+if TYPE_CHECKING:
+    from quantify_scheduler.operations.operation import Operation
+
 REGENERATE_REF_FILES: bool = False  # Set flag to true to regenerate the reference files
 
 
@@ -126,7 +130,7 @@ REGENERATE_REF_FILES: bool = False  # Set flag to true to regenerate the referen
 
 @pytest.fixture
 def dummy_cluster():
-    cluster: Optional[Cluster] = None
+    cluster: Cluster | None = None
 
     def _dummy_cluster(
         name: str = "cluster0",
@@ -1208,7 +1212,7 @@ def test_compile_clock_operations(
     mock_setup_basic_transmon_with_standard_params,
     operation: Operation,
     instruction_to_check: str,
-    clock_freq_old: Optional[float],
+    clock_freq_old: float | None,
     lo1_freq: float,
 ):
     hardware_cfg = {

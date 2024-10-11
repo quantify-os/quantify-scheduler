@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import inspect
-from typing import List
 from unittest.case import TestCase
 
 import numpy as np
@@ -93,7 +92,7 @@ def test_get_waveform_by_pulseid(
     ]
     pulse_info_0 = schedule_with_pulse_info.operations[operation_id]["pulse_info"][0]
     pulse_id = get_pulse_uuid(pulse_info_0)
-    expected_keys: List[int] = [pulse_id]
+    expected_keys: list[int] = [pulse_id]
 
     # Act
     waveform_dict = get_waveform_by_pulseid(schedule_with_pulse_info)
@@ -120,7 +119,7 @@ def test_get_waveform_by_pulseid_are_unique(
     operation_id = list(schedule.schedulables.values())[0]["operation_id"]
     pulse_info_0 = schedule.operations[operation_id]["pulse_info"][0]
     pulse_id = get_pulse_uuid(pulse_info_0)
-    expected_keys: List[int] = [pulse_id]
+    expected_keys: list[int] = [pulse_id]
 
     # Act
     waveform_dict = get_waveform_by_pulseid(schedule)

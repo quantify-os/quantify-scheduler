@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 import numpy as np
 
@@ -30,7 +30,7 @@ class AcquisitionStrategyPartial(IOperationStrategy):
         self._acq_info: types.OpInfo = operation_info
         self.bin_mode: BinMode = operation_info.data["bin_mode"]
         self.acq_channel = operation_info.data["acq_channel"]
-        self.bin_idx_register: Optional[str] = None
+        self.bin_idx_register: str | None = None
         """The register used to keep track of the bin index, only not None for append
         mode acquisitions."""
 
@@ -105,7 +105,7 @@ class AcquisitionStrategyPartial(IOperationStrategy):
 class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
     """Performs a square acquisition (i.e. without acquisition weights)."""
 
-    def generate_data(self, wf_dict: Dict[str, Any]) -> None:
+    def generate_data(self, wf_dict: dict[str, Any]) -> None:
         """Returns None as no waveform is needed."""
         return None
 
@@ -148,9 +148,7 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
         )
         qasm_program.emit(q1asm_instructions.NEW_LINE)
 
-    def _acquire_square(
-        self, qasm_program: QASMProgram, bin_idx: Union[int, str]
-    ) -> None:
+    def _acquire_square(self, qasm_program: QASMProgram, bin_idx: int | str) -> None:
         """
         Adds the instruction for performing acquisitions without weights playback.
 
@@ -183,10 +181,10 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
 
     def __init__(self, operation_info: types.OpInfo):
         super().__init__(operation_info)
-        self.waveform_index0: Optional[int] = None
-        self.waveform_index1: Optional[int] = None
+        self.waveform_index0: int | None = None
+        self.waveform_index1: int | None = None
 
-    def generate_data(self, wf_dict: Dict[str, Any]):
+    def generate_data(self, wf_dict: dict[str, Any]):
         """
         Generates the waveform data for both acquisition weights.
 
@@ -335,7 +333,7 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
 class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
     """Performs a trigger count acquisition."""
 
-    def generate_data(self, wf_dict: Dict[str, Any]) -> None:
+    def generate_data(self, wf_dict: dict[str, Any]) -> None:
         """Returns None as no waveform is needed."""
         return None
 
@@ -433,7 +431,7 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
 class TimetagAcquisitionStrategy(AcquisitionStrategyPartial):
     """Performs a timetag acquisition."""
 
-    def generate_data(self, wf_dict: Dict[str, Any]) -> None:
+    def generate_data(self, wf_dict: dict[str, Any]) -> None:
         """Returns None as no waveform is needed."""
         return None
 

@@ -1,14 +1,13 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Tests for the helpers module."""
+from __future__ import annotations
 
 import math
 from contextlib import nullcontext
-from typing import Union
 
 import pytest
 
-from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.qblox import helpers
 from quantify_scheduler.backends.qblox.hardware_config_nv_center_old_style import (
     hardware_config as hardware_config_nv_center_old_style,
@@ -16,20 +15,7 @@ from quantify_scheduler.backends.qblox.hardware_config_nv_center_old_style impor
 from quantify_scheduler.backends.qblox.hardware_config_transmon_old_style import (
     hardware_config as hardware_config_transmon_old_style,
 )
-from quantify_scheduler.backends.qblox.instrument_compilers import (
-    QRMCompiler,
-)
 from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
-from quantify_scheduler.backends.types.qblox import (
-    BasebandModuleSettings,
-)
-from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
-from quantify_scheduler.helpers.collections import find_all_port_clock_combinations
-from quantify_scheduler.operations.gate_library import Measure
-from quantify_scheduler.operations.pulse_library import MarkerPulse, SquarePulse
-from quantify_scheduler.schedules.schedule import Schedule
 from quantify_scheduler.schemas.examples import utils
 
 QBLOX_HARDWARE_CONFIG_TRANSMON = utils.load_json_example_scheme(
@@ -79,7 +65,7 @@ def test_invalid_get_nco_set_frequency_arguments(frequency: float):
 
 def __get_frequencies(
     clock_freq, lo_freq, interm_freq, downconverter_freq, mix_lo
-) -> Union[helpers.ValidatedFrequencies, str]:
+) -> helpers.ValidatedFrequencies | str:
     if downconverter_freq is None or downconverter_freq == 0:
         freqs = helpers.Frequencies(clock=clock_freq)
     else:
@@ -168,11 +154,11 @@ def __get_frequencies(
 )
 def test_determine_clock_lo_interm_freqs(
     clock_freq: float,
-    lo_freq: Union[float, None],
-    interm_freq: Union[float, None],
-    downconverter_freq: Union[float, None],
+    lo_freq: float | None,
+    interm_freq: float | None,
+    downconverter_freq: float | None,
     mix_lo: bool,
-    expected_freqs: Union[helpers.Frequencies, str],
+    expected_freqs: helpers.Frequencies | str,
 ):
     freqs = helpers.Frequencies(clock=clock_freq, LO=lo_freq, IF=interm_freq)
     context_mngr = nullcontext()

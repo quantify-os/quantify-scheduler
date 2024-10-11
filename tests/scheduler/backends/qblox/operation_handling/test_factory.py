@@ -3,7 +3,7 @@
 """Tests for factory module."""
 
 
-from typing import Type
+from __future__ import annotations
 
 import pytest
 
@@ -145,7 +145,7 @@ TEST_OP_INFO_MAPPING = {
 )
 def test_get_operation_strategy(
     operation_info: OpInfo,
-    answer: Type[base.IOperationStrategy],
+    answer: type[base.IOperationStrategy],
 ):
     obj = factory_analog.get_operation_strategy(
         operation_info=operation_info,

@@ -10,7 +10,7 @@ import sys
 import warnings
 from enum import Enum
 from types import ModuleType
-from typing import Any, Callable, Dict, List, Type, Union
+from typing import Any, Callable
 
 import fastjsonschema
 import numpy as np
@@ -43,7 +43,7 @@ def validate_json(data, schema):
     return fastjsonschema.validate(schema, data)
 
 
-def load_json_schema(relative_to: Union[str, pathlib.Path], filename: str):
+def load_json_schema(relative_to: str | pathlib.Path, filename: str):
     """
     Load a JSON schema from file. Expects a 'schemas' directory in the same directory
     as ``relative_to``.
@@ -71,9 +71,7 @@ def load_json_schema(relative_to: Union[str, pathlib.Path], filename: str):
 
 
 @lru_cache
-def load_json_validator(
-    relative_to: Union[str, pathlib.Path], filename: str
-) -> Callable:
+def load_json_validator(relative_to: str | pathlib.Path, filename: str) -> Callable:
     """
     Load a JSON validator from file. Expects a 'schemas' directory in the same directory
     as ``relative_to``.
@@ -153,14 +151,14 @@ class SchedulerJSONDecoder(json.JSONDecoder):
 
     Keyword Arguments
     -----------------
-    modules : List[ModuleType], *optional*
+    modules : list[ModuleType], *optional*
         A list of custom modules containing serializable classes, by default []
     """  # noqa: D416
 
-    _classes: Dict[str, Type[Any]]
+    _classes: dict[str, type[Any]]
 
     def __init__(self, *args, **kwargs) -> None:
-        extended_modules: List[ModuleType] = kwargs.pop("modules", [])
+        extended_modules: list[ModuleType] = kwargs.pop("modules", [])
         invalid_modules = list(
             filter(lambda o: not isinstance(o, ModuleType), extended_modules)
         )
@@ -181,8 +179,8 @@ class SchedulerJSONDecoder(json.JSONDecoder):
         self._classes.update({t.__name__: t for t in DEFAULT_TYPES})
 
     def decode_dict(
-        self, obj: Dict[str, Any]
-    ) -> Union[Dict[str, Any], np.ndarray, object, Instrument]:
+        self, obj: dict[str, Any]
+    ) -> dict[str, Any] | np.ndarray | object | Instrument:
         """
         Returns the deserialized JSON dictionary.
 
@@ -243,7 +241,7 @@ class SchedulerJSONDecoder(json.JSONDecoder):
             return self.decode_dict(obj)
         return obj
 
-    def _get_type_from_string(self, deserialization_type: str) -> Type:
+    def _get_type_from_string(self, deserialization_type: str) -> type:
         """
         Get the python type based on the description string.
 
@@ -290,7 +288,7 @@ class SchedulerJSONDecoder(json.JSONDecoder):
             )
 
 
-def _get_type_from_string_deprecated(deserialization_type: str) -> Type:
+def _get_type_from_string_deprecated(deserialization_type: str) -> type:
     # Use local import to void Error('Operation' from partially initialized module
     # 'quantify_scheduler')
 

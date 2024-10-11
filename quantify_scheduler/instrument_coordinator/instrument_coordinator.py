@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import warnings
-from typing import Dict
 
 import numpy as np
 from qcodes.instrument import base as qcodes_base
@@ -354,7 +353,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             instrument = self.find_instrument(instr_name)
             self.get_component(instrument.name).wait_done(timeout_sec)
 
-    def retrieve_hardware_logs(self) -> Dict[str, dict]:
+    def retrieve_hardware_logs(self) -> dict[str, dict]:
         """
         Return the hardware logs of the instruments of each component.
 

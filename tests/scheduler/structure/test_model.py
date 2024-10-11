@@ -1,7 +1,9 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Unit tests for the DataStructure, and custom json (de)serialization."""
-from typing import Any, Callable, Type, Union
+from __future__ import annotations
+
+from typing import Any, Callable
 
 import pytest
 from pydantic import field_serializer, field_validator
@@ -28,7 +30,7 @@ class DummyStructure(DataStructure):
     @field_validator("func", mode="before")
     @classmethod
     def import_func_if_str(
-        cls, fun: Union[str, Callable[[int], int]]
+        cls, fun: str | Callable[[int], int]
     ) -> Callable[[int], int]:
         if isinstance(fun, str):
             return deserialize_function(fun)
@@ -46,7 +48,7 @@ class DummyStructure2(DataStructure):
     @field_validator("func", mode="before")
     @classmethod
     def import_func_if_str(
-        cls, fun: Union[str, Callable[[str], Any]]
+        cls, fun: str | Callable[[str], Any]
     ) -> Callable[[str], Any]:
         if isinstance(fun, str):
             return deserialize_function(fun)
@@ -55,7 +57,7 @@ class DummyStructure2(DataStructure):
 
 class DummyStructure3(DataStructure):
     name: str
-    cls: Type[DataStructure]
+    cls: type[DataStructure]
 
     @field_serializer("cls")
     def _serialize_cls(self, v):
@@ -64,8 +66,8 @@ class DummyStructure3(DataStructure):
     @field_validator("cls", mode="before")
     @classmethod
     def import_class_if_str(
-        cls, class_: Union[str, Type[DataStructure]]
-    ) -> Type[DataStructure]:
+        cls, class_: str | type[DataStructure]
+    ) -> type[DataStructure]:
         if isinstance(class_, str):
             return deserialize_class(class_)
         return class_  # type: ignore

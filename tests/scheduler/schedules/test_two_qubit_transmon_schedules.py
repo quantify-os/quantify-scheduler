@@ -2,13 +2,17 @@
 # Licensed according to the LICENCE file on the main branch
 """Unit tests for schedules used in two qubit experiments."""
 
-from typing import Type
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 from quantify_scheduler.backends import SerialCompiler
-from quantify_scheduler.backends.graph_compilation import SerialCompilationConfig
 from quantify_scheduler.schedules import two_qubit_transmon_schedules as ts
+
+if TYPE_CHECKING:
+    from quantify_scheduler.backends.graph_compilation import SerialCompilationConfig
 
 
 class TestChevronCZSched:
@@ -19,7 +23,7 @@ class TestChevronCZSched:
     """
 
     @classmethod
-    def setup_class(cls: Type) -> None:
+    def setup_class(cls: type) -> None:
         """Configure an example sweep for a single flux pulse duration."""
         cls.sched_kwargs = {  # type: ignore
             "lf_qubit": "q0",

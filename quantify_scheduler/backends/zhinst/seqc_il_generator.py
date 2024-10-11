@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import textwrap
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 from quantify_scheduler.backends.types import zhinst
 
@@ -28,7 +28,7 @@ class SeqcInstructions(Enum):
     START_QA = "startQA"
 
 
-SEQC_INSTR_CLOCKS: Dict[zhinst.DeviceType, Dict[SeqcInstructions, int]] = {
+SEQC_INSTR_CLOCKS: dict[zhinst.DeviceType, dict[SeqcInstructions, int]] = {
     zhinst.DeviceType.HDAWG: {
         SeqcInstructions.PLAY_WAVE: 3,
         SeqcInstructions.SET_TRIGGER: 1,
@@ -55,8 +55,8 @@ class SeqcILGenerator(object):
     """
 
     _level: int
-    _variables: Dict[str, Tuple[str, Optional[str]]]
-    _program: List[Tuple[int, str]]
+    _variables: dict[str, tuple[str, str | None]]
+    _program: list[tuple[int, str]]
 
     def __init__(self) -> None:
         self._level = 0
@@ -133,7 +133,7 @@ class SeqcILGenerator(object):
         if self._level < 0:
             raise ValueError("SeqcILGenerator scope level is to low!")
 
-    def declare_var(self, name: str, value: Optional[Union[str, int]] = None) -> None:
+    def declare_var(self, name: str, value: str | int | None = None) -> None:
         """
         Creates a new variable of type ``var`` with a name and
         optionally its value.
@@ -153,7 +153,7 @@ class SeqcILGenerator(object):
             else:
                 self.assign_var(name, value)
 
-    def declare_wave(self, name: str, value: Optional[str] = None) -> None:
+    def declare_wave(self, name: str, value: str | None = None) -> None:
         """
         Creates a new variable of type ``wave`` with a name and
         optionally its value.
@@ -195,7 +195,7 @@ class SeqcILGenerator(object):
         """
         self._assign_local(name, f"placeholder({size});")
 
-    def assign_var(self, name: str, value: Union[str, int, List[Any]]) -> None:
+    def assign_var(self, name: str, value: str | int | list[Any]) -> None:
         """
         Assign a value to a variable by name.
 
@@ -350,7 +350,7 @@ class SeqcILGenerator(object):
         """
         self._emit(f"wait({cycles});{comment}")
 
-    def emit_set_trigger(self, index: Union[int, str], comment: str = "") -> None:
+    def emit_set_trigger(self, index: int | str, comment: str = "") -> None:
         """
         Emit setTrigger to the program.
 
@@ -365,7 +365,7 @@ class SeqcILGenerator(object):
         self,
         index: int = 0,
         comment: str = "",
-        device_type: Optional[zhinst.DeviceType] = None,
+        device_type: zhinst.DeviceType | None = None,
     ) -> None:
         """
         Emit waitDigTrigger to the program.
@@ -395,7 +395,7 @@ class SeqcILGenerator(object):
         self._emit("startQAMonitor();")
 
     def emit_start_qa_result(
-        self, bitmask: Optional[str] = None, trigger: Optional[str] = None
+        self, bitmask: str | None = None, trigger: str | None = None
     ) -> None:
         """
         Starts the Quantum Analysis Result unit by setting
@@ -442,7 +442,7 @@ class SeqcILGenerator(object):
         """Emit ending the while loop."""
         self._end_scope()
 
-    def emit_begin_repeat(self, repetitions: Union[int, str] = 1) -> None:
+    def emit_begin_repeat(self, repetitions: int | str = 1) -> None:
         """
         Emit repeat loop to the program.
 
@@ -684,7 +684,7 @@ def add_execute_table_entry(
 
 def add_set_trigger(
     seqc_gen: SeqcILGenerator,
-    value: Union[List[str], int, str],
+    value: list[str] | int | str,
     device_type: zhinst.DeviceType,
     comment: str = "",
 ) -> int:
@@ -728,7 +728,7 @@ def add_set_trigger(
 def declare_csv_waveform_variables(
     seqc_gen: SeqcILGenerator,
     device_name: str,
-    waveform_indices: List[int],
+    waveform_indices: list[int],
     awg_index: int = 0,
 ):
     """
@@ -747,7 +747,7 @@ def add_csv_waveform_variables(
     seqc_gen: SeqcILGenerator,
     device_serial: str,
     awg_index: int,
-    commandtable_map: Dict[int, int],
+    commandtable_map: dict[int, int],
 ):
     """
     Adds wave variables in form of a

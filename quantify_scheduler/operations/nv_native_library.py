@@ -2,11 +2,14 @@
 # Licensed according to the LICENCE file on the main branch
 
 """NV-center-specific operations for use with the quantify_scheduler."""
-from typing import Hashable, Literal, Optional, Tuple, Union
+from __future__ import annotations
 
-from quantify_scheduler.enums import BinMode
+from typing import TYPE_CHECKING, Hashable, Literal
 
 from .operation import Operation
+
+if TYPE_CHECKING:
+    from quantify_scheduler.enums import BinMode
 
 
 class ChargeReset(Operation):
@@ -78,8 +81,8 @@ class CRCount(Operation):
     def __init__(
         self,
         *qubits: str,
-        acq_channel: Optional[Hashable] = None,
-        acq_index: Union[Tuple[int, ...], int] = None,
+        acq_channel: Hashable | None = None,
+        acq_index: tuple[int, ...] | int = None,
         # These are the currently supported acquisition protocols.
         acq_protocol: Literal[
             "Trace",

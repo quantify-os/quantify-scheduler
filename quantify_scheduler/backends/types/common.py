@@ -8,13 +8,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Dict,
-    List,
     Literal,
-    Optional,
-    Tuple,
-    Type,
-    Union,
 )
 
 import matplotlib.pyplot as plt
@@ -99,9 +93,9 @@ class SoftwareDistortionCorrection(DataStructure):
     """The function applied to the waveforms."""
     input_var_name: str
     """The argument to which the waveforms will be passed in the filter_func."""
-    kwargs: Dict[str, Union[List, NDArray]]
+    kwargs: dict[str, list | NDArray]
     """The keyword arguments that are passed to the filter_func."""
-    clipping_values: Optional[List] = None
+    clipping_values: list | None = None
     """
     The optional boundaries to which the corrected pulses will be clipped,
     upon exceeding."""
@@ -161,9 +155,9 @@ class DistortionCorrection(DataStructure):
     """The function applied to the waveforms."""
     input_var_name: str
     """The argument to which the waveforms will be passed in the filter_func."""
-    kwargs: Dict[str, Union[List, NDArray]]
+    kwargs: dict[str, list | NDArray]
     """The keyword arguments that are passed to the filter_func."""
-    clipping_values: Optional[List] = None
+    clipping_values: list | None = None
     """
     The optional boundaries to which the corrected pulses will be clipped,
     upon exceeding."""
@@ -195,9 +189,9 @@ class ModulationFrequencies(DataStructure):
             }
     """
 
-    interm_freq: Optional[float] = None
+    interm_freq: float | None = None
     """The intermodulation frequency (IF) used for this port-clock combination."""
-    lo_freq: Optional[float] = None
+    lo_freq: float | None = None
     """The local oscillator frequency (LO) used for this port-clock combination."""
 
 
@@ -245,22 +239,22 @@ class HardwareOptions(DataStructure):
     :class:`~quantify_scheduler.backends.types.zhinst.ZIHardwareOptions`.
     """
 
-    latency_corrections: Optional[Dict[str, LatencyCorrection]] = None
+    latency_corrections: dict[str, LatencyCorrection] | None = None
     """
     Dictionary containing the latency corrections (values) that should be applied
     to operations on a certain port-clock combination (keys).
     """
-    distortion_corrections: Optional[Dict[str, SoftwareDistortionCorrection]] = None
+    distortion_corrections: dict[str, SoftwareDistortionCorrection] | None = None
     """
     Dictionary containing the distortion corrections (values) that should be applied
     to waveforms on a certain port-clock combination (keys).
     """
-    modulation_frequencies: Optional[Dict[str, ModulationFrequencies]] = None
+    modulation_frequencies: dict[str, ModulationFrequencies] | None = None
     """
     Dictionary containing the modulation frequencies (values) that should be used
     for signals on a certain port-clock combination (keys).
     """
-    mixer_corrections: Optional[Dict[str, MixerCorrections]] = None
+    mixer_corrections: dict[str, MixerCorrections] | None = None
     """
     Dictionary containing the mixer corrections (values) that should be used
     for signals on a certain port-clock combination (keys).
@@ -272,15 +266,15 @@ class LocalOscillatorDescription(DataStructure):
 
     instrument_type: Literal["LocalOscillator"]
     """The field discriminator for this HardwareDescription datastructure."""
-    instrument_name: Optional[str] = None
+    instrument_name: str | None = None
     """The QCoDeS instrument name corresponding to this Local Oscillator."""
-    generic_icc_name: Optional[str] = None
+    generic_icc_name: str | None = None
     """The name of the :class:`~.GenericInstrumentCoordinatorComponent` corresponding to this Local Oscillator."""
     frequency_param: str = "frequency"
     """The QCoDeS parameter that is used to set the LO frequency."""
     power_param: str = "power"
     """The QCoDeS parameter that is used to set the LO power."""
-    power: Optional[int] = None
+    power: int | None = None
     """The power setting for this Local Oscillator."""
 
     @field_validator("generic_icc_name")
@@ -390,8 +384,8 @@ class Connectivity(DataStructure):
 
     def draw(
         self,
-        ax: Optional[Axes] = None,
-        figsize: Tuple[float, float] = (20, 10),
+        ax: Axes | None = None,
+        figsize: tuple[float, float] = (20, 10),
         **options,
     ) -> Axes:
         """
@@ -488,7 +482,7 @@ class HardwareCompilationConfig(DataStructure):
     :class:`~quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig`.
     """
 
-    config_type: Type[HardwareCompilationConfig] = Field(
+    config_type: type[HardwareCompilationConfig] = Field(
         default="quantify_scheduler.backends.types.common.HardwareCompilationConfig",
         validate_default=True,
     )
@@ -496,7 +490,7 @@ class HardwareCompilationConfig(DataStructure):
     A reference to the ``HardwareCompilationConfig`` DataStructure for the backend 
     that is used.
     """
-    hardware_description: Dict[str, HardwareDescription]
+    hardware_description: dict[str, HardwareDescription]
     """
     Datastructure describing the control hardware instruments in the setup and their
     high-level settings.
@@ -506,14 +500,14 @@ class HardwareCompilationConfig(DataStructure):
     The :class:`~quantify_scheduler.backends.types.common.HardwareOptions` used in the
     compilation from the quantum-device layer to the control-hardware layer.
     """
-    connectivity: Union[
-        Connectivity, Dict
-    ]  # Dict for legacy support for the old hardware config
+    connectivity: (
+        Connectivity | dict
+    )  # Dict for legacy support for the old hardware config
     """
     Datastructure representing how ports on the quantum device are connected to ports
     on the control hardware.
     """
-    compilation_passes: List["SimpleNodeConfig"] = []
+    compilation_passes: list[SimpleNodeConfig] = []
     """
     The list of compilation nodes that should be called in succession to compile a 
     schedule to instructions for the control hardware.
@@ -525,7 +519,7 @@ class HardwareCompilationConfig(DataStructure):
 
     @field_validator("config_type", mode="before")
     def _import_config_type_if_str(
-        cls, config_type: Type[HardwareCompilationConfig]  # noqa: N805
+        cls, config_type: type[HardwareCompilationConfig]  # noqa: N805
     ) -> Callable[[Schedule, Any], Schedule]:
         if isinstance(config_type, str):
             return deserialize_function(config_type)
@@ -534,7 +528,7 @@ class HardwareCompilationConfig(DataStructure):
     @field_validator("connectivity")
     def _latencies_in_hardware_config(cls, connectivity):  # noqa: N805
         # if connectivity contains a hardware config with latency corrections
-        if isinstance(connectivity, Dict) and "latency_corrections" in connectivity:
+        if isinstance(connectivity, dict) and "latency_corrections" in connectivity:
             warnings.warn(
                 "Latency corrections should be specified in the "
                 "`backends.types.common.HardwareOptions` instead of "
@@ -546,7 +540,7 @@ class HardwareCompilationConfig(DataStructure):
     @field_validator("connectivity")
     def _distortions_in_hardware_config(cls, connectivity):  # noqa: N805
         # if connectivity contains a hardware config with distortion corrections
-        if isinstance(connectivity, Dict) and "distortion_corrections" in connectivity:
+        if isinstance(connectivity, dict) and "distortion_corrections" in connectivity:
             warnings.warn(
                 "Distortion corrections should be specified in the "
                 "`backends.types.common.HardwareOptions` instead of "

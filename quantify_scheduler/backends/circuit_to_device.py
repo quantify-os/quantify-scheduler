@@ -6,7 +6,7 @@ from __future__ import annotations
 import warnings
 from copy import deepcopy
 from itertools import permutations
-from typing import Dict, List, Sequence, overload
+from typing import Sequence, overload
 
 import numpy as np
 
@@ -196,7 +196,7 @@ def set_pulse_and_acquisition_clock(
         config.device_compilation_config
     )
 
-    all_clock_freqs: Dict[str, float] = {}
+    all_clock_freqs: dict[str, float] = {}
     _extract_clock_freqs(schedule, all_clock_freqs)
     for clock, freq in device_cfg.clocks.items():
         if clock in all_clock_freqs:
@@ -213,7 +213,7 @@ def set_pulse_and_acquisition_clock(
 
 
 def _extract_clock_freqs(
-    operation: Operation | Schedule, all_clock_freqs: Dict[str, float]
+    operation: Operation | Schedule, all_clock_freqs: dict[str, float]
 ) -> None:
     if isinstance(operation, ScheduleBase):
         for inner_operation in operation.operations.values():
@@ -240,21 +240,21 @@ def _extract_clock_freqs(
 def _set_pulse_and_acquisition_clock(
     schedule: Schedule,
     operation: Schedule,
-    all_clock_freqs: Dict[str, float],
-    verified_clocks: List,
+    all_clock_freqs: dict[str, float],
+    verified_clocks: list,
 ) -> Schedule: ...
 @overload
 def _set_pulse_and_acquisition_clock(
     schedule: Schedule,
     operation: Operation | Schedule,
-    all_clock_freqs: Dict[str, float],
-    verified_clocks: List,
+    all_clock_freqs: dict[str, float],
+    verified_clocks: list,
 ) -> Operation | Schedule: ...
 def _set_pulse_and_acquisition_clock(
     schedule: Schedule,
     operation: Operation | Schedule,
-    all_clock_freqs: Dict[str, float],
-    verified_clocks: List,
+    all_clock_freqs: dict[str, float],
+    verified_clocks: list,
 ) -> Operation | Schedule:
     """
     Ensures that each pulse/acquisition-level clock resource is added to the schedule.
@@ -316,7 +316,7 @@ def _set_pulse_and_acquisition_clock(
 
 def _valid_clock_in_schedule(
     clock: str,
-    all_clock_freqs: Dict[str, float],
+    all_clock_freqs: dict[str, float],
     schedule: Schedule,
     operation: Operation,
 ) -> bool:
@@ -364,7 +364,7 @@ def _valid_clock_in_schedule(
 def _clocks_compatible(
     clock,
     device_cfg: DeviceCompilationConfig,
-    schedule_clock_resources: Dict[str, float],
+    schedule_clock_resources: dict[str, float],
 ) -> bool:
     """
     Compare device config and schedule resources for compatibility of their clocks.
@@ -716,7 +716,7 @@ def _get_device_repr_from_cfg(
     operation_cfg = deepcopy(operation_cfg)
     factory_func = operation_cfg.factory_func
 
-    factory_kwargs: Dict = operation_cfg.factory_kwargs
+    factory_kwargs: dict = operation_cfg.factory_kwargs
 
     # retrieve keyword args for parametrized operations from the gate info
     if operation_cfg.gate_info_factory_kwargs is not None:
@@ -741,7 +741,7 @@ def _get_device_repr_from_cfg_multiplexed(
     operation_cfg = deepcopy(operation_cfg)
     factory_func = operation_cfg.factory_func
 
-    factory_kwargs: Dict = operation_cfg.factory_kwargs
+    factory_kwargs: dict = operation_cfg.factory_kwargs
 
     # retrieve keyword args for parametrized operations from the gate info
     if operation_cfg.gate_info_factory_kwargs is not None:

@@ -1,11 +1,12 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Pytest fixtures for quantify-scheduler."""
+from __future__ import annotations
 
 import os
 import pathlib
 import shutil
-from typing import Any, Dict, List, Union
+from typing import Any
 
 import pytest
 from qcodes import Instrument
@@ -32,7 +33,7 @@ QBLOX_HARDWARE_CONFIG_TRANSMON = utils.load_json_example_scheme(
 )
 
 
-def close_instruments(instrument_names: Union[List[str], Dict[str, Any]]):
+def close_instruments(instrument_names: list[str] | dict[str, Any]):
     """Close all instruments in the list of names supplied.
 
     Parameters
@@ -214,7 +215,7 @@ def compile_config_basic_transmon_qblox_hardware_cluster(
 
 
 @pytest.fixture(scope="function")
-def mock_setup_basic_transmon_elements(element_names: List[str]):
+def mock_setup_basic_transmon_elements(element_names: list[str]):
     """
     Returns a mock setup consisting of QuantumDevice and BasicTransmonElements only.
     """

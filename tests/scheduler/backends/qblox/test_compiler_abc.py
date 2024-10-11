@@ -1,9 +1,10 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Tests for the InstrumentCompiler subclasses."""
+from __future__ import annotations
+
 import math
-from itertools import permutations, product
-from typing import Dict, List
+from typing import TYPE_CHECKING
 from unittest.mock import Mock
 
 import pytest
@@ -18,7 +19,6 @@ from quantify_scheduler.backends.qblox.helpers import (
     assign_pulse_and_acq_info_to_devices,
 )
 from quantify_scheduler.backends.qblox.instrument_compilers import ClusterCompiler
-from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
 from quantify_scheduler.backends.qblox.operation_handling.factory_analog import (
     get_operation_strategy,
 )
@@ -51,7 +51,6 @@ from quantify_scheduler.operations.control_flow_library import (
     LoopOperation,
 )
 from quantify_scheduler.operations.gate_library import Measure, X
-from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     ResetClockPhase,
@@ -62,10 +61,16 @@ from quantify_scheduler.operations.pulse_library import (
 )
 from quantify_scheduler.resources import BasebandClockResource
 
+if TYPE_CHECKING:
+    from quantify_scheduler.backends.qblox.operation_handling.base import (
+        IOperationStrategy,
+    )
+    from quantify_scheduler.operations.operation import Operation
+
 
 def _assert_update_parameters_op_list(
-    op_list: List[Operation],
-    expected_update_parameters: Dict[int, float],
+    op_list: list[Operation],
+    expected_update_parameters: dict[int, float],
     hardware_cfg_cluster,
 ) -> None:
     schedule = Schedule("parameter update test")
@@ -80,7 +85,7 @@ def _assert_update_parameters_op_list(
 
 def _assert_update_parameters_schedule(
     schedule: Schedule,
-    expected_update_parameters: Dict[int, float],
+    expected_update_parameters: dict[int, float],
     hardware_cfg_cluster,
 ) -> None:
     schedule = _determine_absolute_timing(schedule)
