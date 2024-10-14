@@ -24,9 +24,8 @@ We start by defining an example schedule.
 
 ```{code-cell} ipython3
 
-from quantify_scheduler import Schedule
-from quantify_scheduler.operations.pulse_library import SquarePulse
-from quantify_scheduler.resources import ClockResource
+from quantify_scheduler import ClockResource, Schedule
+from quantify_scheduler.operations import SquarePulse
 
 sched = Schedule("Simple schedule")
 sched.add(SquarePulse(amp=0.2, duration=8e-9, port="q0:res", clock="q0.ro"))
@@ -130,8 +129,7 @@ The schedule defined at the beginning of this tutorial consists of 2 pulse opera
 
 ```{code-cell} ipython3
 
-from quantify_scheduler.backends.graph_compilation import SerialCompiler
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler import QuantumDevice, SerialCompiler
 
 quantum_device = QuantumDevice("DUT")
 
@@ -179,8 +177,8 @@ We attach these instruments to the {class}`~quantify_scheduler.instrument_coordi
 
 ```{code-cell} ipython3
 
-from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
-from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
+from quantify_scheduler import InstrumentCoordinator
+from quantify_scheduler.qblox import ClusterComponent
 
 ic = InstrumentCoordinator("ic")
 ic.add_component(ClusterComponent(cluster0))

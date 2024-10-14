@@ -213,7 +213,7 @@ class Loop(ControlFlowSpec):
         self.repetitions = repetitions
         self.t0 = t0
 
-    def create_operation(self, body: Operation | Schedule) -> Operation | Schedule:
+    def create_operation(self, body: Operation | Schedule) -> LoopOperation:
         """Transform the control flow specification to an operation or schedule."""
         return LoopOperation(body, self.repetitions, self.t0)
 
@@ -236,6 +236,6 @@ class Conditional(ControlFlowSpec):
         self.qubit_name = qubit_name
         self.t0 = t0
 
-    def create_operation(self, body: Operation | Schedule) -> Operation | Schedule:
+    def create_operation(self, body: Operation | Schedule) -> ConditionalOperation:
         """Transform the control flow specification to an operation or schedule."""
         return ConditionalOperation(body, self.qubit_name, self.t0)

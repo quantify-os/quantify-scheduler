@@ -4,13 +4,13 @@ from unittest import TestCase
 import numpy as np
 import pytest
 
-from quantify_scheduler import Operation, Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.qblox.operations.pulse_factories import (
     long_square_pulse,
 )
 from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEncoder
 from quantify_scheduler.operations.gate_library import X90, X
+from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import (
     ChirpPulse,
     DRAGPulse,
@@ -32,6 +32,7 @@ from quantify_scheduler.operations.pulse_library import (
     decompose_long_square_pulse,
 )
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
+from quantify_scheduler.schedules.schedule import Schedule
 
 
 # --------- Test classes and member methods ---------

@@ -31,16 +31,16 @@ sched
 
 As we can see, our newly created schedule is still empty. We need to manually add operations to it. In `quantify-scheduler` there are three types of operations: pulses, acquisitions and gates. All of these have explicit timing control. In this tutorial, we will only cover pulses. The goal will not be to make a schedule that is physically meaningful, but to demonstrate the control over the scheduling to its fullest.
 
-While it is possible to define a pulse completely from scratch, we will be using some of the pulse definitions provided with the `quantify-scheduler`. These pulses are described in the {mod}`quantify_scheduler.operations.pulse_library` submodule. It's worth noting that no sampling of the data yet occurs at this stage, but the pulse is kept in a parameterized form.
+While it is possible to define a pulse completely from scratch, we will be using some of the pulse definitions provided with the `quantify-scheduler`. These pulses are described in the {mod}`quantify_scheduler.operations` submodule. It's worth noting that no sampling of the data yet occurs at this stage, but the pulse is kept in a parameterized form.
 
-We will add a square pulse from the pulse library to the schedule.
+We will add a square pulse from the operation library to the schedule.
 
 ```{code-cell} ipython3
 
-from quantify_scheduler.operations import pulse_library
+from quantify_scheduler.operations import SquarePulse
 
 square_pulse = sched.add(
-    pulse_library.SquarePulse(amp=1, duration=1e-6, port="q0:res", clock="q0.ro")
+    SquarePulse(amp=1, duration=1e-6, port="q0:res", clock="q0.ro")
 )
 
 sched
@@ -52,7 +52,7 @@ You may have noticed that we passed a {code}`port` and a {code}`clock` to the pu
 
 ```{code-cell} ipython3
 
-from quantify_scheduler.resources import ClockResource
+from quantify_scheduler import ClockResource
 
 readout_clock = ClockResource(name="q0.ro", freq=7e9)
 sched.add_resource(readout_clock)
@@ -66,8 +66,7 @@ We now perform the compilation of the schedule onto the {ref}`sec-user-guide-qua
 
 ```{code-cell} ipython3
 
-from quantify_scheduler.backends.graph_compilation import SerialCompiler
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler import QuantumDevice, SerialCompiler
 
 quantum_device = QuantumDevice("quantum_device")
 device_compiler = SerialCompiler("Device compiler", quantum_device)
@@ -93,7 +92,7 @@ What we see in the pulse diagram is only a flat line, corresponding to our singl
 ```{code-cell} ipython3
 
 sched.add(
-    pulse_library.SquarePulse(amp=1, duration=1e-6, port="q0:res", clock="q0.ro"),
+    SquarePulse(amp=1, duration=1e-6, port="q0:res", clock="q0.ro"),
     ref_op=square_pulse,
     rel_time=500e-9,
 )
@@ -109,9 +108,10 @@ We can see that {code}`rel_time=500e-9` schedules the pulse 500 ns shifted relat
 Let's now instead align a pulse to start at the same time as the first square pulse. Before, we specified the timing relative to the end of a different pulse, but we can choose to instead specify it relative to the beginning. This is done by passing {code}`ref_pt="start"`.
 
 ```{code-cell} ipython3
+from quantify_scheduler.operations import DRAGPulse
 
 sched.add(
-    pulse_library.DRAGPulse(
+    DRAGPulse(
         G_amp=0.5, D_amp=0.5, duration=1e-6, phase=0, port="q0:mw", clock="q0.01"
     ),
     ref_op=square_pulse,
@@ -136,7 +136,7 @@ In an experiment, often the need arises to vary one of the parameters of a sched
 
 ```{code-cell} ipython3
 
-from quantify_scheduler.resources import BasebandClockResource
+from quantify_scheduler import BasebandClockResource
 
 
 def pulse_train_schedule(
@@ -144,7 +144,7 @@ def pulse_train_schedule(
 ) -> Schedule:
     sched = Schedule("Pulse train schedule")
     square_pulse = sched.add(
-        pulse_library.SquarePulse(
+        SquarePulse(
             amp=amp,
             duration=time_high,
             port="q0:fl",
@@ -153,7 +153,7 @@ def pulse_train_schedule(
     )
     for _ in range(amount_of_pulses - 1):
         square_pulse = sched.add(
-            pulse_library.SquarePulse(
+            SquarePulse(
                 amp=amp,
                 duration=time_high,
                 port="q0:fl",

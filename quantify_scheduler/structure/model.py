@@ -30,7 +30,7 @@ class DataStructure(BaseModel):
     .. admonition:: Examples
         :class: dropdown
 
-        .. include:: ../../../../examples/structure.DataStructure.rst
+        .. include:: /examples/structure.DataStructure.rst
     """
 
     model_config = ConfigDict(

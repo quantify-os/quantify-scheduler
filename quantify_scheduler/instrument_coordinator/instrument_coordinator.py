@@ -11,16 +11,17 @@ from qcodes.instrument import parameter
 from qcodes.utils import validators
 from xarray import Dataset
 
-from quantify_scheduler import CompiledSchedule
 from quantify_scheduler.instrument_coordinator.components import base, generic
 from quantify_scheduler.instrument_coordinator.utility import (
     check_already_existing_acquisition,
 )
+from quantify_scheduler.schedules.schedule import CompiledSchedule
 
 
 class InstrumentCoordinator(qcodes_base.Instrument):
     """
-    The :class:`~.InstrumentCoordinator` serves as the central interface of the hardware abstraction layer.
+    The :class:`~.InstrumentCoordinator` serves as the central interface of the hardware abstraction
+    layer.
 
     It provides a standardized interface to execute Schedules on
     control hardware.
@@ -269,15 +270,14 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             )
         compiled_instructions = self._compiled_schedule.get("compiled_instructions", {})
         used_components = [
-            base.instrument_to_component_name(name)
-            for name in compiled_instructions.keys()
+            base.instrument_to_component_name(name) for name in compiled_instructions
         ]
         for component_name in self.components():
             if component_name in used_components:
                 component = self.get_component(component_name)
                 component.start()
 
-    def stop(self, allow_failure=False) -> None:
+    def stop(self, allow_failure: bool = False) -> None:
         """
         Stops all components.
 
@@ -381,10 +381,10 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         return hardware_logs
 
 
-def _convert_acquisition_data_format(raw_results):
+def _convert_acquisition_data_format(raw_results: Dataset) -> list:
     acquisition_dict = {}
     for channel in raw_results:
-        if channel not in acquisition_dict.keys():
+        if channel not in acquisition_dict:
             acquisition_dict[channel] = []
         acquisition_dict[channel] = raw_results[channel].values
     acquisitions_list = []
@@ -427,7 +427,7 @@ class ZIInstrumentCoordinator(InstrumentCoordinator):
         self._last_acquisition = None
         self._num_reacquisitions = 0
 
-    def _compare_reacquire(self, raw_results):
+    def _compare_reacquire(self, raw_results: Dataset) -> bool:
         reacquire = True
         results_list = _convert_acquisition_data_format(raw_results)
 

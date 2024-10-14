@@ -11,8 +11,8 @@ from typing import Any
 import numpy as np
 
 from quantify_core.utilities import deprecated
-from quantify_scheduler import Operation
 from quantify_scheduler.enums import BinMode, TimeRef, TimeSource
+from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.resources import DigitalClockResource
 
 

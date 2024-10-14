@@ -50,8 +50,7 @@ In this tutorial we will use the Qblox dummy device, but for real hardware, the 
 
 ```{code-cell} ipython3
 from qblox_instruments import Cluster, ClusterType
-from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
-from quantify_scheduler.helpers.qblox_dummy_instrument import start_dummy_cluster_armed_sequencers
+from quantify_scheduler.qblox import ClusterComponent, start_dummy_cluster_armed_sequencers
 
 cluster = Cluster("cluster0",
                   identifier="<ip address>",
@@ -64,8 +63,7 @@ cluster.start_sequencer = lambda : start_dummy_cluster_armed_sequencers(cluster_
 ```
 
 ```{code-cell} ipython3
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
+from quantify_scheduler import BasicTransmonElement, QuantumDevice
 
 device = QuantumDevice("device")
 transmon0 = BasicTransmonElement("q0")
@@ -124,7 +122,7 @@ Note here, we used the internal mixer, so `"interm_freq"` was set to `0`.
 We set up the {class}`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator`, and we will use the cluster component.
 
 ```{code-cell} ipython3
-from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
+from quantify_scheduler import InstrumentCoordinator
 instrument_coordinator = InstrumentCoordinator("instrument_coordinator")
 ```
 
@@ -172,8 +170,7 @@ mystnb:
   remove_code_outputs: true
 ---
 from quantify_scheduler import Schedule
-from quantify_scheduler.operations.pulse_library import IdlePulse, DRAGPulse
-from quantify_scheduler.operations.acquisition_library import Trace
+from quantify_scheduler.operations import IdlePulse, DRAGPulse, Trace
 
 schedule = Schedule("trace_acquisition_tutorial")
 schedule.add(IdlePulse(duration=1e-6))
@@ -230,7 +227,7 @@ cluster.set_dummy_scope_acquisition_data(
 Let's compile the schedule.
 
 ```{code-cell} ipython3
-from quantify_scheduler.backends import SerialCompiler
+from quantify_scheduler import SerialCompiler
 
 compiler = SerialCompiler(name="compiler")
 compiled_schedule = compiler.compile(schedule=schedule, config=device.generate_compilation_config())
@@ -298,8 +295,7 @@ mystnb:
   remove_code_outputs: true
 ---
 from quantify_scheduler import Schedule
-from quantify_scheduler.operations.pulse_library import IdlePulse, SquarePulse
-from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
+from quantify_scheduler.operations import IdlePulse, SquarePulse, SSBIntegrationComplex
 from quantify_scheduler.enums import BinMode
 
 schedule = Schedule("ssb_acquisition_tutorial")
@@ -360,7 +356,7 @@ cluster.set_dummy_binned_acquisition_data(slot_idx=dummy_slot_idx, sequencer=0, 
 Let's compile the schedule.
 
 ```{code-cell} ipython3
-from quantify_scheduler.backends import SerialCompiler
+from quantify_scheduler import SerialCompiler
 
 compiler = SerialCompiler(name="compiler")
 compiled_schedule = compiler.compile(schedule=schedule, config=device.generate_compilation_config())
@@ -437,8 +433,7 @@ Let's create a schedule which is run 3 times in a row in append mode.
 
 ```{code-cell} ipython3
 from quantify_scheduler import Schedule
-from quantify_scheduler.operations.pulse_library import IdlePulse, SquarePulse
-from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
+from quantify_scheduler.operations import IdlePulse, SquarePulse, SSBIntegrationComplex
 from quantify_scheduler.enums import BinMode
 
 schedule = Schedule("append_tutorial", repetitions=3)
@@ -466,7 +461,7 @@ cluster.set_dummy_binned_acquisition_data(slot_idx=dummy_slot_idx, sequencer=0, 
 Let's compile the schedule.
 
 ```{code-cell} ipython3
-from quantify_scheduler.backends import SerialCompiler
+from quantify_scheduler import SerialCompiler
 
 compiler = SerialCompiler(name="compiler")
 compiled_schedule = compiler.compile(schedule=schedule, config=device.generate_compilation_config())
@@ -512,9 +507,7 @@ As an example, we create a simple schedule using weighted integration below. The
 mystnb:
   remove_code_outputs: true
 ---
-from quantify_scheduler.operations.acquisition_library import (
-    NumericalSeparatedWeightedIntegration,
-)
+from quantify_scheduler.operations import NumericalSeparatedWeightedIntegration
 
 
 schedule = Schedule("weighted_acquisition_tutorial")
@@ -605,7 +598,7 @@ cluster.set_dummy_binned_acquisition_data(
 Let's compile the schedule.
 
 ```{code-cell} ipython3
-from quantify_scheduler.backends import SerialCompiler
+from quantify_scheduler import SerialCompiler
 
 compiler = SerialCompiler(name="compiler")
 compiled_schedule = compiler.compile(
@@ -663,7 +656,7 @@ This experiment is then repeated 200 times. The corresponding schedule would loo
 ```{code-cell} ipython3
 :tags: [remove-output]
 
-from quantify_scheduler.operations.gate_library import Reset, X
+from quantify_scheduler.operations import Reset, X
 
 pulse_duration = 1e-6
 acq_duration = pulse_duration
@@ -764,7 +757,7 @@ To assign each cluster to one state, we can set the qubit parameters {attr}`Basi
 ```{code-cell} ipython3
 :tags: [remove-output]
 
-from quantify_scheduler.operations.acquisition_library import ThresholdedAcquisition
+from quantify_scheduler.operations import ThresholdedAcquisition
 
 # Set the threshold values
 transmon0.measure.acq_threshold(-0.043)
@@ -866,10 +859,7 @@ In this tutorial we assume trigger signals are generated from an external source
 mystnb:
   remove_code_outputs: true
 ---
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
-from quantify_scheduler.helpers.mock_instruments import MockLocalOscillator
-from quantify_scheduler.instrument_coordinator.components.generic import GenericInstrumentCoordinatorComponent
+from quantify_scheduler import BasicElectronicNVElement, GenericInstrumentCoordinatorComponent, MockLocalOscillator, QuantumDevice
 
 nv_device = QuantumDevice(name="nv_device")
 qe0 = BasicElectronicNVElement("qe0")
@@ -935,8 +925,7 @@ mystnb:
   remove_code_outputs: true
 ---
 from quantify_scheduler import Schedule
-from quantify_scheduler.operations.pulse_library import IdlePulse, SquarePulse
-from quantify_scheduler.operations.acquisition_library import TriggerCount
+from quantify_scheduler.operations import IdlePulse, SquarePulse, TriggerCount
 from quantify_scheduler.enums import BinMode
 
 acq_duration = 120e-9
@@ -980,7 +969,7 @@ cluster.set_dummy_binned_acquisition_data(slot_idx=dummy_slot_idx, sequencer=0, 
 Let's compile the schedule.
 
 ```{code-cell} ipython3
-from quantify_scheduler.backends import SerialCompiler
+from quantify_scheduler import SerialCompiler
 
 compiler = SerialCompiler(name="compiler")
 compiled_schedule = compiler.compile(schedule=schedule, config=nv_device.generate_compilation_config())
@@ -1062,8 +1051,7 @@ mystnb:
   remove_code_outputs: true
 ---
 from quantify_scheduler import Schedule
-from quantify_scheduler.operations.pulse_library import IdlePulse
-from quantify_scheduler.operations.gate_library import Measure
+from quantify_scheduler.operations import IdlePulse, Measure
 
 schedule = Schedule("gate_level_ssb_acquisition_tutorial")
 
@@ -1092,7 +1080,7 @@ cluster.set_dummy_binned_acquisition_data(slot_idx=dummy_slot_idx, sequencer=0, 
 Let's compile the schedule.
 
 ```{code-cell} ipython3
-from quantify_scheduler.backends import SerialCompiler
+from quantify_scheduler import SerialCompiler
 
 compiler = SerialCompiler(name="compiler")
 compiled_schedule = compiler.compile(schedule=schedule, config=device.generate_compilation_config())
@@ -1150,7 +1138,7 @@ cluster.set_dummy_binned_acquisition_data(slot_idx=dummy_slot_idx, sequencer=0, 
 Let's compile the schedule.
 
 ```{code-cell} ipython3
-from quantify_scheduler.backends import SerialCompiler
+from quantify_scheduler import SerialCompiler
 
 compiler = SerialCompiler(name="compiler")
 compiled_schedule = compiler.compile(schedule=schedule, config=device.generate_compilation_config())

@@ -8,7 +8,6 @@ from unittest import TestCase
 import numpy as np
 import pytest
 
-from quantify_scheduler import Operation
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
@@ -26,6 +25,7 @@ from quantify_scheduler.operations.acquisition_library import (
     TriggerCount,
 )
 from quantify_scheduler.operations.gate_library import X90
+from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import DRAGPulse
 from quantify_scheduler.schedules.schedule import Schedule
 

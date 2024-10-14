@@ -11,11 +11,11 @@ import json
 
 import pytest
 
-from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.operations.pulse_library import IdlePulse, SetClockFrequency
 from quantify_scheduler.resources import ClockResource
+from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 
 from .standard_schedules import (
     hybrid_schedule_rabi,

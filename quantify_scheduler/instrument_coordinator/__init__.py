@@ -13,5 +13,4 @@
 
 from .instrument_coordinator import InstrumentCoordinator, ZIInstrumentCoordinator
 
-# Commented out because it messes up Sphinx and sphinx extensions
-# __all__ = ["InstrumentCoordinator", "ZIInstrumentCoordinator"]
+__all__ = ["InstrumentCoordinator", "ZIInstrumentCoordinator"]

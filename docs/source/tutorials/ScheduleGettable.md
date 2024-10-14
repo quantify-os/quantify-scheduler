@@ -40,12 +40,8 @@ mystnb:
 from qblox_instruments import Cluster, ClusterType
 from quantify_core.data import handling as dh
 
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
-from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
-from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
-from quantify_scheduler.helpers.qblox_dummy_instrument import start_dummy_cluster_armed_sequencers
-
+from quantify_scheduler import BasicTransmonElement, InstrumentCoordinator, QuantumDevice
+from quantify_scheduler.qblox import ClusterComponent, start_dummy_cluster_armed_sequencers
 
 # First, don't forget to set the data directory!
 dh.set_datadir()  # change me!
@@ -150,7 +146,7 @@ The schedule function can be parameterized to loop over different values. The pa
 
 ```{code-cell} ipython3
 from quantify_scheduler import Schedule
-from quantify_scheduler.operations.gate_library import Measure, Reset, X
+from quantify_scheduler.operations import Measure, Reset, X
 
 def t1_sched(times, repetitions=1):
     schedule = Schedule("T1", repetitions)
@@ -174,7 +170,7 @@ import numpy as np
 
 from qcodes.instrument.parameter import ManualParameter
 
-from quantify_scheduler.gettables import ScheduleGettable
+from quantify_scheduler import ScheduleGettable
 
 # The points we want to measure.
 times = np.linspace(start=1.6e-7, stop=4.976e-5, num=125)
@@ -273,7 +269,7 @@ As we defined 125 points in our `times` array which were measured in 125 differe
 The previous experiment's acquisition results had one data point for each acquisition in the schedule. For a trace measurement, the data format is slightly different. To illustrate this, let us set up an experiment with a trace measurement.
 
 ```{code-cell} ipython3
-from quantify_scheduler.operations.pulse_library import IdlePulse, SoftSquarePulse
+from quantify_scheduler.operations import IdlePulse, SoftSquarePulse
 
 
 def trace_schedule(pulse_amp, acq_delay, port="q0:res", clock="q0.ro", repetitions=1):
@@ -401,16 +397,16 @@ However, if the experiment is run using `ScheduleGettable`, this `repetitions` f
 Keep in mind that the schedule function should pass the `repetitions` argument to the `Schedule` initializer, otherwise both `QuantumDevice.cfg_sched_repetitions` and the `repetitions` argument of the schedule function will be ignored. For example, in the following setup, the `repetitions` will always be `1` (default for the `Schedule` object), even if `cfg_sched_repetitions` is set to `2`.
 
 ```{code-cell} ipython3
+from quantify_scheduler import QuantumDevice, ScheduleGettable
+
 def schedule_function(q0: str, repetitions: int):
     schedule = Schedule("Example schedule")
     schedule.add(Measure(q0, acq_index=0))
     return schedule
 
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 quantum_device = QuantumDevice(name="quantum_sample")
 quantum_device.cfg_sched_repetitions(2)
 
-from quantify_scheduler.gettables import ScheduleGettable
 schedule_gettable = ScheduleGettable(
     quantum_device=quantum_device,
     schedule_function=schedule_function,
@@ -430,15 +426,15 @@ quantum_device.close()
 ```
 
 ```{code-cell} ipython3
+from quantify_scheduler import QuantumDevice, ScheduleGettable
+
 def schedule_function(q0: str, repetitions: int = 2):
     schedule = Schedule("Example schedule", repetitions=repetitions)
     schedule.add(Measure(q0, acq_index=0))
     return schedule
 
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 quantum_device = QuantumDevice(name="quantum_sample")
 
-from quantify_scheduler.gettables import ScheduleGettable
 schedule_gettable = ScheduleGettable(
     quantum_device=quantum_device,
     schedule_function=schedule_function,
@@ -458,10 +454,8 @@ mystnb:
 ---
 from qblox_instruments import Cluster, ClusterType, DummyBinnedAcquisitionData
 
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
-from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
-from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
+from quantify_scheduler import BasicTransmonElement, InstrumentCoordinator, QuantumDevice
+from quantify_scheduler.qblox import ClusterComponent
 
 
 single_qubit_device.close_all()
@@ -594,8 +588,7 @@ We define simple schedule below with a parameterized amplitude and duration of t
 
 ```{code-cell} ipython3
 from quantify_scheduler import Schedule
-from quantify_scheduler.operations.gate_library import Measure, Reset, X, X90
-from quantify_scheduler.operations.pulse_library import SquarePulse
+from quantify_scheduler.operations import Measure, Reset, SquarePulse, X, X90
 
 def chevron_schedule_not_batched(duration, amp, repetitions=1):
     sched = Schedule("Chevron Experiment", repetitions=repetitions)

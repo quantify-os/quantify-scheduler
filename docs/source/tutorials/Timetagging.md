@@ -35,20 +35,10 @@ mystnb:
 from qblox_instruments import Cluster, ClusterType
 
 from quantify_core.data import handling as dh
-from quantify_scheduler.backends.graph_compilation import SerialCompiler
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler import InstrumentCoordinator, QuantumDevice, Schedule, SerialCompiler
 from quantify_scheduler.enums import BinMode, TimeRef, TimeSource
-from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
-from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
-    InstrumentCoordinator,
-)
-from quantify_scheduler.operations.acquisition_library import (
-    Timetag,
-    TimetagTrace,
-    Trace,
-)
-from quantify_scheduler.operations.pulse_library import SquarePulse
-from quantify_scheduler.schedules.schedule import Schedule
+from quantify_scheduler.qblox import ClusterComponent
+from quantify_scheduler.operations import SquarePulse, Timetag, TimetagTrace, Trace
 
 dh.set_datadir(dh.default_datadir())
 ```
@@ -392,10 +382,7 @@ We now add a mock laser to our instrument coordinator so that the example compil
 mystnb:
   remove_code_outputs: true
 ---
-from quantify_scheduler.helpers.mock_instruments import MockLocalOscillator
-from quantify_scheduler.instrument_coordinator.components.generic import (
-    GenericInstrumentCoordinatorComponent,
-)
+from quantify_scheduler import GenericInstrumentCoordinatorComponent, MockLocalOscillator
 
 red_laser = MockLocalOscillator(name="red_laser")
 instrument_coordinator.add_component(GenericInstrumentCoordinatorComponent(red_laser))
@@ -408,7 +395,7 @@ Then we add a {class}`~quantify_scheduler.device_under_test.nv_element.BasicElec
 mystnb:
   remove_code_outputs: true
 ---
-from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
+from quantify_scheduler import BasicElectronicNVElement
 
 quantum_device.hardware_config(hw_cfg)
 
@@ -427,7 +414,7 @@ The schedule consists simply of a `Measure` operation, which includes a readout 
 mystnb:
   remove_code_outputs: true
 ---
-from quantify_scheduler.operations.gate_library import Measure
+from quantify_scheduler.operations import Measure
 
 sched = Schedule("NV Timetag")
 

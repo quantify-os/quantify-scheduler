@@ -6,7 +6,6 @@ schedules.
 
 import pytest
 
-from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends.graph_compilation import (
     DeviceCompilationConfig,
     SerialCompilationConfig,
@@ -17,6 +16,7 @@ from quantify_scheduler.backends.graph_compilation import (
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.operations.operation import Operation
+from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 from quantify_scheduler.schemas.examples.device_example_cfgs import (
     example_transmon_cfg,
 )

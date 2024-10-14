@@ -14,7 +14,6 @@ from typing import Hashable, Literal
 
 import numpy as np
 
-from quantify_scheduler import Operation
 from quantify_scheduler.enums import BinMode, TimeRef, TimeSource
 from quantify_scheduler.operations.acquisition_library import (
     NumericalSeparatedWeightedIntegration,
@@ -28,6 +27,7 @@ from quantify_scheduler.operations.acquisition_library import (
     TriggerCount,
 )
 from quantify_scheduler.operations.control_flow_library import LoopOperation
+from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import (
     IdlePulse,
     ReferenceMagnitude,

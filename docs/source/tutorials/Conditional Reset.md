@@ -88,10 +88,8 @@ import tempfile
 
 from quantify_core.data import handling as dh
 from quantify_core.measurement.control import MeasurementControl
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
-from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
-from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
+from quantify_scheduler import BasicTransmonElement, InstrumentCoordinator, QuantumDevice
+from quantify_scheduler.qblox import ClusterComponent
 
 measurement_control = MeasurementControl("measurement_control")
 instrument_coordinator = InstrumentCoordinator("instrument_coordinator")
@@ -199,9 +197,7 @@ tags: [remove-cell]
 
 import numpy as np
 from qblox_instruments.ieee488_2.dummy_transport import DummyBinnedAcquisitionData
-from quantify_scheduler.helpers.qblox_dummy_instrument import (
-    start_dummy_cluster_armed_sequencers,
-)
+from quantify_scheduler.qblox import start_dummy_cluster_armed_sequencers
 
 def get_dummy_binned_acquisition_data(
     real: float, imag: float, theta: float, threshold: float
@@ -258,10 +254,9 @@ cluster.start_sequencer = lambda: start_dummy_cluster_armed_sequencers(ic_cluste
 import numpy as np
 from qcodes import ManualParameter
 
-from quantify_scheduler.gettables import ScheduleGettable
-from quantify_scheduler.operations.gate_library import Measure
-from quantify_scheduler.schedules.schedule import Schedule
-from quantify_scheduler.schedules.timedomain_schedules import readout_calibration_sched
+from quantify_scheduler import Schedule, ScheduleGettable
+from quantify_scheduler.operations import Measure
+from quantify_scheduler.schedules import readout_calibration_sched
 
 
 single_qubit_device.cfg_sched_repetitions(1)
@@ -408,8 +403,8 @@ In other cases, however, we need to pass extra arguments to {{ ConditionalReset 
 In this example, we use the schedule function {{ t1_sched }} using the {{ ConditionalReset }} instead of the standard {{ Reset }}. When using multiple consecutive {{ ConditionalReset }} on the same qubit, we need to increment the `acq_index` for each one, similar to when adding multiple {{ Measure }} to the schedule. We also need to ensure that all acquisition protocols in the schedule are equal to `"ThresholdedAcquisition"`. 
 
 ```{code-cell} ipython3
-from quantify_scheduler.backends.qblox.operations.gate_library import ConditionalReset
-from quantify_scheduler.operations.gate_library import X, Reset
+from quantify_scheduler.qblox.operations import ConditionalReset
+from quantify_scheduler.operations import X, Reset
 
 
 # original T1 schedule

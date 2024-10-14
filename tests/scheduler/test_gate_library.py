@@ -5,7 +5,6 @@ from unittest import TestCase
 import numpy as np
 import pytest
 
-from quantify_scheduler import Operation, Schedulable, Schedule
 from quantify_scheduler.backends.graph_compilation import SerialCompiler
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.qblox.operations.gate_library import ConditionalReset
@@ -32,8 +31,10 @@ from quantify_scheduler.operations.gate_library import (
     Z,
 )
 from quantify_scheduler.operations.nv_native_library import ChargeReset
+from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.operations.shared_native_library import SpectroscopyOperation
+from quantify_scheduler.schedules.schedule import Schedulable, Schedule
 from quantify_scheduler.schemas.examples import utils
 
 

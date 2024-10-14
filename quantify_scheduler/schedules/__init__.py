@@ -11,6 +11,7 @@ Module containing a standard library of schedules for common experiments as well
     serve as examples when creating schedules for custom experiments.
 
 """
+from .schedule import CompiledSchedule, Schedulable, Schedule
 from .spectroscopy_schedules import (
     heterodyne_spec_sched,
     heterodyne_spec_sched_nco,
@@ -34,6 +35,9 @@ from .trace_schedules import (
 )
 
 __all__ = [
+    "CompiledSchedule",
+    "Schedulable",
+    "Schedule",
     "allxy_sched",
     "echo_sched",
     "heterodyne_spec_sched",

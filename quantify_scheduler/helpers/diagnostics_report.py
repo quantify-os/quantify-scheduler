@@ -26,11 +26,11 @@ from quantify_scheduler._version import __version__ as __scheduler_version__
 if TYPE_CHECKING:
     from types import TracebackType
 
-    from quantify_scheduler import CompiledSchedule, Schedule
     from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
     from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
         InstrumentCoordinator,
     )
+    from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 
 
 def _generate_diagnostics_report(  # noqa: PLR0912, PLR0915
@@ -57,7 +57,9 @@ def _generate_diagnostics_report(  # noqa: PLR0912, PLR0915
     """
 
     def _flatten_hardware_logs_dict(
-        hw_logs: dict, extracted_hw_logs: dict, prefix: str | None = None
+        hw_logs: dict,
+        extracted_hw_logs: dict,
+        prefix: str | None = None,
     ) -> dict:
         for key, value in hw_logs.items():
             if isinstance(value, dict):

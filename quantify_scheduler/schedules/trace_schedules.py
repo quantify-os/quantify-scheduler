@@ -1,10 +1,15 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Contains various examples of trace schedules."""
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import numpy as np
 
-from quantify_scheduler.device_under_test.device_element import DeviceElement
+if TYPE_CHECKING:
+    from quantify_scheduler.device_under_test.device_element import DeviceElement
+
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.acquisition_library import (
     SSBIntegrationComplex,

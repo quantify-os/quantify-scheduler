@@ -11,9 +11,9 @@ from typing import Any, Literal
 import numpy as np
 from qcodes import InstrumentChannel, validators
 
-from quantify_scheduler import Operation
 from quantify_scheduler.helpers.deprecation import deprecated_arg_alias
 from quantify_scheduler.helpers.waveforms import area_pulses
+from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.resources import BasebandClockResource, DigitalClockResource
 
 

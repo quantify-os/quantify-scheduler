@@ -62,7 +62,7 @@ experiment and {class}`~quantify_scheduler.instrument_coordinator.instrument_coo
 
 ```{code-cell} ipython3
 from quantify_core.measurement.control import MeasurementControl
-from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
+from quantify_scheduler import InstrumentCoordinator
 
 measurement_control = MeasurementControl("measurement_control")
 instrument_coordinator = InstrumentCoordinator("instrument_coordinator")
@@ -88,8 +88,7 @@ LO_FREQ_READOUT = 4.5e9
 ```
 
 ```{code-cell} ipython3
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
+from quantify_scheduler import BasicTransmonElement, QuantumDevice
 
 single_qubit_device = QuantumDevice("single_qubit_device")
 single_qubit_device.instr_instrument_coordinator(instrument_coordinator.name)
@@ -121,7 +120,7 @@ slot `2`.
 
 ```{code-cell} ipython3
 from qblox_instruments import Cluster, ClusterType
-from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
+from quantify_scheduler.qblox import ClusterComponent
 cluster = Cluster(
     "cluster",
     dummy_cfg={
@@ -190,7 +189,7 @@ excite the qubit, wait `tau` seconds and then measure the qubit.
 
 ```{code-cell} ipython3
 from quantify_scheduler import Schedule
-from quantify_scheduler.operations.gate_library import Measure, Reset, X
+from quantify_scheduler.operations import Measure, Reset, X
 
 def t1_sched(times, repetitions=1):
     schedule = Schedule("T1", repetitions)
@@ -235,7 +234,7 @@ More information on compilation can be found in {ref}`sec-tutorial-compiling`.
 ```
 
 ```{code-cell} ipython3
-from quantify_scheduler.backends.graph_compilation import SerialCompiler
+from quantify_scheduler import SerialCompiler
 
 compiler = SerialCompiler(name="compiler", quantum_device=single_qubit_device)
 compiled_schedule = compiler.compile(schedule=t1_schedule)
@@ -276,7 +275,7 @@ this case, we will perform a 1-dimensional sweep using a
 ```{code-cell} ipython3
 import numpy as np
 from qcodes.instrument.parameter import ManualParameter
-from quantify_scheduler.gettables import ScheduleGettable
+from quantify_scheduler import ScheduleGettable
 
 # Configure the settable
 time = ManualParameter("sample", label="Sample time", unit="s")

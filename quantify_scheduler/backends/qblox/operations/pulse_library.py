@@ -6,8 +6,8 @@ from __future__ import annotations
 
 import numpy as np
 
-from quantify_scheduler import Operation
 from quantify_scheduler.backends.qblox import constants
+from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import (
     NumericalPulse,
     ReferenceMagnitude,

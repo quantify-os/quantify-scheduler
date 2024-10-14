@@ -3,7 +3,6 @@ from copy import deepcopy
 import numpy as np
 import pytest
 
-from quantify_scheduler import Operation, Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.circuit_to_device import ConfigKeyError
 from quantify_scheduler.compilation import _determine_absolute_timing
@@ -21,9 +20,10 @@ from quantify_scheduler.operations.gate_library import (
     Rxy,
     X,
 )
+from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import BasebandClockResource, ClockResource, Resource
-from quantify_scheduler.schedules.schedule import ScheduleBase
+from quantify_scheduler.schedules.schedule import Schedule, ScheduleBase
 
 
 def test_determine_absolute_timing_ideal_clock():

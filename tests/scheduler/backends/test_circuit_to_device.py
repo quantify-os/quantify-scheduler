@@ -5,7 +5,6 @@ import math
 import numpy as np
 import pytest
 
-from quantify_scheduler import Operation, Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.circuit_to_device import (
     ConfigKeyError,
@@ -42,6 +41,7 @@ from quantify_scheduler.operations.gate_library import (
     Y,
     Z,
 )
+from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_compensation_library import (
     PulseCompensation,
 )
@@ -56,7 +56,7 @@ from quantify_scheduler.operations.pulse_library import (
     SquarePulse,
 )
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
-from quantify_scheduler.schedules.schedule import ScheduleBase
+from quantify_scheduler.schedules.schedule import Schedule, ScheduleBase
 
 
 def test_compile_all_gates_example_transmon_cfg(device_cfg_transmon_example):

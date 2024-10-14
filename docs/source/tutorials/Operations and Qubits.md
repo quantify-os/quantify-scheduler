@@ -36,7 +36,7 @@ Operations are instantiated by providing them with the name of the qubit(s) on w
 they operate:
 
 ```{code-cell} ipython3
-from quantify_scheduler.operations.gate_library import CZ, Measure, Reset, X90
+from quantify_scheduler.operations import CZ, Measure, Reset, X90
 
 q0, q1 = ("q0", "q1")
 X90(q0)
@@ -52,7 +52,7 @@ x-axis.
 
 ```{code-cell} ipython3
 from pprint import pprint
-from quantify_scheduler.operations.gate_library import Rxy
+from quantify_scheduler.operations import Rxy
 
 rxy45 = Rxy(theta=45.0, phi=0.0, qubit=q0)
 pprint(rxy45.data)
@@ -106,7 +106,7 @@ This allows defining the Bell schedule as:
 ```{code-cell} ipython3
 import numpy as np
 from quantify_scheduler import Schedule
-from quantify_scheduler.operations.gate_library import CZ, Measure, Reset, Rxy, X90
+from quantify_scheduler.operations import CZ, Measure, Reset, Rxy, X90
 
 sched = Schedule("Bell experiment")
 
@@ -187,9 +187,7 @@ Here we will use an example device configuration for a transmon-based system tha
 
 ```{code-cell} ipython3
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
-from quantify_scheduler.schemas.examples.device_example_cfgs import (
-    example_transmon_cfg,
-)
+from quantify_scheduler.schemas import example_transmon_cfg
 
 device_cfg = DeviceCompilationConfig.model_validate(example_transmon_cfg)
 
@@ -267,8 +265,7 @@ Currently, `quantify-scheduler` contains the
 to represent a fixed-frequency transmon qubit connected to a feedline. We show their interaction below:
 
 ```{code-cell} ipython3
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
+from quantify_scheduler import BasicTransmonElement, QuantumDevice
 
 # First create a device under test
 dut = QuantumDevice("DUT")
@@ -324,10 +321,8 @@ In this experiment, we want to vary the length and amplitude of a square pulse b
 X gates on a pair of qubits.
 
 ```{code-cell} ipython3
-from quantify_scheduler import Schedule
-from quantify_scheduler.operations.gate_library import Measure, Reset, X, X90
-from quantify_scheduler.operations.pulse_library import SquarePulse
-from quantify_scheduler.resources import ClockResource
+from quantify_scheduler import ClockResource, Schedule
+from quantify_scheduler.operations import Measure, Reset, SquarePulse, X, X90
 
 sched = Schedule("Chevron Experiment")
 acq_idx = 0
@@ -374,9 +369,7 @@ as such support the same timing and reference operators as Pulses.
 {class}`~quantify_scheduler.backends.graph_compilation.SerialCompiler` requires a {class}`~quantify_scheduler.backends.graph_compilation.CompilationConfig` and this holds both the device and hardware configurations (when set). In the example below, we generate a {class}`~quantify_scheduler.backends.graph_compilation.CompilationConfig` via  {meth}`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice.generate_compilation_config` of {class}`~quantify_scheduler.device_under_test.quantum_device.QuantumDevice`.
 
 ```{code-cell} ipython3
-from quantify_scheduler.backends import SerialCompiler
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
+from quantify_scheduler import BasicTransmonElement, QuantumDevice, SerialCompiler
 
 dut.close()
 dut = QuantumDevice("DUT")

@@ -9,10 +9,10 @@ Might be good to mark those tests in detail.
 
 import pytest
 
-from quantify_scheduler import CompiledSchedule, Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.resources import ClockResource
+from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 
 from ....fixtures.mock_setup import ZHINST_HARDWARE_COMPILATION_CONFIG
 from .standard_schedules import (

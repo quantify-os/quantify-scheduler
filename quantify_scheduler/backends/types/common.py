@@ -19,7 +19,6 @@ from pydantic import Field, field_serializer, field_validator, model_validator
 
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.helpers.importers import export_python_object_to_path_string
-from quantify_scheduler.schedules.schedule import Schedule
 from quantify_scheduler.structure.model import (
     DataStructure,
     deserialize_function,
@@ -28,6 +27,7 @@ from quantify_scheduler.structure.types import Graph, NDArray
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.graph_compilation import SimpleNodeConfig
+    from quantify_scheduler.schedules.schedule import Schedule
 
 LatencyCorrection = float
 """

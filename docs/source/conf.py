@@ -261,6 +261,7 @@ autoapi_options = [
     "private-members",
     "show-inheritance",
     "show-module-summary",
+    "imported-members",
     # Including `important-members` displays the description of class aliases in the
     # docs, however, it causes sphinx to raise multiple warnings about finding
     # multiple targets for cross-references.
@@ -269,13 +270,13 @@ autoapi_options = [
 # displays docstrings inside __init__
 autoapi_python_class_content = "class"
 
-# avoid duplicate label warning even when manual label has been used;
 suppress_warnings = [
     "app.add_directive",
-    "autosectionlabel.*",
+    "autosectionlabel.*",  # avoid duplicate label warning even when manual label has been used;
     "mystnb.unknown_mime_type",
     "mystnb.mime_priority",
     "autodoc.RemovedInSphinx80Warning",
+    "ref.python",  # supress more than one target found warnings. TODO: fix
 ]
 
 
@@ -329,20 +330,14 @@ if os.environ.get("GITLAB_CI", "false") == "true":
 # but the issues popped up again, so this is the best and easier solution so far
 
 # qcodes0.36.0 lazyloads h5py which causes build failures
-import h5py
 
 # qcodes imports scipy under the hood but since scipy=1.7.0 it needs to be imported
 # here with typing.TYPE_CHECKING = True otherwise we run into quantify-core#
-import lmfit  # related to quantify-core#218 and quantify-core#221
-import marshmallow
 
 # `pydantic` fails to import automatically and leads to broken documentation,
 # if not preloaded.
-import pydantic
-import qcodes
 
 # Prevents a circular import warning
-import tenacity
 
 # When building the docs we need `typing.TYPE_CHECKING` to be `True` so that the
 # sphinx' kernel loads the modules corresponding to the typehints and is able to
@@ -469,6 +464,8 @@ nitpick_ignore = [
     ("py:class", "quantify_scheduler.Operation"),
     ("py:obj", "quantify_scheduler.Resource"),
     ("py:class", "quantify_scheduler.Resource"),
+    ("py:obj", "QuantifyCompiler"),
+    ("py:obj", "ScheduleBase"),
     ("py:obj", "quantify_scheduler.structure.DataStructure"),
     ("py:obj", "quantify_scheduler.backends.SerialCompiler"),
     ("py:obj", "quantify_scheduler.backends.qblox.operations.StitchedPulseBuilder"),

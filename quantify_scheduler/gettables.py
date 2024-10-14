@@ -28,8 +28,8 @@ if TYPE_CHECKING:
     from numpy.typing import NDArray
     from xarray import Dataset
 
-    from quantify_scheduler import CompiledSchedule, Schedule
     from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+    from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 
 logger = logging.getLogger(__name__)
 
