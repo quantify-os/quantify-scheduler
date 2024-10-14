@@ -267,7 +267,7 @@ class DispersiveMeasurement(InstrumentChannel):
         self.acq_weights_sampling_rate = ManualParameter(
             name="acq_weights_sampling_rate",
             instrument=self,
-            initial_value=kwargs.get("acq_weights_sampling_rate", None),
+            initial_value=kwargs.get("acq_weights_sampling_rate"),
             vals=validators.Numbers(min_value=1, max_value=10e9),
         )
         """The sample rate of the weights arrays, in Hertz. Used when specifying the
@@ -315,7 +315,7 @@ class DispersiveMeasurement(InstrumentChannel):
         self.num_points = ManualParameter(
             name="num_points",
             instrument=self,
-            initial_value=kwargs.get("num_points", None),
+            initial_value=kwargs.get("num_points"),
             vals=validators.Ints(min_value=1),
         )
         """

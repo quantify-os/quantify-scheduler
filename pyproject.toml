@@ -106,6 +106,7 @@ dev = [
  # Live rebuild of Documentation
  "sphinx-autobuild",
  "quantify_scheduler[zhinst]",
+ "pytest-mpl",
 ]
 
 zhinst = [

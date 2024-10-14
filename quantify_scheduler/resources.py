@@ -16,13 +16,35 @@ class Resource(UserDict):
     """
     A resource corresponds to a physical resource such as a port or a clock.
 
-    .. jsonschema:: https://gitlab.com/quantify-os/quantify-scheduler/-/raw/main/quantify_scheduler/schemas/resource.json
+    .. jsonschema::
+
+        {
+            "type": "object",
+            "description": "JSON schema for a quantify resource.",
+            "additionalProperties": true,
+            "required": [
+                "name",
+                "type"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name of the resource."
+                },
+                "type": {
+                    "type": "string",
+                    "description": "Type of the resource, this property can be used by compilation steps."
+                }
+            }
+        }
+
+
 
     Parameters
     ----------
     name :
         The resource name.
-    """
+    """  # noqa: E501
 
     def __init__(self, name: str) -> None:
         super().__init__()

@@ -212,7 +212,7 @@ class SchedulerJSONDecoder(json.JSONDecoder):
                     return np.array(obj["data"])
                 if issubclass(class_type, Instrument):
                     return class_type(**obj["data"])
-                return class_type(obj["data"])
+                return class_type(obj["data"])  # pyright: ignore
 
             if "mode" in obj and obj["mode"] == "type":
                 return class_type

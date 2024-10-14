@@ -499,6 +499,11 @@ nitpick_ignore = [
     ("py:class", "quantify_scheduler.backends.types.zhinst.ZIHardwareDescription"),
     ("py:class", "quantify_scheduler.backends.types.qblox.ClusterModuleDescription"),
     ("py:class", "quantify_scheduler.backends.types.common.LatencyCorrection"),
+    (
+        "py:class",
+        "quantify_scheduler.backends.mock.mock_rom.MockROMHardwareCompilationConfig.hardware_options",
+    ),
+    ("py:class", "HardwareOptions"),
     ("py:class", "ClusterModuleDescription"),
     ("py:class", "Literal[Zurich Instruments]"),
     ("py:class", "Literal[Mock readout module]"),

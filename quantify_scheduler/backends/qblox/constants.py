@@ -107,3 +107,9 @@ MAX_MIN_INSTRUCTION_WAIT: float = 4e-9
 Maximum of minimum wait times for real-time-instructions. e.g. play,
 set_cond, acquire, require at least 4ns.
 """
+GRID_TIME_TOLERANCE_TIME: float = 0.0011
+"""
+Tolerance for time values in nanoseconds.
+
+.. versionadded:: 0.21.2
+"""
