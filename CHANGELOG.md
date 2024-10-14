@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.21.2 (2024-10-14)
+
+### 🐛 Bug Fixes and Closed Issues
+
+Allow user to change `rel_tolerance` in `to_grid_time` function ([!1102](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1102) by [@Robert Sokolewicz](https://gitlab.com/rsokolewicz))
+
+### 🚀 Enhancements
+
+Allow user to change `rel_tolerance` in `to_grid_time` function ([!1102](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1102) by [@Robert Sokolewicz](https://gitlab.com/rsokolewicz))
+
 ## 0.21.1 (2024-08-16)
 
 ### Release highlights

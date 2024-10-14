@@ -25,4 +25,5 @@ quantify_compilers
 bibliography
 authors
 changelog
+release_notes
 ```

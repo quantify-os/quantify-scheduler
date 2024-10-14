@@ -254,7 +254,7 @@ def to_grid_time(time: float, grid_time_ns: int = constants.GRID_TIME) -> int:
             f" operations are multiples of {grid_time_ns} ns"
             f" (tolerance: {tolerance:.0e} ns). If you think this is a mistake, try "
             "increasing the tolerance by setting e.g.:"
-            f" `quantify_scheduler.backends.qblox.constants.GRID_TIME_TOLERANCE_TIME = 0.1e-3` "
+            f" `quantify_scheduler.backends.qblox.constants.GRID_TIME_TOLERANCE_TIME = 1.1e-2` "
             "at the top of your script."
         )
 
