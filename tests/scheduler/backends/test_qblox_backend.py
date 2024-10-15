@@ -1952,7 +1952,7 @@ def test_to_grid_time(time, expected_time_ns):
 
 @pytest.mark.parametrize(
     "time",
-    [7e-9, 10e-9, 8.01e-9, 4.009e-9, 1 + 2e-12],
+    [7e-9, 10e-9, 8.07e-9, 4.09e-9, 1 + 0.1e-9],
 )
 def test_to_grid_time_raises(time):
     with pytest.raises(ValueError) as error:
@@ -1960,8 +1960,37 @@ def test_to_grid_time_raises(time):
 
     assert (
         "Please ensure that the durations of operations"
-        " and wait times between operations are multiples of 4 ns" in str(error)
+        " and wait times between operations are multiples of 4 ns" in str(error.value)
     )
+
+
+@pytest.mark.parametrize(
+    "delta_time, raise_expected",
+    [(0.1, False), (0.01, True)],
+)
+def test_GRID_TIME_TOLERANCE_TIME(delta_time, raise_expected):
+    constants.GRID_TIME_TOLERANCE_TIME = delta_time
+    ref_time = 8e-9
+    ref_time_ns = 8
+    delta = 0.05e-9
+    if raise_expected:
+        with pytest.raises(ValueError) as error:
+            to_grid_time(
+                ref_time + delta, grid_time_ns=constants.MIN_TIME_BETWEEN_OPERATIONS
+            )
+
+        assert (
+            "Please ensure that the durations of operations"
+            " and wait times between operations are multiples of 4 ns"
+            in str(error.value)
+        )
+    else:
+        assert (
+            to_grid_time(
+                ref_time + delta, grid_time_ns=constants.MIN_TIME_BETWEEN_OPERATIONS
+            )
+            == ref_time_ns
+        )
 
 
 @pytest.mark.parametrize(
@@ -1969,8 +1998,8 @@ def test_to_grid_time_raises(time):
     [
         (5e-9, False),
         (11e-9, False),
-        (8.002e-9, False),
-        (4.009e-9, False),
+        (8.06e-9, False),
+        (4.09e-9, False),
         (12e-9, True),
         (8.001e-9, True),
         (4.0008e-9, True),
@@ -5213,7 +5242,7 @@ def test_1_ns_time_grid_half_ns(compile_config_basic_transmon_qblox_hardware):
         match=re.escape(
             "Attempting to use a time value of 9.499999999999998 ns. "
             "Please ensure that the durations of operations and wait times "
-            "between operations are multiples of 1 ns (tolerance: 1e-03 ns)."
+            "between operations are multiples of 1 ns"
         ),
     ):
         compiler = SerialCompiler(name="compiler")

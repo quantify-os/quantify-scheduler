@@ -240,7 +240,7 @@ def to_grid_time(time: float, grid_time_ns: int = constants.GRID_TIME) -> int:
     time_ns_float = time * 1e9
     time_ns = int(round(time_ns_float))
 
-    tolerance = 1.1e-3  # Slightly more to compensate for float repr, allowing for 1 ps
+    tolerance = constants.GRID_TIME_TOLERANCE_TIME
     if (
         not math.isclose(
             time_ns_float, time_ns, abs_tol=tolerance, rel_tol=0
@@ -251,7 +251,10 @@ def to_grid_time(time: float, grid_time_ns: int = constants.GRID_TIME) -> int:
             f"Attempting to use a time value of {time_ns_float} ns."
             f" Please ensure that the durations of operations and wait times between"
             f" operations are multiples of {grid_time_ns} ns"
-            f" (tolerance: {tolerance:.0e} ns)."  # Intentionally not showing digits
+            f" (tolerance: {tolerance:.0e} ns). If you think this is a mistake, try "
+            "increasing the tolerance by setting e.g.:"
+            f" `quantify_scheduler.backends.qblox.constants.GRID_TIME_TOLERANCE_TIME = 0.1e-3` "
+            "at the top of your script."
         )
 
     return time_ns
