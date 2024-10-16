@@ -713,7 +713,7 @@ class TriggerCount(Acquisition):
     bin_mode
         Describes what is done when data is written to a register that already
         contains a value. Options are "append" which appends the result to the
-        list or "average" which stores the count value of the
+        list or "distribution" which stores the count value of the
         new result and the old register value, by default BinMode.APPEND.
     t0
         The acquisition start time in seconds, by default 0.
@@ -729,7 +729,17 @@ class TriggerCount(Acquisition):
         bin_mode: BinMode | str = BinMode.APPEND,
         t0: float = 0,
     ) -> None:
-        if bin_mode == BinMode.AVERAGE and acq_index != 0:
+        if bin_mode == BinMode.AVERAGE:
+            warnings.warn(
+                (
+                    f"{bin_mode} is deprecated for the TriggerCount acquisition protocol, "
+                    f"and will be removed in quantify-scheduler>=0.24.0. "
+                    f"Use {BinMode.DISTRIBUTION} instead, which has the same effect."
+                ),
+                FutureWarning,
+            )
+            bin_mode = BinMode.DISTRIBUTION
+        if bin_mode == BinMode.DISTRIBUTION and acq_index != 0:
             # In average mode the count distribution is measured,
             # and currently we do not support multiple indices for this,
             # or starting the counting from a predefined count number.

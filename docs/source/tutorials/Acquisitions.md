@@ -829,7 +829,7 @@ This protocol is used, for example, in the case of an NV center type of qubit, o
 
 The trigger count protocol is currently only implemented for the Qblox backend, and it is available on two module types: the **QRM** (baseband) and the **QTM**. Please also see {ref}`sec-qblox-acquisition-details` for more information on Qblox module-specific behavior of this operation.
 
-Like the {ref}`single-sideband integration protocol <sec-ssb>`, the {class}`~quantify_scheduler.operations.acquisition_library.TriggerCount` protocol also offers two bin modes: **average** and **append**. The **average** mode can only be used with the QRM, and the **append** mode can be used with both the QRM and the QTM.
+Like the {ref}`single-sideband integration protocol <sec-ssb>`, the {class}`~quantify_scheduler.operations.acquisition_library.TriggerCount` protocol also offers two bin modes: **distribution** and **append**. The **distribution** mode can only be used with the QRM, and the **append** mode can be used with both the QRM and the QTM.
 
 The **append** bin mode is quite similar to the {ref}`single-sideband integration protocol <sec-ssb>` case. Instead of the integrated acquisition result, the data will consist of the total number of triggers counted during each acquisition.
 Let's consider an example where we execute a schedule three times:
@@ -940,13 +940,13 @@ schedule.add(
         port="qe0:optical_readout",
         clock="qe0.ge0",
         acq_channel=0,
-        bin_mode=BinMode.AVERAGE,
+        bin_mode=BinMode.DISTRIBUTION,
     )
 )
 ```
 
 It's important in using {class}`~quantify_scheduler.operations.acquisition_library.TriggerCount` acquisitions that the acquisition channel is identical for all acquisitions in a schedule,
-leading to a single distribution in case of average bin mode (and a single list in case of append bin mode).
+leading to a single distribution in case of distribution bin mode (and a single list in case of append bin mode).
 In this example, if instead there would be 3 acquisitions in the schedule, and all of the acquisition channels were different and then only running the schedule once,
 we would get 3 separate distributions (one per acquisition channel).
 

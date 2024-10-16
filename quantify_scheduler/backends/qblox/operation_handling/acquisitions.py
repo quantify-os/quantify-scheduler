@@ -62,7 +62,7 @@ class AcquisitionStrategyPartial(IOperationStrategy):
 
         qasm_program.time_last_acquisition_triggered = qasm_program.elapsed_time
 
-        if self.bin_mode in (BinMode.AVERAGE, BinMode.FIRST):
+        if self.bin_mode in (BinMode.AVERAGE, BinMode.FIRST, BinMode.DISTRIBUTION):
             if self.bin_idx_register is not None:
                 raise ValueError(
                     f"Attempting to add acquisition with binmode {self.bin_mode}. "

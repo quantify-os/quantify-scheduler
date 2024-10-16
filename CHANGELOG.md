@@ -4,6 +4,8 @@
 
 ### Breaking changes
 
+- Introduce trigger count bin mode to replace AVERAGE with DISTRIBUTION. (!1103)
+
 ### Merged branches and closed issues
 
 - Pyright

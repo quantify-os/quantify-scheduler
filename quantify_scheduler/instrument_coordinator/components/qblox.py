@@ -1996,7 +1996,7 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
                 attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
             )
 
-    @_supported_bin_modes([BinMode.AVERAGE, BinMode.APPEND])
+    @_supported_bin_modes([BinMode.DISTRIBUTION, BinMode.APPEND])
     def _get_trigger_count_data(
         self,
         *,
@@ -2032,13 +2032,13 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
 
         Notes
         -----
-        - For BinMode.AVERAGE, `data` contains the distribution of counts.
+        - For BinMode.DISTRIBUTION, `data` contains the distribution of counts.
         - For BinMode.APPEND, `data` contains the raw trigger counts.
         """
         bin_data = self._get_bin_data(hardware_retrieved_acquisitions, qblox_acq_index)
         acq_index_dim_name = f"acq_index_{acq_channel}"
 
-        if acquisition_metadata.bin_mode == BinMode.AVERAGE:
+        if acquisition_metadata.bin_mode == BinMode.DISTRIBUTION:
 
             def _convert_from_cumulative(
                 cumulative_values: list[int],

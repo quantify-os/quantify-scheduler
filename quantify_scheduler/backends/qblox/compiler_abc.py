@@ -494,10 +494,10 @@ class SequencerCompiler(ABC):
             if acq_metadata.bin_mode == BinMode.APPEND:
                 num_bins = repetitions * self._num_acquisitions
             elif acq_metadata.bin_mode == BinMode.AVERAGE:
-                if acq_metadata.acq_protocol == "TriggerCount":
-                    num_bins = constants.MAX_NUMBER_OF_BINS
-                else:
-                    num_bins = max(acq_indices) + 1
+                num_bins = max(acq_indices) + 1
+            elif acq_metadata.bin_mode == BinMode.DISTRIBUTION:
+                assert acq_metadata.acq_protocol == "TriggerCount"
+                num_bins = constants.MAX_NUMBER_OF_BINS
             elif acq_metadata.bin_mode == BinMode.FIRST:
                 # In BinMode.FIRST (currently only implemented for digital Trace
                 # acquisitions on the QTM), the binned data is ignored by quantify.

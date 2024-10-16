@@ -275,7 +275,7 @@ class AnalogSequencerCompiler(SequencerCompiler):
         )
         if acq_metadata.acq_protocol == "TriggerCount":
             self._settings.ttl_acq_auto_bin_incr_en = (
-                acq_metadata.bin_mode == BinMode.AVERAGE
+                acq_metadata.bin_mode == BinMode.DISTRIBUTION
             )
             if len(self.connected_input_indices) == 1:
                 self._settings.ttl_acq_input_select = self.connected_input_indices[0]

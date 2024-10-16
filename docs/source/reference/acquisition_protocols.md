@@ -260,7 +260,7 @@ xr.Dataset(
 )
 ```
 
-In `BinMode.AVERAGE` mode, the data is very similar. Each element in the list shows how many times the threshold was passed in each repetition **exactly** as many times as it's shown in the `"count"` dimension.
+In `BinMode.DISTRIBUTION` mode, the data is very similar. Each element in the list shows how many times the threshold was passed in each repetition **exactly** as many times as it's shown in the `"count"` dimension.
 For example, in the example below, the schedule ran 8 times. From these 8 runs,
 - in 1 run, the trigger was counted 5 times,
 - in 2 runs, the trigger was counted 4 times,

@@ -189,7 +189,7 @@ def test_trigger_count():
         duration=0.001,
         acq_channel=4815162342,
         acq_index=0,
-        bin_mode=BinMode.AVERAGE,
+        bin_mode=BinMode.DISTRIBUTION,
         t0=12e-9,
     )
     assert Operation.is_valid(trigger_count)
@@ -198,11 +198,11 @@ def test_trigger_count():
     assert trigger_count.data["acquisition_info"][0]["duration"] == 0.001
     assert trigger_count.data["acquisition_info"][0]["acq_index"] == 0
     assert trigger_count.data["acquisition_info"][0]["acq_channel"] == 4815162342
-    assert trigger_count.data["acquisition_info"][0]["bin_mode"] == BinMode.AVERAGE
+    assert trigger_count.data["acquisition_info"][0]["bin_mode"] == BinMode.DISTRIBUTION
     assert trigger_count.data["acquisition_info"][0]["t0"] == 12e-9
 
 
-def test_trigger_count_invalid_index_average_mode():
+def test_trigger_count_invalid_index_distribution_mode():
     with pytest.raises(NotImplementedError) as error:
         _ = TriggerCount(
             port="q0:res",
@@ -210,7 +210,7 @@ def test_trigger_count_invalid_index_average_mode():
             duration=0.001,
             acq_channel=0,
             acq_index=1,
-            bin_mode=BinMode.AVERAGE,
+            bin_mode=BinMode.DISTRIBUTION,
             t0=12e-9,
         )
 
@@ -219,6 +219,21 @@ def test_trigger_count_invalid_index_average_mode():
         == "Using nonzero acq_index is not yet implemented for AVERAGE bin mode for "
         "the trigger count protocol"
     )
+
+
+def test_trigger_count_average_mode_warning():
+    with pytest.warns(
+        FutureWarning,
+        match="0.24.0",
+    ):
+        _ = TriggerCount(
+            port="q0:res",
+            clock="q0.ro",
+            duration=0.001,
+            acq_channel=0,
+            bin_mode=BinMode.AVERAGE,
+            t0=12e-9,
+        )
 
 
 def test_deprecated_weighted_acquisition():

@@ -1468,7 +1468,7 @@ def test_trigger_count_append_gettables(
     instr_coordinator.remove_component("ic_cluster0")
 
 
-def test_trigger_count_average(
+def test_trigger_count_distribution(
     mock_setup_basic_nv, make_cluster_component, hardware_cfg_trigger_count
 ):
     # Setup objects needed for experiment
@@ -1490,7 +1490,7 @@ def test_trigger_count_average(
 
     # Define experiment schedule
     schedule = Schedule("test multiple measurements")
-    meas0 = Measure("qe0", acq_protocol="TriggerCount", bin_mode=BinMode.AVERAGE)
+    meas0 = Measure("qe0", acq_protocol="TriggerCount", bin_mode=BinMode.DISTRIBUTION)
     schedule.add(meas0)
 
     # Setup dummy acquisition data
@@ -1536,7 +1536,7 @@ def test_trigger_count_average(
     instr_coordinator.remove_component("ic_cluster0")
 
 
-def test_trigger_count_average_gettables(
+def test_trigger_count_distribution_gettables(
     mock_setup_basic_nv, make_cluster_component, hardware_cfg_trigger_count
 ):
     # Setup objects needed for experiment
@@ -1559,7 +1559,9 @@ def test_trigger_count_average_gettables(
     # Define experiment schedule
     def _schedule_function(repetitions):
         schedule = Schedule("test multiple measurements", repetitions=repetitions)
-        meas0 = Measure("qe0", acq_protocol="TriggerCount", bin_mode=BinMode.AVERAGE)
+        meas0 = Measure(
+            "qe0", acq_protocol="TriggerCount", bin_mode=BinMode.DISTRIBUTION
+        )
         schedule.add(meas0)
         return schedule
 
@@ -2030,7 +2032,9 @@ def test_multi_real_input_hardware_cfg_trigger_count(
     # Define experiment schedule
     schedule = Schedule("test NV measurement with real output and input")
     schedule.add(Measure("qe0", acq_protocol="TriggerCount", bin_mode=BinMode.APPEND))
-    schedule.add(Measure("qe1", acq_protocol="TriggerCount", bin_mode=BinMode.AVERAGE))
+    schedule.add(
+        Measure("qe1", acq_protocol="TriggerCount", bin_mode=BinMode.DISTRIBUTION)
+    )
 
     # Generate compiled schedule
     compiler = SerialCompiler(name="compiler")
