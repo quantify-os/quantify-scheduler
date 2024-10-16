@@ -17,6 +17,8 @@
       - :class:`!quantify_scheduler.BasebandClockResource`
     * - :class:`.DigitalClockResource`
       - :class:`!quantify_scheduler.DigitalClockResource`
+    * - :class:`.Operation`
+      - :class:`!quantify_scheduler.Operation`
     * - :obj:`.structure`
       - :obj:`!quantify_scheduler.structure`
     * - :class:`.ScheduleGettable`
@@ -55,6 +57,7 @@ from .instrument_coordinator import InstrumentCoordinator
 from .instrument_coordinator.components.generic import (
     GenericInstrumentCoordinatorComponent,
 )
+from .operations import Operation
 from .resources import (
     BasebandClockResource,
     ClockResource,
@@ -67,6 +70,7 @@ __all__ = [
     "QuantumDevice",
     "Schedule",
     "Resource",
+    "Operation",
     "ClockResource",
     "BasebandClockResource",
     "DigitalClockResource",
