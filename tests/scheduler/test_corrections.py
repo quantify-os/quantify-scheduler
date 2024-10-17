@@ -211,11 +211,11 @@ def test_apply_software_distortion_corrections(
 
     assert (
         list(compiled_sched.operations.keys())[1] == operation_hash
-    ), f"Key of CZ operation remains identical"
+    ), "Key of CZ operation remains identical"
 
     assert (
         type(list(compiled_sched.operations.values())[1]) is NumericalPulse
-    ), f"Type of CZ operation is now NumericalPulse"
+    ), "Type of CZ operation is now NumericalPulse"
 
     assert list(compiled_sched.operations.values())[1].data["pulse_info"][0][
         "samples"

@@ -233,13 +233,13 @@ class OpInfo(DataClassJsonMixin):
         """Return ``True`` if the operation is a control flow end."""
         return self.data.get("control_flow_end", None) is True
 
-    def __str__(self):
+    def __str__(self) -> str:
         type_label: str = "Acquisition" if self.is_acquisition else "Pulse"
         return (
             f'{type_label} "{self.name}" (t0={self.timing}, duration={self.duration})'
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         repr_string = (
             f"{'Acquisition' if self.is_acquisition else 'Pulse'} "
             f"{str(self.name)} (t={self.timing} to "
@@ -324,7 +324,7 @@ class BaseModuleSettings(DataClassJsonMixin):
     @classmethod
     def extract_settings_from_mapping(
         cls: type[_ModuleSettingsT],
-        mapping: _ClusterModuleCompilationConfig,
+        mapping: _ClusterModuleCompilationConfig,  # noqa: ARG003 not used
         **kwargs,
     ) -> _ModuleSettingsT:
         """
@@ -338,8 +338,8 @@ class BaseModuleSettings(DataClassJsonMixin):
         **kwargs
             Additional keyword arguments passed to the constructor. Can be used to
             override parts of the mapping dict.
+
         """
-        del mapping  # not used
         return cls(**kwargs)
 
 
@@ -417,6 +417,7 @@ class RFModuleSettings(AnalogModuleSettings):
         **kwargs
             Additional keyword arguments passed to the constructor. Can be used to
             override parts of the mapping dict.
+
         """
         rf_settings = {}
 
@@ -481,8 +482,8 @@ class SequencerSettings(DataClassJsonMixin):
     """Enables the sequencer to record acquisitions."""
     thresholded_acq_trigger_invert: bool = False
     """
-    If you want to set a trigger when the acquisition result is 1, the parameter must be set to false 
-    and vice versa.
+    If you want to set a trigger when the acquisition result is 1,
+    the parameter must be set to false and vice versa.
     """
 
     @classmethod
@@ -509,6 +510,7 @@ class SequencerSettings(DataClassJsonMixin):
         -------
         : SequencerSettings
             A SequencerSettings instance with initial values.
+
         """
         return cls(
             sync_en=True,
@@ -570,7 +572,8 @@ class AnalogSequencerSettings(SequencerSettings):
     thresholded_acq_rotation: Optional[float] = None
     """The sequencer integration result phase rotation in degrees."""
     ttl_acq_input_select: Optional[int] = None
-    """Selects the input used to compare against the threshold value in the TTL trigger acquisition path."""
+    """Selects the input used to compare against
+    the threshold value in the TTL trigger acquisition path."""
     ttl_acq_threshold: Optional[float] = None
     """
     For QRM modules only, sets the threshold value with which to compare the input ADC
@@ -608,6 +611,7 @@ class AnalogSequencerSettings(SequencerSettings):
         -------
         : AnalogSequencerSettings
             A AnalogSequencerSettings instance with initial values.
+
         """
         modulation_freq = (
             sequencer_cfg.modulation_frequencies.interm_freq
@@ -763,6 +767,7 @@ class TimetagSequencerSettings(SequencerSettings):
         -------
         : SequencerSettings
             A SequencerSettings instance with initial values.
+
         """
         return cls(
             sync_en=True,
@@ -782,54 +787,72 @@ class QbloxBaseDescription(HardwareDescription):
 
 
 class ComplexChannelDescription(DataStructure):
-    """Information needed to specify an complex input/output in the :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`."""
+    """
+    Information needed to specify an complex input/output in the
+    :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`.
+    """
 
     marker_debug_mode_enable: bool = False
     """
-    Setting to send 4 ns trigger pulse on the marker located next to the I/O port along with each operation.
+    Setting to send 4 ns trigger pulse on the marker
+    located next to the I/O port along with each operation.
     The marker will be pulled high at the same time as the module starts playing or acquiring.
     """
     mix_lo: bool = True
-    """Whether IQ mixing with a local oscillator is enabled for this channel. Effectively always ``True`` for RF modules."""
+    """Whether IQ mixing with a local oscillator is enabled for this channel.
+    Effectively always ``True`` for RF modules."""
     downconverter_freq: Optional[float] = None
     """
-    Downconverter frequency that should be taken into account when determining the modulation frequencies for this channel.
+    Downconverter frequency that should be taken into account w
+    hen determining the modulation frequencies for this channel.
     Only relevant for users with custom Qblox downconverter hardware.
     """
     distortion_correction_latency_compensation: int = (
         DistortionCorrectionLatencyEnum.NO_DELAY_COMP
     )
     """
-    Delay compensation setting that either delays the signal by the amount chosen by the settings or not.
+    Delay compensation setting that either
+    delays the signal by the amount chosen by the settings or not.
     """
 
 
 class RealChannelDescription(DataStructure):
-    """Information needed to specify a real input/output in the :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`."""
+    """
+    Information needed to specify a real input/output in the
+    :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`.
+    """
 
     marker_debug_mode_enable: bool = False
     """
-    Setting to send 4 ns trigger pulse on the marker located next to the I/O port along with each operation.
+    Setting to send 4 ns trigger pulse on the marker located
+    next to the I/O port along with each operation.
     The marker will be pulled high at the same time as the module starts playing or acquiring.
     """
     mix_lo: bool = True
-    """Whether IQ mixing with a local oscillator is enabled for this channel. Effectively always ``True`` for RF modules."""
+    """Whether IQ mixing with a local oscillator is enabled for this channel.
+    Effectively always ``True`` for RF modules."""
     distortion_correction_latency_compensation: int = (
         DistortionCorrectionLatencyEnum.NO_DELAY_COMP
     )
     """
-    Delay compensation setting that either delays the signal by the amount chosen by the settings or not.
+    Delay compensation setting that either
+    delays the signal by the amount chosen by the settings or not.
     """
 
 
 class DigitalChannelDescription(DataStructure):
-    """Information needed to specify a digital (marker) output (for :class:`~.quantify_scheduler.operations.pulse_library.MarkerPulse`) in the :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`."""
+    """
+    Information needed to specify a digital (marker) output
+    (for :class:`~.quantify_scheduler.operations.pulse_library.MarkerPulse`) in the
+    :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`.
+    """
 
     distortion_correction_latency_compensation: int = (
         DistortionCorrectionLatencyEnum.NO_DELAY_COMP
     )
     """
-    Delay compensation setting that either delays the signal by the amount chosen by the settings or not.
+    Delay compensation setting that either
+    delays the signal by the amount chosen by the settings or not.
     """
 
 
@@ -872,7 +895,10 @@ class DescriptionAnnotationsGettersMixin:
 
 
 class QRMDescription(DataStructure, DescriptionAnnotationsGettersMixin):
-    """Information needed to specify a QRM in the :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`."""
+    """
+    Information needed to specify a QRM in the
+    :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`.
+    """
 
     instrument_type: Literal["QRM"]
     """The instrument type of this module."""
@@ -901,7 +927,10 @@ class QRMDescription(DataStructure, DescriptionAnnotationsGettersMixin):
 
 
 class QCMDescription(DataStructure, DescriptionAnnotationsGettersMixin):
-    """Information needed to specify a QCM in the :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`."""
+    """
+    Information needed to specify a QCM in the
+    :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`.
+    """
 
     instrument_type: Literal["QCM"]
     """The instrument type of this module."""
@@ -930,7 +959,10 @@ class QCMDescription(DataStructure, DescriptionAnnotationsGettersMixin):
 
 
 class QRMRFDescription(DataStructure, DescriptionAnnotationsGettersMixin):
-    """Information needed to specify a QRM-RF in the :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`."""
+    """
+    Information needed to specify a QRM-RF in the
+    :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`.
+    """
 
     instrument_type: Literal["QRM_RF"]
     """The instrument type of this module."""
@@ -947,7 +979,10 @@ class QRMRFDescription(DataStructure, DescriptionAnnotationsGettersMixin):
 
 
 class QCMRFDescription(DataStructure, DescriptionAnnotationsGettersMixin):
-    """Information needed to specify a QCM-RF in the :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`."""
+    """
+    Information needed to specify a QCM-RF in the
+    :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`.
+    """
 
     instrument_type: Literal["QCM_RF"]
     """The instrument type of this module."""
@@ -964,7 +999,10 @@ class QCMRFDescription(DataStructure, DescriptionAnnotationsGettersMixin):
 
 
 class QTMDescription(DataStructure, DescriptionAnnotationsGettersMixin):
-    """Information needed to specify a QTM in the :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`."""
+    """
+    Information needed to specify a QTM in the
+    :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`.
+    """
 
     instrument_type: Literal["QTM"]
     """The instrument type of this module."""
@@ -1049,8 +1087,9 @@ The supported instrument types are:
 class ClusterDescription(QbloxBaseDescription):
     """Information needed to specify a Cluster in the :class:`~.CompilationConfig`."""
 
-    instrument_type: Literal["Cluster"]  # type: ignore  (valid override)
-    """The instrument type, used to select this datastructure when parsing a :class:`~.CompilationConfig`."""
+    instrument_type: Literal["Cluster"]  # type: ignore  # (valid override)
+    """The instrument type, used to select this datastructure
+    when parsing a :class:`~.CompilationConfig`."""
     modules: Dict[int, ClusterModuleDescription] = {}
     """Description of the modules of this Cluster, using slot index as key."""
     ip: Optional[str] = None
@@ -1109,9 +1148,9 @@ class ComplexInputGain(DataStructure):
             }
     """
 
-    gain_I: int
+    gain_I: int  # noqa: N815, capital I allowed here
     """Gain setting on the input receiving the I-component data for this port-clock combination."""
-    gain_Q: int
+    gain_Q: int  # noqa: N815, capital Q allowed here
     """Gain setting on the input receiving the Q-component data for this port-clock combination."""
 
 
@@ -1172,9 +1211,9 @@ class QbloxMixerCorrections(MixerCorrections):
             }
     """
 
-    dc_offset_i: Optional[float] = None  # type: ignore  (optional due to AMC)
+    dc_offset_i: Optional[float] = None  # type: ignore  # (optional due to AMC)
     """The DC offset on the I channel used for this port-clock combination."""
-    dc_offset_q: Optional[float] = None  # type: ignore  (optional due to AMC)
+    dc_offset_q: Optional[float] = None  # type: ignore  # (optional due to AMC)
     """The DC offset on the Q channel used for this port-clock combination."""
     amp_ratio: float = Field(
         default=DEFAULT_MIXER_AMP_RATIO, ge=MIN_MIXER_AMP_RATIO, le=MAX_MIXER_AMP_RATIO
@@ -1284,7 +1323,7 @@ class SequencerOptions(DataStructure):
     """
     qasm_hook_func: Optional[Callable] = None
     """
-    Function to inject custom qasm instructions after the compiler inserts the 
+    Function to inject custom qasm instructions after the compiler inserts the
     footer and the stop instruction in the generated qasm program.
     """
 

@@ -5,7 +5,9 @@ import importlib
 from typing import Any
 
 
-def import_python_object_from_string(function_string: str) -> Any:
+def import_python_object_from_string(
+    function_string: str,
+) -> Any:  # noqa ANN401  (can return Any object)
     """
     Import a python object from a string.
 
@@ -20,7 +22,9 @@ def import_python_object_from_string(function_string: str) -> Any:
     return func
 
 
-def export_python_object_to_path_string(obj: Any) -> str:
+def export_python_object_to_path_string(
+    obj: Any,  # noqa: ANN401  (object can't be a build in type)
+) -> str:
     """
     Get the absolute path (dot-separated) to a python object.
 
@@ -36,11 +40,9 @@ def export_python_object_to_path_string(obj: Any) -> str:
     -------
     str
         A string containing a dot-separated absolute path to the object.
+
     """
     module = obj.__module__
     name = obj.__name__
-    if module == "__main__":
-        path = name
-    else:
-        path = ".".join([module, name])
+    path = name if module == "__main__" else ".".join([module, name])
     return path

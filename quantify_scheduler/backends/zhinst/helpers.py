@@ -6,13 +6,14 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Any
-
-import numpy as np
-from zhinst import qcodes
-from zhinst.qcodes import base
+from typing import TYPE_CHECKING, Any
 
 from quantify_scheduler.helpers import time
+
+if TYPE_CHECKING:
+    import numpy as np
+    from zhinst import qcodes
+    from zhinst.qcodes import base
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,7 @@ def get_value(instrument: base.ZIBaseInstrument, node: str) -> np.ndarray:
     -------
     :
         The node value.
+
     """
     if not node.startswith(f"/{instrument._serial}"):
         node = f"/{instrument._serial}/{node}"
@@ -40,7 +42,7 @@ def get_value(instrument: base.ZIBaseInstrument, node: str) -> np.ndarray:
 def set_value(
     instrument: base.ZIBaseInstrument,
     node: str,
-    value,
+    value: object,
 ) -> None:
     """
     Sets the value of a ZI node.
@@ -53,6 +55,7 @@ def set_value(
         The node path.
     value :
         The new node value.
+
     """
     if not node.startswith(f"/{instrument._serial}"):
         node = f"/{instrument._serial}/{node}"
@@ -73,6 +76,7 @@ def set_values(
         The instrument.
     value :
         The dictionary with nodes and values.
+
     """
     logger.debug(value)
     instrument._controller._set(value)
@@ -96,6 +100,7 @@ def set_vector(
         The node path.
     value :
         The new node vector value.
+
     """
     if not node.startswith(f"/{instrument._serial}"):
         node = f"/{instrument._serial}/{node}"
@@ -122,6 +127,7 @@ def set_awg_value(
         The node path.
     value :
         The new node value.
+
     """
     logger.debug(node)
 
@@ -135,7 +141,7 @@ def set_and_compile_awg_seqc(
     awg_index: int,
     node: str,
     value: str,
-):
+) -> None:
     """
     Uploads and compiles the AWG sequencer program.
 
@@ -151,6 +157,7 @@ def set_and_compile_awg_seqc(
         The seqc program.
     waveforms_dict:
         The new waveforms for comparison.
+
     """
     awgs = [instrument.awg] if not hasattr(instrument, "awgs") else instrument.awgs
     awg = awgs[awg_index]
@@ -208,6 +215,7 @@ def set_wave_vector(
         The wave index.
     vector :
         The vector value.
+
     """
     path: str = f"awgs/{awg_index:d}/waveform/waves/{wave_index:d}"
     set_vector(instrument, path, vector)
@@ -229,6 +237,7 @@ def set_commandtable_data(
         The awg index.
     json_data :
         The json data.
+
     """
     if not isinstance(json_data, str):
         json_data = json.dumps(json_data)
@@ -250,6 +259,7 @@ def get_directory(awg: qcodes.hdawg.AWG) -> Path:
     -------
     :
         The path of this directory.
+
     """
     return Path(awg._awg._module.get_string("directory"))
 
@@ -267,6 +277,7 @@ def get_src_directory(awg: qcodes.hdawg.AWG) -> Path:
     -------
     :
         The path to the source directory.
+
     """
     return get_directory(awg).joinpath("awg", "src")
 
@@ -284,6 +295,7 @@ def get_waves_directory(awg: qcodes.hdawg.AWG) -> Path:
     -------
     :
         The path to the waves directory.
+
     """
     return get_directory(awg).joinpath("awg", "waves")
 
@@ -306,6 +318,7 @@ def write_seqc_file(awg: qcodes.hdawg.AWG, contents: str, filename: str) -> Path
     -------
     :
         Returns the path which was written.
+
     """
     path = get_src_directory(awg).joinpath(filename)
     path.write_text(contents)
@@ -331,6 +344,7 @@ def get_waveform_table(
     -------
     :
         The waveform table dictionary.
+
     """
     waveform_table: dict[int, int] = dict()
     index = 0
@@ -366,6 +380,7 @@ def get_readout_channel_bitmask(readout_channels_count: int) -> str:
     -------
     :
         The channel bitmask.
+
     """
     assert readout_channels_count <= 10
 
@@ -393,6 +408,7 @@ def get_sampling_rates(base_sampling_rate: float) -> dict[int, int]:
     dict[int, int]
         The node value and corresponding sampling rate.
         e.g. {0: 2400000, 1:1200000, ...} for the HDAWG.
+
     """
     return dict(
         map(

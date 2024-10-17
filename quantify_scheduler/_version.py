@@ -1,5 +1,6 @@
 # Code in this file based on 'miniver': https://github.com/jbweston/miniver
 #
+import contextlib
 import os
 from collections import namedtuple
 
@@ -48,7 +49,7 @@ def pep440_format(version_info):
         if release.endswith("-dev") or release.endswith(".dev"):
             version_parts.append(dev)
         else:  # prefer PEP440 over strict adhesion to semver
-            version_parts.append(".dev{}".format(dev))
+            version_parts.append(f".dev{dev}")
 
     if labels:
         version_parts.append("+")
@@ -129,14 +130,14 @@ def get_version_from_git_archive(version_info):
         # variables not expanded during 'git archive'
         return None
 
-    VTAG = "tag: v"
+    version_tag = "tag: v"
     refs = set(r.strip() for r in refnames.split(","))
-    version_tags = set(r[len(VTAG) :] for r in refs if r.startswith(VTAG))
+    version_tags = set(r[len(version_tag) :] for r in refs if r.startswith(version_tag))
     if version_tags:
         release, *_ = sorted(version_tags)  # prefer e.g. "2.0" over "2.0rc1"
         return Version(release, dev=None, labels=None)
     else:
-        return Version(UNKNOWN_VERSION, dev=None, labels=["g{}".format(git_hash)])
+        return Version(UNKNOWN_VERSION, dev=None, labels=[f"g{git_hash}"])
 
 
 __version__ = get_version()
@@ -147,17 +148,14 @@ __version__ = get_version()
 # global is used (but not modified).
 
 
-def _write_version(fname):
+def _write_version(fname) -> None:
     # This could be a hard link, so try to delete it first.  Is there any way
     # to do this atomically together with opening?
-    try:
+    with contextlib.suppress(OSError):
         os.remove(fname)
-    except OSError:
-        pass
     with open(fname, "w") as f:
         f.write(
-            "# This file has been created by setup.py.\n"
-            "version = '{}'\n".format(__version__)
+            "# This file has been created by setup.py.\n" f"version = '{__version__}'\n"
         )
 
 
@@ -165,8 +163,8 @@ def get_cmdclass(pkg_source_path):
     from setuptools.command.build_py import build_py as build_py_orig
     from setuptools.command.sdist import sdist as sdist_orig
 
-    class _build_py(build_py_orig):
-        def run(self):
+    class _build_py(build_py_orig):  # noqa: N801 incorrect class format
+        def run(self) -> None:
             super().run()
 
             src_marker = "".join(["src", os.path.sep])
@@ -177,8 +175,8 @@ def get_cmdclass(pkg_source_path):
                 path = pkg_source_path
             _write_version(os.path.join(self.build_lib, path, STATIC_VERSION_FILE))
 
-    class _sdist(sdist_orig):
-        def make_release_tree(self, base_dir, files):
+    class _sdist(sdist_orig):  # noqa: N801 incorrect class format
+        def make_release_tree(self, base_dir, files) -> None:
             super().make_release_tree(base_dir, files)
             _write_version(os.path.join(base_dir, pkg_source_path, STATIC_VERSION_FILE))
 

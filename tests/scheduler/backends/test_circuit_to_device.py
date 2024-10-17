@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pytest
@@ -24,7 +25,6 @@ from quantify_scheduler.device_under_test.mock_setup import (
     set_standard_params_transmon,
     set_up_mock_transmon_setup,
 )
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.control_flow_library import LoopOperation
 from quantify_scheduler.operations.gate_library import (
@@ -41,7 +41,6 @@ from quantify_scheduler.operations.gate_library import (
     Y,
     Z,
 )
-from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_compensation_library import (
     PulseCompensation,
 )
@@ -57,6 +56,10 @@ from quantify_scheduler.operations.pulse_library import (
 )
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.schedules.schedule import Schedule, ScheduleBase
+
+if TYPE_CHECKING:
+    from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+    from quantify_scheduler.operations.operation import Operation
 
 
 def test_compile_all_gates_example_transmon_cfg(device_cfg_transmon_example):
@@ -872,7 +875,12 @@ def test_set_reference_magnitude(mock_setup_basic_transmon, get_subschedule_oper
         ).operations.values()
     }
     assert measure_q2_operations_dict_with_repr_keys[
-        "SquarePulse(amp=0.25,duration=3e-07,port='q2:res',clock='q2.ro',reference_magnitude=ReferenceMagnitude(value=20, unit='dBm'),t0=0)"
+        (
+            "SquarePulse(amp=0.25,duration=3e-07,"
+            "port='q2:res',"
+            "clock='q2.ro',"
+            "reference_magnitude=ReferenceMagnitude(value=20, unit='dBm'),t0=0)"
+        )
     ]["pulse_info"][0]["reference_magnitude"] == ReferenceMagnitude(20, "dBm")
 
     measure_q3_operations_dict_with_repr_keys = {

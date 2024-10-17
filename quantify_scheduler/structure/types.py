@@ -76,6 +76,7 @@ class NDArray(np.ndarray):
             Dictionary that has ``"data"``, ``"shape"`` and ``"dtype"`` keys.",
             where data is a base64-encoded bytes array, shape is a tuple and dtype is
             a string representation of a Numpy data type.
+
         """
         return (
             np.frombuffer(

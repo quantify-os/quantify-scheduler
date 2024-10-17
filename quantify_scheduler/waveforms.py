@@ -11,7 +11,7 @@ the flux sensitivity and interaction strengths and qubit frequencies.
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Sized
+from typing import TYPE_CHECKING, Literal, Sized
 
 import numpy as np
 from scipy import interpolate, signal
@@ -59,6 +59,7 @@ def staircase(
     -------
     :
         The real valued waveform.
+
     """
     amp_step = (final_amp - start_amp) / (num_steps - 1)
     t_arr_plateau_len = int(len(t) // num_steps)
@@ -128,6 +129,7 @@ def chirp(t: np.ndarray, amp: float, start_freq: float, end_freq: float) -> np.n
     -------
     :
         The complex waveform.
+
     """
     chirp_rate = (end_freq - start_freq) / (t[-1] - t[0])
     return amp * np.exp(1.0j * 2 * np.pi * (chirp_rate * t / 2 + start_freq) * t)
@@ -141,7 +143,7 @@ def drag(
     nr_sigma: float,
     sigma: float | int | None = None,
     phase: float = 0,
-    subtract_offset: str = "average",
+    subtract_offset: Literal["average", "first", "last", "none"] = "average",
 ) -> np.ndarray:
     r"""
     Generates a DRAG pulse consisting of a Gaussian :math:`G` as the I- and a
@@ -236,9 +238,9 @@ def drag(
 
 def sudden_net_zero(
     t: np.ndarray,
-    amp_A: float,
-    amp_B: float,
-    net_zero_A_scale: float,
+    amp_A: float,  # noqa N803
+    amp_B: float,  # noqa N803
+    net_zero_A_scale: float,  # noqa N803: upper case in variable
     t_pulse: float,
     t_phi: float,
     t_integral_correction: float,
@@ -304,6 +306,7 @@ def sudden_net_zero(
     t_integral_correction
         The duration in which any non-zero pulse amplitude needs to be
         corrected. The duration is rounded to the sample rate of the ``t`` array.
+
     """
     sampling_rate = t[1] - t[0]
     single_arm_samples = int(t_pulse / 2 / sampling_rate)
@@ -362,6 +365,7 @@ def interpolated_complex_waveform(
     -------
     :
         An array containing the interpolated values.
+
     """
     samples = np.array(samples)
 
@@ -432,6 +436,7 @@ def rotate_wave(wave: np.ndarray, phase: float) -> np.ndarray:
     -------
     :
         Rotated complex waveform.
+
     """
     angle = np.deg2rad(phase)
 
@@ -491,15 +496,15 @@ def skewed_hermite(
 
     """
     # Hermite factors are taken from paper cited in docstring.
-    PI_HERMITE_FACTOR = 0.956
-    PI2_HERMITE_FACTOR = 0.667
+    pi_hermite_factor = 0.956
+    pi2_hermite_factor = 0.667
 
     # Determine parameters based on switches:
     #   - characteristic time of hermite polynomial
     #   - hermite factor
     #   - center position of pulse
     t_hermite = duration / duration_over_char_time
-    hermite_factor = PI2_HERMITE_FACTOR if pi2_pulse else PI_HERMITE_FACTOR
+    hermite_factor = pi2_hermite_factor if pi2_pulse else pi_hermite_factor
     if center is None:
         center = duration / 2.0
 
@@ -511,7 +516,7 @@ def skewed_hermite(
     h_t = (1 - hermite_factor * normalized_time**2) * np.exp(-(normalized_time**2))
 
     # I and Q components
-    I = amplitude * h_t
+    I = amplitude * h_t  # noqa: E741 ambiguous rules about ambiguousness
     Q = (
         amplitude
         * (skewness / np.pi)

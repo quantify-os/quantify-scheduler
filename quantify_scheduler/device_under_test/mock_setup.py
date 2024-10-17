@@ -92,7 +92,7 @@ def set_up_mock_transmon_setup() -> dict:
     }
 
 
-def set_standard_params_transmon(mock_setup):
+def set_standard_params_transmon(mock_setup: dict) -> None:
     """
     Set somewhat standard parameters to the mock setup generated above.
 
@@ -147,11 +147,11 @@ def set_standard_params_transmon(mock_setup):
 
     for i in range(5):
         qi: BasicTransmonElement = mock_setup[f"q{i}"]
-        sample_rate_MHz = 500
+        sample_rate = 500  # MHz
         acq_duration_us = 2
-        qi.measure.acq_weights_a(np.ones(sample_rate_MHz * acq_duration_us) * 0.6)
-        qi.measure.acq_weights_b(np.ones(sample_rate_MHz * acq_duration_us) * 0.4)
-        qi.measure.acq_weights_sampling_rate(sample_rate_MHz * 1e6)
+        qi.measure.acq_weights_a(np.ones(sample_rate * acq_duration_us) * 0.6)
+        qi.measure.acq_weights_b(np.ones(sample_rate * acq_duration_us) * 0.4)
+        qi.measure.acq_weights_sampling_rate(sample_rate * 1e6)
         qi.measure.acq_weight_type("Numerical")
 
 
@@ -165,6 +165,7 @@ def set_up_mock_basic_nv_setup() -> dict:
     -------
         All instruments created. Containing a "quantum_device", electronic qubit "qe0",
         "meas_ctrl" and "instrument_coordinator".
+
     """
     meas_ctrl = MeasurementControl("meas_ctrl")
     instrument_coordinator = InstrumentCoordinator(

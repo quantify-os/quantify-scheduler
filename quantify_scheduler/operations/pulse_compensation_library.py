@@ -39,6 +39,7 @@ class PulseCompensation(Operation):
         Grid time of the duration of the compensation pulse.
     sampling_rate
         Sampling rate for pulse integration calculation.
+
     """
 
     def __init__(

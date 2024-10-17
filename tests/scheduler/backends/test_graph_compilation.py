@@ -24,24 +24,24 @@ def dummy_compile_add_reset_q0(schedule: Schedule, config=None) -> Schedule:
     return schedule
 
 
-dummy_node_A = SimpleNode(
+dummy_node_a = SimpleNode(
     name="dummy_node_A",
     compilation_func=dummy_compile_add_reset_q0,
 )
 
 
-dummy_node_B = SimpleNode(
+dummy_node_b = SimpleNode(
     name="dummy_node_B",
     compilation_func=dummy_compile_add_reset_q0,
 )
 
-dummy_node_C = SimpleNode(
+dummy_node_c = SimpleNode(
     name="dummy_node_C",
     compilation_func=dummy_compile_add_reset_q0,
 )
 
 
-dummy_node_D = SimpleNode(
+dummy_node_d = SimpleNode(
     name="dummy_node_D",
     compilation_func=dummy_compile_add_reset_q0,
 )
@@ -64,12 +64,12 @@ def test_draw_backend():
     # uncoupled from the configs.
     quantify_compilation._task_graph = nx.DiGraph()
 
-    quantify_compilation._task_graph.add_node(dummy_node_A)
-    quantify_compilation._task_graph.add_node(dummy_node_B)
-    quantify_compilation._task_graph.add_edge(dummy_node_A, dummy_node_B)
+    quantify_compilation._task_graph.add_node(dummy_node_a)
+    quantify_compilation._task_graph.add_node(dummy_node_b)
+    quantify_compilation._task_graph.add_edge(dummy_node_a, dummy_node_b)
 
-    quantify_compilation._task_graph.add_edge(dummy_node_C, dummy_node_B)
-    quantify_compilation._task_graph.add_edge(dummy_node_C, dummy_node_A)
+    quantify_compilation._task_graph.add_edge(dummy_node_c, dummy_node_b)
+    quantify_compilation._task_graph.add_edge(dummy_node_c, dummy_node_a)
 
     ax = quantify_compilation.draw()
     assert isinstance(ax, Axes)

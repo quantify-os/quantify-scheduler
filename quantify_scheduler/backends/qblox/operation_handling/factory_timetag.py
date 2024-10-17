@@ -38,6 +38,7 @@ def get_operation_strategy(
     -------
     :
         The instantiated strategy object.
+
     """
     if operation_info.is_acquisition:
         return _get_acquisition_strategy(operation_info)

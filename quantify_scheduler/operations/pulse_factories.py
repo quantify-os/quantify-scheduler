@@ -61,6 +61,7 @@ def rxy_drag_pulse(
     -------
     :
         DRAGPulse operation.
+
     """
     # G_amp is the gaussian amplitude introduced in
     # https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.103.110501
@@ -116,6 +117,7 @@ def rxy_gauss_pulse(
     -------
     :
         GaussPulse operation.
+
     """
     # theta is in degrees, and
     # amp180 is the amplitude necessary to get the
@@ -151,6 +153,7 @@ def phase_shift(
     -------
     :
         ShiftClockPhase operation.
+
     """
     return pulse_library.ShiftClockPhase(
         phase_shift=theta,
@@ -205,6 +208,7 @@ def composite_square_pulse(
     -------
     :
         SquarePulse operation.
+
     """
     # Start the flux pulse
     composite_pulse = pulse_library.SquarePulse(
@@ -273,6 +277,7 @@ def rxy_hermite_pulse(
     -------
     :
         GaussPulse operation.
+
     """
     # theta is in degrees, and
     # amp180 is the amplitude necessary to get the
@@ -324,6 +329,7 @@ def nv_spec_pulse_mw(
     -------
     :
         Hermite pulse operation
+
     """
     return pulse_library.SkewedHermitePulse(
         duration=duration,

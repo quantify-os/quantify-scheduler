@@ -269,7 +269,8 @@ class LocalOscillatorDescription(DataStructure):
     instrument_name: str | None = None
     """The QCoDeS instrument name corresponding to this Local Oscillator."""
     generic_icc_name: str | None = None
-    """The name of the :class:`~.GenericInstrumentCoordinatorComponent` corresponding to this Local Oscillator."""
+    """The name of the :class:`~.GenericInstrumentCoordinatorComponent`
+    corresponding to this Local Oscillator."""
     frequency_param: str = "frequency"
     """The QCoDeS parameter that is used to set the LO frequency."""
     power_param: str = "power"
@@ -311,7 +312,8 @@ class HardwareDescription(DataStructure):
     Specifies a piece of hardware and its instrument-specific settings.
 
     Each supported instrument type should have its own datastructure that inherits from
-    this class. For examples, see :class:`~quantify_scheduler.backends.types.qblox.ClusterDescription`,
+    this class.
+    For examples, see :class:`~quantify_scheduler.backends.types.qblox.ClusterDescription`,
     :class:`~quantify_scheduler.backends.types.zhinst.ZIHDAWG4Description`,
     :class:`~.LocalOscillatorDescription`.
 
@@ -410,6 +412,7 @@ class Connectivity(DataStructure):
         -------
         :
             Matplotlib axis on which the figure is plotted.
+
         """
         if ax is None:
             _, ax = plt.subplots(figsize=figsize)
@@ -487,7 +490,7 @@ class HardwareCompilationConfig(DataStructure):
         validate_default=True,
     )
     """
-    A reference to the ``HardwareCompilationConfig`` DataStructure for the backend 
+    A reference to the ``HardwareCompilationConfig`` DataStructure for the backend
     that is used.
     """
     hardware_description: dict[str, HardwareDescription]
@@ -509,7 +512,7 @@ class HardwareCompilationConfig(DataStructure):
     """
     compilation_passes: list[SimpleNodeConfig] = []
     """
-    The list of compilation nodes that should be called in succession to compile a 
+    The list of compilation nodes that should be called in succession to compile a
     schedule to instructions for the control hardware.
     """
 
@@ -569,7 +572,8 @@ class HardwareCompilationConfig(DataStructure):
                     ] = "QuantumDevice"
                 else:
                     raise ValueError(
-                        "Invalid node format. Must be 'instrument.port' or 'qubit_name:port'."
+                        "Invalid node format. "
+                        "Must be 'instrument.port' or 'qubit_name:port'."
                     )
         return self
 
@@ -578,11 +582,13 @@ class HardwareCompilationConfig(DataStructure):
         if isinstance(self.connectivity, dict):
             if self.hardware_description != {}:
                 raise ValueError(
-                    "Hardware description must be empty when using old-style hardware config dictionary."
+                    "Hardware description must be empty "
+                    "when using old-style hardware config dictionary."
                 )
             for _, hw_option in self.hardware_options:
                 if hw_option is not None:
                     raise ValueError(
-                        "Hardware options must be empty when using old-style hardware config dictionary."
+                        "Hardware options must be empty "
+                        "when using old-style hardware config dictionary."
                     )
         return self

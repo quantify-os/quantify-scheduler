@@ -8,16 +8,21 @@ using matplotlib.
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
 import matplotlib.patches
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.axes import Axes
 
 # For type hints, import modules to avoid circular dependencies
-from matplotlib.figure import Figure
+from sqlalchemy.testing.plugin.plugin_base import warnings
 
+from quantify_core.utilities import deprecated
 from quantify_scheduler.schedules._visualization import constants
+
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
+    from matplotlib.figure import Figure
 
 logger = logging.getLogger(__name__)
 
@@ -85,14 +90,14 @@ def new_pulse_subplot(fig: Figure, *args, **kwargs) -> Axes:
     return ax
 
 
-def mwPulse(
+def mw_pulse(
     ax: Axes,
     pos: float,
     y_offs: float = 0.0,
     width: float = 1.5,
     amp: float = 1,
     label: str | None = None,
-    phase=0,
+    phase: float = 0,
     label_height: float = 1.3,
     color: str = constants.COLOR_ORANGE,
     modulation: str = "normal",
@@ -105,25 +110,18 @@ def mwPulse(
     ----------
     ax :
         Axis to plot on.
-
     pos :
         Position of the pulse.
-
     y_offs :
         Vertical offset of the pulse.
-
     width :
         Width of the pulse.
-
     amp :
         Amplitude
-
     label :
         Label to add to the pulse.
-
     label_height :
         Height of the label.
-
     color :
         Color of the pulse.
 
@@ -136,18 +134,18 @@ def mwPulse(
 
     """
     x = np.linspace(pos, pos + width, 100)
-    envPos = amp * np.exp(-((x - (pos + width / 2)) ** 2) / (width / 4) ** 2)
-    envNeg = -amp * np.exp(-((x - (pos + width / 2)) ** 2) / (width / 4) ** 2)
+    env_pos = amp * np.exp(-((x - (pos + width / 2)) ** 2) / (width / 4) ** 2)
+    env_neg = -amp * np.exp(-((x - (pos + width / 2)) ** 2) / (width / 4) ** 2)
 
     if modulation == "normal":
-        mod = envPos * np.sin(2 * np.pi * 3 / width * x + phase)
+        mod = env_pos * np.sin(2 * np.pi * 3 / width * x + phase)
     elif modulation == "high":
-        mod = envPos * np.sin(5 * np.pi * 3 / width * x + phase)
+        mod = env_pos * np.sin(5 * np.pi * 3 / width * x + phase)
     else:
         raise ValueError()
 
-    ax.plot(x, envPos + y_offs, "--", color=color, **plot_kws)
-    ax.plot(x, envNeg + y_offs, "--", color=color, **plot_kws)
+    ax.plot(x, env_pos + y_offs, "--", color=color, **plot_kws)
+    ax.plot(x, env_neg + y_offs, "--", color=color, **plot_kws)
     ax.plot(x, mod + y_offs, "-", color=color, **plot_kws)
 
     if label is not None:
@@ -162,7 +160,7 @@ def mwPulse(
     return pos + width
 
 
-def fluxPulse(
+def flux_pulse(
     ax: Axes,
     pos: float,
     y_offs: float = 0.0,
@@ -232,7 +230,7 @@ def fluxPulse(
     return pos + width
 
 
-def ramZPulse(
+def ram_Z_pulse(  # noqa N802 uppercase Z is allowed here
     ax: Axes,
     pos: float,
     y_offs: float = 0.0,
@@ -275,19 +273,19 @@ def ramZPulse(
     :
 
     """
-    xLeft = np.linspace(pos, pos + sep, 100)
-    xRight = np.linspace(pos + sep, pos + width, 100)
-    xFull = np.concatenate((xLeft, xRight))
+    x_left = np.linspace(pos, pos + sep, 100)
+    x_right = np.linspace(pos + sep, pos + width, 100)
+    x_full = np.concatenate((x_left, x_right))
     y = amp / (
-        (np.exp(-(xFull - (pos + 5.5 * s)) / s) + 1)
-        * (np.exp((xFull - (pos + width - 5.5 * s)) / s) + 1)
+        (np.exp(-(x_full - (pos + 5.5 * s)) / s) + 1)
+        * (np.exp((x_full - (pos + width - 5.5 * s)) / s) + 1)
     )
-    yLeft = y[: len(xLeft)]
+    y_left = y[: len(x_left)]
 
     ax.fill_between(
-        xLeft, yLeft + y_offs, y_offs, alpha=0.3, color=color, linewidth=0.0
+        x_left, y_left + y_offs, y_offs, alpha=0.3, color=color, linewidth=0.0
     )
-    ax.plot(xFull, y + y_offs, color=color)
+    ax.plot(x_full, y + y_offs, color=color)
 
     return pos + width
 
@@ -401,10 +399,7 @@ def meter(
     :
 
     """
-    if fillcolor is None:
-        fill = False
-    else:
-        fill = True
+    fill = fillcolor is not None
     p1 = matplotlib.patches.Rectangle(
         (x0 - width / 2, y0 - height / 2 + y_offs),
         width,
@@ -482,10 +477,7 @@ def box_text(
     :
 
     """
-    if fillcolor is None:
-        fill = False
-    else:
-        fill = True
+    fill = fillcolor is not None
     p1 = matplotlib.patches.Rectangle(
         (x0 - width / 2, y0 - height / 2),
         width,
@@ -508,3 +500,33 @@ def box_text(
         size=fontsize,
         color=textcolor,
     ).set_clip_on(True)
+
+
+@deprecated("0.25.0", mw_pulse)
+def mwPulse(*args, **kwargs):  # noqa ANN202, N802 deprecated
+    warnings.warn(
+        "mwPulse has been renamed to mw_pulse and will be removed in"
+        "and will be removed in quantify_scheduler >= 0.25",
+        FutureWarning,
+    )
+    return mw_pulse(*args, **kwargs)
+
+
+@deprecated("0.25.0", flux_pulse)
+def fluxPulse(*args, **kwargs):  # noqa ANN202, N802 deprecated
+    warnings.warn(
+        "fluxPulse has been renamed to mwPulse and will be removed in"
+        "and will be removed in quantify_scheduler >= 0.25",
+        FutureWarning,
+    )
+    return flux_pulse(*args, **kwargs)
+
+
+@deprecated("0.25.0", ram_Z_pulse)
+def ramZPulse(*args, **kwargs):  # noqa ANN202, N802 deprecated
+    warnings.warn(
+        "fluxZPulse has been renamed to ram-Z-pulse "
+        "and will be removed in quantify_scheduler >= 0.25",
+        FutureWarning,
+    )
+    return ram_Z_pulse(*args, **kwargs)

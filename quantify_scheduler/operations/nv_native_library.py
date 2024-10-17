@@ -24,6 +24,7 @@ class ChargeReset(Operation):
     qubit
         The qubit to charge-reset. NB one or more qubits can be specified, e.g.,
         :code:`ChargeReset("qe0")`, :code:`ChargeReset("qe0", "qe1", "qe2")`, etc..
+
     """
 
     def __init__(self, *qubits: str) -> None:
@@ -76,6 +77,7 @@ class CRCount(Operation):
         The binning mode that is to be used. If not None, it will overwrite
         the binning mode used for Measurements in the quantum-circuit to
         quantum-device compilation step.
+
     """
 
     def __init__(

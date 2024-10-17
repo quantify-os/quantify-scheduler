@@ -34,7 +34,7 @@ from quantify_scheduler.instrument_coordinator.components.base import (
 from quantify_scheduler.operations.acquisition_library import Trace
 from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 from quantify_scheduler.structure.model import DataStructure
-from quantify_scheduler.structure.types import NDArray  # noqa: TCH001
+from quantify_scheduler.structure.types import NDArray  # noqa: TCH001, pydantic
 
 
 class MockReadoutModule:
@@ -151,7 +151,8 @@ class MockROMInstrumentCoordinatorComponent(InstrumentCoordinatorComponentBase):
 
     def __init__(self, mock_rom: MockReadoutModule) -> None:
         # The InstrumentCoordinatorComponentBase.__new__ currently requires a QCoDeS instrument
-        # Create a dummy instrument to be compatible with InstrumentCoordinatorComponentBase.__init__
+        # Create a dummy instrument to be compatible with
+        # InstrumentCoordinatorComponentBase.__init__
         instrument = InstrumentBase(name=mock_rom.name)
         super().__init__(instrument)
         self.rom = mock_rom
@@ -196,7 +197,7 @@ class MockROMInstrumentCoordinatorComponent(InstrumentCoordinatorComponentBase):
                 acq_channel_results.append(
                     {
                         acq_channel: xr.DataArray(
-                            # Should be one avaraged array
+                            # Should be one averaged array
                             complex_data.reshape((1, -1)),
                             dims=(
                                 f"acq_index_{acq_channel}",
@@ -218,7 +219,7 @@ class MockROMInstrumentCoordinatorComponent(InstrumentCoordinatorComponentBase):
 
     def get_hardware_log(self, compiled_schedule: CompiledSchedule) -> None:
         """Return the hardware log."""
-        return None
+        pass
 
 
 def hardware_compile(  # noqa: PLR0912, PLR0915

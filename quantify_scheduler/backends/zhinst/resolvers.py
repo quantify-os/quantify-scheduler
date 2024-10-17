@@ -3,10 +3,13 @@
 
 from __future__ import annotations
 
-import numpy as np
-from zhinst import qcodes
+from typing import TYPE_CHECKING
 
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
+
+if TYPE_CHECKING:
+    import numpy as np
+    from zhinst import qcodes
 
 
 def monitor_acquisition_resolver(
@@ -22,6 +25,7 @@ def monitor_acquisition_resolver(
     ----------
     uhfqa
     monitor_nodes
+
     """
     (node_i, node_q) = monitor_nodes
     results_i = zi_helpers.get_value(uhfqa, node_i)
@@ -42,6 +46,7 @@ def result_acquisition_resolver(
     ----------
     uhfqa
     result_nodes
+
     """
     vals_node0 = zi_helpers.get_value(uhfqa, result_nodes[0])
     vals_node1 = zi_helpers.get_value(uhfqa, result_nodes[1])

@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from qcodes.instrument import InstrumentChannel
 from qcodes.instrument.parameter import ManualParameter
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 class CZ(InstrumentChannel):
     """Submodule containing parameters for performing a CZ operation."""
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
         super().__init__(parent=parent, name=name)
         self.square_amp = ManualParameter(
             "square_amp",
@@ -79,7 +79,7 @@ class CompositeSquareEdge(Edge):
         parent_element_name: str,
         child_element_name: str,
         **kwargs,
-    ):
+    ) -> None:
         cz_data = kwargs.pop("cz", {})
 
         super().__init__(

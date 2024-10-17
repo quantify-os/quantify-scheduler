@@ -25,7 +25,7 @@ class ReferenceMagnitude:
     unit: Literal["V", "dBm", "A"]
 
     @classmethod
-    def from_parameter(cls, parameter: InstrumentChannel):
+    def from_parameter(cls, parameter: InstrumentChannel) -> ReferenceMagnitude | None:
         """Initialize from ReferenceMagnitude QCoDeS InstrumentChannel values."""
         value, unit = parameter.get_val_unit()
         if np.isnan(value):
@@ -35,7 +35,7 @@ class ReferenceMagnitude:
 
         return cls(value, unit)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.value, self.unit))
 
 
@@ -60,6 +60,7 @@ class ShiftClockPhase(Operation):
         to the start time of the Operation in the Schedule.
     duration
         (deprecated) The duration of the operation in seconds.
+
     """
 
     def __init__(
@@ -68,7 +69,7 @@ class ShiftClockPhase(Operation):
         clock: str,
         t0: float = 0,
         duration: float = 0.0,
-    ):
+    ) -> None:
         if duration != 0.0:
             warnings.warn(
                 "The duration parameter will be removed in quantify-scheduler >= "
@@ -101,9 +102,10 @@ class ResetClockPhase(Operation):
     ----------
     clock
         The clock of which to reset the phase.
+
     """
 
-    def __init__(self, clock: str, t0: float = 0):
+    def __init__(self, clock: str, t0: float = 0) -> None:
         super().__init__(name=self.__class__.__name__)
         self.data["pulse_info"] = [
             {
@@ -137,12 +139,14 @@ class SetClockFrequency(Operation):
     clock
         The clock for which a new frequency is to be set.
     clock_freq_new
-        The new frequency in Hz. If None, it will reset to the clock frequency set by the configuration or resource.
+        The new frequency in Hz.
+        If None, it will reset to the clock frequency set by the configuration or resource.
     t0
         Time in seconds when to execute the command relative to the start time of
         the Operation in the Schedule.
     duration
         (deprecated) The duration of the operation in seconds.
+
     """
 
     def __init__(
@@ -151,7 +155,7 @@ class SetClockFrequency(Operation):
         clock_freq_new: float | None,
         t0: float = 0,
         duration: float = 0.0,
-    ):
+    ) -> None:
         if duration != 0.0:
             warnings.warn(
                 "The duration parameter will be removed in quantify-scheduler >= "
@@ -204,6 +208,7 @@ class VoltageOffset(Operation):
     reference_magnitude :
         Scaling value and unit for the unitless amplitude. Uses settings in
         hardware config if not provided.
+
     """
 
     @deprecated_arg_alias(
@@ -253,9 +258,10 @@ class IdlePulse(Operation):
     ----------
     duration
         The duration of idle time in seconds.
+
     """
 
-    def __init__(self, duration: float):
+    def __init__(self, duration: float) -> None:
         super().__init__(name=self.__class__.__name__)
         self.data["pulse_info"] = [
             {
@@ -304,6 +310,7 @@ class RampPulse(Operation):
         Time in seconds when to start the pulses relative
         to the start time
         of the Operation in the Schedule.
+
     """
 
     def __init__(
@@ -315,7 +322,7 @@ class RampPulse(Operation):
         reference_magnitude: ReferenceMagnitude | None = None,
         offset: float = 0,
         t0: float = 0,
-    ):
+    ) -> None:
         super().__init__(name=self.__class__.__name__)
         self.data["pulse_info"] = [
             {
@@ -363,6 +370,7 @@ class StaircasePulse(Operation):
     t0
         Time in seconds when to start the pulses relative to the start time
         of the Operation in the Schedule.
+
     """
 
     def __init__(
@@ -375,7 +383,7 @@ class StaircasePulse(Operation):
         clock: str = BasebandClockResource.IDENTITY,
         reference_magnitude: ReferenceMagnitude | None = None,
         t0: float = 0,
-    ):
+    ) -> None:
         super().__init__(name=self.__class__.__name__)
         self.data["pulse_info"] = [
             {
@@ -416,6 +424,7 @@ class MarkerPulse(Operation):
         be specified if a custom clock name is used for a digital channel (for example,
         when a port-clock combination of a device element is used with a digital
         channel).
+
     """
 
     def __init__(
@@ -424,7 +433,7 @@ class MarkerPulse(Operation):
         port: str,
         t0: float = 0,
         clock: str = DigitalClockResource.IDENTITY,
-    ):
+    ) -> None:
         super().__init__(name=self.__class__.__name__)
         self.data["pulse_info"] = [
             {
@@ -464,6 +473,7 @@ class SquarePulse(Operation):
     t0
         Time in seconds when to start the pulses relative to the start time
         of the Operation in the Schedule.
+
     """
 
     def __init__(
@@ -474,7 +484,7 @@ class SquarePulse(Operation):
         clock: str = BasebandClockResource.IDENTITY,
         reference_magnitude: ReferenceMagnitude | None = None,
         t0: float = 0,
-    ):
+    ) -> None:
         super().__init__(name=self.__class__.__name__)
         self.data["pulse_info"] = [
             {
@@ -529,13 +539,14 @@ class SuddenNetZeroPulse(Operation):
     t0
         Time in seconds when to start the pulses relative to the start time
         of the Operation in the Schedule.
+
     """
 
     def __init__(
         self,
-        amp_A: float,
-        amp_B: float,
-        net_zero_A_scale: float,
+        amp_A: float,  # noqa N803: upper case in variable
+        amp_B: float,  # noqa N803: upper case in variable
+        net_zero_A_scale: float,  # noqa N803: upper case in variable
         t_pulse: float,
         t_phi: float,
         t_integral_correction: float,
@@ -543,7 +554,7 @@ class SuddenNetZeroPulse(Operation):
         clock: str = BasebandClockResource.IDENTITY,
         reference_magnitude: ReferenceMagnitude | None = None,
         t0: float = 0,
-    ):
+    ) -> None:
         duration = t_pulse + t_phi + t_integral_correction
 
         super().__init__(name=self.__class__.__name__)
@@ -598,6 +609,7 @@ def decompose_long_square_pulse(
     -------
     :
         A list of :class`SquarePulse` s equivalent to the desired long pulse.
+
     """
     # Sanity checks
     validator_dur = validators.Numbers(min_value=0.0, max_value=7 * 24 * 3600.0)
@@ -639,6 +651,7 @@ class SoftSquarePulse(Operation):
     t0
         Time in seconds when to start the pulses relative to the start time
         of the Operation in the Schedule.
+
     """
 
     def __init__(
@@ -649,7 +662,7 @@ class SoftSquarePulse(Operation):
         clock: str = BasebandClockResource.IDENTITY,
         reference_magnitude: ReferenceMagnitude | None = None,
         t0: float = 0,
-    ):
+    ) -> None:
         super().__init__(name=self.__class__.__name__)
         self.data["pulse_info"] = [
             {
@@ -693,6 +706,7 @@ class ChirpPulse(Operation):
         hardware config if not provided.
     t0
         Shift of the start time with respect to the start of the operation.
+
     """
 
     def __init__(
@@ -705,7 +719,7 @@ class ChirpPulse(Operation):
         end_freq: float,
         reference_magnitude: ReferenceMagnitude | None = None,
         t0: float = 0,
-    ):
+    ) -> None:
         super().__init__(name=self.__class__.__name__)
         self.data["pulse_info"] = [
             {
@@ -763,6 +777,7 @@ class DRAGPulse(Operation):
     t0
         Time in seconds when to start the pulses relative to the start time
         of the Operation in the Schedule.
+
     """
 
     def __init__(
@@ -776,7 +791,7 @@ class DRAGPulse(Operation):
         reference_magnitude: ReferenceMagnitude | None = None,
         sigma: float = None,
         t0: float = 0,
-    ):
+    ) -> None:
         super().__init__(name=self.__class__.__name__)
         self.data["pulse_info"] = [
             {
@@ -806,7 +821,8 @@ class GaussPulse(Operation):
     amplitude and sigma.
     If sigma is not specified it is set to 1/4 of the duration.
 
-    The waveform is generated using :func:`.waveforms.drag` whith a D_amp set to zero, corresponding to a Gaussian pulse.
+    The waveform is generated using :func:`.waveforms.drag` whith a D_amp set to zero,
+    corresponding to a Gaussian pulse.
 
     Parameters
     ----------
@@ -830,6 +846,7 @@ class GaussPulse(Operation):
     t0
         Time in seconds when to start the pulses relative to the start time
         of the Operation in the Schedule.
+
     """
 
     def __init__(
@@ -842,7 +859,7 @@ class GaussPulse(Operation):
         reference_magnitude: ReferenceMagnitude | None = None,
         sigma: float = None,
         t0: float = 0,
-    ):
+    ) -> None:
         super().__init__(name=self.__class__.__name__)
         self.data["pulse_info"] = [
             {
@@ -872,7 +889,7 @@ def create_dc_compensation_pulse(
     port: str,
     t0: float = 0,
     amp: float | None = None,
-    reference_magnitude: ReferenceMagnitude | None = None,
+    reference_magnitude: ReferenceMagnitude | None = None,  # noqa: ARG001
     duration: float | None = None,
 ) -> SquarePulse:
     """
@@ -908,8 +925,8 @@ def create_dc_compensation_pulse(
     clock
         Clock used to modulate the pulse.
     reference_magnitude
-            Scaling value and unit for the unitless amplitude. Uses settings in
-            hardware config if not provided.
+        Scaling value and unit for the unitless amplitude. Uses settings in
+        hardware config if not provided.
     phase
         Phase of the pulse in degrees.
     t0
@@ -920,6 +937,7 @@ def create_dc_compensation_pulse(
     -------
     :
         Returns a SquarePulse object that compensates all pulses passed as argument.
+
     """
 
     def _extract_pulses(pulses: list[Operation], port: str) -> list[dict[str, Any]]:
@@ -960,10 +978,7 @@ def create_dc_compensation_pulse(
         c_duration = duration
         c_amp = -area / c_duration
     elif amp is not None and duration is None:
-        if area > 0:
-            c_amp = -abs(amp)
-        else:
-            c_amp = abs(amp)
+        c_amp = -abs(amp) if area > 0 else abs(amp)
         c_duration = abs(area / c_amp)
     else:
         raise ValueError(
@@ -992,7 +1007,7 @@ class WindowOperation(Operation):
         window_name: str,
         duration: float,
         t0: float = 0.0,
-    ):
+    ) -> None:
         super().__init__(name=self.__class__.__name__)
         self.data["pulse_info"] = [
             {
@@ -1045,6 +1060,7 @@ class NumericalPulse(Operation):
     interpolation
         Specifies the type of interpolation used. This is passed as the "kind"
         argument to `scipy.interpolate.interp1d`.
+
     """
 
     def __init__(
@@ -1056,7 +1072,7 @@ class NumericalPulse(Operation):
         reference_magnitude: ReferenceMagnitude | None = None,
         t0: float = 0,
         interpolation: str = "linear",
-    ):
+    ) -> None:
         def make_list_from_array(val: np.ndarray[float] | list[float]) -> list[float]:
             """Needed since numpy arrays break the (de)serialization code (#146)."""
             if isinstance(val, np.ndarray):
@@ -1115,6 +1131,7 @@ class SkewedHermitePulse(Operation):
     t0
         Time in seconds when to start the pulses relative to the start time
         of the Operation in the Schedule. By default 0.
+
     """
 
     def __init__(
@@ -1127,7 +1144,7 @@ class SkewedHermitePulse(Operation):
         clock: str,
         reference_magnitude: ReferenceMagnitude | None = None,
         t0: float = 0,
-    ):
+    ) -> None:
         super().__init__(name=self.__class__.__name__)
         self.data["pulse_info"] = [
             {
@@ -1168,6 +1185,7 @@ class Timestamp(Operation):
     t0
         Time offset (in seconds) of this Operation, relative to the start time in the
         Schedule. By default 0.
+
     """
 
     def __init__(
@@ -1175,7 +1193,7 @@ class Timestamp(Operation):
         port: str,
         t0: float = 0,
         clock: str = DigitalClockResource.IDENTITY,
-    ):
+    ) -> None:
         super().__init__(name=self.__class__.__name__)
         self.data["pulse_info"] = [
             {

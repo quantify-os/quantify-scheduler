@@ -14,6 +14,7 @@ import numpy as np
 
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.types.qblox import (
+    BoundedParameter,
     ComplexChannelDescription,
     DigitalChannelDescription,
     OpInfo,
@@ -62,6 +63,7 @@ def generate_waveform_data(
     TypeError
         If ``data_dict`` does not contain a ``'duration'`` entry and ``duration is
         None``.
+
     """
     try:
         duration_validated = duration or data_dict["duration"]
@@ -81,7 +83,7 @@ def generate_waveform_data(
     return wf_data
 
 
-def generate_waveform_names_from_uuid(uuid: Any) -> tuple[str, str]:
+def generate_waveform_names_from_uuid(uuid: object) -> tuple[str, str]:
     """
     Generates names for the I and Q parts of the complex waveform based on a unique
     identifier for the pulse/acquisition.
@@ -97,6 +99,7 @@ def generate_waveform_names_from_uuid(uuid: Any) -> tuple[str, str]:
         Name for the I waveform.
     uuid_Q:
         Name for the Q waveform.
+
     """
     return f"{str(uuid)}_I", f"{str(uuid)}_Q"
 
@@ -117,6 +120,7 @@ def generate_uuid_from_wf_data(wf_data: np.ndarray, decimals: int = 12) -> str:
     -------
     :
         A unique identifier.
+
     """
     waveform_hash = hash(wf_data.round(decimals=decimals).tobytes())
     return str(waveform_hash)
@@ -142,12 +146,13 @@ def add_to_wf_dict_if_unique(wf_dict: dict[str, Any], waveform: np.ndarray) -> i
         The uuid of the waveform.
     int
         The index.
+
     """
 
     def generate_entry(name: str, data: np.ndarray, idx: int) -> dict[str, Any]:
         return {name: {"data": data.tolist(), "index": idx}}
 
-    def find_first_free_wf_index():
+    def find_first_free_wf_index() -> int:
         index = 0
         reserved_indices = [wf_dict[uuid]["index"] for uuid in wf_dict]
         while index in reserved_indices:
@@ -198,6 +203,7 @@ def generate_waveform_dict(waveforms_complex: dict[str, np.ndarray]) -> dict[str
 
             # {'12345_I': {'data': [1, 2], 'index': 0},
             # '12345_Q': {'data': [0, 0], 'index': 1}}
+
     """
     wf_dict = {}
     for idx, (uuid, complex_data) in enumerate(waveforms_complex.items()):
@@ -236,6 +242,7 @@ def to_grid_time(time: float, grid_time_ns: int = constants.GRID_TIME) -> int:
     ------
     ValueError
         If ``time`` is not a multiple of :data:`~.constants.GRID_TIME` within the tolerance.
+
     """
     time_ns_float = time * 1e9
     time_ns = int(round(time_ns_float))
@@ -280,6 +287,7 @@ def is_multiple_of_grid_time(
     -------
     :
         ``True`` if ``time`` is a multiple of the grid time, ``False`` otherwise.
+
     """
     try:
         _ = to_grid_time(time=time, grid_time_ns=grid_time_ns)
@@ -304,6 +312,7 @@ def get_nco_phase_arguments(phase_deg: float) -> int:
     -------
     :
         The int corresponding to the phase argument.
+
     """
     phase_deg %= 360
     return round(phase_deg * constants.NCO_PHASE_STEPS_PER_DEG)
@@ -327,6 +336,7 @@ def get_nco_set_frequency_arguments(frequency_hz: float) -> int:
     ------
     ValueError
         If the frequency_hz is out of range.
+
     """
     frequency_steps = round(frequency_hz * constants.NCO_FREQ_STEPS_PER_HZ)
 
@@ -355,7 +365,7 @@ class Frequencies:
     LO: float | None = None
     IF: float | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.clock is None or math.isnan(self.clock):
             raise ValueError(f"Clock frequency must be specified ({self.clock=}).")
         if self.LO is not None and math.isnan(self.LO):
@@ -426,7 +436,8 @@ def determine_clock_lo_interm_freqs(
     ValueError
         In case ``mix_lo`` is ``True`` and neither LO frequency nor IF has been supplied.
     ValueError
-        In case ``mix_lo`` is ``True`` and both LO frequency and IF have been supplied and do not adhere to
+        In case ``mix_lo`` is ``True`` and both LO frequency
+        and IF have been supplied and do not adhere to
         :math:`f_{RF} = f_{LO} + f_{IF}`.
 
     """
@@ -469,28 +480,28 @@ def determine_clock_lo_interm_freqs(
                 "If mix_lo=False is specified, the IF must also be supplied "
                 f"({freqs.IF=})."
             )
-    else:
-        if freqs.LO is None and freqs.IF is None:
+    elif freqs.LO is None and freqs.IF is None:
+        raise ValueError(
+            f"Frequency settings underconstrained for {freqs.clock=}."
+            f" Neither LO nor IF supplied ({freqs.LO=}, {freqs.IF=})."
+        )
+    elif freqs.LO is not None and freqs.IF is not None:
+        if not math.isclose(freqs.LO + freqs.IF, freqs.clock):
             raise ValueError(
-                f"Frequency settings underconstrained for {freqs.clock=}."
-                f" Neither LO nor IF supplied ({freqs.LO=}, {freqs.IF=})."
+                f"Frequency settings overconstrained."
+                f" {freqs.clock=} must be equal to "
+                f"{freqs.LO=}+{freqs.IF=} when both are supplied."
             )
-        elif freqs.LO is not None and freqs.IF is not None:
-            if not math.isclose(freqs.LO + freqs.IF, freqs.clock):
-                raise ValueError(
-                    f"Frequency settings overconstrained."
-                    f" {freqs.clock=} must be equal to {freqs.LO=}+{freqs.IF=} if both are supplied."
-                )
-        elif freqs.LO is None and freqs.IF is not None:
-            freqs.LO = freqs.clock - freqs.IF
-        elif freqs.LO is not None and freqs.IF is None:
-            freqs.IF = freqs.clock - freqs.LO
+    elif freqs.LO is None and freqs.IF is not None:
+        freqs.LO = freqs.clock - freqs.IF
+    elif freqs.LO is not None and freqs.IF is None:
+        freqs.IF = freqs.clock - freqs.LO
 
     return ValidatedFrequencies(clock=freqs.clock, LO=freqs.LO, IF=freqs.IF)  # type: ignore
 
 
 def generate_port_clock_to_device_map(
-    device_compilers: dict[str, Any]
+    device_compilers: dict[str, Any],
 ) -> dict[str, str]:
     """
     Generates a mapping that specifies which port-clock combinations belong to which
@@ -518,11 +529,12 @@ def generate_port_clock_to_device_map(
     ------
     ValueError
         If a port-clock combination occurs multiple times in the hardware configuration.
+
     """
     portclock_map = {}
     for device_name, device_compiler in device_compilers.items():
         if hasattr(device_compiler, "portclock_to_path"):
-            for portclock in device_compiler.portclock_to_path.keys():
+            for portclock in device_compiler.portclock_to_path:
                 portclock_map[portclock] = device_name
 
     return portclock_map
@@ -538,6 +550,7 @@ class LoopBegin(Operation):
         number of repetitions
     t0 : float, optional
         time offset, by default 0
+
     """
 
     def __init__(self, repetitions: int, t0: float = 0) -> None:
@@ -569,7 +582,6 @@ class LoopBegin(Operation):
 class ConditionalBegin(Operation):
     """
     Operation to indicate the beginning of a conditional.
-
 
     Parameters
     ----------
@@ -656,6 +668,7 @@ class _ControlFlowReturn(Operation):
     ----------
     t0 : float, optional
         time offset, by default 0
+
     """
 
     def __init__(self, t0: float = 0) -> None:
@@ -730,7 +743,7 @@ def _get_list_of_operations_for_op_info_creation(
 def assign_pulse_and_acq_info_to_devices(
     schedule: Schedule,
     device_compilers: dict[str, ClusterCompiler],
-):
+) -> None:
     """
     Traverses the schedule and generates `OpInfo` objects for every pulse and
     acquisition, and assigns it to the correct `ClusterCompiler`.
@@ -753,6 +766,7 @@ def assign_pulse_and_acq_info_to_devices(
     KeyError
         This exception is raised when attempting to assign an acquisition with a
         port-clock combination that is not defined in the hardware configuration.
+
     """
     portclock_mapping = generate_port_clock_to_device_map(device_compilers)
 
@@ -792,7 +806,8 @@ def assign_pulse_and_acq_info_to_devices(
 
             if pulse_data.get("reference_magnitude", None) is not None:
                 warnings.warn(
-                    "reference_magnitude parameter not implemented. This parameter will be ignored.",
+                    "reference_magnitude parameter not implemented. "
+                    "This parameter will be ignored.",
                     RuntimeWarning,
                 )
 
@@ -862,7 +877,7 @@ def assign_pulse_and_acq_info_to_devices(
 
 
 def calc_from_units_volt(
-    voltage_range, name: str, param_name: str, offset: float | None
+    voltage_range: BoundedParameter, name: str, param_name: str, offset: float | None
 ) -> float | None:
     """
     Helper method to calculate the offset from mV or V.
@@ -921,7 +936,9 @@ def calc_from_units_volt(
     return calculated_offset
 
 
-def single_scope_mode_acquisition_raise(sequencer_0, sequencer_1, module_name):
+def single_scope_mode_acquisition_raise(
+    sequencer_0: int, sequencer_1: int, module_name: str
+) -> None:
     """
     Raises an error stating that only one scope mode acquisition can be used per module.
 
@@ -938,6 +955,7 @@ def single_scope_mode_acquisition_raise(sequencer_0, sequencer_1, module_name):
     ------
     ValueError
         Always raises the error message.
+
     """
     raise ValueError(
         f"Both sequencer '{sequencer_0}' and '{sequencer_1}' "
@@ -949,7 +967,7 @@ def single_scope_mode_acquisition_raise(sequencer_0, sequencer_1, module_name):
     )
 
 
-def _generate_new_style_hardware_compilation_config(
+def _generate_new_style_hardware_compilation_config(  # noqa PLR0915 too many statements. Remove on duplication
     old_style_config: dict,
 ) -> dict:
     """
@@ -1380,8 +1398,9 @@ def _generate_new_style_hardware_compilation_config(
         "The hardware configuration dictionary is deprecated and will not be supported in "
         "quantify-scheduler >= 1.0.0. Please use a `HardwareCompilationConfig` instead. For "
         "more information on how to migrate from old- to new-style hardware specification, "
-        "please visit https://quantify-os.org/docs/quantify-scheduler/dev/examples/hardware_config_migration.html "
-        "in the documentation.",
+        "please visit "
+        "https://quantify-os.org/docs/quantify-scheduler/dev/examples/hardware_config_migration.html"  # noqa: E501 Line too long
+        " in the documentation.",
         FutureWarning,
     )
 
@@ -1403,7 +1422,8 @@ def _generate_new_style_hardware_compilation_config(
             new_style_config["hardware_options"][hw_cfg_key] = hw_cfg_value
         elif "instrument_type" not in hw_cfg_value:
             warnings.warn(
-                f"Skipping hardware config entry '{hw_cfg_key}' because it does not specify an instrument type."
+                f"Skipping hardware config entry '{hw_cfg_key}' "
+                f"because it does not specify an instrument type."
             )
         elif hw_cfg_value["instrument_type"] == "Cluster":
             _convert_cluster_config(
@@ -1426,6 +1446,7 @@ def _generate_new_style_hardware_compilation_config(
                     )
         else:
             raise ValueError(
-                f"Unexpected instrument_type {hw_cfg_value['instrument_type']} in old-style hardware config."
+                f"Unexpected instrument_type {hw_cfg_value['instrument_type']} "
+                f"in old-style hardware config."
             )
     return new_style_config

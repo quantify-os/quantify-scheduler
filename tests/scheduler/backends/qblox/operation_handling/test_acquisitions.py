@@ -885,7 +885,8 @@ def test_custom_long_trace_acquisition_measurement_control(
     meas_ctrl.gettables(sched_gettable)
     with pytest.warns(
         FutureWarning,
-        match="The format of acquisition data of looped measurements in APPEND mode will change in a future quantify-scheduler revision.",
+        match="The format of acquisition data of looped measurements in APPEND mode "
+        "will change in a future quantify-scheduler revision.",
     ):
         dataset = meas_ctrl.run(f"Readout long trace schedule of {q2.name}")
 
@@ -2068,11 +2069,12 @@ def test_multi_real_input_hardware_cfg_trigger_count(
     instr_coordinator.remove_component("ic_cluster0")
 
 
+# TODO split up into smaller units
 @pytest.mark.parametrize(
     "module_under_test",
     [ClusterType.CLUSTER_QRM_RF, ClusterType.CLUSTER_QRM],
 )
-def test_trace_acquisition_instrument_coordinator(
+def test_trace_acquisition_instrument_coordinator(  # noqa PLR915 Too many statements
     mocker,
     mock_setup_basic_transmon_with_standard_params,
     make_cluster_component,
@@ -2786,7 +2788,8 @@ def test_looped_measurements(mock_setup_basic_transmon, make_cluster_component):
 
     with pytest.warns(
         FutureWarning,
-        match="The format of acquisition data of looped measurements in APPEND mode will change in a future quantify-scheduler revision.",
+        match="The format of acquisition data of looped measurements in APPEND mode "
+        "will change in a future quantify-scheduler revision.",
     ):
         data = instr_coordinator.retrieve_acquisition()
 

@@ -3,7 +3,7 @@
 """Module containing schedules for common spectroscopy experiments."""
 from __future__ import annotations
 
-import numpy as np
+from typing import TYPE_CHECKING
 
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
@@ -17,6 +17,9 @@ from quantify_scheduler.operations.pulse_library import (
 from quantify_scheduler.operations.shared_native_library import SpectroscopyOperation
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.schedule import Schedule
+
+if TYPE_CHECKING:
+    import numpy as np
 
 
 def heterodyne_spec_sched(
@@ -58,6 +61,7 @@ def heterodyne_spec_sched(
     port_out
         Output port on the device where the pulse should be applied. If `None`, then use
         the same as `port`.
+
     """
     sched = Schedule("Heterodyne spectroscopy", repetitions)
     sched.add_resource(ClockResource(name=clock, freq=frequency))
@@ -186,7 +190,8 @@ def heterodyne_spec_sched_nco(
     port_out
         Output port on the device where the pulse should be applied. If `None`, then use
         the same as `port`.
-    """
+
+    """  # noqa: E501 Line too long
     sched = Schedule("Fast heterodyne spectroscopy (NCO sweep)", repetitions)
     sched.add_resource(ClockResource(name=clock, freq=frequencies.flat[0]))
 
@@ -283,6 +288,7 @@ def two_tone_spec_sched(
         The relaxation time or dead time.
     repetitions
         The amount of times the Schedule will be repeated.
+
     """
     sched = Schedule("Two-tone spectroscopy", repetitions)
     sched.add_resource(ClockResource(name=spec_pulse_clock, freq=spec_pulse_frequency))
@@ -451,6 +457,7 @@ def two_tone_spec_sched_nco(
         The relaxation time or dead time.
     repetitions
         The amount of times the Schedule will be repeated.
+
     """
     sched = Schedule("Fast two-tone spectroscopy (NCO sweep)", repetitions)
     sched.add_resources(
@@ -532,6 +539,7 @@ def nv_dark_esr_sched(
     -------
     :
         Schedule with a single frequency
+
     """
     sched = Schedule("Dark ESR Schedule", repetitions=repetitions)
 
@@ -572,6 +580,7 @@ def nv_dark_esr_sched_nco(
     -------
     :
         Schedule with NCO frequency sweeping for spectroscopy operation.
+
     """
     sched = Schedule("Dark ESR Schedule (NCO sweep)", repetitions=repetitions)
 

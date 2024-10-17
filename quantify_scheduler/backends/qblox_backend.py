@@ -9,7 +9,7 @@ import warnings
 from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, Iterable, Literal
+from typing import TYPE_CHECKING, Any, Iterable, Literal
 
 import numpy as np
 from pydantic import Field, model_validator
@@ -61,7 +61,6 @@ from quantify_scheduler.operations.control_flow_library import (
     ControlFlowOperation,
     LoopOperation,
 )
-from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import (
     ResetClockPhase,
     SetClockFrequency,
@@ -74,6 +73,9 @@ from quantify_scheduler.schedules.schedule import (
     ScheduleBase,
 )
 from quantify_scheduler.structure.model import DataStructure
+
+if TYPE_CHECKING:
+    from quantify_scheduler.operations.operation import Operation
 
 
 def _replace_long_square_pulses_recursively(
@@ -91,6 +93,7 @@ def _replace_long_square_pulses_recursively(
     ----------
     operation
         An operation, possibly containing long square pulses.
+
     """
     if isinstance(operation, ScheduleBase):
         for inner_operation_id, inner_operation in operation.operations.items():
@@ -142,6 +145,7 @@ def _replace_long_square_pulses(
         not need to be replaced in the schedule or control flow.
     square_pulse_idx_to_replace
         The pulse indices that need to be replaced in the operation.
+
     """
     square_pulse_idx_to_replace.sort()
 
@@ -392,9 +396,11 @@ def compile_conditional_playback(  # noqa: D417
             if current_ongoing_conditional_acquire is None:
                 raise RuntimeError(
                     f"Conditional control flow, ``{operation}``,  found without a preceding "
-                    "Conditional acquisition. Please ensure that the preceding acquisition or Measure "
-                    "is conditional, by passing `feedback_trigger_label=qubit_name` to the "
-                    "corresponding operation, e.g.\n\n"
+                    "Conditional acquisition. "
+                    "Please ensure that the preceding acquisition or Measure is conditional, "
+                    "by passing `feedback_trigger_label=qubit_name` "
+                    "to the corresponding operation, "
+                    "e.g.\n\n"
                     "> schedule.add(Measure(qubit_name, ..., feedback_trigger_label=qubit_name))\n"
                 )
             else:
@@ -426,8 +432,8 @@ def compile_long_square_pulses_to_awg_offsets(  # noqa: D417
     longer than
     :class:`~quantify_scheduler.backends.qblox.constants.PULSE_STITCHING_DURATION`. Any
     of these square pulses are converted to
-    :func:`~quantify_scheduler.backends.qblox.operations.pulse_factories.long_square_pulse`, which
-    consist of AWG voltage offsets.
+    :func:`~quantify_scheduler.backends.qblox.operations.pulse_factories.long_square_pulse`,
+    which consist of AWG voltage offsets.
 
     If any operations are to be replaced, a deepcopy will be made of the schedule, which
     is returned by this function. Otherwise the original unmodified schedule will be
@@ -445,8 +451,9 @@ def compile_long_square_pulses_to_awg_offsets(  # noqa: D417
         The schedule with square pulses longer than
         :class:`~quantify_scheduler.backends.qblox.constants.PULSE_STITCHING_DURATION`
         replaced by
-        :func:`~quantify_scheduler.backends.qblox.operations.pulse_factories.long_square_pulse`. If no
-        replacements were done, this is the original unmodified schedule.
+        :func:`~quantify_scheduler.backends.qblox.operations.pulse_factories.long_square_pulse`.
+        If no replacements were done, this is the original unmodified schedule.
+
     """
     _replace_long_square_pulses_recursively(schedule)
     return schedule
@@ -583,7 +590,7 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
         ),
     ]
     """
-    The list of compilation nodes that should be called in succession to compile a 
+    The list of compilation nodes that should be called in succession to compile a
     schedule to instructions for the Qblox hardware.
     """
 
@@ -672,18 +679,20 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
                     # FIXME: https://qblox.atlassian.net/browse/SE-490
                     if mix_lo is not None and mix_lo is False:
                         warnings.warn(
-                            "Using `mix_lo=False` in channels coupled to lasers might cause ill-behavior. "
+                            "Using `mix_lo=False` in channels coupled to lasers "
+                            "might cause ill-behavior. "
                             "Please use quantify_scheduler=0.20.1.",
                             FutureWarning,
                         )
 
         return self
 
+    # TODO Remove together with deprecated  _generate_new_style_hardware_compilation_config
     @model_validator(mode="before")
     @classmethod
     def from_old_style_hardware_config(
-        cls: type[QbloxHardwareCompilationConfig], data: Any
-    ) -> Any:
+        cls, data: Any  # noqa: ANN401 deprecated
+    ) -> Any:  # noqa: ANN401 deprecated
         """Convert old style hardware config dict to new style before validation."""
         if (
             isinstance(data, dict)
@@ -695,12 +704,13 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
 
         return data
 
-    # TODO: Remove this validator (and test) when substituting `networkx.Graph` with `networkx.DiGraph` (SE-477)
+    # TODO: Remove this validator (and test)
+    #  when substituting `networkx.Graph` with `networkx.DiGraph` (SE-477)
     #       (introduced to find errors during conversion of hardware config versions)
     @model_validator(mode="after")
     def _validate_connectivity_graph_structure(self) -> QbloxHardwareCompilationConfig:
         """Validate connectivity graph structure."""
-        EXC_MESSAGE = (
+        exception_message = (
             "Channels, rf-signals of iq mixers and lo outputs must be source nodes "
             "(left), and ports and if/lo-signals of iq mixers must be target nodes (right)."
             "This error might be caused by duplicated ports in connectivity."
@@ -730,12 +740,12 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
                     or _is_iq_mixer(source, "lo")
                 ):
                     raise ValueError(
-                        f"Node {source} in connectivity graph is a source. {EXC_MESSAGE}"
+                        f"Node {source} in connectivity graph is a source. {exception_message}"
                     )
 
                 if _is_channel(target) or _is_lo(target) or _is_iq_mixer(target, "rf"):
                     raise ValueError(
-                        f"Node {target} in connectivity graph is a target. {EXC_MESSAGE}"
+                        f"Node {target} in connectivity graph is a target. {exception_message}"
                     )
 
         return self
@@ -744,10 +754,12 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
         self, portclocks_used: set[tuple]
     ) -> dict[str, Any]:
         """
-        Extract an instrument compiler config for each instrument mentioned in ``hardware_description``.
-        Each instrument config has a similar structure than ``QbloxHardwareCompilationConfig``, but
-        contains only the settings related to their related instrument. Each config must contain at least one
-        portclock referenced in ``portclocks_used``, otherwise the config is deleted.
+        Extract an instrument compiler config
+        for each instrument mentioned in ``hardware_description``.
+        Each instrument config has a similar structure as ``QbloxHardwareCompilationConfig``
+        , but contains only the settings related to their related instrument.
+        Each config must contain at least one ortclock referenced in ``portclocks_used``,
+        otherwise the config is deleted.
         """
         cluster_configs: dict[str, _ClusterCompilationConfig] = {}
         lo_configs: dict[str, _LocalOscillatorCompilationConfig] = {}
@@ -823,7 +835,7 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
             used_modules_idx = [
                 path.module_idx for path in cfg.portclock_to_path.values()
             ]
-            for module_idx in cfg.hardware_description.modules.keys():
+            for module_idx in cfg.hardware_description.modules:
                 if module_idx not in used_modules_idx:
                     unused_modules[instrument_name].append(module_idx)
 
@@ -975,7 +987,10 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
 
 
 class _LocalOscillatorCompilationConfig(DataStructure):
-    """Configuration values for a :class:`quantify_scheduler.backends.qblox.instrument_compilers.LocalOscillatorCompiler`."""
+    """
+    Configuration values for a
+    :class:`quantify_scheduler.backends.qblox.instrument_compilers.LocalOscillatorCompiler`.
+    """
 
     hardware_description: LocalOscillatorDescription
     """Description of the physical setup of this local oscillator."""
@@ -991,9 +1006,11 @@ class _ClusterCompilationConfig(DataStructure):
     hardware_options: QbloxHardwareOptions
     """Options that are used in compiling the instructions for the hardware."""
     portclock_to_path: dict[str, ChannelPath] = {}
-    """Mapping between portclocks and their associated channel name paths (e.g. cluster0.module1.complex_output_0)."""
+    """Mapping between portclocks and their associated channel name paths
+    (e.g. cluster0.module1.complex_output_0)."""
     lo_to_path: dict[str, ChannelPath] = {}
-    """Mapping between lo names and their associated channel name paths (e.g. cluster0.module1.complex_output_0)."""
+    """Mapping between lo names and their associated channel name paths
+    (e.g. cluster0.module1.complex_output_0)."""
     allow_off_grid_nco_ops: bool | None = None
     """
     Flag to allow NCO operations to play at times that are not aligned with the NCO
@@ -1061,9 +1078,11 @@ class _ClusterModuleCompilationConfig(DataStructure):
     hardware_options: QbloxHardwareOptions
     """Options that are used in compiling the instructions for the hardware."""
     portclock_to_path: dict[str, ChannelPath] = {}
-    """Mapping between portclocks and their associated channel name paths (e.g. cluster0.module1.complex_output_0)."""
+    """Mapping between portclocks and their associated channel name paths
+    (e.g. cluster0.module1.complex_output_0)."""
     lo_to_path: dict[str, ChannelPath] = {}
-    """Mapping between lo names and their associated channel name paths (e.g. cluster0.module1.complex_output_0)."""
+    """Mapping between lo names and their associated channel name paths
+    (e.g. cluster0.module1.complex_output_0)."""
     allow_off_grid_nco_ops: bool | None = None
     """
     Flag to allow NCO operations to play at times that are not aligned with the NCO
@@ -1152,13 +1171,15 @@ class _ClusterModuleCompilationConfig(DataStructure):
                 channel_name = self.portclock_to_path[portclock].channel_name
                 if ChannelMode.REAL in channel_name and isinstance(corrections, list):
                     raise ValueError(
-                        f"Several distortion corrections were assigned to portclock '{portclock}' which is a real channel, but only one correction is required."
+                        f"Several distortion corrections were assigned to portclock '{portclock}' "
+                        f"which is a real channel, but only one correction is required."
                     )
                 elif ChannelMode.COMPLEX in channel_name and isinstance(
                     corrections, QbloxHardwareDistortionCorrection
                 ):
                     raise ValueError(
-                        f"One distortion correction was assigned to portclock '{portclock}' which is a complex channel, but two corrections are required."
+                        f"One distortion correction was assigned to portclock '{portclock}' "
+                        f"which is a complex channel, but two corrections are required."
                     )
 
         return self
@@ -1181,13 +1202,15 @@ class _ClusterModuleCompilationConfig(DataStructure):
                     gain, ComplexInputGain
                 ):
                     raise ValueError(
-                        f"A complex input gain was assigned to portclock '{portclock}', which is a real channel."
+                        f"A complex input gain was assigned to portclock '{portclock}', "
+                        f"which is a real channel."
                     )
                 elif ChannelMode.COMPLEX in channel_name and isinstance(
                     gain, RealInputGain
                 ):
                     raise ValueError(
-                        f"A real input gain was assigned to portclock '{portclock}', which is a complex channel."
+                        f"A real input gain was assigned to portclock '{portclock}', "
+                        f"which is a complex channel."
                     )
 
         return self
@@ -1300,7 +1323,7 @@ def _add_clock_freqs_to_set_clock_frequency(
                 )
 
 
-def validate_non_overlapping_stitched_pulse(schedule: Schedule, **_: Any) -> None:
+def validate_non_overlapping_stitched_pulse(schedule: Schedule) -> None:
     """
     Raise an error when pulses overlap, if at least one contains a voltage offset.
 
@@ -1330,6 +1353,7 @@ def validate_non_overlapping_stitched_pulse(schedule: Schedule, **_: Any) -> Non
     RuntimeError
         If the schedule contains overlapping pulses (containing voltage offsets) on the
         same port and clock.
+
     """
     abs_times_and_operations: list[tuple[float, Operation]] = list()
     _all_abs_times_ops_with_voltage_offsets_pulses(
@@ -1460,7 +1484,7 @@ def _operation_end(abs_time_and_operation: tuple[float, Operation]) -> float:
     return abs_time + operation.duration
 
 
-def _check_nco_operations_on_nco_time_grid(schedule: Schedule, **_: Any) -> Schedule:
+def _check_nco_operations_on_nco_time_grid(schedule: Schedule) -> Schedule:
     """
     Check whether NCO operations are on the 4ns time grid _and_ sub-schedules (including
     control-flow) containing NCO operations start/end on the 4 ns time grid.
@@ -1493,6 +1517,7 @@ def _check_nco_operations_on_nco_time_grid_recursively(
     -------
     bool
         True if the operation is a, or contains NCO operation(s), else False.
+
     """
     contains_nco_op = False
     if isinstance(operation, Schedule):

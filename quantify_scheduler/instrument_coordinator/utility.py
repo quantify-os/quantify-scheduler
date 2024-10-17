@@ -1,14 +1,17 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Utility functions for the instrument coordinator and components."""
+from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING
 
 import numpy as np
 import xarray
-from qcodes.instrument.base import InstrumentBase
 from qcodes.parameters.parameter import Parameter
+
+if TYPE_CHECKING:
+    from qcodes.instrument.base import InstrumentBase
 
 logger = logging.getLogger(__name__)
 
@@ -36,14 +39,16 @@ def search_settable_param(
     root_param = instrument
     split_params = nested_parameter_name.split(".")
 
-    def _search_next_level(child_parameter_name, root_attr_dicts_list):
+    def _search_next_level(
+        child_parameter_name: str | Parameter, root_attr_dicts_list: list
+    ) -> Parameter | None:
+        if callable(child_parameter_name):
+            return child_parameter_name
         for root_attr_dict in root_attr_dicts_list:
-            if callable(child_parameter_name):
-                return child_parameter_name
             if child_parameter_name in root_attr_dict:
                 return root_attr_dict.get(child_parameter_name)
 
-        return None
+        return
 
     # Search for the parameter within the parameter, function
     # or submodule delegate_attrs_dict of the instrument
@@ -71,7 +76,7 @@ def search_settable_param(
 
 
 def parameter_value_same_as_cache(
-    instrument: InstrumentBase, parameter_name: str, val: Any
+    instrument: InstrumentBase, parameter_name: str, val: object
 ) -> bool:
     """
     Returns whether the value of a QCoDeS parameter is the same as the value in cache.
@@ -93,11 +98,12 @@ def parameter_value_same_as_cache(
     parameter = search_settable_param(
         instrument=instrument, nested_parameter_name=parameter_name
     )
-    # parameter.cache() throws for non-gettable parameters if the cache is invalid. This order prevents the exception.
+    # parameter.cache() throws for non-gettable parameters if the cache is invalid.
+    # This order prevents the exception.
     return parameter.cache.valid and parameter.cache() == val
 
 
-def lazy_set(instrument: InstrumentBase, parameter_name: str, val: Any) -> None:
+def lazy_set(instrument: InstrumentBase, parameter_name: str, val: object) -> None:
     """
     Set the value of a QCoDeS parameter only if it is different from the value in cache.
 
@@ -109,11 +115,13 @@ def lazy_set(instrument: InstrumentBase, parameter_name: str, val: Any) -> None:
         Name of the parameter to set.
     val:
         Value to set it to.
+
     """
     parameter = search_settable_param(
         instrument=instrument, nested_parameter_name=parameter_name
     )
-    # parameter.cache() throws for non-gettable parameters if the cache is invalid. This order prevents the exception.
+    # parameter.cache() throws for non-gettable parameters if the cache is invalid.
+    # This order prevents the exception.
     if not parameter_value_same_as_cache(instrument, parameter_name, val):
         parameter.set(val)
     else:
@@ -124,7 +132,7 @@ def lazy_set(instrument: InstrumentBase, parameter_name: str, val: Any) -> None:
 
 def check_already_existing_acquisition(
     new_dataset: xarray.Dataset, current_dataset: xarray.Dataset
-):
+) -> None:
     """
     Verifies non-overlapping data in new_dataset and current_dataset.
 
@@ -136,17 +144,22 @@ def check_already_existing_acquisition(
         New dataset.
     current_dataset
         Current dataset.
+
     """
     conflicting_indices_str = []
     for acq_channel, _data_array in new_dataset.items():
         if acq_channel in current_dataset:
-            # The return values are two `DataArray`s with only coordinates which are common in the inputs.
+            # The return values are two `DataArray`s with only coordinates
+            # which are common in the inputs.
             common_0, common_1 = xarray.align(
                 new_dataset[acq_channel], current_dataset[acq_channel], join="inner"
             )
+
             # We need to check if the values are `math.nan`, because if they are,
             # that means there is no value at that position (xarray standard).
-            mask_func = lambda x, y: 0 if (np.isnan(x) or np.isnan(y)) else 1
+            def mask_func(x: float, y: float) -> int:
+                return 0 if np.isnan(x) or np.isnan(y) else 1
+
             conflict_mask = xarray.apply_ufunc(
                 mask_func, common_0, common_1, vectorize=True
             )

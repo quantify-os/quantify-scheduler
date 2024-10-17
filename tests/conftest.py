@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-
-
 import pytest  # noqa
 
 from tests.fixtures.mock_setup import *  # noqa: F401

@@ -6,7 +6,7 @@ from __future__ import annotations
 import inspect
 import math
 from functools import partial
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 import numpy as np
 
@@ -14,7 +14,9 @@ from quantify_scheduler import math as math_helpers
 from quantify_scheduler import waveforms
 from quantify_scheduler.helpers import schedule as schedule_helpers
 from quantify_scheduler.helpers.importers import import_python_object_from_string
-from quantify_scheduler.schedules.schedule import Schedule
+
+if TYPE_CHECKING:
+    from quantify_scheduler.schedules.schedule import Schedule
 
 
 class GetWaveformPartial(Protocol):  # typing.Protocol
@@ -33,6 +35,7 @@ class GetWaveformPartial(Protocol):  # typing.Protocol
         -------
         :
             The waveform array.
+
         """
         ...
 
@@ -66,6 +69,7 @@ def resize_waveforms(waveforms_dict: dict[int, np.ndarray], granularity: int) ->
         The waveforms dictionary.
     granularity
         The granularity.
+
     """
     # Modify the list while iterating to avoid copies
     for pulse_id in waveforms_dict:
@@ -90,6 +94,7 @@ def resize_waveform(waveform: np.ndarray, granularity: int) -> np.ndarray:
     :
         The resized waveform with a length equal to
         `mod(len(waveform), granularity) == 0`.
+
     """
     size: int = len(waveform)
     if size == 0:
@@ -139,6 +144,7 @@ def shift_waveform(
         The sampling rate
     resolution
         The sequencer resolution.
+
     """
     start_in_samples_count = round(start_in_seconds * sampling_rate)
     samples_shift = start_in_samples_count % resolution
@@ -168,6 +174,7 @@ def get_waveform(
     -------
     :
         The waveform.
+
     """
     t: np.ndarray = np.arange(0, 0 + pulse_info["duration"], 1 / sampling_rate)
     wf_func: str = pulse_info["wf_func"]
@@ -189,6 +196,7 @@ def get_waveform_by_pulseid(
     ----------
     schedule
         The schedule.
+
     """
     pulseid_waveformfn_dict: dict[int, GetWaveformPartial] = {}
     for schedulable in schedule.schedulables.values():
@@ -234,6 +242,7 @@ def exec_waveform_partial(
     -------
     :
         The waveform array.
+
     """
     # Execute partial function get_waveform that already has
     # 'pulse_info' assigned. The following method execution
@@ -267,6 +276,7 @@ def exec_waveform_function(wf_func: str, t: np.ndarray, pulse_info: dict) -> np.
     -------
     :
         Returns the computed waveform.
+
     """
     whitelist: list[str] = ["square", "ramp", "soft_square", "drag"]
     fn_name: str = wf_func.split(".")[-1]
@@ -275,7 +285,7 @@ def exec_waveform_function(wf_func: str, t: np.ndarray, pulse_info: dict) -> np.
         if fn_name == "square":
             waveform = waveforms.square(t=t, amp=pulse_info["amp"])
         elif fn_name == "ramp":
-            if "offset" in pulse_info.keys():
+            if "offset" in pulse_info:
                 waveform = waveforms.ramp(
                     t=t, amp=pulse_info["amp"], offset=pulse_info["offset"]
                 )
@@ -324,6 +334,7 @@ def exec_custom_waveform_function(
     -------
     :
         Returns the computed waveform.
+
     """
     # Load the waveform function from string
     function = import_python_object_from_string(wf_func)
@@ -332,7 +343,7 @@ def exec_custom_waveform_function(
     # in pulse info
     par_map = inspect.signature(function).parameters
     wf_kwargs = {}
-    for key in par_map.keys():
+    for key in par_map:
         if key in pulse_info:
             wf_kwargs[key] = pulse_info[key]
 
@@ -374,9 +385,10 @@ def apply_mixer_skewness_corrections(
     :
         The complex valued waveform with the applied phase and amplitude
         corrections.
+
     """
 
-    def skew_real(_waveform: np.ndarray, alpha: float, phi: float):
+    def skew_real(_waveform: np.ndarray, alpha: float, phi: float) -> np.ndarray:
         original_amp = np.max(np.abs(_waveform.real))
         intermediate_wf = _waveform.real + _waveform.imag * np.tan(phi)
         new_amp = np.max(np.abs(intermediate_wf))
@@ -387,7 +399,7 @@ def apply_mixer_skewness_corrections(
         )
         return intermediate_wf * original_amp * np.sqrt(alpha)
 
-    def skew_imag(_waveform: np.ndarray, alpha: float, phi: float):
+    def skew_imag(_waveform: np.ndarray, alpha: float, phi: float) -> np.ndarray:
         original_amp = np.max(np.abs(_waveform.imag))
         intermediate_wf = _waveform.imag / np.cos(phi)
         new_amp = np.max(np.abs(intermediate_wf))
@@ -434,6 +446,7 @@ def modulate_waveform(
     -------
     :
         The modulated waveform
+
     """
     modulation = np.exp(1.0j * 2 * np.pi * freq * (t + t0))
     return envelope * modulation
@@ -461,6 +474,7 @@ def normalize_waveform_data(data: np.ndarray) -> tuple[np.ndarray, float, float]
         The original amplitude of the real part.
     amp_imag
         The original amplitude of the imaginary part.
+
     """
     amp_real_index = np.argmax(np.abs(data.real))
     amp_imag_index = np.argmax(np.abs(data.imag))
@@ -498,6 +512,7 @@ def area_pulses(pulses: list[dict[str, Any]], sampling_rate: float) -> float:
     -------
     :
         The area formed by all the pulses
+
     """
     area: float = 0.0
     for pulse in pulses:
@@ -528,6 +543,7 @@ def area_pulse(pulse: dict[str, Any], sampling_rate: float) -> float:
     -------
     :
         The area defined by the pulse
+
     """
     if not sampling_rate > 0:
         raise ValueError(

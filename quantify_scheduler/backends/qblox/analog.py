@@ -87,6 +87,7 @@ class AnalogSequencerCompiler(SequencerCompiler):
         differences between the different modules.
     sequencer_cfg
         The instrument compiler config associated to this device.
+
     """
 
     def __init__(
@@ -153,6 +154,7 @@ class AnalogSequencerCompiler(SequencerCompiler):
         -------
         :
             The settings set to this sequencer.
+
         """
         return self._settings
 
@@ -165,6 +167,7 @@ class AnalogSequencerCompiler(SequencerCompiler):
         -------
         :
             The frequency.
+
         """
         return self._settings.modulation_freq
 
@@ -183,6 +186,7 @@ class AnalogSequencerCompiler(SequencerCompiler):
         ValueError
             Attempting to set the modulation frequency to a new value even though a
             different value has been previously assigned.
+
         """
         if (
             self._settings.modulation_freq is not None
@@ -215,6 +219,7 @@ class AnalogSequencerCompiler(SequencerCompiler):
         -------
         :
             The instantiated strategy object.
+
         """
         return get_operation_strategy(operation_info, self.settings.channel_name)
 
@@ -226,6 +231,7 @@ class AnalogSequencerCompiler(SequencerCompiler):
         ----------
         op_strategy
             The operation strategy.
+
         """
         if op_strategy.operation_info.data.get("marker_pulse", False):
             # A digital pulse always uses one output.
@@ -251,6 +257,7 @@ class AnalogSequencerCompiler(SequencerCompiler):
             List of the acquisitions assigned to this sequencer.
         acq_metadata
             Acquisition metadata.
+
         """
 
         def _verify_param_range(
@@ -536,6 +543,7 @@ class AnalogSequencerCompiler(SequencerCompiler):
         Returns
         -------
             A bit string passed on to the set_mrk function of the Q1ASM object.
+
         """
         marker_bit_string = 0
         instrument_type = self.static_hw_properties.instrument_type
@@ -582,6 +590,7 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
         the schedule.
     instrument_cfg
         The instrument compiler config referring to this device.
+
     """
 
     _settings: AnalogModuleSettings  # type: ignore
@@ -638,6 +647,7 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
             will be determined and set.
         clock_frequency
             Clock frequency of the clock assigned to the sequencer compiler.
+
         """
 
     @abstractmethod
@@ -670,6 +680,7 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
             Mapping from clock name to clock resource, which contains the clock frequency.
         kwargs:
             Potential keyword arguments for other compiler classes.
+
         """
         self._configure_input_gains()
         self._configure_mixer_offsets()
@@ -946,6 +957,7 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
         ValueError
             Multiple sequencers have to perform trace acquisition. This is not
             supported by the hardware.
+
         """  # noqa: E501 line too long
 
         def is_scope_acquisition(acquisition: OpInfo) -> bool:
@@ -1023,6 +1035,7 @@ class BasebandModuleCompiler(AnalogModuleCompiler):
         ValueError
             If the NCO and/or LO frequencies cannot be determined, are invalid, or are
             inconsistent with the clock frequency.
+
         """
         if external_lo is None:
             if sequencer.settings.nco_en:
@@ -1134,6 +1147,7 @@ class RFModuleCompiler(AnalogModuleCompiler):
         ValueError
             If the NCO and/or LO frequencies cannot be determined, are invalid, or are
             inconsistent with the clock frequency.
+
         """
         for lo_idx in RFModuleCompiler._get_connected_lo_indices(sequencer):
             try:
@@ -1192,6 +1206,7 @@ class RFModuleCompiler(AnalogModuleCompiler):
         ------
         IndexError
             If the derived class instance does not contain an LO with that index.
+
         """
         if lo_idx == 0:
             return self._settings.lo0_freq
@@ -1219,6 +1234,7 @@ class RFModuleCompiler(AnalogModuleCompiler):
         ------
         IndexError
             If the derived class instance does not contain an LO with that index.
+
         """
         previous_lo_freq = self._get_lo_frequency(lo_idx)
 

@@ -344,9 +344,7 @@ def deprecated_zhinst_hardware_config_example():
     }
 
 
-@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 def test_compile_hardware_hdawg4_successfully_deprecated_hardware_config(
-    mocker,
     create_schedule_with_pulse_info,
     deprecated_zhinst_hardware_config_example: dict[str, Any],
 ) -> None:
@@ -360,9 +358,9 @@ def test_compile_hardware_hdawg4_successfully_deprecated_hardware_config(
     schedule.add(Measure(q0))
     schedule = create_schedule_with_pulse_info(schedule)
 
-    modulate_wave_spy = mocker.patch.object(
-        waveform_helpers, "modulate_waveform", wraps=waveform_helpers.modulate_waveform
-    )
+    # modulate_wave_spy = mocker.patch.object(
+    #     waveform_helpers, "modulate_waveform", wraps=waveform_helpers.modulate_waveform
+    # )
     # settings_builder = mocker.Mock(wraps=settings.ZISettingsBuilder())
     # mocker.patch.object(settings, "ZISettingsBuilder", return_value=settings_builder)
 
@@ -392,8 +390,9 @@ def test_compile_hardware_hdawg4_successfully_deprecated_hardware_config(
     }
 
     # Act
-    comp_sched = zhinst_backend.flatten_schedule(schedule, hdawg_hardware_cfg)
-    comp_sched = zhinst_backend.compile_backend(comp_sched, hdawg_hardware_cfg)
+    with pytest.warns(FutureWarning, match="0.19.0"):
+        comp_sched = zhinst_backend.flatten_schedule(schedule, hdawg_hardware_cfg)
+        comp_sched = zhinst_backend.compile_backend(comp_sched, hdawg_hardware_cfg)
     device_configs = comp_sched["compiled_instructions"]
 
     # Assert
@@ -412,7 +411,6 @@ def test_compile_hardware_hdawg4_successfully_deprecated_hardware_config(
 
 
 def test_compile_hardware_hdawg4_successfully(
-    mocker,
     create_schedule_with_pulse_info,
     compile_config_basic_transmon_zhinst_hardware,
 ) -> None:
@@ -424,18 +422,18 @@ def test_compile_hardware_hdawg4_successfully(
     schedule.add(X90(q1))
     schedule.add(Measure(q0))
 
-    q0_mw_rf = (
-        compile_config_basic_transmon_zhinst_hardware.device_compilation_config.clocks[
-            "q0.01"
-        ]
-    )
-    q0_mw_if = compile_config_basic_transmon_zhinst_hardware.hardware_compilation_config.hardware_options.modulation_frequencies[
-        "q0:mw-q0.01"
-    ].interm_freq
+    hardware = compile_config_basic_transmon_zhinst_hardware
 
-    modulate_wave_spy = mocker.patch.object(
-        waveform_helpers, "modulate_waveform", wraps=waveform_helpers.modulate_waveform
+    q0_mw_rf = hardware.device_compilation_config.clocks["q0.01"]
+    q0_mw_if = (
+        hardware.hardware_compilation_config.hardware_options.modulation_frequencies[
+            "q0:mw-q0.01"
+        ].interm_freq
     )
+
+    # modulate_wave_spy = mocker.patch.object(
+    #     waveform_helpers, "modulate_waveform", wraps=waveform_helpers.modulate_waveform
+    # )
     # settings_builder = mocker.Mock(wraps=settings.ZISettingsBuilder())
     # mocker.patch.object(settings, "ZISettingsBuilder", return_value=settings_builder)
 
@@ -557,7 +555,7 @@ def test_compile_hardware_uhfqa_successfully_deprecated_hardware_config(
     compiled_settings = zi_settings.as_dict()
 
     for key, expected_value in expected_settings.items():
-        assert key in compiled_settings.keys()
+        assert key in compiled_settings
         if isinstance(expected_value, type(ANY)):
             continue
         assert compiled_settings[key] == expected_value
@@ -570,15 +568,14 @@ def test_compile_hardware_uhfqa_successfully(
 ) -> None:
     # Arrange
     schedule = make_schedule()
+    hardware = compile_config_basic_transmon_zhinst_hardware
 
-    q0_ro_rf = (
-        compile_config_basic_transmon_zhinst_hardware.device_compilation_config.clocks[
-            "q0.ro"
-        ]
+    q0_ro_rf = hardware.device_compilation_config.clocks["q0.ro"]
+    q0_ro_if = (
+        hardware.hardware_compilation_config.hardware_options.modulation_frequencies[
+            "q0:res-q0.ro"
+        ].interm_freq
     )
-    q0_ro_if = compile_config_basic_transmon_zhinst_hardware.hardware_compilation_config.hardware_options.modulation_frequencies[
-        "q0:res-q0.ro"
-    ].interm_freq
 
     expected_settings = {
         "awgs/0/single": 1,
@@ -635,7 +632,7 @@ def test_compile_hardware_uhfqa_successfully(
     compiled_settings = zi_settings.as_dict()
 
     for key, expected_value in expected_settings.items():
-        assert key in compiled_settings.keys()
+        assert key in compiled_settings
         if isinstance(expected_value, type(ANY)):
             continue
         assert compiled_settings[key] == expected_value

@@ -36,6 +36,7 @@ class StitchedPulse(Operation):
     pulse_info : list[Any] or None, optional
         A list containing the pulses that are part of the StitchedPulse. By default
         None.
+
     """
 
     def __init__(
@@ -68,6 +69,7 @@ class StitchedPulse(Operation):
         ValueError
             When the operation's port and/or clock do not match those of the previously
             added SitchedPulse components.
+
         """
         if not self._pulse_and_clock_match(pulse_operation["pulse_info"]):
             raise ValueError(
@@ -126,6 +128,7 @@ def convert_to_numerical_pulse(
         gate_info or acquisition_info, a NumericalPulse is returned. Otherwise,
         the input type is returned with the pulse_info replaced by that of a
         NumericalPulse.
+
     """
     if not operation.valid_pulse:
         return operation
@@ -215,6 +218,7 @@ class StitchedPulseBuilder:
         Time in seconds when to start the pulses relative to the start time
         of the Operation in the Schedule. This can also be added later through
         :meth:`~.set_t0`. By default None.
+
     """
 
     def __init__(
@@ -243,6 +247,7 @@ class StitchedPulseBuilder:
         Returns
         -------
         StitchedPulseBuilder
+
         """
         self._port = port
         return self
@@ -259,6 +264,7 @@ class StitchedPulseBuilder:
         Returns
         -------
         StitchedPulseBuilder
+
         """
         self._clock = clock
         return self
@@ -276,6 +282,7 @@ class StitchedPulseBuilder:
         Returns
         -------
         StitchedPulseBuilder
+
         """
         self._t0 = t0
         return self
@@ -305,6 +312,7 @@ class StitchedPulseBuilder:
         ------
         RuntimeError
             If the Operation is not a pulse.
+
         """
         if pulse.valid_acquisition:
             raise RuntimeError(
@@ -392,6 +400,7 @@ class StitchedPulseBuilder:
             If the duration is specified and not at least ``min_duration``.
         RuntimeError
             If the offset overlaps in time with a previously added offset.
+
         """
         if append:
             rel_time += self.operation_end
@@ -431,6 +440,7 @@ class StitchedPulseBuilder:
         -------
         :
             The maximum end time considering all pulses and offsets.
+
         """
         max_from_pulses: float = max(
             (
@@ -555,6 +565,7 @@ class StitchedPulseBuilder:
         Returns
         -------
         StitchedPulse
+
         """
         self._distribute_port_clock()
         offsets = self._build_voltage_offset_operations()

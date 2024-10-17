@@ -25,9 +25,10 @@ class IdleStrategy(IOperationStrategy):
     ----------
     operation_info : quantify_scheduler.backends.types.qblox.OpInfo
         The operation info that corresponds to this operation.
+
     """
 
-    def __init__(self, operation_info: types.OpInfo):
+    def __init__(self, operation_info: types.OpInfo) -> None:
         self._op_info = operation_info
 
     @property
@@ -35,11 +36,11 @@ class IdleStrategy(IOperationStrategy):
         """Property for retrieving the operation info."""
         return self._op_info
 
-    def generate_data(self, wf_dict: dict[str, Any]):
+    def generate_data(self, wf_dict: dict[str, Any]) -> None:
         """Returns None as no waveforms are generated in this strategy."""
-        return None
+        pass
 
-    def insert_qasm(self, qasm_program: QASMProgram):
+    def insert_qasm(self, qasm_program: QASMProgram) -> None:
         """
         Add the assembly instructions for the Q1 sequence processor that corresponds to
         this operation.
@@ -52,6 +53,7 @@ class IdleStrategy(IOperationStrategy):
         ----------
         qasm_program
             The QASMProgram to add the assembly instructions to.
+
         """
 
 
@@ -62,7 +64,7 @@ class NcoPhaseShiftStrategy(IdleStrategy):
     leading to a total duration of 8 ns before the next command can be issued.
     """
 
-    def insert_qasm(self, qasm_program: QASMProgram):
+    def insert_qasm(self, qasm_program: QASMProgram) -> None:
         """
         Inserts the instructions needed to shift the NCO phase by a specific amount.
 
@@ -70,6 +72,7 @@ class NcoPhaseShiftStrategy(IdleStrategy):
         ----------
         qasm_program
             The QASMProgram to add the assembly instructions to.
+
         """
         phase: float = self.operation_info.data["phase_shift"]
         if phase != 0:
@@ -87,7 +90,7 @@ class NcoResetClockPhaseStrategy(IdleStrategy):
     the phase of the NCO.
     """
 
-    def insert_qasm(self, qasm_program: QASMProgram):
+    def insert_qasm(self, qasm_program: QASMProgram) -> None:
         """
         Inserts the instructions needed to reset the NCO phase.
 
@@ -95,6 +98,7 @@ class NcoResetClockPhaseStrategy(IdleStrategy):
         ----------
         qasm_program
             The QASMProgram to add the assembly instructions to.
+
         """
         reset_clock_phase = self.operation_info.data.get("reset_clock_phase")
         if reset_clock_phase is None:
@@ -112,7 +116,7 @@ class NcoSetClockFrequencyStrategy(IdleStrategy):
     leading to a total duration of 8 ns before the next command can be issued.
     """
 
-    def insert_qasm(self, qasm_program: QASMProgram):
+    def insert_qasm(self, qasm_program: QASMProgram) -> None:
         """
         Inserts the instructions needed to set the NCO frequency.
 
@@ -120,6 +124,7 @@ class NcoSetClockFrequencyStrategy(IdleStrategy):
         ----------
         qasm_program
             The QASMProgram to add the assembly instructions to.
+
         """
         clock_freq_new = self.operation_info.data.get("clock_freq_new")
         clock_freq_old = self.operation_info.data.get("clock_freq_old")
@@ -160,7 +165,7 @@ class AwgOffsetStrategy(IdleStrategy):
     only the ``set_awg_offs`` instruction and no ``upd_param`` instruction.
     """
 
-    def insert_qasm(self, qasm_program: QASMProgram):
+    def insert_qasm(self, qasm_program: QASMProgram) -> None:
         """
         Add the Q1ASM instruction for a DC voltage offset.
 
@@ -168,6 +173,7 @@ class AwgOffsetStrategy(IdleStrategy):
         ----------
         qasm_program : QASMProgram
             The QASMProgram to add the assembly instructions to.
+
         """
         path_I_amp = qasm_program.expand_awg_from_normalised_range(
             val=self.operation_info.data["offset_path_I"],
@@ -193,7 +199,7 @@ class AwgOffsetStrategy(IdleStrategy):
 class ResetFeedbackTriggersStrategy(IdleStrategy):
     """Strategy for resetting the count of feedback trigger addresses."""
 
-    def insert_qasm(self, qasm_program: QASMProgram):
+    def insert_qasm(self, qasm_program: QASMProgram) -> None:
         """
         Add the assembly instructions for the Q1 sequence processor that corresponds to
         this pulse.
@@ -216,7 +222,7 @@ class ResetFeedbackTriggersStrategy(IdleStrategy):
 class UpdateParameterStrategy(IdleStrategy):
     """Strategy for compiling an "update parameters" real-time instruction."""
 
-    def insert_qasm(self, qasm_program: QASMProgram):
+    def insert_qasm(self, qasm_program: QASMProgram) -> None:
         """
         Add the ``upd_param`` assembly instruction for the Q1 sequence processor.
 
@@ -224,6 +230,7 @@ class UpdateParameterStrategy(IdleStrategy):
         ----------
         qasm_program : QASMProgram
             The QASMProgram to add the assembly instructions to.
+
         """
         qasm_program.emit(
             q1asm_instructions.UPDATE_PARAMETERS,
@@ -245,7 +252,7 @@ class ConditionalStrategy(IdleStrategy):
 
     def __init__(
         self, operation_info: types.OpInfo, trigger_condition: FeedbackTriggerCondition
-    ):
+    ) -> None:
         super().__init__(operation_info=operation_info)
         self.trigger_condition = trigger_condition
 
@@ -264,7 +271,7 @@ class TimestampStrategy(IdleStrategy):
     :class:`~quantify_scheduler.operations.pulse_library.Timestamp`.
     """
 
-    def insert_qasm(self, qasm_program: QASMProgram):
+    def insert_qasm(self, qasm_program: QASMProgram) -> None:
         """
         Inserts the instructions needed insert a time reference.
 
@@ -272,6 +279,7 @@ class TimestampStrategy(IdleStrategy):
         ----------
         qasm_program
             The QASMProgram to add the assembly instructions to.
+
         """
         assert "timestamp" in self.operation_info.data
         qasm_program.emit(q1asm_instructions.SET_TIME_REF)

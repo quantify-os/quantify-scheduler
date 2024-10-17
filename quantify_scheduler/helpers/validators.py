@@ -29,6 +29,7 @@ class Numbers(validators.Numbers):
     ------
     TypeError: If min or max value not a number. Or if min_value is
         larger than the max_value.
+
     """
 
     def __init__(
@@ -55,6 +56,7 @@ class Numbers(validators.Numbers):
         ------
         TypeError: If not int or float.
         ValueError: If number is not between the min and the max value.
+
         """
         if not isinstance(value, self.validtypes):
             raise TypeError(f"{repr(value)} is not an int or float; {context}")
@@ -65,10 +67,8 @@ class Numbers(validators.Numbers):
 
         if not (self._min_value <= value <= self._max_value):
             raise ValueError(
-                "{} is invalid: must be between "
-                "{} and {} inclusive; {}".format(
-                    repr(value), self._min_value, self._max_value, context
-                )
+                f"{repr(value)} is invalid: must be between "
+                f"{self._min_value} and {self._max_value} inclusive; {context}"
             )
 
 
@@ -129,6 +129,7 @@ class _Hashable(Validator[Hashable]):
         ------
         TypeError
             If value is not hashable.
+
         """
         if not isinstance(value, Hashable):
             raise TypeError(f"{value!r} is not Hashable; {context}")

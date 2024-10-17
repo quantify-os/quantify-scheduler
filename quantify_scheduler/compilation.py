@@ -83,6 +83,7 @@ def _determine_absolute_timing(  # noqa: PLR0912
     ------
     NotImplementedError
         If the scheduling strategy is not "asap"
+
     """
     time_unit = time_unit or "physical"
     if time_unit not in (valid_time_units := ("physical", "ideal")):
@@ -268,6 +269,7 @@ def validate_config(config: dict, scheme_fn: str) -> bool:
     -------
     :
         True if valid
+
     """
     scheme = load_json_schema(__file__, scheme_fn)
     validate_json(config, scheme)

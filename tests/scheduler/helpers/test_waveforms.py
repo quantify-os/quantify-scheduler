@@ -4,11 +4,11 @@
 from __future__ import annotations
 
 import inspect
+from typing import TYPE_CHECKING
 from unittest.case import TestCase
 
 import numpy as np
 import pytest
-from pytest_mock.plugin import MockerFixture
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends import SerialCompiler
@@ -32,6 +32,9 @@ from quantify_scheduler.operations.pulse_library import (
     SquarePulse,
     StaircasePulse,
 )
+
+if TYPE_CHECKING:
+    from pytest_mock.plugin import MockerFixture
 
 
 @pytest.mark.parametrize(

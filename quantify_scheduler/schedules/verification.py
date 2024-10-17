@@ -4,13 +4,17 @@
 
 from __future__ import annotations
 
-import numpy as np
-from numpy.typing import NDArray
+from typing import TYPE_CHECKING
 
-from quantify_scheduler import Schedule
+import numpy as np
+
+from quantify_scheduler import Operation, Schedule
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.pulse_library import IdlePulse, SquarePulse
 from quantify_scheduler.resources import ClockResource
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
 
 
 def acquisition_staircase_sched(
@@ -166,6 +170,7 @@ def awg_staircase_sched(
     weighted acquisition in combination with the synchronization between the readout
     module (e.g., Qblox QRM or ZI UHFQA) and the pulse generating module
     (e.g., Qblox QCM or ZI HDAWG).
+
     """
     sched = Schedule(name="AWG staircase", repetitions=repetitions)
 
@@ -257,9 +262,18 @@ def multiplexing_staircase_sched(
     -------
     :
         The generated schedule.
+
     """
 
-    def add_staircase_step(sched, ref_op, amp, clock, acq_channel, acq_index, delay):
+    def add_staircase_step(
+        sched: Schedule,
+        ref_op: Operation,
+        amp: float | complex,
+        clock: str,
+        acq_channel: int,
+        acq_index: int,
+        delay: float,
+    ) -> Schedule:
         pulse = sched.add(
             SquarePulse(
                 duration=pulse_duration,

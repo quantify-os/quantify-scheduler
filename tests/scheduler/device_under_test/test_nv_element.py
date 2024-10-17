@@ -1,10 +1,9 @@
 import json
 import math
+from typing import TYPE_CHECKING
 
 import pytest
 from qcodes import Instrument
-from qcodes.instrument.channel import InstrumentModule
-from qcodes.instrument.parameter import Parameter
 
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
@@ -26,6 +25,10 @@ from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
 from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEncoder
 from quantify_scheduler.operations.gate_library import X, Y
 from quantify_scheduler.schedules.schedule import Schedule
+
+if TYPE_CHECKING:
+    from qcodes.instrument.channel import InstrumentModule
+    from qcodes.instrument.parameter import Parameter
 
 
 @pytest.fixture
@@ -193,7 +196,7 @@ def test_mock_nv_setup():
     set_standard_params_basic_nv(mock_nv_setup)
 
 
-def test_Rxy_compiles(mock_setup_basic_nv_qblox_hardware):
+def test_r_xy_compiles(mock_setup_basic_nv_qblox_hardware):
     """Test Rxy operations compile using the skewed hermite pulse waveform"""
 
     # Create test NV center element
@@ -291,7 +294,7 @@ def test_parameter_validators(electronic_q0: BasicElectronicNVElement):
             if parameter_name in skip_list_submodule:
                 continue
             patterns = []
-            for pattern in mapping_pattern_val.keys():
+            for pattern in mapping_pattern_val:
                 if pattern in str.lower(parameter_name) or pattern == parameter.unit:
                     patterns.append(pattern)
             if len(patterns) != 1:
@@ -350,7 +353,8 @@ def test_nv_center_serialization(electronic_q0):
                 and "deserialization_type"
                 in electronic_q0_as_dict["data"][submodule_name][parameter_name]
             ):
-                # This is a custom type which will not have equal contents in the serialized and deserialized versions.
+                # This is a custom type
+                # which will not have equal contents in the serialized and deserialized versions.
                 continue
             expected_val = electronic_q0.submodules[submodule_name][parameter_name]()
             val = electronic_q0_as_dict["data"][submodule_name][parameter_name]
@@ -374,7 +378,8 @@ def test_nv_center_serialization(electronic_q0):
                 isinstance(parameter_val, dict)
                 and "deserialization_type" in parameter_val
             ):
-                # This is a custom type which will not have equal contents in the serialized and deserialized versions.
+                # This is a custom type
+                # which will not have equal contents in the serialized and deserialized versions.
                 continue
             expected_parameter_val = electronic_q0.submodules[submodule_name][
                 parameter_name

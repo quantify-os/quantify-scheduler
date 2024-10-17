@@ -4,13 +4,16 @@
 from __future__ import annotations
 
 from collections import UserDict
-from typing import Any, Iterable, MutableMapping
+from typing import TYPE_CHECKING, Iterable, MutableMapping
 
 import numpy as np
 import xxhash
 
+if TYPE_CHECKING:
+    from collections.abc import Hashable
 
-def make_hash(obj: Any) -> int:
+
+def make_hash(obj: set | tuple | list | np.ndarray | dict | Hashable) -> int:
     """
     Make a hash from a dictionary, list, tuple or set to any level.
 
@@ -25,6 +28,7 @@ def make_hash(obj: Any) -> int:
     -------
     :
         Hash.
+
     """
     new_hash = xxhash.xxh64()
     if isinstance(obj, (set, tuple, list)):
@@ -37,11 +41,11 @@ def make_hash(obj: Any) -> int:
         new_hash.reset()
         return val
 
-    if not isinstance(obj, dict):
-        return hash(obj)
+    if isinstance(obj, dict):
+        tuple_of_hashes = ((key, make_hash(val)) for key, val in obj.items())
+        return hash(frozenset(sorted(tuple_of_hashes)))
 
-    tuple_of_hashes = ((key, make_hash(val)) for key, val in obj.items())
-    return hash(frozenset(sorted(tuple_of_hashes)))
+    return hash(obj)
 
 
 def without(dict_in: dict, keys: list) -> dict:
@@ -59,6 +63,7 @@ def without(dict_in: dict, keys: list) -> dict:
     -------
     :
         Filtered dictionary.
+
     """
     if not isinstance(keys, list):
         keys = [keys]
@@ -68,7 +73,7 @@ def without(dict_in: dict, keys: list) -> dict:
     return new_d
 
 
-def find_inner_dicts_containing_key(d: MutableMapping, key: Any) -> list[dict]:
+def find_inner_dicts_containing_key(d: MutableMapping, key: Hashable) -> list[dict]:
     """
     Generate a list of the first dictionaries encountered that contain a certain key.
 
@@ -86,11 +91,11 @@ def find_inner_dicts_containing_key(d: MutableMapping, key: Any) -> list[dict]:
     -------
     :
         A list containing all the inner dictionaries containing the specified key.
+
     """
     dicts_found = []
-    if isinstance(d, dict):
-        if key in d:
-            dicts_found.append(d)
+    if isinstance(d, dict) and key in d:
+        dicts_found.append(d)
     for val in d.values():
         if isinstance(val, (dict, UserDict)):
             dicts_found.extend(find_inner_dicts_containing_key(val, key))
@@ -124,6 +129,7 @@ def find_all_port_clock_combinations(d: dict) -> list[tuple[str, str]]:
     :
         A list containing tuples representing the port and clock combinations found
         in the dictionary.
+
     """
     port_clocks = []
     dicts_with_port = find_inner_dicts_containing_key(d, "port")
@@ -157,9 +163,12 @@ def find_port_clock_path(hardware_config: dict, port: str, clock: str) -> list:
     :
         A list representing the keys to the port-clock combination in the hardware config.
         If the port-clock location is in a list, the list index is also included in this path.
+
     """
 
-    def recursive_find(hardware_config, port, clock, path) -> list | None:
+    def recursive_find(
+        hardware_config: dict, port: str, clock: str, path: list[int]
+    ) -> list[int] | None:
         for k, v in hardware_config.items():
             # If key is port, we are done
             if k == "port":

@@ -29,7 +29,7 @@ def test_header() -> None:
         for file_name in files:
             if file_name[-3:] == ".py" and file_name not in skipfiles:
                 file_path = Path(root) / file_name
-                with open(file_path, "r") as file:
+                with open(file_path) as file:
                     lines_iter = (line.strip() for line in file)
                     line_matches = [
                         expected_line == line
@@ -38,7 +38,7 @@ def test_header() -> None:
                     if not all(line_matches):
                         failures.append(str(file_path))
     if failures:
-        pytest.fail("Bad headers:\n{}".format(pprint.pformat(failures)))
+        pytest.fail(f"Bad headers:\n{pprint.pformat(failures)}")
 
 
 def test_docs_copyright() -> None:
@@ -47,7 +47,7 @@ def test_docs_copyright() -> None:
     copyright_found = False
     current_year = str(datetime.datetime.now().year)
     cr_match = 'copyright = "2020-20.*Qblox & Orange Quantum Systems'
-    with open(conf_file, "r") as file:
+    with open(conf_file) as file:
         for line in file.readlines():
             if re.match(cr_match, line):
                 if current_year in line:

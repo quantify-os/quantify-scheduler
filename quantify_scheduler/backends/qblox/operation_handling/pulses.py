@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -16,8 +16,10 @@ from quantify_scheduler.backends.qblox.qasm_program import (
     QASMProgram,
     get_marker_binary,
 )
-from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.helpers.waveforms import normalize_waveform_data
+
+if TYPE_CHECKING:
+    from quantify_scheduler.backends.types import qblox as types
 
 logger = logging.getLogger(__name__)
 
@@ -32,12 +34,13 @@ class PulseStrategyPartial(IOperationStrategy):
         The operation info that corresponds to this pulse.
     channel_name
         Specifies the channel identifier of the hardware config (e.g. `complex_output_0`).
+
     """
 
     _amplitude_path_I: float | None  # noqa: N815  (mixed case)
     _amplitude_path_Q: float | None  # noqa: N815  (mixed case)
 
-    def __init__(self, operation_info: types.OpInfo, channel_name: str):
+    def __init__(self, operation_info: types.OpInfo, channel_name: str) -> None:
         self._pulse_info: types.OpInfo = operation_info
         self.channel_name = channel_name
 
@@ -60,9 +63,10 @@ class GenericPulseStrategy(PulseStrategyPartial):
         The operation info that corresponds to this pulse.
     channel_name
         Specifies the channel identifier of the hardware config (e.g. `complex_output_0`).
+
     """
 
-    def __init__(self, operation_info: types.OpInfo, channel_name: str):
+    def __init__(self, operation_info: types.OpInfo, channel_name: str) -> None:
         super().__init__(
             operation_info=operation_info,
             channel_name=channel_name,
@@ -76,7 +80,7 @@ class GenericPulseStrategy(PulseStrategyPartial):
 
         self._waveform_len: int | None = None
 
-    def generate_data(self, wf_dict: dict[str, Any]):
+    def generate_data(self, wf_dict: dict[str, Any]) -> None:
         """
         Generates the data and adds them to the ``wf_dict`` (if not already present).
 
@@ -104,7 +108,7 @@ class GenericPulseStrategy(PulseStrategyPartial):
 
 
         In real mode (e.g. ``real_output_0``), the NCO produces :math:`I_\\text{IF}` on
-        path_I 
+        path_I
 
 
         .. math::
@@ -124,7 +128,7 @@ class GenericPulseStrategy(PulseStrategyPartial):
             \\begin{bmatrix}
             I_\\text{IF} \\\\
             - \\end{bmatrix}
-        
+
 
         Note that the fields marked with `-` represent waveforms that are not relevant
         for the mode.
@@ -141,6 +145,7 @@ class GenericPulseStrategy(PulseStrategyPartial):
         ValueError
             Data is complex (has an imaginary component), but the channel_name is not
             set as complex (e.g. ``complex_output_0``).
+
         """  # noqa: D301
         op_info = self.operation_info
         waveform_data = helpers.generate_waveform_data(
@@ -151,7 +156,7 @@ class GenericPulseStrategy(PulseStrategyPartial):
 
         if (
             np.any(np.iscomplex(waveform_data))
-            and not ChannelMode.COMPLEX in self.channel_name
+            and ChannelMode.COMPLEX not in self.channel_name
         ):
             raise ValueError(
                 f"Complex valued {str(op_info)} detected but the sequencer"
@@ -160,7 +165,8 @@ class GenericPulseStrategy(PulseStrategyPartial):
                 f" marked as real.\n\nException caused by {repr(op_info)}."
             )
 
-        non_null = lambda amp: abs(amp) >= 2 / constants.IMMEDIATE_SZ_GAIN
+        def non_null(amp: float) -> bool:
+            return abs(amp) >= 2 / constants.IMMEDIATE_SZ_GAIN
 
         idx_real = (
             helpers.add_to_wf_dict_if_unique(
@@ -180,7 +186,7 @@ class GenericPulseStrategy(PulseStrategyPartial):
         self._waveform_index0, self._waveform_index1 = idx_real, idx_imag
         self._amplitude_path_I, self._amplitude_path_Q = amp_real, amp_imag
 
-    def insert_qasm(self, qasm_program: QASMProgram):
+    def insert_qasm(self, qasm_program: QASMProgram) -> None:
         """
         Add the assembly instructions for the Q1 sequence processor that corresponds to
         this pulse.
@@ -189,6 +195,7 @@ class GenericPulseStrategy(PulseStrategyPartial):
         ----------
         qasm_program
             The QASMProgram to add the assembly instructions to.
+
         """
         if qasm_program.time_last_pulse_triggered is not None and (
             qasm_program.elapsed_time - qasm_program.time_last_pulse_triggered
@@ -241,23 +248,25 @@ class DigitalOutputStrategy(PulseStrategyPartial):
     for the QTM.
     """
 
-    def generate_data(self, wf_dict: dict[str, Any]):
+    def generate_data(self, wf_dict: dict[str, Any]) -> None:
         """Returns None as no waveforms are generated in this strategy."""
-        return None
+        pass
 
 
 class MarkerPulseStrategy(DigitalOutputStrategy):
     """If this strategy is used a digital pulse is played on the corresponding marker."""
 
-    def insert_qasm(self, qasm_program: QASMProgram):
+    def insert_qasm(self, qasm_program: QASMProgram) -> None:
         """
         Inserts the QASM instructions to play the marker pulse.
-        Note that for RF modules the first two bits of set_mrk are used as switches for the RF outputs.
+        Note that for RF modules the first two bits of set_mrk
+        are used as switches for the RF outputs.
 
         Parameters
         ----------
         qasm_program
             The QASMProgram to add the assembly instructions to.
+
         """
         if ChannelMode.DIGITAL not in self.channel_name:
             port = self.operation_info.data.get("port")
@@ -266,8 +275,10 @@ class MarkerPulseStrategy(DigitalOutputStrategy):
             raise ValueError(
                 f"{self.__class__.__name__} can only be used with a "
                 f"digital channel. Please make sure that "
-                f"'digital' keyword is included in the channel_name in the hardware configuration "
-                f"for port-clock combination '{port}-{clock}' (current channel_name is '{self.channel_name}')."
+                f"'digital' keyword is included in the channel_name "
+                f"in the hardware configuration "
+                f"for port-clock combination '{port}-{clock}' "
+                f"(current channel_name is '{self.channel_name}')."
                 f"Operation causing exception: {self.operation_info}"
             )
         marker_bit_index = int(self.operation_info.data["output"])
@@ -298,7 +309,7 @@ class MarkerPulseStrategy(DigitalOutputStrategy):
     @staticmethod
     def _fix_marker_bit_output_addressing_qcm_rf(
         qasm_program: QASMProgram, marker_bit_index: int
-    ):
+    ) -> int:
         """Fix for the swapped marker bit output addressing of the QCM-RF."""
         if qasm_program.static_hw_properties.instrument_type == "QCM_RF":
             if marker_bit_index == 2:
@@ -309,17 +320,22 @@ class MarkerPulseStrategy(DigitalOutputStrategy):
 
 
 class DigitalPulseStrategy(DigitalOutputStrategy):
-    """If this strategy is used a digital pulse is played on the corresponding digital output channel."""
+    """
+    If this strategy is used a digital pulse is played
+    on the corresponding digital output channel.
+    """
 
-    def insert_qasm(self, qasm_program: QASMProgram):
+    def insert_qasm(self, qasm_program: QASMProgram) -> None:
         """
         Inserts the QASM instructions to play the marker pulse.
-        Note that for RF modules the first two bits of set_mrk are used as switches for the RF outputs.
+        Note that for RF modules the first two bits of set_mrk
+        are used as switches for the RF outputs.
 
         Parameters
         ----------
         qasm_program
             The QASMProgram to add the assembly instructions to.
+
         """
         if ChannelMode.DIGITAL not in self.channel_name:
             port = self.operation_info.data.get("port")
@@ -329,7 +345,8 @@ class DigitalPulseStrategy(DigitalOutputStrategy):
                 f"{self.__class__.__name__} can only be used with a "
                 f"digital channel. Please make sure that "
                 f"'digital' keyword is included in the channel_name in the hardware configuration "
-                f"for port-clock combination '{port}-{clock}' (current channel_name is '{self.channel_name}')."
+                f"for port-clock combination '{port}-{clock}' "
+                f"(current channel_name is '{self.channel_name}')."
                 f"Operation causing exception: {self.operation_info}"
             )
 

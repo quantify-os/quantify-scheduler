@@ -300,7 +300,7 @@ def test_reset_qcodes_settings(
         "q1:fl-cl0.baseband": {"init_gain_awg_path_Q": -0.5},
     }
 
-    schedule = Schedule(f"Schedule")
+    schedule = Schedule("Schedule")
     schedule.add(
         SquarePulse(
             amp=1.0,
@@ -447,7 +447,7 @@ def test_init_qcodes_settings(
         "q1:fl-cl0.baseband": {"init_gain_awg_path_Q": -0.5},
     }
 
-    schedule = Schedule(f"Schedule")
+    schedule = Schedule("Schedule")
     schedule.add(
         SquarePulse(
             amp=1.0,
@@ -500,8 +500,8 @@ def test_init_qcodes_settings(
             f"gain_awg_path{path}"
         ].set.assert_called_once_with(qcm_gain[path])
 
-    qcm.instrument["sequencer0"].parameters[f"sync_en"].set.assert_called_with(True)
-    qrm.instrument["sequencer0"].parameters[f"sync_en"].set.assert_called_with(True)
+    qcm.instrument["sequencer0"].parameters["sync_en"].set.assert_called_with(True)
+    qrm.instrument["sequencer0"].parameters["sync_en"].set.assert_called_with(True)
 
     qrm_offset = defaultdict(lambda: 0.0)
     qrm_gain = defaultdict(lambda: 1.0)
@@ -583,7 +583,7 @@ def test_prepare_baseband(  # noqa: PLR0915
     quantum_device.hardware_config(hardware_cfg_cluster)
     quantum_device.get_element("q0").clock_freqs.readout(7.5e9)
 
-    schedule = Schedule(f"Schedule with measurement")
+    schedule = Schedule("Schedule with measurement")
     schedule.add(Reset("q0", "q1"))
     schedule.add(X90("q0"))
     schedule.add(X90("q1"))
@@ -685,12 +685,12 @@ def test_prepare_rf(
     qcm_rf = ic_cluster.instrument.module2
     mocker.patch.object(qcm_rf.parameters["out0_att"], "set")
     mocker.patch.object(qcm_rf.parameters["out1_att"], "set")
-    mocker.patch.object(qcm_rf[f"sequencer0"].parameters["sync_en"], "set")
+    mocker.patch.object(qcm_rf["sequencer0"].parameters["sync_en"], "set")
 
     qrm_rf = ic_cluster.instrument.module4
     mocker.patch.object(qrm_rf.parameters["out0_att"], "set")
     mocker.patch.object(qrm_rf.parameters["in0_att"], "set")
-    mocker.patch.object(qrm_rf[f"sequencer0"].parameters["sync_en"], "set")
+    mocker.patch.object(qrm_rf["sequencer0"].parameters["sync_en"], "set")
 
     ic_cluster.force_set_parameters(force_set_parameters)
     ic_cluster.instrument.reference_source("internal")  # Put it in a known state
@@ -741,7 +741,7 @@ def test_prepare_rf(
                 hw_options_param[1]
             ]
         )
-    qcm_rf["sequencer0"].parameters[f"sync_en"].set.assert_called_with(True)
+    qcm_rf["sequencer0"].parameters["sync_en"].set.assert_called_with(True)
 
     for qcodes_param, hw_options_param in [
         ("out0_att", ["output_att", "q0:res-q0.ro"]),
@@ -752,7 +752,7 @@ def test_prepare_rf(
                 hw_options_param[1]
             ]
         )
-    qrm_rf["sequencer0"].parameters[f"sync_en"].set.assert_called_with(True)
+    qrm_rf["sequencer0"].parameters["sync_en"].set.assert_called_with(True)
 
 
 @pytest.mark.parametrize("force_set_parameters", [False, True])
@@ -885,7 +885,7 @@ def test_retrieve_acquisition(
     mock_setup["q0"].clock_freqs.readout(4.5e8)
     mock_setup["q2"].clock_freqs.readout(7.3e9)
 
-    schedule = Schedule(f"Retrieve acq sched")
+    schedule = Schedule("Retrieve acq sched")
 
     schedule.add(Measure("q0"))
     schedule.add(Measure("q2"))
@@ -1661,7 +1661,7 @@ def test_get_hardware_log_component_base(
         compiled_sched.compiled_instructions["cluster0"]["cluster0_module4"]
     )
     module4_log = module4.get_hardware_log(compiled_sched)
-    assert module4_log["app_log"] == f"Mock hardware log for app"
+    assert module4_log["app_log"] == "Mock hardware log for app"
 
 
 def test_get_hardware_log_cluster_component(
@@ -2239,7 +2239,7 @@ def test_missing_acq_index(
     mock_setup["q0"].clock_freqs.readout(4.5e8)
     mock_setup["q2"].clock_freqs.readout(7.3e9)
 
-    schedule = Schedule(f"Retrieve acq sched")
+    schedule = Schedule("Retrieve acq sched")
 
     schedule.add(Measure("q0"))
     schedule.add(Measure("q2"))

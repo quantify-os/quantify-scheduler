@@ -15,13 +15,14 @@ class MockLocalOscillator(Instrument):
     ----------
     name
         QCoDeS name of the intstrument.
+
     """
 
-    def __init__(self, name: str):
+    def __init__(self, name: str) -> None:
         super().__init__(name)
         self._add_qcodes_parameters_dummy()
 
-    def _add_qcodes_parameters_dummy(self):
+    def _add_qcodes_parameters_dummy(self) -> None:
         """Use to fake communications."""
         self.status = ManualParameter(
             "status",

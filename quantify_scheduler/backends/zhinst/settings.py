@@ -9,14 +9,16 @@ import json
 from copy import deepcopy
 from functools import partial
 from pathlib import Path
-from typing import Any, Callable, Dict, cast
+from typing import TYPE_CHECKING, Any, Callable, Dict, cast
 
 import numpy as np
-from zhinst.qcodes import base
 
 from quantify_scheduler.backends.types import zhinst as zi_types
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 from quantify_scheduler.helpers.collections import make_hash
+
+if TYPE_CHECKING:
+    from zhinst.qcodes import base
 
 # same as backends.zhinst_backend.NUM_UHFQA_READOUT_CHANNELS
 # copied here to avoid a circular import
@@ -50,16 +52,18 @@ class ZISetting:
         Returns
         -------
         :
+
         """
         return {self.node: self.value}
 
-    def apply(self, instrument: base.ZIBaseInstrument):
+    def apply(self, instrument: base.ZIBaseInstrument) -> None:
         """
         Applies settings to the Instrument.
 
         Parameters
         ----------
         instrument :
+
         """
         self.apply_fn(instrument=instrument, node=self.node, value=self.value)
 
@@ -74,18 +78,19 @@ class ZISettings:
         The data acquisition node settings.
     awg_settings :
         The AWG(s) node settings.
+
     """
 
     def __init__(
         self,
         daq_settings: list[ZISetting],
         awg_settings: dict[int, ZISetting],
-    ):
+    ) -> None:
         self._daq_settings: list[ZISetting] = daq_settings
         self._awg_settings: dict[int, ZISetting] = awg_settings
         self._awg_indexes = list(self._awg_settings.keys())
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         self_dict = self.as_dict()
         if not isinstance(other, ZISettings):
             return False
@@ -105,6 +110,7 @@ class ZISettings:
         Returns
         -------
         :
+
         """
         settings_dict: dict[str, Any] = dict()
         for setting in self._daq_settings:
@@ -124,7 +130,9 @@ class ZISettings:
         for _, setting in self._awg_settings.items():
             setting.apply(instrument)
 
-        def sort_by_fn(setting: ZISetting):
+        def sort_by_fn(
+            setting: ZISetting,
+        ) -> Callable[[base.ZIBaseInstrument, str, Any], None]:
             """Returns ZISetting callable apply function as a sorter."""
             return setting.apply_fn
 
@@ -164,6 +172,7 @@ class ZISettings:
         -------
         :
             The path to the parent JSON file.
+
         """
         collection = {
             "name": options.name,
@@ -250,6 +259,7 @@ class ZISettings:
         ------
         ValueError
             If the settings_path does not end with '_settings.json'.
+
         """
         if not settings_path.name.endswith("_settings.json"):
             raise ValueError(
@@ -334,7 +344,7 @@ class ZISettingsBuilder:
     _daq_settings: list[ZISetting]
     _awg_settings: list[tuple[str, tuple[int, ZISetting]]]
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._daq_settings = list()
         self._awg_settings = list()
 
@@ -349,6 +359,7 @@ class ZISettingsBuilder:
         Returns
         -------
         :
+
         """
         self._daq_settings.append(setting)
         return self
@@ -365,6 +376,7 @@ class ZISettingsBuilder:
         Returns
         -------
         :
+
         """
         self._awg_settings.append((setting.node, (awg_index, setting)))
         return self
@@ -380,6 +392,7 @@ class ZISettingsBuilder:
         Returns
         -------
         :
+
         """
         for node, value in defaults:
             self._set_daq(ZISetting(node, value, zi_helpers.set_value))
@@ -401,6 +414,7 @@ class ZISettingsBuilder:
         Returns
         -------
         :
+
         """
         return self._set_daq(
             ZISetting(
@@ -431,9 +445,10 @@ class ZISettingsBuilder:
         Returns
         -------
         :
+
         """
 
-        def void(instrument: base.ZIBaseInstrument, node, value):
+        def void(instrument: base.ZIBaseInstrument, node: str, value: object) -> None:
             pass
 
         return self._set_daq(
@@ -459,6 +474,7 @@ class ZISettingsBuilder:
         Returns
         -------
         :
+
         """
         if not isinstance(json_data, str):
             json_data = json.dumps(json_data)
@@ -487,6 +503,7 @@ class ZISettingsBuilder:
         Returns
         -------
         :
+
         """
         assert clock_rate_index < 14
 
@@ -507,6 +524,7 @@ class ZISettingsBuilder:
         Returns
         -------
         :
+
         """
         return self._set_daq(
             ZISetting(
@@ -528,6 +546,7 @@ class ZISettingsBuilder:
         Returns
         -------
         :
+
         """
         return self._set_daq(
             ZISetting(
@@ -549,6 +568,7 @@ class ZISettingsBuilder:
         Returns
         -------
         :
+
         """
         return self._set_daq(
             ZISetting(
@@ -570,6 +590,7 @@ class ZISettingsBuilder:
         Returns
         -------
         :
+
         """
         return self._set_daq(
             ZISetting(
@@ -591,6 +612,7 @@ class ZISettingsBuilder:
         Returns
         -------
         :
+
         """
         return self._set_daq(
             ZISetting(
@@ -614,6 +636,7 @@ class ZISettingsBuilder:
         Returns
         -------
         :
+
         """
         return self._set_daq(
             ZISetting(
@@ -634,6 +657,7 @@ class ZISettingsBuilder:
         Returns
         -------
         :
+
         """
         return self._set_daq(
             ZISetting(
@@ -655,6 +679,7 @@ class ZISettingsBuilder:
         Returns
         -------
         :
+
         """
         assert n_samples <= 4096
         return self._set_daq(
@@ -680,6 +705,7 @@ class ZISettingsBuilder:
         Returns
         -------
         :
+
         """
         return self._set_daq(
             ZISetting(
@@ -710,6 +736,7 @@ class ZISettingsBuilder:
         ------
         ValueError
             If a channel used is larger than 9.
+
         """
         assert len(real) <= 4096
 
@@ -752,6 +779,7 @@ class ZISettingsBuilder:
         ------
         ValueError
             If a channel used is larger than 9.
+
         """
         assert len(imag) <= 4096
 
@@ -784,6 +812,7 @@ class ZISettingsBuilder:
         Returns
         -------
         :
+
         """
         return self._set_daq(
             ZISetting(
@@ -804,6 +833,7 @@ class ZISettingsBuilder:
         Returns
         -------
         :
+
         """
         return self._set_daq(
             ZISetting(
@@ -824,6 +854,7 @@ class ZISettingsBuilder:
         Returns
         -------
         :
+
         """
         return self._set_daq(
             ZISetting(
@@ -844,6 +875,7 @@ class ZISettingsBuilder:
         Returns
         -------
         :
+
         """
         return self._set_daq(
             ZISetting(
@@ -868,6 +900,7 @@ class ZISettingsBuilder:
         Returns
         -------
         :
+
         """
         if isinstance(value, int):
             value = np.exp(1j * np.deg2rad(value))
@@ -895,6 +928,7 @@ class ZISettingsBuilder:
         Returns
         -------
         :
+
         """
         return self._set_daq(
             ZISetting(
@@ -919,6 +953,7 @@ class ZISettingsBuilder:
         Returns
         -------
         :
+
         """
         onoff_0, onoff_1 = outputs
         channel_0 = awg_index * 2
@@ -945,6 +980,7 @@ class ZISettingsBuilder:
         Returns
         -------
         :
+
         """
         return self._set_daq(
             ZISetting(
@@ -968,6 +1004,7 @@ class ZISettingsBuilder:
         Returns
         -------
         :
+
         """
         gain1, gain2 = gain
 
@@ -1001,6 +1038,7 @@ class ZISettingsBuilder:
         Returns
         -------
         :
+
         """
         return self._set_awg(
             awg_index,
@@ -1021,6 +1059,7 @@ class ZISettingsBuilder:
         Returns
         -------
         :
+
         """
         # return ZISettings(self._daq_settings, dict(self._awg_settings).values())
 

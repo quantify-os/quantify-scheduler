@@ -9,7 +9,7 @@ but could be extended for other qubits (eg. carbon qubit).
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from qcodes.instrument import InstrumentModule
 from qcodes.instrument.parameter import (
@@ -47,7 +47,8 @@ if TYPE_CHECKING:
 class Ports(InstrumentModule):
     """Submodule containing the ports."""
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
+        del kwargs  # Ignore any other arguments passed. TODO: enforce this doesn't happen
         super().__init__(parent=parent, name=name)
 
         self.microwave = Parameter(
@@ -84,7 +85,8 @@ class Ports(InstrumentModule):
 class ClockFrequencies(InstrumentModule):
     """Submodule with clock frequencies specifying the transitions to address."""
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
+        del kwargs  # Ignore any other arguments passed. TODO: enforce this doesn't happen
         super().__init__(parent=parent, name=name)
 
         self.f01 = ManualParameter(
@@ -154,7 +156,8 @@ class SpectroscopyOperationHermiteMW(InstrumentModule):
     :class:`~.ClockFrequencies`.
     """
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
+        del kwargs  # Ignore any other arguments passed. TODO: enforce this doesn't happen
         super().__init__(parent=parent, name=name)
 
         self.amplitude = ManualParameter(
@@ -185,7 +188,8 @@ class ResetSpinpump(InstrumentModule):
     This should reset the NV to the :math:`|0\rangle` state.
     """
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
+        del kwargs  # Ignore any other arguments passed. TODO: enforce this doesn't happen
         super().__init__(parent=parent, name=name)
 
         self.amplitude = ManualParameter(
@@ -215,7 +219,8 @@ class Measure(InstrumentModule):
     Acquisition of photons when decaying back into the :math:`|0\rangle` state.
     """
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
+        del kwargs  # Ignore any other arguments passed. TODO: enforce this doesn't happen
         super().__init__(parent=parent, name=name)
 
         self.pulse_amplitude = ManualParameter(
@@ -306,7 +311,8 @@ class ChargeReset(InstrumentModule):
     After resetting, the qubit should be in its negatively charged state.
     """
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
+        del kwargs  # Ignore any other arguments passed. TODO: enforce this doesn't happen
         super().__init__(parent=parent, name=name)
 
         self.amplitude = ManualParameter(
@@ -335,7 +341,10 @@ class CRCount(InstrumentModule):
     This uses a photon count to perform a charge and resonance count.
     """
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+    def __init__(
+        self, parent: InstrumentBase, name: str, **kwargs: float | None
+    ) -> None:
+        del kwargs  # Ignore any other arguments passed. TODO: enforce this doesn't happen
         super().__init__(parent=parent, name=name)
 
         self.readout_pulse_amplitude = ManualParameter(
@@ -414,7 +423,9 @@ class RxyHermite(InstrumentModule):
     using a Hermite pulse.
     """
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+    def __init__(
+        self, parent: InstrumentBase, name: str, **kwargs: float | None
+    ) -> None:
         super().__init__(parent=parent, name=name)
 
         self.amp180 = ManualParameter(
@@ -453,7 +464,7 @@ class BasicElectronicNVElement(DeviceElement):
     operations into pulses. Please see the documentation of these classes.
     """
 
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name: str, **kwargs) -> None:
         submodules_to_add = {
             "spectroscopy_operation": SpectroscopyOperationHermiteMW,
             "ports": Ports,

@@ -115,6 +115,7 @@ def get_sampled_pulses_from_voltage_offsets(
     -------
     dict[str, list[SampledPulse]] :
         SampledPulse objects grouped by port.
+
     """
     if sampled_pulses is None:
         sampled_pulses = defaultdict(list)
@@ -219,6 +220,7 @@ def get_sampled_pulses(
     -------
     dict[str, list[SampledPulse]] :
         SampledPulse objects grouped by port.
+
     """
     if sampled_pulses is None:
         sampled_pulses = defaultdict(list)
@@ -279,7 +281,7 @@ def get_sampled_pulses(
 
 
 def get_sampled_acquisitions(
-    acq_infos: dict[str, list[ScheduledInfo]]
+    acq_infos: dict[str, list[ScheduledInfo]],
 ) -> dict[str, list[SampledAcquisition]]:
     """
     Generate :class:`.SampledAcquisition` objects from acquisition_info dicts.
@@ -293,6 +295,7 @@ def get_sampled_acquisitions(
     -------
     dict[str, list[SampledAcquisition]] :
         SampledAcquisition objects grouped by port.
+
     """
     sampled_acqs: dict[str, list[SampledAcquisition]] = defaultdict(list)
     for port, info_list in acq_infos.items():
@@ -438,6 +441,7 @@ def sample_schedule(
     -------
     dict[str, tuple[list[SampledPulse], list[SampledAcquisition]]] :
         SampledPulse and SampledAcquisition objects grouped by port.
+
     """
     offset_infos: dict[str, dict[str, list[ScheduledInfo]]] = defaultdict(
         lambda: defaultdict(list)
@@ -514,6 +518,7 @@ def pulse_diagram_plotly(
     -------
     :class:`plotly.graph_objects.Figure` :
         the plot
+
     """
     n_rows = len(sampled_pulses_and_acqs)
     fig = make_subplots(rows=n_rows, cols=1, shared_xaxes=True, vertical_spacing=0.02)
@@ -691,6 +696,7 @@ def plot_single_subplot_mpl(
 
     ax :
         The Axes of the subplot belonging to the Figure.
+
     """
     if ax is None:
         fig, ax = plt.subplots()
@@ -744,6 +750,7 @@ def plot_multiple_subplots_mpl(
 
     axs :
         An array of Axes objects belonging to the Figure.
+
     """
     fig, axs = plt.subplots(len(sampled_schedule), 1, sharex=True)
 
@@ -821,6 +828,7 @@ def pulse_diagram_matplotlib(
     ax :
         The Axes object belonging to the Figure, or an array of Axes if
         ``multiple_subplots=True``.
+
     """
     pulses = {port: pulses for port, (pulses, _) in sampled_pulses_and_acqs.items()}
 
@@ -852,6 +860,7 @@ def get_window_operations(
     -------
     :
         List of all window operations in the schedule.
+
     """
     window_operations = []
     for _, schedulable in enumerate(schedule.schedulables.values()):
@@ -889,6 +898,7 @@ def plot_window_operations(
         The matplotlib figure.
     ax
         The matplotlib ax.
+
     """
     if ax is None:
         ax = plt.gca()
@@ -932,6 +942,7 @@ def plot_acquisition_operations(
     -------
     :
         List of handles
+
     """
     if ax is None:
         ax = plt.gca()

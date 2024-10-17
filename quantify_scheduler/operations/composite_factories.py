@@ -21,6 +21,7 @@ def hadamard_as_y90z(
     -------
     :
         Schedule.
+
     """
     schedule = Schedule("Hadamard")
     schedule.add(Z(qubit))
@@ -47,6 +48,7 @@ def cnot_as_h_cz_h(
     -------
     Schedule
         Schedule for the CNOT gate.
+
     """
     schedule = Schedule("CNOT")
     schedule.add(H(target_qubit))

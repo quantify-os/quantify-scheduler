@@ -33,6 +33,7 @@ from quantify_scheduler.backends.types.common import (
 from quantify_scheduler.backends.types.qblox import (
     BoundedParameter,
     OpInfo,
+    QbloxRealTimeFilter,
     StaticAnalogModuleProperties,
     StaticTimetagModuleProperties,
     TimetagModuleSettings,
@@ -50,7 +51,9 @@ if TYPE_CHECKING:
 
 class LocalOscillatorCompiler(compiler_abc.InstrumentCompiler):
     """
-    Implementation of an :class:`~quantify_scheduler.backends.qblox.compiler_abc.InstrumentCompiler` that compiles for a generic LO. The main
+    Implementation of an
+    :class:`~quantify_scheduler.backends.qblox.compiler_abc.InstrumentCompiler`
+    that compiles for a generic LO. The main
     difference between this class and the other compiler classes is that it doesn't take
     pulses and acquisitions.
 
@@ -66,6 +69,7 @@ class LocalOscillatorCompiler(compiler_abc.InstrumentCompiler):
         the schedule.
     instrument_cfg
         The compiler config referring to this instrument.
+
     """
 
     def __init__(
@@ -73,7 +77,7 @@ class LocalOscillatorCompiler(compiler_abc.InstrumentCompiler):
         name: str,
         total_play_time: float,
         instrument_cfg: _LocalOscillatorCompilationConfig,
-    ):
+    ) -> None:
         super().__init__(
             name=name,
             total_play_time=total_play_time,
@@ -93,11 +97,12 @@ class LocalOscillatorCompiler(compiler_abc.InstrumentCompiler):
         -------
         :
             The current frequency.
+
         """
         return self._frequency
 
     @frequency.setter
-    def frequency(self, value: float):
+    def frequency(self, value: float) -> None:
         """
         Sets the lo frequency for this device if no frequency is specified, but raises
         an exception otherwise.
@@ -113,17 +118,21 @@ class LocalOscillatorCompiler(compiler_abc.InstrumentCompiler):
             Occurs when a frequency has been previously set and attempting to set the
             frequency to a different value than what it is currently set to. This would
             indicate an invalid configuration in the hardware mapping.
+
         """
-        if self._frequency is not None:
-            if value != self._frequency:
-                raise ValueError(
-                    f"Attempting to set LO {self.name} to frequency {value}, "
-                    f"while it has previously already been set to "
-                    f"{self._frequency}!"
-                )
+        if self._frequency is not None and value != self._frequency:
+            raise ValueError(
+                f"Attempting to set LO {self.name} to frequency {value}, "
+                f"while it has previously already been set to "
+                f"{self._frequency}!"
+            )
         self._frequency = value
 
-    def compile(self, debug_mode, repetitions: int = 1) -> dict[str, Any] | None:
+    def compile(
+        self,
+        debug_mode: bool,  # noqa: ARG002 Debug_mode not used for this class
+        repetitions: int = 1,  # noqa: ARG002 Repetitions not used for this class
+    ) -> dict[str, Any] | None:
         """
         Compiles the program for the LO InstrumentCoordinator component.
 
@@ -140,6 +149,7 @@ class LocalOscillatorCompiler(compiler_abc.InstrumentCompiler):
         :
             Dictionary containing all the information the InstrumentCoordinator
             component needs to set the parameters appropriately.
+
         """
         if self._frequency is None:
             return None
@@ -174,7 +184,7 @@ class QCMCompiler(BasebandModuleCompiler):
         },
     )
 
-    def _configure_hardware_distortion_corrections(self):
+    def _configure_hardware_distortion_corrections(self) -> None:
         """Assign distortion corrections to settings of instrument compiler."""
         distortion_configs = self._get_distortion_configs_per_output()
         self._configure_distortion_correction_latency_compensations(distortion_configs)
@@ -220,7 +230,7 @@ class QCMCompiler(BasebandModuleCompiler):
                             output_settings.fir, value, marker_debug_mode_enable
                         )
 
-    def _get_distortion_configs_per_output(self):
+    def _get_distortion_configs_per_output(self) -> dict[int, dict]:
         module_distortion_configs = {}
         corrections = self.instrument_cfg.hardware_options.distortion_corrections
         if corrections is not None:
@@ -267,7 +277,12 @@ class QCMCompiler(BasebandModuleCompiler):
                             )
         return module_distortion_configs
 
-    def _configure_filter(self, filt, coefficient, marker_debug_mode_enable):
+    def _configure_filter(
+        self,
+        filt: QbloxRealTimeFilter,
+        coefficient: float,
+        marker_debug_mode_enable: bool,
+    ) -> None:
         filt.coeffs = coefficient
         filt.config = QbloxFilterConfig.ENABLED
         if marker_debug_mode_enable:
@@ -361,6 +376,7 @@ class QTMCompiler(compiler_abc.ClusterModuleCompiler):
         the schedule.
     instrument_cfg
         The instrument compilation config referring to this device.
+
     """
 
     def __init__(
@@ -438,7 +454,7 @@ class QTMCompiler(compiler_abc.ClusterModuleCompiler):
             sequencer_cfg=sequencer_cfg,
         )
 
-    def prepare(self, **kwargs) -> None:
+    def prepare(self, **kwargs) -> None:  # noqa: ARG002 other kwargs are ignored
         """
         Performs the logic needed before being able to start the compilation. In effect,
         this means assigning the pulses and acquisitions to the sequencers and
@@ -463,6 +479,7 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
         Total time execution of the schedule should go on for.
     instrument_cfg
         The instrument compiler config referring to this device.
+
     """
 
     compiler_classes: dict[str, type] = {
@@ -480,7 +497,7 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
         name: str,
         total_play_time: float,
         instrument_cfg: _ClusterCompilationConfig,
-    ):
+    ) -> None:
         super().__init__(
             name=name,
             total_play_time=total_play_time,
@@ -504,6 +521,7 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
         op_info
             Data structure containing all the information regarding this specific
             pulse or acquisition operation.
+
         """
         self._op_infos[(port, clock)].append(op_info)
 
@@ -516,6 +534,7 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
         :
             A dictionary with the name of the module as key and the value its
             compiler.
+
         """
         module_compilers = {}
         module_configs = self.instrument_cfg._extract_module_compilation_configs()
@@ -537,7 +556,7 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
         self,
         external_los: dict[str, LocalOscillatorCompiler] | None = None,
         schedule_resources: dict[str, Resource] | None = None,
-        **kwargs,
+        **kwargs,  # noqa: ARG002 other kwargs are ignored
     ) -> None:
         """
         Prepares the instrument compiler for compilation by assigning the data.
@@ -551,6 +570,7 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
             Mapping from clock name to clock resource, which contains the clock frequency.
         kwargs:
             Potential keyword arguments for other compiler classes.
+
         """
         self.distribute_data()
         for compiler in self.instrument_compilers.values():
@@ -587,6 +607,7 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
         -------
         :
             The part of the compiled instructions relevant for this instrument.
+
         """
         program = {}
         program["settings"] = {

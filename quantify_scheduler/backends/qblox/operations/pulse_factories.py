@@ -67,6 +67,7 @@ def long_square_pulse(
     ------
     ValueError
         When the duration of the pulse is not a multiple of ``grid_time_ns``.
+
     """
     if duration * 1e9 < constants.MIN_TIME_BETWEEN_OPERATIONS:
         raise ValueError(
@@ -166,6 +167,7 @@ def staircase_pulse(
     ------
     ValueError
         When the duration of a step is not a multiple of ``grid_time_ns``.
+
     """
     builder = StitchedPulseBuilder(
         name=staircase_pulse.__name__, port=port, clock=clock, t0=t0
@@ -271,6 +273,7 @@ def long_ramp_pulse(
     StitchedPulse
         A ``StitchedPulse`` composed of shorter ramp pulses with varying DC offsets,
         forming one long ramp pulse.
+
     """
     dur_ns = helpers.to_grid_time(duration)
     num_whole_parts = (dur_ns - 1) // part_duration_ns

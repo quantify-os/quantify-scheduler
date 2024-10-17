@@ -136,6 +136,7 @@ def ensure_no_operations_overlap(timing_table: pandas.DataFrame) -> None:
     ------
     ValueError
         If there is overlap between operations.
+
     """
     for output_ch in timing_table.hardware_channel.unique():
         if output_ch is None:
@@ -333,6 +334,7 @@ def _determine_measurement_fixpoint_correction(
     tuple[float, int]
         The time correction to be applied in seconds.
         The correction in the number of samples.
+
     """
     uhf_sampling_rate = 1.8e9
     samples_per_clock_cycle = 8
@@ -379,6 +381,7 @@ def _apply_measurement_fixpoint_correction(
         A larger common frequency results in a smaller time correction.
         This largest common frequency is the common frequency of the HDAWG and UHFQA and
         is 600 MHz.
+
     """
     acquisitions = timing_table[timing_table.is_acquisition]
     time_corrections = np.zeros(len(timing_table))
@@ -489,6 +492,7 @@ def _parse_local_oscillators(data: dict[str, Any]) -> dict[str, zhinst.LocalOsci
     ------
     RuntimeError
         If duplicate LocalOscillators have been found.
+
     """
     local_oscillators: dict[str, zhinst.LocalOscillator] = dict()
     lo_list_validator = TypeAdapter(List[zhinst.LocalOscillator])
@@ -539,6 +543,7 @@ def _validate_schedule(schedule: Schedule) -> None:
     ------
     ValueError
         The validation error.
+
     """
     if len(schedule.schedulables) == 0:
         raise ValueError(f"Undefined schedulables for schedule '{schedule.name}'!")
@@ -583,6 +588,7 @@ def apply_waveform_corrections(
     Returns
     -------
     :
+
     """
     (start_in_seconds, duration_in_seconds) = start_and_duration_in_seconds
 
@@ -670,6 +676,7 @@ class ZIAcquisitionConfig:
     Parameters
     ----------
     bin_mode:
+
     """
 
     n_acquisitions: int
@@ -747,6 +754,7 @@ def _generate_legacy_hardware_config(  # noqa: PLR0912, PLR0915
     RuntimeError
         If no external local oscillator is found in the generated zhinst
         hardware configuration.
+
     """
 
     hardware_description = (
@@ -1046,6 +1054,7 @@ def _generate_new_style_hardware_compilation_config(  # noqa: PLR0912, PLR0915
     -------
     dict
         New-style hardware compilation config dictionary.
+
     """
     # Avoid modifying the original config
     old_style_config = deepcopy(old_style_config)
@@ -1269,6 +1278,7 @@ def flatten_schedule(
     -------
     Schedule
         Equivalent schedule without subschedules
+
     """
 
     def _insert_op_at_time(
@@ -1392,6 +1402,7 @@ def compile_backend(  # noqa: PLR0912
         Thrown when using unsupported ZI Instruments.
     ValueError
         When both ``config`` and ``hardware_cfg`` are supplied.
+
     """
     if not ((config is not None) ^ (hardware_cfg is not None)):
         raise ValueError(
@@ -1754,6 +1765,7 @@ def _compile_for_hdawg(
     Raises
     ------
     ValueError
+
     """
     # calculating duration over all operations instead of only the last ensures a
     # long operation near the end does not get overlooked.
@@ -2034,6 +2046,7 @@ def _compile_for_uhfqa(  # noqa: PLR0915
     Returns
     -------
     :
+
     """
     ########################################
     # Add standard settings to builder

@@ -8,8 +8,10 @@ import os
 import subprocess as sp  # nosec B404
 import sys
 from pathlib import Path
-from types import ModuleType
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from types import ModuleType
 
 
 def get_classes(*modules: ModuleType) -> dict[str, type[Any]]:
@@ -34,6 +36,7 @@ def get_classes(*modules: ModuleType) -> dict[str, type[Any]]:
     -------
     :
         A dictionary containing the class names by class reference.
+
     """
     classes = list()
     for module in modules:
@@ -65,6 +68,7 @@ def make_uml_diagram(
     -------
     :
         The name of the generated ``png`` image
+
     """
     basic_options = ["--colorized", "-m", "n"]
 

@@ -420,8 +420,7 @@ def test_deprecated_funcs_and_classes_warn():
 
 def test_deprecated_path_args():
     with pytest.warns(FutureWarning, match="0.20.0"):
-
-        pulse = (
+        (
             StitchedPulseBuilder(port="q0:mw", clock="q0.01")  # type: ignore
             .add_pulse(SquarePulse(amp=0.2, duration=1e-6, port="q0:mw", clock="q0.01"))
             .add_pulse(RampPulse(amp=0.5, duration=28e-9, port="q0:mw", clock="q0.01"))
@@ -431,8 +430,7 @@ def test_deprecated_path_args():
             .build()
         )
     with pytest.raises(TypeError, match="0.20.0"):
-
-        pulse = (
+        (
             StitchedPulseBuilder(port="q0:mw", clock="q0.01")  # type: ignore
             .add_pulse(SquarePulse(amp=0.2, duration=1e-6, port="q0:mw", clock="q0.01"))
             .add_pulse(RampPulse(amp=0.5, duration=28e-9, port="q0:mw", clock="q0.01"))

@@ -3,12 +3,14 @@
 """Standard gateset for use with the quantify_scheduler."""
 from __future__ import annotations
 
-from typing import Hashable, Literal
+from typing import TYPE_CHECKING, Hashable, Literal
 
 import numpy as np
 
-from ..enums import BinMode
 from .operation import Operation
+
+if TYPE_CHECKING:
+    from quantify_scheduler.enums import BinMode
 
 
 class Rxy(Operation):
@@ -46,7 +48,7 @@ class Rxy(Operation):
         phi: float,
         qubit: str,
         **device_overrides,
-    ):
+    ) -> None:
         if not isinstance(theta, float):
             theta = float(theta)
         if not isinstance(phi, float):
@@ -123,7 +125,7 @@ class X(Rxy):
 
     """
 
-    def __init__(self, qubit: str, **device_overrides):
+    def __init__(self, qubit: str, **device_overrides) -> None:
         super().__init__(theta=180.0, phi=0, qubit=qubit, **device_overrides)
         self.data["name"] = f"X {qubit}"
         self.data["gate_info"]["tex"] = r"$X_{\pi}$"
@@ -154,13 +156,14 @@ class X90(Rxy):
     device_overrides
         Device level parameters that override device configuration values
         when compiling from circuit to device level.
+
     """
 
     def __init__(
         self,
         qubit: str,
         **device_overrides,
-    ):
+    ) -> None:
         super().__init__(theta=90.0, phi=0.0, qubit=qubit, **device_overrides)
         self.qubit = qubit
         self.data["name"] = f"X_90 {qubit}"
@@ -178,7 +181,7 @@ class Y(Rxy):
 
     It is identical to the Rxy gate with theta=180 and phi=90
 
-    Defined by the unitary: 
+    Defined by the unitary:
 
     .. math::
         Y180 = R_{Y180} = \begin{bmatrix}
@@ -192,13 +195,14 @@ class Y(Rxy):
     device_overrides
         Device level parameters that override device configuration values
         when compiling from circuit to device level.
+
     """
 
     def __init__(
         self,
         qubit: str,
         **device_overrides,
-    ):
+    ) -> None:
         super().__init__(theta=180.0, phi=90.0, qubit=qubit, **device_overrides)
         self.data["name"] = f"Y {qubit}"
         self.data["gate_info"]["tex"] = r"$Y_{\pi}$"
@@ -215,7 +219,7 @@ class Y90(Rxy):
 
     It is identical to the Rxy gate with theta=90 and phi=90
 
-    Defined by the unitary: 
+    Defined by the unitary:
 
     .. math::
 
@@ -230,9 +234,10 @@ class Y90(Rxy):
     device_overrides
         Device level parameters that override device configuration values
         when compiling from circuit to device level.
+
     """
 
-    def __init__(self, qubit: str, **device_overrides):
+    def __init__(self, qubit: str, **device_overrides) -> None:
         super().__init__(theta=90.0, phi=90.0, qubit=qubit, **device_overrides)
         self.data["name"] = f"Y_90 {qubit}"
         self.data["gate_info"]["tex"] = r"$Y_{\pi/2}$"
@@ -276,9 +281,10 @@ class Rz(Operation):
     device_overrides
         Device level parameters that override device configuration values
         when compiling from circuit to device level.
+
     """
 
-    def __init__(self, theta: float, qubit: str, **device_overrides):
+    def __init__(self, theta: float, qubit: str, **device_overrides) -> None:
         if not isinstance(theta, float):
             theta = float(theta)
 
@@ -343,7 +349,7 @@ class Z(Rz):
 
     """
 
-    def __init__(self, qubit: str, **device_overrides):
+    def __init__(self, qubit: str, **device_overrides) -> None:
         super().__init__(theta=180.0, qubit=qubit, **device_overrides)
         self.data["name"] = f"Z {qubit}"
         self.data["gate_info"]["tex"] = r"$Z_{\pi}$"
@@ -362,7 +368,10 @@ class Z90(Rz):
 
     .. math::
 
-        Z90 = R_{Z90} = e^{-\frac{\pi/2}{2}}S = e^{-\frac{\pi/2}{2}}\sqrt{Z} = \frac{1}{\sqrt{2}}\begin{bmatrix}
+        Z90 =
+        R_{Z90} =
+        e^{-\frac{\pi/2}{2}}S =
+        e^{-\frac{\pi/2}{2}}\sqrt{Z} = \frac{1}{\sqrt{2}}\begin{bmatrix}
              1-i & 0 \\
              0 & 1+i \\ \end{bmatrix}
 
@@ -376,7 +385,7 @@ class Z90(Rz):
 
     """
 
-    def __init__(self, qubit: str, **device_overrides):
+    def __init__(self, qubit: str, **device_overrides) -> None:
         super().__init__(theta=90.0, qubit=qubit, **device_overrides)
         self.data["name"] = f"Z_90 {qubit}"
         self.data["gate_info"]["tex"] = r"$Z_{\pi/2}$"
@@ -410,7 +419,7 @@ class H(Operation):
 
     """
 
-    def __init__(self, *qubits: str, **device_overrides):
+    def __init__(self, *qubits: str, **device_overrides) -> None:
         tex = r"$H$"
         plot_func = (
             "quantify_scheduler.schedules._visualization.circuit_diagram.gate_box"
@@ -462,7 +471,7 @@ class CNOT(Operation):
 
     """
 
-    def __init__(self, qC: str, qT: str, **device_overrides):
+    def __init__(self, qC: str, qT: str, **device_overrides) -> None:
         plot_func = "quantify_scheduler.schedules._visualization.circuit_diagram.cnot"
         super().__init__(f"CNOT ({qC}, {qT})")
         self.data.update(
@@ -512,14 +521,14 @@ class CZ(Operation):
     qC
         The control qubit.
     qT
-        The target qubit        
+        The target qubit
     device_overrides
         Device level parameters that override device configuration values
         when compiling from circuit to device level.
-    
+
     """
 
-    def __init__(self, qC: str, qT: str, **device_overrides):
+    def __init__(self, qC: str, qT: str, **device_overrides) -> None:
         plot_func = "quantify_scheduler.schedules._visualization.circuit_diagram.cz"
         super().__init__(f"CZ ({qC}, {qT})")
         self.data.update(
@@ -580,9 +589,10 @@ class Reset(Operation):
     device_overrides
         Device level parameters that override device configuration values
         when compiling from circuit to device level.
+
     """
 
-    def __init__(self, *qubits: str, **device_overrides):
+    def __init__(self, *qubits: str, **device_overrides) -> None:
         super().__init__(f"Reset {', '.join(qubits)}")
         plot_func = "quantify_scheduler.schedules._visualization.circuit_diagram.reset"
         self.data.update(
@@ -670,7 +680,7 @@ class Measure(Operation):
         bin_mode: BinMode | str | None = None,
         feedback_trigger_label: str | None = None,
         **device_overrides,
-    ):
+    ) -> None:
         # this if else statement a workaround to support multiplexed measurements (#262)
 
         # this snippet has some automatic behaviour that is error prone.
@@ -678,16 +688,15 @@ class Measure(Operation):
         if len(qubits) == 1:
             if acq_index is None:
                 acq_index = 0
-        else:
-            if isinstance(acq_index, int):
-                acq_index = [
-                    acq_index,
-                ] * len(qubits)
-            elif acq_index is None:
-                # defaults to writing the result of all qubits to acq_index 0.
-                # note that this will result in averaging data together if multiple
-                # measurements are present in the same schedule (#262)
-                acq_index = list(0 for i in range(len(qubits)))
+        elif isinstance(acq_index, int):
+            acq_index = [
+                acq_index,
+            ] * len(qubits)
+        elif acq_index is None:
+            # defaults to writing the result of all qubits to acq_index 0.
+            # note that this will result in averaging data together if multiple
+            # measurements are present in the same schedule (#262)
+            acq_index = list(0 for i in range(len(qubits)))
 
         plot_func = "quantify_scheduler.schedules._visualization.circuit_diagram.meter"
         super().__init__(f"Measure {', '.join(qubits)}")

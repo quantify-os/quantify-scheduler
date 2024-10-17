@@ -62,6 +62,7 @@ class LoopOperation(ControlFlowOperation):
         Number of repetitions
     t0
         Time offset, by default 0
+
     """
 
     def __init__(
@@ -207,6 +208,7 @@ class Loop(ControlFlowSpec):
         Number of repetitions
     t0
         Time offset, by default 0
+
     """
 
     def __init__(self, repetitions: int, t0: float = 0.0) -> None:
@@ -230,6 +232,7 @@ class Conditional(ControlFlowSpec):
         Number of repetitions
     t0
         Time offset, by default 0
+
     """
 
     def __init__(self, qubit_name: str, t0: float = 0.0) -> None:

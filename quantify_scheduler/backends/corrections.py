@@ -33,14 +33,16 @@ def determine_relative_latency_corrections(
 ) -> dict[str, float]:
     """
     Generates the latency configuration dict for all port-clock combinations that are present in
-    the schedule (or in the hardware config, if an old-style zhinst config is passed). This is done by first setting unspecified latency corrections to zero, and then
+    the schedule (or in the hardware config, if an old-style zhinst config is passed).
+    This is done by first setting unspecified latency corrections to zero, and then
     subtracting the minimum latency from all latency corrections.
     """
 
     def _extract_port_clocks(hardware_cfg: dict[str, Any]) -> Generator:
         """
         Extracts all port-clock combinations that are present in a hardware configuration.
-        Based on: https://stackoverflow.com/questions/9807634/find-all-occurrences-of-a-key-in-nested-dictionaries-and-lists.
+        Based on:
+        https://stackoverflow.com/questions/9807634/find-all-occurrences-of-a-key-in-nested-dictionaries-and-lists.
         """
         if hasattr(hardware_cfg, "items"):
             for k, v in hardware_cfg.items():
@@ -60,7 +62,9 @@ def determine_relative_latency_corrections(
     if isinstance(hardware_cfg, HardwareCompilationConfig):
         if schedule is None:
             raise ValueError(
-                f"{determine_relative_latency_corrections.__name__} requires the `schedule` argument if `hardware_cfg` is a `HardwareCompilationConfig`."
+                f"{determine_relative_latency_corrections.__name__} "
+                f"requires the `schedule` argument if "
+                f"`hardware_cfg` is a `HardwareCompilationConfig`."
             )
 
         port_clocks = [
@@ -113,6 +117,7 @@ def distortion_correct_pulse(
     -------
     :
         The sampled, distortion corrected pulse wrapped in a ``NumericalPulse``.
+
     """
     waveform_data = get_waveform(
         pulse_info=pulse_data, sampling_rate=distortion_correction.sampling_rate
@@ -226,9 +231,10 @@ def apply_software_distortion_corrections(
         combination.
     KeyError
         when clipping values are supplied but not two values exactly, min and max.
+
     """
     if isinstance(operation, ScheduleBase):
-        for inner_operation_id in operation.operations.keys():
+        for inner_operation_id in operation.operations:
             replacing_operation = apply_software_distortion_corrections(
                 operation.operations[inner_operation_id], distortion_corrections
             )

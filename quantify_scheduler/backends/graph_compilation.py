@@ -9,16 +9,20 @@ from typing import (
     Any,
     Callable,
     Literal,
+    NoReturn,
 )
 
 import matplotlib.pyplot as plt
 import networkx as nx
-from matplotlib.axes import Axes
 from pydantic import Field, field_serializer, field_validator
 
-from quantify_scheduler.backends.types.common import HardwareCompilationConfig
+from quantify_scheduler.backends.types.common import (
+    HardwareCompilationConfig,  # noqa: TCH001 pydantic needs it
+)
 from quantify_scheduler.helpers.importers import export_python_object_to_path_string
-from quantify_scheduler.operations.operation import Operation
+from quantify_scheduler.operations.operation import (
+    Operation,  # noqa: TCH001 circular import if moved to TYPE_CHECKING
+)
 from quantify_scheduler.schedules.schedule import (
     CompiledSchedule,
     Schedule,
@@ -31,6 +35,8 @@ from quantify_scheduler.structure.model import (
 )
 
 if TYPE_CHECKING:
+    from matplotlib.axes import Axes
+
     from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 
 
@@ -54,7 +60,7 @@ class SimpleNodeConfig(DataStructure):
     """
 
     @field_serializer("compilation_func")
-    def _serialize_compilation_func(self, v):
+    def _serialize_compilation_func(self, v: object) -> str:
         return export_python_object_to_path_string(v)
 
     @field_validator("compilation_func", mode="before")
@@ -92,7 +98,7 @@ class OperationCompilationConfig(DataStructure):
     """
 
     @field_serializer("factory_func")
-    def _serialize_factory_func(self, v):
+    def _serialize_factory_func(self, v: object) -> str | None:
         if v is None:
             return None
         else:
@@ -244,7 +250,7 @@ class CompilationConfig(DataStructure):
     """
 
     @field_serializer("backend")
-    def _serialize_backend_func(self, v):
+    def _serialize_backend_func(self, v: object) -> str:
         return export_python_object_to_path_string(v)
 
     @field_validator("backend", mode="before")
@@ -270,17 +276,18 @@ class CompilationNode:
         The name of the node. Should be unique if it is added to a (larger)
         compilation
         graph.
+
     """
 
-    def __init__(self, name: str):
+    def __init__(self, name: str) -> None:
         self.name = name
 
     # used as the key in a networkx graph so we like this to be a simple string.
-    def __repr__(self):  # noqa: D105
+    def __repr__(self) -> str:  # noqa: D105
         return self.name
 
     # used as a label when visualizing using networkx
-    def __str__(self):  # noqa: D105
+    def __str__(self) -> str:  # noqa: D105
         return self.name
 
     def _compilation_func(
@@ -337,9 +344,10 @@ class SimpleNode(CompilationNode):
         should take the intermediate representation (commonly :class:`~.Schedule`)
         and a config as inputs and returns a new (modified) intermediate
         representation.
+
     """
 
-    def __init__(self, name: str, compilation_func: Callable):
+    def __init__(self, name: str, compilation_func: Callable) -> None:
         super().__init__(name=name)
         self.compilation_func = compilation_func
 
@@ -371,9 +379,10 @@ class QuantifyCompiler(CompilationNode):
     quantum_device
         quantum_device from which a :class:`~.CompilationConfig` will be generated
         if None is provided for the compile step
+
     """
 
-    def __init__(self, name, quantum_device: QuantumDevice | None = None) -> None:
+    def __init__(self, name: str, quantum_device: QuantumDevice | None = None) -> None:
         super().__init__(name=name)
 
         # current implementations use networkx directed graph to store the task graph
@@ -383,7 +392,7 @@ class QuantifyCompiler(CompilationNode):
         self._task_graph: nx.DiGraph = None
 
         self._input_node = None
-        self._ouput_node = None
+        self._output_node = None
 
         self.quantum_device = quantum_device
 
@@ -428,7 +437,7 @@ class QuantifyCompiler(CompilationNode):
         return self._compilation_func(schedule=schedule, config=config)
 
     @property
-    def input_node(self):
+    def input_node(self) -> SimpleNode:
         """
         Node designated as the default input for compilation.
 
@@ -437,15 +446,15 @@ class QuantifyCompiler(CompilationNode):
         return self._input_node
 
     @property
-    def output_node(self):
+    def output_node(self) -> SimpleNode | None:
         """
         Node designated as the default output for compilation.
 
         If not specified will return None.
         """
-        return self._ouput_node
+        return self._output_node
 
-    def construct_graph(self, config: CompilationConfig):
+    def construct_graph(self, config: CompilationConfig) -> NoReturn:
         """Construct the compilation graph based on a provided config."""
         raise NotImplementedError
 
@@ -508,7 +517,7 @@ class QuantifyCompiler(CompilationNode):
 class SerialCompiler(QuantifyCompiler):
     """A compiler that executes compilation passes sequentially."""
 
-    def construct_graph(self, config: SerialCompilationConfig):
+    def construct_graph(self, config: SerialCompilationConfig) -> None:
         """
         Construct the compilation graph based on a provided config.
 
@@ -532,6 +541,8 @@ class SerialCompiler(QuantifyCompiler):
                 config.hardware_compilation_config.compilation_passes
             )
 
+        node = None
+        last_added_node = None
         for i, compilation_pass in enumerate(compilation_passes):
             node = SimpleNode(
                 name=compilation_pass.name,
@@ -541,10 +552,10 @@ class SerialCompiler(QuantifyCompiler):
             if i == 0:
                 self._input_node = node
             else:
-                self._task_graph.add_edge(last_added_node, node)  # noqa: F821
-            last_added_node = node  # noqa: F841
+                self._task_graph.add_edge(last_added_node, node)
+            last_added_node = node
 
-        self._ouput_node = node
+        self._output_node = node
 
     def _compilation_func(
         self, schedule: Schedule, config: SerialCompilationConfig
@@ -560,6 +571,7 @@ class SerialCompiler(QuantifyCompiler):
             A dictionary containing the information needed to compile the schedule.
             Nodes in this compiler specify what key they need information from in this
             dictionary.
+
         """
         self.construct_graph(config=config)
         # if there is only 1 node there is no shortest_path defined
@@ -601,7 +613,7 @@ class SerialCompilationConfig(CompilationConfig):
     backend: type[SerialCompiler] = SerialCompiler
 
     @field_serializer("backend")
-    def _serialize_backend_func(self, v):
+    def _serialize_backend_func(self, v: object) -> str:
         return export_python_object_to_path_string(v)
 
     @field_validator("backend", mode="before")

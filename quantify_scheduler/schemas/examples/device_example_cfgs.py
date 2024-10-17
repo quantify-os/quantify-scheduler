@@ -6,7 +6,7 @@ example_transmon_cfg = {
     "compilation_passes": [
         {
             "name": "circuit_to_device",
-            "compilation_func": "quantify_scheduler.backends.circuit_to_device.compile_circuit_to_device_with_config_validation",
+            "compilation_func": "quantify_scheduler.backends.circuit_to_device.compile_circuit_to_device_with_config_validation",  # noqa: E501, line too long
         }
     ],
     "clocks": {

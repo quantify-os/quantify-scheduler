@@ -94,14 +94,16 @@ class TestDataStructure:
 
     def test_json_loads2(self):
         dummy1 = DummyStructure2.model_validate_json(
-            '{"name": "foobar", "func": "quantify_scheduler.helpers.importers.import_python_object_from_string"}'
+            '{"name": "foobar", '
+            '"func": "quantify_scheduler.helpers.importers.import_python_object_from_string"}'
         )
         dummy2 = DummyStructure2(name="foobar", func=import_python_object_from_string)
         assert dummy1 == dummy2
 
     def test_json_loads3(self):
         dummy1 = DummyStructure3.model_validate_json(
-            '{"name": "foobar", "cls": "quantify_scheduler.structure.model.DataStructure"}'
+            '{"name": "foobar", '
+            '"cls": "quantify_scheduler.structure.model.DataStructure"}'
         )
         dummy2 = DummyStructure3(name="foobar", cls=DataStructure)
         assert dummy1 == dummy2
@@ -130,8 +132,8 @@ class TestDataStructure:
         dummy = DummyStructure2(name="foobar", func=import_python_object_from_string)
         json_str = dummy.model_dump_json()
         assert (
-            json_str
-            == '{"name":"foobar","func":"quantify_scheduler.helpers.importers.import_python_object_from_string"}'
+            json_str == '{"name":"foobar",'
+            '"func":"quantify_scheduler.helpers.importers.import_python_object_from_string"}'
         )
 
     def test_json_dumps3(self):

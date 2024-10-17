@@ -4,13 +4,17 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from qcodes.instrument.base import InstrumentBase
 
 import quantify_scheduler.instrument_coordinator.utility as util
 from quantify_scheduler.instrument_coordinator.components import base
-from quantify_scheduler.schedules.schedule import CompiledSchedule
+
+if TYPE_CHECKING:
+    from xarray import Dataset
+
+    from quantify_scheduler.schedules.schedule import CompiledSchedule
 
 logger = logging.getLogger(__name__)
 
@@ -101,9 +105,10 @@ class GenericInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentB
         """
         self._set_params_to_devices(params_config=params_config)
 
-    def _set_params_to_devices(self, params_config) -> None:
+    def _set_params_to_devices(self, params_config: dict) -> None:
         """
-        Set the parameters in the params_config dict to the generic devices set in the hardware_config.
+        Set the parameters in the params_config dict
+        to the generic devices set in the hardware_config.
 
         The bool force_set_parameters is used to
         change the lazy_set behavior.
@@ -137,13 +142,13 @@ class GenericInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentB
                         f"{key} is neither a parameter nor a callable function"
                     ) from e
 
-    def retrieve_acquisition(self) -> Any:
+    def retrieve_acquisition(self) -> Dataset | None:
         """Retrieve acquisition."""
         pass
 
     def get_hardware_log(
         self,
-        compiled_schedule: CompiledSchedule,
+        compiled_schedule: CompiledSchedule,  # noqa: ARG002
     ) -> dict | None:
         """Get the hardware log."""
         return None

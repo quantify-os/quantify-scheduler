@@ -21,12 +21,6 @@ from quantify_scheduler.backends.qblox import constants, helpers, q1asm_instruct
 from quantify_scheduler.backends.qblox.conditional import (
     ConditionalManager,
 )
-from quantify_scheduler.backends.qblox.register_manager import RegisterManager
-from quantify_scheduler.backends.types.qblox import (
-    OpInfo,
-    StaticHardwareProperties,
-)
-from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.qblox.operation_handling.base import (
@@ -35,6 +29,12 @@ if TYPE_CHECKING:
     from quantify_scheduler.backends.qblox.operation_handling.virtual import (
         ConditionalStrategy,
     )
+    from quantify_scheduler.backends.qblox.register_manager import RegisterManager
+    from quantify_scheduler.backends.types.qblox import (
+        OpInfo,
+        StaticHardwareProperties,
+    )
+    from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 
 
 def get_marker_binary(marker_setting: str | int) -> int:
@@ -49,6 +49,7 @@ def get_marker_binary(marker_setting: str | int) -> int:
     ----------
     marker_setting
         The string representing a binary number.
+
     """
     if isinstance(marker_setting, str):
         if len(marker_setting) != 4:
@@ -79,6 +80,7 @@ class QASMProgram:
     acq_metadata
         Provides a summary of the used acquisition protocol, bin mode, acquisition
         channels, acquisition indices per channel, and repetitions.
+
     """
 
     def __init__(
@@ -87,7 +89,7 @@ class QASMProgram:
         register_manager: RegisterManager,
         align_fields: bool,
         acq_metadata: AcquisitionMetadata | None,
-    ):
+    ) -> None:
         self.static_hw_properties = static_hw_properties
         """Dataclass holding the properties of the hardware that this program is to be
         played on."""
@@ -185,6 +187,7 @@ class QASMProgram:
         ------
         SyntaxError
             More arguments passed than the sequencer allows.
+
         """
         instr_args = ",".join(str(arg) for arg in args)
 
@@ -209,13 +212,17 @@ class QASMProgram:
             A list containing instructions.
 
         """
-        # Translating the acquisition channel to qblox acquisition index is intended as a temporary solution.
-        # Proper solution: SE-298.
+        # Translating the acquisition channel to qblox acquisition index
+        # is intended as a temporary solution.
+        # TODO: Proper solution: SE-298.
         instruction = args[0]
         if self.acq_metadata and (
-            instruction == q1asm_instructions.ACQUIRE
-            or instruction == q1asm_instructions.ACQUIRE_TTL
-            or instruction == q1asm_instructions.ACQUIRE_WEIGHED
+            instruction
+            in (
+                q1asm_instructions.ACQUIRE,
+                q1asm_instructions.ACQUIRE_TTL,
+                q1asm_instructions.ACQUIRE_WEIGHED,
+            )
         ):
             args = list(args)
             args[1] = self._find_qblox_acq_index(acq_channel=args[1])
@@ -273,6 +280,7 @@ class QASMProgram:
         ------
         ValueError
             If ``wait_time <= 0``.
+
         """
         if wait_time == 0:
             return
@@ -337,6 +345,7 @@ class QASMProgram:
         ------
         ValueError
             If wait time < 0.
+
         """
         start_time = helpers.to_grid_time(operation.timing)
         wait_time = start_time - self.elapsed_time
@@ -360,8 +369,8 @@ class QASMProgram:
 
     def set_gain_from_amplitude(
         self,
-        amplitude_path_I: float,
-        amplitude_path_Q: float,
+        amplitude_path_I: float,  # noqa N803 - uppercase in name
+        amplitude_path_Q: float,  # noqa N803 - uppercase in name
         operation: OpInfo | None,
     ) -> None:
         """
@@ -375,6 +384,7 @@ class QASMProgram:
             Voltage to set on path_Q.
         operation
             The operation for which this is done. Used for the exception messages.
+
         """
         awg_gain_path_I_immediate = self.expand_awg_from_normalised_range(
             amplitude_path_I,
@@ -402,10 +412,12 @@ class QASMProgram:
         immediate_size: int,
         param: str | None = None,
         operation: OpInfo | None = None,
-    ):
+    ) -> float:
         """
-        Takes the value of an awg gain or offset parameter in normalized form (abs(param) <= 1.0), and
-        expands it to an integer in the appropriate range required by the sequencer.
+        Takes the value of an awg gain or offset parameter
+        in normalized form (abs(param) <= 1.0),
+        and expands it to an integer
+        in the appropriate range required by the sequencer.
 
         Parameters
         ----------
@@ -429,6 +441,7 @@ class QASMProgram:
         ------
         ValueError
             Parameter is not in the normalized range.
+
         """
         if np.abs(val) > 1.0:
             raise ValueError(
@@ -450,6 +463,7 @@ class QASMProgram:
         -------
         :
             The string representation of the program.
+
         """
         if self.align_fields:
             try:
@@ -505,7 +519,8 @@ class QASMProgram:
         if self._lock_conditional:
             raise RuntimeError(
                 "Nested conditional playback inside schedules is not supported by "
-                f"the Qblox backend. This error is caused by the following operation strategy:\n{operation}."
+                f"the Qblox backend. "
+                f"This error is caused by the following operation strategy:\n{operation}."
             )
         self._lock_conditional = True
 
@@ -548,7 +563,7 @@ class QASMProgram:
         self._lock_conditional = False
 
     @contextmanager
-    def loop(self, label: str, repetitions: int = 1):
+    def loop(self, label: str, repetitions: int = 1) -> Generator[str, None, None]:
         """
         Defines a context manager that can be used to generate a loop in the QASM
         program.
@@ -590,6 +605,7 @@ class QASMProgram:
                 qasm.auto_wait(100)
 
             qasm.instructions
+
         """
         register = self.register_manager.allocate_register()
         comment = f"iterator for loop with label {label}"
@@ -623,6 +639,7 @@ class QASMProgram:
         ------
         :
             Either a single register or a list of registers.
+
         """
         registers: list[str] = list()
         for _ in range(amount):

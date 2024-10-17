@@ -21,7 +21,9 @@ from quantify_core.data import handling
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 from quantify_scheduler.backends.zhinst.settings import ZISerializeSettings
 from quantify_scheduler.enums import BinMode
-from quantify_scheduler.instrument_coordinator.components import base
+from quantify_scheduler.instrument_coordinator.components.base import (
+    InstrumentCoordinatorComponentBase,
+)
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -39,7 +41,7 @@ class AcquisitionProtocolNotSupportedError(NotImplementedError):
     pass
 
 
-class ZIInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
+class ZIInstrumentCoordinatorComponent(InstrumentCoordinatorComponentBase):
     """Zurich Instruments InstrumentCoordinator component base class."""
 
     def __init__(
@@ -74,6 +76,7 @@ class ZIInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentBase):
         -------
         :
             A boolean indicating if the ZI component was configured in this call.
+
         """
         self.zi_device_config = zi_device_config
 
@@ -145,6 +148,7 @@ class HDAWGInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
         -------
         :
             The HDAWG AWG instance.
+
         """
         return self.instrument.awgs[index]
 
@@ -218,6 +222,7 @@ class UHFQAInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
         -------
         :
             A boolean indicating if the ZI component was configured in this call.
+
         """
         # always start by resetting the counters and stopping the AWG
         self.instrument.qas[0].result.enable(0)

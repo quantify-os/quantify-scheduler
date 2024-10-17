@@ -5,15 +5,17 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
 from quantify_scheduler.backends.qblox import constants, helpers, q1asm_instructions
 from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
-from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
-from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.enums import BinMode
+
+if TYPE_CHECKING:
+    from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
+    from quantify_scheduler.backends.types import qblox as types
 
 
 class AcquisitionStrategyPartial(IOperationStrategy):
@@ -24,9 +26,10 @@ class AcquisitionStrategyPartial(IOperationStrategy):
     ----------
     operation_info
         The operation info that corresponds to this operation.
+
     """
 
-    def __init__(self, operation_info: types.OpInfo):
+    def __init__(self, operation_info: types.OpInfo) -> None:
         self._acq_info: types.OpInfo = operation_info
         self.bin_mode: BinMode = operation_info.data["bin_mode"]
         self.acq_channel = operation_info.data["acq_channel"]
@@ -34,7 +37,7 @@ class AcquisitionStrategyPartial(IOperationStrategy):
         """The register used to keep track of the bin index, only not None for append
         mode acquisitions."""
 
-    def insert_qasm(self, qasm_program: QASMProgram):
+    def insert_qasm(self, qasm_program: QASMProgram) -> None:
         """
         Add the assembly instructions for the Q1 sequence processor that corresponds to
         this acquisition. This function calls the appropriate method to generate
@@ -44,21 +47,21 @@ class AcquisitionStrategyPartial(IOperationStrategy):
         ----------
         qasm_program
             The QASMProgram to add the assembly instructions to.
+
         """
-        if qasm_program.time_last_acquisition_triggered is not None:
-            if (
-                qasm_program.elapsed_time - qasm_program.time_last_acquisition_triggered
-                < constants.MIN_TIME_BETWEEN_ACQUISITIONS
-            ):
-                raise ValueError(
-                    f"Attempting to start an acquisition at t="
-                    f"{qasm_program.elapsed_time} ns, while the last acquisition was "
-                    f"started at t={qasm_program.time_last_acquisition_triggered} ns. "
-                    f"Please ensure a minimum interval of "
-                    f"{constants.MIN_TIME_BETWEEN_ACQUISITIONS} ns between "
-                    f"acquisitions.\n\nError caused by acquisition:\n"
-                    f"{repr(self.operation_info)}."
-                )
+        if qasm_program.time_last_acquisition_triggered is not None and (
+            qasm_program.elapsed_time - qasm_program.time_last_acquisition_triggered
+            < constants.MIN_TIME_BETWEEN_ACQUISITIONS
+        ):
+            raise ValueError(
+                f"Attempting to start an acquisition at t="
+                f"{qasm_program.elapsed_time} ns, while the last acquisition was "
+                f"started at t={qasm_program.time_last_acquisition_triggered} ns. "
+                f"Please ensure a minimum interval of "
+                f"{constants.MIN_TIME_BETWEEN_ACQUISITIONS} ns between "
+                f"acquisitions.\n\nError caused by acquisition:\n"
+                f"{repr(self.operation_info)}."
+            )
 
         qasm_program.time_last_acquisition_triggered = qasm_program.elapsed_time
 
@@ -83,14 +86,14 @@ class AcquisitionStrategyPartial(IOperationStrategy):
             )
 
     @abstractmethod
-    def _acquire_with_immediate_bin_index(self, qasm_program: QASMProgram):
+    def _acquire_with_immediate_bin_index(self, qasm_program: QASMProgram) -> None:
         """
         Adds the assembly to the program for an acquisition with an immediate value for
         the bin index.
         """
 
     @abstractmethod
-    def _acquire_with_register_bin_index(self, qasm_program: QASMProgram):
+    def _acquire_with_register_bin_index(self, qasm_program: QASMProgram) -> None:
         """
         Adds the assembly to the program for an acquisition with a register value for
         the bin index, and assembly for incrementing the bin index by 1.
@@ -107,9 +110,9 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
 
     def generate_data(self, wf_dict: dict[str, Any]) -> None:
         """Returns None as no waveform is needed."""
-        return None
+        pass
 
-    def _acquire_with_immediate_bin_index(self, qasm_program: QASMProgram):
+    def _acquire_with_immediate_bin_index(self, qasm_program: QASMProgram) -> None:
         """
         Adds the assembly to the program for an acquisition with an immediate value for
         the bin index.
@@ -118,11 +121,12 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
         ----------
         qasm_program
             The QASMProgram to add the assembly instructions to.
+
         """
         bin_idx = self.operation_info.data["acq_index"]
         self._acquire_square(qasm_program, bin_idx)
 
-    def _acquire_with_register_bin_index(self, qasm_program: QASMProgram):
+    def _acquire_with_register_bin_index(self, qasm_program: QASMProgram) -> None:
         """
         Adds the assembly to the program for an acquisition with a register value for
         the bin index, and assembly for incrementing the bin index by 1.
@@ -131,6 +135,7 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
         ----------
         qasm_program
             The QASMProgram to add the assembly instructions to.
+
         """
         # Already checked in insert_qasm, but this helps the type checker
         assert self.bin_idx_register is not None
@@ -159,6 +164,7 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
         bin_idx
             The bin_idx to store the result in, can be either an int (for immediates) or
             a str (for registers).
+
         """
         qasm_program.emit(
             q1asm_instructions.ACQUIRE,
@@ -177,14 +183,15 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
     ----------
     operation_info
         The operation info that corresponds to this acquisition.
+
     """
 
-    def __init__(self, operation_info: types.OpInfo):
+    def __init__(self, operation_info: types.OpInfo) -> None:
         super().__init__(operation_info)
         self.waveform_index0: int | None = None
         self.waveform_index1: int | None = None
 
-    def generate_data(self, wf_dict: dict[str, Any]):
+    def generate_data(self, wf_dict: dict[str, Any]) -> None:
         """
         Generates the waveform data for both acquisition weights.
 
@@ -193,6 +200,7 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
         wf_dict
             The dictionary to add the waveform to. N.B. the dictionary is modified in
             function.
+
         """
         waveform_indices = []
         for idx, parameterized_waveform in enumerate(
@@ -258,7 +266,7 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
 
         self.waveform_index0, self.waveform_index1 = waveform_indices
 
-    def _acquire_with_immediate_bin_index(self, qasm_program: QASMProgram):
+    def _acquire_with_immediate_bin_index(self, qasm_program: QASMProgram) -> None:
         """
         Adds the assembly to the program for an acquisition with an immediate value for
         the bin index.
@@ -267,6 +275,7 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
         ----------
         qasm_program
             The QASMProgram to add the assembly instructions to.
+
         """
         bin_idx = self.operation_info.data["acq_index"]
 
@@ -281,7 +290,7 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
         )
         qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
 
-    def _acquire_with_register_bin_index(self, qasm_program: QASMProgram):
+    def _acquire_with_register_bin_index(self, qasm_program: QASMProgram) -> None:
         """
         Adds the assembly to the program for an acquisition with a register value for
         the bin index, and assembly for incrementing the bin index by 1. Registers will
@@ -291,6 +300,7 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
         ----------
         qasm_program
             The QASMProgram to add the assembly instructions to.
+
         """
         acq_bin_idx_reg = self.bin_idx_register
 
@@ -335,9 +345,9 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
 
     def generate_data(self, wf_dict: dict[str, Any]) -> None:
         """Returns None as no waveform is needed."""
-        return None
+        pass
 
-    def _acquire_with_immediate_bin_index(self, qasm_program: QASMProgram):
+    def _acquire_with_immediate_bin_index(self, qasm_program: QASMProgram) -> None:
         """
         Adds the assembly to the program for an acquisition with an immediate value for
         the bin index.
@@ -346,6 +356,7 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
         ----------
         qasm_program
             The QASMProgram to add the assembly instructions to.
+
         """
         bin_idx = self.operation_info.data["acq_index"]
 
@@ -378,7 +389,7 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
         )
         qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
 
-    def _acquire_with_register_bin_index(self, qasm_program: QASMProgram):
+    def _acquire_with_register_bin_index(self, qasm_program: QASMProgram) -> None:
         """
         Adds the assembly to the program for an acquisition with a register value for
         the bin index, and assembly for incrementing the bin index by 1.
@@ -387,6 +398,7 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
         ----------
         qasm_program
             The QASMProgram to add the assembly instructions to.
+
         """
         acq_bin_idx_reg = self.bin_idx_register
 
@@ -433,9 +445,9 @@ class TimetagAcquisitionStrategy(AcquisitionStrategyPartial):
 
     def generate_data(self, wf_dict: dict[str, Any]) -> None:
         """Returns None as no waveform is needed."""
-        return None
+        pass
 
-    def _acquire_with_immediate_bin_index(self, qasm_program: QASMProgram):
+    def _acquire_with_immediate_bin_index(self, qasm_program: QASMProgram) -> None:
         """
         Adds the assembly to the program for an acquisition with an immediate value for
         the bin index.
@@ -444,6 +456,7 @@ class TimetagAcquisitionStrategy(AcquisitionStrategyPartial):
         ----------
         qasm_program
             The QASMProgram to add the assembly instructions to.
+
         """
         bin_idx = self.operation_info.data["acq_index"]
 
@@ -478,7 +491,7 @@ class TimetagAcquisitionStrategy(AcquisitionStrategyPartial):
         )
         qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
 
-    def _acquire_with_register_bin_index(self, qasm_program: QASMProgram):
+    def _acquire_with_register_bin_index(self, qasm_program: QASMProgram) -> None:
         """
         Adds the assembly to the program for an acquisition with a register value for
         the bin index, and assembly for incrementing the bin index by 1.
@@ -487,6 +500,7 @@ class TimetagAcquisitionStrategy(AcquisitionStrategyPartial):
         ----------
         qasm_program
             The QASMProgram to add the assembly instructions to.
+
         """
         acq_bin_idx_reg = self.bin_idx_register
 
@@ -547,7 +561,7 @@ class ScopedTimetagAcquisitionStrategy(TimetagAcquisitionStrategy):
     ``TimetagAcquisitionStrategy`` in ``set_scope_en`` instructions.
     """
 
-    def _acquire_with_immediate_bin_index(self, qasm_program: QASMProgram):
+    def _acquire_with_immediate_bin_index(self, qasm_program: QASMProgram) -> None:
         """
         Adds the assembly to the program for an acquisition with an immediate value for
         the bin index.
@@ -556,12 +570,13 @@ class ScopedTimetagAcquisitionStrategy(TimetagAcquisitionStrategy):
         ----------
         qasm_program
             The QASMProgram to add the assembly instructions to.
+
         """
         qasm_program.emit(q1asm_instructions.SET_SCOPE_EN, 1)
         super()._acquire_with_immediate_bin_index(qasm_program)
         qasm_program.emit(q1asm_instructions.SET_SCOPE_EN, 0)
 
-    def _acquire_with_register_bin_index(self, qasm_program: QASMProgram):
+    def _acquire_with_register_bin_index(self, qasm_program: QASMProgram) -> None:
         """
         Adds the assembly to the program for an acquisition with a register value for
         the bin index, and assembly for incrementing the bin index by 1.
@@ -570,6 +585,7 @@ class ScopedTimetagAcquisitionStrategy(TimetagAcquisitionStrategy):
         ----------
         qasm_program
             The QASMProgram to add the assembly instructions to.
+
         """
         qasm_program.emit(q1asm_instructions.SET_SCOPE_EN, 1)
         super()._acquire_with_register_bin_index(qasm_program)

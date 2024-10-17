@@ -43,9 +43,10 @@ class CompilerContainer:
     ----------
     schedule
         The schedule to be compiled.
+
     """
 
-    def __init__(self, schedule: Schedule):
+    def __init__(self, schedule: Schedule) -> None:
         self.total_play_time = schedule.get_schedule_duration() / schedule.repetitions
         """
         The total duration of a single repetition of the schedule.
@@ -60,7 +61,7 @@ class CompilerContainer:
         self.local_oscillators: dict[str, LocalOscillatorCompiler] = {}
         """Local oscillator compiler instances managed by this container instance."""
 
-    def prepare(self):
+    def prepare(self) -> None:
         """
         Prepares all the instrument compilers contained in the class,
         by running their respective :code:`prepare` methods.
@@ -94,6 +95,7 @@ class CompilerContainer:
         :
             Dictionary containing all the compiled programs for each instrument. The key
             refers to the name of the instrument that the program belongs to.
+
         """
         compiled_schedule: dict[str, Any] = {}
 
@@ -153,6 +155,7 @@ class CompilerContainer:
             The schedule to pass to the constructor.
         hardware_cfg
             The hardware compilation config.
+
         """
         composite = cls(schedule)
         instrument_configs = hardware_cfg._extract_instrument_compilation_configs(

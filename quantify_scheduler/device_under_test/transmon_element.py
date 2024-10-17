@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import numpy as np
 from qcodes.instrument import InstrumentChannel
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 class Ports(InstrumentChannel):
     """Submodule containing the ports."""
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
         super().__init__(parent=parent, name=name)
 
         self.microwave = Parameter(
@@ -66,7 +66,7 @@ class Ports(InstrumentChannel):
 class ClocksFrequencies(InstrumentChannel):
     """Submodule containing the clock frequencies specifying the transitions to address."""
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
         super().__init__(parent=parent, name=name)
 
         self.f01 = ManualParameter(
@@ -103,7 +103,7 @@ class ClocksFrequencies(InstrumentChannel):
 class IdlingReset(InstrumentChannel):
     """Submodule containing parameters for doing a reset by idling."""
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
         super().__init__(parent=parent, name=name)
 
         self.duration = ManualParameter(
@@ -123,7 +123,7 @@ class RxyDRAG(InstrumentChannel):
     The Rxy operation uses a DRAG pulse.
     """
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
         super().__init__(parent=parent, name=name)
         self.amp180 = ManualParameter(
             name="amp180",
@@ -169,7 +169,7 @@ class RxyDRAG(InstrumentChannel):
 class PulseCompensationModule(InstrumentChannel):
     """Submodule containing parameters for performing a PulseCompensation operation."""
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
         super().__init__(parent=parent, name=name)
         self.max_compensation_amp = ManualParameter(
             name="max_compensation_amp",
@@ -207,7 +207,7 @@ class DispersiveMeasurement(InstrumentChannel):
     :func:`~quantify_scheduler.operations.measurement_factories.dispersive_measurement_transmon`.
     """
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
         super().__init__(parent=parent, name=name)
 
         pulse_types = validators.Enum("SquarePulse")
@@ -375,7 +375,7 @@ class ReferenceMagnitude(InstrumentChannel):
     automatically set to nan.
     """
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
         super().__init__(parent=parent, name=name)
 
         self.dBm = Parameter(
@@ -403,7 +403,7 @@ class ReferenceMagnitude(InstrumentChannel):
             vals=Numbers(allow_nan=True),
         )
 
-    def _set_parameter(self, value: float, parameter: str):
+    def _set_parameter(self, value: float, parameter: str) -> None:
         """
         Set the value of one of the unit parameters.
 
@@ -427,6 +427,7 @@ class ReferenceMagnitude(InstrumentChannel):
             The value of the amplitude reference
         unit
             The unit in which this value is specified
+
         """
         value_and_unit = math.nan, ""
         for param in self.parameters.values():
@@ -455,9 +456,10 @@ class BasicTransmonElement(DeviceElement):
         Can be used to pass submodule initialization data by using submodule name
         as keyword and as argument a dictionary containing the submodule parameter
         names and their value.
+
     """
 
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name: str, **kwargs) -> None:
         submodules_to_add = {
             "reset": IdlingReset,
             "rxy": RxyDRAG,
@@ -467,7 +469,7 @@ class BasicTransmonElement(DeviceElement):
             "clock_freqs": ClocksFrequencies,
         }
         submodule_data = {
-            sub_name: kwargs.pop(sub_name, {}) for sub_name in submodules_to_add.keys()
+            sub_name: kwargs.pop(sub_name, {}) for sub_name in submodules_to_add
         }
         super().__init__(name, **kwargs)
 

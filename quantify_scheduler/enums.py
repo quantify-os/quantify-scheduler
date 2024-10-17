@@ -10,7 +10,7 @@ except ImportError:
     class StrEnum(Enum):
         """Enum that can be directly serialized to string."""
 
-        def __str__(self):
+        def __str__(self) -> str:
             return self.value
 
 

@@ -6,7 +6,7 @@ from __future__ import annotations
 import warnings
 from copy import deepcopy
 from itertools import permutations
-from typing import Sequence, overload
+from typing import TYPE_CHECKING, Sequence, overload
 
 import numpy as np
 
@@ -16,13 +16,15 @@ from quantify_scheduler.backends.graph_compilation import (
     OperationCompilationConfig,
 )
 from quantify_scheduler.operations.control_flow_library import ControlFlowOperation
-from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_compensation_library import (
     Port,
     PulseCompensation,
 )
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.schedule import Schedulable, Schedule, ScheduleBase
+
+if TYPE_CHECKING:
+    from quantify_scheduler.operations.operation import Operation
 
 
 def compile_circuit_to_device_with_config_validation(
@@ -191,6 +193,7 @@ def set_pulse_and_acquisition_clock(
         When clock frequency is unknown.
     ValueError
         When clock frequency is NaN.
+
     """
     device_cfg = DeviceCompilationConfig.model_validate(
         config.device_compilation_config
@@ -275,6 +278,7 @@ def _set_pulse_and_acquisition_clock(
     -------
     :
         The modified ``operation`` with all clock resources added.
+
     """
     if isinstance(operation, ScheduleBase):
         # verify that required clocks are present; print warning if they are inconsistent
@@ -339,6 +343,7 @@ def _valid_clock_in_schedule(
     ValueError
         Returns ValueError if (i) the device config is the only defined clock and
         contains nan values or (ii) no clock is defined.
+
     """
     if clock in schedule.resources:
         return True
@@ -362,7 +367,7 @@ def _valid_clock_in_schedule(
 
 
 def _clocks_compatible(
-    clock,
+    clock: str,
     device_cfg: DeviceCompilationConfig,
     schedule_clock_resources: dict[str, float],
 ) -> bool:
@@ -391,6 +396,7 @@ def _clocks_compatible(
     Returns
     -------
         True if the clock frequencies are consistent.
+
     """
     clock_freq_device_cfg = np.asarray(device_cfg.clocks[clock])
     clock_freq_schedule = np.asarray(schedule_clock_resources[clock])
@@ -429,6 +435,7 @@ def _assert_operation_valid_device_level(operation: Operation) -> None:
     ----------
     operation
         Quantify operation
+
     """
     if not (
         operation.valid_pulse
@@ -771,25 +778,25 @@ def _get_device_repr_from_cfg_multiplexed(
 class ConfigKeyError(KeyError):
     """Custom exception for when a key is missing in a configuration file."""
 
-    def __init__(self, kind, missing, allowed):
+    def __init__(self, kind: str, missing: str, allowed: list[str]) -> None:
         self.value = (
             f'{kind} "{missing}" is not present in the configuration file;'
             + f" {kind} must be one of the following: {allowed}"
         )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return repr(self.value)
 
 
 class MultipleKeysError(KeyError):
     """Custom exception for when symmetric keys are found in a configuration file."""
 
-    def __init__(self, operation, matches):
+    def __init__(self, operation: str, matches: list[str]) -> None:
         self.value = (
             f"Symmetric Operation {operation} matches the following edges {matches}"
             f" in the QuantumDevice. You can only specify a single edge for a symmetric"
             " operation."
         )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return repr(self.value)

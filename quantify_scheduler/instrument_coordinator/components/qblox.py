@@ -197,6 +197,7 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
             The name of the parameter to set.
         val
             The new value of the parameter.
+
         """
         # TODO: these qcodes parameters already exist in the development branch
         # of qblox-instruments, but will be released in 0.14.0 when RTP is
@@ -232,6 +233,7 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
         -------
         :
             True if any of the sequencers reports the `SequencerStates.RUNNING` status.
+
         """
         for seq_idx in range(self._hardware_properties.number_of_sequencers):
             seq_status = self.instrument.get_sequencer_status(seq_idx)
@@ -248,6 +250,7 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
         timeout_sec
             The timeout in seconds. N.B. the instrument takes the timeout in minutes
             (int), therefore it is rounded down to whole minutes with a minimum of 1.
+
         """
         timeout_min = timeout_sec // 60
         if timeout_min == 0:
@@ -291,6 +294,7 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
         :
             A dict containing the hardware log of the Qblox instrument, in case the
             component was referenced; else None.
+
         """
         if self.instrument.name not in compiled_schedule.compiled_instructions:
             return None
@@ -324,6 +328,7 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
         ----------
         settings
             The settings to configure it to.
+
         """
 
     def _configure_sequencer_settings(
@@ -338,6 +343,7 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
             Index of the sequencer to configure.
         settings
             The settings to configure it to.
+
         """
         self._set_parameter(
             self.instrument.sequencers[seq_idx], "sync_en", settings.sync_en
@@ -381,6 +387,7 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
         -------
         :
             A dataclass with all the hardware properties for this specific module.
+
         """
 
 
@@ -407,6 +414,7 @@ class _AnalogModuleComponent(_ModuleComponentBase):
         ----------
         settings
             The settings to configure it to.
+
         """
 
     def _configure_sequencer_settings(
@@ -421,6 +429,7 @@ class _AnalogModuleComponent(_ModuleComponentBase):
             Index of the sequencer to configure.
         settings
             The settings to configure it to.
+
         """
         self._set_parameter(
             self.instrument.sequencers[seq_idx], "mod_en_awg", settings.nco_en
@@ -535,6 +544,7 @@ class _AnalogModuleComponent(_ModuleComponentBase):
         -------
         :
             A dataclass with all the hardware properties for this specific module.
+
         """
 
 
@@ -559,6 +569,7 @@ class _QCMComponent(_AnalogModuleComponent):
         -------
         :
             QCM returns None since the QCM has no acquisition.
+
         """
         return None
 
@@ -578,6 +589,7 @@ class _QCMComponent(_AnalogModuleComponent):
             Under the key :code:`"sequencer"` you specify the sequencer specific
             options for each sequencer, e.g. :code:`"seq0"`.
             For global settings, the options are under different keys, e.g. :code:`"settings"`.
+
         """
         super().prepare(program)
 
@@ -614,6 +626,7 @@ class _QCMComponent(_AnalogModuleComponent):
         ----------
         settings
             The settings to configure it to.
+
         """
         # configure mixer correction offsets
         if settings.offset_ch0_path_I is not None:
@@ -698,6 +711,7 @@ class _QRMComponent(_AnalogModuleComponent):
         -------
         :
             The acquired data.
+
         """
         if self._acquisition_manager:
             return self._acquisition_manager.retrieve_acquisition()
@@ -720,6 +734,7 @@ class _QRMComponent(_AnalogModuleComponent):
             Under the key :code:`"sequencer"` you specify the sequencer specific
             options for each sequencer, e.g. :code:`"seq0"`.
             For global settings, the options are under different keys, e.g. :code:`"settings"`.
+
         """
         super().prepare(program)
 
@@ -790,6 +805,7 @@ class _QRMComponent(_AnalogModuleComponent):
         ----------
         settings
             The settings to configure it to.
+
         """
         # configure mixer correction offsets
         if settings.offset_ch0_path_I is not None:
@@ -939,6 +955,7 @@ class _QRMComponent(_AnalogModuleComponent):
         :
             The sequencer and qblox_acq_channel for the trace acquisition, if there is any,
             otherwise None.
+
         """
         sequencer_and_qblox_acq_index = None
         for (
@@ -989,6 +1006,7 @@ class _RFComponent(_AnalogModuleComponent):
             Under the key :code:`"sequencer"` you specify the sequencer specific
             options for each sequencer, e.g. :code:`"seq0"`.
             For global settings, the options are under different keys, e.g. :code:`"settings"`.
+
         """
         super().prepare(program)
 
@@ -1086,6 +1104,7 @@ class _QCMRFComponent(_RFComponent, _QCMComponent):
         ----------
         settings
             The settings to configure it to.
+
         """
         # configure mixer correction offsets
         if settings.offset_ch0_path_I is not None:
@@ -1168,6 +1187,7 @@ class _QRMRFComponent(_RFComponent, _QRMComponent):
         ----------
         settings
             The settings to configure it to.
+
         """
         # configure mixer correction offsets
         if settings.offset_ch0_path_I is not None:
@@ -1250,6 +1270,7 @@ class _QTMComponent(_ModuleComponentBase):
         -------
         :
             The acquired data.
+
         """
         if self._acquisition_manager:
             return self._acquisition_manager.retrieve_acquisition()
@@ -1272,6 +1293,7 @@ class _QTMComponent(_ModuleComponentBase):
             Under the key :code:`"sequencer"` you specify the sequencer specific
             options for each sequencer, e.g. :code:`"seq0"`.
             For global settings, the options are under different keys, e.g. :code:`"settings"`.
+
         """
         super().prepare(program)
 
@@ -1319,6 +1341,7 @@ class _QTMComponent(_ModuleComponentBase):
         ----------
         settings
             The settings to configure it to.
+
         """
         # No global settings yet.
 
@@ -1334,6 +1357,7 @@ class _QTMComponent(_ModuleComponentBase):
             Index of the sequencer to configure.
         settings
             The settings to configure it to.
+
         """
         super()._configure_sequencer_settings(seq_idx, settings)
         # No other sequencer settings yet.
@@ -1350,6 +1374,7 @@ class _QTMComponent(_ModuleComponentBase):
             Index of the sequencer to configure.
         settings
             The settings to configure it to.
+
         """
         # Note: there is no channel mapping in QTM firmware V1 (meaning, each sequencer
         # only connects to its corresponding io channel). The contents of
@@ -1453,6 +1478,7 @@ class _AcquisitionManagerBase(ABC):
         The duration of each acquisition for each sequencer.
     seq_name_to_idx_map
         All available sequencer names to their ids in a dict.
+
     """
 
     def __init__(
@@ -1510,6 +1536,7 @@ class _AcquisitionManagerBase(ABC):
             Each `xarray.DataArray` is a two-dimensional array, with ``acq_index`` and
             Each `xarray.DataArray` is a two-dimensional array,
             with ``acq_index`` and ``repetition`` as dimensions.
+
         """
         dataset = Dataset()
 
@@ -1643,6 +1670,7 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
         All available sequencer names to their ids in a dict.
     scope_mode_sequencer_and_qblox_acq_index
         The sequencer and qblox acq_index of the scope mode acquisition if there's any.
+
     """
 
     def __init__(
@@ -1693,6 +1721,7 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
             The ``acq_channel`` is the name of each `xarray.DataArray` in the `xarray.Dataset`.
             Each `xarray.DataArray` is a two-dimensional array,
             with ``acq_index`` and ``repetition`` as dimensions.
+
         """
         self._store_scope_acquisition()
         return super().retrieve_acquisition()
@@ -1753,6 +1782,7 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
         -------
         :
             The scope mode data.
+
         """
         if (
             acq_duration < 0
@@ -1830,6 +1860,7 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
         -------
         :
             The integrated data.
+
         """
         bin_data = self._get_bin_data(hardware_retrieved_acquisitions, qblox_acq_index)
         i_data = np.array(bin_data["integration"]["path0"])
@@ -1911,6 +1942,7 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
         -------
         :
             Array containing binned, normalized acquisition data.
+
         """
         if acq_duration is None:
             raise RuntimeError(
@@ -1962,6 +1994,7 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
         -------
         :
             DataArray containing thresholded acquisition data.
+
         """
         if acq_duration is None:
             raise RuntimeError(
@@ -2034,6 +2067,7 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
         -----
         - For BinMode.DISTRIBUTION, `data` contains the distribution of counts.
         - For BinMode.APPEND, `data` contains the raw trigger counts.
+
         """
         bin_data = self._get_bin_data(hardware_retrieved_acquisitions, qblox_acq_index)
         acq_index_dim_name = f"acq_index_{acq_channel}"
@@ -2100,6 +2134,7 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
         The duration of each acquisition for each sequencer.
     seq_name_to_idx_map
         All available sequencer names to their ids in a dict.
+
     """
 
     @property
@@ -2166,6 +2201,7 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
         -----
         - BinMode.AVERAGE is not implemented for the QTM.
         - For BinMode.APPEND, `data` contains the raw trigger counts.
+
         """
         bin_data = self._get_bin_data(hardware_retrieved_acquisitions, qblox_acq_index)
         acq_index_dim_name = f"acq_index_{acq_channel}"
@@ -2383,6 +2419,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
     ----------
     instrument
         Reference to the cluster driver object.
+
     """
 
     def __init__(self, instrument: Cluster) -> None:
@@ -2453,6 +2490,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         ----------
         settings
             A dictionary containing all the settings to set.
+
         """
         if "reference_source" in settings:
             if self.force_set_parameters():
@@ -2470,6 +2508,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         ----------
         options
             The compiled instructions to configure the cluster to.
+
         """
         self._program = copy.deepcopy(options)
 
@@ -2492,6 +2531,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         -------
         :
             The acquired data or ``None`` if no acquisitions have been performed.
+
         """
         acquisitions = Dataset()
         for comp_name, comp in self._cluster_modules.items():
@@ -2515,6 +2555,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         ----------
         timeout_sec
             The time in seconds until the instrument is considered to have timed out.
+
         """
         for comp in self._cluster_modules.values():
             comp.wait_done(timeout_sec=timeout_sec)
@@ -2540,6 +2581,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         :
             A dict containing the hardware log of the cluster, in case the
             component was referenced; else None.
+
         """
         cluster = self.instrument
         if cluster.name not in compiled_schedule.compiled_instructions:

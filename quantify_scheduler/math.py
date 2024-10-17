@@ -19,6 +19,7 @@ def closest_number_ceil(number: int | float, multiple: int | float) -> int:
     -------
     :
         The closest next number.
+
     """
     if not number > 0:
         raise ValueError(f"number must be positive. Got {number}.")

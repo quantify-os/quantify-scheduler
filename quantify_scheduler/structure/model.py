@@ -62,6 +62,7 @@ def deserialize_function(fun: str) -> Callable[..., Any]:
     ------
     ValueError
         Raised if the function cannot be imported from path in the string.
+
     """
     try:
         return import_python_object_from_string(fun)
@@ -89,6 +90,7 @@ def deserialize_class(cls: str) -> type:
     ------
     ValueError
         Raised if the class cannot be imported from path in the string.
+
     """
     try:
         return import_python_object_from_string(cls)

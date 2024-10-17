@@ -11,22 +11,32 @@ Profiling of the control electronics is enabled by using the
 
     The :class:`ProfiledScheduleGettable` is currently only tested to support Qblox hardware.
 """
+from __future__ import annotations
+
 import json
 import os
 import time
+from typing import TYPE_CHECKING, Callable
 
 import matplotlib.pyplot as plt
 import numpy as np
 from qcodes.instrument.instrument import Instrument
-from xarray import Dataset
 
 from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
     InstrumentCoordinator,
 )
 
+if TYPE_CHECKING:
+    from xarray import Dataset
 
-def profiler(func):
+    from quantify_scheduler.instrument_coordinator.components import (
+        InstrumentCoordinatorComponentBase,
+    )
+    from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
+
+
+def profiler(func: Callable) -> Callable:
     """
     Decorator that reports the execution time of the decorated function
     and stores this in ``ProfiledInstrumentCoordinator.profile``.
@@ -35,15 +45,16 @@ def profiler(func):
     ----------
     func: Callable
         Target function to be profiled.
+
     """
 
-    def wrap(self, *args, **kwargs):
+    def wrap(profiled: ProfiledInstrumentCoordinator, *args, **kwargs) -> object:
         start = time.time()
-        result = func(self, *args, **kwargs)
+        result = func(profiled, *args, **kwargs)
         end = time.time()
-        if func.__name__ not in self.profile:
-            self.profile[func.__name__] = []
-        self.profile[func.__name__].append(end - start)
+        if func.__name__ not in profiled.profile:
+            profiled.profile[func.__name__] = []
+        profiled.profile[func.__name__].append(end - start)
         return result
 
     return wrap
@@ -81,9 +92,10 @@ class ProfiledInstrumentCoordinator(InstrumentCoordinator):
         Name of :class:`ProfiledInstrumentCoordinator` instance.
     parent_ic: InstrumentCoordinator
         Original :class:`~.InstrumentCoordinator`.
+
     """
 
-    def __init__(self, name: str, parent_ic: InstrumentCoordinator):
+    def __init__(self, name: str, parent_ic: InstrumentCoordinator) -> None:
         self.profile = {"schedule": []}
         super().__init__(name, add_default_generic_icc=False)
         self.parent_ic = parent_ic
@@ -92,24 +104,24 @@ class ProfiledInstrumentCoordinator(InstrumentCoordinator):
     @profiler
     def add_component(
         self,
-        component,
+        component: InstrumentCoordinatorComponentBase,
     ) -> None:
         self.parent_ic.add_component(component)
 
     @profiler
     def prepare(
         self,
-        compiled_schedule,
+        compiled_schedule: CompiledSchedule,
     ) -> None:
         self.profile["schedule"].append(compiled_schedule.get_schedule_duration())
         self.parent_ic.prepare(compiled_schedule)
 
     @profiler
-    def start(self):
+    def start(self) -> None:
         self.parent_ic.start()
 
     @profiler
-    def stop(self, allow_failure=False):
+    def stop(self, allow_failure: bool = False) -> None:  # noqa: ARG002 Not used
         self.parent_ic.stop()
 
     @profiler
@@ -117,7 +129,7 @@ class ProfiledInstrumentCoordinator(InstrumentCoordinator):
         return self.parent_ic.retrieve_acquisition()
 
     @profiler
-    def wait_done(self, timeout_sec: int = 10):
+    def wait_done(self, timeout_sec: int = 10) -> None:
         self.parent_ic.wait_done(timeout_sec)
 
 
@@ -128,7 +140,7 @@ class ProfiledScheduleGettable(ScheduleGettable):
     via :func:`plot_profile`.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
         self.profile = {}
@@ -146,11 +158,11 @@ class ProfiledScheduleGettable(ScheduleGettable):
         )
 
     @profiler
-    def _compile(self, sched):
+    def _compile(self, sched: Schedule) -> None:
         """Overwrite compile step for profiling."""
         super()._compile(sched)
 
-    def close(self):
+    def close(self) -> None:
         """Cleanup new profiling instruments to avoid future conflicts."""
         self.profile.update(self.profiled_instr_coordinator.profile)
         self.quantum_device.instr_instrument_coordinator(self.instr_coordinator.name)
@@ -159,12 +171,12 @@ class ProfiledScheduleGettable(ScheduleGettable):
 
     def log_profile(
         self,
-        obj=None,
-        path="profiling_logs",
-        filename=None,
+        obj: object = None,
+        path: str = "profiling_logs",
+        filename: str | None = None,
         indent: int = 4,
-        separators=None,
-    ):
+        separators: tuple[str, str] | None = None,
+    ) -> dict:
         """Store profiling logs to json file."""
         if not obj:
             obj = self.profile
@@ -180,7 +192,9 @@ class ProfiledScheduleGettable(ScheduleGettable):
 
         return self.profile
 
-    def plot_profile(self, path=None, filename="average_runtimes.pdf"):
+    def plot_profile(
+        self, path: str | None = None, filename: str = "average_runtimes.pdf"
+    ) -> None:
         """Create barplot of accumulated profiling data."""
         profile = self.profile
         time_ax = list(profile.keys())

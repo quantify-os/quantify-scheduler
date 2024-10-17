@@ -82,7 +82,7 @@ def pulse_baseband(
     """
     cartoon_width = 0.6
     for qubit_idx in qubit_idxs:
-        ps.fluxPulse(
+        ps.flux_pulse(
             ax,
             pos=time - cartoon_width / 2,
             y_offs=qubit_idx,
@@ -113,10 +113,11 @@ def pulse_modulated(
         The pulse name.
     kw :
         Additional keyword arguments to be passed to drawing the pulse.
+
     """
     cartoon_width = 0.6
     for qubit_idx in qubit_idxs:
-        ps.mwPulse(
+        ps.mw_pulse(
             ax,
             pos=time - cartoon_width / 2,
             y_offs=qubit_idx,
@@ -127,7 +128,9 @@ def pulse_modulated(
         ax.text(time, qubit_idx + 0.45, text, ha="center", va="center", zorder=6)
 
 
-def meter(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> None:
+def meter(
+    ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw  # Noqa: ARG001
+) -> None:
     """
     A simple meter to depict a measurement.
 
@@ -143,6 +146,7 @@ def meter(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> None
         The measurement name.
     kw :
         Additional keyword arguments to be passed to drawing the meter.
+
     """
     for qubit_idx in qubit_idxs:
         ps.meter(
@@ -157,7 +161,9 @@ def meter(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> None
         )
 
 
-def acq_meter(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> None:
+def acq_meter(
+    ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw  # Noqa: ARG001
+) -> None:
     """
     Variation of the meter to depict a acquisition.
 
@@ -173,6 +179,7 @@ def acq_meter(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> 
         The measurement name.
     kw :
         Additional keyword arguments to be passed to drawing the acq meter.
+
     """
     for qubit_idx in qubit_idxs:
         ps.meter(
@@ -206,12 +213,15 @@ def acq_meter_text(
         The measurement name.
     kw :
         Additional keyword arguments to be passed to drawing the acq meter.
+
     """
     acq_meter(ax, time, qubit_idxs, text, **kw)
     ax.text(time, max(qubit_idxs) + 0.45, text, ha="center", va="center", zorder=6)
 
 
-def cnot(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> None:
+def cnot(
+    ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw  # Noqa: ARG001
+) -> None:
     """
     Markers to denote a CNOT gate between two qubits.
 
@@ -227,6 +237,7 @@ def cnot(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> None:
         The CNOT name.
     kw :
         Additional keyword arguments to be passed to drawing the CNOT.
+
     """
     ax.plot(
         [time, time], qubit_idxs, marker="o", markersize=15, color=constants.COLOR_BLUE
@@ -234,7 +245,9 @@ def cnot(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> None:
     ax.plot([time], qubit_idxs[1], marker="+", markersize=12, color="white")
 
 
-def cz(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> None:
+def cz(
+    ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw  # Noqa: ARG001
+) -> None:
     """
     Markers to denote a CZ gate between two qubits.
 
@@ -250,6 +263,7 @@ def cz(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> None:
         The CZ name.
     kw :
         Additional keyword arguments to be passed to drawing the CZ.
+
     """
     ax.plot(
         [time, time], qubit_idxs, marker="o", markersize=15, color=constants.COLOR_BLUE
@@ -272,6 +286,7 @@ def reset(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> None
         The reset name.
     kw :
         Additional keyword arguments to be passed to drawing the reset.
+
     """
     for qubit_idx in qubit_idxs:
         ps.box_text(

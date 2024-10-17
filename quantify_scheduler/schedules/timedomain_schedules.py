@@ -58,6 +58,7 @@ def rabi_sched(
         infer the clock.
     repetitions
         The amount of times the Schedule will be repeated.
+
     """
     # ensure pulse_amplitude and pulse_duration are iterable.
     amps = np.asarray(pulse_amp)
@@ -241,6 +242,7 @@ def echo_sched(
     -------
     :
         An experiment schedule.
+
     """
     # ensure times is an iterable when passing floats.
     times = np.asarray(times)
@@ -276,7 +278,8 @@ def cpmg_sched(
     Parameters
     ----------
     n_gates
-        Number of CPMG Gates. Note that `n_gates=1` corresponds to an Echo experiment (:func:`~.echo_sched`).
+        Number of CPMG Gates.
+        Note that `n_gates=1` corresponds to an Echo experiment (:func:`~.echo_sched`).
     qubit
         The name of the qubit, e.g., "q0", to perform the echo experiment on.
     times
@@ -285,7 +288,8 @@ def cpmg_sched(
         time/(2n) must be an integer multiple of your hardware backend grid
         time.
     variant
-        CPMG using either pi_x ("X"), pi_y ("Y") or interleaved pi_x/pi_y ("XY") gates, default is "X".
+        CPMG using either pi_x ("X"), pi_y ("Y")
+        or interleaved pi_x/pi_y ("XY") gates, default is "X".
     artificial_detuning:
         The frequency in Hz of the software emulated, or ``artificial`` qubit detuning, which is
         implemented by changing the phase of the second pi/2 (recovery) pulse. The
@@ -300,6 +304,7 @@ def cpmg_sched(
     -------
     :
         An experiment schedule.
+
     """
     if variant not in ["X", "Y", "XY"]:
         raise ValueError(
@@ -479,6 +484,7 @@ def readout_calibration_sched(
         If the prepared state is not either 0, 1, or 2.
     NotImplementedError
         If the prepared state is 2.
+
     """
     schedule = Schedule(f"Readout calibration {qubit}, {prepared_states}", repetitions)
 
@@ -568,6 +574,7 @@ def rabi_pulse_sched(
         The relaxation time or dead time.
     repetitions
         The amount of times the Schedule will be repeated.
+
     """
     schedule = Schedule("Rabi schedule (pulse)", repetitions)
     schedule.add_resource(ClockResource(name=mw_clock, freq=mw_frequency))

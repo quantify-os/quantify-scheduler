@@ -10,7 +10,7 @@ import sys
 import warnings
 from enum import Enum
 from types import ModuleType
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 import fastjsonschema
 import numpy as np
@@ -19,6 +19,9 @@ from qcodes.instrument import Instrument
 from quantify_scheduler import enums
 from quantify_scheduler.helpers import inspect as inspect_helpers
 from quantify_scheduler.helpers.importers import import_python_object_from_string
+
+if TYPE_CHECKING:
+    from quantify_scheduler.operations import Operation
 
 current_python_version = sys.version_info
 
@@ -38,12 +41,12 @@ DEFAULT_TYPES = [
 ]
 
 
-def validate_json(data, schema):
+def validate_json(data: dict, schema: str) -> object:
     """Validate schema using jsonschema-rs."""
     return fastjsonschema.validate(schema, data)
 
 
-def load_json_schema(relative_to: str | pathlib.Path, filename: str):
+def load_json_schema(relative_to: str | pathlib.Path, filename: str) -> str:
     """
     Load a JSON schema from file. Expects a 'schemas' directory in the same directory
     as ``relative_to``.
@@ -64,6 +67,7 @@ def load_json_schema(relative_to: str | pathlib.Path, filename: str):
     -------
     dict
         the schema
+
     """
     path = pathlib.Path(relative_to).resolve().parent.joinpath("schemas", filename)
     with path.open(mode="r", encoding="utf-8") as file:
@@ -88,10 +92,11 @@ def load_json_validator(relative_to: str | pathlib.Path, filename: str) -> Calla
     -------
     Callable
         The validator
+
     """
     definition = load_json_schema(relative_to, filename)
     validator = fastjsonschema.compile(definition, handlers={}, formats={})
-    return validator  # type: ignore  (complicated return type)
+    return validator  # type: ignore  # (complicated return type)
 
 
 class UnknownDeserializationTypeError(Exception):
@@ -109,7 +114,7 @@ class JSONSchemaValMixin:
     schema_filename: str
 
     @classmethod
-    def is_valid(cls, object_to_be_validated) -> bool:
+    def is_valid(cls, object_to_be_validated: Operation) -> bool:
         """
         Checks if the object is valid according to its schema.
 
@@ -153,6 +158,7 @@ class SchedulerJSONDecoder(json.JSONDecoder):
     -----------------
     modules : list[ModuleType], *optional*
         A list of custom modules containing serializable classes, by default []
+
     """  # noqa: D416
 
     _classes: dict[str, type[Any]]
@@ -193,6 +199,7 @@ class SchedulerJSONDecoder(json.JSONDecoder):
         -------
         :
             The deserialized result.
+
         """
         # If "deserialization_type" is present in `obj` it means the object was
         # serialized using `__getstate__` and should be deserialized using
@@ -236,6 +243,7 @@ class SchedulerJSONDecoder(json.JSONDecoder):
         -------
         :
             The deserialized result.
+
         """
         if isinstance(obj, dict):
             return self.decode_dict(obj)
@@ -269,6 +277,7 @@ class SchedulerJSONDecoder(json.JSONDecoder):
         -------
         Type
             The ``Type`` found.
+
         """
         try:
             return self._classes[deserialization_type]
@@ -351,7 +360,7 @@ class SchedulerJSONEncoder(json.JSONEncoder):
     string.
     """
 
-    def default(self, o):
+    def default(self, o: object) -> object:
         """
         Overloads the json.JSONEncoder default method that returns a serializable
         object. It will try 3 different serialization methods which are, in order,
@@ -360,7 +369,7 @@ class SchedulerJSONEncoder(json.JSONEncoder):
         """
         if isinstance(
             o,
-            (  # type: ignore  (type checker cannot deal with numpy types)
+            (  # type: ignore  # (type checker cannot deal with numpy types)
                 complex,
                 np.int32,
                 np.complex128,

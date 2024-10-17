@@ -82,6 +82,7 @@ class Trace(Acquisition):
         modules.
     t0
         The acquisition start time in seconds, by default 0.
+
     """
 
     def __init__(
@@ -171,6 +172,7 @@ class WeightedIntegratedSeparated(Acquisition):
     Raises
     ------
     NotImplementedError
+
     """
 
     def __init__(
@@ -252,6 +254,7 @@ class SSBIntegrationComplex(Acquisition):
         The phase of the pulse and acquisition in degrees, by default 0.
     t0
         The acquisition start time in seconds, by default 0.
+
     """
 
     def __init__(
@@ -386,6 +389,7 @@ class ThresholdedAcquisition(Acquisition):
         The phase of the pulse and acquisition in degrees, by default 0.
     t0 : float
         The acquisition start time in seconds, by default 0.
+
     """
 
     def __init__(
@@ -503,6 +507,7 @@ class NumericalSeparatedWeightedIntegration(WeightedIntegratedSeparated):
         The phase of the pulse and acquisition in degrees, by default 0.
     t0
         The acquisition start time in seconds, by default 0.
+
     """
 
     def __init__(
@@ -646,6 +651,7 @@ class NumericalWeightedIntegration(NumericalSeparatedWeightedIntegration):
         The phase of the pulse and acquisition in degrees, by default 0.
     t0
         The acquisition start time in seconds, by default 0.
+
     """
 
     def __init__(
@@ -717,6 +723,7 @@ class TriggerCount(Acquisition):
         new result and the old register value, by default BinMode.APPEND.
     t0
         The acquisition start time in seconds, by default 0.
+
     """
 
     def __init__(
@@ -812,6 +819,7 @@ class TimetagTrace(Acquisition):
         * timestamp: record relative to the timestamp marked using the ``Timestamp`` operation.
     t0
         The acquisition start time in seconds, by default 0.
+
     """
 
     def __init__(
@@ -910,6 +918,7 @@ class Timetag(Acquisition):
           :class:`~quantify_scheduler.operations.pulse_library.Timestamp` operation.
     t0
         The acquisition start time in seconds, by default 0.
+
     """
 
     def __init__(

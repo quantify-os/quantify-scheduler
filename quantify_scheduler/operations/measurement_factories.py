@@ -130,6 +130,7 @@ def _dispersive_measurement(  # noqa: PLR0915
     -------
     :
         The resulting schedule for the dispersive measurement.
+
     """
     if bin_mode is None:
         bin_mode = BinMode.AVERAGE
@@ -449,6 +450,7 @@ def dispersive_measurement_transmon(
     -------
     :
         The resulting schedule for the dispersive measurement.
+
     """
     return _dispersive_measurement(
         pulse_amp=pulse_amp,
@@ -566,6 +568,7 @@ def dispersive_measurement_spin(
     -------
     :
         The resulting schedule for the dispersive measurement.
+
     """
     return _dispersive_measurement(
         pulse_amp=pulse_amp,
@@ -682,6 +685,7 @@ def optical_measurement(
         If first four function arguments do not have the same length.
     NotImplementedError
         If an unknown ``pulse_type`` or ``acq_protocol`` are used.
+
     """
     # ensures default argument is used if not specified at gate level.
     # ideally, this input would not be accepted, but this is a workaround for #267

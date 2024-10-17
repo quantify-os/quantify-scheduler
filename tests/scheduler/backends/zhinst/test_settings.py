@@ -70,17 +70,14 @@ def test_zi_settings_equality(
 
     # Assert
 
-    assert sett_a == sett_a
     assert sett_a != sett_b
     assert sett_a != sett_c
 
     assert sett_b != sett_a
-    assert sett_b == sett_b
     assert sett_b == sett_c
 
     assert sett_c != sett_a
     assert sett_c == sett_b
-    assert sett_c == sett_c
 
 
 def test_zi_setting_apply(mocker):
@@ -460,7 +457,7 @@ def test_deserialize(mocker):
             "awgs/0/commandtable/data": "uhfqa0_awg0.json",
             "qas/0/integration/weights/0/real": np.ones(4096).tolist(),
             "qas/0/integration/weights/0/imag": np.zeros(4096).tolist(),
-            "qas/0/rotations/0": str((1 + 0j)).replace(" ", ""),
+            "qas/0/rotations/0": str(1 + 0j).replace(" ", ""),
             "qas/0/delay": 0,
             "compiler/sourcestring": {"0": "uhfqa0_awg0.seqc"},
         }

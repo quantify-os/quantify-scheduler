@@ -3,6 +3,7 @@
 """Pytest fixtures for quantify-scheduler."""
 from __future__ import annotations
 
+import contextlib
 import os
 import pathlib
 import shutil
@@ -42,10 +43,8 @@ def close_instruments(instrument_names: list[str] | dict[str, Any]):
         List of instrument names or dict, where keys correspond to instrument names.
     """
     for name in instrument_names:
-        try:
+        with contextlib.suppress(KeyError):
             Instrument.find_instrument(name).close()
-        except KeyError:
-            pass
 
 
 @pytest.fixture(scope="function", autouse=True)

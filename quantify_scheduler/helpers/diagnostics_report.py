@@ -54,6 +54,7 @@ def _generate_diagnostics_report(  # noqa: PLR0912, PLR0915
     -------
     :
         A path to the generated zipfile report.
+
     """
 
     def _flatten_hardware_logs_dict(

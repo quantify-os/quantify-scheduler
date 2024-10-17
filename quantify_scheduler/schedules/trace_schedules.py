@@ -70,6 +70,7 @@ def trace_schedule(
     -------
     :
         The Raw Trace acquisition Schedule.
+
     """
     schedule = Schedule("Raw trace acquisition", repetitions)
     schedule.add_resource(ClockResource(name=clock, freq=frequency))
@@ -122,6 +123,7 @@ def trace_schedule_circuit_layer(
     -------
     :
         The Raw Trace acquisition Schedule.
+
     """
     schedule = Schedule("Raw trace acquisition", repetitions)
     schedule.add(Measure(qubit_name, acq_protocol="Trace"))
@@ -191,6 +193,7 @@ def two_tone_trace_schedule(
     -------
     :
         The Two-tone Trace acquisition Schedule.
+
     """
     schedule = Schedule("Two-tone Trace acquisition", repetitions)
     schedule.add_resource(
@@ -298,6 +301,7 @@ def long_time_trace(
     -------
     :
         The custom long Trace acquisition Schedule.
+
     """
     schedule = Schedule("Long time trace acquisition", repetitions)
     schedule.add_resource(ClockResource(name=clock, freq=frequency))
@@ -375,6 +379,7 @@ def long_time_trace_with_qubit(
     -------
     :
         The custom long Trace acquisition Schedule.
+
     """
     schedule = long_time_trace(
         pulse_amp=qubit.measure.pulse_amp(),

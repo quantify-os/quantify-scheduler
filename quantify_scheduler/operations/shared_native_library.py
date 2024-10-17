@@ -16,12 +16,13 @@ class SpectroscopyOperation(Operation):
     ----------
     qubit
         The target qubit.
+
     """
 
     def __init__(
         self,
         qubit: str,
-    ):
+    ) -> None:
         super().__init__(name=f"Spectroscopy operation {qubit}")
         self.data.update(
             {

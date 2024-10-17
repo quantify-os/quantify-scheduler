@@ -20,8 +20,8 @@ from quantify_scheduler.schedules.schedule import CompiledSchedule
 
 class InstrumentCoordinator(qcodes_base.Instrument):
     """
-    The :class:`~.InstrumentCoordinator` serves as the central interface of the hardware abstraction
-    layer.
+    The :class:`~.InstrumentCoordinator` serves as
+    the central interface of the hardware abstraction layer.
 
     It provides a standardized interface to execute Schedules on
     control hardware.
@@ -79,6 +79,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
     add_default_generic_icc
         If True, automatically adds a GenericInstrumentCoordinatorComponent to this
         instrument coordinator with the default name.
+
     """
 
     def __init__(self, name: str, add_default_generic_icc: bool = True) -> None:
@@ -132,6 +133,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         -------
         :
             The :class:`.InstrumentCoordinator`'s running state.
+
         """
         return any(
             self.find_instrument(c_name).is_running is True
@@ -156,6 +158,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         ------
         KeyError
             If key ``name`` is not present in ``self.components``.
+
         """
         if full_name in self.components():
             # If the instrument is a component of this class, its type will be a
@@ -184,6 +187,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             If a component with a duplicated name is added to the collection.
         TypeError
             If :code:`component` is not an instance of the base component.
+
         """
         if component.name in self.components():
             raise ValueError(f"'{component.name}' has already been added!")
@@ -204,6 +208,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         ----------
         name
             The component name.
+
         """
         self.components().remove(name)  # list gets updated in place
 
@@ -232,6 +237,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             absent in the instrument coordinator.
         TypeError
             If the schedule provided is not a valid :class:`.CompiledSchedule`.
+
         """
         self._compiled_schedule = compiled_schedule
         if not CompiledSchedule.is_valid(self._compiled_schedule):
@@ -289,6 +295,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             By default it is set to `False`. When set to `True`, the AttributeErrors
             raised by a component are demoted to warnings to allow other
             components to stop.
+
         """
         for instr_name in self.components():
             if allow_failure:
@@ -312,6 +319,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         :
             The acquisition data in an :code:`xarray.Dataset`.
             For each acquisition channel it contains an :code:`xarray.DataArray`.
+
         """
         if self._compiled_schedule is None:
             raise ValueError(
@@ -348,6 +356,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         ----------
         timeout_sec
             The maximum amount of time in seconds before a timeout.
+
         """
         for instr_name in self.components():
             instrument = self.find_instrument(instr_name)
@@ -381,7 +390,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         return hardware_logs
 
 
-def _convert_acquisition_data_format(raw_results: Dataset) -> list:
+def _convert_acquisition_data_format(raw_results: Dataset) -> list[np.ndarray]:
     acquisition_dict = {}
     for channel in raw_results:
         if channel not in acquisition_dict:
@@ -452,6 +461,7 @@ class ZIInstrumentCoordinator(InstrumentCoordinator):
         :
             The acquisition data in an :code:`xarray.Dataset`.
             For each acquisition channel it contains an :code:`xarray.DataArray`.
+
         """
         raw_acq_results = super().retrieve_acquisition()
         if self.timeout_reacquire():

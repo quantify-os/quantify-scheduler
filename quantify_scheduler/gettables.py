@@ -34,11 +34,13 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class AcquisitionProtocolError(TypeError):
+class AcquisitionProtocolError(TypeError):  # noqa: D101 missing doc
     pass
 
 
-class AcquisitionProtocolNotSupportedError(NotImplementedError):
+class AcquisitionProtocolNotSupportedError(  # noqa: D101 missing doc
+    NotImplementedError
+):
     pass
 
 
@@ -88,6 +90,7 @@ class ScheduleGettable:
     always_initialize:
         If True, then reinitialize the schedule on each invocation of ``get``. If
         False, then only initialize the first invocation of ``get``.
+
     """
 
     def __init__(
@@ -154,7 +157,7 @@ class ScheduleGettable:
         self._debug_mode: bool = False
 
     def __call__(self) -> tuple[float, ...] | tuple[np.ndarray, ...]:
-        """Acquire and return data"""
+        """Acquire and return data."""
         return self.get()
 
     def _compile(self, sched: Schedule) -> None:
@@ -170,7 +173,7 @@ class ScheduleGettable:
 
     def initialize(self) -> None:
         """
-        This generates the schedule and uploads the compiled instructions to the
+        Generates the schedule and uploads the compiled instructions to the
         hardware using the instrument coordinator.
         """
         logger.debug("Initializing schedule gettable.")
@@ -191,7 +194,7 @@ class ScheduleGettable:
 
     @property
     def compiled_schedule(self) -> CompiledSchedule | None:
-        """Return the schedule used in this class"""
+        """Return the schedule used in this class."""
         return self._compiled_schedule
 
     def get(self) -> tuple[np.ndarray, ...]:
@@ -206,6 +209,7 @@ class ScheduleGettable:
         -------
         :
             A tuple of acquisition data per acquisition channel as specified above.
+
         """
         instr_coordinator = self.quantum_device.instr_instrument_coordinator.get_instr()
 
@@ -284,6 +288,7 @@ class ScheduleGettable:
         -------
         :
             A tuple of data, casted to a historical conventions on data format.
+
         """
         # retrieve the acquisition results
 
@@ -398,8 +403,8 @@ class ScheduleGettable:
             - ``failed_hw_log_retrieval``: The experiment succeeded but \
             :meth:`~.InstrumentCoordinator.retrieve_hardware_logs` failed.
             - ``completed_exp``: The experiment succeeded.
-        """
 
+        """
         if not self.quantum_device.instr_instrument_coordinator:
             raise AttributeError(
                 "`InstrumentCoordinator` not found in the `QuantumDevice`, please\

@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 class PortsSpin(InstrumentChannel):
     """Submodule containing the ports."""
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
         super().__init__(parent=parent, name=name)
 
         self.microwave = Parameter(
@@ -71,7 +71,7 @@ class PortsSpin(InstrumentChannel):
 class ClocksFrequenciesSpin(InstrumentChannel):
     """Submodule containing the clock frequencies specifying the transitions to address."""
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
         super().__init__(parent=parent, name=name)
 
         self.f_larmor = ManualParameter(
@@ -102,7 +102,7 @@ class RxyGaussian(InstrumentChannel):
     The Rxy operation uses a Gaussian pulse.
     """
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
         super().__init__(parent=parent, name=name)
         self.amp180 = ManualParameter(
             name="amp180",
@@ -144,7 +144,7 @@ class DispersiveMeasurementSpin(DispersiveMeasurement):
     :func:`~quantify_scheduler.operations.measurement_factories.dispersive_measurement_spin`.
     """
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: Any) -> None:
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
         super().__init__(parent=parent, name=name, **kwargs)
 
         self.gate_pulse_amp = ManualParameter(
@@ -172,9 +172,12 @@ class BasicSpinElement(DeviceElement):
         Can be used to pass submodule initialization data by using submodule name
         as keyword and as argument a dictionary containing the submodule parameter
         names and their value.
+
     """
 
-    def __init__(self, name: str, **kwargs: Any) -> None:
+    #  TODO replace those submodules with proper parameters,
+    #   and set the kwargs parameter type to `Unpack[InstrumentBaseKWArgs]`
+    def __init__(self, name: str, **kwargs: Any) -> None:  # noqa: ANN401
         submodules_to_add = {
             "reset": IdlingReset,
             "rxy": RxyGaussian,

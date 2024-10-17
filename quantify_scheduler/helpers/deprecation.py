@@ -35,6 +35,7 @@ def deprecated_arg_alias(depr_version: str, **aliases: str) -> Callable:
         The same function or method, that raises a FutureWarning if a deprecated
         argument is passed, or a TypeError if both the new and the deprecated arguments
         are passed.
+
     """
 
     def deco(f: Callable) -> Callable:

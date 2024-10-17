@@ -89,6 +89,7 @@ def _determine_sum_and_end_of_all_pulses(
     -------
     :
         The sum and end time of all the pulses as a `SumEnd`.
+
     """
     assert not isinstance(operation, PulseCompensation)
 
@@ -197,6 +198,7 @@ def _determine_compensation_pulse(
     :
         The start, duration and amp of a compensation pulse
         with the given requirements as a `CompensationPulseParams` for each port.
+
     """
     pulses_start_duration_amp: dict[Port, CompensationPulseParams] = {}
 
@@ -256,6 +258,7 @@ def process_compensation_pulses(
     :
         The start, duration and amp of a compensation pulse
         with the given requirements as a `CompensationPulseParams` for each port.
+
     """
     operation: Operation | Schedule = schedule
     if isinstance(operation, ScheduleBase):

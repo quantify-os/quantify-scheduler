@@ -71,7 +71,7 @@ class Operation(JSONSchemaValMixin, UserDict):
         self.data["logic_info"] = {}
         self._duration: float = 0
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: object) -> bool:
         """
         Returns the equality of two instances based on its hash.
 
@@ -83,6 +83,7 @@ class Operation(JSONSchemaValMixin, UserDict):
         Returns
         -------
         :
+
         """
         return hash(self) == hash(other)
 
@@ -98,13 +99,13 @@ class Operation(JSONSchemaValMixin, UserDict):
         """
         return f"{self.__class__.__name__}(name='{self.name}')"
 
-    def __getstate__(self):
+    def __getstate__(self) -> dict[str, object]:
         return {
             "deserialization_type": export_python_object_to_path_string(self.__class__),
             "data": self.data,
         }
 
-    def __setstate__(self, state):
+    def __setstate__(self, state: dict[str, dict]) -> None:
         self.data = state["data"]
         self._update()
 
@@ -114,11 +115,11 @@ class Operation(JSONSchemaValMixin, UserDict):
     def _update(self) -> None:
         """Update the Operation's internals."""
 
-        def _get_operation_end(info) -> float:
+        def _get_operation_end(info: dict[str, float]) -> float:
             """Return the operation end in seconds."""
             return info["t0"] + info["duration"]
 
-        # Iterate over the data and take longest duration
+        # Iterate over the data and take the longest duration
         self._duration = max(
             map(
                 _get_operation_end,
@@ -167,13 +168,14 @@ class Operation(JSONSchemaValMixin, UserDict):
         Returns
         -------
         :
+
         """
         if cls._class_signature is None:
             logging.info(f"Caching signature for class {cls.__name__}")
             cls._class_signature = inspect.signature(cls)
         signature = cls._class_signature
 
-        def to_kwarg(key) -> str:
+        def to_kwarg(key: str) -> str:
             """
             Returns a key-value pair in string format of a keyword argument.
 
@@ -185,6 +187,7 @@ class Operation(JSONSchemaValMixin, UserDict):
             Returns
             -------
             :
+
             """
             value = parameters[key]
             if isinstance(value, Enum):
@@ -206,6 +209,7 @@ class Operation(JSONSchemaValMixin, UserDict):
         ----------
         gate_operation
             an operation containing gate_info.
+
         """
         self.data["gate_info"].update(gate_operation.data["gate_info"])
 
@@ -218,6 +222,7 @@ class Operation(JSONSchemaValMixin, UserDict):
         device_operation
             an operation containing the pulse_info and/or acquisition info describing
             how to represent the current operation at the quantum-device layer.
+
         """
         self.add_pulse(device_operation)
         self.add_acquisition(device_operation)
@@ -230,6 +235,7 @@ class Operation(JSONSchemaValMixin, UserDict):
         ----------
         pulse_operation
             an operation containing pulse_info.
+
         """
         self.data["pulse_info"] += pulse_operation.data["pulse_info"]
         self._update()
@@ -242,12 +248,13 @@ class Operation(JSONSchemaValMixin, UserDict):
         ----------
         acquisition_operation
             an operation containing acquisition_info.
+
         """
         self.data["acquisition_info"] += acquisition_operation.data["acquisition_info"]
         self._update()
 
     @classmethod
-    def is_valid(cls, object_to_be_validated) -> bool:
+    def is_valid(cls, object_to_be_validated: Operation) -> bool:
         """
         Validates the object's contents against the schema.
 
@@ -272,7 +279,10 @@ class Operation(JSONSchemaValMixin, UserDict):
 
     @property
     def valid_acquisition(self) -> bool:
-        """An operation is a valid acquisition if it has pulse-level acquisition representation details."""
+        """
+        An operation is a valid acquisition
+        if it has pulse-level acquisition representation details.
+        """
         return len(self.data["acquisition_info"]) > 0
 
     @property
@@ -297,6 +307,7 @@ class Operation(JSONSchemaValMixin, UserDict):
         -------
         bool
             Whether the operation is a control flow operation.
+
         """
         return self.data.get("control_flow_info") is not None
 

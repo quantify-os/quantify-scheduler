@@ -30,7 +30,7 @@ class StitchedPulse(Operation):
 
 
 @deprecated("0.20.0", qblox_stitched_pulse.convert_to_numerical_pulse)
-def convert_to_numerical_pulse():
+def convert_to_numerical_pulse() -> None:
     """Deprecated convert_to_numerical_pulse."""
 
 

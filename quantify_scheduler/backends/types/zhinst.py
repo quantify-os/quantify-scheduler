@@ -120,13 +120,16 @@ class LocalOscillator(DataStructure):
     generic_icc_name: str | None = None
     """The name of the GenericInstrumentCoordinatorComponent attached to this device."""
     frequency: dict | None = None
-    """A dict which tells the generic icc what parameter maps to the local oscillator (LO) frequency in Hz."""
+    """A dict which tells the generic icc what parameter maps
+    to the local oscillator (LO) frequency in Hz."""
     frequency_param: str | None = None
     """The parameter on the LO instrument used to control the frequency."""
     power: dict | None = None
-    """A dict which tells the generic icc what parameter maps to the local oscillator (LO) power in dBm."""
+    """A dict which tells the generic icc what parameter maps
+    to the local oscillator (LO) power in dBm."""
     phase: dict | None = None
-    """A dict which tells the generic icc what parameter maps to the local oscillator (LO) phase in radians."""
+    """A dict which tells the generic icc what parameter maps
+    to the local oscillator (LO) phase in radians."""
     parameters: dict | None = None
     """
     A dict which allows setting of channel specific parameters of the device. Cannot
@@ -322,7 +325,7 @@ class CommandTable(DataStructure):
     table: list[CommandTableEntry]
 
     @field_validator("header", mode="before")
-    def generate_command_table_header(cls, v, values):
+    def generate_command_table_header(cls, v):
         """Generates command table header."""
         if v is not None:
             raise ValueError(
@@ -386,7 +389,7 @@ class InstrumentInfo:
     mode: InstrumentOperationMode = InstrumentOperationMode.OPERATING
     sequencer_rate: float = field(init=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Initializes fields after initializing object."""
         self.sequencer_rate = self.num_samples_per_clock / self.sample_rate
 
@@ -402,13 +405,14 @@ class Instruction:
     duration: float
 
     @staticmethod
-    def default():
+    def default() -> Instruction:
         """
         Returns a default Instruction instance.
 
         Returns
         -------
         Instruction :
+
         """
         return Instruction("None", 0, 0, 0)
 
@@ -420,7 +424,7 @@ class Acquisition(Instruction):
     If a waveform_id is specified, this waveform will be used as the integration weight.
     """  # noqa: D404
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             f"Acquisition(waveform_id: {self.waveform_id}"
             f"|abs_time: {self.abs_time * 1e9} ns"
@@ -433,7 +437,7 @@ class Acquisition(Instruction):
 class Wave(Instruction):
     """This instruction indicates that a waveform should be played."""  # noqa: D404
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             f"Wave(waveform_id: {self.waveform_id}"
             f"|abs_time: {self.abs_time * 1e9} ns"
@@ -444,7 +448,8 @@ class Wave(Instruction):
 
 class ZIChannelDescription(DataStructure):
     """
-    Information needed to specify a ZI Channel in the :class:`~.quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig`.
+    Information needed to specify a ZI Channel in the
+    :class:`~.quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig`.
 
     A single 'channel' represents a complex output, consisting of two physical I/O channels on
     the Instrument.
@@ -478,14 +483,18 @@ class ZIBaseDescription(common.HardwareDescription):
 
 
 class ZIHDAWG4Description(ZIBaseDescription):
-    """Information needed to specify a HDAWG4 in the :class:`~.quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig`."""
+    """
+    Information needed to specify a HDAWG4 in the
+    :class:`~.quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig`.
+    """
 
     instrument_type: Literal["HDAWG4"]
-    """The instrument type, used to select this datastructure when parsing a :class:`~.quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig`."""
+    """The instrument type, used to select this datastructure when parsing a
+    :class:`~.quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig`."""
     channelgrouping: int
     """
     The HDAWG channelgrouping property impacting the amount of HDAWG channels per AWG
-    that must be used.. (default = 0) corresponding to a single sequencer controlling 
+    that must be used.. (default = 0) corresponding to a single sequencer controlling
     a pair (2) awg outputs.
     """
     clock_select: int
@@ -498,27 +507,39 @@ class ZIHDAWG4Description(ZIBaseDescription):
     Examples: base sampling rate (1.8 GHz) divided by 2^clock_select. (default = 0)
     """
     channel_0: ZIChannelDescription | None = None
-    """Description of the first channel on this HDAWG (corresponding to 1 or 2 physical output ports)."""
+    """Description of the first channel on this HDAWG
+    (corresponding to 1 or 2 physical output ports)."""
     channel_1: ZIChannelDescription | None = None
-    """Description of the second channel on this HDAWG (corresponding to 1 or 2 physical output ports)."""
+    """Description of the second channel on this HDAWG
+    (corresponding to 1 or 2 physical output ports)."""
 
 
 class ZIHDAWG8Description(ZIHDAWG4Description):
-    """Information needed to specify a HDAWG8 in the :class:`~.quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig`."""
+    """
+    Information needed to specify a HDAWG8 in the
+    :class:`~.quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig`.
+    """
 
     instrument_type: Literal["HDAWG8"]
-    """The instrument type, used to select this datastructure when parsing a :class:`~.quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig`."""
+    """The instrument type, used to select this datastructure when parsing a
+    :class:`~.quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig`."""
     channel_2: ZIChannelDescription | None = None
-    """Description of the third channel on this HDAWG (corresponding to 1 or 2 physical output ports)."""
+    """Description of the third channel on this HDAWG
+    (corresponding to 1 or 2 physical output ports)."""
     channel_3: ZIChannelDescription | None = None
-    """Description of the fourth channel on this HDAWG (corresponding to 1 or 2 physical output ports)."""
+    """Description of the fourth channel on this HDAWG
+    (corresponding to 1 or 2 physical output ports)."""
 
 
 class ZIUHFQADescription(ZIBaseDescription):
-    """Information needed to specify a UHFQA in the :class:`~.quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig`."""
+    """
+    Information needed to specify a UHFQA in the
+    :class:`~.quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig`.
+    """
 
     instrument_type: Literal["UHFQA"]
-    """The instrument type, used to select this datastructure when parsing a :class:`~.quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig`."""
+    """The instrument type, used to select this datastructure when parsing a
+    :class:`~.quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig`."""
     channel_0: ZIChannelDescription | None = None
     """Description of the readout channel on this UHFQA."""
 

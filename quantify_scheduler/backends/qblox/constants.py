@@ -40,7 +40,8 @@ Minimum time between two operations to prevent FIFO errors.
 """
 NCO_TIME_GRID = 4  # ns
 """
-Clock period of the NCO. All time intervals used must be multiples of this value for NCO related operations.
+Clock period of the NCO.
+All time intervals used must be multiples of this value for NCO related operations.
 """
 MIN_TIME_BETWEEN_ACQUISITIONS = 300  # ns
 """Minimum time between two acquisitions to prevent FIFO errors."""
@@ -88,9 +89,11 @@ MIN_PHASE_ROTATION_ACQ = 0
 MAX_PHASE_ROTATION_ACQ = 360
 """Maximum value of the sequencer integration result phase rotation in degrees."""
 MIN_DISCRETIZATION_THRESHOLD_ACQ = -16777212.0
-"""Minimum value of the sequencer discretization threshold for discretizing the phase rotation result."""
+"""Minimum value of the sequencer discretization threshold
+ for discretizing the phase rotation result."""
 MAX_DISCRETIZATION_THRESHOLD_ACQ = 16777212.0
-"""Maximum value of the sequencer discretization threshold for discretizing the phase rotation result."""
+"""Maximum value of the sequencer discretization threshold
+ for discretizing the phase rotation result."""
 MAX_NUMBER_OF_BINS: int = 131072
 """Number of bins available in the Qblox sequencers."""
 GENERIC_IC_COMPONENT_NAME: str = "generic"

@@ -5,12 +5,15 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from qcodes.instrument import base, parameter
+from qcodes.instrument import Instrument, InstrumentBase, parameter
 from qcodes.utils import validators
 
-from quantify_scheduler.schedules.schedule import CompiledSchedule
+if TYPE_CHECKING:
+    from xarray import Dataset
+
+    from quantify_scheduler.schedules.schedule import CompiledSchedule
 
 
 def instrument_to_component_name(instrument_name: str) -> str:
@@ -26,19 +29,18 @@ def instrument_to_component_name(instrument_name: str) -> str:
     -------
     :
         The name of the instrument coordinator component.
+
     """
     return f"ic_{instrument_name}"
 
 
-class InstrumentCoordinatorComponentBase(base.Instrument):
+class InstrumentCoordinatorComponentBase(Instrument):
     """The InstrumentCoordinator component abstract interface."""
 
     # NB `_instances` also used by `Instrument` class
     _no_gc_instances: dict[str, InstrumentCoordinatorComponentBase] = dict()
 
-    def __new__(
-        cls, instrument: base.InstrumentBase
-    ) -> InstrumentCoordinatorComponentBase:
+    def __new__(cls, instrument: InstrumentBase) -> InstrumentCoordinatorComponentBase:
         """
         Keeps track of the instances of this class.
 
@@ -54,7 +56,11 @@ class InstrumentCoordinatorComponentBase(base.Instrument):
         _ = self._no_gc_instances.pop(self.instrument_ref())
         super().close()
 
-    def __init__(self, instrument: base.InstrumentBase, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        instrument: InstrumentBase,
+        **kwargs: Any,  # noqa ANN401 (complicated subclass overrides)
+    ) -> None:
         super().__init__(instrument_to_component_name(instrument.name), **kwargs)
 
         self.instrument_ref = parameter.InstrumentRefParameter(
@@ -77,12 +83,12 @@ class InstrumentCoordinatorComponentBase(base.Instrument):
         )
 
     @property
-    def instrument(self) -> base.InstrumentBase:
+    def instrument(self) -> InstrumentBase:
         """Returns the instrument referenced by `instrument_ref`."""
         return self.instrument_ref.get_instr()
 
     @instrument.setter
-    def instrument(self, instrument: base.InstrumentBase) -> None:
+    def instrument(self, instrument: InstrumentBase) -> None:
         """Sets a new Instrument as reference."""
         self.instrument_ref(instrument.name)
 
@@ -103,6 +109,7 @@ class InstrumentCoordinatorComponentBase(base.Instrument):
         -------
         :
             The components' running state.
+
         """
 
     @abstractmethod
@@ -114,11 +121,13 @@ class InstrumentCoordinatorComponentBase(base.Instrument):
         """Stops the InstrumentCoordinator Component."""
 
     @abstractmethod
-    def prepare(self, options: Any) -> None:
+    def prepare(
+        self, options: Any  # noqa: ANN401 (Complicated subclass overrides)
+    ) -> None:
         """Initializes the InstrumentCoordinator Component with parameters."""
 
     @abstractmethod
-    def retrieve_acquisition(self) -> Any:
+    def retrieve_acquisition(self) -> Dataset | None:
         """Gets and returns acquisition data."""
 
     @abstractmethod
@@ -136,6 +145,7 @@ class InstrumentCoordinatorComponentBase(base.Instrument):
         ----------
         timeout_sec :
             The maximum amount of time in seconds before a timeout.
+
         """
 
     @abstractmethod

@@ -142,7 +142,7 @@ class TestGateLevelOperation:
         # Assert
         if (
             "unitary" in operation.data["gate_info"]
-            and not operation.data["gate_info"]["unitary"] is None
+            and operation.data["gate_info"]["unitary"] is not None
         ):
             assert isinstance(
                 obj.data["gate_info"]["unitary"], (np.generic, np.ndarray)

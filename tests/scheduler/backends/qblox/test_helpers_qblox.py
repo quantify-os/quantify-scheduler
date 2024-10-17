@@ -76,21 +76,20 @@ def __get_frequencies(
         if interm_freq is None:
             return "underconstrained"
         freqs.IF = interm_freq
-    else:
-        if lo_freq is None and interm_freq is None:
-            return "underconstrained"
-        elif lo_freq is None and interm_freq is not None:
+    elif lo_freq is None and interm_freq is None:
+        return "underconstrained"
+    elif lo_freq is None and interm_freq is not None:
+        freqs.IF = interm_freq
+        freqs.LO = freqs.clock - interm_freq
+    elif lo_freq is not None and interm_freq is None:
+        freqs.IF = freqs.clock - lo_freq
+        freqs.LO = lo_freq
+    elif lo_freq is not None and interm_freq is not None:
+        if math.isclose(freqs.clock, lo_freq + interm_freq):
             freqs.IF = interm_freq
-            freqs.LO = freqs.clock - interm_freq
-        elif lo_freq is not None and interm_freq is None:
-            freqs.IF = freqs.clock - lo_freq
             freqs.LO = lo_freq
-        elif lo_freq is not None and interm_freq is not None:
-            if math.isclose(freqs.clock, lo_freq + interm_freq):
-                freqs.IF = interm_freq
-                freqs.LO = lo_freq
-            else:
-                return "overconstrained"
+        else:
+            return "overconstrained"
     return helpers.ValidatedFrequencies(clock=freqs.clock, IF=freqs.IF, LO=freqs.LO)
 
 
@@ -195,7 +194,7 @@ def test_determine_clock_lo_interm_freqs(
         elif expected_freqs == "overconstrained":
             possible_errors.append(
                 f"Frequency settings overconstrained."
-                f" {freqs.clock=} must be equal to {freqs.LO=}+{freqs.IF=} if both are supplied."
+                f" {freqs.clock=} must be equal to {freqs.LO=}+{freqs.IF=} when both are supplied."
             )
         if downconverter_freq is not None:
             if downconverter_freq < 0:
@@ -211,7 +210,7 @@ def test_determine_clock_lo_interm_freqs(
         assert str(error.value) in possible_errors
 
 
-def test_Frequencies():
+def test_frequencies():
     freq = helpers.Frequencies(clock=100, LO=float("nan"), IF=float("nan"))
     assert freq.LO is None
     assert freq.IF is None

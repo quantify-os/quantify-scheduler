@@ -16,6 +16,7 @@ def check_zhinst_compatibility() -> None:
         When running an incompatible python version.
     ModuleNotFoundError
         When the zhinst backend is not installed.
+
     """
     version = sys.version_info
     major, minor = version.major, version.minor

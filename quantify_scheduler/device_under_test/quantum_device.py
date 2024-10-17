@@ -188,6 +188,7 @@ class QuantumDevice(Instrument):
         -------
         :
             The json string containing the serialized `QuantumDevice`.
+
         """
         device_instruments = []
         if hasattr(self, "elements"):
@@ -234,6 +235,7 @@ class QuantumDevice(Instrument):
         -------
         :
             The name of the file containing the serialized `QuantumDevice`.
+
         """
         if path is None:
             path = get_datadir()
@@ -263,6 +265,7 @@ class QuantumDevice(Instrument):
         -------
         :
             The deserialized :class:`~QuantumDevice` object.
+
         """
         return json.loads(data, cls=SchedulerJSONDecoder)
 
@@ -280,6 +283,7 @@ class QuantumDevice(Instrument):
         -------
         :
             The deserialized :class:`~QuantumDevice` object.
+
         """
         with open(filename) as file:
             deserialized_device = cls.from_json(file.read())
@@ -307,6 +311,7 @@ class QuantumDevice(Instrument):
 
             The config currently has to be specified by the user using the
             :code:`hardware_config` parameter.
+
         """
         return self.hardware_config()
 
@@ -443,6 +448,7 @@ class QuantumDevice(Instrument):
         ------
         KeyError
             If key ``name`` is not present in `self.elements`.
+
         """
         if name in self.elements():
             return self.find_instrument(name)  # type: ignore
@@ -466,6 +472,7 @@ class QuantumDevice(Instrument):
             If a element with a duplicated name is added to the collection.
         TypeError
             If :code:`element` is not an instance of the base element.
+
         """
         if element.name in self.elements():
             raise ValueError(f"'{element.name}' has already been added.")
@@ -484,6 +491,7 @@ class QuantumDevice(Instrument):
         ----------
         name
             The element name.
+
         """
         self.elements().remove(name)  # list gets updated in place
 
@@ -505,6 +513,7 @@ class QuantumDevice(Instrument):
         ------
         KeyError
             If key ``name`` is not present in ``self.edges``.
+
         """
         if name in self.edges():
             return self.find_instrument(name)
@@ -519,6 +528,7 @@ class QuantumDevice(Instrument):
         edge
             The edge name connecting the elements. Has to follow the convention
             'element_0'-'element_1'
+
         """
         if edge.name in self.edges():
             raise ValueError(f"'{edge.name}' has already been added.")
@@ -537,5 +547,6 @@ class QuantumDevice(Instrument):
         ----------
         edge_name
             The edge name.
+
         """
         self.edges().remove(edge_name)  # list gets updated in place

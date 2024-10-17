@@ -572,7 +572,7 @@ def test_generate_port_clock_to_device_map_generated_hardware_config(
     ).instrument_compilers
     portclock_map = generate_port_clock_to_device_map(instrument_compilers)
 
-    assert (None, None) not in portclock_map.keys()
+    assert (None, None) not in portclock_map
     assert set(portclock_map.keys()) == {
         ("q0:fl-cl0.baseband"),
         ("q0:mw-q0.01"),
@@ -701,7 +701,7 @@ def test_invalid_channel_names_connectivity(
         "hardware_options": {},
         "connectivity": {
             "graph": [
-                [f"cluster0.module1.wrong_key", "q0:res"],
+                ["cluster0.module1.wrong_key", "q0:res"],
             ]
         },
     }
@@ -738,7 +738,7 @@ def test_missing_module_in_description_raises(
         "hardware_options": {},
         "connectivity": {
             "graph": [
-                [f"cluster0.module1.complex_output_0", "q0:res"],
+                ["cluster0.module1.complex_output_0", "q0:res"],
             ]
         },
     }
@@ -1108,10 +1108,9 @@ def test_compile_cluster(
 
     compiler = SerialCompiler(name="compiler")
     context_mngr = nullcontext()
+    config = compile_config_basic_transmon_qblox_hardware.hardware_compilation_config
     if delete_lo0:
-        del compile_config_basic_transmon_qblox_hardware.hardware_compilation_config.hardware_description[
-            "lo0"
-        ]
+        del config.hardware_description["lo0"]
         context_mngr = pytest.raises(RuntimeError)
     with context_mngr as error:
         compiler.compile(
@@ -1358,16 +1357,16 @@ def test_compile_cz_gate(
     }
 
     assert any(
-        re.search(rf"^\s*play\s+0,0,4(\s|$)", line) for line in program_lines["q2:fl"]
+        re.search(r"^\s*play\s+0,0,4(\s|$)", line) for line in program_lines["q2:fl"]
     ), "\n".join(line for line in program_lines["q2:fl"])
 
     assert any(
-        re.search(rf"^\s*set_ph_delta\s+122222222(\s|$)", line)
+        re.search(r"^\s*set_ph_delta\s+122222222(\s|$)", line)
         for line in program_lines["q2:mw"]
     ), "\n".join(line for line in program_lines["q2:mw"])
 
     assert any(
-        re.search(rf"^\s*set_ph_delta\s+175000000(\s|$)", line)
+        re.search(r"^\s*set_ph_delta\s+175000000(\s|$)", line)
         for line in program_lines["q3:mw"]
     ), "\n".join(line for line in program_lines["q3:mw"])
 
@@ -1461,12 +1460,12 @@ def test_acquisitions_max_index_raises(
         )
 
     assert (
-        "Found 0 as the highest index out of "
+        error.value.args[0] == "Found 0 as the highest index out of "
         "2 for channel 0, indicating "
         "an acquisition index was skipped or an acquisition index was repeated. "
         "Please make sure the used indices increment by 1 starting from 0. "
         "Problem occurred for port q0:res with clock q0.ro, "
-        "which corresponds to seq0 of cluster0_module3." == error.value.args[0]
+        "which corresponds to seq0 of cluster0_module3."
     )
 
 
@@ -1486,12 +1485,12 @@ def test_acquisitions_same_index_raises(
         )
 
     assert (
-        "Found 2 unique indices out of "
+        error.value.args[0] == "Found 2 unique indices out of "
         "3 for channel 0, indicating "
         "an acquisition index was skipped or an acquisition index was repeated. "
         "Please make sure the used indices increment by 1 starting from 0. "
         "Problem occurred for port q0:res with clock q0.ro, "
-        "which corresponds to seq0 of cluster0_module3." == error.value.args[0]
+        "which corresponds to seq0 of cluster0_module3."
     )
 
 
@@ -1538,7 +1537,7 @@ def test_deprecated_weighted_acquisition_end_to_end(
             config=compile_config_basic_transmon_qblox_hardware,
         )
     assert re.search(
-        rf"\n\s*acquire_weighed\s+0,0,0,1,4(\s|$)",
+        r"\n\s*acquire_weighed\s+0,0,0,1,4(\s|$)",
         (
             compiled_sched.compiled_instructions["cluster0"]["cluster0_module4"][
                 "sequencers"
@@ -1563,7 +1562,7 @@ def test_separated_weighted_acquisition_end_to_end(
         config=compile_config_basic_transmon_qblox_hardware_cluster,
     )
     assert re.search(
-        rf"\n\s*acquire_weighed\s+0,0,0,1,4(\s|$)",
+        r"\n\s*acquire_weighed\s+0,0,0,1,4(\s|$)",
         (
             compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"][
                 "sequencers"
@@ -1588,7 +1587,7 @@ def test_weighted_acquisition_end_to_end(
         config=compile_config_basic_transmon_qblox_hardware_cluster,
     )
     assert re.search(
-        rf"\n\s*acquire_weighed\s+0,0,0,1,4(\s|$)",
+        r"\n\s*acquire_weighed\s+0,0,0,1,4(\s|$)",
         (
             compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"][
                 "sequencers"
@@ -1687,8 +1686,8 @@ def test_compile_with_repetitions(
     program_from_json = full_program["compiled_instructions"]["cluster0"][
         "cluster0_module1"
     ]["sequencers"]["seq0"]["sequence"]["program"]
-    assert re.search(rf"\n\s*move\s+10,R0", program_from_json)
-    assert re.search(rf"\n\s*loop\s+R0,@start", program_from_json)
+    assert re.search(r"\n\s*move\s+10,R0", program_from_json)
+    assert re.search(r"\n\s*loop\s+R0,@start", program_from_json)
 
 
 def _func_for_hook_test(qasm: QASMProgram):
@@ -1771,7 +1770,7 @@ def test_qasm_hook_hardware_config(
     ]["seq0"]["sequence"]["program"]
     program_lines = program.splitlines()
 
-    assert q1asm_instructions.NOP == program_lines[0].strip()
+    assert program_lines[0].strip() == q1asm_instructions.NOP
 
 
 def test_qcm_acquisition_error(
@@ -1836,15 +1835,15 @@ def test_real_mode_pulses(
             elif seq_path == 1:
                 assert (np.array(waveform_data) == 0).all()
 
-        assert re.search(rf"play\s+0,0", seq_instructions["program"]), (
-            f"Output {output + 1} must be connected to "
-            f"sequencer{output} path{iq_order[0]} in real mode."
-        )
+        assert re.search(r"play\s+0,0", seq_instructions["program"])
+        # (
+        #     f"Output {output + 1} must be connected to "
+        #     f"sequencer{output} path{iq_order[0]} in real mode."
+        # )
 
 
 # Keep this test as extra coverage for old-to-new style conversion
 # Using the old-style / legacy hardware config dict is deprecated
-@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
 def test_real_mode_pulses_legacy_hardware_cfg(
     real_square_pulse_schedule,
     hardware_cfg_real_mode_legacy,
@@ -1855,12 +1854,13 @@ def test_real_mode_pulses_legacy_hardware_cfg(
         hardware_cfg_real_mode_legacy
     )
     compiler = SerialCompiler(name="compiler")
-    full_program = compiler.compile(
-        real_square_pulse_schedule,
-        config=mock_setup_basic_transmon[
-            "quantum_device"
-        ].generate_compilation_config(),
-    )
+    with pytest.warns(FutureWarning, match="1.0.0"):
+        full_program = compiler.compile(
+            real_square_pulse_schedule,
+            config=mock_setup_basic_transmon[
+                "quantum_device"
+            ].generate_compilation_config(),
+        )
 
     for output in range(4):
         seq_instructions = full_program.compiled_instructions["cluster0"][
@@ -1876,10 +1876,11 @@ def test_real_mode_pulses_legacy_hardware_cfg(
             elif seq_path == 1:
                 assert (np.array(waveform_data) == 0).all()
 
-        assert re.search(rf"play\s+0,0", seq_instructions["program"]), (
-            f"Output {output + 1} must be connected to "
-            f"sequencer{output} path{iq_order[0]} in real mode."
-        )
+        assert re.search(r"play\s+0,0", seq_instructions["program"])
+        # (
+        #     f"Output {output + 1} must be connected to "
+        #     f"sequencer{output} path{iq_order[0]} in real mode."
+        # )
 
 
 # --------- Test QASMProgram class ---------
@@ -1968,7 +1969,7 @@ def test_to_grid_time_raises(time):
     "delta_time, raise_expected",
     [(0.1, False), (0.01, True)],
 )
-def test_GRID_TIME_TOLERANCE_TIME(delta_time, raise_expected):
+def test_constant_grid_time_tolerance_time(delta_time, raise_expected):
     constants.GRID_TIME_TOLERANCE_TIME = delta_time
     ref_time = 8e-9
     ref_time_ns = 8
@@ -2151,12 +2152,12 @@ def test_multiple_trace_acquisition_error(
             config=compile_config_basic_transmon_qblox_hardware_cluster,
         )
     assert str(exception.value) == (
-        f"Both sequencer '0' and '1' "
-        f"of 'cluster0_module3' attempts to perform scope mode acquisitions. "
-        f"Only one sequencer per device can "
-        f"trigger raw trace capture.\n\nPlease ensure that "
-        f"only one port-clock combination performs "
-        f"raw trace acquisition per instrument."
+        "Both sequencer '0' and '1' "
+        "of 'cluster0_module3' attempts to perform scope mode acquisitions. "
+        "Only one sequencer per device can "
+        "trigger raw trace capture.\n\nPlease ensure that "
+        "only one port-clock combination performs "
+        "raw trace acquisition per instrument."
     )
 
 
@@ -2232,7 +2233,7 @@ def test_from_mapping(
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         pulse_only_schedule, hardware_cfg
     )
-    for instr_name in hardware_cfg.hardware_description.keys():
+    for instr_name in hardware_cfg.hardware_description:
         if instr_name in [
             "iq_mixer_lo0",
             "iq_mixer_lo1",
@@ -3396,7 +3397,8 @@ def test_assign_gain(compile_config_basic_transmon_qblox_hardware):
 
 
 @pytest.mark.xfail(
-    reason="This should be checked in validators of the QBloxHardwareCompilationConfig datastructure."
+    reason="This should be checked in validators of the "
+    "QBloxHardwareCompilationConfig datastructure."
 )
 @pytest.mark.parametrize(
     "portclock, not_supported_option, value",
@@ -3857,7 +3859,7 @@ def test_apply_latency_corrections_hardware_config_valid(
         schedule=sched,
         hardware_cfg=hardware_cfg,
     )
-    latency = int(1e9 * latency_dict[f"q0:mw-q0.01"])
+    latency = int(1e9 * latency_dict["q0:mw-q0.01"])
 
     program_lines = compiled_data["sequencers"]["seq0"]["sequence"][
         "program"
@@ -3918,7 +3920,7 @@ def test_determine_relative_latency_corrections(
     hardware_cfg_cluster_latency_corrections,
     create_schedule_with_pulse_info,
 ) -> None:
-    schedule = Schedule(f"q0 and q1")
+    schedule = Schedule("q0 and q1")
     schedule.add(Reset("q0"))
     schedule.add(Reset("q1"))
     schedule.add(X90("q0"))
@@ -3944,9 +3946,8 @@ def test_apply_mixer_corrections(
     mixer corrections are set for the correct portclock key
     by checking against the value set in the compiled instructions.
     """
-    expected_settings = compile_config_basic_transmon_qblox_hardware.hardware_compilation_config.hardware_options.mixer_corrections[
-        "q4:res-q4.ro"
-    ]
+    config = compile_config_basic_transmon_qblox_hardware.hardware_compilation_config
+    expected_settings = config.hardware_options.mixer_corrections["q4:res-q4.ro"]
 
     sched = Schedule("Simple experiment")
     sched.add(
@@ -4092,7 +4093,7 @@ start:
  upd_param 4 
  loop R0,@start 
  stop  
-""",
+""",  # noqa: W291 trailing whitespace
     )
 
 
@@ -4245,7 +4246,7 @@ def test_q1asm_stitched_pulses(mock_setup_basic_nv_qblox_hardware):
  wait 792 # auto generated wait (792 ns)
  set_awg_offs 0,0 # setting offset for staircase_pulse
  set_awg_gain 16384,0 # setting gain for staircase_pulse
- play 0,0,4 # play staircase_pulse (4 ns)"""
+ play 0,0,4 # play staircase_pulse (4 ns)"""  # noqa: W291 trailing whitespace
         in compiled_sched.compiled_instructions["cluster0"]["cluster0_module4"][
             "sequencers"
         ]["seq0"]["sequence"]["program"]
@@ -4582,25 +4583,27 @@ start:
  play 0,0,4 # play SquarePulse (4 ns)
  loop R0,@start 
  stop  
-"""
+"""  # noqa: W291 trailing whitespace
     else:
-        expected_program = """          set_mrk       3          # set markers to 3                    
-          wait_sync     4                                                
-          upd_param     4                                                
-          wait          4          # latency correction of 4 + 0 ns      
-          move          1,R0       # iterator for loop with label start  
-  start:                                                                 
-          reset_ph                                                       
-          upd_param     4                                                
-          set_awg_offs  16384,0    # setting offset for SquarePulse      
-          upd_param     4                                                
-          wait          992        # auto generated wait (992 ns)        
-          set_awg_offs  0,0        # setting offset for SquarePulse      
-          set_awg_gain  16384,0    # setting gain for SquarePulse        
-          play          0,0,4      # play SquarePulse (4 ns)             
-          loop          R0,@start                                        
-          stop                                                           
-"""
+        expected_program = (
+            "          set_mrk       3          # set markers to 3                    \n"
+            "          wait_sync     4                                                \n"
+            "          upd_param     4                                                \n"
+            "          wait          4          # latency correction of 4 + 0 ns      \n"
+            "          move          1,R0       # iterator for loop with label start  \n"
+            "  start:                                                                 \n"
+            "          reset_ph                                                       \n"
+            "          upd_param     4                                                \n"
+            "          set_awg_offs  16384,0    # setting offset for SquarePulse      \n"
+            "          upd_param     4                                                \n"
+            "          wait          992        # auto generated wait (992 ns)        \n"
+            "          set_awg_offs  0,0        # setting offset for SquarePulse      \n"
+            "          set_awg_gain  16384,0    # setting gain for SquarePulse        \n"
+            "          play          0,0,4      # play SquarePulse (4 ns)             \n"
+            "          loop          R0,@start                                        \n"
+            "          stop                                                           \n"
+        )
+
     assert program == expected_program, program
 
 
@@ -5041,9 +5044,8 @@ def test_1_ns_time_grid_repetition_loop_on_nco_grid(
 ):
     # In the second repetition, the NCO operations would be misaligned with the 4 ns
     # grid.
-    compile_config_basic_transmon_qblox_hardware.hardware_compilation_config.allow_off_grid_nco_ops = (
-        allow_off_grid_nco_ops
-    )
+    config = compile_config_basic_transmon_qblox_hardware.hardware_compilation_config
+    config.allow_off_grid_nco_ops = allow_off_grid_nco_ops
     sched = Schedule("1 ns timegrid", repetitions=2)
     sched.add(
         SquarePulse(
@@ -5084,9 +5086,8 @@ def test_1_ns_time_grid_repetition_loop_on_nco_grid(
 def test_1_ns_time_grid_loops_on_nco_grid_start_time(
     compile_config_basic_transmon_qblox_hardware, allow_off_grid_nco_ops
 ):
-    compile_config_basic_transmon_qblox_hardware.hardware_compilation_config.allow_off_grid_nco_ops = (
-        allow_off_grid_nco_ops
-    )
+    config = compile_config_basic_transmon_qblox_hardware.hardware_compilation_config
+    config.allow_off_grid_nco_ops = allow_off_grid_nco_ops
     sched = Schedule("1 ns timegrid")
     sched.add(
         SquarePulse(
@@ -5138,9 +5139,8 @@ def test_1_ns_time_grid_loops_on_nco_grid_start_time(
 def test_1_ns_time_grid_loops_on_nco_grid_duration(
     compile_config_basic_transmon_qblox_hardware, allow_off_grid_nco_ops
 ):
-    compile_config_basic_transmon_qblox_hardware.hardware_compilation_config.allow_off_grid_nco_ops = (
-        allow_off_grid_nco_ops
-    )
+    config = compile_config_basic_transmon_qblox_hardware.hardware_compilation_config
+    config.allow_off_grid_nco_ops = allow_off_grid_nco_ops
     sched = Schedule("1 ns timegrid")
     sched.add(
         SquarePulse(
@@ -5293,9 +5293,8 @@ def test_1_ns_time_grid_nco_too_close_set_freq(
     compile_config_basic_transmon_qblox_hardware,
     allow_off_grid_nco_ops,
 ):
-    compile_config_basic_transmon_qblox_hardware.hardware_compilation_config.allow_off_grid_nco_ops = (
-        allow_off_grid_nco_ops
-    )
+    config = compile_config_basic_transmon_qblox_hardware.hardware_compilation_config
+    config.allow_off_grid_nco_ops = allow_off_grid_nco_ops
     sched = Schedule("1 ns timegrid")
     pulse = SquarePulse(
         amp=0.5,
@@ -5330,9 +5329,8 @@ def test_1_ns_time_grid_nco_too_close_set_phase(
     compile_config_basic_transmon_qblox_hardware,
     allow_off_grid_nco_ops,
 ):
-    compile_config_basic_transmon_qblox_hardware.hardware_compilation_config.allow_off_grid_nco_ops = (
-        allow_off_grid_nco_ops
-    )
+    config = compile_config_basic_transmon_qblox_hardware.hardware_compilation_config
+    config.allow_off_grid_nco_ops = allow_off_grid_nco_ops
     sched = Schedule("1 ns timegrid")
     pulse = SquarePulse(
         amp=0.5,
@@ -5366,9 +5364,8 @@ def test_1_ns_time_grid_nco_too_close_set_phase(
 def test_1_ns_time_grid_nco(
     compile_config_basic_transmon_qblox_hardware, allow_off_grid_nco_ops
 ):
-    compile_config_basic_transmon_qblox_hardware.hardware_compilation_config.allow_off_grid_nco_ops = (
-        allow_off_grid_nco_ops
-    )
+    config = compile_config_basic_transmon_qblox_hardware
+    config.hardware_compilation_config.allow_off_grid_nco_ops = allow_off_grid_nco_ops
     sched = Schedule("1 ns timegrid")
     pulse = SquarePulse(
         amp=0.5,
@@ -5382,7 +5379,7 @@ def test_1_ns_time_grid_nco(
     sched.add(pulse)
     compiler = SerialCompiler(name="compiler")
     if allow_off_grid_nco_ops:
-        _ = compiler.compile(sched, config=compile_config_basic_transmon_qblox_hardware)
+        _ = compiler.compile(sched, config=config)
     else:
         with pytest.raises(
             NcoOperationTimingError,
@@ -5393,7 +5390,7 @@ def test_1_ns_time_grid_nco(
         ):
             _ = compiler.compile(
                 schedule=sched,
-                config=compile_config_basic_transmon_qblox_hardware,
+                config=config,
             )
 
 
@@ -5696,7 +5693,7 @@ def test_validate_input_gain(input_gain, error_msg):
     quantum_device.hardware_config(hardware_compilation_cfg)
 
     with pytest.raises(ValueError) as error:
-        sched = compiler.compile(
+        compiler.compile(
             schedule=sched,
             config=quantum_device.generate_compilation_config(),
         )
@@ -5705,6 +5702,7 @@ def test_validate_input_gain(input_gain, error_msg):
 
 
 def test_distortion_correction_latency_compensation():
+    enum = DistortionCorrectionLatencyEnum
     hardware_compilation_cfg = {
         "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
         "hardware_description": {
@@ -5715,53 +5713,53 @@ def test_distortion_correction_latency_compensation():
                     "1": {
                         "instrument_type": "QCM",
                         "complex_output_0": {
-                            "distortion_correction_latency_compensation": DistortionCorrectionLatencyEnum.EXP0
-                            | DistortionCorrectionLatencyEnum.EXP1
-                            | DistortionCorrectionLatencyEnum.EXP3
+                            "distortion_correction_latency_compensation": enum.EXP0
+                            | enum.EXP1
+                            | enum.EXP3
                         },
                         "real_output_2": {
                             "marker_debug_mode_enable": True,
-                            "distortion_correction_latency_compensation": DistortionCorrectionLatencyEnum.EXP0
-                            | DistortionCorrectionLatencyEnum.FIR,
+                            "distortion_correction_latency_compensation": enum.EXP0
+                            | enum.FIR,
                         },
                         "real_output_3": {
                             "marker_debug_mode_enable": False,
-                            "distortion_correction_latency_compensation": DistortionCorrectionLatencyEnum.EXP0
-                            | DistortionCorrectionLatencyEnum.EXP2,
+                            "distortion_correction_latency_compensation": enum.EXP0
+                            | enum.EXP2,
                         },
                         "digital_output_0": {
-                            "distortion_correction_latency_compensation": DistortionCorrectionLatencyEnum.EXP0
-                            | DistortionCorrectionLatencyEnum.FIR
+                            "distortion_correction_latency_compensation": enum.EXP0
+                            | enum.FIR
                         },
                         "digital_output_1": {
-                            "distortion_correction_latency_compensation": DistortionCorrectionLatencyEnum.EXP0
+                            "distortion_correction_latency_compensation": enum.EXP0
                         },
                         "digital_output_2": {
-                            "distortion_correction_latency_compensation": DistortionCorrectionLatencyEnum.EXP0
+                            "distortion_correction_latency_compensation": enum.EXP0
                         },
                         "digital_output_3": {
-                            "distortion_correction_latency_compensation": DistortionCorrectionLatencyEnum.EXP0
-                            | DistortionCorrectionLatencyEnum.EXP1
+                            "distortion_correction_latency_compensation": enum.EXP0
+                            | enum.EXP1
                         },
                     },
                     "2": {
                         "instrument_type": "QCM_RF",
                         "complex_output_0": {
-                            "distortion_correction_latency_compensation": DistortionCorrectionLatencyEnum.EXP0
-                            | DistortionCorrectionLatencyEnum.EXP1
-                            | DistortionCorrectionLatencyEnum.EXP3
+                            "distortion_correction_latency_compensation": enum.EXP0
+                            | enum.EXP1
+                            | enum.EXP3
                         },
                         "complex_output_1": {
                             "marker_debug_mode_enable": True,
-                            "distortion_correction_latency_compensation": DistortionCorrectionLatencyEnum.EXP0
-                            | DistortionCorrectionLatencyEnum.FIR,
+                            "distortion_correction_latency_compensation": enum.EXP0
+                            | enum.FIR,
                         },
                         "digital_output_0": {
-                            "distortion_correction_latency_compensation": DistortionCorrectionLatencyEnum.EXP0
-                            | DistortionCorrectionLatencyEnum.EXP1
+                            "distortion_correction_latency_compensation": enum.EXP0
+                            | enum.EXP1
                         },
                         "digital_output_1": {
-                            "distortion_correction_latency_compensation": DistortionCorrectionLatencyEnum.EXP0
+                            "distortion_correction_latency_compensation": enum.EXP0
                         },
                     },
                 },
@@ -6295,7 +6293,8 @@ def test_invalid_parameter_ordering(
     compiler = SerialCompiler(name="compiler")
     with pytest.raises(
         ValueError,
-        match="Invalid timing. Pulse SetClockFrequency \\(t=6.*e-08 to 6.*e-08\\).*\n.* cannot be started at this order or time. "
+        match="Invalid timing. Pulse SetClockFrequency \\(t=6.*e-08 to 6.*e-08\\).*\n.* "
+        "cannot be started at this order or time. "
         "Please try to reorder your operations by adding this operation "
         r"before any other operation \(possibly at the same time\) that happens at that time.",
     ):

@@ -98,7 +98,7 @@ class TestGenericPulseStrategy:
         assert strategy._amplitude_path_I == amp_real
         assert strategy._amplitude_path_Q == amp_imag
         assert strategy._waveform_index0 == 0
-        assert strategy._waveform_index1 == None
+        assert strategy._waveform_index1 is None
 
     def test_generate_data_complex(self):
         # arrange
@@ -238,7 +238,9 @@ class TestMarkerPulseStrategy:
                 "MarkerPulseStrategy can only be used with a digital channel. "
                 "Please make sure that 'digital' keyword is included "
                 "in the channel_name in the hardware configuration for port-clock combination"
-                " 'None-None' (current channel_name is 'complex_output_0').Operation causing exception: Pulse \"test_pulse\" (t0=0, duration=2.4e-08)"
+                " 'None-None'"
+                " (current channel_name is 'complex_output_0').Operation causing exception: "
+                'Pulse "test_pulse" (t0=0, duration=2.4e-08)'
             ),
         ):
             strategy.insert_qasm(empty_qasm_program_qcm)
@@ -276,7 +278,7 @@ class TestMarkerPulseStrategy:
         self, mock_setup_basic_transmon_with_standard_params
     ):
         hardware_cfg = {
-            "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+            "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",  # noqa: E501, line too long
             "hardware_description": {
                 "cluster0": {
                     "instrument_type": "Cluster",
@@ -347,7 +349,7 @@ class TestMarkerPulseStrategy:
         self, mock_setup_basic_transmon_with_standard_params
     ):
         hardware_cfg = {
-            "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+            "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",  # noqa: E501, line too long
             "hardware_description": {
                 "cluster0": {
                     "instrument_type": "Cluster",
@@ -417,7 +419,7 @@ class TestMarkerPulseStrategy:
 
     def test_marker_pulse_added_to_operation(self):
         hw_config = {
-            "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+            "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",  # noqa: E501, line too long
             "hardware_description": {
                 "cluster0": {
                     "instrument_type": "Cluster",
@@ -491,7 +493,9 @@ class TestDigitalPulseStrategy:
                 "DigitalPulseStrategy can only be used with a digital channel. "
                 "Please make sure that 'digital' keyword is included "
                 "in the channel_name in the hardware configuration for port-clock combination"
-                " 'None-None' (current channel_name is 'complex_output_0').Operation causing exception: Pulse \"test_pulse\" (t0=0, duration=2.4e-08)"
+                " 'None-None' "
+                "(current channel_name is 'complex_output_0').Operation causing exception: "
+                'Pulse "test_pulse" (t0=0, duration=2.4e-08)'
             ),
         ):
             strategy.insert_qasm(empty_qasm_program_qcm)

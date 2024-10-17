@@ -22,7 +22,7 @@ class DriverVersionError(Exception):
     """Raise when the installed driver version is not supported."""
 
 
-def verify_qblox_instruments_version(version: str | None = driver_version):
+def verify_qblox_instruments_version(version: str | None = driver_version) -> None:
     """
     Verifies whether the installed version is supported by the qblox_backend.
 
@@ -35,6 +35,7 @@ def verify_qblox_instruments_version(version: str | None = driver_version):
     ------
     DriverVersionError
         When an incorrect or no installation of qblox-instruments was found.
+
     """
     if not raise_on_version_mismatch:
         logger.warning(

@@ -24,6 +24,7 @@ def load_json_example_scheme(filename: str) -> dict[str, Any]:
     -------
     :
         The json file as a dictionary.
+
     """
     path = Path(examples.__file__).parent.joinpath(filename)
     return json.loads(path.read_text())

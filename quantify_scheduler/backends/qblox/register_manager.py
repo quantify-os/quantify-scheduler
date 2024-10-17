@@ -27,6 +27,7 @@ class RegisterManager:
         ------
         IndexError
             When the RegisterManager runs out of registers to allocate.
+
         """
         if len(self.available_registers) < 1:
             raise IndexError(
@@ -55,6 +56,7 @@ class RegisterManager:
             The value provided is not a valid register.
         RuntimeError
             Attempting to free a register that is already free.
+
         """
         _verify_valid_register(register)
         if register in self.available_registers:
@@ -73,6 +75,7 @@ class RegisterManager:
         -------
         :
             A set containing all the available registers.
+
         """
         return self._available_registers
 
@@ -97,6 +100,7 @@ def _verify_valid_register(register_name: str) -> None:
     ------
     ValueError
         Invalid register name passed.
+
     """
 
     def raise_error() -> None:

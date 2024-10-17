@@ -72,6 +72,7 @@ def chevron_cz_sched(
     -------
     :
         An experiment schedule.
+
     """
     sched = Schedule("Two-qubit Chevron CZ schedule", repetitions)
 

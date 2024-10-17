@@ -35,7 +35,6 @@ from quantify_scheduler.backends.qblox import (
 from quantify_scheduler.backends.qblox.operation_handling.acquisitions import (
     AcquisitionStrategyPartial,
 )
-from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
 from quantify_scheduler.backends.qblox.operation_handling.pulses import (
     DigitalOutputStrategy,
 )
@@ -57,6 +56,9 @@ from quantify_scheduler.helpers.schedule import (
 )
 
 if TYPE_CHECKING:
+    from quantify_scheduler.backends.qblox.operation_handling.base import (
+        IOperationStrategy,
+    )
     from quantify_scheduler.backends.qblox_backend import (
         _ClusterCompilationConfig,
         _ClusterModuleCompilationConfig,
@@ -118,7 +120,7 @@ class InstrumentCompiler(ABC):
         """
 
     @abstractmethod
-    def compile(self, debug_mode: bool, repetitions: int) -> Any:
+    def compile(self, debug_mode: bool, repetitions: int) -> object:
         """
         An abstract method that should be overridden in a subclass to implement the
         actual compilation. It should turn the pulses and acquisitions added to the
@@ -137,6 +139,7 @@ class InstrumentCompiler(ABC):
         :
             A data structure representing the compiled program. The type is
             dependent on implementation.
+
         """
 
 
@@ -157,6 +160,7 @@ class SequencerCompiler(ABC):
         differences between the different modules.
     sequencer_cfg
         The instrument compiler config associated to this instrument.
+
     """
 
     _settings: SequencerSettings
@@ -225,6 +229,7 @@ class SequencerCompiler(ABC):
         -------
         :
             The portclock.
+
         """
         return self.port, self.clock
 
@@ -237,6 +242,7 @@ class SequencerCompiler(ABC):
         -------
         :
             The settings set to this sequencer.
+
         """
         return self._settings
 
@@ -249,6 +255,7 @@ class SequencerCompiler(ABC):
         -------
         :
             The name.
+
         """
         return f"seq{self.index}"
 
@@ -262,6 +269,7 @@ class SequencerCompiler(ABC):
         -------
         :
             Has data been assigned to this sequencer?
+
         """
         return len(self.op_strategies) > 0
 
@@ -282,6 +290,7 @@ class SequencerCompiler(ABC):
         -------
         :
             The instantiated strategy object.
+
         """
 
     def add_operation_strategy(self, op_strategy: IOperationStrategy) -> None:
@@ -292,6 +301,7 @@ class SequencerCompiler(ABC):
         ----------
         op_strategy
             The operation strategy.
+
         """
         self.op_strategies.append(op_strategy)
         if op_strategy.operation_info.is_parameter_instruction:
@@ -347,6 +357,7 @@ class SequencerCompiler(ABC):
         RuntimeError
             When the total waveform size specified for a port-clock combination exceeds
             the waveform sample limit of the hardware.
+
         """
         wf_dict: dict[str, Any] = {}
         for op_strategy in self.op_strategies:
@@ -390,6 +401,7 @@ class SequencerCompiler(ABC):
             Currently, only two one dimensional waveforms can be used as acquisition
             weights. This exception is raised when either or both waveforms contain
             both a real and imaginary part.
+
         """
         wf_dict: dict[str, Any] = {}
         for op_strategy in self.op_strategies:
@@ -425,6 +437,7 @@ class SequencerCompiler(ABC):
             List of the acquisitions assigned to this sequencer.
         acq_metadata
             Acquisition metadata.
+
         """
 
     def _generate_acq_declaration_dict(
@@ -452,6 +465,7 @@ class SequencerCompiler(ABC):
         :
             The "acquisitions" entry of the program json as a dict. The keys correspond
             to the names of the acquisitions (i.e. the acq_channel in the scheduler).
+
         """
         # initialize an empty dictionary for the format required by module
         acq_declaration_dict = {}
@@ -576,6 +590,7 @@ class SequencerCompiler(ABC):
         ------
         RuntimeError
             Upon ``total_sequence_time`` exceeding :attr:`.QASMProgram.elapsed_time`.
+
         """
         loop_label = "start"
 
@@ -773,6 +788,7 @@ class SequencerCompiler(ABC):
             The program to add the instructions to.
         op_strategies:
             An operations list including all the acquisitions to consider.
+
         """
         channel_to_reg: dict[str, str] = {}
         for op_strategy in op_strategies:
@@ -855,12 +871,16 @@ class SequencerCompiler(ABC):
                         op_strategy, (LoopStrategy, ControlFlowReturnStrategy)
                     )
                 ):
-                    # If a parameter instruction happens while we're iterating through the operations not in reverse,
-                    # that invalidates all the other update parameters (and real time io instructions) that were before it,
+                    # If a parameter instruction happens while
+                    # we're iterating through the operations not in reverse,
+                    # that invalidates all the other update parameters
+                    # (and real time io instructions) that were before it,
                     # because that potentially means the parameter is not updated.
                     #
-                    # For conditionals and loops we cannot eliminate the update parameter just before them,
-                    # because these control flows might not even run their bodies (for loops if repetition is 0).
+                    # For conditionals and loops we
+                    # cannot eliminate the update parameter just before them,
+                    # because these control flows might not even
+                    # run their bodies (for loops if repetition is 0).
                     #
                     # For loops, we cannot eliminate the first update parameter in the body,
                     # because we directly can jump there from the end of the body,
@@ -898,7 +918,8 @@ class SequencerCompiler(ABC):
                         f"{op_strategy.operation_info.timing} cannot be scheduled at the very end "
                         "of a Schedule. The Schedule can be extended by adding an "
                         "IdlePulse operation with a duration of at least "
-                        f"{constants.MIN_TIME_BETWEEN_OPERATIONS} ns, or the Parameter operation can be "
+                        f"{constants.MIN_TIME_BETWEEN_OPERATIONS} ns, "
+                        f"or the Parameter operation can be "
                         "replaced by another operation."
                     )
                 elif (
@@ -911,9 +932,11 @@ class SequencerCompiler(ABC):
                     raise RuntimeError(
                         f"Parameter operation {op_strategy.operation_info} with start time "
                         f"{op_strategy.operation_info.timing} cannot be scheduled exactly before "
-                        f"the operation {last_upd_params_incompatible_op_info} with the same start time. "
+                        f"the operation {last_upd_params_incompatible_op_info} "
+                        f"with the same start time. "
                         "Insert an IdlePulse operation with a duration of at least "
-                        f"{constants.MIN_TIME_BETWEEN_OPERATIONS} ns, or the Parameter operation can be "
+                        f"{constants.MIN_TIME_BETWEEN_OPERATIONS} ns, "
+                        f"or the Parameter operation can be "
                         "replaced by another operation."
                     )
             elif op_strategy.operation_info.is_control_flow_end or isinstance(
@@ -1022,6 +1045,7 @@ class SequencerCompiler(ABC):
         -------
         :
             The combined program.
+
         """
         compiled_dict: dict[str, Any] = {}
         compiled_dict["program"] = program
@@ -1050,6 +1074,7 @@ class SequencerCompiler(ABC):
         -------
         :
             The full absolute path where the json file is stored.
+
         """
         data_dir = get_datadir()
         folder = path.join(data_dir, "schedules")
@@ -1102,6 +1127,7 @@ class SequencerCompiler(ABC):
             The compiled program and the acquisition metadata.
             If no data is assigned to this sequencer, the
             compilation is skipped and None is returned instead.
+
         """
         if not self.has_data:
             return None, None
@@ -1206,6 +1232,7 @@ class ClusterModuleCompiler(InstrumentCompiler, Generic[_SequencerT_co], ABC):
         the schedule.
     instrument_cfg
         The instrument compiler config referring to this device.
+
     """
 
     _settings: _ModuleSettingsType
@@ -1255,6 +1282,7 @@ class ClusterModuleCompiler(InstrumentCompiler, Generic[_SequencerT_co], ABC):
         op_info
             Data structure containing all the information regarding this specific
             pulse or acquisition operation.
+
         """
         if op_info.is_acquisition and not self.supports_acquisition:
             raise RuntimeError(
@@ -1276,6 +1304,7 @@ class ClusterModuleCompiler(InstrumentCompiler, Generic[_SequencerT_co], ABC):
         :
             A set containing all the port-clock combinations that are used by this
             InstrumentCompiler.
+
         """
         portclocks_used: set[tuple[str, str]] = {
             portclock
@@ -1391,6 +1420,7 @@ class ClusterModuleCompiler(InstrumentCompiler, Generic[_SequencerT_co], ABC):
             All the other generic settings are under the key `"settings"`.
             If the device is not actually used,
             and an empty program is compiled, None is returned instead.
+
         """
         program: dict[str, Any] = {}
 

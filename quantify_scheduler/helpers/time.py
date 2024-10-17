@@ -20,6 +20,7 @@ def get_time() -> float:
     -------
     :
         Time since epoch
+
     """
     return time.time()
 
@@ -35,5 +36,6 @@ def sleep(seconds: float) -> None:
     ----------
     seconds :
         The amount of time to wait.
+
     """
     time.sleep(seconds)

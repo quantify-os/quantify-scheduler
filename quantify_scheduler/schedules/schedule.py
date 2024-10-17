@@ -102,6 +102,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         -------
         :
             The repetitions count.
+
         """
         return self["repetitions"]
 
@@ -193,6 +194,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         -------
         :
             The json string result.
+
         """
         return json.dumps(self, cls=json_utils.SchedulerJSONEncoder)
 
@@ -210,6 +212,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         -------
         :
             The Schedule object.
+
         """
         return json_utils.SchedulerJSONDecoder().decode(data)
 
@@ -621,6 +624,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         ------
         ValueError
             When the absolute timing has not been determined during compilation.
+
         """  # noqa: E501
         timing_table_list = []
         self._generate_timing_table_list(self, 0, timing_table_list, None)
@@ -720,6 +724,7 @@ class Schedule(ScheduleBase):
         The amount of times the schedule will be repeated, by default 1
     data
         A dictionary containing a pre-existing schedule, by default None
+
     """
 
     schema_filename = "schedule.json"
@@ -821,6 +826,7 @@ class Schedule(ScheduleBase):
         -------
         :
             Returns the schedulable created in the schedule.
+
         """
         if label is None:
             label = str(uuid4())
@@ -927,6 +933,7 @@ class Schedulable(JSONSchemaValMixin, UserDict):
         schedulables. Separate schedulables cannot share the same name.
     operation_id
         Reference to the operation which is to be executed by this schedulable.
+
     """
 
     schema_filename = "schedulable.json"
@@ -984,6 +991,7 @@ class Schedulable(JSONSchemaValMixin, UserDict):
             of :code:`None`,
             :meth:`~quantify_scheduler.compilation.determine_absolute_timing` assumes
             :code:`"start"`.
+
         """
         # Save as str to help serialization of schedules.
         if ref_schedulable is not None:

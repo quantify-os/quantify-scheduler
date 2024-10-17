@@ -1,6 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-"""Example old-style Zurich Instruments hardware config dictionary for legacy support."""  # noqa: E501
+"""Example old-style Zurich Instruments hardware config dictionary for legacy support."""
 
 hardware_config = {
     "backend": "quantify_scheduler.backends.zhinst_backend.compile_backend",

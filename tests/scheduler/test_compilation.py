@@ -45,7 +45,7 @@ def test_determine_absolute_timing_ideal_clock():
     assert len(sched.data["schedulables"]) == 5
 
     for schedulable in sched.data["schedulables"].values():
-        assert "abs_time" not in schedulable.keys()
+        assert "abs_time" not in schedulable
         assert schedulable["timing_constraints"][0]["rel_time"] == 0
 
     timed_sched = _determine_absolute_timing(sched, time_unit="ideal")
@@ -468,7 +468,7 @@ def test_determine_absolute_timing_subschedule():
     assert len(sched.data["schedulables"]) == 3
 
     for schedulable in sched.data["schedulables"].values():
-        assert "abs_time" not in schedulable.keys()
+        assert "abs_time" not in schedulable
         assert schedulable["timing_constraints"][0]["rel_time"] == 0
 
     timed_sched = _determine_absolute_timing(sched, time_unit="ideal")

@@ -18,6 +18,7 @@ class Resource(UserDict):
     ----------
     name :
         The resource name.
+
     """
 
     def __init__(self, name: str) -> None:
@@ -32,6 +33,7 @@ class Resource(UserDict):
         Returns
         -------
         :
+
         """
         return self.data["name"]
 
@@ -47,6 +49,7 @@ class Resource(UserDict):
         Returns
         -------
         :
+
         """
         return repr(self) == repr(other)
 
@@ -60,13 +63,13 @@ class Resource(UserDict):
         """
         return f"{self.__class__.__name__}(name='{self.name}')"
 
-    def __getstate__(self):
+    def __getstate__(self) -> dict[str, object]:
         return {
             "deserialization_type": export_python_object_to_path_string(self.__class__),
             "data": self.data,
         }
 
-    def __setstate__(self, state):
+    def __setstate__(self, state: dict[str, dict]) -> None:
         self.data = state["data"]
 
     def __hash__(self) -> int:
@@ -90,6 +93,7 @@ class ClockResource(Resource):
         the frequency of the clock in Hz
     phase :
         the starting phase of the clock in deg
+
     """
 
     def __init__(
@@ -123,6 +127,7 @@ class BasebandClockResource(Resource):
     ----------
     name :
         the name of this clock
+
     """
 
     IDENTITY = "cl0.baseband"
@@ -148,6 +153,7 @@ class DigitalClockResource(Resource):
     ----------
     name :
         the name of this clock
+
     """
 
     IDENTITY = "digital"

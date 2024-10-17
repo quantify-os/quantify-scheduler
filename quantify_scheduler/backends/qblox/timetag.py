@@ -52,6 +52,7 @@ class TimetagSequencerCompiler(SequencerCompiler):
         differences between the different modules.
     sequencer_cfg
         The instrument compiler config associated to this device.
+
     """
 
     def __init__(
@@ -88,6 +89,7 @@ class TimetagSequencerCompiler(SequencerCompiler):
         -------
         :
             The settings set to this sequencer.
+
         """
         return self._settings
 
@@ -160,6 +162,7 @@ class TimetagSequencerCompiler(SequencerCompiler):
         -------
         :
             The instantiated strategy object.
+
         """
         return get_operation_strategy(operation_info, self.settings.channel_name)
 
@@ -178,6 +181,7 @@ class TimetagSequencerCompiler(SequencerCompiler):
             List of the acquisitions assigned to this sequencer.
         acq_metadata
             Acquisition metadata.
+
         """
 
         def assert_all_op_info_values_equal(key: str) -> None:
@@ -252,6 +256,7 @@ class TimetagSequencerCompiler(SequencerCompiler):
         :
             The "acquisitions" entry of the program json as a dict. The keys correspond
             to the names of the acquisitions (i.e. the acq_channel in the scheduler).
+
         """
         # This restriction is necessary because there will be only one set of trace data
         # per sequencer, regardless of acquisition channels.

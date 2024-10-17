@@ -1,4 +1,5 @@
 import math
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pytest
@@ -7,14 +8,16 @@ from xarray import Dataset
 
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.compilation import _determine_absolute_timing
-from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.schedules import spectroscopy_schedules as sps
 from tests.scheduler.instrument_coordinator.components.test_qblox import (
     make_cluster_component,
 )
 from tests.scheduler.schedules.compiles_all_backends import _CompilesAllBackends
+
+if TYPE_CHECKING:
+    from quantify_scheduler.device_under_test.nv_element import BasicElectronicNVElement
+    from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 
 
 class TestHeterodyneSpecSchedule(_CompilesAllBackends):
@@ -377,7 +380,7 @@ class TestNVDarkESRSched:
             schedule=self.uncomp_sched,
             config=quantum_device.generate_compilation_config(),
         )
-        assert not schedule.compiled_instructions == {}
+        assert schedule.compiled_instructions != {}
 
 
 class TestNVDarkESRSchedNCO:
@@ -473,4 +476,4 @@ class TestNVDarkESRSchedNCO:
             schedule=self.uncomp_sched,
             config=quantum_device.generate_compilation_config(),
         )
-        assert not schedule.compiled_instructions == {}
+        assert schedule.compiled_instructions != {}

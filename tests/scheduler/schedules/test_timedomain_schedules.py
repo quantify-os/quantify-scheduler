@@ -233,7 +233,7 @@ class TestT1Sched(_CompilesAllBackends):
         labels = []
         label_tmpl = ["Reset {}", "pi {}", "Measurement {}"]
         for i in range(len(self.sched_kwargs["times"])):
-            labels += [l.format(i) for l in label_tmpl]
+            labels += [label.format(i) for label in label_tmpl]
 
         for i, schedulable in enumerate(self.uncomp_sched.schedulables.values()):
             assert schedulable["label"] == labels[i]
@@ -305,7 +305,7 @@ class TestCPMGSched(_CompilesAllBackends):
     def test_timing(self):
         i = 0
         times = self.sched_kwargs["times"]
-        for key in self.uncomp_sched.operations.keys():
+        for key in self.uncomp_sched.operations:
             if isinstance(self.uncomp_sched.operations[key], Schedule):
                 sub_sched = self.uncomp_sched.operations[key]
                 sub_sched_duration = 0
@@ -335,7 +335,7 @@ class TestCPMGSched(_CompilesAllBackends):
             )
 
 
-class TestCPMGSched_y(TestCPMGSched):
+class TestCPMGSchedY(TestCPMGSched):
     @classmethod
     def setup_class(cls):
         n_gates = 16
@@ -352,7 +352,7 @@ class TestCPMGSched_y(TestCPMGSched):
         cls.uncomp_sched = ts.cpmg_sched(**cls.sched_kwargs)
 
 
-class TestCPMGSched_xy(TestCPMGSched):
+class TestCPMGSchedXY(TestCPMGSched):
     @classmethod
     def setup_class(cls):
         n_gates = 32

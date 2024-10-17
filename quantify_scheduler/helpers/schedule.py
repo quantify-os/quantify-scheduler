@@ -36,6 +36,7 @@ def get_pulse_uuid(
     -------
     :
         The uuid hash.
+
     """
     if excludes is None:
         excludes = ["t0"]
@@ -56,6 +57,7 @@ def get_acq_uuid(acq_info: dict[str, Any]) -> int:
     -------
     :
         The uuid hash.
+
     """
     return make_hash(without(acq_info, ["t0", "waveforms"]))
 
@@ -87,6 +89,7 @@ def get_acq_info_by_uuid(schedule: Schedule) -> dict[int, dict[str, Any]]:
     ----------
     schedule
         The schedule.
+
     """
     acqid_acqinfo_dict: dict[int, dict[str, Any]] = {}
     _generate_acq_info_by_uuid(schedule, acqid_acqinfo_dict)
@@ -159,6 +162,7 @@ def extract_acquisition_metadata_from_acquisition_protocols(
         A list of acquisition protocols.
     repetitions
         How many times the acquisition was repeated.
+
     """
     acq_channels_metadata: dict[int, AcquisitionChannelMetadata] = {}
 

@@ -82,7 +82,14 @@ def test_drag_ns() -> None:
     assert np.max(waveform) == pytest.approx(0.5)
 
     with pytest.raises(ValueError):
-        drag(times, 0.5, D_amp, duration, nr_sigma=nr_sigma, subtract_offset="bad!")
+        drag(
+            times,
+            0.5,
+            D_amp,
+            duration,
+            nr_sigma=nr_sigma,
+            subtract_offset="bad!",  # type: ignore  # (wrong type is what we are testing here)
+        )
 
     waveform = drag(
         times,
@@ -101,13 +108,13 @@ def test_sudden_net_zero() -> None:
     times = np.arange(0, 33e-9, 0.91e-9)
     amp_A = 0.4
     amp_B = 0.2
-    net_zero_A_scale = 0.95
+    net_zero_a_scale = 0.95
 
     waveform = sudden_net_zero(
         times,
         amp_A=amp_A,
         amp_B=amp_B,
-        net_zero_A_scale=net_zero_A_scale,
+        net_zero_A_scale=net_zero_a_scale,
         t_pulse=20.1e-9,
         t_phi=2.3e-9,
         t_integral_correction=10.6e-9,
@@ -115,9 +122,9 @@ def test_sudden_net_zero() -> None:
 
     assert np.sum(waveform) == pytest.approx(0, abs=1e-12)
     assert np.max(waveform) == amp_A
-    assert np.min(waveform) == -1 * amp_A * net_zero_A_scale
+    assert np.min(waveform) == -1 * amp_A * net_zero_a_scale
     assert np.round(amp_B * amp_A, decimals=12) in np.round(waveform, decimals=12)
-    assert np.round(-amp_B * amp_A * net_zero_A_scale, decimals=12) in np.round(
+    assert np.round(-amp_B * amp_A * net_zero_a_scale, decimals=12) in np.round(
         waveform, decimals=12
     )
 
@@ -137,11 +144,11 @@ def test_sudden_net_zero_class_does_not_cause_error(
     sum is greater than the duration specified by SuddenNetZeroPulse."""
     amp_A = 0.4
     amp_B = 0.2
-    net_zero_A_scale = 0.95
+    net_zero_a_scale = 0.95
     pulse = SuddenNetZeroPulse(
         amp_A=amp_A,
         amp_B=amp_B,
-        net_zero_A_scale=net_zero_A_scale,
+        net_zero_A_scale=net_zero_a_scale,
         t_pulse=t_pulse,
         t_phi=t_phi,
         t_integral_correction=t_integral_correction,
@@ -151,7 +158,7 @@ def test_sudden_net_zero_class_does_not_cause_error(
     # Array with duration from SuddenNetZeroPulse should not raise error.
     t = np.arange(0, pulse.duration, sample_time)
     _ = sudden_net_zero(
-        t, amp_A, amp_B, net_zero_A_scale, t_pulse, t_phi, t_integral_correction
+        t, amp_A, amp_B, net_zero_a_scale, t_pulse, t_phi, t_integral_correction
     )
 
 

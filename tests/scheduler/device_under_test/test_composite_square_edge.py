@@ -94,10 +94,7 @@ def test_composite_square_edge_serialization(edge_q2b_q3b):
 
     # Check that all serialized submodule params match the original
     for submodule_name, submodule_data in edge_q2b_q3b_as_dict["data"].items():
-        if (
-            submodule_name == "parent_element_name"
-            or submodule_name == "child_element_name"
-        ):
+        if submodule_name in ("parent_element_name", "child_element_name"):
             continue
         for parameter_name, parameter_val in submodule_data.items():
             assert (
