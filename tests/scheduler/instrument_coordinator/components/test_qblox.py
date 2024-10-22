@@ -1764,7 +1764,9 @@ def test_get_configuration_manager(
     mock_qblox_instruments_config_manager,
 ):
     with pytest.raises(RuntimeError) as error:
-        qblox._get_configuration_manager("bad_ip")
+        # The .test domain is guaranteed not to be registered.
+        # https://en.wikipedia.org/wiki/.test
+        qblox._get_configuration_manager("bad_ip.test")
     assert "Note: qblox-instruments" in str(error)
 
     # ConfigurationManager belongs to qblox-instruments, but was already imported
