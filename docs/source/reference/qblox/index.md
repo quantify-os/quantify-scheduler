@@ -46,4 +46,5 @@ recent
 Cluster
 Voltage offsets and long waveforms
 Acquisition details
+Hardware config versioning
 ```

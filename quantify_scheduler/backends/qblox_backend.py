@@ -561,6 +561,10 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
     :class:`~quantify_scheduler.backends.types.common.HardwareCompilationConfig`
     DataStructure for the Qblox backend.
     """
+    version: str = Field(default="0.1")
+    """
+    Version of the specific hardware compilation config used.
+    """
     hardware_description: dict[  # type: ignore
         str, QbloxHardwareDescription | HardwareDescription
     ]
@@ -749,6 +753,16 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
                     )
 
         return self
+
+    @model_validator(mode="before")
+    def _validate_versioning(
+        cls, config: dict[str, Any]  # noqa: N805
+    ) -> dict[str, Any]:
+        if "version" in config:  # noqa: SIM102
+            if config["version"] not in ["0.1", "0.2"]:
+                raise ValueError("Unknown hardware config version.")
+
+        return config
 
     def _extract_instrument_compilation_configs(
         self, portclocks_used: set[tuple]

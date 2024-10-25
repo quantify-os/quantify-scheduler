@@ -2246,6 +2246,42 @@ def test_from_mapping(
         assert instr_name in container.instrument_compilers
 
 
+def test_hardware_compilation_config_versioning():
+    hardware_config = {
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "ref": "internal",
+                "modules": {
+                    "1": {
+                        "instrument_type": "QCM",
+                    },
+                },
+            },
+        },
+        "hardware_options": {},
+        "connectivity": {
+            "graph": [
+                ["cluster0.module1.complex_output_0", "q0:mw"],
+            ]
+        },
+    }
+
+    v10_config = QbloxHardwareCompilationConfig.model_validate(hardware_config)
+    assert v10_config.version == "0.1"
+
+    hardware_config["version"] = "Some unacceptable version"
+    with pytest.raises(ValueError) as error:
+        _ = QbloxHardwareCompilationConfig.model_validate(hardware_config)
+
+    assert "Unknown hardware config version" in error.exconly()
+
+    hardware_config["version"] = "0.2"
+    v11_config = QbloxHardwareCompilationConfig.model_validate(hardware_config)
+    assert v11_config.version == "0.2"
+
+
 # Transmon-specific config
 def test_extract_instrument_compilation_configs_cluster():
     hardware_config = {
