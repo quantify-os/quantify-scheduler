@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 import sys
 import traceback
 import zipfile
@@ -17,6 +16,7 @@ from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
 import numpy as np
+from packaging.requirements import Requirement
 from qcodes.utils.json_utils import NumpyJSONEncoder
 
 from quantify_core._version import __version__ as __core_version__
@@ -83,9 +83,14 @@ def _generate_diagnostics_report(  # noqa: PLR0912, PLR0915
         ]
 
         all_dependency_versions = []
-        _operator_regex_str = r"(~=|==|!=|<=|>=|<|>|===|\[|\s)"
         for line in dependencies:
-            dependency = re.split(_operator_regex_str, line)[0]
+            req = Requirement(line)
+            if req.marker and not req.marker.evaluate():
+                # marker.evaluate() compares the marker (e.g. the python version) with
+                # the local environment. If the result is False, the requirement does
+                # not apply.
+                continue
+            dependency = req.name
             if dependency == "quantify_core":
                 dependency = dependency.replace("_", "-")
             version = (
