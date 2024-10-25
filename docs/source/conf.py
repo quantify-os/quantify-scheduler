@@ -510,7 +510,9 @@ nitpick_ignore = [
     ("py:obj", "quantify_scheduler.structure.Graph"),
     ("py:attr", "BasicTransmonElement.measure.acq_threshold"),
     ("py:attr", "BasicTransmonElement.measure.acq_rotation"),
-]  # tuple[str, str], ignore certain warnings
+    ("py:class", "NamedTuple"),
+]  # Tuple[str, str], ignore certain warnings
+
 
 nitpick_ignore_regex = [
     ("py:class", r"numpy.*"),

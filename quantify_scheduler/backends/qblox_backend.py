@@ -31,7 +31,10 @@ from quantify_scheduler.backends.qblox.helpers import (
     to_grid_time,
 )
 from quantify_scheduler.backends.qblox.operations import long_square_pulse
-from quantify_scheduler.backends.qblox.operations.pulse_library import LatchReset
+from quantify_scheduler.backends.qblox.operations.pulse_library import (
+    LatchReset,
+)
+from quantify_scheduler.backends.qblox.stack_pulses import stack_pulses
 from quantify_scheduler.backends.types.common import (
     Connectivity,
     HardwareCompilationConfig,
@@ -581,6 +584,10 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
     grid.
     """
     compilation_passes: list[SimpleNodeConfig] = [
+        SimpleNodeConfig(
+            name="stack_pulses",
+            compilation_func=stack_pulses,
+        ),
         SimpleNodeConfig(
             name="compile_long_square_pulses_to_awg_offsets",
             compilation_func=compile_long_square_pulses_to_awg_offsets,

@@ -81,7 +81,7 @@ def test_timetag_measurement_control(
         square_pulse = SquarePulse(
             amp=1.0, duration=200e-9, port="qe1:optical_control", clock="qe1.ge0"
         )
-        sched.add(square_pulse, rel_time=100e-9, ref_pt="start")
+        sched.add(square_pulse, rel_time=200e-9, ref_pt="start")
         for rel_time in (1e-6, 2e-6, 3e-6):
             sched.add(square_pulse, rel_time=rel_time, ref_pt="start")
 
@@ -162,7 +162,7 @@ def test_qtm_trace_measurement_control(
         square_pulse = SquarePulse(
             amp=1.0, duration=200e-9, port="qe1:optical_control", clock="qe1.ge0"
         )
-        sched.add(square_pulse, rel_time=100e-9, ref_pt="start")
+        sched.add(square_pulse, rel_time=200e-9, ref_pt="start")
         for rel_time in (1e-6, 2e-6, 3e-6):
             sched.add(square_pulse, rel_time=rel_time, ref_pt="start")
 

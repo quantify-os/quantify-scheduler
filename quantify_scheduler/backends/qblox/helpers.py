@@ -1450,3 +1450,24 @@ def _generate_new_style_hardware_compilation_config(  # noqa PLR0915 too many st
                 f"in old-style hardware config."
             )
     return new_style_config
+
+
+def is_square_pulse(operation: Operation | Schedule) -> bool:
+    """
+    Check if the operation is a square pulse.
+
+    Parameters
+    ----------
+    operation:
+        The operation to check.
+
+    Returns
+    -------
+    :
+        True if the operation is a square pulse, False otherwise.
+
+    """
+    for pulse_info in operation.data["pulse_info"]:
+        if pulse_info["wf_func"] != "quantify_scheduler.waveforms.square":
+            return False
+    return True
