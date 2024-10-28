@@ -34,11 +34,14 @@ from .nv_native_library import ChargeReset, CRCount
 from .operation import Operation
 from .pulse_factories import (
     composite_square_pulse,
+    long_ramp_pulse,
+    long_square_pulse,
     nv_spec_pulse_mw,
     phase_shift,
     rxy_drag_pulse,
     rxy_gauss_pulse,
     rxy_hermite_pulse,
+    staircase_pulse,
 )
 from .pulse_library import (
     ChirpPulse,
@@ -60,6 +63,11 @@ from .pulse_library import (
     Timestamp,
     VoltageOffset,
     WindowOperation,
+)
+from .stitched_pulse import (
+    StitchedPulse,
+    StitchedPulseBuilder,
+    convert_to_numerical_pulse,
 )
 
 __all__ = [
@@ -118,4 +126,10 @@ __all__ = [
     "TriggerCount",
     "TimetagTrace",
     "Timetag",
+    "StitchedPulse",
+    "StitchedPulseBuilder",
+    "convert_to_numerical_pulse",
+    "long_ramp_pulse",
+    "long_square_pulse",
+    "staircase_pulse",
 ]
