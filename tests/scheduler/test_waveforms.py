@@ -6,8 +6,10 @@ import pytest
 
 from quantify_scheduler.operations.pulse_library import SuddenNetZeroPulse
 from quantify_scheduler.waveforms import (
+    chirp,
     drag,
     interpolated_complex_waveform,
+    ramp,
     rotate_wave,
     skewed_hermite,
     square,
@@ -25,34 +27,57 @@ def test_square_wave() -> None:
     npt.assert_array_equal(amped_sq_iq.imag, np.linspace(0, 0, 20))
 
 
+def test_ramp() -> None:
+    waveform = ramp(t=np.array(range(10)), amp=100, offset=4, duration=10)
+    assert np.allclose(waveform, np.array([4, 14, 24, 34, 44, 54, 64, 74, 84, 94]))
+
+
+def test_ramp_non_linear_input() -> None:
+    waveform = ramp(t=np.array([2, -4, 7, 10, 3]), amp=100, offset=4, duration=10)
+    assert np.allclose(waveform, np.array([24, -36, 74, 104, 34]))
+
+
 def test_staircase() -> None:
-    t = np.linspace(0, 1e-6, 20)
-    sig = staircase(t, -1, 2, 4)
-    answer = np.array(
-        [
-            -1.0,
-            -1.0,
-            -1.0,
-            -1.0,
-            -1.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            2.0,
-            2.0,
-            2.0,
-            2.0,
-            2.0,
-        ]
+    waveform = staircase(
+        t=np.array(range(12)), start_amp=20, final_amp=70, num_steps=6, duration=11
     )
-    npt.assert_array_equal(sig, answer)
+    assert np.allclose(
+        waveform, np.array([20, 20, 30, 30, 40, 40, 50, 50, 60, 60, 70, 70])
+    )
+
+
+def test_staircase_times_out_of_range_out_of_order() -> None:
+    waveform = staircase(
+        t=np.array([2, -4, 7, 10, 14, 3, 9, 0, 11, 1, 1]),
+        start_amp=20,
+        final_amp=70,
+        num_steps=6,
+        duration=11,
+    )
+    assert np.allclose(waveform, np.array([30, 20, 50, 70, 70, 30, 60, 20, 70, 20, 20]))
+
+
+def test_chirp():
+    waveform = chirp(
+        t=np.array(range(10)), amp=100, start_freq=2, end_freq=10, duration=9
+    )
+    assert np.allclose(
+        waveform,
+        np.array(
+            [
+                100.0,
+                -93.96926208 + 3.42020143e01j,
+                17.36481777 - 9.84807753e01j,
+                100.0,
+                76.60444431 + 6.42787610e01j,
+                76.60444431 + 6.42787610e01j,
+                100.0,
+                17.36481777 - 9.84807753e01j,
+                -93.96926208 + 3.42020143e01j,
+                100.0,
+            ]
+        ),
+    )
 
 
 def test_drag_ns() -> None:
@@ -315,4 +340,66 @@ def test_drag_sigma_raises_error():
     assert (
         str(exception.value)
         == "Both sigma and nr_sigma are specified. Please specify only one."
+    )
+
+
+def test_deprecated_ramp():
+    with pytest.deprecated_call():
+        waveform = ramp(t=np.array(range(10)), amp=100, offset=4)
+    assert np.allclose(waveform, np.array([4, 14, 24, 34, 44, 54, 64, 74, 84, 94]))
+
+
+def test_deprecated_staircase() -> None:
+    t = np.linspace(0, 1e-6, 20, endpoint=False)
+    with pytest.deprecated_call():
+        sig = staircase(t, -1, 2, 4)
+    answer = np.array(
+        [
+            -1.0,
+            -1.0,
+            -1.0,
+            -1.0,
+            -1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+        ]
+    )
+    npt.assert_array_equal(sig, answer)
+
+
+def test_deprecated_chirp():
+    # Old functionality incorrectly assumed duration = t[-1] - t[0]
+    # so the calculated values here are for duration=9
+    # Which is incorrect
+    with pytest.deprecated_call():
+        waveform = chirp(t=np.array(range(10)), amp=100, start_freq=2, end_freq=10)
+    assert np.allclose(
+        waveform,
+        np.array(
+            [
+                100.0,
+                -93.96926208 + 3.42020143e01j,
+                17.36481777 - 9.84807753e01j,
+                100.0,
+                76.60444431 + 6.42787610e01j,
+                76.60444431 + 6.42787610e01j,
+                100.0,
+                17.36481777 - 9.84807753e01j,
+                -93.96926208 + 3.42020143e01j,
+                100.0,
+            ]
+        ),
     )

@@ -406,7 +406,6 @@ def test_area_pulses() -> None:
 def test_area_pulses_half_sampling() -> None:
     operation = SquarePulse(amp=1, duration=10.5e-9, port="P")
     area = area_pulses(operation.data["pulse_info"], sampling_rate=1e9)
-    print(area)
     TestCase().assertAlmostEqual(area, 10.5e-9)
 
 

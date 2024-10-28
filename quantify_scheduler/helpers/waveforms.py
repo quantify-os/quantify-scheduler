@@ -287,10 +287,15 @@ def exec_waveform_function(wf_func: str, t: np.ndarray, pulse_info: dict) -> np.
         elif fn_name == "ramp":
             if "offset" in pulse_info:
                 waveform = waveforms.ramp(
-                    t=t, amp=pulse_info["amp"], offset=pulse_info["offset"]
+                    t=t,
+                    amp=pulse_info["amp"],
+                    offset=pulse_info["offset"],
+                    duration=pulse_info["duration"],
                 )
             else:
-                waveform = waveforms.ramp(t=t, amp=pulse_info["amp"])
+                waveform = waveforms.ramp(
+                    t=t, amp=pulse_info["amp"], duration=pulse_info["duration"]
+                )
         elif fn_name == "soft_square":
             waveform = waveforms.soft_square(t=t, amp=pulse_info["amp"])
         elif fn_name == "drag":

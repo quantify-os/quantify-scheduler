@@ -246,23 +246,25 @@ def get_sampled_pulses(
                     np.asarray(info.op_info["t_samples"]) - info.op_info["t_samples"][0]
                 )
 
+            # Add the final datapoint for nicer plots
+            t = np.append(t, t[-1] + 0.99 / sampling_rate)
+
             waveform = exec_waveform_function(
-                wf_func=info.op_info["wf_func"], t=t - t[0], pulse_info=info.op_info
+                wf_func=info.op_info["wf_func"],
+                t=t - t[0],
+                pulse_info=info.op_info,
             )
 
-            # Hold the last data point for 1 unit of sample time, so that the full
-            # duration of the pulse is plotted.
-            visual_end = 2 * t[-1] - t[-2]
             # Add 0 amplitude points before and after the pulse such that interpolation
             # in sum_waveforms looks correct visually.
             t = np.concatenate(
                 (
                     [t[0] - 0.01 / sampling_rate],
                     t,
-                    [visual_end - 0.01 / sampling_rate, visual_end],
+                    [t[-1] + 0.01 / sampling_rate],
                 )
             )
-            waveform = np.concatenate(([0], waveform, [waveform[-1], 0]))
+            waveform = np.concatenate(([0], waveform, [0]))
 
             if modulation == "clock":
                 waveform = modulate_waveform(

@@ -4,6 +4,7 @@
 
 ### Breaking changes
 
+- `ramp` now requires an ndarray as input to be inline with other wave functions. Regular lists don't work anymore.
 - Introduce trigger count bin mode to replace AVERAGE with DISTRIBUTION. (!1103)
 
 ### Merged branches and closed issues
@@ -25,6 +26,7 @@
   - Change CPMG schedule to enable Ramsey style decoupling measurements. (!1041)
 - Circuit diagrams
   - Support sub-schedules and control-flow in circuit diagrams. (!1071)
+  - Plot the final datapoint correctly based on the waveform, instead of copying the previous one (!1096)
 
 ## 0.21.1 (2024-08-16)
 

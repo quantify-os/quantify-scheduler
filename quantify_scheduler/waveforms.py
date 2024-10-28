@@ -11,7 +11,7 @@ the flux sensitivity and interaction strengths and qubit frequencies.
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Literal, Sized
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 from scipy import interpolate, signal
@@ -30,17 +30,29 @@ def square_imaginary(t: np.ndarray | list[float], amp: float | complex) -> np.nd
     return square(t, 1j * amp)
 
 
-def ramp(t: Sized, amp: float, offset: float = 0) -> np.ndarray:
+def ramp(
+    t: np.ndarray, amp: float, offset: float = 0, duration: float | None = None
+) -> np.ndarray:
     """Generate a ramp pulse."""
-    return np.linspace(offset, amp + offset, len(t), endpoint=False)
+    if duration is None:
+        warnings.warn(
+            "Defining the duration of a ramp pulse based on the given timings "
+            "is deprecated. Please provide the desired pulse duration to the "
+            "`duration` keyword. E.g. `ramp(..., duration=100e-9)`. "
+            "This will be enforced in quantify-scheduler>=0.24",
+            FutureWarning,
+        )
+        return np.linspace(offset, amp + offset, len(t), endpoint=False)
+    return amp / duration * t + offset
 
 
 def staircase(
-    t: np.ndarray | list[float],
+    t: np.ndarray[float, np.dtype],
     start_amp: float | complex,
     final_amp: float | complex,
     num_steps: int,
-) -> np.ndarray:
+    duration: float | None = None,
+) -> np.ndarray[float, np.dtype] | np.ndarray[complex, np.dtype]:
     """
     Ramps from zero to a finite value in discrete steps.
 
@@ -48,12 +60,16 @@ def staircase(
     ----------
     t
         Times at which to evaluate the function.
+        Times < 0 will output `start_amp`.
+        Times >= `duration` will output `final_amp`.
     start_amp
         Starting amplitude.
     final_amp
         Final amplitude to reach on the last step.
     num_steps
         Number of steps to reach final value.
+    duration
+        Duration of the pulse in seconds.
 
     Returns
     -------
@@ -61,23 +77,22 @@ def staircase(
         The real valued waveform.
 
     """
-    amp_step = (final_amp - start_amp) / (num_steps - 1)
-    t_arr_plateau_len = int(len(t) // num_steps)
-
-    waveform = np.array([])
-    for i in range(num_steps):
-        t_current_plateau = t[i * t_arr_plateau_len : (i + 1) * t_arr_plateau_len]
-        waveform = np.append(
-            waveform,
-            square(
-                t_current_plateau,
-                i * amp_step,
-            )
-            + start_amp,
+    if duration is None:
+        warnings.warn(
+            "Defining the plateau length of a staircase pulse based "
+            "on the given timings is deprecated. "
+            "Please provide the desired pulse duration to the "
+            "`duration` keyword. E.g. `staircase(..., duration=100e-9)`. "
+            "This will be enforced in quantify-scheduler>=0.24",
+            FutureWarning,
         )
-    t_rem = t[num_steps * t_arr_plateau_len :]
-    waveform = np.append(waveform, square(t_rem, final_amp))
-    return waveform
+        duration = float(t[-1] - t[0])
+
+    amp_step = (final_amp - start_amp) / (num_steps - 1)
+    waveform = np.floor(t * (num_steps / duration)) * amp_step + start_amp
+    # Replace out of range values with start_amp or final_amp.
+    # In most cases that would only happen when `duration in t`
+    return np.minimum(np.maximum(waveform, start_amp), final_amp)
 
 
 def soft_square(t: NDArray | list[float], amp: float | complex) -> NDArray:
@@ -100,7 +115,13 @@ def soft_square(t: NDArray | list[float], amp: float | complex) -> NDArray:
     return data
 
 
-def chirp(t: np.ndarray, amp: float, start_freq: float, end_freq: float) -> np.ndarray:
+def chirp(
+    t: np.ndarray,
+    amp: float,
+    start_freq: float,
+    end_freq: float,
+    duration: float | None = None,
+) -> np.ndarray:
     r"""
     Produces a linear chirp signal.
 
@@ -124,6 +145,8 @@ def chirp(t: np.ndarray, amp: float, start_freq: float, end_freq: float) -> np.n
         Start frequency of the Chirp.
     end_freq
         End frequency of the Chirp.
+    duration
+        Duration of the pulse in seconds.
 
     Returns
     -------
@@ -131,7 +154,23 @@ def chirp(t: np.ndarray, amp: float, start_freq: float, end_freq: float) -> np.n
         The complex waveform.
 
     """
-    chirp_rate = (end_freq - start_freq) / (t[-1] - t[0])
+    if duration is None:
+        warnings.warn(
+            "Defining the duration of a chirp pulse based on the given timings is deprecated."
+            "Please provide the duration."
+            "Previously the duration was calculated using the first and last point in t. "
+            "Not only should the shape of t, or its values, not be assumed, "
+            "in most default cases the last point of t was "
+            "`duration - 1/sampling_rate instead` instead of `duration`.  "
+            "Please provide the desired pulse duration to the "
+            "`duration` keyword. E.g. `chirp(..., duration=100e-9)`. "
+            "This will be enforced in quantify-scheduler>=0.24",
+            FutureWarning,
+        )
+        # This was technically incorrect (hence the deprecation)
+        # as in most calls the actual duration was this + 1/sampling_rate
+        duration = float(t[-1] - t[0])
+    chirp_rate = (end_freq - start_freq) / duration
     return amp * np.exp(1.0j * 2 * np.pi * (chirp_rate * t / 2 + start_freq) * t)
 
 

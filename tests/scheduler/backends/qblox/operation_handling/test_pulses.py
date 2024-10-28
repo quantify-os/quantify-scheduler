@@ -63,7 +63,7 @@ class TestGenericPulseStrategy:
             (
                 waveforms.ramp,
                 "quantify_scheduler.waveforms.ramp",
-                {"amp": 0.1234},
+                {"amp": 0.1234, "duration": 24e-9},
             ),
             (
                 waveforms.soft_square,
@@ -83,7 +83,9 @@ class TestGenericPulseStrategy:
             channel_name="real_output_0",
         )
         wf_dict = {}
-        t_test = np.linspace(0, duration, int(duration * constants.SAMPLING_RATE))
+        t_test = np.linspace(
+            0, duration, int(duration * constants.SAMPLING_RATE), endpoint=False
+        )
 
         # act
         strategy.generate_data(wf_dict=wf_dict)
@@ -94,9 +96,9 @@ class TestGenericPulseStrategy:
         normalized_data, amp_real, amp_imag = normalize_waveform_data(
             wf_func(t=t_test, **wf_kwargs)
         )
-        assert waveform0_data == normalized_data.real.tolist()
-        assert strategy._amplitude_path_I == amp_real
-        assert strategy._amplitude_path_Q == amp_imag
+        assert np.allclose(waveform0_data, normalized_data.real.tolist())
+        assert strategy._amplitude_path_I == pytest.approx(amp_real)
+        assert strategy._amplitude_path_Q == pytest.approx(amp_imag)
         assert strategy._waveform_index0 == 0
         assert strategy._waveform_index1 is None
 
