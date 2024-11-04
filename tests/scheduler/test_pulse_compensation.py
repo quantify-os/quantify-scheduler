@@ -105,7 +105,8 @@ def test_determine_compensation_pulse():
         (
             ConditionalOperation(body=X("q0"), qubit_name="q0"),
             "Error calculating compensation pulse amplitude for "
-            "'ConditionalOperation(body=X(qubit='q0'),qubit_name='q0',t0=0.0)'. "
+            "'ConditionalOperation(body=X(qubit='q0'),qubit_name='q0'"
+            ",t0=0.0,hardware_buffer_time=0.0)'. "
             "This control flow operation type is not allowed "
             "in a pulse compensation structure. ",
         ),

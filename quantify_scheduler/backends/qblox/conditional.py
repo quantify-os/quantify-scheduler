@@ -22,8 +22,6 @@ class ConditionalManager:
     """Reference to initial `FEEDBACK_SET_COND` instruction."""
     num_real_time_instructions: int = 0
     """Number of real time instructions."""
-    duration: int = field(default=0, init=False)
-    """Duration of the conditional playback (not exposed to the user)."""
     start_time: int = 0
     """Start time of conditional playback."""
     end_time: int = 0
@@ -44,30 +42,14 @@ class ConditionalManager:
         if operation.operation_info.is_real_time_io_operation:
             self.num_real_time_instructions += 1
 
-    def replace_enable_conditional(self, instruction: list[str | int]) -> None:
-        """
-        Replace the enable conditional instruction.
-
-        Parameters
-        ----------
-        instruction : list[list]
-            Instruction that will replace the enable conditional instruction.
-
-        """
-        self.enable_conditional.clear()
-        self.enable_conditional.extend(instruction)
-
     def reset(self) -> None:
         """Reset the conditional manager."""
-        self.enable_conditional = []
         self.num_real_time_instructions = 0
-        self.duration = 0
 
     @property
-    def wait_per_real_time_instruction(self) -> int:
-        """Instruction duration per real time instruction."""
-        self.duration = self.end_time - self.start_time
-        return self.duration // self.num_real_time_instructions
+    def duration(self) -> int:
+        """Duration of the conditional playback."""
+        return self.end_time - self.start_time
 
 
 class FeedbackTriggerOperator(Enum):
@@ -85,6 +67,18 @@ class FeedbackTriggerOperator(Enum):
     """An odd number of selected counters exceed their thresholds."""
     XNOR = 5
     """An even number of selected counters exceed their thresholds."""
+
+    def __invert__(self) -> FeedbackTriggerOperator:
+        """Define the negation operation for the enum."""
+        negation_map = {
+            FeedbackTriggerOperator.OR: FeedbackTriggerOperator.NOR,
+            FeedbackTriggerOperator.NOR: FeedbackTriggerOperator.OR,
+            FeedbackTriggerOperator.AND: FeedbackTriggerOperator.NAND,
+            FeedbackTriggerOperator.NAND: FeedbackTriggerOperator.AND,
+            FeedbackTriggerOperator.XOR: FeedbackTriggerOperator.XNOR,
+            FeedbackTriggerOperator.XNOR: FeedbackTriggerOperator.XOR,
+        }
+        return negation_map[self]
 
 
 @dataclass

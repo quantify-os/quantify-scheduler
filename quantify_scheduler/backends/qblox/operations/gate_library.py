@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 from quantify_scheduler.backends.qblox.constants import TRIGGER_DELAY
-from quantify_scheduler.operations.control_flow_library import ConditionalOperation
+from quantify_scheduler.backends.qblox.operations.control_flow_library import (
+    ConditionalOperation,
+)
 from quantify_scheduler.operations.gate_library import Measure, X
 from quantify_scheduler.schedules.schedule import Schedule
 

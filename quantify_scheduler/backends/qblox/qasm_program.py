@@ -490,20 +490,31 @@ class QASMProgram:
         """
         Defines a conditional block in the QASM program.
 
+
         When this context manager is entered/exited it will insert additional
         ``set_cond`` QASM instructions in the program that specify the
         conditionality of a set of instructions.
 
-        For example, a conditional X gate would correspond to the QASM program:
+        The following example should make it clear what is happening.
 
-        .. code-block::
+        .. code-block:: none
 
-            set_cond 1, 0, 0, 20
-            play 1, 20
-            set_cond 0, 0, 0, 4
+            set_cond set_enable=1, mask=0, operator=OR, else_duration=4
+            <50 ns duration of instructions that contains 3 real time instructions>
 
-        The exact values that need to be passed to the first ``set_cond``
-        instruction are determined while the qasm program is generated with the
+            set_cond set_enable=1, mask=0, operator=NOR, else_duration=4
+            wait 50-3*4+4 = 42 ns # adding an additional 4 ns to make math work out
+
+            set_cond set_enable=0, mask=0, operator=OR, else_duration=4
+
+        The `else_duration` is the wait time per real time instruction in the
+        conditional block. If a trigger happened, the first block runs normally for
+        50 ns, the second block runs for 4 ns. If there is no trigger, the first
+        block runs for 3*4 = 12 ns, second block for 42 ns. So the duration in
+        both cases is 42 ns. Note that `set_cond` itself has zero duration.
+
+        The exact values that need to be passed to the ``set_cond``
+        instructions are determined while the qasm program is generated with the
         help of
         :class:`~quantify_scheduler.backends.qblox.conditional.FeedbackTriggerCondition`
         and
@@ -526,22 +537,38 @@ class QASMProgram:
 
         # This instruction will be replaced when the context manager exits the
         # conditional block.
-        enable_conditional_instructions = self.emit(
+        self.emit(
             q1asm_instructions.FEEDBACK_SET_COND,
-            0,
-            0,
-            0,
-            0,
+            int(trigger_condition.enable),
+            trigger_condition.mask,
+            trigger_condition.operator.value,
+            constants.MIN_TIME_BETWEEN_OPERATIONS,
             comment="start conditional playback",
         )
         self.conditional_manager.reset()
-        self.conditional_manager.enable_conditional = enable_conditional_instructions
         self.conditional_manager.start_time = self.elapsed_time
 
         yield
-        # When the context manager exits, add a stop conditional playback and
+        # When the context manager exits, add an else branch to fill the correct wait time
+        # and add a stop conditional playback and
         # replace the initial FEEDBACK_SET_COND instruction.
         self.conditional_manager.end_time = self.elapsed_time
+        self.emit(
+            q1asm_instructions.FEEDBACK_SET_COND,
+            int(trigger_condition.enable),
+            trigger_condition.mask,
+            (~trigger_condition.operator).value,
+            constants.MIN_TIME_BETWEEN_OPERATIONS,
+            comment="else wait",
+        )
+        # autowait now adds an additional duration to elapsed time that we need to compensate.
+        duration = (
+            self.conditional_manager.duration
+            - constants.MIN_TIME_BETWEEN_OPERATIONS
+            * self.conditional_manager.num_real_time_instructions
+            + constants.MIN_TIME_BETWEEN_OPERATIONS
+        )
+        self.auto_wait(duration, count_as_elapsed_time=False)
         self.emit(
             q1asm_instructions.FEEDBACK_SET_COND,
             0,
@@ -550,15 +577,8 @@ class QASMProgram:
             0,
             comment="stop conditional playback",
         )
-        instruction = self.get_instruction_as_list(
-            q1asm_instructions.FEEDBACK_SET_COND,
-            int(trigger_condition.enable),
-            trigger_condition.mask,
-            trigger_condition.operator.value,
-            self.conditional_manager.wait_per_real_time_instruction,
-            comment="start conditional playback",
-        )
-        self.conditional_manager.replace_enable_conditional(instruction)
+        self.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
+
         self.conditional_manager.reset()
         self._lock_conditional = False
 

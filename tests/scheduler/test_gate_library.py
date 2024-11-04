@@ -303,7 +303,6 @@ def test_conditional_reset_inside_loop(mock_setup_basic_transmon_with_standard_p
 def test_conditional_reset_single_qubit(
     mock_setup_basic_transmon_with_standard_params,
 ):
-    q0 = mock_setup_basic_transmon_with_standard_params["q0"]
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
 
     hardware_config = utils.load_json_example_scheme(
@@ -363,30 +362,24 @@ def test_conditional_reset_single_qubit(
     latch_en_arg = int(match.group(1))
     assert latch_en_arg == 1
 
+    # The (?P<enable>\d) syntax below assigns a name to the capturing group.
     pattern = r"""
-        \s*set_cond\s* (\d), (\d+), (\d), (\d+).*\n
-        \s*set_awg_gain.*\n
-        \s*play \s*\d+, \d+, \d+.*\n
-        \s*wait .*\n
-        \s*set_cond \s*(\d), 0, 0, (\d+).*\n
+        set_cond\s*1,(?P<mask>\d+),0,4.*
+        set_awg_gain.*
+        play.*
+        wait\s*16.*
+        set_cond\s*1,1,1,4.*
+        wait\s*16.*
+        set_cond\s*0,0,0,0.*
     """
 
     compiled_pattern = re.compile(pattern, re.MULTILINE | re.DOTALL | re.VERBOSE)
     match = compiled_pattern.search(qcm_program)
     assert match is not None
 
-    enable, mask, operator, duration1 = (match.group(i) for i in range(1, 5))
-    disable, duration2 = match.group(5), match.group(6)
-
+    mask = match.group("mask")
     expected_mask = str(2**expected_address - 1)
-    expected_duration1 = str(int(1e9 * q0.rxy.duration()) // 2)
-    assert enable == "1"
     assert mask == expected_mask
-    assert operator == "0"
-    assert duration1 == expected_duration1
-    assert disable == "0"
-    assert duration2 == "0"
-    assert 2**expected_address - 1 == int(mask)
 
 
 def test_conditional_reset_with_overlapping_pulse_for_acq(

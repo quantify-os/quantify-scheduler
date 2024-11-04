@@ -105,7 +105,7 @@ def test_multiple_conditional_without_acquisition_raises(
             "Conditional control flow, "
             "``ConditionalOperation"
             '\\(body=Schedule "" containing \\(1\\) 1  \\(unique\\) operations.'
-            ",qubit_name='q0',t0=0.0\\)``,  "
+            ",qubit_name='q0',t0=0.0,hardware_buffer_time=0.0\\)``,  "
             "found without a preceding Conditional acquisition. "
         ),
     ):

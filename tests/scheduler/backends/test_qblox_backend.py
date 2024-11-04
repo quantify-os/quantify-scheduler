@@ -6296,7 +6296,11 @@ def test_conditional_reset_with_overlapping_pulses_error(
         )
     )
     schedule.add(
-        ConditionalOperation(body=X("q0"), qubit_name="q0"),
+        ConditionalOperation(
+            body=X("q0"),
+            qubit_name="q0",
+            hardware_buffer_time=4e-9,
+        ),
         rel_time=364e-9,
     )
 
