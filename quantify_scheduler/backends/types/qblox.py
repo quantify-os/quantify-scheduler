@@ -200,7 +200,7 @@ class OpInfo(DataClassJsonMixin):
         instructions are executed.
 
         Please refer to
-        https://qblox-qblox-instruments.readthedocs-hosted.com/en/main/cluster/q1_sequence_processor.html#q1-instructions
+        https://docs.qblox.com/en/main/cluster/q1_sequence_processor.html#q1-instructions
         for the full list of these instructions.
         """
         return (
@@ -453,7 +453,7 @@ class SequencerSettings(DataClassJsonMixin):
     In the Qblox driver these settings are typically recognized by parameter names of
     the form ``"{module}.sequencer{index}.{setting}"`` (for allowed values see
     `Cluster QCoDeS parameters
-    <https://qblox-qblox-instruments.readthedocs-hosted.com/en/main/api_reference/sequencer.html#cluster-qcodes-parameters>`__).
+    <https://docs.qblox.com/en/main/api_reference/sequencer.html#cluster-qcodes-parameters>`__).
     These settings are set once and will remain unchanged after, meaning that these
     correspond to the "slow" QCoDeS parameters and not settings that are changed
     dynamically by the sequencer.
@@ -528,7 +528,7 @@ class AnalogSequencerSettings(SequencerSettings):
     In the Qblox driver these settings are typically recognized by parameter names of
     the form ``"{module}.sequencer{index}.{setting}"`` (for allowed values see
     `Cluster QCoDeS parameters
-    <https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/sequencer.html#cluster-qcodes-parameters>`__).
+    <https://docs.qblox.com/en/master/api_reference/sequencer.html#cluster-qcodes-parameters>`__).
     These settings are set once and will remain unchanged after, meaning that these
     correspond to the "slow" QCoDeS parameters and not settings that are changed
     dynamically by the sequencer.
@@ -696,7 +696,7 @@ class TimetagSequencerSettings(SequencerSettings):
     In the Qblox driver these settings are typically recognized by parameter names of
     the form ``"{module}.sequencer{index}.{setting}"`` (for allowed values see
     `Cluster QCoDeS parameters
-    <https://qblox-qblox-instruments.readthedocs-hosted.com/en/master/api_reference/sequencer.html#cluster-qcodes-parameters>`__).
+    <https://docs.qblox.com/en/master/api_reference/sequencer.html#cluster-qcodes-parameters>`__).
     These settings are set once and will remain unchanged after, meaning that these
     correspond to the "slow" QCoDeS parameters and not settings that are changed
     dynamically by the sequencer.
@@ -1285,7 +1285,7 @@ class SequencerOptions(DataStructure):
     Configuration options for a sequencer.
 
     For allowed values, also see `Cluster QCoDeS parameters
-    <https://qblox-qblox-instruments.readthedocs-hosted.com/en/main/api_reference/sequencer.html#cluster-qcodes-parameters>`__.
+    <https://docs.qblox.com/en/main/api_reference/sequencer.html#cluster-qcodes-parameters>`__.
 
     .. admonition:: Example
         :class: dropdown

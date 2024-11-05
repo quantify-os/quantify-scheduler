@@ -83,7 +83,7 @@ intersphinx_mapping = {
     ),
     "scipy": ("https://docs.scipy.org/doc/scipy/", None),
     "qblox-instruments": (
-        "https://qblox-qblox-instruments.readthedocs-hosted.com/en/main/",
+        "https://docs.qblox.com/en/main/",
         None,
     ),
     # FIXME change the "*objects.inv" strings in the lines below back to None, and

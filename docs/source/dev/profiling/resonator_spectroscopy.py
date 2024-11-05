@@ -15,7 +15,7 @@
 # %% [markdown]
 # # Resonator spectroscopy
 #
-# https://qblox-qblox-instruments.readthedocs-hosted.com/en/main/applications/quantify/tuning_transmon_qubit.html
+# https://docs.qblox.com/en/main/applications/quantify/qubit_spec.html
 
 # %% [markdown]
 # ## Setup
@@ -138,7 +138,7 @@ cluster.reset()
 
 # %% [markdown]
 # ### Quantum device settings
-# Here we initialize our `QuantumDevice` and our qubit parameters,  checkout this [tutorial](https://quantify-quantify-scheduler.readthedocs-hosted.com/en/latest/tutorials/Operations%20and%20Qubits.html) for further details.
+# Here we initialize our `QuantumDevice` and our qubit parameters,  checkout this [tutorial](https://quantify-os.org/docs/quantify-scheduler/latest/tutorials/Operations%20and%20Qubits.html) for further details.
 #
 # In short, a `QuantumDevice` contains device elements where we save our found parameters.
 
