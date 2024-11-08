@@ -17,7 +17,6 @@ Download the notebook: {nb-download}`deprecated.ipynb`
 | `common.DistortionCorrection` | 0.20.1 | 0.23 | See {ref}`DistortionCorrection => SoftwareDistortionCorrection`|
 | `ScheduleGettable.generate_diagnostics_report()` | 0.17 | 0.18 | See {ref}`ScheduleGettable.generate_diagnostics_report()` |
 | `plot_kwargs` parameter in `ScheduleBase.plot_pulse_diagram()` | 0.15 | - | See {ref}`plot_kwargs parameter in ScheduleBase.plot_pulse_diagram()` |
-| `repetitions` parameter in `ScheduleGettable.process_acquired_data()` | 0.15 | 0.18 | See {ref}`repetitions parameter in ScheduleGettable.process_acquired_data()` |
 | `t` parameter in `NumericalWeightedIntegrationComplex` | 0.13 | 0.18 | See {ref}`t parameter in NumericalWeightedIntegrationComplex` |
 | Qblox `convert_hw_config_to_portclock_configs_spec()` | 0.13 | 0.18 | See {ref}`Qblox Hardware Configuration` |
 | Qblox `instruction_generated_pulses_enabled` hardware config setting | 0.13 | 0.17 | See {ref}`Instruction-generated pulses (Qblox only)` |
@@ -290,10 +289,6 @@ can now be written as
 ```{code-cell} ipython3
 compiled_schedule.plot_pulse_diagram(x_range=(201e-6, 201.5e-6))
 ```
-
-## repetitions parameter in ScheduleGettable.process_acquired_data()
-
-In version 0.15, the `repetitions` parameter of the {meth}`.ScheduleGettable.process_acquired_data` method was deprecated. This parameter has no effect, and can simply be omitted. The {ref}`sec-tutorial-schedulegettable-repetitions` section of {ref}`sec-tutorial-schedulegettable` contains more information on how to set the number of repetitions in an experiment.
 
 ## t parameter in NumericalWeightedIntegrationComplex
 

@@ -27,52 +27,6 @@ from quantify_scheduler.schedules.timedomain_schedules import (
 from quantify_scheduler.schedules.trace_schedules import trace_schedule
 
 
-@pytest.mark.parametrize("num_channels, real_imag", [(1, True), (2, False), (10, True)])
-def test_process_acquired_data(
-    mock_setup_basic_transmon, num_channels: int, real_imag: bool
-):
-    # arrange
-    quantum_device = mock_setup_basic_transmon["quantum_device"]
-
-    mock_number = 4815 + 162342j
-    mock_results = np.array([mock_number], dtype=np.complex64)
-    mock_dataset = Dataset(
-        {
-            i: (
-                [f"acq_index_{i}"],
-                mock_results * i,
-                {"acq_protocol": "SSBIntegrationComplex"},
-            )
-            for i in range(num_channels)
-        }
-    )
-
-    gettable = ScheduleGettable(
-        quantum_device=quantum_device,
-        schedule_function=lambda x: x,
-        schedule_kwargs={},
-        real_imag=real_imag,
-    )
-
-    # act
-    processed_data = gettable.process_acquired_data(mock_dataset)
-
-    def transform_complex(c: complex) -> tuple:
-        if real_imag:
-            return (c.real, c.imag)
-        else:
-            return (abs(c), np.angle(c, deg=True))
-
-    expected_data: tuple = tuple(
-        np.array([transform_complex(mock_number * i)[elem]], dtype=np.float32)
-        for i in range(num_channels)
-        for elem in [0, 1]
-    )
-
-    # assert
-    np.testing.assert_array_almost_equal(processed_data, expected_data, decimal=5)
-
-
 def test_schedule_gettable_iterative_heterodyne_spec(mock_setup_basic_transmon, mocker):
     meas_ctrl = mock_setup_basic_transmon["meas_ctrl"]
     quantum_device = mock_setup_basic_transmon["quantum_device"]

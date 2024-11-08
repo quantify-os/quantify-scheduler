@@ -17,31 +17,20 @@ from __future__ import annotations
 
 import logging
 import sys
-from typing import TYPE_CHECKING, Any, Callable, Hashable
+from typing import TYPE_CHECKING, Any, Callable
 
-import numpy as np
 from qcodes.parameters import Parameter
 
+from quantify_core.measurement.control import MeasurementControl
 from quantify_scheduler.helpers.diagnostics_report import _generate_diagnostics_report
 
 if TYPE_CHECKING:
-    from numpy.typing import NDArray
-    from xarray import Dataset
+    import numpy as np
 
     from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
     from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 
 logger = logging.getLogger(__name__)
-
-
-class AcquisitionProtocolError(TypeError):  # noqa: D101 missing doc
-    pass
-
-
-class AcquisitionProtocolNotSupportedError(  # noqa: D101 missing doc
-    NotImplementedError
-):
-    pass
 
 
 class ScheduleGettable:
@@ -104,6 +93,7 @@ class ScheduleGettable:
         batched: bool = False,
         max_batch_size: int = 1024,
         always_initialize: bool = True,
+        return_xarray: bool = False,
     ) -> None:
         self._data_labels_specified = data_labels is not None
 
@@ -139,6 +129,7 @@ class ScheduleGettable:
 
         self.batched = batched
         self.batch_size = max_batch_size
+        self._return_xarray = return_xarray  # to support legacy mode
 
         # schedule arguments
         self.schedule_function = schedule_function
@@ -238,137 +229,14 @@ class ScheduleGettable:
                 f"('{instr_coordinator.name}') "
                 f"did not return any data, but was expected to return data."
             )
+        # Return xarray simular to Instrument coordinator
+        if self._return_xarray:
+            return acquired_data
 
-        result = self.process_acquired_data(acquired_data)
-        return result
-
-    def _reshape_data(self, acq_protocol: str, vals: NDArray) -> list[NDArray]:
-        if acq_protocol == "TriggerCount":
-            return [vals.real.astype(np.uint64)]
-        if acq_protocol == "Timetag":
-            return [vals.real.astype(np.float64)]
-        if acq_protocol == "ThresholdedAcquisition":
-            return [vals.real.astype(np.uint32)]
-        if acq_protocol in (
-            "Trace",
-            "SSBIntegrationComplex",
-            "ThresholdedAcquisition",
-            "WeightedIntegratedSeparated",
-            "NumericalSeparatedWeightedIntegration",
-            "NumericalWeightedIntegration",
-        ):
-            ret_val = []
-            if self.real_imag:
-                ret_val.append(vals.real)
-                ret_val.append(vals.imag)
-                return ret_val
-            else:
-                ret_val.append(np.abs(vals))
-                ret_val.append(np.angle(vals, deg=True))
-                return ret_val
-
-        raise NotImplementedError(
-            f"Acquisition protocol {acq_protocol} is not supported."
+        # Use Adapter for the old interface
+        return MeasurementControl._process_acquired_data(
+            acquired_data, self.batched, self.real_imag
         )
-
-    def process_acquired_data(  # noqa: PLR0912
-        self,
-        acquired_data: Dataset,
-    ) -> tuple[NDArray[np.float64], ...]:
-        """
-        Reshapes the data as returned from the instrument coordinator into the form
-        accepted by the measurement control.
-
-        Parameters
-        ----------
-        acquired_data
-            Data that is returned by instrument coordinator.
-
-        Returns
-        -------
-        :
-            A tuple of data, casted to a historical conventions on data format.
-
-        """
-        # retrieve the acquisition results
-
-        return_data = []
-        # We sort acquisition channels so that the user
-        # has control over the order of the return data.
-        # https://gitlab.com/quantify-os/quantify-scheduler/-/issues/466
-        sorted_acq_channels: list[Hashable] = sorted(acquired_data.data_vars)
-        for idx, acq_channel in enumerate(sorted_acq_channels):
-            acq_channel_data = acquired_data[acq_channel]
-            acq_protocol = acq_channel_data.attrs["acq_protocol"]
-
-            num_dims = len(acq_channel_data.dims)
-            if acq_protocol == "Trace" and num_dims != 2:
-                raise AcquisitionProtocolError(
-                    f"Data returned by an instrument coordinator component for "
-                    f"{acq_protocol} acquisition protocol is expected to be an "
-                    f"array of complex numbers with with two dimensions: "
-                    f"acquisition index and trace index. This is not the case for "
-                    f"acquisition channel {acq_channel}, that has data "
-                    f"type {acq_channel_data.dtype} and {num_dims} dimensions: "
-                    f"{', '.join(str(dim) for dim in acq_channel_data.dims)}."
-                )
-            if acq_protocol in (
-                "SSBIntegrationComplex",
-                "WeightedIntegratedSeparated",
-                "NumericalSeparatedWeightedIntegration",
-                "NumericalWeightedIntegration",
-                "ThresholdedAcquisition",
-            ) and num_dims not in (1, 2):
-                raise AcquisitionProtocolError(
-                    f"Data returned by an instrument coordinator component for "
-                    f"{acq_protocol} acquisition protocol is expected to be an "
-                    f"array of complex numbers with with one or two dimensions: "
-                    f"acquisition index and optionally repetition index. This is not the case for "
-                    f"acquisition channel {acq_channel}, that has data "
-                    f"type {acq_channel_data.dtype} and {num_dims} dimensions: "
-                    f"{', '.join(str(dim) for dim in acq_channel_data.dims)}."
-                )
-            if acq_protocol == "Trace" and acq_channel_data.shape[0] != 1:
-                raise AcquisitionProtocolNotSupportedError(
-                    "Trace acquisition protocol with several acquisitions on the "
-                    "same acquisition channel is not supported by "
-                    "a ScheduleGettable"
-                )
-            if acq_protocol not in (
-                "TriggerCount",
-                "Timetag",
-                "Trace",
-                "SSBIntegrationComplex",
-                "WeightedIntegratedSeparated",
-                "NumericalSeparatedWeightedIntegration",
-                "NumericalWeightedIntegration",
-                "ThresholdedAcquisition",
-            ):
-                raise AcquisitionProtocolNotSupportedError(
-                    f"ScheduleGettable does not support {acq_protocol}."
-                )
-
-            if not self._data_labels_specified and idx != acq_channel:
-                logger.warning(
-                    f"Default data_labels may not match the acquisition channel. "
-                    f"Element {idx} with label {self.label[idx]} corresponds to "
-                    f"acq_channel {acq_channel}, while they were expected to match. To "
-                    f"fix this behavior either specify custom data_labels, or ensure "
-                    f"your acquisition channels are sequential starting from 0."
-                )
-
-            vals = acq_channel_data.to_numpy().reshape((-1,))
-
-            if not self.batched and len(vals) != 1:
-                raise ValueError(
-                    f"For iterative mode, only one value is expected for each "
-                    f"acquisition channel. Got {len(vals)} values for acquisition "
-                    f"channel '{acq_channel}' instead."
-                )
-            return_data.extend(self._reshape_data(acq_protocol, vals))
-
-        logger.debug(f"Returning {len(return_data)} values.")
-        return tuple(return_data)
 
     def initialize_and_get_with_report(self) -> str:
         """
