@@ -1,5 +1,10 @@
 @ECHO OFF
 
+REM Clean autoapi directory before running sphinx commands
+if "%1" == "clean" (
+    if exist source\autoapi rmdir /s /q source\autoapi
+)
+
 pushd %~dp0
 
 REM Command file for Sphinx documentation
@@ -19,28 +24,24 @@ REM We can't supply -W due to https://github.com/jupyter/jupyter-sphinx/issues/1
 set SPHINXOPTS=--keep-going -n -w build_errors.log
 
 if "%1" == "" goto help
+if "%1" == "clean" goto clean
+if "%1" == "html" goto html
+if "%1" == "clean" "%2" == "html" goto both
+goto help
 
-%SPHINXBUILD% >NUL 2>NUL
-if errorlevel 9009 (
-    echo.
-    echo.The Sphinx module was not found. Make sure you have Sphinx installed,
-    echo.then set the SPHINXBUILD environment variable to point to the full
-    echo.path of the 'sphinx-build' executable. Alternatively you may add the
-    echo.Sphinx directory to PATH.
-    echo.
-    echo.If you don't have Sphinx installed, grab it from
-    echo.http://sphinx-doc.org/
-    exit /b 1
-)
+:clean
+%SPHINXBUILD% -M clean %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
+goto end
 
-%SPHINXBUILD% -M %1 %SOURCEDIR% %BUILDDIR% %SPHINXOPTS%
-set SPHINXEXITCODE=%ERRORLEVEL%
+:html
+%SPHINXBUILD% -M html %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
+goto end
+
+:both
+%SPHINXBUILD% -M clean html %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
 goto end
 
 :help
-%SPHINXBUILD% -M help %SOURCEDIR% %BUILDDIR% %SPHINXOPTS%
+%SPHINXBUILD% -M help %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
 
 :end
-popd
-REM Exit with same code as sphinx to make sure the pipeline jobs can pass/fail correctly
-exit /b %SPHINXEXITCODE%
