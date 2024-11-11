@@ -100,6 +100,7 @@ single_qubit_device.instr_instrument_coordinator(instrument_coordinator.name)
 # A basic hardware configuration will be used for the two cluster modules.
 
 hardware_cfg = {
+    "version": "0.2",
     "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
     "hardware_description": {
         f"{cluster.name}": {
@@ -128,6 +129,7 @@ hardware_cfg = {
     "connectivity": {
         "graph": [
             [f"{cluster.name}.module1.complex_output_0", "q0:res"],
+            [f"{cluster.name}.module1.complex_input_0", "q0:res"],
             [f"{cluster.name}.module2.complex_output_0", "q0:mw"]
         ]
     }
@@ -524,6 +526,7 @@ instrument_coordinator.add_component(ic_cluster)
 two_qubit_device.instr_instrument_coordinator(instrument_coordinator.name)
 
 hardware_cfg = {
+    "version": "0.2",
     "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
     "hardware_description": {
         f"{cluster.name}": {
@@ -564,8 +567,10 @@ hardware_cfg = {
     "connectivity": {
         "graph": [
             [f"{cluster.name}.module1.complex_output_0", "q0:res"],
+            [f"{cluster.name}.module1.complex_input_0", "q0:res"],
             [f"{cluster.name}.module2.complex_output_0", "q0:mw"],
             [f"{cluster.name}.module3.complex_output_0", "q1:res"],
+            [f"{cluster.name}.module3.complex_input_0", "q1:res"],
             [f"{cluster.name}.module4.complex_output_0", "q1:mw"]
         ]
     }

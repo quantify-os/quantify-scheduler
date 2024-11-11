@@ -142,6 +142,7 @@ For more information on this datastructure, please refer to the explanation in t
 
 ```{code-cell} ipython3
 hardware_comp_cfg = {
+    "version": "0.2",
     "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
     "hardware_description": {
         f"{cluster.name}": {
@@ -166,6 +167,7 @@ hardware_comp_cfg = {
     "connectivity": {
         "graph": [
             (f"{cluster.name}.{cluster.module1.name.split('_')[-1]}.complex_output_0", "q0:res"),
+            (f"{cluster.name}.{cluster.module1.name.split('_')[-1]}.complex_input_0", "q0:res"),
             (f"{cluster.name}.{cluster.module2.name.split('_')[-1]}.complex_output_0", "q0:mw")
         ]
     },

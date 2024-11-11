@@ -6,9 +6,10 @@ from __future__ import annotations
 import itertools
 import re
 import warnings
+from abc import ABC
 from collections import defaultdict
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Iterable, Literal
 
 import numpy as np
@@ -681,48 +682,6 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
 
         return data
 
-    # TODO: Remove this validator (and test)
-    #  when substituting `networkx.Graph` with `networkx.DiGraph` (SE-477)
-    #       (introduced to find errors during conversion of hardware config versions)
-    @model_validator(mode="after")
-    def _validate_connectivity_graph_structure(self) -> QbloxHardwareCompilationConfig:
-        """Validate connectivity graph structure."""
-        exception_message = (
-            "Channels, rf-signals of iq mixers and lo outputs must be source nodes "
-            "(left), and ports and if/lo-signals of iq mixers must be target nodes (right)."
-            "This error might be caused by duplicated ports in connectivity."
-        )
-
-        def _is_channel(node: str) -> bool:
-            return bool(re.match(r"^\w+\.module\d+\.\w+$", node))
-
-        def _is_iq_mixer(node: str, signal_type: str) -> bool:
-            return bool(re.match(rf"^iq_mixer_lo\d+\.{signal_type}$", node))
-
-        def _is_lo(node: str) -> bool:
-            return bool(re.match(r"^lo\d+\.output$", node))
-
-        def _is_port(node: str) -> bool:
-            # Exclude special case of `optical_control` ports in nv centers. This will be fixed
-            # when making connectivity graph directed. (SE-477)
-            return bool(len(node.split(":")) == 2 and "optical_control" not in node)
-
-        if isinstance(self.connectivity, Connectivity):
-            for edge in self.connectivity.graph.edges:
-                source, target = edge
-
-                if _is_port(source) or _is_iq_mixer(source, "if") or _is_iq_mixer(source, "lo"):
-                    raise ValueError(
-                        f"Node {source} in connectivity graph is a source. {exception_message}"
-                    )
-
-                if _is_channel(target) or _is_lo(target) or _is_iq_mixer(target, "rf"):
-                    raise ValueError(
-                        f"Node {target} in connectivity graph is a target. {exception_message}"
-                    )
-
-        return self
-
     @model_validator(mode="before")
     def _validate_versioning(cls, config: dict[str, Any]) -> dict[str, Any]:  # noqa: N805
         if "version" in config:  # noqa: SIM102
@@ -754,6 +713,7 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
                 cluster_configs[instrument_name] = _ClusterCompilationConfig(
                     hardware_description=instrument_description,
                     hardware_options=QbloxHardwareOptions(),
+                    parent_config_version=self.version,
                 )
 
             elif isinstance(instrument_description, LocalOscillatorDescription):
@@ -840,7 +800,7 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
 
         return {**cluster_configs, **lo_configs}
 
-    def _get_all_portclock_to_path_and_lo_name_to_path(
+    def _get_all_portclock_to_path_and_lo_name_to_path(  # noqa: PLR0915
         self,
         portclocks_used: set[tuple[str, str]],
         cluster_configs: dict[str, _ClusterCompilationConfig],
@@ -937,7 +897,27 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
                 if is_path(port_nbr):
                     path = ChannelPath.from_path(port_nbr)
                     for clock in port_to_clocks[port]:
-                        cluster_pc_to_path[path.cluster_name][f"{port}-{clock}"] = path
+                        repeated_pc = False
+                        pc = f"{port}-{clock}"
+                        # Add extra channel name for `Measure` operation. This takes place after
+                        # the first channel name is added ("if not repeated_pc..." block below)
+                        for cluster_name, pc_to_path in cluster_pc_to_path.items():
+                            if pc in pc_to_path:
+                                if (
+                                    path.cluster_name != pc_to_path[pc].cluster_name
+                                    or path.module_name != pc_to_path[pc].module_name
+                                ):
+                                    raise ValueError(
+                                        f"Provided channel names for port-clock {pc} are defined "
+                                        f"for diferent modules, but they must be defined in the "
+                                        f"same module."
+                                    )
+                                pc_to_path[pc].add_channel_name_measure(path.channel_name)
+                                repeated_pc = True
+
+                        if not repeated_pc:
+                            cluster_pc_to_path[path.cluster_name][pc] = path
+
                 elif "." in port_nbr:
                     mixer = port_nbr[: port_nbr.rindex(".")]
                     mixer_path, mixer_lo = get_module_and_lo_for_mixer(mixer)
@@ -966,77 +946,7 @@ class _LocalOscillatorCompilationConfig(DataStructure):
     """The frequency of this local oscillator."""
 
 
-class _ClusterCompilationConfig(DataStructure):
-    """Configuration values for a :class:`~.ClusterCompiler`."""
-
-    hardware_description: ClusterDescription
-    """Description of the physical setup of this cluster."""
-    hardware_options: QbloxHardwareOptions
-    """Options that are used in compiling the instructions for the hardware."""
-    portclock_to_path: dict[str, ChannelPath] = {}
-    """Mapping between portclocks and their associated channel name paths
-    (e.g. cluster0.module1.complex_output_0)."""
-    lo_to_path: dict[str, ChannelPath] = {}
-    """Mapping between lo names and their associated channel name paths
-    (e.g. cluster0.module1.complex_output_0)."""
-    allow_off_grid_nco_ops: bool | None = None
-    """
-    Flag to allow NCO operations to play at times that are not aligned with the NCO
-    grid.
-    """
-
-    def _extract_module_compilation_configs(
-        self,
-    ) -> dict[int, _ClusterModuleCompilationConfig]:
-
-        module_configs: dict[int, _ClusterModuleCompilationConfig] = {}
-
-        # Create configs and distribute `hardware_description`
-        for module_idx, module_description in self.hardware_description.modules.items():
-            module_configs[module_idx] = _ClusterModuleCompilationConfig(
-                hardware_description=module_description,
-                hardware_options=QbloxHardwareOptions(),
-            )
-
-        # Distribute module `hardware_options`
-        modules_hardware_options: dict[int, dict[str, dict[str, Any]]] = {
-            module_idx: {} for module_idx in module_configs
-        }
-
-        for option, values in self.hardware_options.model_dump(exclude_unset=True).items():
-            for pc, option_value in values.items():
-                module_idx = self.portclock_to_path[pc].module_idx
-
-                if not modules_hardware_options[module_idx].get(option):
-                    modules_hardware_options[module_idx][option] = {}
-                modules_hardware_options[module_idx][option][pc] = option_value
-
-        for module_idx, options in modules_hardware_options.items():
-            module_configs[module_idx].hardware_options = QbloxHardwareOptions.model_validate(
-                options
-            )
-
-        # Distribute `portclock_to_path`
-        for portclock, path in self.portclock_to_path.items():
-            module_configs[path.module_idx].portclock_to_path[portclock] = path
-
-        # Distribute `lo_to_path`
-        for lo_name, path in self.lo_to_path.items():
-            module_configs[path.module_idx].lo_to_path[lo_name] = path
-
-        # Distribute `allow_off_grid_nco_ops`
-        for module_cfg in module_configs.values():
-            module_cfg.allow_off_grid_nco_ops = self.allow_off_grid_nco_ops
-
-        # Validate channel-dependent hardware options
-        for cfg in module_configs.values():
-            cfg._validate_input_gain_mode()
-            cfg._validate_hardware_distortion_corrections_mode()
-
-        return module_configs
-
-
-class _ClusterModuleCompilationConfig(DataStructure):
+class _ClusterModuleCompilationConfig(ABC, DataStructure):
     """Configuration values for a :class:`~.ClusterModuleCompiler`."""
 
     hardware_description: ClusterModuleDescription
@@ -1053,6 +963,10 @@ class _ClusterModuleCompilationConfig(DataStructure):
     """
     Flag to allow NCO operations to play at times that are not aligned with the NCO
     grid.
+    """
+    parent_config_version: str
+    """
+    Version of the parent hardware compilation config used.
     """
 
     def _extract_sequencer_compilation_configs(
@@ -1108,6 +1022,7 @@ class _ClusterModuleCompilationConfig(DataStructure):
                 hardware_description=hardware_description,  # type: ignore
                 portclock=portclock,
                 channel_name=path.channel_name,
+                channel_name_measure=path.channel_name_measure,
                 latency_correction=latency_correction,
                 distortion_correction=distortion_correction,
                 lo_name=channel_to_lo.get(path.channel_name),
@@ -1171,6 +1086,115 @@ class _ClusterModuleCompilationConfig(DataStructure):
 
         return self
 
+    def _validate_channel_name_measure(self) -> None:
+        pass
+
+
+class _QCMCompilationConfig(_ClusterModuleCompilationConfig):
+    """QCM-specific configuration values for a :class:`~.ClusterModuleCompiler`."""
+
+    def _validate_channel_name_measure(self) -> None:
+        for pc, path in self.portclock_to_path.items():
+            if path.channel_name_measure is not None:
+                raise ValueError(
+                    f"Found two channel names {path.channel_name} and {path.channel_name_measure} "
+                    f"for portclock {pc}. Repeated portclocks are forbidden for QCM modules."
+                )
+
+        return super()._validate_channel_name_measure()
+
+
+class _QRMCompilationConfig(_ClusterModuleCompilationConfig):
+    """QRM-specific configuration values for a :class:`~.ClusterModuleCompiler`."""
+
+    def _validate_channel_name_measure(self) -> None:
+        for pc, path in self.portclock_to_path.items():
+            if path.channel_name_measure is not None:  # noqa: SIM102
+                if len(path.channel_name_measure) == 1:
+                    if not (
+                        "complex_output" in path.channel_name or "real_output" in path.channel_name
+                    ) or not (
+                        "complex_input" in path.channel_name_measure[0]
+                        or "real_input" in path.channel_name_measure[0]
+                    ):
+                        raise ValueError(
+                            f"Found two channel names {path.channel_name} and "
+                            f"{path.channel_name_measure[0]} that are not of the same mode for "
+                            f"portclock {pc}. Only channel names of the same mode (e.g. "
+                            f"`complex_output_0` and `complex_input_0`) are allowed when they "
+                            f"share a portclock in QRM modules."
+                        )
+                elif len(path.channel_name_measure) == 2:
+                    if not (
+                        "complex_output" in path.channel_name or "real_output" in path.channel_name
+                    ) or not (
+                        "real_input_0" in path.channel_name_measure
+                        and "real_input_1" in path.channel_name_measure
+                    ):
+                        # This is not true, other combinations are possible but are hidden from
+                        # the user interface. Those are allowed only to keep compatibility
+                        # with hardware config version 0.1 (SE-427)
+                        raise ValueError(
+                            f"Found an incorrect combination of three channel names for portclock "
+                            f"{pc}. Please try to use two channel names instead."
+                        )
+                else:
+                    # Extreme edge case
+                    raise ValueError(
+                        f"Found four channel names for portclock {pc}. "
+                        "Please try to use two channel names instead."
+                    )
+
+        return super()._validate_channel_name_measure()
+
+
+class _QCMRFCompilationConfig(_ClusterModuleCompilationConfig):
+    """QCM_RF-specific configuration values for a :class:`~.ClusterModuleCompiler`."""
+
+    def _validate_channel_name_measure(self) -> None:
+        for pc, path in self.portclock_to_path.items():
+            if path.channel_name_measure is not None:
+                raise ValueError(
+                    f"Found two channel names {path.channel_name} and {path.channel_name_measure} "
+                    f"for portclock {pc}. Repeated portclocks are forbidden for QCM_RF modules."
+                )
+        return super()._validate_channel_name_measure()
+
+
+class _QRMRFCompilationConfig(_ClusterModuleCompilationConfig):
+    """QRMRF-specific configuration values for a :class:`~.ClusterModuleCompiler`."""
+
+    def _validate_channel_name_measure(self) -> None:
+        for pc, path in self.portclock_to_path.items():
+            if path.channel_name_measure is not None:  # noqa: SIM102
+                if not (
+                    "complex_output" in path.channel_name
+                    and "complex_input" in path.channel_name_measure[0]
+                ):
+                    raise ValueError(
+                        f"Found two channel names {path.channel_name} and "
+                        f"{path.channel_name_measure[0]} that are not of the same mode for "
+                        f"portclock {pc}. Only channel names of the same mode (e.g. "
+                        f"`complex_output_0` and `complex_input_0`) are allowed when they share a "
+                        f"portclock in QRM_RF modules."
+                    )
+
+        return super()._validate_channel_name_measure()
+
+
+class _QTMCompilationConfig(_ClusterModuleCompilationConfig):
+    """QTM-specific configuration values for a :class:`~.ClusterModuleCompiler`."""
+
+    def _validate_channel_name_measure(self) -> None:
+        for pc, path in self.portclock_to_path.items():
+            if path.channel_name_measure is not None:
+                raise NotImplementedError(
+                    f"Found two channel names {path.channel_name} and {path.channel_name_measure} "
+                    f"for portclock {pc}. Circuit-level operations involving several channels "
+                    f"(e.g. `Measure`) are not implemented for QTM modules."
+                )
+        return super()._validate_channel_name_measure()
+
 
 class _SequencerCompilationConfig(DataStructure):
     """Configuration values for a :class:`~.SequencerCompiler`."""
@@ -1185,6 +1209,8 @@ class _SequencerCompilationConfig(DataStructure):
     """Portclock associated to this sequencer."""
     channel_name: str
     """Channel name associated to this sequencer."""
+    channel_name_measure: None | list[str]
+    """Extra channel name necessary to define a `Measure` operation."""
     latency_correction: LatencyCorrection
     """Latency correction that should be applied to operations on this sequencer."""
     distortion_correction: SoftwareDistortionCorrection | None
@@ -1202,6 +1228,147 @@ class _SequencerCompilationConfig(DataStructure):
     """
 
 
+class _ClusterCompilationConfig(DataStructure):
+    """Configuration values for a :class:`~.ClusterCompiler`."""
+
+    hardware_description: ClusterDescription
+    """Description of the physical setup of this cluster."""
+    hardware_options: QbloxHardwareOptions
+    """Options that are used in compiling the instructions for the hardware."""
+    portclock_to_path: dict[str, ChannelPath] = {}
+    """Mapping between portclocks and their associated channel name paths
+    (e.g. cluster0.module1.complex_output_0)."""
+    lo_to_path: dict[str, ChannelPath] = {}
+    """Mapping between lo names and their associated channel name paths
+    (e.g. cluster0.module1.complex_output_0)."""
+    allow_off_grid_nco_ops: bool | None = None
+    """
+    Flag to allow NCO operations to play at times that are not aligned with the NCO
+    grid.
+    """
+    parent_config_version: str
+    """
+    Version of the parent hardware compilation config used.
+    """
+
+    module_config_classes: dict = {
+        "QCM": _QCMCompilationConfig,
+        "QRM": _QRMCompilationConfig,
+        "QCM_RF": _QCMRFCompilationConfig,
+        "QRM_RF": _QRMRFCompilationConfig,
+        "QTM": _QTMCompilationConfig,
+    }
+
+    def _extract_module_compilation_configs(
+        self,
+    ) -> dict[int, _ClusterModuleCompilationConfig]:
+
+        module_configs: dict[int, _ClusterModuleCompilationConfig] = {}
+
+        # Create configs and distribute `hardware_description`
+        for module_idx, module_description in self.hardware_description.modules.items():
+            module_configs[module_idx] = self.module_config_classes[
+                module_description.instrument_type
+            ](
+                hardware_description=module_description,
+                hardware_options=QbloxHardwareOptions(),
+                parent_config_version=self.parent_config_version,
+            )
+
+        # Distribute module `hardware_options`
+        modules_hardware_options: dict[int, dict[str, dict[str, Any]]] = {
+            module_idx: {} for module_idx in module_configs
+        }
+
+        for option, values in self.hardware_options.model_dump(exclude_unset=True).items():
+            for pc, option_value in values.items():
+                module_idx = self.portclock_to_path[pc].module_idx
+
+                if not modules_hardware_options[module_idx].get(option):
+                    modules_hardware_options[module_idx][option] = {}
+                modules_hardware_options[module_idx][option][pc] = option_value
+
+        for module_idx, options in modules_hardware_options.items():
+            module_configs[module_idx].hardware_options = QbloxHardwareOptions.model_validate(
+                options
+            )
+
+        # Distribute `portclock_to_path`
+        for portclock, path in self.portclock_to_path.items():
+            module_configs[path.module_idx].portclock_to_path[portclock] = path
+
+        # Distribute `lo_to_path`
+        for lo_name, path in self.lo_to_path.items():
+            module_configs[path.module_idx].lo_to_path[lo_name] = path
+
+        # Distribute `allow_off_grid_nco_ops`
+        for module_cfg in module_configs.values():
+            module_cfg.allow_off_grid_nco_ops = self.allow_off_grid_nco_ops
+
+        # Add support for old versions of hardware config
+        if self.parent_config_version == "0.1":
+            for cfg in module_configs.values():
+                _add_support_input_channel_names(cfg)
+
+        # Validate module configs
+        for cfg in module_configs.values():
+            cfg._validate_input_gain_mode()
+            cfg._validate_hardware_distortion_corrections_mode()
+            cfg._validate_channel_name_measure()
+
+        return module_configs
+
+
+def _add_support_input_channel_names(
+    module_config: _ClusterModuleCompilationConfig,
+) -> None:
+    # Update cluster module config with extra channel names (`channel_name_measure`) in order
+    # to keep backwards compatibility after enforcing the use of two channel names for `Measure`
+    # operations (see also SE-427). Sorry for the hacky style, couldn't find a better solution
+    complex_output_pcs = {}
+    real_output_pcs = {}
+    complex_inputs = []
+    real_inputs = []
+
+    for pc, path in module_config.portclock_to_path.items():
+        if ChannelMode.COMPLEX in path.channel_name:
+            if "output" in path.channel_name:
+                complex_output_pcs[path.channel_name] = pc
+            else:
+                complex_inputs.append(path.channel_name)
+        elif ChannelMode.REAL in path.channel_name:
+            if "output" in path.channel_name:
+                real_output_pcs[path.channel_name] = pc
+            else:
+                real_inputs.append(path.channel_name)
+
+    if module_config.hardware_description.instrument_type in ["QRM", "QRM_RF"]:
+        # The specific value of the portclock is not important, as long as it has been
+        # defined before for an output in the same module
+        if not complex_inputs and not real_inputs:
+            if complex_output_pcs:
+                pc = list(complex_output_pcs.values())[0]
+                module_config.portclock_to_path[pc].add_channel_name_measure("complex_input_0")
+            elif real_output_pcs:
+                pc = list(real_output_pcs.values())[0]
+                module_config.portclock_to_path[pc].add_channel_name_measure("real_input_0")
+                # removing the deepcopy is breaking.
+                module_config.portclock_to_path[deepcopy(pc)].add_channel_name_measure(
+                    "real_input_1"
+                )
+        elif (
+            not complex_inputs
+            and len(real_inputs) == 1
+            and not complex_output_pcs
+            and real_output_pcs
+        ):
+            pc = list(real_output_pcs.values())[0]
+            if int(real_inputs[0][-1]) == 0:
+                module_config.portclock_to_path[pc].add_channel_name_measure("real_input_1")
+            else:
+                module_config.portclock_to_path[pc].add_channel_name_measure("real_input_0")
+
+
 @dataclass
 class ChannelPath:
     """Path of a sequencer channel."""
@@ -1210,6 +1377,7 @@ class ChannelPath:
     module_name: str
     channel_name: str
     module_idx: int
+    channel_name_measure: None | list[str] = field(init=False, default=None)
 
     @classmethod
     def from_path(cls: type[ChannelPath], path: str) -> ChannelPath:
@@ -1222,6 +1390,20 @@ class ChannelPath:
             channel_name=channel_name,
             module_idx=module_idx,
         )
+
+    def add_channel_name_measure(self, channel_name_measure: str) -> None:
+        """Add an extra input channel name for measure operation."""
+        if self.channel_name_measure is None:
+            channel_name = deepcopy(self.channel_name)
+            # By convention, the "output" channel name is the main channel name in
+            # measure operations
+            if "input" in channel_name_measure:
+                self.channel_name_measure = [channel_name_measure]
+            else:
+                self.channel_name = channel_name_measure
+                self.channel_name_measure = [channel_name]
+        else:
+            self.channel_name_measure.append(channel_name_measure)
 
 
 def _all_abs_times_ops_with_voltage_offsets_pulses(

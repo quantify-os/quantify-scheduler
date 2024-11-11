@@ -72,10 +72,11 @@ class TimetagSequencerCompiler(SequencerCompiler):
             TimetagSequencerSettings.initialize_from_compilation_config(
                 sequencer_cfg=sequencer_cfg,
                 connected_output_indices=static_hw_properties._get_connected_output_indices(
-                    sequencer_cfg.channel_name
+                    sequencer_cfg.channel_name,
                 ),
                 connected_input_indices=static_hw_properties._get_connected_input_indices(
-                    sequencer_cfg.channel_name
+                    sequencer_cfg.channel_name,
+                    sequencer_cfg.channel_name_measure,
                 ),
             )
         )

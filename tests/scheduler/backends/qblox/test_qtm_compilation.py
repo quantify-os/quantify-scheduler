@@ -60,6 +60,7 @@ def test_generate_qasm_empty_program_qtm(assert_equal_q1asm):
         hardware_description=DigitalChannelDescription(),
         portclock="q1:mw-q1.01",
         channel_name="digital_output_1",
+        channel_name_measure=None,
         latency_correction=0,
         distortion_correction=None,
         lo_name=None,
@@ -71,10 +72,6 @@ def test_generate_qasm_empty_program_qtm(assert_equal_q1asm):
     static_hw_properties = StaticTimetagModuleProperties(
         instrument_type="QTM",
         max_sequencers=8,
-        channel_name_to_connected_io_indices={
-            "digital_output_1": (1,),
-            "digital_input_1": (1,),
-        },
     )
     component = TimetagSequencerCompiler(
         parent=mod,

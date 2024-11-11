@@ -119,9 +119,6 @@ def test_nested_conditional_control_flow_raises_runtime_warning():
         max_sequencers=6,
         max_awg_output_voltage=None,
         mixer_dc_offset_range=BoundedParameter(0, 0, ""),
-        channel_name_to_connected_io_indices={
-            "complex_output_0": (0, 1),
-        },
     )
     mock_parent_module = Mock(BasebandModuleCompiler)
     sequencer_cfg = _SequencerCompilationConfig(
@@ -129,6 +126,7 @@ def test_nested_conditional_control_flow_raises_runtime_warning():
         hardware_description=ComplexChannelDescription(),
         portclock="q1:mw-q1.01",
         channel_name="complex_out_0",
+        channel_name_measure=None,
         latency_correction=0,
         distortion_correction=None,
         lo_name=None,

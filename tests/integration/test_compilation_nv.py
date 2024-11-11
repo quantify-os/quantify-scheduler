@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import numpy
 import pytest
 
@@ -144,7 +146,7 @@ def test_compilation_reset_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
     assert not compiled_sched.operations[operation_id]["acquisition_info"]
 
 
-def test_compilation_measure_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
+def test_compilation_measure_qblox_hardware(mock_setup_basic_nv, qblox_hardware_config_nv_center):
     """Measure can be compiled to the device layer and to qblox
     instructions.
 
@@ -160,7 +162,20 @@ def test_compilation_measure_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
     # We can plot the circuit diagram
     schedule.plot_circuit_diagram()
 
-    quantum_device = mock_setup_basic_nv_qblox_hardware["quantum_device"]
+    hardware_config = deepcopy(qblox_hardware_config_nv_center)
+
+    # TTL acquisition does not support two inputs
+    edge_to_delete = None
+    for edge in hardware_config["connectivity"]["graph"]:
+        if edge[0] == "cluster0.module4.real_input_1" and edge[1] == "qe0:optical_readout":
+            edge_to_delete = edge
+
+    hardware_config["connectivity"]["graph"].remove(edge_to_delete)
+
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+
+    quantum_device.hardware_config.set(hardware_config)
+
     quantum_device.get_element("qe0").measure.acq_delay(1e-7)
 
     pulse_duration = quantum_device.get_element("qe0").measure.pulse_duration()

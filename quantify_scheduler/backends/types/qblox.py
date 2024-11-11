@@ -37,6 +37,7 @@ from quantify_scheduler.backends.qblox.constants import (
     MIN_MIXER_PHASE_ERROR_DEG,
 )
 from quantify_scheduler.backends.qblox.enums import (
+    ChannelMode,
     DistortionCorrectionLatencyEnum,
     LoCalEnum,
     QbloxFilterConfig,
@@ -91,30 +92,34 @@ class StaticHardwareProperties:
     """The type of instrument."""
     max_sequencers: int
     """The amount of sequencers available."""
-    channel_name_to_connected_io_indices: Dict[str, tuple[int, ...]]
-    """Specifies the connected io indices per channel_name identifier."""
 
-    def _get_connected_output_indices(self, channel_name) -> tuple[int, ...]:
-        """
-        Return the connected output indices associated with the output name
-        specified in the hardware config.
-        """
-        return (
-            self.channel_name_to_connected_io_indices[channel_name]
-            if "output" in channel_name
-            else ()
-        )
+    def _get_connected_io_indices(self, mode: str, channel_idx: str) -> tuple[int, ...]:
+        """Return the connected input/output indices associated to this channel name."""
+        idx = int(channel_idx)
+        return (2 * idx, 2 * idx + 1) if mode == ChannelMode.COMPLEX else (idx,)
 
-    def _get_connected_input_indices(self, channel_name) -> tuple[int, ...]:
-        """
-        Return the connected input indices associated with the input name
-        specified in the hardware config.
-        """
-        return (
-            self.channel_name_to_connected_io_indices[channel_name]
-            if "input" in channel_name
-            else ()
-        )
+    def _get_connected_output_indices(self, channel_name: str) -> tuple[int, ...]:
+        """Return the connected output indices associated to this channel name."""
+        mode, io, idx = channel_name.split("_")
+        return self._get_connected_io_indices(mode, idx) if "output" in io else ()
+
+    def _get_connected_input_indices(
+        self, channel_name: str, channel_name_measure: Union[list[str], None]
+    ) -> tuple[int, ...]:
+        """Return the connected input indices associated to this channel name."""
+        mode, io, idx = channel_name.split("_")
+        if "input" in io:
+            if channel_name_measure is None:
+                return self._get_connected_io_indices(mode, idx)
+        elif channel_name_measure is not None:
+            if len(channel_name_measure) == 1:
+                mode_measure, _, idx_measure = channel_name_measure[0].split("_")
+                return self._get_connected_io_indices(mode_measure, idx_measure)
+            else:
+                # Edge case for compatibility with hardware config version 0.1 (SE-427)
+                return (0, 1)
+
+        return ()
 
 
 @dataclass(frozen=True)
@@ -461,6 +466,8 @@ class SequencerSettings(DataClassJsonMixin):
     """Enables party-line synchronization."""
     channel_name: str
     """Specifies the channel identifier of the hardware config (e.g. `complex_output_0`)."""
+    channel_name_measure: Union[list[str], None]
+    """Extra channel name necessary to define a `Measure` operation."""
     connected_output_indices: Tuple[int, ...]
     """Specifies the indices of the outputs this sequencer produces waveforms for."""
     connected_input_indices: Tuple[int, ...]
@@ -509,6 +516,7 @@ class SequencerSettings(DataClassJsonMixin):
         return cls(
             sync_en=True,
             channel_name=sequencer_cfg.channel_name,
+            channel_name_measure=sequencer_cfg.channel_name_measure,
             connected_output_indices=connected_output_indices,
             connected_input_indices=connected_input_indices,
         )
@@ -667,6 +675,7 @@ class AnalogSequencerSettings(SequencerSettings):
             nco_en=nco_en,
             sync_en=True,
             channel_name=sequencer_cfg.channel_name,
+            channel_name_measure=sequencer_cfg.channel_name_measure,
             connected_output_indices=connected_output_indices,
             connected_input_indices=connected_input_indices,
             init_offset_awg_path_I=init_offset_awg_path_I,
@@ -759,6 +768,7 @@ class TimetagSequencerSettings(SequencerSettings):
         return cls(
             sync_en=True,
             channel_name=sequencer_cfg.channel_name,
+            channel_name_measure=sequencer_cfg.channel_name_measure,
             connected_output_indices=connected_output_indices,
             connected_input_indices=connected_input_indices,
         )

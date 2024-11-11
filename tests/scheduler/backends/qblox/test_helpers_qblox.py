@@ -226,6 +226,10 @@ def test_generate_new_style_hardware_config(new_style_config, old_style_config):
 
     converted_new_style_hw_cfg = QbloxHardwareCompilationConfig.model_validate(old_style_config)
 
+    # For nv-center config, transmon config still in version "0.1"
+    if parsed_new_style_config.version == "0.2":
+        converted_new_style_hw_cfg.version = "0.2"
+
     # Partial checks
     # HardwareDescription
     assert (

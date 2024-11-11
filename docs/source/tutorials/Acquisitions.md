@@ -80,6 +80,7 @@ device.instr_instrument_coordinator("instrument_coordinator")
 
 ```{code-cell} ipython3
 hardware_config = {
+    "version": "0.2",
     "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
     "hardware_description": {
         "cluster0": {
@@ -108,6 +109,7 @@ hardware_config = {
     "connectivity": {
         "graph": [
             ["cluster0.module1.complex_output_0", "q0:res"],
+            ["cluster0.module1.complex_input_0", "q0:res"],
             ["cluster0.module1.complex_output_0", "q1:res"],
             ["cluster0.module1.complex_output_0", "q0:mw"]
         ]

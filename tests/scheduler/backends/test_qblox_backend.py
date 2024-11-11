@@ -77,6 +77,7 @@ from quantify_scheduler.backends.qblox_backend import (
     QbloxHardwareCompilationConfig,
     _ClusterCompilationConfig,
     _ClusterModuleCompilationConfig,
+    _QCMCompilationConfig,
 )
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.backends.types.common import HardwareDescription
@@ -812,43 +813,6 @@ def test_warn_mix_lo_false():
     assert "Please use quantify_scheduler=0.20.1." in str(warn[1].message)
 
 
-@pytest.mark.parametrize(
-    "edge",
-    [
-        ["q0:mw", "cluster0.module1.complex_output_0"],
-        ["iq_mixer_lo0.if", "cluster0.module1.complex_output_0"],
-        ["iq_mixer_lo0.lo", "lo0.output"],
-        ["q0:mw", "iq_mixer_lo0.rf"],
-    ],
-)
-def test_validate_connectivity_graph_structure(
-    edge,
-):
-    hardware_cfg = {
-        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
-        "hardware_description": {
-            "cluster0": {
-                "instrument_type": "Cluster",
-                "ref": "internal",
-                "modules": {
-                    "1": {
-                        "instrument_type": "QCM",
-                    },
-                },
-            },
-            "lo0": {"instrument_type": "LocalOscillator", "power": 1},
-            "iq_mixer_lo0": {"instrument_type": "IQMixer"},
-        },
-        "hardware_options": {},
-        "connectivity": {"graph": [edge]},
-    }
-
-    with pytest.raises(ValueError) as error:
-        _ = QbloxHardwareCompilationConfig.model_validate(hardware_cfg)
-
-    assert "is a source" in error.exconly()
-
-
 def test_portclocks(
     make_basic_multi_qubit_schedule,
     compile_config_basic_transmon_qblox_hardware,
@@ -871,65 +835,270 @@ def test_portclocks(
     assert compilers["cluster0_module2"].portclocks == [("q0:mw-q0.01")]
 
 
+def test_channel_path():
+    # Test channel path when "input" path is added as `channel_name_measure`
+    channel_path = ChannelPath.from_path("cluster0.module1.complex_output_0")
+    assert channel_path.cluster_name == "cluster0"
+    assert channel_path.module_name == "module1"
+    assert channel_path.channel_name == "complex_output_0"
+    assert channel_path.module_idx == 1
+    assert channel_path.channel_name_measure is None
+
+    channel_path.add_channel_name_measure("complex_input_0")
+    assert channel_path.channel_name == "complex_output_0"
+    assert channel_path.channel_name_measure == ["complex_input_0"]
+
+    # Test channel path when "output" path is added as `channel_name_measure`
+    channel_path = ChannelPath.from_path("cluster0.module1.complex_input_0")
+    channel_path.add_channel_name_measure("complex_output_0")
+    assert channel_path.channel_name == "complex_output_0"
+    assert channel_path.channel_name_measure == ["complex_input_0"]
+
+    # Test two `channel_name_measure`
+    channel_path = ChannelPath.from_path("cluster0.module1.real_output_0")
+    channel_path.add_channel_name_measure("real_input_0")
+    channel_path.add_channel_name_measure("real_input_1")
+    assert channel_path.channel_name == "real_output_0"
+    assert channel_path.channel_name_measure == ["real_input_0", "real_input_1"]
+
+
 @pytest.mark.parametrize(
-    "module, channel_name_to_connected_io_indices",
+    "graph",
+    [
+        [
+            ["cluster0.module1.complex_output_0", "q5:res"],
+            ["cluster0.module2.complex_input_0", "q5:res"],
+        ],
+        [
+            ["cluster0.module1.complex_output_0", "q5:res"],
+            ["cluster1.module1.complex_input_0", "q5:res"],
+        ],
+    ],
+)
+def test_channel_name_measure_no_same_module_error(
+    graph,
+):
+    hardware_config = {
+        "version": "0.2",
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {
+                    1: {"instrument_type": "QRM"},
+                    2: {"instrument_type": "QRM"},
+                },
+                "ref": "internal",
+            },
+            "cluster1": {
+                "instrument_type": "Cluster",
+                "modules": {1: {"instrument_type": "QRM"}},
+                "ref": "internal",
+            },
+        },
+        "hardware_options": {},
+        "connectivity": {"graph": graph},
+    }
+
+    q5 = BasicTransmonElement("q5")
+
+    q5.rxy.amp180(0.213)
+    q5.clock_freqs.f01(4.33e8)
+    q5.clock_freqs.f12(6.09e9)
+    q5.clock_freqs.readout(4.5e8)
+    q5.measure.acq_delay(100e-9)
+
+    schedule = Schedule("test_channel_measure")
+    schedule.add(Measure("q5"))
+
+    quantum_device = QuantumDevice("basic_transmon_quantum_device")
+    quantum_device.add_element(q5)
+    quantum_device.hardware_config(hardware_config)
+
+    with pytest.raises(ValueError) as error:
+        _ = SerialCompiler(name="compiler").compile(
+            schedule=schedule, config=quantum_device.generate_compilation_config()
+        )
+    assert "Provided channel names" in error.exconly()
+
+
+@pytest.mark.parametrize(
+    "module_type, channel_name, channel_name_measure, error_message",
     [
         (
-            QCMCompiler,
-            {
-                "complex_output_0": (0, 1),
-                "complex_output_1": (2, 3),
-                "real_output_0": (0,),
-                "real_output_1": (1,),
-                "real_output_2": (2,),
-                "real_output_3": (3,),
-                "digital_output_0": (0,),
-                "digital_output_1": (1,),
-                "digital_output_2": (2,),
-                "digital_output_3": (3,),
-            },
+            "QCM",
+            "complex_output_0",
+            "complex_output_1",
+            "two channel names",
+        ),
+        ("QRM", "complex_output_0", "digital_output_0", "not of the same mode"),
+        (
+            "QRM",
+            "digital_output_0",
+            ["real_input_0", "real_input_1"],
+            "incorrect combination of three",
         ),
         (
-            QRMCompiler,
-            {
-                "complex_output_0": (0, 1),
-                "complex_input_0": (0, 1),
-                "real_output_0": (0,),
-                "real_output_1": (1,),
-                "real_input_0": (0,),
-                "real_input_1": (1,),
-                "digital_output_0": (0,),
-                "digital_output_1": (1,),
-                "digital_output_2": (2,),
-                "digital_output_3": (3,),
+            "QCM_RF",
+            "complex_output_0",
+            "digital_output_0",
+            "Repeated portclocks are forbidden",
+        ),
+        ("QRM_RF", "complex_output_0", "digital_output_0", "of the same mode"),
+        ("QTM", "digital_output_0", "digital_input_1", "not implemented"),
+    ],
+)
+def test_channel_name_measure_invalid_combinations(
+    module_type, channel_name, channel_name_measure, error_message
+):
+    if isinstance(channel_name_measure, list):
+        channel_name_measure_1, channel_name_measure_2 = channel_name_measure
+    else:
+        channel_name_measure_1 = channel_name_measure
+
+    hardware_config = {
+        "version": "0.2",
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {
+                    1: {"instrument_type": module_type},
+                },
+                "ref": "internal",
             },
+        },
+        "hardware_options": {},
+        "connectivity": {
+            "graph": [
+                [f"cluster0.module1.{channel_name}", "q5:res"],
+                [f"cluster0.module1.{channel_name_measure_1}", "q5:res"],
+            ]
+        },
+    }
+
+    if isinstance(channel_name_measure, list):
+        hardware_config["connectivity"]["graph"].append(
+            [f"cluster0.module1.{channel_name_measure_2}", "q5:res"]
+        )
+
+    q5 = BasicTransmonElement("q5")
+
+    q5.rxy.amp180(0.213)
+    q5.clock_freqs.f01(4.33e8)
+    q5.clock_freqs.f12(6.09e9)
+    q5.clock_freqs.readout(4.5e8)
+    q5.measure.acq_delay(100e-9)
+
+    schedule = Schedule("test_channel_measure")
+    if "QRM" in module_type:
+        schedule.add(Measure("q5"))
+    else:
+        schedule.add(SquarePulse(amp=0.5, duration=1e-6, port="q5:res", clock="q5.ro"))
+
+    quantum_device = QuantumDevice("basic_transmon_quantum_device")
+    quantum_device.add_element(q5)
+    quantum_device.hardware_config(hardware_config)
+
+    error_type = NotImplementedError if module_type == "QTM" else ValueError
+
+    with pytest.raises(error_type) as error:
+        _ = SerialCompiler(name="compiler").compile(
+            schedule=schedule, config=quantum_device.generate_compilation_config()
+        )
+    assert error_message in error.exconly()
+
+
+@pytest.mark.parametrize(
+    "instrument_type, first_channel_name, second_channel_name, result_channel_name_measure",
+    [
+        (
+            "QCM",
+            "complex_output_0",
+            None,
+            None,
         ),
         (
-            QCMRFCompiler,
-            {
-                "complex_output_0": (0, 1),
-                "complex_output_1": (2, 3),
-                "digital_output_0": (0,),
-                "digital_output_1": (1,),
-            },
+            "QRM",
+            "complex_output_0",
+            None,
+            ["complex_input_0"],
         ),
         (
-            QRMRFCompiler,
-            {
-                "complex_output_0": (0, 1),
-                "complex_input_0": (0, 1),
-                "digital_output_0": (0,),
-                "digital_output_1": (1,),
-            },
+            "QRM",
+            "real_output_0",
+            None,
+            ["real_input_0", "real_input_1"],
+        ),
+        (
+            "QRM",
+            "real_output_0",
+            "real_input_0",
+            ["real_input_1"],
+        ),
+        (
+            "QRM",
+            "real_output_0",
+            "real_input_1",
+            ["real_input_0"],
+        ),
+        ("QRM", "real_input_0", None, None),
+        (
+            "QCM_RF",
+            "complex_output_0",
+            None,
+            None,
+        ),
+        (
+            "QRM_RF",
+            "complex_output_0",
+            None,
+            ["complex_input_0"],
         ),
     ],
 )
-def test_validate_channel_name_to_connected_io_indices(
-    module, channel_name_to_connected_io_indices
+def test_add_support_input_channel_names(
+    instrument_type,
+    first_channel_name,
+    second_channel_name,
+    result_channel_name_measure,
 ):
+    hardware_config = {
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {
+                    1: {"instrument_type": instrument_type},
+                },
+                "ref": "internal",
+            },
+        },
+        "hardware_options": {},
+        "connectivity": {
+            "graph": [
+                [f"cluster0.module1.{first_channel_name}", "q0:res"],
+            ]
+        },
+    }
+
+    portclocks_used = {("q0:res", "q0.ro")}
+
+    if second_channel_name is not None:
+        hardware_config["connectivity"]["graph"].append(
+            [f"cluster0.module1.{second_channel_name}", "q1:res"]
+        )
+        portclocks_used = {("q0:res", "q0.ro"), ("q1:res", "q1.ro")}
+
+    module1_config = (
+        QbloxHardwareCompilationConfig.model_validate(hardware_config)
+        ._extract_instrument_compilation_configs(portclocks_used)["cluster0"]
+        ._extract_module_compilation_configs()[1]
+    )
+
     assert (
-        module.static_hw_properties.channel_name_to_connected_io_indices
-        == channel_name_to_connected_io_indices
+        module1_config.portclock_to_path["q0:res-q0.ro"].channel_name_measure
+        == result_channel_name_measure
     )
 
 
@@ -2421,6 +2590,7 @@ def test_extract_module_compilation_configs():
             "q4:res-q4.ro": ChannelPath.from_path("cluster0.module3.complex_output_0"),
         },
         "lo_to_path": {"lo1": ChannelPath.from_path("cluster0.module3.complex_output_0")},
+        "parent_config_version": "0.2",
     }
 
     cluster_compilation_config = _ClusterCompilationConfig.model_validate(
@@ -2506,11 +2676,10 @@ def test_extract_sequencer_compilation_configs():
             "q0:mw-q0.01": ChannelPath.from_path("cluster0.module1.complex_output_0"),
         },
         "lo_to_path": {"lo0": ChannelPath.from_path("cluster0.module1.complex_output_0")},
+        "parent_config_version": "0.2",
     }
 
-    module_compilation_config = _ClusterModuleCompilationConfig.model_validate(
-        module_compilation_config
-    )
+    module_compilation_config = _QCMCompilationConfig.model_validate(module_compilation_config)
 
     sequencer_configs = module_compilation_config._extract_sequencer_compilation_configs()
 
@@ -2522,6 +2691,7 @@ def test_extract_sequencer_compilation_configs():
         "hardware_description": {"marker_debug_mode_enable": True},
         "portclock": "q0:mw-q0.01",
         "channel_name": "complex_output_0",
+        "channel_name_measure": None,
         "latency_correction": 8e-09,
         "distortion_correction": {
             "filter_func": "scipy.signal.lfilter",
@@ -2541,6 +2711,7 @@ def test_extract_sequencer_compilation_configs():
         "hardware_description": {},
         "portclock": "q1:mw-q1.01",
         "channel_name": "complex_output_1",
+        "channel_name_measure": None,
         "latency_correction": 0.0,
         "distortion_correction": None,
         "lo_name": None,

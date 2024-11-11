@@ -170,18 +170,6 @@ class QCMCompiler(BasebandModuleCompiler):
         max_sequencers=NUMBER_OF_SEQUENCERS_QCM,
         max_awg_output_voltage=2.5,
         mixer_dc_offset_range=BoundedParameter(min_val=-2.5, max_val=2.5, units="V"),
-        channel_name_to_connected_io_indices={
-            "complex_output_0": (0, 1),
-            "complex_output_1": (2, 3),
-            "real_output_0": (0,),
-            "real_output_1": (1,),
-            "real_output_2": (2,),
-            "real_output_3": (3,),
-            "digital_output_0": (0,),
-            "digital_output_1": (1,),
-            "digital_output_2": (2,),
-            "digital_output_3": (3,),
-        },
     )
 
     def _configure_hardware_distortion_corrections(self) -> None:
@@ -286,18 +274,6 @@ class QRMCompiler(BasebandModuleCompiler):
         max_sequencers=NUMBER_OF_SEQUENCERS_QRM,
         max_awg_output_voltage=0.5,
         mixer_dc_offset_range=BoundedParameter(min_val=-0.5, max_val=0.5, units="V"),
-        channel_name_to_connected_io_indices={
-            "complex_output_0": (0, 1),
-            "complex_input_0": (0, 1),
-            "real_output_0": (0,),
-            "real_output_1": (1,),
-            "real_input_0": (0,),
-            "real_input_1": (1,),
-            "digital_output_0": (0,),
-            "digital_output_1": (1,),
-            "digital_output_2": (2,),
-            "digital_output_3": (3,),
-        },
     )
 
 
@@ -312,12 +288,6 @@ class QCMRFCompiler(RFModuleCompiler):
         max_sequencers=NUMBER_OF_SEQUENCERS_QCM,
         max_awg_output_voltage=None,
         mixer_dc_offset_range=BoundedParameter(min_val=-50, max_val=50, units="mV"),
-        channel_name_to_connected_io_indices={
-            "complex_output_0": (0, 1),
-            "complex_output_1": (2, 3),
-            "digital_output_0": (0,),
-            "digital_output_1": (1,),
-        },
         channel_name_to_digital_marker={
             "complex_output_0": 0b0001,
             "complex_output_1": 0b0010,
@@ -337,12 +307,6 @@ class QRMRFCompiler(RFModuleCompiler):
         max_sequencers=NUMBER_OF_SEQUENCERS_QRM,
         max_awg_output_voltage=None,
         mixer_dc_offset_range=BoundedParameter(min_val=-50, max_val=50, units="mV"),
-        channel_name_to_connected_io_indices={
-            "complex_output_0": (0, 1),
-            "complex_input_0": (0, 1),
-            "digital_output_0": (0,),
-            "digital_output_1": (1,),
-        },
         default_marker=0b0011,
     )
 
@@ -401,9 +365,6 @@ class QTMCompiler(compiler_abc.ClusterModuleCompiler):
         return StaticTimetagModuleProperties(
             instrument_type="QTM",
             max_sequencers=NUMBER_OF_SEQUENCERS_QTM,
-            channel_name_to_connected_io_indices={
-                f"digital_{io}_{idx}": (idx,) for io in ("input", "output") for idx in range(8)
-            },
         )
 
     def _construct_sequencer_compiler(
@@ -418,7 +379,10 @@ class QTMCompiler(compiler_abc.ClusterModuleCompiler):
             The QTM has no channel map yet, so the sequencer index = the channel index,
             and there is always only one channel index.
             """
-            input_idx = self.static_hw_properties._get_connected_input_indices(channel_name)
+            input_idx = self.static_hw_properties._get_connected_input_indices(
+                channel_name,
+                channel_name_measure,
+            )
             output_idx = self.static_hw_properties._get_connected_output_indices(channel_name)
             if len(input_idx) > 0:
                 return input_idx[0]
@@ -427,6 +391,7 @@ class QTMCompiler(compiler_abc.ClusterModuleCompiler):
             return output_idx[0]
 
         channel_name = sequencer_cfg.channel_name
+        channel_name_measure = sequencer_cfg.channel_name_measure
         return TimetagSequencerCompiler(
             parent=self,
             index=get_index_from_channel_name(),

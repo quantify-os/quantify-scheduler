@@ -620,7 +620,8 @@ def test_write_repetition_loop_header_equal_time():
         sequencer_options=SequencerOptions(),
         hardware_description=ComplexChannelDescription(),
         portclock="port-clock",
-        channel_name="channel_name",
+        channel_name="channel_name_x",
+        channel_name_measure=None,
         latency_correction=0,
         distortion_correction=None,
         lo_name=None,
@@ -635,9 +636,6 @@ def test_write_repetition_loop_header_equal_time():
             max_sequencers=6,
             max_awg_output_voltage=None,
             mixer_dc_offset_range=BoundedParameter(0, 0, ""),
-            channel_name_to_connected_io_indices={
-                "complex_output_0": (0, 1),
-            },
         ),
         sequencer_cfg=sequencer_cfg,
     )
@@ -648,10 +646,6 @@ def test_write_repetition_loop_header_equal_time():
         static_hw_properties=StaticTimetagModuleProperties(
             instrument_type="QTM",
             max_sequencers=8,
-            channel_name_to_connected_io_indices={
-                "digital_output_1": (1,),
-                "digital_input_1": (1,),
-            },
         ),
         sequencer_cfg=sequencer_cfg,
     )
@@ -693,7 +687,8 @@ def mock_sequencer(total_play_time) -> AnalogSequencerCompiler:
         sequencer_options=SequencerOptions(),
         hardware_description=ComplexChannelDescription(),
         portclock="q1:mw-q1.01",
-        channel_name="channel_name",
+        channel_name="channel_name_x",
+        channel_name_measure=None,
         latency_correction=0,
         distortion_correction=None,
         lo_name=None,
@@ -710,9 +705,6 @@ def mock_sequencer(total_play_time) -> AnalogSequencerCompiler:
             max_sequencers=6,
             max_awg_output_voltage=None,
             mixer_dc_offset_range=BoundedParameter(0, 0, ""),
-            channel_name_to_connected_io_indices={
-                "complex_output_0": (0, 1),
-            },
         ),
         sequencer_cfg=sequencer_cfg,
     )

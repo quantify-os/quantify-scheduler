@@ -375,13 +375,12 @@ With gate-level operations, you have to follow strict port naming:
 
 ### Complex channel
 
-A complex channel is defined by including a `"complex_{output, input}_<n>"` in the connectivity.
-Complex outputs (e.g. `complex_output_0`) are used for playbacks, while complex inputs (e.g. `complex_input_0`) are used for acquisitions.
-However, for readout modules it is possible to use the `complex_output_<n>` key for both playbacks and acquisitions.
+A complex channel is defined by including `"complex_output_<n>"` or `"complex_input_<n>"` in the connectivity. Complex outputs (e.g. `complex_output_0`) are used for playbacks, while complex inputs (e.g. `complex_input_0`) are used for acquisitions. 
 
 ```{note}
-When using a port and clock combination for both playback and acquisition, only set up the `complex_output_<n>`.
+Operations involving both an output and an input channel (e.g.`Measure`) require writing both the output and input channel names in the connectivity, both using the same port. Output and input channels of different modes (e.g. `complex_output_0` + `real_input_0`) using the same port are not allowed.
 ```
+
 
 ```{code-block} python
 ---
@@ -389,6 +388,7 @@ emphasize-lines: 17,18
 linenos: true
 ---
 hardware_compilation_cfg = {
+    "version": "0.2",
     "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
     "hardware_description": {
         "cluster0": {
@@ -405,7 +405,7 @@ hardware_compilation_cfg = {
     "connectivity": {
         "graph": [
             ("cluster0.module1.complex_output_0", "q0:res"),
-            ("cluster0.module1.complex_input_0", "q1:res")
+            ("cluster0.module1.complex_input_0", "q0:res")
         ]
     }
 }
@@ -413,15 +413,12 @@ hardware_compilation_cfg = {
 
 ### Real channel
 
-A real channel is defined by including a `real_{output, input}_<n>` in the connectivity.
-Real outputs (e.g. `real_output_0`) are used for playbacks, while real inputs (e.g. `real_input_0`) are used for acquisitions.
-However, for readout modules it is possible to use the `real_output_<n>` key for both playbacks and acquisitions.
-When using a real channel, the backend automatically maps the signals to the correct output paths.
+A real channel is defined by including `"real_output_<n>"` or `"real_input_<n>"` in the connectivity. Real outputs (e.g. `real_output_0`) are used for playbacks, while real inputs (e.g. `real_input_0`) are used for acquisitions.
 
 Note that the backend throws an error when using a real channel for pulses with an imaginary component. For example, square and ramp pulses are allowed, but DRAG pulses are not.
 
 ```{note}
-When using a port and clock combination for both playback and acquisition, only set up the `real_output_<n>`.
+Operations involving both an output and an input channel (e.g.`Measure`) require writing both the output and input channel names in the connectivity, both using the same port. Output and input channels of different modes (e.g. `complex_output_0` + `real_input_0`) using the same port are not allowed.
 ```
 
 
@@ -431,6 +428,7 @@ emphasize-lines: 17,18,19
 linenos: true
 ---
 hardware_compilation_cfg = {
+    "version": "0.2",
     "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
     "hardware_description": {
         "cluster0": {
@@ -446,9 +444,8 @@ hardware_compilation_cfg = {
     "hardware_options": {...},
     "connectivity": {
         "graph": [
-            ("cluster0.module1.real_output_0", "q0:mw"),
-            ("cluster0.module1.real_output_1", "q0:res"),
-            ("cluster0.module1.real_input_0", "q1:res")
+            ("cluster0.module1.real_output_0", "q0:res"),
+            ("cluster0.module1.real_input_0", "q0:res")
         ]
     }
 }

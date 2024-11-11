@@ -153,6 +153,7 @@ Finally, we define the hardware configuration:
 tags: [hide-cell]
 ---
 hardware_cfg = {
+    "version": "0.2",
     "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
     "hardware_description": {
         f"{cluster.name}": {
@@ -173,6 +174,7 @@ hardware_cfg = {
     "connectivity": {
         "graph": [
             (f"{cluster.name}.module1.complex_output_0", "q0:res"),
+            (f"{cluster.name}.module1.complex_input_0", "q0:res"),
             (f"{cluster.name}.module2.complex_output_0", "q0:mw"),
         ]
     },

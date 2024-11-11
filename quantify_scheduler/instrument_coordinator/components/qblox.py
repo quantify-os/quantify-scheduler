@@ -875,17 +875,13 @@ class _QRMComponent(_AnalogModuleComponent):
         param_name = {0: "connect_acq_I", 1: "connect_acq_Q"}
 
         for channel_idx in range(self._hardware_properties.number_of_input_channels):
-            param_setting = (
-                f"in{channel_idx}"
-                if "output" in settings.channel_name
-                and ChannelMode.DIGITAL not in settings.channel_name
-                else "off"
-            )
             if (
                 len(settings.connected_input_indices) > 0
                 and channel_idx in settings.connected_input_indices
             ):  # For baseband, input indices map 1-to-1 to channel map indices
                 param_setting = f"in{channel_idx}"
+            else:
+                param_setting = "off"
 
             channel_map_parameters[param_name[channel_idx]] = param_setting
 
@@ -1178,8 +1174,6 @@ class _QRMRFComponent(_RFComponent, _QRMComponent):
         channel_map_parameters["connect_acq"] = (
             "in0" if tuple(settings.connected_input_indices) == (0, 1) else "off"
         )
-        if "output" in settings.channel_name and ChannelMode.DIGITAL not in settings.channel_name:
-            channel_map_parameters["connect_acq"] = "in0"
 
         return channel_map_parameters
 

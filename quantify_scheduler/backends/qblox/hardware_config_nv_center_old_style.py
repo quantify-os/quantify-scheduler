@@ -82,6 +82,12 @@ hardware_config = {
                     }
                 ]
             },
+            "real_input_0": {
+                "portclock_configs": [{"port": "qe0:optical_readout", "clock": "qe0.ge0"}]
+            },
+            "real_input_1": {
+                "portclock_configs": [{"port": "qe0:optical_readout", "clock": "qe0.ge0"}]
+            },
         },
         "cluster0_module5": {
             "instrument_type": "QTM",

@@ -1955,6 +1955,189 @@ def test_channel_map(
 
 
 @pytest.mark.parametrize(
+    ("module_type, channel_name, channel_name_measure, channel_map_parameters"),
+    [
+        (
+            "QRM",
+            "complex_output_0",
+            ["complex_input_0"],
+            {
+                "connect_out0": "I",
+                "connect_out1": "Q",
+                "connect_acq_I": "in0",
+                "connect_acq_Q": "in1",
+            },
+        ),
+        (
+            "QRM",
+            "complex_output_0",
+            ["real_input_0", "real_input_1"],
+            {
+                "connect_out0": "I",
+                "connect_out1": "Q",
+                "connect_acq_I": "in0",
+                "connect_acq_Q": "in1",
+            },
+        ),
+        (
+            "QRM",
+            "real_output_0",
+            ["real_input_0"],
+            {
+                "connect_out0": "I",
+                "connect_out1": "off",
+                "connect_acq_I": "in0",
+                "connect_acq_Q": "off",
+            },
+        ),
+        (
+            "QRM",
+            "real_output_0",
+            ["real_input_1"],
+            {
+                "connect_out0": "I",
+                "connect_out1": "off",
+                "connect_acq_I": "off",
+                "connect_acq_Q": "in1",
+            },
+        ),
+        (
+            "QRM",
+            "real_output_1",
+            ["real_input_0"],
+            {
+                "connect_out0": "off",
+                "connect_out1": "I",
+                "connect_acq_I": "in0",
+                "connect_acq_Q": "off",
+            },
+        ),
+        (
+            "QRM",
+            "real_output_1",
+            ["real_input_1"],
+            {
+                "connect_out0": "off",
+                "connect_out1": "I",
+                "connect_acq_I": "off",
+                "connect_acq_Q": "in1",
+            },
+        ),
+        (
+            "QRM",
+            "real_output_0",
+            ["real_input_0", "real_input_1"],
+            {
+                "connect_out0": "I",
+                "connect_out1": "off",
+                "connect_acq_I": "in0",
+                "connect_acq_Q": "in1",
+            },
+        ),
+        (
+            "QRM",
+            "real_output_1",
+            ["real_input_0", "real_input_1"],
+            {
+                "connect_out0": "off",
+                "connect_out1": "I",
+                "connect_acq_I": "in0",
+                "connect_acq_Q": "in1",
+            },
+        ),
+        (
+            "QRM_RF",
+            "complex_output_0",
+            ["complex_input_0"],
+            {
+                "connect_out0": "IQ",
+                "connect_acq": "in0",
+            },
+        ),
+    ],
+)
+def test_channel_map_measure(
+    make_cluster_component,
+    module_type,
+    channel_name,
+    channel_name_measure,
+    channel_map_parameters,
+):
+    # Indices according to `make_cluster_component` instrument setup
+    module_idx = {"QRM": 3, "QRM_RF": 4}
+    test_module_name = f"cluster0_module{module_idx[module_type]}"
+
+    hardware_config = {
+        "version": "0.2",
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {module_idx[module_type]: {"instrument_type": module_type}},
+                "ref": "internal",
+            }
+        },
+        "hardware_options": {},
+        "connectivity": {
+            "graph": [
+                [f"cluster0.module{module_idx[module_type]}.{channel_name}", "q5:res"],
+            ]
+        },
+    }
+
+    for name in channel_name_measure:
+        hardware_config["connectivity"]["graph"].append(
+            [
+                f"cluster0.module{module_idx[module_type]}.{name}",
+                "q5:res",
+            ],
+        )
+
+    if "RF" in module_type:
+        hardware_config["hardware_options"] = {
+            "modulation_frequencies": {"q5:res-q5.ro": {"interm_freq": 3e5}}
+        }
+        freq_01 = 5e9
+        readout = 8.5e9
+    else:
+        freq_01 = 4.33e8
+        readout = 4.5e8
+
+    q5 = BasicTransmonElement("q5")
+
+    q5.rxy.amp180(0.213)
+    q5.clock_freqs.f01(freq_01)
+    q5.clock_freqs.f12(6.09e9)
+    q5.clock_freqs.readout(readout)
+    q5.measure.acq_delay(100e-9)
+
+    schedule = Schedule("test_channel_map")
+    schedule.add(Measure("q5"))
+
+    quantum_device = QuantumDevice("basic_transmon_quantum_device")
+    quantum_device.add_element(q5)
+    quantum_device.hardware_config(hardware_config)
+
+    compiled_schedule = SerialCompiler(name="compiler").compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    prog = compiled_schedule["compiled_instructions"]
+
+    cluster = make_cluster_component("cluster0")
+    cluster.prepare(prog[cluster.instrument.name])
+
+    all_modules = {module.name: module for module in cluster.instrument.modules}
+    module = all_modules[test_module_name]
+
+    all_sequencers = {sequencer.name: sequencer for sequencer in module.sequencers}
+    sequencer = all_sequencers[f"{test_module_name}_sequencer0"]
+
+    for key, value in channel_map_parameters.items():
+        assert sequencer.parameters[key].get() == value
+
+
+@pytest.mark.parametrize(
     ("slot_idx, module_type"),
     [
         (
