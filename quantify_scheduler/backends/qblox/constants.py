@@ -116,3 +116,18 @@ Tolerance for time values in nanoseconds.
 
 .. versionadded:: 0.21.2
 """
+QTM_FINE_DELAY_INT_TO_NS_RATIO = 128
+"""
+Ratio of the integer fine delay argument value to the actual delay in nanoseconds.
+
+The fine delay argument has a resolution of 1/128 ns.
+"""
+MAX_QTM_FINE_DELAY_NS = ((1 << 11) - 1) / QTM_FINE_DELAY_INT_TO_NS_RATIO
+"""
+Maximum fine delay value in nanoseconds for QTM instructions that take a fine delay
+argument.
+
+The maximum integer value is based on an 11-bit unsigned integer.
+"""
+MIN_FINE_DELAY_SPACING_NS = 7  # ns
+"""QTM instructions with unequal fine delay must be at least this far apart in time."""

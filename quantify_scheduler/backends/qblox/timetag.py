@@ -9,11 +9,15 @@ from typing import TYPE_CHECKING, Any
 from quantify_scheduler.backends.qblox import constants, q1asm_instructions
 from quantify_scheduler.backends.qblox.compiler_abc import SequencerCompiler
 from quantify_scheduler.backends.qblox.enums import TimetagTraceType
+from quantify_scheduler.backends.qblox.exceptions import FineDelayTimingError
 from quantify_scheduler.backends.qblox.operation_handling.acquisitions import (
     TimetagAcquisitionStrategy,
 )
 from quantify_scheduler.backends.qblox.operation_handling.factory_timetag import (
     get_operation_strategy,
+)
+from quantify_scheduler.backends.qblox.operation_handling.pulses import (
+    DigitalPulseStrategy,
 )
 from quantify_scheduler.backends.qblox.operation_handling.virtual import (
     TimestampStrategy,
@@ -100,6 +104,7 @@ class TimetagSequencerCompiler(SequencerCompiler):
         :meth:`~quantify_scheduler.backends.qblox.compiler_abc.SequencerCompiler.compile`
         is called.
         """
+        self._assert_fine_delays_executable(self.op_strategies)
         super().prepare()
         self._assert_correct_time_ref_used_with_timestamp()
 
@@ -144,6 +149,94 @@ class TimetagSequencerCompiler(SequencerCompiler):
                 "argument 'time_ref=TimeRef.TIMESTAMP'.",
                 UserWarning,
             )
+
+    @staticmethod
+    def _assert_fine_delays_executable(
+        ordered_op_strategies: list[IOperationStrategy],
+    ) -> None:
+        """
+        Check whether any operations with a fine delay argument are executable on the
+        hardware.
+
+        To avoid undefined behaviour, there must be at least 7ns between consecutive
+        Q1ASM instructions with fine delay, OR the time between such instructions must
+        be an integer number of nanoseconds.
+
+        Must be called before `SequencerCompiler._replace_digital_pulses`.
+        """
+        last_digital_pulse_end_ps = -constants.MIN_FINE_DELAY_SPACING_NS * 1000
+        last_acquisition_end_ps = -constants.MIN_FINE_DELAY_SPACING_NS * 1000
+
+        # This block exists to prevent pyright/ruff errors for possibly undefined variables.
+        # All units are picoseconds from this point.
+        fine_start_delay = 0
+        fine_end_delay = 0
+        operation_duration = 0
+        operation_start_time = 0
+
+        for op in ordered_op_strategies:
+            if isinstance(op, (DigitalPulseStrategy, TimetagAcquisitionStrategy)):
+                fine_start_delay = round(op.operation_info.data.get("fine_start_delay", 0) * 1e12)
+                fine_end_delay = round(op.operation_info.data.get("fine_end_delay", 0) * 1e12)
+
+                # Round these to ns and _then_ convert to ps, because of the Q1 time grid.
+                operation_duration = round(op.operation_info.data["duration"] * 1e9) * 1000
+                operation_start_time = round(op.operation_info.timing * 1e9) * 1000
+
+                if (
+                    (fine_end_delay - fine_start_delay) % 1000 != 0
+                    and operation_duration + fine_end_delay - fine_start_delay
+                    < constants.MIN_FINE_DELAY_SPACING_NS * 1000
+                ):
+                    raise FineDelayTimingError(
+                        error_type="within_op",
+                        operation_info=op.operation_info,
+                        fine_start_delay=fine_start_delay,
+                        fine_end_delay=fine_end_delay,
+                        operation_start_time=operation_start_time,
+                        operation_duration=operation_duration,
+                        last_digital_pulse_end_ps=last_digital_pulse_end_ps,
+                    )
+
+            if isinstance(op, DigitalPulseStrategy):
+                if (
+                    (last_digital_pulse_end_ps - fine_start_delay) % 1000 != 0
+                    and operation_start_time + fine_start_delay - last_digital_pulse_end_ps
+                    < constants.MIN_FINE_DELAY_SPACING_NS * 1000
+                ):
+                    raise FineDelayTimingError(
+                        error_type="between_op",
+                        operation_info=op.operation_info,
+                        fine_start_delay=fine_start_delay,
+                        fine_end_delay=fine_end_delay,
+                        operation_start_time=operation_start_time,
+                        operation_duration=operation_duration,
+                        last_digital_pulse_end_ps=last_digital_pulse_end_ps,
+                    )
+                else:
+                    last_digital_pulse_end_ps = (
+                        operation_start_time + operation_duration + fine_end_delay
+                    )
+
+            elif isinstance(op, TimetagAcquisitionStrategy):
+                if (
+                    (last_acquisition_end_ps - fine_start_delay) % 1000 != 0
+                    and operation_start_time + fine_start_delay - last_acquisition_end_ps
+                    < constants.MIN_FINE_DELAY_SPACING_NS * 1000
+                ):
+                    raise FineDelayTimingError(
+                        error_type="between_op",
+                        operation_info=op.operation_info,
+                        fine_start_delay=fine_start_delay,
+                        fine_end_delay=fine_end_delay,
+                        operation_start_time=operation_start_time,
+                        operation_duration=operation_duration,
+                        last_digital_pulse_end_ps=last_digital_pulse_end_ps,
+                    )
+                else:
+                    last_acquisition_end_ps = (
+                        operation_start_time + operation_duration + fine_end_delay
+                    )
 
     def get_operation_strategy(
         self,

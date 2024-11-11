@@ -343,9 +343,17 @@ class DigitalPulseStrategy(DigitalOutputStrategy):
                 f"Operation causing exception: {self.operation_info}"
             )
 
+        if self.operation_info.data["enable"]:
+            fine_delay = helpers.convert_qtm_fine_delay_to_int(
+                self.operation_info.data.get("fine_start_delay", 0)
+            )
+        else:
+            fine_delay = helpers.convert_qtm_fine_delay_to_int(
+                self.operation_info.data.get("fine_end_delay", 0)
+            )
         qasm_program.emit(
             q1asm_instructions.SET_DIGITAL,
             int(self.operation_info.data["enable"]),
             1,  # Mask. Reserved for future use, set to 1.
-            0,  # Fine delay. Hardcoded to 0 until we decide if/how we want to use it (SE-423)
+            fine_delay,
         )

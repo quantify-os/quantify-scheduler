@@ -1419,3 +1419,18 @@ def is_square_pulse(operation: Operation | Schedule) -> bool:
         if pulse_info["wf_func"] != "quantify_scheduler.waveforms.square":
             return False
     return True
+
+
+def convert_qtm_fine_delay_to_int(fine_delay: float) -> int:
+    """Convert a fine delay value in seconds to an integer value for Q1ASM."""
+    fine_delay_int = round(fine_delay * 128e9)
+    if (
+        not 0
+        <= fine_delay_int
+        <= constants.MAX_QTM_FINE_DELAY_NS * constants.QTM_FINE_DELAY_INT_TO_NS_RATIO
+    ):
+        raise ValueError(
+            f"Fine delay value {fine_delay} s is outside of the hardware supported "
+            f"range of (0, {constants.MAX_QTM_FINE_DELAY_NS}) ns."
+        )
+    return fine_delay_int

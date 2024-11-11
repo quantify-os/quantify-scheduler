@@ -966,3 +966,250 @@ def test_timestamp_operation_but_no_arg(mock_setup_basic_nv):
         "TimeRef.TIMESTAMP'.",
     ):
         _ = compiler.compile(schedule=schedule, config=quantum_device.generate_compilation_config())
+
+
+def test_marker_pulse_fine_delay(assert_equal_q1asm):
+    schedule = Schedule(name="Test", repetitions=1)
+
+    schedule.add(
+        MarkerPulse(
+            duration=40e-9,
+            fine_start_delay=391e-12,
+            fine_end_delay=781e-12,
+            port="qe1:switch",
+        )
+    )
+    schedule.add(IdlePulse(duration=4e-9))
+
+    quantum_device = QuantumDevice(name="quantum_device")
+
+    quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+    assert_equal_q1asm(
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"]["seq0"][
+            "sequence"
+        ]["program"],
+        """ wait_sync 4
+ upd_param 4
+ wait 4 # latency correction of 4 + 0 ns
+ move 1,R0 # iterator for loop with label start
+start:
+ wait 4
+ set_digital 1,1,50 # Set output high
+ upd_param 4
+ wait 36 # auto generated wait (36 ns)
+ set_digital 0,1,100 # Set output low
+ upd_param 4
+ loop R0,@start
+ stop
+""",
+    )
+
+
+def test_trigger_count_fine_delay(mock_setup_basic_nv, assert_equal_q1asm):
+    schedule = Schedule(name="Test")
+
+    schedule.add(
+        TriggerCount(
+            port="qe1:optical_readout",
+            clock="qe1.ge0",
+            duration=100e-9,
+            fine_start_delay=3125e-12,
+            fine_end_delay=6250e-12,
+        )
+    )
+
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+
+    quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    assert_equal_q1asm(
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"]["seq4"][
+            "sequence"
+        ]["program"],
+        """ wait_sync 4
+ upd_param 4
+ move 0,R0 # Initialize acquisition bin_idx for ch0
+ wait 4 # latency correction of 4 + 0 ns
+ move 1,R1 # iterator for loop with label start
+start:
+ wait 4
+ move 400,R10
+ move 800,R11
+ acquire_timetags 0,R0,1,R10,4 # Enable TTL acquisition of acq_channel:0, store in bin:R0
+ wait 92 # auto generated wait (92 ns)
+ acquire_timetags 0,R0,0,R11,4 # Disable TTL acquisition of acq_channel:0, store in bin:R0
+ add R0,1,R0 # Increment bin_idx for ch0 by 1
+ loop R1,@start
+ stop
+""",
+    )
+
+
+def test_timetag_fine_delay(mock_setup_basic_nv, assert_equal_q1asm):
+    schedule = Schedule(name="Test", repetitions=1)
+
+    schedule.add(Timestamp(port="qe1:optical_readout", clock="qe1.ge0"))
+    schedule.add(
+        Timetag(
+            duration=100e-9,
+            port="qe1:optical_readout",
+            clock="qe1.ge0",
+            bin_mode=BinMode.AVERAGE,
+            time_source=TimeSource.FIRST,
+            time_ref=TimeRef.TIMESTAMP,
+            fine_start_delay=1750e-12,
+            fine_end_delay=0,
+        ),
+        rel_time=100e-9,
+    )
+
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+
+    quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    assert_equal_q1asm(
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"]["seq4"][
+            "sequence"
+        ]["program"],
+        """ wait_sync 4
+ upd_param 4
+ wait 4 # latency correction of 4 + 0 ns
+ move 1,R0 # iterator for loop with label start
+start:
+ wait 4
+ set_time_ref
+ upd_param 4
+ wait 96 # auto generated wait (96 ns)
+ acquire_timetags 0,0,1,224,4 # Enable timetag acquisition of acq_channel:0
+ wait 92 # auto generated wait (92 ns)
+ acquire_timetags 0,0,0,0,4 # Disable timetag acquisition of acq_channel:0
+ loop R0,@start
+ stop
+""",
+    )
+
+
+def test_marker_pulse_fine_delay_error_within_op():
+    schedule = Schedule(name="Test", repetitions=1)
+
+    schedule.add(
+        MarkerPulse(
+            duration=6e-9,
+            fine_start_delay=391e-12,
+            fine_end_delay=781e-12,
+            port="qe1:switch",
+        )
+    )
+    schedule.add(IdlePulse(duration=4e-9))
+
+    quantum_device = QuantumDevice(name="quantum_device")
+
+    quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
+
+    compiler = SerialCompiler(name="compiler")
+    with pytest.raises(
+        ValueError,
+        match="there must be at least 7ns between the start and "
+        "end of the operation including the fine delay, OR the time "
+        "between the start and end must be an integer number of "
+        "nanoseconds.",
+    ):
+        _ = compiler.compile(schedule=schedule, config=quantum_device.generate_compilation_config())
+
+
+def test_marker_pulse_fine_delay_error_between_op():
+    schedule = Schedule(name="Test", repetitions=1)
+
+    schedule.add(
+        MarkerPulse(
+            duration=40e-9,
+            fine_start_delay=0,
+            fine_end_delay=80e-12,
+            port="qe1:switch",
+        )
+    )
+    schedule.add(
+        MarkerPulse(
+            duration=40e-9,
+            fine_start_delay=40e-12,
+            fine_end_delay=0,
+            port="qe1:switch",
+        ),
+        rel_time=6e-9,
+    )
+    schedule.add(IdlePulse(duration=4e-9))
+
+    quantum_device = QuantumDevice(name="quantum_device")
+
+    quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
+
+    compiler = SerialCompiler(name="compiler")
+    with pytest.raises(
+        ValueError,
+        match="there must be at least 7ns between the end of the "
+        "previous operation and the start of this one including the "
+        "fine delay, OR the time between the end and start must be an "
+        "integer number of nanoseconds.",
+    ):
+        _ = compiler.compile(schedule=schedule, config=quantum_device.generate_compilation_config())
+
+
+def test_timetag_fine_delay_error_between_op(mock_setup_basic_nv):
+    schedule = Schedule(name="Test", repetitions=1)
+
+    schedule.add(Timestamp(port="qe1:optical_readout", clock="qe1.ge0"))
+    schedule.add(
+        Timetag(
+            duration=100e-9,
+            port="qe1:optical_readout",
+            clock="qe1.ge0",
+            bin_mode=BinMode.AVERAGE,
+            time_source=TimeSource.FIRST,
+            time_ref=TimeRef.TIMESTAMP,
+            fine_start_delay=1750e-12,
+            fine_end_delay=0,
+        ),
+        rel_time=100e-9,
+    )
+    schedule.add(
+        Timetag(
+            duration=100e-9,
+            port="qe1:optical_readout",
+            clock="qe1.ge0",
+            bin_mode=BinMode.AVERAGE,
+            time_source=TimeSource.FIRST,
+            time_ref=TimeRef.TIMESTAMP,
+            fine_start_delay=50e-12,
+            fine_end_delay=0,
+        ),
+        rel_time=4e-9,
+    )
+
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+
+    quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
+
+    compiler = SerialCompiler(name="compiler")
+    with pytest.raises(
+        ValueError,
+        match="there must be at least 7ns between the end of the "
+        "previous operation and the start of this one including the "
+        "fine delay, OR the time between the end and start must be an "
+        "integer number of nanoseconds.",
+    ):
+        _ = compiler.compile(schedule=schedule, config=quantum_device.generate_compilation_config())

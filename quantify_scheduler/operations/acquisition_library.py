@@ -721,6 +721,21 @@ class TriggerCount(Acquisition):
         new result and the old register value, by default BinMode.APPEND.
     t0
         The acquisition start time in seconds, by default 0.
+    fine_start_delay
+        Delays the start of the acquisition by the given amount in seconds. Does
+        not delay the start time of the operation in the schedule. If the
+        hardware supports it, this parameter can be used to shift the
+        acquisition window by a small amount of time, independent of the
+        hardware instruction timing grid. Currently only implemented for Qblox
+        QTM modules, which allow only positive values for this parameter. By
+        default 0.
+    fine_end_delay
+        Delays the end of the pulse by the given amount in seconds. Does not
+        delay the end time of the operation in the schedule. If the hardware
+        supports it, this parameter can be used to shift the acquisition window
+        by a small amount of time, independent of the hardware instruction
+        timing grid. Currently only implemented for Qblox QTM modules, which
+        allow only positive values for this parameter. By default 0.
 
     """
 
@@ -733,6 +748,8 @@ class TriggerCount(Acquisition):
         acq_index: int = 0,
         bin_mode: BinMode | str = BinMode.APPEND,
         t0: float = 0,
+        fine_start_delay: float = 0,
+        fine_end_delay: float = 0,
     ) -> None:
         if bin_mode == BinMode.AVERAGE:
             warnings.warn(
@@ -766,6 +783,8 @@ class TriggerCount(Acquisition):
                 "bin_mode": bin_mode,
                 "acq_return_type": int,
                 "protocol": "TriggerCount",
+                "fine_start_delay": fine_start_delay,
+                "fine_end_delay": fine_end_delay,
             }
         ]
         self._update()
@@ -817,6 +836,21 @@ class TimetagTrace(Acquisition):
         * timestamp: record relative to the timestamp marked using the ``Timestamp`` operation.
     t0
         The acquisition start time in seconds, by default 0.
+    fine_start_delay
+        Delays the start of the acquisition by the given amount in seconds. Does
+        not delay the start time of the operation in the schedule. If the
+        hardware supports it, this parameter can be used to shift the
+        acquisition window by a small amount of time, independent of the
+        hardware instruction timing grid. Currently only implemented for Qblox
+        QTM modules, which allow only positive values for this parameter. By
+        default 0.
+    fine_end_delay
+        Delays the end of the pulse by the given amount in seconds. Does not
+        delay the end time of the operation in the schedule. If the hardware
+        supports it, this parameter can be used to shift the acquisition window
+        by a small amount of time, independent of the hardware instruction
+        timing grid. Currently only implemented for Qblox QTM modules, which
+        allow only positive values for this parameter. By default 0.
 
     """
 
@@ -830,6 +864,8 @@ class TimetagTrace(Acquisition):
         bin_mode: BinMode | str = BinMode.APPEND,
         time_ref: TimeRef | str = TimeRef.START,
         t0: float = 0,
+        fine_start_delay: float = 0,
+        fine_end_delay: float = 0,
     ) -> None:
         if not isinstance(duration, float):
             duration = float(duration)
@@ -855,6 +891,8 @@ class TimetagTrace(Acquisition):
                 "time_ref": time_ref,
                 "protocol": "TimetagTrace",
                 "acq_return_type": np.ndarray,
+                "fine_start_delay": fine_start_delay,
+                "fine_end_delay": fine_end_delay,
             }
         ]
         self._update()
@@ -916,6 +954,21 @@ class Timetag(Acquisition):
           :class:`~quantify_scheduler.operations.pulse_library.Timestamp` operation.
     t0
         The acquisition start time in seconds, by default 0.
+    fine_start_delay
+        Delays the start of the acquisition by the given amount in seconds. Does
+        not delay the start time of the operation in the schedule. If the
+        hardware supports it, this parameter can be used to shift the
+        acquisition window by a small amount of time, independent of the
+        hardware instruction timing grid. Currently only implemented for Qblox
+        QTM modules, which allow only positive values for this parameter. By
+        default 0.
+    fine_end_delay
+        Delays the end of the pulse by the given amount. Does not delay the end
+        time of the operation in the schedule. If the hardware supports it, this
+        parameter can be used to shift the acquisition window by a small amount
+        of time, independent of the hardware instruction timing grid. Currently
+        only implemented for Qblox QTM modules, which allow only positive values
+        for this parameter. By default 0.
 
     """
 
@@ -930,6 +983,8 @@ class Timetag(Acquisition):
         time_source: TimeSource | str = TimeSource.FIRST,
         time_ref: TimeRef | str = TimeRef.START,
         t0: float = 0,
+        fine_start_delay: float = 0,
+        fine_end_delay: float = 0,
     ) -> None:
         super().__init__(name=self.__class__.__name__)
 
@@ -952,6 +1007,8 @@ class Timetag(Acquisition):
                 "time_ref": time_ref,
                 "acq_return_type": float,
                 "protocol": "Timetag",
+                "fine_start_delay": fine_start_delay,
+                "fine_end_delay": fine_end_delay,
             }
         ]
         self._update()

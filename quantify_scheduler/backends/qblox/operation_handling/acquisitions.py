@@ -438,6 +438,16 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
 class TimetagAcquisitionStrategy(AcquisitionStrategyPartial):
     """Performs a timetag acquisition."""
 
+    def __init__(self, operation_info: types.OpInfo) -> None:
+        super().__init__(operation_info)
+
+        self._fine_start_delay_int = helpers.convert_qtm_fine_delay_to_int(
+            self.operation_info.data.get("fine_start_delay", 0)
+        )
+        self._fine_end_delay_int = helpers.convert_qtm_fine_delay_to_int(
+            self.operation_info.data.get("fine_end_delay", 0)
+        )
+
     def generate_data(self, wf_dict: dict[str, Any]) -> None:
         """Returns None as no waveform is needed."""
         pass
@@ -460,7 +470,7 @@ class TimetagAcquisitionStrategy(AcquisitionStrategyPartial):
             self.acq_channel,
             bin_idx,
             1,  # enable timetags acquisition
-            0,  # fine delay hardcoded to 0
+            self._fine_start_delay_int,
             constants.MIN_TIME_BETWEEN_OPERATIONS,
             comment=f"Enable timetag acquisition of acq_channel:{self.acq_channel}, "
             f"bin_mode:{BinMode.AVERAGE}",
@@ -479,7 +489,7 @@ class TimetagAcquisitionStrategy(AcquisitionStrategyPartial):
             self.acq_channel,
             bin_idx,
             0,  # disable timetags acquisition
-            0,  # fine delay hardcoded to 0
+            self._fine_end_delay_int,
             constants.MIN_TIME_BETWEEN_OPERATIONS,
             comment=f"Disable timetag acquisition of acq_channel:{self.acq_channel}, "
             f"bin_mode:{BinMode.AVERAGE}",
@@ -499,22 +509,36 @@ class TimetagAcquisitionStrategy(AcquisitionStrategyPartial):
         """
         acq_bin_idx_reg = self.bin_idx_register
 
-        # Allocated because the Q1ASM operation signature requires it. Not used yet. See
-        # also SE-423.
-        fine_delay_reg = qasm_program.register_manager.allocate_register()
+        if self._fine_start_delay_int == self._fine_end_delay_int:
+            fine_start_delay_reg = qasm_program.register_manager.allocate_register()
+            fine_end_delay_reg = fine_start_delay_reg
 
-        qasm_program.emit(
-            q1asm_instructions.MOVE,
-            0,
-            fine_delay_reg,
-        )
+            qasm_program.emit(
+                q1asm_instructions.MOVE,
+                self._fine_start_delay_int,
+                fine_start_delay_reg,
+            )
+        else:
+            fine_start_delay_reg = qasm_program.register_manager.allocate_register()
+            fine_end_delay_reg = qasm_program.register_manager.allocate_register()
+
+            qasm_program.emit(
+                q1asm_instructions.MOVE,
+                self._fine_start_delay_int,
+                fine_start_delay_reg,
+            )
+            qasm_program.emit(
+                q1asm_instructions.MOVE,
+                self._fine_end_delay_int,
+                fine_end_delay_reg,
+            )
 
         qasm_program.emit(
             q1asm_instructions.ACQUIRE_TIMETAGS,
             self.acq_channel,
             acq_bin_idx_reg,
             1,  # enable ttl acquisition
-            fine_delay_reg,
+            fine_start_delay_reg,
             constants.MIN_TIME_BETWEEN_OPERATIONS,
             comment=f"Enable timetag acquisition of acq_channel:{self.acq_channel}, "
             f"store in bin:{acq_bin_idx_reg}",
@@ -533,13 +557,17 @@ class TimetagAcquisitionStrategy(AcquisitionStrategyPartial):
             self.acq_channel,
             acq_bin_idx_reg,
             0,  # disable ttl acquisition
-            fine_delay_reg,
+            fine_end_delay_reg,
             constants.MIN_TIME_BETWEEN_OPERATIONS,
             comment=f"Disable timetag acquisition of acq_channel:{self.acq_channel}, "
             f"store in bin:{acq_bin_idx_reg}",
         )
         qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
-        qasm_program.register_manager.free_register(fine_delay_reg)
+        if fine_start_delay_reg == fine_end_delay_reg:
+            qasm_program.register_manager.free_register(fine_start_delay_reg)
+        else:
+            qasm_program.register_manager.free_register(fine_start_delay_reg)
+            qasm_program.register_manager.free_register(fine_end_delay_reg)
 
         qasm_program.emit(
             q1asm_instructions.ADD,

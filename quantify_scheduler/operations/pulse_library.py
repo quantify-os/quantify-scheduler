@@ -416,12 +416,29 @@ class MarkerPulse(Operation):
         Duration of the HIGH signal.
     port
         Name of the associated port.
+    t0
+        Time in seconds when to start the pulses relative to the start time
+        of the Operation in the Schedule.
     clock
         Name of the associated clock. By default
         :class:`~quantify_scheduler.resources.DigitalClockResource`. This only needs to
         be specified if a custom clock name is used for a digital channel (for example,
         when a port-clock combination of a device element is used with a digital
         channel).
+    fine_start_delay
+        Delays the start of the pulse by the given amount in seconds. Does not
+        delay the start time of the operation in the schedule. If the hardware
+        supports it, this parameter can be used to shift the pulse by a small
+        amount of time, independent of the hardware instruction timing grid.
+        Currently only implemented for Qblox QTM modules, which allow only
+        positive values for this parameter. By default 0.
+    fine_end_delay
+        Delays the end of the pulse by the given amount in seconds. Does not
+        delay the end time of the operation in the schedule. If the hardware
+        supports it, this parameter can be used to shift the pulse by a small
+        amount of time, independent of the hardware instruction timing grid.
+        Currently only implemented for Qblox QTM modules, which allow only
+        positive values for this parameter. By default 0.
 
     """
 
@@ -431,6 +448,8 @@ class MarkerPulse(Operation):
         port: str,
         t0: float = 0,
         clock: str = DigitalClockResource.IDENTITY,
+        fine_start_delay: float = 0,
+        fine_end_delay: float = 0,
     ) -> None:
         super().__init__(name=self.__class__.__name__)
         self.data["pulse_info"] = [
@@ -441,6 +460,8 @@ class MarkerPulse(Operation):
                 "clock": clock,
                 "port": port,
                 "duration": duration,
+                "fine_start_delay": fine_start_delay,
+                "fine_end_delay": fine_end_delay,
             }
         ]
         self._update()
