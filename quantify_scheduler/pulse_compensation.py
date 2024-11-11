@@ -52,9 +52,7 @@ def _merge_sum_and_end(
     all_ports: set[Port] = pulses_sum_end_1.keys() | pulses_sum_end_2.keys()
     for port in all_ports:
         if (port in pulses_sum_end_1) and (port in pulses_sum_end_2):
-            merged_pulses_sum_end[port] = pulses_sum_end_1[port].merge(
-                pulses_sum_end_2[port]
-            )
+            merged_pulses_sum_end[port] = pulses_sum_end_1[port].merge(pulses_sum_end_2[port])
         elif port in pulses_sum_end_1:
             merged_pulses_sum_end[port] = pulses_sum_end_1[port]
         elif port in pulses_sum_end_2:
@@ -98,19 +96,15 @@ def _determine_sum_and_end_of_all_pulses(
         for schedulable in operation.schedulables.values():
             abs_time = schedulable["abs_time"]
             inner_operation = operation.operations[schedulable["operation_id"]]
-            new_pulses_sum_end: dict[Port, SumEnd] = (
-                _determine_sum_and_end_of_all_pulses(
-                    inner_operation, sampling_rate, time_offset + abs_time, ports
-                )
+            new_pulses_sum_end: dict[Port, SumEnd] = _determine_sum_and_end_of_all_pulses(
+                inner_operation, sampling_rate, time_offset + abs_time, ports
             )
             pulses_sum_end = _merge_sum_and_end(pulses_sum_end, new_pulses_sum_end)
         return pulses_sum_end
     elif isinstance(operation, ControlFlowOperation):
         if isinstance(operation, LoopOperation):
-            body_pulses_sum_end: dict[Port, SumEnd] = (
-                _determine_sum_and_end_of_all_pulses(
-                    operation.body, sampling_rate, time_offset, ports
-                )
+            body_pulses_sum_end: dict[Port, SumEnd] = _determine_sum_and_end_of_all_pulses(
+                operation.body, sampling_rate, time_offset, ports
             )
             repetitions = operation.data["control_flow_info"]["repetitions"]
             assert repetitions != 0

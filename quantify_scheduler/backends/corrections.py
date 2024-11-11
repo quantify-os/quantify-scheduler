@@ -68,8 +68,7 @@ def determine_relative_latency_corrections(
             )
 
         port_clocks = [
-            "-".join(map(str, port_clock))
-            for port_clock in _extract_port_clocks_used(schedule)
+            "-".join(map(str, port_clock)) for port_clock in _extract_port_clocks_used(schedule)
         ]
 
         latency_corrections = hardware_cfg.hardware_options.latency_corrections
@@ -92,9 +91,7 @@ def determine_relative_latency_corrections(
     # (which is useful for calibrating)
     minimum_of_latency_corrections = min(relative_latencies.values(), default=0)
     for port_clock, latency_at_port_clock in relative_latencies.items():
-        relative_latencies[port_clock] = (
-            latency_at_port_clock - minimum_of_latency_corrections
-        )
+        relative_latencies[port_clock] = latency_at_port_clock - minimum_of_latency_corrections
 
     return relative_latencies
 
@@ -141,9 +138,7 @@ def distortion_correct_pulse(
         )
 
     if corrected_waveform_data.size == 1:  # Interpolation requires two sample points
-        corrected_waveform_data = np.append(
-            corrected_waveform_data, corrected_waveform_data[-1]
-        )
+        corrected_waveform_data = np.append(corrected_waveform_data, corrected_waveform_data[-1])
 
     corrected_pulse = NumericalPulse(
         samples=corrected_waveform_data,
@@ -271,17 +266,13 @@ def apply_software_distortion_corrections(
                     continue
 
                 # Zhinst support (still uses old hw dict)
-                if not isinstance(
-                    correction_cfg, SoftwareDistortionCorrection
-                ) and not isinstance(correction_cfg, list):
+                if not isinstance(correction_cfg, SoftwareDistortionCorrection) and not isinstance(
+                    correction_cfg, list
+                ):
                     try:
-                        correction_type = correction_cfg.get(
-                            "correction_type", "software"
-                        )
+                        correction_type = correction_cfg.get("correction_type", "software")
                     except AttributeError:
-                        correction_type = correction_cfg[0].get(
-                            "correction_type", "software"
-                        )
+                        correction_type = correction_cfg[0].get("correction_type", "software")
 
                     if correction_type != "software":
                         continue
@@ -293,9 +284,7 @@ def apply_software_distortion_corrections(
                     ),
                 )
 
-                operation.data["pulse_info"][pulse_info_idx] = corrected_pulse.data[
-                    "pulse_info"
-                ][0]
+                operation.data["pulse_info"][pulse_info_idx] = corrected_pulse.data["pulse_info"][0]
 
                 if pulse_info_idx == 0:
                     substitute_operation = corrected_pulse

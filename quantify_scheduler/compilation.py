@@ -87,9 +87,7 @@ def _determine_absolute_timing(  # noqa: PLR0912
     """
     time_unit = time_unit or "physical"
     if time_unit not in (valid_time_units := ("physical", "ideal")):
-        raise ValueError(
-            f"Undefined time_unit '{time_unit}'! Must be one of {valid_time_units}"
-        )
+        raise ValueError(f"Undefined time_unit '{time_unit}'! Must be one of {valid_time_units}")
 
     if isinstance(schedule, ScheduleBase):
         return _determine_absolute_timing_schedule(schedule, time_unit, config)
@@ -164,9 +162,7 @@ def _determine_absolute_timing_schedule(  # noqa: PLR0912
         curr_op = schedule.operations[schedulable["operation_id"]]
 
         for t_constr in schedulable["timing_constraints"]:
-            t_constr["ref_schedulable"] = t_constr["ref_schedulable"] or str(
-                last_schedulable
-            )
+            t_constr["ref_schedulable"] = t_constr["ref_schedulable"] or str(last_schedulable)
             abs_time = _get_start_time(schedule, t_constr, curr_op, time_unit)
 
             if "abs_time" not in schedulable or abs_time > schedulable["abs_time"]:

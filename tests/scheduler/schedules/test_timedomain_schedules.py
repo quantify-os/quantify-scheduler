@@ -64,9 +64,7 @@ class TestRabiPulse(_CompilesAllBackends):
     def test_compiles_device_cfg_only(self, device_compile_config_basic_transmon):
         # assert that files properly compile
         compiler = SerialCompiler(name="compiler")
-        compiler.compile(
-            schedule=self.uncomp_sched, config=device_compile_config_basic_transmon
-        )
+        compiler.compile(schedule=self.uncomp_sched, config=device_compile_config_basic_transmon)
 
 
 class TestRabiSched(_CompilesAllBackends):
@@ -122,9 +120,7 @@ class TestRabiSched(_CompilesAllBackends):
             clock=None,
         )
         compiler = SerialCompiler(name="compiler")
-        _ = compiler.compile(
-            schedule=sched, config=device_compile_config_basic_transmon
-        )
+        _ = compiler.compile(schedule=sched, config=device_compile_config_basic_transmon)
 
         # test that the right operations are added and timing is as expected.
         labels = ["Reset 0", "Rabi_pulse 0", "Measurement 0"]
@@ -151,9 +147,7 @@ class TestRabiSched(_CompilesAllBackends):
             clock=None,
         )
         compiler = SerialCompiler(name="compiler")
-        _ = compiler.compile(
-            schedule=sched, config=device_compile_config_basic_transmon
-        )
+        _ = compiler.compile(schedule=sched, config=device_compile_config_basic_transmon)
 
         # test that the right operations are added and timing is as expected.
         labels = []
@@ -183,9 +177,7 @@ class TestRabiSched(_CompilesAllBackends):
             clock=None,
         )
         compiler = SerialCompiler(name="compiler")
-        _ = compiler.compile(
-            schedule=sched, config=device_compile_config_basic_transmon
-        )
+        _ = compiler.compile(schedule=sched, config=device_compile_config_basic_transmon)
 
         # test that the right operations are added and timing is as expected.
         labels = []
@@ -250,9 +242,7 @@ class TestT1Sched(_CompilesAllBackends):
         }
         sched = ts.t1_sched(**sched_kwargs)
         compiler = SerialCompiler(name="compiler")
-        _ = compiler.compile(
-            schedule=sched, config=device_compile_config_basic_transmon
-        )
+        _ = compiler.compile(schedule=sched, config=device_compile_config_basic_transmon)
 
     def test_operations(self):
         assert len(self.uncomp_sched.operations) == 2 + 21  # init, pi and 21*measure
@@ -264,9 +254,7 @@ class TestCPMGSched(_CompilesAllBackends):
         n_gates = 8
         cls.sched_kwargs = {
             "n_gates": n_gates,
-            "times": np.arange(
-                4e-9 * n_gates * 10, 4e-9 * n_gates * 100, 4e-9 * n_gates * 10
-            ),
+            "times": np.arange(4e-9 * n_gates * 10, 4e-9 * n_gates * 100, 4e-9 * n_gates * 10),
             "qubit": "q0",
             "variant": "X",
             "repetitions": 1,
@@ -324,12 +312,8 @@ class TestCPMGSched(_CompilesAllBackends):
                 i += 1
 
     @pytest.mark.needs_zhinst
-    def test_compiles_zi_backend(
-        self, compile_config_basic_transmon_zhinst_hardware
-    ) -> None:
-        with pytest.raises(
-            NotImplementedError, match="not supported by the zhinst backend"
-        ):
+    def test_compiles_zi_backend(self, compile_config_basic_transmon_zhinst_hardware) -> None:
+        with pytest.raises(NotImplementedError, match="not supported by the zhinst backend"):
             _CompilesAllBackends.test_compiles_zi_backend(
                 self, compile_config_basic_transmon_zhinst_hardware
             )
@@ -341,9 +325,7 @@ class TestCPMGSchedY(TestCPMGSched):
         n_gates = 16
         cls.sched_kwargs = {
             "n_gates": n_gates,
-            "times": np.arange(
-                4e-9 * n_gates * 10, 4e-9 * n_gates * 100, 4e-9 * n_gates * 20
-            ),
+            "times": np.arange(4e-9 * n_gates * 10, 4e-9 * n_gates * 100, 4e-9 * n_gates * 20),
             "qubit": "q0",
             "variant": "Y",
             "repetitions": 7,
@@ -358,9 +340,7 @@ class TestCPMGSchedXY(TestCPMGSched):
         n_gates = 32
         cls.sched_kwargs = {
             "n_gates": n_gates,
-            "times": np.arange(
-                4e-9 * n_gates * 10, 4e-9 * n_gates * 100, 4e-9 * n_gates * 20
-            ),
+            "times": np.arange(4e-9 * n_gates * 10, 4e-9 * n_gates * 100, 4e-9 * n_gates * 20),
             "qubit": "q0",
             "variant": "XY",
             "repetitions": 10,
@@ -405,12 +385,9 @@ class TestRamseySchedDetuning(_CompilesAllBackends):
         }
         sched = ts.ramsey_sched(**sched_kwargs)
         compiler = SerialCompiler(name="compiler")
-        _ = compiler.compile(
-            schedule=sched, config=device_compile_config_basic_transmon
-        )
+        _ = compiler.compile(schedule=sched, config=device_compile_config_basic_transmon)
         assert any(
-            op["timing_constraints"][0]["rel_time"] == 3e-6
-            for op in sched.schedulables.values()
+            op["timing_constraints"][0]["rel_time"] == 3e-6 for op in sched.schedulables.values()
         )
 
     def test_operations(self):
@@ -451,14 +428,10 @@ class TestRamseySched(_CompilesAllBackends):
         }
         sched = ts.ramsey_sched(**sched_kwargs)
         compiler = SerialCompiler(name="compiler")
-        _ = compiler.compile(
-            schedule=sched, config=device_compile_config_basic_transmon
-        )
+        _ = compiler.compile(schedule=sched, config=device_compile_config_basic_transmon)
 
     def test_operations(self):
-        assert (
-            len(self.uncomp_sched.operations) == 3 + 20
-        )  # init, x90, Rxy(90,0) and 20 * measure
+        assert len(self.uncomp_sched.operations) == 3 + 20  # init, x90, Rxy(90,0) and 20 * measure
 
 
 class TestEchoSched(_CompilesAllBackends):
@@ -481,9 +454,7 @@ class TestEchoSched(_CompilesAllBackends):
         }
         sched = ts.echo_sched(**sched_kwargs)
         compiler = SerialCompiler(name="compiler")
-        _ = compiler.compile(
-            schedule=sched, config=device_compile_config_basic_transmon
-        )
+        _ = compiler.compile(schedule=sched, config=device_compile_config_basic_transmon)
 
     def test_timing(self):
         # test that the right operations are added and timing is as expected.

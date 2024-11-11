@@ -165,9 +165,7 @@ class SchedulerJSONDecoder(json.JSONDecoder):
 
     def __init__(self, *args, **kwargs) -> None:
         extended_modules: list[ModuleType] = kwargs.pop("modules", [])
-        invalid_modules = list(
-            filter(lambda o: not isinstance(o, ModuleType), extended_modules)
-        )
+        invalid_modules = list(filter(lambda o: not isinstance(o, ModuleType), extended_modules))
         if invalid_modules:
             raise ValueError(
                 f"Attempting to create a Schedule decoder class SchedulerJSONDecoder. "
@@ -184,9 +182,7 @@ class SchedulerJSONDecoder(json.JSONDecoder):
         self._classes = inspect_helpers.get_classes(*[enums, *extended_modules])
         self._classes.update({t.__name__: t for t in DEFAULT_TYPES})
 
-    def decode_dict(
-        self, obj: dict[str, Any]
-    ) -> dict[str, Any] | np.ndarray | object | Instrument:
+    def decode_dict(self, obj: dict[str, Any]) -> dict[str, Any] | np.ndarray | object | Instrument:
         """
         Returns the deserialized JSON dictionary.
 

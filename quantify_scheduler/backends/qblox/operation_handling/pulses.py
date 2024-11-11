@@ -154,10 +154,7 @@ class GenericPulseStrategy(PulseStrategyPartial):
         waveform_data, amp_real, amp_imag = normalize_waveform_data(waveform_data)
         self._waveform_len = len(waveform_data)
 
-        if (
-            np.any(np.iscomplex(waveform_data))
-            and ChannelMode.COMPLEX not in self.channel_name
-        ):
+        if np.any(np.iscomplex(waveform_data)) and ChannelMode.COMPLEX not in self.channel_name:
             raise ValueError(
                 f"Complex valued {str(op_info)} detected but the sequencer"
                 f" is not expecting complex input. This can be caused by "
@@ -169,16 +166,12 @@ class GenericPulseStrategy(PulseStrategyPartial):
             return abs(amp) >= 2 / constants.IMMEDIATE_SZ_GAIN
 
         idx_real = (
-            helpers.add_to_wf_dict_if_unique(
-                wf_dict=wf_dict, waveform=waveform_data.real
-            )
+            helpers.add_to_wf_dict_if_unique(wf_dict=wf_dict, waveform=waveform_data.real)
             if non_null(amp_real)
             else None
         )
         idx_imag = (
-            helpers.add_to_wf_dict_if_unique(
-                wf_dict=wf_dict, waveform=waveform_data.imag
-            )
+            helpers.add_to_wf_dict_if_unique(wf_dict=wf_dict, waveform=waveform_data.imag)
             if non_null(amp_imag)
             else None
         )

@@ -15,9 +15,7 @@ def edge_q2b_q3b():
     q2b = BasicTransmonElement("q2b")
     q3b = BasicTransmonElement("q3b")
 
-    edge_q2b_q3b = CompositeSquareEdge(
-        parent_element_name=q2b.name, child_element_name=q3b.name
-    )
+    edge_q2b_q3b = CompositeSquareEdge(parent_element_name=q2b.name, child_element_name=q3b.name)
 
     # Transmon element is returned
     yield edge_q2b_q3b
@@ -47,9 +45,7 @@ def test_generate_edge_config(edge_q2b_q3b):
     expected_cz_dict = expected_edge_cfg["q2b_q3b"]["CZ"].model_dump()
 
     edge_q2b_q3b.cz.square_amp(expected_cz_dict["factory_kwargs"]["square_amp"])
-    edge_q2b_q3b.cz.square_duration(
-        expected_cz_dict["factory_kwargs"]["square_duration"]
-    )
+    edge_q2b_q3b.cz.square_duration(expected_cz_dict["factory_kwargs"]["square_duration"])
     edge_q2b_q3b.cz.q2b_phase_correction(
         expected_cz_dict["factory_kwargs"]["virt_z_parent_qubit_phase"]
     )
@@ -71,9 +67,7 @@ def test_composite_square_edge_serialization(edge_q2b_q3b):
     the serialized counterpart.
     """
 
-    edge_q2b_q3b_as_dict = json.loads(
-        json.dumps(edge_q2b_q3b, cls=SchedulerJSONEncoder)
-    )
+    edge_q2b_q3b_as_dict = json.loads(json.dumps(edge_q2b_q3b, cls=SchedulerJSONEncoder))
     assert edge_q2b_q3b_as_dict.__class__ is dict
     assert (
         edge_q2b_q3b_as_dict["deserialization_type"]
@@ -97,10 +91,7 @@ def test_composite_square_edge_serialization(edge_q2b_q3b):
         if submodule_name in ("parent_element_name", "child_element_name"):
             continue
         for parameter_name, parameter_val in submodule_data.items():
-            assert (
-                parameter_val
-                == edge_q2b_q3b.submodules[submodule_name][parameter_name]()
-            ), (
+            assert parameter_val == edge_q2b_q3b.submodules[submodule_name][parameter_name](), (
                 f"Expected value {edge_q2b_q3b.submodules[submodule_name][parameter_name]()} for "
                 f"{submodule_name}.{parameter_name} but got {parameter_val}"
             )
@@ -136,9 +127,7 @@ def test_composite_square_edge_deserialization(edge_q2b_q3b):
     ]:
         edge_q2b_q3b.cz.set(
             param_name,
-            expected_cz_dict["factory_kwargs"][
-                param_name if kwarg_name == "" else kwarg_name
-            ],
+            expected_cz_dict["factory_kwargs"][param_name if kwarg_name == "" else kwarg_name],
         )
 
     edge_q2b_q3b_serialized = json.dumps(edge_q2b_q3b, cls=SchedulerJSONEncoder)
@@ -146,8 +135,6 @@ def test_composite_square_edge_deserialization(edge_q2b_q3b):
 
     edge_q2b_q3b.close()
 
-    edge_q2b_q3b_deserialized = json.loads(
-        edge_q2b_q3b_serialized, cls=SchedulerJSONDecoder
-    )
+    edge_q2b_q3b_deserialized = json.loads(edge_q2b_q3b_serialized, cls=SchedulerJSONDecoder)
     assert edge_q2b_q3b_deserialized.__class__ is CompositeSquareEdge
     assert edge_q2b_q3b_deserialized.generate_edge_config() == expected_edge_cfg

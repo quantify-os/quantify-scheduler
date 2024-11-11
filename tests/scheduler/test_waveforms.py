@@ -41,9 +41,7 @@ def test_staircase() -> None:
     waveform = staircase(
         t=np.array(range(12)), start_amp=20, final_amp=70, num_steps=6, duration=11
     )
-    assert np.allclose(
-        waveform, np.array([20, 20, 30, 30, 40, 40, 50, 50, 60, 60, 70, 70])
-    )
+    assert np.allclose(waveform, np.array([20, 20, 30, 30, 40, 40, 50, 50, 60, 60, 70, 70]))
 
 
 def test_staircase_times_out_of_range_out_of_order() -> None:
@@ -58,9 +56,7 @@ def test_staircase_times_out_of_range_out_of_order() -> None:
 
 
 def test_chirp():
-    waveform = chirp(
-        t=np.array(range(10)), amp=100, start_freq=2, end_freq=10, duration=9
-    )
+    waveform = chirp(t=np.array(range(10)), amp=100, start_freq=2, end_freq=10, duration=9)
     assert np.allclose(
         waveform,
         np.array(
@@ -156,9 +152,7 @@ def test_sudden_net_zero() -> None:
 
 @pytest.mark.parametrize(
     "sample_time, t_pulse, t_phi, t_integral_correction",
-    itertools.product(
-        (0.5, 1.0, 2.0, 1.0 / 2.4), (4.0, 5.0, 6.0, 7.0), (4.0, 6.0), (6.0, 8.0)
-    ),
+    itertools.product((0.5, 1.0, 2.0, 1.0 / 2.4), (4.0, 5.0, 6.0, 7.0), (4.0, 6.0), (6.0, 8.0)),
 )
 def test_sudden_net_zero_class_does_not_cause_error(
     sample_time: float, t_pulse: float, t_phi: float, t_integral_correction: float
@@ -182,9 +176,7 @@ def test_sudden_net_zero_class_does_not_cause_error(
 
     # Array with duration from SuddenNetZeroPulse should not raise error.
     t = np.arange(0, pulse.duration, sample_time)
-    _ = sudden_net_zero(
-        t, amp_A, amp_B, net_zero_a_scale, t_pulse, t_phi, t_integral_correction
-    )
+    _ = sudden_net_zero(t, amp_A, amp_B, net_zero_a_scale, t_pulse, t_phi, t_integral_correction)
 
 
 @pytest.mark.parametrize(
@@ -210,9 +202,7 @@ def test_sudden_net_zero_class_does_not_cause_error(
 )
 def test_interpolated_complex_waveform(test_wf, test_time, answer):
     t_answer = np.linspace(0, 50e-6, 2000)
-    result = interpolated_complex_waveform(
-        t=t_answer, samples=test_wf, t_samples=test_time
-    )
+    result = interpolated_complex_waveform(t=t_answer, samples=test_wf, t_samples=test_time)
     npt.assert_array_equal(answer, result)
 
     with pytest.raises(ValueError):
@@ -296,9 +286,7 @@ def test_hermite_duration_scaling(hermite_kwargs):
 
     scaling = 2.7
 
-    assert skewed_hermite(
-        t=t, duration=dur, skewness=skewness, **hermite_kwargs
-    ) == pytest.approx(
+    assert skewed_hermite(t=t, duration=dur, skewness=skewness, **hermite_kwargs) == pytest.approx(
         skewed_hermite(
             t=scaling * t,
             duration=scaling * dur,
@@ -337,10 +325,7 @@ def test_drag_sigma_raises_error():
             nr_sigma=4,
             sigma=3,
         )
-    assert (
-        str(exception.value)
-        == "Both sigma and nr_sigma are specified. Please specify only one."
-    )
+    assert str(exception.value) == "Both sigma and nr_sigma are specified. Please specify only one."
 
 
 def test_deprecated_ramp():

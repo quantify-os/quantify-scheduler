@@ -191,12 +191,8 @@ class QCMCompiler(BasebandModuleCompiler):
 
         for output in distortion_configs:
             output_settings = self._settings.distortion_corrections[output]
-            marker_debug_mode_enable = distortion_configs[output][
-                "marker_debug_mode_enable"
-            ]
-            if not isinstance(
-                distortion_configs[output]["distortion_corrections"], list
-            ):
+            marker_debug_mode_enable = distortion_configs[output]["marker_debug_mode_enable"]
+            if not isinstance(distortion_configs[output]["distortion_corrections"], list):
                 dc_list = [distortion_configs[output]["distortion_corrections"]]
             else:
                 dc_list = distortion_configs[output]["distortion_corrections"]
@@ -205,12 +201,7 @@ class QCMCompiler(BasebandModuleCompiler):
                     value = getattr(dc, key)
                     for i in range(4):
                         if key == f"exp{i}_coeffs" and value is not None:
-                            if (
-                                len(value) != 2
-                                or value[0] < 6
-                                or value[1] < -1
-                                or value[1] >= 1
-                            ):
+                            if len(value) != 2 or value[0] < 6 or value[1] < -1 or value[1] >= 1:
                                 raise ValueError(
                                     "The exponential overshoot correction has two "
                                     "coefficients with ranges of [6,inf) and [-1,1)."
@@ -223,21 +214,16 @@ class QCMCompiler(BasebandModuleCompiler):
                     if key == "fir_coeffs" and value is not None:
                         if len(value) != 32 or np.any(value) < -2 or np.any(value) >= 2:
                             raise ValueError(
-                                "The FIR filter has 32 coefficients "
-                                "with a range of [-2,2) each."
+                                "The FIR filter has 32 coefficients " "with a range of [-2,2) each."
                             )
-                        self._configure_filter(
-                            output_settings.fir, value, marker_debug_mode_enable
-                        )
+                        self._configure_filter(output_settings.fir, value, marker_debug_mode_enable)
 
     def _get_distortion_configs_per_output(self) -> dict[int, dict]:
         module_distortion_configs = {}
         corrections = self.instrument_cfg.hardware_options.distortion_corrections
         if corrections is not None:
             for portclock in corrections:
-                if (
-                    path := self.instrument_cfg.portclock_to_path.get(portclock, None)
-                ) is not None:
+                if (path := self.instrument_cfg.portclock_to_path.get(portclock, None)) is not None:
                     correction_cfg = corrections[portclock]
                     # `correction_cfg` can also be a `SoftwareDistortionCorrection`
                     if isinstance(correction_cfg, (HardwareDistortionCorrection, list)):
@@ -416,9 +402,7 @@ class QTMCompiler(compiler_abc.ClusterModuleCompiler):
             instrument_type="QTM",
             max_sequencers=NUMBER_OF_SEQUENCERS_QTM,
             channel_name_to_connected_io_indices={
-                f"digital_{io}_{idx}": (idx,)
-                for io in ("input", "output")
-                for idx in range(8)
+                f"digital_{io}_{idx}": (idx,) for io in ("input", "output") for idx in range(8)
             },
         )
 
@@ -434,12 +418,8 @@ class QTMCompiler(compiler_abc.ClusterModuleCompiler):
             The QTM has no channel map yet, so the sequencer index = the channel index,
             and there is always only one channel index.
             """
-            input_idx = self.static_hw_properties._get_connected_input_indices(
-                channel_name
-            )
-            output_idx = self.static_hw_properties._get_connected_output_indices(
-                channel_name
-            )
+            input_idx = self.static_hw_properties._get_connected_input_indices(channel_name)
+            output_idx = self.static_hw_properties._get_connected_output_indices(channel_name)
             if len(input_idx) > 0:
                 return input_idx[0]
 
@@ -541,9 +521,7 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
 
         for module_idx, cfg in module_configs.items():
             module_name = f"{self.name}_module{module_idx}"
-            compiler_type: type = self.compiler_classes[
-                cfg.hardware_description.instrument_type
-            ]
+            compiler_type: type = self.compiler_classes[cfg.hardware_description.instrument_type]
 
             module_compilers[module_name] = compiler_type(
                 name=module_name,
@@ -574,9 +552,7 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
         """
         self.distribute_data()
         for compiler in self.instrument_compilers.values():
-            compiler.prepare(
-                external_los=external_los, schedule_resources=schedule_resources
-            )
+            compiler.prepare(external_los=external_los, schedule_resources=schedule_resources)
 
     def distribute_data(self) -> None:
         """
@@ -610,9 +586,7 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
 
         """
         program = {}
-        program["settings"] = {
-            "reference_source": self.instrument_cfg.hardware_description.ref
-        }
+        program["settings"] = {"reference_source": self.instrument_cfg.hardware_description.ref}
 
         sequence_to_file = self.instrument_cfg.hardware_description.sequence_to_file
 

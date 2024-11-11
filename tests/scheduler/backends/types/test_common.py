@@ -27,15 +27,12 @@ def test_mismatching_instrument_names_raises():
 
     with pytest.raises(
         ValueError,
-        match="Invalid node. Instrument 'instrument_1' not found in "
-        "hardware description.",
+        match="Invalid node. Instrument 'instrument_1' not found in " "hardware description.",
     ):
         HardwareCompilationConfig.model_validate(hardware_compilation_cfg)
 
 
-@pytest.mark.parametrize(
-    "invalid_port", ["q0microwave", "q0.mw", "quantum_device.q0:mw"]
-)
+@pytest.mark.parametrize("invalid_port", ["q0microwave", "q0.mw", "quantum_device.q0:mw"])
 def test_invalid_quantum_device_port_raises(invalid_port):
     """
     Tests if an invalid quantum device port in the Connectivity raises an error.

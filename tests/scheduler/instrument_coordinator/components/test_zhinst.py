@@ -24,9 +24,7 @@ from quantify_scheduler.instrument_coordinator.components import zhinst
 
 @pytest.fixture
 def make_hdawg(mocker):
-    def _make_hdawg(
-        name: str, serial: str
-    ) -> zhinst.HDAWGInstrumentCoordinatorComponent:
+    def _make_hdawg(name: str, serial: str) -> zhinst.HDAWGInstrumentCoordinatorComponent:
         mocker.patch("qcodes.instrument.Instrument.record_instance")
         hdawg: qcodes.HDAWG = mocker.create_autospec(qcodes.HDAWG, instance=True)
         hdawg.name = name
@@ -45,9 +43,7 @@ def make_hdawg(mocker):
 
 @pytest.fixture
 def make_uhfqa(mocker):
-    def _make_uhfqa(
-        name: str, serial: str
-    ) -> zhinst.HDAWGInstrumentCoordinatorComponent:
+    def _make_uhfqa(name: str, serial: str) -> zhinst.HDAWGInstrumentCoordinatorComponent:
         mocker.patch("qcodes.instrument.Instrument.record_instance")
         uhfqa: qcodes.UHFQA = mocker.create_autospec(qcodes.UHFQA, instance=True)
         uhfqa.name = name

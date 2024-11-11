@@ -11,13 +11,9 @@ from quantify_scheduler.operations.pulse_library import GaussPulse, SquarePulse
 
 
 class TestPulseStacking:
-    def test_pulse_stacking_same_start_time(
-        self, compile_config_basic_transmon_qblox_hardware
-    ):
+    def test_pulse_stacking_same_start_time(self, compile_config_basic_transmon_qblox_hardware):
         sched = Schedule("Pulse stacking")
-        self.add = sched.add(
-            SquarePulse(amp=0.5, duration=20e-9, port="q0:mw", clock="q0.01")
-        )
+        self.add = sched.add(SquarePulse(amp=0.5, duration=20e-9, port="q0:mw", clock="q0.01"))
         ref = self.add
         sched.add(
             SquarePulse(amp=0.3, duration=20e-9, port="q0:mw", clock="q0.01"),
@@ -30,13 +26,9 @@ class TestPulseStacking:
         operations = list(compiled.operations.values())
         assert operations[2].data["pulse_info"][0]["amp"] == 0.8
 
-    def test_pulse_stacking_amp_exception(
-        self, compile_config_basic_transmon_qblox_hardware
-    ):
+    def test_pulse_stacking_amp_exception(self, compile_config_basic_transmon_qblox_hardware):
         sched = Schedule("Pulse stacking")
-        ref = sched.add(
-            SquarePulse(amp=0.5, duration=20e-9, port="q0:mw", clock="q0.01")
-        )
+        ref = sched.add(SquarePulse(amp=0.5, duration=20e-9, port="q0:mw", clock="q0.01"))
         sched.add(
             SquarePulse(amp=0.6, duration=20e-9, port="q0:mw", clock="q0.01"),
             ref_op=ref,
@@ -57,9 +49,7 @@ class TestPulseStacking:
         self, compile_config_basic_transmon_qblox_hardware
     ):
         sched = Schedule("Pulse stacking")
-        ref = sched.add(
-            SquarePulse(amp=0.5, duration=20e-9, port="q0:mw", clock="q0.01")
-        )
+        ref = sched.add(SquarePulse(amp=0.5, duration=20e-9, port="q0:mw", clock="q0.01"))
         sched.add(
             SquarePulse(amp=0.3, duration=20e-9, port="q0:mw", clock="q0.01", t0=12e-9),
             ref_op=ref,
@@ -69,9 +59,7 @@ class TestPulseStacking:
         compiled = compiler.compile(sched, compile_config_basic_transmon_qblox_hardware)
         assert len(compiled.schedulables) == 3
         schedulables = list(compiled.schedulables.values())
-        operations = [
-            compiled.operations[schedulables[i].data["operation_id"]] for i in range(3)
-        ]
+        operations = [compiled.operations[schedulables[i].data["operation_id"]] for i in range(3)]
         pulse0 = operations[0].data["pulse_info"][0]
         pulse1 = operations[1].data["pulse_info"][0]
         pulse2 = operations[2].data["pulse_info"][0]
@@ -90,9 +78,7 @@ class TestPulseStacking:
 
     def test_pulse_stacking_nested(self, compile_config_basic_transmon_qblox_hardware):
         sched = Schedule("Pulse stacking")
-        ref = sched.add(
-            SquarePulse(amp=0.5, duration=40e-9, port="q0:mw", clock="q0.01")
-        )
+        ref = sched.add(SquarePulse(amp=0.5, duration=40e-9, port="q0:mw", clock="q0.01"))
         sched.add(
             SquarePulse(amp=0.3, duration=20e-9, port="q0:mw", clock="q0.01", t0=12e-9),
             ref_op=ref,
@@ -122,9 +108,7 @@ class TestPulseStacking:
             clock="q0.01",
             t0=4e-9,
         )
-        square = SquarePulse(
-            amp=0.2, duration=10e-9, port="q0:fl", clock="q0.01", t0=19e-9
-        )
+        square = SquarePulse(amp=0.2, duration=10e-9, port="q0:fl", clock="q0.01", t0=19e-9)
         ref = sched.add(gauss)
         sched.add(
             square,
@@ -143,9 +127,7 @@ class TestPulseStacking:
 
         assert len(compiled.schedulables) == 3
         schedulables = list(compiled.schedulables.values())
-        operations = [
-            compiled.operations[schedulables[i].data["operation_id"]] for i in range(3)
-        ]
+        operations = [compiled.operations[schedulables[i].data["operation_id"]] for i in range(3)]
         total_waveform = np.array([])
         for operation in operations:
             waveform = helpers.generate_waveform_data(

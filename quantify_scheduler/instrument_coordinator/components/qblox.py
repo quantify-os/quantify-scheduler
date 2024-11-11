@@ -160,8 +160,7 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
         self._instrument_module = instrument
 
         self._seq_name_to_idx_map = {
-            f"seq{idx}": idx
-            for idx in range(self._hardware_properties.number_of_sequencers)
+            f"seq{idx}": idx for idx in range(self._hardware_properties.number_of_sequencers)
         }
 
         self._program = {}
@@ -204,14 +203,9 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
         # officially supported (except bias tee).
         # Until then, catching the value error is needed.
         try:
-            search_settable_param(
-                instrument=instrument, nested_parameter_name=parameter_name
-            )
+            search_settable_param(instrument=instrument, nested_parameter_name=parameter_name)
         except ValueError as e:
-            if (
-                re.search(r".*(out|marker)[0-3]_bt_config", parameter_name)
-                and val == "bypassed"
-            ):
+            if re.search(r".*(out|marker)[0-3]_bt_config", parameter_name) and val == "bypassed":
                 return
             if re.search(
                 r".*(out|marker)[0-3]_bt_time_constant",
@@ -331,9 +325,7 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
 
         """
 
-    def _configure_sequencer_settings(
-        self, seq_idx: int, settings: SequencerSettings
-    ) -> None:
+    def _configure_sequencer_settings(self, seq_idx: int, settings: SequencerSettings) -> None:
         """
         Configures all sequencer-specific settings.
 
@@ -345,13 +337,9 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
             The settings to configure it to.
 
         """
-        self._set_parameter(
-            self.instrument.sequencers[seq_idx], "sync_en", settings.sync_en
-        )
+        self._set_parameter(self.instrument.sequencers[seq_idx], "sync_en", settings.sync_en)
 
-        self._set_parameter(
-            self.instrument.sequencers[seq_idx], "sequence", settings.sequence
-        )
+        self._set_parameter(self.instrument.sequencers[seq_idx], "sequence", settings.sequence)
 
     def arm_all_sequencers_in_program(self) -> None:
         """Arm all the sequencers that are part of the program."""
@@ -431,9 +419,7 @@ class _AnalogModuleComponent(_ModuleComponentBase):
             The settings to configure it to.
 
         """
-        self._set_parameter(
-            self.instrument.sequencers[seq_idx], "mod_en_awg", settings.nco_en
-        )
+        self._set_parameter(self.instrument.sequencers[seq_idx], "mod_en_awg", settings.nco_en)
 
         if settings.nco_en:
             self._nco_frequency_changed[seq_idx] = not parameter_value_same_as_cache(
@@ -594,9 +580,7 @@ class _QCMComponent(_AnalogModuleComponent):
         super().prepare(program)
 
         if (settings_entry := program.get("settings")) is not None:
-            module_settings = self._hardware_properties.settings_type.from_dict(
-                settings_entry
-            )
+            module_settings = self._hardware_properties.settings_type.from_dict(settings_entry)
             self._configure_global_settings(module_settings)
 
         for seq_idx in range(self._hardware_properties.number_of_sequencers):
@@ -630,26 +614,16 @@ class _QCMComponent(_AnalogModuleComponent):
         """
         # configure mixer correction offsets
         if settings.offset_ch0_path_I is not None:
-            self._set_parameter(
-                self.instrument, "out0_offset", settings.offset_ch0_path_I
-            )
+            self._set_parameter(self.instrument, "out0_offset", settings.offset_ch0_path_I)
         if settings.offset_ch0_path_Q is not None:
-            self._set_parameter(
-                self.instrument, "out1_offset", settings.offset_ch0_path_Q
-            )
+            self._set_parameter(self.instrument, "out1_offset", settings.offset_ch0_path_Q)
         if settings.offset_ch1_path_I is not None:
-            self._set_parameter(
-                self.instrument, "out2_offset", settings.offset_ch1_path_I
-            )
+            self._set_parameter(self.instrument, "out2_offset", settings.offset_ch1_path_I)
         if settings.offset_ch1_path_Q is not None:
-            self._set_parameter(
-                self.instrument, "out3_offset", settings.offset_ch1_path_Q
-            )
+            self._set_parameter(self.instrument, "out3_offset", settings.offset_ch1_path_Q)
 
         for output, dc_settings in enumerate(
-            settings.distortion_corrections[
-                : self._hardware_properties.number_of_output_channels
-            ]
+            settings.distortion_corrections[: self._hardware_properties.number_of_output_channels]
         ):
             for i in range(4):
                 if getattr(dc_settings, f"exp{i}").coeffs is not None:
@@ -760,9 +734,7 @@ class _QRMComponent(_AnalogModuleComponent):
 
         if (acq_metadata := program.get("acq_metadata")) is not None:
             scope_mode_sequencer_and_qblox_acq_index = (
-                self._determine_scope_mode_acquisition_sequencer_and_qblox_acq_index(
-                    acq_metadata
-                )
+                self._determine_scope_mode_acquisition_sequencer_and_qblox_acq_index(acq_metadata)
             )
             self._acquisition_manager = _QRMAcquisitionManager(
                 parent=self,
@@ -781,21 +753,15 @@ class _QRMComponent(_AnalogModuleComponent):
             self._acquisition_manager = None
 
         if (settings_entry := program.get("settings")) is not None:
-            module_settings = self._hardware_properties.settings_type.from_dict(
-                settings_entry
-            )
+            module_settings = self._hardware_properties.settings_type.from_dict(settings_entry)
             self._configure_global_settings(module_settings)
 
         for path in [
             0,
             1,
         ]:
-            self._set_parameter(
-                self.instrument, f"scope_acq_trigger_mode_path{path}", "sequencer"
-            )
-            self._set_parameter(
-                self.instrument, f"scope_acq_avg_mode_en_path{path}", True
-            )
+            self._set_parameter(self.instrument, f"scope_acq_trigger_mode_path{path}", "sequencer")
+            self._set_parameter(self.instrument, f"scope_acq_avg_mode_en_path{path}", True)
 
     def _configure_global_settings(self, settings: AnalogModuleSettings) -> None:
         """
@@ -809,13 +775,9 @@ class _QRMComponent(_AnalogModuleComponent):
         """
         # configure mixer correction offsets
         if settings.offset_ch0_path_I is not None:
-            self._set_parameter(
-                self.instrument, "out0_offset", settings.offset_ch0_path_I
-            )
+            self._set_parameter(self.instrument, "out0_offset", settings.offset_ch0_path_I)
         if settings.offset_ch0_path_Q is not None:
-            self._set_parameter(
-                self.instrument, "out1_offset", settings.offset_ch0_path_Q
-            )
+            self._set_parameter(self.instrument, "out1_offset", settings.offset_ch0_path_Q)
         # configure gain
         if settings.in0_gain is not None:
             self._set_parameter(self.instrument, "in0_gain", settings.in0_gain)
@@ -823,9 +785,7 @@ class _QRMComponent(_AnalogModuleComponent):
             self._set_parameter(self.instrument, "in1_gain", settings.in1_gain)
 
         for output, dc_settings in enumerate(
-            settings.distortion_corrections[
-                : self._hardware_properties.number_of_output_channels
-            ]
+            settings.distortion_corrections[: self._hardware_properties.number_of_output_channels]
         ):
             for i in range(4):
                 self._set_parameter(
@@ -849,9 +809,7 @@ class _QRMComponent(_AnalogModuleComponent):
                 settings.integration_length_acq,
             )
 
-        self._set_parameter(
-            self.instrument.sequencers[seq_idx], "demod_en_acq", settings.nco_en
-        )
+        self._set_parameter(self.instrument.sequencers[seq_idx], "demod_en_acq", settings.nco_en)
         if settings.ttl_acq_auto_bin_incr_en is not None:
             self._set_parameter(
                 self.instrument.sequencers[seq_idx],
@@ -1028,9 +986,7 @@ class _RFComponent(_AnalogModuleComponent):
                 lo_idx_to_connected_seq_idx[lo_idx].append(seq_idx)
 
         if (settings_entry := program.get("settings")) is not None:
-            module_settings = self._hardware_properties.settings_type.from_dict(
-                settings_entry
-            )
+            module_settings = self._hardware_properties.settings_type.from_dict(settings_entry)
             self._configure_lo_settings(
                 settings=module_settings,
                 lo_idx_to_connected_seq_idx=lo_idx_to_connected_seq_idx,
@@ -1108,21 +1064,13 @@ class _QCMRFComponent(_RFComponent, _QCMComponent):
         """
         # configure mixer correction offsets
         if settings.offset_ch0_path_I is not None:
-            self._set_parameter(
-                self.instrument, "out0_offset_path0", settings.offset_ch0_path_I
-            )
+            self._set_parameter(self.instrument, "out0_offset_path0", settings.offset_ch0_path_I)
         if settings.offset_ch0_path_Q is not None:
-            self._set_parameter(
-                self.instrument, "out0_offset_path1", settings.offset_ch0_path_Q
-            )
+            self._set_parameter(self.instrument, "out0_offset_path1", settings.offset_ch0_path_Q)
         if settings.offset_ch1_path_I is not None:
-            self._set_parameter(
-                self.instrument, "out1_offset_path0", settings.offset_ch1_path_I
-            )
+            self._set_parameter(self.instrument, "out1_offset_path0", settings.offset_ch1_path_I)
         if settings.offset_ch1_path_Q is not None:
-            self._set_parameter(
-                self.instrument, "out1_offset_path1", settings.offset_ch1_path_Q
-            )
+            self._set_parameter(self.instrument, "out1_offset_path1", settings.offset_ch1_path_Q)
         # configure attenuation
         if settings.out0_att is not None:
             self._set_parameter(self.instrument, "out0_att", settings.out0_att)
@@ -1159,16 +1107,14 @@ class _QCMRFComponent(_RFComponent, _QCMComponent):
         if (
             settings.out0_lo_freq_cal_type_default == LoCalEnum.ON_LO_FREQ_CHANGE
             and lo0_freq_changed
-            or settings.out0_lo_freq_cal_type_default
-            == LoCalEnum.ON_LO_INTERM_FREQ_CHANGE
+            or settings.out0_lo_freq_cal_type_default == LoCalEnum.ON_LO_INTERM_FREQ_CHANGE
             and (lo0_freq_changed or any_nco_frequencies_changed_lo0)
         ):
             self.instrument.out0_lo_cal()
         if (
             settings.out1_lo_freq_cal_type_default == LoCalEnum.ON_LO_FREQ_CHANGE
             and lo1_freq_changed
-            or settings.out1_lo_freq_cal_type_default
-            == LoCalEnum.ON_LO_INTERM_FREQ_CHANGE
+            or settings.out1_lo_freq_cal_type_default == LoCalEnum.ON_LO_INTERM_FREQ_CHANGE
             and (lo1_freq_changed or any_nco_frequencies_changed_lo1)
         ):
             self.instrument.out1_lo_cal()
@@ -1191,13 +1137,9 @@ class _QRMRFComponent(_RFComponent, _QRMComponent):
         """
         # configure mixer correction offsets
         if settings.offset_ch0_path_I is not None:
-            self._set_parameter(
-                self.instrument, "out0_offset_path0", settings.offset_ch0_path_I
-            )
+            self._set_parameter(self.instrument, "out0_offset_path0", settings.offset_ch0_path_I)
         if settings.offset_ch0_path_Q is not None:
-            self._set_parameter(
-                self.instrument, "out0_offset_path1", settings.offset_ch0_path_Q
-            )
+            self._set_parameter(self.instrument, "out0_offset_path1", settings.offset_ch0_path_Q)
         # configure attenuation
         if settings.out0_att is not None:
             self._set_parameter(self.instrument, "out0_att", settings.out0_att)
@@ -1224,8 +1166,7 @@ class _QRMRFComponent(_RFComponent, _QRMComponent):
         if (
             settings.out0_lo_freq_cal_type_default == LoCalEnum.ON_LO_FREQ_CHANGE
             and lo0_freq_changed
-            or settings.out0_lo_freq_cal_type_default
-            == LoCalEnum.ON_LO_INTERM_FREQ_CHANGE
+            or settings.out0_lo_freq_cal_type_default == LoCalEnum.ON_LO_INTERM_FREQ_CHANGE
             and (lo0_freq_changed or any_nco_frequencies_changed_lo0)
         ):
             self.instrument.out0_in0_lo_cal()
@@ -1237,10 +1178,7 @@ class _QRMRFComponent(_RFComponent, _QRMComponent):
         channel_map_parameters["connect_acq"] = (
             "in0" if tuple(settings.connected_input_indices) == (0, 1) else "off"
         )
-        if (
-            "output" in settings.channel_name
-            and ChannelMode.DIGITAL not in settings.channel_name
-        ):
+        if "output" in settings.channel_name and ChannelMode.DIGITAL not in settings.channel_name:
             channel_map_parameters["connect_acq"] = "in0"
 
         return channel_map_parameters
@@ -1328,9 +1266,7 @@ class _QTMComponent(_ModuleComponentBase):
             self._acquisition_manager = None
 
         if (settings_entry := program.get("settings")) is not None:
-            module_settings = self._hardware_properties.settings_type.from_dict(
-                settings_entry
-            )
+            module_settings = self._hardware_properties.settings_type.from_dict(settings_entry)
             self._configure_global_settings(module_settings)
 
     def _configure_global_settings(self, settings: TimetagModuleSettings) -> None:
@@ -1569,9 +1505,7 @@ class _AcquisitionManagerBase(ABC):
                     qblox_acq_index=qblox_acq_index,
                     acq_channel=acq_channel,
                 )
-                formatted_acquisitions_dataset = Dataset(
-                    {acq_channel: formatted_acquisitions}
-                )
+                formatted_acquisitions_dataset = Dataset({acq_channel: formatted_acquisitions})
 
                 check_already_existing_acquisition(
                     new_dataset=formatted_acquisitions_dataset, current_dataset=dataset
@@ -1610,9 +1544,7 @@ class _AcquisitionManagerBase(ABC):
         return {"acq_protocol": protocol}
 
     @classmethod
-    def _get_bin_data(
-        cls, hardware_retrieved_acquisitions: dict, qblox_acq_index: int = 0
-    ) -> dict:
+    def _get_bin_data(cls, hardware_retrieved_acquisitions: dict, qblox_acq_index: int = 0) -> dict:
         """Returns the bin entry of the acquisition data dict."""
         qblox_acq_name = cls._qblox_acq_index_to_qblox_acq_name(qblox_acq_index)
         channel_data = hardware_retrieved_acquisitions[qblox_acq_name]
@@ -1687,22 +1619,16 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
             acquisition_duration=acquisition_duration,
             seq_name_to_idx_map=seq_name_to_idx_map,
         )
-        self._scope_mode_sequencer_and_qblox_acq_index = (
-            scope_mode_sequencer_and_qblox_acq_index
-        )
+        self._scope_mode_sequencer_and_qblox_acq_index = scope_mode_sequencer_and_qblox_acq_index
 
     @property
     def _protocol_to_acq_function_map(self) -> dict[str, Callable]:
         return {
-            "WeightedIntegratedSeparated": partial(
-                self._get_integration_data, separated=True
-            ),
+            "WeightedIntegratedSeparated": partial(self._get_integration_data, separated=True),
             "NumericalSeparatedWeightedIntegration": partial(
                 self._get_integration_data, separated=True
             ),
-            "NumericalWeightedIntegration": partial(
-                self._get_integration_data, separated=False
-            ),
+            "NumericalWeightedIntegration": partial(self._get_integration_data, separated=False),
             "SSBIntegrationComplex": self._get_integration_amplitude_data,
             "ThresholdedAcquisition": self._get_threshold_data,
             "Trace": self._get_scope_data,
@@ -1784,10 +1710,7 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
             The scope mode data.
 
         """
-        if (
-            acq_duration < 0
-            or acq_duration > constants.MAX_SAMPLE_SIZE_SCOPE_ACQUISITIONS
-        ):
+        if acq_duration < 0 or acq_duration > constants.MAX_SAMPLE_SIZE_SCOPE_ACQUISITIONS:
             raise ValueError(
                 "Attempting to retrieve sample of size "
                 f"{acq_duration}, but only integer values "
@@ -1795,9 +1718,7 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
                 f"are allowed."
             )
         qblox_acq_name = self._qblox_acq_index_to_qblox_acq_name(qblox_acq_index)
-        scope_data = hardware_retrieved_acquisitions[qblox_acq_name]["acquisition"][
-            "scope"
-        ]
+        scope_data = hardware_retrieved_acquisitions[qblox_acq_name]["acquisition"]["scope"]
         for path_label in ("path0", "path1"):
             if scope_data[path_label]["out-of-range"]:
                 logger.warning(
@@ -1878,10 +1799,7 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
                 coords={acq_index_dim_name: acq_indices},
                 attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
             )
-        elif (
-            acquisition_metadata.repetitions * len(acq_indices)
-            == acquisitions_data.size
-        ):
+        elif acquisition_metadata.repetitions * len(acq_indices) == acquisitions_data.size:
             acq_data = acquisitions_data.reshape(
                 (acquisition_metadata.repetitions, len(acq_indices))
             )
@@ -2021,9 +1939,7 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
                 bin_data["threshold"], dtype=acquisition_metadata.acq_return_type
             )
             return DataArray(
-                acquisitions_data.reshape(
-                    (acquisition_metadata.repetitions, len(acq_indices))
-                ),
+                acquisitions_data.reshape((acquisition_metadata.repetitions, len(acq_indices))),
                 dims=["repetition", acq_index_dim_name],
                 coords={acq_index_dim_name: acq_indices},
                 attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
@@ -2092,9 +2008,7 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
                     if (not isnan(current_cumulative_value)) and (
                         last_cumulative_value != current_cumulative_value
                     ):
-                        result[count + 1] = (
-                            current_cumulative_value - last_cumulative_value
-                        )
+                        result[count + 1] = current_cumulative_value - last_cumulative_value
                         last_cumulative_value = current_cumulative_value
 
                 return result
@@ -2156,9 +2070,7 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
 
             # For (timetag)trace acquisitions, there is only one acq channel per
             # sequencer/io_channel (enforced by compiler). We just take the first one.
-            qblox_acq_index = next(
-                iter(acquisition_metadata.acq_channels_metadata.keys())
-            )
+            qblox_acq_index = next(iter(acquisition_metadata.acq_channels_metadata.keys()))
             qblox_acq_name = self._qblox_acq_index_to_qblox_acq_name(qblox_acq_index)
             data[qblox_acq_name]["acquisition"]["scope"] = scope_data
         return data
@@ -2227,9 +2139,7 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
     ) -> DataArray:
         qblox_acq_name = self._qblox_acq_index_to_qblox_acq_name(qblox_acq_index)
         scope_data = np.array(
-            hardware_retrieved_acquisitions[qblox_acq_name]["acquisition"]["scope"][
-                :acq_duration
-            ]
+            hardware_retrieved_acquisitions[qblox_acq_name]["acquisition"]["scope"][:acq_duration]
         )
 
         acq_index_dim_name = f"acq_index_{acq_channel}"
@@ -2256,14 +2166,12 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
         acq_channel: Hashable,
     ) -> DataArray:
         qblox_acq_name = self._qblox_acq_index_to_qblox_acq_name(qblox_acq_index)
-        scope_data = hardware_retrieved_acquisitions[qblox_acq_name]["acquisition"][
-            "scope"
-        ]
+        scope_data = hardware_retrieved_acquisitions[qblox_acq_name]["acquisition"]["scope"]
 
         timetag_traces = self._split_timetag_trace_data_per_window(
-            timetags=hardware_retrieved_acquisitions[qblox_acq_name]["acquisition"][
-                "bins"
-            ]["timedelta"],
+            timetags=hardware_retrieved_acquisitions[qblox_acq_name]["acquisition"]["bins"][
+                "timedelta"
+            ],
             scope_data=scope_data,
         )
 
@@ -2303,9 +2211,7 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
                 FutureWarning,
             )
             return DataArray(
-                rect_array.reshape(
-                    (acquisition_metadata.repetitions, -1, len(rect_array[0]))
-                ),
+                rect_array.reshape((acquisition_metadata.repetitions, -1, len(rect_array[0]))),
                 dims=["repetition", "loop_repetition", trace_index_dim_name],
                 coords=None,
                 attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
@@ -2376,9 +2282,7 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
                 attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
             )
         elif acquisition_metadata.repetitions * len(acq_indices) == timetags_ns.size:
-            acq_data = timetags_ns.reshape(
-                (acquisition_metadata.repetitions, len(acq_indices))
-            )
+            acq_data = timetags_ns.reshape((acquisition_metadata.repetitions, len(acq_indices)))
             return DataArray(
                 acq_data,
                 dims=["repetition", acq_index_dim_name],
@@ -2496,9 +2400,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
             if self.force_set_parameters():
                 self.instrument.set("reference_source", settings["reference_source"])
             else:
-                lazy_set(
-                    self.instrument, "reference_source", settings["reference_source"]
-                )
+                lazy_set(self.instrument, "reference_source", settings["reference_source"])
 
     def prepare(self, options: dict[str, dict]) -> None:
         """
@@ -2602,9 +2504,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
                 # Cannot fetch log from module.get_hardware_log here since modules are
                 # not InstrumentCoordinator components when using a cluster
                 module_ip = f"{cluster_ip}/{module.slot_idx}"
-                hardware_log[module.name] = _download_log(
-                    _get_configuration_manager(module_ip)
-                )
+                hardware_log[module.name] = _download_log(_get_configuration_manager(module_ip))
 
         return hardware_log
 
@@ -2629,9 +2529,7 @@ def _get_configuration_manager(instrument_ip: str) -> ConfigurationManager:
     try:
         config_manager = ConfigurationManager(instrument_ip)
     except RuntimeError as error:
-        new_message = (
-            f"{error}\nNote: qblox-instruments might have changed ip formatting."
-        )
+        new_message = f"{error}\nNote: qblox-instruments might have changed ip formatting."
         raise type(error)(new_message)
     return config_manager
 
@@ -2657,8 +2555,7 @@ def _download_log(
             hardware_log[f"{source}_log"] = log
         else:
             raise RuntimeError(
-                f"`ConfigurationManager.download_log` did not create a `{source}`"
-                f" file."
+                f"`ConfigurationManager.download_log` did not create a `{source}`" f" file."
             )
 
     return hardware_log

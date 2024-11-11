@@ -76,9 +76,7 @@ def generate_waveform_data(
     num_samples = round(duration_validated * sampling_rate)
     t = np.arange(start=0, stop=num_samples, step=1) / sampling_rate
 
-    wf_data = exec_waveform_function(
-        wf_func=data_dict["wf_func"], t=t, pulse_info=data_dict
-    )
+    wf_data = exec_waveform_function(wf_func=data_dict["wf_func"], t=t, pulse_info=data_dict)
 
     return wf_data
 
@@ -267,9 +265,7 @@ def to_grid_time(time: float, grid_time_ns: int = constants.GRID_TIME) -> int:
     return time_ns
 
 
-def is_multiple_of_grid_time(
-    time: float, grid_time_ns: int = constants.GRID_TIME
-) -> bool:
+def is_multiple_of_grid_time(time: float, grid_time_ns: int = constants.GRID_TIME) -> bool:
     """
     Determine whether a time value in seconds is a multiple of the grid time.
 
@@ -344,9 +340,7 @@ def get_nco_set_frequency_arguments(frequency_hz: float) -> int:
         frequency_steps < -constants.NCO_FREQ_LIMIT_STEPS
         or frequency_steps > constants.NCO_FREQ_LIMIT_STEPS
     ):
-        min_max_frequency_in_hz = (
-            constants.NCO_FREQ_LIMIT_STEPS / constants.NCO_FREQ_STEPS_PER_HZ
-        )
+        min_max_frequency_in_hz = constants.NCO_FREQ_LIMIT_STEPS / constants.NCO_FREQ_STEPS_PER_HZ
         raise ValueError(
             f"Attempting to set NCO frequency. "
             f"The frequency must be between and including "
@@ -451,9 +445,7 @@ def determine_clock_lo_interm_freqs(
             )
 
         if downconverter_freq < 0:
-            raise ValueError(
-                f"Downconverter frequency must be positive ({downconverter_freq=:e})"
-            )
+            raise ValueError(f"Downconverter frequency must be positive ({downconverter_freq=:e})")
 
         if downconverter_freq < clock_freq:
             raise ValueError(
@@ -470,9 +462,7 @@ def determine_clock_lo_interm_freqs(
         )
     if not mix_lo:
         if freqs.LO is not None and not math.isclose(freqs.LO, freqs.clock):
-            warnings.warn(
-                f"Overriding {freqs.LO=} to {freqs.clock=} due to mix_lo=False."
-            )
+            warnings.warn(f"Overriding {freqs.LO=} to {freqs.clock=} due to mix_lo=False.")
         freqs.LO = freqs.clock
         if freqs.IF is None:
             raise ValueError(
@@ -595,9 +585,7 @@ class ConditionalBegin(Operation):
 
     """
 
-    def __init__(
-        self, qubit_name: str, feedback_trigger_address: int, t0: float
-    ) -> None:
+    def __init__(self, qubit_name: str, feedback_trigger_address: int, t0: float) -> None:
         class_name = self.__class__.__name__
         super().__init__(name=class_name)
         self.data.update(
@@ -639,9 +627,7 @@ def _get_control_flow_begin(
     else:
         begin_operation = ConditionalBegin(
             control_flow_operation.data["control_flow_info"]["qubit_name"],
-            control_flow_operation.data["control_flow_info"][
-                "feedback_trigger_address"
-            ],
+            control_flow_operation.data["control_flow_info"]["feedback_trigger_address"],
             control_flow_operation.data["control_flow_info"]["t0"],
         )
     begin_operation["pulse_info"] = [
@@ -723,12 +709,8 @@ def _get_list_of_operations_for_op_info_creation(
                 inner_operation, time_offset + abs_time, accumulator
             )
     elif isinstance(operation, ControlFlowOperation):
-        accumulator.append(
-            (to_grid_time(time_offset) * 1e-9, _get_control_flow_begin(operation))
-        )
-        _get_list_of_operations_for_op_info_creation(
-            operation.body, time_offset, accumulator
-        )
+        accumulator.append((to_grid_time(time_offset) * 1e-9, _get_control_flow_begin(operation)))
+        _get_list_of_operations_for_op_info_creation(operation.body, time_offset, accumulator)
         assert operation.body.duration is not None
         accumulator.append(
             (
@@ -871,9 +853,7 @@ def assign_pulse_and_acq_info_to_devices(
                     f"Relevant operation:\n{combined_data}."
                 )
             device_name = portclock_mapping[portclock]
-            device_compilers[device_name].add_op_info(
-                port=port, clock=clock, op_info=combined_data
-            )
+            device_compilers[device_name].add_op_info(port=port, clock=clock, op_info=combined_data)
 
 
 def calc_from_units_volt(
@@ -922,10 +902,7 @@ def calc_from_units_volt(
         )
 
     calculated_offset = offset_in_arg * conversion_factor
-    if (
-        calculated_offset < voltage_range.min_val
-        or calculated_offset > voltage_range.max_val
-    ):
+    if calculated_offset < voltage_range.min_val or calculated_offset > voltage_range.max_val:
         raise ValueError(
             f"Attempting to set {param_name} of {name} to "
             f"{offset_in_arg} V. {param_name} has to be between "
@@ -993,9 +970,9 @@ def _generate_new_style_hardware_compilation_config(  # noqa PLR0915 too many st
         new_style_config: dict,
     ) -> None:
         """Add information from old-style complex channel config to new-style config."""
-        new_style_config["hardware_description"][cluster_name]["modules"][
-            module_slot_idx
-        ][channel_name] = {}
+        new_style_config["hardware_description"][cluster_name]["modules"][module_slot_idx][
+            channel_name
+        ] = {}
         port_name = f"{cluster_name}.module{module_slot_idx}.{channel_name}"
         for (
             channel_cfg_key,
@@ -1011,14 +988,14 @@ def _generate_new_style_hardware_compilation_config(  # noqa PLR0915 too many st
                 "mix_lo",
                 "downconverter_freq",
             ]:
-                new_style_config["hardware_description"][cluster_name]["modules"][
-                    module_slot_idx
-                ][channel_name][channel_cfg_key] = channel_cfg_value
+                new_style_config["hardware_description"][cluster_name]["modules"][module_slot_idx][
+                    channel_name
+                ][channel_cfg_key] = channel_cfg_value
             elif channel_cfg_key == "lo_name":
                 # Add IQ mixer to the hardware_description:
-                new_style_config["hardware_description"][
-                    f"iq_mixer_{channel_cfg_value}"
-                ] = {"instrument_type": "IQMixer"}
+                new_style_config["hardware_description"][f"iq_mixer_{channel_cfg_value}"] = {
+                    "instrument_type": "IQMixer"
+                }
                 # Add LO and IQ mixer to connectivity graph:
                 new_style_config["connectivity"]["graph"].extend(
                     [
@@ -1037,33 +1014,33 @@ def _generate_new_style_hardware_compilation_config(  # noqa PLR0915 too many st
                 if "frequency" in old_style_config[channel_cfg_value]:
                     # Set lo_freq for all port-clock combinations (external LO)
                     for port_clock in channel_port_clocks:
-                        new_style_config["hardware_options"]["modulation_frequencies"][
-                            port_clock
-                        ]["lo_freq"] = old_style_config[channel_cfg_value]["frequency"]
+                        new_style_config["hardware_options"]["modulation_frequencies"][port_clock][
+                            "lo_freq"
+                        ] = old_style_config[channel_cfg_value]["frequency"]
             elif channel_cfg_key == "lo_freq":
                 # Set lo_freq for all port-clock combinations (RF modules)
                 for port_clock in channel_port_clocks:
-                    new_style_config["hardware_options"]["modulation_frequencies"][
-                        port_clock
-                    ]["lo_freq"] = channel_cfg_value
+                    new_style_config["hardware_options"]["modulation_frequencies"][port_clock][
+                        "lo_freq"
+                    ] = channel_cfg_value
             elif channel_cfg_key == "auto_lo_cal":
                 # Set auto_lo_cal for all port-clock combinations (RF modules)
                 for port_clock in channel_port_clocks:
-                    new_style_config["hardware_options"]["mixer_corrections"][
-                        port_clock
-                    ]["auto_lo_cal"] = channel_cfg_value
+                    new_style_config["hardware_options"]["mixer_corrections"][port_clock][
+                        "auto_lo_cal"
+                    ] = channel_cfg_value
             elif channel_cfg_key == "dc_mixer_offset_I":
                 # Set mixer offsets for all port-clock combinations (RF modules)
                 for port_clock in channel_port_clocks:
-                    new_style_config["hardware_options"]["mixer_corrections"][
-                        port_clock
-                    ]["dc_offset_i"] = channel_cfg_value
+                    new_style_config["hardware_options"]["mixer_corrections"][port_clock][
+                        "dc_offset_i"
+                    ] = channel_cfg_value
             elif channel_cfg_key == "dc_mixer_offset_Q":
                 # Set mixer offsets for all port-clock combinations (RF modules)
                 for port_clock in channel_port_clocks:
-                    new_style_config["hardware_options"]["mixer_corrections"][
-                        port_clock
-                    ]["dc_offset_q"] = channel_cfg_value
+                    new_style_config["hardware_options"]["mixer_corrections"][port_clock][
+                        "dc_offset_q"
+                    ] = channel_cfg_value
             elif channel_cfg_key == "input_gain_I":
                 # Set input gains for all port-clock combinations (RF modules)
                 for port_clock in channel_port_clocks:
@@ -1097,29 +1074,27 @@ def _generate_new_style_hardware_compilation_config(  # noqa PLR0915 too many st
                             f"{portclock_cfg['port']}",
                         )
                     )
-                    port_clock = (
-                        f"{portclock_cfg.pop('port')}-{portclock_cfg.pop('clock')}"
-                    )
+                    port_clock = f"{portclock_cfg.pop('port')}-{portclock_cfg.pop('clock')}"
                     if "interm_freq" in portclock_cfg:
                         # Set intermodulation freqs from portclock config:
-                        new_style_config["hardware_options"]["modulation_frequencies"][
-                            port_clock
-                        ]["interm_freq"] = portclock_cfg.pop("interm_freq")
+                        new_style_config["hardware_options"]["modulation_frequencies"][port_clock][
+                            "interm_freq"
+                        ] = portclock_cfg.pop("interm_freq")
                     if "mixer_amp_ratio" in portclock_cfg:
                         # Set intermodulation freqs from portclock config:
-                        new_style_config["hardware_options"]["mixer_corrections"][
-                            port_clock
-                        ]["amp_ratio"] = portclock_cfg.pop("mixer_amp_ratio")
+                        new_style_config["hardware_options"]["mixer_corrections"][port_clock][
+                            "amp_ratio"
+                        ] = portclock_cfg.pop("mixer_amp_ratio")
                     if "auto_sideband_cal" in portclock_cfg:
                         # Set auto_sideband_cal from portclock config:
-                        new_style_config["hardware_options"]["mixer_corrections"][
-                            port_clock
-                        ]["auto_sideband_cal"] = portclock_cfg.pop("auto_sideband_cal")
+                        new_style_config["hardware_options"]["mixer_corrections"][port_clock][
+                            "auto_sideband_cal"
+                        ] = portclock_cfg.pop("auto_sideband_cal")
                     if "mixer_phase_error_deg" in portclock_cfg:
                         # Set intermodulation freqs from portclock config:
-                        new_style_config["hardware_options"]["mixer_corrections"][
-                            port_clock
-                        ]["phase_error"] = portclock_cfg.pop("mixer_phase_error_deg")
+                        new_style_config["hardware_options"]["mixer_corrections"][port_clock][
+                            "phase_error"
+                        ] = portclock_cfg.pop("mixer_phase_error_deg")
                     if portclock_cfg != {}:
                         # Set remaining portclock config parameters to sequencer options:
                         new_style_config["hardware_options"]["sequencer_options"][
@@ -1134,9 +1109,9 @@ def _generate_new_style_hardware_compilation_config(  # noqa PLR0915 too many st
         new_style_config: dict,
     ) -> None:
         """Add information from old-style real channel config to new-style config."""
-        new_style_config["hardware_description"][cluster_name]["modules"][
-            module_slot_idx
-        ][channel_name] = {}
+        new_style_config["hardware_description"][cluster_name]["modules"][module_slot_idx][
+            channel_name
+        ] = {}
         port_name = f"{cluster_name}.module{module_slot_idx}.{channel_name}"
         for (
             channel_cfg_key,
@@ -1148,9 +1123,9 @@ def _generate_new_style_hardware_compilation_config(  # noqa PLR0915 too many st
                 for pc_cfg in old_channel_config["portclock_configs"]
             ]
             if channel_cfg_key in ["marker_debug_mode_enable", "mix_lo"]:
-                new_style_config["hardware_description"][cluster_name]["modules"][
-                    module_slot_idx
-                ][channel_name][channel_cfg_key] = channel_cfg_value
+                new_style_config["hardware_description"][cluster_name]["modules"][module_slot_idx][
+                    channel_name
+                ][channel_cfg_key] = channel_cfg_value
             elif channel_cfg_key in ("input_gain_0", "input_gain_1"):
                 # Set input gains for all port-clock combinations
                 for port_clock in channel_port_clocks:
@@ -1166,29 +1141,23 @@ def _generate_new_style_hardware_compilation_config(  # noqa PLR0915 too many st
                             f"{portclock_cfg['port']}",
                         )
                     )
-                    port_clock = (
-                        f"{portclock_cfg.pop('port')}-{portclock_cfg.pop('clock')}"
-                    )
+                    port_clock = f"{portclock_cfg.pop('port')}-{portclock_cfg.pop('clock')}"
 
                     if "interm_freq" in portclock_cfg:
                         # Set intermodulation freqs from portclock config:
-                        new_style_config["hardware_options"]["modulation_frequencies"][
-                            port_clock
-                        ]["interm_freq"] = portclock_cfg.pop("interm_freq")
+                        new_style_config["hardware_options"]["modulation_frequencies"][port_clock][
+                            "interm_freq"
+                        ] = portclock_cfg.pop("interm_freq")
                     if "init_gain_awg_path_I" in portclock_cfg:
                         # Set init gain from portclock config:
-                        new_style_config["hardware_options"]["sequencer_options"][
-                            port_clock
-                        ]["init_gain_awg_path_I"] = portclock_cfg.pop(
+                        new_style_config["hardware_options"]["sequencer_options"][port_clock][
                             "init_gain_awg_path_I"
-                        )
+                        ] = portclock_cfg.pop("init_gain_awg_path_I")
                     if "init_gain_awg_path_Q" in portclock_cfg:
                         # Set init gain from portclock config:
-                        new_style_config["hardware_options"]["sequencer_options"][
-                            port_clock
-                        ]["init_gain_awg_path_Q"] = portclock_cfg.pop(
+                        new_style_config["hardware_options"]["sequencer_options"][port_clock][
                             "init_gain_awg_path_Q"
-                        )
+                        ] = portclock_cfg.pop("init_gain_awg_path_Q")
                     if any(
                         option in portclock_cfg
                         for option in [
@@ -1216,9 +1185,9 @@ def _generate_new_style_hardware_compilation_config(  # noqa PLR0915 too many st
 
             if channel_cfg_key == "lo_name":
                 # Add optical/iq mixer to the hardware_description
-                new_style_config["hardware_description"][
-                    f"{mixer_tag}_{channel_cfg_value}"
-                ] = {"instrument_type": channel_mixer}
+                new_style_config["hardware_description"][f"{mixer_tag}_{channel_cfg_value}"] = {
+                    "instrument_type": channel_mixer
+                }
                 # Add LO and mixer to connectivity graph:
                 new_style_config["connectivity"]["graph"].extend(
                     [
@@ -1237,9 +1206,9 @@ def _generate_new_style_hardware_compilation_config(  # noqa PLR0915 too many st
                 if "frequency" in old_style_config[channel_cfg_value]:
                     # Set lo_freq for all port-clock combinations (external LO)
                     for port_clock in channel_port_clocks:
-                        new_style_config["hardware_options"]["modulation_frequencies"][
-                            port_clock
-                        ]["lo_freq"] = old_style_config[channel_cfg_value]["frequency"]
+                        new_style_config["hardware_options"]["modulation_frequencies"][port_clock][
+                            "lo_freq"
+                        ] = old_style_config[channel_cfg_value]["frequency"]
 
     def _convert_digital_channel_config(
         cluster_name: str,
@@ -1248,9 +1217,9 @@ def _generate_new_style_hardware_compilation_config(  # noqa PLR0915 too many st
         old_channel_config: dict,
         new_style_config: dict,
     ) -> None:
-        new_style_config["hardware_description"][cluster_name]["modules"][
-            module_slot_idx
-        ][channel_name] = {}
+        new_style_config["hardware_description"][cluster_name]["modules"][module_slot_idx][
+            channel_name
+        ] = {}
         for (
             channel_cfg_key,
             channel_cfg_value,
@@ -1265,16 +1234,12 @@ def _generate_new_style_hardware_compilation_config(  # noqa PLR0915 too many st
                         )
                     )
 
-                    port_clock = (
-                        f"{portclock_cfg.pop('port')}-{portclock_cfg.pop('clock')}"
-                    )
+                    port_clock = f"{portclock_cfg.pop('port')}-{portclock_cfg.pop('clock')}"
                     if "in_threshold_primary" in portclock_cfg:
                         # Set init gain from portclock config:
-                        new_style_config["hardware_options"]["digitization_thresholds"][
-                            port_clock
-                        ]["in_threshold_primary"] = portclock_cfg.pop(
+                        new_style_config["hardware_options"]["digitization_thresholds"][port_clock][
                             "in_threshold_primary"
-                        )
+                        ] = portclock_cfg.pop("in_threshold_primary")
 
     def _convert_cluster_module_config(
         cluster_name: str,
@@ -1283,24 +1248,18 @@ def _generate_new_style_hardware_compilation_config(  # noqa PLR0915 too many st
         new_style_config: dict,
     ) -> None:
         """Add information from old-style Cluster module config to new-style config."""
-        new_style_config["hardware_description"][cluster_name]["modules"][
-            module_slot_idx
-        ] = {}
+        new_style_config["hardware_description"][cluster_name]["modules"][module_slot_idx] = {}
         for module_cfg_key, module_cfg_value in old_module_config.items():
             if module_cfg_key in ["instrument_type", "sequence_to_file"]:
-                new_style_config["hardware_description"][cluster_name]["modules"][
-                    module_slot_idx
-                ][module_cfg_key] = module_cfg_value
+                new_style_config["hardware_description"][cluster_name]["modules"][module_slot_idx][
+                    module_cfg_key
+                ] = module_cfg_value
             elif module_cfg_key.startswith("complex_"):
                 # Portclock configs dict must be last item in dict for correct conversion
                 old_channel_config = {
-                    k: v
-                    for k, v in module_cfg_value.items()
-                    if k != "portclock_configs"
+                    k: v for k, v in module_cfg_value.items() if k != "portclock_configs"
                 }
-                old_channel_config["portclock_configs"] = module_cfg_value[
-                    "portclock_configs"
-                ]
+                old_channel_config["portclock_configs"] = module_cfg_value["portclock_configs"]
                 _convert_complex_channel_config(
                     cluster_name=cluster_name,
                     module_slot_idx=module_slot_idx,
@@ -1324,13 +1283,9 @@ def _generate_new_style_hardware_compilation_config(  # noqa PLR0915 too many st
             elif module_cfg_key.startswith("real_"):
                 # Portclock configs dict must be last item in dict for correct conversion
                 old_channel_config = {
-                    k: v
-                    for k, v in module_cfg_value.items()
-                    if k != "portclock_configs"
+                    k: v for k, v in module_cfg_value.items() if k != "portclock_configs"
                 }
-                old_channel_config["portclock_configs"] = module_cfg_value[
-                    "portclock_configs"
-                ]
+                old_channel_config["portclock_configs"] = module_cfg_value["portclock_configs"]
                 _convert_real_channel_config(
                     cluster_name=cluster_name,
                     module_slot_idx=module_slot_idx,
@@ -1344,10 +1299,7 @@ def _generate_new_style_hardware_compilation_config(  # noqa PLR0915 too many st
                         module_slot_idx
                     ][module_cfg_key]
                 )
-                if (
-                    parsed_channel_description.model_dump()
-                    == RealChannelDescription().model_dump()
-                ):
+                if parsed_channel_description.model_dump() == RealChannelDescription().model_dump():
                     new_style_config["hardware_description"][cluster_name]["modules"][
                         module_slot_idx
                     ].pop(module_cfg_key)
@@ -1435,15 +1387,11 @@ def _generate_new_style_hardware_compilation_config(  # noqa PLR0915 too many st
             new_style_config["hardware_description"][hw_cfg_key] = {}
             for lo_cfg_key, lo_cfg_value in hw_cfg_value.items():
                 if lo_cfg_key in ["instrument_type", "power"]:
-                    new_style_config["hardware_description"][hw_cfg_key][
-                        lo_cfg_key
-                    ] = lo_cfg_value
+                    new_style_config["hardware_description"][hw_cfg_key][lo_cfg_key] = lo_cfg_value
                 elif lo_cfg_key == "frequency":
                     pass
                 else:
-                    raise KeyError(
-                        f"Unexpected key {lo_cfg_key} in LocalOscillator config."
-                    )
+                    raise KeyError(f"Unexpected key {lo_cfg_key} in LocalOscillator config.")
         else:
             raise ValueError(
                 f"Unexpected instrument_type {hw_cfg_value['instrument_type']} "

@@ -37,9 +37,9 @@ def test_constructors():
 
 def test_init():
     """Test whether the constructor parameters are correctly used."""
-    builder = StitchedPulseBuilder(
-        name="spb", clock="q0.01", port="q0:mw", t0=1e-6
-    ).add_pulse(SquarePulse(amp=0.2, duration=1000e-9, port="q0:mw"))
+    builder = StitchedPulseBuilder(name="spb", clock="q0.01", port="q0:mw", t0=1e-6).add_pulse(
+        SquarePulse(amp=0.2, duration=1000e-9, port="q0:mw")
+    )
     pulse = builder.build()
     assert pulse.name == "spb"
     assert pulse["pulse_info"][0]["t0"] == 1e-6
@@ -67,9 +67,7 @@ def test_add_operation_wrong_clock():
         .build()
     )
     with pytest.raises(ValueError):
-        pulse.add_pulse(
-            RampPulse(amp=0.5, duration=28e-9, port="q0:res", clock="q0.01")
-        )
+        pulse.add_pulse(RampPulse(amp=0.5, duration=28e-9, port="q0:res", clock="q0.01"))
 
     pulse = (
         StitchedPulseBuilder(port="q0:mw", clock="q0.01")
@@ -142,9 +140,7 @@ def test_operation_end_pulses_only():
         )
         .add_pulse(SquarePulse(amp=0.2, duration=1000, port="q0:mw", t0=200))
         .add_pulse(SquarePulse(amp=0.4, duration=500, port="q0:mw", t0=900))
-        .add_pulse(
-            SquarePulse(amp=0.3, duration=100, port="q0:mw", t0=300), append=False
-        )
+        .add_pulse(SquarePulse(amp=0.3, duration=100, port="q0:mw", t0=300), append=False)
     )
     assert builder.operation_end == 200 + 1000 + 500 + 900
 
@@ -172,9 +168,7 @@ def test_operation_end_mix_pulses_and_operations():
         .add_pulse(SquarePulse(amp=0.2, duration=1000, port="q0:mw", t0=200))
         .add_voltage_offset(path_I=0, path_Q=0, duration=500, rel_time=90)
         .add_pulse(SquarePulse(amp=0.4, duration=500, port="q0:mw", t0=900))
-        .add_pulse(
-            SquarePulse(amp=0.3, duration=100, port="q0:mw", t0=300), append=False
-        )
+        .add_pulse(SquarePulse(amp=0.3, duration=100, port="q0:mw", t0=300), append=False)
         .add_voltage_offset(path_I=0, path_Q=0, duration=200)
     )
     assert builder.operation_end == 200 + 1000 + 500 + 90 + 900 + 500 + 200
@@ -189,9 +183,7 @@ def test_operation_end_long_pulse_inserted_at_start():
         )
         .add_pulse(SquarePulse(amp=0.2, duration=1000, port="q0:mw", t0=200))
         .add_voltage_offset(path_I=0, path_Q=0, duration=500)
-        .add_pulse(
-            SquarePulse(amp=0.3, duration=100000, port="q0:mw", t0=10), append=False
-        )
+        .add_pulse(SquarePulse(amp=0.3, duration=100000, port="q0:mw", t0=10), append=False)
     )
     assert builder.operation_end == 100010
 
@@ -285,9 +277,7 @@ def test_add_operations_insert_timing():
         StitchedPulseBuilder(port="q0:mw", clock="q0.01")
         .add_pulse(SquarePulse(amp=0.2, duration=1e-6, port="q0:mw", clock="q0.01"))
         .add_pulse(RampPulse(amp=0.5, duration=28e-9, port="q0:mw", clock="q0.01"))
-        .add_voltage_offset(
-            path_I=0.5, path_Q=0.0, duration=1e-7, rel_time=5e-7, append=False
-        )
+        .add_voltage_offset(path_I=0.5, path_Q=0.0, duration=1e-7, rel_time=5e-7, append=False)
         .build()
     )
     assert len(pulse.data["pulse_info"]) == 4
@@ -357,9 +347,7 @@ def test_convert_to_numerical():
     assert num_pulse.data["pulse_info"][0]["t0"] == 0.0
 
 
-@pytest.mark.parametrize(
-    "not_a_pulse", [Trace(1e-6, "q0:mw", "q0.ro"), Rxy(0.5, 0.1, "q0")]
-)
+@pytest.mark.parametrize("not_a_pulse", [Trace(1e-6, "q0:mw", "q0.ro"), Rxy(0.5, 0.1, "q0")])
 def test_convert_to_numerical_does_nothing(not_a_pulse):
     converted_op = convert_to_numerical_pulse(not_a_pulse)
     assert converted_op == not_a_pulse

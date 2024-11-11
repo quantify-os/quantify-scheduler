@@ -22,8 +22,7 @@ example_transmon_cfg = {
                 "factory_kwargs": {"duration": 0.0002},
             },
             "Rxy": {
-                "factory_func": "quantify_scheduler.operations."
-                + "pulse_factories.rxy_drag_pulse",
+                "factory_func": "quantify_scheduler.operations." + "pulse_factories.rxy_drag_pulse",
                 "gate_info_factory_kwargs": ["theta", "phi"],
                 "factory_kwargs": {
                     "amp180": 0.32,
@@ -34,8 +33,7 @@ example_transmon_cfg = {
                 },
             },
             "Rz": {
-                "factory_func": "quantify_scheduler.operations."
-                + "pulse_factories.phase_shift",
+                "factory_func": "quantify_scheduler.operations." + "pulse_factories.phase_shift",
                 "gate_info_factory_kwargs": ["theta"],
                 "factory_kwargs": {"clock": "q0.01"},
             },
@@ -74,8 +72,7 @@ example_transmon_cfg = {
                 "factory_kwargs": {"duration": 0.0002},
             },
             "Rxy": {
-                "factory_func": "quantify_scheduler.operations."
-                + "pulse_factories.rxy_drag_pulse",
+                "factory_func": "quantify_scheduler.operations." + "pulse_factories.rxy_drag_pulse",
                 "gate_info_factory_kwargs": ["theta", "phi"],
                 "factory_kwargs": {
                     "amp180": 0.4,
@@ -86,8 +83,7 @@ example_transmon_cfg = {
                 },
             },
             "Rz": {
-                "factory_func": "quantify_scheduler.operations."
-                + "pulse_factories.phase_shift",
+                "factory_func": "quantify_scheduler.operations." + "pulse_factories.phase_shift",
                 "gate_info_factory_kwargs": ["theta"],
                 "factory_kwargs": {"clock": "q1.01"},
             },

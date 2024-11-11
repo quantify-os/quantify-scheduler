@@ -43,8 +43,7 @@ class DeviceElement(Instrument):
         element_data: dict[str, Any] = {"name": self.name}
         for submodule_name, submodule_data in snapshot["submodules"].items():
             element_data[submodule_name] = {
-                name: data["value"]
-                for name, data in submodule_data["parameters"].items()
+                name: data["value"] for name, data in submodule_data["parameters"].items()
             }
 
         state = {

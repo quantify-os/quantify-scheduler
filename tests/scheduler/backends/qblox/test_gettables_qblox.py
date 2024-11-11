@@ -166,9 +166,7 @@ def test_initialize_and_get_with_report_failed_initialization(  # noqa: PLR0915
         quantum_device.get_edge(edge_name).close()
 
     with zipfile.ZipFile(report_zipfile, mode="r") as zf:
-        quantum_device_report = QuantumDevice.from_json(
-            zf.read("quantum_device.json").decode()
-        )
+        quantum_device_report = QuantumDevice.from_json(zf.read("quantum_device.json").decode())
         dependency_versions = json.loads(zf.read("dependency_versions.json").decode())
         timestamp = zf.read("timestamp.txt").decode()
         gettable_cfg_report = json.loads(zf.read("gettable.json").decode())
@@ -186,9 +184,7 @@ def test_initialize_and_get_with_report_failed_initialization(  # noqa: PLR0915
         with pytest.raises(KeyError):
             zf.read("connection_error_trace.txt").decode()
 
-    parsed_dependencies = [
-        Requirement(line.split(":")[0]).name for line in dependency_versions
-    ]
+    parsed_dependencies = [Requirement(line.split(":")[0]).name for line in dependency_versions]
     for dependency in [
         "python",
         "quantify-scheduler",
@@ -201,15 +197,10 @@ def test_initialize_and_get_with_report_failed_initialization(  # noqa: PLR0915
     assert quantum_device_report.get_element("q2").rxy.parameters["amp180"]() == 0.213
     assert datetime.strptime(timestamp, "%Y-%m-%d_%H-%M-%S_%Z")
 
-    assert (
-        gettable.quantum_device.cfg_sched_repetitions()
-        == gettable_cfg_report["repetitions"]
-    )
+    assert gettable.quantum_device.cfg_sched_repetitions() == gettable_cfg_report["repetitions"]
 
     assert (
-        hardware_cfg_report["hardware_description"][cluster_name]["modules"]["2"][
-            "instrument_type"
-        ]
+        hardware_cfg_report["hardware_description"][cluster_name]["modules"]["2"]["instrument_type"]
         == "QCM_RF"
     )
 
@@ -360,9 +351,7 @@ def test_initialize_and_get_with_report_failed_exp(
         json.loads(zf.read("gettable.json").decode())
         json.loads(zf.read("hardware_cfg.json").decode())
         Schedule.from_json(zf.read("schedule.json").decode())
-        compiled_schedule_report = Schedule.from_json(
-            zf.read("compiled_schedule.json").decode()
-        )
+        compiled_schedule_report = Schedule.from_json(zf.read("compiled_schedule.json").decode())
         snap_report = json.loads(zf.read("snapshot.json").decode())
         with pytest.raises(KeyError):
             zf.read("acquisition_data.txt").decode()
@@ -374,9 +363,7 @@ def test_initialize_and_get_with_report_failed_exp(
     assert gettable.compiled_schedule == compiled_schedule_report
 
     assert (
-        snap_report["instruments"]["q2"]["submodules"]["reset"]["parameters"][
-            "duration"
-        ]["value"]
+        snap_report["instruments"]["q2"]["submodules"]["reset"]["parameters"]["duration"]["value"]
         == 0.0002
     )
 
@@ -472,13 +459,9 @@ def test_initialize_and_get_with_report_completed_exp(
         acquisition_data = zf.read("acquisition_data.txt").decode()
         with pytest.raises(KeyError):
             zf.read("error_trace.txt").decode()
-        hardware_log = zf.read(
-            f"{cluster_name}/{cluster_name}_cmm_app_log.txt"
-        ).decode()
+        hardware_log = zf.read(f"{cluster_name}/{cluster_name}_cmm_app_log.txt").decode()
         hardware_log_idn = zf.read(f"{cluster_name}/{cluster_name}_idn.txt").decode()
-        hardware_log_mods_info = zf.read(
-            f"{cluster_name}/{cluster_name}_mods_info.txt"
-        ).decode()
+        hardware_log_mods_info = zf.read(f"{cluster_name}/{cluster_name}_mods_info.txt").decode()
         with pytest.raises(KeyError):
             zf.read("connection_error_trace.txt").decode()
 
@@ -532,9 +515,7 @@ def test_initialize_and_get_with_report_failed_hw_log_retrieval(
     )
 
     failing_connection_trace = "Test failing connection error trace"
-    ic.retrieve_hardware_logs = MagicMock(
-        side_effect=RuntimeError(failing_connection_trace)
-    )
+    ic.retrieve_hardware_logs = MagicMock(side_effect=RuntimeError(failing_connection_trace))
 
     report_zipfile = gettable.initialize_and_get_with_report()
 
@@ -563,10 +544,7 @@ def test_initialize_and_get_with_report_failed_hw_log_retrieval(
         report_connection_error_trace = zf.read("connection_error_trace.txt").decode()
 
     assert report_connection_error_trace.split(" ")[0] == "Traceback"
-    assert (
-        report_connection_error_trace.split(": ")[-1].rstrip()
-        == failing_connection_trace
-    )
+    assert report_connection_error_trace.split(": ")[-1].rstrip() == failing_connection_trace
 
 
 def test_initialize_and_get_with_report_failed_connection_to_hw(

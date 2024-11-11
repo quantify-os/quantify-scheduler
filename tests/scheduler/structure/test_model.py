@@ -29,9 +29,7 @@ class DummyStructure(DataStructure):
 
     @field_validator("func", mode="before")
     @classmethod
-    def import_func_if_str(
-        cls, fun: str | Callable[[int], int]
-    ) -> Callable[[int], int]:
+    def import_func_if_str(cls, fun: str | Callable[[int], int]) -> Callable[[int], int]:
         if isinstance(fun, str):
             return deserialize_function(fun)
         return fun  # type: ignore
@@ -47,9 +45,7 @@ class DummyStructure2(DataStructure):
 
     @field_validator("func", mode="before")
     @classmethod
-    def import_func_if_str(
-        cls, fun: str | Callable[[str], Any]
-    ) -> Callable[[str], Any]:
+    def import_func_if_str(cls, fun: str | Callable[[str], Any]) -> Callable[[str], Any]:
         if isinstance(fun, str):
             return deserialize_function(fun)
         return fun  # type: ignore
@@ -65,9 +61,7 @@ class DummyStructure3(DataStructure):
 
     @field_validator("cls", mode="before")
     @classmethod
-    def import_class_if_str(
-        cls, class_: str | type[DataStructure]
-    ) -> type[DataStructure]:
+    def import_class_if_str(cls, class_: str | type[DataStructure]) -> type[DataStructure]:
         if isinstance(class_, str):
             return deserialize_class(class_)
         return class_  # type: ignore
@@ -102,8 +96,7 @@ class TestDataStructure:
 
     def test_json_loads3(self):
         dummy1 = DummyStructure3.model_validate_json(
-            '{"name": "foobar", '
-            '"cls": "quantify_scheduler.structure.model.DataStructure"}'
+            '{"name": "foobar", ' '"cls": "quantify_scheduler.structure.model.DataStructure"}'
         )
         dummy2 = DummyStructure3(name="foobar", cls=DataStructure)
         assert dummy1 == dummy2
@@ -123,10 +116,7 @@ class TestDataStructure:
     def test_json_dumps1(self):
         dummy = DummyStructure(name="foobar", func=foo)
         json_str = dummy.model_dump_json()
-        assert (
-            json_str
-            == '{"name":"foobar","func":"tests.scheduler.structure.test_model.foo"}'
-        )
+        assert json_str == '{"name":"foobar","func":"tests.scheduler.structure.test_model.foo"}'
 
     def test_json_dumps2(self):
         dummy = DummyStructure2(name="foobar", func=import_python_object_from_string)
@@ -140,6 +130,5 @@ class TestDataStructure:
         dummy = DummyStructure3(name="foobar", cls=DataStructure)
         json_str = dummy.model_dump_json()
         assert (
-            json_str
-            == '{"name":"foobar","cls":"quantify_scheduler.structure.model.DataStructure"}'
+            json_str == '{"name":"foobar","cls":"quantify_scheduler.structure.model.DataStructure"}'
         )

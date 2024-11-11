@@ -76,9 +76,7 @@ def test_hybrid_circuit_acquisitions_matplotlib():
 
     schedule.add(Reset(q0, q1))
     schedule.add(Rxy(90, 0, qubit=q0), label=ref_label_1)
-    schedule.add(
-        SSBIntegrationComplex(port="q0:mw", clock="cl0.baseband", duration=1e-6)
-    )
+    schedule.add(SSBIntegrationComplex(port="q0:mw", clock="cl0.baseband", duration=1e-6))
     schedule.add(operation=CNOT(qC=q0, qT=q1))
     schedule.add(Measure(q0, q1), label="M0")
 
@@ -221,11 +219,7 @@ def test_circuit_diagram_mixed_control_flow():
     inner.add(Measure("q0"))
 
     sched = Schedule("amp_ref")
-    sched.add(
-        Measure(
-            "q0", acq_protocol="ThresholdedAcquisition", feedback_trigger_label="q0"
-        )
-    )
+    sched.add(Measure("q0", acq_protocol="ThresholdedAcquisition", feedback_trigger_label="q0"))
     sched.add(ConditionalOperation(body=inner, qubit_name="q0"), rel_time=364e-9)
     sched.add(X90("q1"))
     sched.add(LoopOperation(body=inner2, repetitions=4))

@@ -35,14 +35,8 @@ def complicated_schedule(pulse_duration):
     body.add(Measure("q0", acq_protocol="ThresholdedAcquisition", acq_index=1))
 
     schedule = Schedule("test")
-    schedule.add(
-        Measure(
-            "q0", acq_protocol="ThresholdedAcquisition", feedback_trigger_label="q0"
-        )
-    )
-    schedule.add(
-        ConditionalOperation(body=body, qubit_name="q0"), label="complicated_label"
-    )
+    schedule.add(Measure("q0", acq_protocol="ThresholdedAcquisition", feedback_trigger_label="q0"))
+    schedule.add(ConditionalOperation(body=body, qubit_name="q0"), label="complicated_label")
     return schedule
 
 
@@ -53,9 +47,7 @@ def test_conditional_playback_compiles(
     schedule = complicated_schedule(pulse_duration)
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
 
-    hardware_config = utils.load_json_example_scheme(
-        "qblox_hardware_config_transmon.json"
-    )
+    hardware_config = utils.load_json_example_scheme("qblox_hardware_config_transmon.json")
     quantum_device.hardware_config(hardware_config)
     config = quantum_device.generate_compilation_config()
 
@@ -65,28 +57,24 @@ def test_conditional_playback_compiles(
         config=config,
     )
 
-    key_conditional_playback = compiled_schedule.schedulables["complicated_label"][
-        "operation_id"
-    ]
+    key_conditional_playback = compiled_schedule.schedulables["complicated_label"]["operation_id"]
     conditional_playback = compiled_schedule.operations[key_conditional_playback]
     conditional_duration = conditional_playback.duration
 
-    seq_settings = compiled_schedule.compiled_instructions["cluster0"][
-        "cluster0_module4"
-    ]["sequencers"]["seq0"]
-    assert (
-        expected_address := seq_settings["thresholded_acq_trigger_address"]
-    ) is not None
+    seq_settings = compiled_schedule.compiled_instructions["cluster0"]["cluster0_module4"][
+        "sequencers"
+    ]["seq0"]
+    assert (expected_address := seq_settings["thresholded_acq_trigger_address"]) is not None
     assert seq_settings["thresholded_acq_trigger_en"] is True
     assert seq_settings["thresholded_acq_trigger_invert"] is False
 
-    qcm_program = compiled_schedule.compiled_instructions["cluster0"][
-        "cluster0_module2"
-    ]["sequencers"]["seq0"]["sequence"]["program"]
+    qcm_program = compiled_schedule.compiled_instructions["cluster0"]["cluster0_module2"][
+        "sequencers"
+    ]["seq0"]["sequence"]["program"]
 
-    qrm_program = compiled_schedule.compiled_instructions["cluster0"][
-        "cluster0_module4"
-    ]["sequencers"]["seq0"]["sequence"]["program"]
+    qrm_program = compiled_schedule.compiled_instructions["cluster0"]["cluster0_module4"][
+        "sequencers"
+    ]["seq0"]["sequence"]["program"]
 
     pattern = r"set_cond.+play.+set_cond.+wait.+set_cond."
     match = re.search(pattern, qrm_program, re.DOTALL)

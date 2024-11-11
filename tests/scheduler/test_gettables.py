@@ -96,9 +96,7 @@ def test_schedule_gettable_iterative_heterodyne_spec(mock_setup_basic_transmon, 
 
 
 # test a batched case
-def test_schedule_gettable_batched_allxy(
-    mock_setup_basic_transmon_with_standard_params, mocker
-):
+def test_schedule_gettable_batched_allxy(mock_setup_basic_transmon_with_standard_params, mocker):
     meas_ctrl = mock_setup_basic_transmon_with_standard_params["meas_ctrl"]
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
 
@@ -209,9 +207,7 @@ def test_schedule_gettable_append_readout_cal(
         config=quantum_device.generate_compilation_config(),
     )
 
-    data = (np.tile(np.arange(2, dtype=np.float64), repetitions) * np.exp(1j)).astype(
-        np.complex64
-    )
+    data = (np.tile(np.arange(2, dtype=np.float64), repetitions) * np.exp(1j)).astype(np.complex64)
 
     acq_metadata = extract_acquisition_metadata_from_schedule(comp_ssro_sched)
     first_acq_channel = next(iter(acq_metadata.acq_channels_metadata.values()))
@@ -291,9 +287,7 @@ def test_schedule_gettable_trace_acquisition(
     )
 
     sample_times = np.arange(0, device_element.measure.integration_time(), 1 / 1e9)
-    exp_trace = (np.ones(len(sample_times)) * np.exp(1j * np.deg2rad(35))).astype(
-        np.complex64
-    )
+    exp_trace = (np.ones(len(sample_times)) * np.exp(1j * np.deg2rad(35))).astype(np.complex64)
 
     exp_data_array = DataArray(
         [exp_trace],
@@ -340,9 +334,7 @@ def test_profiling(mock_setup_basic_transmon_with_standard_params, tmp_test_data
     )
 
     profiled_gettable.initialize()
-    profiled_ic = (
-        profiled_gettable.quantum_device.instr_instrument_coordinator.get_instr()
-    )
+    profiled_ic = profiled_gettable.quantum_device.instr_instrument_coordinator.get_instr()
     profiled_ic.start()
     profiled_ic.wait_done()
     profiled_ic.retrieve_acquisition()

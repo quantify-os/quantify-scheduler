@@ -55,10 +55,7 @@ def _get_acquisition_strategy(
     """Handles the logic for determining the correct acquisition type."""
     protocol = operation_info.data["protocol"]
     if protocol in ("TriggerCount", "Timetag"):
-        if (
-            protocol == "TriggerCount"
-            and operation_info.data["bin_mode"] != BinMode.APPEND
-        ):
+        if protocol == "TriggerCount" and operation_info.data["bin_mode"] != BinMode.APPEND:
             raise ValueError(
                 f"{protocol} acquisition on the QTM does not support bin mode "
                 f"{operation_info.data['bin_mode']}.\n\n{repr(operation_info)} caused "

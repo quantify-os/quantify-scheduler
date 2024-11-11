@@ -100,9 +100,7 @@ def _replace_long_square_pulses_recursively(
     """
     if isinstance(operation, ScheduleBase):
         for inner_operation_id, inner_operation in operation.operations.items():
-            replacing_operation = _replace_long_square_pulses_recursively(
-                inner_operation
-            )
+            replacing_operation = _replace_long_square_pulses_recursively(inner_operation)
             if replacing_operation:
                 operation.operations[inner_operation_id] = replacing_operation
         return None
@@ -119,9 +117,7 @@ def _replace_long_square_pulses_recursively(
                 and pulse_info["duration"] >= constants.PULSE_STITCHING_DURATION
             ):
                 square_pulse_idx_to_replace.append(i)
-        replacing_operation = _replace_long_square_pulses(
-            operation, square_pulse_idx_to_replace
-        )
+        replacing_operation = _replace_long_square_pulses(operation, square_pulse_idx_to_replace)
         if replacing_operation:
             return replacing_operation
         return None
@@ -220,10 +216,7 @@ class OperationTimingInfo:
 
     def overlaps_with(self, operation_timing_info: OperationTimingInfo) -> bool:
         """Check if this operation timing info overlaps with another."""
-        return (
-            self.start <= operation_timing_info.end
-            and operation_timing_info.start <= self.end
-        )
+        return self.start <= operation_timing_info.end and operation_timing_info.start <= self.end
 
 
 @dataclass
@@ -256,9 +249,9 @@ def _set_conditional_address_map(
         control_flow_info["feedback_trigger_address"] = conditional_address_map[
             feedback_trigger_label
         ].address
-        conditional_address_map[
-            feedback_trigger_label
-        ].portclocks |= _extract_port_clocks_used(operation.body)
+        conditional_address_map[feedback_trigger_label].portclocks |= _extract_port_clocks_used(
+            operation.body
+        )
     elif isinstance(operation, ControlFlowOperation):
         _set_conditional_address_map(
             operation=operation.body,
@@ -269,9 +262,7 @@ def _set_conditional_address_map(
         # be passed to the correct Sequencer via ``SequencerSettings``.
         acq_info = operation["acquisition_info"]
         for info in acq_info:
-            if (
-                feedback_trigger_label := info.get("feedback_trigger_label")
-            ) is not None:
+            if (feedback_trigger_label := info.get("feedback_trigger_label")) is not None:
                 info["feedback_trigger_address"] = conditional_address_map[
                     feedback_trigger_label
                 ].address
@@ -304,17 +295,9 @@ def _insert_latch_reset(
     elif operation.valid_acquisition and operation.is_conditional_acquisition:
         acq_info = operation["acquisition_info"]
         for info in acq_info:
-            if (
-                feedback_trigger_label := info.get("feedback_trigger_label")
-            ) is not None:
-                at = (
-                    abs_time_relative_to_schedule
-                    + info["t0"]
-                    + constants.MAX_MIN_INSTRUCTION_WAIT
-                )
-                for portclock in conditional_address_map[
-                    feedback_trigger_label
-                ].portclocks:
+            if (feedback_trigger_label := info.get("feedback_trigger_label")) is not None:
+                at = abs_time_relative_to_schedule + info["t0"] + constants.MAX_MIN_INSTRUCTION_WAIT
+                for portclock in conditional_address_map[feedback_trigger_label].portclocks:
                     schedulable = schedule.add(LatchReset(portclock=portclock))
                     schedulable.data["abs_time"] = at
 
@@ -386,9 +369,7 @@ def compile_conditional_playback(  # noqa: D417
     _all_conditional_acqs_and_control_flows_and_latch_reset(
         schedule, 0, all_conditional_acqs_and_control_flows
     )
-    all_conditional_acqs_and_control_flows.sort(
-        key=lambda time_op_sched: time_op_sched[0]
-    )
+    all_conditional_acqs_and_control_flows.sort(key=lambda time_op_sched: time_op_sched[0])
 
     current_ongoing_conditional_acquire = None
     for (
@@ -499,11 +480,9 @@ def hardware_compile(
 
     if hardware_cfg.hardware_options.latency_corrections is not None:
         # Subtract minimum latency to allow for negative latency corrections
-        hardware_cfg.hardware_options.latency_corrections = (
-            determine_relative_latency_corrections(
-                schedule=schedule,
-                hardware_cfg=hardware_cfg,
-            )
+        hardware_cfg.hardware_options.latency_corrections = determine_relative_latency_corrections(
+            schedule=schedule,
+            hardware_cfg=hardware_cfg,
         )
 
     # Apply software distortion corrections. Hardware distortion corrections are
@@ -522,9 +501,7 @@ def hardware_compile(
     if not hardware_cfg.allow_off_grid_nco_ops:
         _check_nco_operations_on_nco_time_grid(schedule)
 
-    container = compiler_container.CompilerContainer.from_hardware_cfg(
-        schedule, hardware_cfg
-    )
+    container = compiler_container.CompilerContainer.from_hardware_cfg(schedule, hardware_cfg)
 
     assign_pulse_and_acq_info_to_devices(
         schedule=schedule,
@@ -568,9 +545,7 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
     """
     Version of the specific hardware compilation config used.
     """
-    hardware_description: dict[  # type: ignore
-        str, QbloxHardwareDescription | HardwareDescription
-    ]
+    hardware_description: dict[str, QbloxHardwareDescription | HardwareDescription]  # type: ignore
     """Description of the instruments in the physical setup."""
     hardware_options: QbloxHardwareOptions  # type: ignore
     """
@@ -607,9 +582,7 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
 
     @model_validator(mode="after")
     def _validate_connectivity_channel_names(self) -> QbloxHardwareCompilationConfig:
-        module_name_to_channel_names_map: dict[tuple[str, str], set[str]] = defaultdict(
-            set
-        )
+        module_name_to_channel_names_map: dict[tuple[str, str], set[str]] = defaultdict(set)
         assert isinstance(self.connectivity, Connectivity)
         for node in self.connectivity.graph.nodes:
             try:
@@ -617,12 +590,8 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
             except ValueError:
                 continue
 
-            if isinstance(
-                self.hardware_description.get(cluster_name), ClusterDescription
-            ):
-                module_name_to_channel_names_map[cluster_name, module_name].add(
-                    channel_name
-                )
+            if isinstance(self.hardware_description.get(cluster_name), ClusterDescription):
+                module_name_to_channel_names_map[cluster_name, module_name].add(channel_name)
 
         for (
             cluster_name,
@@ -679,12 +648,10 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
                 # New variable to help pyright.
                 cluster_descr = self.hardware_description[channel_path.cluster_name]
                 assert isinstance(cluster_descr, ClusterDescription)
-                module_description = cluster_descr.modules[
-                    channel_path.module_idx
-                ].model_dump(exclude_unset=True)
-                channel_description = module_description.get(
-                    channel_path.channel_name, None
+                module_description = cluster_descr.modules[channel_path.module_idx].model_dump(
+                    exclude_unset=True
                 )
+                channel_description = module_description.get(channel_path.channel_name, None)
                 if channel_description is not None:
                     mix_lo = channel_description.get("mix_lo", None)
                     # FIXME: https://qblox.atlassian.net/browse/SE-490
@@ -707,8 +674,7 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
         """Convert old style hardware config dict to new style before validation."""
         if (
             isinstance(data, dict)
-            and data.get("backend")
-            == "quantify_scheduler.backends.qblox_backend.hardware_compile"
+            and data.get("backend") == "quantify_scheduler.backends.qblox_backend.hardware_compile"
         ):
             # Input is an old style Qblox hardware config dict
             data = _generate_new_style_hardware_compilation_config(data)
@@ -745,11 +711,7 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
             for edge in self.connectivity.graph.edges:
                 source, target = edge
 
-                if (
-                    _is_port(source)
-                    or _is_iq_mixer(source, "if")
-                    or _is_iq_mixer(source, "lo")
-                ):
+                if _is_port(source) or _is_iq_mixer(source, "if") or _is_iq_mixer(source, "lo"):
                     raise ValueError(
                         f"Node {source} in connectivity graph is a source. {exception_message}"
                     )
@@ -762,9 +724,7 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
         return self
 
     @model_validator(mode="before")
-    def _validate_versioning(
-        cls, config: dict[str, Any]  # noqa: N805
-    ) -> dict[str, Any]:
+    def _validate_versioning(cls, config: dict[str, Any]) -> dict[str, Any]:  # noqa: N805
         if "version" in config:  # noqa: SIM102
             if config["version"] not in ["0.1", "0.2"]:
                 raise ValueError("Unknown hardware config version.")
@@ -829,9 +789,7 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
         )
 
         options_by_portclock: dict[str, dict[str, Any]] = {}
-        for option, pc_to_value_map in self.hardware_options.model_dump(
-            exclude_unset=True
-        ).items():
+        for option, pc_to_value_map in self.hardware_options.model_dump(exclude_unset=True).items():
             for pc, value in pc_to_value_map.items():
                 options_by_portclock.setdefault(pc, {})[option] = value
 
@@ -843,8 +801,8 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
                     clusters_hardware_options[instr_name][option][pc] = value
 
         for cluster_name, options in clusters_hardware_options.items():
-            cluster_configs[cluster_name].hardware_options = (
-                QbloxHardwareOptions.model_validate(options)
+            cluster_configs[cluster_name].hardware_options = QbloxHardwareOptions.model_validate(
+                options
             )
 
         for instr_cfg in cluster_configs.values():
@@ -853,18 +811,14 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
         # Delete hardware descriptions of unused modules
         unused_modules = defaultdict(list)
         for instrument_name, cfg in cluster_configs.items():
-            used_modules_idx = [
-                path.module_idx for path in cfg.portclock_to_path.values()
-            ]
+            used_modules_idx = [path.module_idx for path in cfg.portclock_to_path.values()]
             for module_idx in cfg.hardware_description.modules:
                 if module_idx not in used_modules_idx:
                     unused_modules[instrument_name].append(module_idx)
 
         for cluster_name, indices in unused_modules.items():
             for module_idx in indices:
-                del cluster_configs[cluster_name].hardware_description.modules[
-                    module_idx
-                ]
+                del cluster_configs[cluster_name].hardware_description.modules[module_idx]
 
         # Delete empty configs of unused clusters
         unused_clusters = []
@@ -902,10 +856,7 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
         def is_path(value: str) -> bool:
             possible_cluster_name = value.split(".")[0]
             # Important: must be exact match.
-            return any(
-                cluster_name == possible_cluster_name
-                for cluster_name in cluster_pc_to_path
-            )
+            return any(cluster_name == possible_cluster_name for cluster_name in cluster_pc_to_path)
 
         def is_lo_port(value: str) -> bool:
             possible_lo_name = value.split(".")[0]
@@ -994,12 +945,8 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
                     cluster_lo_to_path[path.cluster_name][mixer_lo] = path
                     for clock in port_to_clocks[port]:
                         # NV center hack:
-                        fixed_clock = (
-                            get_optical_clock(mixer, port_to_clocks[port]) or clock
-                        )
-                        cluster_pc_to_path[path.cluster_name][
-                            f"{port}-{fixed_clock}"
-                        ] = path
+                        fixed_clock = get_optical_clock(mixer, port_to_clocks[port]) or clock
+                        cluster_pc_to_path[path.cluster_name][f"{port}-{fixed_clock}"] = path
 
         for cluster_name, pc_to_path in cluster_pc_to_path.items():
             cluster_configs[cluster_name].portclock_to_path = pc_to_path
@@ -1056,9 +1003,7 @@ class _ClusterCompilationConfig(DataStructure):
             module_idx: {} for module_idx in module_configs
         }
 
-        for option, values in self.hardware_options.model_dump(
-            exclude_unset=True
-        ).items():
+        for option, values in self.hardware_options.model_dump(exclude_unset=True).items():
             for pc, option_value in values.items():
                 module_idx = self.portclock_to_path[pc].module_idx
 
@@ -1067,8 +1012,8 @@ class _ClusterCompilationConfig(DataStructure):
                 modules_hardware_options[module_idx][option][pc] = option_value
 
         for module_idx, options in modules_hardware_options.items():
-            module_configs[module_idx].hardware_options = (
-                QbloxHardwareOptions.model_validate(options)
+            module_configs[module_idx].hardware_options = QbloxHardwareOptions.model_validate(
+                options
             )
 
         # Distribute `portclock_to_path`
@@ -1115,9 +1060,7 @@ class _ClusterModuleCompilationConfig(DataStructure):
     ) -> dict[int, _SequencerCompilationConfig]:
 
         sequencer_configs = {}
-        channel_to_lo = {
-            path.channel_name: lo_name for lo_name, path in self.lo_to_path.items()
-        }
+        channel_to_lo = {path.channel_name: lo_name for lo_name, path in self.lo_to_path.items()}
 
         # Sort to ensure deterministic order in sequencer instantiation
         for seq_idx, portclock in enumerate(sorted(self.portclock_to_path)):
@@ -1209,26 +1152,18 @@ class _ClusterModuleCompilationConfig(DataStructure):
         self,
     ) -> _ClusterModuleCompilationConfig:
 
-        input_gain = (
-            self.hardware_options.input_gain
-            if self.hardware_options is not None
-            else None
-        )
+        input_gain = self.hardware_options.input_gain if self.hardware_options is not None else None
 
         if input_gain is not None:
             for portclock, gain in input_gain.items():
                 channel_name = self.portclock_to_path[portclock].channel_name
 
-                if ChannelMode.REAL in channel_name and isinstance(
-                    gain, ComplexInputGain
-                ):
+                if ChannelMode.REAL in channel_name and isinstance(gain, ComplexInputGain):
                     raise ValueError(
                         f"A complex input gain was assigned to portclock '{portclock}', "
                         f"which is a real channel."
                     )
-                elif ChannelMode.COMPLEX in channel_name and isinstance(
-                    gain, RealInputGain
-                ):
+                elif ChannelMode.COMPLEX in channel_name and isinstance(gain, RealInputGain):
                     raise ValueError(
                         f"A real input gain was assigned to portclock '{portclock}', "
                         f"which is a complex channel."
@@ -1323,18 +1258,12 @@ def _add_clock_freqs_to_set_clock_frequency(
     if isinstance(operation, ScheduleBase):
         for schedulable in operation.schedulables.values():
             inner_operation = operation.operations[schedulable["operation_id"]]
-            _add_clock_freqs_to_set_clock_frequency(
-                operation=inner_operation, schedule=operation
-            )
+            _add_clock_freqs_to_set_clock_frequency(operation=inner_operation, schedule=operation)
     elif isinstance(operation, ControlFlowOperation):
-        _add_clock_freqs_to_set_clock_frequency(
-            operation=operation.body, schedule=schedule
-        )
+        _add_clock_freqs_to_set_clock_frequency(operation=operation.body, schedule=schedule)
     else:
         for pulse_info in operation["pulse_info"]:
-            clock_freq = schedule.resources.get(pulse_info["clock"], {}).get(
-                "freq", None
-            )
+            clock_freq = schedule.resources.get(pulse_info["clock"], {}).get("freq", None)
 
             if "clock_freq_new" in pulse_info:
                 pulse_info.update(
@@ -1377,9 +1306,7 @@ def validate_non_overlapping_stitched_pulse(schedule: Schedule) -> None:
 
     """
     abs_times_and_operations: list[tuple[float, Operation]] = list()
-    _all_abs_times_ops_with_voltage_offsets_pulses(
-        schedule, 0, abs_times_and_operations
-    )
+    _all_abs_times_ops_with_voltage_offsets_pulses(schedule, 0, abs_times_and_operations)
     abs_times_and_operations.sort(key=lambda abs_time_and_op: abs_time_and_op[0])
 
     # Iterate through all relevant operations in chronological order, and keep track of the
@@ -1453,9 +1380,7 @@ def _raise_if_pulses_overlap_on_same_port_clock(
     """
     pulse_start_ends_per_port_a = _get_pulse_start_ends(abs_time_a, op_a)
     pulse_start_ends_per_port_b = _get_pulse_start_ends(abs_time_b, op_b)
-    common_ports = set(pulse_start_ends_per_port_a.keys()) & set(
-        pulse_start_ends_per_port_b.keys()
-    )
+    common_ports = set(pulse_start_ends_per_port_a.keys()) & set(pulse_start_ends_per_port_b.keys())
     for port_clock in common_ports:
         start_a, end_a = pulse_start_ends_per_port_a[port_clock]
         start_b, end_b = pulse_start_ends_per_port_b[port_clock]
@@ -1473,17 +1398,12 @@ def _raise_if_pulses_overlap_on_same_port_clock(
             )
 
 
-def _get_pulse_start_ends(
-    abs_time: float, operation: Operation
-) -> dict[str, tuple[float, float]]:
+def _get_pulse_start_ends(abs_time: float, operation: Operation) -> dict[str, tuple[float, float]]:
     pulse_start_ends_per_port: dict[str, tuple[float, float]] = defaultdict(
         lambda: (np.inf, -np.inf)
     )
     for pulse_info in operation["pulse_info"]:
-        if (
-            pulse_info.get("wf_func") is None
-            and pulse_info.get("offset_path_I") is None
-        ):
+        if pulse_info.get("wf_func") is None and pulse_info.get("offset_path_I") is None:
             continue
         prev_start, prev_end = pulse_start_ends_per_port[
             f"{pulse_info['port']}_{pulse_info['clock']}"
@@ -1544,13 +1464,10 @@ def _check_nco_operations_on_nco_time_grid_recursively(
     if isinstance(operation, Schedule):
         for sub_schedulable in operation.schedulables.values():
             sub_operation = operation.operations[sub_schedulable["operation_id"]]
-            contains_nco_op = (
-                contains_nco_op
-                or _check_nco_operations_on_nco_time_grid_recursively(
-                    operation=sub_operation,
-                    schedulable=sub_schedulable,
-                    parent_control_flow_op=None,
-                )
+            contains_nco_op = contains_nco_op or _check_nco_operations_on_nco_time_grid_recursively(
+                operation=sub_operation,
+                schedulable=sub_schedulable,
+                parent_control_flow_op=None,
             )
         if contains_nco_op:
             _check_nco_grid_timing(
@@ -1604,10 +1521,7 @@ def _check_nco_grid_timing(
                 f"must start and end on the {constants.NCO_TIME_GRID} ns time grid."
             ) from e
 
-    elif (
-        isinstance(operation, ControlFlowOperation)
-        or parent_control_flow_op is not None
-    ):
+    elif isinstance(operation, ControlFlowOperation) or parent_control_flow_op is not None:
         assert operation.duration is not None
         try:
             to_grid_time(start_time, constants.NCO_TIME_GRID)

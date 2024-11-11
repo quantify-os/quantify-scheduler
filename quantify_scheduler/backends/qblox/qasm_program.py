@@ -478,15 +478,10 @@ class QASMProgram:
             # columnar inserts a newline before all the the instruction rows
             return instructions_str.split("\n", 1)[1]
         else:
-            return (
-                "\n".join(" ".join(instruction) for instruction in self.instructions)
-                + "\n"
-            )
+            return "\n".join(" ".join(instruction) for instruction in self.instructions) + "\n"
 
     @contextmanager
-    def conditional(
-        self, operation: ConditionalStrategy
-    ) -> Generator[None, None, None]:
+    def conditional(self, operation: ConditionalStrategy) -> Generator[None, None, None]:
         """
         Defines a conditional block in the QASM program.
 

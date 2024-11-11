@@ -81,8 +81,7 @@ class AcquisitionStrategyPartial(IOperationStrategy):
             self._acquire_with_register_bin_index(qasm_program)
         else:
             raise RuntimeError(
-                f"Attempting to process an acquisition with unknown bin "
-                f"mode {self.bin_mode}."
+                f"Attempting to process an acquisition with unknown bin " f"mode {self.bin_mode}."
             )
 
     @abstractmethod
@@ -203,9 +202,7 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
 
         """
         waveform_indices = []
-        for idx, parameterized_waveform in enumerate(
-            self.operation_info.data["waveforms"]
-        ):
+        for idx, parameterized_waveform in enumerate(self.operation_info.data["waveforms"]):
             if idx > 1:
                 raise ValueError(
                     f"Too many waveforms ("
@@ -226,9 +223,7 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
                     "'self.operation_info.data[\"waveforms\"]'"
                 )
             if "interpolated" in parameterized_waveform["wf_func"]:
-                weights_sampling_rate = (
-                    len(parameterized_waveform["t_samples"]) / duration
-                )
+                weights_sampling_rate = len(parameterized_waveform["t_samples"]) / duration
                 if weights_sampling_rate > constants.SAMPLING_RATE:
                     raise ValueError(
                         f"Qblox hardware supports a sampling rate up to "

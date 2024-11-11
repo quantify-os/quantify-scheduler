@@ -243,9 +243,7 @@ def _determine_clock_sample_start(
     return (clock_cycle, sample_float)
 
 
-def _determine_clock_start(
-    hardware_channel: str, abs_time: float, operation_name: str
-) -> float:
+def _determine_clock_start(hardware_channel: str, abs_time: float, operation_name: str) -> float:
     if hardware_channel is None:
         return np.nan
     clock_start, _ = _determine_clock_sample_start(
@@ -256,9 +254,7 @@ def _determine_clock_start(
     return clock_start
 
 
-def _determine_sample_start(
-    hardware_channel: str, abs_time: float, operation_name: str
-) -> float:
+def _determine_sample_start(hardware_channel: str, abs_time: float, operation_name: str) -> float:
     if hardware_channel is None:
         return np.nan
     _, sample_start = _determine_clock_sample_start(
@@ -446,9 +442,7 @@ def _add_waveform_ids(timing_table: pandas.DataFrame) -> pandas.DataFrame:
 
     """
 
-    def _determine_waveform_id(
-        waveform_op_id: str, sample_start: float, phase: float = 0
-    ) -> str:
+    def _determine_waveform_id(waveform_op_id: str, sample_start: float, phase: float = 0) -> str:
         # acq_index is not part of the waveform this is filtered out from the
         # waveform_id as it doesn't affect the waveform itself.
         waveform_op_id = re.sub(r"acq_index=\(.*\)", "acq_index=(*)", waveform_op_id)
@@ -458,17 +452,13 @@ def _add_waveform_ids(timing_table: pandas.DataFrame) -> pandas.DataFrame:
         # samples should always be positive, the abs is here to catch a rare bug
         # where a very small negative number (e.g., -0.00000000000000013) is printed
         # as -0.0 causing conflicting waveform_ids for the same waveform.
-        waveform_id = (
-            f"{waveform_op_id}_sample:{abs(sample_start):.1f}_phase:{phase:.1f}"
-        )
+        waveform_id = f"{waveform_op_id}_sample:{abs(sample_start):.1f}_phase:{phase:.1f}"
         return waveform_id
 
     # N.B. phase is relevant if premodulation is used.
     # calculating the phase is currently not implemented.
     timing_table["waveform_id"] = timing_table.apply(
-        lambda row: _determine_waveform_id(
-            row["waveform_op_id"], row["sample_start"], phase=0
-        ),
+        lambda row: _determine_waveform_id(row["waveform_op_id"], row["sample_start"], phase=0),
         axis=1,
     )
     return timing_table
@@ -551,17 +541,14 @@ def _validate_schedule(schedule: Schedule) -> None:
     for schedulable in schedule.schedulables.values():
         if "abs_time" not in schedulable:
             raise ValueError(
-                "Absolute timing has not been determined "
-                + f"for the schedule '{schedule.name}'!"
+                "Absolute timing has not been determined " + f"for the schedule '{schedule.name}'!"
             )
     for op in schedule.operations.values():
         for pulse_data in op.data["pulse_info"]:
             if pulse_data.get("reference_magnitude", None) is not None:
                 raise NotImplementedError
         if isinstance(op, (ControlFlowOperation, SetClockFrequency)):
-            raise NotImplementedError(
-                f"Operation '{op}' is not supported by the zhinst backend."
-            )
+            raise NotImplementedError(f"Operation '{op}' is not supported by the zhinst backend.")
 
 
 def apply_waveform_corrections(
@@ -598,9 +585,7 @@ def apply_waveform_corrections(
     if is_pulse:
         # Modulate the waveform
         if output.modulation.type == zhinst.ModulationModeType.PREMODULATE:
-            t: np.ndarray = np.arange(
-                0, 0 + duration_in_seconds, 1 / instrument_info.sample_rate
-            )
+            t: np.ndarray = np.arange(0, 0 + duration_in_seconds, 1 / instrument_info.sample_rate)
             waveform = waveform_helpers.modulate_waveform(
                 t, waveform, output.modulation.interm_freq
             )
@@ -613,9 +598,7 @@ def apply_waveform_corrections(
     # in the case where the waveform is an integration weight
     elif output.modulation.type == zhinst.ModulationModeType.PREMODULATE:
         # Modulate the waveform
-        t: np.ndarray = np.arange(
-            0, 0 + duration_in_seconds, 1 / instrument_info.sample_rate
-        )
+        t: np.ndarray = np.arange(0, 0 + duration_in_seconds, 1 / instrument_info.sample_rate)
         # N.B. the minus sign with respect to the pulse being applied
         waveform = waveform_helpers.modulate_waveform(
             t, waveform, -1 * output.modulation.interm_freq
@@ -757,9 +740,7 @@ def _generate_legacy_hardware_config(  # noqa: PLR0912, PLR0915
 
     """
 
-    hardware_description = (
-        compilation_config.hardware_compilation_config.hardware_description
-    )
+    hardware_description = compilation_config.hardware_compilation_config.hardware_description
     hardware_options = compilation_config.hardware_compilation_config.hardware_options
     connectivity = compilation_config.hardware_compilation_config.connectivity
 
@@ -774,14 +755,10 @@ def _generate_legacy_hardware_config(  # noqa: PLR0912, PLR0915
     port_clocks = _extract_port_clocks_used(operation=schedule)
 
     hardware_config: dict = {"devices": [], "local_oscillators": []}
-    hardware_config["backend"] = (
-        "quantify_scheduler.backends.zhinst_backend.compile_backend"
-    )
+    hardware_config["backend"] = "quantify_scheduler.backends.zhinst_backend.compile_backend"
 
     # Add connectivity information to the hardware config:
-    connectivity_graph = (
-        compilation_config.hardware_compilation_config.connectivity.graph
-    )
+    connectivity_graph = compilation_config.hardware_compilation_config.connectivity.graph
     for port, clock in port_clocks:
         connected_nodes = {}
         for node in connectivity_graph:
@@ -796,17 +773,13 @@ def _generate_legacy_hardware_config(  # noqa: PLR0912, PLR0915
             lo_name = None
             if hardware_description[instrument].instrument_type == "IQMixer":
                 # Find which lo is used for this IQ mixer
-                lo_name = list(connectivity_graph[instrument + ".lo"])[0].split(
-                    sep="."
-                )[0]
+                lo_name = list(connectivity_graph[instrument + ".lo"])[0].split(sep=".")[0]
                 # Find which instrument is connected to if port
                 io_path = list(connectivity_graph[instrument + ".if"])[0].split(sep=".")
 
             # Set port-clock combination in io config:
             instr_indices = [
-                i
-                for i, v in enumerate(hardware_config["devices"])
-                if v["name"] == io_path[0]
+                i for i, v in enumerate(hardware_config["devices"]) if v["name"] == io_path[0]
             ]
             if len(instr_indices) == 0:
                 hardware_config["devices"].append({"name": io_path[0]})
@@ -830,9 +803,7 @@ def _generate_legacy_hardware_config(  # noqa: PLR0912, PLR0915
                 instr_config[instrument_io]["local_oscillator"] = lo_name
 
     # Sort the devices to ensure deterministic behaviour:
-    hardware_config["devices"] = sorted(
-        hardware_config["devices"], key=lambda x: x["name"]
-    )
+    hardware_config["devices"] = sorted(hardware_config["devices"], key=lambda x: x["name"])
 
     # Add info from hardware description to hardware config
     if hardware_config.get("local_oscillators") is None:
@@ -842,9 +813,7 @@ def _generate_legacy_hardware_config(  # noqa: PLR0912, PLR0915
     for instr_name, instr_description in hardware_description.items():
         if instr_description.instrument_type in ["UHFQA", "HDAWG4", "HDAWG8"]:
             instr_indices = [
-                i
-                for i, v in enumerate(hardware_config["devices"])
-                if v["name"] == instr_name
+                i for i, v in enumerate(hardware_config["devices"]) if v["name"] == instr_name
             ]
             if len(instr_indices) > 1:
                 raise ValueError(
@@ -865,12 +834,8 @@ def _generate_legacy_hardware_config(  # noqa: PLR0912, PLR0915
                 # Only propagate channel description settings if it was already
                 # added based on the Connectivity and the Schedule.
                 instr_config["channel_0"]["mode"] = instr_description.channel_0.mode
-                instr_config["channel_0"][
-                    "markers"
-                ] = instr_description.channel_0.markers
-                instr_config["channel_0"][
-                    "trigger"
-                ] = instr_description.channel_0.trigger
+                instr_config["channel_0"]["markers"] = instr_description.channel_0.markers
+                instr_config["channel_0"]["trigger"] = instr_description.channel_0.trigger
 
             if (
                 instr_description.instrument_type in ["HDAWG4", "HDAWG8"]
@@ -880,12 +845,8 @@ def _generate_legacy_hardware_config(  # noqa: PLR0912, PLR0915
                 # Only propagate channel description settings if it was already
                 # added based on the Connectivity and the Schedule.
                 instr_config["channel_1"]["mode"] = instr_description.channel_1.mode
-                instr_config["channel_1"][
-                    "markers"
-                ] = instr_description.channel_1.markers
-                instr_config["channel_1"][
-                    "trigger"
-                ] = instr_description.channel_1.trigger
+                instr_config["channel_1"]["markers"] = instr_description.channel_1.markers
+                instr_config["channel_1"]["trigger"] = instr_description.channel_1.trigger
             if (
                 instr_description.instrument_type == "HDAWG8"
                 and instr_description.channel_2 is not None
@@ -894,12 +855,8 @@ def _generate_legacy_hardware_config(  # noqa: PLR0912, PLR0915
                 # Only propagate channel description settings if it was already
                 # added based on the Connectivity and the Schedule.
                 instr_config["channel_2"]["mode"] = instr_description.channel_2.mode
-                instr_config["channel_2"][
-                    "markers"
-                ] = instr_description.channel_2.markers
-                instr_config["channel_2"][
-                    "trigger"
-                ] = instr_description.channel_2.trigger
+                instr_config["channel_2"]["markers"] = instr_description.channel_2.markers
+                instr_config["channel_2"]["trigger"] = instr_description.channel_2.trigger
             if (
                 instr_description.instrument_type == "HDAWG8"
                 and instr_description.channel_3 is not None
@@ -908,12 +865,8 @@ def _generate_legacy_hardware_config(  # noqa: PLR0912, PLR0915
                 # Only propagate channel description settings if it was already
                 # added based on the Connectivity and the Schedule.
                 instr_config["channel_3"]["mode"] = instr_description.channel_3.mode
-                instr_config["channel_3"][
-                    "markers"
-                ] = instr_description.channel_3.markers
-                instr_config["channel_3"][
-                    "trigger"
-                ] = instr_description.channel_3.trigger
+                instr_config["channel_3"]["markers"] = instr_description.channel_3.markers
+                instr_config["channel_3"]["trigger"] = instr_description.channel_3.trigger
 
         elif instr_description.instrument_type == "LocalOscillator":
             lo_indices = [
@@ -958,9 +911,7 @@ def _generate_legacy_hardware_config(  # noqa: PLR0912, PLR0915
                 continue
             # Find path to port-clock combination in the hardware config, e.g.,
             # ["devices", 0, "channel_0"]
-            ch_path = find_port_clock_path(
-                hardware_config=hardware_config, port=port, clock=clock
-            )
+            ch_path = find_port_clock_path(hardware_config=hardware_config, port=port, clock=clock)
             # Extract channel config dict:
             ch_config = hardware_config
             for key in ch_path:
@@ -1004,9 +955,7 @@ def _generate_legacy_hardware_config(  # noqa: PLR0912, PLR0915
                 continue
             # Find path to port-clock combination in the hardware config, e.g.,
             # ["devices", 0, "channel_0"]
-            ch_path = find_port_clock_path(
-                hardware_config=hardware_config, port=port, clock=clock
-            )
+            ch_path = find_port_clock_path(hardware_config=hardware_config, port=port, clock=clock)
             # Extract channel config dict:
             ch_config = hardware_config
             for key in ch_path:
@@ -1022,9 +971,7 @@ def _generate_legacy_hardware_config(  # noqa: PLR0912, PLR0915
                 continue
             # Find path to port-clock combination in the hardware config, e.g.,
             # ["devices", 0, "channel_0"]
-            ch_path = find_port_clock_path(
-                hardware_config=hardware_config, port=port, clock=clock
-            )
+            ch_path = find_port_clock_path(hardware_config=hardware_config, port=port, clock=clock)
             # Extract instrument config and I/O channel config dicts:
             instr_config = hardware_config
             for key in ch_path[:-1]:
@@ -1099,9 +1046,7 @@ def _generate_new_style_hardware_compilation_config(  # noqa: PLR0912, PLR0915
                     }
                     for ch_idx in [0, 1, 2, 3]:
                         if ch_cfg := instr_cfg.get(f"channel_{ch_idx}"):
-                            hardware_description[instr_cfg["name"]][
-                                f"channel_{ch_idx}"
-                            ] = {
+                            hardware_description[instr_cfg["name"]][f"channel_{ch_idx}"] = {
                                 "mode": ch_cfg["mode"],
                                 "markers": ch_cfg.get("markers", []),
                                 "trigger": ch_cfg.get("trigger"),
@@ -1115,9 +1060,7 @@ def _generate_new_style_hardware_compilation_config(  # noqa: PLR0912, PLR0915
                         if ch_cfg.get("local_oscillator") is not None:
                             # Add IQ mixer to the hardware_description:
                             iq_mixer_id = f"iqm_{instr_cfg['name']}_ch{ch_idx}"
-                            hardware_description[iq_mixer_id] = {
-                                "instrument_type": "IQMixer"
-                            }
+                            hardware_description[iq_mixer_id] = {"instrument_type": "IQMixer"}
                             # Add LO and IQ mixer to connectivity graph:
                             connectivity["graph"].extend(
                                 [
@@ -1140,36 +1083,31 @@ def _generate_new_style_hardware_compilation_config(  # noqa: PLR0912, PLR0915
                                 if lo_cfg["unique_name"] == ch_cfg["local_oscillator"]
                             ][0]
                             if "frequency" in lo_cfg:
-                                hardware_options["modulation_frequencies"][
-                                    f"{port}-{clock}"
-                                ]["lo_freq"] = list(lo_cfg["frequency"].values())[0]
+                                hardware_options["modulation_frequencies"][f"{port}-{clock}"][
+                                    "lo_freq"
+                                ] = list(lo_cfg["frequency"].values())[0]
                         connectivity["graph"].append((port_name, port))
                         # Hardware Options
                         if ch_cfg.get("mixer_corrections"):
                             # Decapitalize DC offset keys:
                             mix_corr_lower_case = {}
                             for key in ch_cfg["mixer_corrections"]:
-                                mix_corr_lower_case[key.lower()] = ch_cfg[
-                                    "mixer_corrections"
-                                ][key]
+                                mix_corr_lower_case[key.lower()] = ch_cfg["mixer_corrections"][key]
                             hardware_options["mixer_corrections"][
                                 f"{port}-{clock}"
                             ] = mix_corr_lower_case
                         if ch_cfg.get("gain1"):
-                            hardware_options["output_gain"][f"{port}-{clock}"][
-                                "gain_I"
-                            ] = ch_cfg["gain1"]
+                            hardware_options["output_gain"][f"{port}-{clock}"]["gain_I"] = ch_cfg[
+                                "gain1"
+                            ]
                         if ch_cfg.get("gain2"):
-                            hardware_options["output_gain"][f"{port}-{clock}"][
-                                "gain_Q"
-                            ] = ch_cfg["gain2"]
-                        if (
-                            ch_cfg.get("modulation")
-                            and ch_cfg["modulation"]["type"] == "premod"
-                        ):
-                            hardware_options["modulation_frequencies"][
-                                f"{port}-{clock}"
-                            ]["interm_freq"] = ch_cfg["modulation"]["interm_freq"]
+                            hardware_options["output_gain"][f"{port}-{clock}"]["gain_Q"] = ch_cfg[
+                                "gain2"
+                            ]
+                        if ch_cfg.get("modulation") and ch_cfg["modulation"]["type"] == "premod":
+                            hardware_options["modulation_frequencies"][f"{port}-{clock}"][
+                                "interm_freq"
+                            ] = ch_cfg["modulation"]["interm_freq"]
                 elif instr_cfg["type"] == "UHFQA":
                     # Hardware Description
                     hardware_description[instr_cfg["name"]] = {
@@ -1189,9 +1127,7 @@ def _generate_new_style_hardware_compilation_config(  # noqa: PLR0912, PLR0915
                         if ch_cfg.get("local_oscillator") is not None:
                             # Add IQ mixer to the hardware_description:
                             iq_mixer_id = f"iqm_{instr_cfg['name']}_ch0"
-                            hardware_description[iq_mixer_id] = {
-                                "instrument_type": "IQMixer"
-                            }
+                            hardware_description[iq_mixer_id] = {"instrument_type": "IQMixer"}
                             # Add LO and IQ mixer to connectivity graph:
                             connectivity["graph"].extend(
                                 [
@@ -1214,30 +1150,27 @@ def _generate_new_style_hardware_compilation_config(  # noqa: PLR0912, PLR0915
                                 if lo_cfg["unique_name"] == ch_cfg["local_oscillator"]
                             ][0]
                             if "frequency" in lo_cfg:
-                                hardware_options["modulation_frequencies"][
-                                    f"{port}-{clock}"
-                                ]["lo_freq"] = list(lo_cfg["frequency"].values())[0]
+                                hardware_options["modulation_frequencies"][f"{port}-{clock}"][
+                                    "lo_freq"
+                                ] = list(lo_cfg["frequency"].values())[0]
                         connectivity["graph"].append((port_name, port))
                         # Hardware Options
                         if ch_cfg.get("mixer_corrections"):
-                            hardware_options["mixer_corrections"][f"{port}-{clock}"] = (
-                                ch_cfg["mixer_corrections"]
-                            )
+                            hardware_options["mixer_corrections"][f"{port}-{clock}"] = ch_cfg[
+                                "mixer_corrections"
+                            ]
                         if ch_cfg.get("gain1"):
-                            hardware_options["output_gain"][f"{port}-{clock}"][
-                                "gain_I"
-                            ] = ch_cfg["gain1"]
+                            hardware_options["output_gain"][f"{port}-{clock}"]["gain_I"] = ch_cfg[
+                                "gain1"
+                            ]
                         if ch_cfg.get("gain2"):
-                            hardware_options["output_gain"][f"{port}-{clock}"][
-                                "gain_Q"
-                            ] = ch_cfg["gain2"]
-                        if (
-                            ch_cfg.get("modulation")
-                            and ch_cfg["modulation"]["type"] == "premod"
-                        ):
-                            hardware_options["modulation_frequencies"][
-                                f"{port}-{clock}"
-                            ]["interm_freq"] = ch_cfg["modulation"]["interm_freq"]
+                            hardware_options["output_gain"][f"{port}-{clock}"]["gain_Q"] = ch_cfg[
+                                "gain2"
+                            ]
+                        if ch_cfg.get("modulation") and ch_cfg["modulation"]["type"] == "premod":
+                            hardware_options["modulation_frequencies"][f"{port}-{clock}"][
+                                "interm_freq"
+                            ] = ch_cfg["modulation"]["interm_freq"]
                 else:
                     raise ValueError(
                         f"Unexpected instrument type {instr_cfg['type']} in old-style "
@@ -1246,9 +1179,7 @@ def _generate_new_style_hardware_compilation_config(  # noqa: PLR0912, PLR0915
         elif hw_cfg_key == "mode":
             pass
         else:
-            warnings.warn(
-                f"Skipping unknown key {hw_cfg_key} in old-style hardware config."
-            )
+            warnings.warn(f"Skipping unknown key {hw_cfg_key} in old-style hardware config.")
 
     return dict(
         config_type="quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig",
@@ -1258,9 +1189,7 @@ def _generate_new_style_hardware_compilation_config(  # noqa: PLR0912, PLR0915
     )
 
 
-def flatten_schedule(
-    schedule: Schedule, config: CompilationConfig | None = None
-) -> Schedule:
+def flatten_schedule(schedule: Schedule, config: CompilationConfig | None = None) -> Schedule:
     """
     Recursively flatten subschedules based on the absolute timing.
 
@@ -1281,9 +1210,7 @@ def flatten_schedule(
 
     """
 
-    def _insert_op_at_time(
-        schedule: Schedule, operation: Operation, abs_time: float
-    ) -> None:
+    def _insert_op_at_time(schedule: Schedule, operation: Operation, abs_time: float) -> None:
         new_key = str(uuid4())
         new_schedulable = Schedulable(
             name=new_key,
@@ -1323,9 +1250,7 @@ def flatten_schedule(
             # insert new schedulables shifted by the correct offset
             for inner_schedulable in op.schedulables.values():
                 inner_op = op.operations[inner_schedulable["operation_id"]]
-                _insert_op_at_time(
-                    schedule, inner_op, inner_schedulable["abs_time"] + offset
-                )
+                _insert_op_at_time(schedule, inner_op, inner_schedulable["abs_time"] + offset)
 
             # mark the inner schedule for removal from the parent
             op_keys_to_pop.add(op_key)
@@ -1346,9 +1271,7 @@ def flatten_schedule(
 
 
 def _get_operations_by_repr(schedule: Schedule) -> dict[str, Operation]:
-    operations_dict_with_repr_keys = {
-        str(op): op for op in schedule.operations.values()
-    }
+    operations_dict_with_repr_keys = {str(op): op for op in schedule.operations.values()}
     if len(schedule.operations) != len(operations_dict_with_repr_keys):
         all_reprs = set()
         colliding_ops = []
@@ -1433,12 +1356,8 @@ def compile_backend(  # noqa: PLR0912
         # (see also https://gitlab.com/groups/quantify-os/-/epics/1)
         common.HardwareOptions(latency_corrections=hardware_cfg["latency_corrections"])
 
-    if (
-        distortion_corrections := hardware_cfg.get("distortion_corrections")
-    ) is not None:
-        replacing_schedule = apply_software_distortion_corrections(
-            schedule, distortion_corrections
-        )
+    if (distortion_corrections := hardware_cfg.get("distortion_corrections")) is not None:
+        replacing_schedule = apply_software_distortion_corrections(schedule, distortion_corrections)
         if replacing_schedule is not None:
             schedule = replacing_schedule
 
@@ -1458,9 +1377,7 @@ def compile_backend(  # noqa: PLR0912
 
     # the timing of all pulses and acquisitions is corrected based on the latency corr.
     latency_dict = determine_relative_latency_corrections(hardware_cfg)
-    timing_table = _apply_latency_corrections(
-        timing_table=timing_table, latency_dict=latency_dict
-    )
+    timing_table = _apply_latency_corrections(timing_table=timing_table, latency_dict=latency_dict)
 
     # ensure that operations are still sorted by time after applying the latency corr.
     timing_table.sort_values("abs_time", inplace=True)
@@ -1537,9 +1454,7 @@ def compile_backend(  # noqa: PLR0912
             acq_config: ZIAcquisitionConfig | None = None
 
         elif device.device_type == zhinst.DeviceType.UHFQA:
-            acq_metadata = schedule_helpers.extract_acquisition_metadata_from_schedule(
-                schedule
-            )
+            acq_metadata = schedule_helpers.extract_acquisition_metadata_from_schedule(schedule)
             bin_mode = acq_metadata.bin_mode
 
             builder, acq_config = _compile_for_uhfqa(
@@ -1607,9 +1522,7 @@ class ZIHardwareCompilationConfig(common.HardwareCompilationConfig):
     """
     compilation_passes: list[SimpleNodeConfig] = [
         SimpleNodeConfig(name="flatten_schedule", compilation_func=flatten_schedule),
-        SimpleNodeConfig(
-            name="zhinst_hardware_compile", compilation_func=compile_backend
-        ),
+        SimpleNodeConfig(name="zhinst_hardware_compile", compilation_func=compile_backend),
     ]
     """
     The list of compilation nodes that should be called in succession to compile a
@@ -1624,8 +1537,7 @@ class ZIHardwareCompilationConfig(common.HardwareCompilationConfig):
         """Convert old style hardware config dict to new style before validation."""
         if (
             isinstance(data, dict)
-            and data.get("backend")
-            == "quantify_scheduler.backends.zhinst_backend.compile_backend"
+            and data.get("backend") == "quantify_scheduler.backends.zhinst_backend.compile_backend"
         ):
             # Input is an old style ZI hardware config dict
             data = _generate_new_style_hardware_compilation_config(data)
@@ -1697,9 +1609,7 @@ def _add_lo_config(  # noqa: PLR0912
         and device_configs[local_oscillator.unique_name].get("frequency") != lo_freq_val
     ):
         # the device_config currently only contains the frequency
-        raise ValueError(
-            f'Multiple frequencies assigned to LocalOscillator "{unique_name}"'
-        )
+        raise ValueError(f'Multiple frequencies assigned to LocalOscillator "{unique_name}"')
 
     lo_config = {
         f"{local_oscillator.instrument_name}.{lo_freq_key}": lo_freq_val,
@@ -1800,8 +1710,7 @@ def _compile_for_hdawg(
     sequencer_stop = min(len(device.channels), int(n_awgs / sequencer_step))
 
     logger.debug(
-        f"HDAWG[{device.name}] devtype={device.device_type} "
-        + f" awg_count={n_awgs} {str(device)}"
+        f"HDAWG[{device.name}] devtype={device.device_type} " + f" awg_count={n_awgs} {str(device)}"
     )
 
     enabled_outputs: dict[int, zhinst.Output] = dict()
@@ -1821,9 +1730,7 @@ def _compile_for_hdawg(
         )
         settings_builder.with_sigouts(awg_index, (1, 1)).with_gain(
             awg_index, (output.gain1, output.gain2)
-        ).with_sigout_offset(
-            int(awg_index * 2), mixer_corrections.dc_offset_i
-        ).with_sigout_offset(
+        ).with_sigout_offset(int(awg_index * 2), mixer_corrections.dc_offset_i).with_sigout_offset(
             int(awg_index * 2) + 1, mixer_corrections.dc_offset_q
         )
 
@@ -1838,14 +1745,10 @@ def _compile_for_hdawg(
             timing_table["hardware_channel"] == f"{device.name}.awg{awg_index}"
         ]
 
-        instructions: list[zhinst.Instruction] = _get_instruction_list(
-            output_timing_table
-        )
+        instructions: list[zhinst.Instruction] = _get_instruction_list(output_timing_table)
 
         # enumerate the waveform_ids used in this particular output channel
-        unique_wf_ids = output_timing_table.drop_duplicates(subset="waveform_id")[
-            "waveform_id"
-        ]
+        unique_wf_ids = output_timing_table.drop_duplicates(subset="waveform_id")["waveform_id"]
         # this table maps waveform ids to indices in the seqc command table.
         wf_id_mapping = {}
         for i, wf_id in enumerate(unique_wf_ids):
@@ -1921,9 +1824,7 @@ def _assemble_hdawg_sequence(
         # Do bookkeeping for the CommandTable
         command_table_entry = zhinst.CommandTableEntry(
             index=len(command_table_entries),
-            waveform=zhinst.CommandTableWaveform(
-                index=waveform_index, length=len(waveform)
-            ),
+            waveform=zhinst.CommandTableWaveform(index=waveform_index, length=len(waveform)),
         )
         command_table_entries.append(command_table_entry)
     command_table = zhinst.CommandTable(table=command_table_entries)
@@ -1934,9 +1835,7 @@ def _assemble_hdawg_sequence(
 
     # N.B. All HDAWG markers can be used to trigger a UHFQA or other HDAWGs.
     # marker output is set to 0 before the loop is started
-    seqc_il_generator.add_set_trigger(
-        seqc_gen, value=0, device_type=zhinst.DeviceType.HDAWG
-    )
+    seqc_il_generator.add_set_trigger(seqc_gen, value=0, device_type=zhinst.DeviceType.HDAWG)
 
     seqc_gen.emit_begin_repeat("__repetitions__")
 
@@ -1974,9 +1873,7 @@ def _assemble_hdawg_sequence(
         if clock_cycles_to_wait < 0:
             # a common mistake if there is no overlap if the instruction needs to start
             # to soon after the start of a new cycle.
-            raise ValueError(
-                "Negative wait time, please ensure operations do not overlap in time."
-            )
+            raise ValueError("Negative wait time, please ensure operations do not overlap in time.")
 
         current_clock += seqc_il_generator.add_wait(
             seqc_gen=seqc_gen,
@@ -2009,9 +1906,7 @@ def _assemble_hdawg_sequence(
             seqc_gen=seqc_gen,
             delay=int(clock_cycles_to_wait),
             device_type=zhinst.DeviceType.HDAWG,
-            comment=(
-                f"clock={current_clock}, dead time to ensure total schedule duration"
-            ),
+            comment=(f"clock={current_clock}, dead time to ensure total schedule duration"),
         )
 
     seqc_gen.emit_end_repeat()
@@ -2108,9 +2003,7 @@ def _compile_for_uhfqa(  # noqa: PLR0915
 
     # FIXME ensure unique_wf_ids is only for pulses and not integration weights
     # enumerate the waveform_ids used in this particular output channel
-    unique_wf_ids = output_timing_table.drop_duplicates(subset="waveform_id")[
-        "waveform_id"
-    ]
+    unique_wf_ids = output_timing_table.drop_duplicates(subset="waveform_id")["waveform_id"]
     # this table maps waveform ids to indices in the seqc command table.
     wf_id_mapping = {}
     for i, wf_id in enumerate(unique_wf_ids):
@@ -2188,9 +2081,7 @@ def _compile_for_uhfqa(  # noqa: PLR0915
                 "The integration lenght needs to be identical for all acquisitions."
             )
 
-        if (acq_protocol := acq_info["protocol"]) not in get_args(
-            SUPPORTED_ACQ_PROTOCOLS
-        ):
+        if (acq_protocol := acq_info["protocol"]) not in get_args(SUPPORTED_ACQ_PROTOCOLS):
             raise ValueError(
                 f"Acquisition protocol {acq_protocol} is not supported by"
                 " Zurich Instruments LabOne backend."
@@ -2220,9 +2111,7 @@ def _compile_for_uhfqa(  # noqa: PLR0915
             # the raw signal.
             settings_builder.with_qas_monitor_enable(True).with_qas_monitor_averages(
                 repetitions
-            ).with_qas_monitor_length(
-                integration_length
-            ).with_qas_integration_weights_real(
+            ).with_qas_monitor_length(integration_length).with_qas_integration_weights_real(
                 list(range(NUM_UHFQA_READOUT_CHANNELS)),
                 np.ones(MAX_QAS_INTEGRATION_LENGTH),
             ).with_qas_integration_weights_imag(
@@ -2287,13 +2176,9 @@ def _compile_for_uhfqa(  # noqa: PLR0915
             0
         )
 
-        settings_builder.with_qas_result_mode(
-            zhinst.QasResultMode.CYCLIC
-        ).with_qas_result_source(
+        settings_builder.with_qas_result_mode(zhinst.QasResultMode.CYCLIC).with_qas_result_source(
             zhinst.QasResultSource.INTEGRATION
-        ).with_qas_result_length(
-            n_acquisitions
-        ).with_qas_result_enable(
+        ).with_qas_result_length(n_acquisitions).with_qas_result_enable(
             True
         ).with_qas_result_averages(
             repetitions
@@ -2367,9 +2252,7 @@ def _assemble_uhfqa_sequence(
         if clock_cycles_to_wait < 0:
             # a common mistake if there is no overlap if the instruction needs to start
             # to soon after the start of a new cycle.
-            raise ValueError(
-                "Negative wait time, please ensure operations do not overlap in time."
-            )
+            raise ValueError("Negative wait time, please ensure operations do not overlap in time.")
         current_clock += seqc_il_generator.add_wait(
             seqc_gen=seqc_gen,
             delay=int(clock_cycles_to_wait),
@@ -2426,9 +2309,7 @@ def construct_waveform_table(
 
     """
     # remove all entries for which the port is missing such as a Reset operation.
-    filtered_df = timing_table.drop_duplicates(subset="waveform_id").dropna(
-        axis=0, subset=["port"]
-    )
+    filtered_df = timing_table.drop_duplicates(subset="waveform_id").dropna(axis=0, subset=["port"])
 
     instr_info_dict = {}
     for dev_name, device in device_dict.items():
@@ -2449,9 +2330,9 @@ def construct_waveform_table(
         instrument_info = instr_info_dict[device_name]
 
         if row.is_acquisition:
-            waveform_info = operations_dict[row["operation"]]["acquisition_info"][
-                row["wf_idx"]
-            ]["waveforms"]
+            waveform_info = operations_dict[row["operation"]]["acquisition_info"][row["wf_idx"]][
+                "waveforms"
+            ]
 
             # There are acquisitions (e.g., Trace) in which no integration weights are
             #  uploaded. in that case there are no (2) waveforms to be uploaded.
@@ -2492,9 +2373,7 @@ def construct_waveform_table(
             numerical_wf_dict[row["waveform_id"]] = corr_wf
 
         else:
-            waveform_info = operations_dict[row["operation"]]["pulse_info"][
-                row["wf_idx"]
-            ]
+            waveform_info = operations_dict[row["operation"]]["pulse_info"][row["wf_idx"]]
             waveform = waveform_helpers.get_waveform(
                 waveform_info, sampling_rate=instrument_info.sample_rate
             )

@@ -45,19 +45,11 @@ def set_up_mock_transmon_setup() -> dict:
     q3 = BasicTransmonElement("q3")
     q4 = BasicTransmonElement("q4")
 
-    edge_q0_q2 = CompositeSquareEdge(
-        parent_element_name=q0.name, child_element_name=q2.name
-    )
-    edge_q1_q2 = CompositeSquareEdge(
-        parent_element_name=q1.name, child_element_name=q2.name
-    )
+    edge_q0_q2 = CompositeSquareEdge(parent_element_name=q0.name, child_element_name=q2.name)
+    edge_q1_q2 = CompositeSquareEdge(parent_element_name=q1.name, child_element_name=q2.name)
 
-    edge_q2_q3 = CompositeSquareEdge(
-        parent_element_name=q2.name, child_element_name=q3.name
-    )
-    edge_q2_q4 = CompositeSquareEdge(
-        parent_element_name=q2.name, child_element_name=q4.name
-    )
+    edge_q2_q3 = CompositeSquareEdge(parent_element_name=q2.name, child_element_name=q3.name)
+    edge_q2_q4 = CompositeSquareEdge(parent_element_name=q2.name, child_element_name=q4.name)
 
     quantum_device = QuantumDevice(name="quantum_device")
     quantum_device.add_element(q0)

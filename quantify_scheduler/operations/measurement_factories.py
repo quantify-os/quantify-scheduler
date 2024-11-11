@@ -196,11 +196,7 @@ def _dispersive_measurement(  # noqa: PLR0915
         "NumericalWeightedIntegration",
         "NumericalWeightedIntegrationComplex",
     ):
-        if (
-            acq_weights_a is None
-            or acq_weights_b is None
-            or acq_weights_sampling_rate is None
-        ):
+        if acq_weights_a is None or acq_weights_b is None or acq_weights_sampling_rate is None:
             raise TypeError(
                 f"Keyword arguments 'acq_weights_a', 'acq_weights_b' and "
                 f"'acq_weights_sampling_rate' must not be None when {acq_protocol=} is "
@@ -693,12 +689,7 @@ def optical_measurement(
         bin_mode = BinMode.APPEND
 
     # All lists should be of equal length so this should be ensured
-    if (
-        not len(pulse_amplitudes)
-        == len(pulse_durations)
-        == len(pulse_ports)
-        == len(pulse_clocks)
-    ):
+    if not len(pulse_amplitudes) == len(pulse_durations) == len(pulse_ports) == len(pulse_clocks):
         raise ValueError(
             "For multiple optical excitations, lists must have same length:\n"
             + f"{len(pulse_amplitudes)=},\n"

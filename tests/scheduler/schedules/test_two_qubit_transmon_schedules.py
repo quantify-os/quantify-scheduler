@@ -77,9 +77,7 @@ class TestChevronCZSched:
         }  # type: ignore
         sched = ts.chevron_cz_sched(**sched_kwargs)
         compiler = SerialCompiler(name="compiler")
-        _ = compiler.compile(
-            schedule=sched, config=compile_config_basic_transmon_qblox_hardware
-        )
+        _ = compiler.compile(schedule=sched, config=compile_config_basic_transmon_qblox_hardware)
 
     def test_custom_flux_port(
         self, compile_config_basic_transmon_qblox_hardware: SerialCompilationConfig
@@ -110,9 +108,7 @@ class TestChevronCZSched:
         """Test that a sweep schedule compiles with SerialCompiler."""
         sched = ts.chevron_cz_sched(**self.sched_kwargs)
         compiler = SerialCompiler(name="compiler")
-        _ = compiler.compile(
-            schedule=sched, config=compile_config_basic_transmon_qblox_hardware
-        )
+        _ = compiler.compile(schedule=sched, config=compile_config_basic_transmon_qblox_hardware)
 
     def test_operations(self) -> None:
         """Test that the number of operations in the schedule is correct."""

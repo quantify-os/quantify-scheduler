@@ -197,9 +197,7 @@ def configure_measurement_control_loop(
     return (meas_ctrl, ic)
 
 
-meas_ctrl, instrument_coordinator = configure_measurement_control_loop(
-    quantum_device, cluster
-)
+meas_ctrl, instrument_coordinator = configure_measurement_control_loop(quantum_device, cluster)
 
 # %% [markdown]
 # ### Set data directory

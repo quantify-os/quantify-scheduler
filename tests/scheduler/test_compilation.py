@@ -51,8 +51,7 @@ def test_determine_absolute_timing_ideal_clock():
     timed_sched = _determine_absolute_timing(sched, time_unit="ideal")
 
     abs_times = [
-        schedulable["abs_time"]
-        for schedulable in timed_sched.data["schedulables"].values()
+        schedulable["abs_time"] for schedulable in timed_sched.data["schedulables"].values()
     ]
     assert abs_times == [0, 1, 2, 3, 4]
 
@@ -60,17 +59,14 @@ def test_determine_absolute_timing_ideal_clock():
     sched.add(Rxy(90, 0, qubit=q1), ref_pt="start", ref_op=ref_label_1)
     timed_sched = _determine_absolute_timing(sched, time_unit="ideal")
 
-    abs_times = [
-        constr["abs_time"] for constr in timed_sched.data["schedulables"].values()
-    ]
+    abs_times = [constr["abs_time"] for constr in timed_sched.data["schedulables"].values()]
     assert abs_times == [0, 1, 2, 3, 4, 1]
 
     sched.add(Rxy(90, 0, qubit=q1), ref_pt="start", ref_op="M0")
     timed_sched = _determine_absolute_timing(sched, time_unit="ideal")
 
     abs_times = [
-        schedulable["abs_time"]
-        for schedulable in timed_sched.data["schedulables"].values()
+        schedulable["abs_time"] for schedulable in timed_sched.data["schedulables"].values()
     ]
     assert abs_times == [0, 1, 2, 3, 4, 1, 4]
 
@@ -78,8 +74,7 @@ def test_determine_absolute_timing_ideal_clock():
     timed_sched = _determine_absolute_timing(sched, time_unit="ideal")
 
     abs_times = [
-        schedulable["abs_time"]
-        for schedulable in timed_sched.data["schedulables"].values()
+        schedulable["abs_time"] for schedulable in timed_sched.data["schedulables"].values()
     ]
     assert abs_times == [0, 1, 2, 3, 4, 1, 4, 2]
 
@@ -87,8 +82,7 @@ def test_determine_absolute_timing_ideal_clock():
     timed_sched = _determine_absolute_timing(sched, time_unit="ideal")
 
     abs_times = [
-        schedulable["abs_time"]
-        for schedulable in timed_sched.data["schedulables"].values()
+        schedulable["abs_time"] for schedulable in timed_sched.data["schedulables"].values()
     ]
     assert abs_times == [0, 1, 2, 3, 4, 1, 4, 2, 1.5]
 
@@ -181,9 +175,7 @@ def test_compile_gates_to_subschedule(mock_setup_basic_transmon_with_standard_pa
                 expected_op.schedulables.values(),
             ):
                 inner_op = op.operations[schedulable["operation_id"]]
-                inner_expected_op = expected_op.operations[
-                    expected_schedulable["operation_id"]
-                ]
+                inner_expected_op = expected_op.operations[expected_schedulable["operation_id"]]
                 _compare_op(inner_op, inner_expected_op)
         elif isinstance(op, LoopOperation):
             assert op.data["control_flow"] == expected_op["control_flow"]
@@ -222,14 +214,10 @@ def test_empty_sched():
 def test_bad_gate(device_compile_config_basic_transmon):
     class NotAGate(Operation):
         def __init__(self, q):
-            plot_func = (
-                "quantify_scheduler.schedules._visualization.circuit_diagram.cnot"
-            )
+            plot_func = "quantify_scheduler.schedules._visualization.circuit_diagram.cnot"
             data = {
                 "gate_info": {
-                    "unitary": np.array(
-                        [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]]
-                    ),
+                    "unitary": np.array([[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]]),
                     "tex": r"bad",
                     "plot_func": plot_func,
                     "qubits": [q],
@@ -332,9 +320,7 @@ def test_measurement_specification_of_binmode(device_compile_config_basic_transm
 
     schedule = Schedule("binmode-test", 1)
     schedule.add(Reset(qubit), label=f"Reset {0}")
-    schedule.add(
-        Measure(qubit, acq_index=0, bin_mode=BinMode.APPEND), label=f"Measurement {0}"
-    )
+    schedule.add(Measure(qubit, acq_index=0, bin_mode=BinMode.APPEND), label=f"Measurement {0}")
 
     compiler = SerialCompiler(name="compiler")
     comp_sched = compiler.compile(
@@ -352,9 +338,7 @@ def test_measurement_specification_of_binmode(device_compile_config_basic_transm
 
     schedule = Schedule("binmode-test", 1)
     schedule.add(Reset(qubit), label=f"Reset {0}")
-    schedule.add(
-        Measure(qubit, acq_index=0, bin_mode=BinMode.AVERAGE), label=f"Measurement {0}"
-    )
+    schedule.add(Measure(qubit, acq_index=0, bin_mode=BinMode.AVERAGE), label=f"Measurement {0}")
 
     comp_sched = compiler.compile(
         schedule=schedule,
@@ -383,9 +367,7 @@ def test_measurement_specification_of_binmode(device_compile_config_basic_transm
             assert value.data["acquisition_info"][0]["bin_mode"] == BinMode.AVERAGE
 
 
-def test_compile_trace_acquisition(
-    device_compile_config_basic_transmon, get_subschedule_operation
-):
+def test_compile_trace_acquisition(device_compile_config_basic_transmon, get_subschedule_operation):
     sched = Schedule("Test schedule")
     q0 = "q0"
     sched.add(Reset(q0))
@@ -393,14 +375,9 @@ def test_compile_trace_acquisition(
     sched.add(Measure(q0, acq_protocol="Trace"), label="M0")
 
     compiler = SerialCompiler(name="compile")
-    sched = compiler.compile(
-        schedule=sched, config=device_compile_config_basic_transmon
-    )
+    sched = compiler.compile(schedule=sched, config=device_compile_config_basic_transmon)
 
-    assert (
-        get_subschedule_operation(sched, [2, 2])["acquisition_info"][0]["protocol"]
-        == "Trace"
-    )
+    assert get_subschedule_operation(sched, [2, 2])["acquisition_info"][0]["protocol"] == "Trace"
 
 
 @pytest.mark.filterwarnings("ignore:.*The specified weights and sampling rate lead.*")
@@ -414,9 +391,7 @@ def test_compile_weighted_acquisition(
 
     sched.add(Reset(q0))
     sched.add(Rxy(90, 0, qubit=q0))
-    sched.add(
-        Measure(q0, acq_protocol="NumericalSeparatedWeightedIntegration"), label="M0"
-    )
+    sched.add(Measure(q0, acq_protocol="NumericalSeparatedWeightedIntegration"), label="M0")
     sched.add(Measure(q1, acq_protocol="NumericalWeightedIntegration"), label="M1")
 
     compiler = SerialCompiler(name="compile")
@@ -474,15 +449,13 @@ def test_determine_absolute_timing_subschedule():
     timed_sched = _determine_absolute_timing(sched, time_unit="ideal")
 
     abs_times = [
-        schedulable["abs_time"]
-        for schedulable in timed_sched.data["schedulables"].values()
+        schedulable["abs_time"] for schedulable in timed_sched.data["schedulables"].values()
     ]
     assert abs_times == [0, 1, 3]
     inner_sched_schedulable = timed_sched.data["schedulables"]["ref0_1"]
     timed_inner = timed_sched.operations[inner_sched_schedulable["operation_id"]]
     abs_times = [
-        schedulable["abs_time"]
-        for schedulable in timed_inner.data["schedulables"].values()
+        schedulable["abs_time"] for schedulable in timed_inner.data["schedulables"].values()
     ]
     assert abs_times == [0, 1]
 
@@ -490,9 +463,7 @@ def test_determine_absolute_timing_subschedule():
     sched.add(Rxy(90, 0, qubit=q1), ref_pt="start", ref_op=ref_label_1)
     timed_sched = _determine_absolute_timing(sched, time_unit="ideal")
 
-    abs_times = [
-        constr["abs_time"] for constr in timed_sched.data["schedulables"].values()
-    ]
+    abs_times = [constr["abs_time"] for constr in timed_sched.data["schedulables"].values()]
     assert abs_times == [0, 1, 3, 3]
 
 
@@ -500,9 +471,7 @@ def test_determine_absolute_timing_subschedule():
     argnames="operation",
     argvalues=[X("q0"), LoopOperation(body=X("q0"), repetitions=1024)],
 )
-def test_schedule_gets_all_resources(
-    compile_config_basic_transmon_qblox_hardware, operation
-):
+def test_schedule_gets_all_resources(compile_config_basic_transmon_qblox_hardware, operation):
     schedule1 = Schedule("")
     schedule2 = Schedule("")
     schedule2.add(operation)
@@ -534,6 +503,4 @@ def test_schedule_gets_all_resources(
             "phase": 0,
         },
     }
-    assert (
-        list(compiled_schedule.operations.values())[0].resources == expected_resources
-    )
+    assert list(compiled_schedule.operations.values())[0].resources == expected_resources

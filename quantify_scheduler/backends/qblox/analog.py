@@ -125,24 +125,18 @@ class AnalogSequencerCompiler(SequencerCompiler):
         )
         self.mix_lo = (
             sequencer_cfg.hardware_description.mix_lo
-            if not isinstance(
-                sequencer_cfg.hardware_description, DigitalChannelDescription
-            )
+            if not isinstance(sequencer_cfg.hardware_description, DigitalChannelDescription)
             else None
         )
         self._marker_debug_mode_enable = (
             (sequencer_cfg.hardware_description.marker_debug_mode_enable)
-            if not isinstance(
-                sequencer_cfg.hardware_description, DigitalChannelDescription
-            )
+            if not isinstance(sequencer_cfg.hardware_description, DigitalChannelDescription)
             else None
         )
 
-        self._default_marker = (
-            self.static_hw_properties.channel_name_to_digital_marker.get(
-                self._settings.channel_name,
-                self.static_hw_properties.default_marker,
-            )
+        self._default_marker = self.static_hw_properties.channel_name_to_digital_marker.get(
+            self._settings.channel_name,
+            self.static_hw_properties.default_marker,
         )
 
     @property
@@ -277,13 +271,9 @@ class AnalogSequencerCompiler(SequencerCompiler):
                     f"hardware requires it to be between {min_value} and {max_value}."
                 )
 
-        acquisition_infos: list[OpInfo] = list(
-            map(lambda acq: acq.operation_info, acquisitions)
-        )
+        acquisition_infos: list[OpInfo] = list(map(lambda acq: acq.operation_info, acquisitions))
         if acq_metadata.acq_protocol == "TriggerCount":
-            self._settings.ttl_acq_auto_bin_incr_en = (
-                acq_metadata.bin_mode == BinMode.DISTRIBUTION
-            )
+            self._settings.ttl_acq_auto_bin_incr_en = acq_metadata.bin_mode == BinMode.DISTRIBUTION
             if len(self.connected_input_indices) == 1:
                 self._settings.ttl_acq_input_select = self.connected_input_indices[0]
             elif len(self.connected_input_indices) > 1:
@@ -317,18 +307,14 @@ class AnalogSequencerCompiler(SequencerCompiler):
                 portclock=self.portclock,
             )
             integration_length = acquisition_infos[0].data.get("duration", 0.0) * 1e9
-            self._settings.thresholded_acq_threshold = (
-                acq_threshold * integration_length
-            )
+            self._settings.thresholded_acq_threshold = acq_threshold * integration_length
 
             for info in acquisition_infos:
                 if (address := info.data.get("feedback_trigger_address")) is not None:
                     self._settings.thresholded_acq_trigger_en = True
                     self._settings.thresholded_acq_trigger_address = address
 
-        self._settings.integration_length_acq = (
-            self._get_integration_length_from_acquisitions()
-        )
+        self._settings.integration_length_acq = self._get_integration_length_from_acquisitions()
 
     def _get_integration_length_from_acquisitions(self) -> int | None:
         """
@@ -423,9 +409,7 @@ class AnalogSequencerCompiler(SequencerCompiler):
 
             if isinstance(op, (NcoPhaseShiftStrategy, NcoResetClockPhaseStrategy)):
                 timing = round(op.operation_info.timing * 1e9)
-                if (
-                    diff := timing - last_phase_upd_time
-                ) < constants.NCO_SET_PH_DELTA_WAIT:
+                if (diff := timing - last_phase_upd_time) < constants.NCO_SET_PH_DELTA_WAIT:
                     raise NcoOperationTimingError(
                         f"Operation {op.operation_info} occurred {diff} ns after the "
                         "previous phase update. The minimum time between phase "
@@ -490,9 +474,7 @@ class AnalogSequencerCompiler(SequencerCompiler):
             constants.MIN_TIME_BETWEEN_OPERATIONS,
         )
 
-    def _insert_qasm(
-        self, op_strategy: IOperationStrategy, qasm_program: QASMProgram
-    ) -> None:
+    def _insert_qasm(self, op_strategy: IOperationStrategy, qasm_program: QASMProgram) -> None:
         """
         Get Q1ASM instruction(s) from ``op_strategy`` and insert them into ``qasm_program``.
 
@@ -551,9 +533,7 @@ class AnalogSequencerCompiler(SequencerCompiler):
             for output in self.connected_output_indices:
                 marker_bit_string |= 1 << output
         elif instrument_type == "QRM":
-            marker_bit_string = (
-                0b1100 if operation.operation_info.is_acquisition else 0b0011
-            )
+            marker_bit_string = 0b1100 if operation.operation_info.is_acquisition else 0b0011
 
         # For RF modules, the first two indices correspond to path enable/disable.
         # Therefore, the index of the output is shifted by 2.
@@ -564,9 +544,7 @@ class AnalogSequencerCompiler(SequencerCompiler):
             marker_bit_string |= 1 << (output + 2)
             marker_bit_string |= self._default_marker
         elif instrument_type == "QRM_RF":
-            marker_bit_string = (
-                0b1011 if operation.operation_info.is_acquisition else 0b0111
-            )
+            marker_bit_string = 0b1011 if operation.operation_info.is_acquisition else 0b0111
         return marker_bit_string
 
 
@@ -659,9 +637,7 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
 
     def prepare(
         self,
-        external_los: (
-            dict[str, instrument_compilers.LocalOscillatorCompiler] | None
-        ) = None,
+        external_los: dict[str, instrument_compilers.LocalOscillatorCompiler] | None = None,
         schedule_resources: dict[str, Resource] | None = None,
         **kwargs,  # noqa: ARG002  (unused arg necessary to fit signature)
     ) -> None:
@@ -774,10 +750,7 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
         for output_idx, output_label in enumerate(supported_outputs):
             for portclock, path in self.portclock_to_path.items():
                 if output_label == path.channel_name:
-                    if (
-                        self.instrument_cfg.hardware_options.mixer_corrections
-                        is not None
-                    ):
+                    if self.instrument_cfg.hardware_options.mixer_corrections is not None:
                         mixer_corrections = (
                             self.instrument_cfg.hardware_options.mixer_corrections.get(
                                 portclock, None
@@ -793,41 +766,33 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
                         offset_q = mixer_corrections.dc_offset_q
                         voltage_range = self.static_hw_properties.mixer_dc_offset_range
                         if output_idx == 0:
-                            self._settings.offset_ch0_path_I = (
-                                helpers.calc_from_units_volt(
-                                    voltage_range,
-                                    self.name,
-                                    "dc_mixer_offset_I",
-                                    offset_i,
-                                )
+                            self._settings.offset_ch0_path_I = helpers.calc_from_units_volt(
+                                voltage_range,
+                                self.name,
+                                "dc_mixer_offset_I",
+                                offset_i,
                             )
-                            self._settings.offset_ch0_path_Q = (
-                                helpers.calc_from_units_volt(
-                                    voltage_range,
-                                    self.name,
-                                    "dc_mixer_offset_Q",
-                                    offset_q,
-                                )
+                            self._settings.offset_ch0_path_Q = helpers.calc_from_units_volt(
+                                voltage_range,
+                                self.name,
+                                "dc_mixer_offset_Q",
+                                offset_q,
                             )
                             self._settings.out0_lo_freq_cal_type_default = (
                                 mixer_corrections.auto_lo_cal
                             )
                         else:
-                            self._settings.offset_ch1_path_I = (
-                                helpers.calc_from_units_volt(
-                                    voltage_range,
-                                    self.name,
-                                    "dc_mixer_offset_I",
-                                    offset_i,
-                                )
+                            self._settings.offset_ch1_path_I = helpers.calc_from_units_volt(
+                                voltage_range,
+                                self.name,
+                                "dc_mixer_offset_I",
+                                offset_i,
                             )
-                            self._settings.offset_ch1_path_Q = (
-                                helpers.calc_from_units_volt(
-                                    voltage_range,
-                                    self.name,
-                                    "dc_mixer_offset_Q",
-                                    offset_q,
-                                )
+                            self._settings.offset_ch1_path_Q = helpers.calc_from_units_volt(
+                                voltage_range,
+                                self.name,
+                                "dc_mixer_offset_Q",
+                                offset_q,
                             )
                             self._settings.out1_lo_freq_cal_type_default = (
                                 mixer_corrections.auto_lo_cal
@@ -850,9 +815,7 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
                 continue
 
             dc_comp = channel_description.distortion_correction_latency_compensation
-            output_indices = self.static_hw_properties._get_connected_output_indices(
-                channel_name
-            )
+            output_indices = self.static_hw_properties._get_connected_output_indices(channel_name)
             if output_indices is None:
                 output_indices = ()
             for output in output_indices:
@@ -868,23 +831,16 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
 
                         distortion_configs = distortion_configs or {}
                         if output in distortion_configs:
-                            distortion_configs[output][
-                                "marker_debug_mode_enable"
-                            ] = True
+                            distortion_configs[output]["marker_debug_mode_enable"] = True
                         marker_output = output
-                        if (
-                            channel_name
-                            in self.static_hw_properties.channel_name_to_digital_marker
-                        ):
+                        if channel_name in self.static_hw_properties.channel_name_to_digital_marker:
                             marker_output = (
                                 self.static_hw_properties.channel_name_to_digital_marker[
                                     channel_name
                                 ]
                                 + 1
                             ) % 2
-                        self._configure_dc_latency_comp_for_marker(
-                            marker_output, dc_comp
-                        )
+                        self._configure_dc_latency_comp_for_marker(marker_output, dc_comp)
                     self._configure_dc_latency_comp_for_output(output, dc_comp)
 
     def _configure_dc_latency_comp_for_output(self, output: int, dc_comp: int) -> None:
@@ -902,9 +858,7 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
             ]
         ):
             getattr(self._settings.distortion_corrections[output], f"exp{i}").config = (
-                QbloxFilterConfig.DELAY_COMP
-                if dc_comp & mask
-                else QbloxFilterConfig.BYPASSED
+                QbloxFilterConfig.DELAY_COMP if dc_comp & mask else QbloxFilterConfig.BYPASSED
             )
         self._settings.distortion_corrections[output].fir.config = (
             QbloxFilterConfig.DELAY_COMP
@@ -926,9 +880,7 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
                 DistortionCorrectionLatencyEnum.EXP3,
             ]
         ):
-            getattr(
-                self._settings.distortion_corrections[output], f"exp{i}"
-            ).marker_delay = (
+            getattr(self._settings.distortion_corrections[output], f"exp{i}").marker_delay = (
                 QbloxFilterMarkerDelay.DELAY_COMP
                 if dc_comp & mask
                 else QbloxFilterMarkerDelay.BYPASSED
@@ -966,9 +918,7 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
         scope_acq_seq = None
         for seq in self.sequencers.values():
             op_infos = [
-                op.operation_info
-                for op in seq.op_strategies
-                if op.operation_info.is_acquisition
+                op.operation_info for op in seq.op_strategies if op.operation_info.is_acquisition
             ]
 
             has_scope = any(map(is_scope_acquisition, op_infos))
@@ -1086,9 +1036,7 @@ class BasebandModuleCompiler(AnalogModuleCompiler):
                 DistortionCorrectionLatencyEnum.EXP3,
             ]
         ):
-            getattr(
-                self._settings.distortion_corrections[output], f"exp{i}"
-            ).marker_delay = (
+            getattr(self._settings.distortion_corrections[output], f"exp{i}").marker_delay = (
                 QbloxFilterMarkerDelay.DELAY_COMP
                 if dc_comp & mask
                 else QbloxFilterMarkerDelay.BYPASSED
@@ -1124,9 +1072,7 @@ class RFModuleCompiler(AnalogModuleCompiler):
     def assign_frequencies(
         self,
         sequencer: AnalogSequencerCompiler,
-        external_lo: (  # noqa: ARG002
-            instrument_compilers.LocalOscillatorCompiler | None
-        ),
+        external_lo: instrument_compilers.LocalOscillatorCompiler | None,  # noqa: ARG002
         clock_frequency: float,
     ) -> None:
         """
@@ -1275,9 +1221,7 @@ class RFModuleCompiler(AnalogModuleCompiler):
             if value is None:
                 return None
             if not math.isclose(value % 1, 0):
-                raise ValueError(
-                    f'Trying to set "{label}" to non-integer value {value}'
-                )
+                raise ValueError(f'Trying to set "{label}" to non-integer value {value}')
             return int(value)
 
         in0_att = out0_att = out1_att = None
@@ -1334,9 +1278,7 @@ class RFModuleCompiler(AnalogModuleCompiler):
                 DistortionCorrectionLatencyEnum.EXP3,
             ]
         ):
-            getattr(
-                self._settings.distortion_corrections[output], f"exp{i}"
-            ).marker_delay = (
+            getattr(self._settings.distortion_corrections[output], f"exp{i}").marker_delay = (
                 QbloxFilterMarkerDelay.DELAY_COMP
                 if dc_comp & mask
                 else QbloxFilterMarkerDelay.BYPASSED

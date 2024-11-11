@@ -72,13 +72,8 @@ class TestQubitOperations:
         assert isinstance(dev_cfg, DeviceCompilationConfig)
 
         # Assert values in the right place in config
-        assert (
-            dev_cfg.elements["q0"]["measure"].factory_kwargs["pulse_type"]
-            == "SquarePulse"
-        )
-        assert (
-            dev_cfg.elements["q0"]["measure"].factory_kwargs["pulse_duration"] == 400e-9
-        )
+        assert dev_cfg.elements["q0"]["measure"].factory_kwargs["pulse_type"] == "SquarePulse"
+        assert dev_cfg.elements["q0"]["measure"].factory_kwargs["pulse_duration"] == 400e-9
         # quantify is inconsistent with clock naming and frequency naming between
         # device elements
         if isinstance(q0, BasicTransmonElement):
@@ -145,9 +140,7 @@ class TestQubitOperations:
         # Check that all original submodule params match their serialized counterpart
         for submodule_name, submodule in q0.submodules.items():
             for parameter_name in submodule.parameters:
-                if is_serialized_ndarray(
-                    q0_as_dict["data"][submodule_name][parameter_name]
-                ):
+                if is_serialized_ndarray(q0_as_dict["data"][submodule_name][parameter_name]):
                     np.testing.assert_equal(
                         q0_as_dict["data"][submodule_name][parameter_name]["data"],
                         q0.submodules[submodule_name][parameter_name](),
@@ -176,9 +169,7 @@ class TestQubitOperations:
                         q0.submodules[submodule_name][parameter_name](),
                     )
                 else:
-                    expected_parameter_val = q0.submodules[submodule_name][
-                        parameter_name
-                    ]()
+                    expected_parameter_val = q0.submodules[submodule_name][parameter_name]()
                     assert (parameter_val == expected_parameter_val) or (
                         isinstance(parameter_val, float)
                         and isinstance(expected_parameter_val, float)
@@ -225,9 +216,7 @@ class TestQubitOperations:
         q0.close()
 
         deserialized_q0 = json.loads(q0_as_str, cls=SchedulerJSONDecoder)
-        class_name = (
-            type(deserialized_q0).__module__ + "." + type(deserialized_q0).__qualname__
-        )
+        class_name = type(deserialized_q0).__module__ + "." + type(deserialized_q0).__qualname__
         assert class_name == expected_class_name
 
         dev.add_element(deserialized_q0)

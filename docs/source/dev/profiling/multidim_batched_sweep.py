@@ -301,9 +301,7 @@ def coupler_conditional_oscillation_sched_phase_correction_ssro4(
             ref_pt="start",
         )
         schedule.add(
-            Measure(
-                oscillation_qubit, spectator_qubit, acq_index=i, bin_mode=BinMode.APPEND
-            ),
+            Measure(oscillation_qubit, spectator_qubit, acq_index=i, bin_mode=BinMode.APPEND),
             label=f"Measure {i}",
         )
 

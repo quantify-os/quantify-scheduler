@@ -59,9 +59,7 @@ def gate_box(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> N
         )
 
 
-def pulse_baseband(
-    ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw
-) -> None:
+def pulse_baseband(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> None:
     """
     Adds a visual indicator for a Baseband pulse to the `matplotlib.axes.Axis`
     instance.
@@ -94,9 +92,7 @@ def pulse_baseband(
         ax.text(time, qubit_idx + 0.45, text, ha="center", va="center", zorder=6)
 
 
-def pulse_modulated(
-    ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw
-) -> None:
+def pulse_modulated(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> None:
     """
     Adds a visual indicator for a Modulated pulse to the `matplotlib.axes.Axis`
     instance.
@@ -128,9 +124,7 @@ def pulse_modulated(
         ax.text(time, qubit_idx + 0.45, text, ha="center", va="center", zorder=6)
 
 
-def meter(
-    ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw  # Noqa: ARG001
-) -> None:
+def meter(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> None:  # Noqa: ARG001
     """
     A simple meter to depict a measurement.
 
@@ -195,9 +189,7 @@ def acq_meter(
         )
 
 
-def acq_meter_text(
-    ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw
-) -> None:
+def acq_meter_text(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> None:
     """
     Same as acq_meter, but also displays text.
 
@@ -219,9 +211,7 @@ def acq_meter_text(
     ax.text(time, max(qubit_idxs) + 0.45, text, ha="center", va="center", zorder=6)
 
 
-def cnot(
-    ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw  # Noqa: ARG001
-) -> None:
+def cnot(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> None:  # Noqa: ARG001
     """
     Markers to denote a CNOT gate between two qubits.
 
@@ -239,15 +229,11 @@ def cnot(
         Additional keyword arguments to be passed to drawing the CNOT.
 
     """
-    ax.plot(
-        [time, time], qubit_idxs, marker="o", markersize=15, color=constants.COLOR_BLUE
-    )
+    ax.plot([time, time], qubit_idxs, marker="o", markersize=15, color=constants.COLOR_BLUE)
     ax.plot([time], qubit_idxs[1], marker="+", markersize=12, color="white")
 
 
-def cz(
-    ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw  # Noqa: ARG001
-) -> None:
+def cz(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> None:  # Noqa: ARG001
     """
     Markers to denote a CZ gate between two qubits.
 
@@ -265,9 +251,7 @@ def cz(
         Additional keyword arguments to be passed to drawing the CZ.
 
     """
-    ax.plot(
-        [time, time], qubit_idxs, marker="o", markersize=15, color=constants.COLOR_BLUE
-    )
+    ax.plot([time, time], qubit_idxs, marker="o", markersize=15, color=constants.COLOR_BLUE)
 
 
 def reset(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> None:
@@ -365,9 +349,7 @@ def _draw_operation(
     schedule_resources: dict[str, Resource],
 ) -> None:
     if operation.valid_gate:
-        plot_func = import_python_object_from_string(
-            operation["gate_info"]["plot_func"]
-        )
+        plot_func = import_python_object_from_string(operation["gate_info"]["plot_func"])
         idxs = [qubit_map[qubit] for qubit in operation["gate_info"]["qubits"]]
         plot_func(ax, time=time, qubit_idxs=idxs, text=operation["gate_info"]["tex"])
     elif operation.valid_pulse:
@@ -387,9 +369,7 @@ def _draw_operation(
             else:
                 pulse_modulated(ax, time=time, qubit_idxs=idxs, text=operation.name)
     elif operation.valid_acquisition:
-        idxs = list(
-            {port_map[acq_info["port"]] for acq_info in operation["acquisition_info"]}
-        )
+        idxs = list({port_map[acq_info["port"]] for acq_info in operation["acquisition_info"]})
 
         for _ in operation["acquisition_info"]:
             acq_meter(ax, time=time, qubit_idxs=idxs, text=operation.name)
@@ -404,9 +384,7 @@ def _get_indices(
 ) -> set[int]:
     def add_index_from_operation(operation: Operation, index_set: set[int]) -> None:
         if operation.valid_gate:
-            index_set.update(
-                qubit_map[qubit] for qubit in operation["gate_info"]["qubits"]
-            )
+            index_set.update(qubit_map[qubit] for qubit in operation["gate_info"]["qubits"])
         index_set.update(
             port_map[info["port"]]
             for info in chain(operation["pulse_info"], operation["acquisition_info"])
@@ -596,19 +574,13 @@ def _get_feedback_label_and_qubit_idx(
     """Check if the operation is an acquisition/measure gate with a feedback trigger label."""
     if (
         len(operation["acquisition_info"])
-        and (
-            feedback_label := operation["acquisition_info"][0].get(
-                "feedback_trigger_label", None
-            )
-        )
+        and (feedback_label := operation["acquisition_info"][0].get("feedback_trigger_label", None))
         is not None
     ):
         return feedback_label, port_map[operation["acquisition_info"][0]["port"]]
     if (
         operation.valid_gate
-        and (
-            feedback_label := operation["gate_info"].get("feedback_trigger_label", None)
-        )
+        and (feedback_label := operation["gate_info"].get("feedback_trigger_label", None))
         is not None
     ):
         return feedback_label, qubit_map[operation["gate_info"]["qubits"][0]]
@@ -692,13 +664,9 @@ def circuit_diagram_matplotlib(
             )
         elif operation == _ControlFlowEnd.CONDI_END:
             body_start, conditional_op = conditional_scopes.pop()
-            feedback_trigger_label = conditional_op["control_flow_info"][
-                "feedback_trigger_label"
-            ]
+            feedback_trigger_label = conditional_op["control_flow_info"]["feedback_trigger_label"]
             try:
-                measure_time, measure_qubit_idx = feedback_acq_map[
-                    feedback_trigger_label
-                ]
+                measure_time, measure_qubit_idx = feedback_acq_map[feedback_trigger_label]
             except KeyError as err:
                 raise KeyError(
                     f"Feedback trigger label '{feedback_trigger_label}' not found in "

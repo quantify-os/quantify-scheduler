@@ -42,9 +42,7 @@ def _generate_diagnostics_report(  # noqa: PLR0912, PLR0915
     compiled_schedule: CompiledSchedule | None,
     acquisition_data: tuple[np.ndarray, ...] | None,
     experiment_exception: (
-        tuple[type[BaseException], BaseException, TracebackType]
-        | tuple[None, None, None]
-        | None
+        tuple[type[BaseException], BaseException, TracebackType] | tuple[None, None, None] | None
     ),
 ) -> str:
     """
@@ -68,9 +66,7 @@ def _generate_diagnostics_report(  # noqa: PLR0912, PLR0915
                     hw_logs=value, extracted_hw_logs=extracted_hw_logs, prefix=key
                 )
             else:
-                extracted_hw_logs[
-                    f"{prefix}_{key}" if prefix is not None else f"{key}"
-                ] = value
+                extracted_hw_logs[f"{prefix}_{key}" if prefix is not None else f"{key}"] = value
         return extracted_hw_logs
 
     def _get_dependency_versions() -> list:
@@ -93,11 +89,7 @@ def _generate_diagnostics_report(  # noqa: PLR0912, PLR0915
             dependency = req.name
             if dependency == "quantify_core":
                 dependency = dependency.replace("_", "-")
-            version = (
-                __core_version__
-                if dependency == "quantify-core"
-                else get_version(dependency)
-            )
+            version = __core_version__ if dependency == "quantify-core" else get_version(dependency)
             all_dependency_versions.append(f"{dependency}: {version}")
 
         all_dependency_versions.append(f"quantify-scheduler: {__scheduler_version__}")
@@ -117,20 +109,14 @@ def _generate_diagnostics_report(  # noqa: PLR0912, PLR0915
 
         if experiment_exception is not None:
             report_type = (
-                "failed_connection_to_hw"
-                if connection_exception is not None
-                else "failed_exp"
+                "failed_connection_to_hw" if connection_exception is not None else "failed_exp"
             )
         else:
             report_type = (
-                "failed_hw_log_retrieval"
-                if connection_exception is not None
-                else "completed_exp"
+                "failed_hw_log_retrieval" if connection_exception is not None else "completed_exp"
             )
 
-    report_zipfile = os.path.join(
-        get_datadir(), f"diagnostics_report_{report_type}_{uuid4()}.zip"
-    )
+    report_zipfile = os.path.join(get_datadir(), f"diagnostics_report_{report_type}_{uuid4()}.zip")
 
     with zipfile.ZipFile(
         report_zipfile, mode="w", compression=zipfile.ZIP_DEFLATED, compresslevel=9
@@ -139,9 +125,7 @@ def _generate_diagnostics_report(  # noqa: PLR0912, PLR0915
             "timestamp.txt",
             datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S_%Z"),
         )
-        zip_file.writestr(
-            "dependency_versions.json", json.dumps(_get_dependency_versions())
-        )
+        zip_file.writestr("dependency_versions.json", json.dumps(_get_dependency_versions()))
         zip_file.writestr(
             "gettable.json", json.dumps(gettable_config, cls=NumpyJSONEncoder, indent=4)
         )

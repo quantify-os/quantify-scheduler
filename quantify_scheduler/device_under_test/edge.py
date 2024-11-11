@@ -54,8 +54,7 @@ class Edge(Instrument):
 
         for submodule_name, submodule_data in snapshot["submodules"].items():
             edge_data[submodule_name] = {
-                name: data["value"]
-                for name, data in submodule_data["parameters"].items()
+                name: data["value"] for name, data in submodule_data["parameters"].items()
             }
 
         state = {
@@ -68,16 +67,12 @@ class Edge(Instrument):
     @property
     def parent_device_element(self) -> Instrument:
         """The parent DeviceElement connected by the edge."""
-        return self.find_instrument(
-            name=self._parent_element_name, instrument_class=DeviceElement
-        )
+        return self.find_instrument(name=self._parent_element_name, instrument_class=DeviceElement)
 
     @property
     def child_device_element(self) -> Instrument:
         """The child DeviceElement connected by the edge."""
-        return self.find_instrument(
-            name=self._child_element_name, instrument_class=DeviceElement
-        )
+        return self.find_instrument(name=self._child_element_name, instrument_class=DeviceElement)
 
     def generate_edge_config(self) -> dict[str, dict[str, OperationCompilationConfig]]:
         """

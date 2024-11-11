@@ -83,9 +83,7 @@ class TestGenericPulseStrategy:
             channel_name="real_output_0",
         )
         wf_dict = {}
-        t_test = np.linspace(
-            0, duration, int(duration * constants.SAMPLING_RATE), endpoint=False
-        )
+        t_test = np.linspace(0, duration, int(duration * constants.SAMPLING_RATE), endpoint=False)
 
         # act
         strategy.generate_data(wf_dict=wf_dict)
@@ -276,17 +274,13 @@ class TestMarkerPulseStrategy:
         # assert
         assert data is None
 
-    def test_marker_pulse_compilation_qrm(
-        self, mock_setup_basic_transmon_with_standard_params
-    ):
+    def test_marker_pulse_compilation_qrm(self, mock_setup_basic_transmon_with_standard_params):
         hardware_cfg = {
             "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",  # noqa: E501, line too long
             "hardware_description": {
                 "cluster0": {
                     "instrument_type": "Cluster",
-                    "modules": {
-                        "1": {"instrument_type": "QRM", "digital_output_1": {}}
-                    },
+                    "modules": {"1": {"instrument_type": "QRM", "digital_output_1": {}}},
                     "ref": "internal",
                 }
             },
@@ -326,12 +320,12 @@ class TestMarkerPulseStrategy:
         )
 
         # # Assert markers were set correctly, and wait time is correct for QRM
-        seq0_analog = compiled_sched.compiled_instructions["cluster0"][
-            "cluster0_module1"
-        ]["sequencers"]["seq0"]["sequence"]["program"].splitlines()
-        seq1_digital = compiled_sched.compiled_instructions["cluster0"][
-            "cluster0_module1"
-        ]["sequencers"]["seq1"]["sequence"]["program"].splitlines()
+        seq0_analog = compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"][
+            "sequencers"
+        ]["seq0"]["sequence"]["program"].splitlines()
+        seq1_digital = compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"][
+            "sequencers"
+        ]["seq1"]["sequence"]["program"].splitlines()
         idx = 0
         for i, string in enumerate(seq0_analog):
             if re.search(r"^\s*reset_ph\s+", string):
@@ -347,23 +341,17 @@ class TestMarkerPulseStrategy:
         assert re.search(r"^\s*wait\s+496\s*($|#)", seq1_digital[idx + 2])
         assert re.search(r"^\s*set_mrk\s+0\s*($|#)", seq1_digital[idx + 3])
 
-    def test_marker_pulse_compilation_qcm_rf(
-        self, mock_setup_basic_transmon_with_standard_params
-    ):
+    def test_marker_pulse_compilation_qcm_rf(self, mock_setup_basic_transmon_with_standard_params):
         hardware_cfg = {
             "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",  # noqa: E501, line too long
             "hardware_description": {
                 "cluster0": {
                     "instrument_type": "Cluster",
-                    "modules": {
-                        "1": {"instrument_type": "QCM_RF", "digital_output_1": {}}
-                    },
+                    "modules": {"1": {"instrument_type": "QCM_RF", "digital_output_1": {}}},
                     "ref": "internal",
                 }
             },
-            "hardware_options": {
-                "modulation_frequencies": {"q0:res-q0.ro": {"interm_freq": 0}}
-            },
+            "hardware_options": {"modulation_frequencies": {"q0:res-q0.ro": {"interm_freq": 0}}},
             "connectivity": {
                 "graph": [
                     ["cluster0.module1.complex_output_0", "q0:res"],
@@ -398,12 +386,12 @@ class TestMarkerPulseStrategy:
         )
 
         # Assert markers were set correctly, and wait time is correct for QRM
-        seq0_analog = compiled_sched.compiled_instructions["cluster0"][
-            "cluster0_module1"
-        ]["sequencers"]["seq0"]["sequence"]["program"].splitlines()
-        seq1_digital = compiled_sched.compiled_instructions["cluster0"][
-            "cluster0_module1"
-        ]["sequencers"]["seq1"]["sequence"]["program"].splitlines()
+        seq0_analog = compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"][
+            "sequencers"
+        ]["seq0"]["sequence"]["program"].splitlines()
+        seq1_digital = compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"][
+            "sequencers"
+        ]["seq1"]["sequence"]["program"].splitlines()
         idx = 0
         for i, string in enumerate(seq0_analog):
             if re.search(r"^\s*reset_ph\s+", string):
@@ -425,9 +413,7 @@ class TestMarkerPulseStrategy:
             "hardware_description": {
                 "cluster0": {
                     "instrument_type": "Cluster",
-                    "modules": {
-                        "1": {"instrument_type": "QCM_RF", "digital_output_1": {}}
-                    },
+                    "modules": {"1": {"instrument_type": "QCM_RF", "digital_output_1": {}}},
                     "ref": "internal",
                 }
             },
@@ -448,20 +434,14 @@ class TestMarkerPulseStrategy:
         # Define experiment schedule
         schedule = Schedule("test MarkerPulse add to Operation")
         schedule.add_resource(ClockResource(name="q0.01", freq=5.1e9))
-        square_pulse_op = SquarePulse(
-            amp=0.5, duration=1e-9, port="q0:mw", clock="q0.01"
-        )
-        square_pulse_op.add_pulse(
-            MarkerPulse(duration=100e-9, port="q0:switch", t0=40e-9)
-        )
+        square_pulse_op = SquarePulse(amp=0.5, duration=1e-9, port="q0:mw", clock="q0.01")
+        square_pulse_op.add_pulse(MarkerPulse(duration=100e-9, port="q0:switch", t0=40e-9))
         schedule.add(square_pulse_op)
         schedule.add(IdlePulse(4e-9))
 
         # Generate compiled schedule
         compiler = SerialCompiler(name="compiler")
-        _ = compiler.compile(
-            schedule=schedule, config=quantum_device.generate_compilation_config()
-        )
+        _ = compiler.compile(schedule=schedule, config=quantum_device.generate_compilation_config())
 
 
 class TestDigitalPulseStrategy:
@@ -527,9 +507,7 @@ class TestDigitalPulseStrategy:
 
 def test_simple_numerical_pulse():
     values = [0.2, 0.3, 0.4, 0.5]
-    num_pulse = SimpleNumericalPulse(
-        samples=values, port="q0:mw", clock="q0.01", t0=4e-9
-    )
+    num_pulse = SimpleNumericalPulse(samples=values, port="q0:mw", clock="q0.01", t0=4e-9)
     waveform = helpers.generate_waveform_data(
         num_pulse.data["pulse_info"][0], sampling_rate=constants.SAMPLING_RATE
     )
@@ -538,9 +516,7 @@ def test_simple_numerical_pulse():
 
 def test_simple_numerical_pulse_empty():
     values = []
-    num_pulse = SimpleNumericalPulse(
-        samples=values, port="q0:mw", clock="q0.01", t0=4e-9
-    )
+    num_pulse = SimpleNumericalPulse(samples=values, port="q0:mw", clock="q0.01", t0=4e-9)
     with pytest.raises(IndexError) as error:
         helpers.generate_waveform_data(
             num_pulse.data["pulse_info"][0], sampling_rate=constants.SAMPLING_RATE

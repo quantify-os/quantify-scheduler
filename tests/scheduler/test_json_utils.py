@@ -36,9 +36,7 @@ def test_getsetstate_json_serialization():
     # Check that for the test class, it works as expected
     assert mockinstance1.__dict__ == copy.copy(mockinstance1).__dict__
     serialized = json.dumps(mockinstance1, cls=SchedulerJSONEncoder)
-    assert serialized == json.dumps(
-        {"deserialization_type": "MockClass", "data": {"value": 0}}
-    )
+    assert serialized == json.dumps({"deserialization_type": "MockClass", "data": {"value": 0}})
 
     # Try to decode an unknown class should fail with a ValueError
     with pytest.raises(UnknownDeserializationTypeError):

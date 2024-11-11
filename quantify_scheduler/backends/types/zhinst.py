@@ -328,9 +328,7 @@ class CommandTable(DataStructure):
     def generate_command_table_header(cls, v):
         """Generates command table header."""
         if v is not None:
-            raise ValueError(
-                f"Trying to set 'header' to {v}, while it is an auto-generated field."
-            )
+            raise ValueError(f"Trying to set 'header' to {v}, while it is an auto-generated field.")
         return CommandTableHeader()
 
 

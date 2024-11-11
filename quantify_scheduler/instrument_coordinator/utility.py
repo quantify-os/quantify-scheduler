@@ -16,9 +16,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def search_settable_param(
-    instrument: InstrumentBase, nested_parameter_name: str
-) -> Parameter:
+def search_settable_param(instrument: InstrumentBase, nested_parameter_name: str) -> Parameter:
     """
     Searches for a settable parameter in nested instrument hierarchies.
 
@@ -95,9 +93,7 @@ def parameter_value_same_as_cache(
     bool
 
     """
-    parameter = search_settable_param(
-        instrument=instrument, nested_parameter_name=parameter_name
-    )
+    parameter = search_settable_param(instrument=instrument, nested_parameter_name=parameter_name)
     # parameter.cache() throws for non-gettable parameters if the cache is invalid.
     # This order prevents the exception.
     return parameter.cache.valid and parameter.cache() == val
@@ -117,17 +113,13 @@ def lazy_set(instrument: InstrumentBase, parameter_name: str, val: object) -> No
         Value to set it to.
 
     """
-    parameter = search_settable_param(
-        instrument=instrument, nested_parameter_name=parameter_name
-    )
+    parameter = search_settable_param(instrument=instrument, nested_parameter_name=parameter_name)
     # parameter.cache() throws for non-gettable parameters if the cache is invalid.
     # This order prevents the exception.
     if not parameter_value_same_as_cache(instrument, parameter_name, val):
         parameter.set(val)
     else:
-        logger.info(
-            f"Lazy set skipped setting parameter {instrument.name}.{parameter_name}"
-        )
+        logger.info(f"Lazy set skipped setting parameter {instrument.name}.{parameter_name}")
 
 
 def check_already_existing_acquisition(
@@ -160,15 +152,11 @@ def check_already_existing_acquisition(
             def mask_func(x: float, y: float) -> int:
                 return 0 if np.isnan(x) or np.isnan(y) else 1
 
-            conflict_mask = xarray.apply_ufunc(
-                mask_func, common_0, common_1, vectorize=True
-            )
+            conflict_mask = xarray.apply_ufunc(mask_func, common_0, common_1, vectorize=True)
             for conflict in conflict_mask:
                 if conflict.values == [1]:
                     conflicting_coords = [("acq_channel", acq_channel)]
-                    conflicting_coords += [
-                        (dim, conflict[dim].values) for dim in conflict.coords
-                    ]
+                    conflicting_coords += [(dim, conflict[dim].values) for dim in conflict.coords]
                     coords_str = [f"{dim}={coord}" for dim, coord in conflicting_coords]
                     conflicting_indices_str.append("; ".join(coords_str))
 

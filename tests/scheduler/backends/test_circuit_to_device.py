@@ -197,16 +197,10 @@ def test_compile_symmetric_gate_distinguished_qubits(mock_setup_basic_transmon):
         )
 
     compiled_schedule_q2_q3 = compile_schedule(q2, q3)
-    assert (
-        list(compiled_schedule_q2_q3.operations.values())[0]["pulse_info"][0]["port"]
-        == "q2:fl"
-    )
+    assert list(compiled_schedule_q2_q3.operations.values())[0]["pulse_info"][0]["port"] == "q2:fl"
 
     compiled_schedule_q3_q2 = compile_schedule(q3, q2)
-    assert (
-        list(compiled_schedule_q3_q2.operations.values())[0]["pulse_info"][0]["port"]
-        == "q3:fl"
-    )
+    assert list(compiled_schedule_q3_q2.operations.values())[0]["pulse_info"][0]["port"] == "q3:fl"
 
 
 def test_measurement_compile(device_cfg_transmon_example, get_subschedule_operation):
@@ -313,9 +307,7 @@ def test_only_add_clocks_used(
     )
 
     assert set(
-        get_subschedule_operation(
-            checked_dev_sched, subschedule_indices
-        ).resources.keys()
+        get_subschedule_operation(checked_dev_sched, subschedule_indices).resources.keys()
     ) == set(clocks_used)
 
 
@@ -332,8 +324,7 @@ def test_set_gate_clock_raises(mock_setup_basic_transmon_with_standard_params):
         _ = set_pulse_and_acquisition_clock(sched, config=compilation_cfg)
 
     assert (
-        error.value.args[0]
-        == f"Operation '{operation}' is a gate-level operation and must be "
+        error.value.args[0] == f"Operation '{operation}' is a gate-level operation and must be "
         f"compiled from circuit to device; ensure compilation "
         f"is made in the correct order."
     )
@@ -371,9 +362,7 @@ def test_multiply_defined_clock_freq_raises(
             f"to omit this warning."
         ),
     ):
-        compiled_sched = set_pulse_and_acquisition_clock(
-            schedule=dev_sched, config=compilation_cfg
-        )
+        compiled_sched = set_pulse_and_acquisition_clock(schedule=dev_sched, config=compilation_cfg)
     assert clock_freq_schedule != clock_freq_device_cfg
     assert compiled_sched.resources[clock]["freq"] == clock_freq_schedule
 
@@ -435,16 +424,12 @@ def test_clock_not_defined_raises():
     sched.add(operation)
     dev_sched = compile_circuit_to_device_with_config_validation(
         sched,
-        config=SerialCompilationConfig(
-            name="test", device_compilation_config=simple_config
-        ),
+        config=SerialCompilationConfig(name="test", device_compilation_config=simple_config),
     )
     with pytest.raises(ValueError) as error:
         _ = set_pulse_and_acquisition_clock(
             dev_sched,
-            config=SerialCompilationConfig(
-                name="test", device_compilation_config=simple_config
-            ),
+            config=SerialCompilationConfig(name="test", device_compilation_config=simple_config),
         )
 
     assert (
@@ -561,9 +546,7 @@ def test_compile_schedule_with_trace_acq_protocol():
     sched.add(Measure("q0", acq_protocol="Trace"))
     _ = compile_circuit_to_device_with_config_validation(
         sched,
-        config=SerialCompilationConfig(
-            name="test", device_compilation_config=simple_config
-        ),
+        config=SerialCompilationConfig(name="test", device_compilation_config=simple_config),
     )
 
 
@@ -606,9 +589,7 @@ def test_compile_schedule_with_invalid_pulse_type_raises():
     with pytest.raises(NotImplementedError):
         _ = compile_circuit_to_device_with_config_validation(
             sched,
-            config=SerialCompilationConfig(
-                name="test", device_compilation_config=simple_config
-            ),
+            config=SerialCompilationConfig(name="test", device_compilation_config=simple_config),
         )
 
 
@@ -629,9 +610,7 @@ def test_operation_not_in_config_raises_custom():
     with pytest.raises(ConfigKeyError):
         _ = compile_circuit_to_device_with_config_validation(
             sched,
-            config=SerialCompilationConfig(
-                name="test", device_compilation_config=simple_config
-            ),
+            config=SerialCompilationConfig(name="test", device_compilation_config=simple_config),
         )
 
     sched = Schedule("Test schedule mux missing op")
@@ -639,9 +618,7 @@ def test_operation_not_in_config_raises_custom():
     with pytest.raises(ConfigKeyError):
         _ = compile_circuit_to_device_with_config_validation(
             sched,
-            config=SerialCompilationConfig(
-                name="test", device_compilation_config=simple_config
-            ),
+            config=SerialCompilationConfig(name="test", device_compilation_config=simple_config),
         )
 
     sched = Schedule("Test missing 2Q op")
@@ -649,9 +626,7 @@ def test_operation_not_in_config_raises_custom():
     with pytest.raises(ConfigKeyError):
         _ = compile_circuit_to_device_with_config_validation(
             sched,
-            config=SerialCompilationConfig(
-                name="test", device_compilation_config=simple_config
-            ),
+            config=SerialCompilationConfig(name="test", device_compilation_config=simple_config),
         )
 
 
@@ -696,9 +671,7 @@ def test_config_with_callables():
     sched.add(Reset("q0", "q1"))
     _ = compile_circuit_to_device_with_config_validation(
         sched,
-        config=SerialCompilationConfig(
-            name="test", device_compilation_config=simple_config
-        ),
+        config=SerialCompilationConfig(name="test", device_compilation_config=simple_config),
     )
 
 
@@ -857,22 +830,18 @@ def test_set_reference_magnitude(mock_setup_basic_transmon, get_subschedule_oper
         sched, config=quantum_device.generate_compilation_config()
     )
 
-    operations_dict_with_repr_keys = {
-        str(op): op for op in compiled_schedule.operations.values()
-    }
+    operations_dict_with_repr_keys = {str(op): op for op in compiled_schedule.operations.values()}
 
-    assert operations_dict_with_repr_keys["Rxy(theta=90, phi=0, qubit='q2')"][
-        "pulse_info"
-    ][0]["reference_magnitude"] == ReferenceMagnitude(0.5, "V")
-    assert operations_dict_with_repr_keys["Rxy(theta=12, phi=0, qubit='q3')"][
-        "pulse_info"
-    ][0]["reference_magnitude"] == ReferenceMagnitude(1e-3, "A")
+    assert operations_dict_with_repr_keys["Rxy(theta=90, phi=0, qubit='q2')"]["pulse_info"][0][
+        "reference_magnitude"
+    ] == ReferenceMagnitude(0.5, "V")
+    assert operations_dict_with_repr_keys["Rxy(theta=12, phi=0, qubit='q3')"]["pulse_info"][0][
+        "reference_magnitude"
+    ] == ReferenceMagnitude(1e-3, "A")
 
     measure_q2_operations_dict_with_repr_keys = {
         str(op): op
-        for op in get_subschedule_operation(
-            compiled_schedule, [8, 0]
-        ).operations.values()
+        for op in get_subschedule_operation(compiled_schedule, [8, 0]).operations.values()
     }
     assert measure_q2_operations_dict_with_repr_keys[
         (
@@ -885,9 +854,7 @@ def test_set_reference_magnitude(mock_setup_basic_transmon, get_subschedule_oper
 
     measure_q3_operations_dict_with_repr_keys = {
         str(op): op
-        for op in get_subschedule_operation(
-            compiled_schedule, [8, 1]
-        ).operations.values()
+        for op in get_subschedule_operation(compiled_schedule, [8, 1]).operations.values()
     }
     assert (
         measure_q3_operations_dict_with_repr_keys[
@@ -982,15 +949,11 @@ def test_clock_resources_and_subschedules_compiles():
 
     dev_sched = compile_circuit_to_device_with_config_validation(
         sched,
-        config=SerialCompilationConfig(
-            name="test", device_compilation_config=simple_config
-        ),
+        config=SerialCompilationConfig(name="test", device_compilation_config=simple_config),
     )
     _ = set_pulse_and_acquisition_clock(
         dev_sched,
-        config=SerialCompilationConfig(
-            name="test", device_compilation_config=simple_config
-        ),
+        config=SerialCompilationConfig(name="test", device_compilation_config=simple_config),
     )
 
 
@@ -1100,9 +1063,7 @@ def test_device_overrides_multiple_levels_hamilton(
     assert math.isclose(duration_1, 4e-6)
 
 
-def test_measurement_freq_override(
-    device_cfg_transmon_example, get_subschedule_operation
-):
+def test_measurement_freq_override(device_cfg_transmon_example, get_subschedule_operation):
     sched = Schedule("Test schedule")
     sched.add(Measure("q0"))
     sched.add(Measure("q1", freq=5e9))
@@ -1114,9 +1075,7 @@ def test_measurement_freq_override(
     )
 
     m0_without_freq = get_subschedule_operation(new_dev_sched, [0])
-    assert all(
-        not isinstance(op, SetClockFrequency) for op in m0_without_freq.operations
-    )
+    assert all(not isinstance(op, SetClockFrequency) for op in m0_without_freq.operations)
 
     # Subschedule components for an acquisition are (if there is frequency override):
     # 0th: frequency override,
@@ -1137,9 +1096,7 @@ def test_pulse_compensation_error_factory_func(
 ):
     body = Schedule("schedule")
     body.add(
-        SquarePulse(
-            amp=0.8, duration=1e-8, port="q0:mw", clock=BasebandClockResource.IDENTITY
-        )
+        SquarePulse(amp=0.8, duration=1e-8, port="q0:mw", clock=BasebandClockResource.IDENTITY)
     )
 
     schedule = Schedule("compensated_schedule")

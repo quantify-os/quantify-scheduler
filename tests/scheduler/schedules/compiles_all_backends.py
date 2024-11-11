@@ -25,9 +25,7 @@ class _CompilesAllBackends:
             raise
 
     @pytest.mark.needs_zhinst
-    def test_compiles_zi_backend(
-        self, compile_config_basic_transmon_zhinst_hardware
-    ) -> None:
+    def test_compiles_zi_backend(self, compile_config_basic_transmon_zhinst_hardware) -> None:
         compilation_config = compile_config_basic_transmon_zhinst_hardware
         compiler = SerialCompiler(name="compiler")
         compiler.compile(schedule=self.uncomp_sched, config=compilation_config)

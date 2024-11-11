@@ -556,9 +556,7 @@ class NumericalSeparatedWeightedIntegration(WeightedIntegratedSeparated):
             t0=t0,
         )
         self.data["name"] = self.__class__.__name__
-        self.data["acquisition_info"][0][
-            "protocol"
-        ] = "NumericalSeparatedWeightedIntegration"
+        self.data["acquisition_info"][0]["protocol"] = "NumericalSeparatedWeightedIntegration"
         self._update()
 
     def __str__(self) -> str:

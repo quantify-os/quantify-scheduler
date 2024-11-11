@@ -53,9 +53,7 @@ class GenericInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentB
         cls._no_gc_instances[instrument.name] = instance
         return instance
 
-    def __init__(
-        self, instrument_reference: str | InstrumentBase = DEFAULT_NAME
-    ) -> None:
+    def __init__(self, instrument_reference: str | InstrumentBase = DEFAULT_NAME) -> None:
         if isinstance(instrument_reference, InstrumentBase):
             instrument = instrument_reference
         else:
@@ -116,10 +114,7 @@ class GenericInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentB
         for key, value in params_config.items():
             if "." not in key:
                 error_msg = f"Key [{key}] is not valid in the params_config."
-                hint_msg = (
-                    "Ensure that it is in the format "
-                    + "'instrument_name.parameter_name'"
-                )
+                hint_msg = "Ensure that it is in the format " + "'instrument_name.parameter_name'"
                 raise KeyError(error_msg + hint_msg)
             instrument_name, parameter_name = key.split(".", maxsplit=1)
             instrument = self.find_instrument(instrument_name)
@@ -130,9 +125,7 @@ class GenericInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentB
                     )
                     param_to_set.set(value=value)
                 else:
-                    util.lazy_set(
-                        instrument=instrument, parameter_name=parameter_name, val=value
-                    )
+                    util.lazy_set(instrument=instrument, parameter_name=parameter_name, val=value)
             except ValueError as e:
                 set_function = getattr(instrument, parameter_name)
                 if callable(set_function):

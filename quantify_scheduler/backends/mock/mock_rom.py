@@ -64,9 +64,7 @@ class MockReadoutModule:
     def execute(self) -> None:
         """Execute the instruction sequence (only "TRACE" is supported)."""
         if self.instructions == []:
-            raise RuntimeError(
-                "No instructions available. Did you upload instructions?"
-            )
+            raise RuntimeError("No instructions available. Did you upload instructions?")
         for instruction in self.instructions:
             if "TRACE" in instruction:
                 self.data = []  # Clear data
@@ -208,9 +206,7 @@ class MockROMInstrumentCoordinatorComponent(InstrumentCoordinatorComponentBase):
                     }
                 )
             else:
-                raise NotImplementedError(
-                    f"Acquisition protocol {acq_protocol} not supported."
-                )
+                raise NotImplementedError(f"Acquisition protocol {acq_protocol} not supported.")
 
         return xr.merge(acq_channel_results, compat="no_conflicts")
 
@@ -227,9 +223,7 @@ def hardware_compile(  # noqa: PLR0912, PLR0915
 ) -> Schedule:
     """Compile the schedule to the mock ROM."""
     # Type checks and initialization
-    if not isinstance(
-        config.hardware_compilation_config, MockROMHardwareCompilationConfig
-    ):
+    if not isinstance(config.hardware_compilation_config, MockROMHardwareCompilationConfig):
         raise ValueError("Config should be a MockROMHardwareCompilationConfig object.")
     connectivity = config.hardware_compilation_config.connectivity
     if not isinstance(connectivity, Connectivity):
@@ -248,9 +242,7 @@ def hardware_compile(  # noqa: PLR0912, PLR0915
     for schedulable in schedule.schedulables.values():
         op = schedule.operations[schedulable["operation_id"]]
         if isinstance(op, Schedule):
-            raise NotImplementedError(
-                "Nested schedules are not supported by the Mock ROM backend."
-            )
+            raise NotImplementedError("Nested schedules are not supported by the Mock ROM backend.")
         if op.valid_pulse:
             pulse_info = op.data["pulse_info"][0]
             port = pulse_info["port"]
@@ -264,14 +256,10 @@ def hardware_compile(  # noqa: PLR0912, PLR0915
                     "Modulation frequencies must be specified for the Mock ROM backend."
                 )
             else:
-                pc_mod_freqs = hardware_options.modulation_frequencies.get(
-                    f"{port}-{clock}"
-                )
+                pc_mod_freqs = hardware_options.modulation_frequencies.get(f"{port}-{clock}")
             assert pc_mod_freqs is not None
             assert pc_mod_freqs.interm_freq is not None
-            envelope = exec_waveform_function(
-                wf_func=wf_func, t=time_grid, pulse_info=pulse_info
-            )
+            envelope = exec_waveform_function(wf_func=wf_func, t=time_grid, pulse_info=pulse_info)
             modulated_wf = modulate_waveform(
                 time_grid,
                 envelope=envelope,
@@ -291,17 +279,13 @@ def hardware_compile(  # noqa: PLR0912, PLR0915
                     gain_setting is not None
                     and hardware_options.gain[f"{port}-{clock}"] != gain_setting
                 ):
-                    raise ValueError(
-                        "The gain must be the same for all traces in the schedule."
-                    )
+                    raise ValueError("The gain must be the same for all traces in the schedule.")
                 gain_setting = hardware_options.gain[f"{port}-{clock}"]
             n_acquisitions += 1
             acq_protocols[acq_info["acq_channel"]] = acq_info["protocol"]
             bin_mode = acq_info["bin_mode"]
         else:
-            raise NotImplementedError(
-                f"Operation {op} is not supported by the Mock ROM backend."
-            )
+            raise NotImplementedError(f"Operation {op} is not supported by the Mock ROM backend.")
 
     if "compiled_instructions" not in schedule:
         schedule["compiled_instructions"] = {}

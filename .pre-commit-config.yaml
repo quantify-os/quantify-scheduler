@@ -27,7 +27,7 @@ repos:
         language_version: python3
         entry: black
         args: ["--fast"]
-        stages: [commit]
+        stages: [pre-commit]
         language: python
         types: [python]
 
@@ -37,7 +37,7 @@ repos:
         description: "Run 'ruff' for extremely fast Python linting"
         entry: ruff check --force-exclude
         language: python
-        'types_or': [python, pyi]
+        types_or: [python, pyi]
         args: []
         require_serial: true
         additional_dependencies: []

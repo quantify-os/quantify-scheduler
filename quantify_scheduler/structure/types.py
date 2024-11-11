@@ -79,9 +79,7 @@ class NDArray(np.ndarray):
 
         """
         return (
-            np.frombuffer(
-                base64.b64decode(serialized["data"]), dtype=serialized["dtype"]
-            )
+            np.frombuffer(base64.b64decode(serialized["data"]), dtype=serialized["dtype"])
             .reshape(serialized["shape"])
             .view(cls)
         )
@@ -98,9 +96,7 @@ class Graph(nx.Graph):
     """Pydantic-compatible version of :class:`networkx.Graph`."""
 
     # Avoid showing inherited init docstring (which leads to cross-reference issues)
-    def __init__(
-        self, incoming_graph_data=None, **attr  # noqa: ANN001, ANN003
-    ) -> None:
+    def __init__(self, incoming_graph_data=None, **attr) -> None:  # noqa: ANN001, ANN003
         """Create a new graph instance."""
         super().__init__(incoming_graph_data, **attr)
 

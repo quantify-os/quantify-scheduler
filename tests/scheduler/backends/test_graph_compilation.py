@@ -126,8 +126,8 @@ def test_do_not_keep_original_schedule(
     )
 
     quantum_device.keep_original_schedule(False)
-    compiled_schedule_not_kept_schedule = SerialCompiler(
-        "test", quantum_device
-    ).compile(schedule=schedule)
+    compiled_schedule_not_kept_schedule = SerialCompiler("test", quantum_device).compile(
+        schedule=schedule
+    )
 
     assert compiled_schedule_kept_schedule == compiled_schedule_not_kept_schedule

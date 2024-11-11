@@ -310,9 +310,7 @@ def multiplexing_staircase_sched(
     pulse_amps_reversed = np.flip(pulse_amps)
 
     ref_pulse = sched.add(IdlePulse(duration=init_duration))
-    for acq_index, (pulse_amp0, pulse_amp1) in enumerate(
-        zip(pulse_amps, pulse_amps_reversed)
-    ):
+    for acq_index, (pulse_amp0, pulse_amp1) in enumerate(zip(pulse_amps, pulse_amps_reversed)):
         add_staircase_step(
             sched,
             ref_pulse,

@@ -11,9 +11,7 @@ class TestRegisterManager:
     def fixture_make_rm(self) -> register_manager.RegisterManager:
         return register_manager.RegisterManager()
 
-    def test_available_registers(
-        self, make_rm: register_manager.RegisterManager
-    ) -> None:
+    def test_available_registers(self, make_rm: register_manager.RegisterManager) -> None:
         pool = make_rm
         assert pool.available_registers == pool._available_registers
 

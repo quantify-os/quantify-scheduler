@@ -261,9 +261,7 @@ def test_staircase_raises_step_duration_too_short():
 @pytest.mark.parametrize(
     "pulse",
     [
-        partial(
-            long_square_pulse, amp=0.8, duration=1e-3, port="q0:res", clock="q0.ro"
-        ),
+        partial(long_square_pulse, amp=0.8, duration=1e-3, port="q0:res", clock="q0.ro"),
         partial(
             staircase_pulse,
             start_amp=0.1,
@@ -299,6 +297,4 @@ def test_deprecated_functions_warn():
         FutureWarning,
         match="0.20.0",
     ):
-        old_staircase_pulse(
-            start_amp=0.0, final_amp=1.0, num_steps=20, duration=2e-6, port="port"
-        )
+        old_staircase_pulse(start_amp=0.0, final_amp=1.0, num_steps=20, duration=2e-6, port="port")

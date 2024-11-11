@@ -65,9 +65,7 @@ class LoopOperation(ControlFlowOperation):
 
     """
 
-    def __init__(
-        self, body: Operation | Schedule, repetitions: int, t0: float = 0.0
-    ) -> None:
+    def __init__(self, body: Operation | Schedule, repetitions: int, t0: float = 0.0) -> None:
         super().__init__(name="LoopOperation")
         self.data.update(
             {

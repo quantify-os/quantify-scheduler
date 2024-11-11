@@ -130,9 +130,7 @@ def hardware_cfg_rf_legacy():
                 },
                 "complex_output_1": {
                     "lo_freq": 5e9,
-                    "portclock_configs": [
-                        {"port": "q3:mw", "clock": "q3.01", "interm_freq": None}
-                    ],
+                    "portclock_configs": [{"port": "q3:mw", "clock": "q3.01", "interm_freq": None}],
                 },
             },
             "cluster0_module4": {
@@ -221,9 +219,7 @@ def hardware_cfg_trigger_count():
                 },
                 "qe0:optical_control-qe0.ge0": {"lo_freq": None, "interm_freq": 0},
             },
-            "sequencer_options": {
-                "qe0:optical_readout-qe0.ge0": {"ttl_acq_threshold": 0.5}
-            },
+            "sequencer_options": {"qe0:optical_readout-qe0.ge0": {"ttl_acq_threshold": 0.5}},
         },
         "connectivity": {
             "graph": [
@@ -294,9 +290,7 @@ def hardware_cfg_cluster_latency_corrections():
                 "ref": "internal",
             }
         },
-        "hardware_options": {
-            "latency_corrections": {"q0:mw-q0.01": 2e-08, "q1:mw-q1.01": -4e-09}
-        },
+        "hardware_options": {"latency_corrections": {"q0:mw-q0.01": 2e-08, "q1:mw-q1.01": -4e-09}},
         "connectivity": {
             "graph": [
                 ("cluster0.module1.complex_output_0", "q0:mw"),
@@ -427,9 +421,7 @@ def hardware_cfg_cluster_legacy():
                     "lo_name": "lo1",
                     "dc_mixer_offset_I": 0.2345,
                     "dc_mixer_offset_Q": 1.337,
-                    "portclock_configs": [
-                        {"port": "q1:mw", "clock": "q1.01", "interm_freq": None}
-                    ],
+                    "portclock_configs": [{"port": "q1:mw", "clock": "q1.01", "interm_freq": None}],
                 },
             },
             "cluster0_module2": {

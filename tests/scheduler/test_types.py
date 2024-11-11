@@ -43,9 +43,7 @@ def t1_schedule():
     for i, tau in enumerate(times):
         schedule.add(Reset(qubit), label=f"Reset {i}")
         schedule.add(X(qubit), label=f"pi {i}")
-        schedule.add(
-            Measure(qubit), ref_pt="start", rel_time=tau, label=f"Measurement {i}"
-        )
+        schedule.add(Measure(qubit), ref_pt="start", rel_time=tau, label=f"Measurement {i}")
 
     return schedule
 
@@ -261,9 +259,7 @@ def test_schedule_from_json():
 
 def test_spec_schedule_from_json():
     # Arrange
-    schedule = heterodyne_spec_sched(
-        0.1, 0.1, 6e9, 1e-7, 1e-6, "q0:mw", "q0.01", 200e-6, 1024
-    )
+    schedule = heterodyne_spec_sched(0.1, 0.1, 6e9, 1e-7, 1e-6, "q0:mw", "q0.01", 200e-6, 1024)
 
     # Act
     json_data = schedule.to_json()
@@ -315,9 +311,7 @@ def test_t1_sched_pulse_diagram(t1_schedule, device_compile_config_basic_transmo
 
 
 @pytest.mark.parametrize("reset_clock_phase", (True, False))
-def test_sched_timing_table(
-    mock_setup_basic_transmon_with_standard_params, reset_clock_phase
-):
+def test_sched_timing_table(mock_setup_basic_transmon_with_standard_params, reset_clock_phase):
     schedule = Schedule(name="test_sched", repetitions=10)
     qubit = "q0"
     times = [0, 10e-6, 30e-6]
@@ -404,9 +398,7 @@ def test_sched_timing_table(
 
 
 @pytest.mark.needs_zhinst
-def test_sched_hardware_timing_table(
-    t1_schedule, compile_config_basic_transmon_zhinst_hardware
-):
+def test_sched_hardware_timing_table(t1_schedule, compile_config_basic_transmon_zhinst_hardware):
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
         schedule=t1_schedule, config=compile_config_basic_transmon_zhinst_hardware
@@ -423,9 +415,7 @@ def test_sched_hardware_timing_table(
 
 
 @pytest.mark.needs_zhinst
-def test_sched_hardware_waveform_dict(
-    t1_schedule, compile_config_basic_transmon_zhinst_hardware
-):
+def test_sched_hardware_waveform_dict(t1_schedule, compile_config_basic_transmon_zhinst_hardware):
     compiler = SerialCompiler(name="compiler")
     compiled_schedule = compiler.compile(
         schedule=t1_schedule, config=compile_config_basic_transmon_zhinst_hardware
@@ -433,15 +423,11 @@ def test_sched_hardware_waveform_dict(
 
     # Filter out operations that are not waveforms such as Reset and ClockPhaseReset,
     # that have port = None
-    mask = compiled_schedule.hardware_timing_table.data.port.apply(
-        lambda port: port is not None
-    )
+    mask = compiled_schedule.hardware_timing_table.data.port.apply(lambda port: port is not None)
     hardware_timing_table = compiled_schedule.hardware_timing_table.data[mask]
 
     for waveform_id in hardware_timing_table.waveform_id:
-        assert isinstance(
-            compiled_schedule.hardware_waveform_dict.get(waveform_id), np.ndarray
-        )
+        assert isinstance(compiled_schedule.hardware_waveform_dict.get(waveform_id), np.ndarray)
 
 
 def test_acquisition_metadata():
@@ -451,9 +437,7 @@ def test_acquisition_metadata():
             acq_protocol="SSBIntegrationComplex",
             bin_mode=binmode,
             acq_return_type=complex,
-            acq_channels_metadata={
-                0: AcquisitionChannelMetadata(acq_channel=0, acq_indices=[0])
-            },
+            acq_channels_metadata={0: AcquisitionChannelMetadata(acq_channel=0, acq_indices=[0])},
             repetitions=1,
         )
         # test whether the copy function works correctly
@@ -467,9 +451,7 @@ def test_acquisition_metadata():
             acq_protocol="SSBIntegrationComplex",
             bin_mode=enums.BinMode.AVERAGE,
             acq_return_type=return_type,
-            acq_channels_metadata={
-                0: AcquisitionChannelMetadata(acq_channel=0, acq_indices=[0])
-            },
+            acq_channels_metadata={0: AcquisitionChannelMetadata(acq_channel=0, acq_indices=[0])},
             repetitions=1,
         )
         # test whether the copy function works correctly
@@ -502,7 +484,5 @@ def test_nested_schedule_to_from_json():
 
     # Serialization/deserialization using json.dumps and json.loads functions.
     schedule_serialized_2 = json.dumps(schedule, cls=json_utils.SchedulerJSONEncoder)
-    schedule_deserialized_2 = json.loads(
-        schedule_serialized_2, cls=json_utils.SchedulerJSONDecoder
-    )
+    schedule_deserialized_2 = json.loads(schedule_serialized_2, cls=json_utils.SchedulerJSONDecoder)
     assert schedule == schedule_deserialized_2

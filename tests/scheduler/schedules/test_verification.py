@@ -120,15 +120,11 @@ def test_awg_staircase_sched(gen_awg_staircase_sched):
     assert_array_equal(np.array(amps), sched_kwargs["pulse_amps"])
 
 
-def test_awg_staircase_comp_transmon(
-    gen_awg_staircase_sched, mock_setup_basic_transmon
-):
+def test_awg_staircase_comp_transmon(gen_awg_staircase_sched, mock_setup_basic_transmon):
     compiler = SerialCompiler(name="compiler")
     _ = compiler.compile(
         schedule=gen_awg_staircase_sched[0],
-        config=mock_setup_basic_transmon[
-            "quantum_device"
-        ].generate_compilation_config(),
+        config=mock_setup_basic_transmon["quantum_device"].generate_compilation_config(),
     )
 
 

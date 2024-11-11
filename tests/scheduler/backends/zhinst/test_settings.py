@@ -48,9 +48,7 @@ def test_zi_settings_equality(
 
     compiler = SerialCompiler(name="compiler")
 
-    hw_comp_cfg["hardware_options"]["modulation_frequencies"]["q0:res-q0.ro"][
-        "interm_freq"
-    ] = 10e6
+    hw_comp_cfg["hardware_options"]["modulation_frequencies"]["q0:res-q0.ro"]["interm_freq"] = 10e6
     quantum_device.hardware_config(hw_comp_cfg)
     config = quantum_device.generate_compilation_config()
     comp_sched_a = compiler.compile(sched, config=config)
@@ -179,9 +177,7 @@ def test_zi_settings_serialize_wave(mocker):
     zi_settings = settings.ZISettings(daq_settings, awg_settings)
     zi_settings.serialize(
         root,
-        settings.ZISerializeSettings(
-            instrument.name, instrument._serial, instrument._type
-        ),
+        settings.ZISerializeSettings(instrument.name, instrument._serial, instrument._type),
     )
 
     # Assert
@@ -190,9 +186,7 @@ def test_zi_settings_serialize_wave(mocker):
 
     args, _ = np_savetext.call_args
     csv_bug_scale_factor = 2**15 - 1  # See issue quantify-scheduler#175
-    np.testing.assert_array_equal(
-        args[1], np.reshape(wave / csv_bug_scale_factor, (24, -1))
-    )
+    np.testing.assert_array_equal(args[1], np.reshape(wave / csv_bug_scale_factor, (24, -1)))
 
     touch.assert_called()
 
@@ -212,9 +206,7 @@ def test_zi_settings_serialize_wave(mocker):
 def test_zi_settings_serialize_command_table(mocker):
     # Arrange
     instrument = make_ufhqa(mocker)
-    daq_settings = [
-        settings.ZISetting("awgs/0/commandtable/data", {"key": 0}, mocker.Mock())
-    ]
+    daq_settings = [settings.ZISetting("awgs/0/commandtable/data", {"key": 0}, mocker.Mock())]
 
     root = Path(".")
     touch = mocker.patch.object(Path, "touch")
@@ -302,9 +294,7 @@ def test_zi_settings_serialize_integration_weights(mocker):
     instrument = make_ufhqa(mocker)
     time = np.arange(0, 10, 1)
     weights = np.sin(time)
-    daq_settings = [
-        settings.ZISetting("qas/0/integration/weights/0/real", weights, mocker.Mock())
-    ]
+    daq_settings = [settings.ZISetting("qas/0/integration/weights/0/real", weights, mocker.Mock())]
 
     root = Path(".")
     touch = mocker.patch.object(Path, "touch")
@@ -507,6 +497,5 @@ def test_deserialize_with_invalid_filename():
 
     # Assert
     assert str(execinfo.value) == (
-        "Invalid value for param 'settings_path' provide path to "
-        "'{instrument}_settings.json'"
+        "Invalid value for param 'settings_path' provide path to " "'{instrument}_settings.json'"
     )

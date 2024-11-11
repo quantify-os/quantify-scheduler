@@ -25,22 +25,14 @@ def test_zero_duration_parameter_operations(
     sched = Schedule("test")
     sched.add(ResetClockPhase(clock="q0.01"))
     sched.add(SetClockFrequency(clock="q0.01", clock_freq_new=7250e6))
+    sched.add(VoltageOffset(offset_path_I=0.5, offset_path_Q=0.5, port="q0:mw", clock="q0.01"))
     sched.add(
-        VoltageOffset(offset_path_I=0.5, offset_path_Q=0.5, port="q0:mw", clock="q0.01")
-    )
-    sched.add(
-        VoltageOffset(
-            offset_path_I=0.0, offset_path_Q=0.0, port="q0:mw", clock="q0.01"
-        ),
+        VoltageOffset(offset_path_I=0.0, offset_path_Q=0.0, port="q0:mw", clock="q0.01"),
         rel_time=100e-9,
     )
     sched.add(ShiftClockPhase(phase_shift=120, clock="q0.01"), rel_time=100e-9)
-    sq_pulse = sched.add(
-        SquarePulse(amp=0.5, duration=100e-9, port="q0:mw", clock="q0.01")
-    )
-    sched.add(
-        MarkerPulse(duration=80e-9, port="q0:switch"), ref_op=sq_pulse, ref_pt="start"
-    )
+    sq_pulse = sched.add(SquarePulse(amp=0.5, duration=100e-9, port="q0:mw", clock="q0.01"))
+    sched.add(MarkerPulse(duration=80e-9, port="q0:switch"), ref_op=sq_pulse, ref_pt="start")
 
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
 
@@ -53,9 +45,9 @@ def test_zero_duration_parameter_operations(
     )
 
     assert_equal_q1asm(
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module2"][
-            "sequencers"
-        ]["seq0"]["sequence"]["program"],
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module2"]["sequencers"]["seq0"][
+            "sequence"
+        ]["program"],
         """
  set_mrk 1 # set markers to 1
  wait_sync 4
@@ -82,9 +74,9 @@ start:
 """,
     )
     assert_equal_q1asm(
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module2"][
-            "sequencers"
-        ]["seq1"]["sequence"]["program"],
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module2"]["sequencers"]["seq1"][
+            "sequence"
+        ]["program"],
         """
  set_mrk 3 # set markers to 3
  wait_sync 4
@@ -121,13 +113,9 @@ def test_zero_duration_parameter_operations_with_loops(
     inner.add(SquarePulse(amp=0.5, duration=100e-9, port="q0:mw", clock="q0.01"))
 
     sched.add(LoopOperation(body=inner, repetitions=3), rel_time=4e-9)
+    sched.add(VoltageOffset(offset_path_I=0.5, offset_path_Q=0.5, port="q0:mw", clock="q0.01"))
     sched.add(
-        VoltageOffset(offset_path_I=0.5, offset_path_Q=0.5, port="q0:mw", clock="q0.01")
-    )
-    sched.add(
-        VoltageOffset(
-            offset_path_I=0.0, offset_path_Q=0.0, port="q0:mw", clock="q0.01"
-        ),
+        VoltageOffset(offset_path_I=0.0, offset_path_Q=0.0, port="q0:mw", clock="q0.01"),
         rel_time=100e-9,
     )
     sched.add(IdlePulse(4e-9))
@@ -143,9 +131,9 @@ def test_zero_duration_parameter_operations_with_loops(
     )
 
     assert_equal_q1asm(
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module2"][
-            "sequencers"
-        ]["seq0"]["sequence"]["program"],
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module2"]["sequencers"]["seq0"][
+            "sequence"
+        ]["program"],
         """
  set_mrk 1 # set markers to 1
  wait_sync 4

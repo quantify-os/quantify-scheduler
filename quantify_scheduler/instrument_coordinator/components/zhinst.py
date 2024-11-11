@@ -85,8 +85,7 @@ class ZIInstrumentCoordinatorComponent(InstrumentCoordinatorComponentBase):
 
         if new_zi_settings == old_zi_settings:
             logger.info(
-                f"{self.name}: device config and settings "
-                + "are identical! Compilation skipped."
+                f"{self.name}: device config and settings " + "are identical! Compilation skipped."
             )
             return False
 
@@ -130,10 +129,7 @@ class HDAWGInstrumentCoordinatorComponent(ZIInstrumentCoordinatorComponent):
 
     @property
     def is_running(self) -> bool:
-        return any(
-            self.get_awg(awg_index).is_running
-            for awg_index in self.zi_settings.awg_indexes
-        )
+        return any(self.get_awg(awg_index).is_running for awg_index in self.zi_settings.awg_indexes)
 
     def get_awg(self, index: int) -> qcodes.hdawg.AWG:
         """

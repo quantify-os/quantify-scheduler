@@ -21,9 +21,7 @@ class SeqcInstructions(Enum):
     WAIT = "wait"
     WAIT_WAVE = "waitWave"
     # addi + addiu + st
-    ARM_INTEGRATION = (
-        "AWG_INTEGRATION_ARM + AWG_INTEGRATION_TRIGGER + AWG_MONITOR_TRIGGER"
-    )
+    ARM_INTEGRATION = "AWG_INTEGRATION_ARM + AWG_INTEGRATION_TRIGGER + AWG_MONITOR_TRIGGER"
     EXECUTE_TABLE_ENTRY = "executeTableEntry"
     START_QA = "startQA"
 
@@ -409,9 +407,7 @@ class SeqcILGenerator:
         """
         self._emit("startQAMonitor();")
 
-    def emit_start_qa_result(
-        self, bitmask: str | None = None, trigger: str | None = None
-    ) -> None:
+    def emit_start_qa_result(self, bitmask: str | None = None, trigger: str | None = None) -> None:
         """
         Starts the Quantum Analysis Result unit by setting
         and clearing appropriate AWG trigger output signals.
@@ -689,13 +685,10 @@ def add_execute_table_entry(
     """
     if device_type != zhinst.DeviceType.HDAWG:
         raise AttributeError(
-            "Unsupported sequencer instruction "
-            + f"'{SeqcInstructions.EXECUTE_TABLE_ENTRY}'"
+            "Unsupported sequencer instruction " + f"'{SeqcInstructions.EXECUTE_TABLE_ENTRY}'"
         )
 
-    n_assembly_instructions = SEQC_INSTR_CLOCKS[device_type][
-        SeqcInstructions.EXECUTE_TABLE_ENTRY
-    ]
+    n_assembly_instructions = SEQC_INSTR_CLOCKS[device_type][SeqcInstructions.EXECUTE_TABLE_ENTRY]
 
     seqc_gen.emit_execute_table_entry(
         index,
@@ -732,9 +725,7 @@ def add_set_trigger(
         Elapsed number of clock cycles.
 
     """
-    n_assembly_instructions = SEQC_INSTR_CLOCKS[device_type][
-        SeqcInstructions.SET_TRIGGER
-    ]
+    n_assembly_instructions = SEQC_INSTR_CLOCKS[device_type][SeqcInstructions.SET_TRIGGER]
 
     if isinstance(value, list):
         trigger = " + ".join(value)
@@ -742,9 +733,7 @@ def add_set_trigger(
     else:
         trigger = value
 
-    seqc_gen.emit_set_trigger(
-        trigger, comment=f"\t// {comment} n_instr={n_assembly_instructions}"
-    )
+    seqc_gen.emit_set_trigger(trigger, comment=f"\t// {comment} n_instr={n_assembly_instructions}")
 
     return n_assembly_instructions
 
@@ -762,9 +751,7 @@ def declare_csv_waveform_variables(
     """
     for waveform_index in waveform_indices:
         name: str = f"w{waveform_index:d}"
-        seqc_gen.declare_wave(
-            name, f"{device_name}_awg{awg_index}_wave{waveform_index:d}"
-        )
+        seqc_gen.declare_wave(name, f"{device_name}_awg{awg_index}_wave{waveform_index:d}")
 
 
 def add_csv_waveform_variables(
@@ -792,6 +779,4 @@ def add_csv_waveform_variables(
     for waveform_index in commandtable_map.values():
         # Declare new placeholder and assign wave index
         name: str = f"w{waveform_index:d}"
-        seqc_gen.declare_wave(
-            name, f"{device_serial}_awg{awg_index}_wave{waveform_index:d}"
-        )
+        seqc_gen.declare_wave(name, f"{device_serial}_awg{awg_index}_wave{waveform_index:d}")

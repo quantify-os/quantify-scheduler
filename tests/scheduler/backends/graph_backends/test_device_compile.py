@@ -43,9 +43,7 @@ from .standard_schedules import (
         hybrid_schedule_rabi(),
     ],
 )
-def test_compiles_standard_schedules(
-    schedule: Schedule, device_compile_config_basic_transmon
-):
+def test_compiles_standard_schedules(schedule: Schedule, device_compile_config_basic_transmon):
     """
     Tests if a bunch of standard schedules compile with the SerialCompiler to the
     device layer.

@@ -124,6 +124,7 @@ zhinst = [
 "Slack" = "https://join.slack.com/t/quantify-hq/shared_invite/zt-1nd78r4e9-rbWdna53cW4DO_YbtMhVuA"
 "Authors" = "https://gitlab.com/quantify-os/quantify-scheduler/-/blob/main/AUTHORS.md"
 
+
 [tool.setuptools]
 include-package-data = true
 zip-safe = false
@@ -137,46 +138,46 @@ include = ["quantify_scheduler", "quantify_scheduler.*"]
 [tool.setuptools.dynamic]
 readme = { file = ["README.md"], content-type = "text/markdown" }
 
+
 [tool.ruff]
-line-length = 100 # Needs to be >=88 for compat with black, increasing to prevent ruffness
+line-length = 100
 lint.select = [
- "F",  # pyflakes
- "E",  # pycodestyle
- "W",  # pycodestyle
- "D",  # pydocstyle
- "I",  # isort
- "N",  # flake8-naming
- "UP", # pyupgrade
+ "F",    # pyflakes
+ "E",    # pycodestyle
+ "W",    # pycodestyle
+ "D",    # pydocstyle
+ "I",    # isort
+ "N",    # flake8-naming
+ "UP",   # pyupgrade
  "TID",  # flake8-tidy-imports
  "SIM",  # flake8-simplify
  "TCH",  # flake8-type-checking
- "Q", #flake8-quotes
- "ARG", #flake8-unused-arguments
+ "Q",    # flake8-quotes
+ "ARG",  # flake8-unused-arguments
  "ANN",  # flake8-annotations
- #Pylint (PLC, PLE, PLR, PLW)
+ # Pylint (PLC, PLE, PLR, PLW)
  "PLC",
  "PLE",
  "PLR",
  "PLW",
- #numpy 2.0 migration
- "NPY201"
+ # numpy 2.0 migration
+ "NPY201",
 ]
-
-# ignore:
-# D105: Missing docstring in magic method
-# D107: Missing docstring in `__init__` (it should be completely absent in our convention)
-# D203: 1 blank line required before class docstring  (conflict with D211)
-# D205: blank-line-after-summary (Conflicts when summary is too large
-# D212: Multi-line docstring summary should start at the first line (conflict with D213)
-# D401: Docstrings should be in imperative mood
-# ANN002: Missing type annotation for *{name}
-# ANN003: Missing type annotation for **{name}
-# ANN101: Missing type annotation for `self` in method
-# ANN102: Missing type annotation for `cls` in class method
-# PLR2004: Magic value used in comparison, consider replacing `...` with a constant variable
-# PLR0912: Too many branches (... > 12)
-# PLR0913: Too many arguments to function call (.../5)
-lint.ignore = ["D105", "D107", "D203", "D205", "D212", "D401", "ANN002", "ANN003", "ANN101", "ANN102", "PLR2004", "PLR0912", "PLR0913"]
+lint.ignore = [
+ "D105",     # Missing docstring in magic method
+ "D107",     # Missing docstring in `__init__` (it should be completely absent in our convention)
+ "D203",     # 1 blank line required before class docstring  (conflict with D211)
+ "D205",     # blank-line-after-summary (Conflicts when summary is too large
+ "D212",     # Multi-line docstring summary should start at the first line (conflict with D213)
+ "D401",     # Docstrings should be in imperative mood
+ "ANN002",   # Missing type annotation for *{name}
+ "ANN003",   # Missing type annotation for **{name}
+ "ANN101",   # Missing type annotation for `self` in method
+ "ANN102",   # Missing type annotation for `cls` in class method
+ "PLR2004",  # Magic value used in comparison, consider replacing `...` with a constant variable
+ "PLR0912",  # Too many branches (... > 12)
+ "PLR0913",  # Too many arguments to function call (.../5)
+]
 extend-exclude = [
  "docs",
 ]
@@ -185,7 +186,6 @@ extend-exclude = [
 extend-ignore-names = ["I", "Q", "*path_I*", "*path_Q*", "*G_amp", "*D_amp", "qT", "qC"]
 
 [tool.ruff.lint.per-file-ignores]
-
 # - E402: Module level import not at top of file
 # - F401: Multiple imports on one line
 
@@ -193,34 +193,39 @@ extend-ignore-names = ["I", "Q", "*path_I*", "*path_Q*", "*G_amp", "*D_amp", "qT
 "setup.py" = ["D", "ANN"]
 "*/docs/source/conf.py" = ["E402", "F401"]
 "__init__.py" = ["F401", "D104", "D205", "D415", "D400"]
-"quantify_scheduler/_version.py" = ["ANN001", "ANN202"] # _version.py doesn't need to be properly annotated
+"quantify_scheduler/_version.py" = ["ANN001", "ANN202"]  # _version.py doesn't need to be properly annotated
 
 # Test don't need to be properly linted
 "tests/**/*.py" = ["D", "ANN", "F401", "F403", "F811", "ARG001", "N806"]
 
 # Type checking and naming conventions for the pydantic files (backends/types) is annoying
-"quantify_scheduler/backends/types/common.py" = ["ANN001", "ANN201", "ANN202", "N805", "TCH001", "TCH002"]  # Pydantic
-"quantify_scheduler/backends/types/qblox.py" = ["ANN001", "ANN102", "ANN202","UP006", "UP007"]  # Pydantic
+"quantify_scheduler/backends/types/common.py" = ["ANN001", "ANN201", "ANN202", "N805", "TCH001", "TCH002"]
+"quantify_scheduler/backends/types/qblox.py" = ["ANN001", "ANN102", "ANN202","UP006", "UP007"]
 
 # Files that will be removed/refactored away in future versions, so no need to do complex fixes
 "zhinst_backend.py" = ["E402"]
 "zhinst.py" = ["E402"]
-"quantify_scheduler/backends/types/zhinst.py" = ["ANN001", "ANN201", "N805", "N815"] # To be removed
-"quantify_scheduler/backends/zhinst/helpers.py" = ["D417"] # To be removed
-"quantify_scheduler/backends/zhinst/resolvers.py" = ["D100", "D417"] # To be removed
-"quantify_scheduler/backends/zhinst/seqc_il_generator.py" = ["D100", "D417"] # To be removed
-"quantify_scheduler/backends/zhinst/settings.py" = ["ANN102", "ARG001", "D417"] # To be removed
-"quantify_scheduler/backends/zhinst_backend.py" = ["D202", "D417", "D419"] # To be removed
-"quantify_scheduler/gettables_profiled.py" = ["D102", "D404"]  # To be removed
-"quantify_scheduler/instrument_coordinator/components/zhinst.py" = ["D101", "D102"] # To be removed
+"quantify_scheduler/backends/types/zhinst.py" = ["ANN001", "ANN201", "N805", "N815"]
+"quantify_scheduler/backends/zhinst/helpers.py" = ["D417"]
+"quantify_scheduler/backends/zhinst/resolvers.py" = ["D100", "D417"]
+"quantify_scheduler/backends/zhinst/seqc_il_generator.py" = ["D100", "D417"]
+"quantify_scheduler/backends/zhinst/settings.py" = ["ANN102", "ARG001", "D417"]
+"quantify_scheduler/backends/zhinst_backend.py" = ["D202", "D417", "D419"]
+"quantify_scheduler/gettables_profiled.py" = ["D102", "D404"]
+"quantify_scheduler/instrument_coordinator/components/zhinst.py" = ["D101", "D102"]
 
 # Files that might still need to be fixed in the future
-"quantify_scheduler/backends/mock/mock_rom.py" = ["D101", "D102"] # Mock rom doesn't need proper documenation
-"quantify_scheduler/schedules/_visualization/pulse_scheme.py" = ["D417"] # TODO: refactor the functions in here
-
+"quantify_scheduler/backends/mock/mock_rom.py" = ["D101", "D102"]  # Mock rom doesn't need proper documentation
+"quantify_scheduler/schedules/_visualization/pulse_scheme.py" = ["D417"]  # TODO: refactor the functions in here
 
 [tool.ruff.lint.isort]
 known-first-party = ["quantify_core", "quantify_scheduler"]
+
+
+[tool.black]
+line-length = 100
+
+
 [tool.pyright]
 exclude = [
  "docs",

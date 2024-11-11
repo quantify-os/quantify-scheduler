@@ -50,9 +50,7 @@ def test_compilation_spectroscopy_operation_qblox_hardware(
     schedule.plot_circuit_diagram()
 
     quantum_device = mock_setup_basic_nv_qblox_hardware["quantum_device"]
-    pulse_duration = quantum_device.get_element(
-        "qe0"
-    ).spectroscopy_operation.duration.get()
+    pulse_duration = quantum_device.get_element("qe0").spectroscopy_operation.duration.get()
 
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
@@ -72,9 +70,7 @@ def test_compilation_spectroscopy_operation_qblox_hardware(
     assert "abs_time" in compiled_sched.schedulables[label1].data
     assert "abs_time" in compiled_sched.schedulables[label2].data
     assert compiled_sched.schedulables[label1].data["abs_time"] == 0
-    duration_pulse_1 = compiled_sched.operations[spec_pulse_hash].data["pulse_info"][0][
-        "duration"
-    ]
+    duration_pulse_1 = compiled_sched.operations[spec_pulse_hash].data["pulse_info"][0]["duration"]
     assert compiled_sched.schedulables[label2].data["abs_time"] == pytest.approx(
         0 + duration_pulse_1
     )
@@ -86,12 +82,8 @@ def test_compilation_spectroscopy_operation_qblox_hardware(
     assert compiled_sched.timing_table.data.loc[1, "duration"] == pulse_duration
     assert compiled_sched.timing_table.data.loc[1, "abs_time"] == pulse_duration
 
-    assert compiled_sched.timing_table.data.loc[0, "is_acquisition"] is numpy.bool_(
-        False
-    )
-    assert compiled_sched.timing_table.data.loc[1, "is_acquisition"] is numpy.bool_(
-        False
-    )
+    assert compiled_sched.timing_table.data.loc[0, "is_acquisition"] is numpy.bool_(False)
+    assert compiled_sched.timing_table.data.loc[1, "is_acquisition"] is numpy.bool_(False)
 
 
 def test_compilation_reset_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
@@ -218,9 +210,9 @@ def test_compilation_measure_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
         )["pulse_info"]
     )
     assert (
-        TriggerCount(
-            port="qe0:optical_readout", clock="qe0.ge0", duration=acq_duration, t0=1e-7
-        )["acquisition_info"]
+        TriggerCount(port="qe0:optical_readout", clock="qe0.ge0", duration=acq_duration, t0=1e-7)[
+            "acquisition_info"
+        ]
         == compiled_sched.operations[operation_id]["acquisition_info"]
     )
 
@@ -333,10 +325,6 @@ def test_compilation_cr_count_qblox_hardware(mock_setup_basic_nv):
     assert isinstance(compiled_sched, CompiledSchedule)
     assert "compiled_instructions" in compiled_sched.data
     assert compiled_sched.timing_table.data.loc[0, "duration"] == pulse_duration
-    assert compiled_sched.timing_table.data.loc[0, "is_acquisition"] is numpy.bool_(
-        False
-    )
+    assert compiled_sched.timing_table.data.loc[0, "is_acquisition"] is numpy.bool_(False)
     assert compiled_sched.timing_table.data.loc[2, "duration"] == acq_duration
-    assert compiled_sched.timing_table.data.loc[2, "is_acquisition"] is numpy.bool_(
-        True
-    )
+    assert compiled_sched.timing_table.data.loc[2, "is_acquisition"] is numpy.bool_(True)

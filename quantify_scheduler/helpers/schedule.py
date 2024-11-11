@@ -19,9 +19,7 @@ if TYPE_CHECKING:
     from quantify_scheduler.operations.operation import Operation
 
 
-def get_pulse_uuid(
-    pulse_info: dict[str, Any], excludes: list[str] | None = None
-) -> int:
+def get_pulse_uuid(pulse_info: dict[str, Any], excludes: list[str] | None = None) -> int:
     """
     Return an unique identifier for a pulse.
 
@@ -199,8 +197,7 @@ def extract_acquisition_metadata_from_acquisition_protocols(
 
         if conflicts:
             raise RuntimeError(
-                "All acquisitions in a Schedule must be of the same kind:\n"
-                + "\n".join(conflicts)
+                "All acquisitions in a Schedule must be of the same kind:\n" + "\n".join(conflicts)
             )
 
         # add the individual channel

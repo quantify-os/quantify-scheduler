@@ -172,10 +172,7 @@ def find_port_clock_path(hardware_config: dict, port: str, clock: str) -> list:
         for k, v in hardware_config.items():
             # If key is port, we are done
             if k == "port":
-                if (
-                    hardware_config["port"] == port
-                    and hardware_config["clock"] == clock
-                ):
+                if hardware_config["port"] == port and hardware_config["clock"] == clock:
                     return path
 
             # If value is list, append key to path and loop trough its elements.

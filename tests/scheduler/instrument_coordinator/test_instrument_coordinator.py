@@ -82,9 +82,7 @@ def fixture_dummy_components(
 
 @pytest.fixture(scope="function", name="instrument_coordinator")
 def fixture_instrument_coordinator(request, component_names) -> InstrumentCoordinator:
-    instrument_coordinator = InstrumentCoordinator(
-        "ic_0000", add_default_generic_icc=False
-    )
+    instrument_coordinator = InstrumentCoordinator("ic_0000", add_default_generic_icc=False)
 
     # Mock compiled instructions to make sure data is acquired from components,
     # because in these tests we do not create a compiled schedule.
@@ -96,12 +94,8 @@ def fixture_instrument_coordinator(request, component_names) -> InstrumentCoordi
 
 
 @pytest.fixture(scope="function", name="zi_instrument_coordinator")
-def fixture_zi_instrument_coordinator(
-    request, component_names
-) -> ZIInstrumentCoordinator:
-    zi_instrument_coordinator = ZIInstrumentCoordinator(
-        "ic_zi_0000", add_default_generic_icc=False
-    )
+def fixture_zi_instrument_coordinator(request, component_names) -> ZIInstrumentCoordinator:
+    zi_instrument_coordinator = ZIInstrumentCoordinator("ic_zi_0000", add_default_generic_icc=False)
 
     # Mock compiled instructions to make sure data is acquired from components,
     # because in these tests we do not create a compiled schedule.

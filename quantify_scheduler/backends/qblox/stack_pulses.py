@@ -44,9 +44,7 @@ PortClock = namedtuple("PortClock", ["port", "clock"])
 """ Named tuple for port and clock information."""
 
 
-def stack_pulses(  # noqa: D417
-    schedule: Schedule, config  # noqa: ARG001, ANN001
-) -> Schedule:
+def stack_pulses(schedule: Schedule, config) -> Schedule:  # noqa: D417, ARG001, ANN001
     """
     Processes a given schedule by identifying and stacking overlapping pulses.
     The function first defines intervals of overlapping pulses and then
@@ -96,16 +94,12 @@ def _construct_pulses_by_port_clock(
         pulses_by_port_clock[port_clock].extend(
             [
                 PulseParameters(
-                    time=round(
-                        to_grid_time(start_time) * (1 / constants.SAMPLING_RATE), 9
-                    ),
+                    time=round(to_grid_time(start_time) * (1 / constants.SAMPLING_RATE), 9),
                     is_end=False,
                     schedulable_key=schedulable_key,
                 ),
                 PulseParameters(
-                    time=round(
-                        to_grid_time(end_time) * (1 / constants.SAMPLING_RATE), 9
-                    ),
+                    time=round(to_grid_time(end_time) * (1 / constants.SAMPLING_RATE), 9),
                     is_end=True,
                     schedulable_key=schedulable_key,
                 ),
@@ -153,9 +147,7 @@ def _construct_pulses_by_interval(
         else:
             if time > last_time:
                 if len(active_pulses):
-                    pulses_by_interval.append(
-                        PulseInterval(last_time, time, active_pulses.copy())
-                    )
+                    pulses_by_interval.append(PulseInterval(last_time, time, active_pulses.copy()))
                 last_time = time
             if is_end:
                 active_pulses.remove(key)
@@ -175,9 +167,7 @@ def _stack_pulses_by_interval(
             continue
 
         if all(
-            is_square_pulse(
-                schedule.operations[schedule.schedulables[key]["operation_id"]]
-            )
+            is_square_pulse(schedule.operations[schedule.schedulables[key]["operation_id"]])
             for key in interval.pulse_keys
         ):
             _stack_square_pulses(interval, schedule, old_schedulable_keys)
@@ -201,9 +191,7 @@ def _stack_arbitrary_pulses(
     schedule: Schedule,
     old_schedulable_keys: set[str],
 ) -> None:
-    num_samples = round(
-        (interval.end_time - interval.start_time) * constants.SAMPLING_RATE
-    )
+    num_samples = round((interval.end_time - interval.start_time) * constants.SAMPLING_RATE)
     combined_waveform = np.zeros(num_samples)
     port, clock, pulse_info = None, None, None
 

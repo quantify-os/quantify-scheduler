@@ -192,9 +192,7 @@ class ZISettings:
                 file_path = root / name
 
                 columns = 2
-                waveform_data = np.reshape(
-                    setting.value, (len(setting.value) // columns, -1)
-                )
+                waveform_data = np.reshape(setting.value, (len(setting.value) // columns, -1))
                 ############################################################
                 # WARNING: For saving waveform in csv format, the data
                 # MUST be in floating point type, and NOT int16 (as is required)
@@ -296,13 +294,9 @@ class ZISettings:
                 parts = node.split("/")
                 channel_index = int(parts[4])
                 if node.endswith("real"):
-                    builder.with_qas_integration_weights_real(
-                        channel_index, integration_weights
-                    )
+                    builder.with_qas_integration_weights_real(channel_index, integration_weights)
                 elif node.endswith("imag"):
-                    builder.with_qas_integration_weights_imag(
-                        channel_index, integration_weights
-                    )
+                    builder.with_qas_integration_weights_imag(channel_index, integration_weights)
             elif "rotations/" in node:
                 channel_index = int(node.split("/")[-1])
                 complex_value = complex(value.replace(" ", ""))
@@ -317,9 +311,7 @@ class ZISettings:
                     seqc_content = seqc_path.read_text()
                     builder.with_compiler_sourcestring(int(awg_index), seqc_content)
             else:
-                builder._daq_settings.append(
-                    ZISetting(node, value, zi_helpers.set_value)
-                )
+                builder._daq_settings.append(ZISetting(node, value, zi_helpers.set_value))
 
         return builder
 
@@ -508,9 +500,7 @@ class ZISettingsBuilder:
         assert clock_rate_index < 14
 
         return self._set_daq(
-            ZISetting(
-                f"awgs/{awg_index:d}/time", clock_rate_index, zi_helpers.set_value
-            )
+            ZISetting(f"awgs/{awg_index:d}/time", clock_rate_index, zi_helpers.set_value)
         )
 
     def with_qas_delay(self, delay: int) -> ZISettingsBuilder:
@@ -622,9 +612,7 @@ class ZISettingsBuilder:
             )
         )
 
-    def with_qas_result_source(
-        self, mode: zi_types.QasResultSource
-    ) -> ZISettingsBuilder:
+    def with_qas_result_source(self, mode: zi_types.QasResultSource) -> ZISettingsBuilder:
         """
         Adds the Instruments QAS Monitor result
         source setting.
@@ -938,9 +926,7 @@ class ZISettingsBuilder:
             )
         )
 
-    def with_sigouts(
-        self, awg_index: int, outputs: tuple[int, int]
-    ) -> ZISettingsBuilder:
+    def with_sigouts(self, awg_index: int, outputs: tuple[int, int]) -> ZISettingsBuilder:
         """
         Adds the channel sigouts setting
         for the Instruments awg by index.
@@ -958,12 +944,8 @@ class ZISettingsBuilder:
         onoff_0, onoff_1 = outputs
         channel_0 = awg_index * 2
         channel_1 = (awg_index * 2) + 1
-        self._set_daq(
-            ZISetting(f"sigouts/{channel_0:d}/on", onoff_0, zi_helpers.set_value)
-        )
-        return self._set_daq(
-            ZISetting(f"sigouts/{channel_1:d}/on", onoff_1, zi_helpers.set_value)
-        )
+        self._set_daq(ZISetting(f"sigouts/{channel_0:d}/on", onoff_0, zi_helpers.set_value))
+        return self._set_daq(ZISetting(f"sigouts/{channel_1:d}/on", onoff_1, zi_helpers.set_value))
 
     def with_sigout_offset(
         self, channel_index: int, offset_in_millivolts: float
@@ -1012,19 +994,13 @@ class ZISettingsBuilder:
         assert gain2 >= -1 <= 1
 
         self._set_daq(
-            ZISetting(
-                f"awgs/{awg_index:d}/outputs/0/gains/0", gain1, zi_helpers.set_value
-            )
+            ZISetting(f"awgs/{awg_index:d}/outputs/0/gains/0", gain1, zi_helpers.set_value)
         )
         return self._set_daq(
-            ZISetting(
-                f"awgs/{awg_index:d}/outputs/1/gains/1", gain2, zi_helpers.set_value
-            )
+            ZISetting(f"awgs/{awg_index:d}/outputs/1/gains/1", gain2, zi_helpers.set_value)
         )
 
-    def with_compiler_sourcestring(
-        self, awg_index: int, seqc: str
-    ) -> ZISettingsBuilder:
+    def with_compiler_sourcestring(self, awg_index: int, seqc: str) -> ZISettingsBuilder:
         """
         Adds the sequencer compiler sourcestring
         setting for the Instruments awg by index.

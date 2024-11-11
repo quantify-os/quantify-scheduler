@@ -153,9 +153,7 @@ class ProfiledScheduleGettable(ScheduleGettable):
         self.profiled_instr_coordinator = ProfiledInstrumentCoordinator(
             name="profiled_ic", parent_ic=self.instr_coordinator
         )
-        self.quantum_device.instr_instrument_coordinator(
-            self.profiled_instr_coordinator.name
-        )
+        self.quantum_device.instr_instrument_coordinator(self.profiled_instr_coordinator.name)
 
     @profiler
     def _compile(self, sched: Schedule) -> None:
@@ -192,9 +190,7 @@ class ProfiledScheduleGettable(ScheduleGettable):
 
         return self.profile
 
-    def plot_profile(
-        self, path: str | None = None, filename: str = "average_runtimes.pdf"
-    ) -> None:
+    def plot_profile(self, path: str | None = None, filename: str = "average_runtimes.pdf") -> None:
         """Create barplot of accumulated profiling data."""
         profile = self.profile
         time_ax = list(profile.keys())

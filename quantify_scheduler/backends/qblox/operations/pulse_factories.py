@@ -78,9 +78,7 @@ def long_square_pulse(
         )
 
     pulse = (
-        StitchedPulseBuilder(
-            name=long_square_pulse.__name__, port=port, clock=clock, t0=t0
-        )
+        StitchedPulseBuilder(name=long_square_pulse.__name__, port=port, clock=clock, t0=t0)
         .add_voltage_offset(
             path_I=np.real(amp),
             path_Q=np.imag(amp),
@@ -169,14 +167,10 @@ def staircase_pulse(
         When the duration of a step is not a multiple of ``grid_time_ns``.
 
     """
-    builder = StitchedPulseBuilder(
-        name=staircase_pulse.__name__, port=port, clock=clock, t0=t0
-    )
+    builder = StitchedPulseBuilder(name=staircase_pulse.__name__, port=port, clock=clock, t0=t0)
 
     try:
-        step_duration = (
-            helpers.to_grid_time(duration / num_steps, min_operation_time_ns) * 1e-9
-        )
+        step_duration = helpers.to_grid_time(duration / num_steps, min_operation_time_ns) * 1e-9
     except ValueError as err:
         raise ValueError(
             f"The duration of each step of the staircase must be a multiple of"
@@ -281,9 +275,7 @@ def long_ramp_pulse(
     dur_left = (dur_ns - num_whole_parts * part_duration_ns) * 1e-9
     amp_left = amp - num_whole_parts * amp_part
 
-    builder = StitchedPulseBuilder(
-        long_ramp_pulse.__name__, port=port, clock=clock, t0=t0
-    )
+    builder = StitchedPulseBuilder(long_ramp_pulse.__name__, port=port, clock=clock, t0=t0)
 
     last_sample_voltage = offset
     for _ in range(num_whole_parts):

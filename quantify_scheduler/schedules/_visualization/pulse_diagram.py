@@ -132,9 +132,7 @@ def get_sampled_pulses_from_voltage_offsets(
                     time.append(info.time - 0.01 / sampling_rate)
                     signal.append(signal[-1])
                 time.append(info.time)
-                signal.append(
-                    info.op_info["offset_path_I"] + 1j * info.op_info["offset_path_Q"]
-                )
+                signal.append(info.op_info["offset_path_I"] + 1j * info.op_info["offset_path_Q"])
             time.append(schedule.duration)
             signal.append(signal[-1])
 
@@ -156,14 +154,10 @@ def get_sampled_pulses_from_voltage_offsets(
                 new_time = np.linspace(
                     time[0], time[-1], round((time[-1] - time[0]) * sampling_rate) + 1
                 )
-                signal = interpolated_complex_waveform(
-                    t=new_time, samples=signal, t_samples=time
-                )
+                signal = interpolated_complex_waveform(t=new_time, samples=signal, t_samples=time)
                 time = new_time
             if modulation == "clock":
-                signal = modulate_waveform(
-                    time, signal, schedule.resources[clock]["freq"]
-                )
+                signal = modulate_waveform(time, signal, schedule.resources[clock]["freq"])
 
             elif modulation == "if":
                 signal = modulate_waveform(time, signal, modulation_if)
@@ -276,9 +270,7 @@ def get_sampled_pulses(
 
             waveform = np.real_if_close(waveform)
             label = f"{info.op_name}, clock {info.op_info['clock']}"
-            sampled_pulses[port].append(
-                SampledPulse(time=t, signal=waveform, label=label)
-            )
+            sampled_pulses[port].append(SampledPulse(time=t, signal=waveform, label=label))
     return sampled_pulses
 
 
@@ -326,8 +318,7 @@ def merge_pulses_and_offsets(operations: list[SampledPulse]) -> SampledPulse:
     return SampledPulse(
         time=result_time,
         signal=sum(
-            np.interp(result_time, op.time, op.signal, left=0.0, right=0.0)
-            for op in operations
+            np.interp(result_time, op.time, op.signal, left=0.0, right=0.0) for op in operations
         ),  # type: ignore
         label=label,
     )
@@ -394,9 +385,7 @@ def _extract_schedule_infos(
                     time=time_offset + pulse_info["t0"],
                     op_name=operation["name"],
                 )
-                offset_infos[pulse_info["port"]][pulse_info["clock"]].append(
-                    pulse_info_cpy
-                )
+                offset_infos[pulse_info["port"]][pulse_info["clock"]].append(pulse_info_cpy)
 
 
 def sample_schedule(
@@ -445,9 +434,7 @@ def sample_schedule(
         SampledPulse and SampledAcquisition objects grouped by port.
 
     """
-    offset_infos: dict[str, dict[str, list[ScheduledInfo]]] = defaultdict(
-        lambda: defaultdict(list)
-    )
+    offset_infos: dict[str, dict[str, list[ScheduledInfo]]] = defaultdict(lambda: defaultdict(list))
     pulse_infos: dict[str, list[ScheduledInfo]] = defaultdict(list)
     acq_infos: dict[str, list[ScheduledInfo]] = defaultdict(list)
 
@@ -495,9 +482,7 @@ def sample_schedule(
 
 
 def pulse_diagram_plotly(
-    sampled_pulses_and_acqs: dict[
-        str, tuple[list[SampledPulse], list[SampledAcquisition]]
-    ],
+    sampled_pulses_and_acqs: dict[str, tuple[list[SampledPulse], list[SampledAcquisition]]],
     title: str = "Pulse diagram",
     fig_ch_height: float = 300,
     fig_width: float = 1000,
@@ -767,9 +752,7 @@ def plot_multiple_subplots_mpl(
                 color=color[pulse.label],
                 label=pulse.label,
             )
-            axs[i].fill_between(
-                pulse.time, pulse.signal.real, color=color[pulse.label], alpha=0.2
-            )
+            axs[i].fill_between(pulse.time, pulse.signal.real, color=color[pulse.label], alpha=0.2)
 
             if np.iscomplexobj(pulse.signal):
                 axs[i].plot(
@@ -796,9 +779,7 @@ def plot_multiple_subplots_mpl(
 
 
 def pulse_diagram_matplotlib(
-    sampled_pulses_and_acqs: dict[
-        str, tuple[list[SampledPulse], list[SampledAcquisition]]
-    ],
+    sampled_pulses_and_acqs: dict[str, tuple[list[SampledPulse], list[SampledAcquisition]]],
     multiple_subplots: bool = False,
     ax: mpl.axes.Axes | None = None,
     title: str = "Pulse diagram",

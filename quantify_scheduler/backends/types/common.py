@@ -280,10 +280,7 @@ class LocalOscillatorDescription(DataStructure):
 
     @field_validator("generic_icc_name")
     def _only_default_generic_icc_name(cls, generic_icc_name):
-        if (
-            generic_icc_name is not None
-            and generic_icc_name != constants.GENERIC_IC_COMPONENT_NAME
-        ):
+        if generic_icc_name is not None and generic_icc_name != constants.GENERIC_IC_COMPONENT_NAME:
             raise NotImplementedError(
                 f"Specified name '{generic_icc_name}' as a generic instrument "
                 f"coordinator component, but the Qblox backend currently only "
@@ -503,9 +500,7 @@ class HardwareCompilationConfig(DataStructure):
     The :class:`~quantify_scheduler.backends.types.common.HardwareOptions` used in the
     compilation from the quantum-device layer to the control-hardware layer.
     """
-    connectivity: (
-        Connectivity | dict
-    )  # Dict for legacy support for the old hardware config
+    connectivity: Connectivity | dict  # Dict for legacy support for the old hardware config
     """
     Datastructure representing how ports on the quantum device are connected to ports
     on the control hardware.
@@ -563,17 +558,12 @@ class HardwareCompilationConfig(DataStructure):
                             f"Invalid node. Instrument '{instrument_name}'"
                             f" not found in hardware description."
                         )
-                    self.connectivity.graph.nodes[node][
-                        "instrument_name"
-                    ] = instrument_name
+                    self.connectivity.graph.nodes[node]["instrument_name"] = instrument_name
                 elif ":" in node:
-                    self.connectivity.graph.nodes[node][
-                        "instrument_name"
-                    ] = "QuantumDevice"
+                    self.connectivity.graph.nodes[node]["instrument_name"] = "QuantumDevice"
                 else:
                     raise ValueError(
-                        "Invalid node format. "
-                        "Must be 'instrument.port' or 'qubit_name:port'."
+                        "Invalid node format. " "Must be 'instrument.port' or 'qubit_name:port'."
                     )
         return self
 

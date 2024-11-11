@@ -593,9 +593,7 @@ def nv_dark_esr_sched_nco(
             label=f"set_freq ({spec_clock} {spec_freq:e} Hz)",
         )
         sched.add(Reset(qubit), label=f"Reset {idx}")
-        sched.add(
-            SpectroscopyOperation(qubit), label=f"Spectroscopy ({spec_freq:e} Hz)"
-        )
+        sched.add(SpectroscopyOperation(qubit), label=f"Spectroscopy ({spec_freq:e} Hz)")
         sched.add(Measure(qubit, acq_index=idx * 2 + 1), label=f"Measure {idx}")
         sched.add(CRCount(qubit, acq_index=idx * 2 + 2), label=f"CRCount post {idx}")
 

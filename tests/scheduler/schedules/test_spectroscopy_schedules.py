@@ -57,9 +57,7 @@ class TestHeterodyneSpecSchedule(_CompilesAllBackends):
     def test_compiles_device_cfg_only(self, device_compile_config_basic_transmon):
         # assert that files properly compile
         compiler = SerialCompiler(name="compiler")
-        compiler.compile(
-            schedule=self.uncomp_sched, config=device_compile_config_basic_transmon
-        )
+        compiler.compile(schedule=self.uncomp_sched, config=device_compile_config_basic_transmon)
 
 
 class TestHeterodyneSpecScheduleNCO(TestHeterodyneSpecSchedule):
@@ -106,9 +104,7 @@ class TestHeterodyneSpecScheduleNCO(TestHeterodyneSpecSchedule):
         raises=NotImplementedError,
         reason="SetClockFrequency not supported in Zhinst backend",
     )
-    def test_compiles_zi_backend(
-        self, compile_config_basic_transmon_zhinst_hardware
-    ) -> None:
+    def test_compiles_zi_backend(self, compile_config_basic_transmon_zhinst_hardware) -> None:
         _CompilesAllBackends.test_compiles_zi_backend(
             self, compile_config_basic_transmon_zhinst_hardware
         )
@@ -170,9 +166,7 @@ def test_heterodyne_spec_sched_nco__qblox_hardware(
     assert spec_gettable.is_initialized is False
 
     # Prepare the mock data the spectroscopy schedule
-    exp_data = np.full_like(
-        ro_freqs, 1 * np.exp(1j * np.deg2rad(45)), dtype=np.complex64
-    )
+    exp_data = np.full_like(ro_freqs, 1 * np.exp(1j * np.deg2rad(45)), dtype=np.complex64)
     acq_channel = 0
     expected_dataset = Dataset(
         {
@@ -194,9 +188,7 @@ def test_heterodyne_spec_sched_nco__qblox_hardware(
     meas_ctrl.settables(ro_freq)
     meas_ctrl.setpoints(ro_freqs)
     meas_ctrl.gettables(spec_gettable)
-    dataset = meas_ctrl.run(
-        name=f"Fast heterodyne spectroscopy (NCO sweep) {qubit.name}"
-    )
+    dataset = meas_ctrl.run(name=f"Fast heterodyne spectroscopy (NCO sweep) {qubit.name}")
     assert spec_gettable.is_initialized is True
 
     # Assert that the data is coming out correctly
@@ -251,9 +243,7 @@ class TestTwoToneSpecSchedule(_CompilesAllBackends):
     def test_compiles_device_cfg_only(self, device_compile_config_basic_transmon):
         # assert that files properly compile
         compiler = SerialCompiler(name="compiler")
-        compiler.compile(
-            schedule=self.uncomp_sched, config=device_compile_config_basic_transmon
-        )
+        compiler.compile(schedule=self.uncomp_sched, config=device_compile_config_basic_transmon)
 
 
 class TestTwoToneSpecScheduleNCO(TestTwoToneSpecSchedule):
@@ -288,8 +278,7 @@ class TestTwoToneSpecScheduleNCO(TestTwoToneSpecSchedule):
         rel_times = [
             self.sched_kwargs["init_duration"],
             0,
-            self.sched_kwargs["spec_pulse_duration"]
-            + self.sched_kwargs["ro_pulse_delay"],
+            self.sched_kwargs["spec_pulse_duration"] + self.sched_kwargs["ro_pulse_delay"],
             self.sched_kwargs["ro_acquisition_delay"],
             self.sched_kwargs["ro_integration_time"],
         ]
@@ -307,9 +296,7 @@ class TestTwoToneSpecScheduleNCO(TestTwoToneSpecSchedule):
         raises=NotImplementedError,
         reason="SetClockFrequency not supported in Zhinst backend",
     )
-    def test_compiles_zi_backend(
-        self, compile_config_basic_transmon_zhinst_hardware
-    ) -> None:
+    def test_compiles_zi_backend(self, compile_config_basic_transmon_zhinst_hardware) -> None:
         _CompilesAllBackends.test_compiles_zi_backend(
             self, compile_config_basic_transmon_zhinst_hardware
         )
@@ -371,9 +358,7 @@ class TestNVDarkESRSched:
 
     def test_compiles_qblox_backend(self, mock_setup_basic_nv_qblox_hardware) -> None:
         # assert that files properly compile
-        quantum_device: QuantumDevice = mock_setup_basic_nv_qblox_hardware[
-            "quantum_device"
-        ]
+        quantum_device: QuantumDevice = mock_setup_basic_nv_qblox_hardware["quantum_device"]
         compiler = SerialCompiler(name="compiler")
 
         schedule = compiler.compile(
@@ -467,9 +452,7 @@ class TestNVDarkESRSchedNCO:
 
     def test_compiles_qblox_backend(self, mock_setup_basic_nv_qblox_hardware) -> None:
         # assert that files properly compile
-        quantum_device: QuantumDevice = mock_setup_basic_nv_qblox_hardware[
-            "quantum_device"
-        ]
+        quantum_device: QuantumDevice = mock_setup_basic_nv_qblox_hardware["quantum_device"]
         compiler = SerialCompiler(name="compiler")
 
         schedule = compiler.compile(

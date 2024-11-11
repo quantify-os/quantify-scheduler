@@ -292,9 +292,7 @@ class Operation(JSONSchemaValMixin, UserDict):
         an acquisition with a ``feedback_trigger_label`` assigned to it.
         """
         if (acq_info := self.data.get("acquisition_info")) is not None:
-            return len(acq_info) > 0 and (
-                acq_info[0].get("feedback_trigger_label") is not None
-            )
+            return len(acq_info) > 0 and (acq_info[0].get("feedback_trigger_label") is not None)
 
         return False
 

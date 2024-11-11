@@ -56,8 +56,6 @@ def test_result_acquisition_resolver(mocker: MockerFixture) -> None:
     complex_result = result_acquisition_resolver(instrument, result_nodes)
 
     # Assert
-    get_mock.assert_called_with(
-        instrument, result_nodes[1]
-    )  # can only check the last call
+    get_mock.assert_called_with(instrument, result_nodes[1])  # can only check the last call
     np.testing.assert_array_equal(complex_result.real, real_data + imag_data)
     np.testing.assert_array_equal(complex_result.imag, real_data + imag_data)

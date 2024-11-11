@@ -133,9 +133,7 @@ def test_add_and_get_unbound_edges(dev):
     Edge(parent_element_name="parent", child_element_name="child")
 
     for i in range(25):
-        dev.add_edge(
-            Edge(parent_element_name=f"parent{i}", child_element_name=f"child{i}")
-        )
+        dev.add_edge(Edge(parent_element_name=f"parent{i}", child_element_name=f"child{i}"))
 
     # Entries in WeakValueDictionary Instrument._all_instruments are automatically
     # discarded when no strong reference to the value exists anymore;
@@ -143,9 +141,7 @@ def test_add_and_get_unbound_edges(dev):
     for i in range(25):
         dev.get_edge(f"parent{i}_child{i}")
 
-    with pytest.raises(
-        KeyError, match="Instrument with name parent_child does not exist"
-    ):
+    with pytest.raises(KeyError, match="Instrument with name parent_child does not exist"):
         Edge.find_instrument("parent_child")
 
 
@@ -185,9 +181,7 @@ def test_quantum_device_serialization(
         if add_utc_timestamp:
             basename_of_saved_file = os.path.basename(path_serialized_quantum_device)
             assert datetime.datetime.strptime(
-                basename_of_saved_file.split(".json", 1)[0].split(
-                    quantum_device.name + "_", 1
-                )[1],
+                basename_of_saved_file.split(".json", 1)[0].split(quantum_device.name + "_", 1)[1],
                 "%Y-%m-%d_%H-%M-%S_%Z",
             )
         else:
@@ -210,9 +204,7 @@ def test_quantum_device_serialization(
                     "`QuantumDevice.remove_edge`."
                 ),
             ):
-                _ = quantum_device.to_json_file(
-                    path=get_datadir(), add_timestamp=add_utc_timestamp
-                )
+                _ = quantum_device.to_json_file(path=get_datadir(), add_timestamp=add_utc_timestamp)
 
             QuantumDevice.close_all()  # This closes *any* open instrument
             with pytest.raises(
@@ -220,15 +212,11 @@ def test_quantum_device_serialization(
                 match="Cannot serialize 'quantum_device'. All attached instruments have been "
                 "closed and their information cannot be retrieved any longer.",
             ):
-                _ = quantum_device.to_json_file(
-                    path=get_datadir(), add_timestamp=add_utc_timestamp
-                )
+                _ = quantum_device.to_json_file(path=get_datadir(), add_timestamp=add_utc_timestamp)
 
         assert path_serialized_quantum_device.__class__ is str
 
-        deserialized_quantum_device = QuantumDevice.from_json_file(
-            path_serialized_quantum_device
-        )
+        deserialized_quantum_device = QuantumDevice.from_json_file(path_serialized_quantum_device)
 
     else:
         serialized_quantum_device = quantum_device.to_json()
@@ -269,10 +257,7 @@ def test_quantum_device_serialization(
         deserialized_quantum_device.get_edge("q2_q3").cz.q2_phase_correction()
         == q2_phase_correction_test
     )
-    assert (
-        deserialized_quantum_device.cfg_sched_repetitions()
-        == cfg_sched_repetitions_test
-    )
+    assert deserialized_quantum_device.cfg_sched_repetitions() == cfg_sched_repetitions_test
 
     assert deserialized_quantum_device.elements() == elements_list
     assert deserialized_quantum_device.edges() == edges_list
@@ -335,10 +320,7 @@ def test_quantum_device_serialization_via_snapshot(
         deserialized_quantum_device.get_edge("q2_q3").cz.q2_phase_correction()
         == q2_phase_correction_test
     )
-    assert (
-        deserialized_quantum_device.cfg_sched_repetitions()
-        == cfg_sched_repetitions_test
-    )
+    assert deserialized_quantum_device.cfg_sched_repetitions() == cfg_sched_repetitions_test
 
     assert deserialized_quantum_device.elements() == elements_list
     assert deserialized_quantum_device.edges() == edges_list

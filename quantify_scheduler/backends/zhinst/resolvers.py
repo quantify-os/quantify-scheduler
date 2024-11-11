@@ -12,9 +12,7 @@ if TYPE_CHECKING:
     from zhinst import qcodes
 
 
-def monitor_acquisition_resolver(
-    uhfqa: qcodes.UHFQA, monitor_nodes: tuple[str, str]
-) -> np.ndarray:
+def monitor_acquisition_resolver(uhfqa: qcodes.UHFQA, monitor_nodes: tuple[str, str]) -> np.ndarray:
     """
     Returns complex value of UHFQA Monitor nodes.
 
@@ -33,9 +31,7 @@ def monitor_acquisition_resolver(
     return results_i + 1j * results_q
 
 
-def result_acquisition_resolver(
-    uhfqa: qcodes.UHFQA, result_nodes: tuple[str, str]
-) -> np.ndarray:
+def result_acquisition_resolver(uhfqa: qcodes.UHFQA, result_nodes: tuple[str, str]) -> np.ndarray:
     """
     Returns complex value of UHFQA Result nodes.
 

@@ -42,16 +42,12 @@ def device_cfg_transmon_example() -> Generator[DeviceCompilationConfig, None, No
 
 
 @pytest.fixture
-def hardware_compilation_config_zhinst_example() -> (
-    Generator[dict[str, Any], None, None]
-):
+def hardware_compilation_config_zhinst_example() -> Generator[dict[str, Any], None, None]:
     yield dict(ZHINST_HARDWARE_COMPILATION_CONFIG)
 
 
 @pytest.fixture
-def create_schedule_with_pulse_info(
-    device_cfg_transmon_example, basic_schedule: Schedule
-):
+def create_schedule_with_pulse_info(device_cfg_transmon_example, basic_schedule: Schedule):
     def _create_schedule_with_pulse_info(
         schedule: Schedule | None = None, device_config: dict | None = None
     ) -> Schedule:
@@ -63,9 +59,7 @@ def create_schedule_with_pulse_info(
         )
         _schedule = compile_circuit_to_device_with_config_validation(
             schedule=_schedule,
-            config=SerialCompilationConfig(
-                name="test", device_compilation_config=_device_config
-            ),
+            config=SerialCompilationConfig(name="test", device_compilation_config=_device_config),
         )
         _schedule = _determine_absolute_timing(schedule=_schedule, time_unit="physical")
         return _schedule

@@ -62,9 +62,7 @@ class Rxy(Operation):
         phi = round(phi % 360, 8)
 
         tex = r"$R_{xy}^{" + f"{theta:.0f}, {phi:.0f}" + r"}$"
-        plot_func = (
-            "quantify_scheduler.schedules._visualization.circuit_diagram.gate_box"
-        )
+        plot_func = "quantify_scheduler.schedules._visualization.circuit_diagram.gate_box"
         theta_r = np.deg2rad(theta)
         phi_r = np.deg2rad(phi)
 
@@ -294,9 +292,7 @@ class Rz(Operation):
         theta = _modulo_360_with_mapping(theta)
 
         tex = r"$R_{z}^{" + f"{theta:.0f}" + r"}$"
-        plot_func = (
-            "quantify_scheduler.schedules._visualization.circuit_diagram.gate_box"
-        )
+        plot_func = "quantify_scheduler.schedules._visualization.circuit_diagram.gate_box"
         theta_r = np.deg2rad(theta)
 
         # not all operations have a valid unitary description
@@ -421,9 +417,7 @@ class H(Operation):
 
     def __init__(self, *qubits: str, **device_overrides) -> None:
         tex = r"$H$"
-        plot_func = (
-            "quantify_scheduler.schedules._visualization.circuit_diagram.gate_box"
-        )
+        plot_func = "quantify_scheduler.schedules._visualization.circuit_diagram.gate_box"
 
         unitary = -1j / np.sqrt(2) * np.array([[1, 1], [1, -1]], dtype=complex)
         super().__init__(f"H, '{qubits}')")
@@ -478,9 +472,7 @@ class CNOT(Operation):
             {
                 "name": f"CNOT ({qC}, {qT})",
                 "gate_info": {
-                    "unitary": np.array(
-                        [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]
-                    ),
+                    "unitary": np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]),
                     "tex": r"CNOT",
                     "plot_func": plot_func,
                     "qubits": [qC, qT],
@@ -535,9 +527,7 @@ class CZ(Operation):
             {
                 "name": f"CZ ({qC}, {qT})",
                 "gate_info": {
-                    "unitary": np.array(
-                        [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]
-                    ),
+                    "unitary": np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]),
                     "tex": r"CZ",
                     "plot_func": plot_func,
                     "qubits": [qC, qT],

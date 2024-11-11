@@ -75,8 +75,7 @@ class InstrumentCoordinatorComponentBase(Instrument):
             "force_set_parameters",
             initial_value=False,
             docstring=(
-                "A switch to force the setting of a parameter, "
-                + "bypassing the lazy_set utility."
+                "A switch to force the setting of a parameter, " + "bypassing the lazy_set utility."
             ),
             vals=validators.Bool(),
             instrument=self,
@@ -121,9 +120,7 @@ class InstrumentCoordinatorComponentBase(Instrument):
         """Stops the InstrumentCoordinator Component."""
 
     @abstractmethod
-    def prepare(
-        self, options: Any  # noqa: ANN401 (Complicated subclass overrides)
-    ) -> None:
+    def prepare(self, options: Any) -> None:  # noqa: ANN401 (Complicated subclass overrides)
         """Initializes the InstrumentCoordinator Component with parameters."""
 
     @abstractmethod

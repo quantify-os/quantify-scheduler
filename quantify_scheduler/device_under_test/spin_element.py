@@ -186,17 +186,13 @@ class BasicSpinElement(DeviceElement):
             "ports": PortsSpin,
             "clock_freqs": ClocksFrequenciesSpin,
         }
-        submodule_data = {
-            sub_name: kwargs.pop(sub_name, {}) for sub_name in submodules_to_add
-        }
+        submodule_data = {sub_name: kwargs.pop(sub_name, {}) for sub_name in submodules_to_add}
         super().__init__(name, **kwargs)
 
         for sub_name, sub_class in submodules_to_add.items():
             self.add_submodule(
                 sub_name,
-                sub_class(
-                    parent=self, name=sub_name, **submodule_data.get(sub_name, {})
-                ),
+                sub_class(parent=self, name=sub_name, **submodule_data.get(sub_name, {})),
             )
 
         self.reset: IdlingReset

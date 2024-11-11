@@ -605,9 +605,7 @@ class SequencerCompiler(ABC):
         # program header
         qasm.set_latch(self.op_strategies)
         qasm.emit(q1asm_instructions.WAIT_SYNC, constants.MIN_TIME_BETWEEN_OPERATIONS)
-        qasm.emit(
-            q1asm_instructions.UPDATE_PARAMETERS, constants.MIN_TIME_BETWEEN_OPERATIONS
-        )
+        qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.MIN_TIME_BETWEEN_OPERATIONS)
 
         self._initialize_append_mode_registers(qasm, ordered_op_strategies)
 
@@ -617,9 +615,7 @@ class SequencerCompiler(ABC):
 
         # Adds the latency correction, this needs to be a minimum of 4 ns,
         # so all sequencers get delayed by at least that.
-        latency_correction_ns: int = self._get_latency_correction_ns(
-            self.latency_correction
-        )
+        latency_correction_ns: int = self._get_latency_correction_ns(self.latency_correction)
         qasm.auto_wait(
             wait_time=constants.MIN_TIME_BETWEEN_OPERATIONS + latency_correction_ns,
             count_as_elapsed_time=False,
@@ -676,9 +672,7 @@ class SequencerCompiler(ABC):
         if self.qasm_hook_func:
             self.qasm_hook_func(qasm)
 
-        if (
-            num_instructions := len(qasm.instructions)
-        ) > self.parent.max_number_of_instructions:
+        if (num_instructions := len(qasm.instructions)) > self.parent.max_number_of_instructions:
             warnings.warn(
                 f"Number of instructions ({num_instructions}) compiled for "
                 f"'{self.name}' of {self.parent.__class__.__name__} "
@@ -747,9 +741,7 @@ class SequencerCompiler(ABC):
         return self.ParseOperationStatus.EXITED_CONTROL_FLOW
 
     @abstractmethod
-    def _insert_qasm(
-        self, op_strategy: IOperationStrategy, qasm_program: QASMProgram
-    ) -> None:
+    def _insert_qasm(self, op_strategy: IOperationStrategy, qasm_program: QASMProgram) -> None:
         """Get Q1ASM instruction(s) from ``op_strategy`` and insert them into ``qasm_program``."""
 
     @abstractmethod
@@ -862,14 +854,9 @@ class SequencerCompiler(ABC):
                     else:
                         last_updated_timing = op_timing
                 elif (
-                    (
-                        not is_reversed
-                        and op_strategy.operation_info.is_parameter_instruction
-                    )
+                    (not is_reversed and op_strategy.operation_info.is_parameter_instruction)
                     or (is_reversed and isinstance(op_strategy, ConditionalStrategy))
-                    or isinstance(
-                        op_strategy, (LoopStrategy, ControlFlowReturnStrategy)
-                    )
+                    or isinstance(op_strategy, (LoopStrategy, ControlFlowReturnStrategy))
                 ):
                     # If a parameter instruction happens while
                     # we're iterating through the operations not in reverse,
@@ -889,9 +876,7 @@ class SequencerCompiler(ABC):
                     last_updated_timing = None
 
             self.op_strategies = [
-                op
-                for i, op in enumerate(self.op_strategies)
-                if i not in indices_to_be_removed
+                op for i, op in enumerate(self.op_strategies) if i not in indices_to_be_removed
             ]
 
         # We can remove all redundant update parameters which
@@ -924,9 +909,7 @@ class SequencerCompiler(ABC):
                     )
                 elif (
                     last_upd_params_incompatible_op_info is not None
-                    and helpers.to_grid_time(
-                        last_upd_params_incompatible_op_info.timing
-                    )
+                    and helpers.to_grid_time(last_upd_params_incompatible_op_info.timing)
                     == op_timing
                 ):
                     raise RuntimeError(
@@ -1080,9 +1063,7 @@ class SequencerCompiler(ABC):
         folder = path.join(data_dir, "schedules")
         makedirs(folder, exist_ok=True)
 
-        filename = (
-            f"{gen_tuid()}.json" if label is None else f"{gen_tuid()}_{label}.json"
-        )
+        filename = f"{gen_tuid()}.json" if label is None else f"{gen_tuid()}_{label}.json"
         filename = sanitize_filename(filename)
         file_path = path.join(folder, filename)
 
@@ -1147,9 +1128,7 @@ class SequencerCompiler(ABC):
             ]
             if len(acquisitions) > 0:
                 acq_metadata = extract_acquisition_metadata_from_acquisition_protocols(
-                    acquisition_protocols=[
-                        acq.operation_info.data for acq in acquisitions
-                    ],
+                    acquisition_protocols=[acq.operation_info.data for acq in acquisitions],
                     repetitions=repetitions,
                 )
                 self._prepare_acq_settings(
@@ -1427,9 +1406,7 @@ class ClusterModuleCompiler(InstrumentCompiler, Generic[_SequencerT_co], ABC):
         # `sequence_to_file` of a module can be `True` even if its `False` for a cluster
         if sequence_to_file is None or sequence_to_file is False:
             # Explicit cast to bool to help type checker.
-            sequence_to_file = bool(
-                self.instrument_cfg.hardware_description.sequence_to_file
-            )
+            sequence_to_file = bool(self.instrument_cfg.hardware_description.sequence_to_file)
 
         align_qasm_fields = debug_mode
 

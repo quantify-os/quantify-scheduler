@@ -124,9 +124,7 @@ class TimetagSequencerCompiler(SequencerCompiler):
             # Early return because Timetag is not used.
             return
 
-        timestamp_in_arg = (
-            first_timetag.operation_info.data["time_ref"] == TimeRef.TIMESTAMP
-        )
+        timestamp_in_arg = first_timetag.operation_info.data["time_ref"] == TimeRef.TIMESTAMP
         timestamp_operation_present = any(
             op for op in self.op_strategies if isinstance(op, TimestampStrategy)
         )
@@ -188,26 +186,21 @@ class TimetagSequencerCompiler(SequencerCompiler):
             unique_op_infos = set(acq.operation_info.data[key] for acq in acquisitions)
             if len(unique_op_infos) != 1:
                 raise ValueError(
-                    f"{key} must be the same for all acquisitions on a port-clock "
-                    "combination."
+                    f"{key} must be the same for all acquisitions on a port-clock " "combination."
                 )
 
         if acq_metadata.acq_protocol == "Trace":
             self._settings.scope_trace_type = TimetagTraceType.SCOPE
             # Trace acquisitions have bin mode FIRST, meaning only the first acquisition
             # has any effect. Therefore we take the duration from the first acquisition.
-            self._settings.trace_acq_duration = round(
-                acquisitions[0].operation_info.duration * 1e9
-            )
+            self._settings.trace_acq_duration = round(acquisitions[0].operation_info.duration * 1e9)
         elif acq_metadata.acq_protocol == "TimetagTrace":
             self._settings.scope_trace_type = TimetagTraceType.TIMETAG
 
         if acq_metadata.acq_protocol in ("Timetag", "TimetagTrace"):
             assert_all_op_info_values_equal("time_source")
             assert_all_op_info_values_equal("time_ref")
-            self._settings.time_source = acquisitions[0].operation_info.data[
-                "time_source"
-            ]
+            self._settings.time_source = acquisitions[0].operation_info.data["time_source"]
             self._settings.time_ref = acquisitions[0].operation_info.data["time_ref"]
 
     def _write_pre_wait_sync_instructions(self, qasm: QASMProgram) -> None:
@@ -226,9 +219,7 @@ class TimetagSequencerCompiler(SequencerCompiler):
         """
         qasm.emit(q1asm_instructions.WAIT, constants.MIN_TIME_BETWEEN_OPERATIONS)
 
-    def _insert_qasm(
-        self, op_strategy: IOperationStrategy, qasm_program: QASMProgram
-    ) -> None:
+    def _insert_qasm(self, op_strategy: IOperationStrategy, qasm_program: QASMProgram) -> None:
         """Get Q1ASM instruction(s) from ``op_strategy`` and insert them into ``qasm_program``."""
         op_strategy.insert_qasm(qasm_program)
 

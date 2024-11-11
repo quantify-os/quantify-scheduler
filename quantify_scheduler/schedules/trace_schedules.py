@@ -196,9 +196,7 @@ def two_tone_trace_schedule(
 
     """
     schedule = Schedule("Two-tone Trace acquisition", repetitions)
-    schedule.add_resource(
-        ClockResource(name=qubit_pulse_clock, freq=qubit_pulse_frequency)
-    )
+    schedule.add_resource(ClockResource(name=qubit_pulse_clock, freq=qubit_pulse_frequency))
     schedule.add_resource(ClockResource(name=ro_pulse_clock, freq=ro_pulse_frequency))
 
     schedule.add(

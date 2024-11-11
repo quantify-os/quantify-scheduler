@@ -102,9 +102,7 @@ class TestAcquisitionStrategyPartial:
         op_info = types.OpInfo(name="", data=data, timing=0)
         strategy = MockAcquisition(op_info)
         append_mock = mocker.patch.object(strategy, "_acquire_with_register_bin_index")
-        average_mock = mocker.patch.object(
-            strategy, "_acquire_with_immediate_bin_index"
-        )
+        average_mock = mocker.patch.object(strategy, "_acquire_with_immediate_bin_index")
 
         strategy.bin_idx_register = "R0" if bin_mode == BinMode.APPEND else None
 
@@ -154,8 +152,7 @@ class TestAcquisitionStrategyPartial:
 
         # assert
         assert (
-            exc.value.args[0]
-            == "Attempting to start an acquisition at t=0 ns, while the last "
+            exc.value.args[0] == "Attempting to start an acquisition at t=0 ns, while the last "
             "acquisition was started at t=0 ns. Please ensure a minimum interval of "
             "300 ns between acquisitions.\n\nError caused by acquisition:\n"
             "Acquisition  (t=0 to 1e-06)\ndata={'bin_mode': 'nonsense', "
@@ -187,9 +184,7 @@ class TestSquareAcquisitionStrategy:
     @pytest.mark.parametrize("bin_mode", [BinMode.AVERAGE, BinMode.APPEND])
     def test_constructor(self, bin_mode):
         data = {"bin_mode": bin_mode, "acq_channel": 0, "acq_index": 0}
-        acquisitions.SquareAcquisitionStrategy(
-            types.OpInfo(name="", data=data, timing=0)
-        )
+        acquisitions.SquareAcquisitionStrategy(types.OpInfo(name="", data=data, timing=0))
 
     def test_generate_data(self):
         # arrange
@@ -256,9 +251,7 @@ class TestWeightedAcquisitionStrategy:
     @pytest.mark.parametrize("bin_mode", [BinMode.AVERAGE, BinMode.APPEND])
     def test_constructor(self, bin_mode):
         data = {"bin_mode": bin_mode, "acq_channel": 0, "acq_index": 0}
-        acquisitions.WeightedAcquisitionStrategy(
-            types.OpInfo(name="", data=data, timing=0)
-        )
+        acquisitions.WeightedAcquisitionStrategy(types.OpInfo(name="", data=data, timing=0))
 
     def test_generate_data(self):
         # arrange
@@ -440,9 +433,7 @@ class TestTriggerCountStrategy:
     @pytest.mark.parametrize("bin_mode", [BinMode.AVERAGE, BinMode.APPEND])
     def test_constructor(self, bin_mode):
         data = {"bin_mode": bin_mode, "acq_channel": 0, "acq_index": 0}
-        acquisitions.TriggerCountAcquisitionStrategy(
-            types.OpInfo(name="", data=data, timing=0)
-        )
+        acquisitions.TriggerCountAcquisitionStrategy(types.OpInfo(name="", data=data, timing=0))
 
     def test_generate_data(self):
         # arrange
@@ -535,9 +526,7 @@ class TestTimetagStrategy:
     @pytest.mark.parametrize("bin_mode", [BinMode.AVERAGE, BinMode.APPEND])
     def test_constructor(self, bin_mode):
         data = {"bin_mode": bin_mode, "acq_channel": 0, "acq_index": 0}
-        acquisitions.TimetagAcquisitionStrategy(
-            types.OpInfo(name="", data=data, timing=0)
-        )
+        acquisitions.TimetagAcquisitionStrategy(types.OpInfo(name="", data=data, timing=0))
 
     def test_generate_data(self):
         # arrange
@@ -631,9 +620,7 @@ class TestScopedTimetagStrategy:
     @pytest.mark.parametrize("bin_mode", [BinMode.AVERAGE, BinMode.APPEND])
     def test_constructor(self, bin_mode):
         data = {"bin_mode": bin_mode, "acq_channel": 0, "acq_index": 0}
-        acquisitions.ScopedTimetagAcquisitionStrategy(
-            types.OpInfo(name="", data=data, timing=0)
-        )
+        acquisitions.ScopedTimetagAcquisitionStrategy(types.OpInfo(name="", data=data, timing=0))
 
     def test_generate_data(self):
         # arrange
@@ -995,9 +982,7 @@ def test_long_time_trace_protocol(
     compiler = SerialCompiler("compiler", quantum_device=quantum_device)
     compiled_schedule = compiler.compile(schedule)
 
-    compiled_instructions = compiled_schedule.compiled_instructions["cluster0"][
-        "cluster0_module4"
-    ]
+    compiled_instructions = compiled_schedule.compiled_instructions["cluster0"]["cluster0_module4"]
 
     sequencer_acquisition_metadata = compiled_instructions["acq_metadata"]["seq0"]
     assert sequencer_acquisition_metadata.acq_protocol == "SSBIntegrationComplex"
@@ -1080,12 +1065,12 @@ def test_thresholded_acquisition_multiplex(
     for index, (phase, threshold) in enumerate(
         zip((rotation_q0, rotation_q1), (threshold_q0, threshold_q1))
     ):
-        sequencer_compiled_instructions = compiled_schedule.compiled_instructions[
-            "cluster0"
-        ]["cluster0_module3"]["sequencers"][f"seq{index}"]
-        sequencer_acquisition_metadata = compiled_schedule.compiled_instructions[
-            "cluster0"
-        ]["cluster0_module3"]["acq_metadata"][f"seq{index}"]
+        sequencer_compiled_instructions = compiled_schedule.compiled_instructions["cluster0"][
+            "cluster0_module3"
+        ]["sequencers"][f"seq{index}"]
+        sequencer_acquisition_metadata = compiled_schedule.compiled_instructions["cluster0"][
+            "cluster0_module3"
+        ]["acq_metadata"][f"seq{index}"]
 
         if index == 0:
             integration_length = q0.measure.integration_time() * 1e9
@@ -1122,21 +1107,9 @@ def test_trigger_count_append(
 
     # Define experiment schedule
     schedule = Schedule("test multiple measurements")
-    schedule.add(
-        Measure(
-            "qe0", acq_index=0, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND
-        )
-    )
-    schedule.add(
-        Measure(
-            "qe0", acq_index=1, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND
-        )
-    )
-    schedule.add(
-        Measure(
-            "qe0", acq_index=2, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND
-        )
-    )
+    schedule.add(Measure("qe0", acq_index=0, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND))
+    schedule.add(Measure("qe0", acq_index=1, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND))
+    schedule.add(Measure("qe0", acq_index=2, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND))
 
     # Setup dummy acquisition data
     ic_cluster0.instrument.set_dummy_binned_acquisition_data(
@@ -1202,21 +1175,9 @@ def test_trigger_count_append_legacy_hardware_cfg(
 
     # Define experiment schedule
     schedule = Schedule("test multiple measurements")
-    schedule.add(
-        Measure(
-            "qe0", acq_index=0, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND
-        )
-    )
-    schedule.add(
-        Measure(
-            "qe0", acq_index=1, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND
-        )
-    )
-    schedule.add(
-        Measure(
-            "qe0", acq_index=2, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND
-        )
-    )
+    schedule.add(Measure("qe0", acq_index=0, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND))
+    schedule.add(Measure("qe0", acq_index=1, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND))
+    schedule.add(Measure("qe0", acq_index=2, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND))
 
     # Setup dummy acquisition data
     ic_cluster0.instrument.set_dummy_binned_acquisition_data(
@@ -1289,9 +1250,7 @@ def test_trigger_count_append_qtm(
             "digitization_thresholds": {
                 "qe0:optical_readout-qe0.ge0": {"in_threshold_primary": 0.5}
             },
-            "sequencer_options": {
-                "qe0:optical_readout-qe0.ge0": {"ttl_acq_threshold": 0.5}
-            },
+            "sequencer_options": {"qe0:optical_readout-qe0.ge0": {"ttl_acq_threshold": 0.5}},
         },
         "connectivity": {
             "graph": [
@@ -1324,21 +1283,9 @@ def test_trigger_count_append_qtm(
 
     # Define experiment schedule
     schedule = Schedule("test multiple measurements")
-    schedule.add(
-        Measure(
-            "qe0", acq_index=0, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND
-        )
-    )
-    schedule.add(
-        Measure(
-            "qe0", acq_index=1, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND
-        )
-    )
-    schedule.add(
-        Measure(
-            "qe0", acq_index=2, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND
-        )
-    )
+    schedule.add(Measure("qe0", acq_index=0, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND))
+    schedule.add(Measure("qe0", acq_index=1, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND))
+    schedule.add(Measure("qe0", acq_index=2, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND))
 
     # TODO remove these patches when the QTM dummy is available (SE-499)
     mocker.patch.object(ic_cluster0.instrument.module5.sequencer0.sync_en, "set")
@@ -1346,12 +1293,8 @@ def test_trigger_count_append_qtm(
     mocker.patch.object(ic_cluster0.instrument.module5.io_channel0.out_mode, "set")
     mocker.patch.object(ic_cluster0.instrument.module5.io_channel0.out_mode, "get")
     mocker.patch.object(ic_cluster0.instrument.module5.io_channel0.in_trigger_en, "set")
-    mocker.patch.object(
-        ic_cluster0.instrument.module5.io_channel0.binned_acq_time_ref, "set"
-    )
-    mocker.patch.object(
-        ic_cluster0.instrument.module5.io_channel0.binned_acq_time_source, "set"
-    )
+    mocker.patch.object(ic_cluster0.instrument.module5.io_channel0.binned_acq_time_ref, "set")
+    mocker.patch.object(ic_cluster0.instrument.module5.io_channel0.binned_acq_time_source, "set")
     mocker.patch.object(
         ic_cluster0.instrument.module5.io_channel0.binned_acq_on_invalid_time_delta,
         "set",
@@ -1427,19 +1370,13 @@ def test_trigger_count_append_gettables(
     def _schedule_function(repetitions):
         schedule = Schedule("test multiple measurements", repetitions=repetitions)
         schedule.add(
-            Measure(
-                "qe0", acq_index=0, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND
-            )
+            Measure("qe0", acq_index=0, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND)
         )
         schedule.add(
-            Measure(
-                "qe0", acq_index=1, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND
-            )
+            Measure("qe0", acq_index=1, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND)
         )
         schedule.add(
-            Measure(
-                "qe0", acq_index=2, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND
-            )
+            Measure("qe0", acq_index=2, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND)
         )
         return schedule
 
@@ -1560,9 +1497,7 @@ def test_trigger_count_distribution_gettables(
     # Define experiment schedule
     def _schedule_function(repetitions):
         schedule = Schedule("test multiple measurements", repetitions=repetitions)
-        meas0 = Measure(
-            "qe0", acq_protocol="TriggerCount", bin_mode=BinMode.DISTRIBUTION
-        )
+        meas0 = Measure("qe0", acq_protocol="TriggerCount", bin_mode=BinMode.DISTRIBUTION)
         schedule.add(meas0)
         return schedule
 
@@ -1596,9 +1531,7 @@ def test_trigger_count_distribution_gettables(
     instr_coordinator.remove_component("ic_cluster0")
 
 
-def test_mixed_binned_trace_measurements(
-    mock_setup_basic_transmon, make_cluster_component
-):
+def test_mixed_binned_trace_measurements(mock_setup_basic_transmon, make_cluster_component):
     hardware_cfg = {
         "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
         "hardware_description": {
@@ -1688,9 +1621,7 @@ def test_mixed_binned_trace_measurements(
         dims=["acq_index_0"],
         attrs={"acq_protocol": "SSBIntegrationComplex"},
     )
-    expected_dataset = Dataset(
-        {0: expected_dataarray_binned, 1: expected_dataarray_trace}
-    )
+    expected_dataset = Dataset({0: expected_dataarray_binned, 1: expected_dataarray_trace})
 
     xr.testing.assert_identical(data, expected_dataset)
 
@@ -1819,9 +1750,7 @@ def test_same_index_in_module_and_cluster_measurement_error(
                 "acquisition": {"bins": {"integration": {"path0": [0], "path1": [0]}}},
             }
         }
-        mocker.patch.object(
-            instrument, "get_acquisitions", return_value=mock_acquisition_data
-        )
+        mocker.patch.object(instrument, "get_acquisitions", return_value=mock_acquisition_data)
 
     quantum_device = mock_setup["quantum_device"]
     quantum_device.hardware_config(hardware_cfg)
@@ -1829,9 +1758,7 @@ def test_same_index_in_module_and_cluster_measurement_error(
     # Define experiment schedule
     schedule = Schedule("test multiple measurements")
     schedule.add(Measure("q0", acq_protocol="SSBIntegrationComplex", acq_index=0))
-    schedule.add(
-        Measure(qubit_to_overwrite, acq_protocol="SSBIntegrationComplex", acq_index=0)
-    )
+    schedule.add(Measure(qubit_to_overwrite, acq_protocol="SSBIntegrationComplex", acq_index=0))
     schedule.add_resource(ClockResource(name="q0.ro", freq=50e6))
     schedule.add_resource(ClockResource(name="q1.ro", freq=50e6))
 
@@ -1961,16 +1888,14 @@ def test_complex_input_hardware_cfg(make_cluster_component, mock_setup_basic_tra
     )
     expected_dataset = Dataset({0: expected_dataarray_0, 1: expected_dataarray_1})
     xr.testing.assert_identical(data, expected_dataset)
-    assert compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"][
-        "sequencers"
-    ]["seq0"]["connected_input_indices"] == [0, 1]
+    assert compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["sequencers"][
+        "seq0"
+    ]["connected_input_indices"] == [0, 1]
 
     instr_coordinator.remove_component("ic_cluster0")
 
 
-def test_multi_real_input_hardware_cfg_trigger_count(
-    make_cluster_component, mock_setup_basic_nv
-):
+def test_multi_real_input_hardware_cfg_trigger_count(make_cluster_component, mock_setup_basic_nv):
     hardware_cfg = {
         "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
         "hardware_description": {
@@ -2033,9 +1958,7 @@ def test_multi_real_input_hardware_cfg_trigger_count(
     # Define experiment schedule
     schedule = Schedule("test NV measurement with real output and input")
     schedule.add(Measure("qe0", acq_protocol="TriggerCount", bin_mode=BinMode.APPEND))
-    schedule.add(
-        Measure("qe1", acq_protocol="TriggerCount", bin_mode=BinMode.DISTRIBUTION)
-    )
+    schedule.add(Measure("qe1", acq_protocol="TriggerCount", bin_mode=BinMode.DISTRIBUTION))
 
     # Generate compiled schedule
     compiler = SerialCompiler(name="compiler")
@@ -2044,18 +1967,18 @@ def test_multi_real_input_hardware_cfg_trigger_count(
     )
 
     # Assert intended behaviour
-    seq_0 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"][
-        "sequencers"
-    ]["seq0"]
-    seq_1 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"][
-        "sequencers"
-    ]["seq1"]
-    seq_2 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"][
-        "sequencers"
-    ]["seq2"]
-    seq_3 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"][
-        "sequencers"
-    ]["seq3"]
+    seq_0 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["sequencers"][
+        "seq0"
+    ]
+    seq_1 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["sequencers"][
+        "seq1"
+    ]
+    seq_2 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["sequencers"][
+        "seq2"
+    ]
+    seq_3 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["sequencers"][
+        "seq3"
+    ]
 
     assert seq_0["connected_output_indices"] == [0]
     assert seq_0["nco_en"] is True
@@ -2122,12 +2045,9 @@ def test_trace_acquisition_instrument_coordinator(  # noqa PLR915 Too many state
         close_instruments([name])
 
     hardware_cfg_module_names = set(
-        f"{name}_module{idx}"
-        for idx in hardware_cfg["hardware_description"]["cluster0"]["modules"]
+        f"{name}_module{idx}" for idx in hardware_cfg["hardware_description"]["cluster0"]["modules"]
     )
-    module_name = hardware_cfg_module_names.intersection(
-        ic_component._cluster_modules
-    ).pop()
+    module_name = hardware_cfg_module_names.intersection(ic_component._cluster_modules).pop()
 
     try:
         instr_coordinator.add_component(ic_component)
@@ -2139,9 +2059,7 @@ def test_trace_acquisition_instrument_coordinator(  # noqa PLR915 Too many state
 
     q2 = mock_setup["q2"]
     q2.measure.acq_delay(600e-9)
-    q2.clock_freqs.readout(
-        7.404e9 if module_under_test is ClusterType.CLUSTER_QRM_RF else 3e8
-    )
+    q2.clock_freqs.readout(7.404e9 if module_under_test is ClusterType.CLUSTER_QRM_RF else 3e8)
 
     schedule = trace_schedule_circuit_layer(qubit_name="q2")
 
@@ -2205,9 +2123,7 @@ def test_trace_acquisition_instrument_coordinator(  # noqa PLR915 Too many state
     instr_coordinator.remove_component(ic_component.name)
 
 
-def test_mix_lo_flag(
-    mock_setup_basic_transmon_with_standard_params, make_cluster_component
-):
+def test_mix_lo_flag(mock_setup_basic_transmon_with_standard_params, make_cluster_component):
     hardware_cfg = {
         "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
         "hardware_description": {
@@ -2225,9 +2141,7 @@ def test_mix_lo_flag(
             "lo0": {"instrument_type": "LocalOscillator", "power": 1},
         },
         "hardware_options": {
-            "modulation_frequencies": {
-                "q0:res-q0.ro": {"lo_freq": None, "interm_freq": 50000000.0}
-            }
+            "modulation_frequencies": {"q0:res-q0.ro": {"lo_freq": None, "interm_freq": 50000000.0}}
         },
         "connectivity": {
             "graph": [
@@ -2257,28 +2171,22 @@ def test_mix_lo_flag(
     )
 
     # Change mix_lo to false, set new LO freq and generate new compiled schedule
-    hardware_cfg["hardware_description"]["cluster0"]["modules"]["1"][
-        "complex_output_0"
-    ]["mix_lo"] = False
+    hardware_cfg["hardware_description"]["cluster0"]["modules"]["1"]["complex_output_0"][
+        "mix_lo"
+    ] = False
     compiled_sched_mix_lo_false = compiler.compile(
         schedule=schedule, config=quantum_device.generate_compilation_config()
     )
 
     # Assert LO freq got set if mix_lo is true.
-    assert (
-        compiled_sched_mix_lo_true.compiled_instructions["generic"]["lo0.frequency"]
-        == 7.95e9
-    )
+    assert compiled_sched_mix_lo_true.compiled_instructions["generic"]["lo0.frequency"] == 7.95e9
     # Assert LO freq got set if mix_lo is false.
-    assert (
-        compiled_sched_mix_lo_false.compiled_instructions["generic"]["lo0.frequency"]
-        == 8e9
-    )
+    assert compiled_sched_mix_lo_false.compiled_instructions["generic"]["lo0.frequency"] == 8e9
     # Assert NCO freq got set if mix_lo is false.
     assert (
-        compiled_sched_mix_lo_false.compiled_instructions["cluster0"][
-            "cluster0_module1"
-        ]["sequencers"]["seq0"]["modulation_freq"]
+        compiled_sched_mix_lo_false.compiled_instructions["cluster0"]["cluster0_module1"][
+            "sequencers"
+        ]["seq0"]["modulation_freq"]
         == 50e6
     )
     instr_coordinator.remove_component("ic_cluster0")
@@ -2303,9 +2211,7 @@ def test_marker_debug_mode_enable(
                 "ref": "internal",
             }
         },
-        "hardware_options": {
-            "modulation_frequencies": {"q0:res-q0.ro": {"interm_freq": 0}}
-        },
+        "hardware_options": {"modulation_frequencies": {"q0:res-q0.ro": {"interm_freq": 0}}},
         "connectivity": {"graph": [["cluster0.module1.complex_input_0", "q0:res"]]},
     }
 
@@ -2330,18 +2236,16 @@ def test_marker_debug_mode_enable(
     )
 
     # Generate compiled schedule for QRM-RF
-    hardware_cfg["hardware_description"]["cluster0"]["modules"]["1"][
-        "instrument_type"
-    ] = "QRM_RF"
+    hardware_cfg["hardware_description"]["cluster0"]["modules"]["1"]["instrument_type"] = "QRM_RF"
     compiled_sched_qrm_rf = compiler.compile(
         schedule=schedule, config=quantum_device.generate_compilation_config()
     )
 
     # Assert markers were set correctly, and wait time is correct for both modules.
     assert_equal_q1asm(
-        compiled_sched_qrm.compiled_instructions["cluster0"]["cluster0_module1"][
-            "sequencers"
-        ]["seq0"]["sequence"]["program"],
+        compiled_sched_qrm.compiled_instructions["cluster0"]["cluster0_module1"]["sequencers"][
+            "seq0"
+        ]["sequence"]["program"],
         """
  set_mrk 0 # set markers to 0
  wait_sync 4
@@ -2372,9 +2276,9 @@ start:
     )
 
     assert_equal_q1asm(
-        compiled_sched_qrm_rf.compiled_instructions["cluster0"]["cluster0_module1"][
-            "sequencers"
-        ]["seq0"]["sequence"]["program"],
+        compiled_sched_qrm_rf.compiled_instructions["cluster0"]["cluster0_module1"]["sequencers"][
+            "seq0"
+        ]["sequence"]["program"],
         """
  set_mrk 3 # set markers to 3
  wait_sync 4
@@ -2407,9 +2311,7 @@ start:
     instr_coordinator.remove_component("ic_cluster0")
 
 
-def test_multiple_binned_measurements(
-    mock_setup_basic_transmon, make_cluster_component
-):
+def test_multiple_binned_measurements(mock_setup_basic_transmon, make_cluster_component):
     hardware_cfg = {
         "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
         "hardware_description": {
@@ -2476,14 +2378,10 @@ def test_multiple_binned_measurements(
         )
     )
     schedule.add(
-        Measure(
-            "q1", acq_channel="ch_1", acq_index=0, acq_protocol="SSBIntegrationComplex"
-        )
+        Measure("q1", acq_channel="ch_1", acq_index=0, acq_protocol="SSBIntegrationComplex")
     )
     schedule.add(
-        Measure(
-            "q1", acq_channel="ch_1", acq_index=1, acq_protocol="SSBIntegrationComplex"
-        )
+        Measure("q1", acq_channel="ch_1", acq_index=1, acq_protocol="SSBIntegrationComplex")
     )
     schedule.add(
         SSBIntegrationComplex(

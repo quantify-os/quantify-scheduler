@@ -211,9 +211,7 @@ class VoltageOffset(Operation):
 
     """
 
-    @deprecated_arg_alias(
-        "0.20.0", offset_path_0="offset_path_I", offset_path_1="offset_path_Q"
-    )
+    @deprecated_arg_alias("0.20.0", offset_path_0="offset_path_I", offset_path_1="offset_path_Q")
     def __init__(
         self,
         offset_path_I: float,

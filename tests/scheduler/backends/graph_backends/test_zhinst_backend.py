@@ -74,9 +74,7 @@ def test_compiles_standard_schedules_mux_ro(
 
     config = compile_config_basic_transmon_zhinst_hardware
     assert config.name == "QuantumDevice-generated SerialCompilationConfig"
-    assert (
-        config.backend == "quantify_scheduler.backends.graph_compilation.SerialCompiler"
-    )
+    assert config.backend == "quantify_scheduler.backends.graph_compilation.SerialCompiler"
 
     backend = SerialCompiler(name=config.name)
 
@@ -103,9 +101,7 @@ def test_compiles_standard_schedules_edge(
 
     config = compile_config_basic_transmon_zhinst_hardware
     assert config.name == "QuantumDevice-generated SerialCompilationConfig"
-    assert (
-        config.backend == "quantify_scheduler.backends.graph_compilation.SerialCompiler"
-    )
+    assert config.backend == "quantify_scheduler.backends.graph_compilation.SerialCompiler"
 
     backend = SerialCompiler(name=config.name)
     comp_sched = backend.compile(schedule=schedule, config=config)

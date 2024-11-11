@@ -67,9 +67,7 @@ def test_resize_waveform(size: int, granularity: int, expected: int) -> None:
         ("quantify_scheduler.waveforms.drag", 2.4e9),
     ],
 )
-def test_get_waveform(
-    mocker: MockerFixture, wf_func: str, sampling_rate: float
-) -> None:
+def test_get_waveform(mocker: MockerFixture, wf_func: str, sampling_rate: float) -> None:
     # Arrange
     mock = mocker.patch(
         "quantify_scheduler.helpers.waveforms.exec_waveform_function", return_value=[]
@@ -90,9 +88,7 @@ def test_get_waveform_by_pulseid(
     schedule_with_pulse_info: Schedule,
 ) -> None:
     # Arrange
-    operation_id = list(schedule_with_pulse_info.schedulables.values())[0][
-        "operation_id"
-    ]
+    operation_id = list(schedule_with_pulse_info.schedulables.values())[0]["operation_id"]
     pulse_info_0 = schedule_with_pulse_info.operations[operation_id]["pulse_info"][0]
     pulse_id = get_pulse_uuid(pulse_info_0)
     expected_keys: list[int] = [pulse_id]
@@ -115,9 +111,7 @@ def test_get_waveform_by_pulseid_are_unique(
     schedule.add(X90("q0"))
 
     compiler = SerialCompiler(name="compiler")
-    schedule = compiler.compile(
-        schedule=schedule, config=device_compile_config_basic_transmon
-    )
+    schedule = compiler.compile(schedule=schedule, config=device_compile_config_basic_transmon)
 
     operation_id = list(schedule.schedulables.values())[0]["operation_id"]
     pulse_info_0 = schedule.operations[operation_id]["pulse_info"][0]
@@ -183,9 +177,7 @@ def test_exec_waveform_function(wf_func: str, mocker: MockerFixture) -> None:
         ("module.function"),
     ],
 )
-def test_exec_waveform_function_with_custom(
-    wf_func: str, mocker: MockerFixture
-) -> None:
+def test_exec_waveform_function_with_custom(wf_func: str, mocker: MockerFixture) -> None:
     # Arrange
     pulse_duration = 1e-08
     t: np.ndarray = np.arange(0, 0 + pulse_duration, 1 / 1e9)
@@ -252,9 +244,7 @@ def test_shift_waveform_misaligned() -> None:
     expected = np.concatenate([np.zeros(n_samples), waveform])
 
     # Act
-    clock, shifted_waveform = shift_waveform(
-        waveform, start_in_seconds, clock_rate, resolution
-    )
+    clock, shifted_waveform = shift_waveform(waveform, start_in_seconds, clock_rate, resolution)
 
     # Assert
     assert clock == 4
@@ -272,9 +262,7 @@ def test_shift_waveform_aligned() -> None:
     resolution = 8
 
     # Act
-    clock, shifted_waveform = shift_waveform(
-        waveform, start_in_seconds, clock_rate, resolution
-    )
+    clock, shifted_waveform = shift_waveform(waveform, start_in_seconds, clock_rate, resolution)
 
     # Assert
     assert clock == 1
@@ -426,8 +414,6 @@ def test_area_pulses_ramp_pulse_regression() -> None:
 
 
 def test_area_pulses_staircase_pulse() -> None:
-    operation = StaircasePulse(
-        start_amp=0, final_amp=1, num_steps=5, duration=10e-9, port="P"
-    )
+    operation = StaircasePulse(start_amp=0, final_amp=1, num_steps=5, duration=10e-9, port="P")
     area = area_pulses(operation.data["pulse_info"], sampling_rate=1e9)
     TestCase().assertAlmostEqual(area, 5e-9)

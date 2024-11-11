@@ -104,9 +104,7 @@ def __get_frequencies(
             interm_freq,
             downconverter_freq,
             mix_lo,
-            __get_frequencies(
-                clock_freq, lo_freq, interm_freq, downconverter_freq, mix_lo
-            ),
+            __get_frequencies(clock_freq, lo_freq, interm_freq, downconverter_freq, mix_lo),
         )
         for lo_freq in [None, 20]
         for interm_freq in [None, 3]
@@ -120,9 +118,7 @@ def __get_frequencies(
             interm_freq := -30,
             downconverter_freq := 400,
             mix_lo,
-            __get_frequencies(
-                clock_freq, lo_freq, interm_freq, downconverter_freq, mix_lo
-            ),
+            __get_frequencies(clock_freq, lo_freq, interm_freq, downconverter_freq, mix_lo),
         )
         for clock_freq in [-100, 100]
         for mix_lo in [False, True]
@@ -134,9 +130,7 @@ def __get_frequencies(
             interm_freq := None,
             downconverter_freq,
             mix_lo := True,
-            __get_frequencies(
-                clock_freq, lo_freq, interm_freq, downconverter_freq, mix_lo
-            ),
+            __get_frequencies(clock_freq, lo_freq, interm_freq, downconverter_freq, mix_lo),
         )
         for downconverter_freq in [0, clock_freq - 1, -400]
     ]
@@ -199,8 +193,7 @@ def test_determine_clock_lo_interm_freqs(
         if downconverter_freq is not None:
             if downconverter_freq < 0:
                 possible_errors.append(
-                    f"Downconverter frequency must be positive "
-                    f"({downconverter_freq=:e})"
+                    f"Downconverter frequency must be positive " f"({downconverter_freq=:e})"
                 )
             elif downconverter_freq < clock_freq:
                 possible_errors.append(
@@ -229,13 +222,9 @@ def test_frequencies():
     ],
 )
 def test_generate_new_style_hardware_config(new_style_config, old_style_config):
-    parsed_new_style_config = QbloxHardwareCompilationConfig.model_validate(
-        new_style_config
-    )
+    parsed_new_style_config = QbloxHardwareCompilationConfig.model_validate(new_style_config)
 
-    converted_new_style_hw_cfg = QbloxHardwareCompilationConfig.model_validate(
-        old_style_config
-    )
+    converted_new_style_hw_cfg = QbloxHardwareCompilationConfig.model_validate(old_style_config)
 
     # Partial checks
     # HardwareDescription
@@ -254,6 +243,4 @@ def test_generate_new_style_hardware_config(new_style_config, old_style_config):
     )
 
     # Write to dict to check equality of full config contents:
-    assert (
-        converted_new_style_hw_cfg.model_dump() == parsed_new_style_config.model_dump()
-    )
+    assert converted_new_style_hw_cfg.model_dump() == parsed_new_style_config.model_dump()

@@ -211,8 +211,7 @@ def flux_pulse(
     """
     x = np.linspace(pos, pos + width, 100)
     y = amp / (
-        (np.exp(-(x - (pos + 5.5 * s)) / s) + 1)
-        * (np.exp((x - (pos + width - 5.5 * s)) / s) + 1)
+        (np.exp(-(x - (pos + 5.5 * s)) / s) + 1) * (np.exp((x - (pos + width - 5.5 * s)) / s) + 1)
     )
 
     ax.fill_between(x, y + y_offs, y_offs, color=color, alpha=0.3)
@@ -282,9 +281,7 @@ def ram_Z_pulse(  # noqa N802 uppercase Z is allowed here
     )
     y_left = y[: len(x_left)]
 
-    ax.fill_between(
-        x_left, y_left + y_offs, y_offs, alpha=0.3, color=color, linewidth=0.0
-    )
+    ax.fill_between(x_left, y_left + y_offs, y_offs, alpha=0.3, color=color, linewidth=0.0)
     ax.plot(x_full, y + y_offs, color=color)
 
     return pos + width
@@ -346,12 +343,8 @@ def interval(
     ax.add_patch(arrow)
 
     if vlines:
-        ax.plot(
-            [start, start], [0 + y_offs, height + y_offs], "--", color=color, **plot_kws
-        )
-        ax.plot(
-            [stop, stop], [0 + y_offs, height + y_offs], "--", color=color, **plot_kws
-        )
+        ax.plot([start, start], [0 + y_offs, height + y_offs], "--", color=color, **plot_kws)
+        ax.plot([stop, stop], [0 + y_offs, height + y_offs], "--", color=color, **plot_kws)
 
     if label is not None:
         ax.text(

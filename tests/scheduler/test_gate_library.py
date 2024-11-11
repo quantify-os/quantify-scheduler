@@ -144,9 +144,7 @@ class TestGateLevelOperation:
             "unitary" in operation.data["gate_info"]
             and operation.data["gate_info"]["unitary"] is not None
         ):
-            assert isinstance(
-                obj.data["gate_info"]["unitary"], (np.generic, np.ndarray)
-            )
+            assert isinstance(obj.data["gate_info"]["unitary"], (np.generic, np.ndarray))
             np.testing.assert_array_almost_equal(
                 obj.data["gate_info"]["unitary"],
                 operation.data["gate_info"]["unitary"],
@@ -267,9 +265,7 @@ def test_rotation_unitaries() -> None:
 def test_conditional_reset_inside_loop(mock_setup_basic_transmon_with_standard_params):
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
 
-    hardware_config = utils.load_json_example_scheme(
-        "qblox_hardware_config_transmon.json"
-    )
+    hardware_config = utils.load_json_example_scheme("qblox_hardware_config_transmon.json")
     quantum_device.hardware_config(hardware_config)
     config = quantum_device.generate_compilation_config()
 
@@ -305,9 +301,7 @@ def test_conditional_reset_single_qubit(
 ):
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
 
-    hardware_config = utils.load_json_example_scheme(
-        "qblox_hardware_config_transmon.json"
-    )
+    hardware_config = utils.load_json_example_scheme("qblox_hardware_config_transmon.json")
     quantum_device.hardware_config(hardware_config)
     config = quantum_device.generate_compilation_config()
 
@@ -327,9 +321,7 @@ def test_conditional_reset_single_qubit(
         .get("sequencers")
         .get("seq0")
     )
-    assert (
-        expected_address := seq_settings["thresholded_acq_trigger_address"]
-    ) is not None
+    assert (expected_address := seq_settings["thresholded_acq_trigger_address"]) is not None
     assert seq_settings["thresholded_acq_trigger_en"] is True
     assert seq_settings["thresholded_acq_trigger_invert"] is False
 
@@ -387,9 +379,7 @@ def test_conditional_reset_with_overlapping_pulse_for_acq(
 ):
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
 
-    hardware_config = utils.load_json_example_scheme(
-        "qblox_hardware_config_transmon.json"
-    )
+    hardware_config = utils.load_json_example_scheme("qblox_hardware_config_transmon.json")
     quantum_device.hardware_config(hardware_config)
     config = quantum_device.generate_compilation_config()
 
@@ -423,9 +413,7 @@ def test_conditional_acquire_without_control_flow_raises(
 ):
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
 
-    hardware_config = utils.load_json_example_scheme(
-        "qblox_hardware_config_transmon.json"
-    )
+    hardware_config = utils.load_json_example_scheme("qblox_hardware_config_transmon.json")
     quantum_device.hardware_config(hardware_config)
     config = quantum_device.generate_compilation_config()
 
@@ -531,9 +519,7 @@ def test_conditional_reset_multi_qubits(
 ):
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
 
-    hardware_config = utils.load_json_example_scheme(
-        "qblox_hardware_config_transmon.json"
-    )
+    hardware_config = utils.load_json_example_scheme("qblox_hardware_config_transmon.json")
     quantum_device.hardware_config(hardware_config)
     config = quantum_device.generate_compilation_config()
 
@@ -549,30 +535,30 @@ def test_conditional_reset_multi_qubits(
     )
 
     # Assert readout module sequencer settings.
-    trigger_address_q0 = compiled_schedule.compiled_instructions["cluster0"][
-        "cluster0_module4"
-    ]["sequencers"]["seq0"]["thresholded_acq_trigger_address"]
+    trigger_address_q0 = compiled_schedule.compiled_instructions["cluster0"]["cluster0_module4"][
+        "sequencers"
+    ]["seq0"]["thresholded_acq_trigger_address"]
     thresholded_acq_trigger_en_q0 = compiled_schedule.compiled_instructions["cluster0"][
         "cluster0_module4"
     ]["sequencers"]["seq0"]["thresholded_acq_trigger_en"]
-    thresholded_acq_trigger_invert_q0 = compiled_schedule.compiled_instructions[
-        "cluster0"
-    ]["cluster0_module4"]["sequencers"]["seq0"]["thresholded_acq_trigger_invert"]
+    thresholded_acq_trigger_invert_q0 = compiled_schedule.compiled_instructions["cluster0"][
+        "cluster0_module4"
+    ]["sequencers"]["seq0"]["thresholded_acq_trigger_invert"]
 
     assert trigger_address_q0 == 1
     assert thresholded_acq_trigger_en_q0 is True
     assert thresholded_acq_trigger_invert_q0 is False
 
     # Assert readout module sequencer settings for "q4".
-    trigger_address_q4 = compiled_schedule.compiled_instructions["cluster0"][
-        "cluster0_module3"
-    ]["sequencers"]["seq0"]["thresholded_acq_trigger_address"]
+    trigger_address_q4 = compiled_schedule.compiled_instructions["cluster0"]["cluster0_module3"][
+        "sequencers"
+    ]["seq0"]["thresholded_acq_trigger_address"]
     thresholded_acq_trigger_en_q4 = compiled_schedule.compiled_instructions["cluster0"][
         "cluster0_module3"
     ]["sequencers"]["seq0"]["thresholded_acq_trigger_en"]
-    thresholded_acq_trigger_invert_q4 = compiled_schedule.compiled_instructions[
-        "cluster0"
-    ]["cluster0_module3"]["sequencers"]["seq0"]["thresholded_acq_trigger_invert"]
+    thresholded_acq_trigger_invert_q4 = compiled_schedule.compiled_instructions["cluster0"][
+        "cluster0_module3"
+    ]["sequencers"]["seq0"]["thresholded_acq_trigger_invert"]
 
     assert trigger_address_q4 == 2
     assert thresholded_acq_trigger_en_q4 is True

@@ -62,9 +62,7 @@ hardware_config = {
             "complex_output_1": {
                 "lo_freq": 5e9,
                 "output_att": 6,
-                "portclock_configs": [
-                    {"port": "q6:mw", "clock": "q6.01", "interm_freq": None}
-                ],
+                "portclock_configs": [{"port": "q6:mw", "clock": "q6.01", "interm_freq": None}],
             },
             "digital_output_0": {
                 "portclock_configs": [{"port": "q0:switch", "clock": "digital"}],
@@ -112,17 +110,13 @@ hardware_config = {
             "complex_input_0": {
                 "lo_freq": None,
                 "input_att": 10,
-                "portclock_configs": [
-                    {"port": "q5:res", "clock": "q5.ro", "interm_freq": 50e6}
-                ],
+                "portclock_configs": [{"port": "q5:res", "clock": "q5.ro", "interm_freq": 50e6}],
             },
             "complex_output_0": {
                 "lo_freq": 7.8e9,
                 "output_att": 12,
                 "input_att": 4,
-                "portclock_configs": [
-                    {"port": "q0:res", "clock": "q0.ro", "interm_freq": None}
-                ],
+                "portclock_configs": [{"port": "q0:res", "clock": "q0.ro", "interm_freq": None}],
             },
         },
         "cluster0_module7": {
@@ -130,33 +124,21 @@ hardware_config = {
             "sequence_to_file": False,
             "real_output_0": {
                 "lo_name": "lo_real",
-                "portclock_configs": [
-                    {"port": "q7:mw", "clock": "q7.01", "interm_freq": None}
-                ],
+                "portclock_configs": [{"port": "q7:mw", "clock": "q7.01", "interm_freq": None}],
             },
         },
         "cluster0_module10": {
             "instrument_type": "QCM",
             "sequence_to_file": False,
-            "real_output_0": {
-                "portclock_configs": [{"port": "q0:fl", "clock": "cl0.baseband"}]
-            },
-            "real_output_1": {
-                "portclock_configs": [{"port": "q1:fl", "clock": "cl0.baseband"}]
-            },
-            "real_output_2": {
-                "portclock_configs": [{"port": "q2:fl", "clock": "cl0.baseband"}]
-            },
-            "real_output_3": {
-                "portclock_configs": [{"port": "q3:fl", "clock": "cl0.baseband"}]
-            },
+            "real_output_0": {"portclock_configs": [{"port": "q0:fl", "clock": "cl0.baseband"}]},
+            "real_output_1": {"portclock_configs": [{"port": "q1:fl", "clock": "cl0.baseband"}]},
+            "real_output_2": {"portclock_configs": [{"port": "q2:fl", "clock": "cl0.baseband"}]},
+            "real_output_3": {"portclock_configs": [{"port": "q3:fl", "clock": "cl0.baseband"}]},
         },
         "cluster0_module12": {
             "instrument_type": "QCM",
             "sequence_to_file": False,
-            "real_output_0": {
-                "portclock_configs": [{"port": "q4:fl", "clock": "cl0.baseband"}]
-            },
+            "real_output_0": {"portclock_configs": [{"port": "q4:fl", "clock": "cl0.baseband"}]},
         },
     },
     "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},

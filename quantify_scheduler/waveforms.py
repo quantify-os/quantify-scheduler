@@ -30,9 +30,7 @@ def square_imaginary(t: np.ndarray | list[float], amp: float | complex) -> np.nd
     return square(t, 1j * amp)
 
 
-def ramp(
-    t: np.ndarray, amp: float, offset: float = 0, duration: float | None = None
-) -> np.ndarray:
+def ramp(t: np.ndarray, amp: float, offset: float = 0, duration: float | None = None) -> np.ndarray:
     """Generate a ramp pulse."""
     if duration is None:
         warnings.warn(
@@ -238,9 +236,7 @@ def drag(
     mu = t[0] + duration / 2
 
     if sigma is not None and nr_sigma is not None:
-        raise ValueError(
-            "Both sigma and nr_sigma are specified. Please specify only one."
-        )
+        raise ValueError("Both sigma and nr_sigma are specified. Please specify only one.")
 
     if sigma is None:
         sigma = duration / (2 * nr_sigma)
@@ -360,9 +356,9 @@ def sudden_net_zero(
     waveform = np.zeros(len(t))
     waveform[:single_arm_samples] = amp_A
     waveform[single_arm_samples - 1] = amp_A * amp_B
-    waveform[
-        single_arm_samples + mid_samples : 2 * single_arm_samples + mid_samples
-    ] = (-amp_A * net_zero_A_scale)
+    waveform[single_arm_samples + mid_samples : 2 * single_arm_samples + mid_samples] = (
+        -amp_A * net_zero_A_scale
+    )
     waveform[single_arm_samples + mid_samples] = -amp_A * net_zero_A_scale * amp_B
     integral_value = -sum(waveform) / num_corr_samples
     waveform[
@@ -418,10 +414,7 @@ def interpolated_complex_waveform(
         # Allow extrapolation only when t starts less than one t_sample before the start
         # of t_samples, and when t ends less than one t_sample after the end of t_samples.
         delta_t_samples = t_samples[1] - t_samples[0]
-        if (
-            t[0] < t_samples[0] - delta_t_samples
-            or t[-1] > t_samples[-1] + delta_t_samples
-        ):
+        if t[0] < t_samples[0] - delta_t_samples or t[-1] > t_samples[-1] + delta_t_samples:
             raise ValueError(
                 "Interpolation out of bounds: 't' should start at or after the first 't_sample'"
                 " and end at or before the last 't_sample'"

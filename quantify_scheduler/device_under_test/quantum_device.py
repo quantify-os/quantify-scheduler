@@ -139,9 +139,7 @@ class QuantumDevice(Instrument):
         data: dict[str, Any] = {"name": self.name}
 
         data["elements"] = {
-            element_name: json.dumps(
-                self.get_element(element_name), cls=SchedulerJSONEncoder
-            )
+            element_name: json.dumps(self.get_element(element_name), cls=SchedulerJSONEncoder)
             for element_name in self.elements()
         }
 
@@ -377,8 +375,8 @@ class QuantumDevice(Instrument):
                 hardware_config["backend"]
                 == "quantify_scheduler.backends.qblox_backend.hardware_compile"
             ):
-                hardware_compilation_config = (
-                    QbloxHardwareCompilationConfig.model_validate(hardware_config)
+                hardware_compilation_config = QbloxHardwareCompilationConfig.model_validate(
+                    hardware_config
                 )
 
             elif (
@@ -423,8 +421,8 @@ class QuantumDevice(Instrument):
             hardware_compilation_config_model = import_python_object_from_string(
                 hardware_config["config_type"]
             )
-            hardware_compilation_config = (
-                hardware_compilation_config_model.model_validate(hardware_config)
+            hardware_compilation_config = hardware_compilation_config_model.model_validate(
+                hardware_config
             )
 
         return hardware_compilation_config

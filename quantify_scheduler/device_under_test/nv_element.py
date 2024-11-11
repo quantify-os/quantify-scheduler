@@ -341,9 +341,7 @@ class CRCount(InstrumentModule):
     This uses a photon count to perform a charge and resonance count.
     """
 
-    def __init__(
-        self, parent: InstrumentBase, name: str, **kwargs: float | None
-    ) -> None:
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float | None) -> None:
         del kwargs  # Ignore any other arguments passed. TODO: enforce this doesn't happen
         super().__init__(parent=parent, name=name)
 
@@ -423,9 +421,7 @@ class RxyHermite(InstrumentModule):
     using a Hermite pulse.
     """
 
-    def __init__(
-        self, parent: InstrumentBase, name: str, **kwargs: float | None
-    ) -> None:
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float | None) -> None:
         super().__init__(parent=parent, name=name)
 
         self.amp180 = ManualParameter(
@@ -476,17 +472,13 @@ class BasicElectronicNVElement(DeviceElement):
             "cr_count": CRCount,
             "rxy": RxyHermite,
         }
-        submodule_data = {
-            sub_name: kwargs.pop(sub_name, {}) for sub_name in submodules_to_add
-        }
+        submodule_data = {sub_name: kwargs.pop(sub_name, {}) for sub_name in submodules_to_add}
         super().__init__(name, **kwargs)
 
         for sub_name, sub_class in submodules_to_add.items():
             self.add_submodule(
                 sub_name,
-                sub_class(
-                    parent=self, name=sub_name, **submodule_data.get(sub_name, {})
-                ),
+                sub_class(parent=self, name=sub_name, **submodule_data.get(sub_name, {})),
             )
 
         self.spectroscopy_operation: SpectroscopyOperationHermiteMW

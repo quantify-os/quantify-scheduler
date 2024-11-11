@@ -130,14 +130,8 @@ def test_get_compiler_container(create_schedule_with_pulse_info):
     hardware_cfg = QbloxHardwareCompilationConfig.model_validate(hardware_cfg)
 
     schedule = Schedule("Test")
-    schedule.add(
-        SquarePulse(amp=0.5, duration=40e-9, port="qe1:switch", clock="digital")
-    )
-    schedule.add(
-        SSBIntegrationComplex(
-            port="qe1:optical_readout", clock="qe1.ge0", duration=5e-6
-        )
-    )
+    schedule.add(SquarePulse(amp=0.5, duration=40e-9, port="qe1:switch", clock="digital"))
+    schedule.add(SSBIntegrationComplex(port="qe1:optical_readout", clock="qe1.ge0", duration=5e-6))
     schedule = create_schedule_with_pulse_info(schedule)
 
     container = CompilerContainer.from_hardware_cfg(
@@ -159,16 +153,10 @@ def test_get_compiler_container(create_schedule_with_pulse_info):
 
     assert module_compilation_config.hardware_description.instrument_type == "QTM"
     assert module_compilation_config.hardware_description.sequence_to_file is False
-    assert (
-        module_compilation_config.hardware_options.model_dump(exclude_unset=True) == {}
-    )
+    assert module_compilation_config.hardware_options.model_dump(exclude_unset=True) == {}
     assert module_compilation_config.portclock_to_path == {
-        ("qe1:switch-digital"): ChannelPath.from_path(
-            "cluster0.module5.digital_output_0"
-        ),
-        ("qe1:optical_readout-qe1.ge0"): ChannelPath.from_path(
-            "cluster0.module5.digital_input_4"
-        ),
+        ("qe1:switch-digital"): ChannelPath.from_path("cluster0.module5.digital_output_0"),
+        ("qe1:optical_readout-qe1.ge0"): ChannelPath.from_path("cluster0.module5.digital_input_4"),
     }
 
 
@@ -194,9 +182,7 @@ def test_construct_sequencer_compilers():
     compilation_configs = hardware_cfg._extract_instrument_compilation_configs(
         {("q0:switch", "digital"), ("q0:readout", "digital")}
     )
-    module_configs = compilation_configs[
-        "cluster0"
-    ]._extract_module_compilation_configs()
+    module_configs = compilation_configs["cluster0"]._extract_module_compilation_configs()
 
     test_module = QTMCompiler(
         name="cluster0_module1",
@@ -232,9 +218,9 @@ def test_simple_qtm_schedule_compilation_end_to_end(assert_equal_q1asm):
         schedule=schedule, config=quantum_device.generate_compilation_config()
     )
     assert_equal_q1asm(
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
-            "sequencers"
-        ]["seq0"]["sequence"]["program"],
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"]["seq0"][
+            "sequence"
+        ]["program"],
         """ wait_sync 4
  upd_param 4
  wait 4 # latency correction of 4 + 0 ns
@@ -269,9 +255,9 @@ def test_qtm_loop_schedule_compilation_end_to_end(assert_equal_q1asm):
         schedule=schedule, config=quantum_device.generate_compilation_config()
     )
     assert_equal_q1asm(
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
-            "sequencers"
-        ]["seq0"]["sequence"]["program"],
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"]["seq0"][
+            "sequence"
+        ]["program"],
         """ wait_sync 4
  upd_param 4
  wait 4 # latency correction of 4 + 0 ns
@@ -296,9 +282,7 @@ loop6:
     "operation",
     [
         SquarePulse(amp=0.5, duration=40e-9, port="qe1:switch", clock="digital"),
-        SSBIntegrationComplex(
-            port="qe1:optical_readout", clock="qe1.ge0", duration=1e-6
-        ),
+        SSBIntegrationComplex(port="qe1:optical_readout", clock="qe1.ge0", duration=1e-6),
     ],
 )
 def test_qtm_compile_unsupported_operations_raises(mock_setup_basic_nv, operation):
@@ -315,20 +299,14 @@ def test_qtm_compile_unsupported_operations_raises(mock_setup_basic_nv, operatio
         ValueError,
         match=f"Operation info .*{operation.__class__.__name__}.* cannot be compiled for a QTM",
     ):
-        _ = compiler.compile(
-            schedule=schedule, config=quantum_device.generate_compilation_config()
-        )
+        _ = compiler.compile(schedule=schedule, config=quantum_device.generate_compilation_config())
 
 
 @pytest.mark.parametrize("repetitions", [1, 10])
-def test_trigger_count_acq_qtm_compilation(
-    mock_setup_basic_nv, repetitions, assert_equal_q1asm
-):
+def test_trigger_count_acq_qtm_compilation(mock_setup_basic_nv, repetitions, assert_equal_q1asm):
     schedule = Schedule(name="Test", repetitions=repetitions)
 
-    tg = schedule.add(
-        TriggerCount(port="qe1:optical_readout", clock="qe1.ge0", duration=100e-9)
-    )
+    tg = schedule.add(TriggerCount(port="qe1:optical_readout", clock="qe1.ge0", duration=100e-9))
     schedule.add(
         MarkerPulse(duration=4e-9, port="qe1:switch"),
         rel_time=0,
@@ -348,16 +326,16 @@ def test_trigger_count_acq_qtm_compilation(
     )
 
     assert (
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
-            "sequencers"
-        ]["seq4"]["sequence"]["acquisitions"]["0"]["num_bins"]
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"]["seq4"][
+            "sequence"
+        ]["acquisitions"]["0"]["num_bins"]
         == repetitions
     )
 
     assert_equal_q1asm(
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
-            "sequencers"
-        ]["seq4"]["sequence"]["program"],
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"]["seq4"][
+            "sequence"
+        ]["program"],
         f""" wait_sync 4
  upd_param 4
  move 0,R0 # Initialize acquisition bin_idx for ch0
@@ -376,9 +354,9 @@ start:
     )
 
     assert_equal_q1asm(
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
-            "sequencers"
-        ]["seq0"]["sequence"]["program"],
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"]["seq0"][
+            "sequence"
+        ]["program"],
         f""" wait_sync 4
  upd_param 4
  wait 4 # latency correction of 4 + 0 ns
@@ -438,15 +416,15 @@ def test_timetag_acq_compilation(mock_setup_basic_nv, assert_equal_q1asm, bin_mo
     )
 
     assert (
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
-            "sequencers"
-        ]["seq4"]["time_source"]
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"]["seq4"][
+            "time_source"
+        ]
         == TimeSource.FIRST
     )
     assert (
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
-            "sequencers"
-        ]["seq4"]["time_ref"]
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"]["seq4"][
+            "time_ref"
+        ]
         == TimeRef.TIMESTAMP
     )
 
@@ -465,9 +443,9 @@ def test_timetag_acq_compilation(mock_setup_basic_nv, assert_equal_q1asm, bin_mo
         fine_delay = "0"
         loop_reg = 0
     assert_equal_q1asm(
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
-            "sequencers"
-        ]["seq4"]["sequence"]["program"],
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"]["seq4"][
+            "sequence"
+        ]["program"],
         f""" wait_sync 4
  upd_param 4
  {append_mode_init_str}
@@ -519,23 +497,23 @@ def test_trace_acq_qtm_compilation(mock_setup_basic_nv, assert_equal_q1asm):
     )
 
     assert (
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
-            "sequencers"
-        ]["seq4"]["sequence"]["acquisitions"]["0"]["num_bins"]
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"]["seq4"][
+            "sequence"
+        ]["acquisitions"]["0"]["num_bins"]
         == 1
     )
 
     assert (
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
-            "sequencers"
-        ]["seq4"]["scope_trace_type"]
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"]["seq4"][
+            "scope_trace_type"
+        ]
         == TimetagTraceType.SCOPE
     )
 
     assert_equal_q1asm(
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
-            "sequencers"
-        ]["seq4"]["sequence"]["program"],
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"]["seq4"][
+            "sequence"
+        ]["program"],
         """ wait_sync 4
  upd_param 4
  wait 4 # latency correction of 4 + 0 ns
@@ -553,9 +531,9 @@ start:
     )
 
     assert_equal_q1asm(
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
-            "sequencers"
-        ]["seq0"]["sequence"]["program"],
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"]["seq0"][
+            "sequence"
+        ]["program"],
         """ wait_sync 4
  upd_param 4
  wait 4 # latency correction of 4 + 0 ns
@@ -617,23 +595,23 @@ def test_timetagtrace_acq_qtm_compilation(mock_setup_basic_nv, assert_equal_q1as
     )
 
     assert (
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
-            "sequencers"
-        ]["seq4"]["sequence"]["acquisitions"]["0"]["num_bins"]
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"]["seq4"][
+            "sequence"
+        ]["acquisitions"]["0"]["num_bins"]
         == 1
     )
 
     assert (
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
-            "sequencers"
-        ]["seq4"]["scope_trace_type"]
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"]["seq4"][
+            "scope_trace_type"
+        ]
         == TimetagTraceType.TIMETAG
     )
 
     assert_equal_q1asm(
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
-            "sequencers"
-        ]["seq4"]["sequence"]["program"],
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"]["seq4"][
+            "sequence"
+        ]["program"],
         """ wait_sync 4
  upd_param 4
  move 0,R0 # Initialize acquisition bin_idx for ch0
@@ -654,9 +632,9 @@ start:
     )
 
     assert_equal_q1asm(
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
-            "sequencers"
-        ]["seq0"]["sequence"]["program"],
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"]["seq0"][
+            "sequence"
+        ]["program"],
         """ wait_sync 4
  upd_param 4
  wait 4 # latency correction of 4 + 0 ns
@@ -723,9 +701,7 @@ def test_timetag_different_source(mock_setup_basic_nv):
         ValueError,
         match="time_source must be the same for all acquisitions on a port-clock combination.",
     ):
-        _ = compiler.compile(
-            schedule=schedule, config=quantum_device.generate_compilation_config()
-        )
+        _ = compiler.compile(schedule=schedule, config=quantum_device.generate_compilation_config())
 
 
 def test_timetag_different_ref(mock_setup_basic_nv):
@@ -762,9 +738,7 @@ def test_timetag_different_ref(mock_setup_basic_nv):
         ValueError,
         match="time_ref must be the same for all acquisitions on a port-clock combination.",
     ):
-        _ = compiler.compile(
-            schedule=schedule, config=quantum_device.generate_compilation_config()
-        )
+        _ = compiler.compile(schedule=schedule, config=quantum_device.generate_compilation_config())
 
 
 def test_multiple_trace_acq(mock_setup_basic_nv, assert_equal_q1asm):
@@ -800,23 +774,23 @@ def test_multiple_trace_acq(mock_setup_basic_nv, assert_equal_q1asm):
     )
 
     assert (
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
-            "sequencers"
-        ]["seq4"]["sequence"]["acquisitions"]["0"]["num_bins"]
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"]["seq4"][
+            "sequence"
+        ]["acquisitions"]["0"]["num_bins"]
         == 2
     )
 
     assert (
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
-            "sequencers"
-        ]["seq4"]["scope_trace_type"]
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"]["seq4"][
+            "scope_trace_type"
+        ]
         == TimetagTraceType.SCOPE
     )
 
     assert_equal_q1asm(
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
-            "sequencers"
-        ]["seq4"]["sequence"]["program"],
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"]["seq4"][
+            "sequence"
+        ]["program"],
         """ wait_sync 4
  upd_param 4
  wait 4 # latency correction of 4 + 0 ns
@@ -852,9 +826,7 @@ def test_multiple_timetagtrace_acq(mock_setup_basic_nv, assert_equal_q1asm):
         )
     )
     schedule.add(
-        TimetagTrace(
-            duration=16e-6, port="qe1:optical_readout", clock="qe1.ge0", acq_index=1
-        ),
+        TimetagTrace(duration=16e-6, port="qe1:optical_readout", clock="qe1.ge0", acq_index=1),
         rel_time=20e-9,
     )
 
@@ -868,23 +840,23 @@ def test_multiple_timetagtrace_acq(mock_setup_basic_nv, assert_equal_q1asm):
     )
 
     assert (
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
-            "sequencers"
-        ]["seq4"]["sequence"]["acquisitions"]["0"]["num_bins"]
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"]["seq4"][
+            "sequence"
+        ]["acquisitions"]["0"]["num_bins"]
         == 2
     )
 
     assert (
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
-            "sequencers"
-        ]["seq4"]["scope_trace_type"]
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"]["seq4"][
+            "scope_trace_type"
+        ]
         == TimetagTraceType.TIMETAG
     )
 
     assert_equal_q1asm(
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"][
-            "sequencers"
-        ]["seq4"]["sequence"]["program"],
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"]["seq4"][
+            "sequence"
+        ]["program"],
         """ wait_sync 4
  upd_param 4
  move 0,R0 # Initialize acquisition bin_idx for ch0
@@ -924,9 +896,7 @@ def test_multiple_acq_channel_timetagtrace(mock_setup_basic_nv, assert_equal_q1a
         )
     )
     schedule.add(
-        TimetagTrace(
-            duration=16e-6, port="qe1:optical_readout", clock="qe1.ge0", acq_channel=1
-        ),
+        TimetagTrace(duration=16e-6, port="qe1:optical_readout", clock="qe1.ge0", acq_channel=1),
         rel_time=20e-9,
     )
 
@@ -943,9 +913,7 @@ def test_multiple_acq_channel_timetagtrace(mock_setup_basic_nv, assert_equal_q1a
             "were found on port-clock qe1:optical_readout-qe1.ge0."
         ),
     ):
-        _ = compiler.compile(
-            schedule=schedule, config=quantum_device.generate_compilation_config()
-        )
+        _ = compiler.compile(schedule=schedule, config=quantum_device.generate_compilation_config())
 
 
 def test_timestamp_arg_but_no_operation(mock_setup_basic_nv):
@@ -972,9 +940,7 @@ def test_timestamp_arg_but_no_operation(mock_setup_basic_nv):
         "TimeRef.TIMESTAMP' on port 'qe1:optical_readout' and clock 'qe1.ge0', but no "
         "Timestamp operation was found with the same port and clock.",
     ):
-        _ = compiler.compile(
-            schedule=schedule, config=quantum_device.generate_compilation_config()
-        )
+        _ = compiler.compile(schedule=schedule, config=quantum_device.generate_compilation_config())
 
 
 def test_timestamp_operation_but_no_arg(mock_setup_basic_nv):
@@ -1002,6 +968,4 @@ def test_timestamp_operation_but_no_arg(mock_setup_basic_nv):
         "'qe1.ge0', but no Timetag acquisition was scheduled with argument 'time_ref="
         "TimeRef.TIMESTAMP'.",
     ):
-        _ = compiler.compile(
-            schedule=schedule, config=quantum_device.generate_compilation_config()
-        )
+        _ = compiler.compile(schedule=schedule, config=quantum_device.generate_compilation_config())

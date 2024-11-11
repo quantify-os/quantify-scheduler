@@ -44,9 +44,7 @@ ZHINST_HARDWARE_COMPILATION_CONFIG = utils.load_json_example_scheme(
 
 
 @pytest.fixture
-def hardware_compilation_config_zhinst_example() -> (
-    Generator[dict[str, Any], None, None]
-):
+def hardware_compilation_config_zhinst_example() -> Generator[dict[str, Any], None, None]:
     yield dict(ZHINST_HARDWARE_COMPILATION_CONFIG)
 
 
@@ -88,9 +86,7 @@ def make_schedule(create_schedule_with_pulse_info):
 
 
 @pytest.fixture
-def create_typical_timing_table(
-    make_schedule, compile_config_basic_transmon_zhinst_hardware
-):
+def create_typical_timing_table(make_schedule, compile_config_basic_transmon_zhinst_hardware):
     def _create_test_compile_datastructure():
         schedule = make_schedule()
         schedule = zhinst_backend.flatten_schedule(
@@ -113,9 +109,7 @@ def create_typical_timing_table(
 
         # the timing of all pulses and acquisitions is corrected
         # based on the latency corr.
-        latency_dict = corrections.determine_relative_latency_corrections(
-            hardware_config
-        )
+        latency_dict = corrections.determine_relative_latency_corrections(hardware_config)
         timing_table = zhinst_backend._apply_latency_corrections(
             timing_table=timing_table, latency_dict=latency_dict
         )
@@ -125,9 +119,7 @@ def create_typical_timing_table(
         timing_table.sort_values("abs_time", inplace=True)
 
         # add the sequencer clock cycle start and sampling start for the operations.
-        timing_table = zhinst_backend._add_clock_sample_starts(
-            timing_table=timing_table
-        )
+        timing_table = zhinst_backend._add_clock_sample_starts(timing_table=timing_table)
 
         # After adjusting for the latencies, the fix-point correction can be applied.
         # the fix-point correction has the goal to ensure that all measurement
@@ -162,9 +154,7 @@ def create_typical_timing_table(
         for dev in devices:
             device_dict[dev.name] = dev
 
-        operations_dict_with_repr_keys = {
-            str(op): op for op in schedule.operations.values()
-        }
+        operations_dict_with_repr_keys = {str(op): op for op in schedule.operations.values()}
         numerical_wf_dict = zhinst_backend.construct_waveform_table(
             timing_table,
             operations_dict=operations_dict_with_repr_keys,
@@ -425,11 +415,9 @@ def test_compile_hardware_hdawg4_successfully(
     hardware = compile_config_basic_transmon_zhinst_hardware
 
     q0_mw_rf = hardware.device_compilation_config.clocks["q0.01"]
-    q0_mw_if = (
-        hardware.hardware_compilation_config.hardware_options.modulation_frequencies[
-            "q0:mw-q0.01"
-        ].interm_freq
-    )
+    q0_mw_if = hardware.hardware_compilation_config.hardware_options.modulation_frequencies[
+        "q0:mw-q0.01"
+    ].interm_freq
 
     # modulate_wave_spy = mocker.patch.object(
     #     waveform_helpers, "modulate_waveform", wraps=waveform_helpers.modulate_waveform
@@ -463,9 +451,7 @@ def test_compile_hardware_hdawg4_successfully(
     }
     # Act
     compiler = SerialCompiler("compiler")
-    comp_sched = compiler.compile(
-        schedule, compile_config_basic_transmon_zhinst_hardware
-    )
+    comp_sched = compiler.compile(schedule, compile_config_basic_transmon_zhinst_hardware)
     # comp_sched = zhinst_backend.compile_backend(
     #     schedule, compile_config_basic_transmon_zhinst_hardware
     # )
@@ -571,11 +557,9 @@ def test_compile_hardware_uhfqa_successfully(
     hardware = compile_config_basic_transmon_zhinst_hardware
 
     q0_ro_rf = hardware.device_compilation_config.clocks["q0.ro"]
-    q0_ro_if = (
-        hardware.hardware_compilation_config.hardware_options.modulation_frequencies[
-            "q0:res-q0.ro"
-        ].interm_freq
-    )
+    q0_ro_if = hardware.hardware_compilation_config.hardware_options.modulation_frequencies[
+        "q0:res-q0.ro"
+    ].interm_freq
 
     expected_settings = {
         "awgs/0/single": 1,
@@ -620,9 +604,7 @@ def test_compile_hardware_uhfqa_successfully(
 
     # Act
     compiler = SerialCompiler("compiler")
-    comp_sched = compiler.compile(
-        schedule, compile_config_basic_transmon_zhinst_hardware
-    )
+    comp_sched = compiler.compile(schedule, compile_config_basic_transmon_zhinst_hardware)
     device_configs = comp_sched["compiled_instructions"]
 
     # Assert
@@ -660,18 +642,14 @@ def test_compile_invalid_latency_corrections_hardware_config_raises(
 def test_compile_with_third_party_instrument(
     make_schedule, compile_config_basic_transmon_zhinst_hardware
 ):
-    def _third_party_compilation_node(
-        schedule: Schedule, config: CompilationConfig
-    ) -> Schedule:
-        schedule["compiled_instructions"]["third_party_instrument"] = {
-            "setting": "test"
-        }
+    def _third_party_compilation_node(schedule: Schedule, config: CompilationConfig) -> Schedule:
+        schedule["compiled_instructions"]["third_party_instrument"] = {"setting": "test"}
         return schedule
 
     config = deepcopy(compile_config_basic_transmon_zhinst_hardware)
-    config.hardware_compilation_config.hardware_description[
-        "third_party_instrument"
-    ] = common.HardwareDescription(instrument_type="ThirdPartyInstrument")
+    config.hardware_compilation_config.hardware_description["third_party_instrument"] = (
+        common.HardwareDescription(instrument_type="ThirdPartyInstrument")
+    )
     config.hardware_compilation_config.connectivity.graph.add_edge(
         "third_party_instrument.output", "some_qubit:some_port"
     )
@@ -689,10 +667,7 @@ def test_compile_with_third_party_instrument(
         config=config,
     )
 
-    assert (
-        comp_sched["compiled_instructions"]["third_party_instrument"]["setting"]
-        == "test"
-    )
+    assert comp_sched["compiled_instructions"]["third_party_instrument"]["setting"] == "test"
 
 
 def test_external_lo_not_present_raises(
@@ -812,9 +787,7 @@ def test_validate_schedule(
     with pytest.raises(ValueError) as execinfo:
         zhinst_backend._validate_schedule(empty_schedule)
 
-    assert (
-        str(execinfo.value) == "Undefined schedulables for schedule 'Empty Experiment'!"
-    )
+    assert str(execinfo.value) == "Undefined schedulables for schedule 'Empty Experiment'!"
 
     with pytest.raises(ValueError) as execinfo:
         zhinst_backend._validate_schedule(basic_schedule)
@@ -844,15 +817,9 @@ def test_apply_waveform_corrections(
     # Arrange
     wave = np.ones(48)
 
-    modulate_wave = mocker.patch.object(
-        waveform_helpers, "modulate_waveform", return_value=wave
-    )
-    shift_waveform = mocker.patch.object(
-        waveform_helpers, "shift_waveform", return_value=(0, wave)
-    )
-    resize_waveform = mocker.patch.object(
-        waveform_helpers, "resize_waveform", return_value=wave
-    )
+    modulate_wave = mocker.patch.object(waveform_helpers, "modulate_waveform", return_value=wave)
+    shift_waveform = mocker.patch.object(waveform_helpers, "shift_waveform", return_value=(0, wave))
+    resize_waveform = mocker.patch.object(waveform_helpers, "resize_waveform", return_value=wave)
 
     channel = zhinst.Output(
         port="port",
@@ -950,18 +917,14 @@ def test__get_instruction_list(create_typical_timing_table):
 
     for hardware_channel in expected_instructions_list:
         # select only the instructions relevant for the output channel.
-        output_timing_table = timing_table[
-            timing_table["hardware_channel"] == hardware_channel
-        ]
+        output_timing_table = timing_table[timing_table["hardware_channel"] == hardware_channel]
 
         # Act
         instructions = zhinst_backend._get_instruction_list(output_timing_table)
 
         # Assert
         expected_instructions = expected_instructions_list[hardware_channel]
-        for expected_instruction, instruction in zip(
-            expected_instructions, instructions
-        ):
+        for expected_instruction, instruction in zip(expected_instructions, instructions):
             assert instruction == expected_instruction
 
 
@@ -1145,9 +1108,7 @@ def test__extract_port_clock_channelmapping_hdawg() -> None:
         "q3:mw-q3.01": "ic_hdawg0.awg3",
         "q0:res-q0.ro": "ic_uhfqa0.awg0",
     }
-    generated_dict = zhinst_backend._extract_port_clock_channelmapping(
-        hardware_cfg=hardware_config
-    )
+    generated_dict = zhinst_backend._extract_port_clock_channelmapping(hardware_cfg=hardware_config)
     assert generated_dict == expected_dict
 
 
@@ -1168,9 +1129,7 @@ def test_determine_relative_latency_corrections() -> None:
     assert generated_dict == expected_latency_dict
 
 
-def test_compile_latency_corrections(
-    make_schedule, compile_config_basic_transmon_zhinst_hardware
-):
+def test_compile_latency_corrections(make_schedule, compile_config_basic_transmon_zhinst_hardware):
     """
     Tests if the compiled latency corrections are as expected from the
     settings in the hardware options.
@@ -1191,37 +1150,29 @@ def test_compile_latency_corrections(
     ro_pulse_time_before_corr = timing_table[
         timing_table["operation"].str.startswith("SquarePulse")
     ]["abs_time"].values[0]
-    mw_pulse_time_before_corr = timing_table[
-        timing_table["operation"].str.startswith("X90")
-    ]["abs_time"].values[0]
+    mw_pulse_time_before_corr = timing_table[timing_table["operation"].str.startswith("X90")][
+        "abs_time"
+    ].values[0]
 
     # Extract timings after latency corrections
     hw_timing_table = comp_sched.hardware_timing_table.data
     ro_pulse_time_after_corr = hw_timing_table[
         hw_timing_table["operation"].str.startswith("SquarePulse")
     ]["abs_time"].values[0]
-    mw_pulse_time_after_corr = hw_timing_table[
-        hw_timing_table["operation"].str.startswith("X90")
-    ]["abs_time"].values[0]
+    mw_pulse_time_after_corr = hw_timing_table[hw_timing_table["operation"].str.startswith("X90")][
+        "abs_time"
+    ].values[0]
 
     # Calculate compiled latencies (subtract fixpoint correction)
-    compiled_ro_latency = (
-        ro_pulse_time_after_corr - ro_pulse_time_before_corr - 20e-9 / 3
-    )
-    compiled_mw_latency = (
-        mw_pulse_time_after_corr - mw_pulse_time_before_corr - 20e-9 / 3
-    )
+    compiled_ro_latency = ro_pulse_time_after_corr - ro_pulse_time_before_corr - 20e-9 / 3
+    compiled_mw_latency = mw_pulse_time_after_corr - mw_pulse_time_before_corr - 20e-9 / 3
 
     assert np.isclose(compiled_ro_latency, expected_compiled_ro_latency, atol=1e-9)
     assert np.isclose(compiled_mw_latency, expected_compiled_mw_latency, atol=1e-9)
 
 
-@pytest.mark.parametrize(
-    "device_type", [(zhinst.DeviceType.HDAWG), (zhinst.DeviceType.UHFQA)]
-)
-def test__add_wave_nodes_with_vector(
-    create_typical_timing_table, device_type: zhinst.DeviceType
-):
+@pytest.mark.parametrize("device_type", [(zhinst.DeviceType.HDAWG), (zhinst.DeviceType.UHFQA)])
+def test__add_wave_nodes_with_vector(create_typical_timing_table, device_type: zhinst.DeviceType):
     # Arrange
     test_waveform = np.vectorize(complex)(np.zeros(1024), np.ones(1024))
     test_config_dict = create_typical_timing_table()
@@ -1249,9 +1200,7 @@ def test__add_wave_nodes_with_vector(
                 timing_table["hardware_channel"] == f"{device.name}.awg{awg_index}"
             ]
             # enumerate the waveform_ids used in this particular output channel
-            unique_wf_ids = output_timing_table.drop_duplicates(subset="waveform_id")[
-                "waveform_id"
-            ]
+            unique_wf_ids = output_timing_table.drop_duplicates(subset="waveform_id")["waveform_id"]
             # this table maps waveform ids to indices in the seqc command table.
             wf_id_mapping = {}
             for i, wf_id in enumerate(unique_wf_ids):
@@ -1320,9 +1269,7 @@ def test_compile_backend_with_undefined_local_oscillator(
 
     # Act
     compiler = SerialCompiler(name="compiler")
-    with pytest.raises(
-        KeyError, match='Missing configuration for LocalOscillator "lo_unknown"'
-    ):
+    with pytest.raises(KeyError, match='Missing configuration for LocalOscillator "lo_unknown"'):
         compiler.compile(schedule, config=quantum_device.generate_compilation_config())
 
 
@@ -1386,8 +1333,7 @@ def test_compile_backend_with_duplicate_local_oscillator(
 
     # Assert
     assert (
-        str(execinfo.value)
-        == "Duplicate entry LocalOscillators 'lo0' in hardware configuration!"
+        str(execinfo.value) == "Duplicate entry LocalOscillators 'lo0' in hardware configuration!"
     )
 
 
@@ -1407,9 +1353,7 @@ def test_acquisition_staircase_unique_acquisitions(
 
     # Act
     compiler = SerialCompiler(name="compiler")
-    comp_sched = compiler.compile(
-        schedule, config=compile_config_basic_transmon_zhinst_hardware
-    )
+    comp_sched = compiler.compile(schedule, config=compile_config_basic_transmon_zhinst_hardware)
 
     # Assert
     uhfqa_setts = comp_sched.compiled_instructions["ic_uhfqa0"]
@@ -1489,9 +1433,7 @@ def test_acquisition_staircase_right_acq_channel(
 
     # Act
     compiler = SerialCompiler(name="compiler")
-    comp_sched = compiler.compile(
-        schedule, config=compile_config_basic_transmon_zhinst_hardware
-    )
+    comp_sched = compiler.compile(schedule, config=compile_config_basic_transmon_zhinst_hardware)
 
     # Assert
     uhfqa_setts = comp_sched.compiled_instructions["ic_uhfqa0"]
@@ -1577,9 +1519,7 @@ def test_too_long_acquisition_raises_readable_exception(
     # Act
     compiler = SerialCompiler(name="compiler")
     with pytest.raises(ValueError) as exc_info:
-        _ = compiler.compile(
-            sched, config=compile_config_basic_transmon_zhinst_hardware
-        )
+        _ = compiler.compile(sched, config=compile_config_basic_transmon_zhinst_hardware)
 
     # assert that the name of the offending operation is in the exception message.
     assert "SSBIntegrationComplex(" in str(exc_info.value)
@@ -1594,9 +1534,7 @@ def test_generate_legacy_hardware_config(hardware_compilation_config_zhinst_exam
     quantum_device.hardware_config(hardware_compilation_config_zhinst_example)
 
     qubits = {}
-    for port, clock in find_all_port_clock_combinations(
-        zhinst_hardware_config_old_style
-    ):
+    for port, clock in find_all_port_clock_combinations(zhinst_hardware_config_old_style):
         sched.add(SquarePulse(port=port, clock=clock, amp=0.25, duration=12e-9))
         if clock not in sched.resources:
             clock_resource = ClockResource(name=clock, freq=7e9)
@@ -1621,10 +1559,8 @@ def test_generate_new_style_hardware_compilation_config(
         hardware_compilation_config_zhinst_example
     )
 
-    converted_new_style_hw_cfg = (
-        zhinst_backend.ZIHardwareCompilationConfig.model_validate(
-            zhinst_hardware_config_old_style
-        )
+    converted_new_style_hw_cfg = zhinst_backend.ZIHardwareCompilationConfig.model_validate(
+        zhinst_hardware_config_old_style
     )
 
     # Partial checks
@@ -1644,9 +1580,7 @@ def test_generate_new_style_hardware_compilation_config(
     )
 
     # Write to dict to check equality of full config contents:
-    assert (
-        converted_new_style_hw_cfg.model_dump() == parsed_new_style_config.model_dump()
-    )
+    assert converted_new_style_hw_cfg.model_dump() == parsed_new_style_config.model_dump()
 
 
 def test_flatten_schedule():

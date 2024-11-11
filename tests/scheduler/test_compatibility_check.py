@@ -22,9 +22,8 @@ def test_incompatible_python_version(mocker):
 
     with pytest.raises(RuntimeError) as exc_info:
         check_zhinst_compatibility()
-    assert (
-        "The zhinst backend is only compatible with Python 3.8 and Python 3.9"
-        in str(exc_info.value)
+    assert "The zhinst backend is only compatible with Python 3.8 and Python 3.9" in str(
+        exc_info.value
     )
 
 

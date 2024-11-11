@@ -37,9 +37,7 @@ from quantify_scheduler.schedules.schedule import Schedule
 
 # --------- Test classes and member methods ---------
 def test_operation_duration_single_pulse() -> None:
-    dgp = DRAGPulse(
-        G_amp=0.8, D_amp=-0.3, phase=24.3, duration=20e-9, clock="cl:01", port="p.01"
-    )
+    dgp = DRAGPulse(G_amp=0.8, D_amp=-0.3, phase=24.3, duration=20e-9, clock="cl:01", port="p.01")
     assert dgp.duration == pytest.approx(20e-9)
     idle = IdlePulse(50e-9)
     assert idle.duration == pytest.approx(50e-9)
@@ -150,12 +148,8 @@ def test_decompose_long_square_pulse() -> None:
             clock=clock,
         )
 
-        assert len(pulses) == int(duration // duration_sq_max) + bool(
-            duration % duration_sq_max
-        )
-        assert sum(
-            pulse["pulse_info"][0]["duration"] for pulse in pulses
-        ) == pytest.approx(sum_)
+        assert len(pulses) == int(duration // duration_sq_max) + bool(duration % duration_sq_max)
+        assert sum(pulse["pulse_info"][0]["duration"] for pulse in pulses) == pytest.approx(sum_)
 
     # Exactly matching durations
     duration = 200e-6
@@ -171,12 +165,10 @@ def test_decompose_long_square_pulse() -> None:
             clock=clock,
         )
 
-        assert len(pulses) == int(duration // duration_sq_max) + bool(
-            duration % duration_sq_max
+        assert len(pulses) == int(duration // duration_sq_max) + bool(duration % duration_sq_max)
+        assert sum(pulse["pulse_info"][0]["duration"] for pulse in pulses) == pytest.approx(
+            duration
         )
-        assert sum(
-            pulse["pulse_info"][0]["duration"] for pulse in pulses
-        ) == pytest.approx(duration)
 
 
 @pytest.mark.parametrize(
@@ -188,9 +180,7 @@ def test_decompose_long_square_pulse() -> None:
             SetClockFrequency(clock=clock, clock_freq_new=1e6),
             IdlePulse(duration=duration),
             RampPulse(amp=1.0, duration=duration, port=port),
-            StaircasePulse(
-                start_amp=0, final_amp=1, num_steps=5, duration=duration, port=port
-            ),
+            StaircasePulse(start_amp=0, final_amp=1, num_steps=5, duration=duration, port=port),
             SquarePulse(amp=1.0, duration=duration, port=port, clock=clock),
             SuddenNetZeroPulse(
                 amp_A=0.4,
@@ -283,15 +273,10 @@ class TestPulseLevelOperation:
         elif operation.__class__ is SuddenNetZeroPulse:
             assert (
                 operation.duration
-                == pulse_info["t_pulse"]
-                + pulse_info["t_phi"]
-                + pulse_info["t_integral_correction"]
+                == pulse_info["t_pulse"] + pulse_info["t_phi"] + pulse_info["t_integral_correction"]
             )
         elif operation.__class__ is NumericalPulse:
-            assert (
-                operation.duration
-                == pulse_info["t_samples"][-1] - pulse_info["t_samples"][0]
-            )
+            assert operation.duration == pulse_info["t_samples"][-1] - pulse_info["t_samples"][0]
         else:
             assert operation.duration == 16e-9, operation
 
@@ -364,12 +349,8 @@ def test_complex_square_pulse(mock_setup_basic_transmon_with_standard_params):
 
 
 def test_dc_compensation_pulse_amp() -> None:
-    pulse0 = SquarePulse(
-        amp=1, duration=1e-8, port="LP", clock=BasebandClockResource.IDENTITY
-    )
-    pulse1 = RampPulse(
-        amp=1, duration=1e-8, port="LP", clock=BasebandClockResource.IDENTITY
-    )
+    pulse0 = SquarePulse(amp=1, duration=1e-8, port="LP", clock=BasebandClockResource.IDENTITY)
+    pulse1 = RampPulse(amp=1, duration=1e-8, port="LP", clock=BasebandClockResource.IDENTITY)
 
     pulse2 = create_dc_compensation_pulse(
         duration=1e-8,
@@ -383,19 +364,13 @@ def test_dc_compensation_pulse_amp() -> None:
 def test_dc_compensation_pulse_modulated() -> None:
     clock = ClockResource("clock", 1.0)
     pulse0 = SquarePulse(amp=1, duration=1e-8, port="LP", clock=clock.name)
-    pulse = create_dc_compensation_pulse(
-        amp=1, pulses=[pulse0], port="LP", sampling_rate=int(1e9)
-    )
+    pulse = create_dc_compensation_pulse(amp=1, pulses=[pulse0], port="LP", sampling_rate=int(1e9))
     assert pulse.data["pulse_info"][0]["duration"] == 0.0
 
 
 def test_dc_compensation_pulse_duration() -> None:
-    pulse0 = SquarePulse(
-        amp=1, duration=1e-8, port="LP", clock=BasebandClockResource.IDENTITY
-    )
-    pulse1 = RampPulse(
-        amp=1, duration=1e-8, port="LP", clock=BasebandClockResource.IDENTITY
-    )
+    pulse0 = SquarePulse(amp=1, duration=1e-8, port="LP", clock=BasebandClockResource.IDENTITY)
+    pulse1 = RampPulse(amp=1, duration=1e-8, port="LP", clock=BasebandClockResource.IDENTITY)
 
     pulse2 = create_dc_compensation_pulse(
         amp=1,
@@ -409,9 +384,7 @@ def test_dc_compensation_pulse_duration() -> None:
 
 def test_dc_compensation_pulse_both_params() -> None:
     with pytest.raises(ValueError):
-        pulse0 = SquarePulse(
-            amp=1, duration=1e-8, port="LP", clock=BasebandClockResource.IDENTITY
-        )
+        pulse0 = SquarePulse(amp=1, duration=1e-8, port="LP", clock=BasebandClockResource.IDENTITY)
         create_dc_compensation_pulse(
             amp=1,
             duration=1e-8,
@@ -437,10 +410,7 @@ def test_dragpulse_motzoi(mock_setup_basic_transmon_with_standard_params):
         ].generate_compilation_config(),
     )
 
-    D_amp = (
-        list(compiled_sched.operations.values())[0].data["pulse_info"][0].get("D_amp")
-    )
+    D_amp = list(compiled_sched.operations.values())[0].data["pulse_info"][0].get("D_amp")
     assert D_amp == mock_setup_basic_transmon_with_standard_params["q0"].rxy.motzoi(), (
-        "The amplification of the derivative DRAG pulse is not equal to the motzoi "
-        "parameter"
+        "The amplification of the derivative DRAG pulse is not equal to the motzoi " "parameter"
     )

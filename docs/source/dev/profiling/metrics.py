@@ -80,9 +80,7 @@ def get_stat(stats, class_name, method_name):
         current_method_name = stat_key[2]
         if method_name == current_method_name:
             if class_name is not None:
-                if match_class_method(
-                    class_name, method_name, module_path, line_number
-                ):
+                if match_class_method(class_name, method_name, module_path, line_number):
                     return stats.stats[stat_key]
             else:
                 return stats.stats[stat_key]

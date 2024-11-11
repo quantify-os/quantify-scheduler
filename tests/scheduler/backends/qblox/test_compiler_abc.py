@@ -98,9 +98,7 @@ def _assert_update_parameters_schedule(
     cluster0 = container.instrument_compilers["cluster0"]
     assert isinstance(cluster0, ClusterCompiler)
     op_strategies = (
-        cluster0.instrument_compilers["cluster0_module1"]
-        .sequencers["seq0"]
-        .op_strategies
+        cluster0.instrument_compilers["cluster0_module1"].sequencers["seq0"].op_strategies
     )
 
     assert len(expected_update_parameters) == len(
@@ -131,9 +129,7 @@ def square_pulse(duration: float, t0: float = 0) -> Operation:
 
 
 def voltage_offset() -> Operation:
-    return VoltageOffset(
-        offset_path_I=0.5, offset_path_Q=0.0, port="q0:mw", clock="q0.01"
-    )
+    return VoltageOffset(offset_path_I=0.5, offset_path_Q=0.0, port="q0:mw", clock="q0.01")
 
 
 def reset_clock_phase(t0: float = 0):
@@ -535,9 +531,7 @@ def offset_instruction_op_info(
     timing: float, port: str = DEFAULT_PORT, clock=DEFAULT_CLOCK
 ) -> OpInfo:
     """Create an OpInfo object that is recognized as an offset instruction."""
-    operation = VoltageOffset(
-        offset_path_I=0.5, offset_path_Q=0.0, port=port, clock=clock
-    )
+    operation = VoltageOffset(offset_path_I=0.5, offset_path_Q=0.0, port=port, clock=clock)
     return op_info_from_operation(
         operation=operation, timing=timing, data=operation.data["pulse_info"][0]
     )
@@ -674,9 +668,7 @@ def test_write_repetition_loop_header_equal_time():
         durations.append(
             sum(
                 map(
-                    lambda instr_list: _get_instruction_duration(
-                        instr_list[1], instr_list[2]
-                    ),
+                    lambda instr_list: _get_instruction_duration(instr_list[1], instr_list[2]),
                     qasm_program.instructions,
                 )
             )
@@ -726,9 +718,7 @@ def mock_sequencer(total_play_time) -> AnalogSequencerCompiler:
     )
 
 
-def ioperation_strategy_from_op_info(
-    op_info: OpInfo, channel_name: str
-) -> IOperationStrategy:
+def ioperation_strategy_from_op_info(op_info: OpInfo, channel_name: str) -> IOperationStrategy:
     return get_operation_strategy(op_info, channel_name)
 
 
@@ -768,9 +758,7 @@ def test_get_ordered_operations(mock_sequencer: AnalogSequencerCompiler):
         ioperation_strategy_from_op_info(op, "complex_out_0") for op in op_list
     ]
 
-    assert [
-        op_strat.operation_info for op_strat in mock_sequencer._get_ordered_operations()
-    ] == [
+    assert [op_strat.operation_info for op_strat in mock_sequencer._get_ordered_operations()] == [
         reset_clock_phase_op_info(timing=0.0),
         set_clock_frequency_op_info(timing=0.0),
         upd_param_op_info(timing=0.0),

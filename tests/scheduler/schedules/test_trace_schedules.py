@@ -39,25 +39,18 @@ def test_trace_schedule() -> None:
     assert schedule.resources["q0.ro"]["freq"] == clock_frequency
     assert len(schedule.schedulables) == 3
     # IdlePulse
-    idle_pulse_op = schedule.operations[
-        list(schedule.schedulables.values())[0]["operation_id"]
-    ]
+    idle_pulse_op = schedule.operations[list(schedule.schedulables.values())[0]["operation_id"]]
     assert idle_pulse_op["pulse_info"][0]["duration"] == init_duration
 
     # SquarePulse
-    square_pulse_op = schedule.operations[
-        list(schedule.schedulables.values())[1]["operation_id"]
-    ]
+    square_pulse_op = schedule.operations[list(schedule.schedulables.values())[1]["operation_id"]]
     assert square_pulse_op["pulse_info"][0]["duration"] == pulse_duration
     assert (
-        list(schedule.schedulables.values())[1]["timing_constraints"][0]["rel_time"]
-        == pulse_delay
+        list(schedule.schedulables.values())[1]["timing_constraints"][0]["rel_time"] == pulse_delay
     )
 
     # Trace
-    trace_acq_op = schedule.operations[
-        list(schedule.schedulables.values())[2]["operation_id"]
-    ]
+    trace_acq_op = schedule.operations[list(schedule.schedulables.values())[2]["operation_id"]]
     assert trace_acq_op["acquisition_info"][0]["duration"] == integration_time
     assert (
         list(schedule.schedulables.values())[2]["timing_constraints"][0]["rel_time"]
@@ -160,9 +153,7 @@ def test_long_trace_schedule() -> None:
     assert len(schedule.schedulables) == 4
 
     # # VoltageOffset
-    voltage_offset_op = schedule.operations[
-        list(schedule.schedulables.values())[0]["operation_id"]
-    ]
+    voltage_offset_op = schedule.operations[list(schedule.schedulables.values())[0]["operation_id"]]
     assert voltage_offset_op["name"] == "VoltageOffset"
     assert voltage_offset_op["pulse_info"][0]["offset_path_I"] == np.real(pulse_amp)
     assert voltage_offset_op["pulse_info"][0]["offset_path_Q"] == np.imag(pulse_amp)
@@ -173,13 +164,8 @@ def test_long_trace_schedule() -> None:
     assert isinstance(inner_sched, LoopOperation)
     assert inner_sched.data["control_flow_info"]["repetitions"] == num_points
     assert isinstance(inner_sched.body, Schedule)
-    assert (
-        list(inner_sched.body.operations.values())[0]["name"] == "SSBIntegrationComplex"
-    )
-    assert (
-        control_flow_schedulable["timing_constraints"][0]["rel_time"]
-        == acquisition_delay
-    )
+    assert list(inner_sched.body.operations.values())[0]["name"] == "SSBIntegrationComplex"
+    assert control_flow_schedulable["timing_constraints"][0]["rel_time"] == acquisition_delay
 
     # # VoltageOffset_off
     voltage_offset_op_off = schedule.operations[

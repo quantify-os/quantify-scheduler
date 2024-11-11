@@ -20,9 +20,7 @@ def test_plot_pulses_single_q() -> Figure:
 
     # Add some arrows and labeling
     pls.interval(ax, p1, p1 + 1.5, height=1.7, label="$T_\\mathsf{p}$")
-    pls.interval(
-        ax, p1, p2 + 0.5, height=-0.6, label_height=-0.5, label="$\\tau$", vlines=False
-    )
+    pls.interval(ax, p1, p2 + 0.5, height=-0.6, label_height=-0.5, label="$\\tau$", vlines=False)
 
     # Adjust plot range to fit the whole figure
     ax.set_ylim(-1.2, 2.5)

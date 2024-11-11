@@ -205,9 +205,7 @@ def ramsey_sched(
 
         # the phase of the second pi/2 phase progresses to propagate
         recovery_phase = np.rad2deg(2 * np.pi * artificial_detuning * tau)
-        schedule.add(
-            Rxy(theta=90, phi=recovery_phase, qubit=qubit), ref_pt="start", rel_time=tau
-        )
+        schedule.add(Rxy(theta=90, phi=recovery_phase, qubit=qubit), ref_pt="start", rel_time=tau)
         schedule.add(Measure(qubit, acq_index=i), label=f"Measurement {i}")
     return schedule
 
@@ -307,9 +305,7 @@ def cpmg_sched(
 
     """
     if variant not in ["X", "Y", "XY"]:
-        raise ValueError(
-            f"Unknown variant '{variant}'. Variant must be one of ('X', 'Y', 'XY')."
-        )
+        raise ValueError(f"Unknown variant '{variant}'. Variant must be one of ('X', 'Y', 'XY').")
 
     # ensure times is an iterable when passing floats.
     times = np.asarray(times)
@@ -431,8 +427,7 @@ def allxy_sched(
         # check index valid
         if elt_idx > len(allxy_combinations) or elt_idx < 0:
             raise ValueError(
-                f"Invalid index selected: {elt_idx}. "
-                "Index must be in range 0 to 21 inclusive."
+                f"Invalid index selected: {elt_idx}. " "Index must be in range 0 to 21 inclusive."
             )
 
         ((th0, phi0), (th1, phi1)) = allxy_combinations[elt_idx]
@@ -496,15 +491,12 @@ def readout_calibration_sched(
             schedule.add(Rxy(qubit=qubit, theta=180, phi=0))
         elif prep_state == 2:
             raise NotImplementedError(
-                "Preparing the qubit in the second excited (2) "
-                "state is not supported yet."
+                "Preparing the qubit in the second excited (2) " "state is not supported yet."
             )
         else:
             raise ValueError(f"Prepared state ({prep_state}) must be either 0, 1 or 2.")
         schedule.add(
-            Measure(
-                qubit, acq_index=i, bin_mode=BinMode.APPEND, acq_protocol=acq_protocol
-            ),
+            Measure(qubit, acq_index=i, bin_mode=BinMode.APPEND, acq_protocol=acq_protocol),
             label=f"Measurement {i}",
         )
     return schedule

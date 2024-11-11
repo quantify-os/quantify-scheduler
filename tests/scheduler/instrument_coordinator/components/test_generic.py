@@ -14,9 +14,7 @@ def make_generic_qcodes_instruments():
     lo_ro_q0 = MockLocalOscillator(name="lo_ro_q0")
     lo_spec_q0 = MockLocalOscillator(name="lo_spec_q0")
 
-    generic_icc = GenericInstrumentCoordinatorComponent(
-        instrument_reference="test_generic_icc"
-    )
+    generic_icc = GenericInstrumentCoordinatorComponent(instrument_reference="test_generic_icc")
 
     return {
         "lo_mw_q0": lo_mw_q0,
@@ -33,9 +31,7 @@ def test_initialize(make_generic_qcodes_instruments):
 
 
 @pytest.mark.parametrize("force_set_parameters", [False, True])
-def test_generic_icc_prepare_expected(
-    make_generic_qcodes_instruments, force_set_parameters
-):
+def test_generic_icc_prepare_expected(make_generic_qcodes_instruments, force_set_parameters):
     # Arrange
     test_instruments = make_generic_qcodes_instruments
 

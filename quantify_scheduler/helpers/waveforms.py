@@ -73,9 +73,7 @@ def resize_waveforms(waveforms_dict: dict[int, np.ndarray], granularity: int) ->
     """
     # Modify the list while iterating to avoid copies
     for pulse_id in waveforms_dict:
-        waveforms_dict[pulse_id] = resize_waveform(
-            waveforms_dict[pulse_id], granularity
-        )
+        waveforms_dict[pulse_id] = resize_waveform(waveforms_dict[pulse_id], granularity)
 
 
 def resize_waveform(waveform: np.ndarray, granularity: int) -> np.ndarray:
@@ -207,16 +205,12 @@ def get_waveform_by_pulseid(
                 # Unique waveform already populated in the dictionary.
                 continue
 
-            pulseid_waveformfn_dict[pulse_id] = partial(
-                get_waveform, pulse_info=pulse_info
-            )
+            pulseid_waveformfn_dict[pulse_id] = partial(get_waveform, pulse_info=pulse_info)
 
         for acq_info in operation["acquisition_info"]:
             for pulse_info in acq_info["waveforms"]:
                 pulse_id = schedule_helpers.get_pulse_uuid(pulse_info)
-                pulseid_waveformfn_dict[pulse_id] = partial(
-                    get_waveform, pulse_info=pulse_info
-                )
+                pulseid_waveformfn_dict[pulse_id] = partial(get_waveform, pulse_info=pulse_info)
 
     return pulseid_waveformfn_dict
 
@@ -316,9 +310,7 @@ def exec_waveform_function(wf_func: str, t: np.ndarray, pulse_info: dict) -> np.
     return waveform
 
 
-def exec_custom_waveform_function(
-    wf_func: str, t: np.ndarray, pulse_info: dict
-) -> np.ndarray:
+def exec_custom_waveform_function(wf_func: str, t: np.ndarray, pulse_info: dict) -> np.ndarray:
     """
     Load and import an ambiguous waveform function from a module by string.
 
@@ -398,9 +390,7 @@ def apply_mixer_skewness_corrections(
         intermediate_wf = _waveform.real + _waveform.imag * np.tan(phi)
         new_amp = np.max(np.abs(intermediate_wf))
         intermediate_wf = (
-            intermediate_wf / new_amp
-            if new_amp != 0
-            else np.zeros(intermediate_wf.shape)
+            intermediate_wf / new_amp if new_amp != 0 else np.zeros(intermediate_wf.shape)
         )
         return intermediate_wf * original_amp * np.sqrt(alpha)
 
@@ -409,9 +399,7 @@ def apply_mixer_skewness_corrections(
         intermediate_wf = _waveform.imag / np.cos(phi)
         new_amp = np.max(np.abs(intermediate_wf))
         intermediate_wf = (
-            intermediate_wf / new_amp
-            if new_amp != 0
-            else np.zeros(intermediate_wf.shape)
+            intermediate_wf / new_amp if new_amp != 0 else np.zeros(intermediate_wf.shape)
         )
         return intermediate_wf * original_amp / np.sqrt(alpha)
 
@@ -488,9 +476,7 @@ def normalize_waveform_data(data: np.ndarray) -> tuple[np.ndarray, float, float]
     amp_imag = data.imag[amp_imag_index]
 
     norm_data_re = (
-        data.real / amp_real
-        if not math.isclose(amp_real, 0.0)
-        else np.zeros(data.real.shape)
+        data.real / amp_real if not math.isclose(amp_real, 0.0) else np.zeros(data.real.shape)
     )
     if math.isclose(amp_imag, 0.0):
         rescaled_data = norm_data_re

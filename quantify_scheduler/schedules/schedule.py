@@ -304,9 +304,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
             return cd.circuit_diagram_matplotlib(schedule=self, figsize=figsize, ax=ax)
 
-        raise ValueError(
-            f"plot_backend must be equal to 'mpl', value given: {repr(plot_backend)}"
-        )
+        raise ValueError(f"plot_backend must be equal to 'mpl', value given: {repr(plot_backend)}")
 
     def plot_pulse_diagram(
         self,
@@ -688,11 +686,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
 
     def __setstate__(self, state: dict[str, Any]) -> None:
         # Logic to allow legacy (old serialized, saved) and current serialization.
-        data = (
-            state["data"]
-            if ("deserialization_type" in state) and ("data" in state)
-            else state
-        )
+        data = state["data"] if ("deserialization_type" in state) and ("data" in state) else state
 
         if isinstance(data["schedulables"], list):
             # Schedulables can be a list of pair of key values to store
@@ -729,9 +723,7 @@ class Schedule(ScheduleBase):
 
     schema_filename = "schedule.json"
 
-    def __init__(
-        self, name: str, repetitions: int = 1, data: dict = None
-    ) -> None:  # noqa: E501
+    def __init__(self, name: str, repetitions: int = 1, data: dict = None) -> None:  # noqa: E501
         # validate the input data to ensure it is valid schedule data
         super().__init__()
 
@@ -748,13 +740,9 @@ class Schedule(ScheduleBase):
 
         # This is used to define baseband pulses and is expected to always be present
         # in any schedule.
-        self.add_resource(
-            resources.BasebandClockResource(resources.BasebandClockResource.IDENTITY)
-        )
+        self.add_resource(resources.BasebandClockResource(resources.BasebandClockResource.IDENTITY))
         # This is used to define operations on marker and digital channels.
-        self.add_resource(
-            resources.DigitalClockResource(resources.DigitalClockResource.IDENTITY)
-        )
+        self.add_resource(resources.DigitalClockResource(resources.DigitalClockResource.IDENTITY))
 
         if data is not None:
             self.data.update(data)
@@ -938,9 +926,7 @@ class Schedulable(JSONSchemaValMixin, UserDict):
 
     schema_filename = "schedulable.json"
 
-    def __init__(
-        self, name: str, operation_id: str, control_flow: Operation | None = None
-    ) -> None:
+    def __init__(self, name: str, operation_id: str, control_flow: Operation | None = None) -> None:
         super().__init__()
 
         self["name"] = name
@@ -1185,9 +1171,7 @@ class AcquisitionMetadata:
     def __setstate__(self, state: dict[str, Any]) -> dict[str, Any]:
         self.__init__(**state["data"])
         self.acq_channels_metadata = {}
-        for numeric_key, acq_channel_metadata in state["data"][
-            "acq_channels_metadata"
-        ].items():
+        for numeric_key, acq_channel_metadata in state["data"]["acq_channels_metadata"].items():
             self.acq_channels_metadata[int(numeric_key)] = AcquisitionChannelMetadata(
                 acq_channel_metadata["acq_channel"], acq_channel_metadata["acq_indices"]
             )

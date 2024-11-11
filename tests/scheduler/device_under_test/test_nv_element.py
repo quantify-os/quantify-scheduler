@@ -158,9 +158,7 @@ def test_generate_config_crcount(electronic_q0: BasicElectronicNVElement):
     # Assert values are in right place
     assert cfg_crcount.factory_kwargs["pulse_amplitudes"] == [0.2, 1.6]
     assert cfg_crcount.factory_kwargs["pulse_durations"] == [10e-9, 40e-9]
-    assert cfg_crcount.factory_kwargs["pulse_ports"] == [
-        "qe0:optical_control" for _ in range(2)
-    ]
+    assert cfg_crcount.factory_kwargs["pulse_ports"] == ["qe0:optical_control" for _ in range(2)]
     assert cfg_crcount.factory_kwargs["acq_duration"] == 39e-9
     assert cfg_crcount.factory_kwargs["acq_delay"] == 1e-9
     assert cfg_crcount.factory_kwargs["acq_channel"] == 3
@@ -217,9 +215,7 @@ def test_r_xy_compiles(mock_setup_basic_nv_qblox_hardware):
     compiler = SerialCompiler(name="compiler")
     schedule = compiler.compile(
         schedule=rxy_sched,
-        config=mock_setup_basic_nv_qblox_hardware[
-            "quantum_device"
-        ].generate_compilation_config(),
+        config=mock_setup_basic_nv_qblox_hardware["quantum_device"].generate_compilation_config(),
     )
 
     for i, schedulable in enumerate(schedule.schedulables.values()):
@@ -334,9 +330,7 @@ def test_nv_center_serialization(electronic_q0):
     electronic_q0.cr_count.readout_pulse_amplitude(0.2)
     electronic_q0.cr_count.spinpump_pulse_amplitude(1.6)
 
-    electronic_q0_as_dict = json.loads(
-        json.dumps(electronic_q0, cls=SchedulerJSONEncoder)
-    )
+    electronic_q0_as_dict = json.loads(json.dumps(electronic_q0, cls=SchedulerJSONEncoder))
     assert electronic_q0_as_dict.__class__ is dict
     assert (
         electronic_q0_as_dict["deserialization_type"]
@@ -347,9 +341,7 @@ def test_nv_center_serialization(electronic_q0):
     for submodule_name, submodule in electronic_q0.submodules.items():
         for parameter_name in submodule.parameters:
             if (
-                isinstance(
-                    electronic_q0_as_dict["data"][submodule_name][parameter_name], dict
-                )
+                isinstance(electronic_q0_as_dict["data"][submodule_name][parameter_name], dict)
                 and "deserialization_type"
                 in electronic_q0_as_dict["data"][submodule_name][parameter_name]
             ):
@@ -374,16 +366,11 @@ def test_nv_center_serialization(electronic_q0):
         if submodule_name == "name":
             continue
         for parameter_name, parameter_val in submodule_data.items():
-            if (
-                isinstance(parameter_val, dict)
-                and "deserialization_type" in parameter_val
-            ):
+            if isinstance(parameter_val, dict) and "deserialization_type" in parameter_val:
                 # This is a custom type
                 # which will not have equal contents in the serialized and deserialized versions.
                 continue
-            expected_parameter_val = electronic_q0.submodules[submodule_name][
-                parameter_name
-            ]()
+            expected_parameter_val = electronic_q0.submodules[submodule_name][parameter_name]()
             val = electronic_q0_as_dict["data"][submodule_name][parameter_name]
             assert (parameter_val == expected_parameter_val) or (
                 isinstance(parameter_val, float)

@@ -129,9 +129,7 @@ class StaticAnalogModuleProperties(StaticHardwareProperties):
     default_marker: int = 0
     """The default marker value to set at the beginning of programs.
     Important for RF instruments that use the set_mrk command to enable/disable the RF output."""
-    channel_name_to_digital_marker: Dict[str, int] = dataclasses_field(
-        default_factory=dict
-    )
+    channel_name_to_digital_marker: Dict[str, int] = dataclasses_field(default_factory=dict)
     """A mapping from channel_name to digital marker setting.
     Specifies which marker bit needs to be set at start if the
     output (as a string ex. `complex_output_0`) contains a pulse."""
@@ -177,9 +175,7 @@ class OpInfo(DataClassJsonMixin):
         waveform), ``False`` otherwise.
         """
         return (
-            self.is_acquisition
-            or self.is_parameter_update
-            or self.data.get("wf_func") is not None
+            self.is_acquisition or self.is_parameter_update or self.data.get("wf_func") is not None
         )
 
     @property
@@ -235,9 +231,7 @@ class OpInfo(DataClassJsonMixin):
 
     def __str__(self) -> str:
         type_label: str = "Acquisition" if self.is_acquisition else "Pulse"
-        return (
-            f'{type_label} "{self.name}" (t0={self.timing}, duration={self.duration})'
-        )
+        return f'{type_label} "{self.name}" (t0={self.timing}, duration={self.duration})'
 
     def __repr__(self) -> str:
         repr_string = (
@@ -725,22 +719,15 @@ class TimetagSequencerSettings(SequencerSettings):
         There is no channel map in the QTM yet, so there can be only one connected
         index: either input or output.
         """
-        if (
-            len(self.connected_input_indices) > 1
-            or len(self.connected_output_indices) > 1
-        ):
+        if len(self.connected_input_indices) > 1 or len(self.connected_output_indices) > 1:
             raise ValueError(
                 "Too many connected inputs or outputs for a QTM sequencer. "
                 f"{self.connected_input_indices=}, {self.connected_output_indices=}."
             )
 
-        if (
-            len(self.connected_output_indices) == 1
-            and len(self.connected_input_indices) == 1
-        ):
+        if len(self.connected_output_indices) == 1 and len(self.connected_input_indices) == 1:
             raise ValueError(
-                "A QTM sequencer cannot be connected to both an output and an input "
-                "port."
+                "A QTM sequencer cannot be connected to both an output and an input " "port."
             )
 
     @classmethod
@@ -807,9 +794,7 @@ class ComplexChannelDescription(DataStructure):
     hen determining the modulation frequencies for this channel.
     Only relevant for users with custom Qblox downconverter hardware.
     """
-    distortion_correction_latency_compensation: int = (
-        DistortionCorrectionLatencyEnum.NO_DELAY_COMP
-    )
+    distortion_correction_latency_compensation: int = DistortionCorrectionLatencyEnum.NO_DELAY_COMP
     """
     Delay compensation setting that either
     delays the signal by the amount chosen by the settings or not.
@@ -831,9 +816,7 @@ class RealChannelDescription(DataStructure):
     mix_lo: bool = True
     """Whether IQ mixing with a local oscillator is enabled for this channel.
     Effectively always ``True`` for RF modules."""
-    distortion_correction_latency_compensation: int = (
-        DistortionCorrectionLatencyEnum.NO_DELAY_COMP
-    )
+    distortion_correction_latency_compensation: int = DistortionCorrectionLatencyEnum.NO_DELAY_COMP
     """
     Delay compensation setting that either
     delays the signal by the amount chosen by the settings or not.
@@ -847,9 +830,7 @@ class DigitalChannelDescription(DataStructure):
     :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`.
     """
 
-    distortion_correction_latency_compensation: int = (
-        DistortionCorrectionLatencyEnum.NO_DELAY_COMP
-    )
+    distortion_correction_latency_compensation: int = DistortionCorrectionLatencyEnum.NO_DELAY_COMP
     """
     Delay compensation setting that either
     delays the signal by the amount chosen by the settings or not.
@@ -1046,12 +1027,8 @@ class QTMDescription(DataStructure, DescriptionAnnotationsGettersMixin):
         """Validate channel names specified in the Connectivity."""
         super().validate_channel_names(channel_names)
 
-        used_inputs = set(
-            int(n.lstrip("digital_input_")) for n in channel_names if "input" in n
-        )
-        used_outputs = set(
-            int(n.lstrip("digital_output_")) for n in channel_names if "output" in n
-        )
+        used_inputs = set(int(n.lstrip("digital_input_")) for n in channel_names if "input" in n)
+        used_outputs = set(int(n.lstrip("digital_output_")) for n in channel_names if "output" in n)
 
         if overlap := used_inputs & used_outputs:
             raise ValueError(
@@ -1239,9 +1216,7 @@ class QbloxMixerCorrections(MixerCorrections):
 
     @model_validator(mode="before")
     @classmethod
-    def warn_if_mixed_auto_and_manual_calibration(
-        cls, data: dict[str, Any]
-    ) -> dict[str, Any]:
+    def warn_if_mixed_auto_and_manual_calibration(cls, data: dict[str, Any]) -> dict[str, Any]:
         """
         Warn if there is mixed usage of automatic mixer calibration (the auto_*
         settings) and manual mixer correction settings.
@@ -1262,9 +1237,7 @@ class QbloxMixerCorrections(MixerCorrections):
             data["dc_offset_i"] = None
             data["dc_offset_q"] = None
 
-        if data.get(
-            "auto_sideband_cal", SidebandCalEnum.OFF
-        ) != SidebandCalEnum.OFF and not (
+        if data.get("auto_sideband_cal", SidebandCalEnum.OFF) != SidebandCalEnum.OFF and not (
             data.get("amp_ratio") is None and data.get("phase_error") is None
         ):
             warnings.warn(

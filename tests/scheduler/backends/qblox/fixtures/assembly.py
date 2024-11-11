@@ -43,9 +43,7 @@ def assert_equal_q1asm():
         ):
             # pytest's detailed string diff does not work in fixtures, so we display the
             # original strings upon AssertionError.
-            assert (
-                stripped_1 == stripped_2
-            ), f"Original lines:\n{original_1}\n{original_2}"
+            assert stripped_1 == stripped_2, f"Original lines:\n{original_1}\n{original_2}"
 
     return inner
 

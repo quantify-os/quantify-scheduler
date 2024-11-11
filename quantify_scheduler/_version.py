@@ -154,9 +154,7 @@ def _write_version(fname) -> None:
     with contextlib.suppress(OSError):
         os.remove(fname)
     with open(fname, "w") as f:
-        f.write(
-            "# This file has been created by setup.py.\n" f"version = '{__version__}'\n"
-        )
+        f.write("# This file has been created by setup.py.\n" f"version = '{__version__}'\n")
 
 
 def get_cmdclass(pkg_source_path):

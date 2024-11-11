@@ -105,9 +105,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
 
         self._last_schedule = None
         if add_default_generic_icc:
-            self.add_component(
-                generic.GenericInstrumentCoordinatorComponent(generic.DEFAULT_NAME)
-            )
+            self.add_component(generic.GenericInstrumentCoordinatorComponent(generic.DEFAULT_NAME))
         self._compiled_schedule = None
 
     @property
@@ -135,10 +133,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
             The :class:`.InstrumentCoordinator`'s running state.
 
         """
-        return any(
-            self.find_instrument(c_name).is_running is True
-            for c_name in self.components()
-        )
+        return any(self.find_instrument(c_name).is_running is True for c_name in self.components())
 
     def get_component(self, full_name: str) -> base.InstrumentCoordinatorComponentBase:
         """
@@ -241,9 +236,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         """
         self._compiled_schedule = compiled_schedule
         if not CompiledSchedule.is_valid(self._compiled_schedule):
-            raise TypeError(
-                f"{self._compiled_schedule} is not a valid {CompiledSchedule.__name__}"
-            )
+            raise TypeError(f"{self._compiled_schedule} is not a valid {CompiledSchedule.__name__}")
 
         # Adds a reference to the last prepared schedule this can be accessed through
         # the self.last_schedule property.
@@ -255,9 +248,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         # and values containing instructions in the format specific to that type
         # of hardware. See also the specification in the CompiledSchedule class.
         for instrument_name, args in compiled_instructions.items():
-            self.get_component(
-                base.instrument_to_component_name(instrument_name)
-            ).prepare(args)
+            self.get_component(base.instrument_to_component_name(instrument_name)).prepare(args)
 
     def start(self) -> None:
         """
@@ -303,9 +294,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
                     instrument = self.find_instrument(instr_name)
                     instrument.stop()
                 except AttributeError as e:
-                    warnings.warn(
-                        f"When stopping instrument {instr_name}: Error \n {e}."
-                    )
+                    warnings.warn(f"When stopping instrument {instr_name}: Error \n {e}.")
             else:
                 instrument = self.find_instrument(instr_name)
                 instrument.stop()
@@ -382,9 +371,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
         hardware_logs = {}
         for instr_name in self.components():
             component = self.get_component(instr_name)
-            if (
-                hardware_log := component.get_hardware_log(self._compiled_schedule)
-            ) is not None:
+            if (hardware_log := component.get_hardware_log(self._compiled_schedule)) is not None:
                 hardware_logs[component.instrument.name] = hardware_log
 
         return hardware_logs
@@ -428,8 +415,7 @@ class ZIInstrumentCoordinator(InstrumentCoordinator):
             unit="",
             initial_value=5,
             vals=validators.Numbers(min_value=0, max_value=50),
-            docstring="The number of retries to retrieve acquisitions in case "
-            "of timeouts.",
+            docstring="The number of retries to retrieve acquisitions in case " "of timeouts.",
             instrument=self,
         )
 
@@ -441,9 +427,7 @@ class ZIInstrumentCoordinator(InstrumentCoordinator):
         results_list = _convert_acquisition_data_format(raw_results)
 
         if self._last_acquisition is not None:
-            last_acquisition_list = _convert_acquisition_data_format(
-                self._last_acquisition
-            )
+            last_acquisition_list = _convert_acquisition_data_format(self._last_acquisition)
             difference_np_array = np.linalg.norm(
                 np.array(results_list[0]) - np.array(last_acquisition_list[0])
             )

@@ -31,14 +31,10 @@ from quantify_scheduler.resources import BasebandClockResource
 def test_determine_compensation_pulse():
     schedule = Schedule("Schedule")
     schedule.add(
-        SquarePulse(
-            amp=0.8, duration=1e-8, port="q0:gt", clock=BasebandClockResource.IDENTITY
-        )
+        SquarePulse(amp=0.8, duration=1e-8, port="q0:gt", clock=BasebandClockResource.IDENTITY)
     )
     schedule.add(
-        RampPulse(
-            amp=0.5, duration=1e-8, port="q1:gt", clock=BasebandClockResource.IDENTITY
-        )
+        RampPulse(amp=0.5, duration=1e-8, port="q1:gt", clock=BasebandClockResource.IDENTITY)
     )
     schedule.add(
         LoopOperation(
@@ -121,9 +117,7 @@ def test_determine_compensation_pulse_error(operation, expected_error):
     }
 
     with pytest.raises(ValueError) as exception:
-        _determine_compensation_pulse(
-            schedule, max_compensation_amp, 4e-9, sampling_rate=1e9
-        )
+        _determine_compensation_pulse(schedule, max_compensation_amp, 4e-9, sampling_rate=1e9)
 
     assert exception.value.args[0] == expected_error
 
@@ -136,15 +130,9 @@ def test_insert_compensation_pulses(
 ):
     body = Schedule("schedule")
     body.add(
-        SquarePulse(
-            amp=0.8, duration=1e-8, port="q0:mw", clock=BasebandClockResource.IDENTITY
-        )
+        SquarePulse(amp=0.8, duration=1e-8, port="q0:mw", clock=BasebandClockResource.IDENTITY)
     )
-    body.add(
-        RampPulse(
-            amp=0.5, duration=1e-8, port="q1:mw", clock=BasebandClockResource.IDENTITY
-        )
-    )
+    body.add(RampPulse(amp=0.5, duration=1e-8, port="q1:mw", clock=BasebandClockResource.IDENTITY))
     body.add(
         LoopOperation(
             body=RampPulse(
@@ -195,19 +183,13 @@ def test_insert_compensation_pulses(
 
     assert isinstance(compensated_subschedule, Schedule)
 
-    subschedule_schedulable = list(compensated_subschedule.schedulables.values())[0][
-        "name"
-    ]
+    subschedule_schedulable = list(compensated_subschedule.schedulables.values())[0]["name"]
 
-    compensation_pulse_q0_schedulable = list(
-        compensated_subschedule.schedulables.values()
-    )[1]
+    compensation_pulse_q0_schedulable = list(compensated_subschedule.schedulables.values())[1]
     compensation_pulse_q0 = compensated_subschedule.operations[
         compensation_pulse_q0_schedulable["operation_id"]
     ]
-    compensation_pulse_q1_schedulable = list(
-        compensated_subschedule.schedulables.values()
-    )[2]
+    compensation_pulse_q1_schedulable = list(compensated_subschedule.schedulables.values())[2]
     compensation_pulse_q1 = compensated_subschedule.operations[
         compensation_pulse_q1_schedulable["operation_id"]
     ]
@@ -222,37 +204,26 @@ def test_insert_compensation_pulses(
             compensation_pulse_q0,
         )
 
-    assert (
-        compensation_pulse_q0_schedulable["timing_constraints"][0]["rel_time"] == 8e-8
-    )
+    assert compensation_pulse_q0_schedulable["timing_constraints"][0]["rel_time"] == 8e-8
     assert (
         compensation_pulse_q0_schedulable["timing_constraints"][0]["ref_schedulable"]
         == subschedule_schedulable
     )
-    assert (
-        compensation_pulse_q0_schedulable["timing_constraints"][0]["ref_pt"] == "start"
-    )
-    assert (
-        compensation_pulse_q0_schedulable["timing_constraints"][0]["ref_pt_new"]
-        == "start"
-    )
+    assert compensation_pulse_q0_schedulable["timing_constraints"][0]["ref_pt"] == "start"
+    assert compensation_pulse_q0_schedulable["timing_constraints"][0]["ref_pt_new"] == "start"
     assert len(compensation_pulse_q0["pulse_info"]) == 1
     assert (
-        compensation_pulse_q0["pulse_info"][0]["wf_func"]
-        == "quantify_scheduler.waveforms.square"
+        compensation_pulse_q0["pulse_info"][0]["wf_func"] == "quantify_scheduler.waveforms.square"
     )
     assert compensation_pulse_q0["pulse_info"][0]["reference_magnitude"] is None
     assert compensation_pulse_q0["pulse_info"][0]["t0"] == 0
     assert compensation_pulse_q0["pulse_info"][0]["port"] == "q0:mw"
-    assert math.isclose(
-        compensation_pulse_q0["pulse_info"][0]["amp"], -0.5910714285714285
-    )
+    assert math.isclose(compensation_pulse_q0["pulse_info"][0]["amp"], -0.5910714285714285)
     assert math.isclose(compensation_pulse_q0["pulse_info"][0]["duration"], 2.8e-8)
 
     assert len(compensation_pulse_q1["pulse_info"]) == 1
     assert (
-        compensation_pulse_q1["pulse_info"][0]["wf_func"]
-        == "quantify_scheduler.waveforms.square"
+        compensation_pulse_q1["pulse_info"][0]["wf_func"] == "quantify_scheduler.waveforms.square"
     )
     assert compensation_pulse_q1["pulse_info"][0]["reference_magnitude"] is None
     assert compensation_pulse_q1["pulse_info"][0]["t0"] == 0
@@ -277,15 +248,9 @@ def test_pulse_compensation_inconsistent_parameters(
 ):
     body = Schedule("schedule")
     body.add(
-        SquarePulse(
-            amp=0.8, duration=1e-8, port="q0:mw", clock=BasebandClockResource.IDENTITY
-        )
+        SquarePulse(amp=0.8, duration=1e-8, port="q0:mw", clock=BasebandClockResource.IDENTITY)
     )
-    body.add(
-        RampPulse(
-            amp=0.5, duration=1e-8, port="q1:mw", clock=BasebandClockResource.IDENTITY
-        )
-    )
+    body.add(RampPulse(amp=0.5, duration=1e-8, port="q1:mw", clock=BasebandClockResource.IDENTITY))
 
     schedule = Schedule("compensated_schedule")
     schedule.add(PulseCompensation(body=body, qubits=["q0", "q1"]))

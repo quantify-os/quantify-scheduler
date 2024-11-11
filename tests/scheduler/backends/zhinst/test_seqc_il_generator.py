@@ -109,9 +109,7 @@ def test_declare_wave_and_assign() -> None:
         (1, DeviceType.HDAWG, "waitDigTrigger(1);"),
     ],
 )
-def test_emit_wait_dig_trigger(
-    index: int, device_type: DeviceType, expected: str
-) -> None:
+def test_emit_wait_dig_trigger(index: int, device_type: DeviceType, expected: str) -> None:
     # Arrange
     gen = SeqcILGenerator()
 
@@ -230,9 +228,7 @@ def test_add_wait(
     n_instr = SEQC_INSTR_CLOCKS[device_type][SeqcInstructions.WAIT]
     if device_type == DeviceType.HDAWG:
         if delay - n_instr < 0:
-            expected_instruction = (
-                f"wait({expected_wait});\t\t//  n_instr={n_instr} <--"
-            )
+            expected_instruction = f"wait({expected_wait});\t\t//  n_instr={n_instr} <--"
         else:
             expected_instruction = f"wait({expected_wait});\t\t//  n_instr={n_instr}"
     elif device_type == DeviceType.UHFQA:

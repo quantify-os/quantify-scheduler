@@ -103,9 +103,7 @@ def make_uml_diagram(
 
         try:
             diagram_name = f"{abs_module_path.name}.png"
-            sp.run(  # nosec B603
-                ["dot", "-Tpng", "classes.dot", "-o", diagram_name], check=True
-            )
+            sp.run(["dot", "-Tpng", "classes.dot", "-o", diagram_name], check=True)  # nosec B603
             os.remove("classes.dot")
             os.remove("packages.dot")
         except (sp.CalledProcessError, FileNotFoundError):

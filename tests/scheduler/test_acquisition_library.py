@@ -77,9 +77,7 @@ ALL_ACQUISITION_PROTOCOLS = [
 ALL_BIN_MODES = [bin_mode for bin_mode in BinMode]  # type: ignore
 
 
-@pytest.mark.parametrize(
-    "operation_a, operation_b", combinations(ALL_ACQUISITION_PROTOCOLS, 2)
-)
+@pytest.mark.parametrize("operation_a, operation_b", combinations(ALL_ACQUISITION_PROTOCOLS, 2))
 def test_conflicting_acquisitions_raises(operation_a, operation_b):
     sched = Schedule("")
     sched.add(operation_a)
@@ -94,14 +92,10 @@ def test_conflicting_acquisitions_raises(operation_a, operation_b):
 def test_conflicting_bin_modes_raises(bin_mode_a, bin_mode_b):
     sched = Schedule("")
     sched.add(
-        SSBIntegrationComplex(
-            port="q0:res", clock="q0.ro", duration=100e-9, bin_mode=bin_mode_a
-        )
+        SSBIntegrationComplex(port="q0:res", clock="q0.ro", duration=100e-9, bin_mode=bin_mode_a)
     )
     sched.add(
-        SSBIntegrationComplex(
-            port="q0:res", clock="q0.ro", duration=100e-9, bin_mode=bin_mode_b
-        )
+        SSBIntegrationComplex(port="q0:res", clock="q0.ro", duration=100e-9, bin_mode=bin_mode_b)
     )
 
     with pytest.raises(
@@ -355,9 +349,7 @@ def test_deserialize(operation: Operation):
     obj = json.loads(operation_state, cls=SchedulerJSONDecoder)
 
     # Assert
-    if isinstance(
-        operation, (NumericalSeparatedWeightedIntegration, NumericalWeightedIntegration)
-    ):
+    if isinstance(operation, (NumericalSeparatedWeightedIntegration, NumericalWeightedIntegration)):
         waveforms = operation.data["acquisition_info"][0]["waveforms"]
         for i, waveform in enumerate(waveforms):
             assert isinstance(waveform["t_samples"], (np.generic, np.ndarray))

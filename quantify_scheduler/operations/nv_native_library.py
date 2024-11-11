@@ -110,9 +110,7 @@ class CRCount(Operation):
             # measurements are present in the same schedule (#262)
             acq_index = list(0 for i in range(len(qubits)))
 
-        plot_func = (
-            "quantify_scheduler.schedules._visualization.circuit_diagram.acq_meter_text"
-        )
+        plot_func = "quantify_scheduler.schedules._visualization.circuit_diagram.acq_meter_text"
         super().__init__(f"CRCount {', '.join(qubits)}")
         self.data.update(
             {

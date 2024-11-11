@@ -42,9 +42,7 @@ def test_pulse_diagram_plotly(device_compile_config_basic_transmon) -> None:
 
     # Pulse information is added
     compiler = SerialCompiler(name="compiler")
-    compiled_sched = compiler.compile(
-        schedule=sched, config=device_compile_config_basic_transmon
-    )
+    compiled_sched = compiler.compile(schedule=sched, config=device_compile_config_basic_transmon)
 
     # It should be possible to generate this visualization after compilation
     sampled_schedule = sample_schedule(compiled_sched, sampling_rate=20e6)
@@ -57,9 +55,7 @@ def test_pulse_diagram_matplotlib() -> None:
     schedule = Schedule("test")
     schedule.add(SquarePulse(amp=0.2, duration=4e-6, port="SDP"))
     schedule.add(SquarePulse(amp=0.3, duration=6e-6, port="SDP"))
-    schedule.add(
-        WindowOperation(window_name="second pulse", duration=6e-6), ref_pt="start"
-    )
+    schedule.add(WindowOperation(window_name="second pulse", duration=6e-6), ref_pt="start")
     schedule.add(SquarePulse(amp=0.25, duration=6e-6, port="SDP"))
     schedule = _determine_absolute_timing(schedule=schedule)
 
@@ -84,9 +80,7 @@ def test_pulse_diagram_matplotlib_combine_waveforms() -> None:
     schedule = Schedule("test")
     schedule.add(SquarePulse(amp=0.2, duration=4e-6, port="SDP"))
     schedule.add(SquarePulse(amp=0.3, duration=6e-6, port="SDP"))
-    schedule.add(
-        WindowOperation(window_name="second pulse", duration=6e-6), ref_pt="start"
-    )
+    schedule.add(WindowOperation(window_name="second pulse", duration=6e-6), ref_pt="start")
     schedule.add(SquarePulse(amp=0.25, duration=6e-6, port="SDP"))
     schedule = _determine_absolute_timing(schedule=schedule)
 
@@ -105,9 +99,7 @@ def test_pulse_diagram_matplotlib_multiple_subplots() -> None:
 
     plt.figure(1)
     plt.clf()
-    sampled_schedule = sample_schedule(
-        schedule, sampling_rate=0.5e9, x_range=(0, 1.21e-8)
-    )
+    sampled_schedule = sample_schedule(schedule, sampling_rate=0.5e9, x_range=(0, 1.21e-8))
     _, axs = pulse_diagram_matplotlib(
         sampled_pulses_and_acqs=sampled_schedule, multiple_subplots=True
     )
@@ -224,9 +216,7 @@ def test_sample_schedule_voltage_offsets() -> None:
     schedule.add(SquarePulse(amp=-0.2, duration=6e-9, port="T"), rel_time=8e-9)
     schedule.add(VoltageOffset(offset_path_I=-0.3, offset_path_Q=0.3, port="SDP"))
     schedule.add(VoltageOffset(offset_path_I=0.3, offset_path_Q=-0.3, port="T"))
-    schedule.add(
-        VoltageOffset(offset_path_I=0.0, offset_path_Q=0.0, port="SDP"), rel_time=8e-9
-    )
+    schedule.add(VoltageOffset(offset_path_I=0.0, offset_path_Q=0.0, port="SDP"), rel_time=8e-9)
     schedule.add(VoltageOffset(offset_path_I=0.0, offset_path_Q=0.0, port="T"))
     schedule.add(IdlePulse(4e-9))
     schedule = _determine_absolute_timing(schedule=schedule)
@@ -281,16 +271,12 @@ def test_sample_schedule_voltage_offsets_combine_waveforms() -> None:
     schedule.add(SquarePulse(amp=-0.2, duration=6e-9, port="T"), rel_time=8e-9)
     schedule.add(VoltageOffset(offset_path_I=-0.3, offset_path_Q=0.3, port="SDP"))
     schedule.add(VoltageOffset(offset_path_I=0.3, offset_path_Q=-0.3, port="T"))
-    schedule.add(
-        VoltageOffset(offset_path_I=0.0, offset_path_Q=0.0, port="SDP"), rel_time=8e-9
-    )
+    schedule.add(VoltageOffset(offset_path_I=0.0, offset_path_Q=0.0, port="SDP"), rel_time=8e-9)
     schedule.add(VoltageOffset(offset_path_I=0.0, offset_path_Q=0.0, port="T"))
     schedule.add(IdlePulse(4e-9))
     schedule = _determine_absolute_timing(schedule=schedule)
 
-    waveforms = sample_schedule(
-        schedule, sampling_rate=0.5e9, combine_waveforms_on_same_port=True
-    )
+    waveforms = sample_schedule(schedule, sampling_rate=0.5e9, combine_waveforms_on_same_port=True)
 
     np.testing.assert_array_almost_equal(
         waveforms["SDP"][0][0].time,

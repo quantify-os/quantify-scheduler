@@ -351,9 +351,7 @@ class SimpleNode(CompilationNode):
         super().__init__(name=name)
         self.compilation_func = compilation_func
 
-    def _compilation_func(
-        self, schedule: Schedule, config: DataStructure | dict
-    ) -> Schedule:
+    def _compilation_func(self, schedule: Schedule, config: DataStructure | dict) -> Schedule:
         # note that in contrast to the CompilationNode parent class, the compilation
         # function has a much stricter type hint as this is for use in a SerialCompiler
         # which constitutes a linear graph.
@@ -458,9 +456,7 @@ class QuantifyCompiler(CompilationNode):
         """Construct the compilation graph based on a provided config."""
         raise NotImplementedError
 
-    def draw(
-        self, ax: Axes = None, figsize: tuple[float, float] = (20, 10), **options
-    ) -> Axes:
+    def draw(self, ax: Axes = None, figsize: tuple[float, float] = (20, 10), **options) -> Axes:
         """
         Draws the graph defined by this backend using matplotlib.
 
@@ -533,13 +529,9 @@ class SerialCompiler(QuantifyCompiler):
 
         compilation_passes = []
         if config.device_compilation_config is not None:
-            compilation_passes.extend(
-                config.device_compilation_config.compilation_passes
-            )
+            compilation_passes.extend(config.device_compilation_config.compilation_passes)
         if config.hardware_compilation_config is not None:
-            compilation_passes.extend(
-                config.hardware_compilation_config.compilation_passes
-            )
+            compilation_passes.extend(config.hardware_compilation_config.compilation_passes)
 
         node = None
         last_added_node = None
@@ -579,13 +571,9 @@ class SerialCompiler(QuantifyCompiler):
             path = [self.input_node]
         else:
             try:
-                path = nx.shortest_path(
-                    self._task_graph, self.input_node, self.output_node
-                )
+                path = nx.shortest_path(self._task_graph, self.input_node, self.output_node)
             except nx.exception.NetworkXNoPath as e:
-                raise CompilationError(
-                    "No path between the input and output nodes"
-                ) from e
+                raise CompilationError("No path between the input and output nodes") from e
 
         # exclude the input and output from the path to use to compile
         for node in path:

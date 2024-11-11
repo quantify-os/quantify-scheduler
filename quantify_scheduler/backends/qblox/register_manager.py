@@ -61,8 +61,7 @@ class RegisterManager:
         _verify_valid_register(register)
         if register in self.available_registers:
             raise RuntimeError(
-                f"Attempting to free register '{register}', but this register is not in"
-                f"use."
+                f"Attempting to free register '{register}', but this register is not in" f"use."
             )
         self._available_registers.add(register)
 

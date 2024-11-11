@@ -81,9 +81,7 @@ def test_multiple_conditional_without_acquisition_raises(
 ):
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
 
-    hardware_config = utils.load_json_example_scheme(
-        "qblox_hardware_config_transmon.json"
-    )
+    hardware_config = utils.load_json_example_scheme("qblox_hardware_config_transmon.json")
     quantum_device.hardware_config(hardware_config)
     config = quantum_device.generate_compilation_config()
 

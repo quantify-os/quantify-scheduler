@@ -48,9 +48,7 @@ class CZ(InstrumentChannel):
             r""" square pulse operation has been performed.""",
             unit="degrees",
             parameter_class=ManualParameter,
-            initial_value=kwargs.get(
-                f"{parent._parent_element_name}_phase_correction", 0
-            ),
+            initial_value=kwargs.get(f"{parent._parent_element_name}_phase_correction", 0),
             vals=Numbers(min_value=-1e12, max_value=1e12, allow_nan=True),
         )
         self.add_parameter(
@@ -59,9 +57,7 @@ class CZ(InstrumentChannel):
             r""" Square pulse operation has been performed.""",
             unit="degrees",
             parameter_class=ManualParameter,
-            initial_value=kwargs.get(
-                f"{parent._child_element_name}_phase_correction", 0
-            ),
+            initial_value=kwargs.get(f"{parent._child_element_name}_phase_correction", 0),
             vals=Numbers(min_value=-1e12, max_value=1e12, allow_nan=True),
         )
 

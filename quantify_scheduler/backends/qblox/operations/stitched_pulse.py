@@ -51,8 +51,7 @@ class StitchedPulse(Operation):
 
     def __str__(self) -> str:
         return (
-            f"StitchedPulse(name='{self.data['name']}', pulse_info="
-            f"{self.data['pulse_info']})"
+            f"StitchedPulse(name='{self.data['name']}', pulse_info=" f"{self.data['pulse_info']})"
         )
 
     def add_pulse(self, pulse_operation: Operation) -> None:
@@ -72,9 +71,7 @@ class StitchedPulse(Operation):
 
         """
         if not self._pulse_and_clock_match(pulse_operation["pulse_info"]):
-            raise ValueError(
-                "All ports and clocks of a StitchedPulse's components must be equal."
-            )
+            raise ValueError("All ports and clocks of a StitchedPulse's components must be equal.")
 
         super().add_pulse(pulse_operation)
 
@@ -136,8 +133,7 @@ def convert_to_numerical_pulse(
     pulse_t0: float = min(p_i["t0"] for p_i in operation["pulse_info"])
     # Round to nanoseconds, to avoid rounding errors.
     timestamps = np.round(
-        pulse_t0
-        + np.arange(round(operation.duration * sampling_rate) + 1) / sampling_rate,
+        pulse_t0 + np.arange(round(operation.duration * sampling_rate) + 1) / sampling_rate,
         decimals=9,
     )
 
@@ -159,9 +155,7 @@ def convert_to_numerical_pulse(
         else:
             t1 = round(pulse_info["t0"] + pulse_info["duration"], 9)
             time_idx = np.where((timestamps >= t0) & (timestamps < t1))
-        waveform[time_idx] = (
-            pulse_info["offset_path_I"] + 1j * pulse_info["offset_path_Q"]
-        )
+        waveform[time_idx] = pulse_info["offset_path_I"] + 1j * pulse_info["offset_path_Q"]
 
     # Then add the pulses
     for pulse_info in operation["pulse_info"]:
@@ -171,9 +165,7 @@ def convert_to_numerical_pulse(
             data_dict=pulse_info,
             sampling_rate=sampling_rate,
         )
-        t0, t1 = round(pulse_info["t0"], 9), round(
-            pulse_info["t0"] + pulse_info["duration"], 9
-        )
+        t0, t1 = round(pulse_info["t0"], 9), round(pulse_info["t0"] + pulse_info["duration"], 9)
         time_idx = np.where((timestamps >= t0) & (timestamps < t1))
         waveform[time_idx] += waveform_data
 
@@ -406,9 +398,7 @@ class StitchedPulseBuilder:
             rel_time += self.operation_end
 
         if duration is not None and duration < min_duration:
-            raise ValueError(
-                f"Minimum duration of a voltage offset is {min_duration} ns"
-            )
+            raise ValueError(f"Minimum duration of a voltage offset is {min_duration} ns")
 
         offset = _VoltageOffsetInfo(
             path_I=path_I,
@@ -419,8 +409,7 @@ class StitchedPulseBuilder:
         )
         if self._overlaps_with_existing_offsets(offset):
             raise RuntimeError(
-                "Tried to add offset that overlaps with existing offsets in the "
-                "StitchedPulse."
+                "Tried to add offset that overlaps with existing offsets in the " "StitchedPulse."
             )
 
         self._offsets.append(offset)
@@ -523,9 +512,7 @@ class StitchedPulseBuilder:
                 background = (0.0, 0.0)
             # Reset if the next offset's start does not overlap with the current
             # offset's end, or if the current offset is the last one
-            if i + 1 >= len(self._offsets) or not math.isclose(
-                self._offsets[i + 1].t0, this_end
-            ):
+            if i + 1 >= len(self._offsets) or not math.isclose(self._offsets[i + 1].t0, this_end):
                 offset_ops.append(
                     create_operation_from_info(
                         _VoltageOffsetInfo(
@@ -540,9 +527,7 @@ class StitchedPulseBuilder:
         # If this wasn't done yet, add a reset to 0 at the end of the StitchedPulse
         if not (math.isclose(background[0], 0) and math.isclose(background[1], 0)):
             offset_ops.append(
-                create_operation_from_info(
-                    _VoltageOffsetInfo(0.0, 0.0, t0=self.operation_end)
-                )
+                create_operation_from_info(_VoltageOffsetInfo(0.0, 0.0, t0=self.operation_end))
             )
 
         return offset_ops

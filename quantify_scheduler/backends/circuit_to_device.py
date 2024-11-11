@@ -59,9 +59,7 @@ def compile_circuit_to_device_with_config_validation(
         schedule if circuit to device compilation is not necessary.
 
     """
-    device_cfg = DeviceCompilationConfig.model_validate(
-        config.device_compilation_config
-    )
+    device_cfg = DeviceCompilationConfig.model_validate(config.device_compilation_config)
 
     return _compile_circuit_to_device(
         operation=schedule, device_cfg=device_cfg, device_overrides={}
@@ -195,9 +193,7 @@ def set_pulse_and_acquisition_clock(
         When clock frequency is NaN.
 
     """
-    device_cfg = DeviceCompilationConfig.model_validate(
-        config.device_compilation_config
-    )
+    device_cfg = DeviceCompilationConfig.model_validate(config.device_compilation_config)
 
     all_clock_freqs: dict[str, float] = {}
     _extract_clock_freqs(schedule, all_clock_freqs)
@@ -220,9 +216,7 @@ def _extract_clock_freqs(
 ) -> None:
     if isinstance(operation, ScheduleBase):
         for inner_operation in operation.operations.values():
-            _extract_clock_freqs(
-                operation=inner_operation, all_clock_freqs=all_clock_freqs
-            )
+            _extract_clock_freqs(operation=inner_operation, all_clock_freqs=all_clock_freqs)
         for clock, clock_data in operation.resources.items():
             if "freq" in clock_data:
                 freq = clock_data["freq"]
@@ -308,9 +302,7 @@ def _set_pulse_and_acquisition_clock(
                 continue
             # raises ValueError if no clock found;
             # enters if condition if clock only in device config
-            if not _valid_clock_in_schedule(
-                clock, all_clock_freqs, schedule, operation
-            ):
+            if not _valid_clock_in_schedule(clock, all_clock_freqs, schedule, operation):
                 clock_resource = ClockResource(name=clock, freq=all_clock_freqs[clock])
                 schedule.add_resource(clock_resource)
             verified_clocks.append(clock)
@@ -437,11 +429,7 @@ def _assert_operation_valid_device_level(operation: Operation) -> None:
         Quantify operation
 
     """
-    if not (
-        operation.valid_pulse
-        or operation.valid_acquisition
-        or operation.has_voltage_offset
-    ):
+    if not (operation.valid_pulse or operation.valid_acquisition or operation.has_voltage_offset):
         raise RuntimeError(
             f"Operation '{operation}' is a gate-level operation and must be "
             f"compiled from circuit to device; ensure compilation "
@@ -488,9 +476,7 @@ def _compile_multiplexed(
             device_overrides=device_overrides,
         )
 
-        device_op_device_overrides = device_op.data.get("gate_info", {}).get(
-            "device_overrides", {}
-        )
+        device_op_device_overrides = device_op.data.get("gate_info", {}).get("device_overrides", {})
         new_device_overrides = {**device_op_device_overrides, **device_overrides}
 
         if isinstance(device_op, ScheduleBase):
@@ -563,9 +549,7 @@ def _compile_single_qubit(
         device_overrides=device_overrides,
     )
 
-    device_op_device_overrides = device_op.data.get("gate_info", {}).get(
-        "device_overrides", {}
-    )
+    device_op_device_overrides = device_op.data.get("gate_info", {}).get("device_overrides", {})
     new_device_overrides = {**device_op_device_overrides, **device_overrides}
 
     if isinstance(device_op, ScheduleBase):
@@ -600,8 +584,7 @@ def _compile_two_qubits(
         if symmetric_operation:
             possible_permutations = permutations(qubits, 2)
             operable_edges = {
-                f"{permutation[0]}_{permutation[1]}"
-                for permutation in possible_permutations
+                f"{permutation[0]}_{permutation[1]}" for permutation in possible_permutations
             }
             valid_edge_list = list(operable_edges.intersection(device_cfg.edges))
             if len(valid_edge_list) == 1:
@@ -611,13 +594,9 @@ def _compile_two_qubits(
                     kind="edge", missing=edge, allowed=list(device_cfg.edges.keys())
                 )
             elif len(valid_edge_list) > 1:
-                raise MultipleKeysError(
-                    operation=operation_type, matches=valid_edge_list
-                )
+                raise MultipleKeysError(operation=operation_type, matches=valid_edge_list)
         else:
-            raise ConfigKeyError(
-                kind="edge", missing=edge, allowed=list(device_cfg.edges.keys())
-            )
+            raise ConfigKeyError(kind="edge", missing=edge, allowed=list(device_cfg.edges.keys()))
 
     edge_config = device_cfg.edges[edge]
     if operation_type not in edge_config:
@@ -632,9 +611,7 @@ def _compile_two_qubits(
         operation, edge_config[operation_type], device_overrides
     )
 
-    device_op_device_overrides = device_op.data.get("gate_info", {}).get(
-        "device_overrides", {}
-    )
+    device_op_device_overrides = device_op.data.get("gate_info", {}).get("device_overrides", {})
     new_device_overrides = {**device_op_device_overrides, **device_overrides}
 
     if isinstance(device_op, ScheduleBase):
@@ -652,9 +629,7 @@ def _compile_circuit_to_device_pulse_compensation(
     operation: PulseCompensation, device_cfg: DeviceCompilationConfig
 ) -> PulseCompensation:
     """Compiles circuit-level pulse compensation operation to device-level."""
-    if (
-        qubits := operation.data.get("pulse_compensation_info", {}).get("qubits")
-    ) is not None:
+    if (qubits := operation.data.get("pulse_compensation_info", {}).get("qubits")) is not None:
 
         max_compensation_amp: dict[Port, float] = {}
         time_grid: float | None = None
@@ -672,9 +647,7 @@ def _compile_circuit_to_device_pulse_compensation(
                         f"for device element '{qubit}' is not 'None'. "
                         f"Only 'None' is allowed for 'factory_func' for pulse compensation."
                     )
-                current_time_grid = pulse_compensation_element.factory_kwargs[
-                    "time_grid"
-                ]
+                current_time_grid = pulse_compensation_element.factory_kwargs["time_grid"]
                 if (time_grid != current_time_grid) and (time_grid is not None):
                     raise ValueError(
                         f"'time_grid' must be the same for every device element "
@@ -684,12 +657,8 @@ def _compile_circuit_to_device_pulse_compensation(
                     )
                 time_grid = current_time_grid
 
-                current_sampling_rate = pulse_compensation_element.factory_kwargs[
-                    "sampling_rate"
-                ]
-                if (sampling_rate != current_sampling_rate) and (
-                    sampling_rate is not None
-                ):
+                current_sampling_rate = pulse_compensation_element.factory_kwargs["sampling_rate"]
+                if (sampling_rate != current_sampling_rate) and (sampling_rate is not None):
                     raise ValueError(
                         f"'sampling_rate' must be the same for "
                         f"every device element for pulse compensation. "

@@ -125,9 +125,7 @@ def test_optical_measurement_trigger_count(
 
 
 @pytest.mark.parametrize("acq_delay", [-50e-6, 0, 52e-5])
-def test_optical_measurement_trace(
-    typical_kwargs_optical_measurement_single_pulse, acq_delay
-):
+def test_optical_measurement_trace(typical_kwargs_optical_measurement_single_pulse, acq_delay):
     """optical_measurement factory works well with Trace protocol"""
     # Arrange
     kwargs = typical_kwargs_optical_measurement_single_pulse

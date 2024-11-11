@@ -108,9 +108,7 @@ class ScheduleGettable:
                 self.label = data_labels
             else:
                 self.label = [
-                    f"Voltage {iq}{ch}"
-                    for ch in range(num_channels)
-                    for iq in ["I", "Q"]
+                    f"Voltage {iq}{ch}" for ch in range(num_channels) for iq in ["I", "Q"]
                 ]
                 logger.info(f"Auto-generating labels. {self.label}")
             self.unit = ["V", "V"] * num_channels
@@ -158,9 +156,7 @@ class ScheduleGettable:
 
         # made into a private variable for debugging and future caching functionality
         self._backend = compilation_config.backend(name=compilation_config.name)
-        self._compiled_schedule = self._backend.compile(
-            schedule=sched, config=compilation_config
-        )
+        self._compiled_schedule = self._backend.compile(schedule=sched, config=compilation_config)
 
     def initialize(self) -> None:
         """
@@ -319,9 +315,7 @@ class ScheduleGettable:
                 f"and try again.\n{self._evaluated_sched_kwargs=}"
             )
 
-        instrument_coordinator = (
-            self.quantum_device.instr_instrument_coordinator.get_instr()
-        )
+        instrument_coordinator = self.quantum_device.instr_instrument_coordinator.get_instr()
         return _generate_diagnostics_report(
             quantum_device=self.quantum_device,
             gettable_config=gettable_config,

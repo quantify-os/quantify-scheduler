@@ -100,9 +100,7 @@ def filter_coefficients(use_numpy_array):
         for use_numpy in [True, False]
     ),
 )
-def test_distortion_correct_pulse(
-    filter_coefficients, clipping_values, duration, use_numpy_array
-):
+def test_distortion_correct_pulse(filter_coefficients, clipping_values, duration, use_numpy_array):
     pulse = SquarePulse(amp=220e-3, duration=duration, port="", clock="")
 
     distortion_correction = SoftwareDistortionCorrection.model_validate(
@@ -125,9 +123,7 @@ def test_distortion_correct_pulse(
 
     corrected_pulse_samples = corrected_pulse.data["pulse_info"][0]["samples"]
 
-    assert (
-        len(corrected_pulse_samples) > 1
-    ), "Correction always generates at least 2 sample points"
+    assert len(corrected_pulse_samples) > 1, "Correction always generates at least 2 sample points"
 
     if distortion_correction.clipping_values:
         assert min(corrected_pulse_samples) >= distortion_correction.clipping_values[0]
@@ -276,9 +272,7 @@ def test_apply_latency_corrections_hardware_options_invalid_raises(
         compiler = SerialCompiler(name="compiler")
         _ = compiler.compile(
             sched,
-            config=mock_setup_basic_transmon[
-                "quantum_device"
-            ].generate_compilation_config(),
+            config=mock_setup_basic_transmon["quantum_device"].generate_compilation_config(),
         )
 
 

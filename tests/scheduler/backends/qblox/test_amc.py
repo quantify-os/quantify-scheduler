@@ -42,9 +42,7 @@ def test_string_literal_works():
     }
     quantum_device = QuantumDevice("qdev")
     quantum_device.hardware_config(hardware_config)
-    hw_config_class = (
-        quantum_device.generate_compilation_config().hardware_compilation_config
-    )
+    hw_config_class = quantum_device.generate_compilation_config().hardware_compilation_config
     assert (
         hw_config_class.hardware_options.mixer_corrections["q0:res-q0.ro"].auto_lo_cal  # type: ignore
         == LoCalEnum.ON_LO_INTERM_FREQ_CHANGE
@@ -95,9 +93,7 @@ def test_conflicting_settings_warns_nco():
         "`phase_error=-4.2`. To suppress this warning, do not "
         "set either `amp_ratio` or `phase_error` for this port-clock.",
     ):
-        hw_config_class = (
-            quantum_device.generate_compilation_config().hardware_compilation_config
-        )
+        hw_config_class = quantum_device.generate_compilation_config().hardware_compilation_config
     assert (
         hw_config_class.hardware_options.mixer_corrections["q0:res-q0.ro"].amp_ratio  # type: ignore
         is DEFAULT_MIXER_AMP_RATIO
@@ -156,9 +152,7 @@ def test_conflicting_settings_warns_lo():
         "`dc_offset_q=-0.034`. To suppress this warning, do not "
         "set either `dc_offset_i` or `dc_offset_q` for this port-clock.",
     ):
-        hw_config_class = (
-            quantum_device.generate_compilation_config().hardware_compilation_config
-        )
+        hw_config_class = quantum_device.generate_compilation_config().hardware_compilation_config
     assert (
         hw_config_class.hardware_options.mixer_corrections["q0:res-q0.ro"].dc_offset_i  # type: ignore
         is None

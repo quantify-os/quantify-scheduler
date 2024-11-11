@@ -99,9 +99,7 @@ def test_compile_empty_device(hardware_cfg_cluster):
 def test_compile_sequence_to_file_deprecated_hardware_config(sequence_to_file: bool):
     # Arrange
 
-    hardware_cfg = {
-        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile"
-    }
+    hardware_cfg = {"backend": "quantify_scheduler.backends.qblox_backend.hardware_compile"}
     hardware_cfg["cluster0"] = {
         "instrument_type": "Cluster",
         "ref": "internal",
@@ -168,9 +166,7 @@ def test_compile_sequence_to_file(sequence_to_file: bool):
             },
         }
     }
-    hardware_comp_cfg["connectivity"] = {
-        "graph": [("cluster0.module1.complex_output_0", "q0:res")]
-    }
+    hardware_comp_cfg["connectivity"] = {"graph": [("cluster0.module1.complex_output_0", "q0:res")]}
     if sequence_to_file is None:
         del hardware_comp_cfg["hardware_description"]["cluster0"]["sequence_to_file"]
 

@@ -112,9 +112,7 @@ def test_set_vector(mocker, node: str):
     zi_helpers.set_vector(instrument, node, vector)
 
     # Assert
-    controller._controller._connection._daq.setVector.assert_called_with(
-        expected_node, vector
-    )
+    controller._controller._connection._daq.setVector.assert_called_with(expected_node, vector)
 
 
 @pytest.mark.parametrize(
@@ -162,9 +160,7 @@ def test_set_commandtable_data(mocker, json_data):
     instrument = mocker.Mock(spec=ZIBaseInstrument)
 
     expected_node: str = f"awgs/{awg_index}/commandtable/data"
-    expected_json_data: str = (
-        json.dumps(json_data) if not isinstance(json_data, str) else json_data
-    )
+    expected_json_data: str = json.dumps(json_data) if not isinstance(json_data, str) else json_data
 
     # Act
     zi_helpers.set_commandtable_data(instrument, awg_index, json_data)
@@ -437,9 +433,9 @@ def test_set_and_compile_awg_seqc_upload_timeout(mocker):
     value: str = "abc"
 
     # Act
-    with mocker.patch.object(
-        time, "get_time", side_effect=[0, 0 + 1000]
-    ), pytest.raises(Exception) as execinfo:
+    with mocker.patch.object(time, "get_time", side_effect=[0, 0 + 1000]), pytest.raises(
+        Exception
+    ) as execinfo:
         zi_helpers.set_and_compile_awg_seqc(instrument, awg_index, node, value)
 
     # Assert
