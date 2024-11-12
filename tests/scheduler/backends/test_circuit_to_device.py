@@ -25,6 +25,9 @@ from quantify_scheduler.device_under_test.mock_setup import (
     set_standard_params_transmon,
     set_up_mock_transmon_setup,
 )
+from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
+from quantify_scheduler.device_under_test.spin_edge import SpinEdge
+from quantify_scheduler.device_under_test.spin_element import BasicSpinElement
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.control_flow_library import LoopOperation
 from quantify_scheduler.operations.gate_library import (
@@ -50,15 +53,16 @@ from quantify_scheduler.operations.pulse_factories import (
 )
 from quantify_scheduler.operations.pulse_library import (
     IdlePulse,
+    RampPulse,
     ReferenceMagnitude,
     SetClockFrequency,
     SquarePulse,
 )
+from quantify_scheduler.operations.spin_library import SpinInit
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.schedules.schedule import Schedule, ScheduleBase
 
 if TYPE_CHECKING:
-    from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
     from quantify_scheduler.operations.operation import Operation
 
 
@@ -1128,3 +1132,85 @@ def test_pulse_compensation_error_factory_func(
         "for device element 'q0' is not 'None'. "
         "Only 'None' is allowed for 'factory_func' for pulse compensation."
     )
+
+
+def test_compile_spin_init():
+    """
+    Test compilation of spin init.
+    """
+
+    q2 = BasicSpinElement("q2")
+    q3 = BasicSpinElement("q3")
+
+    edge_q2_q3 = SpinEdge(parent_element_name=q2.name, child_element_name=q3.name)
+    edge_q2_q3.spin_init.square_duration(2e-6)
+    edge_q2_q3.spin_init.ramp_diff(1e-6)
+    edge_q2_q3.spin_init.q2_square_amp(0.5)
+    edge_q2_q3.spin_init.q2_ramp_amp(0.25)
+    edge_q2_q3.spin_init.q2_ramp_rate(0.25 / 3e-6)
+    edge_q2_q3.spin_init.q3_square_amp(0.4)
+    edge_q2_q3.spin_init.q3_ramp_amp(0.2)
+    edge_q2_q3.spin_init.q3_ramp_rate(0.2 / 4e-6)
+
+    quantum_device = QuantumDevice(name="quantum_device")
+    quantum_device.add_element(q2)
+    quantum_device.add_element(q3)
+    quantum_device.add_edge(edge_q2_q3)
+
+    schedule = Schedule("Test schedule")
+    schedule.add(SpinInit(qC=q2.name, qT=q3.name))
+
+    compiled_schedule = compile_circuit_to_device_with_config_validation(
+        schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    expected_schedule = Schedule("spin_init")
+    expected_schedule.add(
+        SquarePulse(
+            amp=0.5,
+            duration=2e-6,
+            port="q2:mw",
+            clock="q2.f_larmor",
+        )
+    )
+    expected_schedule.add(
+        SquarePulse(
+            amp=0.4,
+            duration=2e-6,
+            port="q3:mw",
+            clock="q3.f_larmor",
+        ),
+        ref_pt="start",
+    )
+    expected_schedule.add(
+        RampPulse(
+            amp=0.25,
+            duration=3e-6,
+            port="q2:mw",
+            clock="q2.f_larmor",
+        ),
+        ref_pt="end",
+        rel_time=0,
+    )
+    expected_schedule.add(
+        RampPulse(
+            amp=0.2,
+            duration=4e-6,
+            port="q3:mw",
+            clock="q3.f_larmor",
+        ),
+        ref_pt="start",
+        rel_time=0,
+    )
+
+    assert len(compiled_schedule.schedulables) == 1
+
+    compiled_spin_init = list(compiled_schedule.operations.values())[0]
+
+    for schedulable, expected_schedulable in zip(
+        compiled_spin_init.schedulables.values(),
+        expected_schedule.schedulables.values(),
+    ):
+        operation = compiled_spin_init.operations[schedulable["operation_id"]]
+        expected_operation = expected_schedule.operations[expected_schedulable["operation_id"]]
+        assert operation == expected_operation

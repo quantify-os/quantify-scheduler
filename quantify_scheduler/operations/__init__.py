@@ -41,6 +41,7 @@ from .pulse_factories import (
     rxy_drag_pulse,
     rxy_gauss_pulse,
     rxy_hermite_pulse,
+    spin_init_pulse,
     staircase_pulse,
 )
 from .pulse_library import (
@@ -88,6 +89,7 @@ __all__ = [
     "CRCount",
     "composite_square_pulse",
     "nv_spec_pulse_mw",
+    "spin_init_pulse",
     "phase_shift",
     "rxy_drag_pulse",
     "rxy_gauss_pulse",

@@ -15,6 +15,7 @@ from quantify_scheduler.backends.qblox.operations import (
     pulse_factories as qblox_pulse_factories,
 )
 from quantify_scheduler.operations import pulse_library
+from quantify_scheduler.schedules import Schedule
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.qblox.operations.stitched_pulse import (
@@ -340,6 +341,69 @@ def nv_spec_pulse_mw(
         clock=clock,
         port=port,
     )
+
+
+def spin_init_pulse(
+    square_duration: float,
+    ramp_diff: float,
+    parent_port: str,
+    parent_clock: str,
+    parent_square_amp: float,
+    parent_ramp_amp: float,
+    parent_ramp_rate: float,
+    child_port: str,
+    child_clock: str,
+    child_square_amp: float,
+    child_ramp_amp: float,
+    child_ramp_rate: float,
+) -> Schedule:
+    """Device compilation of the spin init operation."""
+    spin_init_schedule = Schedule("spin_init")
+
+    spin_init_schedule.add(
+        pulse_library.SquarePulse(
+            amp=parent_square_amp,
+            duration=square_duration,
+            port=parent_port,
+            clock=parent_clock,
+        )
+    )
+
+    spin_init_schedule.add(
+        pulse_library.SquarePulse(
+            amp=child_square_amp,
+            duration=square_duration,
+            port=child_port,
+            clock=child_clock,
+        ),
+        ref_pt="start",
+    )
+
+    parent_ramp_rel_time = abs(min(ramp_diff, 0))
+
+    spin_init_schedule.add(
+        pulse_library.RampPulse(
+            amp=parent_ramp_amp,
+            duration=parent_ramp_amp / parent_ramp_rate,
+            port=parent_port,
+            clock=parent_clock,
+        ),
+        ref_pt="end",
+        rel_time=parent_ramp_rel_time,
+    )
+
+    spin_init_schedule.add(
+        pulse_library.RampPulse(
+            amp=child_ramp_amp,
+            duration=child_ramp_amp / child_ramp_rate,
+            port=child_port,
+            clock=child_clock,
+        ),
+        ref_pt="start",
+        rel_time=ramp_diff,
+    )
+
+    return spin_init_schedule
 
 
 @deprecated("0.20.0", qblox_pulse_factories.long_square_pulse)
