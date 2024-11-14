@@ -66,6 +66,7 @@ def patch_qtm_parameters(mocker, module):
         mocker.patch.object(module[f"io_channel{seq_no}"].parameters["out_mode"], "set")
         mocker.patch.object(module[f"io_channel{seq_no}"].parameters["out_mode"], "get")
         mocker.patch.object(module[f"io_channel{seq_no}"].parameters["in_trigger_en"], "set")
+        mocker.patch.object(module[f"io_channel{seq_no}"].parameters["in_threshold_primary"], "set")
         mocker.patch.object(
             module[f"io_channel{seq_no}"].parameters["binned_acq_time_ref"],
             "set",
@@ -1120,6 +1121,46 @@ def test_timetag_acquisition_qtm_append(
 
     qtm_instrument.io_channel4.binned_acq_time_source.set.assert_called_with(str(TimeSource.SECOND))
     qtm_instrument.io_channel4.binned_acq_time_ref.set.assert_called_with(str(TimeRef.START))
+
+
+def test_set_in_threshold_primary(
+    mock_setup_basic_nv,
+    make_cluster_component,
+):
+    cluster_name = "cluster0"
+    cluster = make_cluster_component(cluster_name)
+    qtm_instrument = cluster.instrument.module5
+
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+    hardware_cfg = EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER.copy()
+    hardware_cfg["hardware_options"]["digitization_thresholds"]["qe1:optical_readout-qe1.ge0"][
+        "in_threshold_primary"
+    ] = 0.3
+    quantum_device.hardware_config(hardware_cfg)
+
+    sched = Schedule("digital_pulse_and_acq", repetitions=3)
+    sched.add(
+        Timetag(
+            duration=1e-6,
+            port="qe1:optical_readout",
+            clock="qe1.ge0",
+            time_source=TimeSource.SECOND,
+            time_ref=TimeRef.START,
+            bin_mode=BinMode.APPEND,
+        )
+    )
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        schedule=sched,
+        config=quantum_device.generate_compilation_config(),
+    )
+    prog = compiled_schedule["compiled_instructions"][cluster_name]
+
+    cluster.prepare(prog)
+    cluster.start()
+
+    qtm_instrument.io_channel4.in_threshold_primary.set.assert_called_with(0.3)
 
 
 def test_retrieve_trace_acquisition_qtm(

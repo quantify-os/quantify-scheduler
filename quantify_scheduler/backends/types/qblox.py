@@ -709,8 +709,8 @@ class TimetagSequencerSettings(SequencerSettings):
     (e.g. parameters related to thresholded acquisition).
     """
 
-    in_threshold_primary: Optional[float] = None
-    """The voltage threshold above which an input signal is registered as high."""
+    digitization_thresholds: Optional[DigitizationThresholds] = None
+    """The settings that determine when an analog voltage is counted as a pulse."""
     time_source: Optional[TimeSource] = None
     """Selects the timetag data source for timetag acquisitions."""
     time_ref: Optional[TimeRef] = None
@@ -771,6 +771,7 @@ class TimetagSequencerSettings(SequencerSettings):
             channel_name_measure=sequencer_cfg.channel_name_measure,
             connected_output_indices=connected_output_indices,
             connected_input_indices=connected_input_indices,
+            digitization_thresholds=sequencer_cfg.digitization_thresholds,
         )
 
 

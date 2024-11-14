@@ -51,6 +51,7 @@ from quantify_scheduler.backends.types.qblox import (
     ComplexChannelDescription,
     ComplexInputGain,
     DigitalChannelDescription,
+    DigitizationThresholds,
     QbloxHardwareDescription,
     QbloxHardwareDistortionCorrection,
     QbloxHardwareOptions,
@@ -1016,6 +1017,11 @@ class _ClusterModuleCompilationConfig(ABC, DataStructure):
                 if self.hardware_options.mixer_corrections is not None
                 else None
             )
+            digitization_thresholds = (
+                self.hardware_options.digitization_thresholds.get(portclock, None)
+                if self.hardware_options.digitization_thresholds
+                else None
+            )
             # Types: arguments are allowed to be dict. Pydantic takes care of that.
             sequencer_configs[seq_idx] = _SequencerCompilationConfig(
                 sequencer_options=sequencer_options,  # type: ignore
@@ -1029,6 +1035,7 @@ class _ClusterModuleCompilationConfig(ABC, DataStructure):
                 modulation_frequencies=modulation_frequencies,  # type: ignore
                 mixer_corrections=mixer_corrections,
                 allow_off_grid_nco_ops=self.allow_off_grid_nco_ops,
+                digitization_thresholds=digitization_thresholds,
             )
 
         return sequencer_configs
@@ -1226,6 +1233,8 @@ class _SequencerCompilationConfig(DataStructure):
     Flag to allow NCO operations to play at times that are not aligned with the NCO
     grid.
     """
+    digitization_thresholds: DigitizationThresholds | None = None
+    """The settings that determine when an analog voltage is counted as a pulse."""
 
 
 class _ClusterCompilationConfig(DataStructure):

@@ -1324,11 +1324,14 @@ class _QTMComponent(_ModuleComponentBase):
                 "sequencer",
             )
 
-        if settings.in_threshold_primary is not None:
+        if (
+            settings.digitization_thresholds is not None
+            and settings.digitization_thresholds.in_threshold_primary is not None
+        ):
             self._set_parameter(
                 self.instrument.io_channels[seq_idx],
                 "in_threshold_primary",
-                settings.in_threshold_primary,
+                settings.digitization_thresholds.in_threshold_primary,
             )
         self._set_parameter(
             self.instrument.io_channels[seq_idx],
