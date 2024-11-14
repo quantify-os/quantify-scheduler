@@ -357,25 +357,9 @@ class TestNVDarkESRSched:
             config=mock_setup_basic_nv["quantum_device"].generate_compilation_config(),
         )
 
-    def test_compiles_qblox_backend(
-        self, mock_setup_basic_nv, qblox_hardware_config_nv_center
-    ) -> None:
+    def test_compiles_qblox_backend(self, mock_setup_basic_nv_qblox_hardware) -> None:
         # assert that files properly compile
-
-        hardware_config = deepcopy(qblox_hardware_config_nv_center)
-
-        # TTL acquisition does not support two inputs
-        edge_to_delete = None
-
-        for edge in hardware_config["connectivity"]["graph"]:
-            if edge[0] == "cluster0.module4.real_input_1" and edge[1] == "qe0:optical_readout":
-                edge_to_delete = edge
-
-        hardware_config["connectivity"]["graph"].remove(edge_to_delete)
-
-        quantum_device = mock_setup_basic_nv["quantum_device"]
-
-        quantum_device.hardware_config.set(hardware_config)
+        quantum_device: QuantumDevice = mock_setup_basic_nv_qblox_hardware["quantum_device"]
         compiler = SerialCompiler(name="compiler")
 
         schedule = compiler.compile(
@@ -467,24 +451,9 @@ class TestNVDarkESRSchedNCO:
             config=mock_setup_basic_nv["quantum_device"].generate_compilation_config(),
         )
 
-    def test_compiles_qblox_backend(
-        self, qblox_hardware_config_nv_center, mock_setup_basic_nv
-    ) -> None:
+    def test_compiles_qblox_backend(self, mock_setup_basic_nv_qblox_hardware) -> None:
         # assert that files properly compile
-
-        hardware_config = deepcopy(qblox_hardware_config_nv_center)
-
-        # TTL acquisition does not support two inputs
-        edge_to_delete = None
-
-        for edge in hardware_config["connectivity"]["graph"]:
-            if edge[0] == "cluster0.module4.real_input_1" and edge[1] == "qe0:optical_readout":
-                edge_to_delete = edge
-
-        hardware_config["connectivity"]["graph"].remove(edge_to_delete)
-
-        quantum_device = mock_setup_basic_nv["quantum_device"]
-        quantum_device.hardware_config.set(hardware_config)
+        quantum_device: QuantumDevice = mock_setup_basic_nv_qblox_hardware["quantum_device"]
         compiler = SerialCompiler(name="compiler")
 
         schedule = compiler.compile(

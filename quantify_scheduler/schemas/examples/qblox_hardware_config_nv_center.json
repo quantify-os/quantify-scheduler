@@ -139,10 +139,6 @@
                 "qe0:optical_readout"
             ],
             [
-                "cluster0.module4.real_input_1",
-                "qe0:optical_readout"
-            ],
-            [
                 "cluster0.module5.digital_output_0",
                 "qe1:switch"
             ],
