@@ -458,6 +458,25 @@ class BasicElectronicNVElement(DeviceElement):
 
     The submodules contain the necessary qubit parameters to translate higher-level
     operations into pulses. Please see the documentation of these classes.
+
+    .. admonition:: Examples
+
+        Qubit parameters can be set through submodule attributes
+
+        .. jupyter-execute::
+
+            from quantify_scheduler import BasicElectronicNVElement
+
+            qubit = BasicElectronicNVElement("q2")
+
+            qubit.rxy.amp180(0.1)
+            qubit.measure.pulse_amplitude(0.25)
+            qubit.measure.pulse_duration(300e-9)
+            qubit.measure.acq_delay(430e-9)
+            qubit.measure.acq_duration(1e-6)
+            ...
+
+
     """
 
     def __init__(self, name: str, **kwargs) -> None:
@@ -472,6 +491,9 @@ class BasicElectronicNVElement(DeviceElement):
             "cr_count": CRCount,
             "rxy": RxyHermite,
         }
+        # the logic below is to support passing a dictionary to the constructor
+        # e.g. `DeviceElement("q0", rxy={"amp180": 0.1})`. But we're planning to
+        # remove this feature (SE-551).
         submodule_data = {sub_name: kwargs.pop(sub_name, {}) for sub_name in submodules_to_add}
         super().__init__(name, **kwargs)
 

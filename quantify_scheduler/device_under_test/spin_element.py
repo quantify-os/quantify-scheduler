@@ -162,7 +162,25 @@ class BasicSpinElement(DeviceElement):
     A device element representing a Loss–DiVincenzo Spin qubit.
     The element refers to the intrinsic spin-1/2 degree of freedom of
     individual electrons/holes trapped in quantum dots.
-    The charge of the particule is coupled to a resonator.
+    The charge of the particle is coupled to a resonator.
+
+    .. admonition:: Examples
+
+        Qubit parameters can be set through submodule attributes
+
+        .. jupyter-execute::
+
+            from quantify_scheduler import BasicSpinElement
+
+            qubit = BasicSpinElement("q1")
+
+            qubit.rxy.amp180(0.1)
+            qubit.measure.pulse_amp(0.25)
+            qubit.measure.pulse_duration(300e-9)
+            qubit.measure.acq_delay(430e-9)
+            qubit.measure.integration_time(1e-6)
+            ...
+
 
     Parameters
     ----------
@@ -186,6 +204,9 @@ class BasicSpinElement(DeviceElement):
             "ports": PortsSpin,
             "clock_freqs": ClocksFrequenciesSpin,
         }
+        # the logic below is to support passing a dictionary to the constructor
+        # e.g. `DeviceElement("q0", rxy={"amp180": 0.1})`. But we're planning to
+        # remove this feature (SE-551).
         submodule_data = {sub_name: kwargs.pop(sub_name, {}) for sub_name in submodules_to_add}
         super().__init__(name, **kwargs)
 

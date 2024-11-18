@@ -448,6 +448,24 @@ class BasicTransmonElement(DeviceElement):
 
     The qubit is coupled to a readout resonator.
 
+
+    .. admonition:: Examples
+
+        Qubit parameters can be set through submodule attributes
+
+        .. jupyter-execute::
+
+            from quantify_scheduler import BasicTransmonElement
+
+            qubit = BasicTransmonElement("q3")
+
+            qubit.rxy.amp180(0.1)
+            qubit.measure.pulse_amp(0.25)
+            qubit.measure.pulse_duration(300e-9)
+            qubit.measure.acq_delay(430e-9)
+            qubit.measure.integration_time(1e-6)
+            ...
+
     Parameters
     ----------
     name
@@ -468,6 +486,9 @@ class BasicTransmonElement(DeviceElement):
             "ports": Ports,
             "clock_freqs": ClocksFrequencies,
         }
+        # the logic below is to support passing a dictionary to the constructor
+        # e.g. `DeviceElement("q0", rxy={"amp180": 0.1})`. But we're planning to
+        # remove this feature (SE-551).
         submodule_data = {sub_name: kwargs.pop(sub_name, {}) for sub_name in submodules_to_add}
         super().__init__(name, **kwargs)
 
