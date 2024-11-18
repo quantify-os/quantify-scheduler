@@ -3,6 +3,7 @@
 """Tests for acquisitions module."""
 from __future__ import annotations
 
+import math
 import pprint
 import re
 from typing import Any
@@ -897,6 +898,7 @@ def test_thresholded_acquisition(
     qubit_name,
     rotation,
     threshold,
+    make_cluster_component,
 ):
     hardware_config = qblox_hardware_config_transmon
     mock_setup = mock_setup_basic_transmon_with_standard_params
@@ -906,6 +908,8 @@ def test_thresholded_acquisition(
         "q4": "cluster0_module3",
         "q0": "cluster0_module4",
     }
+    q4 = mock_setup["q4"]
+    q4.clock_freqs.readout(7.7e9)
 
     qubit = mock_setup[qubit_name]
     qubit.measure.acq_rotation(rotation)
@@ -929,6 +933,36 @@ def test_thresholded_acquisition(
     )
     assert sequencer_compiled_instructions["thresholded_acq_rotation"] == rotation
     assert sequencer_acquisition_metadata.acq_protocol == "ThresholdedAcquisition"
+
+    instr_coordinator = mock_setup["instrument_coordinator"]
+
+    ic_cluster0 = make_cluster_component("cluster0")
+    ic_generic = GenericInstrumentCoordinatorComponent("generic")
+    lo1 = MockLocalOscillator("lo1")
+    ic_lo1 = GenericInstrumentCoordinatorComponent(lo1)
+    instr_coordinator.add_component(ic_cluster0)
+    instr_coordinator.add_component(ic_generic)
+    instr_coordinator.add_component(ic_lo1)
+
+    ic_cluster0.instrument.set_dummy_binned_acquisition_data(
+        slot_idx=4, sequencer=0, acq_index_name="0", data=[None]
+    )
+
+    # Upload schedule and run experiment
+    instr_coordinator.prepare(compiled_schedule)
+    instr_coordinator.start()
+    data = instr_coordinator.retrieve_acquisition()
+    instr_coordinator.stop()
+
+    expected_dataarray = DataArray(
+        [-1],
+        coords=[[0]],
+        dims=["acq_index_0"],
+        attrs={"acq_protocol": "ThresholdedAcquisition"},
+    )
+    expected_dataset = Dataset({0: expected_dataarray})
+
+    xr.testing.assert_identical(data, expected_dataset)
 
 
 @pytest.mark.parametrize(

@@ -439,7 +439,7 @@ class ThresholdedAcquisition(Acquisition):
                 "acq_channel": acq_channel,
                 "acq_index": acq_index,
                 "bin_mode": bin_mode,
-                "acq_return_type": np.uint32,
+                "acq_return_type": np.int32,
                 "protocol": "ThresholdedAcquisition",
                 "feedback_trigger_label": feedback_trigger_label,
                 "acq_threshold": acq_threshold,

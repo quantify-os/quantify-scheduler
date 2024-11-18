@@ -1922,9 +1922,12 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
         )
 
         acq_index_dim_name = f"acq_index_{acq_channel}"
+        acquisitions_data = np.array(
+            list(map(lambda n: n if not isnan(n) else -1, bin_data["threshold"])),
+            dtype=acquisition_metadata.acq_return_type,
+        )
 
         if acquisition_metadata.bin_mode == BinMode.AVERAGE:
-            acquisitions_data = np.array(bin_data["threshold"])
             return DataArray(
                 acquisitions_data.reshape((len(acq_indices),)),
                 dims=[acq_index_dim_name],
@@ -1932,9 +1935,6 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
                 attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
             )
         else:
-            acquisitions_data = np.array(
-                bin_data["threshold"], dtype=acquisition_metadata.acq_return_type
-            )
             return DataArray(
                 acquisitions_data.reshape((acquisition_metadata.repetitions, len(acq_indices))),
                 dims=["repetition", acq_index_dim_name],
