@@ -25,6 +25,7 @@ from quantify_scheduler.backends.types.common import (
 )
 from quantify_scheduler.device_under_test.device_element import DeviceElement
 from quantify_scheduler.device_under_test.edge import Edge
+from quantify_scheduler.device_under_test.hardware_config import HardwareConfig
 from quantify_scheduler.helpers.importers import (
     export_python_object_to_path_string,
     import_python_object_from_string,
@@ -111,20 +112,22 @@ class QuantumDevice(Instrument):
             instrument=self,
         )
 
-        self.hardware_config = ManualParameter(
-            "hardware_config",
-            docstring=(
-                "The input dictionary used to generate a valid HardwareCompilationConfig "
-                "using quantum_device.generate_hardware_compilation_config(). This configures "
-                "the compilation from the quantum-device layer to the control-hardware layer."
-            ),
-            initial_value=None,
-            instrument=self,
-        )
+        self.hardware_config: HardwareConfig = HardwareConfig(instrument=self)
+        """
+        The input dictionary used to generate a valid HardwareCompilationConfig using
+        :meth:`~.generate_hardware_compilation_config`.
+        This configures the compilation from the quantum-device layer to the control-hardware layer.
+
+
+        Useful methods to write and reload the configuration from a json file are
+        :meth:`~.HardwareConfig.load_from_json_file` and
+        :meth:`~.HardwareConfig.write_to_json_file`.
+
+        """
 
         self.scheduling_strategy = ManualParameter(
             "scheduling_strategy",
-            docstring=("Scheduling strategy used to calculate absolute timing."),
+            docstring="Scheduling strategy used to calculate absolute timing.",
             vals=validators.Enum("asap", "alap"),
             initial_value="asap",
         )
