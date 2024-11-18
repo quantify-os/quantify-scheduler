@@ -16,6 +16,7 @@
 - David Vos ([GitLab](https://gitlab.com/dvos2))
 - Diogo Valada ([GitLab](https://gitlab.com/Astlan))
 - Edgar Reehuis ([GitLab](https://gitlab.com/ereehuis))
+- Fabio Grigolo ([GitLab](https://gitlab.com/fgrigolo))
 - Fokko de Vries ([GitLab](https://gitlab.com/fdvries))
 - Gabor Oszkar Denes ([GitLab](https://gitlab.com/gdenes))
 - Gijs Vermarien ([GitLab](https://gitlab.com/gijsvermarien))

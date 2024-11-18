@@ -4,15 +4,12 @@
 from __future__ import annotations
 
 import json
-import os
-from datetime import datetime, timezone
 from typing import Any
 
 from qcodes.instrument.base import Instrument
 from qcodes.instrument.parameter import InstrumentRefParameter, ManualParameter
 from qcodes.utils import validators
 
-from quantify_core.data.handling import get_datadir
 from quantify_scheduler.backends.graph_compilation import (
     DeviceCompilationConfig,
     SerialCompilationConfig,
@@ -30,10 +27,14 @@ from quantify_scheduler.helpers.importers import (
     export_python_object_to_path_string,
     import_python_object_from_string,
 )
-from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEncoder
+from quantify_scheduler.json_utils import (
+    JSONSerializableMixin,
+    SchedulerJSONDecoder,
+    SchedulerJSONEncoder,
+)
 
 
-class QuantumDevice(Instrument):
+class QuantumDevice(JSONSerializableMixin, Instrument):
     """
     The QuantumDevice directly represents the device under test (DUT).
 
@@ -132,6 +133,7 @@ class QuantumDevice(Instrument):
             initial_value="asap",
         )
 
+        # Store refs to prevent them from being garbage collected.
         self._instrument_references = {}
 
     def __getstate__(self) -> dict[str, Any]:  # type: ignore
@@ -184,6 +186,7 @@ class QuantumDevice(Instrument):
     def to_json(self) -> str:
         """
         Convert the :class:`~QuantumDevice` data structure to a JSON string.
+        Overrides the base mixin method to perform additional checks.
 
         Returns
         -------
@@ -191,6 +194,7 @@ class QuantumDevice(Instrument):
             The json string containing the serialized `QuantumDevice`.
 
         """
+        # Check whether there are closed instruments that prevent serialization.
         device_instruments = []
         if hasattr(self, "elements"):
             device_instruments += self.elements()
@@ -217,78 +221,8 @@ class QuantumDevice(Instrument):
                 f"`QuantumDevice.remove_edge`."
             )
 
-        return json.dumps(self, cls=SchedulerJSONEncoder)
-
-    def to_json_file(self, path: str | None = None, add_timestamp: bool = True) -> str:
-        """
-        Convert the `QuantumDevice` data structure to a JSON string and store it in a file.
-
-        Parameters
-        ----------
-        path
-            The path to the directory where the file is created.
-
-        add_timestamp
-            Specify whether or not to append timestamp to the filename.
-            Default is True.
-
-        Returns
-        -------
-        :
-            The name of the file containing the serialized `QuantumDevice`.
-
-        """
-        if path is None:
-            path = get_datadir()
-
-        if add_timestamp:
-            timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S_%Z")
-            filename = os.path.join(path, f"{self.name}_{timestamp}.json")
-        else:
-            filename = os.path.join(path, f"{self.name}.json")
-
-        with open(filename, "w") as file:
-            file.write(self.to_json())
-
-        return filename
-
-    @classmethod
-    def from_json(cls, data: str) -> QuantumDevice:
-        """
-        Convert the JSON data to a `QuantumDevice`.
-
-        Parameters
-        ----------
-        data
-            The JSON data in str format.
-
-        Returns
-        -------
-        :
-            The deserialized :class:`~QuantumDevice` object.
-
-        """
-        return json.loads(data, cls=SchedulerJSONDecoder)
-
-    @classmethod
-    def from_json_file(cls, filename: str) -> QuantumDevice:
-        """
-        Read JSON data from a file and convert it to a `QuantumDevice`.
-
-        Parameters
-        ----------
-        filename
-            The name of the file containing the serialized `QuantumDevice`.
-
-        Returns
-        -------
-        :
-            The deserialized :class:`~QuantumDevice` object.
-
-        """
-        with open(filename) as file:
-            deserialized_device = cls.from_json(file.read())
-        return deserialized_device
+        # Let the JSON mixin handle serialization.
+        return super().to_json()
 
     def generate_compilation_config(self) -> SerialCompilationConfig:
         """Generate a config for use with a :class:`~.graph_compilation.QuantifyCompiler`."""

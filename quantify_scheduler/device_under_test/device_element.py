@@ -8,18 +8,18 @@ from typing import TYPE_CHECKING, Any
 from qcodes.instrument.base import Instrument
 
 from quantify_scheduler.helpers.importers import export_python_object_to_path_string
+from quantify_scheduler.json_utils import JSONSerializableMixin
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.graph_compilation import DeviceCompilationConfig
 
 
-class DeviceElement(Instrument):
+class DeviceElement(JSONSerializableMixin, Instrument):
     """
     Create a device element for managing parameters.
 
     The :class:`~DeviceElement` is responsible for compiling operations applied to that
-    specific device element from the quantum-circuit to the quantum-device
-    layer.
+    specific device element from the quantum-circuit to the quantum-device layer.
     """
 
     def __init__(self, name: str, **kwargs) -> None:  # noqa: ANN003

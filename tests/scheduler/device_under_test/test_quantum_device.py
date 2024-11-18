@@ -246,7 +246,7 @@ def test_quantum_device_serialization(
         assert serialized_quantum_device.__class__ is str
 
         # Ensure QuantumDevice can be deserialized again after closing instruments
-        deserialized_quantum_device = QuantumDevice.from_json(serialized_quantum_device)
+        _ = QuantumDevice.from_json(serialized_quantum_device)
         QuantumDevice.close_all()
         deserialized_quantum_device = QuantumDevice.from_json(serialized_quantum_device)
 

@@ -5,9 +5,11 @@ from __future__ import annotations
 
 import functools
 import json
+import os
 import pathlib
 import sys
 import warnings
+from datetime import datetime, timezone
 from enum import Enum
 from types import ModuleType
 from typing import TYPE_CHECKING, Any, Callable
@@ -15,7 +17,9 @@ from typing import TYPE_CHECKING, Any, Callable
 import fastjsonschema
 import numpy as np
 from qcodes.instrument import Instrument
+from typing_extensions import Self
 
+from quantify_core.data.handling import get_datadir
 from quantify_scheduler import enums
 from quantify_scheduler.helpers import inspect as inspect_helpers
 from quantify_scheduler.helpers.importers import import_python_object_from_string
@@ -394,3 +398,126 @@ class SchedulerJSONEncoder(json.JSONEncoder):
 
         # Let the base class default method raise the TypeError
         return json.JSONEncoder.default(self, o)
+
+
+class JSONSerializableMixin:
+    """
+    Mixin to allow de/serialization of arbitrary objects using :class:`~SchedulerJSONEncoder`
+    and :class:`~SchedulerJSONDecoder`.
+    """
+
+    def to_json(self) -> str:
+        """
+        Convert the object's data structure to a JSON string.
+
+        Returns
+        -------
+        :
+            The json string containing the serialized object.
+
+        """
+        return json.dumps(self, cls=SchedulerJSONEncoder)
+
+    def to_json_file(
+        self,
+        path: str | None = None,
+        add_timestamp: bool = True,
+    ) -> str:
+        """
+        Convert the object's data structure to a JSON string and store it in a file.
+
+        Examples
+        --------
+        Saving a :class:`~quantify_scheduler.QuantumDevice` will use its name and current timestamp
+
+        .. code-block:: python
+
+            from quantify_scheduler import QuantumDevice
+
+            single_qubit_device = QuantumDevice("single_qubit_device")
+            ...
+            single_qubit_device.to_json_file()
+            single_qubit_device.close()
+
+            single_qubit_device = QuantumDevice.from_json_file("/tmp/single_qubit_device_2024-11-14_13-36-59_UTC.json")
+
+
+        Parameters
+        ----------
+        path
+            The path to the directory where the file is created. Default
+            is `None`, in which case the file will be saved in the directory
+            determined by :func:`~quantify_core.data.handling.get_datadir()`.
+
+        add_timestamp
+            Specify whether to append timestamp to the filename.
+            Default is True.
+
+        Returns
+        -------
+        :
+            The name of the file containing the serialized object.
+
+        """  # noqa: E501
+        if path is None:
+            path = get_datadir()
+
+        name = getattr(self, "name")  # This is to shut up the linter about self.name
+
+        if add_timestamp:
+            timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S_%Z")
+            filename = os.path.join(path, f"{name}_{timestamp}.json")
+        else:
+            filename = os.path.join(path, f"{name}.json")
+
+        with open(filename, "w") as file:
+            file.write(self.to_json())
+
+        return filename
+
+    @classmethod
+    def from_json(cls, data: str) -> Self:
+        """
+        Convert the JSON data to an instance of the attached class.
+
+        Parameters
+        ----------
+        data
+            The JSON data in str format.
+
+        Returns
+        -------
+        :
+            The deserialized object.
+
+        """
+        return json.loads(data, cls=SchedulerJSONDecoder)
+
+    @classmethod
+    def from_json_file(cls, filename: str) -> Self:
+        """
+        Read JSON data from a file and convert it to an instance of the attached class.
+
+        Examples
+        --------
+
+        .. code-block:: python
+
+            from quantify_scheduler import QuantumDevice
+
+            single_qubit_device = QuantumDevice.from_json_file("/tmp/single_qubit_device_2024-11-14_13-36-59_UTC.json")
+
+        Parameters
+        ----------
+        filename
+            The name of the file containing the serialized object.
+
+        Returns
+        -------
+        :
+            The deserialized object.
+
+        """  # noqa: E501
+        with open(filename) as file:
+            deserialized_obj = cls.from_json(file.read())
+        return deserialized_obj
