@@ -230,6 +230,9 @@ def test_generate_new_style_hardware_config(new_style_config, old_style_config):
     if parsed_new_style_config.version == "0.2":
         converted_new_style_hw_cfg.version = "0.2"
 
+    # drop cross talk compensation as old style config does not support it
+    parsed_new_style_config.hardware_options.crosstalk = None
+
     # Partial checks
     # HardwareDescription
     assert (

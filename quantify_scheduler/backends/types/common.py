@@ -15,7 +15,13 @@ import matplotlib.pyplot as plt
 import networkx as nx
 from matplotlib.axes import Axes
 from matplotlib.patches import Rectangle
-from pydantic import Field, field_serializer, field_validator, model_validator
+from pydantic import (
+    ConfigDict,
+    Field,
+    field_serializer,
+    field_validator,
+    model_validator,
+)
 
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.helpers.importers import export_python_object_to_path_string
@@ -239,6 +245,13 @@ class HardwareOptions(DataStructure):
     :class:`~quantify_scheduler.backends.types.zhinst.ZIHardwareOptions`.
     """
 
+    crosstalk: dict[str, dict[str, float | complex]] | None = None
+    """
+    Dictionary containing the crosstalk values between ports on the quantum device.
+    The crosstalk values are given as a dictionary of dictionaries, where the outer
+    dictionary keys are the source ports and the inner dictionary keys are the target
+    ports.
+    """
     latency_corrections: dict[str, LatencyCorrection] | None = None
     """
     Dictionary containing the latency corrections (values) that should be applied
@@ -259,6 +272,14 @@ class HardwareOptions(DataStructure):
     Dictionary containing the mixer corrections (values) that should be used
     for signals on a certain port-clock combination (keys).
     """
+    model_config = ConfigDict(
+        extra="forbid",
+        # ensures exceptions are raised when passing extra argument that are not
+        # part of a model when initializing.
+        validate_assignment=True,
+        # run validation when assigning attributes
+        arbitrary_types_allowed=True,
+    )
 
 
 class LocalOscillatorDescription(DataStructure):
@@ -575,8 +596,9 @@ class HardwareCompilationConfig(DataStructure):
                     "Hardware description must be empty "
                     "when using old-style hardware config dictionary."
                 )
-            for _, hw_option in self.hardware_options:
-                if hw_option is not None:
+            default_hw_options = HardwareOptions()
+            for key, hw_option in self.hardware_options:
+                if hw_option != getattr(default_hw_options, key):
                     raise ValueError(
                         "Hardware options must be empty "
                         "when using old-style hardware config dictionary."

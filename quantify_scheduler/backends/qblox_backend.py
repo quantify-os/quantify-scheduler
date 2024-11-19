@@ -24,6 +24,9 @@ from quantify_scheduler.backends.graph_compilation import (
     SimpleNodeConfig,
 )
 from quantify_scheduler.backends.qblox import compiler_container, constants
+from quantify_scheduler.backends.qblox.crosstalk_compensation import (
+    crosstalk_compensation,
+)
 from quantify_scheduler.backends.qblox.enums import ChannelMode
 from quantify_scheduler.backends.qblox.exceptions import NcoOperationTimingError
 from quantify_scheduler.backends.qblox.helpers import (
@@ -561,6 +564,10 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
     grid.
     """
     compilation_passes: list[SimpleNodeConfig] = [
+        SimpleNodeConfig(
+            name="crosstalk_compensation",
+            compilation_func=crosstalk_compensation,  # type: ignore
+        ),
         SimpleNodeConfig(
             name="stack_pulses",
             compilation_func=stack_pulses,
