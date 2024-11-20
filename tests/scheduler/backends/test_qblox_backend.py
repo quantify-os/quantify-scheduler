@@ -683,6 +683,44 @@ def test_portclocks(
     assert compilers["cluster0_module2"].portclocks == [("q0:mw-q0.01")]
 
 
+# Using the old-style / legacy hardware config dict is deprecated
+@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
+def test_warn_mix_lo_false():
+    hardware_config = {
+        "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
+        "cluster0": {
+            "ref": "internal",
+            "instrument_type": "Cluster",
+            "cluster0_module3": {
+                "instrument_type": "QRM",
+                "real_input_0": {
+                    "lo_name": "red_laser",
+                    "mix_lo": False,
+                    "portclock_configs": [
+                        {
+                            "port": "qe0:optical_readout",
+                            "clock": "qe0.ge0",
+                        },
+                    ],
+                },
+            },
+        },
+        "red_laser": {
+            "instrument_type": "LocalOscillator",
+            "frequency": None,
+            "power": 1,
+        },
+    }
+
+    with pytest.warns(UserWarning) as warn:
+        _ = QbloxHardwareCompilationConfig.model_validate(hardware_config)
+
+    assert (
+        "Using `mix_lo=False` in channels coupled to lasers might cause undefined behavior."
+        in str(warn[1].message)
+    )
+
+
 @pytest.mark.parametrize(
     "graph",
     [
@@ -1285,35 +1323,6 @@ def test_acquisitions_back_to_back(
         )
 
     assert "Please ensure a minimum interval of 300 ns between acquisitions" in error.value.args[0]
-
-
-@pytest.mark.filterwarnings(
-    "ignore:.*The specified weights and sampling rate lead to a weighted integration.*"
-)
-def test_deprecated_weighted_acquisition_end_to_end(
-    pulse_only_schedule_with_operation_timing,
-    compile_config_basic_transmon_qblox_hardware,
-):
-    sched = pulse_only_schedule_with_operation_timing
-    sched.add(Measure("q0", acq_protocol="NumericalWeightedIntegrationComplex"))
-
-    compiler = SerialCompiler(name="compiler")
-    with pytest.warns(
-        FutureWarning,
-        match="0.20.0",
-    ):
-        compiled_sched = compiler.compile(
-            sched,
-            config=compile_config_basic_transmon_qblox_hardware,
-        )
-    assert re.search(
-        r"\n\s*acquire_weighed\s+0,0,0,1,4(\s|$)",
-        (
-            compiled_sched.compiled_instructions["cluster0"]["cluster0_module4"]["sequencers"][
-                "seq0"
-            ]["sequence"]["program"]
-        ),
-    )
 
 
 @pytest.mark.filterwarnings(

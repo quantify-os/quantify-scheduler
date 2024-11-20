@@ -147,10 +147,13 @@ def test_warn_mix_lo_false():
         },
     }
 
-    with pytest.warns(FutureWarning) as warn:
+    with pytest.warns(UserWarning) as warn:
         _ = QbloxHardwareCompilationConfig.model_validate(hardware_config)
 
-    assert "Please use quantify_scheduler=0.20.1." in str(warn[1].message)
+    assert (
+        "Using `mix_lo=False` in channels coupled to lasers might cause undefined behavior."
+        in str(warn[1].message)
+    )
 
 
 def test_channel_path():

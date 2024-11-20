@@ -12,7 +12,6 @@ import numpy as np
 
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.qblox.helpers import generate_waveform_data
-from quantify_scheduler.helpers.deprecation import deprecated_arg_alias
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import (
     NumericalPulse,
@@ -334,7 +333,6 @@ class StitchedPulseBuilder:
         self._pulses.append(pulse)
         return self
 
-    @deprecated_arg_alias("0.20.0", path_0="path_I", path_1="path_Q")
     def add_voltage_offset(
         self,
         path_I: float,

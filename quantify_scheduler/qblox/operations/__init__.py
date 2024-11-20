@@ -6,5 +6,17 @@ from quantify_scheduler.backends.qblox.operations.pulse_library import (
     LatchReset,
     SimpleNumericalPulse,
 )
+from quantify_scheduler.backends.qblox.operations.stitched_pulse import (
+    StitchedPulse,
+    StitchedPulseBuilder,
+    convert_to_numerical_pulse,
+)
 
-__all__ = ["LatchReset", "SimpleNumericalPulse", "ConditionalReset"]
+__all__ = [
+    "LatchReset",
+    "SimpleNumericalPulse",
+    "ConditionalReset",
+    "StitchedPulse",
+    "StitchedPulseBuilder",
+    "convert_to_numerical_pulse",
+]

@@ -18,7 +18,6 @@ from quantify_scheduler.enums import BinMode, TimeRef, TimeSource
 from quantify_scheduler.operations.acquisition_library import (
     NumericalSeparatedWeightedIntegration,
     NumericalWeightedIntegration,
-    NumericalWeightedIntegrationComplex,
     SSBIntegrationComplex,
     ThresholdedAcquisition,
     Timetag,
@@ -194,7 +193,6 @@ def _dispersive_measurement(  # noqa: PLR0915
     elif acq_protocol in (
         "NumericalSeparatedWeightedIntegration",
         "NumericalWeightedIntegration",
-        "NumericalWeightedIntegrationComplex",
     ):
         if acq_weights_a is None or acq_weights_b is None or acq_weights_sampling_rate is None:
             raise TypeError(
@@ -231,21 +229,6 @@ def _dispersive_measurement(  # noqa: PLR0915
         elif acq_protocol == "NumericalWeightedIntegration":
             subschedule.add(
                 NumericalWeightedIntegration(
-                    port=port,
-                    clock=clock,
-                    weights_a=acq_weights_a,
-                    weights_b=acq_weights_b,
-                    weights_sampling_rate=acq_weights_sampling_rate,
-                    acq_channel=acq_channel,
-                    acq_index=acq_index,
-                    bin_mode=bin_mode,
-                    t0=acq_delay,
-                ),
-                ref_pt="start",
-            )
-        elif acq_protocol == "NumericalWeightedIntegrationComplex":
-            subschedule.add(
-                NumericalWeightedIntegrationComplex(
                     port=port,
                     clock=clock,
                     weights_a=acq_weights_a,

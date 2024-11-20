@@ -18,15 +18,6 @@ from quantify_scheduler.operations.pulse_library import (
     SquarePulse,
     VoltageOffset,
 )
-from quantify_scheduler.operations.stitched_pulse import (
-    StitchedPulse as OldStitchedPulse,
-)
-from quantify_scheduler.operations.stitched_pulse import (
-    StitchedPulseBuilder as OldStitchedPulseBuilder,
-)
-from quantify_scheduler.operations.stitched_pulse import (
-    convert_to_numerical_pulse as old_convert_to_numerical_pulse,
-)
 
 
 def test_constructors():
@@ -371,65 +362,3 @@ def test_convert_to_numerical_mixed_operation():
 
     assert isinstance(num_pulse, StitchedPulse)
     assert num_pulse.data["gate_info"] == dummy_gate_info
-
-
-def test_deprecated_funcs_and_classes_warn():
-    with pytest.warns(
-        FutureWarning,
-        match="0.20.0",
-    ):
-        stitched = OldStitchedPulse(pulse_info=[{"t0": 0, "duration": 0}])
-    # Check if correct object got created
-    assert isinstance(stitched, StitchedPulse)
-    # Check if object is fully initialized
-    assert stitched.data["pulse_info"][0]["t0"] == 0
-    assert stitched.data["pulse_info"][0]["duration"] == 0
-    with pytest.warns(
-        FutureWarning,
-        match="0.20.0",
-    ):
-        builder = OldStitchedPulseBuilder(port="port")
-    assert isinstance(builder, StitchedPulseBuilder)
-    assert builder._port == "port"
-    with pytest.warns(
-        FutureWarning,
-        match="0.20.0",
-    ):
-        old_convert_to_numerical_pulse(
-            long_ramp_pulse(
-                amp=0.5,
-                duration=1e-4,
-                port="some_port",
-                clock="some_clock",
-                offset=-0.25,
-            )
-        )
-
-
-def test_deprecated_path_args():
-    with pytest.warns(FutureWarning, match="0.20.0"):
-        (
-            StitchedPulseBuilder(port="q0:mw", clock="q0.01")  # type: ignore
-            .add_pulse(SquarePulse(amp=0.2, duration=1e-6, port="q0:mw", clock="q0.01"))
-            .add_pulse(RampPulse(amp=0.5, duration=28e-9, port="q0:mw", clock="q0.01"))
-            .add_voltage_offset(
-                path_0=0.5, path_1=0.0, duration=1e-7, rel_time=5e-7, append=False  # type: ignore
-            )
-            .build()
-        )
-    with pytest.raises(TypeError, match="0.20.0"):
-        (
-            StitchedPulseBuilder(port="q0:mw", clock="q0.01")  # type: ignore
-            .add_pulse(SquarePulse(amp=0.2, duration=1e-6, port="q0:mw", clock="q0.01"))
-            .add_pulse(RampPulse(amp=0.5, duration=28e-9, port="q0:mw", clock="q0.01"))
-            .add_voltage_offset(
-                path_I=0.5,
-                path_Q=0.0,
-                path_0=0.5,  # type: ignore
-                path_1=0.0,  # type: ignore
-                duration=1e-7,
-                rel_time=5e-7,
-                append=False,
-            )
-            .build()
-        )

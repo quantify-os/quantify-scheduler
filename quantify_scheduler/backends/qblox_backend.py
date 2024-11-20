@@ -666,10 +666,9 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
                     # FIXME: https://qblox.atlassian.net/browse/SE-490
                     if mix_lo is not None and mix_lo is False:
                         warnings.warn(
-                            "Using `mix_lo=False` in channels coupled to lasers "
-                            "might cause ill-behavior. "
-                            "Please use quantify_scheduler=0.20.1.",
-                            FutureWarning,
+                            "Using `mix_lo=False` in channels coupled to lasers might "
+                            "cause undefined behavior.",
+                            UserWarning,
                         )
 
         return self

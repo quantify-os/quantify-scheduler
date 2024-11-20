@@ -4,15 +4,12 @@
 
 from __future__ import annotations
 
-import warnings
 from dataclasses import dataclass
 from typing import Any, Literal
 
 import numpy as np
 from qcodes import InstrumentChannel, validators
 
-from quantify_scheduler.helpers.deprecation import deprecated_arg_alias
-from quantify_scheduler.helpers.waveforms import area_pulses
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.resources import BasebandClockResource, DigitalClockResource
 
@@ -68,14 +65,7 @@ class ShiftClockPhase(Operation):
         phase_shift: float,
         clock: str,
         t0: float = 0,
-        duration: float = 0.0,
     ) -> None:
-        if duration != 0.0:
-            warnings.warn(
-                "The duration parameter will be removed in quantify-scheduler >= "
-                "0.20.0, and the duration will be fixed to 0.0.",
-                FutureWarning,
-            )
         super().__init__(name=self.__class__.__name__)
         self.data["pulse_info"] = [
             {
@@ -154,14 +144,7 @@ class SetClockFrequency(Operation):
         clock: str,
         clock_freq_new: float | None,
         t0: float = 0,
-        duration: float = 0.0,
     ) -> None:
-        if duration != 0.0:
-            warnings.warn(
-                "The duration parameter will be removed in quantify-scheduler >= "
-                "0.20.0, and the duration will be fixed to 0.0.",
-                FutureWarning,
-            )
         super().__init__(name=self.__class__.__name__)
         self.data["pulse_info"] = [
             {
@@ -211,23 +194,15 @@ class VoltageOffset(Operation):
 
     """
 
-    @deprecated_arg_alias("0.20.0", offset_path_0="offset_path_I", offset_path_1="offset_path_Q")
     def __init__(
         self,
         offset_path_I: float,
         offset_path_Q: float,
         port: str,
         clock: str = BasebandClockResource.IDENTITY,
-        duration: float = 0.0,
         t0: float = 0,
         reference_magnitude: ReferenceMagnitude | None = None,
     ) -> None:
-        if duration != 0.0:
-            warnings.warn(
-                "The duration parameter will be removed in quantify-scheduler >= "
-                "0.20.0, and the duration will be fixed to 0.0.",
-                FutureWarning,
-            )
         super().__init__(name=self.__class__.__name__)
         self.data["pulse_info"] = [
             {
@@ -237,7 +212,7 @@ class VoltageOffset(Operation):
                 "offset_path_Q": offset_path_Q,
                 "clock": clock,
                 "port": port,
-                "duration": duration,
+                "duration": 0.0,
                 "reference_magnitude": reference_magnitude,
             }
         ]
@@ -958,6 +933,8 @@ def create_dc_compensation_pulse(
         Returns a SquarePulse object that compensates all pulses passed as argument.
 
     """
+    # Prevent circular import.
+    from quantify_scheduler.helpers.waveforms import area_pulses
 
     def _extract_pulses(pulses: list[Operation], port: str) -> list[dict[str, Any]]:
         # Collect all pulses for the given port

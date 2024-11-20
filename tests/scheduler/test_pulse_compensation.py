@@ -94,7 +94,7 @@ def test_determine_compensation_pulse():
             "Error calculating compensation pulse amplitude for "
             "'VoltageOffset"
             "(offset_path_I=1,offset_path_Q=1,port='q0:gt',clock='cl0.baseband',"
-            "duration=0.0,t0=0,reference_magnitude=None)'. "
+            "t0=0,reference_magnitude=None)'. "
             "Voltage offset operation type is not allowed "
             "in a pulse compensation structure. ",
         ),

@@ -13,11 +13,28 @@ Download the notebook: {nb-download}`deprecated.ipynb`
 
 | **Target** | **Depr** | **Remv** | **Alternatives** |
 |---|---|---|---|
-| `control_flow` argument in `Schedule.add` | 0.20.1 | 0.23 | See {ref}`New control flow interface`|
-| `common.DistortionCorrection` | 0.20.1 | 0.23 | See {ref}`DistortionCorrection => SoftwareDistortionCorrection`|
+| `latency_correction` in `Connectivity` | 0.20.1 | 0.22 | See {ref}`Qblox Hardware Configuration` |
+| `distortion_correction` in `Connectivity` | 0.20.1 | 0.22 | See {ref}`Qblox Hardware Configuration` |
+| `duration` parameter in `ShiftClockPhase` operation | 0.20.1 | 0.22 | See {ref}`removed_duration` |
+| `duration` parameter in `SetClockFrequency` operation | 0.20.1 | 0.22 | See {ref}`removed_duration` |
+| `duration` parameter in `VoltageOffset` operation | 0.20.1 | 0.22 | See {ref}`removed_duration` |
+| `quantify_scheduler.operations.stitched_pulse.StitchedPulse` | 0.20.1 | 0.22 | {class}`~quantify_scheduler.qblox.operations.StitchedPulse` |
+| `quantify_scheduler.operations.stitched_pulse.convert_to_numerical_pulse` | 0.20.1 | 0.22 | {class}`~quantify_scheduler.qblox.operations.convert_to_numerical_pulse` |
+| `quantify_scheduler.operations.stitched_pulse.StitchedPulseBuilder` | 0.20.1 | 0.22 | {class}`~quantify_scheduler.qblox.operations.StitchedPulseBuilder` |
+| `quantify_scheduler.compilation.determine_absolute_timing` | 0.20.1 | 0.22 | {ref}`Compiling to Hardware<sec-tutorial-compiling>` and {ref}`Operations and Qubits<sec-tutorial-ops-qubits>` |
+| `control_flow` argument in `Schedule.add` | 0.20.1 | 0.22 | See {ref}`New control flow interface`|
+| `common.DistortionCorrection` | 0.20.1 | 0.22 | See {ref}`DistortionCorrection => SoftwareDistortionCorrection`|
+| `bounds_error` and `extrapolate` args in `waveforms.interpolated_complex_waveform` | 0.19.0 | 0.22 | See {ref}`removed_bounds_error` |
+| `quantify_scheduler.operations.stitched_pulse` | 0.18 | 0.21 | {mod}`quantify_scheduler.backends.qblox.operations.stitched_pulse` |
+| `quantify_scheduler.operations.pulse_factories.staircase_pulse` | 0.18 | 0.22 | {func}`quantify_scheduler.backends.qblox.operations.pulse_factories.staircase_pulse` |
+| `quantify_scheduler.operations.pulse_factories.long_square_pulse` | 0.18 | 0.22 | {func}`quantify_scheduler.backends.qblox.operations.pulse_factories.long_square_pulse` |
+| `quantify_scheduler.operations.pulse_factories.long_ramp_pulse` | 0.18 | 0.22 | {func}`quantify_scheduler.backends.qblox.operations.pulse_factories.long_ramp_pulse` |
+| `NumericalWeightedIntegrationComplex` | 0.18 | 0.23 | {class}`~quantify_scheduler.operations.acquisition_library.NumericalSeparatedWeightedIntegration` |
+| `offset_path_{0,1}` arguments in {class}`~quantify_scheduler.operations.pulse_library.VoltageOffset` | 0.18 | 0.21 | Replaced by `offset_path_{I,Q}` |
 | `ScheduleGettable.generate_diagnostics_report()` | 0.17 | 0.18 | See {ref}`ScheduleGettable.generate_diagnostics_report()` |
 | `plot_kwargs` parameter in `ScheduleBase.plot_pulse_diagram()` | 0.15 | - | See {ref}`plot_kwargs parameter in ScheduleBase.plot_pulse_diagram()` |
-| `t` parameter in `NumericalWeightedIntegrationComplex` | 0.13 | 0.18 | See {ref}`t parameter in NumericalWeightedIntegrationComplex` |
+| `repetitions` parameter in `ScheduleGettable.process_acquired_data()` | 0.15 | 0.18 | See {ref}`repetitions parameter in ScheduleGettable.process_acquired_data()` |
+| `t` parameter in `NumericalSeparatedWeightedIntegration` | 0.13 | 0.18 | See {ref}`t parameter in NumericalSeparatedWeightedIntegration` |
 | Qblox `convert_hw_config_to_portclock_configs_spec()` | 0.13 | 0.18 | See {ref}`Qblox Hardware Configuration` |
 | Qblox `instruction_generated_pulses_enabled` hardware config setting | 0.13 | 0.17 | See {ref}`Instruction-generated pulses (Qblox only)` |
 | `quantify_scheduler.visualization` | 0.12 | 0.15 | See {ref}`Circuit diagrams and pulse diagrams` |
@@ -32,160 +49,49 @@ Download the notebook: {nb-download}`deprecated.ipynb`
 
 As of `quantify-scheduler==0.10.0`, deprecation warnings are shown by default (as `FutureWarning`).
 
-## Compilation Setup
+## Changed in 0.22.0
 
-```{code-cell} ipython3
----
-tags: [hide-cell]
-mystnb:
-  code_prompt_show: "Set up an InstrumentCoordinator, MeasurementControl and a Cluster"
----
-from quantify_core.data import handling as dh
-from quantify_core.measurement.control import MeasurementControl
-from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
-from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
+(removed_duration)=
+### Removed
 
-from qblox_instruments import Cluster, ClusterType
-from qcodes import Instrument
+- :class:`~quantify_scheduler.operations.ShiftClockPhase`, :class:`~quantify_scheduler.operations.SetClockFrequency` and :class:`~quantify_scheduler.operations.VoltageOffset` no longer accept the `duration` parameter and are set internally to 0 seconds. 
+- `determine_absolute_timing` was removed from the public interface. Please use :class:`~quantify_scheduler.SerialCompiler` or :class:`~quantify_scheduler.ScheduleGettable` instead.
 
-dh.set_datadir(dh.default_datadir())
+### Moved
 
-Instrument.close_all()
-meas_ctrl = MeasurementControl("meas_ctrl")
-ic = InstrumentCoordinator("ic")
+- In the hardware config, the settings `latency_correction` and `distortion_correction` should now be defined inside `HardwareOptions`.
+-  `StitchedPulse`, `convert_to_numerical_pulse`, `StitchedPulseBuilder`, `staircase_pulse`, `long_square_pulse` and `long_ramp_pulse` have moved to the Qblox backend: 
 
-cluster = Cluster(
-    "cluster",
-    dummy_cfg={
-        1: ClusterType.CLUSTER_QRM_RF,
-    },
-)
-
-ic_cluster = ClusterComponent(cluster)
-ic.add_component(ic_cluster)
-
-# Always picks the first module of a certain type, and ignores the others of same type!
-qcm_rf, qrm_rf, qcm, qrm = [None] * 4
-for module in cluster.modules:
-    try:
-        if module.is_rf_type:
-            if module.is_qcm_type:
-                if qcm_rf is None:
-                    qcm_rf = module
-            else:
-                if qrm_rf is None:
-                    qrm_rf = module
-        else:
-            if module.is_qcm_type:
-                if qcm is None:
-                    qcm = module
-            else:
-                if qrm is None:
-                    qrm = module
-    except KeyError:
-        continue
-
-print(f"qcm    => {qcm}\nqrm    => {qrm}\nqcm_rf => {qcm_rf}\nqrm_rf => {qrm_rf}")
-```
-
-```{code-cell} ipython3
----
-tags: [hide-cell]
-mystnb:
-  code_prompt_show: "Set up a QuantumDevice with one BasicTransmonElement"
----
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
-
-q0 = BasicTransmonElement("q0")
-
-quantum_device = QuantumDevice("quantum_device")
-quantum_device.add_element(q0)
-quantum_device.instr_measurement_control(meas_ctrl.name)
-quantum_device.instr_instrument_coordinator(ic.name)
-
-q0.clock_freqs.f01(7.3e9)
-q0.clock_freqs.f12(7.0e9)
-q0.clock_freqs.readout(8.2e9)
-q0.measure.acq_delay(100e-9)
-q0.measure.acq_channel(0)
-q0.measure.pulse_amp(0.2)
-
-device_cfg = quantum_device.generate_device_config()
-```
-
-```{code-cell} ipython3
----
-tags: [hide-cell]
-mystnb:
-  code_prompt_show: "Provide the hardware configuration"
----
-hardware_cfg = {
-    "backend": "quantify_scheduler.backends.qblox_backend.hardware_compile",
-    "cluster": {
-        "ref": "internal",
-        "instrument_type": "Cluster",
-        f"cluster_module{qrm_rf.slot_idx}": {
-            "instrument_type": "QRM_RF",
-            "complex_output_0": {
-                "lo_freq": 2e9,
-                "portclock_configs": [
-                    {
-                        "port": "q0:mw",
-                        "clock": "q0.01",
-                    },
-                    {
-                        "port": "q0:res",
-                        "clock": "q0.ro",
-                    },
-                ],
-            },
-        },
-    },
-}
-```
-
-```{code-cell} ipython3
----
-tags: [hide-cell]
-mystnb:
-  code_prompt_show: "Define a simple schedule function"
----
-from quantify_scheduler import Schedule
-from quantify_scheduler.operations.gate_library import Measure, Reset
-from quantify_scheduler.operations.pulse_library import DRAGPulse
-from quantify_scheduler.resources import ClockResource
+| old location | new location |
+|----------|---------------------
+| `quantify_scheduler.operations.StitchedPulse` | `quantify_scheduler.qblox.operations.StitchedPulse` |
+| `quantify_scheduler.operations.convert_to_numerical_pulse` | `quantify_scheduler.qblox.operations.convert_to_numerical_pulse` |
+| `quantify_scheduler.operations.StitchedPulseBuilder` | `quantify_scheduler.qblox.StitchedPulseBuilder` |
+| `quantify_scheduler.operations.staircase_pulse` | `quantify_scheduler.qblox.staircase_pulse` |
+| `quantify_scheduler.operations.long_square_pulse` | `quantify_scheduler.qblox.long_square_pulse` |
+| `quantify_scheduler.operations.long_ramp_pulse` | `quantify_scheduler.qblox.long_ramp_pulse` |
+| 
 
 
-def simple_trace_sched(
-    repetitions: int,
-    pulse_amp: float = 0.2, 
-) -> Schedule:
-    sched = Schedule("Simple trace schedule", repetitions)
+### Renamed
 
-    port = "q0:res"
-    clock = "q0.ro"
+-  `DistortionCorrection` and `NumericalWeightedIntegrationComplex` have a new name:
 
-    sched.add(Reset("q0"))
-    sched.add(Measure("q0", acq_index=0, acq_protocol="Trace"))
-    sched.add(
-        DRAGPulse(
-            G_amp=pulse_amp,
-            D_amp=0,
-            phase=0,
-            duration=160e-9,
-            port=port,
-            clock=clock,
-        )
-    )
-
-    return sched
+| old name | new name |
+|----------|---------------------
+| `DistortionCorrection` | `SoftwareDistortionCorrection` |
+| `NumericalWeightedIntegrationComplex` | `NumericalSeparatedWeightedIntegration` |
 
 
-sched = simple_trace_sched(repetitions=1)
-```
+(removed_bounds_error)=
+### Other
 
-## New control flow interface
+- When interpolating waveforms, a call to `interpolated_complex_waveform` is made, which accepts key word arguments that will be passed to `scipy.interpolate.interp1d`. The two arguments `bounds_error` and `fill_value` are now fixed to `False` and `"extrapolate"` and cannot be changed.
+
+## Changed in 0.21.0
+
+
+### New control flow interface
 
 This is an example for the loop control flow. For other control flow types, please use the respective operation classes in the same way.
 
@@ -216,7 +122,7 @@ loop_operation = LoopOperation(body=subschedule, repetitions=3)
 schedule_with_loop.add(loop_operation)
 ```
 
-## DistortionCorrection => SoftwareDistortionCorrection
+### DistortionCorrection => SoftwareDistortionCorrection
 
 To prepare for distortion corrections performed by hardware, distortion corrections will now come in two flavors: `SoftwareDistortionCorrection` and `HardwareDistortionCorrection`. 
 
@@ -244,20 +150,21 @@ hardware_configuration = {
 }
 ```
 
-## qcompile() => SerialCompiler
+## Older
+
+### qcompile() => SerialCompiler
 
 The `qcompile()`, `device_compile()` and `hardware_compile()` compilation functions have been replaced by the {class}`~quantify_scheduler.backends.graph_compilation.SerialCompiler`. For step-by-step guides on how to perform compilation to the device level and hardware, please see {ref}`Compiling to Hardware<sec-tutorial-compiling>` and {ref}`Operations and Qubits<sec-tutorial-ops-qubits>`. A brief example is shown below.
 
-First, run {ref}`Compilation Setup`.
 
-```{code-cell} ipython3
+```{code-block} python
 # Old way:
-# from quantify_scheduler.compilation import qcompile
+from quantify_scheduler.compilation import qcompile
 
-# compiled_schedule = qcompile(sched, device_cfg, hardware_cfg)
+compiled_schedule = qcompile(sched, device_cfg, hardware_cfg)
 ```
 
-```{code-cell} ipython3
+```{code-block} python
 from quantify_scheduler.backends.graph_compilation import SerialCompiler
 
 quantum_device.hardware_config(hardware_cfg)
@@ -268,15 +175,11 @@ compiled_schedule = compiler.compile(
 )
 ```
 
-```{code-cell} ipython3
-compiled_schedule.timing_table
-```
-
-## ScheduleGettable.generate_diagnostics_report()
+### ScheduleGettable.generate_diagnostics_report()
 
 In version 0.17, the `ScheduleGettable.generate_diagnostics_report` method received a major update. This method should no longer be called directly. Instead, the experiment should be run via the {meth}`.ScheduleGettable.initialize_and_get_with_report` method, which executes the experiment and generates a diagnostics report for debugging.
 
-## plot_kwargs parameter in ScheduleBase.plot_pulse_diagram()
+### plot_kwargs parameter in ScheduleBase.plot_pulse_diagram()
 
 In version 0.15, the `plot_kwargs` parameter of the {meth}`.ScheduleBase.plot_pulse_diagram` method was replaced by variable keyword arguments (`**kwargs`). This means that the dictionary provided to `plot_kwargs` can be unpacked and passed to the method directly. For example,
 
@@ -286,18 +189,26 @@ schedule.plot_pulse_diagram(plot_kwargs={"x_range": (201e-6, 201.5e-6)})
 
 can now be written as
 
-```{code-cell} ipython3
+```{code-block} python
 compiled_schedule.plot_pulse_diagram(x_range=(201e-6, 201.5e-6))
 ```
 
-## t parameter in NumericalWeightedIntegrationComplex
+### repetitions parameter in ScheduleGettable.process_acquired_data()
 
-In version 0.13.0, the `t` parameter in the {class}`~quantify_scheduler.operations.acquisition_library.NumericalWeightedIntegrationComplex` initializer was replaced by the `weights_sampling_rate` parameter, which takes a sampling rate in Hz.
+In version 0.15, the `repetitions` parameter of the `ScheduleGettable.process_acquired_data` method was deprecated. This parameter has no effect, and can simply be omitted. The {ref}`sec-tutorial-schedulegettable-repetitions` section of {ref}`sec-tutorial-schedulegettable` contains more information on how to set the number of repetitions in an experiment.
+
+### t parameter in NumericalSeparatedWeightedIntegration
+
+```{note}
+This class was renamed from `NumericalWeightedIntegrationComplex` in quantify-scheduler 0.18.1.
+```
+
+In version 0.13.0, the `t` parameter in the {class}`~quantify_scheduler.operations.acquisition_library.NumericalSeparatedWeightedIntegration` initializer was replaced by the `weights_sampling_rate` parameter, which takes a sampling rate in Hz.
 
 This means that creating a class instance as
 
 ```python
-NumericalWeightedIntegrationComplex(
+NumericalSeparatedWeightedIntegration(
     weights_a=[0.1, 0.2, 0.3],
     weight_b=[0.4, 0.5, 0.6],
     t=[0.0, 1e-9, 2e-9],
@@ -310,10 +221,9 @@ NumericalWeightedIntegrationComplex(
 should now be done as
 
 ```{code-cell} ipython3
-from quantify_scheduler.operations.acquisition_library import NumericalWeightedIntegrationComplex
+from quantify_scheduler.operations.acquisition_library import NumericalSeparatedWeightedIntegration
 
-
-NumericalWeightedIntegrationComplex(
+NumericalSeparatedWeightedIntegration(
     weights_a=[0.1, 0.2, 0.3],
     weights_b=[0.4, 0.5, 0.6],
     weights_sampling_rate=1e9,
@@ -324,7 +234,7 @@ NumericalWeightedIntegrationComplex(
 ```
 
 
-## Circuit diagrams and pulse diagrams
+### Circuit diagrams and pulse diagrams
 
 The functions to plot circuit and pulse diagrams have moved to a private module in version 0.12.0.
 
@@ -339,24 +249,24 @@ pulse_diagram_matplotlib(schedule)
 
 should now be written as
 
-```{code-cell} ipython3
+```{code-block} python
 compiled_schedule.plot_pulse_diagram(plot_backend="plotly")
 compiled_schedule.plot_pulse_diagram(plot_backend="mpl")
 ```
 
 More examples can be found in the {ref}`Schedules and Pulses<sec-tutorial-sched-pulse>` and {ref}`Operations and Qubits<sec-tutorial-ops-qubits-vis>` tutorials.
 
-## acq_channel
+### acq_channel
 
-In the {class}`~quantify_scheduler.operations.gate_library.Measure` and {class}`~quantify_scheduler.operations.nv_native_library.CRCount` classes, the `acq_channel` parameter has been removed from the initializers. For gate-level operations, the acquisition channel can be set in the {class}`~quantify_scheduler.device_under_test.device_element.DeviceElement` subclasses, such as {class}`~quantify_scheduler.device_under_test.transmon_element.BasicTransmonElement`, instead. See, for example, `q0.measure.acq_channel(0)` in the {ref}`Compilation Setup`.
+In the {class}`~quantify_scheduler.operations.gate_library.Measure` and {class}`~quantify_scheduler.operations.nv_native_library.CRCount` classes, the `acq_channel` parameter has been removed from the initializers. For gate-level operations, the acquisition channel can be set in the {class}`~quantify_scheduler.device_under_test.device_element.DeviceElement` subclasses, such as {class}`~quantify_scheduler.device_under_test.transmon_element.BasicTransmonElement`, instead.
 
 
 
-## add_pulse_information_transmon() => compile_circuit_to_device()
+### add_pulse_information_transmon() => compile_circuit_to_device()
 
 The compilation step `add_pulse_information_transmon` has been replaced by `compile_circuit_to_device`. For steps on how to add device configuration to your compilation steps, please see {ref}`Operations and Qubits<sec-tutorial-ops-qubits>`.
 
-## Qblox Hardware Configuration
+### Qblox Hardware Configuration
 
 In quantify-scheduler 0.8.0, the schema for the Qblox hardware configuration was revised. From version 0.13.0, old hardware configurations will no longer be automatically converted. Below is a summary of the changes.
 
@@ -421,7 +331,7 @@ correct_hardware_cfg = {
 }
 ```
 
-## TransmonElement => BasicTransmonElement
+### TransmonElement => BasicTransmonElement
 
 In quantify-scheduler 0.7.0, the {class}`~quantify_scheduler.device_under_test.transmon_element.BasicTransmonElement` class was added and replaced the `TransmonElement` class.
 
@@ -499,7 +409,7 @@ device_config_basic_transmon = basic.generate_device_config().model_dump()
 pprint.pprint(device_config_basic_transmon)
 ```
 
-## Instruction-generated pulses (Qblox only)
+### Instruction-generated pulses (Qblox only)
 
 Instead of using the ``instruction_generated_pulses_enabled: True`` field in the port-clock configuration for generating long square and staircase pulses, you can now create long square, staircase and ramp waveforms (that would otherwise not fit in memory), by creating these operations with the following helper functions.
 

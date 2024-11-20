@@ -16,7 +16,6 @@ from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEnc
 from quantify_scheduler.operations.acquisition_library import (
     NumericalSeparatedWeightedIntegration,
     NumericalWeightedIntegration,
-    NumericalWeightedIntegrationComplex,
     SSBIntegrationComplex,
     ThresholdedAcquisition,
     Timetag,
@@ -228,41 +227,6 @@ def test_trigger_count_average_mode_warning():
             bin_mode=BinMode.AVERAGE,
             t0=12e-9,
         )
-
-
-def test_deprecated_weighted_acquisition():
-    with pytest.warns(
-        FutureWarning,
-        match="0.20.0",
-    ):
-        weighted = NumericalWeightedIntegrationComplex(
-            port="q0:res",
-            clock="q0.ro",
-            weights_a=[0.25, 0.5, 0.25, 0.25],
-            weights_b=[0.25, 0.5, 0.5, 0.25],
-            interpolation="linear",
-            acq_channel=1,
-            acq_index=2,
-            bin_mode=BinMode.APPEND,
-            t0=16e-9,
-        )
-    expected = {
-        "t0": 1.6e-08,
-        "clock": "q0.ro",
-        "port": "q0:res",
-        "duration": pytest.approx(4e-9),
-        "phase": 0,
-        "acq_channel": 1,
-        "acq_index": 2,
-        "bin_mode": BinMode.APPEND,
-        "protocol": "NumericalSeparatedWeightedIntegration",
-        "acq_return_type": complex,
-    }
-    for k, v in expected.items():
-        assert weighted.data["acquisition_info"][0][k] == v
-    wf_a, wf_b = weighted.data["acquisition_info"][0]["waveforms"]
-    assert list(wf_a["t_samples"]) == [0.0e00, 1.0e-09, 2.0e-09, 3.0e-09]
-    assert list(wf_b["t_samples"]) == [0.0e00, 1.0e-09, 2.0e-09, 3.0e-09]
 
 
 def test_weighted_acquisition():

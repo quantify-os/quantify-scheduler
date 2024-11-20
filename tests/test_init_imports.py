@@ -48,7 +48,6 @@ def _get_public_items(module):
                 "Loop",
                 "Conditional",
                 "AcquisitionOperation",  # deprecated
-                "NumericalWeightedIntegrationComplex",  # deprecated
             },
         ),
         ("quantify_scheduler", ["resources"], None),

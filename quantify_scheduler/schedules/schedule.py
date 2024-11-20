@@ -793,13 +793,13 @@ class Schedule(ScheduleBase):
             reference point in reference operation must be one of
             :code:`"start"`, :code:`"center"`, :code:`"end"`, or :code:`None`; in case
             of :code:`None`,
-            :func:`~quantify_scheduler.compilation.determine_absolute_timing` assumes
+            :func:`~quantify_scheduler.compilation._determine_absolute_timing` assumes
             :code:`"end"`.
         ref_pt_new
             reference point in added operation must be one of
             :code:`"start"`, :code:`"center"`, :code:`"end"`, or :code:`None`; in case
             of :code:`None`,
-            :func:`~quantify_scheduler.compilation.determine_absolute_timing` assumes
+            :func:`~quantify_scheduler.compilation._determine_absolute_timing` assumes
             :code:`"start"`.
         label
             a unique string that can be used as an identifier when adding operations.
@@ -969,13 +969,13 @@ class Schedulable(JSONSchemaValMixin, UserDict):
             reference point in reference operation must be one of
             :code:`"start"`, :code:`"center"`, :code:`"end"`, or :code:`None`; in case
             of :code:`None`,
-            :meth:`~quantify_scheduler.compilation.determine_absolute_timing` assumes
+            :meth:`~quantify_scheduler.compilation._determine_absolute_timing` assumes
             :code:`"end"`.
         ref_pt_new
             reference point in added operation must be one of
             :code:`"start"`, :code:`"center"`, :code:`"end"`, or :code:`None`; in case
             of :code:`None`,
-            :meth:`~quantify_scheduler.compilation.determine_absolute_timing` assumes
+            :meth:`~quantify_scheduler.compilation._determine_absolute_timing` assumes
             :code:`"start"`.
 
         """

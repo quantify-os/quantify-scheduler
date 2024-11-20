@@ -4,15 +4,12 @@
 from __future__ import annotations
 
 import logging
-import warnings
-from copy import deepcopy
 from typing import TYPE_CHECKING, Literal, overload
 
 from quantify_scheduler.json_utils import load_json_schema, validate_json
 from quantify_scheduler.operations.control_flow_library import (
     ControlFlowOperation,
 )
-from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.schedules.schedule import Schedule, ScheduleBase
 
 if TYPE_CHECKING:
@@ -173,26 +170,6 @@ def _determine_absolute_timing_schedule(  # noqa: PLR0912
     if time_unit == "ideal":
         schedule["depth"] = schedule["duration"] + 1
     return schedule
-
-
-def determine_absolute_timing(  # noqa: PLR0912
-    schedule: Schedule,
-    time_unit: Literal[
-        "physical", "ideal", None
-    ] = "physical",  # should be included in CompilationConfig
-    config: CompilationConfig | None = None,
-) -> Schedule:
-    """Determine the absolute timing of a schedule based on the timing constraints."""
-    warnings.warn(
-        f"Calling {determine_absolute_timing.__name__} directly is deprecated "
-        f"and will be removed from the public interface in quantify-scheduler "
-        f">= 0.21.0. Please use `QuantifyCompiler` instead, which calls "
-        f"{_determine_absolute_timing.__name__} as a compilation node.",
-        FutureWarning,
-    )
-    return _determine_absolute_timing(
-        schedule=deepcopy(schedule), time_unit=time_unit, config=config
-    )
 
 
 def _get_start_time(

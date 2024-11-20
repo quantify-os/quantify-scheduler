@@ -12,18 +12,9 @@ from quantify_scheduler.backends.qblox.operations import (
     staircase_pulse,
 )
 from quantify_scheduler.operations.pulse_factories import (
-    long_ramp_pulse as old_long_ramp_pulse,
-)
-from quantify_scheduler.operations.pulse_factories import (
-    long_square_pulse as old_long_square_pulse,
-)
-from quantify_scheduler.operations.pulse_factories import (
     rxy_drag_pulse,
     rxy_gauss_pulse,
     rxy_hermite_pulse,
-)
-from quantify_scheduler.operations.pulse_factories import (
-    staircase_pulse as old_staircase_pulse,
 )
 from quantify_scheduler.operations.pulse_library import (
     ReferenceMagnitude,
@@ -152,16 +143,15 @@ def test_long_square_pulse():
     assert len(pulse["pulse_info"]) == 3
     assert (
         pulse["pulse_info"][0]
-        == VoltageOffset(
-            offset_path_I=0.8, offset_path_Q=0.0, duration=0.0, port=port, clock=clock
-        )["pulse_info"][0]
+        == VoltageOffset(offset_path_I=0.8, offset_path_Q=0.0, port=port, clock=clock)[
+            "pulse_info"
+        ][0]
     )
     assert (
         pulse["pulse_info"][1]
         == VoltageOffset(
             offset_path_I=0.0,
             offset_path_Q=0.0,
-            duration=0.0,
             port=port,
             clock=clock,
             t0=1e-3 - 4e-9,
@@ -280,21 +270,3 @@ def test_voltage_offset_operations_reference_magnitude(pulse):
     pulse = pulse(reference_magnitude=reference_magnitude)
 
     assert pulse["pulse_info"][0]["reference_magnitude"] == reference_magnitude
-
-
-def test_deprecated_functions_warn():
-    with pytest.warns(
-        FutureWarning,
-        match="0.20.0",
-    ):
-        old_long_ramp_pulse(amp=0.5, duration=100e-9, port="port")
-    with pytest.warns(
-        FutureWarning,
-        match="0.20.0",
-    ):
-        old_long_square_pulse(amp=0.5, duration=100e-9, port="port")
-    with pytest.warns(
-        FutureWarning,
-        match="0.20.0",
-    ):
-        old_staircase_pulse(start_amp=0.0, final_amp=1.0, num_steps=20, duration=2e-6, port="port")

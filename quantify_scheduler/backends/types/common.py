@@ -544,30 +544,6 @@ class HardwareCompilationConfig(DataStructure):
             return deserialize_function(config_type)
         return config_type  # type: ignore
 
-    @field_validator("connectivity")
-    def _latencies_in_hardware_config(cls, connectivity):  # noqa: N805
-        # if connectivity contains a hardware config with latency corrections
-        if isinstance(connectivity, dict) and "latency_corrections" in connectivity:
-            warnings.warn(
-                "Latency corrections should be specified in the "
-                "`backends.types.common.HardwareOptions` instead of "
-                "the hardware configuration as of quantify-scheduler >= 0.19.0",
-                FutureWarning,
-            )
-        return connectivity
-
-    @field_validator("connectivity")
-    def _distortions_in_hardware_config(cls, connectivity):  # noqa: N805
-        # if connectivity contains a hardware config with distortion corrections
-        if isinstance(connectivity, dict) and "distortion_corrections" in connectivity:
-            warnings.warn(
-                "Distortion corrections should be specified in the "
-                "`backends.types.common.HardwareOptions` instead of "
-                "the hardware configuration as of quantify-scheduler >= 0.19.0",
-                FutureWarning,
-            )
-        return connectivity
-
     @model_validator(mode="after")
     def _check_connectivity_graph_nodes_format(self):
         if isinstance(self.connectivity, Connectivity):

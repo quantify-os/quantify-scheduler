@@ -8,19 +8,8 @@ and use that to create an instance of the operation itself.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-from quantify_core.utilities import deprecated
-from quantify_scheduler.backends.qblox.operations import (
-    pulse_factories as qblox_pulse_factories,
-)
 from quantify_scheduler.operations import pulse_library
 from quantify_scheduler.schedules import Schedule
-
-if TYPE_CHECKING:
-    from quantify_scheduler.backends.qblox.operations.stitched_pulse import (
-        StitchedPulse,
-    )
 
 
 def rxy_drag_pulse(
@@ -404,18 +393,3 @@ def spin_init_pulse(
     )
 
     return spin_init_schedule
-
-
-@deprecated("0.20.0", qblox_pulse_factories.long_square_pulse)
-def long_square_pulse() -> StitchedPulse:
-    """Deprecated long_square_pulse."""
-
-
-@deprecated("0.20.0", qblox_pulse_factories.staircase_pulse)
-def staircase_pulse() -> StitchedPulse:
-    """Deprecated staircase_pulse."""
-
-
-@deprecated("0.20.0", qblox_pulse_factories.long_ramp_pulse)
-def long_ramp_pulse() -> StitchedPulse:
-    """Deprecated long_ramp_pulse."""

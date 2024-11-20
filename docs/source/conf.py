@@ -543,12 +543,12 @@ with open("nitpick-exceptions.txt", encoding="utf-8") as nitpick_exceptions:
 def maybe_skip_member(app, what, name, obj, skip, options):
     """Prevent creating conflicting reference targets for sphinx."""
     deprecated_objs = [
-        "quantify_scheduler.operations.stitched_pulse.StitchedPulse",
-        "quantify_scheduler.operations.stitched_pulse.convert_to_numerical_pulse",
-        "quantify_scheduler.operations.stitched_pulse.StitchedPulseBuilder",
-        "quantify_scheduler.operations.pulse_factories.long_ramp_pulse",
-        "quantify_scheduler.operations.pulse_factories.long_square_pulse",
-        "quantify_scheduler.operations.pulse_factories.staircase_pulse",
+        # "quantify_scheduler.operations.stitched_pulse.StitchedPulse",
+        # "quantify_scheduler.operations.stitched_pulse.convert_to_numerical_pulse",
+        # "quantify_scheduler.operations.stitched_pulse.StitchedPulseBuilder",
+        # "quantify_scheduler.operations.pulse_factories.long_ramp_pulse",
+        # "quantify_scheduler.operations.pulse_factories.long_square_pulse",
+        # "quantify_scheduler.operations.pulse_factories.staircase_pulse",
     ]
     if str(name) in deprecated_objs:
         return True

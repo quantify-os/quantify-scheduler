@@ -402,33 +402,30 @@ def interpolated_complex_waveform(
         An array containing the interpolated values.
 
     """
+    if ("bounds_error" in kwargs) or ("fill_value" in kwargs):
+        raise ValueError(
+            "The 'bounds_error' and `fill_value` arguments are fixed to 'False' and "
+            "'\"extrapolate\", respectively, and cannot be changed'."
+        )
+
     samples = np.array(samples)
 
-    if ("bounds_error" in kwargs) or ("fill_value" in kwargs):
-        warnings.warn(
-            "Extrapolation should not be used, and the `bounds_error` and `fill_value` parameters"
-            " can no longer be specified as of quantify-scheduler >= 0.19.0",
-            FutureWarning,
+    # Allow extrapolation only when t starts less than one t_sample before the start
+    # of t_samples, and when t ends less than one t_sample after the end of t_samples.
+    # This is necessary to fill in the last sample(s) when upsampling.
+    delta_t_samples = t_samples[1] - t_samples[0]
+    if t[0] < t_samples[0] - delta_t_samples or t[-1] > t_samples[-1] + delta_t_samples:
+        raise ValueError(
+            "Interpolation out of bounds: 't' should start at or after the first 't_sample'"
+            " and end at or before the last 't_sample'"
         )
-    else:
-        # Allow extrapolation only when t starts less than one t_sample before the start
-        # of t_samples, and when t ends less than one t_sample after the end of t_samples.
-        delta_t_samples = t_samples[1] - t_samples[0]
-        if t[0] < t_samples[0] - delta_t_samples or t[-1] > t_samples[-1] + delta_t_samples:
-            raise ValueError(
-                "Interpolation out of bounds: 't' should start at or after the first 't_sample'"
-                " and end at or before the last 't_sample'"
-            )
-
-    bounds_error = kwargs.pop("bounds_error", False)
-    fill_value = kwargs.pop("fill_value", "extrapolate")
 
     real_interpolator = interpolate.interp1d(
         t_samples,
         samples.real,
         kind=interpolation,
-        bounds_error=bounds_error,
-        fill_value=fill_value,
+        bounds_error=False,
+        fill_value="extrapolate",  # type: ignore
         **kwargs,
     )
 
@@ -441,8 +438,8 @@ def interpolated_complex_waveform(
         t_samples,
         samples.imag,
         kind=interpolation,
-        bounds_error=bounds_error,
-        fill_value=fill_value,
+        bounds_error=False,
+        fill_value="extrapolate",  # type: ignore
         **kwargs,
     )
     return real_interpolator(t) + 1.0j * imag_interpolator(t)

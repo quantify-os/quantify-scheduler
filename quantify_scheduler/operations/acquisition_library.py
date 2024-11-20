@@ -588,22 +588,6 @@ class NumericalSeparatedWeightedIntegration(WeightedIntegratedSeparated):
         return str(self)
 
 
-class NumericalWeightedIntegrationComplex(WeightedIntegratedSeparated):
-    """Deprecated, renamed to :class:`~NumericalSeparatedWeightedIntegration`."""
-
-    def __new__(cls, *args, **kwargs) -> NumericalSeparatedWeightedIntegration:
-        """Return :class:`~NumericalSeparatedWeightedIntegration`."""
-        warnings.warn(
-            (
-                f"{NumericalWeightedIntegrationComplex.__name__} is "
-                f"deprecated and will be removed in quantify-scheduler>=0.20.0. Use "
-                f"{NumericalSeparatedWeightedIntegration.__name__} instead."
-            ),
-            FutureWarning,
-        )
-        return NumericalSeparatedWeightedIntegration(*args, **kwargs)
-
-
 class NumericalWeightedIntegration(NumericalSeparatedWeightedIntegration):
     """
     Subclass of :class:`~NumericalSeparatedWeightedIntegration` returning a complex number.

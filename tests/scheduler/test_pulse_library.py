@@ -305,25 +305,6 @@ class TestPulseLevelOperation:
         assert obj != operation
 
 
-def test_deprecated_path_args_voltage_offset():
-    with pytest.warns(FutureWarning, match="0.20.0"):
-        VoltageOffset(
-            offset_path_0=0.5,
-            offset_path_1=0.1,
-            port="port",
-            clock="clock",
-        )
-    with pytest.raises(TypeError, match="0.20.0"):
-        VoltageOffset(
-            offset_path_0=0.5,
-            offset_path_1=0.1,
-            offset_path_I=0.5,
-            offset_path_Q=0.1,
-            port="port",
-            clock="clock",
-        )
-
-
 def test_complex_square_pulse(mock_setup_basic_transmon_with_standard_params):
     pulse0 = SquarePulse(
         amp=1 + 1j,
