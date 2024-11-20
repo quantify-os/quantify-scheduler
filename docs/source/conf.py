@@ -58,7 +58,14 @@ extensions = [
 copybutton_prompt_text = "$ "
 
 # required to use sphinx_design in combination with myst
-myst_enable_extensions = ["colon_fence", "substitution", "attrs_block"]
+myst_enable_extensions = [
+    "colon_fence",
+    "substitution",
+    "attrs_block",
+    "dollarmath",
+    "amsmath",
+    "linkify",
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -511,6 +518,7 @@ nitpick_ignore = [
     ("py:attr", "BasicTransmonElement.measure.acq_threshold"),
     ("py:attr", "BasicTransmonElement.measure.acq_rotation"),
     ("py:class", "NamedTuple"),
+    ("myst", "schedulegettable-optionally-returns-xarray-dataset"),
 ]  # Tuple[str, str], ignore certain warnings
 
 

@@ -1,42 +1,21 @@
 ## Checklist for a new release
 
 1. [ ] Review that `AUTHORS.md` has been updated.
+1. [ ] Review `@deprecated` and `FutureWarnings` that can be cleaned up now.
 
-1. Update `CHANGELOG.md`, `docs/tutorials/qblox/recent.md` and `README.md`:
-    - [ ] Update `Unreleased` chapter title in `CHANGELOG.md` to `X.Y.Z (YYYY-MM-DD)`.
-      - Also update `Unreleased` title in `docs/source/reference/qblox/recent.md` (if present).
-    - [ ] Order changelog alphabetically based on the key (secondary order of entries with same key can be kept as is): Key - Description
-    - [ ] Add compatibility info, extract the versions from `pyproject.toml` and https://pypi.org/project/qblox-instruments/ (Qblox Cluster firmware):
+1. [ ] Add compatibility info to `README.md`, extract the versions from `pyproject.toml` and https://pypi.org/project/qblox-instruments/ (Qblox Cluster firmware). e.g.:
       ```
       ### Compatibility info
 
       - Qblox: `qblox-instruments==x.x.x` (Cluster firmware vx.x.x)
       - ZI:    `zhinst==x.x.x` `zhinst-qcodes==x.x.x` `zhinst-toolkit==x.x.x`
       ```
-    - [ ] Update `## Hardware/driver compatibility` in `README.md`.
-
-1. [ ] Review `@deprecated` and `FutureWarning`s that can be cleaned up now.
 
 1. CI pipeline:
+    - [ ] Add "Release" label to trigger the changelog update pipeline job. (make sure that "vX.Y.Z" is somewhere in the merge request title)
     - [ ] Automated pipeline passes.
     - [ ] All `Test (py3.x, Windows, manual)` pass (trigger manually!).
 
-1. [ ] Commit pip frozen requirements for future reference:
-    - Go to the `Test (py3.9, Linux)` pipeline job and download the `artifacts` (right side "Job artifacts" `-->` "Download").
-    - Unzip, get the `frozen-requirements.txt`.
-    - Paste it in `frozen_requirements` directory.
-    - Rename it, commit & push:
-
-      ```bash
-      NEW_VERSION=X.Y.Z
-      echo $NEW_VERSION
-
-      mv frozen_requirements/frozen-requirements.txt frozen_requirements/frozen-requirements-$NEW_VERSION.txt
-
-      git add frozen_requirements/frozen-requirements-$NEW_VERSION.txt
-      git commit -m "Add pip frozen requirements for $NEW_VERSION"
-      git push
-      ```
 
 1. [ ] Create tag for bumped version:
     - Merge this MR into `main`.
@@ -50,28 +29,14 @@
       # You will be prompted for a tag description: `Release vX.Y.Z`
       git push origin "v${NEW_VERSION}"
       ```
-    <!-- - Future TODO: finish automation of this step in `.gitlab-ci.yml`. -->
-    <!-- 1. [ ] Run **one** of the major/minor/patch version bump (manual) jobs in the CI pipeline of the MR. -->
-    <!--     - NB this can only be done after unix and windows test & docs jobs pass. -->
 
-
-1. [ ] Add `Unreleased` chapter back to `CHANGELOG.md`. Commit and push it to `main` directly (no need to review it). Commit message: `Start development of vX.Y.Z+1`.
-
+1. [ ] Push an empty commit to `main` with message `Start development of vX.Y.Z+1.dev`.
 1. [ ] **Create** and **push** (see steps above) an **annotated** tag `vX.Y.Z+1.dev` pointing to the commit above.  Commit annotation: `Start development of vX.Y.Z+1`.
-    <!-- Note: if we are following semver, this should be rather vX.Y+1.0.dev, and bugfixes need to go into a separate bugfix branch for each minor release a-la `stable/vX.Y`.
-    Since we are not so strict with that and releasing minor and bugfix from the same branch, to avoid situation of having previous commit having version v0.7.0.dev19+abcdef and
-    next commit version v0.6.5 (which is less than v0.7.0.devN, which should not be the case) we must bump a bugfix version (the most minor version we bump in main)
-    and later we may decide that we are releasing a minor instad of a bugfix.-->
-
-1. [ ] Create new release vX.Y.Z on [GitLab](https://gitlab.com/quantify-os/quantify-scheduler/-/releases).
-    - Copy/paste the changelog of the release
-
-1. [ ] Manually edit the redirects from `/docs/quantify-scheduler` to `/docs/quantify-scheduler/vX.Y.Z/` and similar over at https://gitlab.com/quantify-os/quantify-os.gitlab.io/-/blob/main/source/extra/_redirects.
 
 1. When `Release to test.pypi.org` job of the tag pipeline succeeds:
     - [ ] Install package in (test) env and validate (e.g., run a quick notebook).
        ```bash
-       pip install quantify-scheduler==x.x.x --extra-index-url=https://test.pypi.org/simple/
+       pip install quantify-core==x.x.x --extra-index-url=https://test.pypi.org/simple/
        ```
        - _(For creating test env)_
          ```bash
@@ -89,3 +54,6 @@
 1. [ ] Post the new release in Slack (`#software-for-users` and `#software-for-developers`).
     - PS Rockets are a must! 🚀🚀🚀
 1. [ ] Inform the Quantify Marketing Team.
+
+
+

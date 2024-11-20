@@ -22,7 +22,8 @@ quantify_compilers
 :caption: Extras
 :maxdepth: 1
 
-bibliography
-authors
+release_notes
 changelog
+authors
+bibliography
 ```

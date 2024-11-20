@@ -1,33 +1,46 @@
 # Changelog
 
-## Unreleased
-
-### Breaking changes
-
-- `ramp` now requires an ndarray as input to be inline with other wave functions. Regular lists don't work anymore.
-- Introduce trigger count bin mode to replace AVERAGE with DISTRIBUTION. (!1103)
-
-### Merged branches and closed issues
-
-- Pyright
-  - Unignore files. (!1033, !1054)
-- Serialization
-  - Make timestamp in filename for `QuantumDevice.to_json_file` optional. (!1063)
-- Qblox backend
-  - Cleanup after hardware config redesign. Add `ChannelPath` class. (!1066)
-  - Remove `"settings"` parameter from `SequencerCompiler.__init__` to prevent confusion with `sequencer_cfg`. (!1068)
-  - Add SimpleNumericalPulse to the Qblox pulse library. (!1074)
-  - Fix `StitchedPulseBuilder` not taking its `t0` into account for VoltageOffsets. (!1089)
-  - Add stack_pulses compilation node to the Qblox backend. (!1084)
-  - Add crosstalk_compensation to the Qblox backend. (!1117)
-- Compilation
-  - Add internal logic to calculate pulse compensations. (!1070)
-  - Refactor parts of the NCO/LO frequency determining logic, and remove the `parent` attribute from `InstrumentCompiler` and all subclasses. (!1069)
-- Schedules
-  - Change CPMG schedule to enable Ramsey style decoupling measurements. (!1041)
-- Circuit diagrams
-  - Support sub-schedules and control-flow in circuit diagrams. (!1071)
-  - Plot the final datapoint correctly based on the waveform, instead of copying the previous one (!1096)
+## Release v0.22.0 (2024-11-20)
+### 🐛 Bug Fixes and Closed Issues
+- Fix thresholded NaN values in Qblox backend ([!1140](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1140) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+- Fix propagation of digitization_thresholds to the compiled settings ([!1133](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1133) by [@Thomas Middelburg](https://gitlab.com/ThomasMiddelburg))
+- Fix tests for TTL acquisition ([!1134](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1134) by [@Thomas Middelburg](https://gitlab.com/ThomasMiddelburg))
+- Readd Operation as direct import from quantify_scheduler ([!1109](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1109) by [@Leon Wubben](https://gitlab.com/LeonQblox))
+### ✨ New Features
+- Qblox Compensation Matrix ([!1121](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1121) by [@David Vos](https://gitlab.com/dvos2))
+- Allow (de)serialization of device elements ([!1126](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1126) by [@Fabio Grigolo](https://gitlab.com/fgrigolo))
+- (Re)load and write hardware configuration from and to file ([!1119](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1119) by [@Leon Wubben](https://gitlab.com/LeonQblox))
+- Introduce spin edge and spin init operation ([!1132](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1132) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+- Add support for fine_delay in QTM instructions ([!1118](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1118) by [@Thomas Middelburg](https://gitlab.com/ThomasMiddelburg))
+- Data acquisition: remove reshaping from schedule gettable ([!1093](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1093) by [@Olga Lebiga](https://gitlab.com/olebiga))
+- Qblox Pulse Stacking ([!1084](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1084) by [@David Vos](https://gitlab.com/dvos2))
+- Add versioning to qblox hardware compilation configs ([!1113](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1113) by [@Victor Gervilla Palomar](https://gitlab.com/v_palomar))
+- Allow user to change `rel_tolerance` in `to_grid_time` function ([!1106](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1106) by [@Robert Sokolewicz](https://gitlab.com/rsokolewicz))
+### 💥 Breaking Changes
+- Data acquisition: remove reshaping from schedule gettable ([!1093](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1093) by [@Olga Lebiga](https://gitlab.com/olebiga))
+- Allow generic subschedule in conditional playback ([!1094](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1094) by [@Robert Sokolewicz](https://gitlab.com/rsokolewicz))
+- Introduce trigger count bin mode to replace AVERAGE with DISTRIBUTION ([!1103](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1103) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+### 🚀 Enhancements
+- (Re)load and write hardware configuration from and to file ([!1119](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1119) by [@Leon Wubben](https://gitlab.com/LeonQblox))
+- Add support for fine_delay in QTM instructions ([!1118](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1118) by [@Thomas Middelburg](https://gitlab.com/ThomasMiddelburg))
+- Enforce two channel names for Measure operation ([!1105](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1105) by [@Victor Gervilla Palomar](https://gitlab.com/v_palomar))
+- Allow generic subschedule in conditional playback ([!1094](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1094) by [@Robert Sokolewicz](https://gitlab.com/rsokolewicz))
+- Plot the final datapoint correctly based on the waveform, instead of copying the previous one ([!1096](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1096) by [@Leon Wubben](https://gitlab.com/LeonQblox))
+- Allow StitchedPulse(Builder) and some waveforms to be be directly imported from operations ([!1120](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1120) by [@Leon Wubben](https://gitlab.com/LeonQblox))
+- Introduce trigger count bin mode to replace AVERAGE with DISTRIBUTION ([!1103](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1103) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+### 📚 Documentation
+- Update serialization page ([!1136](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1136) by [@Robert Sokolewicz](https://gitlab.com/rsokolewicz))
+- Update docstrings for device elements ([!1124](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1124) by [@Robert Sokolewicz](https://gitlab.com/rsokolewicz))
+- Change all readthedocs-hosted.com links with qblox.com/quantify-os.org links ([!1122](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1122) by [@Leon Wubben](https://gitlab.com/LeonQblox))
+### ♻️ Refactoring
+- Refactoring tests for DeviceElement ([!1028](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1028) by [@Nicolas Piot](https://gitlab.com/npiot))
+### 🔧 Other
+- Fix tests for TTL acquisition ([!1134](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1134) by [@Thomas Middelburg](https://gitlab.com/ThomasMiddelburg))
+- Clean autoapi when building documentation with make clean html ([!1123](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1123) by [@Robert Sokolewicz](https://gitlab.com/rsokolewicz))
+- Fix black pre-commit stage & align line lengths ([!1127](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1127) by [@Fabio Grigolo](https://gitlab.com/fgrigolo))
+- Move eval-type-backport to requirements ([!1114](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1114) by [@Robert Sokolewicz](https://gitlab.com/rsokolewicz))
+- Fix qblox test: replace bad_ip with bad_ip.test ([!1115](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1115) by [@Rohit Navarathna](https://gitlab.com/rnavarathna))
+- Get rid of all ruff exceptions in pyproject.toml ([!1104](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1104) by [@Leon Wubben](https://gitlab.com/LeonQblox))
 
 ## 0.21.1 (2024-08-16)
 
