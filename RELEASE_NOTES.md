@@ -1,5 +1,9 @@
 # Release Notes
 
+## Release v0.22.1
+
+A small bug fix to make the package compatible with the latest version of pydantic. 
+
 ## Release v0.22.0
 
 Many updates and improvements in this version! Some of the highlights include:

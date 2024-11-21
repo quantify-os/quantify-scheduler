@@ -1,5 +1,9 @@
 # Changelog
 
+## Release v0.22.1 (2024-11-21)
+### 🐛 Bug Fixes and Closed Issues
+- Fix pydantic model validation for SerialCompilationConfig  ([!1141](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1141) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+
 ## Release v0.22.0 (2024-11-20)
 ### 🐛 Bug Fixes and Closed Issues
 - Fix thresholded NaN values in Qblox backend ([!1140](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1140) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
