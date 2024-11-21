@@ -317,7 +317,7 @@ class MockROMHardwareOptions(HardwareOptions):
 
 
 class MockROMHardwareCompilationConfig(HardwareCompilationConfig):
-    config_type: type[MockROMHardwareCompilationConfig] = Field(
+    config_type: type[MockROMHardwareCompilationConfig] = Field(  # type: ignore
         default="quantify_scheduler.backends.mock.mock_rom.MockROMHardwareCompilationConfig",
         validate_default=True,
     )

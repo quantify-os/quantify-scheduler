@@ -503,7 +503,7 @@ class HardwareCompilationConfig(DataStructure):
     :class:`~quantify_scheduler.backends.zhinst_backend.ZIHardwareCompilationConfig`.
     """
 
-    config_type: type[HardwareCompilationConfig] = Field(
+    config_type: type[HardwareCompilationConfig] = Field(  # type: ignore
         default="quantify_scheduler.backends.types.common.HardwareCompilationConfig",
         validate_default=True,
     )

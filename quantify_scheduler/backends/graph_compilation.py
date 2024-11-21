@@ -611,3 +611,7 @@ class SerialCompilationConfig(CompilationConfig):
         if isinstance(class_, str):
             return deserialize_class(class_)
         return class_  # type: ignore
+
+
+# See <https://docs.pydantic.dev/2.10/errors/usage_errors/#class-not-fully-defined>.
+SerialCompilationConfig.model_rebuild()
