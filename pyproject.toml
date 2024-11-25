@@ -172,8 +172,6 @@ lint.ignore = [
  "D401",     # Docstrings should be in imperative mood
  "ANN002",   # Missing type annotation for *{name}
  "ANN003",   # Missing type annotation for **{name}
- "ANN101",   # Missing type annotation for `self` in method
- "ANN102",   # Missing type annotation for `cls` in class method
  "PLR2004",  # Magic value used in comparison, consider replacing `...` with a constant variable
  "PLR0912",  # Too many branches (... > 12)
  "PLR0913",  # Too many arguments to function call (.../5)

@@ -119,8 +119,8 @@ def get_sampled_pulses_from_voltage_offsets(
     """
     if sampled_pulses is None:
         sampled_pulses = defaultdict(list)
-    for port in offset_infos:
-        for clock, info_list in offset_infos[port].items():
+    for port, offset_info in offset_infos.items():
+        for clock, info_list in offset_info.items():
             time: list[float] = []
             signal: list[float] = []
             for info in info_list:

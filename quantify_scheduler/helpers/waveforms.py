@@ -72,8 +72,8 @@ def resize_waveforms(waveforms_dict: dict[int, np.ndarray], granularity: int) ->
 
     """
     # Modify the list while iterating to avoid copies
-    for pulse_id in waveforms_dict:
-        waveforms_dict[pulse_id] = resize_waveform(waveforms_dict[pulse_id], granularity)
+    for pulse_id, waveform in waveforms_dict.items():
+        waveforms_dict[pulse_id] = resize_waveform(waveform, granularity)
 
 
 def resize_waveform(waveform: np.ndarray, granularity: int) -> np.ndarray:

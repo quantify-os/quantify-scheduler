@@ -915,7 +915,7 @@ def test__get_instruction_list(create_typical_timing_table):
         "ic_uhfqa0.awg0": uhfqa0awg0_expected_list,
     }
 
-    for hardware_channel in expected_instructions_list:
+    for hardware_channel, expected_list in expected_instructions_list.items():
         # select only the instructions relevant for the output channel.
         output_timing_table = timing_table[timing_table["hardware_channel"] == hardware_channel]
 
@@ -923,7 +923,7 @@ def test__get_instruction_list(create_typical_timing_table):
         instructions = zhinst_backend._get_instruction_list(output_timing_table)
 
         # Assert
-        expected_instructions = expected_instructions_list[hardware_channel]
+        expected_instructions = expected_list
         for expected_instruction, instruction in zip(expected_instructions, instructions):
             assert instruction == expected_instruction
 

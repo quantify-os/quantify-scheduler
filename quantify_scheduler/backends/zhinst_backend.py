@@ -297,12 +297,11 @@ def _apply_latency_corrections(
     dict. The corrections are added to the abs_time elements fulfilling the
     specific port-clock combination.
     """
-    for port_clock_combination_key in latency_dict:
+    for port_clock_combination_key, latency_corr in latency_dict.items():
         port, clock = port_clock_combination_key.split("-")
         port_mask = timing_table["port"] == port
         clock_mask = timing_table["clock"] == clock
         full_mask_combination = port_mask * clock_mask
-        latency_corr = latency_dict[port_clock_combination_key]
         timing_table.loc[full_mask_combination, "abs_time"] += latency_corr
 
     return timing_table

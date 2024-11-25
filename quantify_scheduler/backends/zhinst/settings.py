@@ -272,8 +272,7 @@ class ZISettings:
         device_type = zi_types.DeviceType(device_type_str.upper())
         builder = ZISettingsBuilder()
 
-        for node in settings_data:
-            value = settings_data[node]
+        for node, value in settings_data.items():
 
             if "waveform/waves" in node:
                 nodes = node.split("/")

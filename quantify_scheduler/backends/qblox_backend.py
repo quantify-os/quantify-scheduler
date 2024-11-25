@@ -897,13 +897,13 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
                 )
             return mixer_path, mixer_lo
 
-        for port in port_to_clocks:
+        for port, clocks in port_to_clocks.items():
             if port not in self.connectivity.graph:
                 raise KeyError(f"{port} was not found in the connectivity.")
             for port_nbr in self.connectivity.graph.neighbors(port):
                 if is_path(port_nbr):
                     path = ChannelPath.from_path(port_nbr)
-                    for clock in port_to_clocks[port]:
+                    for clock in clocks:
                         repeated_pc = False
                         pc = f"{port}-{clock}"
                         # Add extra channel name for `Measure` operation. This takes place after
