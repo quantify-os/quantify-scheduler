@@ -6,6 +6,7 @@ from __future__ import annotations
 from itertools import count
 from typing import TYPE_CHECKING, Any, Hashable
 
+from quantify_core.utilities import deprecated
 from quantify_scheduler.helpers.collections import make_hash, without
 from quantify_scheduler.operations.control_flow_library import ControlFlowOperation
 from quantify_scheduler.schedules.schedule import (
@@ -221,26 +222,11 @@ def extract_acquisition_metadata_from_acquisition_protocols(
     return acq_metadata
 
 
+@deprecated(
+    "0.25",
+    "_extract_port_clocks_used has been moved to "
+    "Operation.get_used_port_clocks and ScheduleBase.get_used_port_clocks",
+)
 def _extract_port_clocks_used(operation: Operation | Schedule) -> set[tuple]:
     """Extracts which port-clock combinations are used in an operation or schedule."""
-    if isinstance(operation, ScheduleBase):
-        port_clocks_used = set()
-        for op_data in operation.operations.values():
-            port_clocks_used |= _extract_port_clocks_used(op_data)
-        return port_clocks_used
-    elif isinstance(operation, ControlFlowOperation):
-        port_clocks_used = _extract_port_clocks_used(operation.body)
-        return port_clocks_used
-    elif operation.valid_pulse or operation.valid_acquisition:
-        port_clocks_used = set()
-        for op_info in operation["pulse_info"] + operation["acquisition_info"]:
-            if (port := op_info["port"]) is None or (clock := op_info["clock"]) is None:
-                continue
-            port_clocks_used.add((port, clock))
-        return port_clocks_used
-    else:
-        raise RuntimeError(
-            f"Operation {operation.name} is not a valid pulse or acquisition."
-            f" Please check whether the device compilation has been performed successfully."
-            f" Operation data: {repr(operation)}"
-        )
+    return operation.get_used_port_clocks()

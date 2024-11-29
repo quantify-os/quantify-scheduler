@@ -48,7 +48,6 @@ from quantify_scheduler.helpers.collections import (
     find_all_port_clock_combinations,
     find_port_clock_path,
 )
-from quantify_scheduler.helpers.schedule import _extract_port_clocks_used
 from quantify_scheduler.instrument_coordinator.components.generic import (
     DEFAULT_NAME as GENERIC_ICC_DEFAULT_NAME,
 )
@@ -751,7 +750,7 @@ def _generate_legacy_hardware_config(  # noqa: PLR0912, PLR0915
             )
         return connectivity
 
-    port_clocks = _extract_port_clocks_used(operation=schedule)
+    port_clocks = schedule.get_used_port_clocks()
 
     hardware_config: dict = {"devices": [], "local_oscillators": []}
     hardware_config["backend"] = "quantify_scheduler.backends.zhinst_backend.compile_backend"

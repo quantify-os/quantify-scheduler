@@ -11,7 +11,6 @@ from quantify_scheduler.backends.qblox.instrument_compilers import (
     ClusterCompiler,
     LocalOscillatorCompiler,
 )
-from quantify_scheduler.helpers.schedule import _extract_port_clocks_used
 from quantify_scheduler.operations.control_flow_library import ControlFlowOperation
 from quantify_scheduler.schedules.schedule import ScheduleBase
 
@@ -159,7 +158,7 @@ class CompilerContainer:
         """
         composite = cls(schedule)
         instrument_configs = hardware_cfg._extract_instrument_compilation_configs(
-            _extract_port_clocks_used(schedule)
+            schedule.get_used_port_clocks()
         )
 
         for (

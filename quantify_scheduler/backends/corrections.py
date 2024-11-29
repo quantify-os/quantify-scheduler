@@ -15,7 +15,6 @@ from quantify_scheduler.backends.types.common import (
     SoftwareDistortionCorrection,
 )
 from quantify_scheduler.helpers.importers import import_python_object_from_string
-from quantify_scheduler.helpers.schedule import _extract_port_clocks_used
 from quantify_scheduler.helpers.waveforms import get_waveform
 from quantify_scheduler.operations.control_flow_library import ControlFlowOperation
 from quantify_scheduler.operations.pulse_library import NumericalPulse
@@ -68,7 +67,7 @@ def determine_relative_latency_corrections(
             )
 
         port_clocks = [
-            "-".join(map(str, port_clock)) for port_clock in _extract_port_clocks_used(schedule)
+            "-".join(map(str, port_clock)) for port_clock in schedule.get_used_port_clocks()
         ]
 
         latency_corrections = hardware_cfg.hardware_options.latency_corrections

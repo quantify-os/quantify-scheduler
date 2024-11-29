@@ -79,7 +79,6 @@ from quantify_scheduler.helpers.collections import (
     find_all_port_clock_combinations,
     find_inner_dicts_containing_key,
 )
-from quantify_scheduler.helpers.schedule import _extract_port_clocks_used
 from quantify_scheduler.operations.acquisition_library import (
     SSBIntegrationComplex,
     Trace,
@@ -574,7 +573,7 @@ def test_construct_sequencers(
 
     hardware_cfg = QbloxHardwareCompilationConfig.model_validate(hardware_cfg_cluster)
     instrument_configs = hardware_cfg._extract_instrument_compilation_configs(
-        _extract_port_clocks_used(sched)
+        sched.get_used_port_clocks()
     )
 
     test_cluster = ClusterCompiler(
@@ -1552,7 +1551,7 @@ def test_qcm_acquisition_error(
     sched = create_schedule_with_pulse_info(make_schedule_with_measurement("q0"))
     hardware_cfg = QbloxHardwareCompilationConfig.model_validate(hardware_cfg_cluster)
     instrument_configs = hardware_cfg._extract_instrument_compilation_configs(
-        _extract_port_clocks_used(sched)
+        sched.get_used_port_clocks()
     )
     module_configs = instrument_configs["cluster0"]._extract_module_compilation_configs()
 
@@ -2683,7 +2682,7 @@ def test_extract_settings_from_mapping(
     hardware_cfg = QbloxHardwareCompilationConfig.model_validate(hardware_cfg)
     sched = create_schedule_with_pulse_info(make_schedule_with_measurement("q0"))
     instrument_configs = hardware_cfg._extract_instrument_compilation_configs(
-        _extract_port_clocks_used(sched)
+        sched.get_used_port_clocks()
     )
     module_configs = instrument_configs["cluster0"]._extract_module_compilation_configs()
 

@@ -12,7 +12,6 @@ from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.collections import make_hash
 from quantify_scheduler.helpers.schedule import (
-    _extract_port_clocks_used,
     extract_acquisition_metadata_from_schedule,
     get_acq_info_by_uuid,
     get_acq_uuid,
@@ -20,8 +19,6 @@ from quantify_scheduler.helpers.schedule import (
 )
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.gate_library import X90, Measure, Reset
-from quantify_scheduler.schedules import spectroscopy_schedules
-from quantify_scheduler.schedules.schedule import ScheduleBase
 
 
 def test_make_hash() -> None:
@@ -128,11 +125,11 @@ def test_extract_acquisition_metadata_from_schedule(compiled_two_qubit_t1_schedu
     assert acq_metadata.acq_channels_metadata[1].acq_indices == list(np.arange(20))
 
 
-def test_extract_port_clocks_used(create_schedule_with_pulse_info):
+def test_get_used_port_clocks(create_schedule_with_pulse_info):
     schedule0 = Schedule("my-schedule")
     schedule0.add(X90("q0"))
     schedule0 = create_schedule_with_pulse_info(schedule0)
-    assert _extract_port_clocks_used(schedule0) == {("q0:mw", "q0.01")}
+    assert schedule0.get_used_port_clocks() == {("q0:mw", "q0.01")}
 
     schedule1 = Schedule("my-schedule")
     schedule1.add(
@@ -145,13 +142,13 @@ def test_extract_port_clocks_used(create_schedule_with_pulse_info):
         )
     )
     schedule1 = create_schedule_with_pulse_info(schedule1)
-    assert _extract_port_clocks_used(schedule1) == {("q0:ro", "q0.res")}
+    assert schedule1.get_used_port_clocks() == {("q0:ro", "q0.res")}
 
     schedule2 = Schedule("my-schedule")
     schedule2.add(schedule0)
     schedule2.add(schedule1)
     schedule2 = create_schedule_with_pulse_info(schedule2)
-    assert _extract_port_clocks_used(schedule2) == {
+    assert schedule2.get_used_port_clocks() == {
         ("q0:mw", "q0.01"),
         ("q0:ro", "q0.res"),
     }

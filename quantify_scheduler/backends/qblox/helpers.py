@@ -20,7 +20,6 @@ from quantify_scheduler.backends.types.qblox import (
     OpInfo,
     RealChannelDescription,
 )
-from quantify_scheduler.helpers.schedule import _extract_port_clocks_used
 from quantify_scheduler.helpers.waveforms import exec_waveform_function
 from quantify_scheduler.operations.control_flow_library import (
     ConditionalOperation,
@@ -618,7 +617,7 @@ def _get_control_flow_begin(
 ) -> Operation:
     assert isinstance(control_flow_operation, (LoopOperation, ConditionalOperation))
 
-    port_clocks = _extract_port_clocks_used(control_flow_operation)
+    port_clocks = control_flow_operation.get_used_port_clocks()
     if isinstance(control_flow_operation, LoopOperation):
         begin_operation: Operation = LoopBegin(
             control_flow_operation.data["control_flow_info"]["repetitions"],
@@ -680,7 +679,7 @@ def _get_control_flow_end(
 ) -> Operation:
     assert isinstance(control_flow_operation, (LoopOperation, ConditionalOperation))
 
-    port_clocks = _extract_port_clocks_used(control_flow_operation)
+    port_clocks = control_flow_operation.get_used_port_clocks()
     end_operation: Operation = _ControlFlowReturn()
     end_operation["pulse_info"] = [
         {

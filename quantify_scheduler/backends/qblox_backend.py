@@ -63,7 +63,6 @@ from quantify_scheduler.backends.types.qblox import (
     RealInputGain,
     SequencerOptions,
 )
-from quantify_scheduler.helpers.schedule import _extract_port_clocks_used
 from quantify_scheduler.operations.control_flow_library import (
     ConditionalOperation,
     ControlFlowOperation,
@@ -254,9 +253,9 @@ def _set_conditional_address_map(
         control_flow_info["feedback_trigger_address"] = conditional_address_map[
             feedback_trigger_label
         ].address
-        conditional_address_map[feedback_trigger_label].portclocks |= _extract_port_clocks_used(
-            operation.body
-        )
+        conditional_address_map[
+            feedback_trigger_label
+        ].portclocks |= operation.body.get_used_port_clocks()
     elif isinstance(operation, ControlFlowOperation):
         _set_conditional_address_map(
             operation=operation.body,

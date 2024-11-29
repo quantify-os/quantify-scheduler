@@ -253,12 +253,36 @@ class Operation(JSONSchemaValMixin, UserDict):
         self.data["acquisition_info"] += acquisition_operation.data["acquisition_info"]
         self._update()
 
+    def get_used_port_clocks(self) -> set[tuple[str, str]]:
+        """
+        Extracts which port-clock combinations are used in this operation.
+
+        Returns
+        -------
+        :
+            All (port, clock) combinations this operation uses.
+
+        """
+        if self.valid_pulse or self.valid_acquisition:
+            port_clocks_used = set()
+            for op_info in self["pulse_info"] + self["acquisition_info"]:
+                if (port := op_info["port"]) is None or (clock := op_info["clock"]) is None:
+                    continue
+                port_clocks_used.add((port, clock))
+            return port_clocks_used
+        else:
+            raise RuntimeError(
+                f"Operation {self.name} is not a valid pulse or acquisition."
+                f" Please check whether the device compilation has been performed successfully."
+                f" Operation data: {repr(self)}"
+            )
+
     @classmethod
     def is_valid(cls, object_to_be_validated: Operation) -> bool:
         """
         Validates the object's contents against the schema.
 
-        Additionally checks if the hash property of the object evaluates correctly.
+        Additionally, checks if the hash property of the object evaluates correctly.
         """
         valid_operation = super().is_valid(object_to_be_validated)
         if valid_operation:

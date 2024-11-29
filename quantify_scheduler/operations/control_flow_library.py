@@ -46,6 +46,19 @@ class ControlFlowOperation(Operation, metaclass=ABCMeta):
         """
         return self._get_signature(self.data["control_flow_info"])
 
+    def get_used_port_clocks(self) -> set[tuple[str, str]]:
+        """
+        Extracts which port-clock combinations are used in this control flow operation.
+
+        Returns
+        -------
+        :
+            All (port, clock) combinations that operations
+            in the body of this control flow operation uses.
+
+        """
+        return self.body.get_used_port_clocks()
+
 
 class LoopOperation(ControlFlowOperation):
     """

@@ -216,6 +216,21 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         """
         return json_utils.SchedulerJSONDecoder().decode(data)
 
+    def get_used_port_clocks(self) -> set[tuple[str, str]]:
+        """
+        Extracts which port-clock combinations are used in this schedule.
+
+        Returns
+        -------
+        :
+            All (port, clock) combinations that operations in this schedule uses
+
+        """
+        port_clocks_used = set()
+        for op_data in self.operations.values():
+            port_clocks_used |= op_data.get_used_port_clocks()
+        return port_clocks_used
+
     def plot_circuit_diagram(
         self,
         figsize: tuple[int, int] = None,
