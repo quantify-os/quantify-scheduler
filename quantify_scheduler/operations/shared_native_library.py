@@ -22,6 +22,7 @@ class SpectroscopyOperation(Operation):
     def __init__(
         self,
         qubit: str,
+        **device_overrides,
     ) -> None:
         super().__init__(name=f"Spectroscopy operation {qubit}")
         self.data.update(
@@ -33,6 +34,7 @@ class SpectroscopyOperation(Operation):
                     "tex": r"Spectroscopy operation",
                     "qubits": [qubit],
                     "operation_type": "spectroscopy_operation",
+                    "device_overrides": device_overrides,
                 },
             }
         )

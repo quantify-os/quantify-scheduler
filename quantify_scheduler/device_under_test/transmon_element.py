@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Hashable, Literal
 
 import numpy as np
 from qcodes.instrument import InstrumentChannel
@@ -35,13 +35,21 @@ if TYPE_CHECKING:
 class Ports(InstrumentChannel):
     """Submodule containing the ports."""
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
+    def __init__(
+        self,
+        parent: InstrumentBase,
+        name: str,
+        *,
+        microwave: str | None = None,
+        flux: str | None = None,
+        readout: str | None = None,
+    ) -> None:
         super().__init__(parent=parent, name=name)
 
         self.microwave = Parameter(
             name="microwave",
             instrument=self,
-            initial_cache_value=kwargs.get("microwave", f"{parent.name}:mw"),
+            initial_cache_value=microwave or f"{parent.name}:mw",
             set_cmd=False,
         )
         """Name of the element's microwave port."""
@@ -49,7 +57,7 @@ class Ports(InstrumentChannel):
         self.flux = Parameter(
             name="flux",
             instrument=self,
-            initial_cache_value=kwargs.get("flux", f"{parent.name}:fl"),
+            initial_cache_value=flux or f"{parent.name}:fl",
             set_cmd=False,
         )
         """Name of the element's flux port."""
@@ -57,7 +65,7 @@ class Ports(InstrumentChannel):
         self.readout = Parameter(
             name="readout",
             instrument=self,
-            initial_cache_value=kwargs.get("readout", f"{parent.name}:res"),
+            initial_cache_value=readout or f"{parent.name}:res",
             set_cmd=False,
         )
         """Name of the element's readout port."""
@@ -66,7 +74,15 @@ class Ports(InstrumentChannel):
 class ClocksFrequencies(InstrumentChannel):
     """Submodule containing the clock frequencies specifying the transitions to address."""
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
+    def __init__(
+        self,
+        parent: InstrumentBase,
+        name: str,
+        *,
+        f01: float = math.nan,
+        f12: float = math.nan,
+        readout: float = math.nan,
+    ) -> None:
         super().__init__(parent=parent, name=name)
 
         self.f01 = ManualParameter(
@@ -74,7 +90,7 @@ class ClocksFrequencies(InstrumentChannel):
             instrument=self,
             label="Qubit frequency",
             unit="Hz",
-            initial_value=kwargs.get("f01", math.nan),
+            initial_value=f01,
             vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
         """Frequency of the 01 clock"""
@@ -84,7 +100,7 @@ class ClocksFrequencies(InstrumentChannel):
             instrument=self,
             label="Frequency of the |1>-|2> transition",
             unit="Hz",
-            initial_value=kwargs.get("f12", math.nan),
+            initial_value=f12,
             vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
         """Frequency of the 12 clock"""
@@ -94,7 +110,7 @@ class ClocksFrequencies(InstrumentChannel):
             instrument=self,
             label="Readout frequency",
             unit="Hz",
-            initial_value=kwargs.get("readout", math.nan),
+            initial_value=readout,
             vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
         """Frequency of the ro clock. """
@@ -103,13 +119,13 @@ class ClocksFrequencies(InstrumentChannel):
 class IdlingReset(InstrumentChannel):
     """Submodule containing parameters for doing a reset by idling."""
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
+    def __init__(self, parent: InstrumentBase, name: str, *, duration: float = 200e-6) -> None:
         super().__init__(parent=parent, name=name)
 
         self.duration = ManualParameter(
             name="duration",
             instrument=self,
-            initial_value=kwargs.get("duration", 200e-6),
+            initial_value=duration,
             unit="s",
             vals=validators.Numbers(min_value=0, max_value=1),
         )
@@ -123,13 +139,24 @@ class RxyDRAG(InstrumentChannel):
     The Rxy operation uses a DRAG pulse.
     """
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
+    def __init__(
+        self,
+        parent: InstrumentBase,
+        name: str,
+        *,
+        amp180: float = math.nan,
+        motzoi: float = 0,
+        duration: float = 20e-9,
+        reference_magnitude_dBm: float = math.nan,
+        reference_magnitude_V: float = math.nan,
+        reference_magnitude_A: float = math.nan,
+    ) -> None:
         super().__init__(parent=parent, name=name)
         self.amp180 = ManualParameter(
             name="amp180",
             instrument=self,
             label=r"$\pi-pulse amplitude$",
-            initial_value=kwargs.get("amp180", math.nan),
+            initial_value=amp180,
             unit="",
             vals=Numbers(min_value=-10, max_value=10, allow_nan=True),
         )
@@ -138,7 +165,7 @@ class RxyDRAG(InstrumentChannel):
         self.motzoi = ManualParameter(
             name="motzoi",
             instrument=self,
-            initial_value=kwargs.get("motzoi", 0),
+            initial_value=motzoi,
             unit="",
             vals=validators.Numbers(min_value=-1, max_value=1),
         )
@@ -148,7 +175,7 @@ class RxyDRAG(InstrumentChannel):
         self.duration = ManualParameter(
             name="duration",
             instrument=self,
-            initial_value=kwargs.get("duration", 20e-9),
+            initial_value=duration,
             unit="s",
             vals=validators.Numbers(min_value=0, max_value=1),
         )
@@ -159,9 +186,9 @@ class RxyDRAG(InstrumentChannel):
             submodule=ReferenceMagnitude(
                 parent=self,
                 name="reference_magnitude",
-                dBm=kwargs.get("reference_magnitude_dBm", math.nan),
-                V=kwargs.get("reference_magnitude_V", math.nan),
-                A=kwargs.get("reference_magnitude_A", math.nan),
+                dBm=reference_magnitude_dBm,
+                V=reference_magnitude_V,
+                A=reference_magnitude_A,
             ),
         )
 
@@ -169,12 +196,20 @@ class RxyDRAG(InstrumentChannel):
 class PulseCompensationModule(InstrumentChannel):
     """Submodule containing parameters for performing a PulseCompensation operation."""
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
+    def __init__(
+        self,
+        parent: InstrumentBase,
+        name: str,
+        *,
+        max_compensation_amp: float = math.nan,
+        time_grid: float = math.nan,
+        sampling_rate: float = math.nan,
+    ) -> None:
         super().__init__(parent=parent, name=name)
         self.max_compensation_amp = ManualParameter(
             name="max_compensation_amp",
             instrument=self,
-            initial_value=kwargs.get("max_compensation_amp", math.nan),
+            initial_value=max_compensation_amp,
             unit="",
             vals=Numbers(min_value=0, allow_nan=True),
         )
@@ -183,7 +218,7 @@ class PulseCompensationModule(InstrumentChannel):
         self.time_grid = ManualParameter(
             name="time_grid",
             instrument=self,
-            initial_value=kwargs.get("time_grid", math.nan),
+            initial_value=time_grid,
             unit="",
             vals=Numbers(min_value=0, allow_nan=True),
         )
@@ -192,7 +227,7 @@ class PulseCompensationModule(InstrumentChannel):
         self.sampling_rate = ManualParameter(
             name="sampling_rate",
             instrument=self,
-            initial_value=kwargs.get("sampling_rate", math.nan),
+            initial_value=sampling_rate,
             unit="",
             vals=Numbers(min_value=0, allow_nan=True),
         )
@@ -207,14 +242,36 @@ class DispersiveMeasurement(InstrumentChannel):
     :func:`~quantify_scheduler.operations.measurement_factories.dispersive_measurement_transmon`.
     """
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
+    def __init__(
+        self,
+        parent: InstrumentBase,
+        name: str,
+        *,
+        pulse_type: str = "SquarePulse",
+        pulse_amp: float = 0.25,
+        pulse_duration: float = 300e-9,
+        acq_channel: Hashable = 0,
+        acq_delay: float = 0,
+        integration_time: float = 1e-6,
+        reset_clock_phase: bool = True,
+        acq_weights_a: np.ndarray | None = None,
+        acq_weights_b: np.ndarray | None = None,
+        acq_weights_sampling_rate: float = 1e9,
+        acq_weight_type: Literal["SSB", "Numerical"] = "SSB",
+        reference_magnitude_dBm: float = math.nan,
+        reference_magnitude_V: float = math.nan,
+        reference_magnitude_A: float = math.nan,
+        acq_rotation: float = 0,
+        acq_threshold: float = 0,
+        num_points: int = 1,
+    ) -> None:
         super().__init__(parent=parent, name=name)
 
         pulse_types = validators.Enum("SquarePulse")
         self.pulse_type = ManualParameter(
             name="pulse_type",
             instrument=self,
-            initial_value=kwargs.get("pulse_type", "SquarePulse"),
+            initial_value=pulse_type,
             vals=pulse_types,
         )
         """Envelope function that defines the shape of the readout pulse prior to
@@ -223,7 +280,7 @@ class DispersiveMeasurement(InstrumentChannel):
         self.pulse_amp = ManualParameter(
             name="pulse_amp",
             instrument=self,
-            initial_value=kwargs.get("pulse_amp", 0.25),
+            initial_value=pulse_amp,
             unit="",
             vals=validators.Numbers(min_value=0, max_value=1),
         )
@@ -232,7 +289,7 @@ class DispersiveMeasurement(InstrumentChannel):
         self.pulse_duration = ManualParameter(
             name="pulse_duration",
             instrument=self,
-            initial_value=kwargs.get("pulse_duration", 300e-9),
+            initial_value=pulse_duration,
             unit="s",
             vals=validators.Numbers(min_value=0, max_value=1),
         )
@@ -241,7 +298,7 @@ class DispersiveMeasurement(InstrumentChannel):
         self.acq_channel = ManualParameter(
             name="acq_channel",
             instrument=self,
-            initial_value=kwargs.get("acq_channel", 0),
+            initial_value=acq_channel,
             unit="",
             vals=_Hashable(),
         )
@@ -250,7 +307,7 @@ class DispersiveMeasurement(InstrumentChannel):
         self.acq_delay = ManualParameter(
             name="acq_delay",
             instrument=self,
-            initial_value=kwargs.get("acq_delay", 0),
+            initial_value=acq_delay,
             unit="s",
             # in principle the values should be a few 100 ns but the validator is here
             # only to protect against silly typos that lead to out of memory errors.
@@ -264,7 +321,7 @@ class DispersiveMeasurement(InstrumentChannel):
         self.integration_time = ManualParameter(
             name="integration_time",
             instrument=self,
-            initial_value=kwargs.get("integration_time", 1e-6),
+            initial_value=integration_time,
             unit="s",
             # in principle the values should be a few us but the validator is here
             # only to protect against silly typos that lead to out of memory errors.
@@ -275,7 +332,7 @@ class DispersiveMeasurement(InstrumentChannel):
         self.reset_clock_phase = ManualParameter(
             name="reset_clock_phase",
             instrument=self,
-            initial_value=kwargs.get("reset_clock_phase", True),
+            initial_value=reset_clock_phase,
             vals=validators.Bool(),
         )
         """The phase of the measurement clock will be reset by the
@@ -285,7 +342,9 @@ class DispersiveMeasurement(InstrumentChannel):
         self.acq_weights_a = ManualParameter(
             name="acq_weights_a",
             instrument=self,
-            initial_value=kwargs.get("acq_weights_a", np.array([], dtype=np.float64)),
+            initial_value=(
+                acq_weights_a if acq_weights_a is not None else np.array([], dtype=np.float64)
+            ),
             vals=validators.Arrays(),
         )
         """The weights for the I path. Used when specifying the
@@ -295,7 +354,9 @@ class DispersiveMeasurement(InstrumentChannel):
         self.acq_weights_b = ManualParameter(
             name="acq_weights_b",
             instrument=self,
-            initial_value=kwargs.get("acq_weights_b", np.array([], dtype=np.float64)),
+            initial_value=(
+                acq_weights_b if acq_weights_b is not None else np.array([], dtype=np.float64)
+            ),
             vals=validators.Arrays(),
         )
         """The weights for the Q path. Used when specifying the
@@ -305,7 +366,7 @@ class DispersiveMeasurement(InstrumentChannel):
         self.acq_weights_sampling_rate = ManualParameter(
             name="acq_weights_sampling_rate",
             instrument=self,
-            initial_value=kwargs.get("acq_weights_sampling_rate"),
+            initial_value=acq_weights_sampling_rate,
             vals=validators.Numbers(min_value=1, max_value=10e9),
         )
         """The sample rate of the weights arrays, in Hertz. Used when specifying the
@@ -316,7 +377,7 @@ class DispersiveMeasurement(InstrumentChannel):
         self.acq_weight_type = ManualParameter(
             name="acq_weight_type",
             instrument=self,
-            initial_value=kwargs.get("acq_weight_type", "SSB"),
+            initial_value=acq_weight_type,
             vals=ro_acq_weight_type_validator,
         )
 
@@ -325,16 +386,16 @@ class DispersiveMeasurement(InstrumentChannel):
             submodule=ReferenceMagnitude(
                 parent=self,
                 name="reference_magnitude",
-                dBm=kwargs.get("reference_magnitude_dBm", math.nan),
-                V=kwargs.get("reference_magnitude_V", math.nan),
-                A=kwargs.get("reference_magnitude_A", math.nan),
+                dBm=reference_magnitude_dBm,
+                V=reference_magnitude_V,
+                A=reference_magnitude_A,
             ),
         )
 
         self.acq_rotation = ManualParameter(
             "acq_rotation",
             instrument=self,
-            initial_value=kwargs.get("acq_rotation", 0),
+            initial_value=acq_rotation,
         )
         """The phase rotation in degrees required to perform thresholded
         acquisition. Note that rotation is performed before the threshold. For
@@ -344,7 +405,7 @@ class DispersiveMeasurement(InstrumentChannel):
         self.acq_threshold = ManualParameter(
             "acq_threshold",
             instrument=self,
-            initial_value=kwargs.get("acq_threshold", 0),
+            initial_value=acq_threshold,
         )
         """The threshold value against which the rotated and integrated result
         is compared against. For more details see
@@ -353,7 +414,7 @@ class DispersiveMeasurement(InstrumentChannel):
         self.num_points = ManualParameter(
             name="num_points",
             instrument=self,
-            initial_value=kwargs.get("num_points"),
+            initial_value=num_points,
             vals=validators.Ints(min_value=1),
         )
         """
@@ -375,13 +436,21 @@ class ReferenceMagnitude(InstrumentChannel):
     automatically set to nan.
     """
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
+    def __init__(
+        self,
+        parent: InstrumentBase,
+        name: str,
+        *,
+        dBm: float = math.nan,
+        V: float = math.nan,
+        A: float = math.nan,
+    ) -> None:
         super().__init__(parent=parent, name=name)
 
         self.dBm = Parameter(
             "reference_magnitude_dBm",
             instrument=self,
-            initial_value=kwargs.get("dBm", math.nan),
+            initial_value=dBm,
             set_cmd=lambda value: self._set_parameter(value, "reference_magnitude_dBm"),
             unit="dBm",
             vals=Numbers(allow_nan=True),
@@ -389,7 +458,7 @@ class ReferenceMagnitude(InstrumentChannel):
         self.V = Parameter(
             "reference_magnitude_V",
             instrument=self,
-            initial_value=kwargs.get("V", math.nan),
+            initial_value=V,
             set_cmd=lambda value: self._set_parameter(value, "reference_magnitude_V"),
             unit="V",
             vals=Numbers(allow_nan=True),
@@ -397,7 +466,7 @@ class ReferenceMagnitude(InstrumentChannel):
         self.A = Parameter(
             "reference_magnitude_A",
             instrument=self,
-            initial_value=kwargs.get("A", math.nan),
+            initial_value=A,
             set_cmd=lambda value: self._set_parameter(value, "reference_magnitude_A"),
             unit="A",
             vals=Numbers(allow_nan=True),

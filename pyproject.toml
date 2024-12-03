@@ -216,6 +216,11 @@ extend-ignore-names = ["I", "Q", "*path_I*", "*path_Q*", "*G_amp", "*D_amp", "qT
 "quantify_scheduler/backends/mock/mock_rom.py" = ["D101", "D102"]  # Mock rom doesn't need proper documentation
 "quantify_scheduler/schedules/_visualization/pulse_scheme.py" = ["D417"]  # TODO: refactor the functions in here
 
+# Naming conventions for reference magnitude
+"quantify_scheduler/device_under_test/transmon_element.py" = ["N803"]
+"quantify_scheduler/device_under_test/spin_element.py" = ["N803"]
+"quantify_scheduler/device_under_test/nv_element.py" = ["N803"]
+
 [tool.ruff.lint.isort]
 known-first-party = ["quantify_core", "quantify_scheduler"]
 

@@ -9,7 +9,7 @@ but could be extended for other qubits (eg. carbon qubit).
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Hashable
 
 from qcodes.instrument import InstrumentModule
 from qcodes.instrument.parameter import (
@@ -47,15 +47,22 @@ if TYPE_CHECKING:
 class Ports(InstrumentModule):
     """Submodule containing the ports."""
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
-        del kwargs  # Ignore any other arguments passed. TODO: enforce this doesn't happen
+    def __init__(
+        self,
+        parent: InstrumentBase,
+        name: str,
+        *,
+        microwave: str | None = None,
+        optical_control: str | None = None,
+        optical_readout: str | None = None,
+    ) -> None:
         super().__init__(parent=parent, name=name)
 
         self.microwave = Parameter(
             name="microwave",
             label="Name of microwave port",
             instrument=self,
-            initial_cache_value=f"{parent.name}:mw",
+            initial_cache_value=microwave or f"{parent.name}:mw",
             set_cmd=False,
             vals=validators.Strings(),
         )
@@ -65,7 +72,7 @@ class Ports(InstrumentModule):
             name="optical_control",
             label="Name of optical control port",
             instrument=self,
-            initial_cache_value=f"{parent.name}:optical_control",
+            initial_cache_value=optical_control or f"{parent.name}:optical_control",
             set_cmd=False,
             vals=validators.Strings(),
         )
@@ -75,7 +82,7 @@ class Ports(InstrumentModule):
             name="optical_readout",
             label="Name of optical readout port",
             instrument=self,
-            initial_cache_value=f"{parent.name}:optical_readout",
+            initial_cache_value=optical_readout or f"{parent.name}:optical_readout",
             set_cmd=False,
             vals=validators.Strings(),
         )
@@ -85,8 +92,17 @@ class Ports(InstrumentModule):
 class ClockFrequencies(InstrumentModule):
     """Submodule with clock frequencies specifying the transitions to address."""
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
-        del kwargs  # Ignore any other arguments passed. TODO: enforce this doesn't happen
+    def __init__(
+        self,
+        parent: InstrumentBase,
+        name: str,
+        *,
+        f01: float = math.nan,
+        spec: float = math.nan,
+        ge0: float = math.nan,
+        ge1: float = math.nan,
+        ionization: float = math.nan,
+    ) -> None:
         super().__init__(parent=parent, name=name)
 
         self.f01 = ManualParameter(
@@ -94,7 +110,7 @@ class ClockFrequencies(InstrumentModule):
             label="Microwave frequency in resonance with transition between 0 and 1.",
             unit="Hz",
             instrument=self,
-            initial_value=math.nan,
+            initial_value=f01,
             vals=_NonNegativeFrequencies(),
         )
         """Microwave frequency to resonantly drive the electron spin state of a
@@ -107,7 +123,7 @@ class ClockFrequencies(InstrumentModule):
             label="Spectroscopy frequency",
             unit="Hz",
             instrument=self,
-            initial_value=math.nan,
+            initial_value=spec,
             vals=_NonNegativeFrequencies(),
         )
         """Parameter that is swept for a spectroscopy measurement. It does not track
@@ -118,7 +134,7 @@ class ClockFrequencies(InstrumentModule):
             label="f_{ge0}",
             unit="Hz",
             instrument=self,
-            initial_value=math.nan,
+            initial_value=ge0,
             vals=_NonNegativeFrequencies(),
         )
         """Transition frequency from the m_s=0 state to the E_x,y state"""
@@ -128,7 +144,7 @@ class ClockFrequencies(InstrumentModule):
             label="f_{ge1}",
             unit="Hz",
             instrument=self,
-            initial_value=math.nan,
+            initial_value=ge1,
             vals=_NonNegativeFrequencies(),
         )
         """Transition frequency from the m_s=+-1 state to any of the A_1, A_2, or
@@ -139,7 +155,7 @@ class ClockFrequencies(InstrumentModule):
             label="Frequency of ionization laser",
             unit="Hz",
             instrument=self,
-            initial_value=math.nan,
+            initial_value=ionization,
             vals=_NonNegativeFrequencies(),
         )
         """Frequency of the green ionization laser for manipulation of the NVs charge state."""
@@ -156,15 +172,21 @@ class SpectroscopyOperationHermiteMW(InstrumentModule):
     :class:`~.ClockFrequencies`.
     """
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
-        del kwargs  # Ignore any other arguments passed. TODO: enforce this doesn't happen
+    def __init__(
+        self,
+        parent: InstrumentBase,
+        name: str,
+        *,
+        amplitude: float = math.nan,
+        duration: float = 8e-6,
+    ) -> None:
         super().__init__(parent=parent, name=name)
 
         self.amplitude = ManualParameter(
             name="amplitude",
             label="Amplitude of spectroscopy pulse",
             instrument=self,
-            initial_value=math.nan,
+            initial_value=amplitude,
             unit="",
             vals=_Amplitudes(),
         )
@@ -174,7 +196,7 @@ class SpectroscopyOperationHermiteMW(InstrumentModule):
             name="duration",
             label="Duration of spectroscopy pulse",
             instrument=self,
-            initial_value=8e-6,
+            initial_value=duration,
             unit="s",
             vals=_Durations(),
         )
@@ -188,14 +210,19 @@ class ResetSpinpump(InstrumentModule):
     This should reset the NV to the :math:`|0\rangle` state.
     """
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
-        del kwargs  # Ignore any other arguments passed. TODO: enforce this doesn't happen
+    def __init__(
+        self,
+        parent: InstrumentBase,
+        name: str,
+        amplitude: float = math.nan,
+        duration: float = 50e-6,
+    ) -> None:
         super().__init__(parent=parent, name=name)
 
         self.amplitude = ManualParameter(
             name="amplitude",
             instrument=self,
-            initial_value=math.nan,
+            initial_value=amplitude,
             unit="",
             vals=_Amplitudes(),
         )
@@ -204,7 +231,7 @@ class ResetSpinpump(InstrumentModule):
         self.duration = ManualParameter(
             name="duration",
             instrument=self,
-            initial_value=50e-6,
+            initial_value=duration,
             unit="s",
             vals=_Durations(),
         )
@@ -219,14 +246,25 @@ class Measure(InstrumentModule):
     Acquisition of photons when decaying back into the :math:`|0\rangle` state.
     """
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
-        del kwargs  # Ignore any other arguments passed. TODO: enforce this doesn't happen
+    def __init__(
+        self,
+        parent: InstrumentBase,
+        name: str,
+        *,
+        pulse_amplitude: float = math.nan,
+        pulse_duration: float = 20e-6,
+        acq_duration: float = 50e-6,
+        acq_delay: float = 0,
+        acq_channel: Hashable = 0,
+        time_source: TimeSource = TimeSource.FIRST,
+        time_ref: TimeRef = TimeRef.START,
+    ) -> None:
         super().__init__(parent=parent, name=name)
 
         self.pulse_amplitude = ManualParameter(
             name="pulse_amplitude",
             instrument=self,
-            initial_value=math.nan,
+            initial_value=pulse_amplitude,
             unit="",
             vals=_Amplitudes(),
         )
@@ -235,7 +273,7 @@ class Measure(InstrumentModule):
         self.pulse_duration = ManualParameter(
             name="pulse_duration",
             instrument=self,
-            initial_value=20e-6,
+            initial_value=pulse_duration,
             unit="s",
             vals=_Durations(),
         )
@@ -244,7 +282,7 @@ class Measure(InstrumentModule):
         self.acq_duration = ManualParameter(
             name="acq_duration",
             instrument=self,
-            initial_value=50e-6,
+            initial_value=acq_duration,
             unit="s",
             vals=_Durations(),
         )
@@ -255,7 +293,7 @@ class Measure(InstrumentModule):
         self.acq_delay = ManualParameter(
             name="acq_delay",
             instrument=self,
-            initial_value=0,
+            initial_value=acq_delay,
             unit="s",
             vals=_Delays(),
         )
@@ -266,7 +304,7 @@ class Measure(InstrumentModule):
         self.acq_channel = ManualParameter(
             name="acq_channel",
             instrument=self,
-            initial_value=0,
+            initial_value=acq_channel,
             unit="",
             vals=_Hashable(),
         )
@@ -279,7 +317,7 @@ class Measure(InstrumentModule):
         self.time_source = ManualParameter(
             name="time_source",
             instrument=self,
-            initial_value=TimeSource.FIRST,
+            initial_value=time_source,
             unit="",
             vals=_Hashable(),
         )
@@ -292,7 +330,7 @@ class Measure(InstrumentModule):
         self.time_ref = ManualParameter(
             name="time_ref",
             instrument=self,
-            initial_value=TimeRef.START,
+            initial_value=time_ref,
             unit="",
             vals=_Hashable(),
         )
@@ -311,14 +349,20 @@ class ChargeReset(InstrumentModule):
     After resetting, the qubit should be in its negatively charged state.
     """
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
-        del kwargs  # Ignore any other arguments passed. TODO: enforce this doesn't happen
+    def __init__(
+        self,
+        parent: InstrumentBase,
+        name: str,
+        *,
+        amplitude: float = math.nan,
+        duration: float = 20e-6,
+    ) -> None:
         super().__init__(parent=parent, name=name)
 
         self.amplitude = ManualParameter(
             name="amplitude",
             instrument=self,
-            initial_value=math.nan,
+            initial_value=amplitude,
             unit="",
             vals=_Amplitudes(),
         )
@@ -327,7 +371,7 @@ class ChargeReset(InstrumentModule):
         self.duration = ManualParameter(
             name="duration",
             instrument=self,
-            initial_value=20e-6,
+            initial_value=duration,
             unit="s",
             vals=_Durations(),
         )
@@ -341,14 +385,25 @@ class CRCount(InstrumentModule):
     This uses a photon count to perform a charge and resonance count.
     """
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float | None) -> None:
-        del kwargs  # Ignore any other arguments passed. TODO: enforce this doesn't happen
+    def __init__(
+        self,
+        parent: InstrumentBase,
+        name: str,
+        *,
+        readout_pulse_amplitude: float = math.nan,
+        spinpump_pulse_amplitude: float = math.nan,
+        readout_pulse_duration: float = 20e-6,
+        spinpump_pulse_duration: float = 20e-6,
+        acq_duration: float = 50e-6,
+        acq_delay: float = 0,
+        acq_channel: Hashable = 0,
+    ) -> None:
         super().__init__(parent=parent, name=name)
 
         self.readout_pulse_amplitude = ManualParameter(
             name="readout_pulse_amplitude",
             instrument=self,
-            initial_value=math.nan,
+            initial_value=readout_pulse_amplitude,
             unit="",
             vals=_Amplitudes(),
         )
@@ -357,7 +412,7 @@ class CRCount(InstrumentModule):
         self.spinpump_pulse_amplitude = ManualParameter(
             name="spinpump_pulse_amplitude",
             instrument=self,
-            initial_value=math.nan,
+            initial_value=spinpump_pulse_amplitude,
             unit="",
             vals=_Amplitudes(),
         )
@@ -366,7 +421,7 @@ class CRCount(InstrumentModule):
         self.readout_pulse_duration = ManualParameter(
             name="readout_pulse_duration",
             instrument=self,
-            initial_value=20e-6,
+            initial_value=readout_pulse_duration,
             unit="s",
             vals=_Durations(),
         )
@@ -375,7 +430,7 @@ class CRCount(InstrumentModule):
         self.spinpump_pulse_duration = ManualParameter(
             name="spinpump_pulse_duration",
             instrument=self,
-            initial_value=20e-6,
+            initial_value=spinpump_pulse_duration,
             unit="s",
             vals=_Durations(),
         )
@@ -384,7 +439,7 @@ class CRCount(InstrumentModule):
         self.acq_duration = ManualParameter(
             name="acq_duration",
             instrument=self,
-            initial_value=50e-6,
+            initial_value=acq_duration,
             unit="s",
             vals=_Durations(),
         )
@@ -395,7 +450,7 @@ class CRCount(InstrumentModule):
         self.acq_delay = ManualParameter(
             name="acq_delay",
             instrument=self,
-            initial_value=0,
+            initial_value=acq_delay,
             unit="s",
             vals=_Delays(),
         )
@@ -406,7 +461,7 @@ class CRCount(InstrumentModule):
         self.acq_channel = ManualParameter(
             name="acq_channel",
             instrument=self,
-            initial_value=0,
+            initial_value=acq_channel,
             unit="",
             vals=_Hashable(),
         )
@@ -421,13 +476,21 @@ class RxyHermite(InstrumentModule):
     using a Hermite pulse.
     """
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float | None) -> None:
+    def __init__(
+        self,
+        parent: InstrumentBase,
+        name: str,
+        *,
+        amp180: float = math.nan,
+        skewness: float = 0,
+        duration: float = 20e-9,
+    ) -> None:
         super().__init__(parent=parent, name=name)
 
         self.amp180 = ManualParameter(
             name="amp180",
             instrument=self,
-            initial_value=kwargs.get("amp180", math.nan),
+            initial_value=amp180,
             unit="",
             vals=_Amplitudes(),
         )
@@ -436,7 +499,7 @@ class RxyHermite(InstrumentModule):
         self.skewness = ManualParameter(
             name="skewness",
             instrument=self,
-            initial_value=kwargs.get("skewness", 0),
+            initial_value=skewness,
             unit="",
             vals=validators.Numbers(min_value=-1, max_value=1),
         )
@@ -445,7 +508,7 @@ class RxyHermite(InstrumentModule):
         self.duration = ManualParameter(
             name="duration",
             instrument=self,
-            initial_value=20e-9,
+            initial_value=duration,
             unit="s",
             vals=_Durations(),
         )

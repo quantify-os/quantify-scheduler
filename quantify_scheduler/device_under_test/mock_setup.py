@@ -211,6 +211,10 @@ def set_standard_params_basic_nv(mock_nv_device: dict[str, Any]) -> None:
     qe0.reset.amplitude(1e-3)
     qe0.measure.pulse_amplitude(1e-3)
     qe0.spectroscopy_operation.amplitude.set(1e-3)
+    qe0.pulse_compensation.max_compensation_amp(0.1)
+    qe0.pulse_compensation.time_grid(4e-9)
+    qe0.pulse_compensation.sampling_rate(1e9)
+    qe0.rxy.amp180(0.5)
 
     qe1: BasicElectronicNVElement = quantum_device.get_element("qe1")
     qe1.clock_freqs.f01.set(4.874e9)
@@ -225,3 +229,7 @@ def set_standard_params_basic_nv(mock_nv_device: dict[str, Any]) -> None:
     qe1.reset.amplitude(1e-3)
     qe1.measure.pulse_amplitude(1e-3)
     qe1.spectroscopy_operation.amplitude.set(1e-3)
+    qe1.pulse_compensation.max_compensation_amp(0.1)
+    qe1.pulse_compensation.time_grid(4e-9)
+    qe1.pulse_compensation.sampling_rate(1e9)
+    qe1.rxy.amp180(0.5)

@@ -390,6 +390,9 @@ def test_nv_center_deserialization(mock_setup_basic_nv_qblox_hardware):
 
     assert electronic_q0_serialized.__class__ is str
 
+    original_config = electronic_q0._generate_config()
     electronic_q0.close()
 
-    json.loads(electronic_q0_serialized, cls=SchedulerJSONDecoder)
+    deserialized = json.loads(electronic_q0_serialized, cls=SchedulerJSONDecoder)
+
+    assert deserialized._generate_config() == original_config

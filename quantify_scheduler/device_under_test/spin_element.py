@@ -40,13 +40,21 @@ if TYPE_CHECKING:
 class PortsSpin(InstrumentChannel):
     """Submodule containing the ports."""
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
+    def __init__(
+        self,
+        parent: InstrumentBase,
+        name: str,
+        *,
+        microwave: str | None = None,
+        gate: str | None = None,
+        readout: str | None = None,
+    ) -> None:
         super().__init__(parent=parent, name=name)
 
         self.microwave = Parameter(
             name="microwave",
             instrument=self,
-            initial_cache_value=kwargs.get("microwave", f"{parent.name}:mw"),
+            initial_cache_value=microwave or f"{parent.name}:mw",
             set_cmd=False,
         )
         """Name of the element's microwave port."""
@@ -54,7 +62,7 @@ class PortsSpin(InstrumentChannel):
         self.gate = Parameter(
             name="gate",
             instrument=self,
-            initial_cache_value=kwargs.get("gate", f"{parent.name}:gt"),
+            initial_cache_value=gate or f"{parent.name}:gt",
             set_cmd=False,
         )
         """Name of the element's ohmic gate port."""
@@ -62,7 +70,7 @@ class PortsSpin(InstrumentChannel):
         self.readout = Parameter(
             name="readout",
             instrument=self,
-            initial_cache_value=kwargs.get("readout", f"{parent.name}:res"),
+            initial_cache_value=readout or f"{parent.name}:res",
             set_cmd=False,
         )
         """Name of the element's readout port."""
@@ -71,7 +79,14 @@ class PortsSpin(InstrumentChannel):
 class ClocksFrequenciesSpin(InstrumentChannel):
     """Submodule containing the clock frequencies specifying the transitions to address."""
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
+    def __init__(
+        self,
+        parent: InstrumentBase,
+        name: str,
+        *,
+        f_larmor: float = math.nan,
+        readout: float = math.nan,
+    ) -> None:
         super().__init__(parent=parent, name=name)
 
         self.f_larmor = ManualParameter(
@@ -79,7 +94,7 @@ class ClocksFrequenciesSpin(InstrumentChannel):
             instrument=self,
             label="Larmor frequency",
             unit="Hz",
-            initial_value=kwargs.get("f_larmor", math.nan),
+            initial_value=f_larmor,
             vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
         """Larmor frequency for the spin qubit"""
@@ -89,7 +104,7 @@ class ClocksFrequenciesSpin(InstrumentChannel):
             instrument=self,
             label="Readout frequency",
             unit="Hz",
-            initial_value=kwargs.get("readout", math.nan),
+            initial_value=readout,
             vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
         """Frequency of the ro clock. """
@@ -102,13 +117,23 @@ class RxyGaussian(InstrumentChannel):
     The Rxy operation uses a Gaussian pulse.
     """
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
+    def __init__(
+        self,
+        parent: InstrumentBase,
+        name: str,
+        *,
+        amp180: float = math.nan,
+        duration: float = 20e-9,
+        reference_magnitude_dBm: float = math.nan,
+        reference_magnitude_V: float = math.nan,
+        reference_magnitude_A: float = math.nan,
+    ) -> None:
         super().__init__(parent=parent, name=name)
         self.amp180 = ManualParameter(
             name="amp180",
             instrument=self,
             label=r"$\pi-pulse amplitude$",
-            initial_value=kwargs.get("amp180", math.nan),
+            initial_value=amp180,
             unit="",
             vals=Numbers(min_value=-10, max_value=10, allow_nan=True),
         )
@@ -117,7 +142,7 @@ class RxyGaussian(InstrumentChannel):
         self.duration = ManualParameter(
             name="duration",
             instrument=self,
-            initial_value=kwargs.get("duration", 20e-9),
+            initial_value=duration,
             unit="s",
             vals=validators.Numbers(min_value=0, max_value=1),
         )
@@ -128,9 +153,9 @@ class RxyGaussian(InstrumentChannel):
             submodule=ReferenceMagnitude(
                 parent=self,
                 name="reference_magnitude",
-                dBm=kwargs.get("reference_magnitude_dBm", math.nan),
-                V=kwargs.get("reference_magnitude_V", math.nan),
-                A=kwargs.get("reference_magnitude_A", math.nan),
+                dBm=reference_magnitude_dBm,
+                V=reference_magnitude_V,
+                A=reference_magnitude_A,
             ),
         )
         """Reference magnitude."""
@@ -144,13 +169,15 @@ class DispersiveMeasurementSpin(DispersiveMeasurement):
     :func:`~quantify_scheduler.operations.measurement_factories.dispersive_measurement_spin`.
     """
 
-    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
+    def __init__(
+        self, parent: InstrumentBase, name: str, *, gate_pulse_amp: float = 0, **kwargs
+    ) -> None:
         super().__init__(parent=parent, name=name, **kwargs)
 
         self.gate_pulse_amp = ManualParameter(
             name="gate_pulse_amp",
             instrument=self,
-            initial_value=kwargs.get("gate_pulse_amp", 0),
+            initial_value=gate_pulse_amp,
             unit="",
             vals=validators.Numbers(min_value=-1, max_value=1),
         )
