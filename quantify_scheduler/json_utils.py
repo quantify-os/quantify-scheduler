@@ -390,6 +390,7 @@ class SchedulerJSONEncoder(json.JSONEncoder):
                 "data": list(o),
             }
         if o in DEFAULT_TYPES:
+            assert isinstance(o, type)
             return {"deserialization_type": o.__name__, "mode": "type"}
         if hasattr(o, "__getstate__"):
             return o.__getstate__()
