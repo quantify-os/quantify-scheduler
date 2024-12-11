@@ -1,9 +1,9 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Tests for factory module."""
-
-
 from __future__ import annotations
+
+import re
 
 import pytest
 
@@ -11,7 +11,9 @@ from quantify_scheduler.backends.qblox import q1asm_instructions
 from quantify_scheduler.backends.qblox.operation_handling import (
     acquisitions,
     base,
+    bin_mode_compat,
     factory_analog,
+    factory_timetag,
     pulses,
     virtual,
 )
@@ -94,7 +96,7 @@ TEST_OP_INFO_MAPPING = {
             "protocol": "TriggerCount",
             "acq_channel": 0,
             "acq_index": 0,
-            "bin_mode": BinMode.AVERAGE,
+            "bin_mode": BinMode.DISTRIBUTION,
             "port": "some_port",
             "clock": "some_clock",
             "duration": 1e-7,
@@ -190,34 +192,98 @@ def test_invalid_protocol_exception():
     )
 
 
-def test_trace_append_exception():
-    # arrange
+@pytest.mark.parametrize(
+    "protocol, bin_mode",
+    [
+        ("Trace", BinMode.APPEND),
+        ("Trace", BinMode.FIRST),
+        ("Trace", BinMode.DISTRIBUTION),
+        ("Trace", BinMode.SUM),
+        ("SSBIntegrationComplex", BinMode.FIRST),
+        ("SSBIntegrationComplex", BinMode.DISTRIBUTION),
+        ("SSBIntegrationComplex", BinMode.SUM),
+        ("NumericalSeparatedWeightedIntegration", BinMode.FIRST),
+        ("NumericalSeparatedWeightedIntegration", BinMode.DISTRIBUTION),
+        ("NumericalSeparatedWeightedIntegration", BinMode.SUM),
+        ("ThresholdedAcquisition", BinMode.FIRST),
+        ("ThresholdedAcquisition", BinMode.DISTRIBUTION),
+        ("ThresholdedAcquisition", BinMode.SUM),
+        ("TriggerCount", BinMode.AVERAGE),
+        ("TriggerCount", BinMode.FIRST),
+    ],
+)
+def test_incompatible_bin_mode_qrm_raises(protocol: str, bin_mode: BinMode):
     operation_info = OpInfo(
         name="",
         data={
             "duration": 12e-9,
-            "protocol": "Trace",
+            "protocol": protocol,
             "acq_channel": 0,
             "acq_index": 0,
-            "bin_mode": BinMode.APPEND,
+            "bin_mode": bin_mode,
             "port": "some_port",
             "clock": "some_clock",
         },
         timing=0,
     )
 
-    # act
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(
+        bin_mode_compat.IncompatibleBinModeError,
+        match=re.escape(
+            f"{protocol} acquisition on the QRM does not support bin mode "
+            f"{operation_info.data['bin_mode']}.\n\n{repr(operation_info)} caused "
+            "this exception to occur."
+        ),
+    ):
         factory_analog.get_operation_strategy(
             operation_info=operation_info,
             channel_name="complex_output_0",
         )
 
-    # assert
-    assert (
-        exc.value.args[0] == "Trace acquisition does not support bin mode append.\n\nAcquisition  "
-        "(t=0 to 1.2e-08)\ndata={'duration': 1.2e-08, 'protocol': 'Trace', "
-        "'acq_channel': 0, 'acq_index': 0, 'bin_mode': <BinMode.APPEND: "
-        "'append'>, 'port': 'some_port', 'clock': 'some_clock'} caused this exception "
-        "to occur."
+
+@pytest.mark.parametrize(
+    "protocol, bin_mode",
+    [
+        ("TriggerCount", BinMode.AVERAGE),
+        ("TriggerCount", BinMode.DISTRIBUTION),
+        ("TriggerCount", BinMode.FIRST),
+        ("Timetag", BinMode.DISTRIBUTION),
+        ("Timetag", BinMode.FIRST),
+        ("Timetag", BinMode.SUM),
+        ("Trace", BinMode.APPEND),
+        ("Trace", BinMode.AVERAGE),
+        ("Trace", BinMode.DISTRIBUTION),
+        ("Trace", BinMode.SUM),
+        ("TimetagTrace", BinMode.AVERAGE),
+        ("TimetagTrace", BinMode.DISTRIBUTION),
+        ("TimetagTrace", BinMode.FIRST),
+        ("TimetagTrace", BinMode.SUM),
+    ],
+)
+def test_incompatible_bin_mode_qtm_raises(protocol: str, bin_mode: BinMode):
+    operation_info = OpInfo(
+        name="",
+        data={
+            "duration": 12e-9,
+            "protocol": protocol,
+            "acq_channel": 0,
+            "acq_index": 0,
+            "bin_mode": bin_mode,
+            "port": "some_port",
+            "clock": "some_clock",
+        },
+        timing=0,
     )
+
+    with pytest.raises(
+        bin_mode_compat.IncompatibleBinModeError,
+        match=re.escape(
+            f"{protocol} acquisition on the QTM does not support bin mode "
+            f"{operation_info.data['bin_mode']}.\n\n{repr(operation_info)} caused "
+            "this exception to occur."
+        ),
+    ):
+        factory_timetag.get_operation_strategy(
+            operation_info=operation_info,
+            channel_name="digital_input_0",
+        )

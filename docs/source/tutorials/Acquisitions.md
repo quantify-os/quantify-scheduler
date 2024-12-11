@@ -831,7 +831,7 @@ This protocol is used, for example, in the case of an NV center type of qubit, o
 
 The trigger count protocol is currently only implemented for the Qblox backend, and it is available on two module types: the **QRM** (baseband) and the **QTM**. Please also see {ref}`sec-qblox-acquisition-details` for more information on Qblox module-specific behavior of this operation.
 
-Like the {ref}`single-sideband integration protocol <sec-ssb>`, the {class}`~quantify_scheduler.operations.acquisition_library.TriggerCount` protocol also offers two bin modes: **average** and **append**. The **average** mode can only be used with the QRM, and the **append** mode can be used with both the QRM and the QTM.
+The {class}`~quantify_scheduler.operations.acquisition_library.TriggerCount` protocol offers three bin modes: **append**, **sum**, and **distribution**. The **distribution** mode can only be used with the QRM, while the **append** and **sum** mode can be used with both the QRM and the QTM.
 
 The **append** bin mode is quite similar to the {ref}`single-sideband integration protocol <sec-ssb>` case. Instead of the integrated acquisition result, the data will consist of the total number of triggers counted during each acquisition.
 Let's consider an example where we execute a schedule three times:
@@ -840,9 +840,11 @@ Let's consider an example where we execute a schedule three times:
 - during the 2nd run, one trigger is acquired,
 - during the 3rd run, one trigger is acquired.
 
-The result would then be the list `[3, 1, 1]`.
+The result would then be the list `[3, 1, 1]` for acquisition index 0.
 
-In the **average** bin mode, the result is a _distribution_ that maps the trigger count numbers to the number of occurrences of each trigger count number.
+In the **sum** bin mode, counts in repeated acquisitions with the same acquisition index are simply accumulated. Given the same experiment as above, the returned amount of counts for acquisition index 0 would be `5` with this bin mode.
+
+In the **distribution** bin mode, the result is a _distribution_ that maps the trigger count numbers to the number of occurrences of each trigger count number.
 This provides insights into the overall occurrence of triggers when running the acquisition multiple times. Let's consider the exact same experimental example as above, where a schedule is executed three times.
 
 The overall distribution of triggers would be: trigger count of 1 occurred twice, and trigger count of 3 occurred once. Hence, the resulting dictionary would be: `{1: 2, 3: 1}`.
@@ -852,7 +854,7 @@ Note, the threshold is set for the QRM via the field {class}`~quantify_scheduler
 
 #### Setup and schedule
 
-In this tutorial we will explain how **average bin mode** works in the {class}`~quantify_scheduler.operations.acquisition_library.TriggerCount` protocol (also see the introduction above).
+In this tutorial we will explain how **distribution bin mode** works in the {class}`~quantify_scheduler.operations.acquisition_library.TriggerCount` protocol (also see the introduction above).
 We create a schedule that consists of an acquisition operation that measures the trigger signals.
 In this tutorial we assume trigger signals are generated from an external source (we do not generate these from the control hardware).
 

@@ -38,11 +38,11 @@ For more information about the bin modes, please see the {ref}`tutorials <sec-ac
   <tr>
     <td class="tg-0pky" rowspan="2">TriggerCount</td>
     <td class="tg-0pky">QRM</td>
-    <td class="tg-0pky"><code>BinMode.APPEND</code>, <code>BinMode.AVERAGE</code></td>
+    <td class="tg-0pky"><code>BinMode.APPEND</code>, <code>BinMode.DISTRIBUTION</code>, <code>BinMode.SUM</code></td>
   </tr>
   <tr>
     <td class="tg-0pky">QTM</td>
-    <td class="tg-0pky"><code>BinMode.APPEND</code></td>
+    <td class="tg-0pky"><code>BinMode.APPEND</code>, <code>BinMode.SUM</code></td>
   </tr>
   <tr>
     <td class="tg-0pky">Timetag</td>

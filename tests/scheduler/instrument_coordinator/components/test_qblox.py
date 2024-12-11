@@ -7,7 +7,7 @@ import os
 import re
 from collections import defaultdict
 from copy import copy, deepcopy
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
 import pytest
@@ -25,12 +25,16 @@ from qcodes.instrument import Instrument, InstrumentChannel, InstrumentModule
 
 from quantify_core.data.handling import get_datadir
 from quantify_scheduler.backends.graph_compilation import SerialCompiler
+from quantify_scheduler.backends.qblox.operation_handling.bin_mode_compat import (
+    IncompatibleBinModeError,
+)
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.enums import BinMode, TimeRef, TimeSource
 from quantify_scheduler.helpers.qblox_dummy_instrument import (
     start_dummy_cluster_armed_sequencers,
 )
+from quantify_scheduler.helpers.schedule import AcquisitionChannelMetadata
 from quantify_scheduler.instrument_coordinator.components import qblox
 from quantify_scheduler.operations.acquisition_library import (
     SSBIntegrationComplex,
@@ -2450,37 +2454,23 @@ def test_missing_acq_index(
         ("TriggerCount", "foo"),
     ],
 )
-def test_unsupported_bin_modes_qrm(
-    make_cluster_component, mock_acquisition_data, protocol, bin_mode
-):
-    cluster = make_cluster_component("cluster0")
+def test_unsupported_bin_modes_qrm(protocol, bin_mode):
+    acq_channel_metadata = AcquisitionChannelMetadata(
+        acq_channel=0, acq_indices=[0] if protocol == "Trace" else list(range(10))
+    )
+    acq_metadata = AcquisitionMetadata(protocol, bin_mode, np.ndarray, {0: acq_channel_metadata}, 1)
     acq_manager = qblox._QRMAcquisitionManager(
-        parent=cluster._cluster_modules["cluster0_module1"],
-        acquisition_metadata=dict(),
+        parent=Mock(),
+        acquisition_metadata={"0": acq_metadata},
         scope_mode_sequencer_and_qblox_acq_index=(0, 0),
-        acquisition_duration={0: 10},
+        acquisition_duration={"0": 10},
         seq_name_to_idx_map={"seq0": 0},
     )
-    acq_metadata = AcquisitionMetadata(protocol, bin_mode, np.ndarray, {0: [0]}, 1)
-    acq_indices = [0] if protocol == "Trace" else list(range(10))
-    get_data_fn_map = {
-        "Trace": acq_manager._get_scope_data,
-        "SSBIntegrationComplex": acq_manager._get_integration_data,
-        "ThresholdedAcquisition": acq_manager._get_threshold_data,
-        "TriggerCount": acq_manager._get_trigger_count_data,
-    }
     with pytest.raises(
-        RuntimeError,
-        match=f"{protocol} acquisition protocol does not support bin mode {bin_mode}",
+        IncompatibleBinModeError,
+        match=f"{protocol} acquisition on the QRM does not support bin mode {bin_mode}",
     ):
-        _ = get_data_fn_map[protocol](
-            acq_indices=acq_indices,
-            hardware_retrieved_acquisitions=mock_acquisition_data,
-            acquisition_metadata=acq_metadata,
-            acq_duration=10,
-            qblox_acq_index=0,
-            acq_channel=0,
-        )
+        _ = acq_manager.retrieve_acquisition()
 
 
 @pytest.mark.parametrize(
@@ -2492,35 +2482,20 @@ def test_unsupported_bin_modes_qrm(
         ("Trace", BinMode.APPEND),
     ],
 )
-def test_unsupported_bin_modes_qtm(
-    make_cluster_component, mock_qtm_acquisition_data, protocol, bin_mode
-):
-    cluster = make_cluster_component("cluster0")
+def test_unsupported_bin_modes_qtm(protocol, bin_mode):
+    acq_channel_metadata = AcquisitionChannelMetadata(acq_channel=0, acq_indices=list(range(10)))
+    acq_metadata = AcquisitionMetadata(protocol, bin_mode, np.ndarray, {0: acq_channel_metadata}, 1)
     acq_manager = qblox._QTMAcquisitionManager(
-        parent=cluster._cluster_modules["cluster0_module5"],
-        acquisition_metadata=dict(),
-        acquisition_duration={0: 10},
+        parent=Mock(),
+        acquisition_metadata={"0": acq_metadata},
+        acquisition_duration={"0": 10},
         seq_name_to_idx_map={"seq0": 0},
     )
-    acq_metadata = AcquisitionMetadata(protocol, bin_mode, np.ndarray, {0: [0]}, 1)
-    get_data_fn_map = {
-        "TriggerCount": acq_manager._get_trigger_count_data,
-        "Timetag": acq_manager._get_timetag_data,
-        "TimetagTrace": acq_manager._get_timetag_trace_data,
-        "Trace": acq_manager._get_digital_trace_data,
-    }
     with pytest.raises(
-        RuntimeError,
-        match=f"{protocol} acquisition protocol does not support bin mode {bin_mode}",
+        IncompatibleBinModeError,
+        match=f"{protocol} acquisition on the QTM does not support bin mode {bin_mode}",
     ):
-        _ = get_data_fn_map[protocol](
-            acq_indices=list(range(10)),
-            hardware_retrieved_acquisitions=mock_qtm_acquisition_data,
-            acquisition_metadata=acq_metadata,
-            acq_duration=10,
-            qblox_acq_index=0,
-            acq_channel=0,
-        )
+        _ = acq_manager.retrieve_acquisition()
 
 
 class MockModuleComponent(qblox._ModuleComponentBase):

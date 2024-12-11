@@ -11,10 +11,15 @@ from quantify_scheduler.backends.qblox.operation_handling import (
     pulses,
     virtual,
 )
+from quantify_scheduler.backends.qblox.operation_handling.bin_mode_compat import (
+    QTM_COMPATIBLE_BIN_MODES,
+)
+from quantify_scheduler.backends.qblox.operation_handling.factory_analog import (
+    IncompatibleBinModeError,
+)
 from quantify_scheduler.backends.qblox.operation_handling.factory_common import (
     try_get_pulse_strategy_common,
 )
-from quantify_scheduler.enums import BinMode
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.types.qblox import OpInfo
@@ -54,30 +59,25 @@ def _get_acquisition_strategy(
 ) -> acquisitions.AcquisitionStrategyPartial:
     """Handles the logic for determining the correct acquisition type."""
     protocol = operation_info.data["protocol"]
+    try:
+        compatible_bin_modes = QTM_COMPATIBLE_BIN_MODES[protocol]
+    except KeyError as err:
+        raise ValueError(f"Operation info {operation_info} cannot be compiled for a QTM.") from err
+    if operation_info.data["bin_mode"] not in compatible_bin_modes:
+        raise IncompatibleBinModeError(
+            module_type="QTM",
+            protocol=protocol,
+            bin_mode=operation_info.data["bin_mode"],
+            operation_info=operation_info,
+        )
+
     if protocol in ("TriggerCount", "Timetag"):
-        if protocol == "TriggerCount" and operation_info.data["bin_mode"] != BinMode.APPEND:
-            raise ValueError(
-                f"{protocol} acquisition on the QTM does not support bin mode "
-                f"{operation_info.data['bin_mode']}.\n\n{repr(operation_info)} caused "
-                "this exception to occur."
-            )
         return acquisitions.TimetagAcquisitionStrategy(operation_info)
 
     if protocol in ("Trace", "TimetagTrace"):
-        if (
-            protocol == "Trace"
-            and operation_info.data["bin_mode"] != BinMode.FIRST
-            or protocol == "TimetagTrace"
-            and operation_info.data["bin_mode"] != BinMode.APPEND
-        ):
-            raise ValueError(
-                f"{protocol} acquisition on the QTM does not support bin mode "
-                f"{operation_info.data['bin_mode']}.\n\n{repr(operation_info)} caused "
-                "this exception to occur."
-            )
         return acquisitions.ScopedTimetagAcquisitionStrategy(operation_info)
 
-    raise ValueError(f"Operation info {operation_info} cannot be compiled for a QTM.")
+    assert False, "This should not be reachable due to the bin mode check above."
 
 
 def _get_pulse_strategy(

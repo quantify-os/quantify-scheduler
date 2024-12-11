@@ -12,10 +12,13 @@ from quantify_scheduler.backends.qblox.operation_handling import (
     pulses,
     virtual,
 )
+from quantify_scheduler.backends.qblox.operation_handling.bin_mode_compat import (
+    QRM_COMPATIBLE_BIN_MODES,
+    IncompatibleBinModeError,
+)
 from quantify_scheduler.backends.qblox.operation_handling.factory_common import (
     try_get_pulse_strategy_common,
 )
-from quantify_scheduler.enums import BinMode
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.types.qblox import OpInfo
@@ -55,13 +58,22 @@ def _get_acquisition_strategy(
 ) -> acquisitions.AcquisitionStrategyPartial:
     """Handles the logic for determining the correct acquisition type."""
     protocol = operation_info.data["protocol"]
+    try:
+        compatible_bin_modes = QRM_COMPATIBLE_BIN_MODES[protocol]
+    except KeyError as err:
+        raise ValueError(
+            f'Unknown acquisition protocol "{protocol}" encountered in '
+            f"Qblox backend when processing acquisition {repr(operation_info)}."
+        ) from err
+    if operation_info.data["bin_mode"] not in compatible_bin_modes:
+        raise IncompatibleBinModeError(
+            module_type="QRM",
+            protocol=protocol,
+            bin_mode=operation_info.data["bin_mode"],
+            operation_info=operation_info,
+        )
+
     if protocol in ("Trace", "SSBIntegrationComplex", "ThresholdedAcquisition"):
-        if protocol == "Trace" and operation_info.data["bin_mode"] != BinMode.AVERAGE:
-            raise ValueError(
-                f"{protocol} acquisition does not support bin mode "
-                f"{operation_info.data['bin_mode']}.\n\n{repr(operation_info)} caused "
-                "this exception to occur."
-            )
         return acquisitions.SquareAcquisitionStrategy(operation_info)
 
     elif protocol in (
@@ -74,10 +86,7 @@ def _get_acquisition_strategy(
     elif protocol == "TriggerCount":
         return acquisitions.TriggerCountAcquisitionStrategy(operation_info)
 
-    raise ValueError(
-        f'Unknown acquisition protocol "{protocol}" encountered in '
-        f"Qblox backend when processing acquisition {repr(operation_info)}."
-    )
+    assert False, "This should not be reachable due to the bin mode check above."
 
 
 def _get_pulse_strategy(  # noqa: PLR0911  # too many return statements

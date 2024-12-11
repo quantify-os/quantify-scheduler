@@ -96,7 +96,10 @@ class TestAcquisitionStrategyPartial:
         # assert
         assert op_info == from_property
 
-    @pytest.mark.parametrize("bin_mode", [BinMode.AVERAGE, BinMode.APPEND])
+    @pytest.mark.parametrize(
+        "bin_mode",
+        [BinMode.AVERAGE, BinMode.APPEND, BinMode.SUM, BinMode.DISTRIBUTION, BinMode.FIRST],
+    )
     def test_bin_mode(self, empty_qasm_program_qrm, bin_mode, mocker):
         # arrange
         data = {"bin_mode": bin_mode, "acq_channel": 0, "acq_index": 0}
@@ -111,12 +114,12 @@ class TestAcquisitionStrategyPartial:
         strategy.insert_qasm(empty_qasm_program_qrm)
 
         # assert
-        if bin_mode == BinMode.AVERAGE:
-            average_mock.assert_called_once()
-            append_mock.assert_not_called()
-        else:
+        if bin_mode == BinMode.APPEND:
             average_mock.assert_not_called()
             append_mock.assert_called_once()
+        else:
+            average_mock.assert_called_once()
+            append_mock.assert_not_called()
 
     def test_invalid_bin_mode(self, empty_qasm_program_qrm):
         # arrange
@@ -160,7 +163,10 @@ class TestAcquisitionStrategyPartial:
             "'acq_channel': 0, 'acq_index': 0, 'duration': 1e-06}."
         )
 
-    @pytest.mark.parametrize("bin_mode", [BinMode.AVERAGE, BinMode.APPEND])
+    @pytest.mark.parametrize(
+        "bin_mode",
+        [BinMode.AVERAGE, BinMode.APPEND, BinMode.SUM, BinMode.DISTRIBUTION, BinMode.FIRST],
+    )
     def test_bin_index_register_invalid(self, empty_qasm_program_qrm, bin_mode):
         # arrange
         data = {"bin_mode": bin_mode, "acq_channel": 0, "acq_index": 0}
@@ -454,7 +460,7 @@ class TestTriggerCountStrategy:
         # arrange
         qasm = empty_qasm_program_qrm
         data = {
-            "bin_mode": None,
+            "bin_mode": BinMode.DISTRIBUTION,
             "acq_channel": 0,
             "acq_index": 0,
             "duration": 100e-6,
@@ -473,7 +479,7 @@ class TestTriggerCountStrategy:
                 "",
                 "acquire_ttl",
                 "0,0,1,4",
-                "# Enable TTL acquisition of acq_channel:0, bin_mode:average",
+                "# Enable TTL acquisition of acq_channel:0, bin_mode:distribution",
             ],
             ["", "wait", "65532", "# auto generated wait (99992 ns)"],
             ["", "wait", "34460", "# auto generated wait (99992 ns)"],
@@ -481,7 +487,7 @@ class TestTriggerCountStrategy:
                 "",
                 "acquire_ttl",
                 "0,0,0,4",
-                "# Disable TTL acquisition of acq_channel:0, bin_mode:average",
+                "# Disable TTL acquisition of acq_channel:0, bin_mode:distribution",
             ],
         ]
 
@@ -547,7 +553,7 @@ class TestTimetagStrategy:
         # arrange
         qasm = empty_qasm_program_qrm
         data = {
-            "bin_mode": None,
+            "bin_mode": BinMode.FIRST,
             "acq_channel": 0,
             "acq_index": 0,
             "duration": 100e-6,
@@ -566,7 +572,7 @@ class TestTimetagStrategy:
                 "",
                 "acquire_timetags",
                 "0,0,1,0,4",
-                "# Enable timetag acquisition of acq_channel:0, bin_mode:average",
+                "# Enable timetag acquisition of acq_channel:0, bin_mode:first",
             ],
             ["", "wait", "65532", "# auto generated wait (99992 ns)"],
             ["", "wait", "34460", "# auto generated wait (99992 ns)"],
@@ -574,7 +580,7 @@ class TestTimetagStrategy:
                 "",
                 "acquire_timetags",
                 "0,0,0,0,4",
-                "# Disable timetag acquisition of acq_channel:0, bin_mode:average",
+                "# Disable timetag acquisition of acq_channel:0, bin_mode:first",
             ],
         ]
 
@@ -641,7 +647,7 @@ class TestScopedTimetagStrategy:
         # arrange
         qasm = empty_qasm_program_qrm
         data = {
-            "bin_mode": None,
+            "bin_mode": BinMode.FIRST,
             "acq_channel": 0,
             "acq_index": 0,
             "duration": 100e-6,
@@ -661,7 +667,7 @@ class TestScopedTimetagStrategy:
                 "",
                 "acquire_timetags",
                 "0,0,1,0,4",
-                "# Enable timetag acquisition of acq_channel:0, bin_mode:average",
+                "# Enable timetag acquisition of acq_channel:0, bin_mode:first",
             ],
             ["", "wait", "65532", "# auto generated wait (99992 ns)"],
             ["", "wait", "34460", "# auto generated wait (99992 ns)"],
@@ -669,7 +675,7 @@ class TestScopedTimetagStrategy:
                 "",
                 "acquire_timetags",
                 "0,0,0,0,4",
-                "# Disable timetag acquisition of acq_channel:0, bin_mode:average",
+                "# Disable timetag acquisition of acq_channel:0, bin_mode:first",
             ],
             ["", "set_scope_en", "0", ""],
         ]

@@ -10,17 +10,14 @@ import re
 import warnings
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from functools import partial, wraps
+from functools import partial
 from math import isnan
 from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
     Hashable,
-    Sequence,
-    TypeVar,
     Union,
-    cast,
 )
 from uuid import uuid4
 
@@ -43,6 +40,11 @@ from quantify_scheduler.backends.qblox.enums import (
 )
 from quantify_scheduler.backends.qblox.helpers import (
     single_scope_mode_acquisition_raise,
+)
+from quantify_scheduler.backends.qblox.operation_handling.bin_mode_compat import (
+    QRM_COMPATIBLE_BIN_MODES,
+    QTM_COMPATIBLE_BIN_MODES,
+    IncompatibleBinModeError,
 )
 from quantify_scheduler.backends.types.qblox import (
     AnalogModuleSettings,
@@ -1432,6 +1434,11 @@ class _AcquisitionManagerBase(ABC):
         """Returns the QRM driver from the parent IC component."""
         return self.parent.instrument
 
+    @staticmethod
+    @abstractmethod
+    def _check_bin_mode_compatible(acquisition_metadata: AcquisitionMetadata) -> None:
+        pass
+
     @property
     @abstractmethod
     def _protocol_to_acq_function_map(self) -> dict[str, Callable]:
@@ -1474,6 +1481,7 @@ class _AcquisitionManagerBase(ABC):
         dataset = Dataset()
 
         for sequencer_name, acquisition_metadata in self._acquisition_metadata.items():
+            self._check_bin_mode_compatible(acquisition_metadata)
             acquisition_function: Callable = self._protocol_to_acq_function_map[
                 acquisition_metadata.acq_protocol
             ]
@@ -1558,27 +1566,6 @@ class _AcquisitionManagerBase(ABC):
         return str(qblox_acq_index)
 
 
-F = TypeVar("F", bound=Callable[..., DataArray])
-
-
-def _supported_bin_modes(bin_modes: Sequence[BinMode | str]) -> Callable[[F], F]:
-    def decorator(function: F) -> F:
-        @wraps(function)
-        def wrapper(*args, **kwargs) -> DataArray:
-            acquisition_metadata = kwargs["acquisition_metadata"]
-            bin_mode = acquisition_metadata.bin_mode
-            if bin_mode not in bin_modes:
-                raise RuntimeError(
-                    f"{acquisition_metadata.acq_protocol} acquisition protocol does not "
-                    f"support bin mode {acquisition_metadata.bin_mode}"
-                )
-            return function(*args, **kwargs)
-
-        return cast(F, wrapper)
-
-    return decorator
-
-
 class _QRMAcquisitionManager(_AcquisitionManagerBase):
     """
     Utility class that handles the acquisitions performed with the QRM.
@@ -1632,6 +1619,18 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
             "TriggerCount": self._get_trigger_count_data,
         }
 
+    @staticmethod
+    def _check_bin_mode_compatible(acquisition_metadata: AcquisitionMetadata) -> None:
+        if (
+            acquisition_metadata.bin_mode
+            not in QRM_COMPATIBLE_BIN_MODES[acquisition_metadata.acq_protocol]
+        ):
+            raise IncompatibleBinModeError(
+                module_type="QRM",
+                protocol=acquisition_metadata.acq_protocol,
+                bin_mode=acquisition_metadata.bin_mode,
+            )
+
     def retrieve_acquisition(self) -> Dataset:
         """
         Retrieves all the acquisition data in the correct format.
@@ -1672,7 +1671,6 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
         qblox_acq_name = self._qblox_acq_index_to_qblox_acq_name(qblox_acq_index)
         self.instrument.store_scope_acquisition(sequencer_index, qblox_acq_name)
 
-    @_supported_bin_modes([BinMode.AVERAGE])
     def _get_scope_data(
         self,
         *,
@@ -1738,7 +1736,6 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
             attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
         )
 
-    @_supported_bin_modes([BinMode.AVERAGE, BinMode.APPEND])
     def _get_integration_data(
         self,
         *,
@@ -1876,7 +1873,6 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
 
         return formatted_data
 
-    @_supported_bin_modes([BinMode.AVERAGE, BinMode.APPEND])
     def _get_threshold_data(
         self,
         *,
@@ -1942,7 +1938,6 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
                 attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
             )
 
-    @_supported_bin_modes([BinMode.DISTRIBUTION, BinMode.APPEND])
     def _get_trigger_count_data(
         self,
         *,
@@ -2017,7 +2012,15 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
                 coords={"repetition": [0], "counts": list(result.keys())[::-1]},
                 attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
             )
-        else:
+        elif acquisition_metadata.bin_mode == BinMode.SUM:
+            counts = np.array(bin_data["avg_cnt"]).astype(int)
+            return DataArray(
+                counts.reshape((len(acq_indices),)),
+                dims=[acq_index_dim_name],
+                coords={acq_index_dim_name: acq_indices},
+                attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
+            )
+        elif acquisition_metadata.bin_mode == BinMode.APPEND:
             counts = np.array(bin_data["avg_cnt"]).astype(int)
             return DataArray(
                 [counts],
@@ -2025,6 +2028,10 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
                 coords={"repetition": [0], acq_index_dim_name: range(len(counts))},
                 attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
             )
+        else:
+            # In principle unreachable due to _check_bin_mode_compatible, but included for
+            # completeness.
+            assert False, "This should not be reachable due to _check_bin_mode_compatible."
 
 
 class _QTMAcquisitionManager(_AcquisitionManagerBase):
@@ -2057,6 +2064,18 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
             "TimetagTrace": self._get_timetag_trace_data,
         }
 
+    @staticmethod
+    def _check_bin_mode_compatible(acquisition_metadata: AcquisitionMetadata) -> None:
+        if (
+            acquisition_metadata.bin_mode
+            not in QTM_COMPATIBLE_BIN_MODES[acquisition_metadata.acq_protocol]
+        ):
+            raise IncompatibleBinModeError(
+                module_type="QTM",
+                protocol=acquisition_metadata.acq_protocol,
+                bin_mode=acquisition_metadata.bin_mode,
+            )
+
     def _get_acquisitions_from_instrument(
         self, seq_idx: int, acquisition_metadata: AcquisitionMetadata
     ) -> dict:
@@ -2072,7 +2091,6 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
             data[qblox_acq_name]["acquisition"]["scope"] = scope_data
         return data
 
-    @_supported_bin_modes([BinMode.APPEND])
     def _get_trigger_count_data(
         self,
         *,
@@ -2116,14 +2134,25 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
         acq_index_dim_name = f"acq_index_{acq_channel}"
 
         counts = np.array(bin_data["count"]).astype(int)
-        return DataArray(
-            [counts],
-            dims=["repetition", acq_index_dim_name],
-            coords={"repetition": [0], acq_index_dim_name: range(len(counts))},
-            attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
-        )
+        if acquisition_metadata.bin_mode == BinMode.APPEND:
+            return DataArray(
+                [counts],
+                dims=["repetition", acq_index_dim_name],
+                coords={"repetition": [0], acq_index_dim_name: range(len(counts))},
+                attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
+            )
+        elif acquisition_metadata.bin_mode == BinMode.SUM:
+            return DataArray(
+                counts.reshape((len(acq_indices),)),
+                dims=[acq_index_dim_name],
+                coords={acq_index_dim_name: acq_indices},
+                attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
+            )
+        else:
+            # In principle unreachable due to _check_bin_mode_compatible, but included for
+            # completeness.
+            assert False, "This should not be reachable due to _check_bin_mode_compatible."
 
-    @_supported_bin_modes([BinMode.FIRST])
     def _get_digital_trace_data(
         self,
         *,
@@ -2151,7 +2180,6 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
             attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
         )
 
-    @_supported_bin_modes([BinMode.APPEND])
     def _get_timetag_trace_data(
         self,
         *,
@@ -2254,7 +2282,6 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
 
         return timetag_traces
 
-    @_supported_bin_modes([BinMode.AVERAGE, BinMode.APPEND])
     def _get_timetag_data(
         self,
         *,

@@ -507,7 +507,7 @@ class SequencerCompiler(ABC):
             # Add the acquisition metadata to the acquisition declaration dict
             if acq_metadata.bin_mode == BinMode.APPEND:
                 num_bins = repetitions * self._num_acquisitions
-            elif acq_metadata.bin_mode == BinMode.AVERAGE:
+            elif acq_metadata.bin_mode in (BinMode.AVERAGE, BinMode.SUM):
                 num_bins = max(acq_indices) + 1
             elif acq_metadata.bin_mode == BinMode.DISTRIBUTION:
                 assert acq_metadata.acq_protocol == "TriggerCount"

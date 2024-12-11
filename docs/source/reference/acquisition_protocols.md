@@ -260,7 +260,9 @@ xr.Dataset(
 )
 ```
 
-In `BinMode.AVERAGE` mode, the data is very similar. Each element in the list shows how many times the threshold was passed in each repetition **exactly** as many times as it's shown in the `"count"` dimension.
+In `BinMode.DISTRIBUTION` mode, the result is a _distribution_ that maps the trigger count numbers to the number of occurrences of each trigger count number.
+This provides insights into the overall occurrence of triggers when running the acquisition multiple times.
+
 For example, in the example below, the schedule ran 8 times. From these 8 runs,
 - in 1 run, the trigger was counted 5 times,
 - in 2 runs, the trigger was counted 4 times,
@@ -269,7 +271,7 @@ For example, in the example below, the schedule ran 8 times. From these 8 runs,
 
 Note: 0 counts are removed from the returned data, so there will be no entry for "3 times".
 
-You can think of the append mode values as the cumulative distribution of the average mode values.
+You can think of the append mode values as the cumulative distribution of the distribution mode values.
 See an example below.
 ```{code-cell} ipython3
 ---

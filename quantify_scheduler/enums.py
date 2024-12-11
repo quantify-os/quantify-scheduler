@@ -42,6 +42,7 @@ class BinMode(StrEnum):  # type: ignore
     AVERAGE = "average"
     FIRST = "first"
     DISTRIBUTION = "distribution"
+    SUM = "sum"
     # N.B. in principle it is possible to specify other behaviours for
     # BinMode such as `SUM` or `OVERWRITE` but these are not
     # currently supported by any backend.

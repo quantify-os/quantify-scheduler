@@ -65,7 +65,7 @@ class AcquisitionStrategyPartial(IOperationStrategy):
 
         qasm_program.time_last_acquisition_triggered = qasm_program.elapsed_time
 
-        if self.bin_mode in (BinMode.AVERAGE, BinMode.FIRST, BinMode.DISTRIBUTION):
+        if self.bin_mode in (BinMode.AVERAGE, BinMode.FIRST, BinMode.DISTRIBUTION, BinMode.SUM):
             if self.bin_idx_register is not None:
                 raise ValueError(
                     f"Attempting to add acquisition with binmode {self.bin_mode}. "
@@ -362,7 +362,7 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
             1,  # enable ttl acquisition
             constants.MIN_TIME_BETWEEN_OPERATIONS,
             comment=f"Enable TTL acquisition of acq_channel:{self.acq_channel}, "
-            f"bin_mode:{BinMode.AVERAGE}",
+            f"bin_mode:{self.bin_mode}",
         )
         qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
 
@@ -380,7 +380,7 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
             0,  # disable ttl acquisition
             constants.MIN_TIME_BETWEEN_OPERATIONS,
             comment=f"Disable TTL acquisition of acq_channel:{self.acq_channel}, "
-            f"bin_mode:{BinMode.AVERAGE}",
+            f"bin_mode:{self.bin_mode}",
         )
         qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
 
@@ -473,7 +473,7 @@ class TimetagAcquisitionStrategy(AcquisitionStrategyPartial):
             self._fine_start_delay_int,
             constants.MIN_TIME_BETWEEN_OPERATIONS,
             comment=f"Enable timetag acquisition of acq_channel:{self.acq_channel}, "
-            f"bin_mode:{BinMode.AVERAGE}",
+            f"bin_mode:{self.bin_mode}",
         )
         qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
 
@@ -492,7 +492,7 @@ class TimetagAcquisitionStrategy(AcquisitionStrategyPartial):
             self._fine_end_delay_int,
             constants.MIN_TIME_BETWEEN_OPERATIONS,
             comment=f"Disable timetag acquisition of acq_channel:{self.acq_channel}, "
-            f"bin_mode:{BinMode.AVERAGE}",
+            f"bin_mode:{self.bin_mode}",
         )
         qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
 
