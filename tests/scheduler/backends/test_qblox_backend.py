@@ -69,8 +69,11 @@ from quantify_scheduler.backends.qblox_backend import (
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.backends.types.common import HardwareDescription
 from quantify_scheduler.backends.types.qblox import (
+    AnalogModuleSettings,
     BasebandModuleSettings,
+    DistortionSettings,
     QbloxHardwareDistortionCorrection,
+    QbloxRealTimeFilter,
 )
 from quantify_scheduler.compilation import _determine_absolute_timing
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
@@ -901,15 +904,15 @@ def test_compile_cluster_deprecated_hardware_config(
     )
 
     assert (
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"]["sequencers"]["seq0"][
-            "sequence"
-        ]
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"]["sequencers"][
+            "seq0"
+        ].sequence
         is not None
     )
     assert (
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module2"]["sequencers"]["seq0"][
-            "sequence"
-        ]
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module2"]["sequencers"][
+            "seq0"
+        ].sequence
         is not None
     )
 
@@ -976,7 +979,7 @@ def test_compile_identical_pulses(
 
     prog = compiled_schedule.compiled_instructions["cluster0"]["cluster0_module1"]["sequencers"][
         "seq0"
-    ]["sequence"]
+    ].sequence
     assert len(prog["waveforms"]) == 2
 
 
@@ -991,7 +994,7 @@ def test_compile_measure(
     )
     qrm0_seq0_json = full_program["compiled_instructions"]["cluster0"]["cluster0_module3"][
         "sequencers"
-    ]["seq0"]["sequence"]
+    ]["seq0"].sequence
 
     assert len(qrm0_seq0_json["weights"]) == 0
 
@@ -1098,9 +1101,11 @@ def test_compile_clock_operations(
             config=quantum_device.generate_compilation_config(),
         )
 
-    program_lines = compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"][
-        "sequencers"
-    ]["seq0"]["sequence"]["program"].splitlines()
+    program_lines = (
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"]["sequencers"]["seq0"]
+        .sequence["program"]
+        .splitlines()
+    )
     assert any(re.search(instruction_to_check, line) for line in program_lines), "\n".join(
         line for line in program_lines
     )
@@ -1163,13 +1168,19 @@ def test_compile_cz_gate(
     program_lines = {
         "q2:fl": compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"]["sequencers"][
             "seq0"
-        ]["sequence"]["program"].splitlines(),
+        ]
+        .sequence["program"]
+        .splitlines(),
         "q2:mw": compiled_sched.compiled_instructions["cluster0"]["cluster0_module2"]["sequencers"][
             "seq0"
-        ]["sequence"]["program"].splitlines(),
+        ]
+        .sequence["program"]
+        .splitlines(),
         "q3:mw": compiled_sched.compiled_instructions["cluster0"]["cluster0_module2"]["sequencers"][
             "seq1"
-        ]["sequence"]["program"].splitlines(),
+        ]
+        .sequence["program"]
+        .splitlines(),
     }
 
     assert any(
@@ -1198,7 +1209,7 @@ def test_compile_simple_with_acq(
 
     qcm0_seq0_json = full_program["compiled_instructions"]["cluster0"]["cluster0_module3"][
         "sequencers"
-    ]["seq0"]["sequence"]
+    ]["seq0"].sequence
 
     qcm0 = dummy_cluster().module2
     qcm0.sequencer0.sequence(qcm0_seq0_json)
@@ -1246,7 +1257,7 @@ def test_compile_acq_measurement_with_clock_phase_reset(
     )
     qrm0_seq0_json = compiled_schedule.compiled_instructions["cluster0"]["cluster0_module3"][
         "sequencers"
-    ]["seq0"]["seq_fn"]
+    ]["seq0"].seq_fn
     with open(qrm0_seq0_json) as file:
         program = json.load(file)["program"]
     reset_counts = program.count(" reset_ph ")
@@ -1344,7 +1355,7 @@ def test_separated_weighted_acquisition_end_to_end(
         (
             compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["sequencers"][
                 "seq0"
-            ]["sequence"]["program"]
+            ].sequence["program"]
         ),
     )
 
@@ -1369,7 +1380,7 @@ def test_weighted_acquisition_end_to_end(
         (
             compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["sequencers"][
                 "seq0"
-            ]["sequence"]["program"]
+            ].sequence["program"]
         ),
     )
 
@@ -1439,7 +1450,7 @@ def test_compile_with_rel_time(
 
     qcm0_seq0_json = full_program["compiled_instructions"]["cluster0"]["cluster0_module1"][
         "sequencers"
-    ]["seq0"]["sequence"]
+    ]["seq0"].sequence
 
     qcm0 = dummy_cluster().module2
     qcm0.sequencer0.sequence(qcm0_seq0_json)
@@ -1459,7 +1470,7 @@ def test_compile_with_repetitions(
 
     program_from_json = full_program["compiled_instructions"]["cluster0"]["cluster0_module1"][
         "sequencers"
-    ]["seq0"]["sequence"]["program"]
+    ]["seq0"].sequence["program"]
     assert re.search(r"\n\s*move\s+10,R0", program_from_json)
     assert re.search(r"\n\s*loop\s+R0,@start", program_from_json)
 
@@ -1494,7 +1505,7 @@ def test_qasm_hook(
     )
     program = comp_sched["compiled_instructions"]["cluster0"]["cluster0_module2"]["sequencers"][
         "seq0"
-    ]["sequence"]["program"]
+    ].sequence["program"]
     program_lines = program.splitlines()
 
     assert program_lines[0].strip() == q1asm_instructions.NOP
@@ -1537,7 +1548,7 @@ def test_qasm_hook_hardware_config(
     )
     program = full_program["compiled_instructions"]["cluster0"]["cluster0_module1"]["sequencers"][
         "seq0"
-    ]["sequence"]["program"]
+    ].sequence["program"]
     program_lines = program.splitlines()
 
     assert program_lines[0].strip() == q1asm_instructions.NOP
@@ -1588,7 +1599,7 @@ def test_real_mode_pulses(
     for output in range(4):
         seq_instructions = full_program.compiled_instructions["cluster0"]["cluster0_module1"][
             "sequencers"
-        ][f"seq{output}"]["sequence"]
+        ][f"seq{output}"].sequence
 
         for value in seq_instructions["waveforms"].values():
             waveform_data, seq_path = value["data"], value["index"]
@@ -1621,7 +1632,7 @@ def test_real_mode_pulses_legacy_hardware_cfg(
     for output in range(4):
         seq_instructions = full_program.compiled_instructions["cluster0"]["cluster0_module1"][
             "sequencers"
-        ][f"seq{output}"]["sequence"]
+        ][f"seq{output}"].sequence
 
         for value in seq_instructions["waveforms"].values():
             waveform_data, seq_path = value["data"], value["index"]
@@ -2067,9 +2078,7 @@ def test_assign_frequencies_baseband_hardware_config(
     assert compiled_instructions[generic_icc][f"{io0_lo_name}.frequency"] == lo0
     assert compiled_instructions[generic_icc][f"{io1_lo_name}.frequency"] == lo1
     assert (
-        compiled_instructions["cluster0"]["cluster0_module1"]["sequencers"]["seq1"][
-            "modulation_freq"
-        ]
+        compiled_instructions["cluster0"]["cluster0_module1"]["sequencers"]["seq1"].modulation_freq
         == if1
     )
 
@@ -2116,9 +2125,7 @@ def test_assign_frequencies_baseband(compile_config_basic_transmon_qblox_hardwar
     assert compiled_instructions[generic_icc][f"{mw_lo_name}.frequency"] == lo_mw
     assert compiled_instructions[generic_icc][f"{ro_lo_name}.frequency"] == lo_ro
     assert (
-        compiled_instructions["cluster0"]["cluster0_module3"]["sequencers"]["seq0"][
-            "modulation_freq"
-        ]
+        compiled_instructions["cluster0"]["cluster0_module3"]["sequencers"]["seq0"].modulation_freq
         == if_ro
     )
 
@@ -2216,7 +2223,7 @@ def test_assign_frequencies_baseband_downconverter(  # noqa: PLR0912, PLR0915
     ]
     qcm_program = compiled_schedule["compiled_instructions"]["cluster0"]["cluster0_module1"]
     actual_lo0 = generic_ic_program[f"{io0_lo_name}.frequency"]
-    actual_if1 = qcm_program["sequencers"]["seq1"]["modulation_freq"]
+    actual_if1 = qcm_program["sequencers"]["seq1"].modulation_freq
 
     if downconverter_freq0 is None:
         expected_lo0 = q0_clock_freq - if0
@@ -2284,9 +2291,9 @@ def test_assign_frequencies_rf_hardware_config(mock_setup_basic_transmon, hardwa
     compiled_instructions = compiled_schedule["compiled_instructions"]
     qcm_program = compiled_instructions["cluster0"]["cluster0_module2"]
 
-    assert qcm_program["settings"]["lo0_freq"] == lo0
-    assert qcm_program["settings"]["lo1_freq"] == lo1
-    assert qcm_program["sequencers"]["seq1"]["modulation_freq"] == if1
+    assert qcm_program["settings"].lo0_freq == lo0
+    assert qcm_program["settings"].lo1_freq == lo1
+    assert qcm_program["sequencers"]["seq1"].modulation_freq == if1
 
 
 def test_assign_frequencies_rf(compile_config_basic_transmon_qblox_hardware):
@@ -2318,12 +2325,10 @@ def test_assign_frequencies_rf(compile_config_basic_transmon_qblox_hardware):
     compiled_schedule = compiler.compile(sched, config=compile_config_basic_transmon_qblox_hardware)
     compiled_instructions = compiled_schedule["compiled_instructions"]
 
-    assert compiled_instructions["cluster0"]["cluster0_module2"]["settings"]["lo0_freq"] == lo_mw
-    assert compiled_instructions["cluster0"]["cluster0_module4"]["settings"]["lo0_freq"] == lo_ro
+    assert compiled_instructions["cluster0"]["cluster0_module2"]["settings"].lo0_freq == lo_mw
+    assert compiled_instructions["cluster0"]["cluster0_module4"]["settings"].lo0_freq == lo_ro
     assert (
-        compiled_instructions["cluster0"]["cluster0_module4"]["sequencers"]["seq0"][
-            "modulation_freq"
-        ]
+        compiled_instructions["cluster0"]["cluster0_module4"]["sequencers"]["seq0"].modulation_freq
         == if_ro
     )
 
@@ -2407,9 +2412,9 @@ def test_assign_frequencies_rf_downconverter(
         return
 
     qcm_program = compiled_schedule["compiled_instructions"]["cluster0"]["cluster0_module2"]
-    actual_lo0 = qcm_program["settings"]["lo0_freq"]
-    actual_lo1 = qcm_program["settings"]["lo1_freq"]
-    actual_if1 = qcm_program["sequencers"]["seq1"]["modulation_freq"]
+    actual_lo0 = qcm_program["settings"].lo0_freq
+    actual_lo1 = qcm_program["settings"].lo1_freq
+    actual_if1 = qcm_program["sequencers"]["seq1"].modulation_freq
 
     if0 = hardware_compilation_config["hardware_options"]["modulation_frequencies"][
         f"{qubit0.ports.microwave()}-{qubit0.name}.01"
@@ -2494,8 +2499,8 @@ def test_assign_attenuation_old_style_hardware_config(
         schedule=sched, config=quantum_device.generate_compilation_config()
     )
     qrm_rf_program = compiled_schedule["compiled_instructions"]["cluster0"]["cluster0_module4"]
-    compiled_in0_att = qrm_rf_program["settings"]["in0_att"]
-    compiled_out0_att = qrm_rf_program["settings"]["out0_att"]
+    compiled_in0_att = qrm_rf_program["settings"].in0_att
+    compiled_out0_att = qrm_rf_program["settings"].out0_att
 
     assert compiled_in0_att == input_att
     assert compiled_out0_att == output_att
@@ -2516,8 +2521,8 @@ def test_assign_attenuation(compile_config_basic_transmon_qblox_hardware):
     compiled_schedule = compiler.compile(sched, config=compile_config_basic_transmon_qblox_hardware)
     compiled_instructions = compiled_schedule["compiled_instructions"]
 
-    in0_att = compiled_instructions["cluster0"]["cluster0_module4"]["settings"]["in0_att"]
-    out0_att = compiled_instructions["cluster0"]["cluster0_module4"]["settings"]["out0_att"]
+    in0_att = compiled_instructions["cluster0"]["cluster0_module4"]["settings"].in0_att
+    out0_att = compiled_instructions["cluster0"]["cluster0_module4"]["settings"].out0_att
 
     assert in0_att == 4
     assert out0_att == 12
@@ -2579,14 +2584,14 @@ def test_assign_gain(compile_config_basic_transmon_qblox_hardware):
     compiled_schedule = compiler.compile(sched, config=compile_config_basic_transmon_qblox_hardware)
     compiled_instructions = compiled_schedule["compiled_instructions"]
 
-    assert compiled_instructions["cluster0"]["cluster0_module3"]["settings"]["in0_gain"] == 2
-    assert compiled_instructions["cluster0"]["cluster0_module3"]["settings"]["in1_gain"] == 3
+    assert compiled_instructions["cluster0"]["cluster0_module3"]["settings"].in0_gain == 2
+    assert compiled_instructions["cluster0"]["cluster0_module3"]["settings"].in1_gain == 3
 
 
 def test_markers(mock_setup_basic_transmon, hardware_cfg_cluster, hardware_cfg_rf):
     def _confirm_correct_markers(device_program, default_marker, is_rf=False, sequencer=0):
         answer = default_marker
-        qasm = device_program["sequencers"][f"seq{sequencer}"]["sequence"]["program"]
+        qasm = device_program["sequencers"][f"seq{sequencer}"].sequence["program"]
 
         matches = re.findall(r"set\_mrk +\d+", qasm)
         match = [int(m.replace("set_mrk", "").strip()) for m in matches][0]
@@ -2691,7 +2696,9 @@ def test_extract_settings_from_mapping(
 
 
 def test_cluster_settings(
-    compile_config_basic_transmon_qblox_hardware, create_schedule_with_pulse_info
+    compile_config_basic_transmon_qblox_hardware,
+    create_schedule_with_pulse_info,
+    pulse_only_schedule,
 ):
     sched = Schedule("pulse_only_experiment")
     sched.add(IdlePulse(duration=200e-6))
@@ -2718,7 +2725,7 @@ def test_cluster_settings(
         external_los=container.local_oscillators, schedule_resources=container.resources
     )
     cl_qcm0 = cluster_compiler.instrument_compilers["cluster0_module1"]
-    assert isinstance(cl_qcm0._settings, BasebandModuleSettings)
+    assert type(cl_qcm0._settings) is AnalogModuleSettings
 
 
 class TestAssemblyValid:
@@ -2775,7 +2782,7 @@ class TestAssemblyValid:
 
             module_seq0_json = compiled_schedule["compiled_instructions"][cluster.name][
                 module.name
-            ]["sequencers"]["seq0"]["sequence"]
+            ]["sequencers"]["seq0"].sequence
             module.sequencer0.sequence(module_seq0_json)
             module.arm_sequencer(0)
             uploaded_waveforms = module.get_waveforms(0)
@@ -2800,7 +2807,7 @@ class TestAssemblyValid:
         self._validate_seq_instructions(
             seq_instructions=compiled_ssro_sched["compiled_instructions"][cluster.name][qrm_name][
                 "sequencers"
-            ]["seq0"]["sequence"],
+            ]["seq0"].sequence,
             filename=f"{test_name}_{qrm_name}_seq0_instr.json",
         )
 
@@ -2823,7 +2830,7 @@ class TestAssemblyValid:
         self._validate_seq_instructions(
             seq_instructions=compiled_allxy_sched["compiled_instructions"][cluster.name][qrm_name][
                 "sequencers"
-            ]["seq0"]["sequence"],
+            ]["seq0"].sequence,
             filename=f"{test_name}_{qrm_name}_seq0_instr.json",
         )
 
@@ -2846,7 +2853,7 @@ class TestAssemblyValid:
         self._validate_seq_instructions(
             seq_instructions=compiled_allxy_sched["compiled_instructions"][cluster.name][qcm_name][
                 "sequencers"
-            ]["seq0"]["sequence"],
+            ]["seq0"].sequence,
             filename=f"{test_name}_{qcm_name}_seq0_instr.json",
         )
 
@@ -2866,7 +2873,7 @@ def test_acq_declaration_dict_append_mode(
 
     qrm0_seq_instructions = compiled_ssro_sched["compiled_instructions"]["cluster0"][
         "cluster0_module3"
-    ]["sequencers"]["seq0"]["sequence"]
+    ]["sequencers"]["seq0"].sequence
 
     acquisitions = qrm0_seq_instructions["acquisitions"]
     # the only key corresponds to channel 0
@@ -2884,7 +2891,7 @@ def test_acq_declaration_dict_bin_avg_mode(
     )
     qrm0_seq_instructions = compiled_allxy_sched["compiled_instructions"]["cluster0"][
         "cluster0_module3"
-    ]["sequencers"]["seq0"]["sequence"]
+    ]["sequencers"]["seq0"].sequence
 
     acquisitions = qrm0_seq_instructions["acquisitions"]
 
@@ -2935,7 +2942,7 @@ def test_apply_latency_corrections_hardware_config_valid(
     )
     latency = int(1e9 * latency_dict["q0:mw-q0.01"])
 
-    program_lines = compiled_data["sequencers"]["seq0"]["sequence"]["program"].splitlines()
+    program_lines = compiled_data["sequencers"]["seq0"].sequence["program"].splitlines()
     assert any(
         f"latency correction of {constants.MIN_TIME_BETWEEN_OPERATIONS} + {latency} ns" in line
         for line in program_lines
@@ -2967,18 +2974,22 @@ def test_apply_latency_corrections_hardware_options_valid(
     compiled_instructions = compiled_sched.compiled_instructions
 
     # Check latency correction for q4:mw-q4.01:
-    program_lines_mw = compiled_instructions["cluster0"]["cluster0_module1"]["sequencers"]["seq0"][
-        "sequence"
-    ]["program"].splitlines()
+    program_lines_mw = (
+        compiled_instructions["cluster0"]["cluster0_module1"]["sequencers"]["seq0"]
+        .sequence["program"]
+        .splitlines()
+    )
     assert any(
         f"latency correction of {constants.MIN_TIME_BETWEEN_OPERATIONS} + 8 ns" in line
         for line in program_lines_mw
     )
 
     # Check latency correction for q4:res-q4.ro:
-    program_lines_ro = compiled_instructions["cluster0"]["cluster0_module3"]["sequencers"]["seq0"][
-        "sequence"
-    ]["program"].splitlines()
+    program_lines_ro = (
+        compiled_instructions["cluster0"]["cluster0_module3"]["sequencers"]["seq0"]
+        .sequence["program"]
+        .splitlines()
+    )
     assert any(
         f"latency correction of {constants.MIN_TIME_BETWEEN_OPERATIONS} + 0 ns" in line
         for line in program_lines_ro
@@ -3034,19 +3045,15 @@ def test_apply_mixer_corrections(
 
     qrm_compiled_instructions = compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]
 
-    assert (
-        qrm_compiled_instructions["settings"]["offset_ch0_path_I"] == expected_settings.dc_offset_i
-    )
-    assert (
-        qrm_compiled_instructions["settings"]["offset_ch0_path_Q"] == expected_settings.dc_offset_q
-    )
+    assert qrm_compiled_instructions["settings"].offset_ch0_path_I == expected_settings.dc_offset_i
+    assert qrm_compiled_instructions["settings"].offset_ch0_path_Q == expected_settings.dc_offset_q
 
     assert (
-        qrm_compiled_instructions["sequencers"]["seq0"]["mixer_corr_gain_ratio"]
+        qrm_compiled_instructions["sequencers"]["seq0"].mixer_corr_gain_ratio
         == expected_settings.amp_ratio
     )
     assert (
-        qrm_compiled_instructions["sequencers"]["seq0"]["mixer_corr_phase_offset_degree"]
+        qrm_compiled_instructions["sequencers"]["seq0"].mixer_corr_phase_offset_degree
         == expected_settings.phase_error
     )
 
@@ -3084,11 +3091,11 @@ def test_compile_sequencer_options(
         "sequencers"
     ]["seq0"]
 
-    assert sequencer_instructions["ttl_acq_threshold"] == 0.2
-    assert sequencer_instructions["init_offset_awg_path_I"] == 0.1
-    assert sequencer_instructions["init_offset_awg_path_Q"] == -0.1
-    assert sequencer_instructions["init_gain_awg_path_I"] == 0.55
-    assert sequencer_instructions["init_gain_awg_path_Q"] == 0.66
+    assert sequencer_instructions.ttl_acq_threshold == 0.2
+    assert sequencer_instructions.init_offset_awg_path_I == 0.1
+    assert sequencer_instructions.init_offset_awg_path_Q == -0.1
+    assert sequencer_instructions.init_gain_awg_path_I == 0.55
+    assert sequencer_instructions.init_gain_awg_path_Q == 0.66
 
 
 def test_digital_channel_any_clock_name(
@@ -3139,7 +3146,7 @@ def test_digital_channel_any_clock_name(
     # # Assert markers were set correctly, and wait time is correct for QRM
     seq0_digital = compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"][
         "sequencers"
-    ]["seq0"]["sequence"]["program"]
+    ]["seq0"].sequence["program"]
     assert_equal_q1asm(
         seq0_digital,
         """
@@ -3219,9 +3226,11 @@ def test_stitched_pulse_compilation_upd_param_at_end(
         schedule=sched,
         config=quantum_device.generate_compilation_config(),
     )
-    program_with_long_square = compiled_sched.compiled_instructions["cluster0"]["cluster0_module4"][
-        "sequencers"
-    ]["seq0"]["sequence"]["program"].splitlines()
+    program_with_long_square = (
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module4"]["sequencers"]["seq0"]
+        .sequence["program"]
+        .splitlines()
+    )
     for i, string in enumerate(program_with_long_square):
         if "set_awg_offs" in string:
             break
@@ -3314,7 +3323,7 @@ def test_q1asm_stitched_pulses(mock_setup_basic_nv_qblox_hardware):
  play 0,0,4 # play staircase_pulse (4 ns)"""  # noqa: W291 trailing whitespace
         in compiled_sched.compiled_instructions["cluster0"]["cluster0_module4"]["sequencers"][
             "seq0"
-        ]["sequence"]["program"]
+        ].sequence["program"]
     )
 
 
@@ -3511,7 +3520,7 @@ def test_zero_pulse_skip_timing(
     qcm_name = f"{cluster.name}_module2"
     compiled_instructions = compiled_sched["compiled_instructions"][cluster.name][qcm_name][
         "sequencers"
-    ]["seq0"]["sequence"]
+    ]["seq0"].sequence
 
     assert len(compiled_instructions["waveforms"]) == 1
 
@@ -3550,7 +3559,7 @@ def test_debug_mode_qasm_aligning(
     compiled_schedule = compiler.compile(schedule=schedule, config=compilation_config)
     program = compiled_schedule.compiled_instructions["cluster0"]["cluster0_module4"]["sequencers"][
         "seq0"
-    ]["sequence"]["program"]
+    ].sequence["program"]
 
     if not debug_mode:
         expected_program = """ set_mrk 3 # set markers to 3
@@ -3677,7 +3686,7 @@ class TestControlFlow:
         elif module == "qrm":
             mod = "cluster0_module4"
         program = self._replace_multiple_spaces(
-            compiled.compiled_instructions["cluster0"][mod]["sequencers"]["seq0"]["sequence"][
+            compiled.compiled_instructions["cluster0"][mod]["sequencers"]["seq0"].sequence[
                 "program"
             ]
         )
@@ -3722,10 +3731,10 @@ class TestControlFlow:
 
         program_subschedule = compiled_subschedule.compiled_instructions["cluster0"][
             "cluster0_module2"
-        ]["sequencers"]["seq0"]["sequence"]["program"]
+        ]["sequencers"]["seq0"].sequence["program"]
         program_ref = compiled_ref.compiled_instructions["cluster0"]["cluster0_module2"][
             "sequencers"
-        ]["seq0"]["sequence"]["program"]
+        ]["seq0"].sequence["program"]
 
         assert program_ref == program_subschedule
 
@@ -3961,7 +3970,7 @@ def test_very_low_amp_paths(
     qcm_name = f"{cluster.name}_module2"
     compiled_instructions = compiled_sched["compiled_instructions"][cluster.name][qcm_name][
         "sequencers"
-    ]["seq0"]["sequence"]
+    ]["seq0"].sequence
 
     seq_instructions = compiled_instructions["program"].splitlines()
 
@@ -4491,15 +4500,15 @@ def test_compile_hardware_distortion_corrections():
         config=quantum_device.generate_compilation_config(),
     )
 
-    assert sched.compiled_instructions["cluster0"]["cluster0_module1"]["settings"][
-        "distortion_corrections"
-    ][2]["exp1"]["coeffs"] == [2000, -0.1]
-    assert sched.compiled_instructions["cluster0"]["cluster0_module1"]["settings"][
-        "distortion_corrections"
-    ][0]["exp1"]["coeffs"] == [200, -0.1]
-    assert sched.compiled_instructions["cluster0"]["cluster0_module1"]["settings"][
-        "distortion_corrections"
-    ][1]["exp1"]["coeffs"] == [20, -0.1]
+    assert sched.compiled_instructions["cluster0"]["cluster0_module1"][
+        "settings"
+    ].distortion_corrections[2]["exp1"]["coeffs"] == [2000, -0.1]
+    assert sched.compiled_instructions["cluster0"]["cluster0_module1"][
+        "settings"
+    ].distortion_corrections[0]["exp1"]["coeffs"] == [200, -0.1]
+    assert sched.compiled_instructions["cluster0"]["cluster0_module1"][
+        "settings"
+    ].distortion_corrections[1]["exp1"]["coeffs"] == [20, -0.1]
 
 
 @pytest.mark.parametrize(
@@ -4753,39 +4762,39 @@ def test_distortion_correction_latency_compensation():
         config=quantum_device.generate_compilation_config(),
     )
 
-    corrections = sched.compiled_instructions["cluster0"]["cluster0_module1"]["settings"][
-        "distortion_corrections"
-    ]
+    corrections = sched.compiled_instructions["cluster0"]["cluster0_module1"][
+        "settings"
+    ].distortion_corrections
 
     ideal_corrections = [
-        {
-            "bt": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.BYPASSED,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-            "exp0": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.DELAY_COMP,
-                "marker_delay": QbloxFilterMarkerDelay.DELAY_COMP,
-            },
-            "exp1": {
-                "coeffs": [200.0, -0.1],
-                "config": QbloxFilterConfig.ENABLED,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-            "exp2": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.BYPASSED,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-            "exp3": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.DELAY_COMP,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-            "fir": {
-                "coeffs": [
+        DistortionSettings(
+            bt=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.BYPASSED,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+            exp0=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.DELAY_COMP,
+                marker_delay=QbloxFilterMarkerDelay.DELAY_COMP,
+            ),
+            exp1=QbloxRealTimeFilter(
+                coeffs=[200.0, -0.1],
+                config=QbloxFilterConfig.ENABLED,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+            exp2=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.BYPASSED,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+            exp3=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.DELAY_COMP,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+            fir=QbloxRealTimeFilter(
+                coeffs=[
                     1.025,
                     0.03,
                     0.02,
@@ -4819,38 +4828,38 @@ def test_distortion_correction_latency_compensation():
                     0.02,
                     0.0,
                 ],
-                "config": QbloxFilterConfig.ENABLED,
-                "marker_delay": QbloxFilterMarkerDelay.DELAY_COMP,
-            },
-        },
-        {
-            "bt": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.BYPASSED,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-            "exp0": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.DELAY_COMP,
-                "marker_delay": QbloxFilterMarkerDelay.DELAY_COMP,
-            },
-            "exp1": {
-                "coeffs": [20.0, -0.1],
-                "config": QbloxFilterConfig.ENABLED,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-            "exp2": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.BYPASSED,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-            "exp3": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.DELAY_COMP,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-            "fir": {
-                "coeffs": [
+                config=QbloxFilterConfig.ENABLED,
+                marker_delay=QbloxFilterMarkerDelay.DELAY_COMP,
+            ),
+        ),
+        DistortionSettings(
+            bt=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.BYPASSED,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+            exp0=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.DELAY_COMP,
+                marker_delay=QbloxFilterMarkerDelay.DELAY_COMP,
+            ),
+            exp1=QbloxRealTimeFilter(
+                coeffs=[20.0, -0.1],
+                config=QbloxFilterConfig.ENABLED,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+            exp2=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.BYPASSED,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+            exp3=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.DELAY_COMP,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+            fir=QbloxRealTimeFilter(
+                coeffs=[
                     1.025,
                     0.03,
                     0.02,
@@ -4884,38 +4893,38 @@ def test_distortion_correction_latency_compensation():
                     0.02,
                     0.0,
                 ],
-                "config": QbloxFilterConfig.ENABLED,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-        },
-        {
-            "bt": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.BYPASSED,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-            "exp0": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.DELAY_COMP,
-                "marker_delay": QbloxFilterMarkerDelay.DELAY_COMP,
-            },
-            "exp1": {
-                "coeffs": [2000.0, -0.1],
-                "config": QbloxFilterConfig.ENABLED,
-                "marker_delay": QbloxFilterMarkerDelay.DELAY_COMP,
-            },
-            "exp2": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.BYPASSED,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-            "exp3": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.BYPASSED,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-            "fir": {
-                "coeffs": [
+                config=QbloxFilterConfig.ENABLED,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+        ),
+        DistortionSettings(
+            bt=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.BYPASSED,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+            exp0=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.DELAY_COMP,
+                marker_delay=QbloxFilterMarkerDelay.DELAY_COMP,
+            ),
+            exp1=QbloxRealTimeFilter(
+                coeffs=[2000.0, -0.1],
+                config=QbloxFilterConfig.ENABLED,
+                marker_delay=QbloxFilterMarkerDelay.DELAY_COMP,
+            ),
+            exp2=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.BYPASSED,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+            exp3=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.BYPASSED,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+            fir=QbloxRealTimeFilter(
+                coeffs=[
                     1.025,
                     0.03,
                     0.02,
@@ -4949,179 +4958,179 @@ def test_distortion_correction_latency_compensation():
                     0.02,
                     0.0,
                 ],
-                "config": QbloxFilterConfig.ENABLED,
-                "marker_delay": QbloxFilterMarkerDelay.DELAY_COMP,
-            },
-        },
-        {
-            "bt": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.BYPASSED,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-            "exp0": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.DELAY_COMP,
-                "marker_delay": QbloxFilterMarkerDelay.DELAY_COMP,
-            },
-            "exp1": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.BYPASSED,
-                "marker_delay": QbloxFilterMarkerDelay.DELAY_COMP,
-            },
-            "exp2": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.DELAY_COMP,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-            "exp3": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.BYPASSED,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-            "fir": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.BYPASSED,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-        },
+                config=QbloxFilterConfig.ENABLED,
+                marker_delay=QbloxFilterMarkerDelay.DELAY_COMP,
+            ),
+        ),
+        DistortionSettings(
+            bt=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.BYPASSED,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+            exp0=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.DELAY_COMP,
+                marker_delay=QbloxFilterMarkerDelay.DELAY_COMP,
+            ),
+            exp1=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.BYPASSED,
+                marker_delay=QbloxFilterMarkerDelay.DELAY_COMP,
+            ),
+            exp2=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.DELAY_COMP,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+            exp3=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.BYPASSED,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+            fir=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.BYPASSED,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+        ),
     ]
 
     assert corrections == ideal_corrections
 
-    corrections = sched.compiled_instructions["cluster0"]["cluster0_module2"]["settings"][
-        "distortion_corrections"
-    ]
+    corrections = sched.compiled_instructions["cluster0"]["cluster0_module2"][
+        "settings"
+    ].distortion_corrections
 
     ideal_corrections = [
-        {
-            "bt": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.BYPASSED,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-            "exp0": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.DELAY_COMP,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-            "exp1": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.DELAY_COMP,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-            "exp2": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.BYPASSED,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-            "exp3": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.DELAY_COMP,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-            "fir": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.BYPASSED,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-        },
-        {
-            "bt": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.BYPASSED,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-            "exp0": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.DELAY_COMP,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-            "exp1": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.DELAY_COMP,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-            "exp2": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.BYPASSED,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-            "exp3": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.DELAY_COMP,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-            "fir": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.BYPASSED,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-        },
-        {
-            "bt": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.BYPASSED,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-            "exp0": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.DELAY_COMP,
-                "marker_delay": QbloxFilterMarkerDelay.DELAY_COMP,
-            },
-            "exp1": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.BYPASSED,
-                "marker_delay": QbloxFilterMarkerDelay.DELAY_COMP,
-            },
-            "exp2": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.BYPASSED,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-            "exp3": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.BYPASSED,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-            "fir": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.DELAY_COMP,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-        },
-        {
-            "bt": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.BYPASSED,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-            "exp0": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.DELAY_COMP,
-                "marker_delay": QbloxFilterMarkerDelay.DELAY_COMP,
-            },
-            "exp1": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.BYPASSED,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-            "exp2": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.BYPASSED,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-            "exp3": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.BYPASSED,
-                "marker_delay": QbloxFilterMarkerDelay.BYPASSED,
-            },
-            "fir": {
-                "coeffs": None,
-                "config": QbloxFilterConfig.DELAY_COMP,
-                "marker_delay": QbloxFilterMarkerDelay.DELAY_COMP,
-            },
-        },
+        DistortionSettings(
+            bt=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.BYPASSED,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+            exp0=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.DELAY_COMP,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+            exp1=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.DELAY_COMP,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+            exp2=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.BYPASSED,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+            exp3=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.DELAY_COMP,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+            fir=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.BYPASSED,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+        ),
+        DistortionSettings(
+            bt=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.BYPASSED,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+            exp0=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.DELAY_COMP,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+            exp1=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.DELAY_COMP,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+            exp2=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.BYPASSED,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+            exp3=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.DELAY_COMP,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+            fir=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.BYPASSED,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+        ),
+        DistortionSettings(
+            bt=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.BYPASSED,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+            exp0=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.DELAY_COMP,
+                marker_delay=QbloxFilterMarkerDelay.DELAY_COMP,
+            ),
+            exp1=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.BYPASSED,
+                marker_delay=QbloxFilterMarkerDelay.DELAY_COMP,
+            ),
+            exp2=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.BYPASSED,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+            exp3=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.BYPASSED,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+            fir=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.DELAY_COMP,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+        ),
+        DistortionSettings(
+            bt=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.BYPASSED,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+            exp0=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.DELAY_COMP,
+                marker_delay=QbloxFilterMarkerDelay.DELAY_COMP,
+            ),
+            exp1=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.BYPASSED,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+            exp2=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.BYPASSED,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+            exp3=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.BYPASSED,
+                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
+            ),
+            fir=QbloxRealTimeFilter(
+                coeffs=None,
+                config=QbloxFilterConfig.DELAY_COMP,
+                marker_delay=QbloxFilterMarkerDelay.DELAY_COMP,
+            ),
+        ),
     ]
 
     assert corrections == ideal_corrections

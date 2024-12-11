@@ -105,7 +105,7 @@ class AnalogSequencerCompiler(SequencerCompiler):
             sequencer_cfg=sequencer_cfg,
         )
 
-        self._settings: AnalogSequencerSettings = (  # type: ignore  (override type)
+        self._settings: AnalogSequencerSettings = (  # type: ignore  # (override type)
             AnalogSequencerSettings.initialize_from_compilation_config(
                 sequencer_cfg=sequencer_cfg,
                 connected_output_indices=static_hw_properties._get_connected_output_indices(
@@ -939,6 +939,8 @@ class BasebandModuleCompiler(AnalogModuleCompiler):
     modules.
     """
 
+    _settings_type = BasebandModuleSettings  # To be overwritten by subclasses
+
     def __init__(
         self,
         name: str,
@@ -950,9 +952,7 @@ class BasebandModuleCompiler(AnalogModuleCompiler):
             total_play_time=total_play_time,
             instrument_cfg=instrument_cfg,
         )
-        self._settings: BasebandModuleSettings = (  # type: ignore
-            BasebandModuleSettings.extract_settings_from_mapping(instrument_cfg)
-        )
+        self._settings = self._settings_type.extract_settings_from_mapping(instrument_cfg)
 
     def assign_frequencies(
         self,

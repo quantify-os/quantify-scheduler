@@ -285,8 +285,7 @@ def test_conditional_reset_inside_loop(mock_setup_basic_transmon_with_standard_p
         .get("cluster0_module2")
         .get("sequencers")
         .get("seq0")
-        .get("sequence")
-        .get("program")
+        .sequence.get("program")
     )
 
     # Check that there is no `loop` instruction between the two `set_cond`
@@ -321,17 +320,16 @@ def test_conditional_reset_single_qubit(
         .get("sequencers")
         .get("seq0")
     )
-    assert (expected_address := seq_settings["thresholded_acq_trigger_address"]) is not None
-    assert seq_settings["thresholded_acq_trigger_en"] is True
-    assert seq_settings["thresholded_acq_trigger_invert"] is False
+    assert (expected_address := seq_settings.thresholded_acq_trigger_address) is not None
+    assert seq_settings.thresholded_acq_trigger_en is True
+    assert seq_settings.thresholded_acq_trigger_invert is False
 
     qcm_program = (
         compiled_schedule.compiled_instructions.get("cluster0")
         .get("cluster0_module2")
         .get("sequencers")
         .get("seq0")
-        .get("sequence")
-        .get("program")
+        .sequence.get("program")
     )
 
     qrm_program = (
@@ -339,8 +337,7 @@ def test_conditional_reset_single_qubit(
         .get("cluster0_module4")
         .get("sequencers")
         .get("seq0")
-        .get("sequence")
-        .get("program")
+        .sequence.get("program")
     )
 
     pattern = r"^\s*latch_rst.*$"
@@ -537,13 +534,13 @@ def test_conditional_reset_multi_qubits(
     # Assert readout module sequencer settings.
     trigger_address_q0 = compiled_schedule.compiled_instructions["cluster0"]["cluster0_module4"][
         "sequencers"
-    ]["seq0"]["thresholded_acq_trigger_address"]
+    ]["seq0"].thresholded_acq_trigger_address
     thresholded_acq_trigger_en_q0 = compiled_schedule.compiled_instructions["cluster0"][
         "cluster0_module4"
-    ]["sequencers"]["seq0"]["thresholded_acq_trigger_en"]
+    ]["sequencers"]["seq0"].thresholded_acq_trigger_en
     thresholded_acq_trigger_invert_q0 = compiled_schedule.compiled_instructions["cluster0"][
         "cluster0_module4"
-    ]["sequencers"]["seq0"]["thresholded_acq_trigger_invert"]
+    ]["sequencers"]["seq0"].thresholded_acq_trigger_invert
 
     assert trigger_address_q0 == 1
     assert thresholded_acq_trigger_en_q0 is True
@@ -552,13 +549,13 @@ def test_conditional_reset_multi_qubits(
     # Assert readout module sequencer settings for "q4".
     trigger_address_q4 = compiled_schedule.compiled_instructions["cluster0"]["cluster0_module3"][
         "sequencers"
-    ]["seq0"]["thresholded_acq_trigger_address"]
+    ]["seq0"].thresholded_acq_trigger_address
     thresholded_acq_trigger_en_q4 = compiled_schedule.compiled_instructions["cluster0"][
         "cluster0_module3"
-    ]["sequencers"]["seq0"]["thresholded_acq_trigger_en"]
+    ]["sequencers"]["seq0"].thresholded_acq_trigger_en
     thresholded_acq_trigger_invert_q4 = compiled_schedule.compiled_instructions["cluster0"][
         "cluster0_module3"
-    ]["sequencers"]["seq0"]["thresholded_acq_trigger_invert"]
+    ]["sequencers"]["seq0"].thresholded_acq_trigger_invert
 
     assert trigger_address_q4 == 2
     assert thresholded_acq_trigger_en_q4 is True

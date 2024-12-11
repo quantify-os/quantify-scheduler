@@ -45,9 +45,9 @@ def test_zero_duration_parameter_operations(
     )
 
     assert_equal_q1asm(
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module2"]["sequencers"]["seq0"][
-            "sequence"
-        ]["program"],
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module2"]["sequencers"][
+            "seq0"
+        ].sequence["program"],
         """
  set_mrk 1 # set markers to 1
  wait_sync 4
@@ -74,9 +74,9 @@ start:
 """,
     )
     assert_equal_q1asm(
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module2"]["sequencers"]["seq1"][
-            "sequence"
-        ]["program"],
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module2"]["sequencers"][
+            "seq1"
+        ].sequence["program"],
         """
  set_mrk 3 # set markers to 3
  wait_sync 4
@@ -131,9 +131,9 @@ def test_zero_duration_parameter_operations_with_loops(
     )
 
     assert_equal_q1asm(
-        compiled_sched.compiled_instructions["cluster0"]["cluster0_module2"]["sequencers"]["seq0"][
-            "sequence"
-        ]["program"],
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module2"]["sequencers"][
+            "seq0"
+        ].sequence["program"],
         """
  set_mrk 1 # set markers to 1
  wait_sync 4

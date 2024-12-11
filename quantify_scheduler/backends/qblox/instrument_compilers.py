@@ -31,9 +31,11 @@ from quantify_scheduler.backends.types.common import (
     HardwareDistortionCorrection,
 )
 from quantify_scheduler.backends.types.qblox import (
+    AnalogModuleSettings,
     BoundedParameter,
     OpInfo,
     QbloxRealTimeFilter,
+    RFModuleSettings,
     StaticAnalogModuleProperties,
     StaticTimetagModuleProperties,
     TimetagModuleSettings,
@@ -162,6 +164,8 @@ class LocalOscillatorCompiler(compiler_abc.InstrumentCompiler):
 class QCMCompiler(BasebandModuleCompiler):
     """QCM specific implementation of the qblox compiler."""
 
+    _settings_type = AnalogModuleSettings
+
     # Ignore pyright because a "static property" does not exist (in the standard library).
     supports_acquisition = False  # type: ignore
     max_number_of_instructions = MAX_NUMBER_OF_INSTRUCTIONS_QCM  # type: ignore
@@ -266,6 +270,7 @@ class QCMCompiler(BasebandModuleCompiler):
 class QRMCompiler(BasebandModuleCompiler):
     """QRM specific implementation of the qblox compiler."""
 
+    _settings_type = RFModuleSettings
     # Ignore pyright because a "static property" does not exist (in the standard library).
     supports_acquisition = True  # type: ignore
     max_number_of_instructions = MAX_NUMBER_OF_INSTRUCTIONS_QRM  # type: ignore
@@ -487,7 +492,6 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
         for module_idx, cfg in module_configs.items():
             module_name = f"{self.name}_module{module_idx}"
             compiler_type: type = self.compiler_classes[cfg.hardware_description.instrument_type]
-
             module_compilers[module_name] = compiler_type(
                 name=module_name,
                 total_play_time=self.total_play_time,

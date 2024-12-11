@@ -1086,7 +1086,7 @@ class SequencerCompiler(ABC):
         sequence_to_file: bool,
         align_qasm_fields: bool,
         repetitions: int = 1,
-    ) -> tuple[dict[str, Any] | None, AcquisitionMetadata | None]:
+    ) -> tuple[SequencerSettings | None, AcquisitionMetadata | None]:
         """
         Performs the full sequencer level compilation based on the assigned data and
         settings. If no data is assigned to this sequencer, the compilation is skipped
@@ -1166,8 +1166,7 @@ class SequencerCompiler(ABC):
                 wf_and_pr_dict=wf_and_prog, label=f"{self.port}_{self.clock}"
             )
 
-        sequencer_cfg = self._settings.to_dict()
-        return sequencer_cfg, acq_metadata
+        return self._settings, acq_metadata
 
 
 _SequencerT_co = TypeVar("_SequencerT_co", bound=SequencerCompiler, covariant=True)
@@ -1428,7 +1427,7 @@ class ClusterModuleCompiler(InstrumentCompiler, Generic[_SequencerT_co], ABC):
         if len(program) == 0:
             return {}
 
-        program["settings"] = self._settings.to_dict()
+        program["settings"] = self._settings
         program["repetitions"] = repetitions
 
         return program

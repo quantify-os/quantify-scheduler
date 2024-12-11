@@ -27,6 +27,7 @@ from pydantic import Field, field_validator
 from pydantic.functional_validators import model_validator
 from typing_extensions import Annotated
 
+from quantify_core.utilities import deprecated
 from quantify_scheduler.backends.qblox import q1asm_instructions
 from quantify_scheduler.backends.qblox.constants import (
     DEFAULT_MIXER_AMP_RATIO,
@@ -280,6 +281,22 @@ class QbloxRealTimeFilter(DataClassJsonMixin):
     """State of the marker delay.
        One of 'BYPASSED' or 'ENABLED'."""
 
+    @deprecated(
+        "0.25",
+        "Configurations acting as a dictionary is deprecated, "
+        'please use settings.attribute instead of settings["attribute"]',
+    )
+    def __getitem__(self, item: str) -> object:
+        return self.__getattribute__(item)
+
+    @deprecated(
+        "0.25",
+        "Configurations acting as a dictionary is deprecated, "
+        'please use settings.attribute instead of settings["attribute"]',
+    )
+    def get(self, item: str) -> object:  # noqa: D102
+        return self[item]
+
 
 @dataclass
 class DistortionSettings(DataClassJsonMixin):
@@ -297,6 +314,22 @@ class DistortionSettings(DataClassJsonMixin):
     """The exponential overshoot correction 4 filter."""
     fir: QbloxRealTimeFilter = dataclasses_field(default_factory=QbloxRealTimeFilter)
     """The FIR filter."""
+
+    @deprecated(
+        "0.25",
+        "Settings acting as a dictionary is deprecated, "
+        'please use settings.attribute instead of settings["attribute"]',
+    )
+    def __getitem__(self, item: str) -> object:
+        return self.__getattribute__(item)
+
+    @deprecated(
+        "0.25",
+        "Settings acting as a dictionary is deprecated, "
+        'please use settings.attribute instead of settings["attribute"]',
+    )
+    def get(self, item: str) -> object:  # noqa: D102
+        return self[item]
 
 
 @dataclass
@@ -319,6 +352,22 @@ class BaseModuleSettings(DataClassJsonMixin):
         default_factory=lambda: [DistortionSettings() for _ in range(4)]
     )
     """distortion correction settings"""
+
+    @deprecated(
+        "0.25",
+        "Settings acting as a dictionary is deprecated, "
+        'please use settings.attribute instead of settings["attribute"]',
+    )
+    def __getitem__(self, item: str) -> object:
+        return self.__getattribute__(item)
+
+    @deprecated(
+        "0.25",
+        "Settings acting as a dictionary is deprecated, "
+        'please use settings.attribute instead of settings["attribute"]',
+    )
+    def get(self, item: str) -> object:  # noqa: D102
+        return self[item]
 
     @classmethod
     def extract_settings_from_mapping(
@@ -520,6 +569,22 @@ class SequencerSettings(DataClassJsonMixin):
             connected_output_indices=connected_output_indices,
             connected_input_indices=connected_input_indices,
         )
+
+    @deprecated(
+        "0.25",
+        "SequencerCompiler.compile returns the SequencerSettings instead of a dictionary, "
+        'please use settings.attribute instead of settings["attribute"]',
+    )
+    def __getitem__(self, item: str) -> object:
+        return self.__getattribute__(item)
+
+    @deprecated(
+        "0.25",
+        "SequencerCompiler.compile returns the SequencerSettings instead of a dictionary, "
+        'please use settings.attribute instead of settings["attribute"]',
+    )
+    def get(self, item: str) -> object:  # noqa: D102
+        return self[item]
 
 
 @dataclass

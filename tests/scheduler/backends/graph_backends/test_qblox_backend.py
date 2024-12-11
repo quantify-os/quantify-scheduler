@@ -133,8 +133,8 @@ def test_compile_sequence_to_file_deprecated_hardware_config(sequence_to_file: b
     # Assert
     compiled_data = compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"]
 
-    seq0_json = compiled_data["sequencers"]["seq0"]["sequence"]
-    seq_fn = compiled_data["sequencers"]["seq0"]["seq_fn"]
+    seq0_json = compiled_data["sequencers"]["seq0"].sequence
+    seq_fn = compiled_data["sequencers"]["seq0"].seq_fn
     assert len(seq0_json["program"]) > 0
 
     if sequence_to_file is True:
@@ -184,8 +184,8 @@ def test_compile_sequence_to_file(sequence_to_file: bool):
     # Assert
     compiled_data = compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"]
 
-    seq0_json = compiled_data["sequencers"]["seq0"]["sequence"]
-    seq_fn = compiled_data["sequencers"]["seq0"]["seq_fn"]
+    seq0_json = compiled_data["sequencers"]["seq0"].sequence
+    seq_fn = compiled_data["sequencers"]["seq0"].seq_fn
     assert len(seq0_json["program"]) > 0
 
     if sequence_to_file is True:

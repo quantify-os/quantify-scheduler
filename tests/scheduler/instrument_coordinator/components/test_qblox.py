@@ -2239,6 +2239,8 @@ def test_channel_map_off_with_marker_pulse(make_cluster_component, slot_idx, mod
     compiled_schedule = compiler.compile(
         schedule=schedule, config=quantum_device.generate_compilation_config()
     )
+    # Testing if serialization works
+    compiled_schedule = Schedule.from_json(compiled_schedule.to_json())
 
     prog = compiled_schedule["compiled_instructions"]
 

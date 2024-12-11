@@ -231,10 +231,9 @@ def test_initialize_and_get_with_report_failed_initialization(  # noqa: PLR0915
     assert "failed_initialization" in os.path.basename(report_zipfile)
 
     with zipfile.ZipFile(report_zipfile, mode="r") as zf:
-        compiled_schedule_report = CompiledSchedule.from_json(
-            zf.read("compiled_schedule.json").decode()
-        )
-    assert gettable.compiled_schedule == compiled_schedule_report
+        compiled_schedule_report = zf.read("compiled_schedule.json").decode()
+    assert isinstance(gettable.compiled_schedule, CompiledSchedule)
+    assert gettable.compiled_schedule.to_json() == compiled_schedule_report
 
 
 def test_initialize_and_get_with_report_compiled_schedule_reset(
@@ -351,7 +350,7 @@ def test_initialize_and_get_with_report_failed_exp(
         json.loads(zf.read("gettable.json").decode())
         json.loads(zf.read("hardware_cfg.json").decode())
         Schedule.from_json(zf.read("schedule.json").decode())
-        compiled_schedule_report = Schedule.from_json(zf.read("compiled_schedule.json").decode())
+        compiled_schedule_report = zf.read("compiled_schedule.json").decode()
         snap_report = json.loads(zf.read("snapshot.json").decode())
         with pytest.raises(KeyError):
             zf.read("acquisition_data.txt").decode()
@@ -360,7 +359,8 @@ def test_initialize_and_get_with_report_failed_exp(
         with pytest.raises(KeyError):
             zf.read("connection_error_trace.txt").decode()
 
-    assert gettable.compiled_schedule == compiled_schedule_report
+    assert isinstance(gettable.compiled_schedule, CompiledSchedule)
+    assert gettable.compiled_schedule.to_json() == compiled_schedule_report
 
     assert (
         snap_report["instruments"]["q2"]["submodules"]["reset"]["parameters"]["duration"]["value"]

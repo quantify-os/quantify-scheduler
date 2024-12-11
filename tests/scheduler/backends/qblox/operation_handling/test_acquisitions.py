@@ -934,10 +934,10 @@ def test_thresholded_acquisition(
     sequencer_acquisition_metadata = compiled_instructions["acq_metadata"]["seq0"]
 
     assert (
-        sequencer_compiled_instructions["thresholded_acq_threshold"]
+        sequencer_compiled_instructions.thresholded_acq_threshold
         == threshold * qubit.measure.integration_time() * 1e9
     )
-    assert sequencer_compiled_instructions["thresholded_acq_rotation"] == rotation
+    assert sequencer_compiled_instructions.thresholded_acq_rotation == rotation
     assert sequencer_acquisition_metadata.acq_protocol == "ThresholdedAcquisition"
 
     instr_coordinator = mock_setup["instrument_coordinator"]
@@ -1028,7 +1028,7 @@ def test_long_time_trace_protocol(
     assert sequencer_acquisition_metadata.acq_protocol == "SSBIntegrationComplex"
 
     sequencer_compiled_instructions = compiled_instructions["sequencers"]["seq0"]
-    program = sequencer_compiled_instructions["sequence"]["program"]
+    program = sequencer_compiled_instructions.sequence["program"]
     start = r"^\s*"
     end = r"\s*(#.*)*\s*"
     assert re.search(
@@ -1118,10 +1118,10 @@ def test_thresholded_acquisition_multiplex(
             integration_length = q1.measure.integration_time() * 1e9
 
         assert (
-            sequencer_compiled_instructions["thresholded_acq_threshold"]
+            sequencer_compiled_instructions.thresholded_acq_threshold
             == threshold * integration_length
         )
-        assert sequencer_compiled_instructions["thresholded_acq_rotation"] == phase
+        assert sequencer_compiled_instructions.thresholded_acq_rotation == phase
         assert sequencer_acquisition_metadata.acq_protocol == "ThresholdedAcquisition"
 
 
@@ -1930,7 +1930,7 @@ def test_complex_input_hardware_cfg(make_cluster_component, mock_setup_basic_tra
     xr.testing.assert_identical(data, expected_dataset)
     assert compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["sequencers"][
         "seq0"
-    ]["connected_input_indices"] == [0, 1]
+    ].connected_input_indices == (0, 1)
 
     instr_coordinator.remove_component("ic_cluster0")
 
@@ -2020,14 +2020,14 @@ def test_multi_real_input_hardware_cfg_trigger_count(make_cluster_component, moc
         "seq3"
     ]
 
-    assert seq_0["connected_output_indices"] == [0]
-    assert seq_0["nco_en"] is True
-    assert seq_1["connected_input_indices"] == [0]
-    assert seq_1["ttl_acq_auto_bin_incr_en"] is False
-    assert seq_2["connected_output_indices"] == [1]
-    assert seq_2["nco_en"] is True
-    assert seq_3["connected_input_indices"] == [1]
-    assert seq_3["ttl_acq_auto_bin_incr_en"] is True
+    assert seq_0.connected_output_indices == (0,)
+    assert seq_0.nco_en is True
+    assert seq_1.connected_input_indices == (0,)
+    assert seq_1.ttl_acq_auto_bin_incr_en is False
+    assert seq_2.connected_output_indices == (1,)
+    assert seq_2.nco_en is True
+    assert seq_3.connected_input_indices == (1,)
+    assert seq_3.ttl_acq_auto_bin_incr_en is True
 
     instr_coordinator.remove_component("ic_cluster0")
 
@@ -2226,7 +2226,7 @@ def test_mix_lo_flag(mock_setup_basic_transmon_with_standard_params, make_cluste
     assert (
         compiled_sched_mix_lo_false.compiled_instructions["cluster0"]["cluster0_module1"][
             "sequencers"
-        ]["seq0"]["modulation_freq"]
+        ]["seq0"].modulation_freq
         == 50e6
     )
     instr_coordinator.remove_component("ic_cluster0")
@@ -2285,7 +2285,7 @@ def test_marker_debug_mode_enable(
     assert_equal_q1asm(
         compiled_sched_qrm.compiled_instructions["cluster0"]["cluster0_module1"]["sequencers"][
             "seq0"
-        ]["sequence"]["program"],
+        ].sequence["program"],
         """
  set_mrk 0 # set markers to 0
  wait_sync 4
@@ -2318,7 +2318,7 @@ start:
     assert_equal_q1asm(
         compiled_sched_qrm_rf.compiled_instructions["cluster0"]["cluster0_module1"]["sequencers"][
             "seq0"
-        ]["sequence"]["program"],
+        ].sequence["program"],
         """
  set_mrk 3 # set markers to 3
  wait_sync 4

@@ -49,6 +49,7 @@ from quantify_scheduler.backends.qblox.operation_handling.bin_mode_compat import
 from quantify_scheduler.backends.types.qblox import (
     AnalogModuleSettings,
     AnalogSequencerSettings,
+    BasebandModuleSettings,
     BaseModuleSettings,
     RFModuleSettings,
     SequencerSettings,
@@ -561,7 +562,7 @@ class _QCMComponent(_AnalogModuleComponent):
         """
         return None
 
-    def prepare(self, program: dict[str, dict]) -> None:
+    def prepare(self, program: dict[str, dict | AnalogModuleSettings]) -> None:
         """
         Uploads the waveforms and programs to the sequencers.
 
@@ -581,14 +582,19 @@ class _QCMComponent(_AnalogModuleComponent):
         """
         super().prepare(program)
 
-        if (settings_entry := program.get("settings")) is not None:
-            module_settings = self._hardware_properties.settings_type.from_dict(settings_entry)
-            self._configure_global_settings(module_settings)
+        if (settings := program.get("settings")) is not None:
+            if isinstance(settings, dict):
+                settings = self._hardware_properties.settings_type.from_dict(settings)
+            self._configure_global_settings(settings)
 
         for seq_idx in range(self._hardware_properties.number_of_sequencers):
             self._set_parameter(self.instrument.sequencers[seq_idx], "sync_en", False)
 
-        for seq_name, seq_cfg in program["sequencers"].items():
+        for seq_name, settings in program["sequencers"].items():
+            if isinstance(settings, dict):
+                sequencer_settings = AnalogSequencerSettings.from_dict(settings)
+            else:
+                sequencer_settings = settings
             if seq_name in self._seq_name_to_idx_map:
                 seq_idx = self._seq_name_to_idx_map[seq_name]
             else:
@@ -597,12 +603,8 @@ class _QCMComponent(_AnalogModuleComponent):
                     f'with name "{seq_name}".'
                 )
 
-            self._configure_sequencer_settings(
-                seq_idx=seq_idx, settings=AnalogSequencerSettings.from_dict(seq_cfg)
-            )
-            self._configure_nco_mixer_calibration(
-                seq_idx=seq_idx, settings=AnalogSequencerSettings.from_dict(seq_cfg)
-            )
+            self._configure_sequencer_settings(seq_idx=seq_idx, settings=sequencer_settings)
+            self._configure_nco_mixer_calibration(seq_idx=seq_idx, settings=sequencer_settings)
 
     def _configure_global_settings(self, settings: AnalogModuleSettings) -> None:
         """
@@ -694,7 +696,7 @@ class _QRMComponent(_AnalogModuleComponent):
         else:
             return None
 
-    def prepare(self, program: dict[str, dict]) -> None:
+    def prepare(self, program: dict[str, dict | BasebandModuleSettings]) -> None:
         """
         Uploads the waveforms and programs to the sequencers.
 
@@ -718,7 +720,11 @@ class _QRMComponent(_AnalogModuleComponent):
             self._set_parameter(self.instrument.sequencers[seq_idx], "sync_en", False)
 
         acq_duration = {}
-        for seq_name, seq_cfg in program["sequencers"].items():
+        for seq_name, settings in program["sequencers"].items():
+            if isinstance(settings, dict):
+                sequencer_settings = AnalogSequencerSettings.from_dict(settings)
+            else:
+                sequencer_settings = settings
             if seq_name in self._seq_name_to_idx_map:
                 seq_idx = self._seq_name_to_idx_map[seq_name]
             else:
@@ -727,12 +733,9 @@ class _QRMComponent(_AnalogModuleComponent):
                     f'with name "{seq_name}".'
                 )
 
-            settings = AnalogSequencerSettings.from_dict(seq_cfg)
-            self._configure_sequencer_settings(seq_idx=seq_idx, settings=settings)
-            self._configure_nco_mixer_calibration(
-                seq_idx=seq_idx, settings=AnalogSequencerSettings.from_dict(seq_cfg)
-            )
-            acq_duration[seq_name] = settings.integration_length_acq
+            self._configure_sequencer_settings(seq_idx=seq_idx, settings=sequencer_settings)
+            self._configure_nco_mixer_calibration(seq_idx=seq_idx, settings=sequencer_settings)
+            acq_duration[seq_name] = sequencer_settings.integration_length_acq
 
         if (acq_metadata := program.get("acq_metadata")) is not None:
             scope_mode_sequencer_and_qblox_acq_index = (
@@ -754,9 +757,10 @@ class _QRMComponent(_AnalogModuleComponent):
         else:
             self._acquisition_manager = None
 
-        if (settings_entry := program.get("settings")) is not None:
-            module_settings = self._hardware_properties.settings_type.from_dict(settings_entry)
-            self._configure_global_settings(module_settings)
+        if (settings := program.get("settings")) is not None:
+            if isinstance(settings, dict):
+                settings = self._hardware_properties.settings_type.from_dict(settings)
+            self._configure_global_settings(settings)
 
         for path in [
             0,
@@ -948,7 +952,7 @@ class _QRMComponent(_AnalogModuleComponent):
 class _RFComponent(_AnalogModuleComponent):
     """Mix-in for RF-module-specific InstrumentCoordinatorComponent behaviour."""
 
-    def prepare(self, program: dict[str, dict]) -> None:
+    def prepare(self, program: dict[str, dict | RFModuleSettings]) -> None:
         """
         Uploads the waveforms and programs to the sequencers.
 
@@ -967,7 +971,11 @@ class _RFComponent(_AnalogModuleComponent):
         super().prepare(program)
 
         lo_idx_to_connected_seq_idx: dict[int, list[int]] = {}
-        for seq_name, seq_cfg in program["sequencers"].items():
+        for seq_name, settings in program["sequencers"].items():
+            if isinstance(settings, dict):
+                sequencer_settings = AnalogSequencerSettings.from_dict(settings)
+            else:
+                sequencer_settings = settings
             if seq_name in self._seq_name_to_idx_map:
                 seq_idx = self._seq_name_to_idx_map[seq_name]
             else:
@@ -977,16 +985,17 @@ class _RFComponent(_AnalogModuleComponent):
                 )
 
             for lo_idx in self._get_connected_lo_idx_for_sequencer(
-                sequencer_settings=AnalogSequencerSettings.from_dict(seq_cfg)
+                sequencer_settings=sequencer_settings
             ):
                 if lo_idx not in lo_idx_to_connected_seq_idx:
                     lo_idx_to_connected_seq_idx[lo_idx] = []
                 lo_idx_to_connected_seq_idx[lo_idx].append(seq_idx)
 
-        if (settings_entry := program.get("settings")) is not None:
-            module_settings = self._hardware_properties.settings_type.from_dict(settings_entry)
+        if (settings := program.get("settings")) is not None:
+            if isinstance(settings, dict):
+                settings = self._hardware_properties.settings_type.from_dict(settings)
             self._configure_lo_settings(
-                settings=module_settings,
+                settings=settings,
                 lo_idx_to_connected_seq_idx=lo_idx_to_connected_seq_idx,
             )
 
@@ -1211,7 +1220,7 @@ class _QTMComponent(_ModuleComponentBase):
         else:
             return None
 
-    def prepare(self, program: dict[str, dict]) -> None:
+    def prepare(self, program: dict[str, dict | TimetagModuleSettings]) -> None:
         """
         Uploads the waveforms and programs to the sequencers.
 
@@ -1235,7 +1244,7 @@ class _QTMComponent(_ModuleComponentBase):
             self._set_parameter(self.instrument.sequencers[seq_idx], "sync_en", False)
 
         trace_acq_duration = {}
-        for seq_name, seq_cfg in program["sequencers"].items():
+        for seq_name, settings in program["sequencers"].items():
             if seq_name in self._seq_name_to_idx_map:
                 seq_idx = self._seq_name_to_idx_map[seq_name]
             else:
@@ -1246,7 +1255,6 @@ class _QTMComponent(_ModuleComponentBase):
 
             # 1-1 Sequencer-io_channel coupling,
             # the io_channel settings are inside SequencerSettings
-            settings = TimetagSequencerSettings.from_dict(seq_cfg)
             self._configure_sequencer_settings(seq_idx=seq_idx, settings=settings)
             self._configure_io_channel_settings(seq_idx=seq_idx, settings=settings)
             trace_acq_duration[seq_name] = settings.trace_acq_duration
@@ -1261,9 +1269,8 @@ class _QTMComponent(_ModuleComponentBase):
         else:
             self._acquisition_manager = None
 
-        if (settings_entry := program.get("settings")) is not None:
-            module_settings = self._hardware_properties.settings_type.from_dict(settings_entry)
-            self._configure_global_settings(module_settings)
+        if (settings := program.get("settings")) is not None:
+            self._configure_global_settings(settings)
 
     def _configure_global_settings(self, settings: TimetagModuleSettings) -> None:
         """

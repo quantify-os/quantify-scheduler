@@ -320,12 +320,20 @@ class TestMarkerPulseStrategy:
         )
 
         # # Assert markers were set correctly, and wait time is correct for QRM
-        seq0_analog = compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"][
-            "sequencers"
-        ]["seq0"]["sequence"]["program"].splitlines()
-        seq1_digital = compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"][
-            "sequencers"
-        ]["seq1"]["sequence"]["program"].splitlines()
+        seq0_analog = (
+            compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"]["sequencers"][
+                "seq0"
+            ]
+            .sequence["program"]
+            .splitlines()
+        )
+        seq1_digital = (
+            compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"]["sequencers"][
+                "seq1"
+            ]
+            .sequence["program"]
+            .splitlines()
+        )
         idx = 0
         for i, string in enumerate(seq0_analog):
             if re.search(r"^\s*reset_ph\s+", string):
@@ -386,12 +394,20 @@ class TestMarkerPulseStrategy:
         )
 
         # Assert markers were set correctly, and wait time is correct for QRM
-        seq0_analog = compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"][
-            "sequencers"
-        ]["seq0"]["sequence"]["program"].splitlines()
-        seq1_digital = compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"][
-            "sequencers"
-        ]["seq1"]["sequence"]["program"].splitlines()
+        seq0_analog = (
+            compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"]["sequencers"][
+                "seq0"
+            ]
+            .sequence["program"]
+            .splitlines()
+        )
+        seq1_digital = (
+            compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"]["sequencers"][
+                "seq1"
+            ]
+            .sequence["program"]
+            .splitlines()
+        )
         idx = 0
         for i, string in enumerate(seq0_analog):
             if re.search(r"^\s*reset_ph\s+", string):
