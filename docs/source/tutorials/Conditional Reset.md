@@ -22,8 +22,6 @@ myst:
     T1Analysis: "{class}`~quantify_core.analysis.single_qubit_timedomain.T1Analysis`"
 ---
 
-(sec-tutorial-conditional-reset)=
-
 
 ```{seealso}
 The complete source code of this tutorial can be found in
@@ -31,6 +29,8 @@ The complete source code of this tutorial can be found in
 {nb-download}`Conditional Reset.ipynb`
 
 ```
+
+(sec-tutorial-conditional-reset)=
 
 # Tutorial: Conditional Reset
 

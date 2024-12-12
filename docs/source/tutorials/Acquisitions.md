@@ -997,6 +997,186 @@ acquisition
 
 There were three trigger acquisitions overall. In the first acquisition 3 triggers were sent-out, and in the second and third case, only one. So, we expect to see that one trigger was measured twice, and 3 triggers were measured only once. The data shows exactly this. At `acq_channel=0` (corresponding to the `0` key in the `Dataset`) the values are `2` and `1`, with `counts` for `1` and `3` respectively.
 
+
+(sec-acquisitions-thresholded-trigger-count)=
+### Thresholded trigger count acquisition
+
+The thresholded trigger count acquisition protocol also counts rising edges of the input signal, like the trigger count acquisition, and subsequently compares the result (the number of counts) to a counts threshold. The result (less than the threshold (0), or at least equal to the threshold (1)) can be retrieved directly, and can also be used to conditionally execute other instructions. For the latter, you would use the {class}`~quantify_scheduler.operations.control_flow_library.ConditionalOperation` in the same way as described in {ref}`sec-tutorial-conditional-reset`. You can expand the section below for an example schedule.
+
+```{code-cell} ipython3
+---
+tags: [hide-cell,hide-output]
+mystnb:
+  code_prompt_show: "Example conditional schedule with ThresholdedTriggerCount"
+---
+from quantify_scheduler import Schedule
+from quantify_scheduler.enums import TriggerCondition
+from quantify_scheduler.operations import (
+    ConditionalOperation,
+    IdlePulse,
+    ThresholdedTriggerCount,
+    X,
+)
+
+
+schedule = Schedule("Conditional X gate")
+schedule.add(
+    ThresholdedTriggerCount(
+        port="qe0:optical_readout",
+        clock="qe0.ge0",
+        duration=1e-6,
+        threshold=10,
+        feedback_trigger_label="qe0",
+        feedback_trigger_condition=TriggerCondition.LESS_THAN,
+    )
+)
+schedule.add(
+    ConditionalOperation(body=X("qe0"), qubit_name="qe0"),
+    rel_time=364e-9,
+)
+schedule.add(IdlePulse(4e-9))
+```
+
+The thresholded trigger count protocol is currently only implemented for the Qblox backend, and it is available on two module types: the **QRM** (baseband) and the **QTM**. Please also see {ref}`sec-qblox-acquisition-details` for more information on Qblox module-specific behavior of this operation.
+
+The protocol only works with the **append** bin mode. This means each acquisition result will appear in a separate bin.
+
+Note, the analog threshold for registering a single count is set for the QRM via the field {class}`~quantify_scheduler.backends.types.qblox.SequencerOptions.ttl_acq_threshold` in {ref}`sec-qblox-sequencer-options`, while for the QTM this threshold is set via the field `in_threshold_primary` in the {ref}`sec-qblox-digitization-thresholds` hardware option.
+
+#### Setup and schedule
+
+In this tutorial we will explain the basic usage of the {class}`~quantify_scheduler.operations.acquisition_library.ThresholdedTriggerCount` protocol (also see the introduction above).
+We create a schedule that consists of an acquisition operation that measures the trigger signals.
+In this tutorial we assume trigger signals are generated from an external source (we do not generate these from the control hardware).
+
+```{code-cell} ipython3
+---
+mystnb:
+  remove_code_outputs: true
+---
+from quantify_scheduler import BasicElectronicNVElement, GenericInstrumentCoordinatorComponent, MockLocalOscillator, QuantumDevice
+
+hardware_cfg_trigger_count = config = {
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+    "hardware_description": {
+        "cluster0": {
+            "instrument_type": "Cluster",
+            "modules": {
+                1: {
+                    "instrument_type": "QRM"
+                }
+            },
+            "ref": "internal"
+        },
+        "optical_mod_red_laser": {
+            "instrument_type": "OpticalModulator"
+        },
+        "red_laser": {
+            "instrument_type": "LocalOscillator",
+            "power": 1
+        }
+    },
+    "hardware_options": {
+        "modulation_frequencies": {
+            "qe0:optical_readout-qe0.ge0": {
+                "lo_freq": None,
+                "interm_freq": 50000000.0
+            }
+        },
+        "sequencer_options": {
+            "qe0:optical_readout-qe0.ge0": {
+                "ttl_acq_threshold": 0.5
+            }
+        }
+    },
+    "connectivity": {
+        "graph": [
+            ("cluster0.module1.real_input_0", "optical_mod_red_laser.if"),
+            ("red_laser.output", "optical_mod_red_laser.lo"),
+            ("optical_mod_red_laser.out", "qe0:optical_readout")
+        ]
+    }
+}
+
+nv_device.hardware_config(hardware_cfg_trigger_count)
+```
+
+The schedule contains one trigger count acquisition, and we will set `repetitions=3` so that there will be three acquisitions done in total.
+The input signals are the following: The first time the schedule runs, there are 3 trigger signals. The second time there is 1 trigger signal. And the third time there is again 1 trigger signal. 
+The **counts threshold** is set to 2 counts.
+
+Note that for usage with conditional operations, there are also the parameters `feedback_trigger_condition` and `feedback_trigger_label`. The former controls whether the conditional instructions play upon counting less than the threshold (value {class}`~quantify_scheduler.enums.TriggerCondition.LESS_THAN`), or equal to/more than the threshold (value {class}`~quantify_scheduler.enums.TriggerCondition.GREATER_THAN_EQUAL_TO`). The latter, `feedback_trigger_label`, links acquisition operations and conditional operations with each other if they have the same label.
+
+```{code-cell} ipython3
+---
+mystnb:
+  remove_code_outputs: true
+---
+from quantify_scheduler import Schedule
+from quantify_scheduler.operations import IdlePulse, SquarePulse, ThresholdedTriggerCount
+from quantify_scheduler.enums import BinMode
+
+acq_duration = 120e-9
+
+schedule = Schedule("trigger_count_acquisition_tutorial", repetitions=3)
+schedule.add(IdlePulse(duration=1e-6))
+
+schedule.add(
+    ThresholdedTriggerCount(
+        t0=0,
+        duration=acq_duration,
+        threshold=2,
+        port="qe0:optical_readout",
+        clock="qe0.ge0",
+        acq_channel=0,
+        bin_mode=BinMode.APPEND,
+    )
+)
+```
+
+```{code-cell} ipython3
+:tags: [remove-cell]
+
+from qblox_instruments import DummyBinnedAcquisitionData, DummyScopeAcquisitionData
+
+dummy_slot_idx = 1
+cluster.delete_dummy_binned_acquisition_data(slot_idx=dummy_slot_idx, sequencer=0)
+cluster.delete_dummy_binned_acquisition_data(slot_idx=dummy_slot_idx, sequencer=1)
+dummy_data_0 = [
+        DummyBinnedAcquisitionData(data=(16, 0), thres=0, avg_cnt=3),
+        DummyBinnedAcquisitionData(data=(16, 0), thres=0, avg_cnt=1),
+        DummyBinnedAcquisitionData(data=(16, 0), thres=0, avg_cnt=1),
+]
+cluster.set_dummy_binned_acquisition_data(slot_idx=dummy_slot_idx, sequencer=0, acq_index_name="0", data=dummy_data_0)
+```
+
+Let's compile the schedule.
+
+```{code-cell} ipython3
+from quantify_scheduler import SerialCompiler
+
+compiler = SerialCompiler(name="compiler")
+compiled_schedule = compiler.compile(schedule=schedule, config=nv_device.generate_compilation_config())
+```
+
+#### Running the schedule, retrieving acquisition
+
+Let's run the schedule, and retrieve the acquisitions.
+
+```{code-cell} ipython3
+instrument_coordinator.prepare(compiled_schedule)
+instrument_coordinator.start()
+instrument_coordinator.wait_done(timeout_sec=10)
+
+acquisition = instrument_coordinator.retrieve_acquisition()
+```
+
+```{code-cell} ipython3
+acquisition
+```
+
+There were three trigger acquisitions overall. In the first acquisition 3 triggers were sent-out, and in the second and third case, only one. With a threshold of 2 counts, we expect to see an array of `[1, 0, 0]`, meaning only the first acquisition was above the threshold.
+
 (sec-acquisitions-timetag)=
 ### Timetag and TimetagTrace acquisitions
 

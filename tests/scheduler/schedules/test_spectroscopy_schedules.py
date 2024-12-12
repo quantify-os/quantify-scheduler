@@ -1,5 +1,4 @@
 import math
-from copy import deepcopy
 from typing import TYPE_CHECKING
 
 import numpy as np

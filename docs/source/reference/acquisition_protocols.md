@@ -288,6 +288,33 @@ xr.Dataset(
 )
 ```
 
+(sec-acquisition-protocols-thresholded-trigger-count)=
+## Thresholded Trigger Count
+
+- Referred to as `"ThresholdedTriggerCount"`.
+- Supported by the {mod}`Qblox <quantify_scheduler.backends.qblox>` backend.
+
+```{admonition} Note
+Please also see {ref}`sec-qblox-acquisition-details` for more information on Qblox module-specific behavior of this operation.
+```
+
+This acquisition protocol returns whether the number of triggers counted surpassed the given threshold. It can also be used together with the {class}`~quantify_scheduler.operations.control_flow_library.ConditionalOperation` to execute instructions based on the threshold comparison result.
+
+Note that the _analog_ thresholded for registering a single trigger is set via the hardware configuration. For the QRM, the analog threshold is set via {class}`~quantify_scheduler.backends.types.qblox.SequencerOptions.ttl_acq_threshold` (see also {ref}`sec-qblox-sequencer-options`), while for the QTM this threshold setting is a dedicated hardware option called `in_threshold_primary`, see {ref}`sec-qblox-digitization-thresholds`.
+
+The only available bin mode is `BinMode.APPEND`.
+The returned data for the acquisition channel contains the number of triggers counted for each acquisition index. For example, suppose a schedule with one trigger count acquisition was executed 5 times (`repetitions=5`) with a threshold set to 4 counts. In order, the number of triggers counted is `[6, 3, 8, 1, 3]`. The resulting dataset would then look like:
+
+```{code-cell} ipython3
+---
+tags: [hide-input]
+---
+trigger_data = np.array([1, 0, 1, 0, 0])
+xr.Dataset(
+    {0: xr.DataArray(trigger_data.reshape(1, 5), dims = ['acq_index_0', 'repetitions'])}
+)
+```
+
 (sec-acquisition-protocols-timetag)=
 ## Timetag acquisition
 

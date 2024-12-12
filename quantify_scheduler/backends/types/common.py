@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import warnings
+from dataclasses import dataclass
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -24,6 +25,7 @@ from pydantic import (
 )
 
 from quantify_scheduler.backends.qblox import constants
+from quantify_scheduler.enums import TriggerCondition
 from quantify_scheduler.helpers.importers import export_python_object_to_path_string
 from quantify_scheduler.structure.model import (
     DataStructure,
@@ -580,3 +582,15 @@ class HardwareCompilationConfig(DataStructure):
                         "when using old-style hardware config dictionary."
                     )
         return self
+
+
+@dataclass
+class ThresholdedTriggerCountMetadata:
+    """Metadata specifically for the ThresholdedTriggerCount acquisition."""
+
+    threshold: int
+    """The threshold of the ThresholdedTriggerCount acquisition."""
+    condition: TriggerCondition
+    """
+    The comparison condition (greater-equal, less-than) for the ThresholdedTriggerCount acquisition.
+    """

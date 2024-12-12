@@ -48,6 +48,10 @@
                 "interm_freq": 200000000.0,
                 "lo_freq": null
             },
+            "qe1:mw-qe1.spec": {
+                "interm_freq": 200000000.0,
+                "lo_freq": null
+            },
             "qe0:optical_control-qe0.ge1": {
             	"interm_freq": 200e6,
             	"lo_freq": null
@@ -75,6 +79,12 @@
                 "dc_offset_q": 0.0,
                 "amp_ratio": 0.9999,
                 "phase_error": -4.2
+            },
+            "qe1:mw-qe1.spec": {
+               "amp_ratio": 1.0,
+               "dc_offset_i": 0.0,
+               "dc_offset_q": 0.0,
+               "phase_error": 0.0
             }
        },
         "digitization_thresholds": {
@@ -93,6 +103,10 @@
             [
                 "cluster0.module1.complex_output_0",
                 "qe0:mw"
+            ],
+[
+                "cluster0.module1.complex_output_1",
+                "qe1:mw"
             ],
             [
                 "cluster0.module2.real_output_0",

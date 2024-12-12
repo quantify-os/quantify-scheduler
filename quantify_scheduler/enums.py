@@ -73,3 +73,10 @@ class TimeRef(StrEnum):  # type: ignore
     END = "end"
     FIRST = "first"
     TIMESTAMP = "timestamp"
+
+
+class TriggerCondition(StrEnum):  # type: ignore
+    """Comparison condition for the thresholded trigger count acquisition."""
+
+    LESS_THAN = "less_than"
+    GREATER_THAN_EQUAL_TO = "greater_than_equal_to"

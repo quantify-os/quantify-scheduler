@@ -29,6 +29,19 @@ hardware_config = {
                     }
                 ],
             },
+            "complex_output_1": {
+                "lo_freq": None,
+                "auto_lo_cal": LoCalEnum.OFF,
+                "dc_mixer_offset_I": 0.0,
+                "dc_mixer_offset_Q": 0.0,
+                "portclock_configs": [
+                    {
+                        "port": "qe1:mw",
+                        "clock": "qe1.spec",
+                        "interm_freq": 200000000.0,
+                    }
+                ],
+            },
         },
         "cluster0_module2": {
             "instrument_type": "QCM",

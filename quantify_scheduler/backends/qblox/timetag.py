@@ -27,7 +27,7 @@ from quantify_scheduler.backends.types.qblox import (
     StaticHardwareProperties,
     TimetagSequencerSettings,
 )
-from quantify_scheduler.enums import TimeRef
+from quantify_scheduler.enums import TimeRef, TriggerCondition
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.qblox.instrument_compilers import (
@@ -297,13 +297,77 @@ class TimetagSequencerCompiler(SequencerCompiler):
             self._settings.time_source = acquisitions[0].operation_info.data["time_source"]
             self._settings.time_ref = acquisitions[0].operation_info.data["time_ref"]
 
+        if acq_metadata.acq_protocol == "ThresholdedTriggerCount":
+            for acq in acquisitions:
+                if (address := acq.operation_info.data.get("feedback_trigger_address")) is not None:
+                    self._settings.thresholded_acq_trigger_write_en = True
+                    # For a ThresholdedTriggerCount with one threshold, both the low and high
+                    # thresholds are the same.
+                    self._settings.thresholded_acq_trigger_write_threshold_low = (
+                        acq.operation_info.data["thresholded_trigger_count"]["threshold"]
+                    )
+                    self._settings.thresholded_acq_trigger_write_threshold_high = (
+                        acq.operation_info.data["thresholded_trigger_count"]["threshold"]
+                    )
+                    if (
+                        acq.operation_info.data["thresholded_trigger_count"]["condition"]
+                        == TriggerCondition.LESS_THAN
+                    ):
+                        self._settings.thresholded_acq_trigger_write_address_high = 0
+                        self._settings.thresholded_acq_trigger_write_address_mid = 0
+                        self._settings.thresholded_acq_trigger_write_address_low = address
+                        self._settings.thresholded_acq_trigger_write_address_invalid = 0
+                    elif (
+                        acq.operation_info.data["thresholded_trigger_count"]["condition"]
+                        == TriggerCondition.GREATER_THAN_EQUAL_TO
+                    ):
+                        self._settings.thresholded_acq_trigger_write_address_high = address
+                        self._settings.thresholded_acq_trigger_write_address_mid = 0
+                        self._settings.thresholded_acq_trigger_write_address_low = 0
+                        self._settings.thresholded_acq_trigger_write_address_invalid = 0
+                    else:
+                        raise ValueError(
+                            "Trigger condition "
+                            f"{acq.operation_info.data['thresholded_trigger_count']['condition']} "
+                            "is not supported."
+                        )
+
+            thresh_trg_cnt_metadata = self._get_thresholded_trigger_count_metadata_by_acq_channel(
+                acquisitions
+            )
+            for acq_channel, metadata in thresh_trg_cnt_metadata.items():
+                acq_ch_metadata = acq_metadata.acq_channel_metadata_by_acq_channel_name(acq_channel)
+                acq_ch_metadata.thresholded_trigger_count = metadata
+
     def _write_pre_wait_sync_instructions(self, qasm: QASMProgram) -> None:
         """
         Write instructions to the QASM program that must come before the first wait_sync.
 
         The duration must be equal for all module types.
         """
-        # No pre-wait_sync instructions.
+        if self._settings.thresholded_acq_trigger_write_en:
+            if (
+                self._settings.thresholded_acq_trigger_write_threshold_low is None
+                or self._settings.thresholded_acq_trigger_write_threshold_high is None
+            ):
+                raise RuntimeError(
+                    "If the thresholded acquisition trigger is enabled, the threshold "
+                    "cannot be None."
+                )
+            # Set lower and upper threshold to the same value because we effectively
+            # support only one threshold.
+            qasm.emit(
+                q1asm_instructions.UPD_THRES,
+                0,  # lower threshold
+                self._settings.thresholded_acq_trigger_write_threshold_low,
+                constants.MIN_TIME_BETWEEN_OPERATIONS,
+            )
+            qasm.emit(
+                q1asm_instructions.UPD_THRES,
+                1,  # upper threshold
+                self._settings.thresholded_acq_trigger_write_threshold_high,
+                constants.MIN_TIME_BETWEEN_OPERATIONS,
+            )
 
     def _write_repetition_loop_header(self, qasm: QASMProgram) -> None:
         """

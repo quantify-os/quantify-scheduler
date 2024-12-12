@@ -17,6 +17,7 @@ from .acquisition_library import (
     NumericalWeightedIntegration,
     SSBIntegrationComplex,
     ThresholdedAcquisition,
+    ThresholdedTriggerCount,
     Timetag,
     TimetagTrace,
     Trace,
@@ -118,6 +119,7 @@ __all__ = [
     "NumericalSeparatedWeightedIntegration",
     "NumericalWeightedIntegration",
     "TriggerCount",
+    "ThresholdedTriggerCount",
     "TimetagTrace",
     "Timetag",
 ]

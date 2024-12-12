@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any, Iterable, Literal
 
 import numpy as np
 from pydantic import Field, model_validator
+from qblox_instruments import InstrumentType
 
 from quantify_scheduler.backends.corrections import (
     apply_software_distortion_corrections,
@@ -63,6 +64,7 @@ from quantify_scheduler.backends.types.qblox import (
     RealInputGain,
     SequencerOptions,
 )
+from quantify_scheduler.enums import TriggerCondition
 from quantify_scheduler.operations.control_flow_library import (
     ConditionalOperation,
     ControlFlowOperation,
@@ -224,24 +226,136 @@ class OperationTimingInfo:
 
 
 @dataclass
-class ConditionalAddress:
+class ConditionalInfo:
     """Container for conditional address data."""
 
     portclocks: set[tuple[str, str]]
     address: int
+    _trigger_invert: bool | None = None
+    _trigger_count: int | None = None
+
+    @property
+    def trigger_invert(self) -> bool | None:
+        """
+        If True, inverts the trigger before reading from the trigger network.
+
+        If a ThresholdedTriggerCount acquisition is done with a QRM, this must be set according to
+        the condition you are trying to measure (greater than /equal to the threshold, or less than
+        the threshold). If it is done with a QTM, this is set to False.
+        """
+        return self._trigger_invert
+
+    @trigger_invert.setter
+    def trigger_invert(self, value: bool) -> None:
+        if self._trigger_invert is not None and self._trigger_invert != value:
+            raise ValueError(
+                f"Trying to set conflicting settings for feedback trigger inversion. Setting "
+                f"{value} while the previous value was {self._trigger_invert}. This may happen "
+                "because multiple ThresholdedTriggerCount acquisitions with conflicting threshold "
+                "settings are scheduled, or ThresholdedTriggerCount acquisitions with the same "
+                "feedback trigger label are scheduled on different modules."
+            )
+        self._trigger_invert = value
+
+    @property
+    def trigger_count(self) -> int | None:
+        """
+        The sequencer trigger address counter threshold.
+
+        If a ThresholdedTriggerCount acquisition is done with a QRM, this must be set to the counts
+        threshold. If it is done with a QTM, this is set to 1.
+        """
+        return self._trigger_count
+
+    @trigger_count.setter
+    def trigger_count(self, value: int) -> None:
+        if self._trigger_count is not None and self._trigger_count != value:
+            raise ValueError(
+                f"Trying to set conflicting settings for feedback trigger address count threshold. "
+                f"Setting {value} while the previous value was {self._trigger_invert}. This may "
+                "happen because multiple ThresholdedTriggerCount acquisitions with conflicting "
+                "threshold settings are scheduled, or ThresholdedTriggerCount acquisitions with "
+                "the same feedback trigger label are scheduled on different modules."
+            )
+        self._trigger_count = value
 
 
-def _set_conditional_address_map(
+def _get_module_type(
+    port: str, clock: str, compilation_config: CompilationConfig
+) -> InstrumentType:
+    config = deepcopy(compilation_config)  # _extract_... call modifies the config
+    assert isinstance(config.hardware_compilation_config, QbloxHardwareCompilationConfig)
+    device_cfgs = config.hardware_compilation_config._extract_instrument_compilation_configs(
+        {(port, clock)}
+    )
+    port_clock_str = f"{port}-{clock}"
+    for device_cfg in device_cfgs.values():
+        if (
+            isinstance(device_cfg, _ClusterCompilationConfig)
+            and port_clock_str in device_cfg.portclock_to_path
+        ):
+            module_idx = device_cfg.portclock_to_path[port_clock_str].module_idx
+            module_type = device_cfg.hardware_description.modules[module_idx].instrument_type
+            break
+    else:
+        raise KeyError(
+            f"Could not determine module type associated with port-clock {port_clock_str}"
+        )
+    return InstrumentType(module_type)
+
+
+def _update_conditional_info_from_acquisition(
+    acq_info: dict[str, Any],
+    cond_info: defaultdict[str, ConditionalInfo],
+    compilation_config: CompilationConfig,
+) -> None:
+    if acq_info["protocol"] == "ThresholdedAcquisition":
+        label = acq_info["feedback_trigger_label"]
+        acq_info["feedback_trigger_address"] = cond_info[label].address
+    elif acq_info["protocol"] == "ThresholdedTriggerCount":
+        try:
+            TriggerCondition(acq_info["thresholded_trigger_count"]["condition"])
+        except (ValueError, TypeError):
+            raise ValueError(
+                f"Trigger condition {acq_info['thresholded_trigger_count']['condition']} is not "
+                "supported."
+            )
+        label = acq_info["feedback_trigger_label"]
+        acq_info["feedback_trigger_address"] = cond_info[label].address
+        module_type = _get_module_type(acq_info["port"], acq_info["clock"], compilation_config)
+        if module_type == InstrumentType.QRM:
+            # The QRM sends a trigger on every count. Therefore, any sequencers doing conditional
+            # playback based on thresholded trigger count need to respond only when the count
+            # threshold is breached.
+            cond_info[label].trigger_invert = (
+                acq_info["thresholded_trigger_count"]["condition"] == TriggerCondition.LESS_THAN
+            )
+            cond_info[label].trigger_count = acq_info["thresholded_trigger_count"]["threshold"]
+        elif module_type == InstrumentType.QTM:
+            # The QTM sends a trigger only after the acquisition is done, to a trigger address based
+            # on the "trigger condition" (this is handled in acquistion info). Therefore, if a
+            # QTM acquires, we check for only 0 or 1 triggers.
+            cond_info[label].trigger_invert = False
+            cond_info[label].trigger_count = 1
+    else:
+        raise ValueError(
+            f"Error evaluating unknown thresholded acquisition type {acq_info['protocol']}"
+        )
+
+
+def _set_conditional_info_map(
     operation: Operation | Schedule,
-    conditional_address_map: defaultdict[str, ConditionalAddress],
+    conditional_info_map: defaultdict[str, ConditionalInfo],
+    compilation_config: CompilationConfig,
 ) -> None:
     if isinstance(operation, ScheduleBase):
         schedulables = list(operation.schedulables.values())
         for schedulable in schedulables:
             inner_operation = operation.operations[schedulable["operation_id"]]
-            _set_conditional_address_map(
+            _set_conditional_info_map(
                 operation=inner_operation,
-                conditional_address_map=conditional_address_map,
+                conditional_info_map=conditional_info_map,
+                compilation_config=compilation_config,
             )
     elif isinstance(operation, ConditionalOperation):
         # Store `feedback_trigger_address` in the pulse that corresponds
@@ -250,33 +364,44 @@ def _set_conditional_address_map(
         # go recursively into conditionals.
         control_flow_info: dict = operation.data["control_flow_info"]
         feedback_trigger_label: str = control_flow_info["feedback_trigger_label"]
-        control_flow_info["feedback_trigger_address"] = conditional_address_map[
+        control_flow_info["feedback_trigger_address"] = conditional_info_map[
             feedback_trigger_label
         ].address
-        conditional_address_map[
+        control_flow_info["feedback_trigger_invert"] = conditional_info_map[
+            feedback_trigger_label
+        ].trigger_invert
+        control_flow_info["feedback_trigger_count"] = conditional_info_map[
+            feedback_trigger_label
+        ].trigger_count
+
+        conditional_info_map[
             feedback_trigger_label
         ].portclocks |= operation.body.get_used_port_clocks()
+
     elif isinstance(operation, ControlFlowOperation):
-        _set_conditional_address_map(
+        _set_conditional_info_map(
             operation=operation.body,
-            conditional_address_map=conditional_address_map,
+            conditional_info_map=conditional_info_map,
+            compilation_config=compilation_config,
         )
     elif operation.valid_acquisition and operation.is_conditional_acquisition:
         # Store `feedback_trigger_address` in the correct acquisition, so that it can
         # be passed to the correct Sequencer via ``SequencerSettings``.
         acq_info = operation["acquisition_info"]
         for info in acq_info:
-            if (feedback_trigger_label := info.get("feedback_trigger_label")) is not None:
-                info["feedback_trigger_address"] = conditional_address_map[
-                    feedback_trigger_label
-                ].address
+            if info.get("feedback_trigger_label") is not None:
+                _update_conditional_info_from_acquisition(
+                    acq_info=info,
+                    cond_info=conditional_info_map,
+                    compilation_config=compilation_config,
+                )
 
 
 def _insert_latch_reset(
     operation: Operation | Schedule,
     abs_time_relative_to_schedule: float,
     schedule: Schedule,
-    conditional_address_map: defaultdict[str, ConditionalAddress],
+    conditional_info_map: defaultdict[str, ConditionalInfo],
 ) -> None:
     if isinstance(operation, ScheduleBase):
         schedulables = list(operation.schedulables.values())
@@ -287,27 +412,28 @@ def _insert_latch_reset(
                 operation=inner_operation,
                 abs_time_relative_to_schedule=abs_time,
                 schedule=operation,
-                conditional_address_map=conditional_address_map,
+                conditional_info_map=conditional_info_map,
             )
     elif isinstance(operation, LoopOperation):
         _insert_latch_reset(
             operation=operation.body,
             abs_time_relative_to_schedule=abs_time_relative_to_schedule,
             schedule=schedule,
-            conditional_address_map=conditional_address_map,
+            conditional_info_map=conditional_info_map,
         )
     elif operation.valid_acquisition and operation.is_conditional_acquisition:
         acq_info = operation["acquisition_info"]
         for info in acq_info:
             if (feedback_trigger_label := info.get("feedback_trigger_label")) is not None:
                 at = abs_time_relative_to_schedule + info["t0"] + constants.MAX_MIN_INSTRUCTION_WAIT
-                for portclock in conditional_address_map[feedback_trigger_label].portclocks:
+                for portclock in conditional_info_map[feedback_trigger_label].portclocks:
                     schedulable = schedule.add(LatchReset(portclock=portclock))
                     schedulable.data["abs_time"] = at
 
 
 def compile_conditional_playback(  # noqa: D417
-    schedule: Schedule, config: DataStructure | dict  # noqa: ARG001
+    schedule: Schedule,
+    config: CompilationConfig,
 ) -> Schedule:
     """
     Compiles conditional playback.
@@ -356,12 +482,12 @@ def compile_conditional_playback(  # noqa: D417
     # this implementation the `address_map` is shared among multiple
     # clusters, but each cluster should have its own map. (SE-332)
     address_counter = itertools.count(1)
-    conditional_address_map = defaultdict(
-        lambda: ConditionalAddress(portclocks=set(), address=address_counter.__next__())
+    conditional_info_map = defaultdict(
+        lambda: ConditionalInfo(portclocks=set(), address=address_counter.__next__())
     )
-    _set_conditional_address_map(schedule, conditional_address_map)
-    _insert_latch_reset(schedule, 0, schedule, conditional_address_map)
-    address_map_addresses = [a.address for a in conditional_address_map.values()]
+    _set_conditional_info_map(schedule, conditional_info_map, config)
+    _insert_latch_reset(schedule, 0, schedule, conditional_info_map)
+    address_map_addresses = [a.address for a in conditional_info_map.values()]
     if max(address_map_addresses, default=0) > constants.MAX_FEEDBACK_TRIGGER_ADDRESS:
         raise ValueError(
             "Maximum number of feedback trigger addresses received. "
@@ -565,7 +691,7 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
     compilation_passes: list[SimpleNodeConfig] = [
         SimpleNodeConfig(
             name="crosstalk_compensation",
-            compilation_func=crosstalk_compensation,  # type: ignore
+            compilation_func=crosstalk_compensation,
         ),
         SimpleNodeConfig(
             name="stack_pulses",
@@ -579,9 +705,7 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
             name="qblox_compile_conditional_playback",
             compilation_func=compile_conditional_playback,
         ),
-        SimpleNodeConfig(
-            name="qblox_hardware_compile", compilation_func=hardware_compile  # type: ignore
-        ),
+        SimpleNodeConfig(name="qblox_hardware_compile", compilation_func=hardware_compile),
     ]
     """
     The list of compilation nodes that should be called in succession to compile a

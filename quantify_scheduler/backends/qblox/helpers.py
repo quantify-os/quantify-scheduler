@@ -584,7 +584,14 @@ class ConditionalBegin(Operation):
 
     """
 
-    def __init__(self, qubit_name: str, feedback_trigger_address: int, t0: float) -> None:
+    def __init__(
+        self,
+        qubit_name: str,
+        feedback_trigger_address: int,
+        feedback_trigger_invert: bool,
+        feedback_trigger_count: int,
+        t0: float,
+    ) -> None:
         class_name = self.__class__.__name__
         super().__init__(name=class_name)
         self.data.update(
@@ -594,6 +601,8 @@ class ConditionalBegin(Operation):
                     "qubit_name": qubit_name,
                     "t0": t0,
                     "feedback_trigger_address": feedback_trigger_address,
+                    "feedback_trigger_invert": feedback_trigger_invert,
+                    "feedback_trigger_count": feedback_trigger_count,
                 },
             }
         )
@@ -625,9 +634,17 @@ def _get_control_flow_begin(
         )
     else:
         begin_operation = ConditionalBegin(
-            control_flow_operation.data["control_flow_info"]["qubit_name"],
-            control_flow_operation.data["control_flow_info"]["feedback_trigger_address"],
-            control_flow_operation.data["control_flow_info"]["t0"],
+            qubit_name=control_flow_operation.data["control_flow_info"]["qubit_name"],
+            feedback_trigger_address=control_flow_operation.data["control_flow_info"][
+                "feedback_trigger_address"
+            ],
+            feedback_trigger_invert=control_flow_operation.data["control_flow_info"][
+                "feedback_trigger_invert"
+            ],
+            feedback_trigger_count=control_flow_operation.data["control_flow_info"][
+                "feedback_trigger_count"
+            ],
+            t0=control_flow_operation.data["control_flow_info"]["t0"],
         )
     begin_operation["pulse_info"] = [
         {

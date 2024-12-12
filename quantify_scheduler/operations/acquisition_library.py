@@ -1,17 +1,16 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-
 """Standard acquisition protocols for use with the quantify_scheduler."""
-
 from __future__ import annotations
 
 import warnings
+from copy import copy
 from typing import Any
 
 import numpy as np
 
 from quantify_core.utilities import deprecated
-from quantify_scheduler.enums import BinMode, TimeRef, TimeSource
+from quantify_scheduler.enums import BinMode, TimeRef, TimeSource, TriggerCondition
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.resources import DigitalClockResource
 
@@ -999,4 +998,106 @@ class Timetag(Acquisition):
 
     def __str__(self) -> str:
         acq_info = self.data["acquisition_info"][0]
+        return self._get_signature(acq_info)
+
+
+class ThresholdedTriggerCount(Acquisition):
+    """
+    Thresholded trigger counting acquisition protocol returning the comparison result with a
+    threshold.
+
+    If the number of triggers counted is less than the threshold, a 0 is returned, otherwise a 1.
+
+    The analog threshold for registering a single count is set in the hardware configuration.
+
+    .. important::
+
+        The exact duration of this operation, and the possible bin modes may depend on the control
+        hardware. Please consult your hardware vendor's :ref:`Reference guide` for more information.
+
+    Parameters
+    ----------
+    port
+        The acquisition port.
+    clock
+        The clock used to demodulate the acquisition.
+    duration
+        The duration of the operation in seconds.
+    threshold
+        The threshold of the ThresholdedTriggerCount acquisition.
+    feedback_trigger_label
+        The label corresponding to the feedback trigger, which is mapped by the compiler to a
+        feedback trigger address on hardware, by default None.
+        Note: this label is merely used to link this acquisition together with a
+        ConditionalOperation. It does not affect the acquisition result.
+    feedback_trigger_condition
+        The comparison condition (greater-equal, less-than) for the ThresholdedTriggerCount
+        acquisition.
+    acq_channel
+        The data channel in which the acquisition is stored, by default 0.  Describes the "where"
+        information of the measurement, which typically corresponds to a qubit idx.
+    acq_index
+        The data register in which the acquisition is stored, by default 0.  Describes the "when"
+        information of the measurement, used to label or tag individual measurements in a large
+        circuit. Typically corresponds to the setpoints of a schedule (e.g., tau in a T1
+        experiment).
+    bin_mode
+        Describes what is done when data is written to a register that already contains a value.
+        Options are "append" which appends the result to the list or "average" which stores the
+        count value of the new result and the old register value, by default BinMode.APPEND.
+    t0
+        The acquisition start time in seconds, by default 0.
+
+    """
+
+    def __init__(
+        self,
+        port: str,
+        clock: str,
+        duration: float,
+        threshold: int,
+        *,
+        feedback_trigger_label: str | None = None,
+        feedback_trigger_condition: str | TriggerCondition = TriggerCondition.GREATER_THAN_EQUAL_TO,
+        acq_channel: int = 0,
+        acq_index: int = 0,
+        bin_mode: BinMode | str = BinMode.APPEND,
+        t0: float = 0,
+    ) -> None:
+        if bin_mode == BinMode.AVERAGE and acq_index != 0:
+            # In average mode the count distribution is measured,
+            # and currently we do not support multiple indices for this,
+            # or starting the counting from a predefined count number.
+            raise NotImplementedError(
+                "Using nonzero acq_index is not yet implemented for AVERAGE bin mode for "
+                "the trigger count protocol"
+            )
+
+        super().__init__(name=self.__class__.__name__)
+        self.data["acquisition_info"] = [
+            {
+                "waveforms": [],
+                "t0": t0,
+                "clock": clock,
+                "port": port,
+                "duration": duration,
+                "acq_channel": acq_channel,
+                "acq_index": acq_index,
+                "bin_mode": bin_mode,
+                "thresholded_trigger_count": {
+                    "threshold": threshold,
+                    "condition": feedback_trigger_condition,
+                },
+                "feedback_trigger_label": feedback_trigger_label,
+                "acq_return_type": int,
+                "protocol": "ThresholdedTriggerCount",
+            }
+        ]
+        self._update()
+
+    def __str__(self) -> str:
+        acq_info = copy(self.data["acquisition_info"][0])
+        # The __str__ method is used for serialization. The keys must match the input parameters.
+        acq_info["threshold"] = acq_info["thresholded_trigger_count"]["threshold"]
+        acq_info["feedback_trigger_condition"] = acq_info["thresholded_trigger_count"]["condition"]
         return self._get_signature(acq_info)

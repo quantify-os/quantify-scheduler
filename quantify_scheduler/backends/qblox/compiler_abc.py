@@ -45,10 +45,12 @@ from quantify_scheduler.backends.qblox.operation_handling.virtual import (
     UpdateParameterStrategy,
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
+from quantify_scheduler.backends.types.common import ThresholdedTriggerCountMetadata
 from quantify_scheduler.backends.types.qblox import (
     OpInfo,
     SequencerSettings,
     StaticHardwareProperties,
+    ThresholdedAcqTriggerReadSettings,
 )
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
@@ -439,6 +441,34 @@ class SequencerCompiler(ABC):
             Acquisition metadata.
 
         """
+
+    def _get_thresholded_trigger_count_metadata_by_acq_channel(
+        self, acquisitions: list[IOperationStrategy]
+    ) -> dict[int, ThresholdedTriggerCountMetadata]:
+        metadata_dict: dict[int, ThresholdedTriggerCountMetadata] = {}
+        for acq in acquisitions:
+            if acq.operation_info.data["protocol"] != "ThresholdedTriggerCount":
+                continue
+
+            acq_channel = acq.operation_info.data["acq_channel"]
+            threshold = acq.operation_info.data["thresholded_trigger_count"]["threshold"]
+            condition = acq.operation_info.data["thresholded_trigger_count"]["condition"]
+            if acq_channel in metadata_dict and (
+                metadata_dict[acq_channel].threshold != threshold
+                or metadata_dict[acq_channel].condition != condition
+            ):
+                raise ValueError(
+                    f"Trying to set thresholded trigger count settings threshold={threshold} and "
+                    f"condition={condition} for {acq_channel=}, while those were previously "
+                    f"determined to be threshold={metadata_dict[acq_channel].threshold} and "
+                    f"condition={metadata_dict[acq_channel].condition}, respectively. These "
+                    "settings must be the same per acquisition channel."
+                )
+            metadata_dict[acq_channel] = ThresholdedTriggerCountMetadata(
+                threshold=threshold, condition=condition
+            )
+
+        return metadata_dict
 
     def _generate_acq_declaration_dict(
         self,
@@ -1081,6 +1111,55 @@ class SequencerCompiler(ABC):
         self._remove_redundant_update_parameters()
         self._validate_update_parameters_alignment()
 
+    def _prepare_threshold_settings(
+        self,
+        operations: list[IOperationStrategy],
+    ) -> None:
+        """
+        Derive sequencer settings for trigger count thresholding.
+
+        Parameters
+        ----------
+        operations
+            List of the acquisitions assigned to this sequencer.
+
+        """
+        for operation in operations:
+            if operation.operation_info.name != "ConditionalBegin":
+                continue
+
+            # Note: validation that all conditional operations, with the same address,
+            # have the same "invert" and "count" settings is done in
+            # qblox_backend._update_conditional_info_from_acquisition.
+            # These asserts are for the developer:
+
+            if (
+                operation.operation_info.data["feedback_trigger_address"]
+                in self._settings.thresholded_acq_trigger_read_settings
+            ):
+                read_settings = self._settings.thresholded_acq_trigger_read_settings[
+                    operation.operation_info.data["feedback_trigger_address"]
+                ]
+                assert (
+                    operation.operation_info.data["feedback_trigger_invert"]
+                    == read_settings.thresholded_acq_trigger_invert
+                )
+                assert (
+                    operation.operation_info.data["feedback_trigger_count"]
+                    == read_settings.thresholded_acq_trigger_count
+                )
+
+            self._settings.thresholded_acq_trigger_read_settings[
+                operation.operation_info.data["feedback_trigger_address"]
+            ] = ThresholdedAcqTriggerReadSettings(
+                thresholded_acq_trigger_invert=operation.operation_info.data[
+                    "feedback_trigger_invert"
+                ],
+                thresholded_acq_trigger_count=operation.operation_info.data[
+                    "feedback_trigger_count"
+                ],
+            )
+
     def compile(
         self,
         sequence_to_file: bool,
@@ -1135,7 +1214,9 @@ class SequencerCompiler(ABC):
                     acquisitions=acquisitions,
                     acq_metadata=acq_metadata,
                 )
+                self._validate_thresholded_acquisitions(acquisitions, acq_metadata.acq_protocol)
                 weights_dict = self._generate_weights_dict()
+        self._prepare_threshold_settings(self.op_strategies)
 
         # acq_declaration_dict needs to count number of acquires in the program
         operation_list = self._get_ordered_operations()
@@ -1167,6 +1248,43 @@ class SequencerCompiler(ABC):
             )
 
         return self._settings, acq_metadata
+
+    def _validate_thresholded_acquisitions(
+        self, operations: list[IOperationStrategy], protocol: str
+    ) -> None:
+        """
+        All thresholded acquisitions on a single sequencer must have the same label and the same
+        threshold settings.
+        """
+        if protocol not in ("ThresholdedAcquisition", "ThresholdedTriggerCount"):
+            # Early return: we do not check other protocols.
+            return
+
+        acquisitions = [
+            op
+            for op in operations
+            if op.operation_info.is_acquisition
+            and op.operation_info.data.get("feedback_trigger_label") is not None
+        ]
+        if len(acquisitions) < 2:
+            # Early return: only 1 acquisition means nothing can conflict.
+            return
+
+        keys_to_check = {}
+        if protocol == "ThresholdedAcquisition":
+            keys_to_check = {"acq_threshold", "acq_rotation", "feedback_trigger_label"}
+        elif protocol == "ThresholdedTriggerCount":
+            keys_to_check = {"thresholded_trigger_count", "feedback_trigger_label"}
+
+        for key in keys_to_check:
+            first_value = acquisitions[0].operation_info.data[key]
+            for acq in acquisitions[1:]:
+                if acq.operation_info.data[key] != first_value:
+                    raise ValueError(
+                        f"All {protocol} acquisitions on the same port-clock must have the same "
+                        f"threshold settings. Found different settings for {key}:\n{first_value}\n"
+                        f"\n{acq.operation_info.data[key]}"
+                    )
 
 
 _SequencerT_co = TypeVar("_SequencerT_co", bound=SequencerCompiler, covariant=True)

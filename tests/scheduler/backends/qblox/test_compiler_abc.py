@@ -10,7 +10,7 @@ from unittest.mock import Mock
 import pytest
 
 from quantify_scheduler import Schedule
-from quantify_scheduler.backends import SerialCompiler, corrections
+from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.qblox import compiler_container, q1asm_instructions
 from quantify_scheduler.backends.qblox.analog import AnalogSequencerCompiler
 from quantify_scheduler.backends.qblox.helpers import (
@@ -26,40 +26,42 @@ from quantify_scheduler.backends.qblox.operation_handling.virtual import (
     UpdateParameterStrategy,
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
+from quantify_scheduler.backends.qblox.register_manager import RegisterManager
 from quantify_scheduler.backends.qblox.timetag import TimetagSequencerCompiler
 from quantify_scheduler.backends.qblox_backend import (
     QbloxHardwareCompilationConfig,
     _SequencerCompilationConfig,
 )
-from quantify_scheduler.backends.types.common import ModulationFrequencies
+from quantify_scheduler.backends.types.common import (
+    ModulationFrequencies,
+    ThresholdedTriggerCountMetadata,
+)
 from quantify_scheduler.backends.types.qblox import (
-    AnalogSequencerSettings,
     BoundedParameter,
     ComplexChannelDescription,
+    DigitalChannelDescription,
     OpInfo,
     SequencerOptions,
-    SequencerSettings,
     StaticAnalogModuleProperties,
     StaticTimetagModuleProperties,
 )
 from quantify_scheduler.compilation import (
     _determine_absolute_timing,
 )
-from quantify_scheduler.operations.acquisition_library import Trace
+from quantify_scheduler.enums import TriggerCondition
+from quantify_scheduler.operations import SSBIntegrationComplex, ThresholdedTriggerCount
 from quantify_scheduler.operations.control_flow_library import (
     ConditionalOperation,
     LoopOperation,
 )
-from quantify_scheduler.operations.gate_library import Measure, X
+from quantify_scheduler.operations.gate_library import Measure
 from quantify_scheduler.operations.pulse_library import (
-    DRAGPulse,
     ResetClockPhase,
     SetClockFrequency,
     ShiftClockPhase,
     SquarePulse,
     VoltageOffset,
 )
-from quantify_scheduler.resources import BasebandClockResource
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.qblox.operation_handling.base import (
@@ -763,3 +765,148 @@ def test_get_ordered_operations(mock_sequencer: AnalogSequencerCompiler):
         offset_instruction_op_info(timing=2.04e-07),
         upd_param_op_info(timing=2.04e-7),
     ]
+
+
+# Total play time number does not matter here, but the fixture needs it.
+@pytest.mark.parametrize("total_play_time", [2e-7])
+def test_get_thresholded_trigger_count_metadata_by_acq_channel_success(
+    mock_sequencer: AnalogSequencerCompiler,
+):
+    acquisitions = [
+        ThresholdedTriggerCount(
+            mock_sequencer.port,
+            mock_sequencer.clock,
+            duration=1e-3,
+            threshold=10,
+        ),
+        ThresholdedTriggerCount(
+            mock_sequencer.port,
+            mock_sequencer.clock,
+            duration=1e-3,
+            threshold=10,
+        ),
+        ThresholdedTriggerCount(
+            mock_sequencer.port,
+            mock_sequencer.clock,
+            duration=1e-3,
+            threshold=10,
+        ),
+    ]
+    operation_strats = [
+        ioperation_strategy_from_op_info(
+            op_info_from_operation(operation=op, timing=0, data=op.data["acquisition_info"][0]),
+            channel_name="real_input_0",
+        )
+        for op in acquisitions
+    ]
+
+    assert mock_sequencer._get_thresholded_trigger_count_metadata_by_acq_channel(
+        operation_strats
+    ) == {
+        0: ThresholdedTriggerCountMetadata(
+            threshold=10, condition=TriggerCondition.GREATER_THAN_EQUAL_TO
+        )
+    }
+
+
+# Total play time number does not matter here, but the fixture needs it.
+@pytest.mark.parametrize("total_play_time", [2e-7])
+def test_get_thresholded_trigger_count_metadata_by_acq_channel_raises(
+    mock_sequencer: AnalogSequencerCompiler,
+):
+    acquisitions = [
+        ThresholdedTriggerCount(
+            mock_sequencer.port, mock_sequencer.clock, duration=1e-3, threshold=7
+        ),
+        ThresholdedTriggerCount(
+            mock_sequencer.port, mock_sequencer.clock, duration=1e-3, threshold=8
+        ),
+        ThresholdedTriggerCount(
+            mock_sequencer.port, mock_sequencer.clock, duration=1e-3, threshold=9
+        ),
+    ]
+    operation_strats = [
+        ioperation_strategy_from_op_info(
+            op_info_from_operation(operation=op, timing=0, data=op.data["acquisition_info"][0]),
+            channel_name="real_input_0",
+        )
+        for op in acquisitions
+    ]
+
+    with pytest.raises(
+        ValueError,
+        match="Trying to set thresholded trigger count settings threshold=8 and "
+        "condition=greater_than_equal_to for acq_channel=0, while those were previously determined "
+        "to be threshold=7 and condition=greater_than_equal_to, respectively. These settings must "
+        "be the same per acquisition channel.",
+    ):
+        mock_sequencer._get_thresholded_trigger_count_metadata_by_acq_channel(operation_strats)
+
+
+# Total play time number does not matter here, but the fixture needs it.
+@pytest.mark.parametrize("total_play_time", [2e-7])
+def test_get_thresholded_trigger_count_metadata_by_acq_channel_ignored(
+    mock_sequencer: AnalogSequencerCompiler,
+):
+    acquisitions = [
+        SSBIntegrationComplex(mock_sequencer.port, mock_sequencer.clock, duration=1e-3),
+        SSBIntegrationComplex(mock_sequencer.port, mock_sequencer.clock, duration=1e-3),
+        SSBIntegrationComplex(mock_sequencer.port, mock_sequencer.clock, duration=1e-3),
+    ]
+    operation_strats = [
+        ioperation_strategy_from_op_info(
+            op_info_from_operation(operation=op, timing=0, data=op.data["acquisition_info"][0]),
+            channel_name="real_input_0",
+        )
+        for op in acquisitions
+    ]
+
+    assert (
+        mock_sequencer._get_thresholded_trigger_count_metadata_by_acq_channel(operation_strats)
+        == {}
+    )
+
+
+@pytest.fixture
+def mock_timetag_sequencer() -> TimetagSequencerCompiler:
+    mod = Mock()
+    # mod.configure_mock(total_play_time=total_play_time)
+    sequencer_cfg = _SequencerCompilationConfig(
+        sequencer_options=SequencerOptions(),
+        hardware_description=ComplexChannelDescription(),
+        portclock="qe0:optical_control-qe0.ge0",
+        channel_name="digital_input_0",
+        channel_name_measure=None,
+        latency_correction=0,
+        distortion_correction=None,
+        lo_name=None,
+        modulation_frequencies=ModulationFrequencies(),
+        mixer_corrections=None,
+    )
+    return TimetagSequencerCompiler(
+        parent=mod,
+        index=0,
+        static_hw_properties=StaticTimetagModuleProperties(
+            instrument_type="QTM",
+            max_sequencers=8,
+        ),
+        sequencer_cfg=sequencer_cfg,
+    )
+
+
+def test_write_pre_wait_sync_instructions_raises_if_not_both_thresholds_set(mock_timetag_sequencer):
+    mock_timetag_sequencer._settings.thresholded_acq_trigger_write_en = True
+    mock_timetag_sequencer._settings.thresholded_acq_trigger_write_threshold_high = 10
+    mock_timetag_sequencer._settings.thresholded_acq_trigger_write_threshold_low = None
+    qasm_program = QASMProgram(
+        static_hw_properties=mock_timetag_sequencer.static_hw_properties,
+        register_manager=RegisterManager(),
+        align_fields=False,
+        acq_metadata=None,
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="If the thresholded acquisition trigger is enabled, the threshold " "cannot be None.",
+    ):
+        mock_timetag_sequencer._write_pre_wait_sync_instructions(qasm_program)

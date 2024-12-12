@@ -53,7 +53,7 @@ class SimpleNodeConfig(DataStructure):
 
     name: str
     """The name of the compilation pass."""
-    compilation_func: Callable[[Schedule, DataStructure | dict], ScheduleBase]
+    compilation_func: Callable[[Schedule, CompilationConfig], ScheduleBase]
     """
     The function to perform the compilation pass as an
     importable string (e.g., "package_name.my_module.function_name").

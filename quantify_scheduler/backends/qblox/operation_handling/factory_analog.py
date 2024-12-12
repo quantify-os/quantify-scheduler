@@ -83,7 +83,7 @@ def _get_acquisition_strategy(
     ):
         return acquisitions.WeightedAcquisitionStrategy(operation_info)
 
-    elif protocol == "TriggerCount":
+    elif protocol in ("TriggerCount", "ThresholdedTriggerCount"):
         return acquisitions.TriggerCountAcquisitionStrategy(operation_info)
 
     assert False, "This should not be reachable due to the bin mode check above."

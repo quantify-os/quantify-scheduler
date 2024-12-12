@@ -320,9 +320,9 @@ def test_conditional_reset_single_qubit(
         .get("sequencers")
         .get("seq0")
     )
-    assert (expected_address := seq_settings.thresholded_acq_trigger_address) is not None
-    assert seq_settings.thresholded_acq_trigger_en is True
-    assert seq_settings.thresholded_acq_trigger_invert is False
+    assert (expected_address := seq_settings.thresholded_acq_trigger_write_address) is not None
+    assert seq_settings.thresholded_acq_trigger_write_en is True
+    assert seq_settings.thresholded_acq_trigger_write_invert is False
 
     qcm_program = (
         compiled_schedule.compiled_instructions.get("cluster0")
@@ -534,13 +534,13 @@ def test_conditional_reset_multi_qubits(
     # Assert readout module sequencer settings.
     trigger_address_q0 = compiled_schedule.compiled_instructions["cluster0"]["cluster0_module4"][
         "sequencers"
-    ]["seq0"].thresholded_acq_trigger_address
+    ]["seq0"].thresholded_acq_trigger_write_address
     thresholded_acq_trigger_en_q0 = compiled_schedule.compiled_instructions["cluster0"][
         "cluster0_module4"
-    ]["sequencers"]["seq0"].thresholded_acq_trigger_en
+    ]["sequencers"]["seq0"].thresholded_acq_trigger_write_en
     thresholded_acq_trigger_invert_q0 = compiled_schedule.compiled_instructions["cluster0"][
         "cluster0_module4"
-    ]["sequencers"]["seq0"].thresholded_acq_trigger_invert
+    ]["sequencers"]["seq0"].thresholded_acq_trigger_write_invert
 
     assert trigger_address_q0 == 1
     assert thresholded_acq_trigger_en_q0 is True
@@ -549,13 +549,13 @@ def test_conditional_reset_multi_qubits(
     # Assert readout module sequencer settings for "q4".
     trigger_address_q4 = compiled_schedule.compiled_instructions["cluster0"]["cluster0_module3"][
         "sequencers"
-    ]["seq0"].thresholded_acq_trigger_address
+    ]["seq0"].thresholded_acq_trigger_write_address
     thresholded_acq_trigger_en_q4 = compiled_schedule.compiled_instructions["cluster0"][
         "cluster0_module3"
-    ]["sequencers"]["seq0"].thresholded_acq_trigger_en
+    ]["sequencers"]["seq0"].thresholded_acq_trigger_write_en
     thresholded_acq_trigger_invert_q4 = compiled_schedule.compiled_instructions["cluster0"][
         "cluster0_module3"
-    ]["sequencers"]["seq0"].thresholded_acq_trigger_invert
+    ]["sequencers"]["seq0"].thresholded_acq_trigger_write_invert
 
     assert trigger_address_q4 == 2
     assert thresholded_acq_trigger_en_q4 is True

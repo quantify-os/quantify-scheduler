@@ -64,9 +64,9 @@ def test_conditional_playback_compiles(
     seq_settings = compiled_schedule.compiled_instructions["cluster0"]["cluster0_module4"][
         "sequencers"
     ]["seq0"]
-    assert (expected_address := seq_settings.thresholded_acq_trigger_address) is not None
-    assert seq_settings.thresholded_acq_trigger_en is True
-    assert seq_settings.thresholded_acq_trigger_invert is False
+    assert (expected_address := seq_settings.thresholded_acq_trigger_write_address) is not None
+    assert seq_settings.thresholded_acq_trigger_write_en is True
+    assert seq_settings.thresholded_acq_trigger_write_invert is False
 
     qcm_program = compiled_schedule.compiled_instructions["cluster0"]["cluster0_module2"][
         "sequencers"

@@ -56,7 +56,7 @@ from quantify_scheduler.backends.types.qblox import (
     TimetagModuleSettings,
     TimetagSequencerSettings,
 )
-from quantify_scheduler.enums import BinMode, TimeRef
+from quantify_scheduler.enums import BinMode, TimeRef, TriggerCondition
 from quantify_scheduler.instrument_coordinator.components import base
 from quantify_scheduler.instrument_coordinator.utility import (
     check_already_existing_acquisition,
@@ -343,6 +343,20 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
         self._set_parameter(self.instrument.sequencers[seq_idx], "sync_en", settings.sync_en)
 
         self._set_parameter(self.instrument.sequencers[seq_idx], "sequence", settings.sequence)
+
+        for address, trigger_settings in settings.thresholded_acq_trigger_read_settings.items():
+            if trigger_settings.thresholded_acq_trigger_invert is not None:
+                self._set_parameter(
+                    self.instrument.sequencers[seq_idx],
+                    f"trigger{address}_threshold_invert",
+                    trigger_settings.thresholded_acq_trigger_invert,
+                )
+            if trigger_settings.thresholded_acq_trigger_count is not None:
+                self._set_parameter(
+                    self.instrument.sequencers[seq_idx],
+                    f"trigger{address}_count_threshold",
+                    trigger_settings.thresholded_acq_trigger_count,
+                )
 
     def arm_all_sequencers_in_program(self) -> None:
         """Arm all the sequencers that are part of the program."""
@@ -846,22 +860,22 @@ class _QRMComponent(_AnalogModuleComponent):
                 "thresholded_acq_threshold",
                 settings.thresholded_acq_threshold,
             )
-        if settings.thresholded_acq_trigger_address is not None:
+        if settings.thresholded_acq_trigger_write_address is not None:
             self._set_parameter(
                 self.instrument.sequencers[seq_idx],
                 "thresholded_acq_trigger_address",
-                settings.thresholded_acq_trigger_address,
+                settings.thresholded_acq_trigger_write_address,
             )
-        if settings.thresholded_acq_trigger_en is not None:
+        if settings.thresholded_acq_trigger_write_en is not None:
             self._set_parameter(
                 self.instrument.sequencers[seq_idx],
                 "thresholded_acq_trigger_en",
-                settings.thresholded_acq_trigger_en,
+                settings.thresholded_acq_trigger_write_en,
             )
             self._set_parameter(
                 self.instrument.sequencers[seq_idx],
                 "thresholded_acq_trigger_invert",
-                settings.thresholded_acq_trigger_invert,
+                settings.thresholded_acq_trigger_write_invert,
             )
 
     def _determine_channel_map_parameters(
@@ -1299,7 +1313,6 @@ class _QTMComponent(_ModuleComponentBase):
 
         """
         super()._configure_sequencer_settings(seq_idx, settings)
-        # No other sequencer settings yet.
 
     def _configure_io_channel_settings(
         self, seq_idx: int, settings: TimetagSequencerSettings
@@ -1333,14 +1346,11 @@ class _QTMComponent(_ModuleComponentBase):
                 "sequencer",
             )
 
-        if (
-            settings.digitization_thresholds is not None
-            and settings.digitization_thresholds.in_threshold_primary is not None
-        ):
+        if settings.in_threshold_primary is not None:
             self._set_parameter(
                 self.instrument.io_channels[seq_idx],
                 "in_threshold_primary",
-                settings.digitization_thresholds.in_threshold_primary,
+                settings.in_threshold_primary,
             )
         self._set_parameter(
             self.instrument.io_channels[seq_idx],
@@ -1391,6 +1401,33 @@ class _QTMComponent(_ModuleComponentBase):
                 self.instrument[f"io_channel{seq_idx}"],
                 "binned_acq_time_ref",
                 time_ref,
+            )
+
+        self._set_parameter(
+            self.instrument[f"io_channel{seq_idx}"],
+            "thresholded_acq_trigger_address_high",
+            settings.thresholded_acq_trigger_write_address_high,
+        )
+        self._set_parameter(
+            self.instrument[f"io_channel{seq_idx}"],
+            "thresholded_acq_trigger_address_mid",
+            settings.thresholded_acq_trigger_write_address_mid,
+        )
+        self._set_parameter(
+            self.instrument[f"io_channel{seq_idx}"],
+            "thresholded_acq_trigger_address_low",
+            settings.thresholded_acq_trigger_write_address_low,
+        )
+        self._set_parameter(
+            self.instrument[f"io_channel{seq_idx}"],
+            "thresholded_acq_trigger_address_invalid",
+            settings.thresholded_acq_trigger_write_address_invalid,
+        )
+        if settings.thresholded_acq_trigger_write_en is not None:
+            self._set_parameter(
+                self.instrument[f"io_channel{seq_idx}"],
+                "thresholded_acq_trigger_en",
+                settings.thresholded_acq_trigger_write_en,
             )
 
     def clear_data(self) -> None:
@@ -1572,6 +1609,67 @@ class _AcquisitionManagerBase(ABC):
         """Returns the name of the acquisition from the qblox_acq_index."""
         return str(qblox_acq_index)
 
+    def _get_trigger_count_threshold_data(
+        self,
+        *,
+        acq_indices: list,  # noqa: ARG002, unused argument
+        hardware_retrieved_acquisitions: dict,
+        acquisition_metadata: AcquisitionMetadata,
+        acq_duration: int,  # noqa: ARG002, unused argument
+        qblox_acq_index: int,
+        acq_channel: Hashable,
+    ) -> DataArray:
+        """
+        Retrieve the thresholded acquisition data associated with ``acq_channel`` and ``acq_index``.
+
+        Parameters
+        ----------
+        acq_indices
+            Acquisition indices.
+        hardware_retrieved_acquisitions
+            The acquisitions dict as returned by the sequencer.
+        acquisition_metadata
+            Acquisition metadata.
+        acq_duration
+            Desired maximum number of samples for the scope acquisition.
+        qblox_acq_index
+            The Qblox acquisition index from which to get the data.
+        acq_channel
+            The acquisition channel.
+
+        Returns
+        -------
+        :
+            DataArray containing thresholded acquisition data.
+
+        """
+        bin_data = self._get_bin_data(hardware_retrieved_acquisitions, qblox_acq_index)
+        acq_index_dim_name = f"acq_index_{acq_channel}"
+
+        thresh_tc_settings = acquisition_metadata.acq_channels_metadata[
+            qblox_acq_index
+        ].thresholded_trigger_count
+        assert thresh_tc_settings is not None
+        # "avg_cnt" is the key for QRM modules, "count" for QTM modules. Note
+        # that QTM modules also return a "avg_cnt" key, that should not be used!
+        counts = bin_data["count"] if "count" in bin_data else bin_data["avg_cnt"]
+        # To make the return data similar to thresholdd acquisition, it is cast
+        # to integers. Note that the hardwware returns counts as floats.
+        if thresh_tc_settings.condition == TriggerCondition.GREATER_THAN_EQUAL_TO:
+            states = (np.round(counts) >= thresh_tc_settings.threshold).astype(int)
+        elif thresh_tc_settings.condition == TriggerCondition.LESS_THAN:
+            states = (np.round(counts) < thresh_tc_settings.threshold).astype(int)
+        else:
+            raise ValueError(f"Unknown trigger condition {thresh_tc_settings.condition}")
+        # The above lines convert NaNs to 0. We want them to be -1.
+        states[np.isnan(counts)] = -1
+        return DataArray(
+            [states],
+            dims=["repetition", acq_index_dim_name],
+            coords={"repetition": [0], acq_index_dim_name: range(len(states))},
+            attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
+        )
+
 
 class _QRMAcquisitionManager(_AcquisitionManagerBase):
     """
@@ -1622,6 +1720,7 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
             "NumericalWeightedIntegration": partial(self._get_integration_data, separated=False),
             "SSBIntegrationComplex": self._get_integration_amplitude_data,
             "ThresholdedAcquisition": self._get_threshold_data,
+            "ThresholdedTriggerCount": self._get_trigger_count_threshold_data,
             "Trace": self._get_scope_data,
             "TriggerCount": self._get_trigger_count_data,
         }
@@ -2066,6 +2165,7 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
     def _protocol_to_acq_function_map(self) -> dict[str, Callable]:
         return {
             "TriggerCount": self._get_trigger_count_data,
+            "ThresholdedTriggerCount": self._get_trigger_count_threshold_data,
             "Timetag": self._get_timetag_data,
             "Trace": self._get_digital_trace_data,
             "TimetagTrace": self._get_timetag_trace_data,

@@ -494,6 +494,21 @@ class TimetagModuleSettings(BaseModuleSettings):
 
 
 @dataclass
+class ThresholdedAcqTriggerReadSettings(DataClassJsonMixin):
+    """Settings for reading from a trigger address."""
+
+    thresholded_acq_trigger_invert: bool = False
+    """
+    If true, inverts the comparison result that is read from the trigger network address
+    counter.
+    """
+    thresholded_acq_trigger_count: Optional[int] = None
+    """
+    Sets the threshold for the counter on the specified trigger address.
+    """
+
+
+@dataclass
 class SequencerSettings(DataClassJsonMixin):
     """
     Sequencer level settings.
@@ -526,15 +541,16 @@ class SequencerSettings(DataClassJsonMixin):
     sequencer."""
     seq_fn: Optional[str] = None
     """Filename of JSON file containing a dump of the waveforms and program."""
-    thresholded_acq_trigger_address: Optional[int] = None
-    """Sets the feedback trigger address to be used by conditional playback."""
-    thresholded_acq_trigger_en: Optional[bool] = None
-    """Enables the sequencer to record acquisitions."""
-    thresholded_acq_trigger_invert: bool = False
-    """
-    If you want to set a trigger when the acquisition result is 1,
-    the parameter must be set to false and vice versa.
-    """
+    thresholded_acq_trigger_write_en: Optional[bool] = None
+    """Enables mapping of thresholded acquisition results to the trigger network."""
+    thresholded_acq_trigger_write_address: Optional[int] = None
+    """The trigger address that thresholded acquisition results are written to."""
+    thresholded_acq_trigger_write_invert: bool = False
+    """If True, inverts the trigger before writing to the trigger network."""
+    thresholded_acq_trigger_read_settings: dict[int, ThresholdedAcqTriggerReadSettings] = (
+        dataclasses_field(default_factory=dict)
+    )
+    """Settings for reading from a trigger address."""
 
     @classmethod
     def initialize_from_compilation_config(
@@ -774,7 +790,7 @@ class TimetagSequencerSettings(SequencerSettings):
     (e.g. parameters related to thresholded acquisition).
     """
 
-    digitization_thresholds: Optional[DigitizationThresholds] = None
+    in_threshold_primary: Optional[float] = None
     """The settings that determine when an analog voltage is counted as a pulse."""
     time_source: Optional[TimeSource] = None
     """Selects the timetag data source for timetag acquisitions."""
@@ -784,6 +800,20 @@ class TimetagSequencerSettings(SequencerSettings):
     """Set to True if the program on this sequencer contains a scope/trace acquisition."""
     trace_acq_duration: Optional[int] = None
     """Duration of the trace acquisition (if any) done with this sequencer."""
+    thresholded_acq_trigger_write_address_low: int = 0
+    thresholded_acq_trigger_write_address_mid: int = 0
+    thresholded_acq_trigger_write_address_high: int = 0
+    thresholded_acq_trigger_write_address_invalid: int = 0
+    thresholded_acq_trigger_write_threshold_low: Optional[int] = None
+    """
+    Optional threshold value used for the upd_thres Q1ASM instruction if ThresholdedTriggerCount is
+    scheduled.
+    """
+    thresholded_acq_trigger_write_threshold_high: Optional[int] = None
+    """
+    Optional threshold value used for the upd_thres Q1ASM instruction if ThresholdedTriggerCount is
+    scheduled.
+    """
 
     def __post_init__(self) -> None:
         self._validate_io_indices_no_channel_map()
@@ -836,7 +866,11 @@ class TimetagSequencerSettings(SequencerSettings):
             channel_name_measure=sequencer_cfg.channel_name_measure,
             connected_output_indices=connected_output_indices,
             connected_input_indices=connected_input_indices,
-            digitization_thresholds=sequencer_cfg.digitization_thresholds,
+            in_threshold_primary=(
+                sequencer_cfg.digitization_thresholds.in_threshold_primary
+                if sequencer_cfg.digitization_thresholds is not None
+                else None
+            ),
         )
 
 

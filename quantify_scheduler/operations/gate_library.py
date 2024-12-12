@@ -661,6 +661,7 @@ class Measure(Operation):
                 "TimetagTrace",
                 "Trace",
                 "TriggerCount",
+                "ThresholdedTriggerCount",
                 "NumericalSeparatedWeightedIntegration",
                 "NumericalWeightedIntegration",
                 "ThresholdedAcquisition",

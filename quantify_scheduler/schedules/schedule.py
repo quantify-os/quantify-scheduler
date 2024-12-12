@@ -17,6 +17,7 @@ import numpy as np
 import pandas as pd
 
 from quantify_scheduler import enums, json_utils, resources
+from quantify_scheduler.backends.types.common import ThresholdedTriggerCountMetadata
 from quantify_scheduler.helpers.collections import make_hash
 from quantify_scheduler.helpers.importers import export_python_object_to_path_string
 from quantify_scheduler.json_utils import JSONSchemaValMixin
@@ -1142,6 +1143,11 @@ class AcquisitionChannelMetadata:
     """The acquisition channel given in the schedule."""
     acq_indices: list[int]
     """The indices reserved for this acquisition channel."""
+    thresholded_trigger_count: ThresholdedTriggerCountMetadata | None = None
+    """
+    Optional metadata for ThresholdedTriggerCount. Must be filled in if the this protocol is used.
+    The metadata is allowed to be different per acquisition channel.
+    """
 
     def __getstate__(self) -> dict[str, Any]:
         data = dataclasses.asdict(self)
@@ -1150,7 +1156,7 @@ class AcquisitionChannelMetadata:
             "data": data,
         }
 
-    def __setstate__(self, state: dict[str, Any]) -> dict[str, Any]:
+    def __setstate__(self, state: dict[str, Any]) -> None:
         self.__init__(**state["data"])
 
 
@@ -1183,10 +1189,29 @@ class AcquisitionMetadata:
             "data": data,
         }
 
-    def __setstate__(self, state: dict[str, Any]) -> dict[str, Any]:
+    def __setstate__(self, state: dict[str, Any]) -> None:
         self.__init__(**state["data"])
         self.acq_channels_metadata = {}
         for numeric_key, acq_channel_metadata in state["data"]["acq_channels_metadata"].items():
-            self.acq_channels_metadata[int(numeric_key)] = AcquisitionChannelMetadata(
-                acq_channel_metadata["acq_channel"], acq_channel_metadata["acq_indices"]
+            # TODO this is ugly, but won't be needed after changing these classes to
+            # pydantic models.
+            thresholded_trigger_count = (
+                ThresholdedTriggerCountMetadata(**acq_channel_metadata["thresholded_trigger_count"])
+                if acq_channel_metadata["thresholded_trigger_count"] is not None
+                else None
             )
+            self.acq_channels_metadata[int(numeric_key)] = AcquisitionChannelMetadata(
+                acq_channel_metadata["acq_channel"],
+                acq_channel_metadata["acq_indices"],
+                thresholded_trigger_count=thresholded_trigger_count,
+            )
+
+    def acq_channel_metadata_by_acq_channel_name(
+        self, acq_channel: Hashable
+    ) -> AcquisitionChannelMetadata:
+        """Retrieve acq_channel_metadata by acq_channel."""
+        for md in self.acq_channels_metadata.values():
+            if md.acq_channel == acq_channel:
+                return md
+        else:  # noqa: PLW0120  # ruff doesn't pick up return statement
+            raise KeyError(f"{acq_channel=} is not present.")

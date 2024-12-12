@@ -71,7 +71,7 @@ def _get_acquisition_strategy(
             operation_info=operation_info,
         )
 
-    if protocol in ("TriggerCount", "Timetag"):
+    if protocol in ("TriggerCount", "ThresholdedTriggerCount", "Timetag"):
         return acquisitions.TimetagAcquisitionStrategy(operation_info)
 
     if protocol in ("Trace", "TimetagTrace"):

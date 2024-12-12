@@ -2,13 +2,14 @@
 # Licensed according to the LICENCE file on the main branch
 """Unit tests acquisition protocols for use with the quantify_scheduler."""
 import json
+from copy import deepcopy
 from itertools import combinations
 from unittest import TestCase
 
 import numpy as np
 import pytest
 
-from quantify_scheduler.enums import BinMode
+from quantify_scheduler.enums import BinMode, TriggerCondition
 from quantify_scheduler.helpers.schedule import (
     extract_acquisition_metadata_from_schedule,
 )
@@ -18,6 +19,7 @@ from quantify_scheduler.operations.acquisition_library import (
     NumericalWeightedIntegration,
     SSBIntegrationComplex,
     ThresholdedAcquisition,
+    ThresholdedTriggerCount,
     Timetag,
     TimetagTrace,
     Trace,
@@ -70,6 +72,14 @@ ALL_ACQUISITION_PROTOCOLS = [
         port="q0:res",
         clock="q0.ro",
         duration=100e-9,
+    ),
+    ThresholdedTriggerCount(
+        port="q0:res",
+        clock="q0.ro",
+        duration=100e-9,
+        threshold=10,
+        feedback_trigger_condition=TriggerCondition.GREATER_THAN_EQUAL_TO,
+        feedback_trigger_label="q0",
     ),
 ]
 
@@ -302,6 +312,15 @@ def test__repr__(operation: Operation):
 @pytest.mark.parametrize("operation", ALL_ACQUISITION_PROTOCOLS)
 def test__str__(operation: Operation):
     assert isinstance(eval(str(operation)), type(operation))
+
+
+def test_str_does_not_modify():
+    ttc = ThresholdedTriggerCount(
+        port="port:port", clock="clock.clock", duration=10e-6, threshold=10
+    )
+    data_before = deepcopy(ttc.data)
+    _ = str(ttc)
+    assert ttc.data == data_before
 
 
 @pytest.mark.parametrize("operation", ALL_ACQUISITION_PROTOCOLS)

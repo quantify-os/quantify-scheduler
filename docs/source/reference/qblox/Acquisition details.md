@@ -8,7 +8,7 @@ kernelspec:
 
 # Acquisition details
 
-This page describes important Qblox-specific behaviour of the {class}`~quantify_scheduler.operations.acquisition_library.TriggerCount`, {class}`~quantify_scheduler.operations.acquisition_library.Timetag`, {class}`~quantify_scheduler.operations.acquisition_library.TimetagTrace` and {class}`~quantify_scheduler.operations.acquisition_library.Trace` acquisition protocols. Explanations of the protocols themselves can be found in {ref}`sec-acquisition-protocols` and detailed usage examples can be found in the {ref}`sec-acquisitions` tutorials.
+This page describes important Qblox-specific behaviour of the {class}`~quantify_scheduler.operations.acquisition_library.TriggerCount`, {class}`~quantify_scheduler.operations.acquisition_library.Timetag`, {class}`~quantify_scheduler.operations.acquisition_library.TimetagTrace`, {class}`~quantify_scheduler.operations.acquisition_library.Trace` and {class}`~quantify_scheduler.operations.acquisition_library.ThresholdedTriggerCount` acquisition protocols. Explanations of the protocols themselves can be found in {ref}`sec-acquisition-protocols` and detailed usage examples can be found in the {ref}`sec-acquisitions` tutorials.
 
 ## Duration
 
@@ -16,7 +16,7 @@ On all Qblox modules, the actual duration of the trigger count, timetag and time
 
 ## Bin modes and module support
 
-Not all acquisitions work with all {class}`bin modes <quantify_scheduler.enums.BinMode>` or module types. The table below lists exactly what is supported for the {class}`~quantify_scheduler.operations.acquisition_library.TriggerCount`, {class}`~quantify_scheduler.operations.acquisition_library.Timetag`, {class}`~quantify_scheduler.operations.acquisition_library.TimetagTrace` and {class}`~quantify_scheduler.operations.acquisition_library.Trace` acquisitions.
+Not all acquisitions work with all {class}`bin modes <quantify_scheduler.enums.BinMode>` or module types. The table below lists exactly what is supported for the {class}`~quantify_scheduler.operations.acquisition_library.TriggerCount`, {class}`~quantify_scheduler.operations.acquisition_library.Timetag`, {class}`~quantify_scheduler.operations.acquisition_library.TimetagTrace`, {class}`~quantify_scheduler.operations.acquisition_library.Trace` and {class}`~quantify_scheduler.operations.acquisition_library.ThresholdedTriggerCount` acquisitions.
 
 For more information about the bin modes, please see the {ref}`tutorials <sec-acquisitions>` and {ref}`reference guide <sec-acquisition-protocols>`.
 
@@ -62,6 +62,11 @@ For more information about the bin modes, please see the {ref}`tutorials <sec-ac
   <tr>
     <td class="tg-0pky">QTM</td>
     <td class="tg-0pky"><code>BinMode.FIRST</code></td>
+  </tr>
+  <tr>
+    <td class="tg-0pky">ThresholdedTriggerCount</td>
+    <td class="tg-0pky">QRM, QTM</td>
+    <td class="tg-0pky"><code>BinMode.APPEND</code></td>
   </tr>
 </tbody>
 </table>

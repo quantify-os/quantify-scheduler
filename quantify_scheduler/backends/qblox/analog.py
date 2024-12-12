@@ -273,7 +273,7 @@ class AnalogSequencerCompiler(SequencerCompiler):
                 )
 
         acquisition_infos: list[OpInfo] = list(map(lambda acq: acq.operation_info, acquisitions))
-        if acq_metadata.acq_protocol == "TriggerCount":
+        if acq_metadata.acq_protocol in ("TriggerCount", "ThresholdedTriggerCount"):
             self._settings.ttl_acq_auto_bin_incr_en = acq_metadata.bin_mode == BinMode.DISTRIBUTION
             if len(self.connected_input_indices) == 1:
                 self._settings.ttl_acq_input_select = self.connected_input_indices[0]
@@ -288,7 +288,16 @@ class AnalogSequencerCompiler(SequencerCompiler):
                     f"{self.parent.name}."
                 )
 
-        elif acq_metadata.acq_protocol == "ThresholdedAcquisition":
+        if acq_metadata.acq_protocol in (
+            "ThresholdedAcquisition",
+            "ThresholdedTriggerCount",
+        ):
+            for info in acquisition_infos:
+                if (address := info.data.get("feedback_trigger_address")) is not None:
+                    self._settings.thresholded_acq_trigger_write_en = True
+                    self._settings.thresholded_acq_trigger_write_address = address
+
+        if acq_metadata.acq_protocol == "ThresholdedAcquisition":
             acq_rotation = acquisition_infos[0].data.get("acq_rotation")
             _verify_param_range(
                 param_name="acq_rotation",
@@ -309,11 +318,13 @@ class AnalogSequencerCompiler(SequencerCompiler):
             )
             integration_length = acquisition_infos[0].data.get("duration", 0.0) * 1e9
             self._settings.thresholded_acq_threshold = acq_threshold * integration_length
-
-            for info in acquisition_infos:
-                if (address := info.data.get("feedback_trigger_address")) is not None:
-                    self._settings.thresholded_acq_trigger_en = True
-                    self._settings.thresholded_acq_trigger_address = address
+        elif acq_metadata.acq_protocol == "ThresholdedTriggerCount":
+            thresh_trg_cnt_metadata = self._get_thresholded_trigger_count_metadata_by_acq_channel(
+                acquisitions
+            )
+            for acq_channel, metadata in thresh_trg_cnt_metadata.items():
+                acq_ch_metadata = acq_metadata.acq_channel_metadata_by_acq_channel_name(acq_channel)
+                acq_ch_metadata.thresholded_trigger_count = metadata
 
         self._settings.integration_length_acq = self._get_integration_length_from_acquisitions()
 
