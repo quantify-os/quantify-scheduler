@@ -207,10 +207,18 @@ class GenericPulseStrategy(PulseStrategyPartial):
         qasm_program.time_last_pulse_triggered = qasm_program.elapsed_time
 
         # Only emit play command if at least one path has a signal
-        # else auto-generate wait command
+        # else update parameters as there might still be some lingering
+        # from for example a voltage offset.
         index0 = self._waveform_index0
         index1 = self._waveform_index1
-        if (index0 is not None) or (index1 is not None):
+        if index0 is None and index1 is None:
+            qasm_program.emit(
+                q1asm_instructions.UPDATE_PARAMETERS,
+                constants.MIN_TIME_BETWEEN_OPERATIONS,
+                comment=f"{self.operation_info.name} has too low amplitude to be played, "
+                f"updating parameters instead",
+            )
+        else:
             assert self._amplitude_path_I is not None
             assert self._amplitude_path_Q is not None
             qasm_program.set_gain_from_amplitude(
@@ -228,7 +236,7 @@ class GenericPulseStrategy(PulseStrategyPartial):
                 constants.MIN_TIME_BETWEEN_OPERATIONS,  # N.B. the waveform keeps playing
                 comment=f"play {self.operation_info.name} ({self._waveform_len} ns)",
             )
-            qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
+        qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
 
 
 class DigitalOutputStrategy(PulseStrategyPartial):

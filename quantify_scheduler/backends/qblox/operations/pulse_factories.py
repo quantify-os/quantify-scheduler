@@ -281,7 +281,7 @@ def long_ramp_pulse(
     for _ in range(num_whole_parts):
         # Add an offset for each ramp part, except for the first one if the overall ramp
         # offset is 0.
-        if not (last_sample_voltage == offset and math.isclose(offset, 0.0)):
+        if last_sample_voltage != offset or not math.isclose(offset, 0.0):
             builder.add_voltage_offset(
                 path_I=last_sample_voltage,
                 path_Q=0.0,
@@ -316,6 +316,4 @@ def long_ramp_pulse(
         )
     )
 
-    pulse = builder.build()
-
-    return pulse
+    return builder.build()

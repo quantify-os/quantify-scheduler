@@ -206,6 +206,32 @@ class TestGenericPulseStrategy:
         assert empty_qasm_program_qcm.instructions[0] == line0
         assert empty_qasm_program_qcm.instructions[1] == line1
 
+    def test_insert_qasm_no_known_indices_because_low_amplitude(self, empty_qasm_program_qcm):
+        # Test that an update_param is inserted
+        # so that previously defined params are actually updated even if no play is played
+        data = {
+            "wf_func": "quantify_scheduler.waveforms.drag",
+            "G_amp": 2 / constants.IMMEDIATE_SZ_GAIN,  # Right on the border
+            "D_amp": 2 / constants.IMMEDIATE_SZ_GAIN,
+            "duration": 24e-9,
+            "nr_sigma": 3,
+            "sigma": None,
+            "phase": 0,
+        }
+
+        strategy = pulses.GenericPulseStrategy(
+            operation_info=types.OpInfo(name="test_pulse", data=data, timing=0),
+            channel_name="complex_output_0",
+        )
+        strategy.generate_data(wf_dict={})
+        strategy.insert_qasm(empty_qasm_program_qcm)
+
+        assert len(empty_qasm_program_qcm.instructions) == 1
+        assert empty_qasm_program_qcm.instructions[0][0] == ""
+        assert empty_qasm_program_qcm.instructions[0][1] == "upd_param"
+        assert empty_qasm_program_qcm.instructions[0][2] == "4"
+        assert empty_qasm_program_qcm.elapsed_time == 4
+
 
 class TestMarkerPulseStrategy:
     def test_constructor(self):

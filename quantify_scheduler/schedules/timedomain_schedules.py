@@ -6,7 +6,7 @@ T1 measurement.
 """
 from __future__ import annotations
 
-from typing import Literal
+from typing import Iterable, Literal
 
 import numpy as np
 
@@ -363,7 +363,7 @@ def cpmg_sched(
 
 def allxy_sched(
     qubit: str,
-    element_select_idx: np.ndarray | int = np.arange(21),
+    element_select_idx: Iterable[int] | int = np.arange(21),
     repetitions: int = 1,
 ) -> Schedule:
     """
@@ -374,7 +374,7 @@ def allxy_sched(
 
     for a specific set of combinations of x90, x180, y90, y180 and idle rotations.
 
-    See section 2.3.2 of :cite:t:`reed_entanglement_2013` for an explanation of
+    See section 5.2.3 of :cite:t:`reed_entanglement_2013` for an explanation of
     the AllXY experiment and it's applications in diagnosing errors in single-qubit
     control pulses.
 
@@ -383,7 +383,7 @@ def allxy_sched(
     qubit
         the name of the qubit e.g., :code:`"q0"` to perform the experiment on.
     element_select_idx
-        the index of the particular element of the AllXY experiment to exectute.
+        the index of the particular element of the AllXY experiment to execute.
     repetitions
         The amount of times the Schedule will be repeated.
 
@@ -393,8 +393,8 @@ def allxy_sched(
         An experiment schedule.
 
     """
-    element_idxs = np.asarray(element_select_idx)
-    element_idxs = element_idxs.reshape(element_idxs.shape or (1,))
+    if isinstance(element_select_idx, int):
+        element_select_idx = [element_select_idx]
 
     # all combinations of Idle, X90, Y90, X180 and Y180 gates that are part of
     # the AllXY experiment
@@ -423,14 +423,14 @@ def allxy_sched(
     ]
     schedule = Schedule("AllXY", repetitions)
 
-    for i, elt_idx in enumerate(element_idxs):
+    for i, elt_idx in enumerate(element_select_idx):
         # check index valid
         if elt_idx > len(allxy_combinations) or elt_idx < 0:
             raise ValueError(
                 f"Invalid index selected: {elt_idx}. " "Index must be in range 0 to 21 inclusive."
             )
 
-        ((th0, phi0), (th1, phi1)) = allxy_combinations[elt_idx]
+        (th0, phi0), (th1, phi1) = allxy_combinations[elt_idx]
 
         schedule.add(Reset(qubit), label=f"Reset {i}")
         schedule.add(Rxy(qubit=qubit, theta=th0, phi=phi0))

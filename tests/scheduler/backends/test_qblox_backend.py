@@ -2730,10 +2730,12 @@ def test_cluster_settings(
 
 class TestAssemblyValid:
     @staticmethod
-    def _strip_spaces_and_comments(program: str):
+    def _strip_spaces_and_comments(program: str | list) -> list:
         # helper function for comparing programs
+        if isinstance(program, str):
+            program = program.split("\n")
         stripped_program = []
-        for line in program.split("\n"):
+        for line in program:
             if "#" in line:
                 line = line.split("#")[0]  # noqa: PLW2901
             line = line.rstrip()  # remove trailing whitespace # noqa: PLW2901
@@ -2756,7 +2758,8 @@ class TestAssemblyValid:
         # (Utility for updating ref files during development, does not belong to the test)
         if REGENERATE_REF_FILES:
             with open(baseline_assembly, "w", encoding="utf-8") as file:
-                json.dump(seq_instructions, file)
+                seq_instructions["program"] = seq_instructions["program"].split("\n")
+                json.dump(seq_instructions, file, indent=2)
 
         with open(baseline_assembly) as file:
             baseline_seq_instructions = json.load(file)
@@ -3524,15 +3527,14 @@ def test_zero_pulse_skip_timing(
 
     assert len(compiled_instructions["waveforms"]) == 1
 
-    idx = 0
     seq_instructions = compiled_instructions["program"].splitlines()
     for i, line in enumerate(seq_instructions):
-        if re.search(r"^\s*wait\s+20\s+", line):
-            idx = i
-            break
-
-    assert re.search(r"^\s*set_awg_gain\s+16384,0\s+", seq_instructions[idx + 1])
-    assert re.search(r"^\s*play\s+0,0,4\s+", seq_instructions[idx + 2])
+        if re.search(r"^\s*upd_param\s+4\s+# DRAGPulse has too low amplitude", line):
+            assert re.search(r"^\s*wait 16\s+", seq_instructions[i + 1])
+            assert re.search(r"^\s*set_awg_gain\s+16384,0\s+", seq_instructions[i + 2])
+            assert re.search(r"^\s*play\s+0,0,4\s+", seq_instructions[i + 3])
+            return
+    assert False  # should not reach
 
 
 @pytest.mark.parametrize("debug_mode", [True, False])
