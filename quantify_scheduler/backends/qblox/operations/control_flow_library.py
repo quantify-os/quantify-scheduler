@@ -39,22 +39,21 @@ class ConditionalOperation(_ConditionalOperation):
 
     A conditional reset can be implemented as follows:
 
-    .. admonition:: example
 
-        .. jupyter-execute
+    .. jupyter-execute::
 
-            # relevant imports
-            from quantify_scheduler import Schedule
-            from quantify_scheduler.backends.qblox.operations import ConditionalOperation
-            from quantify_scheduler.operations.gate_library import Measure, X
+        # relevant imports
+        from quantify_scheduler import Schedule
+        from quantify_scheduler.qblox.operations import ConditionalOperation
+        from quantify_scheduler.operations import Measure, X
 
-            # define conditional reset as a Schedule
-            conditional_reset = Schedule("conditional reset")
-            conditional_reset.add(Measure("q0", feedback_trigger_label="q0"))
-            conditional_reset.add(
-                ConditionalOperation(body=X("q0"), qubit_name="q0"),
-                rel_time=364e-9,
-            )
+        # define conditional reset as a Schedule
+        conditional_reset = Schedule("conditional reset")
+        conditional_reset.add(Measure("q0", feedback_trigger_label="q0"))
+        conditional_reset.add(
+            ConditionalOperation(body=X("q0"), qubit_name="q0"),
+            rel_time=364e-9,
+        )
 
     """
 

@@ -62,16 +62,15 @@ class ConditionalReset(Schedule):
 
     Examples
     --------
-    .. admonition:: Examples
 
-        .. jupyter-execute::
-            :hide-output:
+    .. jupyter-execute::
+        :hide-output:
 
-            from quantify_scheduler.backends.qblox.operations.gate_library import ConditionalReset
-            from quantify_scheduler.schedules.schedule import Schedule
+        from quantify_scheduler import Schedule
+        from quantify_scheduler.qblox.operations import ConditionalReset
 
-            schedule = Schedule("example schedule")
-            schedule.add(ConditionalReset("q0"))
+        schedule = Schedule("example schedule")
+        schedule.add(ConditionalReset("q0"))
 
     """
 
