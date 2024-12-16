@@ -7,7 +7,9 @@ import quantify_scheduler.schedules._visualization.pulse_scheme as pls
 cm = 1 / 2.54  # inch to cm conversion
 
 
-@pytest.mark.mpl_image_compare(style="default", savefig_kwargs={"dpi": 300})
+# Somehow, the images a bit too different between python 3.9 and 3.10+. Raise tolerance to account
+# for this.
+@pytest.mark.mpl_image_compare(style="default", savefig_kwargs={"dpi": 300}, tolerance=9)
 def test_plot_pulses_single_q() -> Figure:
     """
     Generates figure for testing
