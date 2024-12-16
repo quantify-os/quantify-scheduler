@@ -59,7 +59,7 @@ We have added a few more operations specific for spin-based elements. These incl
 
 ### Improve conditional playback
 
-We have added support for generic subschedules in conditional playback. This allows for more flexible and reusable conditional logic in your schedules. For more details, please refer to the [Conditional playback](https://quantify-os.org/docs/quantify-scheduler/tutorials/conditional_playback.html) tutorial and the [reference guide](https://quantify-os.org/docs/quantify-scheduler/dev/reference/conditional_playback.html).
+We have added support for generic subschedules in conditional playback. This allows for more flexible and reusable conditional logic in your schedules. For more details, please refer to the [Conditional playback](https://quantify-os.org/docs/quantify-scheduler/dev/tutorials/Conditional%20Reset.html) tutorial and the [reference guide](https://quantify-os.org/docs/quantify-scheduler/dev/reference/conditional_playback.html).
 
 ````{admonition} Breaking change
 :class: warning
