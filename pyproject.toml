@@ -98,7 +98,6 @@ dev = [
  "coverage",
  "pre-commit",
  "pre-commit-hooks", # common hooks for git repos
- "prospector",
  "pyright!=1.1.309",  # Version excluded because of a bug (https://github.com/microsoft/pyright/issues/5126).
  # Pytest-cov is used to generage test coverage reports, which is rather a development than testing requirement
  "pytest-cov",
