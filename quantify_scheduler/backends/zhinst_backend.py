@@ -190,7 +190,7 @@ def _determine_clock_sample_start(
     operation_name: str = "",
 ) -> tuple[int, float]:
     """
-    depending on the output channel, select the right clock cycle time and sample rate
+    Depending on the output channel, select the right clock cycle time and sample rate
     from the channel descriptor for ZI channels.
     the sample is returned as a float to preserve information of incorrect rounding to
     full samples if present.
