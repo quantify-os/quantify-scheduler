@@ -1020,6 +1020,12 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
                 )
             return mixer_path, mixer_lo
 
+        # For each port-clock combination, we look up the port in the connectivity graph
+        # and check what cluster module channel it is connected to.
+        # Each port-clock combination can be connected to at most one output channel and
+        # either one complex input channel or two real input channels.
+        # FIXME (SE-672) the logic below is very difficult to understand and not likely
+        # to be correct.
         for port, clocks in port_to_clocks.items():
             if port not in self.connectivity.graph:
                 raise KeyError(f"{port} was not found in the connectivity.")
@@ -1049,6 +1055,8 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
                             cluster_pc_to_path[path.cluster_name][pc] = path
 
                 elif "." in port_nbr:
+                    # In this case, there is an element (e.g. I/Q mixer) between the
+                    # port and the channel.
                     mixer = port_nbr[: port_nbr.rindex(".")]
                     mixer_path, mixer_lo = get_module_and_lo_for_mixer(mixer)
                     path = ChannelPath.from_path(mixer_path)
@@ -1157,7 +1165,11 @@ class _ClusterModuleCompilationConfig(ABC, DataStructure):
                 hardware_description=hardware_description,  # type: ignore
                 portclock=portclock,
                 channel_name=path.channel_name,
-                channel_name_measure=path.channel_name_measure,
+                channel_name_measure=(
+                    list(path.channel_name_measure)
+                    if path.channel_name_measure is not None
+                    else None
+                ),
                 latency_correction=latency_correction,
                 distortion_correction=distortion_correction,
                 lo_name=channel_to_lo.get(path.channel_name),
@@ -1247,15 +1259,16 @@ class _QRMCompilationConfig(_ClusterModuleCompilationConfig):
         for pc, path in self.portclock_to_path.items():
             if path.channel_name_measure is not None:  # noqa: SIM102
                 if len(path.channel_name_measure) == 1:
+                    channel_name_measure = next(iter(path.channel_name_measure))
                     if not (
                         "complex_output" in path.channel_name or "real_output" in path.channel_name
                     ) or not (
-                        "complex_input" in path.channel_name_measure[0]
-                        or "real_input" in path.channel_name_measure[0]
+                        "complex_input" in channel_name_measure
+                        or "real_input" in channel_name_measure
                     ):
                         raise ValueError(
                             f"Found two channel names {path.channel_name} and "
-                            f"{path.channel_name_measure[0]} that are not of the same mode for "
+                            f"{channel_name_measure} that are not of the same mode for "
                             f"portclock {pc}. Only channel names of the same mode (e.g. "
                             f"`complex_output_0` and `complex_input_0`) are allowed when they "
                             f"share a portclock in QRM modules."
@@ -1305,11 +1318,11 @@ class _QRMRFCompilationConfig(_ClusterModuleCompilationConfig):
             if path.channel_name_measure is not None:  # noqa: SIM102
                 if not (
                     "complex_output" in path.channel_name
-                    and "complex_input" in path.channel_name_measure[0]
+                    and all("complex_input" in ch_name for ch_name in path.channel_name_measure)
                 ):
                     raise ValueError(
-                        f"Found two channel names {path.channel_name} and "
-                        f"{path.channel_name_measure[0]} that are not of the same mode for "
+                        f"Found channel names {path.channel_name} and "
+                        f"{path.channel_name_measure} that are not of the same mode for "
                         f"portclock {pc}. Only channel names of the same mode (e.g. "
                         f"`complex_output_0` and `complex_input_0`) are allowed when they share a "
                         f"portclock in QRM_RF modules."
@@ -1463,20 +1476,20 @@ def _add_support_input_channel_names(
     # Update cluster module config with extra channel names (`channel_name_measure`) in order
     # to keep backwards compatibility after enforcing the use of two channel names for `Measure`
     # operations (see also SE-427). Sorry for the hacky style, couldn't find a better solution
-    complex_output_pcs = {}
-    real_output_pcs = {}
-    complex_inputs = []
-    real_inputs = []
+    complex_output_pcs: dict[str, list[str]] = defaultdict(list)
+    real_output_pcs: dict[str, list[str]] = defaultdict(list)
+    complex_inputs: list[str] = []
+    real_inputs: list[str] = []
 
     for pc, path in module_config.portclock_to_path.items():
         if ChannelMode.COMPLEX in path.channel_name:
             if "output" in path.channel_name:
-                complex_output_pcs[path.channel_name] = pc
+                complex_output_pcs[path.channel_name].append(pc)
             else:
                 complex_inputs.append(path.channel_name)
         elif ChannelMode.REAL in path.channel_name:
             if "output" in path.channel_name:
-                real_output_pcs[path.channel_name] = pc
+                real_output_pcs[path.channel_name].append(pc)
             else:
                 real_inputs.append(path.channel_name)
 
@@ -1484,27 +1497,25 @@ def _add_support_input_channel_names(
         # The specific value of the portclock is not important, as long as it has been
         # defined before for an output in the same module
         if not complex_inputs and not real_inputs:
-            if complex_output_pcs:
-                pc = list(complex_output_pcs.values())[0]
-                module_config.portclock_to_path[pc].add_channel_name_measure("complex_input_0")
-            elif real_output_pcs:
-                pc = list(real_output_pcs.values())[0]
-                module_config.portclock_to_path[pc].add_channel_name_measure("real_input_0")
-                # removing the deepcopy is breaking.
-                module_config.portclock_to_path[deepcopy(pc)].add_channel_name_measure(
-                    "real_input_1"
-                )
+            for pc_list in complex_output_pcs.values():
+                for pc in pc_list:
+                    module_config.portclock_to_path[pc].add_channel_name_measure("complex_input_0")
+            for pc_list in real_output_pcs.values():
+                for pc in pc_list:
+                    module_config.portclock_to_path[pc].add_channel_name_measure("real_input_0")
+                    module_config.portclock_to_path[pc].add_channel_name_measure("real_input_1")
         elif (
             not complex_inputs
             and len(real_inputs) == 1
             and not complex_output_pcs
             and real_output_pcs
         ):
-            pc = list(real_output_pcs.values())[0]
-            if int(real_inputs[0][-1]) == 0:
-                module_config.portclock_to_path[pc].add_channel_name_measure("real_input_1")
-            else:
-                module_config.portclock_to_path[pc].add_channel_name_measure("real_input_0")
+            for pc_list in real_output_pcs.values():
+                for pc in pc_list:
+                    if int(real_inputs[0][-1]) == 0:
+                        module_config.portclock_to_path[pc].add_channel_name_measure("real_input_1")
+                    else:
+                        module_config.portclock_to_path[pc].add_channel_name_measure("real_input_0")
 
 
 @dataclass
@@ -1515,7 +1526,7 @@ class ChannelPath:
     module_name: str
     channel_name: str
     module_idx: int
-    channel_name_measure: None | list[str] = field(init=False, default=None)
+    channel_name_measure: None | set[str] = field(init=False, default=None)
 
     @classmethod
     def from_path(cls: type[ChannelPath], path: str) -> ChannelPath:
@@ -1531,17 +1542,26 @@ class ChannelPath:
 
     def add_channel_name_measure(self, channel_name_measure: str) -> None:
         """Add an extra input channel name for measure operation."""
+        # FIXME (SE-672) this method has turned this class from a description of a
+        # single input/output on a module ('channel'), into a description of the I/O
+        # connections of a sequencer. The fields _except_ 'channel_name_measure'
+        # represent a single output channel (which in itself is incorrect, since you can
+        # have _two_ "real" output channels), and the `channel_name_measure` are the
+        # input channels.
+        # We need to decide what the actual purpose of this class is and clean up the
+        # usage.
+
         if self.channel_name_measure is None:
             channel_name = deepcopy(self.channel_name)
             # By convention, the "output" channel name is the main channel name in
             # measure operations
             if "input" in channel_name_measure:
-                self.channel_name_measure = [channel_name_measure]
+                self.channel_name_measure = {channel_name_measure}
             else:
                 self.channel_name = channel_name_measure
-                self.channel_name_measure = [channel_name]
+                self.channel_name_measure = {channel_name}
         else:
-            self.channel_name_measure.append(channel_name_measure)
+            self.channel_name_measure.add(channel_name_measure)
 
 
 def _all_abs_times_ops_with_voltage_offsets_pulses(

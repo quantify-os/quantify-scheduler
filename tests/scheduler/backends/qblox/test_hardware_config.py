@@ -167,20 +167,20 @@ def test_channel_path():
 
     channel_path.add_channel_name_measure("complex_input_0")
     assert channel_path.channel_name == "complex_output_0"
-    assert channel_path.channel_name_measure == ["complex_input_0"]
+    assert channel_path.channel_name_measure == {"complex_input_0"}
 
     # Test channel path when "output" path is added as `channel_name_measure`
     channel_path = ChannelPath.from_path("cluster0.module1.complex_input_0")
     channel_path.add_channel_name_measure("complex_output_0")
     assert channel_path.channel_name == "complex_output_0"
-    assert channel_path.channel_name_measure == ["complex_input_0"]
+    assert channel_path.channel_name_measure == {"complex_input_0"}
 
     # Test two `channel_name_measure`
     channel_path = ChannelPath.from_path("cluster0.module1.real_output_0")
     channel_path.add_channel_name_measure("real_input_0")
     channel_path.add_channel_name_measure("real_input_1")
     assert channel_path.channel_name == "real_output_0"
-    assert channel_path.channel_name_measure == ["real_input_0", "real_input_1"]
+    assert channel_path.channel_name_measure == {"real_input_0", "real_input_1"}
 
 
 @pytest.mark.parametrize(
@@ -343,25 +343,25 @@ def test_channel_name_measure_invalid_combinations(
             "QRM",
             "complex_output_0",
             None,
-            ["complex_input_0"],
+            {"complex_input_0"},
         ),
         (
             "QRM",
             "real_output_0",
             None,
-            ["real_input_0", "real_input_1"],
+            {"real_input_0", "real_input_1"},
         ),
         (
             "QRM",
             "real_output_0",
             "real_input_0",
-            ["real_input_1"],
+            {"real_input_1"},
         ),
         (
             "QRM",
             "real_output_0",
             "real_input_1",
-            ["real_input_0"],
+            {"real_input_0"},
         ),
         ("QRM", "real_input_0", None, None),
         (
@@ -374,7 +374,7 @@ def test_channel_name_measure_invalid_combinations(
             "QRM_RF",
             "complex_output_0",
             None,
-            ["complex_input_0"],
+            {"complex_input_0"},
         ),
     ],
 )
@@ -421,6 +421,80 @@ def test_add_support_input_channel_names(
         module1_config.portclock_to_path["q0:res-q0.ro"].channel_name_measure
         == result_channel_name_measure
     )
+
+
+@pytest.mark.parametrize(
+    "instrument_type, first_channel_name, result_channel_name_measure",
+    [
+        (
+            "QCM",
+            "complex_output_0",
+            None,
+        ),
+        (
+            "QRM",
+            "complex_output_0",
+            {"complex_input_0"},
+        ),
+        (
+            "QRM",
+            "real_output_0",
+            {"real_input_0", "real_input_1"},
+        ),
+        ("QRM", "real_input_0", None),
+        (
+            "QCM_RF",
+            "complex_output_0",
+            None,
+        ),
+        (
+            "QRM_RF",
+            "complex_output_0",
+            {"complex_input_0"},
+        ),
+    ],
+)
+def test_add_support_input_channel_names_muxing(
+    instrument_type, first_channel_name, result_channel_name_measure
+):
+    hardware_config = {
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {
+                    1: {"instrument_type": instrument_type},
+                },
+                "ref": "internal",
+            },
+        },
+        "hardware_options": {},
+        "connectivity": {
+            "graph": [
+                [f"cluster0.module1.{first_channel_name}", "q0:res"],
+                [f"cluster0.module1.{first_channel_name}", "q1:res"],
+                [f"cluster0.module1.{first_channel_name}", "q2:res"],
+            ]
+        },
+    }
+
+    portclocks_used = {
+        ("q0:res", "q0.ro"),
+        ("q1:res", "q1.ro"),
+        ("q2:res", "q2.ro"),
+    }
+
+    module1_config = (
+        QbloxHardwareCompilationConfig.model_validate(hardware_config)
+        ._extract_instrument_compilation_configs(portclocks_used)["cluster0"]
+        ._extract_module_compilation_configs()[1]
+    )
+
+    for i in range(3):
+        assert (
+            module1_config.portclock_to_path[f"q{i}:res-q{i}.ro"].channel_name_measure
+            == result_channel_name_measure
+        )
 
 
 def test_hardware_compilation_config_versioning():
