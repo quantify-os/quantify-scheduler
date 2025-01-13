@@ -8,6 +8,7 @@ import logging
 from collections import UserDict
 from enum import Enum
 from pydoc import locate
+from typing import Iterable
 
 from quantify_scheduler.helpers.collections import make_hash
 from quantify_scheduler.helpers.importers import export_python_object_to_path_string
@@ -340,3 +341,21 @@ class Operation(JSONSchemaValMixin, UserDict):
             "offset_path_I" in pulse_info or "offset_path_Q" in pulse_info
             for pulse_info in self.data["pulse_info"]
         )
+
+
+def _generate_acq_indices_for_gate(
+    qubits: list[str], acq_index: tuple[int, ...] | int | None
+) -> int | Iterable[int]:
+    # This if else statement a workaround to support multiplexed measurements (#262);
+    # this snippet has some automatic behaviour that is error prone; see #262.
+    if len(qubits) == 1:
+        return 0 if (acq_index is None) else acq_index
+    elif acq_index is None:
+        # Defaults to writing the result of all qubits to acq_index 0.
+        # Note that this will result in averaging data together if multiple
+        # measurements are present in the same schedule (#262).
+        return [0] * len(qubits)
+    elif isinstance(acq_index, Iterable):
+        return acq_index
+    else:
+        return [acq_index] * len(qubits)

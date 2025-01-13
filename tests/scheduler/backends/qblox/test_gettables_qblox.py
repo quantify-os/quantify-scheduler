@@ -171,10 +171,10 @@ def test_initialize_and_get_with_report_failed_initialization(  # noqa: PLR0915
         timestamp = zf.read("timestamp.txt").decode()
         gettable_cfg_report = json.loads(zf.read("gettable.json").decode())
         hardware_cfg_report = json.loads(zf.read("hardware_cfg.json").decode())
-        schedule_report = Schedule.from_json(zf.read("schedule.json").decode())
+        schedule_report = CompiledSchedule.from_json(zf.read("schedule.json").decode())
         report_error_trace = zf.read("error_trace.txt").decode()
         with pytest.raises(KeyError):
-            Schedule.from_json(zf.read("compiled_schedule.json").decode())
+            CompiledSchedule.from_json(zf.read("compiled_schedule.json").decode())
         with pytest.raises(KeyError):
             json.loads(zf.read("snapshot.json").decode())
         with pytest.raises(KeyError):
@@ -349,6 +349,7 @@ def test_initialize_and_get_with_report_failed_exp(
         json.loads(zf.read("dependency_versions.json").decode())
         json.loads(zf.read("gettable.json").decode())
         json.loads(zf.read("hardware_cfg.json").decode())
+        CompiledSchedule.from_json(zf.read("schedule.json").decode())
         Schedule.from_json(zf.read("schedule.json").decode())
         compiled_schedule_report = zf.read("compiled_schedule.json").decode()
         snap_report = json.loads(zf.read("snapshot.json").decode())

@@ -230,3 +230,14 @@ def extract_acquisition_metadata_from_acquisition_protocols(
 def _extract_port_clocks_used(operation: Operation | Schedule) -> set[tuple]:
     """Extracts which port-clock combinations are used in an operation or schedule."""
     return operation.get_used_port_clocks()
+
+
+def _is_binned_type_protocol(protocol: str) -> bool:
+    return protocol in (
+        "SSBIntegrationComplex",
+        "WeightedIntegratedSeparated",
+        "NumericalSeparatedWeightedIntegration",
+        "NumericalWeightedIntegrationComplex",
+        "NumericalWeightedIntegration",
+        "ThresholdedAcquisition",
+    )

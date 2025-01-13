@@ -3,11 +3,11 @@
 """Standard gateset for use with the quantify_scheduler."""
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Hashable, Literal
+from typing import TYPE_CHECKING, Hashable, Iterable, Literal
 
 import numpy as np
 
-from .operation import Operation
+from .operation import Operation, _generate_acq_indices_for_gate
 
 if TYPE_CHECKING:
     from quantify_scheduler.enums import BinMode
@@ -672,22 +672,9 @@ class Measure(Operation):
         feedback_trigger_label: str | None = None,
         **device_overrides,
     ) -> None:
-        # this if else statement a workaround to support multiplexed measurements (#262)
-
-        # this snippet has some automatic behaviour that is error prone.
-        # see #262
-        if len(qubits) == 1:
-            if acq_index is None:
-                acq_index = 0
-        elif isinstance(acq_index, int):
-            acq_index = [
-                acq_index,
-            ] * len(qubits)
-        elif acq_index is None:
-            # defaults to writing the result of all qubits to acq_index 0.
-            # note that this will result in averaging data together if multiple
-            # measurements are present in the same schedule (#262)
-            acq_index = list(0 for i in range(len(qubits)))
+        acq_index: int | Iterable[int] = _generate_acq_indices_for_gate(
+            qubits=qubits, acq_index=acq_index
+        )
 
         plot_func = "quantify_scheduler.schedules._visualization.circuit_diagram.meter"
         super().__init__(f"Measure {', '.join(qubits)}")

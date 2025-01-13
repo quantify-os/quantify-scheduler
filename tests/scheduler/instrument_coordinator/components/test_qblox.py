@@ -837,7 +837,6 @@ def test_retrieve_acquisition(
 ):
     cluster_name = "cluster0"
     qcm_name = f"{cluster_name}_module1"
-    qcm_rf_name = f"{cluster_name}_module2"
     qrm_name = f"{cluster_name}_module3"
     qrm_rf_name = f"{cluster_name}_module4"
 
@@ -846,7 +845,6 @@ def test_retrieve_acquisition(
         modules={"1": "QCM", "2": "QCM_RF", "3": "QRM", "4": "QRM_RF"},
     )
     qcm = cluster._cluster_modules[qcm_name]
-    qcm_rf = cluster._cluster_modules[qcm_rf_name]
     qrm = cluster._cluster_modules[qrm_name]
     qrm_rf = cluster._cluster_modules[qrm_rf_name]
 
@@ -854,8 +852,19 @@ def test_retrieve_acquisition(
         DummyBinnedAcquisitionData(data=(100.0, 200.0), thres=0, avg_cnt=0),
     ]
     expected_dataset = xr.Dataset(
-        {0: (["acq_index_0"], [0.1 + 0.2j], {"acq_protocol": "SSBIntegrationComplex"})},
-        coords={"acq_index_0": [0]},
+        {
+            0: (
+                ["acq_index_0"],
+                [0.1 + 0.2j],
+                {"acq_protocol": "SSBIntegrationComplex"},
+            ),
+            2: (
+                ["acq_index_2"],
+                [0.1 + 0.2j],
+                {"acq_protocol": "SSBIntegrationComplex"},
+            ),
+        },
+        coords={"acq_index_0": [0], "acq_index_2": [0]},
     )
 
     mock_setup = mock_setup_basic_transmon_with_standard_params
@@ -879,23 +888,16 @@ def test_retrieve_acquisition(
     qrm.instrument.set_dummy_binned_acquisition_data(
         sequencer=0, acq_index_name="0", data=dummy_data
     )
-
-    cluster.prepare(prog)
-    cluster.start()
-
-    assert qcm.retrieve_acquisition() is None
-
-    xr.testing.assert_identical(qrm.retrieve_acquisition(), expected_dataset)
-
-    # RF
     qrm_rf.instrument.set_dummy_binned_acquisition_data(
         sequencer=0, acq_index_name="0", data=dummy_data
     )
 
     cluster.prepare(prog)
     cluster.start()
-    assert qcm_rf.retrieve_acquisition() is None
-    xr.testing.assert_identical(qrm_rf.retrieve_acquisition(), expected_dataset)
+
+    assert qcm.retrieve_acquisition() is None
+
+    xr.testing.assert_identical(cluster.retrieve_acquisition(), expected_dataset)
 
 
 def test_retrieve_acquisition_qtm(

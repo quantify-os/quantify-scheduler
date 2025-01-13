@@ -7,6 +7,11 @@ from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.circuit_to_device import ConfigKeyError
 from quantify_scheduler.compilation import _determine_absolute_timing
 from quantify_scheduler.enums import BinMode
+from quantify_scheduler.operations.acquisition_library import (
+    SSBIntegrationComplex,
+    Trace,
+    TriggerCount,
+)
 from quantify_scheduler.operations.composite_factories import hadamard_as_y90z
 from quantify_scheduler.operations.control_flow_library import (
     LoopOperation,
@@ -504,3 +509,127 @@ def test_schedule_gets_all_resources(compile_config_basic_transmon_qblox_hardwar
         },
     }
     assert list(compiled_schedule.operations.values())[0].resources == expected_resources
+
+
+@pytest.mark.parametrize(
+    argnames="acq_operation,acq_protocol,bin_mode",
+    argvalues=[
+        (
+            SSBIntegrationComplex(
+                port="q0.res", clock="q0.01", duration=100e-9, bin_mode=BinMode.FIRST
+            ),
+            "SSBIntegrationComplex",
+            "first",
+        ),
+        (
+            SSBIntegrationComplex(port="q0.res", clock="q0.01", duration=100e-9, bin_mode=-1),
+            "SSBIntegrationComplex",
+            "-1",
+        ),
+        (
+            Trace(port="q0.res", clock="q0.01", duration=100e-9, bin_mode=BinMode.DISTRIBUTION),
+            "Trace",
+            "distribution",
+        ),
+        (
+            TriggerCount(port="q0.res", clock="q0.01", duration=100e-9, bin_mode=-1),
+            "TriggerCount",
+            "-1",
+        ),
+    ],
+)
+def test_unsupported_bin_mode_raises(
+    compile_config_basic_transmon_qblox_hardware, acq_operation, acq_protocol, bin_mode
+):
+    schedule = Schedule("")
+    schedule.add(acq_operation)
+
+    compiler = SerialCompiler("")
+
+    with pytest.warns(
+        RuntimeWarning,
+        match=f"Unsupported bin mode '{bin_mode}' for acquisition protocol "
+        f"'{acq_protocol}' on acq_channel '0'.",
+    ), pytest.raises(Exception):
+        compiler.compile(
+            schedule=schedule,
+            config=compile_config_basic_transmon_qblox_hardware,
+        )
+
+
+def test_inconsistent_acq_protocol_for_acq_channel_warns(
+    compile_config_basic_transmon_qblox_hardware,
+):
+    schedule = Schedule("")
+    schedule.add(Trace(acq_channel=0, port="q0.res", clock="q0.01", duration=100e-9))
+    schedule.add(
+        SSBIntegrationComplex(acq_channel=0, port="q0.res", clock="q0.01", duration=100e-9)
+    )
+
+    compiler = SerialCompiler("")
+
+    with pytest.warns(
+        RuntimeWarning,
+        match="Found different acquisition protocols \\('Trace' and 'SSBIntegrationComplex'\\) "
+        "for acq_channel '0'. Make sure there is only one protocol for each acq_channel.",
+    ), pytest.raises(Exception):
+        compiler.compile(
+            schedule=schedule,
+            config=compile_config_basic_transmon_qblox_hardware,
+        )
+
+
+def test_inconsistent_bin_mode_for_acq_channel_warns(
+    compile_config_basic_transmon_qblox_hardware,
+):
+    schedule = Schedule("")
+    schedule.add(
+        SSBIntegrationComplex(
+            acq_channel=0,
+            port="q0.res",
+            clock="q0.01",
+            duration=100e-9,
+            bin_mode=BinMode.AVERAGE,
+        )
+    )
+    schedule.add(
+        SSBIntegrationComplex(
+            acq_channel=0,
+            port="q0.res",
+            clock="q0.01",
+            duration=100e-9,
+            bin_mode=BinMode.APPEND,
+        )
+    )
+
+    compiler = SerialCompiler("")
+
+    with pytest.warns(
+        RuntimeWarning,
+        match="Found different bin modes \\('average' and 'append'\\) "
+        "for acq_channel '0'. Make sure there is only one bin mode for each acq_channel.",
+    ), pytest.raises(Exception):
+        compiler.compile(
+            schedule=schedule,
+            config=compile_config_basic_transmon_qblox_hardware,
+        )
+
+
+def test_multiple_trace_acquisition_raises(
+    compile_config_basic_transmon_qblox_hardware,
+):
+    sched = Schedule("")
+    sched.add(Trace(duration=100e-9, port="q0:res", clock="q0.01"))
+    sched.add(Trace(duration=100e-9, port="q0:res", clock="q0.01"))
+
+    with pytest.warns(
+        RuntimeWarning,
+        match="Multiple acquisitions found for acq_channel '0' "
+        "which has a trace acquisition. "
+        "Only one trace acquisition is allowed for each acq_channel.",
+    ), pytest.raises(Exception):
+        compiler = SerialCompiler(name="compiler")
+        _ = compiler.compile(
+            schedule=sched,
+            config=compile_config_basic_transmon_qblox_hardware,
+        )

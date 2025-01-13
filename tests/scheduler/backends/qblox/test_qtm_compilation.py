@@ -738,7 +738,7 @@ def test_timetag_different_ref(mock_setup_basic_nv):
         _ = compiler.compile(schedule=schedule, config=quantum_device.generate_compilation_config())
 
 
-def test_multiple_trace_acq(mock_setup_basic_nv, assert_equal_q1asm):
+def test_incorrect_multiple_trace_acq(mock_setup_basic_nv, assert_equal_q1asm):
     schedule = Schedule(name="Test")
 
     schedule.add(
@@ -746,6 +746,7 @@ def test_multiple_trace_acq(mock_setup_basic_nv, assert_equal_q1asm):
             duration=16e-6,
             port="qe1:optical_readout",
             clock="qe1.ge0",
+            acq_channel=0,
             acq_index=0,
             bin_mode=BinMode.FIRST,
         )
@@ -755,7 +756,49 @@ def test_multiple_trace_acq(mock_setup_basic_nv, assert_equal_q1asm):
             duration=16e-6,
             port="qe1:optical_readout",
             clock="qe1.ge0",
-            acq_index=1,
+            acq_channel=1,
+            acq_index=0,
+            bin_mode=BinMode.FIRST,
+        ),
+        rel_time=20e-9,
+    )
+
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+
+    quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
+
+    compiler = SerialCompiler(name="compiler")
+    with pytest.raises(
+        RuntimeError,
+        match=re.escape(
+            "Only one acquisition channel per port-clock can be specified, "
+            "if the Trace acquisition protocol is used.\n"
+            "Acquisition channels [0, 1] were found on port-clock qe1:optical_readout-qe1.ge0."
+        ),
+    ):
+        compiler.compile(schedule=schedule, config=quantum_device.generate_compilation_config())
+
+
+def test_multiple_trace_acq(mock_setup_basic_nv, assert_equal_q1asm):
+    schedule = Schedule(name="Test")
+
+    schedule.add(
+        Trace(
+            duration=16e-6,
+            port="qe1:switch",
+            clock="digital",
+            acq_channel=0,
+            acq_index=0,
+            bin_mode=BinMode.FIRST,
+        )
+    )
+    schedule.add(
+        Trace(
+            duration=16e-6,
+            port="qe1:optical_readout",
+            clock="qe1.ge0",
+            acq_channel=1,
+            acq_index=0,
             bin_mode=BinMode.FIRST,
         ),
         rel_time=20e-9,
@@ -772,11 +815,24 @@ def test_multiple_trace_acq(mock_setup_basic_nv, assert_equal_q1asm):
 
     assert (
         compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"][
-            "seq4"
+            "seq0"
         ].sequence["acquisitions"]["0"]["num_bins"]
-        == 2
+        == 1
     )
 
+    assert (
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"][
+            "seq4"
+        ].sequence["acquisitions"]["0"]["num_bins"]
+        == 1
+    )
+
+    assert (
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"][
+            "seq0"
+        ].scope_trace_type
+        == TimetagTraceType.SCOPE
+    )
     assert (
         compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"][
             "seq4"
@@ -786,7 +842,7 @@ def test_multiple_trace_acq(mock_setup_basic_nv, assert_equal_q1asm):
 
     assert_equal_q1asm(
         compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"][
-            "seq4"
+            "seq0"
         ].sequence["program"],
         """ wait_sync 4
  upd_param 4
@@ -799,11 +855,27 @@ start:
  wait 15992 # auto generated wait (15992 ns)
  acquire_timetags 0,0,0,0,4 # Disable timetag acquisition of acq_channel:0, bin_mode:average
  set_scope_en 0
- wait 20 # auto generated wait (20 ns)
+ wait 16020 # auto generated wait (16020 ns)
+ loop R0,@start
+ stop
+""",
+    )
+
+    assert_equal_q1asm(
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"][
+            "seq4"
+        ].sequence["program"],
+        """ wait_sync 4
+ upd_param 4
+ wait 4 # latency correction of 4 + 0 ns
+ move 1,R0 # iterator for loop with label start
+start:
+ wait 4
+ wait 16020 # auto generated wait (16020 ns)
  set_scope_en 1
- acquire_timetags 0,1,1,0,4 # Enable timetag acquisition of acq_channel:0, bin_mode:average
+ acquire_timetags 1,0,1,0,4 # Enable timetag acquisition of acq_channel:1, bin_mode:average
  wait 15992 # auto generated wait (15992 ns)
- acquire_timetags 0,1,0,0,4 # Disable timetag acquisition of acq_channel:0, bin_mode:average
+ acquire_timetags 1,0,0,0,4 # Disable timetag acquisition of acq_channel:1, bin_mode:average
  set_scope_en 0
  loop R0,@start
  stop

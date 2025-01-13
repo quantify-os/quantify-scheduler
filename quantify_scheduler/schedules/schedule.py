@@ -10,7 +10,7 @@ from abc import ABC
 from collections import UserDict
 from copy import copy
 from itertools import chain
-from typing import TYPE_CHECKING, Any, Hashable, Literal
+from typing import TYPE_CHECKING, Any, Dict, Hashable, Literal
 from uuid import uuid4
 
 import numpy as np
@@ -197,7 +197,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             The json string result.
 
         """
-        return json.dumps(self, cls=json_utils.SchedulerJSONEncoder)
+        return json.dumps(self.__getstate__(), cls=json_utils.SchedulerJSONEncoder)
 
     @classmethod
     def from_json(cls, data: str) -> Schedule:
@@ -215,7 +215,10 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             The Schedule object.
 
         """
-        return json_utils.SchedulerJSONDecoder().decode(data)
+        schedule_data = json_utils.SchedulerJSONDecoder().decode(data)
+        sched = cls.__new__(cls)
+        sched.__setstate__(schedule_data)
+        return sched
 
     def get_used_port_clocks(self) -> set[tuple[str, str]]:
         """
@@ -587,7 +590,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
                 q0 = BasicTransmonElement("q0")
                 q4 = BasicTransmonElement("q4")
 
-                for qubit in [q0, q4]:
+                for i, qubit in enumerate([q0, q4]):
                     qubit.rxy.amp180(0.115)
                     qubit.rxy.motzoi(0.1)
                     qubit.clock_freqs.f01(7.3e9)
@@ -615,8 +618,8 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
                 schedule.add(Reset("q0", "q4"))
                 schedule.add(X("q0"))
                 schedule.add(Y("q4"))
-                schedule.add(Measure("q0", acq_index=0))
-                schedule.add(Measure("q4", acq_index=0))
+                schedule.add(Measure("q0", acq_channel=0, acq_index=0))
+                schedule.add(Measure("q4", acq_channel=1, acq_index=0))
 
                 compiled_schedule = compiler.compile(schedule)
                 compiled_schedule.timing_table
@@ -1028,6 +1031,32 @@ class Schedulable(JSONSchemaValMixin, UserDict):
         self.data = state["data"]
 
 
+@dataclasses.dataclass
+class AcquisitionChannelData:
+    """Datastructure to store metadata for the given acquisition channel."""
+
+    acq_index_dim_name: str
+    """Acquisition index dimension name."""
+    protocol: str
+    """Acquisition protocol."""
+    bin_mode: enums.BinMode
+    """Bin mode."""
+    coords: dict | list[dict]
+    """
+    Coords for each acquisition.
+
+    For binned types this is a list of coords for each acquisition index,
+    and for trace and trigger count types, this is only one value.
+    """
+
+
+AcquisitionChannelsData = Dict[Hashable, AcquisitionChannelData]
+"""
+Dictionary mapping each acq_channel to their corresponding
+hardware independent acquisition channel data.
+"""
+
+
 class CompiledSchedule(ScheduleBase):
     """
     A schedule that contains compiled instructions ready for execution using the :class:`~.InstrumentCoordinator`.
@@ -1133,6 +1162,41 @@ class CompiledSchedule(ScheduleBase):
          optionally added to the schedule. Not all back ends support this feature.
         """  # noqa: E501
         return self._hardware_waveform_dict
+
+    def __getstate__(self) -> dict[str, Any]:
+        # We need custom serialization/deserialization here,
+        # because JSON does not allow the keys of "acq_channels_data" to
+        # be anything other than strings. So we store this dict as
+        # a list of dicts. If "acq_channels_data" is `{k1: v1, k2: v2}`,
+        # then the serialized version is
+        # `[{"key": k1, "value": v1}, {"key": k2, "value": v2}]`.
+        if "acq_channels_data" in self.data:
+            serialized_acq_channels_data = [
+                dict(key=k, value=v) for k, v in self.data["acq_channels_data"].items()
+            ]
+            # Shallow copy everything,
+            # and replace acq_channels_data with the serialized version.
+            data = copy(self.data)
+            data["acq_channels_data"] = serialized_acq_channels_data
+            return data
+        else:
+            return self.data
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        # We need custom serialization/deserialization here,
+        # because JSON does not allow the keys of "acq_channels_data" to
+        # be anything other than strings.
+        def _acq_channel_data(
+            v: AcquisitionChannelData | dict,
+        ) -> AcquisitionChannelData:
+            return v if isinstance(v, AcquisitionChannelData) else AcquisitionChannelData(**v)
+
+        if "acq_channels_data" in state:
+            deserialized_acq_channels = {
+                elem["key"]: _acq_channel_data(elem["value"]) for elem in state["acq_channels_data"]
+            }
+            state["acq_channels_data"] = deserialized_acq_channels
+        self.data = state
 
 
 @dataclasses.dataclass

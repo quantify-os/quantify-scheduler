@@ -33,11 +33,15 @@
         },
         "compiled_instructions": {
             "type": "object",
-            "description": "A containing compiled instructions."
+            "description": "A dictionary containing compiled instructions."
         },
         "duration": {
             "type": "number",
             "description": "Duration of the schedule."
+        },
+        "acq_channels_data": {
+            "type": "object",
+            "description": "A dictionary containing data for every acquisition channel."
         }
     }
 }

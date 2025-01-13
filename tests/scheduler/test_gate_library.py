@@ -466,6 +466,7 @@ def test_max_conditional_resets(num_reset, expected_exception):
         q[i].clock_freqs.readout(1.2e9)
         q[i].measure.acq_delay(100e-9)
         q[i].measure.integration_time(200e-9)
+        q[i].measure.acq_channel(i)
         quantum_device.add_element(q[i])
 
     hw_config = {

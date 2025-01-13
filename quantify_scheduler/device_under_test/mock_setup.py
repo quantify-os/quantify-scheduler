@@ -103,6 +103,7 @@ def set_standard_params_transmon(mock_setup: dict) -> None:
     q0.clock_freqs.f12(7.0e9)
     q0.clock_freqs.readout(8.0e9)
     q0.measure.acq_delay(100e-9)
+    q0.measure.acq_channel(0)
 
     q1 = mock_setup["q1"]
     q1.rxy.amp180(0.325)
@@ -111,6 +112,7 @@ def set_standard_params_transmon(mock_setup: dict) -> None:
     q1.clock_freqs.f12(6.89e9)
     q1.clock_freqs.readout(8.3e9)
     q1.measure.acq_delay(100e-9)
+    q1.measure.acq_channel(1)
 
     q2 = mock_setup["q2"]
     # controlled by a QCM-RF max output amp is 0.25V
@@ -120,6 +122,7 @@ def set_standard_params_transmon(mock_setup: dict) -> None:
     q2.clock_freqs.f12(6.09e9)
     q2.clock_freqs.readout(8.5e9)
     q2.measure.acq_delay(100e-9)
+    q2.measure.acq_channel(2)
 
     q3 = mock_setup["q3"]
     q3.rxy.amp180(0.215)
@@ -128,6 +131,7 @@ def set_standard_params_transmon(mock_setup: dict) -> None:
     q3.clock_freqs.f12(5.48e9)
     q3.clock_freqs.readout(8.7e9)
     q3.measure.acq_delay(100e-9)
+    q3.measure.acq_channel(3)
 
     q4 = mock_setup["q4"]
     q4.rxy.amp180(0.208)
@@ -136,6 +140,7 @@ def set_standard_params_transmon(mock_setup: dict) -> None:
     q4.clock_freqs.f12(5.41e9)
     q4.clock_freqs.readout(9.1e9)
     q4.measure.acq_delay(100e-9)
+    q4.measure.acq_channel(4)
 
     for i in range(5):
         qi: BasicTransmonElement = mock_setup[f"q{i}"]
@@ -210,6 +215,7 @@ def set_standard_params_basic_nv(mock_nv_device: dict[str, Any]) -> None:
     qe0.cr_count.spinpump_pulse_amplitude(1e-3)
     qe0.reset.amplitude(1e-3)
     qe0.measure.pulse_amplitude(1e-3)
+    qe0.measure.acq_channel(0)
     qe0.spectroscopy_operation.amplitude.set(1e-3)
     qe0.pulse_compensation.max_compensation_amp(0.1)
     qe0.pulse_compensation.time_grid(4e-9)
@@ -228,6 +234,7 @@ def set_standard_params_basic_nv(mock_nv_device: dict[str, Any]) -> None:
     qe1.cr_count.spinpump_pulse_amplitude(1e-3)
     qe1.reset.amplitude(1e-3)
     qe1.measure.pulse_amplitude(1e-3)
+    qe1.measure.acq_channel(1)
     qe1.spectroscopy_operation.amplitude.set(1e-3)
     qe1.pulse_compensation.max_compensation_amp(0.1)
     qe1.pulse_compensation.time_grid(4e-9)

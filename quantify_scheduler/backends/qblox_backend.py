@@ -65,6 +65,9 @@ from quantify_scheduler.backends.types.qblox import (
     SequencerOptions,
 )
 from quantify_scheduler.enums import TriggerCondition
+from quantify_scheduler.helpers.generate_acq_channels_data import (
+    generate_acq_channels_data,
+)
 from quantify_scheduler.operations.control_flow_library import (
     ConditionalOperation,
     ControlFlowOperation,
@@ -631,6 +634,8 @@ def hardware_compile(
     if not hardware_cfg.allow_off_grid_nco_ops:
         _check_nco_operations_on_nco_time_grid(schedule)
 
+    acq_channels_data, _schedulable_label_to_acq_index = generate_acq_channels_data(schedule)
+
     container = compiler_container.CompilerContainer.from_hardware_cfg(schedule, hardware_cfg)
 
     assign_pulse_and_acq_info_to_devices(
@@ -647,9 +652,11 @@ def hardware_compile(
     # compilation function is called directly instead of through a `QuantifyCompiler`.
     if "compiled_instructions" not in schedule:
         schedule["compiled_instructions"] = {}
-    # add the compiled instructions to the schedule data structure
+    # Add the compiled instructions to the schedule data structure.
     schedule["compiled_instructions"].update(compiled_instructions)
-    # Mark the schedule as a compiled schedule
+    # Add the acquisition channel data to the schedule data structure.
+    schedule["acq_channels_data"] = acq_channels_data
+    # Mark the schedule as a compiled schedule.
     return CompiledSchedule(schedule)
 
 

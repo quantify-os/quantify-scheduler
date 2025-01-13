@@ -518,6 +518,9 @@ nitpick_ignore = [
     ("py:attr", "BasicTransmonElement.measure.acq_threshold"),
     ("py:attr", "BasicTransmonElement.measure.acq_rotation"),
     ("py:class", "NamedTuple"),
+    ("py:class", "SchedulableLabelToAcquisitionIndex"),
+    ("py:class", "FullSchedulableLabel"),
+    ("py:class", "quantify_scheduler.schedules.schedule.AcquisitionChannelsData"),
     ("myst", "schedulegettable-optionally-returns-xarray-dataset"),
 ]  # Tuple[str, str], ignore certain warnings
 

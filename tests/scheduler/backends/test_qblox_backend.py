@@ -2486,11 +2486,12 @@ def test_assign_attenuation_old_style_hardware_config(
     quantum_device.hardware_config(hardware_cfg)
 
     sched = Schedule("Measurement")
-    for qubit_name in element_names:
+    for i, qubit_name in enumerate(element_names):
         qubit = quantum_device.get_element(qubit_name)
         qubit.clock_freqs.readout(5e9)
         qubit.measure.pulse_amp(0.2)
         qubit.measure.acq_delay(40e-9)
+        qubit.measure.acq_channel(i)
 
         sched.add(Measure(qubit_name))
 
@@ -2618,13 +2619,16 @@ def test_markers(mock_setup_basic_transmon, hardware_cfg_cluster, hardware_cfg_r
     q0.clock_freqs.f12(7.0e9)
     q0.clock_freqs.readout(8.0e9)
     q0.measure.acq_delay(100e-9)
+    q0.measure.acq_channel(0)
 
     q3.clock_freqs.f01(5.2e9)
+    q3.measure.acq_channel(3)
 
     q2.clock_freqs.f01(6.33e9)
     q2.clock_freqs.f12(7.0e9)
     q2.clock_freqs.readout(8.0e9)
     q2.measure.acq_delay(100e-9)
+    q2.measure.acq_channel(2)
 
     quantum_device.hardware_config(hardware_cfg_cluster)
     compiler = SerialCompiler(name="compiler")

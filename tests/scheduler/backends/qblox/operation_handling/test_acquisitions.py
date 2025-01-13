@@ -960,13 +960,15 @@ def test_thresholded_acquisition(
     data = instr_coordinator.retrieve_acquisition()
     instr_coordinator.stop()
 
+    expected_acq_channel = mock_setup[qubit_name].measure.acq_channel()
+
     expected_dataarray = DataArray(
         [-1],
         coords=[[0]],
-        dims=["acq_index_0"],
+        dims=[f"acq_index_{expected_acq_channel}"],
         attrs={"acq_protocol": "ThresholdedAcquisition"},
     )
-    expected_dataset = Dataset({0: expected_dataarray})
+    expected_dataset = Dataset({expected_acq_channel: expected_dataarray})
 
     xr.testing.assert_identical(data, expected_dataset)
 
@@ -1806,38 +1808,27 @@ def test_same_index_in_module_and_cluster_measurement_error(
     q0 = mock_setup["q0"]
     q0.measure.acq_delay(1e-6)
     q0.measure.integration_time(5e-6)
+    q0.measure.acq_channel(0)
     q1 = mock_setup["q1"]
     q1.measure.acq_delay(1e-6)
     q1.measure.integration_time(5e-6)
+    q1.measure.acq_channel(0)
     q2 = mock_setup["q2"]
     q2.measure.acq_delay(600e-9)
     q2.clock_freqs.readout(7404000000.0)
     q2.measure.integration_time(5e-6)
+    q2.measure.acq_channel(0)
 
     # Generate compiled schedule
     compiler = SerialCompiler(name="compiler")
-    compiled_sched = compiler.compile(
-        schedule=schedule, config=quantum_device.generate_compilation_config()
-    )
 
-    # Upload schedule and run experiment
-    instr_coordinator.prepare(compiled_sched)
-    instr_coordinator.start()
-
-    with pytest.raises(RuntimeError) as exc:
-        instr_coordinator.retrieve_acquisition()
-
-    # assert
-    assert (
-        exc.value.args[0] == "Attempting to gather acquisitions. "
-        "Make sure an acq_channel, acq_index corresponds to not more than one acquisition.\n"
-        "The following indices are defined multiple times.\n"
-        "acq_channel=0; acq_index_0=0"
-    )
-
-    instr_coordinator.stop()
-
-    instr_coordinator.remove_component("ic_cluster0")
+    with pytest.warns(
+        RuntimeWarning,
+        match="Found invalid acq_index=0 for acq_channel=0. "
+        "Make sure that each explicitly defined acq_index starts at 0, and increments by 1 "
+        "for each new acquisition within the same acquisition channel, ordered by time.",
+    ):
+        compiler.compile(schedule=schedule, config=quantum_device.generate_compilation_config())
 
 
 def test_complex_input_hardware_cfg(make_cluster_component, mock_setup_basic_transmon):
@@ -2155,10 +2146,10 @@ def test_trace_acquisition_instrument_coordinator(  # noqa PLR915 Too many state
     expected_dataarray = DataArray(
         [[1j] * 1000],
         coords=[[0], range(1000)],
-        dims=["acq_index_0", "trace_index_0"],
+        dims=["acq_index_2", "trace_index_2"],
         attrs={"acq_protocol": "Trace"},
     )
-    expected_dataset = Dataset({0: expected_dataarray})
+    expected_dataset = Dataset({2: expected_dataarray})
     xr.testing.assert_identical(acquired_data, expected_dataset)
     instr_coordinator.remove_component(ic_component.name)
 
