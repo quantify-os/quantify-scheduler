@@ -20,190 +20,64 @@
 
 # %%
 import numpy as np
-from quantify_core.measurement import MeasurementControl
-from quantify_scheduler import Schedule
-from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
-from quantify_scheduler.gettables import ScheduleGettable
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
-from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
-from quantify_core.data import handling as dh
-from qblox_instruments import Cluster, ClusterType
-
+import utils
+from qcodes.instrument import Instrument
 from qcodes.instrument.parameter import ManualParameter
+from qcodes.parameters import ManualParameter
 
+from quantify_core.data import handling as dh
+from quantify_scheduler import QuantumDevice, Schedule
 from quantify_scheduler.enums import BinMode
-
+from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.operations.gate_library import Measure, Reset, Rxy
-
 from quantify_scheduler.operations.pulse_library import SoftSquarePulse
 
 # %%
 dh.set_datadir(dh.default_datadir(verbose=False))
 
 # %% [markdown]
-# # Connect to hardware
-
-# %%
-dummy_cfg = {
-    2: ClusterType.CLUSTER_QCM_RF,
-    4: ClusterType.CLUSTER_QCM_RF,
-    10: ClusterType.CLUSTER_QRM_RF,
-    12: ClusterType.CLUSTER_QCM,
-}
-
-cluster = Cluster(name="cluster0", identifier=None, dummy_cfg=dummy_cfg)
-
-# %%
-ic = InstrumentCoordinator("ic")
-
-# %%
-qcm = cluster.module1
-qrm = cluster.module2
-qcm_rf = cluster.module3
-qrm_rf = cluster.module4
-
-# %%
-ic.add_component(ClusterComponent(cluster))
-
-# %%
-meas_ctrl = MeasurementControl("mc")
-meas_ctrl.verbose(False)
-
-# %%
-quantum_device = QuantumDevice("my_device")
-
-# %%
-quantum_device.instr_instrument_coordinator(ic.name)
-quantum_device.instr_measurement_control(meas_ctrl.name)
-
-# %% [markdown]
 # ### Hardware Cfg
-
-# %%
-hardware_config = {
-    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
-    "hardware_description": {
-        "cluster0": {
-            "instrument_type": "Cluster",
-            "modules": {
-                "2": {"instrument_type": "QCM_RF"},
-                "4": {"instrument_type": "QCM_RF"},
-                "10": {"instrument_type": "QRM_RF"},
-                "12": {"instrument_type": "QCM"},
-            },
-            "sequence_to_file": False,
-            "ref": "internal",
-        }
-    },
-    "hardware_options": {
-        "mixer_corrections": {
-            "q1:mw-q1.01": {
-                "dc_offset_i": -0.0024496,
-                "dc_offset_q": -0.0109159,
-                "amp_ratio": 0.9416,
-                "phase_error": -17.36234,
-            },
-            "q1:mw-q1.12": {
-                "dc_offset_i": -0.0024496,
-                "dc_offset_q": -0.0109159,
-                "amp_ratio": 0.9416,
-                "phase_error": -17.36234,
-            },
-            "q2:mw-q2.01": {
-                "dc_offset_i": -0.0024927,
-                "dc_offset_q": -0.0051141,
-                "amp_ratio": 0.9519,
-                "phase_error": -19.85496,
-            },
-            "q2:mw-q2.12": {
-                "dc_offset_i": -0.0024927,
-                "dc_offset_q": -0.0051141,
-                "amp_ratio": 0.9519,
-                "phase_error": -19.85496,
-            },
-            "q1:res-q1.ro": {
-                "dc_offset_i": -0.009068,
-                "dc_offset_q": -0.0082944,
-                "amp_ratio": 0.9973,
-                "phase_error": 12.46307,
-            },
-            "q2:res-q2.ro": {
-                "dc_offset_i": -0.009068,
-                "dc_offset_q": -0.0082944,
-                "amp_ratio": 0.9973,
-                "phase_error": 12.46307,
-            },
-        },
-        "modulation_frequencies": {
-            "q1:mw-q1.01": {"lo_freq": 4895200000.0},
-            "q1:mw-q1.12": {"lo_freq": 4895200000.0},
-            "q2:mw-q2.01": {"lo_freq": 4802000000.0},
-            "q2:mw-q2.12": {"lo_freq": 4802000000.0},
-            "q1:res-q1.ro": {"lo_freq": 7050000000.0},
-            "q2:res-q2.ro": {"lo_freq": 7050000000.0},
-        },
-        "output_att": {
-            "q2:mw-q2.01": 0,
-            "q2:mw-q2.12": 0,
-            "q1:res-q1.ro": 24,
-            "q2:res-q2.ro": 24,
-        },
-    },
-    "connectivity": {
-        "graph": [
-            ["cluster0.module2.complex_output_0", "q1:mw"],
-            ["cluster0.module2.complex_output_0", "q1:mw"],
-            ["cluster0.module4.complex_output_0", "q2:mw"],
-            ["cluster0.module4.complex_output_0", "q2:mw"],
-            ["cluster0.module10.complex_output_0", "q1:res"],
-            ["cluster0.module10.complex_output_0", "q2:res"],
-            ["cluster0.module12.real_output_0", "q2:fl"],
-        ]
-    },
-}
-
-
-# %%
-quantum_device.hardware_config(hardware_config)
 
 # %% [markdown]
 # ### Device Cfg
 
-# %% [markdown]
-# Load device config and fill out information in the transmon element from the loaded file
-
 # %%
-q1 = BasicTransmonElement("q1")
-q2 = BasicTransmonElement("q2")
+# Instentiate instruments
+ip, hardware_cfg, device_path = utils.set_up_config()
+quantum_device = QuantumDevice.from_json_file(str(device_path))
+quantum_device.hardware_config(hardware_cfg)
+qubit = quantum_device.get_element("q0")
+meas_ctrl, _, cluster = utils.initialize_hardware(quantum_device, ip=ip)
 
+cluster.reset()
 # %%
-quantum_device.add_element(q1)
-quantum_device.add_element(q2)
 
-# %%
-q1.clock_freqs.f01(4815200000.0)
+q0 = quantum_device.get_element("q0")
+q1 = quantum_device.get_element("q1")
+
+q0.clock_freqs.f01(9.1e9)
+q0.rxy.amp180(0.14)
+q0.rxy.duration(48e-9)
+
+q0.measure.acq_channel(0)
+q0.measure.acq_delay(40e-9)
+q0.measure.pulse_amp(0.125)
+q0.measure.pulse_duration(3e-6)
+q0.measure.integration_time(2800e-9)
+q0.clock_freqs.readout(7.45e9)
+
+q1.clock_freqs.f01(9.2e9)
 q1.rxy.amp180(0.14)
 q1.rxy.duration(48e-9)
 
-q2.clock_freqs.f01(4729610000.0)
-q2.rxy.amp180(0.14)
-q2.rxy.duration(48e-9)
-
-q1.measure.acq_channel(0)
+q1.measure.acq_channel(1)
 q1.measure.acq_delay(40e-9)
 q1.measure.pulse_amp(0.125)
 q1.measure.pulse_duration(3e-6)
 q1.measure.integration_time(2800e-9)
-q1.clock_freqs.readout(6995499000)
+q1.clock_freqs.readout(7.48e9)
 
-q2.measure.acq_channel(1)
-q2.measure.acq_delay(40e-9)
-q2.measure.pulse_amp(0.125)
-q2.measure.pulse_duration(3e-6)
-q2.measure.integration_time(2800e-9)
-q2.clock_freqs.readout(6849880000.0)
-
+quantum_device.cfg_sched_repetitions(1)
 
 # %% [markdown] jp-MarkdownHeadingCollapsed=true
 # ## Manually writing schedule
@@ -238,8 +112,8 @@ def coupler_conditional_oscillation_sched_phase_correction_ssro4(
      (X180) means we either apply it or not, depending on the :code:`spectator_rotations`
      parameter.
 
-     Parameters
-     ----------
+    Parameters
+    ----------
      oscillation_qubit:
          The name of the oscillating qubit e.g., :code:`"q0"`
      spectator_qubit:
@@ -255,8 +129,8 @@ def coupler_conditional_oscillation_sched_phase_correction_ssro4(
      repetitions:
          The number of times the schedule will be repeated
 
-     Returns
-     -------
+    Returns
+    -------
      :
          An experiment schedule
 
@@ -284,7 +158,7 @@ def coupler_conditional_oscillation_sched_phase_correction_ssro4(
             SoftSquarePulse(
                 duration=flux_duration,
                 amp=flux_amplitude,
-                port="q2:fl",
+                port="q1:fl",
                 clock="cl0.baseband",
             )
         )
@@ -313,18 +187,18 @@ def coupler_conditional_oscillation_sched_phase_correction_ssro4(
 
 # %%
 phase = ManualParameter(name="phase", unit="s", label="Delay")
-phase.batched = True
+phase.batched = True  # type: ignore
 
 spec_rotation = ManualParameter(name="spectator_rotation", unit="s", label="Delay")
-spec_rotation.batched = True
+spec_rotation.batched = True  # type: ignore
 
 repetition_param = ManualParameter(name="repetition", unit="s", label="Repetition")
-repetition_param.batched = True
+repetition_param.batched = True  # type: ignore
 repetitions = 16
 
 schedule_kwargs = {
-    "oscillation_qubit": q1.name,
-    "spectator_qubit": q2.name,
+    "oscillation_qubit": q0.name,
+    "spectator_qubit": q1.name,
     "flux_amplitude": 0.1,
     "flux_duration": 20e-9,
     "rise_time": 4e-9,
@@ -362,3 +236,4 @@ meas_ctrl.gettables(gettable)
 # %%
 def run_experiment():
     meas_ctrl.run()
+    Instrument.close_all()

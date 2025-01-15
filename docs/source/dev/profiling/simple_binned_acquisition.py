@@ -20,93 +20,40 @@
 
 # %%
 import numpy as np
-from quantify_scheduler import Schedule
-from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
-from quantify_scheduler.gettables import ScheduleGettable
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
-from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
-from quantify_scheduler.operations.pulse_library import IdlePulse, SquarePulse
-from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
-from quantify_scheduler.enums import BinMode
+import utils
+from qblox_instruments import DummyBinnedAcquisitionData
+from qcodes.instrument import Instrument
 from qcodes.instrument.parameter import ManualParameter
-from qblox_instruments import Cluster, ClusterType
+
 from quantify_core.data import handling as dh
+from quantify_scheduler import QuantumDevice, Schedule
+from quantify_scheduler.enums import BinMode
+from quantify_scheduler.gettables import ScheduleGettable
+from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
+from quantify_scheduler.operations.pulse_library import IdlePulse, SquarePulse
 
 # %%
 dh.set_datadir(dh.default_datadir(verbose=False))
 
-# %% [markdown]
-# ## Setup cluster
-
 # %%
-cluster = Cluster(
-    "cluster0",
-    "<ip>",
-    debug=1,
-    dummy_cfg={15: ClusterType.CLUSTER_QRM},
-)
-
-ic_cluster0 = ClusterComponent(cluster)
-my_instr_coord = InstrumentCoordinator("my_instr_coord")
-my_instr_coord.add_component(ic_cluster0)
-
-# %%
-my_device = QuantumDevice("my_device")
-
-# %%
-transmon0 = BasicTransmonElement(f"q0")
-transmon0.clock_freqs.readout(10e9)
-my_device.add_element(transmon0)
-transmon1 = BasicTransmonElement(f"q1")
-transmon1.clock_freqs.readout(10e9)
-my_device.add_element(transmon1)
-
-# %%
-my_device.instr_instrument_coordinator("my_instr_coord")
-
-# %%
-hw_config = {
-    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
-    "hardware_description": {
-        "cluster0": {
-            "instrument_type": "Cluster",
-            "modules": {"15": {"instrument_type": "QRM"}},
-            "ref": "internal",
-        }
-    },
-    "hardware_options": {
-        "modulation_frequencies": {
-            "q0:res-q0.ro": {"interm_freq": 0},
-            "q1:res-q1.ro": {"interm_freq": 0},
-        }
-    },
-    "connectivity": {
-        "graph": [
-            ["cluster0.module15.complex_output_0", "q0:res"],
-            ["cluster0.module15.complex_output_0", "q1:res"],
-        ]
-    },
-}
-
-# %%
-my_device.hardware_config(hw_config)
-my_device.cfg_sched_repetitions(1)
-
+# ## Setup Instruments
+ip, hardware_cfg, device_path = utils.set_up_config()
+quantum_device = QuantumDevice.from_json_file(str(device_path))
+quantum_device.hardware_config(hardware_cfg)
+qubit = quantum_device.get_element("q0")
+_, _, cluster = utils.initialize_hardware(quantum_device, ip=ip)
 # %% [markdown]
 # ## Setup schedule, dummy data
 
 # %%
+quantum_device.cfg_sched_repetitions(1)
 signal_delay = 148e-9
 num_acquisitions = 1000
-
-# %%
-from qblox_instruments import DummyBinnedAcquisitionData
 
 
 # %%
 def set_dummy_data(repetitions=1):
-    dummy_slot_idx = 15
+    dummy_slot_idx = 4
     cluster.delete_dummy_binned_acquisition_data(slot_idx=dummy_slot_idx)
     dummy_data_0 = [
         DummyBinnedAcquisitionData(data=(4 * i, 0), thres=0, avg_cnt=0)
@@ -198,8 +145,8 @@ def create_schedule(
 
 
 # %%
-set_dummy_data()
-
+if not ip:
+    set_dummy_data()
 # %%
 pulse_levels = []
 for i in [0, 1]:
@@ -207,7 +154,7 @@ for i in [0, 1]:
         name=f"pulse_level_q{i}", initial_value=0.0, unit="-", label="pulse level"
     )
     pulse_level(0.125 * (i + 1))
-    pulse_level.batched = False
+    pulse_level.batched = False  # type: ignore
     pulse_levels.append(pulse_level)
 
 # %%
@@ -217,21 +164,20 @@ simple_binned_acquisition_kwargs = {
     "num_acquisitions": num_acquisitions,
 }
 
-
-# %% [markdown]
+# %%
 # ## Run schedule and profiling
 
 
-# %%
 def run_experiment():
     my_gettable = ScheduleGettable(
-        my_device,
+        quantum_device,
         create_schedule,
         simple_binned_acquisition_kwargs,
         batched=True,
         real_imag=False,
-        data_labels=[f"q0 abs", f"q0 phase", f"q1 abs", f"q1 phase"],
+        data_labels=["q0 abs", "q0 phase", "q1 abs", "q1 phase"],
         num_channels=2,
     )
     acq = my_gettable.get()
+    Instrument.close_all()
     return acq

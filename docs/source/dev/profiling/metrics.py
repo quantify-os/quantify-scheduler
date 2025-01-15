@@ -1,13 +1,12 @@
+import argparse
 import cProfile
-import pstats
-import qcodes
 import importlib
 import inspect
-import numpy as np
+import pstats
 import sys
-import argparse
-from tqdm import tqdm
 
+import numpy as np
+from tqdm import tqdm
 
 # How many times each notebook is run. (The results are averaged.)
 SAMPLES = 10
@@ -18,8 +17,8 @@ EXPERIMENT_NOTEBOOKS = [
     "simple_binned_acquisition",
     "resonator_spectroscopy",
     "random_gates",
-    "multidim_batched_sweep",
     "loops_with_measurements",
+    "multidim_batched_sweep",
 ]
 # Methods to profile. The function will be profiled in the class.
 # (<name>, (<class>, <function name>))
@@ -34,7 +33,6 @@ METHODS = [
 
 
 def stat_experiment(experiment_notebook):
-    qcodes.instrument.Instrument.close_all()
     if experiment_notebook in sys.modules:
         notebook_mod = importlib.import_module(experiment_notebook)
         importlib.reload(notebook_mod)

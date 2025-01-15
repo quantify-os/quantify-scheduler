@@ -1,0 +1,82 @@
+{
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+    "hardware_description": {
+        "cluster0": {
+            "instrument_type": "Cluster",
+            "modules": {
+                "2": {
+                    "instrument_type": "QCM"
+                },
+                "4": {
+                    "instrument_type": "QRM"
+                },
+                "6": {
+                    "instrument_type": "QCM_RF"
+                }
+            },
+            "sequence_to_file": false,
+            "ref": "internal"
+        }
+    },
+    "hardware_options": {
+        "output_att": {
+            "q0:mw-q0.f_larmor": 0,
+            "q1:mw-q1.f_larmor": 0
+        },
+        "mixer_corrections": {
+            "q0:mw-q0.f_larmor": {
+                "auto_lo_cal": "on_lo_interm_freq_change",
+                "auto_sideband_cal": "on_interm_freq_change",
+                "dc_offset_i": 0.0,
+                "dc_offset_q": 0.0,
+                "amp_ratio": 1.0,
+                "phase_error": 0.0
+            },
+            "q1:mw-q1.f_larmor": {
+                "auto_lo_cal": "on_lo_interm_freq_change",
+                "auto_sideband_cal": "on_interm_freq_change",
+                "dc_offset_i": 0.0,
+                "dc_offset_q": 0.0,
+                "amp_ratio": 1.0,
+                "phase_error": 0.0
+            }
+        },
+        "modulation_frequencies": {
+            "q0:mw-q0.f_larmor": {
+                "interm_freq": 80000000.0
+            },
+            "q1:mw-q1.f_larmor": {
+                "interm_freq": 70000000.0
+            }
+        }
+    },
+    "connectivity": {
+        "graph": [
+
+            [
+                "cluster0.module2.real_output_0",
+                "q0:gt"
+            ],
+            [
+                "cluster0.module2.real_output_1",
+                "q1:gt"
+            ],
+            [
+                "cluster0.module4.real_output_0",
+                "q0:res"
+            ],
+            [
+                "cluster0.module4.real_output_0",
+                "q1:res"
+            ],
+            [
+                "cluster0.module6.complex_output_0",
+                "q0:mw"
+            ],
+            [
+                "cluster0.module6.complex_output_1",
+                "q1:mw"
+            ]
+        ]
+    }
+}

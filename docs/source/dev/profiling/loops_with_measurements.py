@@ -14,22 +14,36 @@
 # ---
 
 # %%
+import utils
+from qcodes.instrument import Instrument
+
 import quantify_scheduler
+from quantify_scheduler import QuantumDevice
 
 print(quantify_scheduler.__version__)
 print(quantify_scheduler.__file__)
 
-# %%
 from quantify_scheduler import Schedule
-from quantify_scheduler.operations.pulse_library import (
-    SquarePulse,
-    IdlePulse,
-    SetClockFrequency,
-)
-from quantify_scheduler.operations.gate_library import Reset, X, Measure
+from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.operations import control_flow_library
-from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
-from quantify_scheduler.resources import ClockResource
+from quantify_scheduler.operations.gate_library import Measure, Reset, X
+
+# %%
+# ## Setup Instruments
+ip, hardware_cfg, device_path = utils.set_up_config()
+quantum_device = QuantumDevice.from_json_file(str(device_path))
+quantum_device.hardware_config(hardware_cfg)
+_, _, cluster = utils.initialize_hardware(quantum_device, ip=ip)
+cluster.reset()
+# %%
+qubit = quantum_device.get_element("q0")
+qubit.rxy.amp180(0.5)
+qubit.rxy.duration(20e-9)
+qubit.measure.pulse_duration(2e-6)
+qubit.clock_freqs.f01(7.9e9)
+qubit.clock_freqs.readout(7.4e9)
+qubit.reset.duration(200e-6)
+quantum_device.cfg_sched_repetitions(1)
 
 
 def create_subschedule(acquisition_index: int):
@@ -43,7 +57,7 @@ def create_subschedule(acquisition_index: int):
 
 
 def create_schedule(repetitions: int = 1):
-    sched = Schedule("Schedule", repetitions=1)
+    sched = Schedule("Schedule", repetitions=repetitions)
 
     for i in range(100):
         sched.add(Reset("q0"))
@@ -55,76 +69,10 @@ def create_schedule(repetitions: int = 1):
             ),
             rel_time=1e-6,
         )
-
     return sched
 
 
 # %%
-from quantify_scheduler.backends.graph_compilation import SerialCompiler
-from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
-from contextlib import suppress
-
-quantum_device = QuantumDevice("DUT")
-quantum_device.add_element(q0 := BasicTransmonElement("q0"))
-
-hardware_comp_cfg = {
-    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
-    "hardware_description": {
-        "cluster0": {
-            "instrument_type": "Cluster",
-            "ref": "internal",
-            "modules": {
-                "10": {"instrument_type": "QCM_RF"},
-                "12": {"instrument_type": "QRM_RF"},
-            },
-        },
-    },
-    "hardware_options": {
-        "modulation_frequencies": {
-            "q0:res-q0.ro": {"interm_freq": 50e6},
-            "q0:mw-q0.01": {"interm_freq": 50e6},
-        },
-    },
-    "connectivity": {
-        "graph": [
-            ("cluster0.module12.complex_output_0", "q0:res"),
-            ("cluster0.module10.complex_output_0", "q0:mw"),
-        ]
-    },
-}
-
-quantum_device.hardware_config(hardware_comp_cfg)
-
-# %%
-qubit = quantum_device.get_element("q0")
-qubit.rxy.amp180(0.5)
-qubit.rxy.duration(20e-9)
-qubit.measure.pulse_duration(2e-6)
-qubit.clock_freqs.f01(4e9)
-qubit.clock_freqs.readout(6e9)
-qubit.reset.duration(200e-6)
-
-# %%
-from qblox_instruments import Cluster, ClusterType
-from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
-from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
-
-cluster = Cluster(
-    "cluster0",
-    "<ip>",
-    debug=1,
-    dummy_cfg={10: ClusterType.CLUSTER_QCM_RF, 12: ClusterType.CLUSTER_QRM_RF},
-)
-
-ic_cluster0 = ClusterComponent(cluster)
-my_instr_coord = InstrumentCoordinator("my_instr_coord")
-my_instr_coord.add_component(ic_cluster0)
-
-quantum_device.instr_instrument_coordinator("my_instr_coord")
-
-# %%
-from quantify_scheduler.gettables import ScheduleGettable
 
 
 def run_experiment():
@@ -136,4 +84,5 @@ def run_experiment():
         real_imag=False,
     )
     acq = my_gettable.get()
+    Instrument.close_all()
     return acq
