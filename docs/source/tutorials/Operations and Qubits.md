@@ -373,10 +373,10 @@ from quantify_scheduler import BasicTransmonElement, QuantumDevice, SerialCompil
 
 dut.close()
 dut = QuantumDevice("DUT")
-q0 = BasicTransmonElement("q0")
-q1 = BasicTransmonElement("q1")
-dut.add_element(q0)
-dut.add_element(q1)
+q0_dev = BasicTransmonElement("q0")
+q1_dev = BasicTransmonElement("q1")
+dut.add_element(q0_dev)
+dut.add_element(q1_dev)
 dut.get_element("q0").rxy.amp180(0.65)
 dut.get_element("q1").rxy.amp180(0.55)
 dut.get_element("q0").measure.pulse_amp(0.28)
@@ -398,4 +398,45 @@ compiled_sched.timing_table.hide(slice(11, None), axis="index").hide(
 
 ```{code-cell} ipython3
 f, ax = compiled_sched.plot_pulse_diagram(x_range=(200e-6, 200.4e-6))
+```
+
+## Overriding device parameters on circuit-level operations
+
+The Quantify compiler has an additional feature which adds more low-level control for users how
+a circuit-level operation is compiled to device-level. It is possible to **override** the parameters of
+the `DeviceElement` using the `device_overrides` keyword argument in each circuit-level operation.
+
+For example, to override the parameters of the `X` operation
+
+```{code-block} ipython
+X("q0", motzoi=0.5, duration=2e-6)
+```
+
+Let's create, compile and show it on an actual schedule.
+
+```{code-cell} ipython3
+sched = Schedule("Rabi")
+
+amps = np.linspace(start=0.1, stop=1.0, num=10)
+durations = np.linspace(start=1e-6, stop=1e-4, num=10)
+
+for i, (amp, duration) in enumerate(zip(amps, durations)):
+    sched.add(Reset("q0"))
+    sched.add(X("q0", duration=duration, motzoi=0.5/amp))
+    sched.add(Measure("q0", acq_index=i))
+
+sched.add_resources([ClockResource("q0.01", 6.02e9), ClockResource("q0.ro", 5.02e9)]) 
+
+compiler = SerialCompiler(name='compiler')
+compiled_sched = compiler.compile(schedule=sched, config=dut.generate_compilation_config())
+```
+
+```{code-cell} ipython3
+f, ax = compiled_sched.plot_pulse_diagram(x_range=(000e-6, 1800.4e-6), port_list=["q0:mw"])
+```
+
+As you can see, the amplitude of the pulse (which was compiled from the `X` gate) changes.
+
+```{info}
+a few device element parameter names do not correspond to the `device_overrides` key names. The `integration_time` of device elements can be overriden with the `"acq_duration"` key. These discrepancies are rare; in all cases the device element's `factory_kwargs` must be used in the already generated compilation config.
 ```
