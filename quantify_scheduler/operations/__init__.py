@@ -11,6 +11,7 @@ Module containing the standard library of commonly used operations as well as th
     look at e.g., the pulse library for examples on how to implement custom pulses.
 
 """
+
 from .acquisition_library import (
     Acquisition,
     NumericalSeparatedWeightedIntegration,
@@ -35,6 +36,7 @@ from .nv_native_library import ChargeReset, CRCount
 from .operation import Operation
 from .pulse_factories import (
     composite_square_pulse,
+    non_implemented_pulse,
     nv_spec_pulse_mw,
     phase_shift,
     rxy_drag_pulse,
@@ -122,4 +124,5 @@ __all__ = [
     "ThresholdedTriggerCount",
     "TimetagTrace",
     "Timetag",
+    "non_implemented_pulse",
 ]

@@ -16,7 +16,7 @@ from quantify_scheduler.helpers.validators import (
     _Amplitudes,
     _Durations,
 )
-from quantify_scheduler.operations.pulse_factories import spin_init_pulse
+from quantify_scheduler.operations.pulse_factories import non_implemented_pulse, spin_init_pulse
 
 if TYPE_CHECKING:
     from qcodes.instrument.base import InstrumentBase
@@ -79,6 +79,60 @@ class SpinInit(InstrumentChannel):
             )
 
 
+class CZ(InstrumentChannel):
+    """Submodule containing parameters for performing a CZ operation."""
+
+    def __init__(self, parent: InstrumentBase, name: str, **kwargs: float) -> None:
+        super().__init__(parent=parent, name=name)
+        self.square_amp = ManualParameter(
+            "square_amp",
+            docstring=r"""Amplitude of the square envelope.""",
+            unit="V",
+            initial_value=kwargs.get("square_amp", 0),
+            vals=Numbers(min_value=0, allow_nan=True),
+            instrument=self,
+        )
+
+        self.square_duration = ManualParameter(
+            "square_duration",
+            docstring=r"""The square pulse duration in seconds.""",
+            unit="s",
+            initial_value=kwargs.get("square_duration", 2e-8),
+            vals=Numbers(min_value=0, allow_nan=True),
+            instrument=self,
+        )
+        self.add_parameter(
+            name=f"{parent._parent_element_name}_phase_correction",
+            docstring=r"""The phase correction for the parent qubit after the"""
+            r""" square pulse operation has been performed.""",
+            unit="degrees",
+            parameter_class=ManualParameter,
+            initial_value=kwargs.get(f"{parent._parent_element_name}_phase_correction", 0),
+            vals=Numbers(min_value=-1e12, max_value=1e12, allow_nan=True),
+        )
+        self.add_parameter(
+            name=f"{parent._child_element_name}_phase_correction",
+            docstring=r"""The phase correction for the child qubit after the"""
+            r""" Square pulse operation has been performed.""",
+            unit="degrees",
+            parameter_class=ManualParameter,
+            initial_value=kwargs.get(f"{parent._child_element_name}_phase_correction", 0),
+            vals=Numbers(min_value=-1e12, max_value=1e12, allow_nan=True),
+        )
+
+
+class CNOT(InstrumentChannel):
+    """Submodule containing parameters for performing a CNOT operation."""
+
+    def __init__(
+        self,
+        parent: InstrumentBase,
+        name: str,
+        **kwargs: float,  # noqa: ANN401, ARG002
+    ) -> None:
+        super().__init__(parent=parent, name=name)
+
+
 class SpinEdge(Edge):
     """
     Spin edge implementation which connects two SpinElements.
@@ -93,6 +147,8 @@ class SpinEdge(Edge):
         **kwargs,
     ) -> None:
         spin_init_data = kwargs.pop("spin_init", {})
+        cz_data = kwargs.pop("cz", {})
+        cnot_data = kwargs.pop("cnot", {})
 
         super().__init__(
             parent_element_name=parent_element_name,
@@ -101,6 +157,8 @@ class SpinEdge(Edge):
         )
 
         self.add_submodule("spin_init", SpinInit(parent=self, name="spin_init", **spin_init_data))
+        self.add_submodule("cz", CZ(parent=self, name="cz", **cz_data))
+        self.add_submodule("cnot", CNOT(parent=self, name="cnot", **cnot_data))
 
     def generate_edge_config(self) -> dict[str, dict[str, OperationCompilationConfig]]:
         """
@@ -132,6 +190,27 @@ class SpinEdge(Edge):
                         "child_ramp_amp": self.spin_init.parameters[f"{child_name}_ramp_amp"](),
                         "child_ramp_rate": self.spin_init.parameters[f"{child_name}_ramp_rate"](),
                     },
+                ),
+                "CZ": OperationCompilationConfig(
+                    factory_func=non_implemented_pulse,
+                    factory_kwargs={
+                        "square_port": None,
+                        "square_clock": None,
+                        "square_amp": self.cz.square_amp(),
+                        "square_duration": self.cz.square_duration(),
+                        "virt_z_parent_qubit_phase": self.cz.parameters[
+                            f"{self._parent_element_name}_phase_correction"
+                        ](),
+                        "virt_z_parent_qubit_clock": f"{self.parent_device_element.name}.f_larmor",
+                        "virt_z_child_qubit_phase": self.cz.parameters[
+                            f"{self._child_element_name}_phase_correction"
+                        ](),
+                        "virt_z_child_qubit_clock": f"{self.child_device_element.name}.f_larmor",
+                    },
+                ),
+                "CNOT": OperationCompilationConfig(
+                    factory_func=non_implemented_pulse,
+                    factory_kwargs={},
                 ),
             }
         }

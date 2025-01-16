@@ -12,6 +12,7 @@ from quantify_scheduler.backends.qblox.operations import (
     staircase_pulse,
 )
 from quantify_scheduler.operations.pulse_factories import (
+    non_implemented_pulse,
     rxy_drag_pulse,
     rxy_gauss_pulse,
     rxy_hermite_pulse,
@@ -270,3 +271,11 @@ def test_voltage_offset_operations_reference_magnitude(pulse):
     pulse = pulse(reference_magnitude=reference_magnitude)
 
     assert pulse["pulse_info"][0]["reference_magnitude"] == reference_magnitude
+
+
+def test_non_implemented_pulse():
+    """Test that the non_implemented_pulse function raises NotImplementedError."""
+    with pytest.raises(
+        NotImplementedError, match="The gate or pulse you are trying to use is not implemented yet."
+    ):
+        non_implemented_pulse()

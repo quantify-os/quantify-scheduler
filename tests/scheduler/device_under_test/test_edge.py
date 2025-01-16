@@ -10,7 +10,11 @@ from quantify_scheduler.device_under_test.spin_edge import SpinEdge
 from quantify_scheduler.device_under_test.spin_element import BasicSpinElement
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEncoder
-from quantify_scheduler.operations.pulse_factories import composite_square_pulse, spin_init_pulse
+from quantify_scheduler.operations.pulse_factories import (
+    composite_square_pulse,
+    non_implemented_pulse,
+    spin_init_pulse,
+)
 
 
 @pytest.fixture
@@ -43,6 +47,10 @@ def spin_edge():
     edge_q2b_q3b.spin_init.q3b_square_amp(0.4)
     edge_q2b_q3b.spin_init.q3b_ramp_amp(0.2)
     edge_q2b_q3b.spin_init.q3b_ramp_rate(0.2 / 4e-6)
+    edge_q2b_q3b.cz.square_amp(0.5)
+    edge_q2b_q3b.cz.square_duration(300e-9)
+    edge_q2b_q3b.cz.q2b_phase_correction(25)
+    edge_q2b_q3b.cz.q3b_phase_correction(-22)
 
     yield edge_q2b_q3b
 
@@ -90,6 +98,23 @@ def spin_edge():
                             "child_ramp_amp": 0.2,
                             "child_ramp_rate": 0.2 / 4e-6,
                         },
+                    ),
+                    "CZ": OperationCompilationConfig(
+                        factory_func=non_implemented_pulse,
+                        factory_kwargs={
+                            "square_port": None,
+                            "square_clock": None,
+                            "square_amp": 0.5,
+                            "square_duration": 300e-9,
+                            "virt_z_parent_qubit_phase": 25,
+                            "virt_z_parent_qubit_clock": "q2b.f_larmor",
+                            "virt_z_child_qubit_phase": -22,
+                            "virt_z_child_qubit_clock": "q3b.f_larmor",
+                        },
+                    ),
+                    "CNOT": OperationCompilationConfig(
+                        factory_func=non_implemented_pulse,
+                        factory_kwargs={},
                     ),
                 }
             },
@@ -197,6 +222,23 @@ def test_composite_square_edge_serialization(request, edge, expected_deserializa
                             "child_ramp_amp": 0.2,
                             "child_ramp_rate": 0.2 / 4e-6,
                         },
+                    ),
+                    "CZ": OperationCompilationConfig(
+                        factory_func=non_implemented_pulse,
+                        factory_kwargs={
+                            "square_port": None,
+                            "square_clock": None,
+                            "square_amp": 0.5,
+                            "square_duration": 300e-9,
+                            "virt_z_parent_qubit_phase": 25,
+                            "virt_z_parent_qubit_clock": "q2b.f_larmor",
+                            "virt_z_child_qubit_phase": -22,
+                            "virt_z_child_qubit_clock": "q3b.f_larmor",
+                        },
+                    ),
+                    "CNOT": OperationCompilationConfig(
+                        factory_func=non_implemented_pulse,
+                        factory_kwargs={},
                     ),
                 }
             },

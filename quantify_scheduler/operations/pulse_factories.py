@@ -6,6 +6,7 @@ A module containing factory functions for pulses on the quantum-device layer.
 These factories are used to take a parametrized representation of on a operation
 and use that to create an instance of the operation itself.
 """
+
 from __future__ import annotations
 
 from quantify_scheduler.operations import pulse_library
@@ -393,3 +394,8 @@ def spin_init_pulse(
     )
 
     return spin_init_schedule
+
+
+def non_implemented_pulse(**kwargs) -> Schedule:  # noqa: ARG001
+    """Raise an error indicating that the requested gate or pulse is not implemented."""
+    raise NotImplementedError("The gate or pulse you are trying to use is not implemented yet.")

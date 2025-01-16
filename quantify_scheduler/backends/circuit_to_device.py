@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Compilation backend for quantum-circuit to quantum-device layer."""
+
 from __future__ import annotations
 
 import warnings
@@ -630,7 +631,6 @@ def _compile_circuit_to_device_pulse_compensation(
 ) -> PulseCompensation:
     """Compiles circuit-level pulse compensation operation to device-level."""
     if (qubits := operation.data.get("pulse_compensation_info", {}).get("qubits")) is not None:
-
         max_compensation_amp: dict[Port, float] = {}
         time_grid: float | None = None
         sampling_rate: float | None = None
