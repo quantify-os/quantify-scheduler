@@ -41,6 +41,7 @@ def _get_public_items(module):
                 "nv_native_library",
                 "control_flow_library",
                 "acquisition_library",
+                "pulse_compensation_library",
             ],
             {
                 "create_dc_compensation_pulse",

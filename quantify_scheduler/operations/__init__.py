@@ -34,6 +34,9 @@ from .control_flow_library import (
 from .gate_library import CNOT, CZ, X90, Y90, Z90, H, Measure, Reset, Rxy, Rz, X, Y, Z
 from .nv_native_library import ChargeReset, CRCount
 from .operation import Operation
+from .pulse_compensation_library import (
+    PulseCompensation,
+)
 from .pulse_factories import (
     composite_square_pulse,
     non_implemented_pulse,
@@ -124,5 +127,6 @@ __all__ = [
     "ThresholdedTriggerCount",
     "TimetagTrace",
     "Timetag",
+    "PulseCompensation",
     "non_implemented_pulse",
 ]
