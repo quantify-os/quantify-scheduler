@@ -123,7 +123,7 @@ def test_determine_compensation_pulse_error(operation, expected_error):
 
 
 @pytest.mark.parametrize("is_circuit_level", [False, True])
-def test_insert_compensation_pulses(
+def test_insert_compensation_pulses(  # noqa PLR915
     is_circuit_level,
     mock_setup_basic_transmon_with_standard_params,
     get_subschedule_operation,
@@ -144,6 +144,7 @@ def test_insert_compensation_pulses(
             repetitions=3,
         )
     )
+    body.add(X("q2"))
 
     schedule = Schedule("compensated_schedule")
 
@@ -230,6 +231,11 @@ def test_insert_compensation_pulses(
     assert compensation_pulse_q1["pulse_info"][0]["port"] == "q1:mw"
     assert math.isclose(compensation_pulse_q1["pulse_info"][0]["amp"], -0.5625)
     assert math.isclose(compensation_pulse_q1["pulse_info"][0]["duration"], 4e-9)
+
+    # Check if the X operation has been device compiled which is inside the pulse compensation.
+    compiled_x_op = get_subschedule_operation(compiled_schedule, [0, 0, 3])
+    assert len(compiled_x_op["pulse_info"]) == 1
+    assert compiled_x_op["pulse_info"][0]["wf_func"] == "quantify_scheduler.waveforms.drag"
 
 
 def test_pulse_compensation_invalid_operation():

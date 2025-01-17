@@ -106,7 +106,9 @@ def _compile_circuit_to_device(  # noqa: PLR0911
         )
         return operation
     elif isinstance(operation, PulseCompensation):
-        return _compile_circuit_to_device_pulse_compensation(operation, device_cfg)
+        return _compile_circuit_to_device_pulse_compensation(
+            operation, device_cfg, device_overrides
+        )
     elif not (operation.valid_pulse or operation.valid_acquisition):
         # If operation is a valid pulse or acquisition it will not attempt to
         # add pulse/acquisition info in the lines below (if operation.valid_gate
@@ -627,7 +629,7 @@ def _compile_two_qubits(
 
 
 def _compile_circuit_to_device_pulse_compensation(
-    operation: PulseCompensation, device_cfg: DeviceCompilationConfig
+    operation: PulseCompensation, device_cfg: DeviceCompilationConfig, device_overrides: dict
 ) -> PulseCompensation:
     """Compiles circuit-level pulse compensation operation to device-level."""
     if (qubits := operation.data.get("pulse_compensation_info", {}).get("qubits")) is not None:
@@ -673,13 +675,18 @@ def _compile_circuit_to_device_pulse_compensation(
                 ]
 
         return PulseCompensation(
-            body=operation.body,
+            body=_compile_circuit_to_device(operation.body, device_cfg, device_overrides),
             max_compensation_amp=max_compensation_amp,
             time_grid=time_grid,
             sampling_rate=sampling_rate,
         )
     else:
-        return operation
+        return PulseCompensation(
+            body=_compile_circuit_to_device(operation.body, device_cfg, device_overrides),
+            max_compensation_amp=operation.max_compensation_amp,
+            time_grid=operation.time_grid,
+            sampling_rate=operation.sampling_rate,
+        )
 
 
 def _get_device_repr_from_cfg(
