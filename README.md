@@ -30,6 +30,11 @@ that are distributed to control hardware, after compiling these schedules into c
 
 | quantify-scheduler |                      qblox-instruments                       |                               Cluster firmware                                |
 |--------------------|:------------------------------------------------------------:|:-----------------------------------------------------------------------------:|
+| v0.22.2            | [0.15.0](https://pypi.org/project/qblox-instruments/0.15.0/) | [0.10.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.10.0) |
+|                    | [0.14.2](https://pypi.org/project/qblox-instruments/0.14.2/) | [0.9.2](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.9.2) |
+|                    | [0.14.1](https://pypi.org/project/qblox-instruments/0.14.1/) | [0.9.1](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.9.1) |
+| v0.22.1            | [0.14.2](https://pypi.org/project/qblox-instruments/0.14.2/) | [0.9.2](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.9.2) |
+|                    | [0.14.1](https://pypi.org/project/qblox-instruments/0.14.1/) | [0.9.1](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.9.1) |
 | v0.22.0            | [0.14.2](https://pypi.org/project/qblox-instruments/0.14.2/) | [0.9.2](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.9.2) |
 |                    | [0.14.1](https://pypi.org/project/qblox-instruments/0.14.1/) | [0.9.1](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.9.1) |
 |                    | [0.14.0](https://pypi.org/project/qblox-instruments/0.14.0/) | [0.9.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.9.0) |

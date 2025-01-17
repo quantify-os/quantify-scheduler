@@ -1,5 +1,36 @@
 # Changelog
 
+## Release v0.22.2 (2025-01-16)
+
+### 🐛 Bug Fixes and Closed Issues
+- Hotfix in channel_name_measure ([!1164](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1164) by [@Thomas Middelburg](https://gitlab.com/ThomasMiddelburg))
+- Perform an upd_param instruction instead of a wait when amplitude of a pulse is too low ([!1145](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1145) by [@Leon Wubben](https://gitlab.com/LeonQblox))
+- Nv element fix (SE-638) ([!1130](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1130) by [@Vatshal Srivastav](https://gitlab.com/vsrivastav1))
+
+### ✨ New Features
+- Add thresholded trigger count acquisition (SE-422) ([!1107](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1107) by [@Thomas Middelburg](https://gitlab.com/ThomasMiddelburg))
+- Add bin mode SUM for TriggerCount (and fix docs for bin mode DISTRIBUTION) ([!1144](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1144) by [@Thomas Middelburg](https://gitlab.com/ThomasMiddelburg))
+
+### 🚀 Enhancements
+- Introduce new acquisition channels mapping for future use ([!1110](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1110) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+- Add thresholded trigger count acquisition (SE-422) ([!1107](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1107) by [@Thomas Middelburg](https://gitlab.com/ThomasMiddelburg))
+
+### 📚 Documentation
+- Add tutorial for device overrides feature ([!1152](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1152) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+- Update conditional playback documentation ([!1138](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1138) by [@Robert Sokolewicz](https://gitlab.com/rsokolewicz))
+
+### ♻️ Refactoring
+- Remove all instances of from_dict and to_dict ([!1149](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1149) by [@Leon Wubben](https://gitlab.com/LeonQblox))
+- Add bin mode SUM for TriggerCount (and fix docs for bin mode DISTRIBUTION) ([!1144](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1144) by [@Thomas Middelburg](https://gitlab.com/ThomasMiddelburg))
+- Refactoring: create get_used_port_clocks attribute instead of _extract_port_clocks_used ([!1147](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1147) by [@Leon Wubben](https://gitlab.com/LeonQblox))
+
+### 🔧 Other
+- Improving profiling to run on hardware ([!1165](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1165) by [@Nicolas Piot](https://gitlab.com/npiot))
+- Remove prospector from dev requirements ([!1163](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1163) by [@Thomas Middelburg](https://gitlab.com/ThomasMiddelburg))
+- Fix failing mpl test ([!1161](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1161) by [@Thomas Middelburg](https://gitlab.com/ThomasMiddelburg))
+- Fix Windows test and new Ruff rules ([!1143](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1143) by [@Leon Wubben](https://gitlab.com/LeonQblox))
+
+
 ## Release v0.22.1 (2024-11-21)
 ### 🐛 Bug Fixes and Closed Issues
 - Fix pydantic model validation for SerialCompilationConfig  ([!1141](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1141) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))

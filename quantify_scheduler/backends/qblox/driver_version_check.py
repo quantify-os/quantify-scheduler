@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Helper functions to perform the version check for qblox_instruments."""
+
 from __future__ import annotations
 
 import logging
@@ -12,7 +13,7 @@ try:
 except ImportError:
     driver_version = None  # Prior to v0.3.2 __version__ was not there
 
-SUPPORTED_DRIVER_VERSIONS: tuple[str, ...] = ("0.14",)
+SUPPORTED_DRIVER_VERSIONS: tuple[str, ...] = ("0.14", "0.15")
 """Tuple containing all the version supported by this version of the backend."""
 raise_on_version_mismatch: bool = True
 """Can be set to false to override version check."""

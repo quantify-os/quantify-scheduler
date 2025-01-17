@@ -1,16 +1,77 @@
 # Release Notes
 
-## Release v0.22.1
+## Release v0.22.2 (2025-01-17)
+
+Bugfixes, compatibility with qblox-instruments v0.15.0, and more nv center element features. Some of the highlights include:
+
+- [Fix v0.2 hardware config does not support multiplexing](#fix-v02-hardware-config-does-not-support-multiplexing)
+- [ Fix gate-level pulse compensation operation compiling](#fix-gate-level-pulse-compensation-operation-compiling)
+- [ Fix v0.2 hardware config does not support multiplexing](#fix-v02-hardware-config-does-not-support-multiplexing)
+- [Fix low amplitude long ramp pulses do not play](#fix-low-amplitude-long-ramp-pulses-do-not-play)
+- [Fix `BasicElectronicNVElement` misses info when serialized](#fix-basicelectronicnvelement-misses-info-when-serialized)
+- [New acquisition protocol: `ThresholdedTriggerCount`](#new-acquisition-protocol-thresholdedtriggercount)
+- [New bin mode for trigger count: `SUM`](#new-bin-mode-sum-for-triggercount)
+- [Compatibility with qblox-instruments v0.15.0](#compatibility-with-qblox-instruments-v0150)
+
+## Fix gate-level pulse compensation operation compiling
+
+There was a bug with the `PulseCompensation` operation where the body argument wasn't compiled recursively. This has now been fixed.
+
+## Fix v0.2 hardware config does not support multiplexing
+
+There was a bug where multiplexed readout was no longer supported in the v0.2 hardware config format. This has now been fixed.
+
+## Fix low amplitude long ramp pulses do not play
+
+There was a bug where long ramp pulses with a small slope the amplitude would be rounded to zero. This has now been fixed. 
+
+## Fix `BasicElectronicNVElement` misses info when serialized
+
+When (de)serializing `BasicElectronicNVElement` objects using `to_json` and `from_json`, some of the qubit parameter values were missing. This has now been fixed. 
+
+## New acquisition protocol: `ThresholdedTriggerCount`
+
+A new AcquisitionProtocol has been added which the user to threshold trigger counts. This can be used in combination with conditional playback to play instructions only when the trigger count is above a certain threshold. Example:
+
+
+```{code-block} python
+schedule = Schedule("example")
+
+schedule.add(ThresholdedTriggerCount(
+            port="qe0:optical_readout",
+            clock="qe0.ge0",
+            duration=10e-6,
+            threshold=10,
+            feedback_trigger_label="qe0",
+            feedback_trigger_condition=TriggerCondition.GREATER_EQUAL,
+        )
+)
+
+sub_schedule = ...
+
+schedule.add(ConditionalOperation(body=sub_schedule, qubit_name="qe0"), rel_time=...)
+
+```
+
+## New bin mode SUM for TriggerCount
+
+A new bin mode `SUM` for `TriggerCount` has been added. This mode will sum the trigger counts over all runs. For example, a schedule that contains a single `TriggerCount` operation, while `APPEND` mode would return the trigger counts for each repetition of the schedule, the `SUM` mode will simply return the total number of times (across all repetitions) a trigger was counted. When using multiple `TriggerCount` operations, using multiple acquisition indices, the `SUM` mode will only sum the triggers specific to the acquisition index. For more information, please refer to the [trigger count acquisition tutorial](https://quantify-os.org/docs/quantify-scheduler/tutorials/Acquisitions.html#trigger-count-acquisition)
+
+## Compatibility with qblox-instruments v0.15.0
+
+This release adds compatibility with qblox-instruments v0.15.0. For more information, please refer to the [qblox-instruments release notes](https://docs.qblox.com/en/main/getting_started/whats_new.html#new-features).
+
+## Release v0.22.1 (2024-11-21)
 
 A small bug fix to make the package compatible with the latest version of pydantic. 
 
-## Release v0.22.0
+## Release v0.22.0 (2024-11-20)
 
 Many updates and improvements in this version! Some of the highlights include:
 
 - [Friendlier import paths for common quantify operations and other classes](#friendly-imports)
 - [More spin operations](#more-spin-operations)
-- [Virtual gates](#virtual-gates)
+- [Crosstalk compensation](#crosstalk-compensation)
 - [Improve conditional playback](#improve-conditional-playback)
 - [Version 0.2 of the Qblox hardware compilation config](#version-02-of-the-qblox-hardware-compilation-config)
 - [`ScheduleGettable` optionally returns `xarray.DataSet`](#schedulegettable-optionally-returns-xarray-dataset)
@@ -53,8 +114,8 @@ To see a complete list of available imports, please refer to the [API reference]
 
 We have added a few more operations specific for spin-based elements. These include:
 
-- [`quantify_scheduler.operations.SpinEdge`](https://quantify-os.org/docs/quantify-scheduler/dev/autoapi/quantify_scheduler/operations/spin_operations/index.html)
-- [`quantify_scheduler.operations.SpinInit`](https://quantify-os.org/docs/quantify-scheduler/dev/autoapi/quantify_scheduler/operations/spin_operations/index.html)
+- [`quantify_scheduler.operations.SpinEdge`](https://quantify-os.org/docs/quantify-scheduler/dev/autoapi/quantify_scheduler/device_under_test/spin_edge/index.html#quantify_scheduler.device_under_test.spin_edge.SpinEdge)
+- [`quantify_scheduler.operations.SpinInit`](https://quantify-os.org/docs/quantify-scheduler/dev/autoapi/quantify_scheduler/operations/spin_library/index.html#quantify_scheduler.operations.spin_library.SpinInit)
 - [`quantify_scheduler.operations.SpinPSB`](https://quantify-os.org/docs/quantify-scheduler/dev/autoapi/quantify_scheduler/operations/spin_operations/index.html)
 
 ### Improve conditional playback
@@ -70,9 +131,9 @@ from quantify_scheduler.qblox.operations import ConditionalOperation, Conditiona
 ```
 ````
 
-### Virtual gates
+### Crosstalk compensation
 
-For Qblox users we have added support for virtual gates (cross talk compensation) to compensate unwanted interference and interactions between qubits. For example, if we have a 2 qubit device with qubits `q0` and `q1`, we can define a virtual gate in the hardware configuration:
+For Qblox users we have added support for cross talk compensation to remove unwanted interference and interactions between qubits. For example, if we have a 2 qubit device with qubits `q0` and `q1`, we can define a cross talk matrix in the hardware configuration:
 
 ```{code-block} python
 hardware_comp_cfg = {
@@ -107,15 +168,15 @@ $$
 \begin{pmatrix} 
 1 & 0.5 \\ 
 0.5 & 1 
-\end{pmatrix} 
+\end{pmatrix}^{-1}
 \begin{pmatrix} 
 f(t)\\
 g(t)
 \end{pmatrix} 
-\Rightarrow 
+\Rightarrow \frac{1}{3}
 \begin{pmatrix} 
-f(t) + 0.5\,g(t)\\
-0.5\,f(t) + g(t)
+4\,f(t) -2\,g(t)\\
+-2\,f(t) + 4\,g(t)
 \end{pmatrix}
 $$
 
