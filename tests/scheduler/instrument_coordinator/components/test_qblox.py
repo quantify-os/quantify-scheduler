@@ -62,36 +62,34 @@ EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER = utils.load_json_example_scheme(
 def patch_qtm_parameters(mocker, module):
     """
     Patch QTM QCoDeS parameters.
-
-    This is necessary until the QTM dummy is available in qblox-instruments. (SE-499)
     """
     for seq_no in range(8):
-        mocker.patch.object(module[f"sequencer{seq_no}"].parameters["sync_en"], "set")
-        mocker.patch.object(module[f"sequencer{seq_no}"].parameters["sequence"], "set")
-        mocker.patch.object(module[f"io_channel{seq_no}"].parameters["out_mode"], "set")
-        mocker.patch.object(module[f"io_channel{seq_no}"].parameters["out_mode"], "get")
-        mocker.patch.object(module[f"io_channel{seq_no}"].parameters["in_trigger_en"], "set")
-        mocker.patch.object(module[f"io_channel{seq_no}"].parameters["in_threshold_primary"], "set")
+        sequencer = module[f"sequencer{seq_no}"]
+        io_channel = module[f"io_channel{seq_no}"]
+        mocker.patch.object(sequencer.sync_en, "set", wraps=sequencer.sync_en.set)
+        # sequence is not wrapped because the QTM instructions are not yet in the qblox-instruments
+        # assembler binaries.
+        mocker.patch.object(sequencer.sequence, "set")
+        mocker.patch.object(io_channel.out_mode, "set", wraps=io_channel.out_mode.set)
+        mocker.patch.object(io_channel.in_trigger_en, "set", wraps=io_channel.in_trigger_en.set)
         mocker.patch.object(
-            module[f"io_channel{seq_no}"].parameters["binned_acq_time_ref"],
-            "set",
+            io_channel.in_threshold_primary, "set", wraps=io_channel.in_threshold_primary.set
         )
         mocker.patch.object(
-            module[f"io_channel{seq_no}"].parameters["binned_acq_time_source"],
-            "set",
+            io_channel.binned_acq_time_ref, "set", wraps=io_channel.binned_acq_time_ref.set
         )
         mocker.patch.object(
-            module[f"io_channel{seq_no}"].parameters["binned_acq_on_invalid_time_delta"],
-            "set",
+            io_channel.binned_acq_time_source, "set", wraps=io_channel.binned_acq_time_source.set
         )
         mocker.patch.object(
-            module[f"io_channel{seq_no}"].parameters["scope_trigger_mode"],
+            io_channel.binned_acq_on_invalid_time_delta,
             "set",
+            wraps=io_channel.binned_acq_on_invalid_time_delta.set,
         )
         mocker.patch.object(
-            module[f"io_channel{seq_no}"].parameters["scope_mode"],
-            "set",
+            io_channel.scope_trigger_mode, "set", wraps=io_channel.scope_trigger_mode.set
         )
+        mocker.patch.object(io_channel.scope_mode, "set", wraps=io_channel.scope_mode.set)
 
 
 @pytest.fixture
