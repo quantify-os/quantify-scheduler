@@ -817,6 +817,13 @@ class TimetagTrace(Acquisition):
           negative timetag.
         * first: syntactic sugar for first#, where # is the current channel.
         * timestamp: record relative to the timestamp marked using the ``Timestamp`` operation.
+        * ``port``: record relative to the timetag measured on another port. If this
+          option is used, the ``time_ref_port`` argument must be specified as well. The
+          acquisition operation that is measuring the timetag on the *other* port must
+          end before or at the same time as *this* acquisition operation.
+    time_ref_port
+        If the ``port`` time reference is used, ``time_ref_port`` specifies the port on
+        which the other acquisition is executed.
     t0
         The acquisition start time in seconds, by default 0.
     fine_start_delay
@@ -846,6 +853,7 @@ class TimetagTrace(Acquisition):
         acq_index: int = 0,
         bin_mode: BinMode | str = BinMode.APPEND,
         time_ref: TimeRef | str = TimeRef.START,
+        time_ref_port: str | None = None,
         t0: float = 0,
         fine_start_delay: float = 0,
         fine_end_delay: float = 0,
@@ -854,6 +862,9 @@ class TimetagTrace(Acquisition):
             duration = float(duration)
         if isinstance(bin_mode, str):
             bin_mode = BinMode(bin_mode)
+
+        if time_ref == TimeRef.PORT and time_ref_port is None:
+            raise ValueError(f"If {time_ref} is used, `time_ref_port` must contain a valid port.")
 
         super().__init__(name=self.__class__.__name__)
         self.data["acquisition_info"] = [
@@ -872,6 +883,8 @@ class TimetagTrace(Acquisition):
                 # relative timestamps.
                 "time_source": TimeSource.FIRST,
                 "time_ref": time_ref,
+                "time_ref_port": time_ref_port,
+                "time_ref_channel": None,  # to be filled in by compiler
                 "protocol": "TimetagTrace",
                 "acq_return_type": np.ndarray,
                 "fine_start_delay": fine_start_delay,
@@ -935,6 +948,13 @@ class Timetag(Acquisition):
         * ``first``: record relative to the first timetag in the window.
         * ``timestamp``: record relative to the timestamp marked using the
           :class:`~quantify_scheduler.operations.pulse_library.Timestamp` operation.
+        * ``port``: record relative to the timetag measured on another port. If this
+          option is used, the ``time_ref_port`` argument must be specified as well. The
+          acquisition operation that is measuring the timetag on the *other* port must
+          end before or at the same time as *this* acquisition operation.
+    time_ref_port
+        If the ``port`` time reference is used, ``time_ref_port`` specifies the port on
+        which the other acquisition is executed.
     t0
         The acquisition start time in seconds, by default 0.
     fine_start_delay
@@ -965,6 +985,7 @@ class Timetag(Acquisition):
         bin_mode: BinMode | str = BinMode.APPEND,
         time_source: TimeSource | str = TimeSource.FIRST,
         time_ref: TimeRef | str = TimeRef.START,
+        time_ref_port: str | None = None,
         t0: float = 0,
         fine_start_delay: float = 0,
         fine_end_delay: float = 0,
@@ -975,6 +996,9 @@ class Timetag(Acquisition):
             time_source = TimeSource(time_source)
         if isinstance(time_ref, str):
             time_ref = TimeRef(time_ref)
+
+        if time_ref == TimeRef.PORT and time_ref_port is None:
+            raise ValueError(f"If {time_ref} is used, `time_ref_port` must contain a valid port.")
 
         self.data["acquisition_info"] = [
             {
@@ -988,6 +1012,8 @@ class Timetag(Acquisition):
                 "bin_mode": bin_mode,
                 "time_source": time_source,
                 "time_ref": time_ref,
+                "time_ref_port": time_ref_port,
+                "time_ref_channel": None,  # to be filled in by compiler
                 "acq_return_type": float,
                 "protocol": "Timetag",
                 "fine_start_delay": fine_start_delay,

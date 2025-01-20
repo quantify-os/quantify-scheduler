@@ -796,6 +796,11 @@ class TimetagSequencerSettings(SequencerSettings):
     """Selects the timetag data source for timetag acquisitions."""
     time_ref: Optional[TimeRef] = None
     """Selects the time reference that the timetag is recorded in relation to."""
+    time_ref_channel: Optional[int] = None
+    """
+    If using TimeRef.PORT, this setting specifies the channel index (on the same module) belonging
+    to that port.
+    """
     scope_trace_type: Optional[TimetagTraceType] = None
     """Set to True if the program on this sequencer contains a scope/trace acquisition."""
     trace_acq_duration: Optional[int] = None

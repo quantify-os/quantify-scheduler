@@ -296,6 +296,9 @@ class TimetagSequencerCompiler(SequencerCompiler):
             assert_all_op_info_values_equal("time_ref")
             self._settings.time_source = acquisitions[0].operation_info.data["time_source"]
             self._settings.time_ref = acquisitions[0].operation_info.data["time_ref"]
+            self._settings.time_ref_channel = acquisitions[0].operation_info.data[
+                "time_ref_channel"
+            ]
 
         if acq_metadata.acq_protocol == "ThresholdedTriggerCount":
             for acq in acquisitions:

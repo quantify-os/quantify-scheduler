@@ -1535,6 +1535,9 @@ class ChannelPath:
     module_idx: int
     channel_name_measure: None | set[str] = field(init=False, default=None)
 
+    def __hash__(self) -> int:
+        return hash(tuple(self.__dataclass_fields__.values()))
+
     @classmethod
     def from_path(cls: type[ChannelPath], path: str) -> ChannelPath:
         """Instantiate a `ChannelPath` object from a path string."""
@@ -1546,6 +1549,16 @@ class ChannelPath:
             channel_name=channel_name,
             module_idx=module_idx,
         )
+
+    @property
+    def channel_idx(self) -> int:
+        """
+        The channel index in the channel name.
+
+        A channel name is always formatted as "type_direction_#" where # is the channel index. This
+        property extracts the channel index.
+        """
+        return int(self.channel_name[self.channel_name.rfind("_") + 1 :])
 
     def add_channel_name_measure(self, channel_name_measure: str) -> None:
         """Add an extra input channel name for measure operation."""

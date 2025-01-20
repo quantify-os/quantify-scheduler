@@ -2,6 +2,7 @@
 # Licensed according to the LICENCE file on the main branch
 """Tests for the QTM."""
 import re
+from copy import deepcopy
 from unittest.mock import Mock
 
 import pytest
@@ -851,9 +852,9 @@ def test_multiple_trace_acq(mock_setup_basic_nv, assert_equal_q1asm):
 start:
  wait 4
  set_scope_en 1
- acquire_timetags 0,0,1,0,4 # Enable timetag acquisition of acq_channel:0, bin_mode:average
+ acquire_timetags 0,0,1,0,4 # Enable timetag acquisition of acq_channel:0, bin_mode:first
  wait 15992 # auto generated wait (15992 ns)
- acquire_timetags 0,0,0,0,4 # Disable timetag acquisition of acq_channel:0, bin_mode:average
+ acquire_timetags 0,0,0,0,4 # Disable timetag acquisition of acq_channel:0, bin_mode:first
  set_scope_en 0
  wait 16020 # auto generated wait (16020 ns)
  loop R0,@start
@@ -873,9 +874,9 @@ start:
  wait 4
  wait 16020 # auto generated wait (16020 ns)
  set_scope_en 1
- acquire_timetags 1,0,1,0,4 # Enable timetag acquisition of acq_channel:1, bin_mode:average
+ acquire_timetags 0,0,1,0,4 # Enable timetag acquisition of acq_channel:1, bin_mode:first
  wait 15992 # auto generated wait (15992 ns)
- acquire_timetags 1,0,0,0,4 # Disable timetag acquisition of acq_channel:1, bin_mode:average
+ acquire_timetags 0,0,0,0,4 # Disable timetag acquisition of acq_channel:1, bin_mode:first
  set_scope_en 0
  loop R0,@start
  stop
@@ -1285,3 +1286,78 @@ def test_timetag_fine_delay_error_between_op(mock_setup_basic_nv):
         "integer number of nanoseconds.",
     ):
         _ = compiler.compile(schedule=schedule, config=quantum_device.generate_compilation_config())
+
+
+def test_time_ref_port(mock_setup_basic_nv):
+    schedule = Schedule(name="Test", repetitions=1)
+
+    schedule.add(
+        Timetag(
+            duration=100e-9,
+            port="qe1:optical_readout",
+            clock="qe1.ge0",
+            bin_mode=BinMode.APPEND,
+            time_source=TimeSource.FIRST,
+            time_ref=TimeRef.START,
+        ),
+    )
+    schedule.add(
+        Timetag(
+            duration=100e-9,
+            port="test:another_port",
+            clock="digital",
+            bin_mode=BinMode.APPEND,
+            time_source=TimeSource.FIRST,
+            time_ref=TimeRef.PORT,
+            time_ref_port="qe1:optical_readout",
+        ),
+        ref_pt="start",
+        rel_time=100e-9,
+    )
+
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+
+    hardware_config = deepcopy(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
+    hardware_config["hardware_options"]["digitization_thresholds"]["test:another_port-digital"] = {
+        "in_threshold_primary": 0.5
+    }
+    hardware_config["connectivity"]["graph"].append(
+        ["cluster0.module5.digital_input_7", "test:another_port"]
+    )
+    quantum_device.hardware_config(hardware_config)
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    assert (
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"][
+            "seq4"
+        ].time_source
+        == TimeSource.FIRST
+    )
+    assert (
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"][
+            "seq4"
+        ].time_ref
+        == TimeRef.START
+    )
+    assert (
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"][
+            "seq7"
+        ].time_source
+        == TimeSource.FIRST
+    )
+    assert (
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"][
+            "seq7"
+        ].time_ref
+        == TimeRef.PORT
+    )
+    assert (
+        compiled_sched.compiled_instructions["cluster0"]["cluster0_module5"]["sequencers"][
+            "seq7"
+        ].time_ref_channel
+        == 4
+    )

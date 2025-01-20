@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from itertools import chain
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -40,9 +41,11 @@ from quantify_scheduler.backends.types.qblox import (
     StaticTimetagModuleProperties,
     TimetagModuleSettings,
 )
+from quantify_scheduler.enums import TimeRef
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.qblox_backend import (
+        ChannelPath,
         _ClusterCompilationConfig,
         _ClusterModuleCompilationConfig,
         _LocalOscillatorCompilationConfig,
@@ -411,10 +414,55 @@ class QTMCompiler(compiler_abc.ClusterModuleCompiler):
         calculating the relevant frequencies in case an external local oscillator is
         used.
         """
+        self._set_time_ref_channel(self._op_infos, self.instrument_cfg.portclock_to_path)
         self._construct_all_sequencer_compilers()
         self.distribute_data()
         for seq in self.sequencers.values():
             seq.prepare()
+
+    @staticmethod
+    def _set_time_ref_channel(
+        op_infos: dict[tuple[str, str], list[OpInfo]], portclock_to_path: dict[str, ChannelPath]
+    ) -> None:
+        """
+        Set the time_ref_channel for all Timetag operations using TimeRef.PORT.
+
+        Needs to be called before `SequencerCompiler._prepare_acq_settings()`.
+
+        It is not validated that there is indeed a timetag acquisition on the port that was
+        referenced, as this is not necessary for the schedule to run without errors.
+        """
+        all_op_infos = chain.from_iterable(op_infos.values())
+        all_acqs_with_time_ref_port = [
+            op
+            for op in all_op_infos
+            if op.is_acquisition and op.data.get("time_ref") == TimeRef.PORT
+        ]
+        for acq in all_acqs_with_time_ref_port:
+            # For each acquisition, "time_ref_port" must be connected to exactly one channel path.
+            # This means that, for all port-clocks that contains the same port as "time_ref_port",
+            # we check if the channel path is the same.
+            matching_port_clocks = [
+                f"{port}-{clock}" for port, clock in op_infos if port == acq.data["time_ref_port"]
+            ]
+            if len(matching_port_clocks) == 0:
+                raise ValueError(
+                    f"Found no channels connected to time_ref_port={acq.data['time_ref_port']} on "
+                    f"the same module as the acquisition port={acq.data['port']}"
+                )
+            if (
+                len(matching_port_clocks) > 1
+                and len(set(portclock_to_path[pc] for pc in matching_port_clocks)) > 1
+            ):
+                raise ValueError(
+                    "Found multiple channels connected to time_ref_port="
+                    f"{acq.data['time_ref_port']}"
+                )
+
+            # All port-clocks in matching_port_clocks map to the same channel path in
+            # portclock_to_path.
+            ref_channel = portclock_to_path[matching_port_clocks[0]]
+            acq.data["time_ref_channel"] = ref_channel.channel_idx
 
 
 class ClusterCompiler(compiler_abc.InstrumentCompiler):

@@ -73,6 +73,7 @@ class TimeRef(StrEnum):  # type: ignore
     END = "end"
     FIRST = "first"
     TIMESTAMP = "timestamp"
+    PORT = "port"
 
 
 class TriggerCondition(StrEnum):  # type: ignore

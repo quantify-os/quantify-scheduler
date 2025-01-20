@@ -28,6 +28,7 @@ from quantify_scheduler.backends.graph_compilation import SerialCompiler
 from quantify_scheduler.backends.qblox.operation_handling.bin_mode_compat import (
     IncompatibleBinModeError,
 )
+from quantify_scheduler.backends.types.qblox import TimetagSequencerSettings
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.enums import BinMode, TimeRef, TimeSource
@@ -2551,3 +2552,25 @@ def test_set_parameter_value_error_is_passed(mock_module_component):
         mock_module_component._set_parameter(mock_instrument, "out0_bt_time_constant", "some_value")
 
         assert mock_search_settable_param.called
+
+
+def test_call_time_ref_first_relative(make_cluster_component):
+    cluster_component: qblox.ClusterComponent = make_cluster_component(
+        name="cluster0", modules={"10": "QTM"}
+    )
+    qtm: qblox._QTMComponent = cluster_component._cluster_modules["cluster0_module10"]
+    seq_idx = 0
+    ref_idx = 1
+    settings = TimetagSequencerSettings(
+        sync_en=True,
+        channel_name="digital_input_0",
+        channel_name_measure=None,
+        connected_output_indices=(),
+        connected_input_indices=(0,),
+        time_ref=TimeRef.PORT,
+        time_ref_channel=ref_idx,
+    )
+    qtm._configure_io_channel_settings(seq_idx, settings)
+    qtm.instrument[f"io_channel{seq_idx}"].parameters[
+        "binned_acq_time_ref"
+    ].set.assert_called_once_with(f"first{ref_idx}")

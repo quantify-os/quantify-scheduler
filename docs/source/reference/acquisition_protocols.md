@@ -328,16 +328,17 @@ The {class}`~quantify_scheduler.operations.acquisition_library.Timetag` acquisit
 
 The source of the timetag itself can be one of:
 
-- The first recorded rising edge,
-- The second recorded rising edge,
-- The last recorded rising edge.
+- The first recorded rising edge (`TimeSource.FIRST`),
+- The second recorded rising edge (`TimeSource.SECOND`),
+- The last recorded rising edge (`TimeSource.LAST`).
 
 The time reference can be one of:
 
-- The start of the acquisition window,
-- The end of the acquisition window,
-- The first measured rising edge,
-- A scheduled {class}`~quantify_scheduler.operations.pulse_library.Timestamp` operation.
+- The start of the acquisition window (`TimeRef.START`),
+- The end of the acquisition window (`TimeRef.END`),
+- The first measured rising edge (`TimeRef.FIRST`),
+- A scheduled {class}`~quantify_scheduler.operations.pulse_library.Timestamp` operation (`TimeRef.TIMESTAMP`).
+- A timetag acquisition on another port (`TimeRef.PORT` in combination with an argument for `time_ref_port`)
 
 The protocol always returns one timetag per acquisition bin. If `BinMode.APPEND` is used, the acquisition bin index is incremented automatically and each timetag measurement is put in a separate bin. For example, let's look at the schedule below, which is repeated three times.
 
@@ -395,6 +396,52 @@ data_array = xr.DataArray(
         attrs={"acq_protocol": "Timetag"},
     )
 xr.Dataset({0: data_array})
+```
+
+### Measuring a time difference between pulses on two ports
+
+If you have pulses coming from two different ports and you want to measure the time difference between them, you can use `TimeRef.PORT` on one `Timetag` acquisition, in combination with providing the port of another `Timetag` for the `time_ref_port` parameter.
+
+Note that the timetag acquisition that you are recording relative to (i.e., the one that is _not_ using `TimeRef.PORT`) _must_ end either before or at the end of the other timetag acquisition.
+
+For both timetag acquisitions, all values of `time_source` are allowed, and for the acquisition that is not using `TimeRef.PORT`, all other `TimeRef` values are allowed as well.
+
+For example, the code below shows an experiment where the acquisition with `acq_channel=0` records the timetag of the first measured pulse, relative to the start of the acquisition, and `acq_channel=1` records the timetag of the first measured pulse, relative to the timetag in `acq_channel=0`.
+
+```{code-cell} ipython3
+---
+mystnb:
+  remove_code_outputs: true
+---
+from quantify_scheduler import Schedule
+from quantify_scheduler.enums import BinMode, TimeSource, TimeRef
+from quantify_scheduler.operations.pulse_library import Timestamp
+from quantify_scheduler.operations.acquisition_library import Timetag
+
+schedule = Schedule("Relative timetag", repetitions=1)
+schedule.add(
+    Timetag(
+        duration=10e-6,
+        port="qe0:optical_readout",
+        clock="qe0.ge0",
+        acq_channel=0,
+        time_source=TimeSource.FIRST,
+        time_ref=TimeRef.START,
+    )
+)
+schedule.add(
+    Timetag(
+        duration=10e-6,
+        port="qe1:optical_readout",
+        clock="qe1.ge0",
+        acq_channel=1,
+        time_source=TimeSource.FIRST,
+        time_ref=TimeRef.PORT,
+        time_ref_port="qe0:optical_readout",
+    ),
+    # Start the acquisition simultaneously with the previous one.
+    ref_pt="start",
+)
 ```
 
 (sec-acquisition-protocols-timetag-trace)=

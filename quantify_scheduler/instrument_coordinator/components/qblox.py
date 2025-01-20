@@ -1395,6 +1395,8 @@ class _QTMComponent(_ModuleComponentBase):
         if settings.time_ref is not None:
             if settings.time_ref == TimeRef.TIMESTAMP:
                 time_ref = "sequencer"
+            elif settings.time_ref == TimeRef.PORT:
+                time_ref = f"first{settings.time_ref_channel}"
             else:
                 time_ref = str(settings.time_ref)
             self._set_parameter(
