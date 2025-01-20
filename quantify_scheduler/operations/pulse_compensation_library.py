@@ -50,8 +50,9 @@ class PulseCompensation(Operation):
         time_grid: float | None = None,
         sampling_rate: float | None = None,
     ) -> None:
+        device_elements = qubits
         super().__init__(name="PulseCompensation")
-        if qubits is not None:
+        if device_elements is not None:
             if (
                 max_compensation_amp is not None
                 or time_grid is not None
@@ -63,14 +64,14 @@ class PulseCompensation(Operation):
                     "'time_grid' and 'sampling_rate' must be 'None'."
                 )
 
-            if isinstance(qubits, str):
-                qubits = [qubits]
+            if isinstance(device_elements, str):
+                device_elements = [device_elements]
 
             self.data.update(
                 {
                     "pulse_compensation_info": {
                         "body": body,
-                        "qubits": qubits,
+                        "device_elements": device_elements,
                     },
                 }
             )

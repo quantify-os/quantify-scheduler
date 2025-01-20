@@ -25,11 +25,15 @@
                     "type": "string"
                 },
                 "qubits": {
-                    "description": "A list of strings indicating the qubits the gate acts on. Valid qubits are strings that appear in the device_config.json file.",
+                    "description": "Deprecated. A list of strings indicating the qubits the gate acts on. Valid qubits are strings that appear in the device_config.json file.",
+                    "type": "array"
+                },
+                "device_elements": {
+                    "description": "A list of strings indicating the device_elements the gate acts on. Valid device_elements are strings that appear in the device_config.json file.",
                     "type": "array"
                 },
                 "symmetric": {
-                    "description": "A boolean to indicate whether a two qubit gate is symmetric. This is used in the device config compilation stage. By default, it is set as False",
+                    "description": "A boolean to indicate whether a two device elements is symmetric. This is used in the device config compilation stage. By default, it is set as False",
                     "type": "boolean"
                 },
                 "tex": {

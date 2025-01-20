@@ -1,5 +1,49 @@
 # Release Notes
 
+## Release v0.22.3 (2025-03-19)
+
+Intermediate release to add the `WeightedThresholdedAcquisition` operation. This allows the user to pass integration weights to thresholded acquisitions:
+
+**use as an Acquisition Operation**
+```python
+schedule.add(
+    WeightedThresholdedAcquisition(
+        weights_a=np.zeros(3, dtype=complex),
+        weights_b=np.ones(3, dtype=complex),
+        acq_rotation = 90,
+        acq_threshold = 0.5,
+        port="q0:res",
+        clock="q0.ro",
+    )
+)
+```
+
+**or, use qubit parameters together with the Measure gate**
+```python
+q0.measure.acq_weights_a(np.zeros(3, dtype=complex))
+q0.measure.acq_weights_b(np.ones(3, dtype=complex))
+q0.measure.acq_rotation(90)
+q0.measure.acq_threshold(0.5)
+schedule.add(Measure("q0", acq_protocol="WeightedThresholdedAcquisition"))
+```
+
+**or, pass weights and thresholds as override parameters to the Measure gate**
+```python
+schedule.add(
+    Measure(
+        "q0",
+        acq_protocol="WeightedThresholdedAcquisition",
+        acq_weights_a=np.zeros(3, dtype=complex),
+        acq_weights_b=np.ones(3, dtype=complex),
+        acq_rotation=90,
+        acq_threshold=0.5
+    )
+)
+```
+more info: [WeightedThresholdedAcquisition](https://quantify-os.org/docs/quantify-scheduler/dev/reference/operations/WeightedThresholdedAcquisition.html)
+
+---
+
 ## Release v0.22.2 (2025-01-17)
 
 Bugfixes, compatibility with qblox-instruments v0.15.0, and more nv center element features. Some of the highlights include:

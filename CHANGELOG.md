@@ -1,5 +1,14 @@
 # Changelog
 
+
+## Release v0.22.3 (2025-03-19)
+
+### ✨ New Features
+- Add WeightedThresholdedAcquisition operation ([!1193](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1193) by [@Rohit Navarathna](https://gitlab.com/rnavarathna))
+
+### 🚀 Enhancements
+- Rename "qubit" references to device element where appropriate ([!1148](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1148) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+
 ## Release v0.22.2 (2025-01-16)
 
 ### 🐛 Bug Fixes and Closed Issues

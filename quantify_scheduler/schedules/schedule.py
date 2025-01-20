@@ -590,13 +590,13 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
                 q0 = BasicTransmonElement("q0")
                 q4 = BasicTransmonElement("q4")
 
-                for i, qubit in enumerate([q0, q4]):
-                    qubit.rxy.amp180(0.115)
-                    qubit.rxy.motzoi(0.1)
-                    qubit.clock_freqs.f01(7.3e9)
-                    qubit.clock_freqs.f12(7.0e9)
-                    qubit.clock_freqs.readout(8.0e9)
-                    qubit.measure.acq_delay(100e-9)
+                for device_element in [q0, q4]:
+                    device_element.rxy.amp180(0.115)
+                    device_element.rxy.motzoi(0.1)
+                    device_element.clock_freqs.f01(7.3e9)
+                    device_element.clock_freqs.f12(7.0e9)
+                    device_element.clock_freqs.readout(8.0e9)
+                    device_element.measure.acq_delay(100e-9)
 
                 quantum_device = QuantumDevice(name="quantum_device0")
                 quantum_device.add_element(q0)
@@ -772,7 +772,7 @@ class Schedule(ScheduleBase):
             self.add_resource(resource)
 
     def add_resource(self, resource: Resource) -> None:
-        """Add a resource such as a channel or qubit to the schedule."""
+        """Add a resource such as a channel or device element to the schedule."""
         if not isinstance(resource, Resource):
             raise ValueError(
                 f"Attempting to add resource to schedule. "

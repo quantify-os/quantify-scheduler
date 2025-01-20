@@ -501,7 +501,7 @@ class SquarePulse(Operation):
 
 class SuddenNetZeroPulse(Operation):
     """
-    A pulse that can be used to implement a conditional phase gate in transmon qubits.
+    A pulse that can be used to implement a conditional phase gate in transmon device elements.
 
     The sudden net-zero (SNZ) pulse is defined in
     :cite:t:`negirneac_high_fidelity_2021`.

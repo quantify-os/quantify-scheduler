@@ -379,14 +379,15 @@ def long_time_trace_with_qubit(
         The custom long Trace acquisition Schedule.
 
     """
+    device_element = qubit
     schedule = long_time_trace(
-        pulse_amp=qubit.measure.pulse_amp(),
+        pulse_amp=device_element.measure.pulse_amp(),
         pulse_delay=0,
-        frequency=qubit.clock_freqs.readout(),
-        acquisition_delay=qubit.measure.acq_delay(),
-        integration_time=qubit.measure.integration_time(),
-        port=qubit.ports.readout(),
-        clock=qubit.name + ".ro",
+        frequency=device_element.clock_freqs.readout(),
+        acquisition_delay=device_element.measure.acq_delay(),
+        integration_time=device_element.measure.integration_time(),
+        port=device_element.ports.readout(),
+        clock=device_element.name + ".ro",
         num_points=num_points,
         acq_index=acq_index,
         repetitions=repetitions,

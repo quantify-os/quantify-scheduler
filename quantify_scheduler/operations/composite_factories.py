@@ -15,7 +15,7 @@ def hadamard_as_y90z(
     Parameters
     ----------
     qubit
-        Qubit to which the Hadamard gate is applied.
+        Device element to which the Hadamard gate is applied.
 
     Returns
     -------
@@ -23,9 +23,10 @@ def hadamard_as_y90z(
         Schedule.
 
     """
+    device_element = qubit
     schedule = Schedule("Hadamard")
-    schedule.add(Z(qubit))
-    schedule.add(Y90(qubit))
+    schedule.add(Z(device_element))
+    schedule.add(Y90(device_element))
     return schedule
 
 

@@ -114,35 +114,38 @@ def _compile_circuit_to_device(  # noqa: PLR0911
         # add pulse/acquisition info in the lines below (if operation.valid_gate
         # will not work here for e.g. Measure, which is also a valid
         # acquisition)
-        qubits: Sequence[str] = operation.data["gate_info"]["qubits"]
+        device_elements: Sequence[str] = operation.data["gate_info"]["device_elements"]
         operation_type: str = operation.data["gate_info"]["operation_type"]
 
-        # single qubit operations
-        if len(qubits) == 1:
-            return _compile_single_qubit(
+        # single device element operations
+        if len(device_elements) == 1:
+            return _compile_single_device_element(
                 operation=operation,
-                qubit=qubits[0],
+                device_element=device_elements[0],
                 operation_type=operation_type,
                 device_cfg=device_cfg,
                 device_overrides=device_overrides,
             )
 
-        # it is a two-qubit operation if the operation not in the qubit config
-        elif len(qubits) == 2 and operation_type not in device_cfg.elements[qubits[0]]:
-            return _compile_two_qubits(
+        # it is a two device element operation if the operation not in the device element config
+        elif (
+            len(device_elements) == 2
+            and operation_type not in device_cfg.elements[device_elements[0]]
+        ):
+            return _compile_two_device_elements(
                 operation=operation,
-                qubits=qubits,
+                device_elements=device_elements,
                 operation_type=operation_type,
                 device_cfg=device_cfg,
                 device_overrides=device_overrides,
             )
-        # we only support 2-qubit operations and single-qubit operations.
-        # some single-qubit operations (reset, measure) can be expressed as acting
-        # on multiple qubits simultaneously. That is covered through this for-loop.
+        # we only support 2 device element operations and single device element operations.
+        # some single device element operations (reset, measure) can be expressed as acting
+        # on multiple device elements simultaneously. That is covered through this for-loop.
         else:
             return _compile_multiplexed(
                 operation=operation,
-                qubits=qubits,
+                device_elements=device_elements,
                 operation_type=operation_type,
                 device_cfg=device_cfg,
                 device_overrides=device_overrides,
@@ -442,28 +445,28 @@ def _assert_operation_valid_device_level(operation: Operation) -> None:
 
 def _compile_multiplexed(
     operation: Operation,
-    qubits: Sequence[str],
+    device_elements: Sequence[str],
     operation_type: str,
     device_cfg: DeviceCompilationConfig,
     device_overrides: dict,
 ) -> Operation | Schedule:
     """
-    Compiles gate with multiple qubits.
+    Compiles gate with multiple device elements.
 
     Note: it updates the `operation`, if it can directly add pulse representation.
     """
     inner_subschedules: list = []
     operation_has_device_representation: bool = False
 
-    for mux_idx, qubit in enumerate(qubits):
-        if qubit not in device_cfg.elements:
+    for mux_idx, device_element in enumerate(device_elements):
+        if device_element not in device_cfg.elements:
             raise ConfigKeyError(
                 kind="element",
-                missing=qubit,
+                missing=device_element,
                 allowed=list(device_cfg.elements.keys()),
             )
 
-        element_cfg = device_cfg.elements[qubit]
+        element_cfg = device_cfg.elements[device_element]
 
         if operation_type not in element_cfg:
             raise ConfigKeyError(
@@ -519,26 +522,26 @@ def _compile_multiplexed(
         return operation
 
 
-def _compile_single_qubit(
+def _compile_single_device_element(
     operation: Operation,
-    qubit: str,
+    device_element: str,
     operation_type: str,
     device_cfg: DeviceCompilationConfig,
     device_overrides: dict,
 ) -> Operation | Schedule:
     """
-    Compiles gate with multiple qubits.
+    Compiles gate with single device_element.
 
     Note: it updates the `operation`, if it can directly add pulse representation.
     """
-    if qubit not in device_cfg.elements:
+    if device_element not in device_cfg.elements:
         raise ConfigKeyError(
             kind="element",
-            missing=qubit,
+            missing=device_element,
             allowed=list(device_cfg.elements.keys()),
         )
 
-    element_cfg = device_cfg.elements[qubit]
+    element_cfg = device_cfg.elements[device_element]
     if operation_type not in element_cfg:
         raise ConfigKeyError(
             kind="operation",
@@ -566,26 +569,26 @@ def _compile_single_qubit(
         return operation
 
 
-def _compile_two_qubits(
+def _compile_two_device_elements(
     operation: Operation,
-    qubits: Sequence[str],
+    device_elements: Sequence[str],
     operation_type: str,
     device_cfg: DeviceCompilationConfig,
     device_overrides: dict,
 ) -> Operation | Schedule:
     """
-    Compiles gate with multiple qubits.
+    Compiles gate with multiple device elements.
 
     Note: it updates the `operation`, if it can directly add pulse representation.
     """
-    parent_qubit, child_qubit = qubits
-    edge = f"{parent_qubit}_{child_qubit}"
+    parent_device_element, child_device_element = device_elements
+    edge = f"{parent_device_element}_{child_device_element}"
 
     if edge not in device_cfg.edges:
         symmetric_operation = operation.get("gate_info", {}).get("symmetric", False)
 
         if symmetric_operation:
-            possible_permutations = permutations(qubits, 2)
+            possible_permutations = permutations(device_elements, 2)
             operable_edges = {
                 f"{permutation[0]}_{permutation[1]}" for permutation in possible_permutations
             }
@@ -603,7 +606,7 @@ def _compile_two_qubits(
 
     edge_config = device_cfg.edges[edge]
     if operation_type not in edge_config:
-        # only raise exception if it is also not a single-qubit operation
+        # only raise exception if it is also not a single device element operation
         raise ConfigKeyError(
             kind="operation",
             missing=operation_type,
@@ -632,21 +635,23 @@ def _compile_circuit_to_device_pulse_compensation(
     operation: PulseCompensation, device_cfg: DeviceCompilationConfig, device_overrides: dict
 ) -> PulseCompensation:
     """Compiles circuit-level pulse compensation operation to device-level."""
-    if (qubits := operation.data.get("pulse_compensation_info", {}).get("qubits")) is not None:
+    if (
+        device_elements := operation.data.get("pulse_compensation_info", {}).get("device_elements")
+    ) is not None:
         max_compensation_amp: dict[Port, float] = {}
         time_grid: float | None = None
         sampling_rate: float | None = None
 
-        for qubit in qubits:
+        for device_element in device_elements:
             if (
-                pulse_compensation_element := device_cfg.elements.get(qubit, {}).get(
+                pulse_compensation_element := device_cfg.elements.get(device_element, {}).get(
                     "pulse_compensation"
                 )
             ) is not None:
                 if pulse_compensation_element.factory_func is not None:
                     raise ValueError(
                         f"'factory_func' in the device configuration for pulse compensation "
-                        f"for device element '{qubit}' is not 'None'. "
+                        f"for device element '{device_element}' is not 'None'. "
                         f"Only 'None' is allowed for 'factory_func' for pulse compensation."
                     )
                 current_time_grid = pulse_compensation_element.factory_kwargs["time_grid"]
@@ -654,7 +659,7 @@ def _compile_circuit_to_device_pulse_compensation(
                     raise ValueError(
                         f"'time_grid' must be the same for every device element "
                         f"for pulse compensation. 'time_grid' for "
-                        f"device element '{qubit}' is '{current_time_grid}', "
+                        f"device element '{device_element}' is '{current_time_grid}', "
                         f"for others it is '{time_grid}'."
                     )
                 time_grid = current_time_grid
@@ -664,7 +669,7 @@ def _compile_circuit_to_device_pulse_compensation(
                     raise ValueError(
                         f"'sampling_rate' must be the same for "
                         f"every device element for pulse compensation. "
-                        f"'sampling_rate' for device element '{qubit}' is "
+                        f"'sampling_rate' for device element '{device_element}' is "
                         f"'{current_sampling_rate}', for others it is '{sampling_rate}'."
                     )
                 sampling_rate = current_sampling_rate
@@ -734,7 +739,7 @@ def _get_device_repr_from_cfg_multiplexed(
             # necessary passed for each element separately. We assume that if they do
             # (say, acquisition index and channel for measurement), they are passed as
             # a list or tuple. If they don't (say, it is hard to imagine different
-            # acquisition protocols for qubits during multiplexed readout), they are
+            # acquisition protocols for device element during multiplexed readout), they are
             # assumed to NOT be a list or tuple. If this spoils the correct behaviour of
             # your program in future: sorry :(
             if isinstance(gate_info, (tuple, list)):

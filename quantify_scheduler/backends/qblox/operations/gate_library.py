@@ -17,7 +17,7 @@ class ConditionalReset(Schedule):
 
     The
     :class:`~quantify_scheduler.backends.qblox.operations.gate_library.ConditionalReset`
-    gate is a conditional gate that first measures the state of the qubit using
+    gate is a conditional gate that first measures the state of the device element using
     an
     :class:`~quantify_scheduler.operations.acquisition_library.ThresholdedAcquisition`
     operation and then performs a :math:`\pi` rotation on the condition that the
@@ -31,10 +31,10 @@ class ConditionalReset(Schedule):
 
         The total time of the the ConditionalReset is the sum of
 
-         1) integration time (<qubit>.measure.integration_time)
-         2) acquisition delay (<qubit>.measure.acq_delay)
+         1) integration time (<device_element>.measure.integration_time)
+         2) acquisition delay (<device_element>.measure.acq_delay)
          3) trigger delay (364ns)
-         4) pi-pulse duration (<qubit>.rxy.duration)
+         4) pi-pulse duration (<device_element>.rxy.duration)
          5) idle time (4ns)
 
     .. note::
@@ -54,7 +54,7 @@ class ConditionalReset(Schedule):
     name : str
         The name of the conditional subschedule, by default "conditional_reset".
     qubit_name : str
-        The name of the qubit to reset to the :math:`|0\rangle` state.
+        The name of the device element to reset to the :math:`|0\rangle` state.
     **kwargs:
         Additional keyword arguments are passed to
         :class:`~quantify_scheduler.operations.gate_library.Measure`. e.g.
@@ -80,16 +80,17 @@ class ConditionalReset(Schedule):
         name: str = "conditional_reset",
         **kwargs,  # noqa: ANN003 (kwargs not annotated)
     ) -> None:
+        device_element_name = qubit_name
         super().__init__(name)
         self.add(
             Measure(
-                qubit_name,
+                device_element_name,
                 acq_protocol="ThresholdedAcquisition",
-                feedback_trigger_label=qubit_name,
+                feedback_trigger_label=device_element_name,
                 **kwargs,
             )
         )
         self.add(
-            ConditionalOperation(body=X(qubit_name), qubit_name=qubit_name),
+            ConditionalOperation(body=X(device_element_name), qubit_name=device_element_name),
             rel_time=TRIGGER_DELAY,
         )

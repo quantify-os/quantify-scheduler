@@ -168,7 +168,7 @@ def composite_square_pulse(
     An example composite pulse to implement a CZ gate.
 
     It applies the
-    square pulse and then corrects for the phase shifts on both the qubits.
+    square pulse and then corrects for the phase shifts on both the device elements.
 
     Parameters
     ----------

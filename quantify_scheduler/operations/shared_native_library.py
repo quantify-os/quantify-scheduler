@@ -15,7 +15,7 @@ class SpectroscopyOperation(Operation):
     Parameters
     ----------
     qubit
-        The target qubit.
+        The target device element.
 
     """
 
@@ -24,7 +24,8 @@ class SpectroscopyOperation(Operation):
         qubit: str,
         **device_overrides,
     ) -> None:
-        super().__init__(name=f"Spectroscopy operation {qubit}")
+        device_element = qubit
+        super().__init__(name=f"Spectroscopy operation {device_element}")
         self.data.update(
             {
                 "gate_info": {
@@ -32,7 +33,7 @@ class SpectroscopyOperation(Operation):
                     "plot_func": "quantify_scheduler.schedules._visualization"
                     ".circuit_diagram.pulse_modulated",
                     "tex": r"Spectroscopy operation",
-                    "qubits": [qubit],
+                    "device_elements": [device_element],
                     "operation_type": "spectroscopy_operation",
                     "device_overrides": device_overrides,
                 },
@@ -42,5 +43,5 @@ class SpectroscopyOperation(Operation):
 
     def __str__(self) -> str:
         gate_info = self.data["gate_info"]
-        qubit = gate_info["qubits"][0]
-        return f'{self.__class__.__name__}(qubit="{qubit}")'
+        device_element = gate_info["device_elements"][0]
+        return f'{self.__class__.__name__}(qubit="{device_element}")'

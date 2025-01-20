@@ -526,13 +526,13 @@ class BasicTransmonElement(DeviceElement):
 
             from quantify_scheduler import BasicTransmonElement
 
-            qubit = BasicTransmonElement("q3")
+            device_element = BasicTransmonElement("q3")
 
-            qubit.rxy.amp180(0.1)
-            qubit.measure.pulse_amp(0.25)
-            qubit.measure.pulse_duration(300e-9)
-            qubit.measure.acq_delay(430e-9)
-            qubit.measure.integration_time(1e-6)
+            device_element.rxy.amp180(0.1)
+            device_element.measure.pulse_amp(0.25)
+            device_element.measure.pulse_duration(300e-9)
+            device_element.measure.acq_delay(430e-9)
+            device_element.measure.integration_time(1e-6)
             ...
 
     Parameters
@@ -587,7 +587,7 @@ class BasicTransmonElement(DeviceElement):
         This method is intended to be used when this object is part of a
         device object containing multiple elements.
         """
-        qubit_config = {
+        device_element_config = {
             f"{self.name}": {
                 "reset": OperationCompilationConfig(
                     factory_func=pulse_library.IdlePulse,
@@ -674,7 +674,7 @@ class BasicTransmonElement(DeviceElement):
                 ),
             }
         }
-        return qubit_config
+        return device_element_config
 
     def generate_device_config(self) -> DeviceCompilationConfig:
         """
@@ -683,7 +683,7 @@ class BasicTransmonElement(DeviceElement):
         The config will be used for the quantify-scheduler making use of the
         :func:`~.circuit_to_device.compile_circuit_to_device_with_config_validation` function.
 
-        This enables the settings of this qubit to be used in isolation.
+        This enables the settings of this device element to be used in isolation.
 
         .. note:
 

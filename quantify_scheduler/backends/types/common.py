@@ -562,7 +562,8 @@ class HardwareCompilationConfig(DataStructure):
                     self.connectivity.graph.nodes[node]["instrument_name"] = "QuantumDevice"
                 else:
                     raise ValueError(
-                        "Invalid node format. " "Must be 'instrument.port' or 'qubit_name:port'."
+                        "Invalid node format. "
+                        "Must be 'instrument.port' or 'device_element_name:port'."
                     )
         return self
 

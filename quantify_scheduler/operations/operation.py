@@ -6,6 +6,7 @@ from __future__ import annotations
 import inspect
 import logging
 from collections import UserDict
+from copy import deepcopy
 from enum import Enum
 from pydoc import locate
 from typing import Iterable
@@ -107,7 +108,19 @@ class Operation(JSONSchemaValMixin, UserDict):
         }
 
     def __setstate__(self, state: dict[str, dict]) -> None:
-        self.data = state["data"]
+        data = state["data"]
+        # This is to make sure we can be backwards compatible
+        # when the "qubits" is used instead of "device_elements"
+        # in the legacy serialized objects.
+        if ((gate_info := data.get("gate_info")) is not None) and (
+            (qubits := gate_info.get("qubits")) is not None
+        ):
+            new_gate_info = deepcopy(gate_info)
+            if gate_info.get("device_elements") is not None:
+                gate_info["device_elements"] = qubits
+            new_gate_info.pop("qubits")
+            data["gate_info"] = new_gate_info
+        self.data = data
         self._update()
 
     def __hash__(self) -> int:
@@ -344,18 +357,18 @@ class Operation(JSONSchemaValMixin, UserDict):
 
 
 def _generate_acq_indices_for_gate(
-    qubits: list[str], acq_index: tuple[int, ...] | int | None
+    device_elements: list[str], acq_index: tuple[int, ...] | int | None
 ) -> int | Iterable[int]:
     # This if else statement a workaround to support multiplexed measurements (#262);
     # this snippet has some automatic behaviour that is error prone; see #262.
-    if len(qubits) == 1:
+    if len(device_elements) == 1:
         return 0 if (acq_index is None) else acq_index
     elif acq_index is None:
-        # Defaults to writing the result of all qubits to acq_index 0.
+        # Defaults to writing the result of all device elements to acq_index 0.
         # Note that this will result in averaging data together if multiple
         # measurements are present in the same schedule (#262).
-        return [0] * len(qubits)
+        return [0] * len(device_elements)
     elif isinstance(acq_index, Iterable):
         return acq_index
     else:
-        return [acq_index] * len(qubits)
+        return [acq_index] * len(device_elements)

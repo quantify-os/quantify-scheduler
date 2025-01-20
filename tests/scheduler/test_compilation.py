@@ -225,7 +225,7 @@ def test_bad_gate(device_compile_config_basic_transmon):
                     "unitary": np.array([[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]]),
                     "tex": r"bad",
                     "plot_func": plot_func,
-                    "qubits": [q],
+                    "device_elements": [q],
                     "operation_type": "bad",
                 }
             }
