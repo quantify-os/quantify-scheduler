@@ -3,7 +3,9 @@ import pytest
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.backends import SerialCompiler
+from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.qblox.operations import long_square_pulse
+from quantify_scheduler.operations import SquarePulse
 from quantify_scheduler.operations.acquisition_library import TriggerCount
 from quantify_scheduler.operations.gate_library import Measure, Reset
 from quantify_scheduler.operations.nv_native_library import ChargeReset, CRCount
@@ -51,6 +53,7 @@ def test_compilation_spectroscopy_operation_qblox_hardware(
 
     quantum_device = mock_setup_basic_nv_qblox_hardware["quantum_device"]
     pulse_duration = quantum_device.get_element("qe0").spectroscopy_operation.duration.get()
+    pulse_amplitude = quantum_device.get_element("qe0").spectroscopy_operation.amplitude.get()
 
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
@@ -70,20 +73,34 @@ def test_compilation_spectroscopy_operation_qblox_hardware(
     assert "abs_time" in compiled_sched.schedulables[label1].data
     assert "abs_time" in compiled_sched.schedulables[label2].data
     assert compiled_sched.schedulables[label1].data["abs_time"] == 0
-    duration_pulse_1 = compiled_sched.operations[spec_pulse_hash].data["pulse_info"][0]["duration"]
+    duration_pulse_1 = compiled_sched.operations[spec_pulse_hash].duration
     assert compiled_sched.schedulables[label2].data["abs_time"] == pytest.approx(
-        0 + duration_pulse_1
+        0 + duration_pulse_1  # type: ignore  (type should be a float here)
     )
+
+    if pulse_duration >= constants.PULSE_STITCHING_DURATION:
+        assert (
+            compiled_sched.operations[spec_pulse_hash].data["pulse_info"]
+            == long_square_pulse(
+                amp=pulse_amplitude,
+                duration=pulse_duration,
+                port="qe0:mw",
+                clock="qe0.spec",
+            )["pulse_info"]
+        )
+    else:
+        assert (
+            compiled_sched.operations[spec_pulse_hash].data["pulse_info"]
+            == SquarePulse(
+                amp=pulse_amplitude,
+                duration=pulse_duration,
+                port="qe0:mw",
+                clock="qe0.spec",
+            )["pulse_info"]
+        )
 
     assert isinstance(compiled_sched, CompiledSchedule)
     assert "compiled_instructions" in compiled_sched.data
-
-    assert compiled_sched.timing_table.data.loc[0, "duration"] == pulse_duration
-    assert compiled_sched.timing_table.data.loc[1, "duration"] == pulse_duration
-    assert compiled_sched.timing_table.data.loc[1, "abs_time"] == pulse_duration
-
-    assert compiled_sched.timing_table.data.loc[0, "is_acquisition"] is numpy.bool_(False)
-    assert compiled_sched.timing_table.data.loc[1, "is_acquisition"] is numpy.bool_(False)
 
 
 def test_compilation_reset_qblox_hardware(mock_setup_basic_nv_qblox_hardware):

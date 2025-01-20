@@ -9,7 +9,7 @@ but could be extended for other qubits (eg. carbon qubit).
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Hashable
+from typing import TYPE_CHECKING, Hashable, Literal
 
 from qcodes.instrument import InstrumentModule
 from qcodes.instrument.parameter import (
@@ -161,9 +161,9 @@ class ClockFrequencies(InstrumentModule):
         """Frequency of the green ionization laser for manipulation of the NVs charge state."""
 
 
-class SpectroscopyOperationHermiteMW(InstrumentModule):
+class SpectroscopyOperationNV(InstrumentModule):
     """
-    Convert the SpectroscopyOperation into a hermite microwave pulse.
+    Convert the SpectroscopyOperation into a hermite, square, or gaussian microwave pulse.
 
     This class contains parameters with a certain amplitude and duration for
     spin-state manipulation.
@@ -179,6 +179,7 @@ class SpectroscopyOperationHermiteMW(InstrumentModule):
         *,
         amplitude: float = math.nan,
         duration: float = 8e-6,
+        pulse_shape: Literal["SquarePulse", "SkewedHermitePulse", "GaussPulse"] = "SquarePulse",
     ) -> None:
         super().__init__(parent=parent, name=name)
 
@@ -201,6 +202,16 @@ class SpectroscopyOperationHermiteMW(InstrumentModule):
             vals=_Durations(),
         )
         """Duration of the MW pulse."""
+
+        self.pulse_shape = ManualParameter(
+            name="pulse_shape",
+            label="Shape of the pulse",
+            instrument=self,
+            initial_value=pulse_shape,
+            unit="",
+            vals=validators.Enum("SquarePulse", "SkewedHermitePulse", "GaussPulse"),
+        )
+        """Shape of the MW pulse."""
 
 
 class ResetSpinpump(InstrumentModule):
@@ -470,10 +481,10 @@ class CRCount(InstrumentModule):
         """
 
 
-class RxyHermite(InstrumentModule):
+class RxyNV(InstrumentModule):
     """
     Submodule containing parameters to perform an Rxy operation
-    using a Hermite pulse.
+    using a Hermite or Gaussian pulse.
     """
 
     def __init__(
@@ -484,6 +495,7 @@ class RxyHermite(InstrumentModule):
         amp180: float = math.nan,
         skewness: float = 0,
         duration: float = 20e-9,
+        pulse_shape: Literal["SkewedHermitePulse", "GaussPulse"] = "SkewedHermitePulse",
     ) -> None:
         super().__init__(parent=parent, name=name)
 
@@ -513,6 +525,16 @@ class RxyHermite(InstrumentModule):
             vals=_Durations(),
         )
         """Duration of the pi pulse."""
+
+        self.pulse_shape = ManualParameter(
+            name="pulse_shape",
+            label="Shape of the pulse",
+            instrument=self,
+            initial_value=pulse_shape,
+            unit="",
+            vals=validators.Enum("SkewedHermitePulse", "GaussPulse"),
+        )
+        """Shape of the pi pulse."""
 
 
 class BasicElectronicNVElement(DeviceElement):
@@ -544,7 +566,7 @@ class BasicElectronicNVElement(DeviceElement):
 
     def __init__(self, name: str, **kwargs) -> None:
         submodules_to_add = {
-            "spectroscopy_operation": SpectroscopyOperationHermiteMW,
+            "spectroscopy_operation": SpectroscopyOperationNV,
             "ports": Ports,
             "clock_freqs": ClockFrequencies,
             "reset": ResetSpinpump,
@@ -552,7 +574,7 @@ class BasicElectronicNVElement(DeviceElement):
             "measure": Measure,
             "pulse_compensation": PulseCompensationModule,
             "cr_count": CRCount,
-            "rxy": RxyHermite,
+            "rxy": RxyNV,
         }
         # the logic below is to support passing a dictionary to the constructor
         # e.g. `DeviceElement("q0", rxy={"amp180": 0.1})`. But we're planning to
@@ -566,8 +588,8 @@ class BasicElectronicNVElement(DeviceElement):
                 sub_class(parent=self, name=sub_name, **submodule_data.get(sub_name, {})),
             )
 
-        self.spectroscopy_operation: SpectroscopyOperationHermiteMW
-        """Submodule :class:`~.SpectroscopyOperationHermiteMW`."""
+        self.spectroscopy_operation: SpectroscopyOperationNV
+        """Submodule :class:`~.SpectroscopyOperationNV`."""
         self.ports: Ports
         """Submodule :class:`~.Ports`."""
         self.clock_freqs: ClockFrequencies
@@ -582,7 +604,7 @@ class BasicElectronicNVElement(DeviceElement):
         """Submodule :class:`~.PulseCompensationModule`."""
         self.cr_count: CRCount
         """Submodule :class:`~.CRCount`."""
-        self.rxy: RxyHermite
+        self.rxy: RxyNV
         """Submodule :class:`~.Rxy`."""
 
     def _generate_config(self) -> dict[str, dict[str, OperationCompilationConfig]]:
@@ -601,6 +623,7 @@ class BasicElectronicNVElement(DeviceElement):
                         "amplitude": self.spectroscopy_operation.amplitude(),
                         "port": self.ports.microwave(),
                         "clock": f"{self.name}.spec",
+                        "pulse_shape": self.spectroscopy_operation.pulse_shape(),
                     },
                 ),
                 "reset": OperationCompilationConfig(
@@ -690,13 +713,14 @@ class BasicElectronicNVElement(DeviceElement):
                     ],
                 ),
                 "Rxy": OperationCompilationConfig(
-                    factory_func=pulse_factories.rxy_hermite_pulse,
+                    factory_func=pulse_factories.rxy_pulse,
                     factory_kwargs={
                         "amp180": self.rxy.amp180(),
                         "skewness": self.rxy.skewness(),
                         "port": self.ports.microwave(),
                         "clock": f"{self.name}.spec",
                         "duration": self.rxy.duration(),
+                        "pulse_shape": self.rxy.pulse_shape(),
                     },
                     gate_info_factory_kwargs=[
                         "theta",

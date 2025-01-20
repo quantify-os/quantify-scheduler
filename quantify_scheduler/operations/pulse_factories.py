@@ -9,6 +9,8 @@ and use that to create an instance of the operation itself.
 
 from __future__ import annotations
 
+from typing import Literal
+
 from quantify_scheduler.operations import pulse_library
 from quantify_scheduler.schedules import Schedule
 
@@ -230,7 +232,7 @@ def composite_square_pulse(
     return composite_pulse
 
 
-def rxy_hermite_pulse(
+def rxy_pulse(
     amp180: float,
     skewness: float,
     theta: float,
@@ -238,52 +240,68 @@ def rxy_hermite_pulse(
     port: str,
     duration: float,
     clock: str,
+    pulse_shape: Literal["SkewedHermitePulse", "GaussPulse"],
     reference_magnitude: pulse_library.ReferenceMagnitude | None = None,
-) -> pulse_library.SkewedHermitePulse:
+) -> pulse_library.SkewedHermitePulse | pulse_library.GaussPulse:
     """
-    Generate a Gaussian drive with :class:`~.operations.pulse_library.GaussPulse` that achieves
-    the right rotation angle ``theta`` based on a calibrated pi-pulse amplitude.
+    Generate a Hermite or Gaussian drive pulse for a specified rotation on the Bloch sphere.
+
+    The pulse achieves the desired rotation angle ``theta`` using a calibrated pi-pulse
+    amplitude ``amp180``. The shape of the pulse can be either a skewed Hermite pulse or a
+    Gaussian pulse, depending on the specified `pulse_shape`.
 
     Parameters
     ----------
-    amp180
-        Unitless amplitude of excitation pulse to get the maximum 180 degree theta.
-    skewness
-        First-order amplitude correction to the Hermite pulse. Skewness of 0 returns a standard
-        hermite pulse.
-    theta
-        Angle in degrees to rotate around an equatorial axis on the Bloch sphere.
-    phi
-        Phase of the pulse in degrees.
-    port
-        Name of the port where the pulse is played.
-    duration
-        Duration of the pulse in seconds.
-    clock
+    amp180 : float
+        Unitless amplitude of the excitation pulse for a 180-degree rotation.
+    skewness : float
+        Amplitude correction for the Hermite pulse. A value of 0 results in a standard
+        Hermite pulse.
+    theta : float
+        Rotation angle around an equatorial axis on the Bloch sphere, in degrees.
+    phi : float
+        Phase of the pulse, in degrees.
+    port : str
+        Name of the port where the pulse will be played.
+    duration : float
+        Duration of the pulse, in seconds.
+    clock : str
         Name of the clock used to modulate the pulse.
-    reference_magnitude : :class:`~quantify_scheduler.operations.pulse_library.ReferenceMagnitude`,
-        hardware config if not provided.
+    pulse_shape : Literal["SkewedHermitePulse", "GaussPulse"]
+        Shape of the pulse to be generated.
+    reference_magnitude : pulse_library.ReferenceMagnitude | None, optional
+        Reference magnitude for hardware configuration. If not provided, defaults to `None`.
 
     Returns
     -------
-    :
-        GaussPulse operation.
+    pulse_library.SkewedHermitePulse | pulse_library.GaussPulse
+        The generated pulse operation based on the specified shape and parameters.
 
     """
-    # theta is in degrees, and
-    # amp180 is the amplitude necessary to get the
-    # maximum 180 degree theta (experimentally)
     amp_theta = amp180 * theta / 180
-
-    return pulse_library.SkewedHermitePulse(
-        amplitude=amp_theta,
-        skewness=skewness,
-        phase=phi,
-        port=port,
-        duration=duration,
-        clock=clock,
-        reference_magnitude=reference_magnitude,
-    )
+    if pulse_shape == "SkewedHermitePulse":
+        return pulse_library.SkewedHermitePulse(
+            amplitude=amp_theta,
+            skewness=skewness,
+            phase=phi,
+            port=port,
+            duration=duration,
+            clock=clock,
+            reference_magnitude=reference_magnitude,
+        )
+    elif pulse_shape == "GaussPulse":
+        return pulse_library.GaussPulse(
+            G_amp=amp_theta,
+            phase=phi,
+            duration=duration,
+            port=port,
+            clock=clock,
+            reference_magnitude=reference_magnitude,
+        )
+    else:
+        raise ValueError(
+            f"Unsupported pulse shape: {pulse_shape}. Use 'SkewedHermitePulse' or 'GaussPulse'."
+        )
 
 
 def nv_spec_pulse_mw(
@@ -291,46 +309,70 @@ def nv_spec_pulse_mw(
     amplitude: float,
     clock: str,
     port: str,
+    pulse_shape: Literal["SquarePulse", "SkewedHermitePulse", "GaussPulse"],
     reference_magnitude: pulse_library.ReferenceMagnitude | None = None,
-) -> pulse_library.SkewedHermitePulse:
+) -> pulse_library.SquarePulse | pulse_library.SkewedHermitePulse | pulse_library.GaussPulse:
     """
-    Generate hermite pulse for spectroscopy experiment.
+    Generate a microwave pulse for spectroscopy experiments.
 
-    This is a simplified version of the SkewedHermitePulse. It is not skewed. It also
-    sets the phase to 0. This means that no rotation about the z-axis is applied on the
-    qubit.
+    The pulse can take one of three shapes: Square, Skewed Hermite, or Gaussian,
+    based on the specified `pulse_shape`. This function supports frequency-modulated
+    pulses for spectroscopy applications.
 
     Parameters
     ----------
-    duration
-        Pulse duration in seconds
-    amplitude
-        Amplitude of the hermite pulse
-    skewness
-        Skewness of hermite pulse
-    clock
-        Name of clock for frequency modulation of hermite pulse
-    port
-        Name of port where hermite pulse is applied
-    reference_magnitude : :class:`~quantify_scheduler.operations.pulse_library.ReferenceMagnitude`,
-        Optional scaling value and unit for the unitless amplitude. Uses settings in
-        hardware config if not provided.
+    duration : float
+        Duration of the pulse, in seconds.
+    amplitude : float
+        Amplitude of the pulse.
+    clock : str
+        Name of the clock used for frequency modulation.
+    port : str
+        Name of the port where the pulse is applied.
+    pulse_shape : Literal["SquarePulse", "SkewedHermitePulse", "GaussPulse"]
+        Shape of the pulse. The default is "SquarePulse".
+    reference_magnitude : pulse_library.ReferenceMagnitude | None, optional
+        Scaling value and unit for the unitless amplitude. If not provided,
+        settings from the hardware configuration are used.
 
     Returns
     -------
-    :
-        Hermite pulse operation
+    pulse_library.SquarePulse | pulse_library.SkewedHermitePulse | pulse_library.GaussPulse
+        The generated pulse operation based on the specified shape and parameters.
 
     """
-    return pulse_library.SkewedHermitePulse(
-        duration=duration,
-        amplitude=amplitude,
-        reference_magnitude=reference_magnitude,
-        skewness=0,
-        phase=0,
-        clock=clock,
-        port=port,
-    )
+    if pulse_shape == "SquarePulse":
+        return pulse_library.SquarePulse(
+            amp=amplitude,
+            duration=duration,
+            port=port,
+            clock=clock,
+            reference_magnitude=reference_magnitude,
+        )
+    elif pulse_shape == "SkewedHermitePulse":
+        return pulse_library.SkewedHermitePulse(
+            duration=duration,
+            amplitude=amplitude,
+            reference_magnitude=reference_magnitude,
+            skewness=0,
+            phase=0,
+            clock=clock,
+            port=port,
+        )
+    elif pulse_shape == "GaussPulse":
+        return pulse_library.GaussPulse(
+            G_amp=amplitude,
+            phase=0,
+            duration=duration,
+            port=port,
+            clock=clock,
+            reference_magnitude=reference_magnitude,
+        )
+    else:
+        raise ValueError(
+            f"Unsupported pulse shape: {pulse_shape}. Use 'SquarePulse', "
+            "'SkewedHermitePulse', or 'GaussPulse'."
+        )
 
 
 def spin_init_pulse(

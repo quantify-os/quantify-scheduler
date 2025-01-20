@@ -13,9 +13,10 @@ from quantify_scheduler.backends.qblox.operations import (
 )
 from quantify_scheduler.operations.pulse_factories import (
     non_implemented_pulse,
+    nv_spec_pulse_mw,
     rxy_drag_pulse,
     rxy_gauss_pulse,
-    rxy_hermite_pulse,
+    rxy_pulse,
 )
 from quantify_scheduler.operations.pulse_library import (
     ReferenceMagnitude,
@@ -74,9 +75,9 @@ def test_rxy_gauss_pulse():
     ]
 
 
-def test_rxy_hermite_pulse():
-    """Test the rxy_hermite_pulse"""
-    pulse = rxy_hermite_pulse(
+def test_rxy_pulse():
+    """Test the rxy_pulse"""
+    pulse = rxy_pulse(
         amp180=0.8,
         theta=180,
         phi=10,
@@ -84,6 +85,7 @@ def test_rxy_hermite_pulse():
         duration=100e-9,
         clock="q0.ro",
         skewness=0.0,
+        pulse_shape="SkewedHermitePulse",
     )
     assert pulse.data["pulse_info"] == [
         {
@@ -96,6 +98,114 @@ def test_rxy_hermite_pulse():
             "clock": "q0.ro",
             "reference_magnitude": None,
             "t0": 0.0,
+        }
+    ]
+
+
+def test_unsupported_pulse_shape_rxy():
+    """Test rxy_pulse with unsupported pulse shape."""
+    with pytest.raises(
+        ValueError,
+        match=r"Unsupported pulse shape: \w+\. Use 'SkewedHermitePulse' or 'GaussPulse'\.",
+    ):
+        rxy_pulse(
+            amp180=0.8,
+            theta=180,
+            phi=10,
+            port="q0:res",
+            duration=100e-9,
+            clock="q0.ro",
+            skewness=0.0,
+            pulse_shape="Staircase",  # type: ignore
+        )
+
+
+def test_unsupported_pulse_shape_nv_spec():
+    """Test nv_spec_pulse_mw with unsupported pulse shape."""
+    with pytest.raises(
+        ValueError,
+        match=(
+            r"Unsupported pulse shape: \w+\. "
+            r"Use 'SquarePulse', 'SkewedHermitePulse', or 'GaussPulse'\."
+        ),
+    ):
+        nv_spec_pulse_mw(
+            duration=10e-9,
+            amplitude=0.5,
+            clock="q0.ro",
+            port="q0:res",
+            pulse_shape="Staircase",  # type: ignore
+        )
+
+
+def test_nv_spec_pulse_mw_square():
+    """Test the nv_spec_pulse_mw with SquarePulse."""
+    pulse = nv_spec_pulse_mw(
+        duration=1e-7,
+        amplitude=0.8,
+        clock="q0.ro",
+        port="q0:res",
+        pulse_shape="SquarePulse",
+    )
+    assert pulse.data["pulse_info"] == [
+        {
+            "wf_func": "quantify_scheduler.waveforms.square",
+            "amp": 0.8,
+            "duration": 1e-7,
+            "port": "q0:res",
+            "clock": "q0.ro",
+            "reference_magnitude": None,
+            "t0": 0,
+        }
+    ]
+
+
+def test_nv_spec_pulse_mw_skewed_hermite():
+    """Test the nv_spec_pulse_mw with SkewedHermitePulse."""
+    pulse = nv_spec_pulse_mw(
+        duration=1e-7,
+        amplitude=0.8,
+        clock="q0.ro",
+        port="q0:res",
+        pulse_shape="SkewedHermitePulse",
+    )
+    assert pulse.data["pulse_info"] == [
+        {
+            "wf_func": "quantify_scheduler.waveforms.skewed_hermite",
+            "amplitude": 0.8,
+            "duration": 1e-7,
+            "skewness": 0.0,
+            "phase": 0,
+            "port": "q0:res",
+            "clock": "q0.ro",
+            "reference_magnitude": None,
+            "t0": 0.0,
+        }
+    ]
+
+
+def test_nv_spec_pulse_mw_gauss():
+    """Test the nv_spec_pulse_mw with GaussPulse."""
+    pulse = nv_spec_pulse_mw(
+        duration=1e-7,
+        amplitude=0.8,
+        clock="q0.ro",
+        port="q0:res",
+        pulse_shape="GaussPulse",
+    )
+    assert pulse.data["pulse_info"] == [
+        {
+            "wf_func": "quantify_scheduler.waveforms.drag",
+            "G_amp": 0.8,
+            "D_amp": 0,
+            "reference_magnitude": None,
+            "duration": 100e-9,
+            "phase": 0,
+            "nr_sigma": 4,
+            "sigma": None,
+            "clock": "q0.ro",
+            "port": "q0:res",
+            "t0": 0,
         }
     ]
 

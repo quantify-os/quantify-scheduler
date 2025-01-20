@@ -38,6 +38,7 @@
 - Thomas Middelburg ([GitLab](https://gitlab.com/ThomasMiddelburg))
 - Thomas Reynders ([GitLab](https://gitlab.com/treynders))
 - Tobias Bonsen ([GitLab](https://gitlab.com/tobiasbonsen))
+- Vatshal Srivastav ([GitLab](https://gitlab.com/vsrivastav1))
 - Viacheslav Ostroukh ([GitLab](https://gitlab.com/slavoutich))
 - Victor Gervilla ([GitLab](https://gitlab.com/v_palomar))
 - Victor Negirneac ([GitLab](https://gitlab.com/caenrigen))

@@ -44,7 +44,7 @@ from .pulse_factories import (
     phase_shift,
     rxy_drag_pulse,
     rxy_gauss_pulse,
-    rxy_hermite_pulse,
+    rxy_pulse,
     spin_init_pulse,
 )
 from .pulse_library import (
@@ -91,7 +91,7 @@ __all__ = [
     "phase_shift",
     "rxy_drag_pulse",
     "rxy_gauss_pulse",
-    "rxy_hermite_pulse",
+    "rxy_pulse",
     "ChirpPulse",
     "DRAGPulse",
     "GaussPulse",
