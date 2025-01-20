@@ -352,7 +352,7 @@ def test_convert_to_numerical_mixed_operation():
     dummy_gate_info = {
         "unitary": [[1, 0], [0, 1]],
         "operation_type": "Example",
-        "qubits": ["q0"],
+        "device_elements": ["q0"],
         "symmetric": False,
         "tex": r"example",
         "plot_func": None,

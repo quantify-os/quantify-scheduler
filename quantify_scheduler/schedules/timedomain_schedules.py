@@ -47,19 +47,20 @@ def rabi_sched(
     frequency
         frequency of the qubit 01 transition.
     qubit
-        the qubit on which to perform a Rabi experiment.
+        the device element name on which to perform a Rabi experiment.
     port
         location on the chip where the Rabi pulse should be applied.
-        if set to :code:`None`, will use the naming convention :code:`"<qubit>:mw"` to
+        if set to :code:`None`, will use the naming convention :code:`"<device element name>:mw"` to
         infer the port.
     clock
         name of the location in frequency space where to apply the Rabi pulse.
-        if set to :code:`None`, will use the naming convention :code:`"<qubit>.01"` to
+        if set to :code:`None`, will use the naming convention :code:`"<device_element>.01"` to
         infer the clock.
     repetitions
         The amount of times the Schedule will be repeated.
 
     """
+    device_element = qubit
     # ensure pulse_amplitude and pulse_duration are iterable.
     amps = np.asarray(pulse_amp)
     amps = amps.reshape(amps.shape or (1,))
@@ -79,15 +80,15 @@ def rabi_sched(
         )
 
     if port is None:
-        port = f"{qubit}:mw"
+        port = f"{device_element}:mw"
     if clock is None:
-        clock = f"{qubit}.01"
+        clock = f"{device_element}.01"
 
     schedule = Schedule("Rabi", repetitions)
     schedule.add_resource(ClockResource(name=clock, freq=frequency))
 
     for i, (amp, duration) in enumerate(zip(amps, durations)):
-        schedule.add(Reset(qubit), label=f"Reset {i}")
+        schedule.add(Reset(device_element), label=f"Reset {i}")
         schedule.add(
             DRAGPulse(
                 duration=duration,
@@ -100,7 +101,7 @@ def rabi_sched(
             label=f"Rabi_pulse {i}",
         )
         # N.B. acq_channel is not specified
-        schedule.add(Measure(qubit, acq_index=i), label=f"Measurement {i}")
+        schedule.add(Measure(device_element, acq_index=i), label=f"Measurement {i}")
 
     return schedule
 
@@ -125,7 +126,7 @@ def t1_sched(
     times
         an array of wait times tau between the start of pi-pulse and the measurement.
     qubit
-        the name of the qubit e.g., :code:`"q0"` to perform the T1 experiment on.
+        the name of the device element e.g., :code:`"q0"` to perform the T1 experiment on.
     repetitions
         The amount of times the Schedule will be repeated.
 
@@ -135,16 +136,17 @@ def t1_sched(
         An experiment schedule.
 
     """
+    device_element = qubit
     # ensure times is an iterable when passing floats.
     times = np.asarray(times)
     times = times.reshape(times.shape or (1,))
 
     schedule = Schedule("T1", repetitions)
     for i, tau in enumerate(times):
-        schedule.add(Reset(qubit), label=f"Reset {i}")
-        schedule.add(X(qubit), label=f"pi {i}")
+        schedule.add(Reset(device_element), label=f"Reset {i}")
+        schedule.add(X(device_element), label=f"pi {i}")
         schedule.add(
-            Measure(qubit, acq_index=i),
+            Measure(device_element, acq_index=i),
             ref_pt="start",
             rel_time=tau,
             label=f"Measurement {i}",
@@ -180,7 +182,7 @@ def ramsey_sched(
         which can be useful to distinguish a slow oscillation due to a small physical
         detuning from the decay of the dephasing noise.
     qubit
-        the name of the qubit e.g., :code:`"q0"` to perform the Ramsey experiment on.
+        the name of the device element e.g., :code:`"q0"` to perform the Ramsey experiment on.
     repetitions
         The amount of times the Schedule will be repeated.
 
@@ -190,6 +192,7 @@ def ramsey_sched(
         An experiment schedule.
 
     """
+    device_element = qubit
     # ensure times is an iterable when passing floats.
     times = np.asarray(times)
     times = times.reshape(times.shape or (1,))
@@ -200,13 +203,15 @@ def ramsey_sched(
         times = [times]
 
     for i, tau in enumerate(times):
-        schedule.add(Reset(qubit), label=f"Reset {i}")
-        schedule.add(X90(qubit))
+        schedule.add(Reset(device_element), label=f"Reset {i}")
+        schedule.add(X90(device_element))
 
         # the phase of the second pi/2 phase progresses to propagate
         recovery_phase = np.rad2deg(2 * np.pi * artificial_detuning * tau)
-        schedule.add(Rxy(theta=90, phi=recovery_phase, qubit=qubit), ref_pt="start", rel_time=tau)
-        schedule.add(Measure(qubit, acq_index=i), label=f"Measurement {i}")
+        schedule.add(
+            Rxy(theta=90, phi=recovery_phase, qubit=device_element), ref_pt="start", rel_time=tau
+        )
+        schedule.add(Measure(device_element, acq_index=i), label=f"Measurement {i}")
     return schedule
 
 
@@ -228,7 +233,7 @@ def echo_sched(
     Parameters
     ----------
     qubit
-        the name of the qubit e.g., "q0" to perform the echo experiment on.
+        the name of the device element e.g., "q0" to perform the echo experiment on.
     times
         an array of wait times. Used as
         tau/2 wait time between the start of the first pi/2 pulse and pi pulse,
@@ -242,17 +247,18 @@ def echo_sched(
         An experiment schedule.
 
     """
+    device_element = qubit
     # ensure times is an iterable when passing floats.
     times = np.asarray(times)
     times = times.reshape(times.shape or (1,))
 
     schedule = Schedule("Echo", repetitions)
     for i, tau in enumerate(times):
-        schedule.add(Reset(qubit), label=f"Reset {i}")
-        schedule.add(X90(qubit))
-        schedule.add(X(qubit), ref_pt="start", rel_time=tau / 2)
-        schedule.add(X90(qubit), ref_pt="start", rel_time=tau / 2)
-        schedule.add(Measure(qubit, acq_index=i), label=f"Measurement {i}")
+        schedule.add(Reset(device_element), label=f"Reset {i}")
+        schedule.add(X90(device_element))
+        schedule.add(X(device_element), ref_pt="start", rel_time=tau / 2)
+        schedule.add(X90(device_element), ref_pt="start", rel_time=tau / 2)
+        schedule.add(Measure(device_element, acq_index=i), label=f"Measurement {i}")
     return schedule
 
 
@@ -279,7 +285,7 @@ def cpmg_sched(
         Number of CPMG Gates.
         Note that `n_gates=1` corresponds to an Echo experiment (:func:`~.echo_sched`).
     qubit
-        The name of the qubit, e.g., "q0", to perform the echo experiment on.
+        The name of the device element, e.g., "q0", to perform the echo experiment on.
     times
         An array of wait times between the pi/2 pulses. The wait times are
         subdivided into multiple IdlePulse(time/(2n)) operations. Be aware that
@@ -304,6 +310,7 @@ def cpmg_sched(
         An experiment schedule.
 
     """
+    device_element = qubit
     if variant not in ["X", "Y", "XY"]:
         raise ValueError(f"Unknown variant '{variant}'. Variant must be one of ('X', 'Y', 'XY').")
 
@@ -318,16 +325,16 @@ def cpmg_sched(
     for i, tau in enumerate(times):
         idle_time = tau / (2 * n_gates)
 
-        schedule.add(Reset(qubit), label=f"Reset {i}")
-        schedule.add(X90(qubit))
+        schedule.add(Reset(device_element), label=f"Reset {i}")
+        schedule.add(X90(device_element))
         inner = Schedule("inner")
 
         if variant != "XY":
             inner.add(IdlePulse(duration=idle_time))
             if variant == "X":
-                echo_gate = X(qubit)
+                echo_gate = X(device_element)
             elif variant == "Y":
-                echo_gate = Y(qubit)
+                echo_gate = Y(device_element)
             inner.add(echo_gate, label=f"pi {i}")
             inner.add(IdlePulse(duration=idle_time), ref_pt="start")
             n_reps = n_gates
@@ -340,9 +347,9 @@ def cpmg_sched(
                 )
 
             inner.add(IdlePulse(duration=idle_time))
-            inner.add(X(qubit), label=f"pi_x {i}")
+            inner.add(X(device_element), label=f"pi_x {i}")
             inner.add(IdlePulse(duration=2 * idle_time), ref_pt="start")
-            inner.add(Y(qubit), label=f"pi_y {i}")
+            inner.add(Y(device_element), label=f"pi_y {i}")
             inner.add(IdlePulse(duration=idle_time), ref_pt="start")
             n_reps = int(n_gates / 2)
 
@@ -355,8 +362,8 @@ def cpmg_sched(
             rel_time=4e-9,
         )
         recovery_phase = np.rad2deg(2 * np.pi * artificial_detuning * tau)
-        schedule.add(Rxy(theta=90, phi=recovery_phase, qubit=qubit))
-        schedule.add(Measure(qubit, acq_index=i), label=f"Measurement {i}")
+        schedule.add(Rxy(theta=90, phi=recovery_phase, qubit=device_element))
+        schedule.add(Measure(device_element, acq_index=i), label=f"Measurement {i}")
 
     return schedule
 
@@ -381,7 +388,7 @@ def allxy_sched(
     Parameters
     ----------
     qubit
-        the name of the qubit e.g., :code:`"q0"` to perform the experiment on.
+        the name of the device element e.g., :code:`"q0"` to perform the experiment on.
     element_select_idx
         the index of the particular element of the AllXY experiment to execute.
     repetitions
@@ -393,6 +400,7 @@ def allxy_sched(
         An experiment schedule.
 
     """
+    device_element = qubit
     if isinstance(element_select_idx, int):
         element_select_idx = [element_select_idx]
 
@@ -432,10 +440,10 @@ def allxy_sched(
 
         (th0, phi0), (th1, phi1) = allxy_combinations[elt_idx]
 
-        schedule.add(Reset(qubit), label=f"Reset {i}")
-        schedule.add(Rxy(qubit=qubit, theta=th0, phi=phi0))
-        schedule.add(Rxy(qubit=qubit, theta=th1, phi=phi1))
-        schedule.add(Measure(qubit, acq_index=i), label=f"Measurement {i}")
+        schedule.add(Reset(device_element), label=f"Reset {i}")
+        schedule.add(Rxy(qubit=device_element, theta=th0, phi=phi0))
+        schedule.add(Rxy(qubit=device_element, theta=th1, phi=phi1))
+        schedule.add(Measure(device_element, acq_index=i), label=f"Measurement {i}")
     return schedule
 
 
@@ -454,7 +462,7 @@ def readout_calibration_sched(
     Parameters
     ----------
     qubit
-        the name of the qubit e.g., :code:`"q0"` to perform the experiment on.
+        the name of the device element e.g., :code:`"q0"` to perform the experiment on.
     prepared_states
         the states to prepare the qubit in before measuring as in integer corresponding
         to the ground (0), first-excited (1) or second-excited (2) state.
@@ -481,14 +489,15 @@ def readout_calibration_sched(
         If the prepared state is 2.
 
     """
-    schedule = Schedule(f"Readout calibration {qubit}, {prepared_states}", repetitions)
+    device_element = qubit
+    schedule = Schedule(f"Readout calibration {device_element}, {prepared_states}", repetitions)
 
     for i, prep_state in enumerate(prepared_states):
-        schedule.add(Reset(qubit), label=f"Reset {i}")
+        schedule.add(Reset(device_element), label=f"Reset {i}")
         if prep_state == 0:
             pass
         elif prep_state == 1:
-            schedule.add(Rxy(qubit=qubit, theta=180, phi=0))
+            schedule.add(Rxy(qubit=device_element, theta=180, phi=0))
         elif prep_state == 2:
             raise NotImplementedError(
                 "Preparing the qubit in the second excited (2) " "state is not supported yet."
@@ -496,7 +505,9 @@ def readout_calibration_sched(
         else:
             raise ValueError(f"Prepared state ({prep_state}) must be either 0, 1 or 2.")
         schedule.add(
-            Measure(qubit, acq_index=i, bin_mode=BinMode.APPEND, acq_protocol=acq_protocol),
+            Measure(
+                device_element, acq_index=i, bin_mode=BinMode.APPEND, acq_protocol=acq_protocol
+            ),
             label=f"Measurement {i}",
         )
     return schedule

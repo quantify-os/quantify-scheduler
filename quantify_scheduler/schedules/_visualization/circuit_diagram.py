@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from quantify_scheduler.resources import Resource
 
 
-def gate_box(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> None:
+def gate_box(ax: Axes, time: float, device_element_idxs: list[int], text: str, **kw) -> None:
     """
     A box for a single gate containing a label.
 
@@ -38,19 +38,19 @@ def gate_box(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> N
         The matplotlib Axes.
     time :
         The time of the gate.
-    qubit_idxs :
-        The qubit indices.
+    device_element_idxs :
+        The device_element indices.
     text :
         The gate name.
     kw :
         Additional keyword arguments to be passed to drawing the gate box.
 
     """
-    for qubit_idx in qubit_idxs:
+    for device_element_idx in device_element_idxs:
         ps.box_text(
             ax,
             x0=time,
-            y0=qubit_idx,
+            y0=device_element_idx,
             text=text,
             fillcolor=constants.COLOR_LAZURE,
             width=0.8,
@@ -59,7 +59,7 @@ def gate_box(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> N
         )
 
 
-def pulse_baseband(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> None:
+def pulse_baseband(ax: Axes, time: float, device_element_idxs: list[int], text: str, **kw) -> None:
     """
     Adds a visual indicator for a Baseband pulse to the `matplotlib.axes.Axis`
     instance.
@@ -70,8 +70,8 @@ def pulse_baseband(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw
         The matplotlib Axes.
     time :
         The time of the pulse.
-    qubit_idxs :
-        The qubit indices.
+    device_element_idxs :
+        The device_element indices.
     text :
         The pulse name.
     kw :
@@ -79,20 +79,20 @@ def pulse_baseband(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw
 
     """
     cartoon_width = 0.6
-    for qubit_idx in qubit_idxs:
+    for device_element_idx in device_element_idxs:
         ps.flux_pulse(
             ax,
             pos=time - cartoon_width / 2,
-            y_offs=qubit_idx,
+            y_offs=device_element_idx,
             width=cartoon_width,
             s=0.0025,
             amp=0.33,
             **kw,
         )
-        ax.text(time, qubit_idx + 0.45, text, ha="center", va="center", zorder=6)
+        ax.text(time, device_element_idx + 0.45, text, ha="center", va="center", zorder=6)
 
 
-def pulse_modulated(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> None:
+def pulse_modulated(ax: Axes, time: float, device_element_idxs: list[int], text: str, **kw) -> None:
     """
     Adds a visual indicator for a Modulated pulse to the `matplotlib.axes.Axis`
     instance.
@@ -103,8 +103,8 @@ def pulse_modulated(ax: Axes, time: float, qubit_idxs: list[int], text: str, **k
         The matplotlib Axes.
     time :
         The time of the pulse.
-    qubit_idxs :
-        The qubit indices.
+    device_element_idxs :
+        The device_element indices.
     text :
         The pulse name.
     kw :
@@ -112,19 +112,21 @@ def pulse_modulated(ax: Axes, time: float, qubit_idxs: list[int], text: str, **k
 
     """
     cartoon_width = 0.6
-    for qubit_idx in qubit_idxs:
+    for device_element_idx in device_element_idxs:
         ps.mw_pulse(
             ax,
             pos=time - cartoon_width / 2,
-            y_offs=qubit_idx,
+            y_offs=device_element_idx,
             width=cartoon_width,
             amp=0.33,
             **kw,
         )
-        ax.text(time, qubit_idx + 0.45, text, ha="center", va="center", zorder=6)
+        ax.text(time, device_element_idx + 0.45, text, ha="center", va="center", zorder=6)
 
 
-def meter(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> None:  # Noqa: ARG001
+def meter(
+    ax: Axes, time: float, device_element_idxs: list[int], text: str, **kw  # Noqa: ARG001
+) -> None:
     """
     A simple meter to depict a measurement.
 
@@ -134,19 +136,19 @@ def meter(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> None
         The matplotlib Axes.
     time :
         The time of the measurement.
-    qubit_idxs :
-        The qubit indices.
+    device_element_idxs :
+        The device_element indices.
     text :
         The measurement name.
     kw :
         Additional keyword arguments to be passed to drawing the meter.
 
     """
-    for qubit_idx in qubit_idxs:
+    for device_element_idx in device_element_idxs:
         ps.meter(
             ax,
             x0=time,
-            y0=qubit_idx,
+            y0=device_element_idx,
             fillcolor=constants.COLOR_GREY,
             y_offs=0,
             width=0.8,
@@ -156,7 +158,7 @@ def meter(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> None
 
 
 def acq_meter(
-    ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw  # Noqa: ARG001
+    ax: Axes, time: float, device_element_idxs: list[int], text: str, **kw  # Noqa: ARG001
 ) -> None:
     """
     Variation of the meter to depict a acquisition.
@@ -167,19 +169,19 @@ def acq_meter(
         The matplotlib Axes.
     time :
         The time of the measurement.
-    qubit_idxs :
-        The qubit indices.
+    device_element_idxs :
+        The device_element indices.
     text :
         The measurement name.
     kw :
         Additional keyword arguments to be passed to drawing the acq meter.
 
     """
-    for qubit_idx in qubit_idxs:
+    for device_element_idx in device_element_idxs:
         ps.meter(
             ax,
             x0=time,
-            y0=qubit_idx,
+            y0=device_element_idx,
             fillcolor="white",
             y_offs=0.0,
             width=0.8,
@@ -189,7 +191,7 @@ def acq_meter(
         )
 
 
-def acq_meter_text(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> None:
+def acq_meter_text(ax: Axes, time: float, device_element_idxs: list[int], text: str, **kw) -> None:
     """
     Same as acq_meter, but also displays text.
 
@@ -199,21 +201,23 @@ def acq_meter_text(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw
         The matplotlib Axes.
     time :
         The time of the measurement.
-    qubit_idxs :
-        The qubit indices.
+    device_element_idxs :
+        The device_element indices.
     text :
         The measurement name.
     kw :
         Additional keyword arguments to be passed to drawing the acq meter.
 
     """
-    acq_meter(ax, time, qubit_idxs, text, **kw)
-    ax.text(time, max(qubit_idxs) + 0.45, text, ha="center", va="center", zorder=6)
+    acq_meter(ax, time, device_element_idxs, text, **kw)
+    ax.text(time, max(device_element_idxs) + 0.45, text, ha="center", va="center", zorder=6)
 
 
-def cnot(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> None:  # Noqa: ARG001
+def cnot(
+    ax: Axes, time: float, device_element_idxs: list[int], text: str, **kw  # Noqa: ARG001
+) -> None:
     """
-    Markers to denote a CNOT gate between two qubits.
+    Markers to denote a CNOT gate between two device_elements.
 
     Parameters
     ----------
@@ -221,21 +225,25 @@ def cnot(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> None:
         The matplotlib Axes.
     time :
         The time of the CNOT.
-    qubit_idxs :
-        The qubit indices.
+    device_element_idxs :
+        The device_element indices.
     text :
         The CNOT name.
     kw :
         Additional keyword arguments to be passed to drawing the CNOT.
 
     """
-    ax.plot([time, time], qubit_idxs, marker="o", markersize=15, color=constants.COLOR_BLUE)
-    ax.plot([time], qubit_idxs[1], marker="+", markersize=12, color="white")
+    ax.plot(
+        [time, time], device_element_idxs, marker="o", markersize=15, color=constants.COLOR_BLUE
+    )
+    ax.plot([time], device_element_idxs[1], marker="+", markersize=12, color="white")
 
 
-def cz(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> None:  # Noqa: ARG001
+def cz(
+    ax: Axes, time: float, device_element_idxs: list[int], text: str, **kw  # Noqa: ARG001
+) -> None:
     """
-    Markers to denote a CZ gate between two qubits.
+    Markers to denote a CZ gate between two device_elements.
 
     Parameters
     ----------
@@ -243,20 +251,22 @@ def cz(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> None:  
         The matplotlib Axes.
     time :
         The time of the CZ.
-    qubit_idxs :
-        The qubit indices.
+    device_element_idxs :
+        The device_element indices.
     text :
         The CZ name.
     kw :
         Additional keyword arguments to be passed to drawing the CZ.
 
     """
-    ax.plot([time, time], qubit_idxs, marker="o", markersize=15, color=constants.COLOR_BLUE)
+    ax.plot(
+        [time, time], device_element_idxs, marker="o", markersize=15, color=constants.COLOR_BLUE
+    )
 
 
-def reset(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> None:
+def reset(ax: Axes, time: float, device_element_idxs: list[int], text: str, **kw) -> None:
     """
-    A broken line to denote qubit initialization.
+    A broken line to denote device_element initialization.
 
     Parameters
     ----------
@@ -264,19 +274,19 @@ def reset(ax: Axes, time: float, qubit_idxs: list[int], text: str, **kw) -> None
         matplotlib axis object.
     time
         x position to draw the reset on
-    qubit_idxs
-        indices of the qubits that the reset is performed on.
+    device_element_idxs
+        indices of the device_elements that the reset is performed on.
     text :
         The reset name.
     kw :
         Additional keyword arguments to be passed to drawing the reset.
 
     """
-    for qubit_idx in qubit_idxs:
+    for device_element_idx in device_element_idxs:
         ps.box_text(
             ax,
             x0=time,
-            y0=qubit_idx,
+            y0=device_element_idx,
             text=text,
             color="white",
             fillcolor="white",
@@ -342,7 +352,7 @@ def _walk_schedule_only_operations(
 
 def _draw_operation(
     operation: Operation,
-    qubit_map: dict[str, int],
+    device_element_map: dict[str, int],
     port_map: dict[str, int],
     ax: Axes,
     time: int,
@@ -350,8 +360,11 @@ def _draw_operation(
 ) -> None:
     if operation.valid_gate:
         plot_func = import_python_object_from_string(operation["gate_info"]["plot_func"])
-        idxs = [qubit_map[qubit] for qubit in operation["gate_info"]["qubits"]]
-        plot_func(ax, time=time, qubit_idxs=idxs, text=operation["gate_info"]["tex"])
+        idxs = [
+            device_element_map[device_element]
+            for device_element in operation["gate_info"]["device_elements"]
+        ]
+        plot_func(ax, time=time, device_element_idxs=idxs, text=operation["gate_info"]["tex"])
     elif operation.valid_pulse:
         idxs = list(
             {
@@ -365,26 +378,29 @@ def _draw_operation(
             clock_id: str = pulse_info["clock"]
             clock_resource = schedule_resources[clock_id]
             if clock_resource["freq"] == 0:
-                pulse_baseband(ax, time=time, qubit_idxs=idxs, text=operation.name)
+                pulse_baseband(ax, time=time, device_element_idxs=idxs, text=operation.name)
             else:
-                pulse_modulated(ax, time=time, qubit_idxs=idxs, text=operation.name)
+                pulse_modulated(ax, time=time, device_element_idxs=idxs, text=operation.name)
     elif operation.valid_acquisition:
         idxs = list({port_map[acq_info["port"]] for acq_info in operation["acquisition_info"]})
 
         for _ in operation["acquisition_info"]:
-            acq_meter(ax, time=time, qubit_idxs=idxs, text=operation.name)
+            acq_meter(ax, time=time, device_element_idxs=idxs, text=operation.name)
     else:
         raise ValueError("Unknown operation")
 
 
 def _get_indices(
     sched_or_op: Schedule | Operation,
-    qubit_map: dict[str, int],
+    device_element_map: dict[str, int],
     port_map: dict[str, int],
 ) -> set[int]:
     def add_index_from_operation(operation: Operation, index_set: set[int]) -> None:
         if operation.valid_gate:
-            index_set.update(qubit_map[qubit] for qubit in operation["gate_info"]["qubits"])
+            index_set.update(
+                device_element_map[device_element]
+                for device_element in operation["gate_info"]["device_elements"]
+            )
         index_set.update(
             port_map[info["port"]]
             for info in chain(operation["pulse_info"], operation["acquisition_info"])
@@ -403,7 +419,7 @@ def _get_indices(
 
 def _draw_loop(
     ax: Axes,
-    qubit_map: dict[str, int],
+    device_element_map: dict[str, int],
     port_map: dict[str, int],
     operation: LoopOperation,
     start_time: int,
@@ -414,11 +430,11 @@ def _draw_loop(
 ) -> None:
     reps = operation["control_flow_info"]["repetitions"]
 
-    def draw_brackets(bottom_qubit: int, top_qubit: int) -> None:
+    def draw_brackets(bottom_device_element: int, top_device_element: int) -> None:
         x_start = start_time - x_offset
         x_end = end_time + x_offset
-        y_top = top_qubit + y_offset
-        y_bottom = bottom_qubit - y_offset
+        y_top = top_device_element + y_offset
+        y_bottom = bottom_device_element - y_offset
         ax.annotate(
             "",
             xy=(x_start, y_bottom),
@@ -427,7 +443,7 @@ def _draw_loop(
                 arrowstyle="-",
                 linewidth=constants.CTRL_FLOW_ARROW_LINEWIDTH,
                 facecolor=constants.COLOR_DARK_MODE_LINE,
-                connectionstyle=f"bar,fraction={fraction/(top_qubit-bottom_qubit+1)}",
+                connectionstyle=f"bar,fraction={fraction/(top_device_element-bottom_device_element+1)}",
             ),
         )
         ax.annotate(
@@ -438,14 +454,14 @@ def _draw_loop(
                 arrowstyle="-",
                 linewidth=constants.CTRL_FLOW_ARROW_LINEWIDTH,
                 facecolor=constants.COLOR_DARK_MODE_LINE,
-                connectionstyle=f"bar,fraction=-{fraction/(top_qubit-bottom_qubit+1)}",
+                connectionstyle=f"bar,fraction=-{fraction/(top_device_element-bottom_device_element+1)}",
             ),
         )
         ax.text(x_end + 0.1, y_top + 0.05, f"x{reps}")
 
-    involved_indices = _get_indices(operation.body, qubit_map, port_map)
-    if len(involved_indices) == len(qubit_map):
-        draw_brackets(0, len(qubit_map) - 1)
+    involved_indices = _get_indices(operation.body, device_element_map, port_map)
+    if len(involved_indices) == len(device_element_map):
+        draw_brackets(0, len(device_element_map) - 1)
     else:
         for idx in involved_indices:
             draw_brackets(idx, idx)
@@ -454,18 +470,18 @@ def _draw_loop(
 def _draw_conditional(
     ax: Axes,
     measure_time: int,
-    measure_qubit_idx: int,
+    measure_device_element_idx: int,
     body: Operation | Schedule,
     body_start: int,
     body_end: int,
-    qubit_map: dict[str, int],
+    device_element_map: dict[str, int],
     port_map: dict[str, int],
 ) -> None:
     def draw_for_single_operation(index: int) -> None:
         ax.annotate(
             "",
             xy=(body_start, index + 0.25),
-            xytext=(measure_time, measure_qubit_idx + 0.25),
+            xytext=(measure_time, measure_device_element_idx + 0.25),
             arrowprops=dict(
                 arrowstyle="->",
                 facecolor=constants.COLOR_DARK_MODE_LINE,
@@ -475,26 +491,26 @@ def _draw_conditional(
         )
         ax.text(
             measure_time + 0.5,
-            measure_qubit_idx + 0.5,
+            measure_device_element_idx + 0.5,
             "m=1",
             ha="center",
             va="center",
             backgroundcolor="white",
         )
 
-    def draw_rectangle_with_arrow(bottom_qubit: int, top_qubit: int) -> None:
+    def draw_rectangle_with_arrow(bottom_device_element: int, top_device_element: int) -> None:
         p1 = matplotlib.patches.Rectangle(  # type: ignore
-            (body_start - 0.45, bottom_qubit - 0.45),
+            (body_start - 0.45, bottom_device_element - 0.45),
             body_end - body_start + 0.9,
-            top_qubit - bottom_qubit + 0.95,
+            top_device_element - bottom_device_element + 0.95,
             edgecolor=constants.COLOR_DARK_MODE_LINE,
             fill=False,
         )
         ax.add_patch(p1)
         ax.annotate(
             "",
-            xy=(body_start - 0.45, top_qubit + 0.4),
-            xytext=(measure_time, measure_qubit_idx + 0.25),
+            xy=(body_start - 0.45, top_device_element + 0.4),
+            xytext=(measure_time, measure_device_element_idx + 0.25),
             arrowprops=dict(
                 arrowstyle="->",
                 facecolor=constants.COLOR_DARK_MODE_LINE,
@@ -503,73 +519,75 @@ def _draw_conditional(
             ),
         )
 
-    def draw_for_schedule_all_qubits() -> None:
-        draw_rectangle_with_arrow(0, len(qubit_map) - 1)
+    def draw_for_schedule_all_device_elements() -> None:
+        draw_rectangle_with_arrow(0, len(device_element_map) - 1)
         ax.text(
             measure_time - 0.1,
-            measure_qubit_idx + 0.5,
+            measure_device_element_idx + 0.5,
             "m=1",
             ha="center",
             va="center",
             backgroundcolor="white",
         )
 
-    def draw_for_schedule_single_qubits(involved_indices: Iterable[int]) -> None:
+    def draw_for_schedule_single_device_elements(involved_indices: Iterable[int]) -> None:
         for index in involved_indices:
             draw_rectangle_with_arrow(index, index)
         ax.text(
             measure_time - 0.1,
-            measure_qubit_idx + 0.5,
+            measure_device_element_idx + 0.5,
             "m=1",
             ha="center",
             va="center",
             backgroundcolor="white",
         )
 
-    involved_indices = _get_indices(body, qubit_map, port_map)
+    involved_indices = _get_indices(body, device_element_map, port_map)
     if isinstance(body, Operation):
         for idx in involved_indices:
             draw_for_single_operation(idx)
-    elif len(involved_indices) == len(qubit_map):
-        draw_for_schedule_all_qubits()
+    elif len(involved_indices) == len(device_element_map):
+        draw_for_schedule_all_device_elements()
     else:
-        draw_for_schedule_single_qubits(involved_indices)
+        draw_for_schedule_single_device_elements(involved_indices)
 
 
-def _get_qubit_and_port_map_from_schedule(
+def _get_device_element_and_port_map_from_schedule(
     schedule: Schedule,
 ) -> tuple[dict[str, int], dict[str, int]]:
     ports: set[str] = set()
-    qubits: set[str] = set()
+    device_elements: set[str] = set()
     for operation in _walk_schedule_only_operations(schedule):
         if operation.valid_gate:
-            qubits.update(operation["gate_info"]["qubits"])
+            device_elements.update(operation["gate_info"]["device_elements"])
             continue
         for info in chain(operation["pulse_info"], operation["acquisition_info"]):
             if (port := info["port"]) is not None:
                 # Can be None e.g. in case of NCO operations.
                 ports.add(port)
 
-    qubit_map = {qubit: idx for idx, qubit in enumerate(sorted(qubits))}
+    device_element_map = {
+        device_element: idx for idx, device_element in enumerate(sorted(device_elements))
+    }
     port_map: dict[str, int] = {}
     added_other = False
     for port in ports:
-        maybe_qubit = port.split(":")[0]
-        if maybe_qubit in qubits:
-            port_map[port] = qubit_map[maybe_qubit]
+        maybe_device_element = port.split(":")[0]
+        if maybe_device_element in device_elements:
+            port_map[port] = device_element_map[maybe_device_element]
         elif not added_other:
-            for qubit, idx in qubit_map.items():
-                qubit_map[qubit] = idx + 1
-            qubit_map["other"] = 0
+            for device_element, idx in device_element_map.items():
+                device_element_map[device_element] = idx + 1
+            device_element_map["other"] = 0
             port_map[port] = 0
             added_other = True
         else:
-            port_map[port] = qubit_map["other"]
-    return qubit_map, port_map
+            port_map[port] = device_element_map["other"]
+    return device_element_map, port_map
 
 
-def _get_feedback_label_and_qubit_idx(
-    operation: Operation, port_map: dict[str, int], qubit_map: dict[str, int]
+def _get_feedback_label_and_device_element_idx(
+    operation: Operation, port_map: dict[str, int], device_element_map: dict[str, int]
 ) -> tuple[str, int] | None:
     """Check if the operation is an acquisition/measure gate with a feedback trigger label."""
     if (
@@ -583,7 +601,7 @@ def _get_feedback_label_and_qubit_idx(
         and (feedback_label := operation["gate_info"].get("feedback_trigger_label", None))
         is not None
     ):
-        return feedback_label, qubit_map[operation["gate_info"]["qubits"][0]]
+        return feedback_label, device_element_map[operation["gate_info"]["device_elements"][0]]
     return None
 
 
@@ -595,21 +613,21 @@ def circuit_diagram_matplotlib(
     # to prevent the original input schedule from being modified.
     schedule = _determine_absolute_timing(deepcopy(schedule), "ideal")
 
-    qubit_map, port_map = _get_qubit_and_port_map_from_schedule(schedule)
+    device_element_map, port_map = _get_device_element_and_port_map_from_schedule(schedule)
 
     if figsize is None:
-        figsize = (10, len(qubit_map))
+        figsize = (10, len(device_element_map))
     fig, ax = ps.new_pulse_fig(figsize=figsize, ax=ax)
     ax.set_title(schedule.data["name"])
     ax.set_aspect("equal")
 
-    ax.set_ylim(-0.5, len(qubit_map) - 0.5)
-    for y in qubit_map.values():
+    ax.set_ylim(-0.5, len(device_element_map) - 0.5)
+    for y in device_element_map.values():
         ax.axhline(y, color=constants.COLOR_DARK_MODE_LINE, linewidth=0.9)
 
-    # plot the qubit names on the y-axis
-    ax.set_yticks(list(qubit_map.values()))
-    ax.set_yticklabels(qubit_map.keys())
+    # plot the device_element names on the y-axis
+    ax.set_yticks(list(device_element_map.values()))
+    ax.set_yticklabels(device_element_map.keys())
 
     current_diagram_time = 0
     last_operation_time = 0
@@ -618,7 +636,7 @@ def circuit_diagram_matplotlib(
     loop_scopes: list[tuple[int, LoopOperation]] = []
     # Stack of (conditional start time, conditional operation) tuples
     conditional_scopes: list[tuple[int, ConditionalOperation]] = []
-    # Map from feedback_trigger_label to (thresholded acq time, qubit) tuple
+    # Map from feedback_trigger_label to (thresholded acq time, device_element) tuple
     feedback_acq_map: dict[str, tuple[int, int]] = {}
     for abs_time, operation in _walk_schedule(schedule):
         if isinstance(operation, LoopOperation):
@@ -636,15 +654,15 @@ def circuit_diagram_matplotlib(
             else:
                 draw_time = abs_time
             if (
-                feedback_label_and_qubit_idx := _get_feedback_label_and_qubit_idx(
-                    operation, port_map, qubit_map
+                feedback_label_and_device_element_idx := _get_feedback_label_and_device_element_idx(
+                    operation, port_map, device_element_map
                 )
             ) is not None:
-                feedback_label, qubit_idx = feedback_label_and_qubit_idx
-                feedback_acq_map[feedback_label] = current_diagram_time, qubit_idx
+                feedback_label, device_element_idx = feedback_label_and_device_element_idx
+                feedback_acq_map[feedback_label] = current_diagram_time, device_element_idx
             _draw_operation(
                 operation=operation,
-                qubit_map=qubit_map,
+                device_element_map=device_element_map,
                 port_map=port_map,
                 ax=ax,
                 time=draw_time,
@@ -656,7 +674,7 @@ def circuit_diagram_matplotlib(
             start_time, loop_op = loop_scopes.pop()
             _draw_loop(
                 ax=ax,
-                qubit_map=qubit_map,
+                device_element_map=device_element_map,
                 port_map=port_map,
                 operation=loop_op,
                 start_time=start_time,
@@ -666,7 +684,7 @@ def circuit_diagram_matplotlib(
             body_start, conditional_op = conditional_scopes.pop()
             feedback_trigger_label = conditional_op["control_flow_info"]["feedback_trigger_label"]
             try:
-                measure_time, measure_qubit_idx = feedback_acq_map[feedback_trigger_label]
+                measure_time, measure_device_element_idx = feedback_acq_map[feedback_trigger_label]
             except KeyError as err:
                 raise KeyError(
                     f"Feedback trigger label '{feedback_trigger_label}' not found in "
@@ -675,11 +693,11 @@ def circuit_diagram_matplotlib(
             _draw_conditional(
                 ax=ax,
                 measure_time=measure_time,
-                measure_qubit_idx=measure_qubit_idx,
+                measure_device_element_idx=measure_device_element_idx,
                 body=conditional_op.body,
                 body_start=body_start,
                 body_end=current_diagram_time,
-                qubit_map=qubit_map,
+                device_element_map=device_element_map,
                 port_map=port_map,
             )
 

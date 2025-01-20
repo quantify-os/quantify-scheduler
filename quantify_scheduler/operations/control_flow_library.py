@@ -124,7 +124,7 @@ class ConditionalOperation(ControlFlowOperation):
     body
         Operation to be conditionally played
     qubit_name
-        Name of the qubit on which the body will be conditioned
+        Name of the device element on which the body will be conditioned
     t0
         Time offset, by default 0
     hardware_buffer_time
@@ -166,14 +166,15 @@ class ConditionalOperation(ControlFlowOperation):
         t0: float = 0.0,
         hardware_buffer_time: float = 0.0,
     ) -> None:
+        device_element_name = qubit_name
         super().__init__(name="ConditionalOperation")
         self.data.update(
             {
                 "control_flow_info": {
                     "body": body,
-                    "qubit_name": qubit_name,
+                    "qubit_name": device_element_name,
                     "t0": t0,
-                    "feedback_trigger_label": qubit_name,
+                    "feedback_trigger_label": device_element_name,
                     "feedback_trigger_address": None,  # Filled in at compilation.
                     "hardware_buffer_time": hardware_buffer_time,
                 },
@@ -250,16 +251,16 @@ class Conditional(ControlFlowSpec):
     Parameters
     ----------
     qubit_name
-        Number of repetitions
+        Target device element.
     t0
         Time offset, by default 0
 
     """
 
     def __init__(self, qubit_name: str, t0: float = 0.0) -> None:
-        self.qubit_name = qubit_name
+        self.device_element_name = qubit_name
         self.t0 = t0
 
     def create_operation(self, body: Operation | Schedule) -> ConditionalOperation:
         """Transform the control flow specification to an operation or schedule."""
-        return ConditionalOperation(body, self.qubit_name, self.t0)
+        return ConditionalOperation(body, self.device_element_name, self.t0)

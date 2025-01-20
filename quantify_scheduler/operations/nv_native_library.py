@@ -28,16 +28,17 @@ class ChargeReset(Operation):
     """
 
     def __init__(self, *qubits: str) -> None:
-        super().__init__(name=f"ChargeReset {', '.join(qubits)}")
+        device_elements = qubits
+        super().__init__(name=f"ChargeReset {', '.join(device_elements)}")
         self.data.update(
             {
-                "name": f"ChargeReset {', '.join(qubits)}",
+                "name": f"ChargeReset {', '.join(device_elements)}",
                 "gate_info": {
                     "unitary": None,
                     "plot_func": "quantify_scheduler.schedules._visualization."
                     + "circuit_diagram.reset",
                     "tex": r"$NV^-$",
-                    "qubits": list(qubits),
+                    "device_elements": list(device_elements),
                     "operation_type": "charge_reset",
                 },
             }
@@ -45,8 +46,8 @@ class ChargeReset(Operation):
         self.update()
 
     def __str__(self) -> str:
-        qubits = map(lambda x: f"'{x}'", self.data["gate_info"]["qubits"])
-        return f'{self.__class__.__name__}({",".join(qubits)})'
+        device_elements = map(lambda x: f"'{x}'", self.data["gate_info"]["device_elements"])
+        return f'{self.__class__.__name__}({",".join(device_elements)})'
 
 
 class CRCount(Operation):
@@ -93,20 +94,21 @@ class CRCount(Operation):
         ] = None,
         bin_mode: BinMode = None,
     ) -> None:
+        device_elements = qubits
         acq_index: int | Iterable[int] = _generate_acq_indices_for_gate(
-            qubits=qubits, acq_index=acq_index
+            device_elements=device_elements, acq_index=acq_index
         )
 
         plot_func = "quantify_scheduler.schedules._visualization.circuit_diagram.acq_meter_text"
-        super().__init__(f"CRCount {', '.join(qubits)}")
+        super().__init__(f"CRCount {', '.join(device_elements)}")
         self.data.update(
             {
-                "name": f"CRCount {', '.join(qubits)}",
+                "name": f"CRCount {', '.join(device_elements)}",
                 "gate_info": {
                     "unitary": None,
                     "plot_func": plot_func,
                     "tex": r"CR",
-                    "qubits": list(qubits),
+                    "device_elements": list(device_elements),
                     "acq_channel_override": acq_channel,
                     "acq_index": acq_index,
                     "acq_protocol": acq_protocol,
@@ -119,13 +121,13 @@ class CRCount(Operation):
 
     def __str__(self) -> str:
         gate_info = self.data["gate_info"]
-        qubits = map(lambda x: f"'{x}'", gate_info["qubits"])
+        device_elements = map(lambda x: f"'{x}'", gate_info["device_elements"])
         acq_channel = gate_info["acq_channel_override"]
         acq_index = gate_info["acq_index"]
         acq_protocol = gate_info["acq_protocol"]
         bin_mode = gate_info["bin_mode"]
         return (
-            f'{self.__class__.__name__}({",".join(qubits)}, '
+            f'{self.__class__.__name__}({",".join(device_elements)}, '
             f"acq_channel={acq_channel}, "
             f"acq_index={acq_index}, "
             f'acq_protocol="{acq_protocol}", '

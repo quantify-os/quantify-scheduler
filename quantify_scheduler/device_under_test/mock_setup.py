@@ -21,7 +21,7 @@ from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 
 def set_up_mock_transmon_setup() -> dict:
     r"""
-    Set up a system containing 5 transmon qubits connected in a star shape.
+    Set up a system containing 5 transmon device elements connected in a star shape.
 
     .. code-block::
 
@@ -154,7 +154,7 @@ def set_standard_params_transmon(mock_setup: dict) -> None:
 
 def set_up_mock_basic_nv_setup() -> dict:
     """
-    Set up a system containing 2 electronic qubits in an NV center.
+    Set up a system containing 2 electronic device elements in an NV center.
 
     After usage, close all instruments.
 

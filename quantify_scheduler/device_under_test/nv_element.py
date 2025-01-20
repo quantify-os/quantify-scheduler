@@ -519,7 +519,7 @@ class BasicElectronicNVElement(DeviceElement):
     """
     A device element representing an electronic qubit in an NV center.
 
-    The submodules contain the necessary qubit parameters to translate higher-level
+    The submodules contain the necessary device element parameters to translate higher-level
     operations into pulses. Please see the documentation of these classes.
 
     .. admonition:: Examples
@@ -530,13 +530,13 @@ class BasicElectronicNVElement(DeviceElement):
 
             from quantify_scheduler import BasicElectronicNVElement
 
-            qubit = BasicElectronicNVElement("q2")
+            device_element = BasicElectronicNVElement("q2")
 
-            qubit.rxy.amp180(0.1)
-            qubit.measure.pulse_amplitude(0.25)
-            qubit.measure.pulse_duration(300e-9)
-            qubit.measure.acq_delay(430e-9)
-            qubit.measure.acq_duration(1e-6)
+            device_element.rxy.amp180(0.1)
+            device_element.measure.pulse_amplitude(0.25)
+            device_element.measure.pulse_duration(300e-9)
+            device_element.measure.acq_delay(430e-9)
+            device_element.measure.acq_duration(1e-6)
             ...
 
 
@@ -592,7 +592,7 @@ class BasicElectronicNVElement(DeviceElement):
         This method is intended to be used when this object is part of a
         device object containing multiple elements.
         """
-        qubit_config = {
+        device_element_config = {
             f"{self.name}": {
                 "spectroscopy_operation": OperationCompilationConfig(
                     factory_func=pulse_factories.nv_spec_pulse_mw,
@@ -705,7 +705,7 @@ class BasicElectronicNVElement(DeviceElement):
                 ),
             }
         }
-        return qubit_config
+        return device_element_config
 
     def generate_device_config(self) -> DeviceCompilationConfig:
         """

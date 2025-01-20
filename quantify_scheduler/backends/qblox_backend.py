@@ -515,10 +515,10 @@ def compile_conditional_playback(  # noqa: D417
                     f"Conditional control flow, ``{operation}``,  found without a preceding "
                     "Conditional acquisition. "
                     "Please ensure that the preceding acquisition or Measure is conditional, "
-                    "by passing `feedback_trigger_label=qubit_name` "
+                    "by passing `feedback_trigger_label=dev_element` "
                     "to the corresponding operation, "
                     "e.g.\n\n"
-                    "> schedule.add(Measure(qubit_name, ..., feedback_trigger_label=qubit_name))\n"
+                    "schedule.add(Measure(dev_element, ..., feedback_trigger_label=dev_element))\n"
                 )
             else:
                 current_ongoing_conditional_acquire = None

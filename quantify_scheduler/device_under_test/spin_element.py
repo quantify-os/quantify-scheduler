@@ -97,7 +97,7 @@ class ClocksFrequenciesSpin(InstrumentChannel):
             initial_value=f_larmor,
             vals=Numbers(min_value=0, max_value=1e12, allow_nan=True),
         )
-        """Larmor frequency for the spin qubit"""
+        """Larmor frequency for the spin device element"""
 
         self.readout = ManualParameter(
             name="readout",
@@ -199,13 +199,13 @@ class BasicSpinElement(DeviceElement):
 
             from quantify_scheduler import BasicSpinElement
 
-            qubit = BasicSpinElement("q1")
+            device_element = BasicSpinElement("q1")
 
-            qubit.rxy.amp180(0.1)
-            qubit.measure.pulse_amp(0.25)
-            qubit.measure.pulse_duration(300e-9)
-            qubit.measure.acq_delay(430e-9)
-            qubit.measure.integration_time(1e-6)
+            device_element.rxy.amp180(0.1)
+            device_element.measure.pulse_amp(0.25)
+            device_element.measure.pulse_duration(300e-9)
+            device_element.measure.acq_delay(430e-9)
+            device_element.measure.integration_time(1e-6)
             ...
 
 
@@ -263,7 +263,7 @@ class BasicSpinElement(DeviceElement):
         This method is intended to be used when this object is part of a
         device object containing multiple elements.
         """
-        qubit_config = {
+        device_element_config = {
             f"{self.name}": {
                 "reset": OperationCompilationConfig(
                     factory_func=pulse_library.IdlePulse,
@@ -351,7 +351,7 @@ class BasicSpinElement(DeviceElement):
                 ),
             }
         }
-        return qubit_config
+        return device_element_config
 
     def generate_device_config(self) -> DeviceCompilationConfig:
         """

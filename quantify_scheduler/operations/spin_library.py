@@ -13,13 +13,19 @@ class SpinInit(Operation):
 
     Parameters
     ----------
-    qubits
-        The qubits to initialize.
+    qC
+        The control device element.
+    qT
+        The target device element
+    device_overrides
+        Device level parameters that override device configuration values
+        when compiling from circuit to device level.
 
     """
 
     def __init__(self, qC: str, qT: str, **device_overrides) -> None:
-        super().__init__(name=f"SpinInit ({qC}, {qT})")
+        device_element_control, device_element_target = qC, qT
+        super().__init__(name=f"SpinInit ({device_element_control}, {device_element_target})")
         self.data.update(
             {
                 "name": self.name,
@@ -28,7 +34,7 @@ class SpinInit(Operation):
                     "plot_func": "quantify_scheduler.schedules._visualization."
                     + "circuit_diagram.reset",
                     "tex": r"SpinInit",
-                    "qubits": [qC, qT],
+                    "device_elements": [device_element_control, device_element_target],
                     "operation_type": "SpinInit",
                     "device_overrides": device_overrides,
                 },
@@ -37,5 +43,5 @@ class SpinInit(Operation):
         self.update()
 
     def __str__(self) -> str:
-        qubits = map(lambda x: f"'{x}'", self.data["gate_info"]["qubits"])
-        return f'{self.__class__.__name__}({",".join(qubits)})'
+        device_elements = map(lambda x: f"'{x}'", self.data["gate_info"]["device_elements"])
+        return f'{self.__class__.__name__}({",".join(device_elements)})'

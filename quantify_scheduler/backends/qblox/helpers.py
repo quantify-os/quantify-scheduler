@@ -575,7 +575,7 @@ class ConditionalBegin(Operation):
     Parameters
     ----------
     qubit_name
-        The name of the qubit to condition on.
+        The name of the device element to condition on.
     feedback_trigger_address
         Feedback trigger address
     t0

@@ -30,7 +30,7 @@ class ConditionalOperation(_ConditionalOperation):
     body
         Operation to be conditionally played
     qubit_name
-        Name of the qubit on which the body will be conditioned
+        Name of the device element on which the body will be conditioned
     t0
         Time offset, by default 0
 

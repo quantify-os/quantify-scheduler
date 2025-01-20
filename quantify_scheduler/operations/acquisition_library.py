@@ -65,7 +65,7 @@ class Trace(Acquisition):
     acq_channel
         The data channel in which the acquisition is stored, is by default 0.
         Describes the "where" information of the  measurement, which typically
-        corresponds to a qubit idx.
+        corresponds to a device element idx.
     acq_index
         The data register in which the acquisition is stored, by default 0.
         Describes the "when" information of the measurement, used to label or
@@ -152,7 +152,7 @@ class WeightedIntegratedSeparated(Acquisition):
     acq_channel
         The data channel in which the acquisition is stored, by default 0.
         Describes the "where" information of the  measurement, which typically
-        corresponds to a qubit idx.
+        corresponds to a device element idx.
     acq_index
         The data register in which the acquisition is stored, by default 0.
         Describes the "when" information of the measurement, used to label or
@@ -238,7 +238,7 @@ class SSBIntegrationComplex(Acquisition):
     acq_channel
         The data channel in which the acquisition is stored, by default 0.
         Describes the "where" information of the  measurement, which typically
-        corresponds to a qubit idx.
+        corresponds to a device element idx.
     acq_index
         The data register in which the acquisition is stored, by default 0.
         Describes the "when" information of the measurement, used to label or
@@ -322,8 +322,8 @@ class ThresholdedAcquisition(Acquisition):
     This acquisition protocol is similar to the :class:`~.SSBIntegrationComplex`
     acquisition protocol, but the complex result is now rotated and thresholded
     to produce a "0" or a "1", as controlled by the parameters for rotation
-    angle `<qubit>.measure.acq_rotation` and threshold value
-    `<qubit>.measure.acq_threshold` in the device configuration (see example
+    angle `<device_element>.measure.acq_rotation` and threshold value
+    `<device_element>.measure.acq_threshold` in the device configuration (see example
     below).
 
     The rotation angle and threshold value for each qubit can be set through
@@ -343,13 +343,13 @@ class ThresholdedAcquisition(Acquisition):
             from quantify_scheduler.operations.acquisition_library import ThresholdedAcquisition
 
             # set up qubit
-            qubit = BasicTransmonElement("q0")
-            qubit.clock_freqs.readout(8.0e9)
+            device_element = BasicTransmonElement("q0")
+            device_element.clock_freqs.readout(8.0e9)
 
             # set rotation and threshold value
             rotation, threshold = 20, -0.1
-            qubit.measure.acq_rotation(rotation)
-            qubit.measure.acq_threshold(threshold)
+            device_element.measure.acq_rotation(rotation)
+            device_element.measure.acq_threshold(threshold)
 
             # basic schedule
             schedule = Schedule("thresholded acquisition")
@@ -367,7 +367,7 @@ class ThresholdedAcquisition(Acquisition):
     acq_channel : int
         The data channel in which the acquisition is stored, by default 0.
         Describes the "where" information of the  measurement, which
-        typically corresponds to a qubit idx.
+        typically corresponds to a device element idx.
     acq_index : int
         The data register in which the acquisition is stored, by default 0.
         Describes the "when" information of the measurement, used to label
@@ -491,7 +491,7 @@ class NumericalSeparatedWeightedIntegration(WeightedIntegratedSeparated):
     acq_channel
         The data channel in which the acquisition is stored, by default 0.
         Describes the "where" information of the  measurement, which typically
-        corresponds to a qubit idx.
+        corresponds to a device element idx.
     acq_index
         The data register in which the acquisition is stored, by default 0.
         Describes the "when" information of the measurement, used to label or
@@ -617,7 +617,7 @@ class NumericalWeightedIntegration(NumericalSeparatedWeightedIntegration):
     acq_channel
         The data channel in which the acquisition is stored, by default 0.
         Describes the "where" information of the  measurement, which typically
-        corresponds to a qubit idx.
+        corresponds to a device element idx.
     acq_index
         The data register in which the acquisition is stored, by default 0.
         Describes the "when" information of the measurement, used to label or
@@ -691,7 +691,7 @@ class TriggerCount(Acquisition):
     acq_channel
         The data channel in which the acquisition is stored, by default 0.
         Describes the "where" information of the measurement, which typically
-        corresponds to a qubit idx.
+        corresponds to a device element idx.
     acq_index
         The data register in which the acquisition is stored, by default 0.
         Describes the "when" information of the measurement, used to label or
@@ -798,7 +798,7 @@ class TimetagTrace(Acquisition):
     acq_channel
         The data channel in which the acquisition is stored, is by default 0.
         Describes the "where" information of the  measurement, which typically
-        corresponds to a qubit idx.
+        corresponds to a device element idx.
     acq_index
         The data register in which the acquisition is stored, by default 0.
         Describes the "when" information of the measurement, used to label or
@@ -906,7 +906,7 @@ class Timetag(Acquisition):
     acq_channel
         The data channel in which the acquisition is stored, by default 0.
         Describes the "where" information of the  measurement, which typically
-        corresponds to a qubit idx.
+        corresponds to a device element idx.
     acq_index
         The data register in which the acquisition is stored, by default 0.
         Describes the "when" information of the measurement, used to label or
