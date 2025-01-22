@@ -104,13 +104,13 @@ def test_trigger_count_bin_mode_sum_qtm(
 ):
     cluster_name = "cluster0"
 
-    qrm_name = f"{cluster_name}_module5"
+    qtm_name = f"{cluster_name}_module5"
 
     cluster = make_cluster_component(
         name=cluster_name,
         modules={"5": "QTM"},
     )
-    qrm = cluster._cluster_modules[qrm_name]
+    qtm = cluster._cluster_modules[qtm_name]
 
     dummy_data = {
         "0": {
@@ -132,7 +132,8 @@ def test_trigger_count_bin_mode_sum_qtm(
         }
     }
 
-    count = np.array(dummy_data["0"]["acquisition"]["bins"]["count"]).astype(int)
+    repetitions = 3
+    count = (np.array(dummy_data["0"]["acquisition"]["bins"]["count"]) * repetitions).astype(int)
     dataarray = xr.DataArray(
         count,
         dims=["acq_index_0"],
@@ -144,7 +145,7 @@ def test_trigger_count_bin_mode_sum_qtm(
     quantum_device = mock_setup_basic_nv["quantum_device"]
     quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
 
-    sched = Schedule("digital_pulse_and_acq", repetitions=3)
+    sched = Schedule("digital_pulse_and_acq", repetitions=repetitions)
     sched.add(
         TriggerCount(
             duration=1e-6,
@@ -181,4 +182,4 @@ def test_trigger_count_bin_mode_sum_qtm(
     cluster.prepare(prog)
     cluster.start()
 
-    xr.testing.assert_identical(qrm.retrieve_acquisition(), expected_dataset)
+    xr.testing.assert_identical(qtm.retrieve_acquisition(), expected_dataset)

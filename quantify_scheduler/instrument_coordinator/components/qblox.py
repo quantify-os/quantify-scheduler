@@ -2242,15 +2242,16 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
         bin_data = self._get_bin_data(hardware_retrieved_acquisitions, qblox_acq_index)
         acq_index_dim_name = f"acq_index_{acq_channel}"
 
-        counts = np.array(bin_data["count"]).astype(int)
+        counts = np.array(bin_data["count"])
         if acquisition_metadata.bin_mode == BinMode.APPEND:
             return DataArray(
-                [counts],
+                [counts.astype(int)],
                 dims=["repetition", acq_index_dim_name],
                 coords={"repetition": [0], acq_index_dim_name: range(len(counts))},
                 attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
             )
         elif acquisition_metadata.bin_mode == BinMode.SUM:
+            counts = (counts * acquisition_metadata.repetitions).round().astype(int)
             return DataArray(
                 counts.reshape((len(acq_indices),)),
                 dims=[acq_index_dim_name],
