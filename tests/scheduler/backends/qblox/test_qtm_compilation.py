@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Tests for the QTM."""
+
 import re
 from copy import deepcopy
 from unittest.mock import Mock

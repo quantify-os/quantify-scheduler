@@ -14,7 +14,6 @@ hardware_config2 = {"b": 6}
 
 
 class TestWriteToFile:
-
     def test_file_does_not_exist(self, tmp_path):
         file_path = tmp_path / "tmp.json"
         assert not os.path.exists(file_path)
@@ -63,7 +62,6 @@ class TestWriteToFile:
 
 
 class TestLoadFromFile:
-
     def test_file_does_not_exist(self, tmp_path):
         file_path = tmp_path / "tmp.json"
         assert not os.path.exists(file_path)

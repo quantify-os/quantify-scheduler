@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Pulse and acquisition corrections for hardware compilation."""
+
 from __future__ import annotations
 
 import logging
@@ -46,7 +47,7 @@ def determine_relative_latency_corrections(
         if hasattr(hardware_cfg, "items"):
             for k, v in hardware_cfg.items():
                 if k == "port":
-                    port_clock = f'{hardware_cfg["port"]}-{hardware_cfg["clock"]}'
+                    port_clock = f"{hardware_cfg['port']}-{hardware_cfg['clock']}"
                     yield port_clock
 
                 elif isinstance(v, dict):

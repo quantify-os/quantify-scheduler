@@ -172,7 +172,8 @@ class Output(DataStructure):
     """The output mixer corrections."""
 
     @field_validator("mixer_corrections", mode="before")
-    def decapitalize_dc_mixer_offsets(cls, v):
+    @classmethod
+    def decapitalize_dc_mixer_offsets(cls, v) -> common.MixerCorrections:
         """
         Decapitalize the DC mixer offsets.
 
@@ -248,7 +249,8 @@ class Device(DataStructure):
     """
 
     @field_validator("channels")
-    def generate_channel_list(cls, v, info):
+    @classmethod
+    def generate_channel_list(cls, v, info) -> list[Output]:
         """Generate the channel list."""
         if v != []:
             raise ValueError(
@@ -264,7 +266,8 @@ class Device(DataStructure):
         return v
 
     @field_validator("n_channels")
-    def calculate_n_channels(cls, v, info):
+    @classmethod
+    def calculate_n_channels(cls, v, info) -> int | ValueError:
         """Calculate the number of channels."""
         if v is not None:
             raise ValueError(
@@ -278,7 +281,8 @@ class Device(DataStructure):
         return v
 
     @field_validator("device_type")
-    def determine_device_type(cls, v, info):
+    @classmethod
+    def determine_device_type(cls, v, info) -> DeviceType | ValueError:
         """Determine the device type."""
         if v is not DeviceType.NONE:
             raise ValueError(
@@ -325,7 +329,8 @@ class CommandTable(DataStructure):
     table: list[CommandTableEntry]
 
     @field_validator("header", mode="before")
-    def generate_command_table_header(cls, v):
+    @classmethod
+    def generate_command_table_header(cls, v) -> CommandTableHeader | ValueError:
         """Generates command table header."""
         if v is not None:
             raise ValueError(f"Trying to set 'header' to {v}, while it is an auto-generated field.")

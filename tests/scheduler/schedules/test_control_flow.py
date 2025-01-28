@@ -159,8 +159,7 @@ def test_nested_conditional_control_flow_raises_runtime_warning():
 
     with pytest.raises(
         RuntimeError,
-        match="Nested conditional playback inside schedules "
-        "is not supported by the Qblox backend.",
+        match="Nested conditional playback inside schedules is not supported by the Qblox backend.",
     ):
         sequencer.generate_qasm_program(
             ordered_op_strategies=sequencer._get_ordered_operations(),

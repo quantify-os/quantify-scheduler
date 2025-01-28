@@ -355,11 +355,7 @@ def test_nv_center_serialization(electronic_q0):
                 and isinstance(expected_val, float)
                 and math.isnan(val)
                 and math.isnan(expected_val)
-            ), (
-                f"Expected value {expected_val} for "
-                f"{submodule_name}.{parameter_name} but got "
-                f"{val}"
-            )
+            ), f"Expected value {expected_val} for {submodule_name}.{parameter_name} but got {val}"
 
     # Check that all serialized submodule params match the original
     for submodule_name, submodule_data in electronic_q0_as_dict["data"].items():

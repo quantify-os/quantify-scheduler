@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Graph compilation backend of quantify-scheduler."""
+
 from __future__ import annotations
 
 from copy import deepcopy
@@ -64,8 +65,10 @@ class SimpleNodeConfig(DataStructure):
         return export_python_object_to_path_string(v)
 
     @field_validator("compilation_func", mode="before")
+    @classmethod
     def _import_compilation_func_if_str(
-        cls, fun: Callable[[Schedule, Any], Schedule]  # noqa: N805
+        cls,
+        fun: Callable[[Schedule, Any], Schedule],  # noqa: N805
     ) -> Callable[[Schedule, Any], Schedule]:
         if isinstance(fun, str):
             return deserialize_function(fun)
@@ -105,8 +108,10 @@ class OperationCompilationConfig(DataStructure):
             return export_python_object_to_path_string(v)
 
     @field_validator("factory_func", mode="before")
+    @classmethod
     def _import_factory_func_if_str(
-        cls, fun: str | Callable[..., Operation]  # noqa: N805
+        cls,
+        fun: str | Callable[..., Operation],  # noqa: N805
     ) -> Callable[..., Operation]:
         if isinstance(fun, str):
             return deserialize_function(fun)
@@ -254,8 +259,10 @@ class CompilationConfig(DataStructure):
         return export_python_object_to_path_string(v)
 
     @field_validator("backend", mode="before")
+    @classmethod
     def _import_backend_if_str(
-        cls, class_: type[QuantifyCompiler] | str  # noqa: N805
+        cls,
+        class_: type[QuantifyCompiler] | str,  # noqa: N805
     ) -> type[QuantifyCompiler]:
         if isinstance(class_, str):
             return deserialize_class(class_)
@@ -605,8 +612,10 @@ class SerialCompilationConfig(CompilationConfig):
         return export_python_object_to_path_string(v)
 
     @field_validator("backend", mode="before")
+    @classmethod
     def _import_backend_if_str(
-        cls, class_: type[SerialCompiler] | str  # noqa: N805
+        cls,
+        class_: type[SerialCompiler] | str,  # noqa: N805
     ) -> type[SerialCompiler]:
         if isinstance(class_, str):
             return deserialize_class(class_)

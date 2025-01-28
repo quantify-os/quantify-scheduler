@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Tests for the helpers module."""
+
 from __future__ import annotations
 
 import math
@@ -193,7 +194,7 @@ def test_determine_clock_lo_interm_freqs(
         if downconverter_freq is not None:
             if downconverter_freq < 0:
                 possible_errors.append(
-                    f"Downconverter frequency must be positive " f"({downconverter_freq=:e})"
+                    f"Downconverter frequency must be positive ({downconverter_freq=:e})"
                 )
             elif downconverter_freq < clock_freq:
                 possible_errors.append(

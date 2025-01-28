@@ -497,5 +497,5 @@ def test_deserialize_with_invalid_filename():
 
     # Assert
     assert str(execinfo.value) == (
-        "Invalid value for param 'settings_path' provide path to " "'{instrument}_settings.json'"
+        "Invalid value for param 'settings_path' provide path to '{instrument}_settings.json'"
     )

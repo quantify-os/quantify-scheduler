@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Tests for Qblox instrument coordinator components."""
+
 from __future__ import annotations
 
 import os
@@ -794,8 +795,7 @@ def test_prepare_exception(make_cluster_component):
 
         # Assert
         assert execinfo.value.args[0] == (
-            "Invalid program. Attempting to access non-existing sequencer with"
-            ' name "idontexist".'
+            'Invalid program. Attempting to access non-existing sequencer with name "idontexist".'
         )
 
 

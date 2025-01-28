@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Unit tests for the DataStructure, and custom json (de)serialization."""
+
 from __future__ import annotations
 
 from typing import Any, Callable
@@ -96,7 +97,7 @@ class TestDataStructure:
 
     def test_json_loads3(self):
         dummy1 = DummyStructure3.model_validate_json(
-            '{"name": "foobar", ' '"cls": "quantify_scheduler.structure.model.DataStructure"}'
+            '{"name": "foobar", "cls": "quantify_scheduler.structure.model.DataStructure"}'
         )
         dummy2 = DummyStructure3(name="foobar", cls=DataStructure)
         assert dummy1 == dummy2

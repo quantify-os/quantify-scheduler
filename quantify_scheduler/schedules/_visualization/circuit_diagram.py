@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Plotting functions used in the visualization backend of the sequencer."""
+
 from __future__ import annotations
 
 from copy import deepcopy
@@ -125,7 +126,11 @@ def pulse_modulated(ax: Axes, time: float, device_element_idxs: list[int], text:
 
 
 def meter(
-    ax: Axes, time: float, device_element_idxs: list[int], text: str, **kw  # Noqa: ARG001
+    ax: Axes,
+    time: float,
+    device_element_idxs: list[int],
+    text: str,
+    **kw,  # Noqa: ARG001
 ) -> None:
     """
     A simple meter to depict a measurement.
@@ -158,7 +163,11 @@ def meter(
 
 
 def acq_meter(
-    ax: Axes, time: float, device_element_idxs: list[int], text: str, **kw  # Noqa: ARG001
+    ax: Axes,
+    time: float,
+    device_element_idxs: list[int],
+    text: str,
+    **kw,  # Noqa: ARG001
 ) -> None:
     """
     Variation of the meter to depict a acquisition.
@@ -214,7 +223,11 @@ def acq_meter_text(ax: Axes, time: float, device_element_idxs: list[int], text: 
 
 
 def cnot(
-    ax: Axes, time: float, device_element_idxs: list[int], text: str, **kw  # Noqa: ARG001
+    ax: Axes,
+    time: float,
+    device_element_idxs: list[int],
+    text: str,
+    **kw,  # Noqa: ARG001
 ) -> None:
     """
     Markers to denote a CNOT gate between two device_elements.
@@ -240,7 +253,11 @@ def cnot(
 
 
 def cz(
-    ax: Axes, time: float, device_element_idxs: list[int], text: str, **kw  # Noqa: ARG001
+    ax: Axes,
+    time: float,
+    device_element_idxs: list[int],
+    text: str,
+    **kw,  # Noqa: ARG001
 ) -> None:
     """
     Markers to denote a CZ gate between two device_elements.
@@ -443,7 +460,8 @@ def _draw_loop(
                 arrowstyle="-",
                 linewidth=constants.CTRL_FLOW_ARROW_LINEWIDTH,
                 facecolor=constants.COLOR_DARK_MODE_LINE,
-                connectionstyle=f"bar,fraction={fraction/(top_device_element-bottom_device_element+1)}",
+                connectionstyle=f"bar,"
+                f"fraction={fraction / (top_device_element - bottom_device_element + 1)}",
             ),
         )
         ax.annotate(
@@ -454,7 +472,8 @@ def _draw_loop(
                 arrowstyle="-",
                 linewidth=constants.CTRL_FLOW_ARROW_LINEWIDTH,
                 facecolor=constants.COLOR_DARK_MODE_LINE,
-                connectionstyle=f"bar,fraction=-{fraction/(top_device_element-bottom_device_element+1)}",
+                connectionstyle=f"bar,"
+                f"fraction=-{fraction / (top_device_element - bottom_device_element + 1)}",
             ),
         )
         ax.text(x_end + 0.1, y_top + 0.05, f"x{reps}")

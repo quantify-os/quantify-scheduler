@@ -153,9 +153,9 @@ def ensure_no_operations_overlap(timing_table: pandas.DataFrame) -> None:
 
             raise ValueError(
                 f"Operation {clashing_op.operation} at time"
-                f" {clashing_op.abs_time*1e9:.1f} ns "
+                f" {clashing_op.abs_time * 1e9:.1f} ns "
                 f"overlaps with {preceding_op.operation} at "
-                f"time {preceding_op.abs_time*1e9:.1f} ns "
+                f"time {preceding_op.abs_time * 1e9:.1f} ns "
                 f"on output channel {clashing_op.hardware_channel}."
             )
 
@@ -233,7 +233,7 @@ def _determine_clock_sample_start(
         # 10 ns is a nice clock multiple as well.
         raise ValueError(
             f"Rounding to samples not exact for operation ({operation_name}) at time "
-            f"({abs_time*1e9:.1f} ns). Attempting to round ({sample_float}) "
+            f"({abs_time * 1e9:.1f} ns). Attempting to round ({sample_float}) "
             f"to ({sample}) \n TIP: Try to ensure waveforms start a multiple of"
             " the samlping rate e.g., try multiples of 10 ns for the HDAWG or 40 ns for"
             " UFHQA pulses."
@@ -1091,9 +1091,9 @@ def _generate_new_style_hardware_compilation_config(  # noqa: PLR0912, PLR0915
                             mix_corr_lower_case = {}
                             for key in ch_cfg["mixer_corrections"]:
                                 mix_corr_lower_case[key.lower()] = ch_cfg["mixer_corrections"][key]
-                            hardware_options["mixer_corrections"][
-                                f"{port}-{clock}"
-                            ] = mix_corr_lower_case
+                            hardware_options["mixer_corrections"][f"{port}-{clock}"] = (
+                                mix_corr_lower_case
+                            )
                         if ch_cfg.get("gain1"):
                             hardware_options["output_gain"][f"{port}-{clock}"]["gain_I"] = ch_cfg[
                                 "gain1"
@@ -1530,7 +1530,8 @@ class ZIHardwareCompilationConfig(common.HardwareCompilationConfig):
     @model_validator(mode="before")
     @classmethod
     def from_old_style_hardware_config(
-        cls: type[ZIHardwareCompilationConfig], data: Any  # noqa: ANN401
+        cls: type[ZIHardwareCompilationConfig],
+        data: Any,  # noqa: ANN401
     ) -> Any:  # noqa: ANN401
         """Convert old style hardware config dict to new style before validation."""
         if (
@@ -1980,9 +1981,7 @@ def _compile_for_uhfqa(  # noqa: PLR0915
     ).with_qas_integration_weights_imag(
         channels=list(range(NUM_UHFQA_READOUT_CHANNELS)),
         imag=np.zeros(MAX_QAS_INTEGRATION_LENGTH),
-    ).with_sigout_offset(
-        0, mixer_corrections.dc_offset_i
-    ).with_sigout_offset(
+    ).with_sigout_offset(0, mixer_corrections.dc_offset_i).with_sigout_offset(
         1, mixer_corrections.dc_offset_q
     )
 
@@ -2075,7 +2074,7 @@ def _compile_for_uhfqa(  # noqa: PLR0915
         if acq_duration != acq_info["duration"]:
             raise ValueError(
                 f"Different acquisitions have a different duration "
-                f"{acq_duration*1e9:.1f}ns and {acq_info['duration']*1e9:.1f}ns. "
+                f"{acq_duration * 1e9:.1f}ns and {acq_info['duration'] * 1e9:.1f}ns. "
                 "The integration lenght needs to be identical for all acquisitions."
             )
 
@@ -2147,16 +2146,14 @@ def _compile_for_uhfqa(  # noqa: PLR0915
                 2 * acq_channel, list(weights_q)
             ).with_qas_integration_weights_real(
                 2 * acq_channel + 1, list(weights_q)
-            ).with_qas_integration_weights_imag(
-                2 * acq_channel + 1, list(-1 * weights_i)
-            )
+            ).with_qas_integration_weights_imag(2 * acq_channel + 1, list(-1 * weights_i))
 
             # Create partial function for delayed execution
             acq_channel_resolvers_map[acq_channel] = partial(
                 resolvers.result_acquisition_resolver,
                 result_nodes=[
-                    f"qas/0/result/data/{2*acq_channel}/wave",
-                    f"qas/0/result/data/{2*acq_channel+1}/wave",
+                    f"qas/0/result/data/{2 * acq_channel}/wave",
+                    f"qas/0/result/data/{2 * acq_channel + 1}/wave",
                 ],
             )
 
@@ -2168,19 +2165,13 @@ def _compile_for_uhfqa(  # noqa: PLR0915
             zhinst.QasIntegrationMode.NORMAL
         ).with_qas_integration_length(integration_length).with_qas_result_enable(
             False
-        ).with_qas_monitor_enable(
-            False
-        ).with_qas_delay(
-            0
-        )
+        ).with_qas_monitor_enable(False).with_qas_delay(0)
 
         settings_builder.with_qas_result_mode(zhinst.QasResultMode.CYCLIC).with_qas_result_source(
             zhinst.QasResultSource.INTEGRATION
         ).with_qas_result_length(n_acquisitions).with_qas_result_enable(
             True
-        ).with_qas_result_averages(
-            repetitions
-        )
+        ).with_qas_result_averages(repetitions)
 
     settings_builder.with_qas_result_reset(0).with_qas_result_reset(1)
     settings_builder.with_qas_monitor_reset(0).with_qas_monitor_reset(1)
@@ -2361,10 +2352,10 @@ def construct_waveform_table(
                 raise ValueError(
                     f"Attempting to set an integration weight of {len(corr_wf)} samples"
                     " (>4096) corresponding to an integration time of "
-                    f"{len(corr_wf)/instrument_info.sample_rate*1e6} us. "
+                    f"{len(corr_wf) / instrument_info.sample_rate * 1e6} us. "
                     "Please double check that your schedule does not contain any "
                     "acquisitions with a duration longer than "
-                    f"{4096/instrument_info.sample_rate*1e6:.2f} us.\n"
+                    f"{4096 / instrument_info.sample_rate * 1e6:.2f} us.\n"
                     f'Offending operation: "{row["operation"]}"'
                 )
 

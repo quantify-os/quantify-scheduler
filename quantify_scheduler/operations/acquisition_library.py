@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Standard acquisition protocols for use with the quantify_scheduler."""
+
 from __future__ import annotations
 
 import warnings

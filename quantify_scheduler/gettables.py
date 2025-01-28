@@ -306,9 +306,7 @@ class ScheduleGettable:
                 **self._evaluated_sched_kwargs,
                 repetitions=self.quantum_device.cfg_sched_repetitions(),
             )
-        except (
-            TypeError
-        ):  # Not tested, included for guiding users with common MeasurementControl mistake  # noqa: E501
+        except TypeError:  # Not tested, included for guiding users with common MeasurementControl mistake  # noqa: E501
             raise TypeError(
                 f"One or more keyword arguments of the schedule function in "
                 f"schedule_kwargs are of unexpected type, please check the arguments "

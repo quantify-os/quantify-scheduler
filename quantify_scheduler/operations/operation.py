@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Module containing the core concepts of the scheduler."""
+
 from __future__ import annotations
 
 import inspect
@@ -213,7 +214,7 @@ class Operation(JSONSchemaValMixin, UserDict):
         required_params = list(signature.parameters.keys())
         kwargs_list = map(to_kwarg, required_params)
 
-        return f'{cls.__name__}({",".join(kwargs_list)})'
+        return f"{cls.__name__}({','.join(kwargs_list)})"
 
     def add_gate_info(self, gate_operation: Operation) -> None:
         """

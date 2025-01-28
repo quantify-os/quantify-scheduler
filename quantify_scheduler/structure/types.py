@@ -11,6 +11,7 @@ See `Pydantic documentation`_ for more information about implementing new types.
 
 .. _Pydantic documentation: https://docs.pydantic.dev/latest/usage/types/custom/
 """
+
 from __future__ import annotations
 
 import base64

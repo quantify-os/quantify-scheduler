@@ -494,17 +494,14 @@ def box_text(
 
 @deprecated("0.25.0", mw_pulse)
 def mwPulse(*args, **kwargs):  # noqa ANN202, N802 deprecated
-
     return mw_pulse(*args, **kwargs)
 
 
 @deprecated("0.25.0", flux_pulse)
 def fluxPulse(*args, **kwargs):  # noqa ANN202, N802 deprecated
-
     return flux_pulse(*args, **kwargs)
 
 
 @deprecated("0.25.0", ram_Z_pulse)
 def ramZPulse(*args, **kwargs):  # noqa ANN202, N802 deprecated
-
     return ram_Z_pulse(*args, **kwargs)

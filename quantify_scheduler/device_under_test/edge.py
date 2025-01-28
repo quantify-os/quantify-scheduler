@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """The module contains definitions for edges."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any

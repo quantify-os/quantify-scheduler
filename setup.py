@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 """The setup script."""
+
 import sys
 
 from setuptools import setup

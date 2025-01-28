@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Utilty classes for Qblox timetag module."""
+
 from __future__ import annotations
 
 import warnings
@@ -280,7 +281,7 @@ class TimetagSequencerCompiler(SequencerCompiler):
             unique_op_infos = set(acq.operation_info.data[key] for acq in acquisitions)
             if len(unique_op_infos) != 1:
                 raise ValueError(
-                    f"{key} must be the same for all acquisitions on a port-clock " "combination."
+                    f"{key} must be the same for all acquisitions on a port-clock combination."
                 )
 
         if acq_metadata.acq_protocol == "Trace":

@@ -53,7 +53,10 @@ qubit_params = [
 @pytest.mark.parametrize(["qubit_fixture", "expected_values"], qubit_params)
 class TestQubitOperations:
     def test_qubit_name(
-        self, qubit_fixture, expected_values, request  # noqa ARG002 # unused argument
+        self,
+        qubit_fixture,
+        expected_values,  # noqa ARG002 # unused argument
+        request,  # noqa ARG002 # unused argument
     ):
         q0 = request.getfixturevalue(qubit_fixture)
         assert q0.name == "q0"
@@ -88,7 +91,10 @@ class TestQubitOperations:
         ]
 
     def test_generate_device_config(
-        self, qubit_fixture, expected_values, request  # noqa ARG002 # unused argument
+        self,
+        qubit_fixture,
+        expected_values,  # noqa ARG002 # unused argument
+        request,  # noqa ARG002 # unused argument
     ):
         q0 = request.getfixturevalue(qubit_fixture)
         _ = q0.generate_device_config()
@@ -236,7 +242,10 @@ class TestQubitOperations:
         )
 
     def test_reference_magnitude_overwrite_units(
-        self, qubit_fixture, expected_values, request  # noqa ARG002 # unused argument
+        self,
+        qubit_fixture,
+        expected_values,  # noqa ARG002 # unused argument
+        request,  # noqa ARG002 # unused argument
     ):
         """
         Tests that the amplitude reference parameters get correctly overwritten when you

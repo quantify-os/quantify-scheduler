@@ -654,7 +654,6 @@ def test_extract_instrument_compilation_configs_cluster():
 
 
 def test_extract_instrument_compilation_configs_lo():
-
     hardware_config = {
         "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
         "hardware_description": {

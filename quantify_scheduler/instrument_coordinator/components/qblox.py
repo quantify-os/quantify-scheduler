@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Module containing Qblox InstrumentCoordinator Components."""
+
 from __future__ import annotations
 
 import copy
@@ -1602,7 +1603,7 @@ class _AcquisitionManagerBase(ABC):
         if channel_data["index"] != qblox_acq_index:
             raise RuntimeError(
                 f"Name does not correspond to a valid acquisition for name {qblox_acq_name}, "
-                f'which has index {channel_data["index"]}.'
+                f"which has index {channel_data['index']}."
             )
         return channel_data["acquisition"]["bins"]
 
@@ -2689,7 +2690,7 @@ def _download_log(
             hardware_log[f"{source}_log"] = log
         else:
             raise RuntimeError(
-                f"`ConfigurationManager.download_log` did not create a `{source}`" f" file."
+                f"`ConfigurationManager.download_log` did not create a `{source}` file."
             )
 
     return hardware_log

@@ -2,6 +2,7 @@
 # Licensed according to the LICENCE file on the main branch
 
 """Spin qubit specific operations for use with the quantify_scheduler."""
+
 from __future__ import annotations
 
 from .operation import Operation
@@ -44,4 +45,4 @@ class SpinInit(Operation):
 
     def __str__(self) -> str:
         device_elements = map(lambda x: f"'{x}'", self.data["gate_info"]["device_elements"])
-        return f'{self.__class__.__name__}({",".join(device_elements)})'
+        return f"{self.__class__.__name__}({','.join(device_elements)})"

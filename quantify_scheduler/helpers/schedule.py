@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Schedule helper functions."""
+
 from __future__ import annotations
 
 from itertools import count
@@ -188,12 +189,12 @@ def extract_acquisition_metadata_from_acquisition_protocols(
 
         if acq_protocol["protocol"] != protocol:
             conflicts.append(
-                f'acquisition protocol: found {protocol} and {acq_protocol["protocol"]}'
+                f"acquisition protocol: found {protocol} and {acq_protocol['protocol']}"
             )
         if acq_protocol["bin_mode"] != bin_mode:
             conflicts.append(
                 f"bin mode: found {bin_mode.__class__.__name__}.{bin_mode.name} and "
-                f'{acq_protocol["bin_mode"].__class__.__name__}.{acq_protocol["bin_mode"].name}'
+                f"{acq_protocol['bin_mode'].__class__.__name__}.{acq_protocol['bin_mode'].name}"
             )
 
         if conflicts:

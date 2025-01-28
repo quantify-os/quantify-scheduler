@@ -6,6 +6,7 @@ Module containing the HardwareConfig object.
 Extends ManualParameter to add methods to load from/to file and reload.
 Note: ManualParameter might be refactored out at some point in the future.
 """
+
 from __future__ import annotations
 
 import json

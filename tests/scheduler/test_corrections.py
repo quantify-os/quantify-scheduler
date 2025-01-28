@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Tests for pulse and acquisition corrections."""
+
 import numpy as np
 import pytest
 from pydantic import ValidationError
@@ -205,13 +206,13 @@ def test_apply_software_distortion_corrections(
         config=quantum_device.generate_compilation_config(),
     )
 
-    assert (
-        list(compiled_sched.operations.keys())[1] == operation_hash
-    ), "Key of CZ operation remains identical"
+    assert list(compiled_sched.operations.keys())[1] == operation_hash, (
+        "Key of CZ operation remains identical"
+    )
 
-    assert (
-        type(list(compiled_sched.operations.values())[1]) is NumericalPulse
-    ), "Type of CZ operation is now NumericalPulse"
+    assert type(list(compiled_sched.operations.values())[1]) is NumericalPulse, (
+        "Type of CZ operation is now NumericalPulse"
+    )
 
     assert list(compiled_sched.operations.values())[1].data["pulse_info"][0][
         "samples"

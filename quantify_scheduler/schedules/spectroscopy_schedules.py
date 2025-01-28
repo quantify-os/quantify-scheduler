@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Module containing schedules for common spectroscopy experiments."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

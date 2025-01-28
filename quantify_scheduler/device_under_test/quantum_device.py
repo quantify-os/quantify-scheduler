@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Module containing the QuantumDevice object."""
+
 from __future__ import annotations
 
 import json

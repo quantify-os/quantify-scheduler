@@ -2,7 +2,6 @@
 # Licensed according to the LICENCE file on the main branch
 """Tests for virtual strategy module."""
 
-
 from __future__ import annotations
 
 from contextlib import nullcontext
@@ -35,7 +34,6 @@ def fixture_empty_qasm_program():
 
 
 def _assert_none_data(strategy: IOperationStrategy):
-
     # this is what we want to verify
     data = strategy.generate_data({})
 
@@ -292,5 +290,5 @@ class TestNcoSetClockFrequencyStrategy:
                 f"Got {interm_freq_new:e} Hz."
             )
         else:
-            expected_instruction = ("set_freq", f"{round(interm_freq_new*4)}")
+            expected_instruction = ("set_freq", f"{round(interm_freq_new * 4)}")
             assert extract_instruction_and_args(qasm) == expected_instruction

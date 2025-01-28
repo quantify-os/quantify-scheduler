@@ -2,7 +2,6 @@
 # Licensed according to the LICENCE file on the main branch
 """Exceptions used by Qblox backend."""
 
-
 from typing import Literal
 
 from quantify_scheduler.backends.types.qblox import OpInfo
@@ -34,7 +33,7 @@ class FineDelayTimingError(ValueError):
                 f"Operation {operation_info} has fine delay specifications "
                 f"that are not supported by the hardware: {fine_start_delay=} "
                 f"ps, {fine_end_delay=} ps and the duration of the operation "
-                f"is {operation_duration//1000} ns. To avoid undefined "
+                f"is {operation_duration // 1000} ns. To avoid undefined "
                 "behaviour, there must be at least 7ns between the start and "
                 "end of the operation including the fine delay, OR the time "
                 "between the start and end must be an integer number of "

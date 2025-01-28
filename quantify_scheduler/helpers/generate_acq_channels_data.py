@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Helper functions to generate acq_indices."""
+
 from __future__ import annotations
 
 import warnings
@@ -257,8 +258,7 @@ def _generate_acq_channels_data_for_protocol(
             )
         else:
             warnings.warn(
-                f"Unsupported acquisition protocol '{protocol}' "
-                f"on acq_channel '{acq_channel}'.",
+                f"Unsupported acquisition protocol '{protocol}' on acq_channel '{acq_channel}'.",
                 RuntimeWarning,
             )
 

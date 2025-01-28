@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Utility class for dynamically allocating registers for Qblox sequencers."""
+
 from __future__ import annotations
 
 from quantify_scheduler.backends.qblox import constants
@@ -61,7 +62,7 @@ class RegisterManager:
         _verify_valid_register(register)
         if register in self.available_registers:
             raise RuntimeError(
-                f"Attempting to free register '{register}', but this register is not in" f"use."
+                f"Attempting to free register '{register}', but this register is not inuse."
             )
         self._available_registers.add(register)
 

@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Functions for producing operation handling strategies for the QTM."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

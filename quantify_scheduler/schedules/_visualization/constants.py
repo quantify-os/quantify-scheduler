@@ -2,7 +2,6 @@
 # Licensed according to the LICENCE file on the main branch
 """Constants used for drawing figures."""
 
-
 # draw circuit diagram mpl color scheme
 COLOR_BLUE = "#5296dd"
 COLOR_LAZURE = "#92bddf"

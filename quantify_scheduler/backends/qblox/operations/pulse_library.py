@@ -104,7 +104,6 @@ class SimpleNumericalPulse(NumericalPulse):
         reference_magnitude: ReferenceMagnitude | None = None,
         t0: float = 0,
     ) -> None:
-
         # Append samples with one value which will be truncated away by the interpolation.
         samples = np.append(samples, 0)
 

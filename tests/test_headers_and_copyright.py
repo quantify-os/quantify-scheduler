@@ -55,6 +55,5 @@ def test_docs_copyright() -> None:
                 break
 
     assert copyright_found, (
-        f"No correct copyright claim for {current_year} matching "
-        f"`{cr_match}` in {str(conf_file)}."
+        f"No correct copyright claim for {current_year} matching `{cr_match}` in {str(conf_file)}."
     )

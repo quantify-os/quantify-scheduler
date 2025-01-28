@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Compiler classes for Qblox backend."""
+
 from __future__ import annotations
 
 from collections import defaultdict
@@ -209,7 +210,7 @@ class QCMCompiler(BasebandModuleCompiler):
                     if key == "fir_coeffs" and value is not None:
                         if len(value) != 32 or np.any(value) < -2 or np.any(value) >= 2:
                             raise ValueError(
-                                "The FIR filter has 32 coefficients " "with a range of [-2,2) each."
+                                "The FIR filter has 32 coefficients with a range of [-2,2) each."
                             )
                         self._configure_filter(output_settings.fir, value, marker_debug_mode_enable)
 

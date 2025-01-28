@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Functionality to determine if the bin mode is compatible with the acquisition protocol."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

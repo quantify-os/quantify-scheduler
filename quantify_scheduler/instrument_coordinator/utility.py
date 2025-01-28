@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Utility functions for the instrument coordinator and components."""
+
 from __future__ import annotations
 
 import logging

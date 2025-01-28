@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Module containing the core concepts of the scheduler."""
+
 from __future__ import annotations
 
 import dataclasses
@@ -183,7 +184,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         """Return a string representation of this instance."""
         return (
             f'{self.__class__.__name__} "{self["name"]}" containing '
-            f'({len(self["operation_dict"])}) '
+            f"({len(self['operation_dict'])}) "
             f"{len(self.schedulables)}  (unique) operations."
         )
 
@@ -505,8 +506,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
                 if "abs_time" not in schedulable:
                     # when this exception is encountered
                     raise ValueError(
-                        "Absolute time has not been determined yet. "
-                        "Please compile your schedule."
+                        "Absolute time has not been determined yet. Please compile your schedule."
                     )
                 cls._generate_timing_table_list(
                     operation.operations[schedulable["operation_id"]],
@@ -652,8 +652,8 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         # nanoseconds.
         styled_timing_table = timing_table.style.format(
             {
-                "abs_time": lambda val: f"{val*1e9:,.1f} ns",
-                "duration": lambda val: f"{val*1e9:,.1f} ns",
+                "abs_time": lambda val: f"{val * 1e9:,.1f} ns",
+                "duration": lambda val: f"{val * 1e9:,.1f} ns",
             }
         )
         return styled_timing_table
@@ -775,8 +775,7 @@ class Schedule(ScheduleBase):
         """Add a resource such as a channel or device element to the schedule."""
         if not isinstance(resource, Resource):
             raise ValueError(
-                f"Attempting to add resource to schedule. "
-                f"'{resource}' is not a Resource instance."
+                f"Attempting to add resource to schedule. '{resource}' is not a Resource instance."
             )
         if resource.name in self["resource_dict"]:
             raise ValueError(f"Key {resource.name} is already present")
@@ -1141,8 +1140,8 @@ class CompiledSchedule(ScheduleBase):
         """
         styled_hardware_timing_table = self._hardware_timing_table.style.format(
             {
-                "abs_time": lambda val: f"{val*1e9:,.1f} ns",
-                "duration": lambda val: f"{val*1e9:,.1f} ns",
+                "abs_time": lambda val: f"{val * 1e9:,.1f} ns",
+                "duration": lambda val: f"{val * 1e9:,.1f} ns",
                 "clock_cycle_start": lambda val: f"{val:,.1f}",
                 "sample_start": lambda val: f"{val:,.1f}",
             }

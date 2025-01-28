@@ -2,6 +2,7 @@
 # Licensed according to the LICENCE file on the main branch
 
 """Helper functions for debugging experiments."""
+
 from __future__ import annotations
 
 import json
@@ -72,9 +73,7 @@ def _generate_diagnostics_report(  # noqa: PLR0912, PLR0915
     def _get_dependency_versions() -> list:
         dependencies = [
             dependency
-            for dependency in distribution(
-                "quantify-scheduler"
-            ).requires  # pyright: ignore[reportOptionalIterable]
+            for dependency in distribution("quantify-scheduler").requires  # pyright: ignore[reportOptionalIterable]
             if "extra" not in dependency
         ]
 

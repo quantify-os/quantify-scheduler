@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Helper functions for Qblox backend."""
+
 from __future__ import annotations
 
 import dataclasses
@@ -1060,27 +1061,27 @@ def _generate_new_style_hardware_compilation_config(  # noqa PLR0915 too many st
             elif channel_cfg_key == "input_gain_I":
                 # Set input gains for all port-clock combinations (RF modules)
                 for port_clock in channel_port_clocks:
-                    new_style_config["hardware_options"]["input_gain"][port_clock][
-                        "gain_I"
-                    ] = channel_cfg_value
+                    new_style_config["hardware_options"]["input_gain"][port_clock]["gain_I"] = (
+                        channel_cfg_value
+                    )
             elif channel_cfg_key == "input_gain_Q":
                 # Set input gains for all port-clock combinations (RF modules)
                 for port_clock in channel_port_clocks:
-                    new_style_config["hardware_options"]["input_gain"][port_clock][
-                        "gain_Q"
-                    ] = channel_cfg_value
+                    new_style_config["hardware_options"]["input_gain"][port_clock]["gain_Q"] = (
+                        channel_cfg_value
+                    )
             elif channel_cfg_key == "output_att":
                 # Set output attenuation for all port-clock combinations (RF modules)
                 for port_clock in channel_port_clocks:
-                    new_style_config["hardware_options"]["output_att"][
-                        port_clock
-                    ] = channel_cfg_value
+                    new_style_config["hardware_options"]["output_att"][port_clock] = (
+                        channel_cfg_value
+                    )
             elif channel_cfg_key == "input_att":
                 # Set input attenuation for all port-clock combinations (RF modules)
                 for port_clock in channel_port_clocks:
-                    new_style_config["hardware_options"]["input_att"][
-                        port_clock
-                    ] = channel_cfg_value
+                    new_style_config["hardware_options"]["input_att"][port_clock] = (
+                        channel_cfg_value
+                    )
             elif channel_cfg_key == "portclock_configs":
                 # Add connectivity information to connectivity graph:
                 for portclock_cfg in channel_cfg_value:
@@ -1113,9 +1114,9 @@ def _generate_new_style_hardware_compilation_config(  # noqa PLR0915 too many st
                         ] = portclock_cfg.pop("mixer_phase_error_deg")
                     if portclock_cfg != {}:
                         # Set remaining portclock config parameters to sequencer options:
-                        new_style_config["hardware_options"]["sequencer_options"][
-                            port_clock
-                        ] = portclock_cfg
+                        new_style_config["hardware_options"]["sequencer_options"][port_clock] = (
+                            portclock_cfg
+                        )
 
     def _convert_real_channel_config(
         cluster_name: str,
@@ -1145,9 +1146,9 @@ def _generate_new_style_hardware_compilation_config(  # noqa PLR0915 too many st
             elif channel_cfg_key in ("input_gain_0", "input_gain_1"):
                 # Set input gains for all port-clock combinations
                 for port_clock in channel_port_clocks:
-                    new_style_config["hardware_options"]["input_gain"][
-                        port_clock
-                    ] = channel_cfg_value
+                    new_style_config["hardware_options"]["input_gain"][port_clock] = (
+                        channel_cfg_value
+                    )
             elif channel_cfg_key == "portclock_configs":
                 # Add connectivity information to connectivity graph:
                 for portclock_cfg in channel_cfg_value:
@@ -1186,9 +1187,9 @@ def _generate_new_style_hardware_compilation_config(  # noqa PLR0915 too many st
                         ]
                     ):
                         # Set remaining portclock config parameters to sequencer options:
-                        new_style_config["hardware_options"]["sequencer_options"][
-                            port_clock
-                        ] = portclock_cfg
+                        new_style_config["hardware_options"]["sequencer_options"][port_clock] = (
+                            portclock_cfg
+                        )
 
             if any("optical_control" in pc for pc in channel_port_clocks):
                 channel_mixer = "OpticalModulator"
@@ -1351,9 +1352,9 @@ def _generate_new_style_hardware_compilation_config(  # noqa PLR0915 too many st
         }
         for cluster_cfg_key, cluster_cfg_value in old_cluster_config.items():
             if cluster_cfg_key in ["ref", "sequence_to_file"]:
-                new_style_config["hardware_description"][cluster_name][
-                    cluster_cfg_key
-                ] = cluster_cfg_value
+                new_style_config["hardware_description"][cluster_name][cluster_cfg_key] = (
+                    cluster_cfg_value
+                )
             elif "module" in cluster_cfg_key:
                 _convert_cluster_module_config(
                     cluster_name=cluster_name,

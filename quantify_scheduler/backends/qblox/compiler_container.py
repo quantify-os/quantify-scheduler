@@ -165,7 +165,6 @@ class CompilerContainer:
             instrument_name,
             cfg,
         ) in instrument_configs.items():
-
             instrument_type = cfg.hardware_description.instrument_type
 
             if instrument_type == "Cluster":

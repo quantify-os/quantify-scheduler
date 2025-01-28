@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Module containing definitions related to stitched pulses."""
+
 from __future__ import annotations
 
 import math
@@ -49,9 +50,7 @@ class StitchedPulse(Operation):
         self._update()
 
     def __str__(self) -> str:
-        return (
-            f"StitchedPulse(name='{self.data['name']}', pulse_info=" f"{self.data['pulse_info']})"
-        )
+        return f"StitchedPulse(name='{self.data['name']}', pulse_info={self.data['pulse_info']})"
 
     def add_pulse(self, pulse_operation: Operation) -> None:
         """
@@ -312,8 +311,7 @@ class StitchedPulseBuilder:
             )
         if pulse.valid_gate:
             raise RuntimeError(
-                "Cannot add gate to StitchedPulse. Please add it directly to the "
-                "schedule instead."
+                "Cannot add gate to StitchedPulse. Please add it directly to the schedule instead."
             )
         if len(pulse["logic_info"]) > 0:
             raise RuntimeError(
@@ -407,7 +405,7 @@ class StitchedPulseBuilder:
         )
         if self._overlaps_with_existing_offsets(offset):
             raise RuntimeError(
-                "Tried to add offset that overlaps with existing offsets in the " "StitchedPulse."
+                "Tried to add offset that overlaps with existing offsets in the StitchedPulse."
             )
 
         self._offsets.append(offset)

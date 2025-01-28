@@ -11,7 +11,6 @@ attrs==24.2.0
 babel==2.16.0
 backports.tarfile==1.2.0
 beautifulsoup4==4.12.3
-black==24.8.0
 bleach==6.1.0
 bokeh==3.4.3
 broadbean==0.14.0

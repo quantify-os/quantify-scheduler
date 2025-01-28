@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Tests for the InstrumentCompiler subclasses."""
+
 from __future__ import annotations
 
 import math
@@ -907,6 +908,6 @@ def test_write_pre_wait_sync_instructions_raises_if_not_both_thresholds_set(mock
 
     with pytest.raises(
         RuntimeError,
-        match="If the thresholded acquisition trigger is enabled, the threshold " "cannot be None.",
+        match="If the thresholded acquisition trigger is enabled, the threshold cannot be None.",
     ):
         mock_timetag_sequencer._write_pre_wait_sync_instructions(qasm_program)

@@ -7,6 +7,7 @@ These factories take a parametrized representation of an operation and create an
 instance of the operation itself. The created operations make use of Qblox-specific
 hardware features.
 """
+
 from __future__ import annotations
 
 import math

@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Enums used by Qblox backend."""
+
 from __future__ import annotations
 
 from enum import Enum

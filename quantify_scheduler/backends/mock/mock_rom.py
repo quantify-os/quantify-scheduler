@@ -4,6 +4,7 @@
 # pyright: reportIncompatibleVariableOverride=false
 
 """Compiler backend for a mock readout module."""
+
 from __future__ import annotations
 
 from typing import Hashable, Literal
@@ -138,9 +139,7 @@ class MockROMSettings(DataStructure):
 class MockROMInstrumentCoordinatorComponent(InstrumentCoordinatorComponentBase):
     """Mock readout module instrument coordinator component."""
 
-    def __new__(
-        cls, mock_rom: MockReadoutModule
-    ) -> InstrumentCoordinatorComponentBase:  # noqa: D102
+    def __new__(cls, mock_rom: MockReadoutModule) -> InstrumentCoordinatorComponentBase:  # noqa: D102
         # The InstrumentCoordinatorComponentBase.__new__ currently requires a QCoDeS instrument
         # Create a dummy instrument to be compatible with InstrumentCoordinatorComponentBase.__new__
         instrument = InstrumentBase(name=mock_rom.name)
@@ -330,7 +329,8 @@ class MockROMHardwareCompilationConfig(HardwareCompilationConfig):
     hardware_options: MockROMHardwareOptions
     compilation_passes: list[SimpleNodeConfig] = [
         SimpleNodeConfig(
-            name="mock_rom_hardware_compile", compilation_func=hardware_compile  # type: ignore
+            name="mock_rom_hardware_compile",
+            compilation_func=hardware_compile,  # type: ignore
         )
     ]
 

@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Tests for acquisitions module."""
+
 from __future__ import annotations
 
 import math
@@ -1011,7 +1012,6 @@ def test_long_time_trace_protocol(
     qblox_hardware_config_transmon,
     get_subschedule_operation,
 ):
-
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
     quantum_device.hardware_config(qblox_hardware_config_transmon)
     qubit = mock_setup_basic_transmon_with_standard_params["q0"]
@@ -1720,9 +1720,9 @@ def test_multiple_trace_raises(
     ]
     acq_metadata_trace = acq_metadata["seq0"]
     acq_metadata = {"seq0": acq_metadata_trace, "seq1": acq_metadata_trace}
-    compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"][
-        "acq_metadata"
-    ] = acq_metadata
+    compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["acq_metadata"] = (
+        acq_metadata
+    )
 
     with pytest.raises(ValueError) as exc:
         instr_coordinator.prepare(compiled_sched)

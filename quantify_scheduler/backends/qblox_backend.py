@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Compiler backend for Qblox hardware."""
+
 from __future__ import annotations
 
 import itertools
@@ -211,7 +212,9 @@ class OperationTimingInfo:
 
     @classmethod
     def from_operation_and_schedulable(
-        cls, operation: Operation, schedulable: Schedulable  # noqa: ANN102
+        cls,
+        operation: Operation,
+        schedulable: Schedulable,  # noqa: ANN102
     ) -> OperationTimingInfo:
         """Create an ``OperationTimingInfo`` from an operation and a schedulable."""
         start: float = schedulable.data["abs_time"]
@@ -540,7 +543,8 @@ def compile_conditional_playback(  # noqa: D417
 
 
 def compile_long_square_pulses_to_awg_offsets(  # noqa: D417
-    schedule: Schedule, config: DataStructure | dict  # noqa: ARG001
+    schedule: Schedule,
+    config: DataStructure | dict,  # noqa: ARG001
 ) -> Schedule:
     """
     Replace square pulses in the schedule with long square pulses.
@@ -807,7 +811,8 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
     @model_validator(mode="before")
     @classmethod
     def from_old_style_hardware_config(
-        cls, data: Any  # noqa: ANN401 deprecated
+        cls,
+        data: Any,  # noqa: ANN401 deprecated
     ) -> Any:  # noqa: ANN401 deprecated
         """Convert old style hardware config dict to new style before validation."""
         if (
@@ -1117,7 +1122,6 @@ class _ClusterModuleCompilationConfig(ABC, DataStructure):
     def _extract_sequencer_compilation_configs(
         self,
     ) -> dict[int, _SequencerCompilationConfig]:
-
         sequencer_configs = {}
         channel_to_lo = {path.channel_name: lo_name for lo_name, path in self.lo_to_path.items()}
 
@@ -1193,7 +1197,6 @@ class _ClusterModuleCompilationConfig(ABC, DataStructure):
     def _validate_hardware_distortion_corrections_mode(
         self,
     ) -> _ClusterModuleCompilationConfig:
-
         distortion_corrections = (
             self.hardware_options.distortion_corrections
             if self.hardware_options is not None
@@ -1221,7 +1224,6 @@ class _ClusterModuleCompilationConfig(ABC, DataStructure):
     def _validate_input_gain_mode(
         self,
     ) -> _ClusterModuleCompilationConfig:
-
         input_gain = self.hardware_options.input_gain if self.hardware_options is not None else None
 
         if input_gain is not None:
@@ -1420,7 +1422,6 @@ class _ClusterCompilationConfig(DataStructure):
     def _extract_module_compilation_configs(
         self,
     ) -> dict[int, _ClusterModuleCompilationConfig]:
-
         module_configs: dict[int, _ClusterModuleCompilationConfig] = {}
 
         # Create configs and distribute `hardware_description`
@@ -1684,8 +1685,7 @@ def validate_non_overlapping_stitched_pulse(schedule: Schedule) -> None:
                 if last_pulse_abs_time is None or last_pulse_op is None:
                     # This error should be unreachable.
                     raise RuntimeError(
-                        f"{last_pulse_abs_time=} and {last_pulse_op} may not be None "
-                        "at this point."
+                        f"{last_pulse_abs_time=} and {last_pulse_op} may not be None at this point."
                     )
                 _raise_if_pulses_overlap_on_same_port_clock(
                     abs_time_op,
@@ -1876,8 +1876,8 @@ def _check_nco_grid_timing(
         except ValueError as e:
             raise NcoOperationTimingError(
                 f"Schedule {operation.name}, which contains NCO related operations, "
-                f"cannot start at t={round(start_time*1e9)} ns and end at "
-                f"t={round((start_time+operation.duration)*1e9)} ns. This schedule "
+                f"cannot start at t={round(start_time * 1e9)} ns and end at "
+                f"t={round((start_time + operation.duration) * 1e9)} ns. This schedule "
                 f"must start and end on the {constants.NCO_TIME_GRID} ns time grid."
             ) from e
 
@@ -1891,15 +1891,15 @@ def _check_nco_grid_timing(
                 raise NcoOperationTimingError(
                     f"ControlFlow operation {operation.name}, which contains NCO "
                     f"related operations, cannot start at t="
-                    f"{round(start_time*1e9)} ns and end at t="
-                    f"{round((start_time+operation.duration)*1e9)} ns. This operation "
+                    f"{round(start_time * 1e9)} ns and end at t="
+                    f"{round((start_time + operation.duration) * 1e9)} ns. This operation "
                     f"must start and end on the {constants.NCO_TIME_GRID} ns time grid."
                 ) from e
             else:
                 raise NcoOperationTimingError(
                     f"ControlFlow operation {parent_control_flow_op.name}, starting at "
-                    f"t={round(start_time*1e9)} ns and ending at t="
-                    f"{round((start_time+parent_control_flow_op.duration)*1e9)} ns, "
+                    f"t={round(start_time * 1e9)} ns and ending at t="
+                    f"{round((start_time + parent_control_flow_op.duration) * 1e9)} ns, "
                     "contains NCO related operations that may not be aligned with the "
                     f"{constants.NCO_TIME_GRID} ns time grid. Please make sure all "
                     "iterations and/or branches start and end on the "
@@ -1913,7 +1913,7 @@ def _check_nco_grid_timing(
         except ValueError as e:
             raise NcoOperationTimingError(
                 f"NCO related operation {operation} cannot start at "
-                f"t={round(start_time*1e9)} ns. This operation must be on the "
+                f"t={round(start_time * 1e9)} ns. This operation must be on the "
                 f"{constants.NCO_TIME_GRID} ns time grid."
             ) from e
 

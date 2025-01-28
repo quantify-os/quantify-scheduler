@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Pytest fixtures for quantify-scheduler."""
+
 from __future__ import annotations
 
 from copy import deepcopy
@@ -80,7 +81,7 @@ def basic_schedule(make_basic_schedule) -> Schedule:
 @pytest.fixture
 def make_basic_schedule() -> Callable[[str], Schedule]:
     def _make_basic_schedule(qubit: str) -> Schedule:
-        schedule = Schedule(f'Basic schedule{" "+qubit if qubit != "q0" else ""}')
+        schedule = Schedule(f"Basic schedule{' ' + qubit if qubit != 'q0' else ''}")
         schedule.add(X90(qubit))
         return schedule
 

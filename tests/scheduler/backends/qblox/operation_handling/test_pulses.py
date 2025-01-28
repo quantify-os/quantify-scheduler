@@ -2,7 +2,6 @@
 # Licensed according to the LICENCE file on the main branch
 """Tests for pulses module."""
 
-
 import re
 
 import numpy as np

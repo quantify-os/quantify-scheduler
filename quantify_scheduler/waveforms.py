@@ -8,6 +8,7 @@ These functions are intended to be used to generate waveforms defined in the
 Examples of waveforms that are too advanced are flux pulses that require knowledge of
 the flux sensitivity and interaction strengths and qubit frequencies.
 """
+
 from __future__ import annotations
 
 import warnings
@@ -362,8 +363,7 @@ def sudden_net_zero(
     waveform[single_arm_samples + mid_samples] = -amp_A * net_zero_A_scale * amp_B
     integral_value = -sum(waveform) / num_corr_samples
     waveform[
-        2 * single_arm_samples
-        + mid_samples : 2 * single_arm_samples
+        2 * single_arm_samples + mid_samples : 2 * single_arm_samples
         + mid_samples
         + num_corr_samples
     ] = integral_value

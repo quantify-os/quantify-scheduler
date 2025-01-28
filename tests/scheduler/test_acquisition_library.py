@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Unit tests acquisition protocols for use with the quantify_scheduler."""
+
 import json
 from copy import deepcopy
 from itertools import combinations

@@ -4,6 +4,7 @@
 Module containing schedules for common time domain experiments such as a Rabi and
 T1 measurement.
 """
+
 from __future__ import annotations
 
 from typing import Iterable, Literal
@@ -435,7 +436,7 @@ def allxy_sched(
         # check index valid
         if elt_idx > len(allxy_combinations) or elt_idx < 0:
             raise ValueError(
-                f"Invalid index selected: {elt_idx}. " "Index must be in range 0 to 21 inclusive."
+                f"Invalid index selected: {elt_idx}. Index must be in range 0 to 21 inclusive."
             )
 
         (th0, phi0), (th1, phi1) = allxy_combinations[elt_idx]
@@ -500,7 +501,7 @@ def readout_calibration_sched(
             schedule.add(Rxy(qubit=device_element, theta=180, phi=0))
         elif prep_state == 2:
             raise NotImplementedError(
-                "Preparing the qubit in the second excited (2) " "state is not supported yet."
+                "Preparing the qubit in the second excited (2) state is not supported yet."
             )
         else:
             raise ValueError(f"Prepared state ({prep_state}) must be either 0, 1 or 2.")

@@ -2,7 +2,6 @@
 # Licensed according to the LICENCE file on the main branch
 """Constants for compilation to Qblox hardware."""
 
-
 MAX_NUMBER_OF_INSTRUCTIONS_QCM: int = 16384
 """Maximum supported number of instructions in Q1ASM programs for QCM/QCM-RF."""
 MAX_NUMBER_OF_INSTRUCTIONS_QRM: int = 12288

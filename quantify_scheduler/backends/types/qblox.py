@@ -836,7 +836,7 @@ class TimetagSequencerSettings(SequencerSettings):
 
         if len(self.connected_output_indices) == 1 and len(self.connected_input_indices) == 1:
             raise ValueError(
-                "A QTM sequencer cannot be connected to both an output and an input " "port."
+                "A QTM sequencer cannot be connected to both an output and an input port."
             )
 
     @classmethod
@@ -1421,7 +1421,8 @@ class SequencerOptions(DataStructure):
         "init_gain_awg_path_I",
         "init_gain_awg_path_Q",
     )
-    def _init_setting_limits(cls, init_setting):  # noqa: N805
+    @classmethod
+    def _init_setting_limits(cls, init_setting) -> float | ValueError:  # noqa: N805
         # if connectivity contains a hardware config with latency corrections
         if init_setting < -1.0 or init_setting > 1.0:
             raise ValueError(

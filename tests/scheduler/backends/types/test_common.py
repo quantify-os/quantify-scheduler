@@ -27,7 +27,7 @@ def test_mismatching_instrument_names_raises():
 
     with pytest.raises(
         ValueError,
-        match="Invalid node. Instrument 'instrument_1' not found in " "hardware description.",
+        match="Invalid node. Instrument 'instrument_1' not found in hardware description.",
     ):
         HardwareCompilationConfig.model_validate(hardware_compilation_cfg)
 

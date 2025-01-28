@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Tests for Qblox backend crosstalk compensation."""
+
 import numpy as np
 
 from quantify_scheduler import ClockResource, Schedule, SerialCompiler
@@ -10,7 +11,6 @@ from quantify_scheduler.operations import DRAGPulse, GaussPulse, RampPulse, Squa
 
 class TestCrosstalkCompensation:
     def test_crosstalk_comp_single_pulse(self, compile_config_basic_transmon_qblox_hardware):
-
         sched = Schedule("crosstalk comp")
         sched.add(
             SquarePulse(
@@ -36,7 +36,6 @@ class TestCrosstalkCompensation:
         assert operations[1].data["pulse_info"][0]["amp"] == -0.26666666666666666
 
     def test_crosstalk_comp_two_pulses(self, compile_config_basic_transmon_qblox_hardware):
-
         sched = Schedule("crosstalk comp")
         sched.add(SquarePulse(amp=0.4, duration=20e-9, port="q0:mw", clock="q0.01"))
         sched.add(SquarePulse(amp=0.5, duration=20e-9, port="q0:mw", clock="q0.01"))

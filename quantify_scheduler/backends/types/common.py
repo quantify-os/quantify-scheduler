@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Common python dataclasses for multiple backends."""
+
 from __future__ import annotations
 
 import warnings
@@ -111,7 +112,8 @@ class SoftwareDistortionCorrection(DataStructure):
     """The sample rate of the corrected pulse, in Hz."""
 
     @field_validator("clipping_values")
-    def _only_two_clipping_values(cls, clipping_values):
+    @classmethod
+    def _only_two_clipping_values(cls, clipping_values) -> list | None | ValueError:
         if clipping_values and len(clipping_values) != 2:
             raise KeyError(
                 f"Clipping values should contain only two values, min and max.\n"
@@ -302,7 +304,8 @@ class LocalOscillatorDescription(DataStructure):
     """The power setting for this Local Oscillator."""
 
     @field_validator("generic_icc_name")
-    def _only_default_generic_icc_name(cls, generic_icc_name):
+    @classmethod
+    def _only_default_generic_icc_name(cls, generic_icc_name) -> str | None:
         if generic_icc_name is not None and generic_icc_name != constants.GENERIC_IC_COMPONENT_NAME:
             raise NotImplementedError(
                 f"Specified name '{generic_icc_name}' as a generic instrument "
@@ -390,7 +393,8 @@ class Connectivity(DataStructure):
     """
 
     @field_validator("graph", mode="before")
-    def _unroll_lists_of_ports_in_edges_input(cls, graph):
+    @classmethod
+    def _unroll_lists_of_ports_in_edges_input(cls, graph) -> list[tuple[Any, Any]]:  # type: ignore
         if isinstance(graph, list):
             list_of_edges = []
             for edge_input in graph:
@@ -539,8 +543,10 @@ class HardwareCompilationConfig(DataStructure):
         return export_python_object_to_path_string(v)
 
     @field_validator("config_type", mode="before")
+    @classmethod
     def _import_config_type_if_str(
-        cls, config_type: type[HardwareCompilationConfig]  # noqa: N805
+        cls,
+        config_type: type[HardwareCompilationConfig],  # noqa: N805
     ) -> Callable[[Schedule, Any], Schedule]:
         if isinstance(config_type, str):
             return deserialize_function(config_type)

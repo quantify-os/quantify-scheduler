@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Tests for Qblox backend."""
+
 from __future__ import annotations
 
 import copy
@@ -455,9 +456,9 @@ def test_generate_waveform_data_sample_size(duration, sampling_rate, sample_size
     }
     gen_data = generate_waveform_data(data_dict, sampling_rate)
 
-    assert (
-        len(gen_data) == sample_size
-    ), f"Sample size {sample_size} is integer nearest to {duration * sampling_rate}"
+    assert len(gen_data) == sample_size, (
+        f"Sample size {sample_size} is integer nearest to {duration * sampling_rate}"
+    )
 
 
 def test_find_inner_dicts_containing_key():
@@ -1183,9 +1184,9 @@ def test_compile_cz_gate(
         .splitlines(),
     }
 
-    assert any(
-        re.search(r"^\s*play\s+0,0,4(\s|$)", line) for line in program_lines["q2:fl"]
-    ), "\n".join(line for line in program_lines["q2:fl"])
+    assert any(re.search(r"^\s*play\s+0,0,4(\s|$)", line) for line in program_lines["q2:fl"]), (
+        "\n".join(line for line in program_lines["q2:fl"])
+    )
 
     assert any(
         re.search(r"^\s*set_ph_delta\s+122222222(\s|$)", line) for line in program_lines["q2:mw"]
@@ -1854,7 +1855,7 @@ def test_assign_pulse_and_acq_info_to_devices(
         f"{actual_num_of_pulses} instead."
     )
     assert actual_num_of_acquisitions == 1, (
-        f"Expected 1 number of acquisitions, but found {actual_num_of_acquisitions} " "instead."
+        f"Expected 1 number of acquisitions, but found {actual_num_of_acquisitions} instead."
     )
 
 
@@ -3652,7 +3653,7 @@ def test_overlapping_pulse_and_voltage_offset_raises1(
     with pytest.raises(
         RuntimeError,
         match=(
-            "contain pulses with voltage offsets that overlap in time on the same " "port and clock"
+            "contain pulses with voltage offsets that overlap in time on the same port and clock"
         ),
     ):
         _ = compiler.compile(schedule=schedule, config=compilation_config)

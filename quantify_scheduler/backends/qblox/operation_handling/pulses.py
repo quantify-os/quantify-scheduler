@@ -194,7 +194,6 @@ class GenericPulseStrategy(PulseStrategyPartial):
             qasm_program.elapsed_time - qasm_program.time_last_pulse_triggered
             < constants.MIN_TIME_BETWEEN_OPERATIONS
         ):
-
             raise ValueError(
                 f"Attempting to start an operation at t="
                 f"{qasm_program.elapsed_time} ns, while the last operation was "

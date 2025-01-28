@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Settings builder for Zurich Instruments."""
+
 from __future__ import annotations
 
 import dataclasses
@@ -273,7 +274,6 @@ class ZISettings:
         builder = ZISettingsBuilder()
 
         for node, value in settings_data.items():
-
             if "waveform/waves" in node:
                 nodes = node.split("/")
                 awg_index = int(nodes[1])
@@ -301,9 +301,7 @@ class ZISettings:
                 complex_value = complex(value.replace(" ", ""))
                 builder.with_qas_rotations(channel_index, complex_value)
             elif node == "compiler/sourcestring":
-                seqc_per_awg = cast(
-                    Dict[int, str], value
-                )  # noqa: UP006  # (Casting to dict[int,str] doesn't work in python 3.8)
+                seqc_per_awg = cast(Dict[int, str], value)  # noqa: UP006  # (Casting to dict[int,str] doesn't work in python 3.8)
 
                 for awg_index, seqc_file in seqc_per_awg.items():
                     seqc_path = Path(seqc_file)

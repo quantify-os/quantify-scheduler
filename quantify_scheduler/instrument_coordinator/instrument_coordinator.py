@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Module containing the main InstrumentCoordinator Component."""
+
 from __future__ import annotations
 
 import warnings
@@ -406,7 +407,7 @@ class ZIInstrumentCoordinator(InstrumentCoordinator):
             unit="",
             initial_value=True,
             vals=validators.Bool(),
-            docstring="Turns on reacquisition in case " "of timeouts.",
+            docstring="Turns on reacquisition in case of timeouts.",
             instrument=self,
         )
 
@@ -415,7 +416,7 @@ class ZIInstrumentCoordinator(InstrumentCoordinator):
             unit="",
             initial_value=5,
             vals=validators.Numbers(min_value=0, max_value=50),
-            docstring="The number of retries to retrieve acquisitions in case " "of timeouts.",
+            docstring="The number of retries to retrieve acquisitions in case of timeouts.",
             instrument=self,
         )
 

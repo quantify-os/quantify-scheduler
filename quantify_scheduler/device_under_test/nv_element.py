@@ -6,6 +6,7 @@ Device elements for NV centers.
 Currently only for the electronic qubit,
 but could be extended for other qubits (eg. carbon qubit).
 """
+
 from __future__ import annotations
 
 import math

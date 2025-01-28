@@ -395,9 +395,9 @@ def test_compile_hardware_hdawg4_successfully_deprecated_hardware_config(
         assert key in zi_settings_dict
         if isinstance(expected_value, type(ANY)):
             continue
-        assert (
-            zi_settings_dict[key] == expected_value
-        ), f"Expected {key} {zi_settings_dict[key]} to equal {expected_value}"
+        assert zi_settings_dict[key] == expected_value, (
+            f"Expected {key} {zi_settings_dict[key]} to equal {expected_value}"
+        )
 
 
 def test_compile_hardware_hdawg4_successfully(
@@ -467,9 +467,9 @@ def test_compile_hardware_hdawg4_successfully(
         assert key in zi_settings_dict
         if isinstance(expected_value, type(ANY)):
             continue
-        assert (
-            zi_settings_dict[key] == expected_value
-        ), f"Expected {key} {zi_settings_dict[key]} to equal {expected_value}"
+        assert zi_settings_dict[key] == expected_value, (
+            f"Expected {key} {zi_settings_dict[key]} to equal {expected_value}"
+        )
 
     assert "generic" in device_configs
 
@@ -1441,11 +1441,11 @@ def test_acquisition_staircase_right_acq_channel(
     assert len(uhfqa_setts.acq_config.resolvers) == 1
     assert (
         uhfqa_setts.acq_config.resolvers[acq_channel].keywords["result_nodes"][0]
-        == f"qas/0/result/data/{2*acq_channel}/wave"
+        == f"qas/0/result/data/{2 * acq_channel}/wave"
     )
     assert (
         uhfqa_setts.acq_config.resolvers[acq_channel].keywords["result_nodes"][1]
-        == f"qas/0/result/data/{2*acq_channel+1}/wave"
+        == f"qas/0/result/data/{2 * acq_channel + 1}/wave"
     )
 
     settings_dict = uhfqa_setts.settings_builder.build().as_dict()

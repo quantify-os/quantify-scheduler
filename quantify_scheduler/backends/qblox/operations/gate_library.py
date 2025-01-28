@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Contains the gate library for the Qblox backend."""
+
 from __future__ import annotations
 
 from quantify_scheduler.backends.qblox.constants import TRIGGER_DELAY

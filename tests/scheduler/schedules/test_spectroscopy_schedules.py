@@ -94,9 +94,9 @@ class TestHeterodyneSpecScheduleNCO(TestHeterodyneSpecSchedule):
         abs_time = 0.0
         for i, schedulable in enumerate(sched.schedulables.values()):
             assert labels[i] in schedulable["label"]
-            assert math.isclose(
-                schedulable["abs_time"], abs_time, abs_tol=0.0, rel_tol=1e-15
-            ), schedulable["label"]
+            assert math.isclose(schedulable["abs_time"], abs_time, abs_tol=0.0, rel_tol=1e-15), (
+                schedulable["label"]
+            )
             abs_time += rel_times[i]
 
     @pytest.mark.needs_zhinst
@@ -287,9 +287,9 @@ class TestTwoToneSpecScheduleNCO(TestTwoToneSpecSchedule):
         abs_time = 0.0
         for i, schedulable in enumerate(sched.schedulables.values()):
             assert labels[i] in schedulable["label"]
-            assert math.isclose(
-                schedulable["abs_time"], abs_time, abs_tol=0.0, rel_tol=1e-15
-            ), schedulable["label"]
+            assert math.isclose(schedulable["abs_time"], abs_time, abs_tol=0.0, rel_tol=1e-15), (
+                schedulable["label"]
+            )
             abs_time += rel_times[i]
 
     @pytest.mark.xfail(
@@ -437,9 +437,9 @@ class TestNVDarkESRSchedNCO:
         abs_time = 0.0
         for i, schedulable in enumerate(sched.schedulables.values()):
             assert labels[i] in schedulable["label"]
-            assert math.isclose(
-                schedulable["abs_time"], abs_time, abs_tol=0.0, rel_tol=1e-15
-            ), schedulable["label"]
+            assert math.isclose(schedulable["abs_time"], abs_time, abs_tol=0.0, rel_tol=1e-15), (
+                schedulable["label"]
+            )
             abs_time += rel_times[i]
 
     def test_compiles_device_cfg_only(self, mock_setup_basic_nv):

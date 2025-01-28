@@ -6,6 +6,7 @@ A module containing factory functions for measurements on the quantum-device lay
 These factories are used to take a parametrized representation of on a operation
 and use that to create an instance of the operation itself.
 """
+
 from __future__ import annotations
 
 import math
@@ -137,7 +138,6 @@ def _dispersive_measurement(  # noqa: PLR0915
     subschedule = Schedule("dispersive_measurement")
 
     if acq_protocol != "LongTimeTrace":
-
         if reset_clock_phase:
             subschedule.add(ResetClockPhase(clock=clock))
 

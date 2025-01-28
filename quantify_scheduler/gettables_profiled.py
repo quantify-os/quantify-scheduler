@@ -11,6 +11,7 @@ Profiling of the control electronics is enabled by using the
 
     The :class:`ProfiledScheduleGettable` is currently only tested to support Qblox hardware.
 """
+
 from __future__ import annotations
 
 import json

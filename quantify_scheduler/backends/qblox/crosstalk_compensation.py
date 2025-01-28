@@ -17,7 +17,8 @@ from quantify_scheduler.schedules import Schedulable, Schedule
 
 
 def crosstalk_compensation(
-    schedule: Schedule, config: CompilationConfig  # noqa: D417
+    schedule: Schedule,
+    config: CompilationConfig,  # noqa: D417
 ) -> Schedule:  # noqa: D103
     """
     Apply crosstalk compensation to the given schedule based on the provided configuration.
@@ -121,7 +122,7 @@ def _apply_compensation_to_operation(
     compensation_matrix: np.ndarray,
 ) -> None:
     port_clock = (
-        f"{operation.data['pulse_info'][0]['port']}-" f"{operation.data['pulse_info'][0]['clock']}"
+        f"{operation.data['pulse_info'][0]['port']}-{operation.data['pulse_info'][0]['clock']}"
     )
     port_clock_index = port_clock_list.index(port_clock)
     compensation_row = compensation_matrix[port_clock_index]

@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Standard gateset for use with the quantify_scheduler."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Hashable, Iterable, Literal
@@ -441,7 +442,7 @@ class H(Operation):
 
     def __str__(self) -> str:
         device_elements = map(lambda x: f"'{x}'", self.data["gate_info"]["device_elements"])
-        return f'{self.__class__.__name__}({",".join(device_elements)})'
+        return f"{self.__class__.__name__}({','.join(device_elements)})"
 
 
 class CNOT(Operation):
@@ -617,7 +618,7 @@ class Reset(Operation):
 
     def __str__(self) -> str:
         device_elements = map(lambda x: f"'{x}'", self.data["gate_info"]["device_elements"])
-        return f'{self.__class__.__name__}({",".join(device_elements)})'
+        return f"{self.__class__.__name__}({','.join(device_elements)})"
 
 
 class Measure(Operation):
@@ -723,7 +724,7 @@ class Measure(Operation):
         bin_mode = gate_info["bin_mode"]
         feedback_trigger_label = gate_info["feedback_trigger_label"]
         return (
-            f'{self.__class__.__name__}({",".join(device_elements)}, '
+            f"{self.__class__.__name__}({','.join(device_elements)}, "
             f"acq_channel={acq_channel}, "
             f"acq_index={acq_index}, "
             f'acq_protocol="{acq_protocol}", '

@@ -393,5 +393,5 @@ def test_dragpulse_motzoi(mock_setup_basic_transmon_with_standard_params):
 
     D_amp = list(compiled_sched.operations.values())[0].data["pulse_info"][0].get("D_amp")
     assert D_amp == mock_setup_basic_transmon_with_standard_params["q0"].rxy.motzoi(), (
-        "The amplification of the derivative DRAG pulse is not equal to the motzoi " "parameter"
+        "The amplification of the derivative DRAG pulse is not equal to the motzoi parameter"
     )

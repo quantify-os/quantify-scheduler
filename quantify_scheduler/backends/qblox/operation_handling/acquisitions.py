@@ -81,7 +81,7 @@ class AcquisitionStrategyPartial(IOperationStrategy):
             self._acquire_with_register_bin_index(qasm_program)
         else:
             raise RuntimeError(
-                f"Attempting to process an acquisition with unknown bin " f"mode {self.bin_mode}."
+                f"Attempting to process an acquisition with unknown bin mode {self.bin_mode}."
             )
 
     @abstractmethod
@@ -321,8 +321,7 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
                 acq_idx0_reg,
                 acq_idx1_reg,
                 constants.MIN_TIME_BETWEEN_OPERATIONS,
-                comment=f"Store acq in acq_channel:{self.acq_channel}, "
-                f"bin_idx:{acq_bin_idx_reg}",
+                comment=f"Store acq in acq_channel:{self.acq_channel}, bin_idx:{acq_bin_idx_reg}",
             )
             qasm_program.emit(
                 q1asm_instructions.ADD,

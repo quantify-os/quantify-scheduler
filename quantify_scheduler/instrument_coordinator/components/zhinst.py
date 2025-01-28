@@ -2,7 +2,6 @@
 # Licensed according to the LICENCE file on the main branch
 """Module containing Zurich Instruments InstrumentCoordinator Components."""
 
-
 from __future__ import annotations
 
 from quantify_scheduler.compatibility_check import check_zhinst_compatibility
