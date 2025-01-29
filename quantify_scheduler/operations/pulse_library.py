@@ -10,6 +10,7 @@ from typing import Any, Literal
 import numpy as np
 from qcodes import InstrumentChannel, validators
 
+from quantify_scheduler.helpers.importers import export_python_object_to_path_string
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.resources import BasebandClockResource, DigitalClockResource
 
@@ -34,6 +35,15 @@ class ReferenceMagnitude:
 
     def __hash__(self) -> int:
         return hash((self.value, self.unit))
+
+    def __setstate__(self, state: dict[str, Any]) -> dict:
+        self.value = state["value"]
+        self.unit = state["unit"]
+
+    def __getstate__(self) -> None:
+        dtype = export_python_object_to_path_string(self.__class__)
+        self.__dict__["deserialization_type"] = dtype
+        return self.__dict__
 
 
 class ShiftClockPhase(Operation):

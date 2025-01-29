@@ -19,6 +19,7 @@
 - Fabio Grigolo ([GitLab](https://gitlab.com/fgrigolo))
 - Fokko de Vries ([GitLab](https://gitlab.com/fdvries))
 - Gabor Oszkar Denes ([GitLab](https://gitlab.com/gdenes))
+- Gabriel Chatelain ([GitLab](https://gitlab.com/chagab_at_orangeqs))
 - Gijs Vermarien ([GitLab](https://gitlab.com/gijsvermarien))
 - Hiresh Jadoenathmissier ([GitLab](https://gitlab.com/HireshJ1))
 - Jordy Gloudemans ([GitLab](https://gitlab.com/jgloudemans))

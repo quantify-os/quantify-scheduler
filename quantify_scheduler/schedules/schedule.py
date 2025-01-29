@@ -22,10 +22,7 @@ from quantify_scheduler.backends.types.common import ThresholdedTriggerCountMeta
 from quantify_scheduler.helpers.collections import make_hash
 from quantify_scheduler.helpers.importers import export_python_object_to_path_string
 from quantify_scheduler.json_utils import JSONSchemaValMixin
-from quantify_scheduler.operations.control_flow_library import (
-    ConditionalOperation,
-    LoopOperation,
-)
+from quantify_scheduler.operations.control_flow_library import ConditionalOperation, LoopOperation
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.resources import Resource
 
@@ -216,10 +213,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             The Schedule object.
 
         """
-        schedule_data = json_utils.SchedulerJSONDecoder().decode(data)
-        sched = cls.__new__(cls)
-        sched.__setstate__(schedule_data)
-        return sched
+        return json_utils.SchedulerJSONDecoder().decode(data)
 
     def get_used_port_clocks(self) -> set[tuple[str, str]]:
         """
@@ -450,9 +444,7 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
         """  # noqa: E501
         # NB imported here to avoid circular import
 
-        from quantify_scheduler.schedules._visualization.pulse_diagram import (
-            sample_schedule,
-        )
+        from quantify_scheduler.schedules._visualization.pulse_diagram import sample_schedule
 
         sampled_pulses_and_acqs = sample_schedule(
             self,

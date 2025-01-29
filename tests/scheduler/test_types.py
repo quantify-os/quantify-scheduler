@@ -10,29 +10,16 @@ from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.json_utils import SchedulerJSONDecoder
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.control_flow_library import LoopOperation
-from quantify_scheduler.operations.gate_library import (
-    CNOT,
-    CZ,
-    X90,
-    Y90,
-    Measure,
-    Reset,
-    Rxy,
-    X,
-    Y,
-)
+from quantify_scheduler.operations.gate_library import CNOT, CZ, X90, Y90, Measure, Reset, Rxy, X, Y
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
-from quantify_scheduler.schedules import timedomain_schedules
 from quantify_scheduler.schedules.schedule import (
     AcquisitionChannelMetadata,
     AcquisitionMetadata,
     CompiledSchedule,
-    Schedulable,
     Schedule,
 )
-from quantify_scheduler.schedules.spectroscopy_schedules import heterodyne_spec_sched
 
 
 @pytest.fixture(scope="module", autouse=False)
@@ -231,43 +218,6 @@ def test___repr__():
 def test___str__():
     operation = Operation("test")
     assert eval(str(operation)) == operation
-
-
-def test_schedule_to_json():
-    # Arrange
-    schedule = timedomain_schedules.t1_sched(np.zeros(1), "q0")
-
-    # Act
-    json_data = schedule.to_json()
-
-    # Assert
-    json.loads(json_data)
-
-
-def test_schedule_from_json():
-    # Arrange
-    schedule = timedomain_schedules.t1_sched(np.zeros(1), "q0")
-
-    # Act
-    json_data = schedule.to_json()
-    result = Schedule.from_json(json_data)
-
-    # Assert
-    assert schedule == result
-    assert schedule.data == result.data
-
-
-def test_spec_schedule_from_json():
-    # Arrange
-    schedule = heterodyne_spec_sched(0.1, 0.1, 6e9, 1e-7, 1e-6, "q0:mw", "q0.01", 200e-6, 1024)
-
-    # Act
-    json_data = schedule.to_json()
-    result = Schedule.from_json(json_data)
-
-    # Assert
-    assert schedule == result
-    assert schedule.data == result.data
 
 
 def test_t1_sched_valid(t1_schedule):

@@ -3,6 +3,7 @@ import json
 import sys
 import types
 
+import numpy as np
 import pytest
 
 from quantify_scheduler.helpers.importers import export_python_object_to_path_string
@@ -11,7 +12,12 @@ from quantify_scheduler.json_utils import (
     SchedulerJSONEncoder,
     UnknownDeserializationTypeError,
 )
-from quantify_scheduler.operations.pulse_library import IdlePulse
+from quantify_scheduler.operations.gate_library import Measure, Reset
+from quantify_scheduler.operations.pulse_library import DRAGPulse, IdlePulse, ReferenceMagnitude
+from quantify_scheduler.resources import ClockResource
+from quantify_scheduler.schedules import timedomain_schedules
+from quantify_scheduler.schedules.schedule import Schedule
+from quantify_scheduler.schedules.spectroscopy_schedules import heterodyne_spec_sched
 
 
 def test_getsetstate_json_serialization():
@@ -110,3 +116,58 @@ def test_deprecated_deserialization_fallback():
     with pytest.warns(FutureWarning):
         deserialized = json.loads(serialized, cls=SchedulerJSONDecoder)
     assert isinstance(deserialized, IdlePulse)
+
+
+def simple_schedule(ref_mag=None):
+    schedule = Schedule("Test", 1)
+    clock = "q0.01"
+    frequency = 4509922570.610321
+    schedule.add_resource(ClockResource(name=clock, freq=frequency))
+    qubit = "q0"
+    port = "q0:mw"
+    duration = 2.0e-8
+    max_duration = 2e-08
+
+    op = schedule.add(Reset(qubit), label="Reset all qubits")
+
+    schedule.add(
+        DRAGPulse(
+            duration=duration,
+            G_amp=0.0,
+            D_amp=0,
+            port=port,
+            clock=clock,
+            phase=0,
+            reference_magnitude=ref_mag,
+        ),
+        # Make sure the rabi pulses are parallel not sequential
+        ref_op=op,
+        label=f"Rabi_pulse on {qubit}",
+    )
+
+    schedule.add(
+        Measure(qubit, acq_index=0, acq_protocol="SSBIntegrationComplex"),
+        label="Multiplexed measurement",
+        rel_time=max_duration,
+        ref_pt="start",
+    )
+
+    return schedule
+
+
+@pytest.mark.parametrize(
+    "schedule",
+    [
+        timedomain_schedules.t1_sched(np.zeros(1), "q0"),
+        heterodyne_spec_sched(0.1, 0.1, 6e9, 1e-7, 1e-6, "q0:mw", "q0.01", 200e-6, 1024),
+        simple_schedule(None),
+        simple_schedule(ref_mag=ReferenceMagnitude(value=0, unit="dBm")),
+    ],
+)
+def test_schedule_to_and_from_json(schedule):
+    json_data = schedule.to_json()
+    result = Schedule.from_json(json_data)
+
+    assert schedule == result
+    assert schedule.data == result.data
+    assert schedule.__dict__ == result.__dict__
