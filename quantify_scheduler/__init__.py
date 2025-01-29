@@ -48,6 +48,7 @@ from .device_under_test import (
     BasicElectronicNVElement,
     BasicSpinElement,
     BasicTransmonElement,
+    ChargeSensor,
     CompositeSquareEdge,
     QuantumDevice,
 )
@@ -84,4 +85,5 @@ __all__ = [
     "GenericInstrumentCoordinatorComponent",
     "SerialCompiler",
     "MockLocalOscillator",
+    "ChargeSensor",
 ]

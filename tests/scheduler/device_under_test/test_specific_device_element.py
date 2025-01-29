@@ -8,7 +8,7 @@ from quantify_scheduler import Schedule
 from quantify_scheduler.backends.circuit_to_device import DeviceCompilationConfig
 from quantify_scheduler.backends.graph_compilation import SerialCompiler
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
-from quantify_scheduler.device_under_test.spin_element import BasicSpinElement
+from quantify_scheduler.device_under_test.spin_element import BasicSpinElement, ChargeSensor
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEncoder
 from quantify_scheduler.operations.gate_library import Measure
@@ -30,6 +30,11 @@ def spin_element():
     return BasicSpinElement("q0")
 
 
+@pytest.fixture
+def charge_sensor():
+    return ChargeSensor("cs0")
+
+
 qubit_params = [
     (
         "transmon_element",
@@ -47,6 +52,12 @@ qubit_params = [
             },
         },
     ),
+    (
+        "charge_sensor",
+        {
+            "clock": "ro",
+        },
+    ),
 ]
 
 
@@ -55,11 +66,14 @@ class TestQubitOperations:
     def test_qubit_name(
         self,
         qubit_fixture,
-        expected_values,  # noqa ARG002 # unused argument
-        request,  # noqa ARG002 # unused argument
+        expected_values,  # noqa: ARG002  # Mark as unused
+        request,
     ):
         q0 = request.getfixturevalue(qubit_fixture)
-        assert q0.name == "q0"
+        if isinstance(q0, ChargeSensor):
+            assert q0.name == "cs0"
+        else:
+            assert q0.name == "q0"
 
     def test_generate_device_config_part_of_device(
         self, qubit_fixture, expected_values, dev: QuantumDevice, request
@@ -75,26 +89,29 @@ class TestQubitOperations:
         assert isinstance(dev_cfg, DeviceCompilationConfig)
 
         # Assert values in the right place in config
-        assert dev_cfg.elements["q0"]["measure"].factory_kwargs["pulse_type"] == "SquarePulse"
-        assert dev_cfg.elements["q0"]["measure"].factory_kwargs["pulse_duration"] == 400e-9
+        assert (
+            dev_cfg.elements[f"{q0.name}"]["measure"].factory_kwargs["pulse_type"] == "SquarePulse"
+        )
+        assert dev_cfg.elements[f"{q0.name}"]["measure"].factory_kwargs["pulse_duration"] == 400e-9
         # quantify is inconsistent with clock naming and frequency naming between
         # device elements
-        if isinstance(q0, BasicTransmonElement):
-            expected_clock = q0.name + "." + expected_values["clock"][1:]
-        else:
-            expected_clock = q0.name + "." + expected_values["clock"]
+        if isinstance(q0, (BasicTransmonElement, BasicSpinElement)):
+            if isinstance(q0, BasicTransmonElement):
+                expected_clock = q0.name + "." + expected_values["clock"][1:]
+            else:
+                expected_clock = q0.name + "." + expected_values["clock"]
 
-        assert dev_cfg.elements["q0"]["Rxy"].factory_kwargs["clock"] == expected_clock
-        assert dev_cfg.elements["q0"]["Rxy"].gate_info_factory_kwargs == [
-            "theta",
-            "phi",
-        ]
+            assert dev_cfg.elements[f"{q0.name}"]["Rxy"].factory_kwargs["clock"] == expected_clock
+            assert dev_cfg.elements[f"{q0.name}"]["Rxy"].gate_info_factory_kwargs == [
+                "theta",
+                "phi",
+            ]
 
     def test_generate_device_config(
         self,
         qubit_fixture,
-        expected_values,  # noqa ARG002 # unused argument
-        request,  # noqa ARG002 # unused argument
+        expected_values,  # noqa: ARG002  # Mark as unused
+        request,
     ):
         q0 = request.getfixturevalue(qubit_fixture)
         _ = q0.generate_device_config()
@@ -127,16 +144,16 @@ class TestQubitOperations:
 
         q0.clock_freqs.readout(readout_frequency)
         q0.measure.acq_delay(acq_delay)
-        q0.rxy.amp180(pulse_amp)
-        q0.rxy.reference_magnitude.dBm(-10)
         q0.measure.reference_magnitude.dBm(-10)
 
-        if isinstance(q0, BasicTransmonElement):
-            q0.clock_freqs.f12(0)
+        if isinstance(q0, (BasicTransmonElement, BasicSpinElement)):
+            q0.rxy.amp180(pulse_amp)
+            q0.rxy.reference_magnitude.dBm(-10)
+            clock = expected_values["clock"]
+            q0.clock_freqs.get_component(clock)(mw_frequency)
 
-        clock = expected_values["clock"]
-
-        q0.clock_freqs.get_component(clock)(mw_frequency)
+            if isinstance(q0, BasicTransmonElement):
+                q0.clock_freqs.f12(0)
 
         q0_as_dict = json.loads(json.dumps(q0, cls=SchedulerJSONEncoder))
         assert q0_as_dict.__class__ is dict
@@ -213,7 +230,7 @@ class TestQubitOperations:
             schedule=sched, config=dev.generate_compilation_config()
         )
 
-        dev.remove_element("q0")
+        dev.remove_element(f"{q0.name}")
 
         q0_as_str = json.dumps(q0, cls=SchedulerJSONEncoder)
         assert q0_as_str.__class__ is str
@@ -244,14 +261,18 @@ class TestQubitOperations:
     def test_reference_magnitude_overwrite_units(
         self,
         qubit_fixture,
-        expected_values,  # noqa ARG002 # unused argument
-        request,  # noqa ARG002 # unused argument
+        expected_values,  # noqa: ARG002  # Mark as unused
+        request,
     ):
         """
         Tests that the amplitude reference parameters get correctly overwritten when you
         call the set method of a different unit parameter
         """
+
         q0 = request.getfixturevalue(qubit_fixture)
+
+        if isinstance(q0, ChargeSensor):
+            pytest.skip("This test is not relevant for ChargeSensor because no module rxy")
         # All units should initially be nan
         assert math.isnan(q0.rxy.reference_magnitude.dBm())
         assert math.isnan(q0.rxy.reference_magnitude.V())
@@ -300,11 +321,11 @@ class TestQubitOperations:
                     )
 
         dev_cfg = q0.generate_device_config()
-        cfg_measure = dev_cfg.elements["q0"]["measure"]
+        cfg_measure = dev_cfg.elements[f"{q0.name}"]["measure"]
 
         # Assert values are in right place
-        assert cfg_measure.factory_kwargs["port"] == "q0:res"
-        assert cfg_measure.factory_kwargs["clock"] == "q0.ro"
+        assert cfg_measure.factory_kwargs["port"] == f"{q0.name}:res"
+        assert cfg_measure.factory_kwargs["clock"] == f"{q0.name}.ro"
         assert cfg_measure.factory_kwargs["pulse_type"] == "SquarePulse"
         assert cfg_measure.factory_kwargs["pulse_amp"] == 0.1234
         assert cfg_measure.factory_kwargs["pulse_duration"] == 300e-6
@@ -324,7 +345,7 @@ class TestQubitOperations:
         q0.measure.acq_channel("ch_123")
 
         dev_cfg = q0.generate_device_config()
-        cfg_measure = dev_cfg.elements["q0"]["measure"]
+        cfg_measure = dev_cfg.elements[f"{q0.name}"]["measure"]
 
         # Assert values are in right place
         assert cfg_measure.factory_kwargs["acq_channel"] == "ch_123"
