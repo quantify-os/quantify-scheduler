@@ -236,4 +236,14 @@ meas_ctrl.gettables(gettable)
 # %%
 def run_experiment():
     meas_ctrl.run()
+
+
+# %%
+def schedule_duration():
+    gettable.initialize()
+    return gettable.compiled_schedule.duration
+
+
+# %%
+def close_experiment():
     Instrument.close_all()

@@ -168,8 +168,8 @@ simple_binned_acquisition_kwargs = {
 # ## Run schedule and profiling
 
 
-def run_experiment():
-    my_gettable = ScheduleGettable(
+def schedule_gettable():
+    return ScheduleGettable(
         quantum_device,
         create_schedule,
         simple_binned_acquisition_kwargs,
@@ -178,6 +178,21 @@ def run_experiment():
         data_labels=["q0 abs", "q0 phase", "q1 abs", "q1 phase"],
         num_channels=2,
     )
+
+
+def run_experiment():
+    my_gettable = schedule_gettable()
     acq = my_gettable.get()
-    Instrument.close_all()
     return acq
+
+
+# %%
+def schedule_duration():
+    my_gettable = schedule_gettable()
+    my_gettable.initialize()
+    return my_gettable.compiled_schedule.duration
+
+
+# %%
+def close_experiment():
+    Instrument.close_all()

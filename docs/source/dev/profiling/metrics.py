@@ -21,27 +21,34 @@ EXPERIMENT_NOTEBOOKS = [
     "multidim_batched_sweep",
 ]
 # Methods to profile. The function will be profiled in the class.
-# (<name>, (<class>, <function name>))
+# (<profile>, <name>, (<class>, <function name>))
 # Note, <name> can be anything, that's what is displayed in the profiling notebook.
+# <profile> is a bool: if True, the function will be profiled,
+# if False, it will be called, and the return value is used.
+# In case <profile> is False, the <class> must be None.
+# The return value is assumed to be in ns.
 METHODS = [
-    ("compile", ("QuantifyCompiler", "compile")),
-    ("prepare", ("InstrumentCoordinator", "prepare")),
-    ("schedule", (None, "create_schedule")),
-    ("run", ("InstrumentCoordinator", "start")),
-    ("process", ("InstrumentCoordinator", "retrieve_acquisition")),
+    (True, "compile", ("QuantifyCompiler", "compile")),
+    (True, "prepare", ("InstrumentCoordinator", "prepare")),
+    (True, "schedule", (None, "create_schedule")),
+    (True, "run", ("InstrumentCoordinator", "start")),
+    (True, "process", ("InstrumentCoordinator", "retrieve_acquisition")),
+    (False, "schedule_duration", (None, "schedule_duration")),
 ]
 
 
-def stat_experiment(experiment_notebook):
+def get_notebook_mod(experiment_notebook):
     if experiment_notebook in sys.modules:
         notebook_mod = importlib.import_module(experiment_notebook)
         importlib.reload(notebook_mod)
     else:
         notebook_mod = importlib.import_module(experiment_notebook)
+    return notebook_mod
+
+
+def stat_experiment(notebook_mod):
     with cProfile.Profile() as pr:
         notebook_mod.run_experiment()
-    if "close_experiment" in globals():
-        close_experiment()
     return pstats.Stats(pr)
 
 
@@ -87,7 +94,7 @@ def get_stat(stats, class_name, method_name):
 
 def expected_value_and_sigma(t_sum, t_sq_sum, samples):
     expected_value = t_sum / samples
-    sigma = (t_sq_sum / samples - expected_value**2) ** 0.5
+    sigma = abs(t_sq_sum / samples - expected_value**2) ** 0.5
     return (expected_value, sigma)
 
 
@@ -101,19 +108,25 @@ def stat_experiment_detailed(experiment_notebook, samples, methods):
     total_time = Sums()
     times = [Sums() for _ in range(len(methods))]
     for sample in tqdm(range(samples), desc=experiment_notebook):
-        stats = stat_experiment(experiment_notebook)
+        notebook_mod = get_notebook_mod(experiment_notebook)
+        stats = stat_experiment(notebook_mod)
 
         for i, method in enumerate(methods):
-            current_stats = get_stat(stats, method[1][0], method[1][1])
-            if current_stats:
-                time = current_stats[3]
-                times[i].sum += time
-                times[i].sq_sum += time**2
+            time = np.nan
+            if method[0]:
+                current_stats = get_stat(stats, method[2][0], method[2][1])
+                if current_stats:
+                    time = current_stats[3]
             else:
-                times[i].sum = np.nan
-                times[i].sq_sum = np.nan
+                if hasattr(notebook_mod, method[2][1]):
+                    time = getattr(notebook_mod, method[2][1])()
+            times[i].sum += time
+            times[i].sq_sum += time**2
         total_time.sum += stats.total_tt
         total_time.sq_sum += stats.total_tt**2
+
+        if hasattr(notebook_mod, "close_experiment"):
+            getattr(notebook_mod, "close_experiment")()
 
     times = [expected_value_and_sigma(t.sum, t.sq_sum, samples) for t in times]
     total_time = expected_value_and_sigma(total_time.sum, total_time.sq_sum, samples)
@@ -128,7 +141,9 @@ def measure_experiment_runtimes():
     measured_data = []
     for experiment_notebook in EXPERIMENT_NOTEBOOKS:
         times, total_time = stat_experiment_detailed(
-            experiment_notebook, samples=SAMPLES, methods=METHODS
+            experiment_notebook,
+            samples=SAMPLES,
+            methods=METHODS,
         )
         measured_data.append((experiment_notebook, times, total_time))
     return measured_data

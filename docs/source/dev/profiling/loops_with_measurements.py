@@ -75,14 +75,29 @@ def create_schedule(repetitions: int = 1):
 # %%
 
 
-def run_experiment():
-    my_gettable = ScheduleGettable(
+def schedule_gettable():
+    return ScheduleGettable(
         quantum_device,
         create_schedule,
         {},
         batched=True,
         real_imag=False,
     )
+
+
+def run_experiment():
+    my_gettable = schedule_gettable()
     acq = my_gettable.get()
-    Instrument.close_all()
     return acq
+
+
+# %%
+def schedule_duration():
+    gettable = schedule_gettable()
+    gettable.initialize()
+    return gettable.compiled_schedule.duration
+
+
+# %%
+def close_experiment():
+    Instrument.close_all()

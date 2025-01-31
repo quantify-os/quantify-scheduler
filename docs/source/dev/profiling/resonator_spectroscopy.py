@@ -169,4 +169,14 @@ def run_experiment():
     meas_ctrl.run(
         "resonator spectroscopy",
     )
+
+
+# %%
+def schedule_duration():
+    gettable.initialize()
+    return gettable.compiled_schedule.duration
+
+
+# %%
+def close_experiment():
     Instrument.close_all()
