@@ -384,18 +384,20 @@ class SchedulerJSONEncoder(json.JSONEncoder):
                 "mode": "__init__",
                 "data": str(o),
             }
-        if isinstance(o, (np.ndarray,)):
+        elif isinstance(o, (np.ndarray,)):
             return {
                 "deserialization_type": type(o).__name__,
                 "mode": "__init__",
                 "data": list(o),
             }
-        if o in DEFAULT_TYPES:
+        elif o in DEFAULT_TYPES:
             assert isinstance(o, type)
             return {"deserialization_type": o.__name__, "mode": "type"}
-        if hasattr(o, "__getstate__"):
-            return o.__getstate__()
-        if hasattr(o, "__dict__"):
+        elif hasattr(o, "__getstate__"):
+            # Pyright does not support verifying this properly.
+            # <https://github.com/microsoft/pyright/issues/7363>
+            return o.__getstate__()  # pyright: ignore[reportAttributeAccessIssue]
+        elif hasattr(o, "__dict__"):
             return o.__dict__
 
         # Let the base class default method raise the TypeError

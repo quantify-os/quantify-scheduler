@@ -268,8 +268,8 @@ class Measure(InstrumentModule):
         acq_duration: float = 50e-6,
         acq_delay: float = 0,
         acq_channel: Hashable = 0,
-        time_source: TimeSource = TimeSource.FIRST,
-        time_ref: TimeRef = TimeRef.START,
+        time_source: TimeSource | str = TimeSource.FIRST,
+        time_ref: TimeRef | str = TimeRef.START,
     ) -> None:
         super().__init__(parent=parent, name=name)
 
