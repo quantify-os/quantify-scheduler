@@ -745,11 +745,17 @@ hardware_compilation_cfg = {
 ```{versionadded} 0.21.0
 Automatic mixer calibration was added.
 ```
-The mixer correction settings above can also be automatically determined by the hardware. It is possible to calibrate only the LO leakage (controlled by `dc_offset_i` and `dc_offset_q`) automatically, or only the sidebands (controlled `amp_ratio` and `phase_error`), or both.
+The mixer correction settings above can also be automatically determined by the hardware. It is possible to calibrate both the LO leakage (controlled by `dc_offset_i` and `dc_offset_q`) and the sidebands (controlled by `amp_ratio` and `phase_error`), or either one individually.
 
-Automatic LO leakage calibration can be turned on with the setting {attr}`~quantify_scheduler.backends.types.qblox.QbloxMixerCorrections.auto_lo_cal`, which can take the values `"off"`, `"on_interm_freq_change"` and `"on_lo_interm_freq_change"`. This will automatically find values for `"dc_offset_i"` and `"dc_offset_q"`, which means these fields should not be specified if using automatic calibration.
+Automatic LO leakage calibration can be turned on with the setting {attr}`~quantify_scheduler.backends.types.qblox.QbloxMixerCorrections.auto_lo_cal`, which can take the values:
 
-Automatic sidebands calibration can be turned on with the setting {attr}`~quantify_scheduler.backends.types.qblox.QbloxMixerCorrections.auto_sideband_cal` which can take the values `"off"` and `"on_interm_freq_change"`. This will automatically find values for `"amp_ratio"` and `"phase_error"`, which means these fields should not be specified if using automatic calibration.
+- `"off"`: no LO leakage calibration,
+- `"on_lo_freq_change"`: only run when changing the LO frequency, and
+- `"on_lo_interm_freq_change"`: run when changing either the LO frequency or the intermediate frequency.
+
+Depending on the exact setting, the module will automatically find values for `"dc_offset_i"` and `"dc_offset_q"`, which means these fields should not be specified if using automatic calibration.
+
+Automatic sidebands calibration can be turned on with the setting {attr}`~quantify_scheduler.backends.types.qblox.QbloxMixerCorrections.auto_sideband_cal` which can take the values `"off"` and `"on_interm_freq_change"` (run when changing the intermediate frequency). This will automatically find values for `"amp_ratio"` and `"phase_error"`, which means these fields should not be specified if using automatic calibration.
 
 The automatic mixer correction settings are also specified in the `"mixer_corrections"` field in the hardware options. See the following example.
 
