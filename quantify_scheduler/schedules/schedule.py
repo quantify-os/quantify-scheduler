@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import dataclasses
-import json
 import warnings
 from abc import ABC
 from collections import UserDict
@@ -17,11 +16,16 @@ from uuid import uuid4
 import numpy as np
 import pandas as pd
 
-from quantify_scheduler import enums, json_utils, resources
+from quantify_scheduler import enums, resources
 from quantify_scheduler.backends.types.common import ThresholdedTriggerCountMetadata
 from quantify_scheduler.helpers.collections import make_hash
-from quantify_scheduler.helpers.importers import export_python_object_to_path_string
-from quantify_scheduler.json_utils import JSONSchemaValMixin
+from quantify_scheduler.helpers.importers import (
+    export_python_object_to_path_string,
+)
+from quantify_scheduler.json_utils import (
+    JSONSchemaValMixin,
+    JSONSerializableMixin,
+)
 from quantify_scheduler.operations.control_flow_library import ConditionalOperation, LoopOperation
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.resources import Resource
@@ -43,7 +47,7 @@ Note: collections.OrderedDict can be slow in some cases.
 """
 
 
-class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
+class ScheduleBase(JSONSchemaValMixin, JSONSerializableMixin, UserDict, ABC):
     """
     Interface to be used for :class:`~.Schedule`.
 
@@ -184,36 +188,6 @@ class ScheduleBase(JSONSchemaValMixin, UserDict, ABC):
             f"({len(self['operation_dict'])}) "
             f"{len(self.schedulables)}  (unique) operations."
         )
-
-    def to_json(self) -> str:
-        """
-        Convert the Schedule data structure to a JSON string.
-
-        Returns
-        -------
-        :
-            The json string result.
-
-        """
-        return json.dumps(self.__getstate__(), cls=json_utils.SchedulerJSONEncoder)
-
-    @classmethod
-    def from_json(cls, data: str) -> Schedule:
-        """
-        Convert the JSON data to a Schedule.
-
-        Parameters
-        ----------
-        data
-            The JSON data.
-
-        Returns
-        -------
-        :
-            The Schedule object.
-
-        """
-        return json_utils.SchedulerJSONDecoder().decode(data)
 
     def get_used_port_clocks(self) -> set[tuple[str, str]]:
         """
