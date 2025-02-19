@@ -32,8 +32,7 @@
             "description": "A dictionary of resources."
         },
         "compiled_instructions": {
-            "type": "object",
-            "description": "A dictionary containing compiled instructions."
+            "description": "A MutableMapping object containing compiled instructions."
         },
         "duration": {
             "type": "number",

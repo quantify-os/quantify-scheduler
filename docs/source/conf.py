@@ -104,6 +104,7 @@ intersphinx_mapping = {
         "https://docs.zhinst.com/zhinst-qcodes/en/v0.1/",
         "zhinst_qcodes_objects.inv",
     ),
+    "ipywidgets": ("https://ipywidgets.readthedocs.io/en/latest/", None),
 }
 
 bibtex_bibfiles = ["refs.bib"]
@@ -522,6 +523,8 @@ nitpick_ignore = [
     ("py:class", "FullSchedulableLabel"),
     ("py:class", "quantify_scheduler.schedules.schedule.AcquisitionChannelsData"),
     ("myst", "schedulegettable-optionally-returns-xarray-dataset"),
+    ("py:class", "ipywidgets.Tab"),
+    ("py:class", "widgets.Tab"),
 ]  # Tuple[str, str], ignore certain warnings
 
 

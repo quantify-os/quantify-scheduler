@@ -40,6 +40,7 @@ from quantify_scheduler.backends.qblox.operations import long_square_pulse
 from quantify_scheduler.backends.qblox.operations.pulse_library import (
     LatchReset,
 )
+from quantify_scheduler.backends.qblox.schedule import CompiledInstructions
 from quantify_scheduler.backends.qblox.stack_pulses import stack_pulses
 from quantify_scheduler.backends.types.common import (
     Connectivity,
@@ -656,10 +657,13 @@ def hardware_compile(
     # compilation function is called directly instead of through a `QuantifyCompiler`.
     if "compiled_instructions" not in schedule:
         schedule["compiled_instructions"] = {}
-    # Add the compiled instructions to the schedule data structure.
+
     schedule["compiled_instructions"].update(compiled_instructions)
+    schedule["compiled_instructions"] = CompiledInstructions(schedule["compiled_instructions"])
+
     # Add the acquisition channel data to the schedule data structure.
     schedule["acq_channels_data"] = acq_channels_data
+
     # Mark the schedule as a compiled schedule.
     return CompiledSchedule(schedule)
 

@@ -30,3 +30,8 @@ dl.xr-attrs {
     margin-left: auto;
     margin-right: auto;
 }
+
+/* prevent pandas dataframes from being squashed */
+div.cell_output table {
+    table-layout: auto;
+}

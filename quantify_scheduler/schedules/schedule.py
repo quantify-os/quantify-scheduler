@@ -10,7 +10,7 @@ from abc import ABC
 from collections import UserDict
 from copy import copy
 from itertools import chain
-from typing import TYPE_CHECKING, Any, Dict, Hashable, Literal
+from typing import TYPE_CHECKING, Any, Dict, Hashable, Literal, MutableMapping
 from uuid import uuid4
 
 import numpy as np
@@ -1060,7 +1060,7 @@ class CompiledSchedule(ScheduleBase):
         self.data.update(schedule.data)
 
     @property
-    def compiled_instructions(self) -> dict[str, Resource]:
+    def compiled_instructions(self) -> MutableMapping[str, Resource]:
         """
         A dictionary containing compiled instructions.
 
