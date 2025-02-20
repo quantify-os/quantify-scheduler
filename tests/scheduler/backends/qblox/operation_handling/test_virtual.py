@@ -10,10 +10,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from quantify_scheduler.backends.qblox import constants, q1asm_instructions
-from quantify_scheduler.backends.qblox.instrument_compilers import QCMCompiler
 from quantify_scheduler.backends.qblox.operation_handling import virtual
-from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
-from quantify_scheduler.backends.qblox.register_manager import RegisterManager
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.operations.pulse_library import SetClockFrequency
 
@@ -21,16 +18,7 @@ if TYPE_CHECKING:
     from quantify_scheduler.backends.qblox.operation_handling.base import (
         IOperationStrategy,
     )
-
-
-@pytest.fixture(name="empty_qasm_program_qcm")
-def fixture_empty_qasm_program():
-    yield QASMProgram(
-        static_hw_properties=QCMCompiler.static_hw_properties,
-        register_manager=RegisterManager(),
-        align_fields=True,
-        acq_metadata=None,
-    )
+    from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 
 
 def _assert_none_data(strategy: IOperationStrategy):

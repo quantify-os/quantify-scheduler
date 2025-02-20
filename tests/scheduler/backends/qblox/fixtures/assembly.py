@@ -36,19 +36,30 @@ def assert_equal_q1asm():
     'wait4' for comparison.
     """
 
-    def inner(program_1: str, program_2: str):
-        for (stripped_1, original_1), (stripped_2, original_2) in zip(
-            _strip_and_skip_empty_lines(program_1),
-            _strip_and_skip_empty_lines(program_2),
-        ):
+    def inner(program_1: str | list[str], program_2: str | list[str]):
+        if isinstance(program_1, str):
+            program_1 = program_1.splitlines()
+        if isinstance(program_2, str):
+            program_2 = program_2.splitlines()
+        stripped_program_1 = _strip_and_skip_empty_lines(program_1)
+        stripped_program_2 = _strip_and_skip_empty_lines(program_2)
+        assert len(stripped_program_1) == len(stripped_program_2), (
+            "Programs have differing amount of lines"
+            f"{len(stripped_program_1)} vs {len(stripped_program_2)}"
+        )
+        for i in range(len(stripped_program_1)):
+            (stripped_1, original_1) = stripped_program_1[i]
+            (stripped_2, original_2) = stripped_program_2[i]
             # pytest's detailed string diff does not work in fixtures, so we display the
             # original strings upon AssertionError.
-            assert stripped_1 == stripped_2, f"Original lines:\n{original_1}\n{original_2}"
+            assert stripped_1 == stripped_2, (
+                f"Line {i} not the same. Original lines:\n{original_1}\n{original_2}"
+            )
 
     return inner
 
 
-def _strip_and_skip_empty_lines(program: str) -> Iterator[tuple[str, str]]:
+def _strip_and_skip_empty_lines(program: list[str]) -> list[tuple[str, str]]:
     """
     Strip each line of the program of whitespace and comments.
 
@@ -57,8 +68,10 @@ def _strip_and_skip_empty_lines(program: str) -> Iterator[tuple[str, str]]:
     Returns an iterator of tuples, containing the stripped and original line (in that
     order).
     """
-    for line in program.splitlines():
+    program_list = []
+    for line in program:
         stripped_line = re.sub(r"\s+|#.*$", "", line)
         if stripped_line == "":
             continue
-        yield stripped_line, line
+        program_list.append((stripped_line, line))
+    return program_list

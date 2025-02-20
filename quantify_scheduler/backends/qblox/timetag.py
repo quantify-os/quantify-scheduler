@@ -53,8 +53,8 @@ class TimetagSequencerCompiler(SequencerCompiler):
     index
         Index of the sequencer.
     static_hw_properties
-        The static properties of the hardware. This effectively gathers all the
-        differences between the different modules.
+        The static properties of the hardware.
+        This effectively gathers all the differences between the different modules.
     sequencer_cfg
         The instrument compiler config associated to this device.
 
@@ -73,7 +73,7 @@ class TimetagSequencerCompiler(SequencerCompiler):
             static_hw_properties=static_hw_properties,
             sequencer_cfg=sequencer_cfg,
         )
-        self._settings: TimetagSequencerSettings = (  # type: ignore  (override type)
+        self._settings: TimetagSequencerSettings = (  # type: ignore  # (override type)
             TimetagSequencerSettings.initialize_from_compilation_config(
                 sequencer_cfg=sequencer_cfg,
                 connected_output_indices=static_hw_properties._get_connected_output_indices(
@@ -343,7 +343,10 @@ class TimetagSequencerCompiler(SequencerCompiler):
                 acq_ch_metadata = acq_metadata.acq_channel_metadata_by_acq_channel_name(acq_channel)
                 acq_ch_metadata.thresholded_trigger_count = metadata
 
-    def _write_pre_wait_sync_instructions(self, qasm: QASMProgram) -> None:
+    def _write_pre_wait_sync_instructions(
+        self,
+        qasm: QASMProgram,
+    ) -> None:
         """
         Write instructions to the QASM program that must come before the first wait_sync.
 

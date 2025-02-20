@@ -17,7 +17,6 @@ from quantify_scheduler.backends.qblox.operation_handling.virtual import (
 from quantify_scheduler.backends.qblox_backend import _SequencerCompilationConfig
 from quantify_scheduler.backends.types.common import ModulationFrequencies
 from quantify_scheduler.backends.types.qblox import (
-    AnalogSequencerSettings,
     BoundedParameter,
     ComplexChannelDescription,
     OpInfo,
@@ -119,8 +118,8 @@ def test_nested_conditional_control_flow_raises_runtime_warning():
         max_sequencers=6,
         max_awg_output_voltage=None,
         mixer_dc_offset_range=BoundedParameter(0, 0, ""),
+        channel_name_to_digital_marker={},
     )
-    mock_parent_module = Mock(BasebandModuleCompiler)
     sequencer_cfg = _SequencerCompilationConfig(
         sequencer_options=SequencerOptions(),
         hardware_description=ComplexChannelDescription(),
@@ -135,6 +134,8 @@ def test_nested_conditional_control_flow_raises_runtime_warning():
         ),
         mixer_corrections=None,
     )
+    mock_parent_module = Mock(BasebandModuleCompiler)
+    type(mock_parent_module).instrument_cfg = Mock()
     sequencer = AnalogSequencerCompiler(
         parent=mock_parent_module,
         index=0,
@@ -156,6 +157,8 @@ def test_nested_conditional_control_flow_raises_runtime_warning():
             ),
         ),
     ]
+
+    assert sequencer.parent is mock_parent_module
 
     with pytest.raises(
         RuntimeError,

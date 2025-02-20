@@ -169,15 +169,20 @@ class QCMCompiler(BasebandModuleCompiler):
     """QCM specific implementation of the qblox compiler."""
 
     _settings_type = AnalogModuleSettings
-
     # Ignore pyright because a "static property" does not exist (in the standard library).
     supports_acquisition = False  # type: ignore
     max_number_of_instructions = MAX_NUMBER_OF_INSTRUCTIONS_QCM  # type: ignore
-    static_hw_properties = StaticAnalogModuleProperties(  # type: ignore
+    static_hw_properties: StaticAnalogModuleProperties = StaticAnalogModuleProperties(
         instrument_type="QCM",
         max_sequencers=NUMBER_OF_SEQUENCERS_QCM,
         max_awg_output_voltage=2.5,
         mixer_dc_offset_range=BoundedParameter(min_val=-2.5, max_val=2.5, units="V"),
+        channel_name_to_digital_marker={
+            "digital_output_0": 0b0001,
+            "digital_output_1": 0b0010,
+            "digital_output_2": 0b0100,
+            "digital_output_3": 0b1000,
+        },
     )
 
     def _configure_hardware_distortion_corrections(self) -> None:
@@ -278,11 +283,17 @@ class QRMCompiler(BasebandModuleCompiler):
     # Ignore pyright because a "static property" does not exist (in the standard library).
     supports_acquisition = True  # type: ignore
     max_number_of_instructions = MAX_NUMBER_OF_INSTRUCTIONS_QRM  # type: ignore
-    static_hw_properties = StaticAnalogModuleProperties(  # type: ignore
+    static_hw_properties: StaticAnalogModuleProperties = StaticAnalogModuleProperties(
         instrument_type="QRM",
         max_sequencers=NUMBER_OF_SEQUENCERS_QRM,
         max_awg_output_voltage=0.5,
         mixer_dc_offset_range=BoundedParameter(min_val=-0.5, max_val=0.5, units="V"),
+        channel_name_to_digital_marker={
+            "digital_output_0": 0b0001,
+            "digital_output_1": 0b0010,
+            "digital_output_2": 0b0100,
+            "digital_output_3": 0b1000,
+        },
     )
 
 
@@ -292,7 +303,7 @@ class QCMRFCompiler(RFModuleCompiler):
     # Ignore pyright because a "static property" does not exist (in the standard library).
     supports_acquisition = False  # type: ignore
     max_number_of_instructions = MAX_NUMBER_OF_INSTRUCTIONS_QCM  # type: ignore
-    static_hw_properties = StaticAnalogModuleProperties(  # type: ignore
+    static_hw_properties: StaticAnalogModuleProperties = StaticAnalogModuleProperties(
         instrument_type="QCM_RF",
         max_sequencers=NUMBER_OF_SEQUENCERS_QCM,
         max_awg_output_voltage=None,
@@ -300,8 +311,17 @@ class QCMRFCompiler(RFModuleCompiler):
         channel_name_to_digital_marker={
             "complex_output_0": 0b0001,
             "complex_output_1": 0b0010,
+            # Note: indices 2 and 3 are for outputs 1 and 0.
+            "digital_output_1": 0b0100,
+            "digital_output_0": 0b1000,
         },
-        default_marker=0b0011,
+        default_markers={
+            "complex_output_0": 0b0001,
+            "complex_output_1": 0b0010,
+            # Note: indices 2 and 3 are for outputs 1 and 0.
+            "digital_output_1": 0b0011,
+            "digital_output_0": 0b0011,
+        },
     )
 
 
@@ -311,12 +331,23 @@ class QRMRFCompiler(RFModuleCompiler):
     # Ignore pyright because a "static property" does not exist (in the standard library).
     supports_acquisition = True  # type: ignore
     max_number_of_instructions = MAX_NUMBER_OF_INSTRUCTIONS_QRM  # type: ignore
-    static_hw_properties = StaticAnalogModuleProperties(  # type: ignore
+    static_hw_properties: StaticAnalogModuleProperties = StaticAnalogModuleProperties(
         instrument_type="QRM_RF",
         max_sequencers=NUMBER_OF_SEQUENCERS_QRM,
         max_awg_output_voltage=None,
         mixer_dc_offset_range=BoundedParameter(min_val=-50, max_val=50, units="mV"),
-        default_marker=0b0011,
+        channel_name_to_digital_marker={
+            # bit index 0 is inactive
+            "complex_output_0": 0b0010,
+            "digital_output_0": 0b0100,
+            "digital_output_1": 0b1000,
+        },
+        default_markers={
+            "complex_input_0": 0b0010,
+            "complex_output_0": 0b0010,
+            "digital_output_0": 0b0010,
+            "digital_output_1": 0b0010,
+        },
     )
 
 
@@ -337,6 +368,13 @@ class QTMCompiler(compiler_abc.ClusterModuleCompiler):
         The instrument compilation config referring to this device.
 
     """
+
+    static_hw_properties: StaticTimetagModuleProperties = (  # type: ignore
+        StaticTimetagModuleProperties(
+            instrument_type="QTM",
+            max_sequencers=NUMBER_OF_SEQUENCERS_QTM,
+        )
+    )
 
     def __init__(
         self,
@@ -364,17 +402,6 @@ class QTMCompiler(compiler_abc.ClusterModuleCompiler):
     def supports_acquisition(self) -> bool:
         """Specifies whether the device can perform acquisitions."""
         return True
-
-    @property
-    def static_hw_properties(self) -> StaticTimetagModuleProperties:
-        """
-        The static properties of the hardware. This effectively gathers all the
-        differences between the different modules.
-        """
-        return StaticTimetagModuleProperties(
-            instrument_type="QTM",
-            max_sequencers=NUMBER_OF_SEQUENCERS_QTM,
-        )
 
     def _construct_sequencer_compiler(
         self,

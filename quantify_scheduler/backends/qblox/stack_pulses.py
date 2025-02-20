@@ -88,6 +88,8 @@ def _construct_pulses_by_port_clock(
             continue
 
         pulse_info = next(iter(op.data["pulse_info"]))
+        if not pulse_info.get("wf_func"):
+            continue
         port_clock = PortClock(pulse_info["port"], pulse_info["clock"])
         start_time = schedulable["abs_time"] + pulse_info["t0"]
         end_time = start_time + pulse_info["duration"]

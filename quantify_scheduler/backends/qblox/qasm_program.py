@@ -38,30 +38,6 @@ if TYPE_CHECKING:
     from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 
 
-def get_marker_binary(marker_setting: str | int) -> int:
-    """
-    Sets the marker from a string representing a binary number. Each digit
-    corresponds to a marker e.g. '0010' sets the second marker to True.
-
-    If the marker setting is already an integer, the function checks whether it is a
-    4-bit integer.
-
-    Parameters
-    ----------
-    marker_setting
-        The string representing a binary number.
-
-    """
-    if isinstance(marker_setting, str):
-        if len(marker_setting) != 4:
-            raise ValueError("4 marker values are expected.")
-        return int(marker_setting, 2)
-    else:
-        if marker_setting > 0b1111:
-            raise ValueError(f"Invalid marker setting: {marker_setting=}.")
-        return marker_setting
-
-
 class QASMProgram:
     """
     Class that holds the compiled Q1ASM program that is to be executed by the sequencer.
@@ -606,11 +582,8 @@ class QASMProgram:
 
             from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
             from quantify_scheduler.backends.qblox.instrument_compilers import QCMCompiler
-            from quantify_scheduler.backends.qblox import register_manager, constants
-            from quantify_scheduler.backends.types.qblox import (
-                StaticAnalogModuleProperties,
-                BoundedParameter
-            )
+            from quantify_scheduler.backends.qblox import register_manager
+            from quantify_scheduler.backends.types.qblox import QCMDescription
 
             qasm = QASMProgram(
                 static_hw_properties=QCMCompiler.static_hw_properties,

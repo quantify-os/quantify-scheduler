@@ -18,7 +18,7 @@ from quantify_scheduler.backends.qblox.operation_handling import (
     pulses,
     virtual,
 )
-from quantify_scheduler.backends.types.qblox import OpInfo
+from quantify_scheduler.backends.types.qblox import OpInfo, QRMDescription, QTMDescription
 from quantify_scheduler.enums import BinMode
 
 TEST_OP_INFO_MAPPING = {
@@ -153,6 +153,7 @@ def test_get_operation_strategy(
     obj = factory_analog.get_operation_strategy(
         operation_info=operation_info,
         channel_name="complex_output_0",
+        module_options=QRMDescription(),
     )
 
     # assert
@@ -180,6 +181,7 @@ def test_invalid_protocol_exception():
         factory_analog.get_operation_strategy(
             operation_info=operation_info,
             channel_name="complex_output_0",
+            module_options=QRMDescription(),
         )
 
     # assert
@@ -239,6 +241,7 @@ def test_incompatible_bin_mode_qrm_raises(protocol: str, bin_mode: BinMode):
         factory_analog.get_operation_strategy(
             operation_info=operation_info,
             channel_name="complex_output_0",
+            module_options=QRMDescription(),
         )
 
 

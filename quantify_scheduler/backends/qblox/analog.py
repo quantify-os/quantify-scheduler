@@ -38,7 +38,6 @@ from quantify_scheduler.backends.qblox.operation_handling.virtual import (
     NcoResetClockPhaseStrategy,
     NcoSetClockFrequencyStrategy,
 )
-from quantify_scheduler.backends.qblox.qasm_program import get_marker_binary
 from quantify_scheduler.backends.types.qblox import (
     AnalogModuleSettings,
     AnalogSequencerSettings,
@@ -50,6 +49,7 @@ from quantify_scheduler.backends.types.qblox import (
     OpInfo,
     OutputAttenuation,
     RealInputGain,
+    RFDescription,
     RFModuleSettings,
     StaticAnalogModuleProperties,
 )
@@ -84,8 +84,8 @@ class AnalogSequencerCompiler(SequencerCompiler):
     index
         Index of the sequencer.
     static_hw_properties
-        The static properties of the hardware. This effectively gathers all the
-        differences between the different modules.
+        The static properties of the hardware.
+        This effectively gathers all the differences between the different modules.
     sequencer_cfg
         The instrument compiler config associated to this device.
 
@@ -98,7 +98,6 @@ class AnalogSequencerCompiler(SequencerCompiler):
         static_hw_properties: StaticAnalogModuleProperties,
         sequencer_cfg: _SequencerCompilationConfig,
     ) -> None:
-        self.static_hw_properties: StaticAnalogModuleProperties  # help type checker
         super().__init__(
             parent=parent,
             index=index,
@@ -131,15 +130,14 @@ class AnalogSequencerCompiler(SequencerCompiler):
             else None
         )
         self._marker_debug_mode_enable = (
-            (sequencer_cfg.hardware_description.marker_debug_mode_enable)
+            sequencer_cfg.hardware_description.marker_debug_mode_enable
             if not isinstance(sequencer_cfg.hardware_description, DigitalChannelDescription)
             else None
         )
 
-        self._default_marker = self.static_hw_properties.channel_name_to_digital_marker.get(
-            self._settings.channel_name,
-            self.static_hw_properties.default_marker,
-        )
+        self._default_marker = 0
+        if static_hw_properties.default_markers:
+            self._default_marker = static_hw_properties.default_markers[sequencer_cfg.channel_name]
 
     @property
     def settings(self) -> AnalogSequencerSettings:
@@ -208,8 +206,6 @@ class AnalogSequencerCompiler(SequencerCompiler):
         ----------
         operation_info
             The operation we are building the strategy for.
-        channel_name
-            Specifies the channel identifier of the hardware config (e.g. `complex_output_0`).
 
         Returns
         -------
@@ -217,26 +213,11 @@ class AnalogSequencerCompiler(SequencerCompiler):
             The instantiated strategy object.
 
         """
-        return get_operation_strategy(operation_info, self.settings.channel_name)
-
-    def add_operation_strategy(self, op_strategy: IOperationStrategy) -> None:
-        """
-        Adds the operation strategy to the sequencer compiler.
-
-        Parameters
-        ----------
-        op_strategy
-            The operation strategy.
-
-        """
-        if op_strategy.operation_info.data.get("marker_pulse", False):
-            # A digital pulse always uses one output.
-            op_strategy.operation_info.data["output"] = self.connected_output_indices[0]
-            op_strategy.operation_info.data["default_marker"] = (
-                self.static_hw_properties.default_marker
-            )
-
-        super().add_operation_strategy(op_strategy)
+        return get_operation_strategy(
+            operation_info,
+            self.settings.channel_name,
+            self.parent.instrument_cfg.hardware_description,
+        )
 
     def _prepare_acq_settings(
         self,
@@ -469,10 +450,22 @@ class AnalogSequencerCompiler(SequencerCompiler):
 
         The duration must be equal for all module types.
         """
+        default_marker = 0
+        module_options = self.parent.instrument_cfg.hardware_description
+        if (
+            module_options
+            and isinstance(module_options, RFDescription)
+            and module_options.rf_output_on
+            and isinstance(qasm.static_hw_properties, StaticAnalogModuleProperties)
+            and qasm.static_hw_properties.default_markers
+            and self.settings.channel_name in qasm.static_hw_properties.default_markers
+        ):
+            default_marker = qasm.static_hw_properties.default_markers[self.settings.channel_name]
+
         qasm.emit(
             q1asm_instructions.SET_MARKER,
-            get_marker_binary(self._default_marker),
-            comment=f"set markers to {self._default_marker}",
+            default_marker,
+            comment=f"set markers to {default_marker} (init)",
         )
 
     def _write_repetition_loop_header(self, qasm: QASMProgram) -> None:
@@ -501,14 +494,14 @@ class AnalogSequencerCompiler(SequencerCompiler):
             marker = self._decide_markers(op_strategy)
             qasm_program.emit(
                 q1asm_instructions.SET_MARKER,
-                get_marker_binary(marker),
-                comment=f"set markers to {marker}",
+                marker,
+                comment=f"set markers to {marker} (debug = True)",
             )
             op_strategy.insert_qasm(qasm_program)
             qasm_program.emit(
                 q1asm_instructions.SET_MARKER,
-                get_marker_binary(self._default_marker),
-                comment=f"set markers to {self._default_marker}",
+                self._default_marker,
+                comment=f"set markers to {self._default_marker} (default, debug = True).",
             )
             qasm_program.emit(
                 q1asm_instructions.UPDATE_PARAMETERS,
@@ -540,25 +533,24 @@ class AnalogSequencerCompiler(SequencerCompiler):
             A bit string passed on to the set_mrk function of the Q1ASM object.
 
         """
-        marker_bit_string = 0
         instrument_type = self.static_hw_properties.instrument_type
         if instrument_type == "QCM":
+            marker_bit = 0
             for output in self.connected_output_indices:
-                marker_bit_string |= 1 << output
+                marker_bit |= 1 << output
+            return marker_bit
         elif instrument_type == "QRM":
-            marker_bit_string = 0b1100 if operation.operation_info.is_acquisition else 0b0011
-
+            return 0b1100 if operation.operation_info.is_acquisition else 0b0011
         # For RF modules, the first two indices correspond to path enable/disable.
         # Therefore, the index of the output is shifted by 2.
         elif instrument_type == "QCM_RF":
             # connected outputs are either 0,1 or 2,3 corresponding to
             # marker bitstrings 0b0100 and 0b1000 respectively
             output = self.connected_output_indices[0] // 2
-            marker_bit_string |= 1 << (output + 2)
-            marker_bit_string |= self._default_marker
+            return 1 << (output + 2) | self._default_marker
         elif instrument_type == "QRM_RF":
-            marker_bit_string = 0b1011 if operation.operation_info.is_acquisition else 0b0111
-        return marker_bit_string
+            return 0b1010 if operation.operation_info.is_acquisition else 0b0110
+        raise ValueError(f"Unknown instrument type {instrument_type}")
 
 
 class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
@@ -585,6 +577,7 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
     """
 
     _settings: AnalogModuleSettings  # type: ignore
+    static_hw_properties: StaticAnalogModuleProperties  # type: ignore
 
     def __init__(
         self,
@@ -598,14 +591,6 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
             instrument_cfg=instrument_cfg,
         )
         self.sequencers: dict[str, AnalogSequencerCompiler] = {}
-
-    @property
-    @abstractmethod
-    def static_hw_properties(self) -> StaticAnalogModuleProperties:
-        """
-        The static properties of the hardware. This effectively gathers all the
-        differences between the different modules.
-        """
 
     def _construct_sequencer_compiler(
         self, index: int, sequencer_cfg: _SequencerCompilationConfig
@@ -945,7 +930,7 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
                 scope_acq_seq = seq.index
 
 
-class BasebandModuleCompiler(AnalogModuleCompiler):
+class BasebandModuleCompiler(AnalogModuleCompiler, ABC):
     """
     Abstract class with all the shared functionality between the QRM and QCM baseband
     modules.
@@ -1061,7 +1046,7 @@ class BasebandModuleCompiler(AnalogModuleCompiler):
         )
 
 
-class RFModuleCompiler(AnalogModuleCompiler):
+class RFModuleCompiler(AnalogModuleCompiler, ABC):
     """
     Abstract class with all the shared functionality between the QRM-RF and QCM-RF
     modules.

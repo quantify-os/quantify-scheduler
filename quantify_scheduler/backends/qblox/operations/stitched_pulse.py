@@ -11,8 +11,7 @@ from typing import Any
 
 import numpy as np
 
-from quantify_scheduler.backends.qblox import constants
-from quantify_scheduler.backends.qblox.helpers import generate_waveform_data
+from quantify_scheduler.backends.qblox import constants, helpers
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import (
     NumericalPulse,
@@ -159,7 +158,7 @@ def convert_to_numerical_pulse(
     for pulse_info in operation["pulse_info"]:
         if not pulse_info["wf_func"]:
             continue
-        waveform_data = generate_waveform_data(
+        waveform_data = helpers.generate_waveform_data(
             data_dict=pulse_info,
             sampling_rate=sampling_rate,
         )

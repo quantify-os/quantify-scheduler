@@ -42,6 +42,7 @@ from quantify_scheduler.backends.types.qblox import (
     ComplexChannelDescription,
     DigitalChannelDescription,
     OpInfo,
+    QRMDescription,
     SequencerOptions,
     StaticAnalogModuleProperties,
     StaticTimetagModuleProperties,
@@ -639,6 +640,7 @@ def test_write_repetition_loop_header_equal_time():
             max_sequencers=6,
             max_awg_output_voltage=None,
             mixer_dc_offset_range=BoundedParameter(0, 0, ""),
+            channel_name_to_digital_marker={},
         ),
         sequencer_cfg=sequencer_cfg,
     )
@@ -708,13 +710,14 @@ def mock_sequencer(total_play_time) -> AnalogSequencerCompiler:
             max_sequencers=6,
             max_awg_output_voltage=None,
             mixer_dc_offset_range=BoundedParameter(0, 0, ""),
+            channel_name_to_digital_marker={},
         ),
         sequencer_cfg=sequencer_cfg,
     )
 
 
 def ioperation_strategy_from_op_info(op_info: OpInfo, channel_name: str) -> IOperationStrategy:
-    return get_operation_strategy(op_info, channel_name)
+    return get_operation_strategy(op_info, channel_name, QRMDescription())
 
 
 def upd_param_op_info(
