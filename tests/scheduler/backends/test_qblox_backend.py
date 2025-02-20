@@ -27,7 +27,6 @@ from quantify_scheduler.backends.qblox import (
     compiler_container,
     constants,
     q1asm_instructions,
-    register_manager,
 )
 from quantify_scheduler.backends.qblox.analog import (
     AnalogSequencerCompiler,
@@ -70,7 +69,6 @@ from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.backends.types.common import HardwareDescription
 from quantify_scheduler.backends.types.qblox import (
     AnalogModuleSettings,
-    BasebandModuleSettings,
     DistortionSettings,
     QbloxHardwareDistortionCorrection,
     QbloxRealTimeFilter,
@@ -398,16 +396,6 @@ def real_square_pulse_schedule():
         )
     )
     return sched
-
-
-@pytest.fixture(name="empty_qasm_program_qcm")
-def fixture_empty_qasm_program():
-    return QASMProgram(
-        static_hw_properties=QCMCompiler.static_hw_properties,
-        register_manager=register_manager.RegisterManager(),
-        align_fields=True,
-        acq_metadata=None,
-    )
 
 
 # --------- Test utility functions ---------
@@ -1650,66 +1638,6 @@ def test_real_mode_pulses_legacy_hardware_cfg(
         # )
 
 
-# --------- Test QASMProgram class ---------
-
-
-def test_emit(empty_qasm_program_qcm):
-    qasm = empty_qasm_program_qcm
-    qasm.emit(q1asm_instructions.PLAY, 0, 1, 120)
-    qasm.emit(q1asm_instructions.STOP, comment="This is a comment that is added")
-
-    assert len(qasm.instructions) == 2
-
-
-def test_auto_wait(empty_qasm_program_qcm):
-    qasm = empty_qasm_program_qcm
-    qasm.auto_wait(120)
-    assert len(qasm.instructions) == 1
-    qasm.auto_wait(70000)
-    assert len(qasm.instructions) == 3  # since it should split the waits
-    assert qasm.elapsed_time == 70120
-    qasm.auto_wait(700000)
-    assert qasm.elapsed_time == 770120
-    assert len(qasm.instructions) == 8  # now loops are used
-    with pytest.raises(ValueError):
-        qasm.auto_wait(-120)
-
-
-@pytest.mark.parametrize(
-    "val, expected_expanded_val",
-    [
-        (-1, -constants.IMMEDIATE_SZ_GAIN // 2),
-        (-0.5, -constants.IMMEDIATE_SZ_GAIN // 4),
-        (0.0, 0),
-        (0.5, constants.IMMEDIATE_SZ_GAIN // 4),
-        (1.0, constants.IMMEDIATE_SZ_GAIN // 2 - 1),
-    ],
-)
-def test_expand_awg_gain_from_normalised_range(val, expected_expanded_val):
-    minimal_pulse_data = {"duration": 20e-9}
-    acq = types.OpInfo(name="test_acq", data=minimal_pulse_data, timing=4e-9)
-
-    expanded_val = QASMProgram.expand_awg_from_normalised_range(
-        val=val,
-        immediate_size=constants.IMMEDIATE_SZ_GAIN,
-        param="test_param",
-        operation=acq,
-    )
-    assert expanded_val == expected_expanded_val
-
-
-def test_out_of_range_expand_awg_gain_from_normalised_range():
-    minimal_pulse_data = {"duration": 20e-9}
-    acq = types.OpInfo(name="test_acq", data=minimal_pulse_data, timing=4e-9)
-    with pytest.raises(ValueError):
-        QASMProgram.expand_awg_from_normalised_range(
-            val=10,
-            immediate_size=constants.IMMEDIATE_SZ_GAIN,
-            param="test_param",
-            operation=acq,
-        )
-
-
 @pytest.mark.parametrize(
     "time, expected_time_ns",
     [(4e-9, 4), (8.001e-9, 8), (4.0008e-9, 4), (1, 1e9), (1 + 1e-12, 1e9)],
@@ -1779,29 +1707,6 @@ def test_is_within_min_op_time_even_if_floating_point_error():
     time1, time2 = 8e-9, 12e-9
     assert abs(time1 - time2) < constants.MIN_TIME_BETWEEN_OPERATIONS
     assert to_grid_time(time1) != to_grid_time(time2)
-
-
-def test_loop(empty_qasm_program_qcm):
-    num_rep = 10
-
-    qasm = empty_qasm_program_qcm
-    qasm.emit(q1asm_instructions.WAIT_SYNC, 4)
-    with qasm.loop("this_loop", repetitions=num_rep):
-        qasm.emit(q1asm_instructions.WAIT, 20)
-    assert len(qasm.instructions) == 5
-    assert qasm.instructions[1][1] == q1asm_instructions.MOVE
-    num_rep_used, reg_used = qasm.instructions[1][2].split(",")
-    assert int(num_rep_used) == num_rep
-
-
-@pytest.mark.parametrize("amount", [1, 2, 3, 40])
-def test_temp_register(amount, empty_qasm_program_qcm):
-    qasm = empty_qasm_program_qcm
-    with qasm.temp_registers(amount) as registers:
-        for reg in registers:
-            assert reg not in qasm.register_manager.available_registers
-    for reg in registers:
-        assert reg in qasm.register_manager.available_registers
 
 
 # --------- Test compilation functions ---------
@@ -2590,11 +2495,11 @@ def test_assign_gain(compile_config_basic_transmon_qblox_hardware):
 
 
 def test_markers(mock_setup_basic_transmon, hardware_cfg_cluster, hardware_cfg_rf):
-    def _confirm_correct_markers(device_program, default_marker, is_rf=False, sequencer=0):
+    def _confirm_correct_markers(device_program, default_marker, sequencer=0):
         answer = default_marker
         qasm = device_program["sequencers"][f"seq{sequencer}"].sequence["program"]
 
-        matches = re.findall(r"set\_mrk +\d+", qasm)
+        matches = re.findall(r"set_mrk +\d+", qasm)
         match = [int(m.replace("set_mrk", "").strip()) for m in matches][0]
         assert match == answer
 
@@ -2651,9 +2556,9 @@ def test_markers(mock_setup_basic_transmon, hardware_cfg_cluster, hardware_cfg_r
     qcm_rf_program = compiled_schedule["compiled_instructions"]["cluster0"]["cluster0_module2"]
     qrm_rf_program = compiled_schedule["compiled_instructions"]["cluster0"]["cluster0_module4"]
 
-    _confirm_correct_markers(qcm_rf_program, 0b0001, is_rf=True, sequencer=0)
-    _confirm_correct_markers(qcm_rf_program, 0b0010, is_rf=True, sequencer=1)
-    _confirm_correct_markers(qrm_rf_program, 0b0011, is_rf=True)
+    _confirm_correct_markers(qcm_rf_program, 0b0001, sequencer=0)
+    _confirm_correct_markers(qcm_rf_program, 0b0010, sequencer=1)
+    _confirm_correct_markers(qrm_rf_program, 0b0010, sequencer=0)
 
 
 def test_extract_settings_from_mapping(
@@ -3568,7 +3473,7 @@ def test_debug_mode_qasm_aligning(
     ].sequence["program"]
 
     if not debug_mode:
-        expected_program = """ set_mrk 3 # set markers to 3
+        expected_program = """ set_mrk 2 # set markers to 2 (init)
  wait_sync 4 
  upd_param 4 
  wait 4 # latency correction of 4 + 0 ns
@@ -3587,7 +3492,7 @@ start:
 """  # noqa: W291 trailing whitespace
     else:
         expected_program = (
-            "          set_mrk       3          # set markers to 3                    \n"
+            "          set_mrk       2          # set markers to 2 (init)             \n"
             "          wait_sync     4                                                \n"
             "          upd_param     4                                                \n"
             "          wait          4          # latency correction of 4 + 0 ns      \n"
@@ -3687,9 +3592,10 @@ class TestControlFlow:
         return re.sub(r" {2,}", " ", s)
 
     def _compare_sequence(self, compiled, reference, module):
-        if module == "qcm":
+        if module == "qcm_rf":
             mod = "cluster0_module2"
-        elif module == "qrm":
+        else:
+            assert module == "qrm_rf"
             mod = "cluster0_module4"
         program = self._replace_multiple_spaces(
             compiled.compiled_instructions["cluster0"][mod]["sequencers"]["seq0"].sequence[
@@ -3787,7 +3693,7 @@ class TestControlFlow:
 
         compiled = compiler.compile(sched, config=compile_config_basic_transmon_qblox_hardware)
 
-        reference_sequence_qcm = """ set_mrk 1 # set markers to 1
+        reference_sequence_qcm_rf = """ set_mrk 1 # set markers to 1 (init)
 wait_sync 4
 upd_param 4
 wait 4 # latency correction of 4 + 0 ns
@@ -3833,7 +3739,7 @@ loop R0,@start
 stop
 """
 
-        reference_sequence_qrm = """ set_mrk 3 # set markers to 3
+        reference_sequence_qrm_rf = """ set_mrk 2 # set markers to 2 (init)
 wait_sync 4
 upd_param 4
 wait 4 # latency correction of 4 + 0 ns
@@ -3857,8 +3763,8 @@ start:
 stop
 """
 
-        self._compare_sequence(compiled, reference_sequence_qcm, "qcm")
-        self._compare_sequence(compiled, reference_sequence_qrm, "qrm")
+        self._compare_sequence(compiled, reference_sequence_qcm_rf, "qcm_rf")
+        self._compare_sequence(compiled, reference_sequence_qrm_rf, "qrm_rf")
 
     def test_loop_instruction_generated(self, compile_config_basic_transmon_qblox_hardware):
         """
@@ -3897,7 +3803,7 @@ stop
             )
         )
 
-        reference = """ set_mrk 3 # set markers to 3
+        reference = """ set_mrk 2 # set markers to 2 (init)
 wait_sync 4
 upd_param 4
 wait 4 # latency correction of 4 + 0 ns
@@ -3931,7 +3837,7 @@ stop
 """
         compiler = SerialCompiler(name="compiler")
         compiled = compiler.compile(sched, config=compile_config_basic_transmon_qblox_hardware)
-        self._compare_sequence(compiled, reference, "qrm")
+        self._compare_sequence(compiled, reference, "qrm_rf")
 
 
 @pytest.mark.parametrize("scaling_factor", [0.999, 1])

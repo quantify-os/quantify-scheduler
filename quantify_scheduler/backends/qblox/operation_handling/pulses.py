@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import logging
+from abc import ABC
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -12,19 +13,23 @@ import numpy as np
 from quantify_scheduler.backends.qblox import constants, helpers, q1asm_instructions
 from quantify_scheduler.backends.qblox.enums import ChannelMode
 from quantify_scheduler.backends.qblox.operation_handling.base import IOperationStrategy
-from quantify_scheduler.backends.qblox.qasm_program import (
-    QASMProgram,
-    get_marker_binary,
+from quantify_scheduler.backends.types.qblox import (
+    ClusterModuleDescription,
+    RFDescription,
+    StaticAnalogModuleProperties,
 )
 from quantify_scheduler.helpers.waveforms import normalize_waveform_data
 
 if TYPE_CHECKING:
+    from quantify_scheduler.backends.qblox.qasm_program import (
+        QASMProgram,
+    )
     from quantify_scheduler.backends.types import qblox as types
 
 logger = logging.getLogger(__name__)
 
 
-class PulseStrategyPartial(IOperationStrategy):
+class PulseStrategyPartial(IOperationStrategy, ABC):
     """
     Contains the logic shared between all the pulses.
 
@@ -239,7 +244,7 @@ class GenericPulseStrategy(PulseStrategyPartial):
         qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
 
 
-class DigitalOutputStrategy(PulseStrategyPartial):
+class DigitalOutputStrategy(PulseStrategyPartial, ABC):
     """
     Interface class for :class:`MarkerPulseStrategy` and :class:`DigitalPulseStrategy`.
 
@@ -257,6 +262,15 @@ class DigitalOutputStrategy(PulseStrategyPartial):
 class MarkerPulseStrategy(DigitalOutputStrategy):
     """If this strategy is used a digital pulse is played on the corresponding marker."""
 
+    def __init__(
+        self,
+        operation_info: types.OpInfo,
+        channel_name: str,
+        module_options: ClusterModuleDescription,
+    ) -> None:
+        super().__init__(operation_info, channel_name)
+        self.module_options = module_options
+
     def insert_qasm(self, qasm_program: QASMProgram) -> None:
         """
         Inserts the QASM instructions to play the marker pulse.
@@ -269,55 +283,50 @@ class MarkerPulseStrategy(DigitalOutputStrategy):
             The QASMProgram to add the assembly instructions to.
 
         """
-        if ChannelMode.DIGITAL not in self.channel_name:
-            port = self.operation_info.data.get("port")
-            clock = self.operation_info.data.get("clock")
-
-            raise ValueError(
-                f"{self.__class__.__name__} can only be used with a "
-                f"digital channel. Please make sure that "
-                f"'digital' keyword is included in the channel_name "
-                f"in the hardware configuration "
-                f"for port-clock combination '{port}-{clock}' "
-                f"(current channel_name is '{self.channel_name}')."
-                f"Operation causing exception: {self.operation_info}"
+        hw_properties = qasm_program.static_hw_properties
+        if not isinstance(hw_properties, StaticAnalogModuleProperties):
+            raise TypeError(
+                f"Marker Operations are only supported for analog modules, "
+                f"not for instrument {self.module_options.instrument_type}."
             )
-        marker_bit_index = int(self.operation_info.data["output"])
-        default_marker = self.operation_info.data["default_marker"]
-
-        # RF modules use first 2 bits of marker bitstring as output/input switch.
-        if qasm_program.static_hw_properties.instrument_type in ("QRM_RF", "QCM_RF"):
-            marker_bit_index += 2
-        # QCM-RF has swapped addressing of outputs
-        marker_bit_index = self._fix_marker_bit_output_addressing_qcm_rf(
-            qasm_program=qasm_program, marker_bit_index=marker_bit_index
-        )
+        if self.channel_name not in hw_properties.channel_name_to_digital_marker:
+            raise ValueError(
+                f"Unable to set markers on channel '{self.channel_name}' for "
+                f"instrument {hw_properties.instrument_type} "
+                f"and operation {self.operation_info.name}. "
+                f"Supported channels: {list(hw_properties.channel_name_to_digital_marker.keys())}"
+            )
+        marker = hw_properties.channel_name_to_digital_marker[self.channel_name]
+        default_marker = 0
+        if (
+            isinstance(self.module_options, RFDescription)
+            and self.module_options.rf_output_on
+            and hw_properties.default_markers
+        ):
+            default_marker = hw_properties.default_markers[self.channel_name]
+            if marker | default_marker == default_marker:  # Marker has no effect
+                raise RuntimeError(
+                    "Attempting to turn on an RF output on a module where "
+                    "`rf_output_on` is set to True (the default value). \n"
+                    "Turning the RF output on with an RFSwitchToggle Operation "
+                    "has no effect. \n"
+                    "Please set `rf_output_on` to False for this module "
+                    "in the hardware configuration."
+                )
 
         if self.operation_info.data["enable"]:
-            marker = (1 << marker_bit_index) | default_marker
+            marker |= default_marker
             qasm_program.emit(
                 q1asm_instructions.SET_MARKER,
-                get_marker_binary(marker),
-                comment=f"set markers to {marker}",
+                marker,
+                comment=f"set markers to {marker} (marker pulse)",
             )
         else:
             qasm_program.emit(
                 q1asm_instructions.SET_MARKER,
-                get_marker_binary(default_marker),
-                comment=f"set markers to {default_marker}",
+                default_marker,
+                comment=f"set markers to {default_marker} (default, marker pulse)",
             )
-
-    @staticmethod
-    def _fix_marker_bit_output_addressing_qcm_rf(
-        qasm_program: QASMProgram, marker_bit_index: int
-    ) -> int:
-        """Fix for the swapped marker bit output addressing of the QCM-RF."""
-        if qasm_program.static_hw_properties.instrument_type == "QCM_RF":
-            if marker_bit_index == 2:
-                marker_bit_index = 3
-            elif marker_bit_index == 3:
-                marker_bit_index = 2
-        return marker_bit_index
 
 
 class DigitalPulseStrategy(DigitalOutputStrategy):

@@ -102,7 +102,7 @@ dev = [
  # Pytest-cov is used to generage test coverage reports, which is rather a development than testing requirement
  "pytest-cov",
  "pytest-xdist", # run tests in parallel
- "ruff",  # linter
+ "ruff",
  "quantify-scheduler[docs,test]",
  # Live rebuild of Documentation
  "sphinx-autobuild",

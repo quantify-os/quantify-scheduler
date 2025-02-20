@@ -21,12 +21,11 @@ from quantify_scheduler.backends.qblox.operation_handling.factory_common import 
 )
 
 if TYPE_CHECKING:
-    from quantify_scheduler.backends.types.qblox import OpInfo
+    from quantify_scheduler.backends.types.qblox import ClusterModuleDescription, OpInfo
 
 
 def get_operation_strategy(
-    operation_info: OpInfo,
-    channel_name: str,
+    operation_info: OpInfo, channel_name: str, module_options: ClusterModuleDescription
 ) -> base.IOperationStrategy:
     """
     Determines and instantiates the correct strategy object.
@@ -37,6 +36,8 @@ def get_operation_strategy(
         The operation we are building the strategy for.
     channel_name
         Specifies the channel identifier of the hardware config (e.g. `complex_output_0`).
+    module_options
+        The module description the operation will run on
 
     Returns
     -------
@@ -48,8 +49,7 @@ def get_operation_strategy(
         return _get_acquisition_strategy(operation_info)
 
     return _get_pulse_strategy(
-        operation_info=operation_info,
-        channel_name=channel_name,
+        operation_info=operation_info, channel_name=channel_name, module_options=module_options
     )
 
 
@@ -91,8 +91,7 @@ def _get_acquisition_strategy(
 
 
 def _get_pulse_strategy(  # noqa: PLR0911  # too many return statements
-    operation_info: OpInfo,
-    channel_name: str,
+    operation_info: OpInfo, channel_name: str, module_options: ClusterModuleDescription
 ) -> base.IOperationStrategy:
     """Handles the logic for determining the correct pulse type."""
     if operation_info.is_offset_instruction:
@@ -111,8 +110,7 @@ def _get_pulse_strategy(  # noqa: PLR0911  # too many return statements
 
     elif operation_info.data.get("marker_pulse", False):
         return pulses.MarkerPulseStrategy(
-            operation_info=operation_info,
-            channel_name=channel_name,
+            operation_info=operation_info, channel_name=channel_name, module_options=module_options
         )
 
     return pulses.GenericPulseStrategy(

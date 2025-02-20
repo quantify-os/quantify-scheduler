@@ -355,9 +355,11 @@ class QuantumDevice(JSONSerializableMixin, Instrument):
                     " contain a string reference to the backend-specific datastructure"
                     " that should be parsed."
                 )
-            hardware_compilation_config_model = import_python_object_from_string(
-                hardware_config["config_type"]
-            )
+            hardware_compilation_config_model = hardware_config["config_type"]
+            if isinstance(hardware_compilation_config_model, str):
+                hardware_compilation_config_model = import_python_object_from_string(
+                    hardware_compilation_config_model
+                )
             hardware_compilation_config = hardware_compilation_config_model.model_validate(
                 hardware_config
             )

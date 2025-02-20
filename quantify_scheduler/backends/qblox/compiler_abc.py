@@ -37,6 +37,7 @@ from quantify_scheduler.backends.qblox.operation_handling.acquisitions import (
 )
 from quantify_scheduler.backends.qblox.operation_handling.pulses import (
     DigitalOutputStrategy,
+    MarkerPulseStrategy,
 )
 from quantify_scheduler.backends.qblox.operation_handling.virtual import (
     ConditionalStrategy,
@@ -47,6 +48,7 @@ from quantify_scheduler.backends.qblox.operation_handling.virtual import (
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.types.common import ThresholdedTriggerCountMetadata
 from quantify_scheduler.backends.types.qblox import (
+    ClusterModuleDescription,
     OpInfo,
     SequencerSettings,
     StaticHardwareProperties,
@@ -158,8 +160,8 @@ class SequencerCompiler(ABC):
     index
         Index of the sequencer.
     static_hw_properties
-        The static properties of the hardware. This effectively gathers all the
-        differences between the different modules.
+        The static properties of the hardware.
+        This effectively gathers all the differences between the different modules.
     sequencer_cfg
         The instrument compiler config associated to this instrument.
 
@@ -959,7 +961,7 @@ class SequencerCompiler(ABC):
 
     @staticmethod
     def _replace_digital_pulses(
-        op_strategies: list[IOperationStrategy],
+        op_strategies: list[IOperationStrategy], module_options: ClusterModuleDescription
     ) -> list[IOperationStrategy]:
         """Replaces MarkerPulse operations by explicit high and low operations."""
         new_op_strategies: list[IOperationStrategy] = []
@@ -970,15 +972,37 @@ class SequencerCompiler(ABC):
                     data=op_strategy.operation_info.data.copy(),
                     timing=op_strategy.operation_info.timing,
                 )
-                duration = op_strategy.operation_info.data["duration"]
                 high_op_info.data["enable"] = True
                 high_op_info.data["duration"] = 0
-                new_op_strategies.append(
-                    op_strategy.__class__(
+                duration = op_strategy.operation_info.data["duration"]
+                low_op_info = OpInfo(
+                    name=op_strategy.operation_info.name,
+                    data=op_strategy.operation_info.data.copy(),
+                    timing=op_strategy.operation_info.timing + duration,
+                )
+                low_op_info.data["enable"] = False
+                low_op_info.data["duration"] = 0
+                if op_strategy.__class__ == MarkerPulseStrategy:
+                    strategy_high = MarkerPulseStrategy(
+                        operation_info=high_op_info,
+                        channel_name=op_strategy.channel_name,
+                        module_options=module_options,
+                    )
+                    strategy_low = MarkerPulseStrategy(
+                        operation_info=low_op_info,
+                        channel_name=op_strategy.channel_name,
+                        module_options=module_options,
+                    )
+                else:
+                    strategy_high = op_strategy.__class__(
                         operation_info=high_op_info,
                         channel_name=op_strategy.channel_name,
                     )
-                )
+                    strategy_low = op_strategy.__class__(
+                        operation_info=low_op_info,
+                        channel_name=op_strategy.channel_name,
+                    )
+                new_op_strategies.append(strategy_high)
                 new_op_strategies.append(
                     UpdateParameterStrategy(
                         OpInfo(
@@ -994,20 +1018,7 @@ class SequencerCompiler(ABC):
                         )
                     )
                 )
-
-                low_op_info = OpInfo(
-                    name=op_strategy.operation_info.name,
-                    data=op_strategy.operation_info.data.copy(),
-                    timing=op_strategy.operation_info.timing + duration,
-                )
-                low_op_info.data["enable"] = False
-                low_op_info.data["duration"] = 0
-                new_op_strategies.append(
-                    op_strategy.__class__(
-                        operation_info=low_op_info,
-                        channel_name=op_strategy.channel_name,
-                    )
-                )
+                new_op_strategies.append(strategy_low)
                 new_op_strategies.append(
                     UpdateParameterStrategy(
                         OpInfo(
@@ -1107,7 +1118,9 @@ class SequencerCompiler(ABC):
         Perform necessary operations on this sequencer's data before
         :meth:`~SequencerCompiler.compile` is called.
         """
-        self.op_strategies = self._replace_digital_pulses(self.op_strategies)
+        self.op_strategies = self._replace_digital_pulses(
+            self.op_strategies, self.parent.instrument_cfg.hardware_description
+        )
         self._remove_redundant_update_parameters()
         self._validate_update_parameters_alignment()
 
@@ -1337,6 +1350,7 @@ class ClusterModuleCompiler(InstrumentCompiler, Generic[_SequencerT_co], ABC):
     """
 
     _settings: _ModuleSettingsType
+    static_hw_properties: StaticHardwareProperties
 
     def __init__(
         self,
@@ -1413,14 +1427,6 @@ class ClusterModuleCompiler(InstrumentCompiler, Generic[_SequencerT_co], ABC):
             if not all(op_info.data.get("name") == "LatchReset" for op_info in op_infos)
         }
         return portclocks_used
-
-    @property
-    @abstractmethod
-    def static_hw_properties(self) -> StaticHardwareProperties:
-        """
-        The static properties of the hardware. This effectively gathers all the
-        differences between the different modules.
-        """
 
     def _construct_all_sequencer_compilers(self) -> None:
         """

@@ -3,10 +3,9 @@
 """Tests for acquisitions module."""
 from __future__ import annotations
 
-import math
 import pprint
 import re
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pytest
@@ -22,10 +21,7 @@ from xarray import DataArray, Dataset
 from quantify_scheduler import Schedule, waveforms
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.qblox import constants
-from quantify_scheduler.backends.qblox.instrument_compilers import QRMCompiler
 from quantify_scheduler.backends.qblox.operation_handling import acquisitions
-from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
-from quantify_scheduler.backends.qblox.register_manager import RegisterManager
 from quantify_scheduler.backends.types import qblox as types
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.gettables import ScheduleGettable
@@ -54,15 +50,8 @@ from tests.scheduler.instrument_coordinator.components.test_qblox import (
     make_cluster_component,
 )
 
-
-@pytest.fixture(name="empty_qasm_program_qrm")
-def fixture_empty_qasm_program():
-    yield QASMProgram(
-        static_hw_properties=QRMCompiler.static_hw_properties,
-        register_manager=RegisterManager(),
-        align_fields=True,
-        acq_metadata=None,
-    )
+if TYPE_CHECKING:
+    from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 
 
 class MockAcquisition(acquisitions.AcquisitionStrategyPartial):
@@ -2311,7 +2300,7 @@ start:
             "seq0"
         ].sequence["program"],
         """
- set_mrk 3 # set markers to 3
+ set_mrk 2 # set markers to 2
  wait_sync 4
  upd_param 4
  wait 4 # latency correction of 4 + 0 ns
@@ -2323,15 +2312,15 @@ start:
  upd_param 4
  wait 16 # auto generated wait (16 ns)
  reset_ph
- set_mrk 7 # set markers to 7
+ set_mrk 6 # set markers to 6
  set_awg_gain 8192,0 # setting gain for SquarePulse
  play 0,0,4 # play SquarePulse (300 ns)
- set_mrk 3 # set markers to 3
+ set_mrk 2 # set markers to 2
  upd_param 4
  wait 92 # auto generated wait (92 ns)
- set_mrk 11 # set markers to 11
+ set_mrk 10 # set markers to 10
  acquire 0,0,4
- set_mrk 3 # set markers to 3
+ set_mrk 2 # set markers to 2
  upd_param 4
  wait 992 # auto generated wait (992 ns)
  loop R0,@start

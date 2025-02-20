@@ -132,13 +132,14 @@ class StaticAnalogModuleProperties(StaticHardwareProperties):
     mixer_dc_offset_range: BoundedParameter
     """Specifies the range over which the dc offsets can be set that are used for mixer
     calibration."""
-    default_marker: int = 0
-    """The default marker value to set at the beginning of programs.
-    Important for RF instruments that use the set_mrk command to enable/disable the RF output."""
-    channel_name_to_digital_marker: Dict[str, int] = dataclasses_field(default_factory=dict)
+    channel_name_to_digital_marker: dict[str, int]
     """A mapping from channel_name to digital marker setting.
     Specifies which marker bit needs to be set at start if the
     output (as a string ex. `complex_output_0`) contains a pulse."""
+    default_markers: None | dict[str, int] = None
+    """The default markers value to set at the beginning of programs and reset marker pulses to.
+    A mapping from channel name to marker.
+    Important for RF instruments that use the set_mrk command to enable/disable the RF output."""
 
 
 @dataclass(frozen=True)
@@ -991,7 +992,7 @@ class QRMDescription(DataStructure, DescriptionAnnotationsGettersMixin):
     :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`.
     """
 
-    instrument_type: Literal["QRM"]
+    instrument_type: Literal["QRM"] = "QRM"
     """The instrument type of this module."""
     sequence_to_file: bool = False
     """Write sequencer programs to files, for this module."""
@@ -1023,7 +1024,7 @@ class QCMDescription(DataStructure, DescriptionAnnotationsGettersMixin):
     :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`.
     """
 
-    instrument_type: Literal["QCM"]
+    instrument_type: Literal["QCM"] = "QCM"
     """The instrument type of this module."""
     sequence_to_file: bool = False
     """Write sequencer programs to files, for this module."""
@@ -1049,16 +1050,27 @@ class QCMDescription(DataStructure, DescriptionAnnotationsGettersMixin):
     """Description of the digital (marker) output channel on this QRM, corresponding to port M4."""
 
 
-class QRMRFDescription(DataStructure, DescriptionAnnotationsGettersMixin):
+class RFDescription(DataStructure, DescriptionAnnotationsGettersMixin):
+    """User settings for radio frequency (RF) modules."""
+
+    sequence_to_file: bool = False
+    """Write sequencer programs to files, for this module."""
+    rf_output_on: bool = True
+    """Whether the RF outputs of this module are always on by default.\n
+    If set to False they can be turned on by using the
+    :class:`~.quantify_scheduler.backends.qblox.operations.rf_switch_toggle.RFSwitchToggle`
+    operation.
+    """
+
+
+class QRMRFDescription(RFDescription):
     """
     Information needed to specify a QRM-RF in the
     :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`.
     """
 
-    instrument_type: Literal["QRM_RF"]
+    instrument_type: Literal["QRM_RF"] = "QRM_RF"
     """The instrument type of this module."""
-    sequence_to_file: bool = False
-    """Write sequencer programs to files, for this module."""
     complex_output_0: Optional[ComplexChannelDescription] = None
     """Description of the complex output channel on this QRM, corresponding to port O1."""
     complex_input_0: Optional[ComplexChannelDescription] = None
@@ -1069,16 +1081,14 @@ class QRMRFDescription(DataStructure, DescriptionAnnotationsGettersMixin):
     """Description of the digital (marker) output channel on this QRM, corresponding to port M2."""
 
 
-class QCMRFDescription(DataStructure, DescriptionAnnotationsGettersMixin):
+class QCMRFDescription(RFDescription):
     """
     Information needed to specify a QCM-RF in the
     :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`.
     """
 
-    instrument_type: Literal["QCM_RF"]
+    instrument_type: Literal["QCM_RF"] = "QCM_RF"
     """The instrument type of this module."""
-    sequence_to_file: bool = False
-    """Write sequencer programs to files, for this module."""
     complex_output_0: Optional[ComplexChannelDescription] = None
     """Description of the complex output channel on this QRM, corresponding to port O1."""
     complex_output_1: Optional[ComplexChannelDescription] = None
@@ -1095,7 +1105,7 @@ class QTMDescription(DataStructure, DescriptionAnnotationsGettersMixin):
     :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`.
     """
 
-    instrument_type: Literal["QTM"]
+    instrument_type: Literal["QTM"] = "QTM"
     """The instrument type of this module."""
     sequence_to_file: bool = False
     """Write sequencer programs to files, for this module."""
