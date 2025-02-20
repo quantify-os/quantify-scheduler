@@ -26,6 +26,10 @@ from quantify_scheduler.operations.gate_library import (
     Reset,
     Rxy,
     Rz,
+    S,
+    SDagger,
+    T,
+    TDagger,
     X,
     Y,
     Z,
@@ -106,6 +110,10 @@ def test_rxy_angle_modulo() -> None:
         Measure("q0", "q6", acq_index=92),
         SpectroscopyOperation("q0"),
         ChargeReset("q0"),
+        S("q0"),
+        SDagger("q1"),
+        T("q2"),
+        TDagger("q3"),
     ],
 )
 class TestGateLevelOperation:

@@ -31,7 +31,25 @@ from .control_flow_library import (
     ControlFlowSpec,
     LoopOperation,
 )
-from .gate_library import CNOT, CZ, X90, Y90, Z90, H, Measure, Reset, Rxy, Rz, X, Y, Z
+from .gate_library import (
+    CNOT,
+    CZ,
+    X90,
+    Y90,
+    Z90,
+    H,
+    Measure,
+    Reset,
+    Rxy,
+    Rz,
+    S,
+    SDagger,
+    T,
+    TDagger,
+    X,
+    Y,
+    Z,
+)
 from .nv_native_library import ChargeReset, CRCount
 from .operation import Operation
 from .pulse_compensation_library import (
@@ -83,6 +101,10 @@ __all__ = [
     "X",
     "Y",
     "Z",
+    "S",
+    "SDagger",
+    "T",
+    "TDagger",
     "ChargeReset",
     "CRCount",
     "composite_square_pulse",

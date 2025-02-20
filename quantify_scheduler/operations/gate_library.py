@@ -400,6 +400,154 @@ class Z90(Rz):
         return f"{self.__class__.__name__}(qubit='{device_element}')"
 
 
+class S(Z90):
+    r"""
+    A single qubit rotation of 90 degrees around the Z-axis.
+
+    This implements an :math:`S` gate up to a global phase.
+    Therefore, this operation is a direct alias of the `Z90` operations
+
+    This operation can be represented by the following unitary:
+
+    .. math::
+
+        R_{Z90} =
+        e^{-i\frac{\pi}{4}}S =
+        e^{-i\frac{\pi}{4}}\sqrt{Z} = \frac{1}{\sqrt{2}}\begin{bmatrix}
+             1-i & 0 \\
+             0 & 1+i \\ \end{bmatrix}
+
+    Parameters
+    ----------
+    qubit
+        The target device element.
+    device_overrides
+        Device level parameters that override device configuration values
+        when compiling from circuit to device level.
+
+    """
+
+    def __init__(self, qubit: str, **device_overrides) -> None:
+        device_element = qubit
+        super().__init__(qubit=device_element, **device_overrides)
+        self.data["name"] = f"S {device_element}"
+        self.data["gate_info"]["tex"] = r"$S$"
+
+
+class SDagger(Rz):
+    r"""
+    A single qubit rotation of -90 degrees around the Z-axis.
+
+    Implements :math:`S^\dagger` up to a global phase.
+
+    This operation can be represented by the following unitary:
+
+    .. math::
+
+        R_{Z270} =
+        e^{\frac{\pi}{4}}S^\dagger =
+        e^{\frac{\pi}{4}}\sqrt{Z}^\dagger = \frac{1}{\sqrt{2}}\begin{bmatrix}
+             1+i & 0 \\
+             0 & 1-i \\ \end{bmatrix}
+
+    Parameters
+    ----------
+    qubit
+        The target device element.
+    device_overrides
+        Device level parameters that override device configuration values
+        when compiling from circuit to device level.
+
+    """
+
+    def __init__(self, qubit: str, **device_overrides) -> None:
+        device_element = qubit
+        super().__init__(theta=-90.0, qubit=device_element, **device_overrides)
+        self.data["name"] = f"S_dagger {device_element}"
+        self.data["gate_info"]["tex"] = r"$S^\dagger$"
+        self._update()
+
+    def __str__(self) -> str:
+        device_element = self.data["gate_info"]["device_elements"][0]
+        return f"{self.__class__.__name__}(qubit='{device_element}')"
+
+
+class T(Rz):
+    r"""
+    A single qubit rotation of 45 degrees around the Z-axis.
+
+    Implements :math:`T` up to a global phase.
+
+    This operation can be represented by the following unitary:
+
+    .. math::
+
+        R_{Z45} =
+        e^{-\frac{\pi}{8}}T =
+        e^{-\frac{\pi}{8}}\begin{bmatrix}
+             1 & 0 \\
+             0 & \frac{1+i}{\sqrt{2}} \\ \end{bmatrix}
+
+    Parameters
+    ----------
+    qubit
+        The target device element.
+    device_overrides
+        Device level parameters that override device configuration values
+        when compiling from circuit to device level.
+
+    """
+
+    def __init__(self, qubit: str, **device_overrides) -> None:
+        device_element = qubit
+        super().__init__(theta=45.0, qubit=device_element, **device_overrides)
+        self.data["name"] = f"T {device_element}"
+        self.data["gate_info"]["tex"] = r"$T$"
+        self._update()
+
+    def __str__(self) -> str:
+        device_element = self.data["gate_info"]["device_elements"][0]
+        return f"{self.__class__.__name__}(qubit='{device_element}')"
+
+
+class TDagger(Rz):
+    r"""
+    A single qubit rotation of -45 degrees around the Z-axis.
+
+    Implements :math:`T^\dagger` up to a global phase.
+
+    This operation can be represented by the following unitary:
+
+    .. math::
+
+        R_{Z315} =
+        e^{\frac{\pi}{8}}T^\dagger =
+        e^{\frac{\pi}{8}}\begin{bmatrix}
+             1 & 0 \\
+             0 & \frac{1-i}{\sqrt{2}} \\ \end{bmatrix}
+
+    Parameters
+    ----------
+    qubit
+        The target device element.
+    device_overrides
+        Device level parameters that override device configuration values
+        when compiling from circuit to device level.
+
+    """
+
+    def __init__(self, qubit: str, **device_overrides) -> None:
+        device_element = qubit
+        super().__init__(theta=-45.0, qubit=device_element, **device_overrides)
+        self.data["name"] = f"T_dagger {device_element}"
+        self.data["gate_info"]["tex"] = r"$T^\dagger$"
+        self._update()
+
+    def __str__(self) -> str:
+        device_element = self.data["gate_info"]["device_elements"][0]
+        return f"{self.__class__.__name__}(qubit='{device_element}')"
+
+
 class H(Operation):
     r"""
     A single qubit Hadamard gate.
