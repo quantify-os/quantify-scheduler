@@ -447,6 +447,22 @@ class SequencerCompiler(ABC):
     def _get_thresholded_trigger_count_metadata_by_acq_channel(
         self, acquisitions: list[IOperationStrategy]
     ) -> dict[int, ThresholdedTriggerCountMetadata]:
+        """
+        Validate that all thresholds are the same for **single** threshold ThresholdedTriggerCount
+        acquisitions on this sequencer.
+
+        Returns
+        -------
+        :
+            The theshold, if ThresholdedTriggerCount acquisition is scheduled, or None, if it is not
+            scheduled.
+
+        Raises
+        ------
+        RuntimeError
+            If different thresholds are found.
+
+        """
         metadata_dict: dict[int, ThresholdedTriggerCountMetadata] = {}
         for acq in acquisitions:
             if acq.operation_info.data["protocol"] != "ThresholdedTriggerCount":

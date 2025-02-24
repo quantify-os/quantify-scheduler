@@ -11,7 +11,13 @@ from typing import Any
 import numpy as np
 
 from quantify_core.utilities import deprecated
-from quantify_scheduler.enums import BinMode, TimeRef, TimeSource, TriggerCondition
+from quantify_scheduler.enums import (
+    BinMode,
+    DualThresholdedTriggerCountLabels,
+    TimeRef,
+    TimeSource,
+    TriggerCondition,
+)
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.resources import DigitalClockResource
 
@@ -1085,7 +1091,9 @@ class ThresholdedTriggerCount(Acquisition):
         threshold: int,
         *,
         feedback_trigger_label: str | None = None,
-        feedback_trigger_condition: str | TriggerCondition = TriggerCondition.GREATER_THAN_EQUAL_TO,
+        feedback_trigger_condition: (
+            str | TriggerCondition
+        ) = TriggerCondition.GREATER_THAN_EQUAL_TO,
         acq_channel: int = 0,
         acq_index: int = 0,
         bin_mode: BinMode | str = BinMode.APPEND,
@@ -1127,4 +1135,131 @@ class ThresholdedTriggerCount(Acquisition):
         # The __str__ method is used for serialization. The keys must match the input parameters.
         acq_info["threshold"] = acq_info["thresholded_trigger_count"]["threshold"]
         acq_info["feedback_trigger_condition"] = acq_info["thresholded_trigger_count"]["condition"]
+        return self._get_signature(acq_info)
+
+
+class DualThresholdedTriggerCount(Acquisition):
+    """
+    Thresholded trigger count protocol that uses two thresholds.
+
+    Four outcomes are possible for this measurement, and each of those four can be assigned a label
+    to use in a :class:`~quantify_scheduler.operations.control_flow_library.ConditionalOperation`:
+
+    - "low" if ``counts < threshold_low``,
+    - "mid" if ``threshold_low <= counts < threshold_high``,
+    - "high" if ``counts >= threshold_high``,
+    - "invalid" if the counts are invalid (can occur in very rare cases, e.g. when the counter
+      overflows).
+
+    The returned acquisition data is the raw number of counts.
+
+    .. important::
+
+        The exact duration of this operation, and the possible bin modes may depend on the control
+        hardware. Please consult your hardware vendor's :ref:`Reference guide` for more information.
+
+    Parameters
+    ----------
+    port
+        The acquisition port.
+    clock
+        The clock used to demodulate the acquisition.
+    duration
+        The duration of the operation in seconds.
+    threshold_low
+        The lower counts threshold of the ThresholdedTriggerCount acquisition.
+    threshold_high
+        The upper counts threshold of the ThresholdedTriggerCount acquisition.
+    label_low
+        The label that can be used to link a result of `counts < threshold_low` to a
+        ConditionalOperation, by default None.
+    label_mid
+        The label that can be used to link a result of `threshold_low <= counts < threshold_high` to
+        a ConditionalOperation, by default None.
+    label_high
+        The label that can be used to link a result of `counts >= threshold_high` to a
+        ConditionalOperation, by default None.
+    label_invalid
+        The label that can be used to link an invalid counts result (e.g. a counter overflow) to a
+        ConditionalOperation, by default None.
+    feedback_trigger_condition
+        The comparison condition (greater-equal, less-than) for the ThresholdedTriggerCount
+        acquisition.
+    acq_channel
+        The data channel in which the acquisition is stored, by default 0.  Describes the "where"
+        information of the measurement, which typically corresponds to a qubit idx.
+    acq_index
+        The data register in which the acquisition is stored, by default 0.  Describes the "when"
+        information of the measurement, used to label or tag individual measurements in a large
+        circuit. Typically corresponds to the setpoints of a schedule (e.g., tau in a T1
+        experiment).
+    bin_mode
+        Describes what is done when data is written to a register that already contains a value.
+        Options are "append" which appends the result to the list or "average" which stores the
+        count value of the new result and the old register value, by default BinMode.APPEND.
+    t0
+        The acquisition start time in seconds, by default 0.
+
+    """
+
+    def __init__(
+        self,
+        port: str,
+        clock: str,
+        duration: float,
+        threshold_low: int,
+        threshold_high: int,
+        *,
+        label_low: str | None = None,
+        label_mid: str | None = None,
+        label_high: str | None = None,
+        label_invalid: str | None = None,
+        acq_channel: int = 0,
+        acq_index: int = 0,
+        bin_mode: BinMode | str = BinMode.APPEND,
+        t0: float = 0,
+    ) -> None:
+        if bin_mode == BinMode.AVERAGE and acq_index != 0:
+            # In average mode the count distribution is measured,
+            # and currently we do not support multiple indices for this,
+            # or starting the counting from a predefined count number.
+            raise NotImplementedError(
+                "Using nonzero acq_index is not yet implemented for AVERAGE bin mode for "
+                "the trigger count protocol"
+            )
+
+        super().__init__(name=self.__class__.__name__)
+        self.data["acquisition_info"] = [
+            {
+                "waveforms": [],
+                "t0": t0,
+                "clock": clock,
+                "port": port,
+                "duration": duration,
+                "acq_channel": acq_channel,
+                "acq_index": acq_index,
+                "bin_mode": bin_mode,
+                "thresholded_trigger_count": {
+                    "threshold_low": threshold_low,
+                    "threshold_high": threshold_high,
+                },
+                "feedback_trigger_labels": {
+                    DualThresholdedTriggerCountLabels.LOW: label_low,
+                    DualThresholdedTriggerCountLabels.MID: label_mid,
+                    DualThresholdedTriggerCountLabels.HIGH: label_high,
+                    DualThresholdedTriggerCountLabels.INVALID: label_invalid,
+                },
+                "acq_return_type": int,
+                "protocol": "DualThresholdedTriggerCount",
+            }
+        ]
+        self._update()
+
+    def __str__(self) -> str:
+        acq_info = copy(self.data["acquisition_info"][0])
+        acq_info["threshold_low"] = acq_info["thresholded_trigger_count"]["threshold_low"]
+        acq_info["threshold_high"] = acq_info["thresholded_trigger_count"]["threshold_high"]
+        # Pyright thinks custom StrEnum is not iterable.
+        for suffix in DualThresholdedTriggerCountLabels:  # type: ignore
+            acq_info[f"label_{suffix}"] = acq_info[f"feedback_trigger_label_{suffix}"]
         return self._get_signature(acq_info)

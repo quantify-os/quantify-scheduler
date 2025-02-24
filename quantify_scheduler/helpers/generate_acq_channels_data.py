@@ -223,7 +223,13 @@ def _generate_acq_channels_data_for_protocol(
                 bin_mode=bin_mode,
                 coords=coords,
             )
-        elif protocol in ("TriggerCount", "Timetag", "TimetagTrace", "ThresholdedTriggerCount"):
+        elif protocol in (
+            "TriggerCount",
+            "Timetag",
+            "TimetagTrace",
+            "ThresholdedTriggerCount",
+            "DualThresholdedTriggerCount",
+        ):
             if (
                 (
                     protocol == "TriggerCount"
@@ -243,7 +249,10 @@ def _generate_acq_channels_data_for_protocol(
                     )
                 )
                 or (protocol == "TimetagTrace" and bin_mode != BinMode.APPEND)
-                or (protocol == "ThresholdedTriggerCount" and bin_mode != BinMode.APPEND)
+                or (
+                    protocol in ("ThresholdedTriggerCount", "DualThresholdedTriggerCount")
+                    and bin_mode != BinMode.APPEND
+                )
             ):
                 _warn_unsupported_bin_mode(
                     protocol=protocol,

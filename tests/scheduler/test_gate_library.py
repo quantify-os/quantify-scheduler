@@ -443,8 +443,10 @@ def test_conditional_acquire_without_control_flow_raises(
     compiler = SerialCompiler(name="compiler")
     with pytest.raises(
         RuntimeError,
-        match="Two subsequent conditional acquisitions found, "
-        "without a conditional control flow operation in between",
+        match=re.escape(
+            "A conditional acquisition was scheduled while some labels from previous conditional "
+            "acquisition(s) were not used yet."
+        ),
     ):
         _ = compiler.compile(
             schedule,

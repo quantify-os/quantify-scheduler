@@ -14,6 +14,7 @@ Module containing the standard library of commonly used operations as well as th
 
 from .acquisition_library import (
     Acquisition,
+    DualThresholdedTriggerCount,
     NumericalSeparatedWeightedIntegration,
     NumericalWeightedIntegration,
     SSBIntegrationComplex,
@@ -147,6 +148,7 @@ __all__ = [
     "NumericalWeightedIntegration",
     "TriggerCount",
     "ThresholdedTriggerCount",
+    "DualThresholdedTriggerCount",
     "TimetagTrace",
     "Timetag",
     "PulseCompensation",

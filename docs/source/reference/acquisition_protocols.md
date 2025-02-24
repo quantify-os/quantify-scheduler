@@ -298,22 +298,47 @@ xr.Dataset(
 Please also see {ref}`sec-qblox-acquisition-details` for more information on Qblox module-specific behavior of this operation.
 ```
 
-This acquisition protocol returns whether the number of triggers counted surpassed the given threshold. It can also be used together with the {class}`~quantify_scheduler.operations.control_flow_library.ConditionalOperation` to execute instructions based on the threshold comparison result.
+This acquisition protocol returns the result of the threshold comparison. I.e., it returns a `1` if the comparison is `True` and a `0` if it is `False`. It can also be used together with the {class}`~quantify_scheduler.operations.control_flow_library.ConditionalOperation` to execute instructions based on the threshold comparison result.
 
 Note that the _analog_ thresholded for registering a single trigger is set via the hardware configuration. For the QRM, the analog threshold is set via {class}`~quantify_scheduler.backends.types.qblox.SequencerOptions.ttl_acq_threshold` (see also {ref}`sec-qblox-sequencer-options`), while for the QTM this threshold setting is a dedicated hardware option called `in_threshold_primary`, see {ref}`sec-qblox-digitization-thresholds`.
 
 The only available bin mode is `BinMode.APPEND`.
-The returned data for the acquisition channel contains the number of triggers counted for each acquisition index. For example, suppose a schedule with one trigger count acquisition was executed 5 times (`repetitions=5`) with a threshold set to 4 counts. In order, the number of triggers counted is `[6, 3, 8, 1, 3]`. The resulting dataset would then look like:
+
+As mentioned above, the returned data for the acquisition channel contains the result of the threshold comparison for each acquisition index. For example, suppose a schedule with one trigger count acquisition was executed 5 times (`repetitions=5`) with a threshold set to 4 counts and `trigger_condition=TriggerCondition.LESS_THAN`. In order, the number of triggers counted is `[6, 3, 8, 1, 3]`. The resulting dataset would then look like:
 
 ```{code-cell} ipython3
 ---
 tags: [hide-input]
 ---
-trigger_data = np.array([1, 0, 1, 0, 0])
+trigger_data = np.array([0, 1, 0, 1, 1])
 xr.Dataset(
     {0: xr.DataArray(trigger_data.reshape(1, 5), dims = ['acq_index_0', 'repetitions'])}
 )
 ```
+
+(sec-acquisition-protocols-dual-thresholded-trigger-count)=
+## Dual Thresholded Trigger Count
+
+- Referred to as `"DualThresholdedTriggerCount"`.
+- Supported by the {mod}`Qblox <quantify_scheduler.backends.qblox>` backend.
+
+```{admonition} Note
+Please also see {ref}`sec-qblox-acquisition-details` for more information on Qblox module-specific behavior of this operation.
+```
+
+Just like the `ThresholdedTriggerCount`, this acquisition protocol can be used together with the {class}`~quantify_scheduler.operations.control_flow_library.ConditionalOperation` to execute instructions based on the threshold comparison result. With `DualThresholdedTriggerCount`, there are 2 thresholds you can pass and 4 possible results:
+
+- "low" when `counts < low_threshold`,
+- "mid" when `low_threshold <= counts < high_threshold`,
+- "high" when `counts >= high_threshold`,
+- "invalid" when the counts are invalid (can occur in extremely rare cases, for example when the counter overflows).
+
+In the returned acquisition data, only the raw counts are present.
+
+You can use any number of the possible threshold comparison results by providing an appropriate label (`"label_<type>"` where type is one of "low", "mid", "high", "invalid") as an argument, and using that same label for a `ConditionalOperation`.
+
+The only available bin mode is `BinMode.APPEND`.
+
 
 (sec-acquisition-protocols-timetag)=
 ## Timetag acquisition

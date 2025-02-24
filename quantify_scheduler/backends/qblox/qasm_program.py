@@ -197,6 +197,8 @@ class QASMProgram:
             instruction
             in (
                 q1asm_instructions.ACQUIRE,
+                q1asm_instructions.ACQUIRE_DIGITAL,
+                q1asm_instructions.ACQUIRE_TIMETAGS,
                 q1asm_instructions.ACQUIRE_TTL,
                 q1asm_instructions.ACQUIRE_WEIGHED,
                 q1asm_instructions.ACQUIRE_DIGITAL,

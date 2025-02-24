@@ -66,9 +66,14 @@ from quantify_scheduler.backends.types.qblox import (
     RealInputGain,
     SequencerOptions,
 )
-from quantify_scheduler.enums import TriggerCondition
+from quantify_scheduler.enums import DualThresholdedTriggerCountLabels, TriggerCondition
 from quantify_scheduler.helpers.generate_acq_channels_data import (
     generate_acq_channels_data,
+)
+from quantify_scheduler.operations import (
+    DualThresholdedTriggerCount,
+    ThresholdedAcquisition,
+    ThresholdedTriggerCount,
 )
 from quantify_scheduler.operations.control_flow_library import (
     ConditionalOperation,
@@ -316,10 +321,10 @@ def _update_conditional_info_from_acquisition(
     cond_info: defaultdict[str, ConditionalInfo],
     compilation_config: CompilationConfig,
 ) -> None:
-    if acq_info["protocol"] == "ThresholdedAcquisition":
+    if acq_info["protocol"] == ThresholdedAcquisition.__name__:
         label = acq_info["feedback_trigger_label"]
         acq_info["feedback_trigger_address"] = cond_info[label].address
-    elif acq_info["protocol"] == "ThresholdedTriggerCount":
+    elif acq_info["protocol"] == ThresholdedTriggerCount.__name__:
         try:
             TriggerCondition(acq_info["thresholded_trigger_count"]["condition"])
         except (ValueError, TypeError):
@@ -327,6 +332,7 @@ def _update_conditional_info_from_acquisition(
                 f"Trigger condition {acq_info['thresholded_trigger_count']['condition']} is not "
                 "supported."
             )
+
         label = acq_info["feedback_trigger_label"]
         acq_info["feedback_trigger_address"] = cond_info[label].address
         module_type = _get_module_type(acq_info["port"], acq_info["clock"], compilation_config)
@@ -342,6 +348,23 @@ def _update_conditional_info_from_acquisition(
             # The QTM sends a trigger only after the acquisition is done, to a trigger address based
             # on the "trigger condition" (this is handled in acquistion info). Therefore, if a
             # QTM acquires, we check for only 0 or 1 triggers.
+            cond_info[label].trigger_invert = False
+            cond_info[label].trigger_count = 1
+    elif acq_info["protocol"] == DualThresholdedTriggerCount.__name__:
+        if "feedback_trigger_addresses" not in acq_info:
+            acq_info["feedback_trigger_addresses"] = {}
+        for kind in DualThresholdedTriggerCountLabels:  # type: ignore
+            if (label := acq_info["feedback_trigger_labels"].get(kind)) is None:
+                continue
+            module_type = _get_module_type(acq_info["port"], acq_info["clock"], compilation_config)
+            if module_type != InstrumentType.QTM:
+                raise RuntimeError(
+                    f"{DualThresholdedTriggerCount.__name__} cannot be scheduled on a module of "
+                    f"type {module_type}."
+                )
+
+            acq_info["feedback_trigger_addresses"][kind] = cond_info[label].address
+
             cond_info[label].trigger_invert = False
             cond_info[label].trigger_count = 1
     else:
@@ -396,7 +419,11 @@ def _set_conditional_info_map(
         # be passed to the correct Sequencer via ``SequencerSettings``.
         acq_info = operation["acquisition_info"]
         for info in acq_info:
-            if info.get("feedback_trigger_label") is not None:
+            if info["protocol"] in (
+                ThresholdedAcquisition.__name__,
+                ThresholdedTriggerCount.__name__,
+                DualThresholdedTriggerCount.__name__,
+            ):
                 _update_conditional_info_from_acquisition(
                     acq_info=info,
                     cond_info=conditional_info_map,
@@ -431,11 +458,40 @@ def _insert_latch_reset(
     elif operation.valid_acquisition and operation.is_conditional_acquisition:
         acq_info = operation["acquisition_info"]
         for info in acq_info:
-            if (feedback_trigger_label := info.get("feedback_trigger_label")) is not None:
-                at = abs_time_relative_to_schedule + info["t0"] + constants.MAX_MIN_INSTRUCTION_WAIT
-                for portclock in conditional_info_map[feedback_trigger_label].portclocks:
+            if info["protocol"] in (
+                ThresholdedAcquisition.__name__,
+                ThresholdedTriggerCount.__name__,
+            ):
+                if (feedback_trigger_label := info.get("feedback_trigger_label")) is not None:
+                    at = (
+                        abs_time_relative_to_schedule
+                        + info["t0"]
+                        + constants.MAX_MIN_INSTRUCTION_WAIT
+                    )
+                    for portclock in conditional_info_map[feedback_trigger_label].portclocks:
+                        schedulable = schedule.add(LatchReset(portclock=portclock))
+                        schedulable.data["abs_time"] = at
+            elif info["protocol"] == DualThresholdedTriggerCount.__name__:
+                # With this protocol, multiple labels can be used simultaneously, but for each
+                # sequencer doing conditional playback, only one LatchReset is needed each time an
+                # acquisition is done, because LatchReset resets _all_ address counters.
+                unique_portclocks_and_times = set()
+                for kind in DualThresholdedTriggerCountLabels:  # type: ignore
+                    if (label := info["feedback_trigger_labels"].get(kind)) is None:
+                        continue
+                    at_ns = round(
+                        (
+                            abs_time_relative_to_schedule
+                            + info["t0"]
+                            + constants.MAX_MIN_INSTRUCTION_WAIT
+                        )
+                        * 1e9
+                    )
+                    for portclock in conditional_info_map[label].portclocks:
+                        unique_portclocks_and_times.add((portclock, at_ns))
+                for portclock, at_ns in unique_portclocks_and_times:
                     schedulable = schedule.add(LatchReset(portclock=portclock))
-                    schedulable.data["abs_time"] = at
+                    schedulable.data["abs_time"] = at_ns * 1e-9
 
 
 def compile_conditional_playback(  # noqa: D417
@@ -508,13 +564,16 @@ def compile_conditional_playback(  # noqa: D417
     )
     all_conditional_acqs_and_control_flows.sort(key=lambda time_op_sched: time_op_sched[0])
 
-    current_ongoing_conditional_acquire = None
+    currently_active_trigger_labels: set[str] = set()
     for (
         time,
         operation,
     ) in all_conditional_acqs_and_control_flows:
         if isinstance(operation, ConditionalOperation):
-            if current_ongoing_conditional_acquire is None:
+            if (
+                operation.data["control_flow_info"]["feedback_trigger_label"]
+                not in currently_active_trigger_labels
+            ):
                 raise RuntimeError(
                     f"Conditional control flow, ``{operation}``,  found without a preceding "
                     "Conditional acquisition. "
@@ -525,20 +584,36 @@ def compile_conditional_playback(  # noqa: D417
                     "schedule.add(Measure(dev_element, ..., feedback_trigger_label=dev_element))\n"
                 )
             else:
-                current_ongoing_conditional_acquire = None
-        elif operation.valid_acquisition and operation.is_conditional_acquisition:
-            if current_ongoing_conditional_acquire is None:
-                current_ongoing_conditional_acquire = operation
-            else:
-                raise RuntimeError(
-                    "Two subsequent conditional acquisitions found, without a "
-                    "conditional control flow operation in between. Conditional "
-                    "playback will only work if a conditional measure or acquisition "
-                    "is followed by a conditional control flow operation.\n"
-                    "The following two operations caused this problem: \n"
-                    f"{current_ongoing_conditional_acquire}\nand\n"
-                    f"{operation}\n"
+                currently_active_trigger_labels.remove(
+                    operation.data["control_flow_info"]["feedback_trigger_label"]
                 )
+        elif operation.valid_acquisition and operation.is_conditional_acquisition:
+            acq_info = operation.data["acquisition_info"][0]
+            if acq_info["protocol"] == DualThresholdedTriggerCount.__name__:
+                # These labels must _all_ be added to `currently_active_trigger_labels` if they are
+                # not None and were not present before. This is because, for
+                # DualThresholdedTriggerCount, multiple subsequent conditional operations are
+                # allowed if they use different labels.
+                labels = set(
+                    acq_info["feedback_trigger_labels"][key]
+                    for key in DualThresholdedTriggerCountLabels  # type: ignore
+                    if acq_info["feedback_trigger_labels"][key] is not None
+                )
+            else:
+                labels = {acq_info["feedback_trigger_label"]}
+            if labels:
+                if currently_active_trigger_labels:
+                    raise RuntimeError(
+                        "A conditional acquisition was scheduled while some labels from previous "
+                        "conditional acquisition(s) were not used yet. To avoid ambiguity, "
+                        "conditional playback will only work if all conditional acquisition labels "
+                        "are used in a conditional control flow operation before a next "
+                        "conditional acquisition is scheduled.\nA conditional acquisition with "
+                        f"feedback labels {labels} was scheduled while the labels "
+                        f"{currently_active_trigger_labels} were not used yet:\n{operation}"
+                    )
+                else:
+                    currently_active_trigger_labels = labels
 
     return schedule
 

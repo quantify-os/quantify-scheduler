@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Hashable, Iterable
 
 from quantify_scheduler.backends.qblox import constants, q1asm_instructions
 from quantify_scheduler.backends.qblox.compiler_abc import SequencerCompiler
@@ -28,7 +28,11 @@ from quantify_scheduler.backends.types.qblox import (
     StaticHardwareProperties,
     TimetagSequencerSettings,
 )
-from quantify_scheduler.enums import TimeRef, TriggerCondition
+from quantify_scheduler.enums import (
+    DualThresholdedTriggerCountLabels,
+    TimeRef,
+    TriggerCondition,
+)
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.qblox.instrument_compilers import (
@@ -277,8 +281,8 @@ class TimetagSequencerCompiler(SequencerCompiler):
 
         """
 
-        def assert_all_op_info_values_equal(key: str) -> None:
-            unique_op_infos = set(acq.operation_info.data[key] for acq in acquisitions)
+        def assert_all_values_equal(values: Iterable[Hashable], key: str) -> None:
+            unique_op_infos = set(values)
             if len(unique_op_infos) != 1:
                 raise ValueError(
                     f"{key} must be the same for all acquisitions on a port-clock combination."
@@ -293,8 +297,12 @@ class TimetagSequencerCompiler(SequencerCompiler):
             self._settings.scope_trace_type = TimetagTraceType.TIMETAG
 
         if acq_metadata.acq_protocol in ("Timetag", "TimetagTrace"):
-            assert_all_op_info_values_equal("time_source")
-            assert_all_op_info_values_equal("time_ref")
+            assert_all_values_equal(
+                (acq.operation_info.data["time_source"] for acq in acquisitions), "time_source"
+            )
+            assert_all_values_equal(
+                (acq.operation_info.data["time_ref"] for acq in acquisitions), "time_ref"
+            )
             self._settings.time_source = acquisitions[0].operation_info.data["time_source"]
             self._settings.time_ref = acquisitions[0].operation_info.data["time_ref"]
             self._settings.time_ref_channel = acquisitions[0].operation_info.data[
@@ -343,10 +351,63 @@ class TimetagSequencerCompiler(SequencerCompiler):
                 acq_ch_metadata = acq_metadata.acq_channel_metadata_by_acq_channel_name(acq_channel)
                 acq_ch_metadata.thresholded_trigger_count = metadata
 
-    def _write_pre_wait_sync_instructions(
-        self,
-        qasm: QASMProgram,
-    ) -> None:
+        if acq_metadata.acq_protocol == "DualThresholdedTriggerCount":
+            assert_all_values_equal(
+                (
+                    acq.operation_info.data["thresholded_trigger_count"]["threshold_low"]
+                    for acq in acquisitions
+                ),
+                "threshold_low",
+            )
+            assert_all_values_equal(
+                (
+                    acq.operation_info.data["thresholded_trigger_count"]["threshold_high"]
+                    for acq in acquisitions
+                ),
+                "threshold_high",
+            )
+            for kind in DualThresholdedTriggerCountLabels:  # type: ignore
+                assert_all_values_equal(
+                    (
+                        acq.operation_info.data["feedback_trigger_addresses"].get(kind, 0)
+                        for acq in acquisitions
+                    ),
+                    f"feedback_trigger_address {kind}",
+                )
+
+            self._settings.thresholded_acq_trigger_write_threshold_low = acquisitions[
+                0
+            ].operation_info.data["thresholded_trigger_count"]["threshold_low"]
+            self._settings.thresholded_acq_trigger_write_threshold_high = acquisitions[
+                0
+            ].operation_info.data["thresholded_trigger_count"]["threshold_high"]
+            # addresses can be set to None, in which case they are converted to 0.
+            self._settings.thresholded_acq_trigger_write_address_high = (
+                acquisitions[0]
+                .operation_info.data["feedback_trigger_addresses"]
+                .get(DualThresholdedTriggerCountLabels.HIGH, 0)
+            )
+            self._settings.thresholded_acq_trigger_write_address_mid = (
+                acquisitions[0]
+                .operation_info.data["feedback_trigger_addresses"]
+                .get(DualThresholdedTriggerCountLabels.MID, 0)
+            )
+            self._settings.thresholded_acq_trigger_write_address_low = (
+                acquisitions[0]
+                .operation_info.data["feedback_trigger_addresses"]
+                .get(DualThresholdedTriggerCountLabels.LOW, 0)
+            )
+            self._settings.thresholded_acq_trigger_write_address_invalid = (
+                acquisitions[0]
+                .operation_info.data["feedback_trigger_addresses"]
+                .get(DualThresholdedTriggerCountLabels.INVALID, 0)
+            )
+            self._settings.thresholded_acq_trigger_write_en = any(
+                acquisitions[0].operation_info.data["feedback_trigger_addresses"].get(kind, 0)
+                for kind in DualThresholdedTriggerCountLabels  # type: ignore
+            )
+
+    def _write_pre_wait_sync_instructions(self, qasm: QASMProgram) -> None:
         """
         Write instructions to the QASM program that must come before the first wait_sync.
 

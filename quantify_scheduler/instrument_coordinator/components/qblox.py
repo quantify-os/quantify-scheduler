@@ -2169,6 +2169,7 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
         return {
             "TriggerCount": self._get_trigger_count_data,
             "ThresholdedTriggerCount": self._get_trigger_count_threshold_data,
+            "DualThresholdedTriggerCount": self._get_trigger_count_dual_threshold_data,
             "Timetag": self._get_timetag_data,
             "Trace": self._get_digital_trace_data,
             "TimetagTrace": self._get_timetag_trace_data,
@@ -2439,6 +2440,51 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
                 coords=None,
                 attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
             )
+
+    def _get_trigger_count_dual_threshold_data(
+        self,
+        *,
+        acq_indices: list,  # noqa: ARG002, unused argument
+        hardware_retrieved_acquisitions: dict,
+        acquisition_metadata: AcquisitionMetadata,
+        acq_duration: int,  # noqa: ARG002, unused argument
+        qblox_acq_index: int,
+        acq_channel: Hashable,
+    ) -> DataArray:
+        """
+        Retrieve the thresholded acquisition data associated with ``acq_channel`` and ``acq_index``.
+
+        Parameters
+        ----------
+        acq_indices
+            Acquisition indices.
+        hardware_retrieved_acquisitions
+            The acquisitions dict as returned by the sequencer.
+        acquisition_metadata
+            Acquisition metadata.
+        acq_duration
+            Desired maximum number of samples for the scope acquisition.
+        qblox_acq_index
+            The Qblox acquisition index from which to get the data.
+        acq_channel
+            The acquisition channel.
+
+        Returns
+        -------
+        :
+            DataArray containing thresholded acquisition data.
+
+        """
+        bin_data = self._get_bin_data(hardware_retrieved_acquisitions, qblox_acq_index)
+        acq_index_dim_name = f"acq_index_{acq_channel}"
+
+        counts = np.array(bin_data["count"]).astype(int)
+        return DataArray(
+            [counts],
+            dims=["repetition", acq_index_dim_name],
+            coords={"repetition": [0], acq_index_dim_name: range(len(counts))},
+            attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
+        )
 
 
 _ClusterModule = Union[

@@ -2,6 +2,8 @@
 # Licensed according to the LICENCE file on the main branch
 """Enums for quantify-scheduler."""
 
+from typing import Any
+
 try:
     from enum import StrEnum, unique  # type: ignore
 except ImportError:
@@ -11,7 +13,53 @@ except ImportError:
         """Enum that can be directly serialized to string."""
 
         def __str__(self) -> str:
-            return self.value
+            return str(self.value)
+
+        def __eq__(self, other: Any) -> bool:  # noqa: ANN401
+            if type(self) is type(other):
+                return str(self) == str(other)
+            elif other in [str(val) for val in type(self)]:
+                return str(self) == other
+            else:
+                return NotImplemented
+
+        def __lt__(self, other: Any) -> bool:  # noqa: ANN401
+            if type(self) is type(other):
+                return str(self) < str(other)
+            elif other in [str(val) for val in type(self)]:
+                return str(self) < other
+            else:
+                return NotImplemented
+
+        def __gt__(self, other: Any) -> bool:  # noqa: ANN401
+            if type(self) is type(other):
+                return str(self) > str(other)
+            elif other in [str(val) for val in type(self)]:
+                return str(self) > other
+            else:
+                return NotImplemented
+
+        def __le__(self, other: Any) -> bool:  # noqa: ANN401
+            if type(self) is type(other):
+                return str(self) <= str(other)
+            elif other in [str(val) for val in type(self)]:
+                return str(self) <= other
+            else:
+                return NotImplemented
+
+        def __ge__(self, other: Any) -> bool:  # noqa: ANN401
+            if type(self) is type(other):
+                return str(self) >= str(other)
+            elif other in [str(val) for val in type(self)]:
+                return str(self) >= other
+            else:
+                return NotImplemented
+
+        def __key__(self) -> str:
+            return str(self)
+
+        def __hash__(self) -> int:
+            return hash(self.__key__())
 
 
 @unique
@@ -81,3 +129,15 @@ class TriggerCondition(StrEnum):  # type: ignore
 
     LESS_THAN = "less_than"
     GREATER_THAN_EQUAL_TO = "greater_than_equal_to"
+
+
+class DualThresholdedTriggerCountLabels(StrEnum):  # type: ignore
+    """
+    All suffixes for the feedback trigger labels that can be used by
+    DualThresholdedTriggerCount.
+    """
+
+    LOW = "low"
+    MID = "mid"
+    HIGH = "high"
+    INVALID = "invalid"

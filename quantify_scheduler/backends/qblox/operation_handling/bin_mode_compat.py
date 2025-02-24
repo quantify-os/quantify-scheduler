@@ -17,6 +17,7 @@ QRM_COMPATIBLE_BIN_MODES = {
     "ThresholdedAcquisition": {BinMode.APPEND, BinMode.AVERAGE},
     "TriggerCount": {BinMode.APPEND, BinMode.SUM, BinMode.DISTRIBUTION},
     "ThresholdedTriggerCount": {BinMode.APPEND},
+    "DualThresholdedTriggerCount": {BinMode.APPEND},
     "WeightedIntegratedSeparated": {BinMode.APPEND, BinMode.AVERAGE},
     "NumericalSeparatedWeightedIntegration": {BinMode.APPEND, BinMode.AVERAGE},
     "NumericalWeightedIntegration": {BinMode.APPEND, BinMode.AVERAGE},
@@ -25,6 +26,7 @@ QRM_COMPATIBLE_BIN_MODES = {
 QTM_COMPATIBLE_BIN_MODES = {
     "TriggerCount": {BinMode.APPEND, BinMode.SUM},
     "ThresholdedTriggerCount": {BinMode.APPEND},
+    "DualThresholdedTriggerCount": {BinMode.APPEND},
     "Timetag": {BinMode.APPEND, BinMode.AVERAGE},
     "Trace": {BinMode.FIRST},
     "TimetagTrace": {BinMode.APPEND},
