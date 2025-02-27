@@ -46,7 +46,7 @@ def pep440_format(version_info):
 
     version_parts = [release]
     if dev:
-        if release.endswith("-dev") or release.endswith(".dev"):
+        if release.endswith(("-dev", ".dev")):
             version_parts.append(dev)
         else:  # prefer PEP440 over strict adhesion to semver
             version_parts.append(f".dev{dev}")
@@ -165,7 +165,7 @@ def get_cmdclass(pkg_source_path):
         def run(self) -> None:
             super().run()
 
-            src_marker = "".join(["src", os.path.sep])
+            src_marker = f"src{os.path.sep}"
 
             if pkg_source_path.startswith(src_marker):
                 path = pkg_source_path[len(src_marker) :]

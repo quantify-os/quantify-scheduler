@@ -15,10 +15,10 @@ from quantify_scheduler.backends.qblox.operations.stitched_pulse import (
 )
 
 __all__ = [
+    "ConditionalOperation",
+    "ConditionalReset",
     "LatchReset",
     "SimpleNumericalPulse",
-    "ConditionalReset",
-    "ConditionalOperation",
     "StitchedPulse",
     "StitchedPulseBuilder",
     "convert_to_numerical_pulse",

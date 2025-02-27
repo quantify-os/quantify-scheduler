@@ -35,8 +35,8 @@ QTM_COMPATIBLE_BIN_MODES = {
 
 class IncompatibleBinModeError(Exception):
     """
-    Compiler exception to be raised when a bin mode is incomatible with the acquisition protocol for
-    the module type.
+    Compiler exception to be raised when a bin mode is incompatible with the acquisition protocol
+    for the module type.
     """
 
     def __init__(
@@ -50,5 +50,5 @@ class IncompatibleBinModeError(Exception):
             f"{protocol} acquisition on the {module_type} does not support bin mode {bin_mode}."
         )
         if operation_info:
-            err_msg += f"\n\n{repr(operation_info)} caused this exception to occur."
+            err_msg += f"\n\n{operation_info!r} caused this exception to occur."
         super().__init__(err_msg)

@@ -5,9 +5,9 @@ from .pulse_factories import long_ramp_pulse, long_square_pulse, staircase_pulse
 from .stitched_pulse import StitchedPulseBuilder
 
 __all__ = [
+    "ConditionalOperation",
+    "StitchedPulseBuilder",
     "long_ramp_pulse",
     "long_square_pulse",
     "staircase_pulse",
-    "StitchedPulseBuilder",
-    "ConditionalOperation",
 ]

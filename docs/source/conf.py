@@ -284,7 +284,7 @@ suppress_warnings = [
     "mystnb.unknown_mime_type",
     "mystnb.mime_priority",
     "autodoc.RemovedInSphinx80Warning",
-    "ref.python",  # supress more than one target found warnings. TODO: fix
+    "ref.python",  # suppress more than one target found warnings. TODO: fix
 ]
 
 
@@ -369,7 +369,7 @@ set_type_checking_flag = True  # this will run `typing.TYPE_CHECKING = True`
 # Automatically generate anchors for MyST headers
 myst_heading_anchors = 3
 
-# By default execution mode is set to "cache": that allowes to store execution result
+# By default execution mode is set to "cache": that allows to store execution result
 # to local cache. However, for a purpose of faster editing we allow to override it
 # locally using MYSTNB_EXECUTION_MODE environment variable. That is useful if
 # documentation author uses `sphinx-autobuild`: setting it to "off" will disable

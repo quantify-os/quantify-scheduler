@@ -438,5 +438,5 @@ f, ax = compiled_sched.plot_pulse_diagram(x_range=(000e-6, 1800.4e-6), port_list
 As you can see, the amplitude of the pulse (which was compiled from the `X` gate) changes.
 
 ```{important}
-A few device element parameter names do not correspond to the `device_overrides` key names. The `integration_time` of device elements can be overriden with the `"acq_duration"` key. These discrepancies are rare; in all cases the device element's `factory_kwargs` must be used in the already generated compilation config.
+A few device element parameter names do not correspond to the `device_overrides` key names. The `integration_time` of device elements can be overridden with the `"acq_duration"` key. These discrepancies are rare; in all cases the device element's `factory_kwargs` must be used in the already generated compilation config.
 ```

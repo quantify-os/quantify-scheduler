@@ -48,12 +48,12 @@ def test_docs_copyright() -> None:
     current_year = str(datetime.datetime.now().year)
     cr_match = 'copyright = "2020-20.*Qblox & Orange Quantum Systems'
     with open(conf_file) as file:
-        for line in file.readlines():
+        for line in file:
             if re.match(cr_match, line):
                 if current_year in line:
                     copyright_found = True
                 break
 
     assert copyright_found, (
-        f"No correct copyright claim for {current_year} matching `{cr_match}` in {str(conf_file)}."
+        f"No correct copyright claim for {current_year} matching `{cr_match}` in {conf_file!s}."
     )

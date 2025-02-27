@@ -69,7 +69,7 @@ def test_generate_data():
 
 def test_marker_pulse_compilation_qrm(mock_setup_basic_transmon_with_standard_params):
     hardware_cfg = {
-        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",  # noqa: E501, line too long
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
         "hardware_description": {
             "cluster0": {
                 "instrument_type": "Cluster",
@@ -142,7 +142,7 @@ def test_marker_pulse_compilation_qrm(mock_setup_basic_transmon_with_standard_pa
 
 def test_marker_pulse_compilation_qcm_rf(mock_setup_basic_transmon_with_standard_params):
     hardware_cfg = {
-        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",  # noqa: E501, line too long
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
         "hardware_description": {
             "cluster0": {
                 "instrument_type": "Cluster",
@@ -213,7 +213,7 @@ def test_marker_pulse_compilation_qcm_rf(mock_setup_basic_transmon_with_standard
 
 def test_marker_pulse_added_to_operation():
     hw_config = {
-        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",  # noqa: E501, line too long
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
         "hardware_description": {
             "cluster0": {
                 "instrument_type": "Cluster",

@@ -269,7 +269,7 @@ def test_parameter_validators(electronic_q0: BasicElectronicNVElement):
     Capitalization is ignored.
     """
     skip_list = [
-        ["example_submodule_name", "example_parameter_name_skiped"],
+        ["example_submodule_name", "example_parameter_name_skipped"],
     ]
 
     mapping_pattern_val = {
@@ -304,7 +304,7 @@ def test_parameter_validators(electronic_q0: BasicElectronicNVElement):
             assert isinstance(parameter.vals, validator), (
                 f"Expected that the parameter '{submodule.name}.{parameter_name}' uses "
                 f"the validator {validator}. If this is not done on purpose, please "
-                f"skip this parameter by adding it explitly to the skip_list in this "
+                f"skip this parameter by adding it explicitly to the skip_list in this "
                 f"test."
             )
 

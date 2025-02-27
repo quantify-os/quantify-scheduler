@@ -145,7 +145,7 @@ With the development of the new style hardware configuration, we now also suppor
 
 The new `LongTimeTrace` protocol allows you to perform long traces that consist of repeated `SSBIntegrationComplex` measurements. It is practical for spin qubit backends.
 
-For the Qblox Qubit Timetag Module (QTM), we introduce a new acquisition protocol, the `TimetagTrace`. This acquisition is similar to the normal `Trace` acquisition protocol, but will return a sequence of time tags when the recorded voltage crossed a threshold. The `Timetag` protocol on the othe other hand will return the first time tag where the voltage crossed a threshold. See [tutorial:Acquisitions](https://quantify-os.org/docs/quantify-scheduler/dev/tutorials/Acquisitions.html#trigger-count-acquisition) and our [reference guide](https://quantify-os.org/docs/quantify-scheduler/dev/reference/acquisition_protocols.html#trigger-count) for more information.
+For the Qblox Qubit Timetag Module (QTM), we introduce a new acquisition protocol, the `TimetagTrace`. This acquisition is similar to the normal `Trace` acquisition protocol, but will return a sequence of time tags when the recorded voltage crossed a threshold. The `Timetag` protocol on the other hand will return the first time tag where the voltage crossed a threshold. See [tutorial:Acquisitions](https://quantify-os.org/docs/quantify-scheduler/dev/tutorials/Acquisitions.html#trigger-count-acquisition) and our [reference guide](https://quantify-os.org/docs/quantify-scheduler/dev/reference/acquisition_protocols.html#trigger-count) for more information.
 
 #### Passing device parameters to gates (!1018, !1039)
 
@@ -491,7 +491,7 @@ The Zhinst backend is now optional, meaning that installing `quantify-scheduler`
 - Operations
   - Add `ConditionalReset` gate to Qblox gate library. (!788)
   - Add `H` Hadamard gate to gate library. (!904)
-  - Remove Qblox references in the pulse and acquistion library, and make various modifications in the Qblox backend (!934):
+  - Remove Qblox references in the pulse and acquisition library, and make various modifications in the Qblox backend (!934):
     - `NumericalSeparatedWeightedIntegration` and `NumericalWeightedIntegration` no longer depend on `SAMPLING_RATE` from the Qblox backend.
     - `NcoPhaseShiftStrategy`, `NcoSetClockFrequencyStrategy` and `MarkerPulseStrategy` no longer insert `upd_param`. That is now handled by `Sequencer._insert_update_parameters` and `UpdateParameterStrategy`.
     - A check is performed during compilation (`Sequencer._check_nco_operation_timing`) to ensure enough time is left between successive frequency or phase updates.
@@ -1023,7 +1023,7 @@ The Zhinst backend is now optional, meaning that installing `quantify-scheduler`
 
 - This release introduces a new acquisition protocol: `NumericalWeightedIntegrationComplex`, that allows users perform a weighted integration acquisition.
 - The schedule library now has a new schedule that performs an NCO frequency sweep in a dark ESR experiment on an NV-center.
-- A lot of code that was marked as deprecated has been removed. Please checkout our [deprecated code suggestions](https://quantify-os.org/docs/quantify-scheduler/v0.13.0/examples/deprecated.html) on how to modify you code to ammend any problems caused by this removal.
+- A lot of code that was marked as deprecated has been removed. Please checkout our [deprecated code suggestions](https://quantify-os.org/docs/quantify-scheduler/v0.13.0/examples/deprecated.html) on how to modify you code to amend any problems caused by this removal.
 - Many improvements and small bug fixes.
 
 ### Breaking changes
@@ -1625,7 +1625,7 @@ For help in migrating from deprecated methods, see [Quantify Deprecated Code Sug
 - Changes to addressing of where a pulse is played !9 (#10)
 - Renamed doc -docs folder for consistency #18 (!12)
 - Moved test folder outside of project #19 (!14)
-- Add copyright notices and cleanup documenation #21 (!13)
+- Add copyright notices and cleanup documentation #21 (!13)
 - Add installation tip for plotly dependency in combination with jupyter #24 (!15)
 
 ```{note}

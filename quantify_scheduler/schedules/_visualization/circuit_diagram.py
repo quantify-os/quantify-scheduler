@@ -129,8 +129,8 @@ def meter(
     ax: Axes,
     time: float,
     device_element_idxs: list[int],
-    text: str,
-    **kw,  # Noqa: ARG001
+    text: str,  # noqa: ARG001
+    **kw,
 ) -> None:
     """
     A simple meter to depict a measurement.
@@ -166,8 +166,8 @@ def acq_meter(
     ax: Axes,
     time: float,
     device_element_idxs: list[int],
-    text: str,
-    **kw,  # Noqa: ARG001
+    text: str,  # noqa: ARG001
+    **kw,
 ) -> None:
     """
     Variation of the meter to depict a acquisition.
@@ -226,8 +226,8 @@ def cnot(
     ax: Axes,
     time: float,
     device_element_idxs: list[int],
-    text: str,
-    **kw,  # Noqa: ARG001
+    text: str,  # noqa: ARG001
+    **kw,  # noqa: ARG001
 ) -> None:
     """
     Markers to denote a CNOT gate between two device_elements.
@@ -256,8 +256,8 @@ def cz(
     ax: Axes,
     time: float,
     device_element_idxs: list[int],
-    text: str,
-    **kw,  # Noqa: ARG001
+    text: str,  # noqa: ARG001
+    **kw,  # noqa: ARG001
 ) -> None:
     """
     Markers to denote a CZ gate between two device_elements.
@@ -314,7 +314,7 @@ def reset(ax: Axes, time: float, device_element_idxs: list[int], text: str, **kw
 
 
 class _ControlFlowEnd(Enum):
-    """Identifer for end of a control-flow scope."""
+    """Identifier for end of a control-flow scope."""
 
     LOOP_END = auto()
     CONDI_END = auto()

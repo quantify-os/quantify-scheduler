@@ -132,5 +132,5 @@ class CRCount(Operation):
             f"acq_channel={acq_channel}, "
             f"acq_index={acq_index}, "
             f'acq_protocol="{acq_protocol}", '
-            f"bin_mode={str(bin_mode)})"
+            f"bin_mode={bin_mode!s})"
         )

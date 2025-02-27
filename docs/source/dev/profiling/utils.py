@@ -45,7 +45,7 @@ def initialize_hardware(
     ip : str | None, optional
         ip address of the qblox cluster. Will use a dummy cluster if None, by default None
     live_plotting : bool, optional
-        wether live plotting should be enabled, by default False
+        whether live plotting should be enabled, by default False
 
     Returns
     -------
@@ -103,7 +103,7 @@ def initialize_hardware(
 
 
 def set_up_config() -> tuple[str | None, dict, Path | str]:
-    """Provide the location of config file before runing an ip of the cluster."""
+    """Provide the location of config file before running an ip of the cluster."""
     ip = os.environ.get("CLUSTER_IP")
     hw_config_path = os.environ.get("HARDWARE_CONFIG_PATH")
     qdevice_path = os.environ.get("QUANTUM_DEVICE_CONFIG_PATH")

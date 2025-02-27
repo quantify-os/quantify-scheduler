@@ -548,9 +548,9 @@ class SuddenNetZeroPulse(Operation):
 
     def __init__(
         self,
-        amp_A: float,  # noqa N803: upper case in variable
-        amp_B: float,  # noqa N803: upper case in variable
-        net_zero_A_scale: float,  # noqa N803: upper case in variable
+        amp_A: float,
+        amp_B: float,
+        net_zero_A_scale: float,
         t_pulse: float,
         t_phi: float,
         t_integral_correction: float,
@@ -825,7 +825,7 @@ class GaussPulse(Operation):
     amplitude and sigma.
     If sigma is not specified it is set to 1/4 of the duration.
 
-    The waveform is generated using :func:`.waveforms.drag` whith a D_amp set to zero,
+    The waveform is generated using :func:`.waveforms.drag` with a D_amp set to zero,
     corresponding to a Gaussian pulse.
 
     Parameters

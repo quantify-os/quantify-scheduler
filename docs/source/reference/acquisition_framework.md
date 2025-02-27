@@ -61,7 +61,7 @@ Should you find a case where the two directly contradict each other, this is con
 
 ### Measure
 
-In quantify, a {class}`~quantify_scheduler.operations.gate_library.Measure`ment at the quantum-circuit layer can be expressed as an {class}`~quantify_scheduler.operations.acquisition_library.Acquisition` at the quantum-device layer. 
+In quantify, a {class}`~quantify_scheduler.operations.gate_library.Measure` at the quantum-circuit layer can be expressed as an {class}`~quantify_scheduler.operations.acquisition_library.Acquisition` at the quantum-device layer. 
 
 When representing a {class}`~quantify_scheduler.operations.gate_library.Measure` at the quantum-circuit layer, the default behavior is that the `AcquisitionChannel`, and `AcquisitionProtocol` are taken from the {class}`~quantify_scheduler.backends.graph_compilation.DeviceCompilationConfig`, and the `AcquisitionIndex` is determined automatically. 
 However, a user may want to specify these parameters manually and thereby overwrite the defaults that are specified in the {class}`~quantify_scheduler.backends.graph_compilation.DeviceCompilationConfig`. 
@@ -142,7 +142,7 @@ In the resulting `RawDataset`, the acquisition index corresponds to a data array
 ### AcquisitionCoordinates
 `AcquisitionCoordinates` are an additional piece of information associated with an acquisition, provided by a user during the schedule construction.
 
-In a `RawDataset` coordinates correspond to `xarray` coordinates along the `AcquistionIndex` dimension of the acquisition channel data arrays.
+In a `RawDataset` coordinates correspond to `xarray` coordinates along the `AcquisitionIndex` dimension of the acquisition channel data arrays.
 Coordinates provided by a user are formatted as a data array using `numpy` conventions, thus, for performance reasons they should have uniform data type that can be handled with `numpy`.
 `AcquisitionCoordinates` can optionally have `units` and `long_name` attributes associated with it.
 

@@ -498,7 +498,7 @@ def _compile_multiplexed(
             operation_has_device_representation = True
 
     if len(inner_subschedules) != 0:
-        inner_schedule: Schedule = Schedule(f"Inner schedule for {str(operation)}")
+        inner_schedule: Schedule = Schedule(f"Inner schedule for {operation!s}")
         # All operations in the inner schedule
         # should happen at the same time;
         # this reference time is the start time

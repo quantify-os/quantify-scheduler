@@ -225,7 +225,7 @@ class ScheduleGettable:
                 f"('{instr_coordinator.name}') "
                 f"did not return any data, but was expected to return data."
             )
-        # Return xarray simular to Instrument coordinator
+        # Return xarray similar to Instrument coordinator
         if self._return_xarray:
             return acquired_data
 

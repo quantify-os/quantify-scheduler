@@ -123,7 +123,7 @@ def test_determine_compensation_pulse_error(operation, expected_error):
 
 
 @pytest.mark.parametrize("is_circuit_level", [False, True])
-def test_insert_compensation_pulses(  # noqa PLR915
+def test_insert_compensation_pulses(  # noqa: PLR0915
     is_circuit_level,
     mock_setup_basic_transmon_with_standard_params,
     get_subschedule_operation,

@@ -6,3 +6,23 @@ include:
   - project: "quantify-os/ci"
     ref: main
     file: "/python-quantify.yml"
+
+Code quality report:
+  extends:
+    - .common - Linux
+    - .rules - test pipeline
+  stage: Test
+  image: $CI_REGISTRY_IMAGE/test/python${default_python_version}:${CI_COMMIT_REF_SLUG}
+  script:
+    - |
+      RUFF_WARNINGS=`python -c '
+      import sys, tomli
+      with open("pyproject.toml", "rb") as f:
+          d = tomli.load(f)
+      sys.stdout.write(str(d["tool"]["ruff-warnings"]["lint"]["extend-select"]))
+      '`
+    - ruff check --config "lint.extend-select = $RUFF_WARNINGS" --output-format gitlab > code-quality-report.json
+  allow_failure: true
+  artifacts:
+      reports:
+          codequality: code-quality-report.json

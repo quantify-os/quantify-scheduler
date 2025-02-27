@@ -220,7 +220,7 @@ class OperationTimingInfo:
     def from_operation_and_schedulable(
         cls,
         operation: Operation,
-        schedulable: Schedulable,  # noqa: ANN102
+        schedulable: Schedulable,
     ) -> OperationTimingInfo:
         """Create an ``OperationTimingInfo`` from an operation and a schedulable."""
         start: float = schedulable.data["abs_time"]
@@ -346,7 +346,7 @@ def _update_conditional_info_from_acquisition(
             cond_info[label].trigger_count = acq_info["thresholded_trigger_count"]["threshold"]
         elif module_type == InstrumentType.QTM:
             # The QTM sends a trigger only after the acquisition is done, to a trigger address based
-            # on the "trigger condition" (this is handled in acquistion info). Therefore, if a
+            # on the "trigger condition" (this is handled in acquisition info). Therefore, if a
             # QTM acquires, we check for only 0 or 1 triggers.
             cond_info[label].trigger_invert = False
             cond_info[label].trigger_count = 1
@@ -904,7 +904,8 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
         return data
 
     @model_validator(mode="before")
-    def _validate_versioning(cls, config: dict[str, Any]) -> dict[str, Any]:  # noqa: N805
+    @classmethod
+    def _validate_versioning(cls, config: dict[str, Any]) -> dict[str, Any]:
         if "version" in config:  # noqa: SIM102
             if config["version"] not in ["0.1", "0.2"]:
                 raise ValueError("Unknown hardware config version.")
@@ -1136,7 +1137,7 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
                                 ):
                                     raise ValueError(
                                         f"Provided channel names for port-clock {pc} are defined "
-                                        f"for diferent modules, but they must be defined in the "
+                                        f"for different modules, but they must be defined in the "
                                         f"same module."
                                     )
                                 pc_to_path[pc].add_channel_name_measure(path.channel_name)
@@ -1345,7 +1346,7 @@ class _QRMCompilationConfig(_ClusterModuleCompilationConfig):
 
     def _validate_channel_name_measure(self) -> None:
         for pc, path in self.portclock_to_path.items():
-            if path.channel_name_measure is not None:  # noqa: SIM102
+            if path.channel_name_measure is not None:
                 if len(path.channel_name_measure) == 1:
                     channel_name_measure = next(iter(path.channel_name_measure))
                     if not (
@@ -1453,7 +1454,7 @@ class _SequencerCompilationConfig(DataStructure):
     distortion_correction: SoftwareDistortionCorrection | None
     """Distortion corrections that should be applied to waveforms on this sequencer."""
     lo_name: str | None
-    """Local oscilator associated to this sequencer."""
+    """Local oscillator associated to this sequencer."""
     modulation_frequencies: ModulationFrequencies
     """Modulation frequencies associated to this sequencer."""
     mixer_corrections: QbloxMixerCorrections | None

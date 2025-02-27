@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 def test_timetag_measurement_control(
     mocker,
     make_cluster_component,
-    mock_setup_basic_nv_qblox_hardware,  # noqa: F811
+    mock_setup_basic_nv_qblox_hardware,
 ):
     ic: InstrumentCoordinator = mock_setup_basic_nv_qblox_hardware["instrument_coordinator"]
     cluster = make_cluster_component(name="cluster0")
@@ -111,7 +111,7 @@ def test_timetag_measurement_control(
 def test_qtm_trace_measurement_control(
     mocker,
     make_cluster_component,
-    mock_setup_basic_nv_qblox_hardware,  # noqa: F811
+    mock_setup_basic_nv_qblox_hardware,
 ):
     ic: InstrumentCoordinator = mock_setup_basic_nv_qblox_hardware["instrument_coordinator"]
     cluster = make_cluster_component(name="cluster0")

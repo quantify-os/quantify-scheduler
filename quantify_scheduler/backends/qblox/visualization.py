@@ -24,13 +24,13 @@ from matplotlib.ticker import MaxNLocator
 
 
 def _display_dict(settings: dict[str, Any]) -> None:
-    df = pd.DataFrame([settings]).T
+    df = pd.DataFrame([settings]).T  # noqa: PD901
     df.columns = ["value"]
     df.columns.name = "setting"  # type: ignore
     display(df)
 
 
-def _display_compiled_instructions(  # noqa: PLR0915 (Too many branches)
+def _display_compiled_instructions(
     data: dict[Any, Any], parent_tab_name: str | None = None
 ) -> ipywidgets.Tab | None:
     """

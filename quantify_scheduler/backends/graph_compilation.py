@@ -18,11 +18,11 @@ import networkx as nx
 from pydantic import Field, field_serializer, field_validator
 
 from quantify_scheduler.backends.types.common import (
-    HardwareCompilationConfig,  # noqa: TCH001 pydantic needs it
+    HardwareCompilationConfig,  # noqa: TC001 pydantic needs it
 )
 from quantify_scheduler.helpers.importers import export_python_object_to_path_string
 from quantify_scheduler.operations.operation import (
-    Operation,  # noqa: TCH001 circular import if moved to TYPE_CHECKING
+    Operation,  # noqa: TC001 circular import if moved to TYPE_CHECKING
 )
 from quantify_scheduler.schedules.schedule import (
     CompiledSchedule,
@@ -68,7 +68,7 @@ class SimpleNodeConfig(DataStructure):
     @classmethod
     def _import_compilation_func_if_str(
         cls,
-        fun: Callable[[Schedule, Any], Schedule],  # noqa: N805
+        fun: Callable[[Schedule, Any], Schedule],
     ) -> Callable[[Schedule, Any], Schedule]:
         if isinstance(fun, str):
             return deserialize_function(fun)
@@ -111,7 +111,7 @@ class OperationCompilationConfig(DataStructure):
     @classmethod
     def _import_factory_func_if_str(
         cls,
-        fun: str | Callable[..., Operation],  # noqa: N805
+        fun: str | Callable[..., Operation],
     ) -> Callable[..., Operation]:
         if isinstance(fun, str):
             return deserialize_function(fun)
@@ -262,7 +262,7 @@ class CompilationConfig(DataStructure):
     @classmethod
     def _import_backend_if_str(
         cls,
-        class_: type[QuantifyCompiler] | str,  # noqa: N805
+        class_: type[QuantifyCompiler] | str,
     ) -> type[QuantifyCompiler]:
         if isinstance(class_, str):
             return deserialize_class(class_)
@@ -290,11 +290,11 @@ class CompilationNode:
         self.name = name
 
     # used as the key in a networkx graph so we like this to be a simple string.
-    def __repr__(self) -> str:  # noqa: D105
+    def __repr__(self) -> str:
         return self.name
 
     # used as a label when visualizing using networkx
-    def __str__(self) -> str:  # noqa: D105
+    def __str__(self) -> str:
         return self.name
 
     def _compilation_func(
@@ -615,7 +615,7 @@ class SerialCompilationConfig(CompilationConfig):
     @classmethod
     def _import_backend_if_str(
         cls,
-        class_: type[SerialCompiler] | str,  # noqa: N805
+        class_: type[SerialCompiler] | str,
     ) -> type[SerialCompiler]:
         if isinstance(class_, str):
             return deserialize_class(class_)

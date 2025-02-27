@@ -1129,14 +1129,16 @@ class _QCMRFComponent(_RFComponent, _QCMComponent):
         if (
             settings.out0_lo_freq_cal_type_default == LoCalEnum.ON_LO_FREQ_CHANGE
             and lo0_freq_changed
-            or settings.out0_lo_freq_cal_type_default == LoCalEnum.ON_LO_INTERM_FREQ_CHANGE
+        ) or (
+            settings.out0_lo_freq_cal_type_default == LoCalEnum.ON_LO_INTERM_FREQ_CHANGE
             and (lo0_freq_changed or any_nco_frequencies_changed_lo0)
         ):
             self.instrument.out0_lo_cal()
         if (
             settings.out1_lo_freq_cal_type_default == LoCalEnum.ON_LO_FREQ_CHANGE
             and lo1_freq_changed
-            or settings.out1_lo_freq_cal_type_default == LoCalEnum.ON_LO_INTERM_FREQ_CHANGE
+        ) or (
+            settings.out1_lo_freq_cal_type_default == LoCalEnum.ON_LO_INTERM_FREQ_CHANGE
             and (lo1_freq_changed or any_nco_frequencies_changed_lo1)
         ):
             self.instrument.out1_lo_cal()
@@ -1188,7 +1190,8 @@ class _QRMRFComponent(_RFComponent, _QRMComponent):
         if (
             settings.out0_lo_freq_cal_type_default == LoCalEnum.ON_LO_FREQ_CHANGE
             and lo0_freq_changed
-            or settings.out0_lo_freq_cal_type_default == LoCalEnum.ON_LO_INTERM_FREQ_CHANGE
+        ) or (
+            settings.out0_lo_freq_cal_type_default == LoCalEnum.ON_LO_INTERM_FREQ_CHANGE
             and (lo0_freq_changed or any_nco_frequencies_changed_lo0)
         ):
             self.instrument.out0_in0_lo_cal()
@@ -2050,7 +2053,7 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
     def _get_trigger_count_data(
         self,
         *,
-        acq_indices: list,  # noqa: ARG002 unused argument
+        acq_indices: list,
         hardware_retrieved_acquisitions: dict,
         acquisition_metadata: AcquisitionMetadata,
         acq_duration: int,  # noqa: ARG002 unused argument
@@ -2205,7 +2208,7 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
     def _get_trigger_count_data(
         self,
         *,
-        acq_indices: list,  # noqa: ARG002, unused argument
+        acq_indices: list,
         hardware_retrieved_acquisitions: dict,
         acquisition_metadata: AcquisitionMetadata,
         acq_duration: int,  # noqa: ARG002, unused argument

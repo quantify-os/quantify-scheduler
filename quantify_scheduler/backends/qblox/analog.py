@@ -1,6 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-"""Utilty classes for Qblox analog modules."""
+"""Utility classes for Qblox analog modules."""
 
 from __future__ import annotations
 
@@ -328,7 +328,7 @@ class AnalogSequencerCompiler(SequencerCompiler):
                     "Attempting to perform square acquisition with a duration of "
                     f"{acq_duration_ns} ns. Please ensure the duration is a multiple "
                     f"of {constants.GRID_TIME} ns.\n\nException caused by "
-                    f"{repr(op_strat)}."
+                    f"{op_strat!r}."
                 )
             if integration_length is None:
                 integration_length = acq_duration_ns
@@ -637,7 +637,7 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
         self,
         external_los: dict[str, instrument_compilers.LocalOscillatorCompiler] | None = None,
         schedule_resources: dict[str, Resource] | None = None,
-        **kwargs,  # noqa: ARG002  (unused arg necessary to fit signature)
+        **kwargs,  # noqa: ARG002 (unused arg necessary to fit signature)
     ) -> None:
         """
         Performs the logic needed before being able to start the compilation. In effect,
@@ -908,7 +908,7 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
             Multiple sequencers have to perform trace acquisition. This is not
             supported by the hardware.
 
-        """  # noqa: E501 line too long
+        """
 
         def is_scope_acquisition(acquisition: OpInfo) -> bool:
             return acquisition.data["protocol"] == "Trace"

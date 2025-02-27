@@ -18,8 +18,8 @@ from quantify_scheduler.schedules import Schedulable, Schedule
 
 def crosstalk_compensation(
     schedule: Schedule,
-    config: CompilationConfig,  # noqa: D417
-) -> Schedule:  # noqa: D103
+    config: CompilationConfig,
+) -> Schedule:
     """
     Apply crosstalk compensation to the given schedule based on the provided configuration.
     It adds compensation operations to port clocks affected by crosstalk.

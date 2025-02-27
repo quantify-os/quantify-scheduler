@@ -8,7 +8,7 @@ from typing import Any
 
 def import_python_object_from_string(
     function_string: str,
-) -> Any:  # noqa ANN401  (can return Any object)
+) -> Any:  # noqa: ANN401 (can return Any object)
     """
     Import a python object from a string.
 
@@ -24,7 +24,7 @@ def import_python_object_from_string(
 
 
 def export_python_object_to_path_string(
-    obj: Any,  # noqa: ANN401  (object can't be a build in type)
+    obj: Any,  # noqa: ANN401 (object can't be a builtin type)
 ) -> str:
     """
     Get the absolute path (dot-separated) to a python object.
@@ -45,5 +45,5 @@ def export_python_object_to_path_string(
     """
     module = obj.__module__
     name = obj.__name__
-    path = name if module == "__main__" else ".".join([module, name])
+    path = name if module == "__main__" else f"{module}.{name}"
     return path

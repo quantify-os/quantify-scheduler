@@ -365,7 +365,7 @@ def generate_acq_channels_data(
     # We choose the following convention: the acquisition indices start from 0, increment by 1, this
     # is a restriction **only** where the acquisition index is explicitly set by the user.
     # (We could have chosen a different convention, but probably for the user this is easier than
-    # the other convention that the acqusition indices are incremented by one for all acquisitions,
+    # the other convention that the acquisition indices are incremented by one for all acquisitions,
     # even when the acquisition index is not explicitly specified by the user.)
     # Then, the only way to generate the acquisition mapping is by first iterating through the
     # acquisition operations where the acquisition index has been explicitly defined.

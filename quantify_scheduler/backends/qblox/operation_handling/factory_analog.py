@@ -63,7 +63,7 @@ def _get_acquisition_strategy(
     except KeyError as err:
         raise ValueError(
             f'Unknown acquisition protocol "{protocol}" encountered in '
-            f"Qblox backend when processing acquisition {repr(operation_info)}."
+            f"Qblox backend when processing acquisition {operation_info!r}."
         ) from err
     if operation_info.data["bin_mode"] not in compatible_bin_modes:
         raise IncompatibleBinModeError(

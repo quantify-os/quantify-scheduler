@@ -289,7 +289,7 @@ class Operation(JSONSchemaValMixin, UserDict):
             raise RuntimeError(
                 f"Operation {self.name} is not a valid pulse or acquisition."
                 f" Please check whether the device compilation has been performed successfully."
-                f" Operation data: {repr(self)}"
+                f" Operation data: {self!r}"
             )
 
     @classmethod

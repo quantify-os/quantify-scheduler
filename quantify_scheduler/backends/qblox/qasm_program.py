@@ -334,7 +334,7 @@ class QASMProgram:
             self.auto_wait(wait_time)
         elif wait_time < 0 and operation.is_parameter_instruction:
             raise ValueError(
-                f"Invalid timing. {repr(operation)} cannot be started at this order or time. "
+                f"Invalid timing. {operation!r} cannot be started at this order or time. "
                 f"Please try to reorder your operations by adding this operation "
                 "before any other operation (possibly at the same time) that happens at that time."
             )
@@ -343,15 +343,15 @@ class QASMProgram:
             # is simultaneously running, it is allowed.
             raise ValueError(
                 f"Invalid timing. Attempting to wait for {wait_time} "
-                f"ns before {repr(operation)}. Please note that a wait time of at least"
+                f"ns before {operation!r}. Please note that a wait time of at least"
                 f" {constants.MIN_TIME_BETWEEN_OPERATIONS} ns is required between "
                 f"operations.\nAre multiple operations being started at the same time?"
             )
 
     def set_gain_from_amplitude(
         self,
-        amplitude_path_I: float,  # noqa N803 - uppercase in name
-        amplitude_path_Q: float,  # noqa N803 - uppercase in name
+        amplitude_path_I: float,
+        amplitude_path_Q: float,
         operation: OpInfo | None,
     ) -> None:
         """
@@ -427,7 +427,7 @@ class QASMProgram:
         if np.abs(val) > 1.0:
             raise ValueError(
                 f"{param} is set to {val}. Parameter must be in the range "
-                f"-1.0 <= {param} <= 1.0 for {repr(operation)}."
+                f"-1.0 <= {param} <= 1.0 for {operation!r}."
             )
         max_gain = immediate_size // 2
         return max(-max_gain, min(round(val * max_gain), max_gain - 1))
@@ -465,7 +465,6 @@ class QASMProgram:
     def conditional(self, operation: ConditionalStrategy) -> Generator[None, None, None]:
         """
         Defines a conditional block in the QASM program.
-
 
         When this context manager is entered/exited it will insert additional
         ``set_cond`` QASM instructions in the program that specify the

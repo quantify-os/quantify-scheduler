@@ -159,8 +159,7 @@ def test_determine_clock_lo_interm_freqs(
     if (
         downconverter_freq is not None
         and (downconverter_freq < 0 or downconverter_freq < clock_freq)
-        or expected_freqs in ("overconstrained", "underconstrained")
-    ):
+    ) or expected_freqs in ("overconstrained", "underconstrained"):
         context_mngr = pytest.raises(ValueError)
 
     with context_mngr as error:

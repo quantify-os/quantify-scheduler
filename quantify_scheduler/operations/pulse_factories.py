@@ -438,6 +438,6 @@ def spin_init_pulse(
     return spin_init_schedule
 
 
-def non_implemented_pulse(**kwargs) -> Schedule:  # noqa: ARG001
+def non_implemented_pulse(**kwargs) -> Schedule:
     """Raise an error indicating that the requested gate or pulse is not implemented."""
     raise NotImplementedError("The gate or pulse you are trying to use is not implemented yet.")

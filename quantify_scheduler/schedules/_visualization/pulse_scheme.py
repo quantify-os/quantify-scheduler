@@ -139,7 +139,7 @@ def mw_pulse(
     elif modulation == "high":
         mod = env_pos * np.sin(5 * np.pi * 3 / width * x + phase)
     else:
-        raise ValueError()
+        raise ValueError
 
     ax.plot(x, env_pos + y_offs, "--", color=color, **plot_kws)
     ax.plot(x, env_neg + y_offs, "--", color=color, **plot_kws)
@@ -226,7 +226,7 @@ def flux_pulse(
     return pos + width
 
 
-def ram_Z_pulse(  # noqa N802 uppercase Z is allowed here
+def ram_Z_pulse(
     ax: Axes,
     pos: float,
     y_offs: float = 0.0,
@@ -493,15 +493,15 @@ def box_text(
 
 
 @deprecated("0.25.0", mw_pulse)
-def mwPulse(*args, **kwargs):  # noqa ANN202, N802 deprecated
+def mwPulse(*args, **kwargs):  # noqa: ANN202, N802
     return mw_pulse(*args, **kwargs)
 
 
 @deprecated("0.25.0", flux_pulse)
-def fluxPulse(*args, **kwargs):  # noqa ANN202, N802 deprecated
+def fluxPulse(*args, **kwargs):  # noqa: ANN202, N802
     return flux_pulse(*args, **kwargs)
 
 
 @deprecated("0.25.0", ram_Z_pulse)
-def ramZPulse(*args, **kwargs):  # noqa ANN202, N802 deprecated
+def ramZPulse(*args, **kwargs):  # noqa: ANN202, N802
     return ram_Z_pulse(*args, **kwargs)

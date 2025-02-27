@@ -30,7 +30,7 @@ class Edge(Instrument):
         self,
         parent_element_name: str,
         child_element_name: str,
-        **kwargs,  # noqa: ANN003
+        **kwargs,
     ) -> None:
         self._parent_element_name = parent_element_name
         self._child_element_name = child_element_name

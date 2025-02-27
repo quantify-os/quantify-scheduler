@@ -213,7 +213,7 @@ class DispersiveMeasurementSpin(DispersiveMeasurement):
 
 class BasicSpinElement(DeviceElement):
     """
-    A device element representing a Loss–DiVincenzo Spin qubit.
+    A device element representing a Loss-DiVincenzo Spin qubit.
     The element refers to the intrinsic spin-1/2 degree of freedom of
     individual electrons/holes trapped in quantum dots.
     The charge of the particle is coupled to a resonator.

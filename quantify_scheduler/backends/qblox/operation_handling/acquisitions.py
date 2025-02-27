@@ -60,7 +60,7 @@ class AcquisitionStrategyPartial(IOperationStrategy):
                 f"Please ensure a minimum interval of "
                 f"{constants.MIN_TIME_BETWEEN_ACQUISITIONS} ns between "
                 f"acquisitions.\n\nError caused by acquisition:\n"
-                f"{repr(self.operation_info)}."
+                f"{self.operation_info!r}."
             )
 
         qasm_program.time_last_acquisition_triggered = qasm_program.elapsed_time
@@ -210,7 +210,7 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
                     f"specified as acquisition weights. Qblox hardware "
                     f"only supports 2 real valued arrays as acquisition "
                     f"weights.\n\nException caused by "
-                    f"{repr(self.operation_info)}."
+                    f"{self.operation_info!r}."
                 )
             if "duration" in parameterized_waveform:
                 duration = parameterized_waveform["duration"]
@@ -252,7 +252,7 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
                 raise ValueError(
                     f"Complex weights not supported by hardware. Please use two 1d "
                     f"real-valued weights.\n\nException was triggered because of "
-                    f"{repr(self.operation_info)}."
+                    f"{self.operation_info!r}."
                 )
             waveform_index = helpers.add_to_wf_dict_if_unique(
                 wf_dict=wf_dict, waveform=waveform_data

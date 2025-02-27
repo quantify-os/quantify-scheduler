@@ -99,7 +99,7 @@ def generate_waveform_names_from_uuid(uuid: object) -> tuple[str, str]:
         Name for the Q waveform.
 
     """
-    return f"{str(uuid)}_I", f"{str(uuid)}_Q"
+    return f"{uuid!s}_I", f"{uuid!s}_Q"
 
 
 def generate_uuid_from_wf_data(wf_data: np.ndarray, decimals: int = 12) -> str:
@@ -783,7 +783,7 @@ def assign_pulse_and_acq_info_to_devices(
             raise RuntimeError(
                 f"Operation is not a valid pulse or acquisition. Please check"
                 f" whether the device compilation been performed successfully. "
-                f"Operation data: {repr(op_data)}"
+                f"Operation data: {op_data!r}"
             )
 
         for pulse_data in op_data.data["pulse_info"]:
@@ -800,7 +800,7 @@ def assign_pulse_and_acq_info_to_devices(
                     f"align with a grid time of {constants.GRID_TIME} ns. Please make "
                     f"sure the start time of all operations is a multiple of "
                     f"{constants.GRID_TIME} ns.\n\nOffending operation:"
-                    f"\n{repr(op_data)}."
+                    f"\n{op_data!r}."
                 ) from exc
 
             if pulse_data.get("reference_magnitude", None) is not None:
@@ -961,7 +961,7 @@ def single_scope_mode_acquisition_raise(
     )
 
 
-def _generate_new_style_hardware_compilation_config(  # noqa PLR0915 too many statements. Remove on duplication
+def _generate_new_style_hardware_compilation_config(  # noqa: PLR0915
     old_style_config: dict,
 ) -> dict:
     """
@@ -1368,7 +1368,7 @@ def _generate_new_style_hardware_compilation_config(  # noqa PLR0915 too many st
         "quantify-scheduler >= 1.0.0. Please use a `HardwareCompilationConfig` instead. For "
         "more information on how to migrate from old- to new-style hardware specification, "
         "please visit "
-        "https://quantify-os.org/docs/quantify-scheduler/dev/examples/hardware_config_migration.html"  # noqa: E501 Line too long
+        "https://quantify-os.org/docs/quantify-scheduler/dev/examples/hardware_config_migration.html"
         " in the documentation.",
         FutureWarning,
     )

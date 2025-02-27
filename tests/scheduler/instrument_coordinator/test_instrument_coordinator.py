@@ -58,12 +58,12 @@ def fixture_component_names() -> int:
     return [f"dev{i}" for i in range(3)]
 
 
-# creates a few dummy components avialable to be used in each test
+# creates a few dummy components available to be used in each test
 @pytest.fixture(scope="function", name="dummy_components")
 def fixture_dummy_components(
     mocker, request, component_names
 ) -> base_component.InstrumentCoordinatorComponentBase:
-    # Create a QCoDeS intrument for realistic emulation
+    # Create a QCoDeS instrument for realistic emulation
     instruments = [Instrument(name) for name in component_names]
     components = []
 

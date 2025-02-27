@@ -400,7 +400,7 @@ class DispersiveMeasurement(InstrumentChannel):
         """The phase rotation in degrees required to perform thresholded
         acquisition. Note that rotation is performed before the threshold. For
         more details see
-        :class:`~quantify_scheduler.operations.acquisition_library.ThresholdedAcquisition`."""  # noqa
+        :class:`~quantify_scheduler.operations.acquisition_library.ThresholdedAcquisition`."""
 
         self.acq_threshold = ManualParameter(
             "acq_threshold",
@@ -409,7 +409,7 @@ class DispersiveMeasurement(InstrumentChannel):
         )
         """The threshold value against which the rotated and integrated result
         is compared against. For more details see
-        :class:`~quantify_scheduler.operations.acquisition_library.ThresholdedAcquisition`."""  # noqa
+        :class:`~quantify_scheduler.operations.acquisition_library.ThresholdedAcquisition`."""
 
         self.num_points = ManualParameter(
             name="num_points",

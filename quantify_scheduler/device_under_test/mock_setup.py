@@ -33,7 +33,7 @@ def set_up_mock_transmon_setup() -> dict:
 
     Returns a dictionary containing the instruments that are instantiated as part of
     this setup. The keys corresponds to the names of the instruments.
-    """  # noqa: D301
+    """
     meas_ctrl = MeasurementControl("meas_ctrl")
     instrument_coordinator = InstrumentCoordinator(
         name="instrument_coordinator", add_default_generic_icc=False

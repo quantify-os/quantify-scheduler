@@ -38,7 +38,7 @@ class NDArray(np.ndarray):
         return np.asarray(array_like).view(cls)
 
     @classmethod
-    def __get_pydantic_core_schema__(  # noqa: D105
+    def __get_pydantic_core_schema__(
         cls: type[NDArray],
         _source_type: Any,  # noqa: ANN401
         _handler: Callable[[Any], core_schema.CoreSchema],
@@ -97,12 +97,12 @@ class Graph(nx.Graph):
     """Pydantic-compatible version of :class:`networkx.Graph`."""
 
     # Avoid showing inherited init docstring (which leads to cross-reference issues)
-    def __init__(self, incoming_graph_data=None, **attr) -> None:  # noqa: ANN001, ANN003
+    def __init__(self, incoming_graph_data=None, **attr) -> None:  # noqa: ANN001
         """Create a new graph instance."""
         super().__init__(incoming_graph_data, **attr)
 
     @classmethod
-    def __get_pydantic_core_schema__(  # noqa: D105
+    def __get_pydantic_core_schema__(
         cls: type[Graph],
         _source_type: Any,  # noqa: ANN401
         _handler: Callable[[Any], core_schema.CoreSchema],

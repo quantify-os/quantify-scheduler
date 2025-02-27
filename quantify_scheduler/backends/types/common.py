@@ -546,7 +546,7 @@ class HardwareCompilationConfig(DataStructure):
     @classmethod
     def _import_config_type_if_str(
         cls,
-        config_type: type[HardwareCompilationConfig],  # noqa: N805
+        config_type: type[HardwareCompilationConfig],
     ) -> Callable[[Schedule, Any], Schedule]:
         if isinstance(config_type, str):
             return deserialize_function(config_type)

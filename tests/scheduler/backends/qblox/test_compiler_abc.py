@@ -582,7 +582,7 @@ def test_too_many_instructions_warns(mock_sequencer: AnalogSequencerCompiler):
         ioperation_strategy_from_op_info(
             offset_instruction_op_info(t * 8e-9), channel_name="real_output_0"
         )
-        for t in range(0, max_operations_num + 1)
+        for t in range(max_operations_num + 1)
     ]
     with pytest.warns(
         RuntimeWarning,

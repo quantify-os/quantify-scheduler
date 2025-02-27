@@ -41,7 +41,7 @@ def deprecated_arg_alias(depr_version: str, **aliases: str) -> Callable:
 
     def deco(f: Callable) -> Callable:
         @functools.wraps(f)
-        def wrapper(*args, **kwargs):  # noqa: ANN202, ANN002, ANN003
+        def wrapper(*args, **kwargs):  # noqa: ANN202
             _rename_kwargs(f.__name__, depr_version, kwargs, aliases)
             return f(*args, **kwargs)
 

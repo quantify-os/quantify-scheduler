@@ -213,8 +213,8 @@ def test_interpolated_complex_waveform(test_wf, test_time, answer):
 
 
 def test_rotate_wave() -> None:
-    I = np.ones(10)  # noqa # Q component is zero
-    Q = np.zeros(10)  # noqa # not used as input, only used for testing
+    I = np.ones(10)  # noqa: E741 (Q component is zero)
+    Q = np.zeros(10)  # not used as input, only used for testing
 
     rot_wf = rotate_wave(I, 0)
 

@@ -2017,7 +2017,7 @@ def test_multi_real_input_hardware_cfg_trigger_count(make_cluster_component, moc
     "module_under_test",
     [ClusterType.CLUSTER_QRM_RF, ClusterType.CLUSTER_QRM],
 )
-def test_trace_acquisition_instrument_coordinator(  # noqa PLR915 Too many statements
+def test_trace_acquisition_instrument_coordinator(  # noqa: PLR0915
     mocker,
     mock_setup_basic_transmon_with_standard_params,
     make_cluster_component,

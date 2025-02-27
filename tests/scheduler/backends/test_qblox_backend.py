@@ -2041,7 +2041,7 @@ def test_assign_frequencies_baseband(compile_config_basic_transmon_qblox_hardwar
     "downconverter_freq0, downconverter_freq1",
     list(itertools.product([None, 0, 9e9], repeat=2)) + [(-1, None), (1e6, None)],
 )
-def test_assign_frequencies_baseband_downconverter(  # noqa: PLR0912, PLR0915
+def test_assign_frequencies_baseband_downconverter(
     hardware_cfg_cluster,
     mock_setup_basic_transmon_with_standard_params,
     downconverter_freq0,

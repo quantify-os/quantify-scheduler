@@ -60,7 +60,7 @@ class Numbers(validators.Numbers):
 
         """
         if not isinstance(value, self.validtypes):
-            raise TypeError(f"{repr(value)} is not an int or float; {context}")
+            raise TypeError(f"{value!r} is not an int or float; {context}")
 
         if self._allow_nan and np.isnan(value):
             # return early as the next statement will otherwise trigger
@@ -68,7 +68,7 @@ class Numbers(validators.Numbers):
 
         if not (self._min_value <= value <= self._max_value):
             raise ValueError(
-                f"{repr(value)} is invalid: must be between "
+                f"{value!r} is invalid: must be between "
                 f"{self._min_value} and {self._max_value} inclusive; {context}"
             )
 

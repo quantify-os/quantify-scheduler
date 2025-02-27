@@ -416,7 +416,7 @@ class QuantumDevice(JSONSerializableMixin, Instrument):
             raise ValueError(f"'{element.name}' has already been added.")
 
         if not isinstance(element, DeviceElement):
-            raise TypeError(f"{repr(element)} is not a DeviceElement.")
+            raise TypeError(f"{element!r} is not a DeviceElement.")
 
         self.elements().append(element.name)  # list gets updated in place
         self._instrument_references[element.name] = element
@@ -472,7 +472,7 @@ class QuantumDevice(JSONSerializableMixin, Instrument):
             raise ValueError(f"'{edge.name}' has already been added.")
 
         if not isinstance(edge, Edge):
-            raise TypeError(f"{repr(edge)} is not an Edge.")
+            raise TypeError(f"{edge!r} is not an Edge.")
 
         self.edges().append(edge.name)
         self._instrument_references[edge.name] = edge

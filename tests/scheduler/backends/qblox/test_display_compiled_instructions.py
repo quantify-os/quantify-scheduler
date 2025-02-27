@@ -47,7 +47,7 @@ def test_display_compiled_instructions_not_None(  # noqa: N802
     assert tab is not None
 
 
-def test_display_compiled_instructions_calls_mpl_show(  # noqa: N802
+def test_display_compiled_instructions_calls_mpl_show(
     mock_widgets,
     compiled_schedule,
 ):
@@ -57,7 +57,7 @@ def test_display_compiled_instructions_calls_mpl_show(  # noqa: N802
     assert plt.show.call_count == 3  # type: ignore
 
 
-def test_display_compiled_instructions_programs_are_displayed(  # noqa: N802
+def test_display_compiled_instructions_programs_are_displayed(
     mock_widgets,
     compiled_schedule,
 ):
@@ -75,7 +75,7 @@ def test_display_compiled_instructions_programs_are_displayed(  # noqa: N802
     assert program_tab_count == expected_tab_count
 
 
-def test_display_compiled_instructions_programs_active_modules_are_displayed(  # noqa: N802
+def test_display_compiled_instructions_programs_active_modules_are_displayed(
     mock_widgets,
     compiled_schedule,
 ):

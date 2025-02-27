@@ -35,7 +35,7 @@ from quantify_scheduler.instrument_coordinator.components.base import (
 from quantify_scheduler.operations.acquisition_library import Trace
 from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 from quantify_scheduler.structure.model import DataStructure
-from quantify_scheduler.structure.types import NDArray  # noqa: TCH001, pydantic
+from quantify_scheduler.structure.types import NDArray  # noqa: TC001, pydantic
 
 
 class MockReadoutModule:
@@ -217,7 +217,7 @@ class MockROMInstrumentCoordinatorComponent(InstrumentCoordinatorComponentBase):
         pass
 
 
-def hardware_compile(  # noqa: PLR0912, PLR0915
+def hardware_compile(  # noqa: PLR0915
     schedule: Schedule, config: CompilationConfig
 ) -> Schedule:
     """Compile the schedule to the mock ROM."""

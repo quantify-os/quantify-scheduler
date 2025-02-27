@@ -34,7 +34,7 @@ if TYPE_CHECKING:
     from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 
 
-def _generate_diagnostics_report(  # noqa: PLR0912, PLR0915
+def _generate_diagnostics_report(  # noqa: PLR0915
     quantum_device: QuantumDevice,
     gettable_config: dict[str, Any],
     schedule: Schedule,

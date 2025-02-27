@@ -671,7 +671,7 @@ def test_initialize_and_get_with_report__two_clusters(
         return_value=mock_qblox_instruments_config_manager,
     )
 
-    def schedule_function(times, repetitions=1):  # noqa: ARG001
+    def schedule_function(times, repetitions=1):
         sched = Schedule("sched")
         sched.add(Measure("q2"))
         sched.add(Measure("q3"))

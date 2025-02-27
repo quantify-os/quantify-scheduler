@@ -22,24 +22,45 @@ repos:
       # pre-commit run --all-files --hook-stage commit
 
       # pip install ruff
-      - id: ruff
+      - id: ruff-linter
         name: Linter [ruff]
-        description: "Run 'ruff' for extremely fast Python linting"
+        description: "Run 'ruff check' for extremely fast Python linting"
         entry: ruff check --force-exclude
         language: python
-        types_or: [python, pyi]
+        types_or: [python, pyi, jupyter]
         args: []
         require_serial: true
         additional_dependencies: []
-        minimum_pre_commit_version: '2.9.2'
+        minimum_pre_commit_version: "2.9.2"
+        stages: [pre-commit]
 
       - id: ruff-format
-        name: Format [ruff]
+        name: Formatter [ruff]
         description: "Run 'ruff format' for extremely fast Python formatting"
         entry: ruff format --force-exclude
         language: python
-        types_or: [ python, pyi, jupyter ]
-        args: [ ]
+        types_or: [python, pyi, jupyter]
+        args: []
         require_serial: true
-        additional_dependencies: [ ]
+        additional_dependencies: []
         minimum_pre_commit_version: "2.9.2"
+        stages: [pre-commit]
+
+      - id: typos
+        name: Spell checker [typos]
+        description: "Finds and corrects spelling mistakes among source code"
+        entry: typos --config pyproject.toml
+        language: python
+        types_or: [text]
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: commitizen
+        name: commitizen check
+        description: >
+          Check whether the current commit message follows committing rules. Allow
+          empty commit messages by default, because they typically indicate to Git
+          that the commit should be aborted.
+        entry: cz check --allow-abort --commit-msg-file
+        language: python
+        stages: [commit-msg]

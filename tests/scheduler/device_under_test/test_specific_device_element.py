@@ -206,7 +206,7 @@ class TestQubitOperations:
     def test_device_element_deserialization(
         self,
         qubit_fixture,
-        expected_values,  # noqa ARG002 # unused argument
+        expected_values,  # noqa: ARG002
         dev: QuantumDevice,
         get_subschedule_operation,
         request,

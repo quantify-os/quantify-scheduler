@@ -274,9 +274,9 @@ def drag(
 
 def sudden_net_zero(
     t: np.ndarray,
-    amp_A: float,  # noqa N803
-    amp_B: float,  # noqa N803
-    net_zero_A_scale: float,  # noqa N803: upper case in variable
+    amp_A: float,
+    amp_B: float,
+    net_zero_A_scale: float,
     t_pulse: float,
     t_phi: float,
     t_integral_correction: float,

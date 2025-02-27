@@ -259,7 +259,7 @@ def test_pulse_and_clock(device_compile_config_basic_transmon):
             config=device_compile_config_basic_transmon,
         )
     assert str(execinfo.value) == (
-        f"Operation '{str(op)}' contains an unknown clock '{mystery_clock}'; "
+        f"Operation '{op!s}' contains an unknown clock '{mystery_clock}'; "
         f"ensure this resource has been added to the schedule "
         f"or to the device config."
     )

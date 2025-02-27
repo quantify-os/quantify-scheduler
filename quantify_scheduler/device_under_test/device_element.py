@@ -23,7 +23,7 @@ class DeviceElement(JSONSerializableMixin, Instrument):
     specific device element from the quantum-circuit to the quantum-device layer.
     """
 
-    def __init__(self, name: str, **kwargs) -> None:  # noqa: ANN003
+    def __init__(self, name: str, **kwargs) -> None:
         if "-" in name or "_" in name:
             raise ValueError(
                 f"Invalid DeviceElement name '{name}'. Hyphens and "

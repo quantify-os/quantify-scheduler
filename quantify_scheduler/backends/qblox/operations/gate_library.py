@@ -79,7 +79,7 @@ class ConditionalReset(Schedule):
         self,
         qubit_name: str,
         name: str = "conditional_reset",
-        **kwargs,  # noqa: ANN003 (kwargs not annotated)
+        **kwargs,
     ) -> None:
         device_element_name = qubit_name
         super().__init__(name)

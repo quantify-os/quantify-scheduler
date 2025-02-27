@@ -190,7 +190,7 @@ class InstrumentCoordinator(qcodes_base.Instrument):
 
         if not isinstance(component, base.InstrumentCoordinatorComponentBase):
             raise TypeError(
-                f"{repr(component)} is not "
+                f"{component!r} is not "
                 f"{base.__name__}.{base.InstrumentCoordinatorComponentBase.__name__}."
             )
 

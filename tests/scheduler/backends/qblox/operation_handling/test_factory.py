@@ -234,7 +234,7 @@ def test_incompatible_bin_mode_qrm_raises(protocol: str, bin_mode: BinMode):
         bin_mode_compat.IncompatibleBinModeError,
         match=re.escape(
             f"{protocol} acquisition on the QRM does not support bin mode "
-            f"{operation_info.data['bin_mode']}.\n\n{repr(operation_info)} caused "
+            f"{operation_info.data['bin_mode']}.\n\n{operation_info!r} caused "
             "this exception to occur."
         ),
     ):
@@ -283,7 +283,7 @@ def test_incompatible_bin_mode_qtm_raises(protocol: str, bin_mode: BinMode):
         bin_mode_compat.IncompatibleBinModeError,
         match=re.escape(
             f"{protocol} acquisition on the QTM does not support bin mode "
-            f"{operation_info.data['bin_mode']}.\n\n{repr(operation_info)} caused "
+            f"{operation_info.data['bin_mode']}.\n\n{operation_info!r} caused "
             "this exception to occur."
         ),
     ):

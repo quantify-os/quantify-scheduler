@@ -57,8 +57,8 @@ from quantify_scheduler.backends.types.common import (
     SoftwareDistortionCorrection,
 )
 from quantify_scheduler.enums import (
-    TimeRef,  # noqa: TCH001 pydantic needs them
-    TimeSource,  # noqa: TCH001 pydantic needs them
+    TimeRef,  # noqa: TC001 pydantic needs them
+    TimeSource,  # noqa: TC001 pydantic needs them
 )
 from quantify_scheduler.structure.model import DataStructure
 
@@ -243,7 +243,7 @@ class OpInfo(DataClassJsonMixin):
     def __repr__(self) -> str:
         repr_string = (
             f"{'Acquisition' if self.is_acquisition else 'Pulse'} "
-            f"{str(self.name)} (t={self.timing} to "
+            f"{self.name!s} (t={self.timing} to "
             f"{self.timing + self.duration})\ndata={self.data}"
         )
         return repr_string
@@ -1250,9 +1250,9 @@ class ComplexInputGain(DataStructure):
             }
     """
 
-    gain_I: int  # noqa: N815, capital I allowed here
+    gain_I: int
     """Gain setting on the input receiving the I-component data for this port-clock combination."""
-    gain_Q: int  # noqa: N815, capital Q allowed here
+    gain_Q: int
     """Gain setting on the input receiving the Q-component data for this port-clock combination."""
 
 
@@ -1432,7 +1432,7 @@ class SequencerOptions(DataStructure):
         "init_gain_awg_path_Q",
     )
     @classmethod
-    def _init_setting_limits(cls, init_setting) -> float | ValueError:  # noqa: N805
+    def _init_setting_limits(cls, init_setting) -> float:
         # if connectivity contains a hardware config with latency corrections
         if init_setting < -1.0 or init_setting > 1.0:
             raise ValueError(

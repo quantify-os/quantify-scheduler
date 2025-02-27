@@ -454,8 +454,8 @@ class SequencerCompiler(ABC):
         Returns
         -------
         :
-            The theshold, if ThresholdedTriggerCount acquisition is scheduled, or None, if it is not
-            scheduled.
+            The threshold, if ThresholdedTriggerCount acquisition is scheduled,
+            or None, if it is not scheduled.
 
         Raises
         ------
@@ -688,7 +688,7 @@ class SequencerCompiler(ABC):
                             f" {'Acquisition' if is_acquisition else 'Pulse'}"
                             f" because it starts before the previous ends,"
                             f" offending operation:"
-                            f" {str(operation.operation_info)}",
+                            f" {operation.operation_info!s}",
                             RuntimeWarning,
                         )
                     last_operation_end[is_acquisition] = (
@@ -1413,7 +1413,7 @@ class ClusterModuleCompiler(InstrumentCompiler, Generic[_SequencerT_co], ABC):
         if op_info.is_acquisition and not self.supports_acquisition:
             raise RuntimeError(
                 f"{self.__class__.__name__} {self.name} does not support acquisitions. "
-                f"Attempting to add acquisition {repr(op_info)} "
+                f"Attempting to add acquisition {op_info!r} "
                 f"on port {port} with clock {clock}."
             )
 

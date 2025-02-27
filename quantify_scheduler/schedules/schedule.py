@@ -89,7 +89,7 @@ class ScheduleBase(JSONSchemaValMixin, JSONSerializableMixin, UserDict, ABC):
 
     .. jsonschema:: https://gitlab.com/quantify-os/quantify-scheduler/-/raw/main/quantify_scheduler/schemas/schedule.json
 
-    """  # noqa: E501
+    """
 
     @property
     def name(self) -> str:
@@ -292,7 +292,7 @@ class ScheduleBase(JSONSchemaValMixin, JSONSerializableMixin, UserDict, ABC):
 
             return cd.circuit_diagram_matplotlib(schedule=self, figsize=figsize, ax=ax)
 
-        raise ValueError(f"plot_backend must be equal to 'mpl', value given: {repr(plot_backend)}")
+        raise ValueError(f"plot_backend must be equal to 'mpl', value given: {plot_backend!r}")
 
     def plot_pulse_diagram(
         self,
@@ -455,8 +455,7 @@ class ScheduleBase(JSONSchemaValMixin, JSONSerializableMixin, UserDict, ABC):
                 **backend_kwargs,
             )
         raise ValueError(
-            f"plot_backend must be equal to either 'mpl' or 'plotly', "
-            f"value given: {repr(plot_backend)}"
+            f"plot_backend must be equal to either 'mpl' or 'plotly', value given: {plot_backend!r}"
         )
 
     @classmethod
@@ -708,7 +707,7 @@ class Schedule(ScheduleBase):
 
     schema_filename = "schedule.json"
 
-    def __init__(self, name: str, repetitions: int = 1, data: dict = None) -> None:  # noqa: E501
+    def __init__(self, name: str, repetitions: int = 1, data: dict = None) -> None:
         # validate the input data to ensure it is valid schedule data
         super().__init__()
 
@@ -1125,7 +1124,7 @@ class CompiledSchedule(ScheduleBase):
 
         This dictionary is constructed during compilation in the hardware back ends and
          optionally added to the schedule. Not all back ends support this feature.
-        """  # noqa: E501
+        """
         return self._hardware_waveform_dict
 
     def __getstate__(self) -> dict[str, Any]:
@@ -1198,7 +1197,7 @@ class AcquisitionMetadata:
 
         The acquisition protocol, bin-mode and return types are assumed to be the same
         for all acquisitions in a schedule.
-    """  # noqa: E501
+    """
 
     acq_protocol: str
     """The acquisition protocol that is used for all acquisitions in the schedule."""

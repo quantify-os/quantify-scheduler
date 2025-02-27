@@ -1,6 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
-"""Utilty classes for Qblox timetag module."""
+"""Utility classes for Qblox timetag module."""
 
 from __future__ import annotations
 

@@ -59,7 +59,7 @@ class InstrumentCoordinatorComponentBase(Instrument):
     def __init__(
         self,
         instrument: InstrumentBase,
-        **kwargs: Any,  # noqa ANN401 (complicated subclass overrides)
+        **kwargs: Any,  # noqa: ANN401 (complicated subclass overrides)
     ) -> None:
         super().__init__(instrument_to_component_name(instrument.name), **kwargs)
 
@@ -120,7 +120,7 @@ class InstrumentCoordinatorComponentBase(Instrument):
         """Stops the InstrumentCoordinator Component."""
 
     @abstractmethod
-    def prepare(self, options: Any) -> None:  # noqa: ANN401 (Complicated subclass overrides)
+    def prepare(self, options: Any) -> None:  # noqa: ANN401 (complicated subclass overrides)
         """Initializes the InstrumentCoordinator Component with parameters."""
 
     @abstractmethod

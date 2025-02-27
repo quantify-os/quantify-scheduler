@@ -597,7 +597,7 @@ and using {class}`quantify_scheduler.gettables.ScheduleGettable`.
 
 Each acquisition and measurement operation in the schedule has associated
 {ref}`acquisition channel and acquisition index <sec-user-guide-acquisition-channel-index>`.
-If you specifiy a schedule using raw acquisition operations (for example, using
+If you specify a schedule using raw acquisition operations (for example, using
 {class}`~quantify_scheduler.operations.acquisition_library.SSBIntegrationComplex`),
 use `acq_channel` and `acq_index` arguments of the operation to specify them.
 Optionally you may also specify the requested binning mode in `bin_mode`

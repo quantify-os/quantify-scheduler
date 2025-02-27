@@ -34,7 +34,7 @@ def _determine_absolute_timing(
     time_unit: Literal["physical", "ideal", None] = "physical",
     config: CompilationConfig | None = None,
 ) -> Operation | Schedule: ...
-def _determine_absolute_timing(  # noqa: PLR0912
+def _determine_absolute_timing(
     schedule: Operation | Schedule,
     time_unit: Literal[
         "physical", "ideal", None
@@ -94,14 +94,13 @@ def _determine_absolute_timing(  # noqa: PLR0912
         return schedule
     elif schedule.duration is None:
         raise RuntimeError(
-            f"Cannot determine timing for operation {schedule.name}."
-            f" Operation data: {repr(schedule)}"
+            f"Cannot determine timing for operation {schedule.name}. Operation data: {schedule!r}"
         )
     else:
         return schedule
 
 
-def _determine_absolute_timing_schedule(  # noqa: PLR0912
+def _determine_absolute_timing_schedule(
     schedule: Schedule,
     time_unit: Literal["physical", "ideal", None],
     config: CompilationConfig | None,
@@ -133,7 +132,7 @@ def _determine_absolute_timing_schedule(  # noqa: PLR0912
             raise RuntimeError(
                 f"Operation {schedule.operations[op_key].name} is not a valid pulse or acquisition."
                 f" Please check whether the device compilation has been performed."
-                f" Operation data: {repr(schedule.operations[op_key])}"
+                f" Operation data: {schedule.operations[op_key]!r}"
             )
 
     scheduling_strategy = "asap"

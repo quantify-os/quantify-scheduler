@@ -42,8 +42,8 @@ class PulseStrategyPartial(IOperationStrategy, ABC):
 
     """
 
-    _amplitude_path_I: float | None  # noqa: N815  (mixed case)
-    _amplitude_path_Q: float | None  # noqa: N815  (mixed case)
+    _amplitude_path_I: float | None
+    _amplitude_path_Q: float | None
 
     def __init__(self, operation_info: types.OpInfo, channel_name: str) -> None:
         self._pulse_info: types.OpInfo = operation_info
@@ -161,10 +161,10 @@ class GenericPulseStrategy(PulseStrategyPartial):
 
         if np.any(np.iscomplex(waveform_data)) and ChannelMode.COMPLEX not in self.channel_name:
             raise ValueError(
-                f"Complex valued {str(op_info)} detected but the sequencer"
+                f"Complex valued {op_info!s} detected but the sequencer"
                 f" is not expecting complex input. This can be caused by "
                 f"attempting to play complex valued waveforms on an output"
-                f" marked as real.\n\nException caused by {repr(op_info)}."
+                f" marked as real.\n\nException caused by {op_info!r}."
             )
 
         def non_null(amp: float) -> bool:
@@ -206,7 +206,7 @@ class GenericPulseStrategy(PulseStrategyPartial):
                 f"Please ensure a minimum interval of "
                 f"{constants.MIN_TIME_BETWEEN_OPERATIONS} ns between "
                 f"operations.\n\nError caused by operation:\n"
-                f"{repr(self.operation_info)}."
+                f"{self.operation_info!r}."
             )
         qasm_program.time_last_pulse_triggered = qasm_program.elapsed_time
 
