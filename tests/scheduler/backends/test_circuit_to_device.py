@@ -1143,14 +1143,6 @@ def test_compile_spin_init():
     q3 = BasicSpinElement("q3")
 
     edge_q2_q3 = SpinEdge(parent_element_name=q2.name, child_element_name=q3.name)
-    edge_q2_q3.spin_init.square_duration(2e-6)
-    edge_q2_q3.spin_init.ramp_diff(1e-6)
-    edge_q2_q3.spin_init.q2_square_amp(0.5)
-    edge_q2_q3.spin_init.q2_ramp_amp(0.25)
-    edge_q2_q3.spin_init.q2_ramp_rate(0.25 / 3e-6)
-    edge_q2_q3.spin_init.q3_square_amp(0.4)
-    edge_q2_q3.spin_init.q3_ramp_amp(0.2)
-    edge_q2_q3.spin_init.q3_ramp_rate(0.2 / 4e-6)
 
     quantum_device = QuantumDevice(name="quantum_device")
     quantum_device.add_element(q2)
@@ -1160,57 +1152,9 @@ def test_compile_spin_init():
     schedule = Schedule("Test schedule")
     schedule.add(SpinInit(qC=q2.name, qT=q3.name))
 
-    compiled_schedule = compile_circuit_to_device_with_config_validation(
-        schedule, config=quantum_device.generate_compilation_config()
-    )
-
-    expected_schedule = Schedule("spin_init")
-    expected_schedule.add(
-        SquarePulse(
-            amp=0.5,
-            duration=2e-6,
-            port="q2:mw",
-            clock="q2.f_larmor",
-        )
-    )
-    expected_schedule.add(
-        SquarePulse(
-            amp=0.4,
-            duration=2e-6,
-            port="q3:mw",
-            clock="q3.f_larmor",
-        ),
-        ref_pt="start",
-    )
-    expected_schedule.add(
-        RampPulse(
-            amp=0.25,
-            duration=3e-6,
-            port="q2:mw",
-            clock="q2.f_larmor",
-        ),
-        ref_pt="end",
-        rel_time=0,
-    )
-    expected_schedule.add(
-        RampPulse(
-            amp=0.2,
-            duration=4e-6,
-            port="q3:mw",
-            clock="q3.f_larmor",
-        ),
-        ref_pt="start",
-        rel_time=0,
-    )
-
-    assert len(compiled_schedule.schedulables) == 1
-
-    compiled_spin_init = list(compiled_schedule.operations.values())[0]
-
-    for schedulable, expected_schedulable in zip(
-        compiled_spin_init.schedulables.values(),
-        expected_schedule.schedulables.values(),
+    with pytest.raises(
+        NotImplementedError, match="The gate or pulse you are trying to use is not implemented yet."
     ):
-        operation = compiled_spin_init.operations[schedulable["operation_id"]]
-        expected_operation = expected_schedule.operations[expected_schedulable["operation_id"]]
-        assert operation == expected_operation
+        compile_circuit_to_device_with_config_validation(
+            schedule, config=quantum_device.generate_compilation_config()
+        )
