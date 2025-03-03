@@ -1223,6 +1223,17 @@ class _ClusterModuleCompilationConfig(ABC, DataStructure):
                         self.hardware_description,
                         description,
                     )
+                    break
+            else:
+                # No channel descriptions were set, make a default one based on the channel name.
+                if path.channel_name.startswith("real"):
+                    hardware_description = RealChannelDescription()
+                elif path.channel_name.startswith("complex"):
+                    hardware_description = ComplexChannelDescription()
+                elif path.channel_name.startswith("digital"):
+                    hardware_description = DigitalChannelDescription()
+                else:
+                    raise ValueError(f"Cannot parse channel name {path.channel_name}")
             latency_correction = (
                 self.hardware_options.latency_corrections.get(portclock, 0)
                 if self.hardware_options.latency_corrections is not None

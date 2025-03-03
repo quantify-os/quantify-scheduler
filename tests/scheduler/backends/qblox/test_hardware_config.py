@@ -10,9 +10,15 @@ from quantify_scheduler.backends.qblox_backend import (
     ChannelPath,
     QbloxHardwareCompilationConfig,
     _ClusterCompilationConfig,
+    _ClusterModuleCompilationConfig,
     _QCMCompilationConfig,
 )
-from quantify_scheduler.backends.types.qblox import QbloxHardwareDistortionCorrection
+from quantify_scheduler.backends.types.qblox import (
+    ComplexChannelDescription,
+    DigitalChannelDescription,
+    QbloxHardwareDistortionCorrection,
+    RealChannelDescription,
+)
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.operations import Measure, SquarePulse, X
@@ -1102,3 +1108,56 @@ def test_validate_hardware_distortion_corrections_mode(portclock, distortion_cor
         )
 
     assert error_msg in error.value.args[0]
+
+
+def test_default_channel_description():
+    hardware_comp_cfg = {
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster": {
+                "instrument_type": "Cluster",
+                "ref": "internal",
+                "modules": {
+                    "2": {"instrument_type": "QCM"},
+                    "4": {"instrument_type": "QCM_RF"},
+                },
+            },
+        },
+        "hardware_options": {
+            "modulation_frequencies": {
+                "q0:res-q0.ro": {"lo_freq": 200e6},
+                "q0:mw-q0.01": {"lo_freq": 200e6},
+                "q0:qrm-q0.r3": {"lo_freq": 2e9},
+            },
+        },
+        "connectivity": {
+            "graph": [
+                ("cluster.module2.real_output_0", "q0:res"),
+                ("cluster.module2.real_output_1", "q0:mw"),
+                (
+                    "cluster.module4.complex_output_0",
+                    "q0:qrm",
+                ),
+                (
+                    "cluster.module2.digital_output_0",
+                    "q0:marker",
+                ),
+            ]
+        },
+    }
+
+    hw_cfg_object = QbloxHardwareCompilationConfig.model_validate(hardware_comp_cfg)
+    dev_cfgs = hw_cfg_object._extract_instrument_compilation_configs(
+        portclocks_used={("q0:res", "q0.ro"), ("q0:qrm", "q0.r3"), ("q0:marker", "digital")}
+    )
+    assert isinstance(dev_cfgs["cluster"], _ClusterCompilationConfig)
+    module_cfgs = dev_cfgs["cluster"]._extract_module_compilation_configs()
+    seq_cfgs = module_cfgs[2]._extract_sequencer_compilation_configs()
+
+    assert isinstance(seq_cfgs[0].hardware_description, DigitalChannelDescription)
+    assert seq_cfgs[0].portclock == "q0:marker-digital"
+    assert isinstance(seq_cfgs[1].hardware_description, RealChannelDescription)
+    assert seq_cfgs[1].portclock == "q0:res-q0.ro"
+    seq_complex_cfg = module_cfgs[4]._extract_sequencer_compilation_configs()[0]
+    assert isinstance(seq_complex_cfg.hardware_description, ComplexChannelDescription)
+    assert seq_complex_cfg.portclock == "q0:qrm-q0.r3"
