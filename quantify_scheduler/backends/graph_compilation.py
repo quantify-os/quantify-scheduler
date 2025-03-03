@@ -185,7 +185,9 @@ class DeviceCompilationConfig(DataStructure):
     The scheduling strategy used when determining the absolute timing of each
     operation of the schedule.
     """
-    compilation_passes: list[SimpleNodeConfig] = Field(
+    # Ignore pyright because circular dependencies prevent us from instantiating
+    # SimpleNodeConfig directly.
+    compilation_passes: list[SimpleNodeConfig] = Field(  # type: ignore
         default=[
             {
                 "name": "circuit_to_device",

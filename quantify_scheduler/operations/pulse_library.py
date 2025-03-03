@@ -793,7 +793,7 @@ class DRAGPulse(Operation):
         port: str,
         clock: str,
         reference_magnitude: ReferenceMagnitude | None = None,
-        sigma: float = None,
+        sigma: float | None = None,
         t0: float = 0,
     ) -> None:
         super().__init__(name=self.__class__.__name__)
@@ -861,7 +861,7 @@ class GaussPulse(Operation):
         port: str,
         clock: str = BasebandClockResource.IDENTITY,
         reference_magnitude: ReferenceMagnitude | None = None,
-        sigma: float = None,
+        sigma: float | None = None,
         t0: float = 0,
     ) -> None:
         super().__init__(name=self.__class__.__name__)

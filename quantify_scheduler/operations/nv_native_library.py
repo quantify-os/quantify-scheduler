@@ -86,17 +86,17 @@ class CRCount(Operation):
         self,
         *qubits: str,
         acq_channel: Hashable | None = None,
-        acq_index: tuple[int, ...] | int = None,
+        acq_index: tuple[int, ...] | int | None = None,
         # These are the currently supported acquisition protocols.
         acq_protocol: Literal[
             "Trace",
             "TriggerCount",
             None,
         ] = None,
-        bin_mode: BinMode = None,
+        bin_mode: BinMode | None = None,
     ) -> None:
         device_elements = qubits
-        acq_index: int | Iterable[int] = _generate_acq_indices_for_gate(
+        gen_acq_index: int | Iterable[int] = _generate_acq_indices_for_gate(
             device_elements=device_elements, acq_index=acq_index
         )
 
@@ -111,7 +111,7 @@ class CRCount(Operation):
                     "tex": r"CR",
                     "device_elements": list(device_elements),
                     "acq_channel_override": acq_channel,
-                    "acq_index": acq_index,
+                    "acq_index": gen_acq_index,
                     "acq_protocol": acq_protocol,
                     "bin_mode": bin_mode,
                     "operation_type": "cr_count",

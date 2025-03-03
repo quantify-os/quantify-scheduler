@@ -10,7 +10,7 @@ from collections import UserDict
 from copy import deepcopy
 from enum import Enum
 from pydoc import locate
-from typing import Iterable
+from typing import Iterable, Sequence
 
 from quantify_scheduler.helpers.collections import make_hash
 from quantify_scheduler.helpers.importers import export_python_object_to_path_string
@@ -361,7 +361,7 @@ class Operation(JSONSchemaValMixin, UserDict):
 
 
 def _generate_acq_indices_for_gate(
-    device_elements: list[str], acq_index: tuple[int, ...] | int | None
+    device_elements: list[str], acq_index: Sequence[int] | int | None
 ) -> int | Iterable[int]:
     # This if else statement a workaround to support multiplexed measurements (#262);
     # this snippet has some automatic behaviour that is error prone; see #262.

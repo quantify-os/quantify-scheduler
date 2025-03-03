@@ -275,7 +275,8 @@ class QuantumDevice(JSONSerializableMixin, Instrument):
             edge_cfg = edge.generate_edge_config()
             edges_cfg.update(edge_cfg)
 
-        device_config = DeviceCompilationConfig(
+        # Ignore pyright because of a bug (the error is in the DeviceCompilationConfig class)
+        device_config = DeviceCompilationConfig(  # type: ignore
             elements=elements_cfg,
             clocks=clocks,
             edges=edges_cfg,
@@ -327,7 +328,9 @@ class QuantumDevice(JSONSerializableMixin, Instrument):
                         compilation_func=hardware_config["backend"],
                     ),
                 ]
-                hardware_compilation_config = HardwareCompilationConfig(
+                # Ignore pyright because of a bug (the error is in the
+                # DeviceCompilationConfig class)
+                hardware_compilation_config = HardwareCompilationConfig(  # type: ignore
                     hardware_description={},
                     hardware_options=HardwareOptions(),
                     connectivity=hardware_config,
@@ -341,7 +344,9 @@ class QuantumDevice(JSONSerializableMixin, Instrument):
                         compilation_func=hardware_config["backend"],
                     ),
                 ]
-                hardware_compilation_config = HardwareCompilationConfig(
+                # Ignore pyright because of a bug (the error is in the
+                # DeviceCompilationConfig class)
+                hardware_compilation_config = HardwareCompilationConfig(  # type: ignore
                     hardware_description={},
                     hardware_options=HardwareOptions(),
                     connectivity=hardware_config,

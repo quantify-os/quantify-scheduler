@@ -9,7 +9,6 @@ from dataclasses import dataclass
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Literal,
 )
 
@@ -30,13 +29,12 @@ from quantify_scheduler.enums import TriggerCondition
 from quantify_scheduler.helpers.importers import export_python_object_to_path_string
 from quantify_scheduler.structure.model import (
     DataStructure,
-    deserialize_function,
+    deserialize_class,
 )
 from quantify_scheduler.structure.types import Graph, NDArray
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.graph_compilation import SimpleNodeConfig
-    from quantify_scheduler.schedules.schedule import Schedule
 
 LatencyCorrection = float
 """
@@ -547,9 +545,9 @@ class HardwareCompilationConfig(DataStructure):
     def _import_config_type_if_str(
         cls,
         config_type: type[HardwareCompilationConfig],
-    ) -> Callable[[Schedule, Any], Schedule]:
+    ) -> type[HardwareCompilationConfig]:
         if isinstance(config_type, str):
-            return deserialize_function(config_type)
+            return deserialize_class(config_type)
         return config_type  # type: ignore
 
     @model_validator(mode="after")

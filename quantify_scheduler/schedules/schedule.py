@@ -206,7 +206,7 @@ class ScheduleBase(JSONSchemaValMixin, JSONSerializableMixin, UserDict, ABC):
 
     def plot_circuit_diagram(
         self,
-        figsize: tuple[int, int] = None,
+        figsize: tuple[int, int] | None = None,
         ax: Axes | None = None,
         plot_backend: Literal["mpl"] = "mpl",
     ) -> tuple[Figure, Axes | list[Axes]]:
@@ -707,7 +707,7 @@ class Schedule(ScheduleBase):
 
     schema_filename = "schedule.json"
 
-    def __init__(self, name: str, repetitions: int = 1, data: dict = None) -> None:
+    def __init__(self, name: str, repetitions: int = 1, data: dict | None = None) -> None:
         # validate the input data to ensure it is valid schedule data
         super().__init__()
 

@@ -312,7 +312,8 @@ def test_quantum_device_serialization_via_snapshot(
         deserialized_edge_q2_q3,
         deserialized_quantum_device,
     ]:
-        load_settings_onto_instrument(instrument=instrument, tuid=tuid)
+        # Ignore pyright because of a bug (the error is in load_settings_onto_instrument)
+        load_settings_onto_instrument(instrument=instrument, tuid=tuid)  # type: ignore
 
     # Assert equality of deserialized and original quantum device
     assert deserialized_quantum_device.get_element("q2").rxy.amp180() == amp180_test

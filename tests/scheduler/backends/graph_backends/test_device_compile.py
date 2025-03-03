@@ -105,7 +105,8 @@ def test_device_compile_default_compilation_passes(basic_schedule):
     for op in basic_schedule.operations.values():
         assert not op.valid_pulse
 
-    device_config = DeviceCompilationConfig(
+    # Ignore pyright because of a bug (the error is in the DeviceCompilationConfig class)
+    device_config = DeviceCompilationConfig(  # type: ignore
         elements=example_transmon_cfg["elements"],
         clocks=example_transmon_cfg["clocks"],
         edges=example_transmon_cfg["edges"],
