@@ -120,7 +120,7 @@ class InstrumentCoordinatorComponentBase(Instrument):
         """Stops the InstrumentCoordinator Component."""
 
     @abstractmethod
-    def prepare(self, options: Any) -> None:  # noqa: ANN401 (complicated subclass overrides)
+    def prepare(self, program: Any) -> None:  # noqa: ANN401 (complicated subclass overrides)
         """Initializes the InstrumentCoordinator Component with parameters."""
 
     @abstractmethod

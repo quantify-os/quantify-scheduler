@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import itertools
 import logging
 import os
 import re
@@ -16,7 +17,9 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    Generic,
     Hashable,
+    TypeVar,
     Union,
 )
 from uuid import uuid4
@@ -51,7 +54,6 @@ from quantify_scheduler.backends.qblox.operation_handling.bin_mode_compat import
 from quantify_scheduler.backends.types.qblox import (
     AnalogModuleSettings,
     AnalogSequencerSettings,
-    BasebandModuleSettings,
     BaseModuleSettings,
     ClusterSettings,
     ExternalTriggerSyncSettings,
@@ -71,7 +73,6 @@ from quantify_scheduler.instrument_coordinator.utility import (
 
 if TYPE_CHECKING:
     from qblox_instruments.qcodes_drivers.module import Module
-    from qblox_instruments.qcodes_drivers.sequencer import Sequencer
     from qcodes.instrument.instrument_base import InstrumentBase
 
     from quantify_scheduler.schedules.schedule import (
@@ -154,8 +155,17 @@ _QTM_PROPERTIES = _StaticTimetagModuleProperties(
 )
 
 
-class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
+_HardwarePropertiesT_co = TypeVar(
+    "_HardwarePropertiesT_co", bound=_StaticHardwareProperties, covariant=True
+)
+
+
+class _ModuleComponentBase(
+    base.InstrumentCoordinatorComponentBase, Generic[_HardwarePropertiesT_co]
+):
     """Qblox InstrumentCoordinator component base class."""
+
+    _hardware_properties: _HardwarePropertiesT_co
 
     def __init__(self, instrument: Module) -> None:
         super().__init__(instrument)
@@ -171,6 +181,7 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
             f"seq{idx}": idx for idx in range(self._hardware_properties.number_of_sequencers)
         }
 
+        # TODO make a data model for this and replace the dictionary by a class.
         self._program = {}
 
         self._nco_frequency_changed: dict[int, bool] = {}
@@ -188,7 +199,7 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
 
     def _set_parameter(
         self,
-        instrument: Module | Sequencer,
+        instrument: InstrumentBase,
         parameter_name: str,
         val: Any,  # noqa: ANN401, disallow Any as type
     ) -> None:
@@ -206,10 +217,8 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
             The new value of the parameter.
 
         """
-        # TODO: these qcodes parameters already exist in the development branch
-        # of qblox-instruments, but will be released in 0.14.0 when RTP is
-        # officially supported (except bias tee).
-        # Until then, catching the value error is needed.
+        # TODO: Bias-tee parameters for RTP are not officially supported in
+        # qblox-instruments. This hack is at a customer's request.
         try:
             search_settable_param(instrument=instrument, nested_parameter_name=parameter_name)
         except ValueError as e:
@@ -303,9 +312,7 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
 
         return _download_log(_get_configuration_manager(_get_instrument_ip(self)))
 
-    # Parameter name is different from base class. We ignore it because it is legacy
-    # code.
-    def prepare(self, program: dict[str, dict]) -> None:  # type: ignore
+    def prepare(self, program: dict[str, dict]) -> None:
         """Store program containing sequencer settings."""
         self._program = program
         self._nco_frequency_changed = {}
@@ -387,22 +394,11 @@ class _ModuleComponentBase(base.InstrumentCoordinatorComponentBase):
         """Clears remaining data on the module. Module type specific function."""
         return None
 
-    @property
-    @abstractmethod
-    def _hardware_properties(self) -> _StaticHardwareProperties:
-        """
-        Holds all the differences between the different modules.
-
-        Returns
-        -------
-        :
-            A dataclass with all the hardware properties for this specific module.
-
-        """
-
 
 class _AnalogModuleComponent(_ModuleComponentBase):
     """Qblox InstrumentCoordinator component base class."""
+
+    _hardware_properties: _StaticAnalogModuleProperties
 
     def __init__(self, instrument: Module) -> None:
         super().__init__(instrument)
@@ -416,7 +412,7 @@ class _AnalogModuleComponent(_ModuleComponentBase):
             )
 
     @abstractmethod
-    def _configure_global_settings(self, settings: AnalogModuleSettings) -> None:
+    def _configure_global_settings(self, settings: BaseModuleSettings) -> None:
         """
         Configures all settings that are set globally for the whole instrument.
 
@@ -427,9 +423,7 @@ class _AnalogModuleComponent(_ModuleComponentBase):
 
         """
 
-    def _configure_sequencer_settings(
-        self, seq_idx: int, settings: AnalogSequencerSettings
-    ) -> None:
+    def _configure_sequencer_settings(self, seq_idx: int, settings: SequencerSettings) -> None:
         """
         Configures all sequencer-specific settings.
 
@@ -441,6 +435,7 @@ class _AnalogModuleComponent(_ModuleComponentBase):
             The settings to configure it to.
 
         """
+        assert isinstance(settings, AnalogSequencerSettings)
         self._set_parameter(self.instrument.sequencers[seq_idx], "mod_en_awg", settings.nco_en)
 
         if settings.nco_en:
@@ -542,19 +537,6 @@ class _AnalogModuleComponent(_ModuleComponentBase):
                     settings.mixer_corr_gain_ratio,
                 )
 
-    @property
-    @abstractmethod
-    def _hardware_properties(self) -> _StaticAnalogModuleProperties:
-        """
-        Holds all the differences between the different modules.
-
-        Returns
-        -------
-        :
-            A dataclass with all the hardware properties for this specific module.
-
-        """
-
 
 class _QCMComponent(_AnalogModuleComponent):
     """QCM specific InstrumentCoordinator component."""
@@ -581,7 +563,7 @@ class _QCMComponent(_AnalogModuleComponent):
         """
         return None
 
-    def prepare(self, program: dict[str, dict | AnalogModuleSettings]) -> None:
+    def prepare(self, program: dict[str, dict]) -> None:
         """
         Uploads the waveforms and programs to the sequencers.
 
@@ -625,7 +607,7 @@ class _QCMComponent(_AnalogModuleComponent):
             self._configure_sequencer_settings(seq_idx=seq_idx, settings=sequencer_settings)
             self._configure_nco_mixer_calibration(seq_idx=seq_idx, settings=sequencer_settings)
 
-    def _configure_global_settings(self, settings: AnalogModuleSettings) -> None:
+    def _configure_global_settings(self, settings: BaseModuleSettings) -> None:
         """
         Configures all settings that are set globally for the whole instrument.
 
@@ -635,6 +617,7 @@ class _QCMComponent(_AnalogModuleComponent):
             The settings to configure it to.
 
         """
+        assert isinstance(settings, AnalogModuleSettings)
         # configure mixer correction offsets
         if settings.offset_ch0_path_I is not None:
             self._set_parameter(self.instrument, "out0_offset", settings.offset_ch0_path_I)
@@ -715,7 +698,7 @@ class _QRMComponent(_AnalogModuleComponent):
         else:
             return None
 
-    def prepare(self, program: dict[str, dict | BasebandModuleSettings]) -> None:
+    def prepare(self, program: dict[str, dict]) -> None:
         """
         Uploads the waveforms and programs to the sequencers.
 
@@ -788,7 +771,7 @@ class _QRMComponent(_AnalogModuleComponent):
             self._set_parameter(self.instrument, f"scope_acq_trigger_mode_path{path}", "sequencer")
             self._set_parameter(self.instrument, f"scope_acq_avg_mode_en_path{path}", True)
 
-    def _configure_global_settings(self, settings: AnalogModuleSettings) -> None:
+    def _configure_global_settings(self, settings: BaseModuleSettings) -> None:
         """
         Configures all settings that are set globally for the whole instrument.
 
@@ -822,9 +805,8 @@ class _QRMComponent(_AnalogModuleComponent):
                 self.instrument, f"out{output}_fir_config", dc_settings.fir.config.value
             )
 
-    def _configure_sequencer_settings(
-        self, seq_idx: int, settings: AnalogSequencerSettings
-    ) -> None:
+    def _configure_sequencer_settings(self, seq_idx: int, settings: SequencerSettings) -> None:
+        assert isinstance(settings, AnalogSequencerSettings)
         super()._configure_sequencer_settings(seq_idx, settings)
 
         if settings.integration_length_acq is not None:
@@ -971,7 +953,7 @@ class _QRMComponent(_AnalogModuleComponent):
 class _RFComponent(_AnalogModuleComponent):
     """Mix-in for RF-module-specific InstrumentCoordinatorComponent behaviour."""
 
-    def prepare(self, program: dict[str, dict | RFModuleSettings]) -> None:
+    def prepare(self, program: dict[str, dict]) -> None:
         """
         Uploads the waveforms and programs to the sequencers.
 
@@ -1013,14 +995,13 @@ class _RFComponent(_AnalogModuleComponent):
         if (settings := program.get("settings")) is not None:
             if isinstance(settings, dict):
                 settings = self._hardware_properties.settings_type.from_dict(settings)
+            assert isinstance(settings, RFModuleSettings)
             self._configure_lo_settings(
                 settings=settings,
                 lo_idx_to_connected_seq_idx=lo_idx_to_connected_seq_idx,
             )
 
-    def _configure_sequencer_settings(
-        self, seq_idx: int, settings: AnalogSequencerSettings
-    ) -> None:
+    def _configure_sequencer_settings(self, seq_idx: int, settings: SequencerSettings) -> None:
         super()._configure_sequencer_settings(seq_idx, settings)
         # Always set override to False.
         self._set_parameter(
@@ -1078,7 +1059,7 @@ class _QCMRFComponent(_RFComponent, _QCMComponent):
 
     _hardware_properties = _QCM_RF_PROPERTIES
 
-    def _configure_global_settings(self, settings: RFModuleSettings) -> None:
+    def _configure_global_settings(self, settings: BaseModuleSettings) -> None:
         """
         Configures all settings that are set globally for the whole instrument.
 
@@ -1088,6 +1069,7 @@ class _QCMRFComponent(_RFComponent, _QCMComponent):
             The settings to configure it to.
 
         """
+        assert isinstance(settings, RFModuleSettings)
         # configure mixer correction offsets
         if settings.offset_ch0_path_I is not None:
             self._set_parameter(self.instrument, "out0_offset_path0", settings.offset_ch0_path_I)
@@ -1153,7 +1135,7 @@ class _QRMRFComponent(_RFComponent, _QRMComponent):
 
     _hardware_properties = _QRM_RF_PROPERTIES
 
-    def _configure_global_settings(self, settings: RFModuleSettings) -> None:
+    def _configure_global_settings(self, settings: BaseModuleSettings) -> None:
         """
         Configures all settings that are set globally for the whole instrument.
 
@@ -1163,6 +1145,7 @@ class _QRMRFComponent(_RFComponent, _QRMComponent):
             The settings to configure it to.
 
         """
+        assert isinstance(settings, RFModuleSettings)
         # configure mixer correction offsets
         if settings.offset_ch0_path_I is not None:
             self._set_parameter(self.instrument, "out0_offset_path0", settings.offset_ch0_path_I)
@@ -1242,7 +1225,7 @@ class _QTMComponent(_ModuleComponentBase):
         else:
             return None
 
-    def prepare(self, program: dict[str, dict | TimetagModuleSettings]) -> None:
+    def prepare(self, program: dict[str, dict]) -> None:
         """
         Uploads the waveforms and programs to the sequencers.
 
@@ -1284,7 +1267,8 @@ class _QTMComponent(_ModuleComponentBase):
         if (acq_metadata := program.get("acq_metadata")) is not None:
             self._acquisition_manager = _QTMAcquisitionManager(
                 parent=self,
-                acquisition_metadata=acq_metadata,
+                # Ignoring type, because this cannot be solved by a simple assert isinstance.
+                acquisition_metadata=acq_metadata,  # type; ignore
                 acquisition_duration=trace_acq_duration,
                 seq_name_to_idx_map=self._seq_name_to_idx_map,
             )
@@ -1292,9 +1276,10 @@ class _QTMComponent(_ModuleComponentBase):
             self._acquisition_manager = None
 
         if (settings := program.get("settings")) is not None:
+            assert isinstance(settings, TimetagModuleSettings)
             self._configure_global_settings(settings)
 
-    def _configure_global_settings(self, settings: TimetagModuleSettings) -> None:
+    def _configure_global_settings(self, settings: BaseModuleSettings) -> None:
         """
         Configures all settings that are set globally for the whole instrument.
 
@@ -1305,22 +1290,6 @@ class _QTMComponent(_ModuleComponentBase):
 
         """
         # No global settings yet.
-
-    def _configure_sequencer_settings(
-        self, seq_idx: int, settings: TimetagSequencerSettings
-    ) -> None:
-        """
-        Configures all sequencer-specific settings.
-
-        Parameters
-        ----------
-        seq_idx
-            Index of the sequencer to configure.
-        settings
-            The settings to configure it to.
-
-        """
-        super()._configure_sequencer_settings(seq_idx, settings)
 
     def _configure_io_channel_settings(
         self, seq_idx: int, settings: TimetagSequencerSettings
@@ -1374,29 +1343,29 @@ class _QTMComponent(_ModuleComponentBase):
 
         if settings.scope_trace_type == TimetagTraceType.SCOPE:
             self._set_parameter(
-                self.instrument[f"io_channel{seq_idx}"],
+                self.instrument.io_channels[seq_idx],
                 "scope_trigger_mode",
                 "sequencer",
             )
             self._set_parameter(
-                self.instrument[f"io_channel{seq_idx}"],
+                self.instrument.io_channels[seq_idx],
                 "scope_mode",
                 "scope",
             )
         elif settings.scope_trace_type == TimetagTraceType.TIMETAG:
             self._set_parameter(
-                self.instrument[f"io_channel{seq_idx}"],
+                self.instrument.io_channels[seq_idx],
                 "scope_trigger_mode",
                 "sequencer",
             )
             self._set_parameter(
-                self.instrument[f"io_channel{seq_idx}"],
+                self.instrument.io_channels[seq_idx],
                 "scope_mode",
                 "timetags-windowed",
             )
         if settings.time_source is not None:
             self._set_parameter(
-                self.instrument[f"io_channel{seq_idx}"],
+                self.instrument.io_channels[seq_idx],
                 "binned_acq_time_source",
                 str(settings.time_source),
             )
@@ -1408,34 +1377,34 @@ class _QTMComponent(_ModuleComponentBase):
             else:
                 time_ref = str(settings.time_ref)
             self._set_parameter(
-                self.instrument[f"io_channel{seq_idx}"],
+                self.instrument.io_channels[seq_idx],
                 "binned_acq_time_ref",
                 time_ref,
             )
 
         self._set_parameter(
-            self.instrument[f"io_channel{seq_idx}"],
+            self.instrument.io_channels[seq_idx],
             "thresholded_acq_trigger_address_high",
             settings.thresholded_acq_trigger_write_address_high,
         )
         self._set_parameter(
-            self.instrument[f"io_channel{seq_idx}"],
+            self.instrument.io_channels[seq_idx],
             "thresholded_acq_trigger_address_mid",
             settings.thresholded_acq_trigger_write_address_mid,
         )
         self._set_parameter(
-            self.instrument[f"io_channel{seq_idx}"],
+            self.instrument.io_channels[seq_idx],
             "thresholded_acq_trigger_address_low",
             settings.thresholded_acq_trigger_write_address_low,
         )
         self._set_parameter(
-            self.instrument[f"io_channel{seq_idx}"],
+            self.instrument.io_channels[seq_idx],
             "thresholded_acq_trigger_address_invalid",
             settings.thresholded_acq_trigger_write_address_invalid,
         )
         if settings.thresholded_acq_trigger_write_en is not None:
             self._set_parameter(
-                self.instrument[f"io_channel{seq_idx}"],
+                self.instrument.io_channels[seq_idx],
                 "thresholded_acq_trigger_en",
                 settings.thresholded_acq_trigger_write_en,
             )
@@ -2119,12 +2088,10 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
                 Note, the cumulative distribution is in reverse order.
                 The cumulative_values list can contain any number of integers and NaNs.
                 """
-                cumulative_values = list(enumerate(cumulative_values))
-
                 result = {}
 
                 last_cumulative_value = 0
-                for count, current_cumulative_value in reversed(cumulative_values):  # type: ignore
+                for count, current_cumulative_value in reversed(list(enumerate(cumulative_values))):
                     if (not isnan(current_cumulative_value)) and (
                         last_cumulative_value != current_cumulative_value
                     ):
@@ -2212,7 +2179,7 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
         data = super()._get_acquisitions_from_instrument(seq_idx, acquisition_metadata)
         if acquisition_metadata.acq_protocol in ("Trace", "TimetagTrace"):
             # We add this scope data in the same format as QRM acquisitions.
-            scope_data = self.instrument[f"io_channel{seq_idx}"].get_scope_data()
+            scope_data = self.instrument.io_channels[seq_idx].get_scope_data()
 
             # For (timetag)trace acquisitions, there is only one acq channel per
             # sequencer/io_channel (enforced by compiler). We just take the first one.
@@ -2392,24 +2359,18 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
         *first* pulse recorded in each window. This data is used to calculate the
         relative timetags for all timetags in the trace.
         """
+        parsed_scope_data = []
+        # groupby splits the list on the "OPEN"/"CLOSE" events
+        for open_close, group in itertools.groupby(scope_data, lambda x: x[0] in ("OPEN", "CLOSE")):
+            # We get "False" groups with the events we're interested in, and "True" groups with
+            # OPEN/CLOSE events, which we ignore.
+            if not open_close:
+                parsed_scope_data.append(list(group))
         timetag_traces = []
-        last_close_idx = 0
-        for ref_timetag in timetags:
-            for i, (event, _) in enumerate(scope_data[last_close_idx:]):
-                if event == "OPEN":
-                    break
-            open_idx = last_close_idx + i
-            for i, (event, _) in enumerate(scope_data[open_idx:]):
-                if event == "CLOSE":
-                    break
-            close_idx = open_idx + i
-
-            rel_times_ns = [
-                (ref_timetag + event[1] - scope_data[open_idx + 1][1]) / 2048
-                for event in scope_data[open_idx + 1 : close_idx]
-            ]
-            timetag_traces.append(rel_times_ns)
-            last_close_idx = close_idx
+        for ref_timetag, scope_group in zip(timetags, parsed_scope_data):
+            timetag_traces.append(
+                [(ref_timetag + event[1] - scope_group[0][1]) / 2048 for event in scope_group]
+            )
 
         return timetag_traces
 
@@ -2659,25 +2620,26 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         # Stops all sequencers in the cluster, time efficiently.
         self.instrument.stop_sequencer()
 
-    def prepare(self, options: dict[str, dict | ClusterSettings]) -> None:
+    def prepare(self, program: dict[str, dict | ClusterSettings]) -> None:
         """
         Prepares the cluster component for execution of a schedule.
 
         Parameters
         ----------
-        options
+        program
             The compiled instructions to configure the cluster to.
 
         """
-        if not isinstance(options.get("settings", {}), ClusterSettings):
-            cluster_settings = ClusterSettings.from_dict(options.get("settings", {}))
+        settings = program.get("settings", {})
+        if not isinstance(settings, ClusterSettings):
+            cluster_settings = ClusterSettings.from_dict(settings)
         else:
-            cluster_settings = options["settings"]
+            cluster_settings = settings
 
         self._set_parameter(self.instrument, "reference_source", cluster_settings.reference_source)
 
         self._program = ClusterComponent._Program(
-            module_programs=without(options, ["settings"]), settings=cluster_settings
+            module_programs=without(program, ["settings"]), settings=cluster_settings
         )
         for name, comp_options in self._program.module_programs.items():
             if name not in self._cluster_modules:

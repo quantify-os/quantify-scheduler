@@ -159,14 +159,14 @@ class MockROMInstrumentCoordinatorComponent(InstrumentCoordinatorComponentBase):
     def is_running(self) -> bool:  # noqa: D102
         return True
 
-    def prepare(self, options: MockROMSettings) -> None:
+    def prepare(self, program: MockROMSettings) -> None:
         """Upload the settings to the ROM."""
-        self.rom.upload_waveforms(options.waveforms)
-        self.rom.upload_instructions(options.instructions)
-        self.rom.sampling_rate = options.sampling_rate
-        self.rom.gain = options.gain
+        self.rom.upload_waveforms(program.waveforms)
+        self.rom.upload_instructions(program.instructions)
+        self.rom.sampling_rate = program.sampling_rate
+        self.rom.gain = program.gain
 
-        self.acq_config = options.acq_config
+        self.acq_config = program.acq_config
 
     def start(self) -> None:
         """Execute the sequence."""

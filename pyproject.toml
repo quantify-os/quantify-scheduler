@@ -289,7 +289,6 @@ exclude = [
   "quantify_scheduler/backends/zhinst/helpers.py",
   "quantify_scheduler/backends/zhinst/seqc_il_generator.py",
   "quantify_scheduler/backends/zhinst/settings.py",
-  "quantify_scheduler/instrument_coordinator/components/qblox.py",
   "quantify_scheduler/instrument_coordinator/components/zhinst.py",
   "quantify_scheduler/operations/acquisition_library.py",
   "quantify_scheduler/operations/gate_library.py",

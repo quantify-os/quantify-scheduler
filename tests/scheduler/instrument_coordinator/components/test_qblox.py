@@ -2528,9 +2528,9 @@ def mock_module_component():
 
 
 # _ModuleComponentBase._set_parameter temporarily catches value errors related
-# to realtime predistortion (RTP) filters. This was a request from Orange until
-# we have official RTP support in Qblox instruments. This test can be removed
-# when that is the case.
+# to realtime predistortion (RTP) filters with bias-tee. This was a request from Orange
+# until we have official RTP (with bias-tee) support in Qblox instruments. This test can
+# be removed when that is the case.
 def test_set_parameter_value_error_is_passed(mock_module_component):
     mock_instrument = MagicMock()
 
