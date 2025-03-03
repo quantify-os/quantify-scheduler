@@ -960,8 +960,8 @@ class _QRMComponent(_AnalogModuleComponent):
 
     def clear_data(self) -> None:
         """Clears remaining data on the module. Module type specific function."""
-        for sequencer_id in range(self._hardware_properties.number_of_sequencers):
-            self.instrument.delete_acquisition_data(sequencer=sequencer_id, all=True)
+        if self._acquisition_manager:
+            self._acquisition_manager.delete_acquisition_data()
 
 
 class _RFComponent(_AnalogModuleComponent):
@@ -1438,8 +1438,8 @@ class _QTMComponent(_ModuleComponentBase):
 
     def clear_data(self) -> None:
         """Clears remaining data on the module. Module type specific function."""
-        for sequencer_id in range(self._hardware_properties.number_of_sequencers):
-            self.instrument.delete_acquisition_data(sequencer=sequencer_id, all=True)
+        if self._acquisition_manager:
+            self._acquisition_manager.delete_acquisition_data()
 
 
 _ReadoutModuleComponentT = Union[_QRMComponent, _QTMComponent]
@@ -1568,6 +1568,18 @@ class _AcquisitionManagerBase(ABC):
                 dataset = dataset.merge(formatted_acquisitions_dataset)
 
         return dataset
+
+    def delete_acquisition_data(self) -> None:
+        """
+        Delete acquisition data from sequencers that have associated acquisition metadata.
+
+        To be called before starting the sequencers, so that old data does not get retrieved more
+        than once.
+        """
+        for seq_name in self._acquisition_metadata:
+            self.instrument.delete_acquisition_data(
+                sequencer=self._seq_name_to_idx_map[seq_name], all=True
+            )
 
     def _assert_acquisition_data_exists(
         self,
