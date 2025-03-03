@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import copy
 import logging
 import os
 import re
@@ -29,9 +28,11 @@ from qblox_instruments import (
     SequencerStates,
     SequencerStatus,
 )
+from qblox_instruments.qcodes_drivers.time import SyncRef
 from xarray import DataArray, Dataset
 
 from quantify_core.data.handling import get_datadir
+from quantify_core.utilities.general import without
 from quantify_scheduler.backends.qblox import constants, driver_version_check
 from quantify_scheduler.backends.qblox.enums import (
     ChannelMode,
@@ -52,6 +53,8 @@ from quantify_scheduler.backends.types.qblox import (
     AnalogSequencerSettings,
     BasebandModuleSettings,
     BaseModuleSettings,
+    ClusterSettings,
+    ExternalTriggerSyncSettings,
     RFModuleSettings,
     SequencerSettings,
     TimetagModuleSettings,
@@ -69,6 +72,7 @@ from quantify_scheduler.instrument_coordinator.utility import (
 if TYPE_CHECKING:
     from qblox_instruments.qcodes_drivers.module import Module
     from qblox_instruments.qcodes_drivers.sequencer import Sequencer
+    from qcodes.instrument.instrument_base import InstrumentBase
 
     from quantify_scheduler.schedules.schedule import (
         AcquisitionMetadata,
@@ -2522,10 +2526,15 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
 
     """
 
+    @dataclass
+    class _Program:
+        module_programs: dict[str, Any]
+        settings: ClusterSettings
+
     def __init__(self, instrument: Cluster) -> None:
         super().__init__(instrument)
         self._cluster_modules: dict[str, _ClusterModule] = {}
-        self._program = {}
+        self._program: ClusterComponent._Program | None = None
 
         # Important: a tuple with only False may not occur as a key, because new
         # unsupported module types may return False on all is_..._type functions.
@@ -2556,6 +2565,31 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         """Returns true if any of the modules are currently running."""
         return any(comp.is_running for comp in self._cluster_modules.values())
 
+    def _set_parameter(
+        self,
+        instrument: InstrumentBase,
+        parameter_name: str,
+        val: Any,  # noqa: ANN401, disallow Any as type
+    ) -> None:
+        """
+        Set the parameter directly or using the lazy set.
+
+        Parameters
+        ----------
+        instrument
+            The instrument or instrument channel that holds the parameter to set,
+            e.g. `self.instrument` or `self.instrument[f"sequencer{idx}"]`.
+        parameter_name
+            The name of the parameter to set.
+        val
+            The new value of the parameter.
+
+        """
+        if self.force_set_parameters():
+            instrument.set(parameter_name, val)
+        else:
+            lazy_set(instrument, parameter_name, val)
+
     def start(self) -> None:
         """Starts all the modules in the cluster."""
         # Disarming all sequencers, to make sure the last
@@ -2563,14 +2597,60 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         # which are explicitly armed by the subsequent calls.
         self.instrument.stop_sequencer()
 
+        if self._program is None:
+            # Nothing to start
+            return
+
         # Arming all sequencers in the program.
         for comp_name, comp in self._cluster_modules.items():
-            if comp_name in self._program:
+            if comp_name in self._program.module_programs:
                 comp.clear_data()
                 comp.arm_all_sequencers_in_program()
 
         # Starts all sequencers in the cluster, time efficiently.
+        if self._program.settings.sync_on_external_trigger is not None:
+            self._sync_on_external_trigger(self._program.settings.sync_on_external_trigger)
+
         self.instrument.start_sequencer()
+
+    def _sync_on_external_trigger(self, settings: ExternalTriggerSyncSettings) -> None:
+        module_idx = settings.slot - 1
+        channel_idx = settings.channel - 1
+        if module_idx != -1:  # if not CMM
+            module: Module = self.instrument.modules[module_idx]
+            if not module.is_qtm_type:
+                raise ValueError(
+                    f"Invalid module type {module.module_type} for sync_on_external_trigger. Must "
+                    "be one of MM or QTM."
+                )
+            # See ClusterCompiler._validate_external_trigger_sync, which validates that these
+            # settings do not conflict, if they already exist in a QTMComponent.
+            self._set_parameter(
+                self.instrument.modules[module_idx].io_channels[channel_idx],
+                "out_mode",
+                "disabled",
+            )
+            if settings.input_threshold is None:
+                raise ValueError(
+                    "Using `sync_on_external_trigger` with a QTM module, but there was no input "
+                    "threshold specified in either `hardware_options.digitization_thresholds` or "
+                    "`sync_on_external_trigger.input_threshold`."
+                )
+            self._set_parameter(
+                self.instrument.modules[module_idx].io_channels[channel_idx],
+                "in_threshold_primary",
+                settings.input_threshold,
+            )
+        sync_ref = SyncRef.ON if settings.sync_to_ref_clock else SyncRef.OFF
+        self.instrument.time.sync_ext_trigger(
+            slot=settings.slot,
+            channel=settings.channel,
+            trigger_timestamp=settings.trigger_timestamp,
+            timeout=settings.timeout,
+            format=settings.format,
+            edge_polarity=settings.edge_polarity,
+            sync_ref=sync_ref,
+        )
 
     def stop(self) -> None:
         """Stops all the modules in the cluster."""
@@ -2579,26 +2659,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         # Stops all sequencers in the cluster, time efficiently.
         self.instrument.stop_sequencer()
 
-    def _configure_cmm_settings(self, settings: dict[str, Any]) -> None:
-        """
-        Set all the settings of the Cluster Management Module.
-
-        These setting have been
-        provided by the backend.
-
-        Parameters
-        ----------
-        settings
-            A dictionary containing all the settings to set.
-
-        """
-        if "reference_source" in settings:
-            if self.force_set_parameters():
-                self.instrument.set("reference_source", settings["reference_source"])
-            else:
-                lazy_set(self.instrument, "reference_source", settings["reference_source"])
-
-    def prepare(self, options: dict[str, dict]) -> None:
+    def prepare(self, options: dict[str, dict | ClusterSettings]) -> None:
         """
         Prepares the cluster component for execution of a schedule.
 
@@ -2608,18 +2669,23 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
             The compiled instructions to configure the cluster to.
 
         """
-        self._program = copy.deepcopy(options)
+        if not isinstance(options.get("settings", {}), ClusterSettings):
+            cluster_settings = ClusterSettings.from_dict(options.get("settings", {}))
+        else:
+            cluster_settings = options["settings"]
 
-        for name, comp_options in self._program.items():
-            if name == "settings":
-                self._configure_cmm_settings(settings=comp_options)
-            elif name in self._cluster_modules:
-                self._cluster_modules[name].prepare(comp_options)
-            else:
+        self._set_parameter(self.instrument, "reference_source", cluster_settings.reference_source)
+
+        self._program = ClusterComponent._Program(
+            module_programs=without(options, ["settings"]), settings=cluster_settings
+        )
+        for name, comp_options in self._program.module_programs.items():
+            if name not in self._cluster_modules:
                 raise KeyError(
                     f"Attempting to prepare module {name} of cluster {self.name}, while"
                     f" module has not been added to the cluster component."
                 )
+            self._cluster_modules[name].prepare(comp_options)
 
     def retrieve_acquisition(self) -> Dataset | None:
         """
@@ -2631,9 +2697,13 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
             The acquired data or ``None`` if no acquisitions have been performed.
 
         """
+        if self._program is None:
+            # No acquisitions
+            return
+
         acquisitions = Dataset()
         for comp_name, comp in self._cluster_modules.items():
-            if comp_name not in self._program:
+            if comp_name not in self._program.module_programs:
                 continue
 
             comp_acq = comp.retrieve_acquisition()

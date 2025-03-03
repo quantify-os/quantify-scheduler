@@ -25,6 +25,7 @@ from typing import (
 from dataclasses_json import DataClassJsonMixin
 from pydantic import Field, field_validator
 from pydantic.functional_validators import model_validator
+from qblox_instruments.qcodes_drivers.time import Polarity
 from typing_extensions import Annotated
 
 from quantify_core.utilities import deprecated
@@ -64,6 +65,7 @@ from quantify_scheduler.structure.model import DataStructure
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.qblox_backend import (
+        _ClusterCompilationConfig,
         _ClusterModuleCompilationConfig,
         _SequencerCompilationConfig,
     )
@@ -331,6 +333,67 @@ class DistortionSettings(DataClassJsonMixin):
     )
     def get(self, item: str) -> object:  # noqa: D102
         return self[item]
+
+
+@dataclass
+class ExternalTriggerSyncSettings(DataClassJsonMixin):
+    """Settings for synchronizing a cluster on an external trigger."""
+
+    slot: int
+    """Slot of the module receiving the incoming trigger (can be the CMM)."""
+    channel: int
+    """
+    Channel that receives the incoming trigger.
+
+    Note that this is the channel number on the front panel. When using a CMM, this should be 1.
+    """
+    input_threshold: Optional[float] = None
+    """
+    If a QTM module is used, this setting specifies the input threshold.
+
+    If a CMM is used instead, this setting is ignored and the trigger signal must be TTL (>2.4 V).
+    """
+    trigger_timestamp: float = 0
+    """What time the cluster should be set to upon receiving the trigger."""
+    timeout: float = 1
+    """The time the cluster will wait for the trigger to arrive."""
+    format: str = "s"
+    """The time unit for the ``trigger_timestamp`` and ``timeout`` parameters."""
+    edge_polarity: Polarity = Polarity.RISING_EDGE
+    """The edge polarity to trigger on."""
+    sync_to_ref_clock: bool = False
+    """If True, synchronizes to the next internal 10 MHz reference clock tick, by default False."""
+
+
+@dataclass
+class ClusterSettings(DataClassJsonMixin):
+    """Shared settings between all the Qblox modules."""
+
+    reference_source: Literal["internal", "external"]
+    sync_on_external_trigger: Optional[ExternalTriggerSyncSettings] = None
+
+    @classmethod
+    def extract_settings_from_mapping(
+        cls,
+        mapping: _ClusterCompilationConfig,
+    ) -> ClusterSettings:
+        """
+        Factory method that takes all the settings defined in the mapping and generates
+        an instance of this class.
+
+        Parameters
+        ----------
+        mapping
+            The mapping dict to extract the settings from
+        **kwargs
+            Additional keyword arguments passed to the constructor. Can be used to
+            override parts of the mapping dict.
+
+        """
+        return cls(
+            reference_source=mapping.hardware_description.ref,
+            sync_on_external_trigger=mapping.hardware_description.sync_on_external_trigger,
+        )
 
 
 @dataclass
@@ -1196,6 +1259,8 @@ class ClusterDescription(QbloxBaseDescription):
     """Description of the modules of this Cluster, using slot index as key."""
     ip: Optional[str] = None
     """Unique identifier (typically the ip address) used to connect to the cluster"""
+    sync_on_external_trigger: Optional[ExternalTriggerSyncSettings] = None
+    """Settings for synchronizing the cluster on an external trigger."""
 
 
 QbloxHardwareDescription = Annotated[

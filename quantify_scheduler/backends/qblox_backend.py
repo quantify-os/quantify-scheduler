@@ -1645,6 +1645,9 @@ class ChannelPath:
             module_idx=module_idx,
         )
 
+    def __str__(self) -> str:
+        return f"{self.cluster_name}.{self.module_name}.{self.channel_name}"
+
     @property
     def channel_idx(self) -> int:
         """

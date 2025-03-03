@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import warnings
 from collections import defaultdict
 from itertools import chain
 from typing import TYPE_CHECKING, Any
@@ -24,6 +25,10 @@ from quantify_scheduler.backends.qblox.constants import (
     NUMBER_OF_SEQUENCERS_QRM,
     NUMBER_OF_SEQUENCERS_QTM,
 )
+from quantify_scheduler.backends.qblox.driver_version_check import (
+    DriverVersionError,
+    verify_qblox_instruments_version,
+)
 from quantify_scheduler.backends.qblox.enums import (
     QbloxFilterConfig,
     QbloxFilterMarkerDelay,
@@ -35,6 +40,7 @@ from quantify_scheduler.backends.types.common import (
 from quantify_scheduler.backends.types.qblox import (
     AnalogModuleSettings,
     BoundedParameter,
+    ClusterSettings,
     OpInfo,
     QbloxRealTimeFilter,
     RFModuleSettings,
@@ -530,6 +536,9 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
             instrument_cfg=instrument_cfg,
         )
         self.instrument_cfg: _ClusterCompilationConfig  # Help typechecker
+        self._settings: ClusterSettings = ClusterSettings.extract_settings_from_mapping(
+            instrument_cfg
+        )
         self._op_infos: dict[tuple[str, str], list[OpInfo]] = defaultdict(list)
         self.instrument_compilers = self._construct_module_compilers()
         self.portclock_to_path = instrument_cfg.portclock_to_path
@@ -595,9 +604,85 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
             Potential keyword arguments for other compiler classes.
 
         """
+        self._validate_external_trigger_sync()
         self.distribute_data()
         for compiler in self.instrument_compilers.values():
             compiler.prepare(external_los=external_los, schedule_resources=schedule_resources)
+
+    def _validate_external_trigger_sync(self) -> None:
+        """
+        Validate _ClusterCompilationConfig.sync_on_external_trigger.
+
+        If the slot and channel used for external trigger sync are also in portclock_to_path,
+        validate that the settings do not conflict.
+        """
+        if self._settings.sync_on_external_trigger is None:
+            return
+
+        try:
+            verify_qblox_instruments_version(match_versions=("0.15",))
+        except DriverVersionError as err:
+            raise DriverVersionError(
+                "'sync_on_external_trigger' requires qblox-instruments >= 0.15."
+            ) from err
+
+        ext_trig_sync = self._settings.sync_on_external_trigger
+
+        # First check modules defined in the hardware config. Users do not specify the CMM in the
+        # hardware config, so if the slot is present in the hardware config, we only need to check
+        # whether it is a QTM.
+        if ext_trig_sync.slot in self.instrument_cfg.hardware_description.modules:
+            if (
+                self.instrument_cfg.hardware_description.modules[ext_trig_sync.slot].instrument_type
+                != "QTM"
+            ):
+                raise ValueError(
+                    f"Slot {ext_trig_sync.slot} specified in the `sync_on_external_trigger` "
+                    "settings contains a module that is not a QTM or CMM. External trigger "
+                    "synchronization only works with these two module types."
+                )
+        elif ext_trig_sync.channel != 1:
+            # The user may be keeping a module outside of the hardware config intentionally, so
+            # allow but warn just in case.
+            warnings.warn(
+                f"Slot {ext_trig_sync.slot} specified in the sync_on_external_trigger settings is "
+                "not present in the hardware description. If this is a CMM module, only channel 1 "
+                f"can be used, but channel {ext_trig_sync.channel} was specified."
+            )
+
+        # Gather all port-clock pairs with ports connected to the same channel as specified in
+        # external trigger sync...
+        port_clocks_to_check: dict[str, ChannelPath] = {}
+        for port_clock, path in self.portclock_to_path.items():
+            if (
+                path.module_idx == ext_trig_sync.slot
+                and path.channel_idx == ext_trig_sync.channel - 1
+            ):
+                port_clocks_to_check[port_clock] = path
+
+        # ... and check whether they have any conflicting settings.
+        for port_clock, path in port_clocks_to_check.items():
+            if "digital_input" not in path.channel_name:
+                raise ValueError(
+                    f"Slot {path.module_idx} channel {path.channel_idx} is present in the "
+                    f"connectivity as {path}, which is not a 'digital_input'."
+                )
+
+            dig_thresholds = self.instrument_cfg.hardware_options.digitization_thresholds
+            if dig_thresholds is None or port_clock not in dig_thresholds:
+                if ext_trig_sync.input_threshold is None:
+                    raise ValueError(
+                        f"No input threshold was set for {path}. Please specify an input "
+                        "threshold, either via the 'sync_on_external_trigger' settings or the "
+                        "hardware options."
+                    )
+            elif dig_thresholds[port_clock].in_threshold_primary != ext_trig_sync.input_threshold:
+                raise ValueError(
+                    f"Channel {path} has an associated 'in_threshold_primary="
+                    f"{dig_thresholds[port_clock].in_threshold_primary}' "
+                    "which is different from 'sync_on_external_trigger.input_threshold="
+                    f"{ext_trig_sync.input_threshold}'"
+                )
 
     def distribute_data(self) -> None:
         """
@@ -630,8 +715,7 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
             The part of the compiled instructions relevant for this instrument.
 
         """
-        program = {}
-        program["settings"] = {"reference_source": self.instrument_cfg.hardware_description.ref}
+        program: dict[str, Any] = {"settings": self._settings}
 
         sequence_to_file = self.instrument_cfg.hardware_description.sequence_to_file
 

@@ -23,7 +23,10 @@ class DriverVersionError(Exception):
     """Raise when the installed driver version is not supported."""
 
 
-def verify_qblox_instruments_version(version: str | None = driver_version) -> None:
+def verify_qblox_instruments_version(
+    version: str | None = driver_version,
+    match_versions: tuple[str, ...] = SUPPORTED_DRIVER_VERSIONS,
+) -> None:
     """
     Verifies whether the installed version is supported by the qblox_backend.
 
@@ -31,6 +34,8 @@ def verify_qblox_instruments_version(version: str | None = driver_version) -> No
     ----------
     version
         The Qblox driver versions (``qblox-instruments`` python package).
+    match_versions
+        A tuple of version strings (can be `major`, `major.minor`, and/or `major.minor.patch`).
 
     Raises
     ------
@@ -51,15 +56,15 @@ def verify_qblox_instruments_version(version: str | None = driver_version) -> No
             "performed. Either the package is not installed correctly or a version "
             "<0.3.2 was found."
         )
-    major, minor, patch = version.split(".")
-    if f"{major}.{minor}" not in SUPPORTED_DRIVER_VERSIONS:
+    major, minor, patch = version.split(".", maxsplit=2)
+    if f"{major}.{minor}" not in match_versions:
         raise DriverVersionError(
             f"The installed Qblox driver (qblox-instruments) version {version} is not "
             "supported by backend. Please install one of the supported versions "
-            f"({'; '.join(SUPPORTED_DRIVER_VERSIONS)}) in order to use this backend."
+            f"({'; '.join(match_versions)}) in order to use this backend."
         )
 
-    if f"{major}.{minor}" != SUPPORTED_DRIVER_VERSIONS[-1]:
+    if f"{major}.{minor}" != match_versions[-1]:
         logger.info(
             "A newer version of Qblox driver (qblox-instruments) which is supported by "
             "the backend is available."
