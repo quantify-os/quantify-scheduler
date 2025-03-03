@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import Any, Generator
 
 import pytest
@@ -16,12 +17,12 @@ QBLOX_HARDWARE_CONFIG_NV_CENTER = utils.load_json_example_scheme(
 
 @pytest.fixture
 def qblox_hardware_config_transmon() -> Generator[dict[str, Any], None, None]:
-    yield dict(QBLOX_HARDWARE_CONFIG_TRANSMON)
+    yield deepcopy(QBLOX_HARDWARE_CONFIG_TRANSMON)
 
 
 @pytest.fixture
 def qblox_hardware_config_nv_center() -> Generator[dict[str, Any], None, None]:
-    yield dict(QBLOX_HARDWARE_CONFIG_NV_CENTER)
+    yield deepcopy(QBLOX_HARDWARE_CONFIG_NV_CENTER)
 
 
 @pytest.fixture

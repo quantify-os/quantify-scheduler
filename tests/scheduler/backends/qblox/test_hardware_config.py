@@ -887,9 +887,7 @@ def test_extract_sequencer_compilation_configs():
 def test_extract_instrument_compilation_configs_nv_center(
     qblox_hardware_config_nv_center,
 ):
-    hardware_config = QbloxHardwareCompilationConfig.model_validate(
-        deepcopy(qblox_hardware_config_nv_center)
-    )
+    hardware_config = QbloxHardwareCompilationConfig.model_validate(qblox_hardware_config_nv_center)
 
     portclocks_used = {
         ("qe0:optical_control", "qe0.ge1"),

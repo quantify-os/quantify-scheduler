@@ -390,7 +390,6 @@ def test_thresholded_trigger_count_acquisition_qrm(
     cluster = make_cluster_component(name=cluster_name, modules={"1": "QCM", "4": "QRM"})
     qrm = cluster._cluster_modules[qrm_name]
 
-    # Dummy data taken directly from hardware test, does not correspond to schedule below
     dummy_data = {
         "0": {
             "index": 0,
@@ -615,8 +614,9 @@ def test_same_label_different_settings_raises(
         "conflicting threshold settings are scheduled, or ThresholdedTriggerCount acquisitions "
         "with the same feedback trigger label are scheduled on different modules."
     else:
-        match_str = "All ThresholdedTriggerCount acquisitions on the same port-clock must have the "
-        "same threshold settings. Found different settings for thresholded_trigger_count"
+        match_str = r"Found .*(less_than.*greater_than_equal_to|greater_than_equal_to.*less_than).*"
+        f" as possible values for 'condition' on the sequencer for port-clock {port}-{clock}. "
+        "'condition' must be unique per sequencer."
     compiler = SerialCompiler(name="compiler")
     with pytest.raises(
         ValueError,
@@ -686,3 +686,191 @@ def test_same_label_different_modules_raises(
             schedule,
             config=config,
         )
+
+
+@pytest.mark.parametrize("qubit", ["qe0", "qe1"])
+def test_same_sequencer_different_labels_raises(
+    mock_setup_basic_nv_qblox_hardware, qblox_hardware_config_nv_center, qubit
+):
+    port = f"{qubit}:optical_readout"
+    clock = f"{qubit}.ge0"
+
+    schedule = Schedule("test")
+    schedule.add(
+        ThresholdedTriggerCount(
+            port=port,
+            clock=clock,
+            acq_channel=0,
+            duration=1e-6,
+            threshold=5,
+            feedback_trigger_label=f"{qubit}a",
+            feedback_trigger_condition=TriggerCondition.LESS_THAN,
+        )
+    )
+    schedule.add(
+        ConditionalOperation(body=X("qe0"), qubit_name=f"{qubit}a"),
+        rel_time=364e-9,
+    )
+    schedule.add(IdlePulse(4e-9))
+    schedule.add(
+        ThresholdedTriggerCount(
+            port=port,
+            clock=clock,
+            acq_channel=1,
+            duration=1e-6,
+            threshold=5,
+            feedback_trigger_label=f"{qubit}b",
+            feedback_trigger_condition=TriggerCondition.LESS_THAN,
+        )
+    )
+
+    schedule.add(
+        ConditionalOperation(body=X("qe1"), qubit_name=f"{qubit}b"),
+        rel_time=364e-9,
+    )
+    schedule.add(IdlePulse(4e-9))
+
+    quantum_device = mock_setup_basic_nv_qblox_hardware["quantum_device"]
+    quantum_device.hardware_config(qblox_hardware_config_nv_center)
+    config = quantum_device.generate_compilation_config()
+
+    compiler = SerialCompiler(name="compiler")
+    with pytest.raises(
+        ValueError,
+        match="Found {1, 2} as possible values for 'feedback_trigger_address' on the sequencer for "
+        f"port-clock {port}-{clock}. 'feedback_trigger_address' must be unique per sequencer.",
+    ):
+        _ = compiler.compile(
+            schedule,
+            config=config,
+        )
+
+
+def test_same_cond_sequencer_different_condition_qtm_success(
+    mock_setup_basic_nv_qblox_hardware, qblox_hardware_config_nv_center
+):
+    qblox_hardware_config_nv_center["hardware_options"]["digitization_thresholds"][
+        "qe2:optical_readout-digital"
+    ] = {"in_threshold_primary": 0.5}
+    qblox_hardware_config_nv_center["connectivity"]["graph"].append(
+        ["cluster0.module5.digital_input_6", "qe2:optical_readout"]
+    )
+
+    qubit = "qe1"
+    port = f"{qubit}:optical_readout"
+    clock = f"{qubit}.ge0"
+
+    schedule = Schedule("test")
+    schedule.add(
+        ThresholdedTriggerCount(
+            port=port,
+            clock=clock,
+            acq_channel=0,
+            duration=1e-6,
+            threshold=5,
+            feedback_trigger_label=qubit,
+            feedback_trigger_condition=TriggerCondition.LESS_THAN,
+        )
+    )
+    schedule.add(
+        ConditionalOperation(body=X("qe0"), qubit_name=qubit),
+        rel_time=364e-9,
+    )
+    schedule.add(IdlePulse(4e-9))
+
+    qubit = "qe2"
+    port = f"{qubit}:optical_readout"
+    clock = "digital"
+    schedule.add(
+        ThresholdedTriggerCount(
+            port=port,
+            clock=clock,
+            acq_channel=1,
+            duration=1e-6,
+            threshold=10,
+            feedback_trigger_label=qubit,
+            feedback_trigger_condition=TriggerCondition.LESS_THAN,
+        )
+    )
+
+    schedule.add(
+        ConditionalOperation(body=X("qe0"), qubit_name=qubit),
+        rel_time=364e-9,
+    )
+    schedule.add(IdlePulse(4e-9))
+
+    quantum_device = mock_setup_basic_nv_qblox_hardware["quantum_device"]
+    quantum_device.hardware_config(qblox_hardware_config_nv_center)
+    config = quantum_device.generate_compilation_config()
+
+    compiler = SerialCompiler(name="compiler")
+    # This must not error
+    _ = compiler.compile(
+        schedule,
+        config=config,
+    )
+
+
+def test_same_cond_sequencer_different_condition_qrm_success(
+    mock_setup_basic_nv_qblox_hardware, qblox_hardware_config_nv_center
+):
+    qblox_hardware_config_nv_center["hardware_options"]["sequencer_options"][
+        "qe2:optical_readout-cl0.baseband"
+    ] = {"ttl_acq_threshold": 0.5}
+    qblox_hardware_config_nv_center["connectivity"]["graph"].append(
+        ["cluster0.module4.real_input_1", "qe2:optical_readout"]
+    )
+
+    qubit = "qe0"
+    port = f"{qubit}:optical_readout"
+    clock = f"{qubit}.ge0"
+
+    schedule = Schedule("test")
+    schedule.add(
+        ThresholdedTriggerCount(
+            port=port,
+            clock=clock,
+            acq_channel=0,
+            duration=1e-6,
+            threshold=5,
+            feedback_trigger_label=qubit,
+            feedback_trigger_condition=TriggerCondition.LESS_THAN,
+        )
+    )
+    schedule.add(
+        ConditionalOperation(body=X("qe0"), qubit_name=qubit),
+        rel_time=364e-9,
+    )
+    schedule.add(IdlePulse(4e-9))
+
+    qubit = "qe2"
+    port = f"{qubit}:optical_readout"
+    clock = "cl0.baseband"
+    schedule.add(
+        ThresholdedTriggerCount(
+            port=port,
+            clock=clock,
+            acq_channel=1,
+            duration=1e-6,
+            threshold=10,
+            feedback_trigger_label=qubit,
+            feedback_trigger_condition=TriggerCondition.LESS_THAN,
+        )
+    )
+
+    schedule.add(
+        ConditionalOperation(body=X("qe0"), qubit_name=qubit),
+        rel_time=364e-9,
+    )
+    schedule.add(IdlePulse(4e-9))
+
+    quantum_device = mock_setup_basic_nv_qblox_hardware["quantum_device"]
+    quantum_device.hardware_config(qblox_hardware_config_nv_center)
+    config = quantum_device.generate_compilation_config()
+
+    compiler = SerialCompiler(name="compiler")
+    # This must not error
+    _ = compiler.compile(
+        schedule,
+        config=config,
+    )

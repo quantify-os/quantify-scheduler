@@ -242,14 +242,17 @@ class ConditionalInfo:
     """Container for conditional address data."""
 
     portclocks: set[tuple[str, str]]
+    """Port-clocks reading from the trigger address."""
     address: int
+    """Trigger address."""
     _trigger_invert: bool | None = None
     _trigger_count: int | None = None
 
     @property
     def trigger_invert(self) -> bool | None:
         """
-        If True, inverts the trigger before reading from the trigger network.
+        If True, inverts the threshold comparison result when reading from the trigger address
+        counter.
 
         If a ThresholdedTriggerCount acquisition is done with a QRM, this must be set according to
         the condition you are trying to measure (greater than /equal to the threshold, or less than
@@ -284,7 +287,7 @@ class ConditionalInfo:
         if self._trigger_count is not None and self._trigger_count != value:
             raise ValueError(
                 f"Trying to set conflicting settings for feedback trigger address count threshold. "
-                f"Setting {value} while the previous value was {self._trigger_invert}. This may "
+                f"Setting {value} while the previous value was {self._trigger_count}. This may "
                 "happen because multiple ThresholdedTriggerCount acquisitions with conflicting "
                 "threshold settings are scheduled, or ThresholdedTriggerCount acquisitions with "
                 "the same feedback trigger label are scheduled on different modules."

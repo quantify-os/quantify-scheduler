@@ -896,10 +896,9 @@ def test_thresholded_acquisition(
     threshold,
     make_cluster_component,
 ):
-    hardware_config = qblox_hardware_config_transmon
     mock_setup = mock_setup_basic_transmon_with_standard_params
     quantum_device = mock_setup["quantum_device"]
-    quantum_device.hardware_config(hardware_config)
+    quantum_device.hardware_config(qblox_hardware_config_transmon)
     qubit_to_device_map = {
         "q4": "cluster0_module3",
         "q0": "cluster0_module4",
@@ -976,10 +975,9 @@ def test_thresholded_acquisition_wrong_values(
     rotation,
     threshold,
 ):
-    hardware_config = qblox_hardware_config_transmon
     mock_setup = mock_setup_basic_transmon_with_standard_params
     quantum_device = mock_setup["quantum_device"]
-    quantum_device.hardware_config(hardware_config)
+    quantum_device.hardware_config(qblox_hardware_config_transmon)
 
     qubit = mock_setup["q0"]
     qubit.measure.acq_rotation(rotation)

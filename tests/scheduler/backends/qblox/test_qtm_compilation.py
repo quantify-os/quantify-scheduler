@@ -3,7 +3,6 @@
 """Tests for the QTM."""
 
 import re
-from copy import deepcopy
 from unittest.mock import Mock
 
 import pytest
@@ -20,15 +19,9 @@ from quantify_scheduler.backends.qblox_backend import (
 )
 from quantify_scheduler.backends.types.common import ModulationFrequencies
 from quantify_scheduler.backends.types.qblox import (
-    AnalogSequencerSettings,
-    BoundedParameter,
     DigitalChannelDescription,
-    OpInfo,
     SequencerOptions,
-    SequencerSettings,
-    StaticAnalogModuleProperties,
     StaticTimetagModuleProperties,
-    TimetagSequencerSettings,
 )
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.enums import BinMode, TimeRef, TimeSource
@@ -669,12 +662,14 @@ start:
 def test_timetag_different_source(mock_setup_basic_nv):
     schedule = Schedule(name="Test", repetitions=1)
 
+    port = "qe1:optical_readout"
+    clock = "qe1.ge0"
     schedule.add(Timestamp(port="qe1:optical_readout", clock="qe1.ge0"))
     schedule.add(
         Timetag(
             duration=100e-9,
-            port="qe1:optical_readout",
-            clock="qe1.ge0",
+            port=port,
+            clock=clock,
             time_source=TimeSource.FIRST,
             time_ref=TimeRef.TIMESTAMP,
         ),
@@ -683,8 +678,8 @@ def test_timetag_different_source(mock_setup_basic_nv):
     schedule.add(
         Timetag(
             duration=100e-9,
-            port="qe1:optical_readout",
-            clock="qe1.ge0",
+            port=port,
+            clock=clock,
             time_source=TimeSource.SECOND,
             time_ref=TimeRef.TIMESTAMP,
         ),
@@ -698,7 +693,9 @@ def test_timetag_different_source(mock_setup_basic_nv):
     compiler = SerialCompiler(name="compiler")
     with pytest.raises(
         ValueError,
-        match="time_source must be the same for all acquisitions on a port-clock combination.",
+        match=r"Found .*(first.*second|second.*first).* as possible values for "
+        f"'time_source' on the sequencer for port-clock {port}-{clock}. 'time_source' must be "
+        "unique per sequencer.",
     ):
         _ = compiler.compile(schedule=schedule, config=quantum_device.generate_compilation_config())
 
@@ -706,12 +703,14 @@ def test_timetag_different_source(mock_setup_basic_nv):
 def test_timetag_different_ref(mock_setup_basic_nv):
     schedule = Schedule(name="Test", repetitions=1)
 
+    port = "qe1:optical_readout"
+    clock = "qe1.ge0"
     schedule.add(Timestamp(port="qe1:optical_readout", clock="qe1.ge0"))
     schedule.add(
         Timetag(
             duration=100e-9,
-            port="qe1:optical_readout",
-            clock="qe1.ge0",
+            port=port,
+            clock=clock,
             time_source=TimeSource.FIRST,
             time_ref=TimeRef.TIMESTAMP,
         ),
@@ -720,8 +719,8 @@ def test_timetag_different_ref(mock_setup_basic_nv):
     schedule.add(
         Timetag(
             duration=100e-9,
-            port="qe1:optical_readout",
-            clock="qe1.ge0",
+            port=port,
+            clock=clock,
             time_source=TimeSource.FIRST,
             time_ref=TimeRef.END,
         ),
@@ -735,7 +734,10 @@ def test_timetag_different_ref(mock_setup_basic_nv):
     compiler = SerialCompiler(name="compiler")
     with pytest.raises(
         ValueError,
-        match="time_ref must be the same for all acquisitions on a port-clock combination.",
+        match=(
+            r"Found .*(end.*timestamp|timestamp.*end).* as possible values for 'time_ref' on the "
+            rf"sequencer for port-clock {port}-{clock}. 'time_ref' must be unique per sequencer."
+        ),
     ):
         _ = compiler.compile(schedule=schedule, config=quantum_device.generate_compilation_config())
 
@@ -1289,7 +1291,7 @@ def test_timetag_fine_delay_error_between_op(mock_setup_basic_nv):
         _ = compiler.compile(schedule=schedule, config=quantum_device.generate_compilation_config())
 
 
-def test_time_ref_port(mock_setup_basic_nv):
+def test_time_ref_port(mock_setup_basic_nv, qblox_hardware_config_nv_center):
     schedule = Schedule(name="Test", repetitions=1)
 
     schedule.add(
@@ -1318,14 +1320,13 @@ def test_time_ref_port(mock_setup_basic_nv):
 
     quantum_device = mock_setup_basic_nv["quantum_device"]
 
-    hardware_config = deepcopy(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
-    hardware_config["hardware_options"]["digitization_thresholds"]["test:another_port-digital"] = {
-        "in_threshold_primary": 0.5
-    }
-    hardware_config["connectivity"]["graph"].append(
+    qblox_hardware_config_nv_center["hardware_options"]["digitization_thresholds"][
+        "test:another_port-digital"
+    ] = {"in_threshold_primary": 0.5}
+    qblox_hardware_config_nv_center["connectivity"]["graph"].append(
         ["cluster0.module5.digital_input_7", "test:another_port"]
     )
-    quantum_device.hardware_config(hardware_config)
+    quantum_device.hardware_config(qblox_hardware_config_nv_center)
 
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(

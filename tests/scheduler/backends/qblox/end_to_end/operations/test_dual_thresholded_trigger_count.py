@@ -2,6 +2,7 @@
 # Licensed according to the LICENCE file on the main branch
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 import numpy as np
@@ -438,8 +439,11 @@ def test_same_label_different_settings_raises(
     compiler = SerialCompiler(name="compiler")
     with pytest.raises(
         ValueError,
-        match="feedback_trigger_address mid must be the same for all acquisitions on a port-clock "
-        "combination.",
+        match=re.escape(
+            "Found {1, 2} as possible values for 'feedback_trigger_address mid' on the sequencer "
+            "for port-clock qe1:optical_readout-qe1.ge0. 'feedback_trigger_address mid' must be "
+            "unique per sequencer."
+        ),
     ):
         _ = compiler.compile(
             schedule,

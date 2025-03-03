@@ -16,6 +16,7 @@ from typing import (
     Any,
     Generic,
     Hashable,
+    Iterable,
     Iterator,
     Protocol,
     TypeVar,
@@ -145,6 +146,9 @@ class InstrumentCompiler(ABC):
             dependent on implementation.
 
         """
+
+
+T = TypeVar("T", bound=Hashable)
 
 
 class SequencerCompiler(ABC):
@@ -296,6 +300,19 @@ class SequencerCompiler(ABC):
             The instantiated strategy object.
 
         """
+
+    def _get_unique_value_or_raise(self, values: Iterable[T], setting_name: str) -> T:
+        """Exception that occurs when multiple different values are derived for a setting."""
+        values_set = set(values)
+        if len(values_set) == 1:
+            return values_set.pop()
+
+        phrase = "no" if len(values_set) == 0 else f"{values_set} as possible"
+        raise ValueError(
+            f"Found {phrase} values for '{setting_name}' on the "
+            f"sequencer for port-clock {self.port}-{self.clock}. '{setting_name}' "
+            "must be unique per sequencer."
+        )
 
     def add_operation_strategy(self, op_strategy: IOperationStrategy) -> None:
         """
@@ -1139,6 +1156,7 @@ class SequencerCompiler(ABC):
         )
         self._remove_redundant_update_parameters()
         self._validate_update_parameters_alignment()
+        self._prepare_threshold_settings(self.op_strategies)
 
     def _prepare_threshold_settings(
         self,
@@ -1243,9 +1261,7 @@ class SequencerCompiler(ABC):
                     acquisitions=acquisitions,
                     acq_metadata=acq_metadata,
                 )
-                self._validate_thresholded_acquisitions(acquisitions, acq_metadata.acq_protocol)
                 weights_dict = self._generate_weights_dict()
-        self._prepare_threshold_settings(self.op_strategies)
 
         # acq_declaration_dict needs to count number of acquires in the program
         operation_list = self._get_ordered_operations()
@@ -1277,43 +1293,6 @@ class SequencerCompiler(ABC):
             )
 
         return self._settings, acq_metadata
-
-    def _validate_thresholded_acquisitions(
-        self, operations: list[IOperationStrategy], protocol: str
-    ) -> None:
-        """
-        All thresholded acquisitions on a single sequencer must have the same label and the same
-        threshold settings.
-        """
-        if protocol not in ("ThresholdedAcquisition", "ThresholdedTriggerCount"):
-            # Early return: we do not check other protocols.
-            return
-
-        acquisitions = [
-            op
-            for op in operations
-            if op.operation_info.is_acquisition
-            and op.operation_info.data.get("feedback_trigger_label") is not None
-        ]
-        if len(acquisitions) < 2:
-            # Early return: only 1 acquisition means nothing can conflict.
-            return
-
-        keys_to_check = {}
-        if protocol == "ThresholdedAcquisition":
-            keys_to_check = {"acq_threshold", "acq_rotation", "feedback_trigger_label"}
-        elif protocol == "ThresholdedTriggerCount":
-            keys_to_check = {"thresholded_trigger_count", "feedback_trigger_label"}
-
-        for key in keys_to_check:
-            first_value = acquisitions[0].operation_info.data[key]
-            for acq in acquisitions[1:]:
-                if acq.operation_info.data[key] != first_value:
-                    raise ValueError(
-                        f"All {protocol} acquisitions on the same port-clock must have the same "
-                        f"threshold settings. Found different settings for {key}:\n{first_value}\n"
-                        f"\n{acq.operation_info.data[key]}"
-                    )
 
 
 _SequencerT_co = TypeVar("_SequencerT_co", bound=SequencerCompiler, covariant=True)

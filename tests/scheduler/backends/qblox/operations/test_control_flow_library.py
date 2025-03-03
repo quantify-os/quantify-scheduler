@@ -7,6 +7,7 @@ from quantify_scheduler.backends.graph_compilation import SerialCompiler
 from quantify_scheduler.backends.qblox.operations.control_flow_library import (
     ConditionalOperation,
 )
+from quantify_scheduler.backends.qblox.operations.gate_library import ConditionalReset
 from quantify_scheduler.operations.gate_library import Measure, X, Y, Z
 from quantify_scheduler.operations.pulse_library import DRAGPulse, SquarePulse
 from quantify_scheduler.schedules.schedule import Schedule

@@ -1474,8 +1474,7 @@ def test_qasm_hook(
     qblox_hardware_config_transmon,
 ):
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    hardware_compilation_config = copy.deepcopy(qblox_hardware_config_transmon)
-    hardware_compilation_config["hardware_options"]["sequencer_options"] = {
+    qblox_hardware_config_transmon["hardware_options"]["sequencer_options"] = {
         "q0:mw-q0.01": {
             "qasm_hook_func": _func_for_hook_test,
         }
@@ -1484,7 +1483,7 @@ def test_qasm_hook(
     sched = pulse_only_schedule
     sched.repetitions = 11
 
-    quantum_device.hardware_config(hardware_compilation_config)
+    quantum_device.hardware_config(qblox_hardware_config_transmon)
     compiler = SerialCompiler(name="compiler")
     comp_sched = compiler.compile(
         sched,
@@ -2258,11 +2257,10 @@ def test_assign_frequencies_rf_downconverter(
     sched.add(X(element_names[0]))
     sched.add(X(element_names[1]))
 
-    hardware_compilation_config = copy.deepcopy(qblox_hardware_config_transmon)
-    hardware_compilation_config["hardware_description"]["cluster0"]["modules"]["2"][
+    qblox_hardware_config_transmon["hardware_description"]["cluster0"]["modules"]["2"][
         "complex_output_0"
     ] = {"downconverter_freq": downconverter_freq0}
-    hardware_compilation_config["hardware_description"]["cluster0"]["modules"]["2"][
+    qblox_hardware_config_transmon["hardware_description"]["cluster0"]["modules"]["2"][
         "complex_output_1"
     ] = {"downconverter_freq": downconverter_freq1}
 
@@ -2279,7 +2277,7 @@ def test_assign_frequencies_rf_downconverter(
     qubit0_clock_freq = device_cfg.clocks[f"{qubit0.name}.01"]
     qubit1_clock_freq = device_cfg.clocks[f"{qubit1.name}.01"]
 
-    quantum_device.hardware_config(hardware_compilation_config)
+    quantum_device.hardware_config(qblox_hardware_config_transmon)
     compiler = SerialCompiler(name="compiler")
 
     context_mngr = nullcontext()
@@ -2322,11 +2320,11 @@ def test_assign_frequencies_rf_downconverter(
     actual_lo1 = qcm_program["settings"].lo1_freq
     actual_if1 = qcm_program["sequencers"]["seq1"].modulation_freq
 
-    if0 = hardware_compilation_config["hardware_options"]["modulation_frequencies"][
+    if0 = qblox_hardware_config_transmon["hardware_options"]["modulation_frequencies"][
         f"{qubit0.ports.microwave()}-{qubit0.name}.01"
     ].get("interm_freq")
     assert if0 is not None
-    lo1 = hardware_compilation_config["hardware_options"]["modulation_frequencies"][
+    lo1 = qblox_hardware_config_transmon["hardware_options"]["modulation_frequencies"][
         f"{qubit1.ports.microwave()}-{qubit1.name}.01"
     ].get("lo_freq")
     expected_lo1 = lo1
@@ -2982,9 +2980,7 @@ def test_compile_sequencer_options(
     )
 
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    hardware_compilation_config = copy.deepcopy(qblox_hardware_config_transmon)
-
-    hardware_compilation_config["hardware_options"]["sequencer_options"] = {
+    qblox_hardware_config_transmon["hardware_options"]["sequencer_options"] = {
         "q4:res-q4.ro": {
             "ttl_acq_threshold": 0.2,
             "init_offset_awg_path_I": 0.1,
@@ -2994,7 +2990,7 @@ def test_compile_sequencer_options(
         }
     }
 
-    quantum_device.hardware_config(hardware_compilation_config)
+    quantum_device.hardware_config(qblox_hardware_config_transmon)
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
         sched,
