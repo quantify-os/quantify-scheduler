@@ -728,11 +728,6 @@ class AnalogSequencerSettings(SequencerSettings):
     """
     ttl_acq_auto_bin_incr_en: Optional[bool] = None
     """Selects if the bin index is automatically incremented when acquiring multiple triggers."""
-    allow_off_grid_nco_ops: Optional[bool] = None
-    """
-    Flag to allow NCO operations to play at times that are not aligned with the NCO
-    grid.
-    """
 
     @classmethod
     def initialize_from_compilation_config(
@@ -814,8 +809,6 @@ class AnalogSequencerSettings(SequencerSettings):
             else None
         )
 
-        allow_off_grid_nco_ops = sequencer_cfg.allow_off_grid_nco_ops
-
         return cls(
             nco_en=nco_en,
             sync_en=True,
@@ -832,7 +825,6 @@ class AnalogSequencerSettings(SequencerSettings):
             mixer_corr_gain_ratio=mixer_amp_ratio,
             ttl_acq_threshold=ttl_acq_threshold,
             auto_sideband_cal=auto_sideband_cal,
-            allow_off_grid_nco_ops=allow_off_grid_nco_ops,
         )
 
 

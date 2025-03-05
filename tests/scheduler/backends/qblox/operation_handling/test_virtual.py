@@ -180,11 +180,11 @@ class TestUpdateParameterStrategy:
 class TestNcoSetClockFrequencyStrategy:
     def test_docstring(self):
         assert (
-            f"``upd_param`` of {constants.NCO_SET_FREQ_WAIT} ns"
+            f"``upd_param`` of {constants.MIN_TIME_BETWEEN_OPERATIONS} ns"
             in virtual.NcoSetClockFrequencyStrategy.__doc__
         )
         assert (
-            f"total duration of {constants.NCO_SET_FREQ_WAIT} ns"
+            f"total duration of {constants.MIN_TIME_BETWEEN_OPERATIONS} ns"
             in virtual.NcoSetClockFrequencyStrategy.__doc__
         )
 

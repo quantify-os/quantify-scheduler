@@ -184,7 +184,6 @@ def test_prepare_acq_settings():
             lo_name=None,
             modulation_frequencies=ModulationFrequencies(),
             mixer_corrections=None,
-            allow_off_grid_nco_ops=None,
             digitization_thresholds=None,
         ),
     )

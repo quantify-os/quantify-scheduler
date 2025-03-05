@@ -10,6 +10,8 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Iterator
 
+import numpy as np
+
 from quantify_scheduler.backends.qblox import (
     constants,
     helpers,
@@ -378,8 +380,7 @@ class AnalogSequencerCompiler(SequencerCompiler):
         is called.
         """
         self._update_set_clock_frequency_operations()
-        if not self._settings.allow_off_grid_nco_ops:
-            self._assert_nco_operation_timing_on_grid(self._get_ordered_operations())
+        self._assert_enough_time_between_freq_phase_updates(self._get_ordered_operations())
         super().prepare()
 
     def _update_set_clock_frequency_operations(self) -> None:
@@ -391,87 +392,30 @@ class AnalogSequencerCompiler(SequencerCompiler):
                     }
                 )
 
-    def _get_latency_correction_ns(self, latency_correction: float) -> int:
-        # NCO grid alignment for NCO operations, _without_ latency corrections, is
-        # already checked in `_assert_nco_operation_timing_on_grid`. Therefore here we
-        # only check the latency corrections. Method overridden from superclass because
-        # only QRM/QCM modules have NCO operations.
-        latency_correction = super()._get_latency_correction_ns(latency_correction)
-        if not self._settings.allow_off_grid_nco_ops:
-            try:
-                helpers.to_grid_time(latency_correction * 1e-9, constants.NCO_TIME_GRID)
-            except ValueError as e:
-                raise NcoOperationTimingError(
-                    f"The latency correction value of {latency_correction} ns for "
-                    f"{self.port}-{self.clock} does not align with the grid time of "
-                    f"{constants.NCO_TIME_GRID} ns for NCO operations. The latency "
-                    "corrections must adhere to this grid time to ensure proper "
-                    "alignment of all later operations in the schedule."
-                ) from e
-
-        return latency_correction
-
     @staticmethod
-    def _assert_nco_operation_timing_on_grid(
+    def _assert_enough_time_between_freq_phase_updates(
         ordered_op_strategies: list[IOperationStrategy],
     ) -> None:
-        """Check whether this sequencer's operation adhere to NCO timing restrictions."""
-        last_freq_upd_time = -constants.NCO_SET_FREQ_WAIT
-        last_phase_upd_time = -constants.NCO_SET_PH_DELTA_WAIT
+        """Check whether there is enough time between subsequent frequency or phase updates."""
+
+        def check_timing(op: IOperationStrategy, type_of_op: str, last_update: int | float) -> int:
+            this_time = round(op.operation_info.timing * 1e9)
+            if (diff := this_time - last_update) < constants.MIN_TIME_BETWEEN_NCO_OPERATIONS:
+                raise NcoOperationTimingError(
+                    f"Operation {op.operation_info} occurred {diff} ns after the "
+                    f"previous {type_of_op} update. "
+                    f"The minimum time between {type_of_op} "
+                    f"updates must be {constants.MIN_TIME_BETWEEN_OPERATIONS} ns."
+                )
+            return this_time
+
+        last_freq_update = -np.inf
+        last_phase_update = -np.inf
         for op in ordered_op_strategies:
-            timing = round(op.operation_info.timing * 1e9)
             if isinstance(op, NcoSetClockFrequencyStrategy):
-                if (diff := timing - last_freq_upd_time) < constants.NCO_SET_FREQ_WAIT:
-                    raise NcoOperationTimingError(
-                        f"Operation {op.operation_info} occurred {diff} ns after the "
-                        "previous frequency update. The minimum time between frequency "
-                        f"updates must be {constants.NCO_SET_FREQ_WAIT} ns."
-                    )
-                else:
-                    last_freq_upd_time = timing
-
+                last_freq_update = check_timing(op, "frequency", last_freq_update)
             if isinstance(op, (NcoPhaseShiftStrategy, NcoResetClockPhaseStrategy)):
-                timing = round(op.operation_info.timing * 1e9)
-                if (diff := timing - last_phase_upd_time) < constants.NCO_SET_PH_DELTA_WAIT:
-                    raise NcoOperationTimingError(
-                        f"Operation {op.operation_info} occurred {diff} ns after the "
-                        "previous phase update. The minimum time between phase "
-                        f"updates must be {constants.NCO_SET_PH_DELTA_WAIT} ns."
-                    )
-                else:
-                    last_phase_upd_time = timing
-
-            if isinstance(
-                op,
-                (
-                    NcoSetClockFrequencyStrategy,
-                    NcoPhaseShiftStrategy,
-                    NcoResetClockPhaseStrategy,
-                ),
-            ):
-                try:
-                    helpers.to_grid_time(timing * 1e-9, constants.NCO_TIME_GRID)
-                except ValueError as e:
-                    raise NcoOperationTimingError(
-                        f"NCO related operation {op.operation_info} must be on "
-                        f"{constants.NCO_TIME_GRID} ns time grid"
-                    ) from e
-
-    def _assert_total_play_time_on_nco_grid(self) -> None:
-        if self._settings.allow_off_grid_nco_ops:
-            return
-
-        try:
-            helpers.to_grid_time(self.parent.total_play_time, constants.NCO_TIME_GRID)
-        except ValueError as e:
-            raise NcoOperationTimingError(
-                "The schedule is repeated with a duration of "
-                f"{round(self.parent.total_play_time * 1e9)} ns per iteration, "
-                "which does not align with the grid time of "
-                f"{constants.NCO_TIME_GRID} ns for NCO operations. The duration "
-                "must adhere to this grid time to ensure proper alignment of NCO "
-                "operations for each iteration."
-            ) from e
+                last_phase_update = check_timing(op, "phase", last_phase_update)
 
     def _write_pre_wait_sync_instructions(self, qasm: QASMProgram) -> None:
         """

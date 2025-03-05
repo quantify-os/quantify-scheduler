@@ -30,11 +30,9 @@ from quantify_scheduler.backends.qblox.crosstalk_compensation import (
     crosstalk_compensation,
 )
 from quantify_scheduler.backends.qblox.enums import ChannelMode
-from quantify_scheduler.backends.qblox.exceptions import NcoOperationTimingError
 from quantify_scheduler.backends.qblox.helpers import (
     _generate_new_style_hardware_compilation_config,
     assign_pulse_and_acq_info_to_devices,
-    to_grid_time,
 )
 from quantify_scheduler.backends.qblox.operations import long_square_pulse
 from quantify_scheduler.backends.qblox.operations.pulse_library import (
@@ -79,11 +77,6 @@ from quantify_scheduler.operations.control_flow_library import (
     ConditionalOperation,
     ControlFlowOperation,
     LoopOperation,
-)
-from quantify_scheduler.operations.pulse_library import (
-    ResetClockPhase,
-    SetClockFrequency,
-    ShiftClockPhase,
 )
 from quantify_scheduler.schedules.schedule import (
     CompiledSchedule,
@@ -714,9 +707,6 @@ def hardware_compile(
 
     validate_non_overlapping_stitched_pulse(schedule)
 
-    if not hardware_cfg.allow_off_grid_nco_ops:
-        _check_nco_operations_on_nco_time_grid(schedule)
-
     acq_channels_data, _schedulable_label_to_acq_index = generate_acq_channels_data(schedule)
 
     container = compiler_container.CompilerContainer.from_hardware_cfg(schedule, hardware_cfg)
@@ -776,7 +766,11 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
     :class:`~quantify_scheduler.backends.types.common.LatencyCorrection` or
     :class:`~quantify_scheduler.backends.types.qblox.SequencerOptions`.
     """
-    allow_off_grid_nco_ops: bool | None = None
+    allow_off_grid_nco_ops: bool | None = Field(
+        default=None,
+        deprecated="`allow_off_grid_nco_ops` is deprecated as NCO operations can be executed on a "
+        "1 ns time grid.",
+    )
     """
     Flag to allow NCO operations to play at times that are not aligned with the NCO
     grid.
@@ -990,9 +984,6 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
                 options
             )
 
-        for instr_cfg in cluster_configs.values():
-            instr_cfg.allow_off_grid_nco_ops = self.allow_off_grid_nco_ops
-
         # Delete hardware descriptions of unused modules
         unused_modules = defaultdict(list)
         for instrument_name, cfg in cluster_configs.items():
@@ -1192,11 +1183,6 @@ class _ClusterModuleCompilationConfig(ABC, DataStructure):
     lo_to_path: dict[str, ChannelPath] = {}
     """Mapping between lo names and their associated channel name paths
     (e.g. cluster0.module1.complex_output_0)."""
-    allow_off_grid_nco_ops: bool | None = None
-    """
-    Flag to allow NCO operations to play at times that are not aligned with the NCO
-    grid.
-    """
     parent_config_version: str
     """
     Version of the parent hardware compilation config used.
@@ -1280,7 +1266,6 @@ class _ClusterModuleCompilationConfig(ABC, DataStructure):
                 lo_name=channel_to_lo.get(path.channel_name),
                 modulation_frequencies=modulation_frequencies,  # type: ignore
                 mixer_corrections=mixer_corrections,
-                allow_off_grid_nco_ops=self.allow_off_grid_nco_ops,
                 digitization_thresholds=digitization_thresholds,
             )
 
@@ -1473,11 +1458,6 @@ class _SequencerCompilationConfig(DataStructure):
     """Modulation frequencies associated to this sequencer."""
     mixer_corrections: QbloxMixerCorrections | None
     """Mixer correction settings."""
-    allow_off_grid_nco_ops: bool | None = None
-    """
-    Flag to allow NCO operations to play at times that are not aligned with the NCO
-    grid.
-    """
     digitization_thresholds: DigitizationThresholds | None = None
     """The settings that determine when an analog voltage is counted as a pulse."""
 
@@ -1495,11 +1475,6 @@ class _ClusterCompilationConfig(DataStructure):
     lo_to_path: dict[str, ChannelPath] = {}
     """Mapping between lo names and their associated channel name paths
     (e.g. cluster0.module1.complex_output_0)."""
-    allow_off_grid_nco_ops: bool | None = None
-    """
-    Flag to allow NCO operations to play at times that are not aligned with the NCO
-    grid.
-    """
     parent_config_version: str
     """
     Version of the parent hardware compilation config used.
@@ -1553,10 +1528,6 @@ class _ClusterCompilationConfig(DataStructure):
         # Distribute `lo_to_path`
         for lo_name, path in self.lo_to_path.items():
             module_configs[path.module_idx].lo_to_path[lo_name] = path
-
-        # Distribute `allow_off_grid_nco_ops`
-        for module_cfg in module_configs.values():
-            module_cfg.allow_off_grid_nco_ops = self.allow_off_grid_nco_ops
 
         # Add support for old versions of hardware config
         if self.parent_config_version == "0.1":
@@ -1880,140 +1851,3 @@ def _operation_end(abs_time_and_operation: tuple[float, Operation]) -> float:
     abs_time = abs_time_and_operation[0]
     operation = abs_time_and_operation[1]
     return abs_time + operation.duration
-
-
-def _check_nco_operations_on_nco_time_grid(schedule: Schedule) -> Schedule:
-    """
-    Check whether NCO operations are on the 4ns time grid _and_ sub-schedules (including
-    control-flow) containing NCO operations start/end on the 4 ns time grid.
-    """
-    _check_nco_operations_on_nco_time_grid_recursively(schedule)
-    return schedule
-
-
-def _check_nco_operations_on_nco_time_grid_recursively(
-    operation: Operation | Schedule,
-    schedulable: Schedulable | None = None,
-    parent_control_flow_op: ControlFlowOperation | None = None,
-) -> bool:
-    """
-    Check whether NCO operations, or Schedules/ControlFlowOperations containing NCO
-    operations, align with the NCO grid.
-
-    Parameters
-    ----------
-    operation : Operation | Schedule
-        The Operation or Schedule to be checked.
-    schedulable : Schedulable | None, optional
-        The Schedulable the operation is a part of. None if it is the top-level
-        Schedule.
-    parent_control_flow_op : ControlFlowOperation | None, optional
-        The ControlFlowOperation that the operation is part of, if any. This is used to
-        create the correct error message.
-
-    Returns
-    -------
-    bool
-        True if the operation is a, or contains NCO operation(s), else False.
-
-    """
-    contains_nco_op = False
-    if isinstance(operation, Schedule):
-        for sub_schedulable in operation.schedulables.values():
-            sub_operation = operation.operations[sub_schedulable["operation_id"]]
-            contains_nco_op = contains_nco_op or _check_nco_operations_on_nco_time_grid_recursively(
-                operation=sub_operation,
-                schedulable=sub_schedulable,
-                parent_control_flow_op=None,
-            )
-        if contains_nco_op:
-            _check_nco_grid_timing(
-                operation=operation,
-                schedulable=schedulable,
-                parent_control_flow_op=parent_control_flow_op,
-            )
-    elif isinstance(operation, ControlFlowOperation):
-        contains_nco_op = _check_nco_operations_on_nco_time_grid_recursively(
-            operation=operation.body,
-            schedulable=schedulable,
-            parent_control_flow_op=operation,
-        )
-        if contains_nco_op:
-            _check_nco_grid_timing(
-                operation=operation,
-                schedulable=schedulable,
-                parent_control_flow_op=parent_control_flow_op,
-            )
-    elif _is_nco_operation(operation):
-        _check_nco_grid_timing(
-            operation=operation,
-            schedulable=schedulable,
-            parent_control_flow_op=parent_control_flow_op,
-        )
-        contains_nco_op = True
-    return contains_nco_op
-
-
-def _check_nco_grid_timing(
-    operation: Operation | Schedule,
-    schedulable: Schedulable | None,
-    parent_control_flow_op: ControlFlowOperation | None = None,
-) -> None:
-    """
-    Assumes `operation` is a, or contains NCO operation(s), and checks the alignment
-    of the `operation` with the NCO grid.
-    """
-    abs_time = 0 if schedulable is None else schedulable["abs_time"]
-    start_time = abs_time + operation.get("t0", 0)
-    if isinstance(operation, Schedule) and parent_control_flow_op is None:
-        assert operation.duration is not None
-        try:
-            to_grid_time(start_time, constants.NCO_TIME_GRID)
-            to_grid_time(operation.duration, constants.NCO_TIME_GRID)
-        except ValueError as e:
-            raise NcoOperationTimingError(
-                f"Schedule {operation.name}, which contains NCO related operations, "
-                f"cannot start at t={round(start_time * 1e9)} ns and end at "
-                f"t={round((start_time + operation.duration) * 1e9)} ns. This schedule "
-                f"must start and end on the {constants.NCO_TIME_GRID} ns time grid."
-            ) from e
-
-    elif isinstance(operation, ControlFlowOperation) or parent_control_flow_op is not None:
-        assert operation.duration is not None
-        try:
-            to_grid_time(start_time, constants.NCO_TIME_GRID)
-            to_grid_time(operation.duration, constants.NCO_TIME_GRID)
-        except ValueError as e:
-            if parent_control_flow_op is None:
-                raise NcoOperationTimingError(
-                    f"ControlFlow operation {operation.name}, which contains NCO "
-                    f"related operations, cannot start at t="
-                    f"{round(start_time * 1e9)} ns and end at t="
-                    f"{round((start_time + operation.duration) * 1e9)} ns. This operation "
-                    f"must start and end on the {constants.NCO_TIME_GRID} ns time grid."
-                ) from e
-            else:
-                raise NcoOperationTimingError(
-                    f"ControlFlow operation {parent_control_flow_op.name}, starting at "
-                    f"t={round(start_time * 1e9)} ns and ending at t="
-                    f"{round((start_time + parent_control_flow_op.duration) * 1e9)} ns, "
-                    "contains NCO related operations that may not be aligned with the "
-                    f"{constants.NCO_TIME_GRID} ns time grid. Please make sure all "
-                    "iterations and/or branches start and end on the "
-                    f"{constants.NCO_TIME_GRID} ns time grid."
-                ) from e
-
-    # Type: guaranteed to be Operation at this point.
-    elif _is_nco_operation(operation):  # type: ignore
-        try:
-            to_grid_time(start_time, constants.NCO_TIME_GRID)
-        except ValueError as e:
-            raise NcoOperationTimingError(
-                f"NCO related operation {operation} cannot start at "
-                f"t={round(start_time * 1e9)} ns. This operation must be on the "
-                f"{constants.NCO_TIME_GRID} ns time grid."
-            ) from e
-
-
-def _is_nco_operation(operation: Operation) -> bool:
-    return isinstance(operation, (ShiftClockPhase, ResetClockPhase, SetClockFrequency))

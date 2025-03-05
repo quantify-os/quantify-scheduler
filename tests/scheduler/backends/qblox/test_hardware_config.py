@@ -853,7 +853,6 @@ def test_extract_sequencer_compilation_configs():
     assert list(sequencer_configs.keys()) == [0, 1]
 
     assert sequencer_configs[0].model_dump(exclude_unset=True) == {
-        "allow_off_grid_nco_ops": None,
         "sequencer_options": {"ttl_acq_threshold": 0.5},
         "hardware_description": {"marker_debug_mode_enable": True},
         "portclock": "q0:mw-q0.01",
@@ -874,7 +873,6 @@ def test_extract_sequencer_compilation_configs():
     }
 
     assert sequencer_configs[1].model_dump(exclude_unset=True) == {
-        "allow_off_grid_nco_ops": None,
         "sequencer_options": {},
         "hardware_description": {},
         "portclock": "q1:mw-q1.01",
