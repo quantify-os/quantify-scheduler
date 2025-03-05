@@ -7,10 +7,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from qcodes.instrument import InstrumentChannel
-from qcodes.instrument.parameter import (
-    ManualParameter,
-    Parameter,
-)
+from qcodes.instrument.parameter import ManualParameter
 
 from quantify_scheduler.backends.graph_compilation import OperationCompilationConfig
 from quantify_scheduler.device_under_test.edge import Edge
@@ -38,12 +35,10 @@ class PortSpinEdge(InstrumentChannel):
     ) -> None:
         super().__init__(parent=parent, name=name)
 
-        self.gate = Parameter(
+        self.gate = ManualParameter(
             name="gate",
             instrument=self,
-            initial_cache_value=gate
-            or f"{parent._parent_element_name}_{parent._child_element_name}:gt",
-            set_cmd=False,
+            initial_value=gate or f"{parent._parent_element_name}_{parent._child_element_name}:gt",
         )
         """Name of the element's gate port."""
 

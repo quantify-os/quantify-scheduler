@@ -46,27 +46,24 @@ class Ports(InstrumentChannel):
     ) -> None:
         super().__init__(parent=parent, name=name)
 
-        self.microwave = Parameter(
+        self.microwave = ManualParameter(
             name="microwave",
             instrument=self,
-            initial_cache_value=microwave or f"{parent.name}:mw",
-            set_cmd=False,
+            initial_value=microwave or f"{parent.name}:mw",
         )
         """Name of the element's microwave port."""
 
-        self.flux = Parameter(
+        self.flux = ManualParameter(
             name="flux",
             instrument=self,
-            initial_cache_value=flux or f"{parent.name}:fl",
-            set_cmd=False,
+            initial_value=flux or f"{parent.name}:fl",
         )
         """Name of the element's flux port."""
 
-        self.readout = Parameter(
+        self.readout = ManualParameter(
             name="readout",
             instrument=self,
-            initial_cache_value=readout or f"{parent.name}:res",
-            set_cmd=False,
+            initial_value=readout or f"{parent.name}:res",
         )
         """Name of the element's readout port."""
 

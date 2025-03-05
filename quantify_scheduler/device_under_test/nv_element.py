@@ -13,10 +13,7 @@ import math
 from typing import TYPE_CHECKING, Hashable, Literal
 
 from qcodes.instrument import InstrumentModule
-from qcodes.instrument.parameter import (
-    ManualParameter,
-    Parameter,
-)
+from qcodes.instrument.parameter import ManualParameter
 from qcodes.utils import validators
 
 from quantify_scheduler.backends.graph_compilation import (
@@ -59,32 +56,29 @@ class Ports(InstrumentModule):
     ) -> None:
         super().__init__(parent=parent, name=name)
 
-        self.microwave = Parameter(
+        self.microwave = ManualParameter(
             name="microwave",
             label="Name of microwave port",
             instrument=self,
-            initial_cache_value=microwave or f"{parent.name}:mw",
-            set_cmd=False,
+            initial_value=microwave or f"{parent.name}:mw",
             vals=validators.Strings(),
         )
         """Name of the element's microwave port."""
 
-        self.optical_control = Parameter(
+        self.optical_control = ManualParameter(
             name="optical_control",
             label="Name of optical control port",
             instrument=self,
-            initial_cache_value=optical_control or f"{parent.name}:optical_control",
-            set_cmd=False,
+            initial_value=optical_control or f"{parent.name}:optical_control",
             vals=validators.Strings(),
         )
         """Port to control the device element with optical pulses."""
 
-        self.optical_readout = Parameter(
+        self.optical_readout = ManualParameter(
             name="optical_readout",
             label="Name of optical readout port",
             instrument=self,
-            initial_cache_value=optical_readout or f"{parent.name}:optical_readout",
-            set_cmd=False,
+            initial_value=optical_readout or f"{parent.name}:optical_readout",
             vals=validators.Strings(),
         )
         """Port to readout photons from the device element."""

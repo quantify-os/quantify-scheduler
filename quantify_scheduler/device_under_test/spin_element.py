@@ -8,10 +8,7 @@ import math
 from typing import TYPE_CHECKING, Any
 
 from qcodes.instrument import InstrumentChannel
-from qcodes.instrument.parameter import (
-    ManualParameter,
-    Parameter,
-)
+from qcodes.instrument.parameter import ManualParameter
 from qcodes.utils import validators
 
 from quantify_scheduler.backends.graph_compilation import (
@@ -50,19 +47,17 @@ class PortsChargeSensor(InstrumentChannel):
     ) -> None:
         super().__init__(parent=parent, name=name)
 
-        self.gate = Parameter(
+        self.gate = ManualParameter(
             name="gate",
             instrument=self,
-            initial_cache_value=gate or f"{parent.name}:gt",
-            set_cmd=False,
+            initial_value=gate or f"{parent.name}:gt",
         )
         """Name of the element's ohmic gate port."""
 
-        self.readout = Parameter(
+        self.readout = ManualParameter(
             name="readout",
             instrument=self,
-            initial_cache_value=readout or f"{parent.name}:res",
-            set_cmd=False,
+            initial_value=readout or f"{parent.name}:res",
         )
         """Name of the element's readout port."""
 
@@ -81,11 +76,10 @@ class PortsSpin(PortsChargeSensor):
     ) -> None:
         super().__init__(parent=parent, name=name, gate=gate, readout=readout)
 
-        self.microwave = Parameter(
+        self.microwave = ManualParameter(
             name="microwave",
             instrument=self,
-            initial_cache_value=microwave or f"{parent.name}:mw",
-            set_cmd=False,
+            initial_value=microwave or f"{parent.name}:mw",
         )
         """Name of the element's microwave port."""
 
