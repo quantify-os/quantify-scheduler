@@ -434,6 +434,7 @@ class QuantumDevice(JSONSerializableMixin, Instrument):
         ----------
         name
             The element name.
+            Has to follow the convention ``"{element_0}_{element_1}"``.
 
         """
         self.elements().remove(name)  # list gets updated in place
@@ -446,6 +447,7 @@ class QuantumDevice(JSONSerializableMixin, Instrument):
         ----------
         name
             The edge name.
+            Has to follow the convention ``"{element_0}_{element_1}"``.
 
         Returns
         -------
@@ -469,8 +471,7 @@ class QuantumDevice(JSONSerializableMixin, Instrument):
         Parameters
         ----------
         edge
-            The edge name connecting the elements. Has to follow the convention
-            'element_0'-'element_1'
+            The edge to add.
 
         """
         if edge.name in self.edges():
@@ -489,7 +490,8 @@ class QuantumDevice(JSONSerializableMixin, Instrument):
         Parameters
         ----------
         edge_name
-            The edge name.
+            The edge name connecting the elements.
+            Has to follow the convention ``"{element_0}_{element_1}"``.
 
         """
         self.edges().remove(edge_name)  # list gets updated in place
