@@ -109,6 +109,11 @@ class LoopOperation(ControlFlowOperation):
             * self.data["control_flow_info"]["body"].duration
         )
 
+    @property
+    def repetitions(self) -> int:
+        """Number of repetitions in the control flow loop."""
+        return self.data["control_flow_info"]["repetitions"]
+
 
 class ConditionalOperation(ControlFlowOperation):
     """
