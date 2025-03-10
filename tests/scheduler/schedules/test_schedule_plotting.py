@@ -11,6 +11,7 @@ from quantify_scheduler.backends.qblox.operations.stitched_pulse import (
     StitchedPulseBuilder,
 )
 from quantify_scheduler.compilation import _determine_absolute_timing
+from quantify_scheduler.operations import LoopOperation
 from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import ClockResource
 
@@ -61,3 +62,19 @@ def test_plot_stitched_pulse(plot_backend, mock_setup_basic_nv_qblox_hardware):
         fig, ax = compiled_schedule.plot_pulse_diagram(plot_backend=plot_backend)
         assert isinstance(fig, matplotlib.figure.Figure)
         assert isinstance(ax, matplotlib.axes.Axes)
+
+
+def test_plot_loop_operation(mock_setup_basic_nv_qblox_hardware):
+    ramp = SquarePulse(amp=0.5, duration=3e-6, port="qe0:optical_readout")
+    loop = LoopOperation(body=ramp, repetitions=5)
+    schedule = Schedule("s")
+    schedule.add(loop)
+    quantum_device = mock_setup_basic_nv_qblox_hardware["quantum_device"]
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        schedule=schedule,
+        config=quantum_device.generate_compilation_config(),
+    )
+    assert compiled_schedule.duration == 15e-6
+    fig, ax = compiled_schedule.plot_pulse_diagram()
+    assert isinstance(fig, matplotlib.figure.Figure)

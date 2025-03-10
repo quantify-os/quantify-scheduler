@@ -104,10 +104,12 @@ class LoopOperation(ControlFlowOperation):
     @property
     def duration(self) -> float:
         """Duration of a control flow."""
-        return (
-            self.data["control_flow_info"]["repetitions"]
-            * self.data["control_flow_info"]["body"].duration
-        )
+        return self.repetitions * self.data["control_flow_info"]["body"].duration
+
+    @property
+    def repetitions(self) -> int:
+        """Number of times the body will execute."""
+        return self.data["control_flow_info"]["repetitions"]
 
 
 class ConditionalOperation(ControlFlowOperation):

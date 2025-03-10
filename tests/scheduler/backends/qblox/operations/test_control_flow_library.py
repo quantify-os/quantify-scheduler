@@ -8,8 +8,9 @@ from quantify_scheduler.backends.qblox.operations.control_flow_library import (
     ConditionalOperation,
 )
 from quantify_scheduler.backends.qblox.operations.gate_library import ConditionalReset
+from quantify_scheduler.operations import LoopOperation
 from quantify_scheduler.operations.gate_library import Measure, X, Y, Z
-from quantify_scheduler.operations.pulse_library import DRAGPulse, SquarePulse
+from quantify_scheduler.operations.pulse_library import DRAGPulse, IdlePulse, SquarePulse
 from quantify_scheduler.schedules.schedule import Schedule
 from quantify_scheduler.schemas.examples import utils
 
@@ -116,3 +117,11 @@ def test_conditional_playback_compiles(
         int(wait_duration) + num_real_time_operations * 4 + 4,
         conditional_duration * 1e9,  # type: ignore
     )
+
+
+def test_loop_operation_init():
+    idle = IdlePulse(duration=50)
+    loop = LoopOperation(body=idle, repetitions=5)
+    assert loop.repetitions == 5
+    assert loop.duration == 250
+    assert loop.body is idle
