@@ -9,6 +9,9 @@ kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
+myst:
+  substitutions:
+    InstrumentCoordinator: "{class}`~quantify_scheduler.instrument_coordinator.instrument_coordinator.InstrumentCoordinator`"
 ---
 
 (sec-acquisition-protocols)=
@@ -168,6 +171,7 @@ xr.Dataset(
 )
 ```
 
+(sec-acquisition-protocols-thresholded-acquisition)=
 ## Thresholded Acquisition
 
 - Referred to as `"ThresholdedAcquisition"`.
@@ -233,6 +237,55 @@ imaginary part contains only noise.
 
 Integration weights should normally be calibrated in a separate experiment
 (see, for example, {cite:t}`magesan2015machine`).
+
+(sec-acquisition-protocols-weighted-thresholded-acquisition)=
+## Numerical Weighted Thresholded Acquisition
+
+- Referred to as `"WeightedThresholdedAcquisition"`.
+- Supported by the {mod}`Qblox <quantify_scheduler.backends.qblox>` backend.
+
+This protocol will perform a numerical separated weighted integration before thresholding the results.
+
+### Examples
+
+```{code-block} python
+# use as an Acquisition Operation
+schedule.add(
+    WeightedThresholdedAcquisition(
+        weights_a=np.zeros(3, dtype=complex),
+        weights_b=np.ones(3, dtype=complex),
+        acq_rotation = 90,
+        acq_threshold = 0.5,
+        port="q0:res",
+        clock="q0.ro",
+    )
+)
+
+# or, use qubit parameters together with the Measure gate
+q0.measure.acq_weights_a(np.zeros(3, dtype=complex))
+q0.measure.acq_weights_b(np.ones(3, dtype=complex))
+q0.measure.acq_rotation(90)
+q0.measure.acq_threshold(0.5)
+schedule.add(Measure("q0", acq_protocol="WeightedThresholdedAcquisition"))
+
+# or, pass weights and thresholds as override parameters to the Measure gate
+schedule.add(
+    Measure(
+        "q0",
+        acq_protocol="WeightedThresholdedAcquisition",
+        acq_weights_a=np.zeros(3, dtype=complex),
+        acq_weights_b=np.ones(3, dtype=complex),
+        acq_rotation=90,
+        acq_threshold=0.5
+    )
+)
+
+```
+
+```{note}
+The resulting datasets are similar to those in {ref}`Thresholded Acquisition <sec-acquisition-protocols-thresholded-acquisition>`. While the dataset returned by {{ InstrumentCoordinator }} when using a regular thresholded acquisition returns a single row of data for each acquisition channel, the weighted thresholded acquisition currently returns two rows per channel: one with actual thresholded values, and the second with all zeros.
+```
+
 
 (sec-acquisition-protocols-trigger-count)=
 ## Trigger Count

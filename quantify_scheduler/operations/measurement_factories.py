@@ -24,6 +24,7 @@ from quantify_scheduler.operations.acquisition_library import (
     TimetagTrace,
     Trace,
     TriggerCount,
+    WeightedThresholdedAcquisition,
 )
 from quantify_scheduler.operations.control_flow_library import LoopOperation
 from quantify_scheduler.operations.operation import Operation
@@ -193,6 +194,7 @@ def _dispersive_measurement(  # noqa: PLR0915
     elif acq_protocol in (
         "NumericalSeparatedWeightedIntegration",
         "NumericalWeightedIntegration",
+        "WeightedThresholdedAcquisition",
     ):
         if acq_weights_a is None or acq_weights_b is None or acq_weights_sampling_rate is None:
             raise TypeError(
@@ -238,6 +240,24 @@ def _dispersive_measurement(  # noqa: PLR0915
                     acq_index=acq_index,
                     bin_mode=bin_mode,
                     t0=acq_delay,
+                ),
+                ref_pt="start",
+            )
+        elif acq_protocol == "WeightedThresholdedAcquisition":
+            subschedule.add(
+                WeightedThresholdedAcquisition(
+                    port=port,
+                    clock=clock,
+                    weights_a=acq_weights_a,
+                    weights_b=acq_weights_b,
+                    weights_sampling_rate=acq_weights_sampling_rate,
+                    acq_channel=acq_channel,
+                    acq_index=acq_index,
+                    bin_mode=bin_mode,
+                    t0=acq_delay,
+                    feedback_trigger_label=feedback_trigger_label,
+                    acq_rotation=acq_rotation,
+                    acq_threshold=acq_threshold,
                 ),
                 ref_pt="start",
             )

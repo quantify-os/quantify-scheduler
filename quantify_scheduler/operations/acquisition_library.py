@@ -666,6 +666,112 @@ class NumericalWeightedIntegration(NumericalSeparatedWeightedIntegration):
         self._update()
 
 
+class WeightedThresholdedAcquisition(NumericalSeparatedWeightedIntegration):
+    """
+    Subclass of :class:`~NumericalSeparatedWeightedIntegration` but Thresholded.
+
+    Acquisition protocol allowing to control rotation and threshold.
+
+    This acquisition protocol is similar to the :class:`~.SSBIntegrationComplex`
+    acquisition protocol, but the complex result is now rotated and thresholded
+    to produce a "0" or a "1", as controlled by the parameters for rotation
+    angle `<qubit>.measure.acq_rotation` and threshold value
+    `<qubit>.measure.acq_threshold` in the device configuration (see example
+    below).
+
+    The rotation angle and threshold value for each qubit can be set through
+    the device configuration.
+
+    .. admonition:: Note
+
+        Thresholded acquisition is currently only supported by the Qblox
+        backend.
+
+    Parameters
+    ----------
+    port
+        The acquisition port.
+    clock
+        The clock used to demodulate the acquisition.
+    weights_a
+        The list of complex values used as weights :math:`A(t)` on
+        the incoming complex signal.
+    weights_b
+        The list of complex values used as weights :math:`B(t)` on
+        the incoming complex signal.
+    weights_sampling_rate
+        The rate with which the weights have been sampled, in Hz. By default equal
+        to 1 GHz. Note that during hardware compilation, the weights will be resampled
+        with the sampling rate supported by the target hardware.
+    t
+        The time values of each weight. This parameter is deprecated in favor of
+        ``weights_sampling_rate``. If a value is provided for ``t``, the
+        ``weights_sampling_rate`` parameter will be ignored.
+    interpolation
+        The type of interpolation to use, by default "linear". This argument is
+        passed to :obj:`~scipy.interpolate.interp1d`.
+    acq_channel
+        The data channel in which the acquisition is stored, by default 0.
+        Describes the "where" information of the  measurement, which typically
+        corresponds to a qubit idx.
+    acq_index
+        The data register in which the acquisition is stored, by default 0.
+        Describes the "when" information of the measurement, used to label or
+        tag individual measurements in a large circuit. Typically corresponds
+        to the setpoints of a schedule (e.g., tau in a T1 experiment).
+    bin_mode
+        Describes what is done when data is written to a register that already
+        contains a value. Options are "append" which appends the result to the
+        list or "average" which stores the weighted average value of the
+        new result and the old register value, by default BinMode.APPEND.
+    phase
+        The phase of the pulse and acquisition in degrees, by default 0.
+    t0
+        The acquisition start time in seconds, by default 0.
+    feedback_trigger_label : str
+        The label corresponding to the feedback trigger, which is mapped by the
+        compiler to a feedback trigger address on hardware, by default None.
+
+    """
+
+    def __init__(
+        self,
+        port: str,
+        clock: str,
+        weights_a: list[complex] | np.ndarray,
+        weights_b: list[complex] | np.ndarray,
+        weights_sampling_rate: float = 1e9,
+        interpolation: str = "linear",
+        acq_channel: int = 0,
+        acq_index: int = 0,
+        bin_mode: BinMode | str = BinMode.APPEND,
+        phase: float = 0,
+        t0: float = 0,
+        feedback_trigger_label: str | None = None,
+        acq_rotation: float = 0,
+        acq_threshold: float = 0,
+    ) -> None:
+        super().__init__(
+            port=port,
+            clock=clock,
+            weights_a=weights_a,
+            weights_b=weights_b,
+            weights_sampling_rate=weights_sampling_rate,
+            interpolation=interpolation,
+            acq_channel=acq_channel,
+            acq_index=acq_index,
+            bin_mode=bin_mode,
+            phase=phase,
+            t0=t0,
+        )
+        self.data["acquisition_info"][0]["protocol"] = "WeightedThresholdedAcquisition"
+        self.data["acquisition_info"][0]["feedback_trigger_label"] = feedback_trigger_label
+        self.data["acquisition_info"][0]["acq_threshold"] = acq_threshold
+        self.data["acquisition_info"][0]["acq_rotation"] = acq_rotation
+        self.data["acquisition_info"][0]["acq_return_type"] = np.int32
+        self._update()
+
+
 class TriggerCount(Acquisition):
     """
     Trigger counting acquisition protocol returning an integer.

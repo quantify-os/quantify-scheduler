@@ -1256,7 +1256,11 @@ class SequencerCompiler(ABC):
         All thresholded acquisitions on a single sequencer must have the same label and the same
         threshold settings.
         """
-        if protocol not in ("ThresholdedAcquisition", "ThresholdedTriggerCount"):
+        if protocol not in (
+            "ThresholdedAcquisition",
+            "ThresholdedTriggerCount",
+            "WeightedThresholdedAcquisition",
+        ):
             # Early return: we do not check other protocols.
             return
 
@@ -1271,7 +1275,8 @@ class SequencerCompiler(ABC):
             return
 
         keys_to_check = {}
-        if protocol == "ThresholdedAcquisition":
+
+        if protocol in ("ThresholdedAcquisition", "WeightedThresholdedAcquisition"):
             keys_to_check = {"acq_threshold", "acq_rotation", "feedback_trigger_label"}
         elif protocol == "ThresholdedTriggerCount":
             keys_to_check = {"thresholded_trigger_count", "feedback_trigger_label"}

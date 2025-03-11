@@ -24,6 +24,7 @@ from quantify_scheduler.operations.acquisition_library import (
     TimetagTrace,
     Trace,
     TriggerCount,
+    WeightedThresholdedAcquisition,
 )
 from quantify_scheduler.operations.gate_library import X90
 from quantify_scheduler.operations.operation import Operation
@@ -62,6 +63,12 @@ ALL_ACQUISITION_PROTOCOLS = [
         port="q0:res",
         clock="q0.ro",
         duration=100e-9,
+    ),
+    WeightedThresholdedAcquisition(
+        weights_a=np.zeros(3, dtype=complex),
+        weights_b=np.ones(3, dtype=complex),
+        port="q0:res",
+        clock="q0.ro",
     ),
     Timetag(
         port="q0:res",

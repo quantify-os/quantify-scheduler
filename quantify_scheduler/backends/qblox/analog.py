@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 """Utilty classes for Qblox analog modules."""
+
 from __future__ import annotations
 
 import logging
@@ -28,6 +29,7 @@ from quantify_scheduler.backends.qblox.enums import (
 from quantify_scheduler.backends.qblox.exceptions import NcoOperationTimingError
 from quantify_scheduler.backends.qblox.operation_handling.acquisitions import (
     SquareAcquisitionStrategy,
+    WeightedAcquisitionStrategy,
 )
 from quantify_scheduler.backends.qblox.operation_handling.factory_analog import (
     get_operation_strategy,
@@ -291,6 +293,7 @@ class AnalogSequencerCompiler(SequencerCompiler):
         if acq_metadata.acq_protocol in (
             "ThresholdedAcquisition",
             "ThresholdedTriggerCount",
+            "WeightedThresholdedAcquisition",
         ):
             for info in acquisition_infos:
                 if (address := info.data.get("feedback_trigger_address")) is not None:
@@ -337,7 +340,7 @@ class AnalogSequencerCompiler(SequencerCompiler):
         """
         integration_length = None
         for op_strat in self.op_strategies:
-            if not isinstance(op_strat, SquareAcquisitionStrategy):
+            if not isinstance(op_strat, (SquareAcquisitionStrategy, WeightedAcquisitionStrategy)):
                 continue
 
             acq_duration_ns = round(op_strat.operation_info.duration * 1e9)

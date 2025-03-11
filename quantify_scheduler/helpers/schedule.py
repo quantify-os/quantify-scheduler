@@ -240,4 +240,5 @@ def _is_binned_type_protocol(protocol: str) -> bool:
         "NumericalWeightedIntegrationComplex",
         "NumericalWeightedIntegration",
         "ThresholdedAcquisition",
+        "WeightedThresholdedAcquisition",
     )
