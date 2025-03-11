@@ -72,6 +72,7 @@ from quantify_scheduler.operations import (
     DualThresholdedTriggerCount,
     ThresholdedAcquisition,
     ThresholdedTriggerCount,
+    WeightedThresholdedAcquisition,
 )
 from quantify_scheduler.operations.control_flow_library import (
     ConditionalOperation,
@@ -317,7 +318,10 @@ def _update_conditional_info_from_acquisition(
     cond_info: defaultdict[str, ConditionalInfo],
     compilation_config: CompilationConfig,
 ) -> None:
-    if acq_info["protocol"] == ThresholdedAcquisition.__name__:
+    if acq_info["protocol"] in [
+        ThresholdedAcquisition.__name__,
+        WeightedThresholdedAcquisition.__name__,
+    ]:
         label = acq_info["feedback_trigger_label"]
         acq_info["feedback_trigger_address"] = cond_info[label].address
     elif acq_info["protocol"] == ThresholdedTriggerCount.__name__:

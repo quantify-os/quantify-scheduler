@@ -15,6 +15,7 @@ QRM_COMPATIBLE_BIN_MODES = {
     "SSBIntegrationComplex": {BinMode.APPEND, BinMode.AVERAGE},
     "Trace": {BinMode.AVERAGE},
     "ThresholdedAcquisition": {BinMode.APPEND, BinMode.AVERAGE},
+    "WeightedThresholdedAcquisition": {BinMode.APPEND, BinMode.AVERAGE},
     "TriggerCount": {BinMode.APPEND, BinMode.SUM, BinMode.DISTRIBUTION},
     "ThresholdedTriggerCount": {BinMode.APPEND},
     "DualThresholdedTriggerCount": {BinMode.APPEND},

@@ -31,6 +31,7 @@ from quantify_scheduler.backends.qblox.enums import (
 from quantify_scheduler.backends.qblox.exceptions import NcoOperationTimingError
 from quantify_scheduler.backends.qblox.operation_handling.acquisitions import (
     SquareAcquisitionStrategy,
+    WeightedAcquisitionStrategy,
 )
 from quantify_scheduler.backends.qblox.operation_handling.factory_analog import (
     get_operation_strategy,
@@ -261,6 +262,7 @@ class AnalogSequencerCompiler(SequencerCompiler):
         if acq_metadata.acq_protocol in (
             "ThresholdedAcquisition",
             "ThresholdedTriggerCount",
+            "WeightedThresholdedAcquisition",
         ):
             # We ignore None because it does not interfere with other acquisitions/conditionals.
             # This is because a LatchReset is used for every thresholded acq with a not-None
@@ -281,9 +283,11 @@ class AnalogSequencerCompiler(SequencerCompiler):
                 self._settings.thresholded_acq_trigger_write_en = True
                 self._settings.thresholded_acq_trigger_write_address = address
 
-        if acq_metadata.acq_protocol == "ThresholdedAcquisition":
+        if acq_metadata.acq_protocol in [
+            "ThresholdedAcquisition",
+            "WeightedThresholdedAcquisition",
+        ]:
             self._prepare_thresholded_acquisition_settings(acquisition_infos)
-
         elif acq_metadata.acq_protocol == "ThresholdedTriggerCount":
             thresh_trg_cnt_metadata = self._get_thresholded_trigger_count_metadata_by_acq_channel(
                 acquisitions
@@ -350,7 +354,7 @@ class AnalogSequencerCompiler(SequencerCompiler):
         """
         integration_length = None
         for op_strat in self.op_strategies:
-            if not isinstance(op_strat, SquareAcquisitionStrategy):
+            if not isinstance(op_strat, (SquareAcquisitionStrategy, WeightedAcquisitionStrategy)):
                 continue
 
             acq_duration_ns = round(op_strat.operation_info.duration * 1e9)

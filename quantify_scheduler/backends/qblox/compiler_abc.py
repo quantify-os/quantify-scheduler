@@ -1294,6 +1294,47 @@ class SequencerCompiler(ABC):
 
         return self._settings, acq_metadata
 
+    def _validate_thresholded_acquisitions(
+        self, operations: list[IOperationStrategy], protocol: str
+    ) -> None:
+        """
+        All thresholded acquisitions on a single sequencer must have the same label and the same
+        threshold settings.
+        """
+        if protocol not in (
+            "ThresholdedAcquisition",
+            "ThresholdedTriggerCount",
+            "WeightedThresholdedAcquisition",
+        ):
+            # Early return: we do not check other protocols.
+            return
+
+        acquisitions = [
+            op
+            for op in operations
+            if op.operation_info.is_acquisition
+            and op.operation_info.data.get("feedback_trigger_label") is not None
+        ]
+        if len(acquisitions) < 2:
+            # Early return: only 1 acquisition means nothing can conflict.
+            return
+
+        keys_to_check = {}
+        if protocol in ("ThresholdedAcquisition", "WeightedThresholdedAcquisition"):
+            keys_to_check = {"acq_threshold", "acq_rotation", "feedback_trigger_label"}
+        elif protocol == "ThresholdedTriggerCount":
+            keys_to_check = {"thresholded_trigger_count", "feedback_trigger_label"}
+
+        for key in keys_to_check:
+            first_value = acquisitions[0].operation_info.data[key]
+            for acq in acquisitions[1:]:
+                if acq.operation_info.data[key] != first_value:
+                    raise ValueError(
+                        f"All {protocol} acquisitions on the same port-clock must have the same "
+                        f"threshold settings. Found different settings for {key}:\n{first_value}\n"
+                        f"\n{acq.operation_info.data[key]}"
+                    )
+
 
 _SequencerT_co = TypeVar("_SequencerT_co", bound=SequencerCompiler, covariant=True)
 """

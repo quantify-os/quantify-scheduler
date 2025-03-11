@@ -1711,6 +1711,7 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
             "NumericalWeightedIntegration": partial(self._get_integration_data, separated=False),
             "SSBIntegrationComplex": self._get_integration_amplitude_data,
             "ThresholdedAcquisition": self._get_threshold_data,
+            "WeightedThresholdedAcquisition": self._get_threshold_data,
             "ThresholdedTriggerCount": self._get_trigger_count_threshold_data,
             "Trace": self._get_scope_data,
             "TriggerCount": self._get_trigger_count_data,

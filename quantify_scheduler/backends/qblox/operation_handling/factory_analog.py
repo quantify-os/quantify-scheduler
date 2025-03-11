@@ -80,6 +80,7 @@ def _get_acquisition_strategy(
         "WeightedIntegratedSeparated",
         "NumericalSeparatedWeightedIntegration",
         "NumericalWeightedIntegration",
+        "WeightedThresholdedAcquisition",
     ):
         return acquisitions.WeightedAcquisitionStrategy(operation_info)
 
