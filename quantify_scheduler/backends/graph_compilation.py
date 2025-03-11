@@ -382,14 +382,14 @@ class QuantifyCompiler(CompilationNode):
     Parameters
     ----------
     name
-        name of the compiler instance
+        name of the compiler instance, by default "compiler"
     quantum_device
         quantum_device from which a :class:`~.CompilationConfig` will be generated
         if None is provided for the compile step
 
     """
 
-    def __init__(self, name: str, quantum_device: QuantumDevice | None = None) -> None:
+    def __init__(self, name: str = "compiler", quantum_device: QuantumDevice | None = None) -> None:
         super().__init__(name=name)
 
         # current implementations use networkx directed graph to store the task graph

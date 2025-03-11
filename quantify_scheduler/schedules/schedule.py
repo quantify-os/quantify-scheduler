@@ -697,7 +697,7 @@ class Schedule(ScheduleBase):
     Parameters
     ----------
     name
-        The name of the schedule
+        The name of the schedule, by default "schedule"
     repetitions
         The amount of times the schedule will be repeated, by default 1
     data
@@ -707,7 +707,9 @@ class Schedule(ScheduleBase):
 
     schema_filename = "schedule.json"
 
-    def __init__(self, name: str, repetitions: int = 1, data: dict | None = None) -> None:
+    def __init__(
+        self, name: str = "schedule", repetitions: int = 1, data: dict | None = None
+    ) -> None:
         # validate the input data to ensure it is valid schedule data
         super().__init__()
 

@@ -47,6 +47,19 @@ dummy_node_d = SimpleNode(
 )
 
 
+def test_quantify_compiler_init_defaults():
+    compiler = QuantifyCompiler()
+    assert compiler.name == "compiler"
+    assert compiler.quantum_device is None
+
+
+def test_multiple_compilers_with_the_same_name():
+    compiler1 = QuantifyCompiler("compiler")
+    compiler2 = QuantifyCompiler("compiler")
+    assert compiler1 != compiler2
+    assert compiler1 is not compiler2
+
+
 def test_draw_backend():
     """
     Tests if we can visualize a graph defined by a generic backend.
