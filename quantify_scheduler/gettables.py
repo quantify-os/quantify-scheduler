@@ -151,14 +151,31 @@ class ScheduleGettable:
         """Acquire and return data."""
         return self.get()
 
-    def _compile(self, sched: Schedule) -> None:
-        """Compile schedule, separated to allow for profiling compilation duration."""
+    def compile(self) -> CompiledSchedule:
+        """
+        Compile the schedule without preparing and running it.
+        The returned compiled schedule can be used to
+        plot the circuit or pulse diagrams for example.
+
+        Returns
+        -------
+        :
+            The compiled schedule.
+
+        """
+        schedule = self.schedule_function(
+            **self._evaluated_sched_kwargs,
+            repetitions=self.quantum_device.cfg_sched_repetitions(),
+        )
         compilation_config = self.quantum_device.generate_compilation_config()
         compilation_config.debug_mode = self._debug_mode
 
         # made into a private variable for debugging and future caching functionality
         self._backend = compilation_config.backend(name=compilation_config.name)
-        self._compiled_schedule = self._backend.compile(schedule=sched, config=compilation_config)
+        self._compiled_schedule = self._backend.compile(
+            schedule=schedule, config=compilation_config
+        )
+        return self._compiled_schedule
 
     def initialize(self) -> None:
         """
@@ -169,12 +186,7 @@ class ScheduleGettable:
         self._evaluated_sched_kwargs = _evaluate_parameter_dict(self.schedule_kwargs)
 
         # generate a schedule using the evaluated keyword arguments dict
-        self._compile(
-            sched=self.schedule_function(
-                **self._evaluated_sched_kwargs,
-                repetitions=self.quantum_device.cfg_sched_repetitions(),
-            )
-        )
+        self.compile()
 
         instr_coordinator = self.quantum_device.instr_instrument_coordinator.get_instr()
         instr_coordinator.prepare(self._compiled_schedule)
@@ -183,7 +195,7 @@ class ScheduleGettable:
 
     @property
     def compiled_schedule(self) -> CompiledSchedule | None:
-        """Return the schedule used in this class."""
+        """Get the latest compiled schedule, or None if nothing has been compiled yet."""
         return self._compiled_schedule
 
     def get(self) -> tuple[np.ndarray, ...]:

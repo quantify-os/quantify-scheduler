@@ -149,7 +149,7 @@ def _construct_pulses_by_interval(
             active_pulses.add(key)
         else:
             if time > last_time:
-                if len(active_pulses):
+                if active_pulses:
                     pulses_by_interval.append(PulseInterval(last_time, time, active_pulses.copy()))
                 last_time = time
             if is_end:

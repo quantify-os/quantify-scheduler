@@ -36,7 +36,7 @@ if TYPE_CHECKING:
     from quantify_scheduler.instrument_coordinator.components import (
         InstrumentCoordinatorComponentBase,
     )
-    from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
+    from quantify_scheduler.schedules.schedule import CompiledSchedule
 
 
 def profiler(func: Callable) -> Callable:
@@ -159,9 +159,9 @@ class ProfiledScheduleGettable(ScheduleGettable):
         self.quantum_device.instr_instrument_coordinator(self.profiled_instr_coordinator.name)
 
     @profiler
-    def _compile(self, sched: Schedule) -> None:
+    def compile(self) -> None:
         """Overwrite compile step for profiling."""
-        super()._compile(sched)
+        super().compile()
 
     def close(self) -> None:
         """Cleanup new profiling instruments to avoid future conflicts."""

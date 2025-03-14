@@ -243,7 +243,7 @@ def to_grid_time(time: float, grid_time_ns: int = constants.GRID_TIME) -> int:
 
     """
     time_ns_float = time * 1e9
-    time_ns = int(round(time_ns_float))
+    time_ns = round(time_ns_float)
 
     tolerance = constants.GRID_TIME_TOLERANCE_TIME
     if (

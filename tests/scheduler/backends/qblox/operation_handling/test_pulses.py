@@ -105,8 +105,7 @@ class TestGenericPulseStrategy:
         )
         wf_dict = {}
         t_test = (
-            np.arange(0, int(round(duration * constants.SAMPLING_RATE)), 1)
-            / constants.SAMPLING_RATE
+            np.arange(0, round(duration * constants.SAMPLING_RATE), 1) / constants.SAMPLING_RATE
         )
 
         # act

@@ -2,13 +2,14 @@
 # Licensed according to the LICENCE file on the main branch
 import os
 from unittest import TestCase
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import numpy as np
 import pytest
 from qcodes.instrument.parameter import ManualParameter
 from xarray import DataArray, Dataset
 
+from quantify_scheduler import Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.gettables_profiled import ProfiledScheduleGettable
@@ -346,7 +347,7 @@ def test_profiling(mock_setup_basic_transmon_with_standard_params, tmp_test_data
     TestCase().assertAlmostEqual(log["schedule"][0], 0.2062336)
     verif_keys = [
         "schedule",
-        "_compile",
+        "compile",
         "prepare",
         "start",
         "wait_done",
@@ -461,3 +462,22 @@ def test_schedule_gettable_no_hardware_cfg_raises(mock_setup_basic_transmon):
         f"('{mock_setup_basic_transmon['instrument_coordinator'].name}') did not "
         f"return any data, but was expected to return data." in str(exc.value)
     )
+
+
+@patch("quantify_scheduler.backends.graph_compilation.SerialCompiler.compile")
+def test_schedule_gettable_compile(compile_patch, mock_setup_basic_transmon):
+    return_value = [1]
+    compile_patch.return_value = return_value
+    quantum_device = mock_setup_basic_transmon["quantum_device"]
+
+    def schedule_function(y="a", repetitions=1):
+        return Schedule(y, repetitions=repetitions)
+
+    schedule_gettable = ScheduleGettable(
+        quantum_device=quantum_device,
+        schedule_function=schedule_function,
+        schedule_kwargs={"y": "schedule"},
+        real_imag=False,
+    )
+    x = schedule_gettable.compile()
+    assert x is return_value

@@ -893,7 +893,7 @@ def plot_window_operations(
 
     for idx, (t0, t1, operation) in enumerate(window_operations):
         window_name = operation.window_name
-        logging.debug(f"plot_window_operations: window {window_name}: {t0}, {t1}")
+        logger.debug(f"plot_window_operations: window {window_name}: {t0}, {t1}")
         colormap = cmap(idx / (1 + len(window_operations)))
         label = window_name
         ax.axvspan(

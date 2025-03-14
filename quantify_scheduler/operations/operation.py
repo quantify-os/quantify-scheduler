@@ -16,6 +16,7 @@ from quantify_scheduler.helpers.collections import make_hash
 from quantify_scheduler.helpers.importers import export_python_object_to_path_string
 from quantify_scheduler.json_utils import JSONSchemaValMixin, lru_cache
 
+logger = logging.getLogger(__name__)
 cached_locate = lru_cache(locate)
 
 
@@ -186,7 +187,7 @@ class Operation(JSONSchemaValMixin, UserDict):
 
         """
         if cls._class_signature is None:
-            logging.info(f"Caching signature for class {cls.__name__}")
+            logger.info(f"Caching signature for class {cls.__name__}")
             cls._class_signature = inspect.signature(cls)
         signature = cls._class_signature
 

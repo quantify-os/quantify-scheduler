@@ -877,7 +877,7 @@ class SequencerCompiler(ABC):
         if latency_correction == 0:
             return 0
 
-        latency_correction_ns = int(round(latency_correction * 1e9))
+        latency_correction_ns = round(latency_correction * 1e9)
 
         return latency_correction_ns
 
