@@ -38,7 +38,7 @@ dependencies = [
   "dataclasses-json",
   "eval-type-backport; python_version < '3.10'", # Required for pydantic's type checking in Python 3.9
   "fastjsonschema",
-  "jinja2>=3.1.2", # pandas requires version 3.1.2 or newer
+  "jinja2>=3.1.2",                      # pandas requires version 3.1.2 or newer
   "matplotlib",
   "networkx",
   "numpy<2.0 ; python_version < '3.10'",
@@ -47,9 +47,9 @@ dependencies = [
   "pathvalidate",
   "plotly",
   "pydantic>=2.0",
-  "qblox-instruments>=0.14.0,<0.16.0", # Prevent upgrade upon minor release while allowing for installing patch releases
-  "quantify-core>=0.7.9", # acquisition data refactor in ScheduleGettable.
-  "qcodes>=0.32.0", # 0.32.0: introduces InstrumentModule
+  "qblox-instruments>=0.14.0,<0.16.0",  # Prevent upgrade upon minor release while allowing for installing patch releases
+  "quantify-core>=0.7.9",               # acquisition data refactor in ScheduleGettable.
+  "qcodes>=0.32.0",                     # 0.32.0: introduces InstrumentModule
   "scipy",
   "xxhash",
 
@@ -59,52 +59,42 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
-  "pytest",
-  "pytest-mock",
-  "diff-cover",
-  "pytest-mpl",
+  "pytest~=8.3",
+  "pytest-mock~=3.14",
+  "diff-cover~=9.2",
+  "pytest-mpl~=0.17",
 ]
 
 docs = [
-  # astroid only added to prevent to sphinx-autoapi error AttributeError: 'Module' object has no attribute 'doc' (!838)
-  # (solvable by sphinx-autoapi>=3, see https://stackoverflow.com/q/77257145, but requires sphinx>=6.2 while latest myst-nb-0.17.2 requires sphinx<6)
-  "astroid<3.0",
-  "jupyter_sphinx>=0.4.0",
-  "jupytext",
-  "sphinx",
-  "pydata-sphinx-theme",
-  "myst-nb",
-  "hvplot",
-  "pylint",
-  "rich[jupyter]",
-  "scanpydoc<0.12", # 0.12.0 and 0.12.1 parse return type in docstrings incorrectly. see also https://github.com/theislab/scanpydoc/issues/120.
-  "sphinx-autoapi",
-  "sphinx-autodoc-typehints", # required by either sphinx.ext.autodoc or sphinx.ext.napoleon
-  "sphinx-design",
-  "sphinx-jsonschema",
-  "sphinx-togglebutton",
-  "sphinx-copybutton",
-  "sphinxcontrib-bibtex",
-  "sphinxcontrib-mermaid",
+  "jupyter-sphinx~=0.5.3",
+  "jupytext~=1.16",
+  "sphinx~=7.4",
+  "pydata-sphinx-theme~=0.16.1",
+  "myst-nb~=1.2",
+  "hvplot~=0.11.2",
+  "scanpydoc~=0.14.0",
+  "sphinx-autoapi~=3.6",
+  "sphinx-autodoc-typehints<3.1",
+  "sphinx-design~=0.6.1",
+  "sphinx-jsonschema~=1.19",
+  "sphinx-togglebutton~=0.3.2",
+  "sphinx-copybutton~=0.5.2",
+  "sphinxcontrib-bibtex~=2.6",
+  "sphinxcontrib-mermaid~=1.0",
   "quantify_scheduler[zhinst]",
-  "scikit-learn", # can be removed when quantify-core==0.8.0 is released
 ]
 
 dev = [
-  "coverage",
-  "pre-commit",
-  "pre-commit-hooks", # common hooks for git repos
-  "pyright!=1.1.309",  # Version excluded because of a bug (https://github.com/microsoft/pyright/issues/5126).
-  # Pytest-cov is used to generage test coverage reports, which is rather a development than testing requirement
-  "pytest-cov",
-  "pytest-xdist", # run tests in parallel
-  "ruff",  # linter
-  "typos",  # spell checker
-  "commitizen", # commit messages
+  "pre-commit~=4.1",
+  "pre-commit-hooks~=5.0",              # common hooks for git repos
+  "pyright==1.1.396",
+  "pytest-cov~=6.0",
+  "pytest-xdist~=3.6",                  # run tests in parallel
+  "ruff~=0.11.0",                       # linter
+  "typos~=1.30",                        # spell checker
+  "commitizen~=4.4",                    # commit messages
+  "sphinx-autobuild~=2024.10",
   "quantify-scheduler[docs,test]",
-  # Live rebuild of Documentation
-  "sphinx-autobuild",
-  "quantify_scheduler[zhinst]",
 ]
 
 zhinst = [
