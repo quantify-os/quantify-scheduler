@@ -118,7 +118,7 @@ def lazy_set(instrument: InstrumentBase, parameter_name: str, val: object) -> No
     # parameter.cache() throws for non-gettable parameters if the cache is invalid.
     # This order prevents the exception.
     if not parameter_value_same_as_cache(instrument, parameter_name, val):
-        parameter.set(val)
+        parameter(val)
     else:
         logger.info(f"Lazy set skipped setting parameter {instrument.name}.{parameter_name}")
 

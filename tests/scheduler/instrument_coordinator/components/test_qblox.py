@@ -598,9 +598,9 @@ def test_prepare_baseband(  # noqa: PLR0915
     # Assert
     if set_offset:
         if force_set_parameters:
-            qcm0.instrument.set.assert_called()
-            qrm0.instrument.set.assert_called()
-            qrm2.instrument.set.assert_called()
+            qcm0.instrument.parameters["out0_offset"].set.assert_called()
+            qrm0.instrument.parameters["out0_offset"].set.assert_called()
+            qrm2.instrument.parameters["in0_gain"].set.assert_called()
         else:
             qcm0.instrument.out0_offset.set.assert_not_called()
             qcm0.instrument.set.assert_not_called()
@@ -674,6 +674,7 @@ def test_prepare_rf(
 
     ic_cluster.force_set_parameters(force_set_parameters)
     ic_cluster.instrument.reference_source("internal")  # Put it in a known state
+    ic_cluster.instrument.reference_source.reset_mock()  # Don't count the previous statement
 
     sched = Schedule("pulse_sequence")
     sched.add(
@@ -710,7 +711,7 @@ def test_prepare_rf(
     assert compiled_schedule == compiled_schedule_before_prepare
 
     # Assert it's only set in initialization
-    ic_cluster.instrument.reference_source.assert_called_once()
+    ic_cluster.instrument.reference_source.assert_not_called()
 
     for qcodes_param, hw_options_param in [
         ("out0_att", ["output_att", "q5:mw-q5.01"]),
@@ -751,6 +752,7 @@ def test_prepare_qtm(
 
     ic_cluster.force_set_parameters(force_set_parameters)
     ic_cluster.instrument.reference_source("internal")  # Put it in a known state
+    ic_cluster.instrument.reference_source.reset_mock()  # Don't count the previous statement
 
     sched = Schedule("pulse_sequence")
     sched.add(MarkerPulse(duration=40e-9, port="qe1:switch"))
@@ -773,7 +775,7 @@ def test_prepare_qtm(
     assert compiled_schedule == compiled_schedule_before_prepare
 
     # Assert it's only set in initialization
-    ic_cluster.instrument.reference_source.assert_called_once()
+    ic_cluster.instrument.reference_source.assert_not_called()
 
     qtm[f"sequencer{in_seq_no}"].parameters["sync_en"].set.assert_called_with(True)
     qtm[f"sequencer{in_seq_no}"].parameters["sequence"].set.assert_called_once()

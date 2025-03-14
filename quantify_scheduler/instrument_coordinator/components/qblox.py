@@ -231,7 +231,7 @@ class _ModuleComponentBase(
                 return
             raise e
         if self.force_set_parameters():
-            instrument.set(parameter_name, val)
+            instrument.parameters[parameter_name].set(val)
         else:
             lazy_set(instrument, parameter_name, val)
 

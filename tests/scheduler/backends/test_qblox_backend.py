@@ -1071,7 +1071,7 @@ def test_compile_clock_operations(
         clock_name = operation.data["pulse_info"][0]["clock"]
         qubit_name, clock_short_name = clock_name.split(".")
         qubit = quantum_device.get_element(qubit_name)
-        qubit.clock_freqs[f"f{clock_short_name}"](np.nan)
+        qubit.clock_freqs.parameters[f"f{clock_short_name}"].set(np.nan)
 
         with pytest.raises(ValueError) as error:
             _ = compiler.compile(
