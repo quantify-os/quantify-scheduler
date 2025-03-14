@@ -7,7 +7,7 @@ from __future__ import annotations
 import warnings
 from copy import deepcopy
 from itertools import permutations
-from typing import TYPE_CHECKING, Sequence, overload
+from typing import TYPE_CHECKING, overload
 
 import numpy as np
 
@@ -25,6 +25,8 @@ from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.schedule import Schedulable, Schedule, ScheduleBase
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from quantify_scheduler.operations.operation import Operation
 
 

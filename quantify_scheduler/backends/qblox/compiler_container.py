@@ -106,7 +106,7 @@ class CompilerContainer:
             ) is not None:
                 compiled_schedule[name] = compiled_instrument_program
 
-        for name, compiler in self.local_oscillators.items():
+        for compiler in self.local_oscillators.values():
             if (
                 compiled_instrument_program := compiler.compile(
                     debug_mode=debug_mode, repetitions=repetitions

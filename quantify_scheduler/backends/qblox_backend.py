@@ -11,7 +11,7 @@ from abc import ABC
 from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Iterable, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 from pydantic import Field, model_validator
@@ -88,6 +88,8 @@ from quantify_scheduler.schedules.schedule import (
 from quantify_scheduler.structure.model import DataStructure
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from quantify_scheduler.operations.operation import Operation
 
 
@@ -331,7 +333,7 @@ def _update_conditional_info_from_acquisition(
             raise ValueError(
                 f"Trigger condition {acq_info['thresholded_trigger_count']['condition']} is not "
                 "supported."
-            )
+            ) from None
 
         label = acq_info["feedback_trigger_label"]
         acq_info["feedback_trigger_address"] = cond_info[label].address
@@ -566,7 +568,7 @@ def compile_conditional_playback(  # noqa: D417
 
     currently_active_trigger_labels: set[str] = set()
     for (
-        time,
+        _time,
         operation,
     ) in all_conditional_acqs_and_control_flows:
         if isinstance(operation, ConditionalOperation):
@@ -845,7 +847,7 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
                         '{cluster_name}' not found in the hardware description. Please
                         ensure all modules mentioned in the connectivity are
                         present in the hardware description. """
-                )
+                ) from None
         return self
 
     @model_validator(mode="after")
@@ -955,7 +957,7 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
                 portclock,
                 frequencies,
             ) in self.hardware_options.modulation_frequencies.items():
-                for instr_name, cfg in cluster_configs.items():
+                for cfg in cluster_configs.values():
                     if portclock not in cfg.portclock_to_path:
                         continue
 
@@ -1127,7 +1129,7 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
                         pc = f"{port}-{clock}"
                         # Add extra channel name for `Measure` operation. This takes place after
                         # the first channel name is added ("if not repeated_pc..." block below)
-                        for cluster_name, pc_to_path in cluster_pc_to_path.items():
+                        for pc_to_path in cluster_pc_to_path.values():
                             if pc in pc_to_path:
                                 if (
                                     path.cluster_name != pc_to_path[pc].cluster_name

@@ -14,7 +14,6 @@ from typing import (
 
 import matplotlib.pyplot as plt
 import networkx as nx
-from matplotlib.axes import Axes
 from matplotlib.patches import Rectangle
 from pydantic import (
     ConfigDict,
@@ -25,7 +24,6 @@ from pydantic import (
 )
 
 from quantify_scheduler.backends.qblox import constants
-from quantify_scheduler.enums import TriggerCondition
 from quantify_scheduler.helpers.importers import export_python_object_to_path_string
 from quantify_scheduler.structure.model import (
     DataStructure,
@@ -34,7 +32,12 @@ from quantify_scheduler.structure.model import (
 from quantify_scheduler.structure.types import Graph, NDArray
 
 if TYPE_CHECKING:
-    from quantify_scheduler.backends.graph_compilation import SimpleNodeConfig
+    from matplotlib.axes import Axes
+
+    from quantify_scheduler.backends.graph_compilation import (
+        SimpleNodeConfig,  # noqa: TC004 (causes circular import otherwise)
+    )
+    from quantify_scheduler.enums import TriggerCondition
 
 LatencyCorrection = float
 """
@@ -530,7 +533,7 @@ class HardwareCompilationConfig(DataStructure):
     Datastructure representing how ports on the quantum device are connected to ports
     on the control hardware.
     """
-    compilation_passes: list[SimpleNodeConfig] = []
+    compilation_passes: list[SimpleNodeConfig] = Field(default_factory=list)
     """
     The list of compilation nodes that should be called in succession to compile a
     schedule to instructions for the control hardware.

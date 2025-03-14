@@ -10,7 +10,7 @@ but could be extended for other qubits (eg. carbon qubit).
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Hashable, Literal
+from typing import TYPE_CHECKING, Literal
 
 from qcodes.instrument import InstrumentModule
 from qcodes.instrument.parameter import ManualParameter
@@ -39,6 +39,8 @@ from quantify_scheduler.operations import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Hashable
+
     from qcodes.instrument.base import InstrumentBase
 
 

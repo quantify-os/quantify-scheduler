@@ -95,7 +95,7 @@ def test_timetag_measurement_control(
     )
 
     settable = ManualParameter("dummy", unit="rep")
-    setattr(settable, "batched", True)
+    setattr(settable, "batched", True)  # noqa: B010
     setpoints = np.array([0, 1, 2])
 
     mc: MeasurementControl = mock_setup_basic_nv_qblox_hardware["meas_ctrl"]
@@ -177,7 +177,7 @@ def test_qtm_trace_measurement_control(
     )
 
     settable = ManualParameter("time", unit="ns")
-    setattr(settable, "batched", True)
+    setattr(settable, "batched", True)  # noqa: B010
     setpoints = np.arange(10e3)
 
     mc: MeasurementControl = mock_setup_basic_nv_qblox_hardware["meas_ctrl"]

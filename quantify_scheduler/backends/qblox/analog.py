@@ -8,7 +8,7 @@ import logging
 import math
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from typing import TYPE_CHECKING, Any, Iterator
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -60,6 +60,8 @@ from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.pulse_library import SetClockFrequency
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from quantify_scheduler.backends.qblox.operation_handling.base import (
         IOperationStrategy,
     )
@@ -986,7 +988,7 @@ class BasebandModuleCompiler(AnalogModuleCompiler, ABC):
             raise error.__class__(
                 f"{error} (for '{sequencer.name}' of '{self.name}' "
                 f"with port '{sequencer.port}' and clock '{sequencer.clock}')"
-            )
+            ) from None
 
         external_lo.frequency = freqs.LO
         sequencer.frequency = freqs.IF
@@ -1085,7 +1087,7 @@ class RFModuleCompiler(AnalogModuleCompiler, ABC):
                 raise error.__class__(
                     f"{error} (for '{sequencer.name}' of '{self.name}' "
                     f"with port '{sequencer.port}' and clock '{sequencer.clock}')"
-                )
+                ) from None
 
             self._set_lo_frequency(lo_idx, freqs.LO)
 

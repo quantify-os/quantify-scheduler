@@ -87,7 +87,7 @@ def _get_acquisition_strategy(
     elif protocol in ("TriggerCount", "ThresholdedTriggerCount"):
         return acquisitions.TriggerCountAcquisitionStrategy(operation_info)
 
-    assert False, "This should not be reachable due to the bin mode check above."
+    raise AssertionError("This should not be reachable due to the bin mode check above.")
 
 
 def _get_pulse_strategy(  # noqa: PLR0911  # too many return statements

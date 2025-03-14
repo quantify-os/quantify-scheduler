@@ -83,7 +83,7 @@ def _get_acquisition_strategy(
     if protocol in ("Trace", "TimetagTrace"):
         return acquisitions.ScopedTimetagAcquisitionStrategy(operation_info)
 
-    assert False, "This should not be reachable due to the bin mode check above."
+    raise AssertionError("This should not be reachable due to the bin mode check above.")
 
 
 def _get_pulse_strategy(

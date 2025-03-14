@@ -2,7 +2,8 @@
 # Licensed according to the LICENCE file on the main branch
 """Root models for data structures used within the package."""
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 

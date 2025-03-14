@@ -2,7 +2,7 @@
 # Licensed according to the LICENCE file on the main branch
 """Module containing pydantic validators."""
 
-from typing import Hashable
+from collections.abc import Hashable
 
 import numpy as np
 from qcodes.utils import validators

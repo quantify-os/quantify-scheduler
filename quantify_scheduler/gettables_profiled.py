@@ -17,7 +17,7 @@ from __future__ import annotations
 import json
 import os
 import time
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -29,6 +29,8 @@ from quantify_scheduler.instrument_coordinator.instrument_coordinator import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from xarray import Dataset
 
     from quantify_scheduler.instrument_coordinator.components import (

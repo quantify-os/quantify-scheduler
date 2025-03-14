@@ -13,12 +13,11 @@ import warnings
 from datetime import datetime, timezone
 from enum import Enum
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 import fastjsonschema
 import numpy as np
 from qcodes.instrument import Instrument
-from typing_extensions import Self
 
 from quantify_core.data.handling import get_datadir
 from quantify_scheduler import enums
@@ -26,6 +25,9 @@ from quantify_scheduler.helpers import inspect as inspect_helpers
 from quantify_scheduler.helpers.importers import import_python_object_from_string
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+    from typing_extensions import Self
+
     from quantify_scheduler.operations import Operation
 
 current_python_version = sys.version_info
@@ -179,9 +181,9 @@ class SchedulerJSONDecoder(json.JSONDecoder):
             )
 
         super().__init__(
-            object_hook=self.custom_object_hook,
             *args,
             **kwargs,
+            object_hook=self.custom_object_hook,
         )
 
         self._classes = inspect_helpers.get_classes(*[enums, *extended_modules])
@@ -295,7 +297,7 @@ class SchedulerJSONDecoder(json.JSONDecoder):
         except KeyError:
             raise UnknownDeserializationTypeError(
                 f"Type '{deserialization_type}' is not a known deserialization type."
-            )
+            ) from None
 
 
 def _get_type_from_string_deprecated(deserialization_type: str) -> type:
@@ -466,7 +468,7 @@ class JSONSerializableMixin:
         if path is None:
             path = get_datadir()
 
-        name = getattr(self, "name")  # This is to shut up the linter about self.name
+        name = getattr(self, "name")  # noqa: B009 This is to shut up the linter about self.name
 
         if add_timestamp:
             timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S_%Z")

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import logging
 import warnings
-from typing import TYPE_CHECKING, Any, Generator, overload
+from typing import TYPE_CHECKING, Any, overload
 
 import numpy as np
 
@@ -22,6 +22,8 @@ from quantify_scheduler.operations.pulse_library import NumericalPulse
 from quantify_scheduler.schedules.schedule import Schedule, ScheduleBase
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
+
     from quantify_scheduler.operations.operation import Operation
 
 logger = logging.getLogger(__name__)

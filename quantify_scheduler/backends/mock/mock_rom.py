@@ -7,7 +7,7 @@
 
 from __future__ import annotations
 
-from typing import Hashable, Literal
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 import xarray as xr
@@ -35,7 +35,10 @@ from quantify_scheduler.instrument_coordinator.components.base import (
 from quantify_scheduler.operations.acquisition_library import Trace
 from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 from quantify_scheduler.structure.model import DataStructure
-from quantify_scheduler.structure.types import NDArray  # noqa: TC001, pydantic
+from quantify_scheduler.structure.types import NDArray
+
+if TYPE_CHECKING:
+    from collections.abc import Hashable
 
 
 class MockReadoutModule:

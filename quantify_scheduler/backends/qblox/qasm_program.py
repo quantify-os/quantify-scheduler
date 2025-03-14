@@ -8,10 +8,6 @@ from __future__ import annotations
 from contextlib import contextmanager
 from typing import (
     TYPE_CHECKING,
-    Generator,
-    Hashable,
-    Iterator,
-    Sequence,
 )
 
 import numpy as np
@@ -24,6 +20,8 @@ from quantify_scheduler.backends.qblox.conditional import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Generator, Hashable, Iterator, Sequence
+
     from quantify_scheduler.backends.qblox.operation_handling.base import (
         IOperationStrategy,
     )

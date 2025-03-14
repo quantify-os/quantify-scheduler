@@ -5,7 +5,8 @@
 from __future__ import annotations
 
 from collections import UserDict
-from typing import TYPE_CHECKING, Iterable, MutableMapping
+from collections.abc import Iterable, MutableMapping
+from typing import TYPE_CHECKING
 
 import numpy as np
 import xxhash

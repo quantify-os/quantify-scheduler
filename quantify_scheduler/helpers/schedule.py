@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from itertools import count
-from typing import TYPE_CHECKING, Any, Hashable
+from typing import TYPE_CHECKING, Any
 
 from quantify_core.utilities import deprecated
 from quantify_scheduler.helpers.collections import make_hash, without
@@ -18,6 +18,8 @@ from quantify_scheduler.schedules.schedule import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Hashable
+
     from quantify_scheduler.operations.operation import Operation
 
 

@@ -23,7 +23,7 @@ def check_zhinst_compatibility() -> None:
 
     if version >= (3, 10):
         raise RuntimeError(
-            "The zhinst backend is only compatible with Python 3.8 and Python 3.9, "
+            "The zhinst backend is only compatible with Python 3.9, "
             f"but you have Python {major}.{minor}. Please install a compatible python version."
         )
     if importlib.util.find_spec("zhinst") is None:  # type: ignore[attr-defined]

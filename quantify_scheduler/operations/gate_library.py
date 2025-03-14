@@ -4,13 +4,15 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Hashable, Iterable, Literal
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 
 from .operation import Operation, _generate_acq_indices_for_gate
 
 if TYPE_CHECKING:
+    from collections.abc import Hashable, Iterable
+
     from quantify_scheduler.enums import BinMode
 
 

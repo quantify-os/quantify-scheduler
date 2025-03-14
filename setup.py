@@ -26,7 +26,7 @@ def get_version_and_cmdclass(pkg_path):
 version, cmdclass = get_version_and_cmdclass(r"quantify_scheduler")
 
 if any("zhinst" in arg for arg in sys.argv):
-    install_requires.append("python>=3.8,<3.10")
+    install_requires.append("python>=3.9,<3.10")
 
 setup(
     install_requires=install_requires,

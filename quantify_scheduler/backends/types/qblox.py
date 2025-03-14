@@ -5,18 +5,15 @@
 from __future__ import annotations
 
 import warnings
+from collections.abc import Callable
 from dataclasses import dataclass
 from dataclasses import field as dataclasses_field
 from typing import (
     TYPE_CHECKING,
+    Annotated,
     Any,
-    Callable,
-    Dict,
-    Iterable,
-    List,
     Literal,
     Optional,
-    Tuple,
     TypeVar,
     Union,
     get_args,
@@ -26,7 +23,6 @@ from dataclasses_json import DataClassJsonMixin
 from pydantic import Field, field_validator
 from pydantic.functional_validators import model_validator
 from qblox_instruments.qcodes_drivers.time import Polarity
-from typing_extensions import Annotated
 
 from quantify_core.utilities import deprecated
 from quantify_scheduler.backends.qblox import q1asm_instructions
@@ -58,12 +54,14 @@ from quantify_scheduler.backends.types.common import (
     SoftwareDistortionCorrection,
 )
 from quantify_scheduler.enums import (
-    TimeRef,  # noqa: TC001 pydantic needs them
-    TimeSource,  # noqa: TC001 pydantic needs them
+    TimeRef,
+    TimeSource,
 )
 from quantify_scheduler.structure.model import DataStructure
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from quantify_scheduler.backends.qblox_backend import (
         _ClusterCompilationConfig,
         _ClusterModuleCompilationConfig,
@@ -138,7 +136,7 @@ class StaticAnalogModuleProperties(StaticHardwareProperties):
     """A mapping from channel_name to digital marker setting.
     Specifies which marker bit needs to be set at start if the
     output (as a string ex. `complex_output_0`) contains a pulse."""
-    default_markers: None | dict[str, int] = None
+    default_markers: dict[str, int] | None = None
     """The default markers value to set at the beginning of programs and reset marker pulses to.
     A mapping from channel name to marker.
     Important for RF instruments that use the set_mrk command to enable/disable the RF output."""
@@ -255,9 +253,9 @@ class OpInfo(DataClassJsonMixin):
 class LOSettings(DataClassJsonMixin):
     """Dataclass containing all the settings for a generic LO instrument."""
 
-    power: Dict[str, float]
+    power: dict[str, float]
     """Power of the LO source."""
-    frequency: Dict[str, Optional[float]]
+    frequency: dict[str, Optional[float]]
     """The frequency to set the LO to."""
 
 
@@ -272,7 +270,7 @@ child classes.
 class QbloxRealTimeFilter(DataClassJsonMixin):
     """An individual real time filter on Qblox hardware."""
 
-    coeffs: Optional[Union[float, List[float]]] = None
+    coeffs: Optional[Union[float, list[float]]] = None
     """Coefficient(s) of the filter.
        Can be None if there is no filter
        or if it is inactive."""
@@ -412,7 +410,7 @@ class BaseModuleSettings(DataClassJsonMixin):
     """The gain of input 0."""
     in1_gain: Optional[int] = None
     """The gain of input 1."""
-    distortion_corrections: List[DistortionSettings] = dataclasses_field(
+    distortion_corrections: list[DistortionSettings] = dataclasses_field(
         default_factory=lambda: [DistortionSettings() for _ in range(4)]
     )
     """distortion correction settings"""
@@ -596,11 +594,11 @@ class SequencerSettings(DataClassJsonMixin):
     """Specifies the channel identifier of the hardware config (e.g. `complex_output_0`)."""
     channel_name_measure: Union[list[str], None]
     """Extra channel name necessary to define a `Measure` operation."""
-    connected_output_indices: Tuple[int, ...]
+    connected_output_indices: tuple[int, ...]
     """Specifies the indices of the outputs this sequencer produces waveforms for."""
-    connected_input_indices: Tuple[int, ...]
+    connected_input_indices: tuple[int, ...]
     """Specifies the indices of the inputs this sequencer collects data for."""
-    sequence: Optional[Dict[str, Any]] = None
+    sequence: Optional[dict[str, Any]] = None
     """JSON compatible dictionary holding the waveforms and program for the
     sequencer."""
     seq_fn: Optional[str] = None
@@ -1012,7 +1010,7 @@ class DescriptionAnnotationsGettersMixin:
     """Provide the functionality of retrieving valid channel names by inheriting this class."""
 
     @classmethod
-    def get_valid_channels(cls) -> List[str]:
+    def get_valid_channels(cls) -> list[str]:
         """Return all the valid channel names for this hardware description."""
         channel_description_types = [
             ComplexChannelDescription.__name__,
@@ -1207,8 +1205,12 @@ class QTMDescription(DataStructure, DescriptionAnnotationsGettersMixin):
         """Validate channel names specified in the Connectivity."""
         super().validate_channel_names(channel_names)
 
-        used_inputs = set(int(n.lstrip("digital_input_")) for n in channel_names if "input" in n)
-        used_outputs = set(int(n.lstrip("digital_output_")) for n in channel_names if "output" in n)
+        used_inputs = set(
+            int(n.removeprefix("digital_input_")) for n in channel_names if "input" in n
+        )
+        used_outputs = set(
+            int(n.removeprefix("digital_output_")) for n in channel_names if "output" in n
+        )
 
         if overlap := used_inputs & used_outputs:
             raise ValueError(
@@ -1247,7 +1249,7 @@ class ClusterDescription(QbloxBaseDescription):
     instrument_type: Literal["Cluster"]  # type: ignore  # (valid override)
     """The instrument type, used to select this datastructure
     when parsing a :class:`~.CompilationConfig`."""
-    modules: Dict[int, ClusterModuleDescription] = {}
+    modules: dict[int, ClusterModuleDescription] = {}
     """Description of the modules of this Cluster, using slot index as key."""
     ip: Optional[str] = None
     """Unique identifier (typically the ip address) used to connect to the cluster"""
@@ -1502,17 +1504,17 @@ class SequencerOptions(DataStructure):
 class QbloxHardwareDistortionCorrection(HardwareDistortionCorrection):
     """A hardware distortion correction specific to the Qblox backend."""
 
-    bt_coeffs: Optional[List[float]] = None
+    bt_coeffs: Optional[list[float]] = None
     """Coefficient of the bias tee correction."""
-    exp0_coeffs: Optional[List[float]] = None
+    exp0_coeffs: Optional[list[float]] = None
     """Coefficients of the exponential overshoot/undershoot correction 1."""
-    exp1_coeffs: Optional[List[float]] = None
+    exp1_coeffs: Optional[list[float]] = None
     """Coefficients of the exponential overshoot/undershoot correction 2."""
-    exp2_coeffs: Optional[List[float]] = None
+    exp2_coeffs: Optional[list[float]] = None
     """Coefficients of the exponential overshoot/undershoot correction 3."""
-    exp3_coeffs: Optional[List[float]] = None
+    exp3_coeffs: Optional[list[float]] = None
     """Coefficients of the exponential overshoot/undershoot correction 4."""
-    fir_coeffs: Optional[List[float]] = None
+    fir_coeffs: Optional[list[float]] = None
     """Coefficients for the FIR filter."""
 
 
@@ -1560,42 +1562,42 @@ class QbloxHardwareOptions(HardwareOptions):
             qblox_hw_options
     """
 
-    input_gain: Optional[Dict[str, Union[RealInputGain, ComplexInputGain]]] = None
+    input_gain: Optional[dict[str, Union[RealInputGain, ComplexInputGain]]] = None
     """
     Dictionary containing the input gain settings (values) that should be applied
     to the inputs that are connected to a certain port-clock combination (keys).
     """
-    output_att: Optional[Dict[str, OutputAttenuation]] = None
+    output_att: Optional[dict[str, OutputAttenuation]] = None
     """
     Dictionary containing the attenuation settings (values) that should be applied
     to the outputs that are connected to a certain port-clock combination (keys).
     """
-    input_att: Optional[Dict[str, InputAttenuation]] = None
+    input_att: Optional[dict[str, InputAttenuation]] = None
     """
     Dictionary containing the attenuation settings (values) that should be applied
     to the inputs that are connected to a certain port-clock combination (keys).
     """
-    mixer_corrections: Optional[Dict[str, QbloxMixerCorrections]] = None  # type: ignore
+    mixer_corrections: Optional[dict[str, QbloxMixerCorrections]] = None  # type: ignore
     """
     Dictionary containing the qblox-specific mixer corrections (values) that should be
     used for signals on a certain port-clock combination (keys).
     """
-    sequencer_options: Optional[Dict[str, SequencerOptions]] = None
+    sequencer_options: Optional[dict[str, SequencerOptions]] = None
     """
     Dictionary containing the options (values) that should be set
     on the sequencer that is used for a certain port-clock combination (keys).
     """
     distortion_corrections: Optional[  # type: ignore
-        Dict[
+        dict[
             str,
             Union[
                 SoftwareDistortionCorrection,
                 QbloxHardwareDistortionCorrection,
-                List[QbloxHardwareDistortionCorrection],
+                list[QbloxHardwareDistortionCorrection],
             ],
         ]
     ] = None
-    digitization_thresholds: Optional[Dict[str, DigitizationThresholds]] = None
+    digitization_thresholds: Optional[dict[str, DigitizationThresholds]] = None
     """
     Dictionary containing the digitization threshold settings for QTM modules. These are
     the settings that determine the voltage thresholds above which input signals are

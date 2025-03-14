@@ -6,9 +6,11 @@ from __future__ import annotations
 
 from dataclasses import InitVar, dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from quantify_scheduler.backends.qblox.operation_handling.base import (
         IOperationStrategy,
     )

@@ -181,8 +181,8 @@ def _stack_pulses_by_interval(
     for key in old_schedulable_keys:
         del schedule.schedulables[key]
 
-    # Dellete timing constraints
-    for key, schedulable in schedule.schedulables.items():
+    # Delete timing constraints
+    for schedulable in schedule.schedulables.values():
         if "timing_constraints" in schedulable:
             del schedulable.data["timing_constraints"]
 

@@ -23,7 +23,6 @@
 import random
 
 import utils
-from qblox_instruments import DummyBinnedAcquisitionData
 from qcodes.instrument import Instrument
 
 from quantify_core.data import handling as dh

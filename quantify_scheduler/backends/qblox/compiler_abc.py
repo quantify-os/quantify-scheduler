@@ -9,15 +9,13 @@ import logging
 import warnings
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from collections.abc import Hashable
 from enum import Enum, auto
 from os import makedirs, path
 from typing import (
     TYPE_CHECKING,
     Any,
     Generic,
-    Hashable,
-    Iterable,
-    Iterator,
     Protocol,
     TypeVar,
 )
@@ -61,6 +59,8 @@ from quantify_scheduler.helpers.schedule import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator
+
     from quantify_scheduler.backends.qblox.operation_handling.base import (
         IOperationStrategy,
     )
@@ -116,7 +116,7 @@ class InstrumentCompiler(ABC):
         self.total_play_time = total_play_time
         self.instrument_cfg = instrument_cfg
 
-    def prepare(self, **kwargs) -> None:
+    def prepare(self, **kwargs) -> None:  # noqa: B027 ("abstract" yet called by subclasses)
         """
         Method that can be overridden to implement logic before the main compilation
         starts. This step is to extract all settings for the devices that are dependent
@@ -749,7 +749,7 @@ class SequencerCompiler(ABC):
 
         return str(qasm)
 
-    def _assert_total_play_time_on_nco_grid(self) -> None:
+    def _assert_total_play_time_on_nco_grid(self) -> None:  # noqa: B027
         """
         Raises an error if the total play time does not align with the NCO grid time.
 

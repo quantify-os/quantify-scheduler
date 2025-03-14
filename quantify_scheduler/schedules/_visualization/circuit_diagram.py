@@ -7,7 +7,7 @@ from __future__ import annotations
 from copy import deepcopy
 from enum import Enum, auto
 from itertools import chain
-from typing import TYPE_CHECKING, Iterable, Iterator
+from typing import TYPE_CHECKING
 
 import matplotlib
 
@@ -23,6 +23,8 @@ from quantify_scheduler.schedules._visualization import constants
 from quantify_scheduler.schedules.schedule import Schedule, ScheduleBase
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator
+
     from matplotlib.axes import Axes
     from matplotlib.figure import Figure
 

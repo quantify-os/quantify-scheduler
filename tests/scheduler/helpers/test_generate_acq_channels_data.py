@@ -1,8 +1,6 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 
-from typing import List
-
 import pytest
 
 from quantify_scheduler.backends import SerialCompiler
@@ -66,7 +64,7 @@ def test_binned_average(
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
 
     schedule = Schedule("Test schedule", repetitions=2)
-    schedulables: List[Schedulable] = []
+    schedulables: list[Schedulable] = []
 
     schedulables.append(
         schedule.add(
@@ -235,7 +233,7 @@ def test_binned_append(
 ):
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
 
-    schedulables: List[Schedulable] = []
+    schedulables: list[Schedulable] = []
 
     schedule = Schedule("Test schedule", repetitions=2)
 
@@ -417,7 +415,7 @@ def test_binned_append_loop(
 def test_trace_and_binned(mock_setup_basic_transmon_with_standard_params):
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
 
-    schedulables: List[Schedulable] = []
+    schedulables: list[Schedulable] = []
 
     schedule = Schedule("Test schedule", repetitions=2)
 
@@ -488,7 +486,7 @@ def test_trace_and_binned(mock_setup_basic_transmon_with_standard_params):
 def test_trigger_count(mock_setup_basic_transmon_with_standard_params, bin_mode):
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
 
-    schedulables: List[Schedulable] = []
+    schedulables: list[Schedulable] = []
 
     schedule = Schedule("Test schedule")
 

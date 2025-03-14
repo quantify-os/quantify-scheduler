@@ -24,7 +24,7 @@ $ pip install quantify-scheduler[zhinst]
 
 ### additional requirements
 
-The zhinst backend is currently compatible with Python versions `3.8` and `3.9`. When importing anything from the `zhinst` backend, an error is raised when either the backend is not installed, or when using an incorrect Python version:
+The zhinst backend is currently compatible with Python version `3.9`. When importing anything from the `zhinst` backend, an error is raised when either the backend is not installed, or when using an incorrect Python version:
 
 ```{code-cell} ipython3
 ---

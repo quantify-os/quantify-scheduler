@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import TYPE_CHECKING, Any, Callable, Generator
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pytest
@@ -26,6 +26,8 @@ from quantify_scheduler.schemas.examples.device_example_cfgs import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Generator
+
     from quantify_scheduler.operations.operation import Operation
 
 ZHINST_HARDWARE_COMPILATION_CONFIG = utils.load_json_example_scheme(

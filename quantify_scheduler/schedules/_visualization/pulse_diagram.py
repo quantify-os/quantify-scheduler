@@ -744,7 +744,7 @@ def plot_multiple_subplots_mpl(
 
     for i, (port, data) in enumerate(sampled_schedule.items()):
         # This automatically creates a label-to-color map as the plots get created.
-        color: dict[str, str] = defaultdict(lambda: f"C{len(color)}")
+        color: dict[str, str] = defaultdict(lambda: f"C{len(color)}")  # noqa: B023 false positive
 
         for pulse in data:
             axs[i].plot(

@@ -7,7 +7,7 @@ from __future__ import annotations
 import warnings
 from functools import reduce
 from operator import mul
-from typing import TYPE_CHECKING, Dict, Hashable, Iterable, List, Tuple, Union
+from typing import TYPE_CHECKING, Union
 
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
@@ -24,11 +24,13 @@ from quantify_scheduler.schedules.schedule import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Hashable, Iterable
+
     from quantify_scheduler.operations.operation import Operation
 
 SchedulableLabel = Union[str, None]
-FullSchedulableLabel = Tuple[SchedulableLabel, ...]
-SchedulableLabelToAcquisitionIndex = Dict[Tuple[FullSchedulableLabel, int], Union[int, List[int]]]
+FullSchedulableLabel = tuple[SchedulableLabel, ...]
+SchedulableLabelToAcquisitionIndex = dict[tuple[FullSchedulableLabel, int], Union[int, list[int]]]
 """
 A mapping from schedulables to an acquisition index.
 

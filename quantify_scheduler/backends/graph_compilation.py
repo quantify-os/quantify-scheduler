@@ -4,11 +4,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from copy import deepcopy
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Literal,
     NoReturn,
 )
@@ -18,11 +18,11 @@ import networkx as nx
 from pydantic import Field, field_serializer, field_validator
 
 from quantify_scheduler.backends.types.common import (
-    HardwareCompilationConfig,  # noqa: TC001 pydantic needs it
+    HardwareCompilationConfig,
 )
 from quantify_scheduler.helpers.importers import export_python_object_to_path_string
 from quantify_scheduler.operations.operation import (
-    Operation,  # noqa: TC001 circular import if moved to TYPE_CHECKING
+    Operation,
 )
 from quantify_scheduler.schedules.schedule import (
     CompiledSchedule,

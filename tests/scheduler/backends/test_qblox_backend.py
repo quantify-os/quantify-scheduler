@@ -2542,7 +2542,7 @@ def test_markers(mock_setup_basic_transmon, hardware_cfg_cluster, hardware_cfg_r
     _confirm_correct_markers(program["cluster0"]["cluster0_module1"], 0)
     _confirm_correct_markers(program["cluster0"]["cluster0_module3"], 0)
 
-    # # Test for rf
+    # Test for rf
     sched = Schedule("gate_experiment")
     sched.add(X("q2"))
     sched.add(X("q3"))
@@ -3052,7 +3052,7 @@ def test_digital_channel_any_clock_name(
         schedule=schedule, config=quantum_device.generate_compilation_config()
     )
 
-    # # Assert markers were set correctly, and wait time is correct for QRM
+    # Assert markers were set correctly, and wait time is correct for QRM
     seq0_digital = compiled_sched.compiled_instructions["cluster0"]["cluster0_module1"][
         "sequencers"
     ]["seq0"].sequence["program"]
@@ -3140,9 +3140,10 @@ def test_stitched_pulse_compilation_upd_param_at_end(
         .sequence["program"]
         .splitlines()
     )
-    for i, string in enumerate(program_with_long_square):
-        if "set_awg_offs" in string:
-            break
+
+    i = next(
+        idx for idx, string in enumerate(program_with_long_square) if "set_awg_offs" in string
+    )  # Find the first matching instruction
     assert re.search(r"^\s*set_awg_offs\s+16384,0\s+", program_with_long_square[i])
     assert re.search(r"^\s*upd_param\s+4\s+", program_with_long_square[i + 1])
     assert re.search(r"^\s*wait\s+9996\s+", program_with_long_square[i + 2])

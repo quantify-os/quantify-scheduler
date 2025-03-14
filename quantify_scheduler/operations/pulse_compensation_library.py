@@ -4,11 +4,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING
 
 from quantify_scheduler.operations.operation import Operation
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from quantify_scheduler.schedules.schedule import Schedule
 
 Port = str

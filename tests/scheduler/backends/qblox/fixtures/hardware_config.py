@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Any, Generator
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
 from quantify_scheduler.schemas.examples import utils
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 QBLOX_HARDWARE_CONFIG_TRANSMON = utils.load_json_example_scheme(
     "qblox_hardware_config_transmon.json"

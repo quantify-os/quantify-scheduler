@@ -7,10 +7,10 @@ from __future__ import annotations
 import inspect
 import logging
 from collections import UserDict
+from collections.abc import Iterable, Sequence
 from copy import deepcopy
 from enum import Enum
 from pydoc import locate
-from typing import Iterable, Sequence
 
 from quantify_scheduler.helpers.collections import make_hash
 from quantify_scheduler.helpers.importers import export_python_object_to_path_string

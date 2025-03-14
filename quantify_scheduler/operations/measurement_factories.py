@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import math
 import warnings
-from typing import Hashable, Literal
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 
@@ -38,6 +38,9 @@ from quantify_scheduler.operations.pulse_library import (
     VoltageOffset,
 )
 from quantify_scheduler.schedules.schedule import Schedule
+
+if TYPE_CHECKING:
+    from collections.abc import Hashable
 
 
 def _dispersive_measurement(  # noqa: PLR0915

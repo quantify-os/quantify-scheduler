@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Hashable, Literal
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 from qcodes.instrument import InstrumentChannel
@@ -29,6 +29,8 @@ from quantify_scheduler.operations import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Hashable
+
     from qcodes.instrument.base import InstrumentBase
 
 

@@ -7,7 +7,7 @@ T1 measurement.
 
 from __future__ import annotations
 
-from typing import Iterable, Literal
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 
@@ -22,6 +22,9 @@ from quantify_scheduler.operations.pulse_library import (
 )
 from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.schedule import Schedule
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
 def rabi_sched(

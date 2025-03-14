@@ -44,7 +44,11 @@ def get_classes(*modules: ModuleType) -> dict[str, type[Any]]:
         module_name: str = module.__name__
         classes += inspect.getmembers(
             sys.modules[module_name],
-            lambda member: inspect.isclass(member) and member.__module__ == module_name,
+            # We need to use the default argument technique to capture the correct value
+            # of `module_name` within each lambda creation.
+            # See: https://docs.python-guide.org/writing/gotchas/#late-binding-closures
+            lambda member, current_module_name=module_name: inspect.isclass(member)
+            and member.__module__ == current_module_name,
         )
     return dict(classes)
 

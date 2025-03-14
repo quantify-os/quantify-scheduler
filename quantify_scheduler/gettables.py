@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import logging
 import sys
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 from qcodes.parameters import Parameter
 
@@ -25,6 +25,8 @@ from quantify_core.measurement.control import MeasurementControl
 from quantify_scheduler.helpers.diagnostics_report import _generate_diagnostics_report
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     import numpy as np
 
     from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
@@ -311,7 +313,7 @@ class ScheduleGettable:
                 f"One or more keyword arguments of the schedule function in "
                 f"schedule_kwargs are of unexpected type, please check the arguments "
                 f"and try again.\n{self._evaluated_sched_kwargs=}"
-            )
+            ) from None
 
         instrument_coordinator = self.quantum_device.instr_instrument_coordinator.get_instr()
         return _generate_diagnostics_report(

@@ -2188,22 +2188,10 @@ def test_channel_map_measure(
 @pytest.mark.parametrize(
     ("slot_idx, module_type"),
     [
-        (
-            1,
-            "QCM",
-        ),
-        (
-            2,
-            "QCM_RF",
-        ),
-        (
-            3,
-            "QRM",
-        ),
-        (
-            4,
-            "QRM_RF",
-        ),
+        (1, "QCM"),
+        (2, "QCM_RF"),
+        (3, "QRM"),
+        (4, "QRM_RF"),
     ],
 )
 def test_channel_map_off_with_marker_pulse(make_cluster_component, slot_idx, module_type):

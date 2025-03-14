@@ -22,7 +22,6 @@
 import numpy as np
 import utils
 from qcodes.instrument import Instrument
-from qcodes.instrument.parameter import ManualParameter
 from qcodes.parameters import ManualParameter
 
 from quantify_core.data import handling as dh

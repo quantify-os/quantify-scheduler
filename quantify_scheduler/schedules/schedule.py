@@ -8,9 +8,10 @@ import dataclasses
 import warnings
 from abc import ABC
 from collections import UserDict
+from collections.abc import Hashable, MutableMapping
 from copy import copy
 from itertools import chain
-from typing import TYPE_CHECKING, Any, Dict, Hashable, Literal, MutableMapping
+from typing import TYPE_CHECKING, Any, Literal
 from uuid import uuid4
 
 import numpy as np
@@ -1016,7 +1017,7 @@ class AcquisitionChannelData:
     """
 
 
-AcquisitionChannelsData = Dict[Hashable, AcquisitionChannelData]
+AcquisitionChannelsData = dict[Hashable, AcquisitionChannelData]
 """
 Dictionary mapping each acq_channel to their corresponding
 hardware independent acquisition channel data.

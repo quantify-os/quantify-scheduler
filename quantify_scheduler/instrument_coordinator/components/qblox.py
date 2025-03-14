@@ -16,9 +16,7 @@ from math import isnan
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Generic,
-    Hashable,
     TypeVar,
     Union,
 )
@@ -72,6 +70,8 @@ from quantify_scheduler.instrument_coordinator.utility import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Hashable
+
     from qblox_instruments.qcodes_drivers.module import Module
     from qcodes.instrument.instrument_base import InstrumentBase
 
@@ -2127,7 +2127,7 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
         else:
             # In principle unreachable due to _check_bin_mode_compatible, but included for
             # completeness.
-            assert False, "This should not be reachable due to _check_bin_mode_compatible."
+            raise AssertionError("This should not be reachable due to _check_bin_mode_compatible.")
 
 
 class _QTMAcquisitionManager(_AcquisitionManagerBase):
@@ -2250,7 +2250,7 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
         else:
             # In principle unreachable due to _check_bin_mode_compatible, but included for
             # completeness.
-            assert False, "This should not be reachable due to _check_bin_mode_compatible."
+            raise AssertionError("This should not be reachable due to _check_bin_mode_compatible.")
 
     def _get_digital_trace_data(
         self,
@@ -2759,7 +2759,7 @@ def _get_configuration_manager(instrument_ip: str) -> ConfigurationManager:
         config_manager = ConfigurationManager(instrument_ip)
     except RuntimeError as error:
         new_message = f"{error}\nNote: qblox-instruments might have changed ip formatting."
-        raise type(error)(new_message)
+        raise type(error)(new_message) from None
     return config_manager
 
 

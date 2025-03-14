@@ -22,7 +22,6 @@ classifiers = [
   "License :: OSI Approved :: BSD License",
   "Natural Language :: English",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
@@ -33,7 +32,7 @@ classifiers = [
 keywords = ["quantum", "quantify"]
 license = { text = "BSD-3-Clause" }
 dynamic = ["version", "readme"]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dependencies = [
   "columnar",
   "dataclasses-json",
@@ -143,7 +142,7 @@ extend-exclude = [
   "**zhinst**",
 ]
 line-length = 100
-target-version = "py38"  # TODO: Change to "py39"
+target-version = "py39"
 
 
 [tool.ruff.lint]
@@ -156,6 +155,7 @@ select = [
   "D",     # pydocstyle
   "UP",    # pyupgrade
   "ANN",   # flake8-annotations
+  "B",     # flake8-bugbear
   "A",     # flake8-builtins
   "LOG",   # flake8-logging
   "PIE",   # flake8-pie
@@ -180,15 +180,17 @@ ignore = [
   "D205",     # blank-line-after-summary (Conflicts when summary is too large)
   "D212",     # Multi-line docstring summary should start at the first line (conflict with D213)
   "D401",     # Docstrings should be in imperative mood
+  "UP038",    # Use `X | Y` in `isinstance` call instead of `(X, Y)` (future rule)
   "ANN002",   # Missing type annotation for *{name}
   "ANN003",   # Missing type annotation for **{name}
   "PLR0912",  # Too many branches (... > 12)
   "PLR0913",  # Too many arguments to function call (.../5)
+  "B028",     # No explicit `stacklevel` keyword argument found
   "A005",     # Module shadows a Python standard-library module
   "PIE790",   # Unnecessary `pass` statement
   "PGH003",   # Use specific rule codes when ignoring type issues
 
-  # TODO: The following are going to be un-ignored in the code quality report
+  # NOTE: The following are going to be un-ignored in the code quality report
   "RUF005",   # Consider iterable unpacking instead of concatenation
   "RUF012",   # Mutable class attributes should be annotated with `typing.ClassVar`
   "RUF013",   # PEP484 prohibits implicit `Optional`
@@ -197,6 +199,14 @@ ignore = [
 
 [tool.ruff.lint.flake8-comprehensions]
 allow-dict-calls-with-keyword-arguments = true
+
+[tool.ruff.lint.flake8-type-checking]
+exempt-modules = ["typing", "typing_extensions"]
+runtime-evaluated-base-classes = [
+  "pydantic.BaseModel",
+  "dataclasses_json.DataClassJsonMixin",
+  "quantify_scheduler.structure.model.DataStructure",
+]
 
 [tool.ruff.lint.pep8-naming]
 extend-ignore-names = [
@@ -220,11 +230,15 @@ extend-ignore-names = [
   "reference_magnitude_*",
 ]
 
+[tool.ruff.lint.pyupgrade]
+# Preserve types, even if a file imports `from __future__ import annotations`.
+keep-runtime-typing = true  # TODO: Disable with py3.10+
+
 [tool.ruff.lint.per-file-ignores]
 # Project specific files
 "setup.py" = ["D", "ANN"]
 "*/docs/source/conf.py" = ["E402", "F401"]
-"__init__.py" = ["F401", "D104", "D415", "D400"]
+"__init__.py" = ["F401", "D104", "D400", "D415"]
 "quantify_scheduler/_version.py" = ["ANN001", "ANN202"]  # _version.py doesn't need to be properly annotated
 
 # Test don't need to be properly linted
@@ -237,6 +251,8 @@ extend-ignore-names = [
   "F811",     # Redefinition of unused {name} from {row}
   "N806",     # Variable {name} in function should be lowercase
   "S101",     # Use of `assert` detected
+  "B011",     # Do not `assert False`, raise `AssertionError()`
+  "B017",     # Do not assert blind exception
   "PIE804",   # Unnecessary `dict` kwargs
   "SLF001",   # Private member accessed
   "ARG001",   # Unused function argument
@@ -245,8 +261,8 @@ extend-ignore-names = [
 ]
 
 # Type checking and naming conventions for the pydantic files (backends/types) is annoying
-"quantify_scheduler/backends/types/common.py" = ["ANN001", "ANN202", "TC001", "TC002"]
-"quantify_scheduler/backends/types/qblox.py" = ["ANN001", "UP006", "UP007"]
+"quantify_scheduler/backends/types/common.py" = ["ANN001", "ANN202"]
+"quantify_scheduler/backends/types/qblox.py" = ["ANN001"]
 
 # Files that will be removed/refactored away in future versions, so no need to do complex fixes
 "quantify_scheduler/gettables_profiled.py" = ["D102", "D404"]
@@ -256,7 +272,9 @@ extend-ignore-names = [
 "quantify_scheduler/schedules/_visualization/pulse_scheme.py" = ["D417"]  # TODO: refactor the functions in here
 
 [tool.ruff.lint.isort]
+extra-standard-library = ["typing_extensions"]
 known-first-party = ["quantify_core", "quantify_scheduler"]
+split-on-trailing-comma = true  # TODO: make false later
 
 [tool.ruff.lint.pylint]
 allow-magic-value-types = ["str", "int"]
@@ -268,6 +286,7 @@ extend-select = [
   "C90",   # mccabe
   "S",     # flake8-bandit
   "B",     # flake8-bugbear
+  "A",     # flake8-builtins (overrides ignores)
   "C4",    # flake8-comprehensions
   "ICN",   # flake8-import-conventions
   "G",     # flake8-logging-format

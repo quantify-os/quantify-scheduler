@@ -391,7 +391,7 @@ def test_last_schedule(instrument_coordinator, dummy_components):
 
     # assert that first there is no schedule prepared yet
     with pytest.raises(ValueError):
-        instrument_coordinator.last_schedule
+        _ = instrument_coordinator.last_schedule
 
     test_sched = Schedule(name="test_schedule")
     compiled_sched = CompiledSchedule(test_sched)
