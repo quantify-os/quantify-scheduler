@@ -2,10 +2,18 @@
 
 ## Release v0.22.3 (2025-03-19)
 
-Intermediate release to add the `WeightedThresholdedAcquisition` operation. This allows the user to pass integration weights to thresholded acquisitions:
+Intermediate release to add the `WeightedThresholdedAcquisition` and `RFSwitchToggle` operations. 
+
+- [Add `WeightedThresholdedAcquisition` operation](#add-weightedthresholdedacquisition-operation)
+- [Add `RFSwitchToggle` operation](#add-rfswitchtoggle-operation)
+
+### Add `WeightedThresholdedAcquisition` operation
+
+This allows the user to pass integration weights to thresholded acquisitions:
 
 **use as an Acquisition Operation**
 ```python
+### use as an Acquisition Operation
 schedule.add(
     WeightedThresholdedAcquisition(
         weights_a=np.zeros(3, dtype=complex),
@@ -20,6 +28,8 @@ schedule.add(
 
 **or, use qubit parameters together with the Measure gate**
 ```python
+
+### or, use qubit parameters together with the Measure gate
 q0.measure.acq_weights_a(np.zeros(3, dtype=complex))
 q0.measure.acq_weights_b(np.ones(3, dtype=complex))
 q0.measure.acq_rotation(90)
@@ -29,6 +39,8 @@ schedule.add(Measure("q0", acq_protocol="WeightedThresholdedAcquisition"))
 
 **or, pass weights and thresholds as override parameters to the Measure gate**
 ```python
+
+### or, pass weights and thresholds as override parameters to the Measure gate
 schedule.add(
     Measure(
         "q0",
@@ -42,7 +54,40 @@ schedule.add(
 ```
 more info: [WeightedThresholdedAcquisition](https://quantify-os.org/docs/quantify-scheduler/dev/reference/operations/WeightedThresholdedAcquisition.html)
 
----
+### Add `RFSwitchToggle` operation
+
+In combination with the `rf_output_on=False` flag in the hardware config, the `RFSwitchToggle` operation can be used to temporarily turn on the RF output of a module:
+
+```python
+hardware_config = {
+    "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+    "hardware_description": {
+        "cluster0": {
+            "instrument_type": "Cluster",
+            "modules": {
+                ...
+                "8": {"instrument_type": "QCM_RF", "rf_output_on": False},
+                ...
+            },
+            "sequence_to_file": False,
+            "ref": "internal",
+        }
+    },
+    "hardware_options": {
+        ...
+    },
+    "connectivity": {
+        ...
+    },
+}
+
+schedule = Schedule("")
+schedule.add(RFSwitchToggle(duration=100e-9, port=f"{qubit}:mw", clock=f"{qubit}.01"))
+schedule.add(X(qubit.name), rel_time=30e-9)
+schedule.add(IdlePulse(duration=200e-9))
+```
+
+
 
 ## Release v0.22.2 (2025-01-17)
 
