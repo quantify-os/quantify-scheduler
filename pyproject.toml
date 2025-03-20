@@ -72,6 +72,7 @@ docs = [
   "pydata-sphinx-theme~=0.16.1",
   "myst-nb~=1.2",
   "hvplot~=0.11.2",
+  "plotly~=6.0.1",
   "scanpydoc~=0.14.0",
   "sphinx-autoapi~=3.6",
   "sphinx-autodoc-typehints<3.1",
