@@ -21,8 +21,10 @@
 - Gabor Oszkar Denes ([GitLab](https://gitlab.com/gdenes))
 - Gabriel Chatelain ([GitLab](https://gitlab.com/chagab_at_orangeqs))
 - Gijs Vermarien ([GitLab](https://gitlab.com/gijsvermarien))
+- Hany Ali
 - Hiresh Jadoenathmissier ([GitLab](https://gitlab.com/HireshJ1))
 - Jordy Gloudemans ([GitLab](https://gitlab.com/jgloudemans))
+- Jorge Marques
 - Jules van Oven ([GitLab](https://gitlab.com/jvoven))
 - Kelvin Loh ([GitLab](https://gitlab.com/kel85uk))
 - Koen Mesman ([GitLab](https://gitlab.com/koenmesman))
@@ -32,15 +34,19 @@
 - Mafalda Jotta Garcia ([GitLab](https://gitlab.com/mafaldajg))
 - Michiel Dubbelman ([GitLab](https://gitlab.com/MichielDubbelman))
 - Nicolas Piot ([GitLab](https://gitlab.com/npiot))
-- Shaurya Bhave([GitLab](https://gitlab.com/sbhave1))
 - Pieter Eendebak ([GitLab](https://gitlab.com/peendebak))
 - Robert Sokolewicz ([GitLab](https://gitlab.com/rsokolewicz))
 - Rohit Navarathna ([GitLab](https://gitlab.com/rnavarathna))
+- Santiago Valles Sanclemente
+- Sean van der Meer
+- Shaurya Bhave([GitLab](https://gitlab.com/sbhave1))
 - Thomas Middelburg ([GitLab](https://gitlab.com/ThomasMiddelburg))
 - Thomas Reynders ([GitLab](https://gitlab.com/treynders))
+- Tim Vroomans
 - Tobias Bonsen ([GitLab](https://gitlab.com/tobiasbonsen))
 - Vatshal Srivastav ([GitLab](https://gitlab.com/vsrivastav1))
 - Viacheslav Ostroukh ([GitLab](https://gitlab.com/slavoutich))
 - Victor Gervilla ([GitLab](https://gitlab.com/v_palomar))
 - Victor Negirneac ([GitLab](https://gitlab.com/caenrigen))
 - Zhihao Wu ([GitLab](https://gitlab.com/r3b1r7h))
+
