@@ -436,7 +436,7 @@ def test_conditional_acquire_without_control_flow_raises(
             "q0",
             feedback_trigger_label="q0",
             acq_index=1,
-            acq_protocol="ThresholdedAcquisition",
+            acq_protocol="WeightedThresholdedAcquisition",
         )
     )
 

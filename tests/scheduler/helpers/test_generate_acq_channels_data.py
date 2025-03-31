@@ -16,6 +16,7 @@ from quantify_scheduler.operations.acquisition_library import (
     Trace,
     TriggerCount,
     WeightedIntegratedSeparated,
+    WeightedThresholdedAcquisition,
 )
 from quantify_scheduler.operations.control_flow_library import LoopOperation
 from quantify_scheduler.schedules.schedule import (
@@ -37,6 +38,11 @@ from quantify_scheduler.schedules.schedule import (
             ThresholdedAcquisition,
             "ThresholdedAcquisition",
             {"duration": 1e-6},
+        ),
+        (
+            WeightedThresholdedAcquisition,
+            "WeightedThresholdedAcquisition",
+            {"weights_a": [0.5], "weights_b": [0.5]},
         ),
         (
             WeightedIntegratedSeparated,
@@ -209,6 +215,11 @@ def test_binned_average(
             {"duration": 1e-6},
         ),
         (
+            WeightedThresholdedAcquisition,
+            "WeightedThresholdedAcquisition",
+            {"weights_a": [0.5], "weights_b": [0.5]},
+        ),
+        (
             WeightedIntegratedSeparated,
             "WeightedIntegratedSeparated",
             {"duration": 1e-6, "waveform_a": [0.5], "waveform_b": [0.5]},
@@ -318,6 +329,11 @@ def test_binned_append(
             ThresholdedAcquisition,
             "ThresholdedAcquisition",
             {"duration": 1e-6},
+        ),
+        (
+            WeightedThresholdedAcquisition,
+            "WeightedThresholdedAcquisition",
+            {"weights_a": [0.5], "weights_b": [0.5]},
         ),
         (
             WeightedIntegratedSeparated,

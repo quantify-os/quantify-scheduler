@@ -626,3 +626,4 @@ class SerialCompilationConfig(CompilationConfig):
 
 # See <https://docs.pydantic.dev/2.10/errors/usage_errors/#class-not-fully-defined>.
 SerialCompilationConfig.model_rebuild()
+HardwareCompilationConfig.model_rebuild()

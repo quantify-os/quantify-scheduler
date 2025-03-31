@@ -880,9 +880,10 @@ def test_custom_long_trace_acquisition_measurement_control(
 
 
 @pytest.mark.parametrize(
-    argnames=["qubit_name", "rotation", "threshold"],
+    argnames=["protocol", "qubit_name", "rotation", "threshold"],
     argvalues=[
-        [qubit_name, rotation, threshold]
+        [protocol, qubit_name, rotation, threshold]
+        for protocol in ["ThresholdedAcquisition", "WeightedThresholdedAcquisition"]
         for qubit_name in ["q0", "q4"]
         for rotation in [10, 340]
         for threshold in [0.5, -0.9]
@@ -891,6 +892,7 @@ def test_custom_long_trace_acquisition_measurement_control(
 def test_thresholded_acquisition(
     mock_setup_basic_transmon_with_standard_params,
     qblox_hardware_config_transmon,
+    protocol,
     qubit_name,
     rotation,
     threshold,
@@ -911,7 +913,7 @@ def test_thresholded_acquisition(
     qubit.measure.acq_threshold(threshold)
 
     schedule = Schedule("Thresholded acquisition")
-    schedule.add(Measure(qubit_name, acq_protocol="ThresholdedAcquisition"))
+    schedule.add(Measure(qubit_name, acq_protocol=protocol))
 
     compiler = SerialCompiler("compiler", quantum_device=quantum_device)
     compiled_schedule = compiler.compile(schedule)
@@ -922,12 +924,15 @@ def test_thresholded_acquisition(
     sequencer_compiled_instructions = compiled_instructions["sequencers"]["seq0"]
     sequencer_acquisition_metadata = compiled_instructions["acq_metadata"]["seq0"]
 
-    assert (
-        sequencer_compiled_instructions.thresholded_acq_threshold
-        == threshold * qubit.measure.integration_time() * 1e9
-    )
+    if protocol == "WeightedThresholdedAcquisition":
+        integration_time = round(
+            len(qubit.measure.acq_weights_a()) * 1e9 / qubit.measure.acq_weights_sampling_rate()
+        )
+    else:
+        integration_time = qubit.measure.integration_time() * 1e9
+    assert sequencer_compiled_instructions.thresholded_acq_threshold == threshold * integration_time
     assert sequencer_compiled_instructions.thresholded_acq_rotation == rotation
-    assert sequencer_acquisition_metadata.acq_protocol == "ThresholdedAcquisition"
+    assert sequencer_acquisition_metadata.acq_protocol == protocol
 
     instr_coordinator = mock_setup["instrument_coordinator"]
 
@@ -955,7 +960,7 @@ def test_thresholded_acquisition(
         [-1],
         coords=[[0]],
         dims=[f"acq_index_{expected_acq_channel}"],
-        attrs={"acq_protocol": "ThresholdedAcquisition"},
+        attrs={"acq_protocol": protocol},
     )
     expected_dataset = Dataset({expected_acq_channel: expected_dataarray})
 
@@ -963,15 +968,16 @@ def test_thresholded_acquisition(
 
 
 @pytest.mark.parametrize(
-    "rotation, threshold",
+    "protocol, rotation, threshold",
     [
-        (0, 1e9),
-        (400, 0),
+        ("ThresholdedAcquisition", 0, 1e9),
+        ("WeightedThresholdedAcquisition", 400, 0),
     ],
 )
-def test_thresholded_acquisition_wrong_values(
+def test_weighted_thresholded_acquisition_wrong_values(
     mock_setup_basic_transmon_with_standard_params,
     qblox_hardware_config_transmon,
+    protocol,
     rotation,
     threshold,
 ):
@@ -984,7 +990,7 @@ def test_thresholded_acquisition_wrong_values(
     qubit.measure.acq_threshold(threshold)
 
     schedule = Schedule("Thresholded acquisition")
-    schedule.add(Measure("q0", acq_protocol="ThresholdedAcquisition"))
+    schedule.add(Measure("q0", acq_protocol=protocol))
 
     compiler = SerialCompiler("compiler", quantum_device=quantum_device)
 
@@ -1040,8 +1046,9 @@ def test_long_time_trace_protocol(
     )
 
 
-def test_thresholded_acquisition_multiplex(
-    mock_setup_basic_transmon_with_standard_params,
+@pytest.mark.parametrize("protocol", ["ThresholdedAcquisition", "WeightedThresholdedAcquisition"])
+def test_weighted_thresholded_acquisition_multiplex(
+    mock_setup_basic_transmon_with_standard_params, protocol
 ):
     hardware_config = {
         "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
@@ -1086,7 +1093,7 @@ def test_thresholded_acquisition_multiplex(
     q1.measure.acq_threshold(threshold_q1)
 
     schedule = Schedule("Thresholded acquisition")
-    schedule.add(Measure("q0", "q1", acq_protocol="ThresholdedAcquisition"))
+    schedule.add(Measure("q0", "q1", acq_protocol=protocol))
 
     compiler = SerialCompiler("compiler", quantum_device=quantum_device)
     compiled_schedule = compiler.compile(schedule)
@@ -1101,17 +1108,21 @@ def test_thresholded_acquisition_multiplex(
             "cluster0_module3"
         ]["acq_metadata"][f"seq{index}"]
 
-        if index == 0:
-            integration_length = q0.measure.integration_time() * 1e9
+        qubit = q0 if index == 0 else q1
+
+        if protocol == "WeightedThresholdedAcquisition":
+            integration_length = round(
+                len(qubit.measure.acq_weights_a()) * 1e9 / qubit.measure.acq_weights_sampling_rate()
+            )
         else:
-            integration_length = q1.measure.integration_time() * 1e9
+            integration_length = qubit.measure.integration_time() * 1e9
 
         assert (
             sequencer_compiled_instructions.thresholded_acq_threshold
             == threshold * integration_length
         )
         assert sequencer_compiled_instructions.thresholded_acq_rotation == phase
-        assert sequencer_acquisition_metadata.acq_protocol == "ThresholdedAcquisition"
+        assert sequencer_acquisition_metadata.acq_protocol == protocol
 
 
 def test_trigger_count_append(

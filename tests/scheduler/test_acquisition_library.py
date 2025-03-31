@@ -306,6 +306,39 @@ def test_weighted_acquisition():
     assert list(wf_a["t_samples"]) == [0.0e00, 1.0e-09, 2.0e-09, 3.0e-09]
     assert list(wf_b["t_samples"]) == [0.0e00, 1.0e-09, 2.0e-09, 3.0e-09]
 
+    weighted = WeightedThresholdedAcquisition(
+        port="q0:res",
+        clock="q0.ro",
+        weights_a=[0.25, 0.5, 0.25, 0.25],
+        weights_b=[0.25, 0.5, 0.5, 0.25],
+        interpolation="linear",
+        acq_channel=1,
+        acq_index=2,
+        bin_mode=BinMode.APPEND,
+        t0=16e-9,
+        acq_rotation=56,
+        acq_threshold=0.546,
+    )
+    expected = {
+        "t0": 1.6e-08,
+        "clock": "q0.ro",
+        "port": "q0:res",
+        "duration": pytest.approx(4e-9),
+        "phase": 0,
+        "acq_channel": 1,
+        "acq_index": 2,
+        "bin_mode": BinMode.APPEND,
+        "protocol": "WeightedThresholdedAcquisition",
+        "acq_return_type": np.int32,
+        "acq_rotation": 56,
+        "acq_threshold": 0.546,
+    }
+    for k, v in expected.items():
+        assert weighted.data["acquisition_info"][0][k] == v
+    wf_a, wf_b = weighted.data["acquisition_info"][0]["waveforms"]
+    assert list(wf_a["t_samples"]) == [0.0e00, 1.0e-09, 2.0e-09, 3.0e-09]
+    assert list(wf_b["t_samples"]) == [0.0e00, 1.0e-09, 2.0e-09, 3.0e-09]
+
 
 @pytest.mark.parametrize("operation", ALL_ACQUISITION_PROTOCOLS)
 def test__repr__(operation: Operation):

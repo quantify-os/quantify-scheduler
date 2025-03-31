@@ -149,7 +149,6 @@ __all__ = [
     "VoltageOffset",
     "WeightedIntegratedSeparated",
     "WeightedThresholdedAcquisition",
-    "WeightedThresholdedAcquisition",
     "WindowOperation",
     "X",
     "Y",
