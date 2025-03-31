@@ -140,6 +140,19 @@ hardware_config = {
             "sequence_to_file": False,
             "real_output_0": {"portclock_configs": [{"port": "q4:fl", "clock": "cl0.baseband"}]},
         },
+        "cluster0_module14": {
+            "instrument_type": "QRC",
+            "sequence_to_file": False,
+            "complex_output_5": {
+                "portclock_configs": [{"port": "q8:mw", "clock": "q8.01", "interm_freq": 50e6}]
+            },
+            "complex_input_1": {
+                "portclock_configs": [{"port": "q8:res", "clock": "q8.ro", "interm_freq": 50e6}]
+            },
+            "digital_output_0": {
+                "portclock_configs": [{"port": "q8:switch", "clock": "digital"}],
+            },
+        },
     },
     "lo0": {"instrument_type": "LocalOscillator", "frequency": None, "power": 1},
     "lo1": {"instrument_type": "LocalOscillator", "frequency": 7.2e9, "power": 1},

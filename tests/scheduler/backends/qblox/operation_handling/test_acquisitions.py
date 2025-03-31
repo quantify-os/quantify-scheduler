@@ -2024,7 +2024,7 @@ def test_multi_real_input_hardware_cfg_trigger_count(make_cluster_component, moc
 # TODO split up into smaller units
 @pytest.mark.parametrize(
     "module_under_test",
-    [ClusterType.CLUSTER_QRM_RF, ClusterType.CLUSTER_QRM],
+    [ClusterType.CLUSTER_QRM_RF, ClusterType.CLUSTER_QRM, ClusterType.CLUSTER_QRC],
 )
 def test_trace_acquisition_instrument_coordinator(  # noqa: PLR0915
     mocker,
@@ -2045,7 +2045,7 @@ def test_trace_acquisition_instrument_coordinator(  # noqa: PLR0915
         "hardware_options": {
             "modulation_frequencies": {"q2:res-q2.ro": {"interm_freq": 50000000.0}}
         },
-        "connectivity": {"graph": [["cluster0.module4.complex_output_0", "q2:res"]]},
+        "connectivity": {"graph": [["cluster0.module4.complex_input_0", "q2:res"]]},
     }
 
     hardware_cfgs[ClusterType.CLUSTER_QRM] = {
@@ -2058,7 +2058,22 @@ def test_trace_acquisition_instrument_coordinator(  # noqa: PLR0915
             }
         },
         "hardware_options": {},
-        "connectivity": {"graph": [["cluster0.module3.complex_output_0", "q2:res"]]},
+        "connectivity": {"graph": [["cluster0.module3.complex_input_0", "q2:res"]]},
+    }
+
+    hardware_cfgs[ClusterType.CLUSTER_QRC] = {
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {"14": {"instrument_type": "QRC"}},
+                "ref": "internal",
+            }
+        },
+        "hardware_options": {
+            "modulation_frequencies": {"q2:res-q2.ro": {"interm_freq": 50000000.0}}
+        },
+        "connectivity": {"graph": [["cluster0.module14.complex_input_1", "q2:res"]]},
     }
 
     hardware_cfg = hardware_cfgs[module_under_test]
@@ -2088,7 +2103,7 @@ def test_trace_acquisition_instrument_coordinator(  # noqa: PLR0915
 
     q2 = mock_setup["q2"]
     q2.measure.acq_delay(600e-9)
-    q2.clock_freqs.readout(7.404e9 if module_under_test is ClusterType.CLUSTER_QRM_RF else 3e8)
+    q2.clock_freqs.readout(7.404e9 if module_under_test is not ClusterType.CLUSTER_QRM else 3e8)
 
     schedule = trace_schedule_circuit_layer(qubit_name="q2")
 
@@ -2105,9 +2120,16 @@ def test_trace_acquisition_instrument_coordinator(  # noqa: PLR0915
     )
 
     # Setup dummy acquisition data
-    dummy_scope_acquisition_data = DummyScopeAcquisitionData(
-        data=[(0, 1)] * 15000, out_of_range=(False, False), avg_cnt=(0, 0)
-    )
+    if module_under_test is ClusterType.CLUSTER_QRC:
+        dummy_scope_acquisition_data = DummyScopeAcquisitionData(
+            data=[(0, 1, 2, 0)] * 15000,
+            out_of_range=(False, False, False, False),
+            avg_cnt=(0, 0, 0, 0),
+        )
+    else:
+        dummy_scope_acquisition_data = DummyScopeAcquisitionData(
+            data=[(0, 1)] * 15000, out_of_range=(False, False), avg_cnt=(0, 0)
+        )
     module.instrument.set_dummy_scope_acquisition_data(
         sequencer=None, data=dummy_scope_acquisition_data
     )
@@ -2140,9 +2162,11 @@ def test_trace_acquisition_instrument_coordinator(  # noqa: PLR0915
 
     module.instrument.store_scope_acquisition.assert_called_with(0, "0")
 
+    expected_scope_single_data = 1j if module_under_test is not ClusterType.CLUSTER_QRC else 2
+
     assert isinstance(acquired_data, Dataset)
     expected_dataarray = DataArray(
-        [[1j] * 1000],
+        [[expected_scope_single_data] * 1000],
         coords=[[0], range(1000)],
         dims=["acq_index_2", "trace_index_2"],
         attrs={"acq_protocol": "Trace"},

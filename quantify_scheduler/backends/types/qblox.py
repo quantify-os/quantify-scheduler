@@ -500,17 +500,39 @@ class RFModuleSettings(AnalogModuleSettings):
     """
 
     lo0_freq: Optional[float] = None
-    """The frequency of Output 0 (O0) LO. If left `None`, the parameter will not be set.
+    """The frequency of Output 0 (O1) LO. If left `None`, the parameter will not be set.
     """
     lo1_freq: Optional[float] = None
-    """The frequency of Output 1 (O1) LO. If left `None`, the parameter will not be set.
+    """The frequency of Output 1 (O2) LO. If left `None`, the parameter will not be set.
+    """
+    lo2_freq: Optional[float] = None
+    """The frequency of Output 2 (O3) LO. If left `None`, the parameter will not be set.
+    """
+    lo3_freq: Optional[float] = None
+    """The frequency of Output 3 (O4) LO. If left `None`, the parameter will not be set.
+    """
+    lo4_freq: Optional[float] = None
+    """The frequency of Output 4 (O5) LO. If left `None`, the parameter will not be set.
+    """
+    lo5_freq: Optional[float] = None
+    """The frequency of Output 5 (O6) LO. If left `None`, the parameter will not be set.
     """
     out0_att: Optional[int] = None
-    """The attenuation of Output 0."""
+    """The attenuation of Output 0 (O1)."""
     out1_att: Optional[int] = None
-    """The attenuation of Output 1."""
+    """The attenuation of Output 1 (O2)."""
+    out2_att: Optional[int] = None
+    """The attenuation of Output 2 (O3)."""
+    out3_att: Optional[int] = None
+    """The attenuation of Output 3 (O4)."""
+    out4_att: Optional[int] = None
+    """The attenuation of Output 4 (O5)."""
+    out5_att: Optional[int] = None
+    """The attenuation of Output 5 (O6)."""
     in0_att: Optional[int] = None
-    """The attenuation of Input 0."""
+    """The attenuation of Input 0 (I1)."""
+    in1_att: Optional[int] = None
+    """The attenuation of Input 1 (I2)."""
 
     @classmethod
     def extract_settings_from_mapping(
@@ -529,18 +551,28 @@ class RFModuleSettings(AnalogModuleSettings):
             override parts of the mapping dict.
 
         """
+        # LO frequency setting names are
+        # qblox-instruments hardcoded parameters.
+        channel_name_to_lo_freq_setting: dict[str, str] = {
+            "complex_output_0": "lo0_freq",
+            "complex_output_1": "lo1_freq",
+            "complex_output_2": "lo2_freq",
+            "complex_output_3": "lo3_freq",
+            "complex_output_4": "lo4_freq",
+            "complex_output_5": "lo5_freq",
+        }
+
         rf_settings = {}
 
-        for portclock, path in mapping.portclock_to_path.items():
-            modulation_frequencies = mapping.hardware_options.modulation_frequencies
-
-            if modulation_frequencies is not None:
+        modulation_frequencies = mapping.hardware_options.modulation_frequencies
+        if modulation_frequencies is not None:
+            for portclock, path in mapping.portclock_to_path.items():
                 pc_freqs = modulation_frequencies.get(portclock)
                 lo_freq = pc_freqs.lo_freq if pc_freqs is not None else None
-                if path.channel_name == "complex_output_0":
-                    rf_settings["lo0_freq"] = lo_freq
-                elif path.channel_name == "complex_output_1":
-                    rf_settings["lo1_freq"] = lo_freq
+                if (
+                    lo_freq_setting := channel_name_to_lo_freq_setting.get(path.channel_name)
+                ) is not None:
+                    rf_settings[lo_freq_setting] = lo_freq
 
         combined_settings = {**rf_settings, **kwargs}
         return cls(**combined_settings)
@@ -1109,7 +1141,7 @@ class QCMDescription(DataStructure, DescriptionAnnotationsGettersMixin):
 
 
 class RFDescription(DataStructure, DescriptionAnnotationsGettersMixin):
-    """User settings for radio frequency (RF) modules."""
+    """User settings for QCM-RF and QRM-RF radio frequency (RF) modules."""
 
     sequence_to_file: bool = False
     """Write sequencer programs to files, for this module."""
@@ -1117,7 +1149,7 @@ class RFDescription(DataStructure, DescriptionAnnotationsGettersMixin):
     """Whether the RF outputs of this module are always on by default.\n
     If set to False they can be turned on by using the
     :class:`~.quantify_scheduler.backends.qblox.operations.rf_switch_toggle.RFSwitchToggle`
-    operation.
+    operation for QRM-RF and QCM-RF.
     """
 
 
@@ -1137,6 +1169,36 @@ class QRMRFDescription(RFDescription):
     """Description of the digital (marker) output channel on this QRM, corresponding to port M1."""
     digital_output_1: Optional[DigitalChannelDescription] = None
     """Description of the digital (marker) output channel on this QRM, corresponding to port M2."""
+
+
+class QRCDescription(DataStructure, DescriptionAnnotationsGettersMixin):
+    """
+    Information needed to specify a QRC in the
+    :class:`~.quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig`.
+    """
+
+    instrument_type: Literal["QRC"]
+    """The instrument type of this module."""
+    sequence_to_file: bool = False
+    """Write sequencer programs to files, for this module."""
+    complex_output_0: Optional[ComplexChannelDescription] = None
+    """Description of the complex output channel on this QRC, corresponding to port O1."""
+    complex_output_1: Optional[ComplexChannelDescription] = None
+    """Description of the complex output channel on this QRC, corresponding to port O2."""
+    complex_output_2: Optional[ComplexChannelDescription] = None
+    """Description of the complex output channel on this QRC, corresponding to port O3."""
+    complex_output_3: Optional[ComplexChannelDescription] = None
+    """Description of the complex output channel on this QRC, corresponding to port O4."""
+    complex_output_4: Optional[ComplexChannelDescription] = None
+    """Description of the complex output channel on this QRC, corresponding to port O5."""
+    complex_output_5: Optional[ComplexChannelDescription] = None
+    """Description of the complex output channel on this QRC, corresponding to port O6."""
+    complex_input_0: Optional[ComplexChannelDescription] = None
+    """Description of the complex input channel on this QRC, corresponding to port I1."""
+    complex_input_1: Optional[ComplexChannelDescription] = None
+    """Description of the complex input channel on this QRC, corresponding to port I2."""
+    digital_output_0: Optional[DigitalChannelDescription] = None
+    """Description of the digital (marker) output channel on this QRC, corresponding to port M1."""
 
 
 class QCMRFDescription(RFDescription):
@@ -1226,6 +1288,7 @@ ClusterModuleDescription = Annotated[
         QRMDescription,
         QCMDescription,
         QRMRFDescription,
+        QRCDescription,
         QCMRFDescription,
         QTMDescription,
     ],

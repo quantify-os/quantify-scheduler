@@ -485,6 +485,8 @@ def test_find_all_port_clock_combinations(
         ("q5:mw", "q5.01"),
         ("q6:mw", "q6.01"),
         ("q7:mw", "q7.01"),
+        ("q8:mw", "q8.01"),
+        ("q8:res", "q8.ro"),
         ("q4:res", "q4.ro"),
         ("q0:fl", "cl0.baseband"),
         ("q1:fl", "cl0.baseband"),
@@ -493,6 +495,7 @@ def test_find_all_port_clock_combinations(
         ("q4:fl", "cl0.baseband"),
         ("qe0:optical_readout", "qe0.ge0"),
         ("q0:switch", "digital"),
+        ("q8:switch", "digital"),
     }
 
 
@@ -517,6 +520,8 @@ def test_generate_port_clock_to_device_map(
         ("q5:mw-q5.01"),
         ("q6:mw-q6.01"),
         ("q7:mw-q7.01"),
+        ("q8:mw-q8.01"),
+        ("q8:res-q8.ro"),
         ("q4:res-q4.ro"),
         ("q5:res-q5.ro"),
         ("q0:res-q0.ro"),
@@ -527,6 +532,7 @@ def test_generate_port_clock_to_device_map(
         ("q4:fl-cl0.baseband"),
         ("qe0:optical_readout-qe0.ge0"),
         ("q0:switch-digital"),
+        ("q8:switch-digital"),
     }
 
 

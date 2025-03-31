@@ -1425,6 +1425,27 @@ class _QRMRFCompilationConfig(_ClusterModuleCompilationConfig):
         return super()._validate_channel_name_measure()
 
 
+class _QRCCompilationConfig(_ClusterModuleCompilationConfig):
+    """QRC-specific configuration values for a :class:`~.ClusterModuleCompiler`."""
+
+    def _validate_channel_name_measure(self) -> None:
+        for pc, path in self.portclock_to_path.items():
+            if path.channel_name_measure is not None:  # noqa: SIM102
+                if not (
+                    "complex" in path.channel_name
+                    and all("complex_input" in ch_name for ch_name in path.channel_name_measure)
+                ):
+                    raise ValueError(
+                        f"Found channel names {path.channel_name} and "
+                        f"{path.channel_name_measure} that are not of the same mode for "
+                        f"portclock {pc}. Only channel names of the same mode (e.g. "
+                        f"`complex_output_0` and `complex_input_0`) are allowed when they share a "
+                        f"portclock in QRM_RF modules."
+                    )
+
+        return super()._validate_channel_name_measure()
+
+
 class _QTMCompilationConfig(_ClusterModuleCompilationConfig):
     """QTM-specific configuration values for a :class:`~.ClusterModuleCompiler`."""
 
@@ -1491,6 +1512,7 @@ class _ClusterCompilationConfig(DataStructure):
         "QRM": _QRMCompilationConfig,
         "QCM_RF": _QCMRFCompilationConfig,
         "QRM_RF": _QRMRFCompilationConfig,
+        "QRC": _QRCCompilationConfig,
         "QTM": _QTMCompilationConfig,
     }
 

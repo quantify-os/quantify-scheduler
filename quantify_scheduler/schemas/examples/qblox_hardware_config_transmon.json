@@ -29,6 +29,9 @@
                 },
                 "12": {
                     "instrument_type": "QCM"
+                },
+                "14": {
+                    "instrument_type": "QRC"
                 }
             }
         },
@@ -108,6 +111,14 @@
             },
             "q7:mw-q7.01": {
                 "lo_freq": 5e9
+            },
+            "q8:mw-q8.01": {
+                "interm_freq": 50e6,
+                "lo_freq": null
+            },
+            "q8:res-q8.ro": {
+                "interm_freq": 50e6,
+                "lo_freq": null
             }
         },
         "mixer_corrections": {
@@ -228,6 +239,18 @@
             [
                 "cluster0.module12.real_output_0",
                 "q4:fl"
+            ],
+            [
+                "cluster0.module14.complex_output_5",
+                "q8:mw"
+            ],
+            [
+                "cluster0.module14.complex_input_1",
+                "q8:res"
+            ],
+            [
+                "cluster0.module14.digital_output_0",
+                "q8:switch"
             ]
         ]
     }

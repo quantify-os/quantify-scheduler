@@ -6,6 +6,8 @@ MAX_NUMBER_OF_INSTRUCTIONS_QCM: int = 16384
 """Maximum supported number of instructions in Q1ASM programs for QCM/QCM-RF."""
 MAX_NUMBER_OF_INSTRUCTIONS_QRM: int = 12288
 """Maximum supported number of instructions in Q1ASM programs for QRM/QRM-RF."""
+MAX_NUMBER_OF_INSTRUCTIONS_QRC: int = 12288
+"""Maximum supported number of instructions in Q1ASM programs for QRC."""
 MAX_NUMBER_OF_INSTRUCTIONS_QTM: int = 16384
 """Maximum supported number of instructions in Q1ASM programs for QTM."""
 IMMEDIATE_SZ_GAIN = pow(2, 16)
@@ -68,6 +70,8 @@ NUMBER_OF_SEQUENCERS_QCM = 6
 """Number of sequencers supported by a QCM/QCM-RF in the latest firmware."""
 NUMBER_OF_SEQUENCERS_QRM = 6
 """Number of sequencers supported by a QRM/QRM-RF in the latest firmware."""
+NUMBER_OF_SEQUENCERS_QRC = 6
+"""Number of sequencers supported by a QRC in the latest firmware."""
 NUMBER_OF_SEQUENCERS_QTM = 8
 """Number of sequencers supported by a QTM in the latest firmware."""
 NUMBER_OF_REGISTERS: int = 64

@@ -106,6 +106,7 @@ def make_cluster_component(mocker):
         "7": "QCM",
         "10": "QCM",  # for flux pulsing q0_q3
         "12": "QCM",  # for flux pulsing q4
+        "14": "QRC",
     }
 
     def _make_cluster_component(
@@ -124,6 +125,7 @@ def make_cluster_component(mocker):
             "QRM": ClusterType.CLUSTER_QRM,
             "QRM_RF": ClusterType.CLUSTER_QRM_RF,
             "QTM": ClusterType.CLUSTER_QTM,
+            "QRC": ClusterType.CLUSTER_QRC,
         }
         cluster = Cluster(
             name=name,
@@ -1590,6 +1592,7 @@ def test_get_integration_data(make_cluster_component, mock_acquisition_data):
         acq_duration=10,
         qblox_acq_index=0,
         acq_channel=0,
+        sequencer_name="seq0",
     )
 
     np.testing.assert_almost_equal(formatted_acquisitions.values, [0.0] * 10)
@@ -1933,6 +1936,32 @@ def test_get_configuration_manager(
                 "connect_acq": "in0",
             },
         ),
+        (
+            "QRC",
+            "complex_output_5",
+            {
+                "connect_out0": "off",
+                "connect_out1": "off",
+                "connect_out2": "off",
+                "connect_out3": "off",
+                "connect_out4": "off",
+                "connect_out5": "IQ",
+                "connect_acq": "off",
+            },
+        ),
+        (
+            "QRC",
+            "complex_input_1",
+            {
+                "connect_out0": "off",
+                "connect_out1": "off",
+                "connect_out2": "off",
+                "connect_out3": "off",
+                "connect_out4": "off",
+                "connect_out5": "off",
+                "connect_acq": "in1",
+            },
+        ),
     ],
 )
 def test_channel_map(
@@ -1942,7 +1971,7 @@ def test_channel_map(
     channel_map_parameters,
 ):
     # Indices according to `make_cluster_component` instrument setup
-    module_idx = {"QCM": 1, "QCM_RF": 2, "QRM": 3, "QRM_RF": 4}
+    module_idx = {"QCM": 1, "QCM_RF": 2, "QRM": 3, "QRM_RF": 4, "QRC": 14}
     test_module_name = f"cluster0_module{module_idx[module_type]}"
 
     hardware_config = {
@@ -1960,7 +1989,7 @@ def test_channel_map(
         },
     }
 
-    if "RF" in module_type:
+    if "RF" in module_type or module_type == "QRC":
         hardware_config["hardware_options"] = {
             "modulation_frequencies": {"q5:mw-q5.01": {"interm_freq": 3e5}}
         }
@@ -2102,6 +2131,15 @@ def test_channel_map(
                 "connect_acq": "in0",
             },
         ),
+        (
+            "QRC",
+            "complex_output_1",
+            ["complex_input_1"],
+            {
+                "connect_out1": "IQ",
+                "connect_acq": "in1",
+            },
+        ),
     ],
 )
 def test_channel_map_measure(
@@ -2112,7 +2150,7 @@ def test_channel_map_measure(
     channel_map_parameters,
 ):
     # Indices according to `make_cluster_component` instrument setup
-    module_idx = {"QRM": 3, "QRM_RF": 4}
+    module_idx = {"QRM": 3, "QRM_RF": 4, "QRC": 14}
     test_module_name = f"cluster0_module{module_idx[module_type]}"
 
     hardware_config = {
@@ -2141,7 +2179,7 @@ def test_channel_map_measure(
             ],
         )
 
-    if "RF" in module_type:
+    if "RF" in module_type or module_type == "QRC":
         hardware_config["hardware_options"] = {
             "modulation_frequencies": {"q5:res-q5.ro": {"interm_freq": 3e5}}
         }
@@ -2248,6 +2286,149 @@ def test_channel_map_off_with_marker_pulse(make_cluster_component, slot_idx, mod
     for param_name, param in seq0.parameters.items():
         if "connect" in param_name:
             assert param.get() == "off"
+
+
+@pytest.mark.parametrize(
+    ("module_type, channel_name, lo_parameters"),
+    [
+        (
+            "QCM_RF",
+            "complex_output_0",
+            {
+                "out0_lo_en": False,
+                "out0_lo_freq": 5e9 - 3e5,
+                "out1_lo_en": False,
+                "out1_lo_freq": 0,
+            },
+        ),
+        (
+            "QCM_RF",
+            "complex_output_1",
+            {
+                "out0_lo_en": False,
+                "out0_lo_freq": 0,
+                "out1_lo_en": False,
+                "out1_lo_freq": 5e9 - 3e5,
+            },
+        ),
+        (
+            "QRM_RF",
+            "complex_output_0",
+            {
+                "out0_in0_lo_en": False,
+                "out0_in0_lo_freq": 5e9 - 3e5,
+            },
+        ),
+        (
+            "QRC",
+            "complex_output_0",
+            {
+                "out0_in0_freq": 5e9 - 3e5,
+                "out1_in1_freq": 0,
+                "out2_freq": 0,
+                "out3_freq": 0,
+                "out4_freq": 0,
+                "out5_freq": 0,
+            },
+        ),
+        (
+            "QRC",
+            "complex_output_1",
+            {
+                "out0_in0_freq": 0,
+                "out1_in1_freq": 5e9 - 3e5,
+                "out2_freq": 0,
+                "out3_freq": 0,
+                "out4_freq": 0,
+                "out5_freq": 0,
+            },
+        ),
+        (
+            "QRC",
+            "complex_output_2",
+            {
+                "out0_in0_freq": 0,
+                "out1_in1_freq": 0,
+                "out2_freq": 5e9 - 3e5,
+                "out3_freq": 0,
+                "out4_freq": 0,
+                "out5_freq": 0,
+            },
+        ),
+        (
+            "QRC",
+            "complex_output_5",
+            {
+                "out0_in0_freq": 0,
+                "out1_in1_freq": 0,
+                "out2_freq": 0,
+                "out3_freq": 0,
+                "out4_freq": 0,
+                "out5_freq": 5e9 - 3e5,
+            },
+        ),
+    ],
+)
+def test_lo_freq(
+    make_cluster_component,
+    module_type,
+    channel_name,
+    lo_parameters,
+):
+    # Indices according to `make_cluster_component` instrument setup
+    module_idx = {"QCM_RF": 2, "QRM_RF": 4, "QRC": 14}
+    test_module_name = f"cluster0_module{module_idx[module_type]}"
+
+    hardware_config = {
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {module_idx[module_type]: {"instrument_type": module_type}},
+                "ref": "internal",
+            }
+        },
+        "hardware_options": {},
+        "connectivity": {
+            "graph": [[f"cluster0.module{module_idx[module_type]}.{channel_name}", "q5:mw"]]
+        },
+    }
+
+    freq_01 = 5e9
+    interm_freq = 3e5
+    hardware_config["hardware_options"] = {
+        "modulation_frequencies": {"q5:mw-q5.01": {"interm_freq": interm_freq, "lo_freq": None}},
+    }
+
+    q5 = BasicTransmonElement("q5")
+
+    q5.rxy.amp180(0.213)
+    q5.clock_freqs.f01(freq_01)
+    q5.clock_freqs.f12(6.09e9)
+    q5.clock_freqs.readout(8.5e9)
+    q5.measure.acq_delay(100e-9)
+
+    schedule = Schedule("test_lo_freq")
+    schedule.add(SquarePulse(amp=0.5, duration=1e-6, port="q5:mw", clock="q5.01"))
+
+    quantum_device = QuantumDevice("basic_transmon_quantum_device")
+    quantum_device.add_element(q5)
+    quantum_device.hardware_config(hardware_config)
+
+    compiled_schedule = SerialCompiler(name="compiler").compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    prog = compiled_schedule["compiled_instructions"]
+
+    cluster = make_cluster_component("cluster0")
+    cluster.prepare(prog[cluster.instrument.name])
+
+    all_modules = {module.name: module for module in cluster.instrument.modules}
+    module = all_modules[test_module_name]
+
+    for key, value in lo_parameters.items():
+        assert module.parameters[key].get() == value
 
 
 def test_amc_setting_is_set_on_instrument(

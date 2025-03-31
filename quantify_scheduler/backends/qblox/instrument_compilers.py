@@ -19,15 +19,13 @@ from quantify_scheduler.backends.qblox.analog import (
 )
 from quantify_scheduler.backends.qblox.constants import (
     MAX_NUMBER_OF_INSTRUCTIONS_QCM,
+    MAX_NUMBER_OF_INSTRUCTIONS_QRC,
     MAX_NUMBER_OF_INSTRUCTIONS_QRM,
     MAX_NUMBER_OF_INSTRUCTIONS_QTM,
     NUMBER_OF_SEQUENCERS_QCM,
+    NUMBER_OF_SEQUENCERS_QRC,
     NUMBER_OF_SEQUENCERS_QRM,
     NUMBER_OF_SEQUENCERS_QTM,
-)
-from quantify_scheduler.backends.qblox.driver_version_check import (
-    DriverVersionError,
-    verify_qblox_instruments_version,
 )
 from quantify_scheduler.backends.qblox.enums import (
     QbloxFilterConfig,
@@ -357,6 +355,23 @@ class QRMRFCompiler(RFModuleCompiler):
     )
 
 
+class QRCCompiler(RFModuleCompiler):
+    """QRC specific implementation of the qblox compiler."""
+
+    # Ignore pyright because a "static property" does not exist (in the standard library).
+    supports_acquisition = True  # type: ignore
+    max_number_of_instructions = MAX_NUMBER_OF_INSTRUCTIONS_QRC  # type: ignore
+    static_hw_properties = StaticAnalogModuleProperties(  # type: ignore
+        instrument_type="QRC",
+        max_sequencers=NUMBER_OF_SEQUENCERS_QRC,
+        max_awg_output_voltage=None,
+        mixer_dc_offset_range=BoundedParameter(min_val=-50, max_val=50, units="mV"),
+        channel_name_to_digital_marker={
+            "digital_output_0": 0b1,
+        },
+    )
+
+
 class QTMCompiler(compiler_abc.ClusterModuleCompiler):
     """
     QTM specific implementation of the qblox compiler.
@@ -425,12 +440,12 @@ class QTMCompiler(compiler_abc.ClusterModuleCompiler):
                 channel_name,
                 channel_name_measure,
             )
-            output_idx = self.static_hw_properties._get_connected_output_indices(channel_name)
             if len(input_idx) > 0:
                 return input_idx[0]
-
-            # If it's not an input channel, it must be an output channel.
-            return output_idx[0]
+            else:
+                # If it's not an input channel, it must be an output channel.
+                output_idx = self.static_hw_properties._get_connected_output_indices(channel_name)
+                return output_idx[0]
 
         channel_name = sequencer_cfg.channel_name
         channel_name_measure = sequencer_cfg.channel_name_measure
@@ -519,6 +534,7 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
         "QRM": QRMCompiler,
         "QCM_RF": QCMRFCompiler,
         "QRM_RF": QRMRFCompiler,
+        "QRC": QRCCompiler,
         "QTM": QTMCompiler,
     }
     """References to the individual module compiler classes that can be used by the
@@ -618,13 +634,6 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
         """
         if self._settings.sync_on_external_trigger is None:
             return
-
-        try:
-            verify_qblox_instruments_version(match_versions=("0.15",))
-        except DriverVersionError as err:
-            raise DriverVersionError(
-                "'sync_on_external_trigger' requires qblox-instruments >= 0.15."
-            ) from err
 
         ext_trig_sync = self._settings.sync_on_external_trigger
 

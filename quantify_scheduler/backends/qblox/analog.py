@@ -529,6 +529,8 @@ class AnalogSequencerCompiler(SequencerCompiler):
             return 1 << (output + 2) | self._default_marker
         elif instrument_type == "QRM_RF":
             return 0b1010 if operation.operation_info.is_acquisition else 0b0110
+        elif instrument_type == "QRC":
+            return 0b1
         raise ValueError(f"Unknown instrument type {instrument_type}")
 
 
@@ -1103,13 +1105,23 @@ class RFModuleCompiler(AnalogModuleCompiler, ABC):
         use the fact that LOX is connected to module output X.
         """
         for sequencer_output_index in sequencer.connected_output_indices:
-            if sequencer_output_index % 2 != 0:
-                # We will only use real output 0 and 2, as they are part of the same
-                # complex outputs as real output 1 and 3
-                continue
+            if sequencer_output_index % 2 == 0:
+                # We will only use real output 0, 2, 4, 6, ... (if they exist) as they
+                # are part of the same complex outputs as real output 1, 3, 5, ... in order.
+                yield sequencer_output_index // 2
 
-            module_output_index = 0 if sequencer_output_index == 0 else 1
-            yield module_output_index
+    def _validate_lo_index(self, lo_idx: int) -> None:
+        instrument_type = self.static_hw_properties.instrument_type
+        if not (
+            (instrument_type == "QRM_RF" and lo_idx in (0,))
+            or (instrument_type == "QCM_RF" and lo_idx in (0, 1))
+            or (instrument_type == "QRC" and lo_idx in range(6))
+        ):
+            raise IndexError(
+                f"Module {self.name} of type "
+                f"{self.static_hw_properties.instrument_type} does not have an LO "
+                f"index {lo_idx}."
+            )
 
     def _get_lo_frequency(self, lo_idx: int) -> float | None:
         """
@@ -1131,15 +1143,8 @@ class RFModuleCompiler(AnalogModuleCompiler, ABC):
             If the derived class instance does not contain an LO with that index.
 
         """
-        if lo_idx == 0:
-            return self._settings.lo0_freq
-        if lo_idx == 1 and self.static_hw_properties.instrument_type == "QCM_RF":
-            return self._settings.lo1_freq
-        raise IndexError(
-            f"Module {self.name} of type "
-            f"{self.static_hw_properties.instrument_type} does not have an LO "
-            f"index {lo_idx}."
-        )
+        self._validate_lo_index(lo_idx)
+        return getattr(self._settings, f"lo{lo_idx}_freq")
 
     def _set_lo_frequency(self, lo_idx: int, frequency: float) -> None:
         """
@@ -1172,16 +1177,8 @@ class RFModuleCompiler(AnalogModuleCompiler, ABC):
                 f"'{previous_lo_freq:e}'!"
             )
 
-        if lo_idx == 0:
-            self._settings.lo0_freq = frequency
-        elif lo_idx == 1 and self.static_hw_properties.instrument_type == "QCM_RF":
-            self._settings.lo1_freq = frequency
-        else:
-            raise IndexError(
-                f"Module {self.name} of type "
-                f"{self.static_hw_properties.instrument_type} does not have an LO "
-                f"index {lo_idx}."
-            )
+        self._validate_lo_index(lo_idx)
+        setattr(self._settings, f"lo{lo_idx}_freq", frequency)
 
     def assign_attenuation(self) -> None:
         """
