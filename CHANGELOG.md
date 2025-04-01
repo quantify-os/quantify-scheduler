@@ -1,5 +1,61 @@
 # Changelog
 
+## Release v0.23.0 (2025-04-01)
+
+### 🐛 Bug Fixes and Closed Issues
+- Fix: create default channel description based on channel name ([!1197](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1197) by [@Thomas Middelburg](https://gitlab.com/ThomasMiddelburg))
+- Fix: "Schedule serialization not working" ([!1177](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1177) by [@Gabriel Chatelain](https://gitlab.com/chagab_at_orangeqs))
+- Fix: AcquisitionManager correctly calculates sum with BinMode.SUM for TriggerCount acquisition with QTM (SE-682) ([!1174](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1174) by [@Thomas Middelburg](https://gitlab.com/ThomasMiddelburg))
+- Fix: Add repetitions property to LoopOperation ([!1209](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1209) by [@Leon Wubben](https://gitlab.com/LeonQblox))
+
+### ✨ New Features
+- Sync on external trigger (TIC-57) ([!1154](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1154) by [@Thomas Middelburg](https://gitlab.com/ThomasMiddelburg))
+- Fixing the CZ gate for spin ([!1199](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1199) by [@Nicolas Piot](https://gitlab.com/npiot))
+- Add DualThresholdedTriggerCount ([!1159](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1159) by [@Thomas Middelburg](https://gitlab.com/ThomasMiddelburg))
+- Adds S, SDagger, T and TDagger gates to gate library ([!1191](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1191) by [@Tim Vroomans](https://gitlab.com/TimVroomans))
+- Add RFSwitchToggle Operation ([!1162](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1162) by [@Leon Wubben](https://gitlab.com/LeonQblox))
+- Feat[qblox]: Add interactivity to a schedule's compiled instructions ([!1189](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1189) by [@Robert Sokolewicz](https://gitlab.com/rsokolewicz))
+- Add duration to profiler ([!1182](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1182) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+- Adding A charge sensor to the spin back-end. ([!1171](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1171) by [@Nicolas Piot](https://gitlab.com/npiot))
+- Nv pulse shape change ([!1150](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1150) by [@Vatshal Srivastav](https://gitlab.com/vsrivastav1))
+- TimeRef relative to other channel of same module (SE-636) ([!1151](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1151) by [@Thomas Middelburg](https://gitlab.com/ThomasMiddelburg))
+- Feat: name parameter for Schedule and SerialCompiler are no longer required ([!1210](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1210) by [@Leon Wubben](https://gitlab.com/LeonQblox))
+- Feat: add WeightedThresholdedAcquisition ([!1193](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1193) by [@Rohit Navarathna](https://gitlab.com/rnavarathna))
+- Feat: Make ScheduleGettable.compile public ([!1218](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1218) by [@Leon Wubben](https://gitlab.com/LeonQblox))
+
+### 💥 Breaking Changes
+- Fix: AcquisitionManager correctly calculates sum with BinMode.SUM for TriggerCount acquisition with QTM (SE-682) ([!1174](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1174) by [@Thomas Middelburg](https://gitlab.com/ThomasMiddelburg))
+- Refactor!: drop support for python 3.8, add some more ruff rules ([!1204](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1204) by [@Fabio Grigolo](https://gitlab.com/fgrigolo))
+
+### 🚀 Enhancements
+- Refactor: use only one constant for defining NCO minimum time between operations ([!1166](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1166) by [@Enido Shatro](https://gitlab.com/eshatro))
+- Only delete acquisition data on sequencers used (QTFY-693) ([!1185](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1185) by [@Thomas Middelburg](https://gitlab.com/ThomasMiddelburg))
+- Add duration to profiler ([!1182](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1182) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+
+### 📚 Documentation
+- Fix: edge docstrings fixes in QuantumDevice ([!1206](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1206) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+- Docs: fix typo AMC and rephrase a bit ([!1187](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1187) by [@Thomas Middelburg](https://gitlab.com/ThomasMiddelburg))
+
+### ♻️ Refactoring
+- Use ManualParameter instead of Parameter when it's more appropriate ([!1201](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1201) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+- Pyright: unignore qblox instrument coordinator components ([!1167](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1167) by [@Thomas Middelburg](https://gitlab.com/ThomasMiddelburg))
+- Refactor deriving sequencer (mostly feedback/trigger) settings ([!1160](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1160) by [@Thomas Middelburg](https://gitlab.com/ThomasMiddelburg))
+- Chore: update pyright to 1.1.395 ([!1203](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1203) by [@Thomas Middelburg](https://gitlab.com/ThomasMiddelburg))
+- Refactor: improve code quality tools ([!1195](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1195) by [@Fabio Grigolo](https://gitlab.com/fgrigolo))
+- Chore: add json mixins to schedule ([!1190](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1190) by [@Robert Sokolewicz](https://gitlab.com/rsokolewicz))
+- Fix pyright various errors (getstate in serialization and nv center typehints) ([!1188](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1188) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+- Update QTM parameter patches with calls to actual parameters via `wraps` (SE-499) ([!1157](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1157) by [@Thomas Middelburg](https://gitlab.com/ThomasMiddelburg))
+
+### 🔧 Other
+- Chore: update author list with Dicarlo contributors ([!1224](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1224) by [@Robert Sokolewicz](https://gitlab.com/rsokolewicz))
+- Feat: add QRC module basic functionality ([!1186](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1186) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+- Add tests for WeightedThresholdedAcquisition ([!1225](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1225) by [@Thomas Middelburg](https://gitlab.com/ThomasMiddelburg))
+- Fix: Pin plotly version in docs build ([!1222](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1222) by [@Leon Wubben](https://gitlab.com/LeonQblox))
+- Chore: pin packages at major-minor versions ([!1184](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1184) by [@Enido Shatro](https://gitlab.com/eshatro))
+ QTFY-695/QTFY-696 Deal with QCoDeS DeprecationWarning ([!1205](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1205) by [@Fabio Grigolo](https://gitlab.com/fgrigolo))
+- Build: remove black from pre-commit and project dependencies, add ruff format instead ([!1180](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1180) by [@Enido Shatro](https://gitlab.com/eshatro))
+- Rename "qubit" references to device element where appropriate ([!1148](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1148) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+
 ## Release v0.22.2 (2025-01-16)
 
 ### 🐛 Bug Fixes and Closed Issues
