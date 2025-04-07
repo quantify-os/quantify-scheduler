@@ -30,7 +30,8 @@ if TYPE_CHECKING:
 
 SchedulableLabel = Union[str, None]
 FullSchedulableLabel = tuple[SchedulableLabel, ...]
-SchedulableLabelToAcquisitionIndex = dict[tuple[FullSchedulableLabel, int], Union[int, list[int]]]
+AcquisitionIndices = Union[int, list[int]]
+SchedulableLabelToAcquisitionIndex = dict[tuple[FullSchedulableLabel, int], AcquisitionIndices]
 """
 A mapping from schedulables to an acquisition index.
 

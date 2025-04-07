@@ -122,7 +122,9 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
             The QASMProgram to add the assembly instructions to.
 
         """
-        bin_idx = self.operation_info.data["acq_index"]
+        bin_idx = self.operation_info.data.get(
+            "acq_index_legacy", self.operation_info.data["acq_index"]
+        )
         self._acquire_square(qasm_program, bin_idx)
 
     def _acquire_with_register_bin_index(self, qasm_program: QASMProgram) -> None:
@@ -272,7 +274,9 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
             The QASMProgram to add the assembly instructions to.
 
         """
-        bin_idx = self.operation_info.data["acq_index"]
+        bin_idx = self.operation_info.data.get(
+            "acq_index_legacy", self.operation_info.data["acq_index"]
+        )
 
         qasm_program.emit(
             q1asm_instructions.ACQUIRE_WEIGHED,
@@ -352,7 +356,9 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
             The QASMProgram to add the assembly instructions to.
 
         """
-        bin_idx = self.operation_info.data["acq_index"]
+        bin_idx = self.operation_info.data.get(
+            "acq_index_legacy", self.operation_info.data["acq_index"]
+        )
 
         qasm_program.emit(
             q1asm_instructions.ACQUIRE_TTL,
@@ -462,7 +468,9 @@ class TimetagAcquisitionStrategy(AcquisitionStrategyPartial):
             The QASMProgram to add the assembly instructions to.
 
         """
-        bin_idx = self.operation_info.data["acq_index"]
+        bin_idx = self.operation_info.data.get(
+            "acq_index_legacy", self.operation_info.data["acq_index"]
+        )
 
         qasm_program.emit(
             q1asm_instructions.ACQUIRE_TIMETAGS,

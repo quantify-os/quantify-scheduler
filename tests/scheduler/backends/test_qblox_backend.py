@@ -590,6 +590,7 @@ def test_construct_sequencers(
     assign_pulse_and_acq_info_to_devices(
         schedule=sched,
         device_compilers={"cluster0_module1": test_module},
+        schedulable_label_to_acq_index={},
     )
 
     test_module._construct_all_sequencer_compilers()
@@ -673,6 +674,7 @@ def test_portclocks(
     assign_pulse_and_acq_info_to_devices(
         schedule=sched,
         device_compilers=container.clusters,
+        schedulable_label_to_acq_index={},
     )
 
     compilers = container.instrument_compilers["cluster0"].instrument_compilers
@@ -1744,6 +1746,7 @@ def test_assign_pulse_and_acq_info_to_devices(
     assign_pulse_and_acq_info_to_devices(
         schedule=sched_with_pulse_info,
         device_compilers=container.clusters,
+        schedulable_label_to_acq_index={},
     )
     container.prepare()
 
@@ -1783,7 +1786,7 @@ def test_container_prepare(
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         sched, QbloxHardwareCompilationConfig.model_validate(hardware_cfg_cluster)
     )
-    assign_pulse_and_acq_info_to_devices(sched, container.clusters)
+    assign_pulse_and_acq_info_to_devices(sched, container.clusters, {})
     container.prepare()
 
     assert (
@@ -1842,6 +1845,7 @@ def test_container_prepare_baseband(
     assign_pulse_and_acq_info_to_devices(
         schedule=sched,
         device_compilers=container.clusters,
+        schedulable_label_to_acq_index={},
     )
     container.prepare()
 
@@ -1871,6 +1875,7 @@ def test_container_prepare_no_lo(
     assign_pulse_and_acq_info_to_devices(
         sched,
         container.clusters,
+        {},
     )
     container.prepare()
 
@@ -1933,7 +1938,7 @@ def test_real_mode_container(
         schedule=real_square_pulse_schedule,
         config=quantum_device.generate_compilation_config(),
     )
-    assign_pulse_and_acq_info_to_devices(sched, container.clusters)
+    assign_pulse_and_acq_info_to_devices(sched, container.clusters, {})
     container.prepare()
     qcm0 = container.instrument_compilers["cluster0"].instrument_compilers["cluster0_module1"]
     for output, seq_name in enumerate(f"seq{i}" for i in range(3)):

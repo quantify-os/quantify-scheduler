@@ -8,7 +8,7 @@ import dataclasses
 import math
 import warnings
 from collections import defaultdict
-from copy import deepcopy
+from copy import copy, deepcopy
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -33,6 +33,10 @@ from quantify_scheduler.schedules.schedule import Schedule, ScheduleBase
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.qblox.instrument_compilers import ClusterCompiler
+    from quantify_scheduler.helpers.generate_acq_channels_data import (
+        FullSchedulableLabel,
+        SchedulableLabelToAcquisitionIndex,
+    )
 
 
 def generate_waveform_data(
@@ -716,32 +720,58 @@ def _get_control_flow_end(
 def _get_list_of_operations_for_op_info_creation(
     operation: Operation | Schedule,
     time_offset: float,
-    accumulator: list[tuple[float, Operation]],
+    accumulator: list[tuple[float, Operation, FullSchedulableLabel]],
+    full_schedulable_label: FullSchedulableLabel,
 ) -> None:
     if isinstance(operation, ScheduleBase):
         for schedulable in operation.schedulables.values():
             abs_time = schedulable["abs_time"]
             inner_operation = operation.operations[schedulable["operation_id"]]
+            schedulable_label = schedulable["name"]
+            new_full_schedulable_label = full_schedulable_label + (schedulable_label,)
             _get_list_of_operations_for_op_info_creation(
-                inner_operation, time_offset + abs_time, accumulator
+                inner_operation,
+                time_offset + abs_time,
+                accumulator,
+                new_full_schedulable_label,
             )
     elif isinstance(operation, ControlFlowOperation):
-        accumulator.append((to_grid_time(time_offset) * 1e-9, _get_control_flow_begin(operation)))
-        _get_list_of_operations_for_op_info_creation(operation.body, time_offset, accumulator)
+        accumulator.append(
+            (
+                to_grid_time(time_offset) * 1e-9,
+                _get_control_flow_begin(operation),
+                full_schedulable_label + (None,),
+            )
+        )
+        new_full_schedulable_label = full_schedulable_label + (None,)
+        _get_list_of_operations_for_op_info_creation(
+            operation.body,
+            time_offset,
+            accumulator,
+            new_full_schedulable_label,
+        )
         assert operation.body.duration is not None
         accumulator.append(
             (
                 to_grid_time(time_offset + operation.body.duration) * 1e-9,
                 _get_control_flow_end(operation),
+                full_schedulable_label + (None,),
             )
         )
     else:
-        accumulator.append((to_grid_time(time_offset) * 1e-9, operation))
+        accumulator.append(
+            (
+                to_grid_time(time_offset) * 1e-9,
+                operation,
+                full_schedulable_label,
+            )
+        )
 
 
-def assign_pulse_and_acq_info_to_devices(
+def assign_pulse_and_acq_info_to_devices(  # noqa: PLR0915
     schedule: Schedule,
     device_compilers: dict[str, ClusterCompiler],
+    schedulable_label_to_acq_index: SchedulableLabelToAcquisitionIndex,
 ) -> None:
     """
     Traverses the schedule and generates `OpInfo` objects for every pulse and
@@ -753,6 +783,8 @@ def assign_pulse_and_acq_info_to_devices(
         The schedule to extract the pulse and acquisition info from.
     device_compilers
         Dictionary containing InstrumentCompilers as values and their names as keys.
+    schedulable_label_to_acq_index
+        Schedulable label to acquisition indices dictionary for binned acquisitions.
 
     Raises
     ------
@@ -769,11 +801,11 @@ def assign_pulse_and_acq_info_to_devices(
     """
     portclock_mapping = generate_port_clock_to_device_map(device_compilers)
 
-    list_of_operations: list[tuple[float, Operation]] = list()
-    _get_list_of_operations_for_op_info_creation(schedule, 0, list_of_operations)
+    list_of_operations: list[tuple[float, Operation, FullSchedulableLabel]] = list()
+    _get_list_of_operations_for_op_info_creation(schedule, 0, list_of_operations, ())
     list_of_operations.sort(key=lambda abs_time_and_op: abs_time_and_op[0])
 
-    for operation_start_time, op_data in list_of_operations:
+    for operation_start_time, op_data, optional_full_schedulable_label in list_of_operations:
         assert isinstance(op_data, Operation)
 
         if isinstance(op_data, WindowOperation):
@@ -842,7 +874,7 @@ def assign_pulse_and_acq_info_to_devices(
                     port=port, clock=clock, op_info=combined_data
                 )
 
-        for acq_data in op_data.data["acquisition_info"]:
+        for i, acq_data in enumerate(op_data.data["acquisition_info"]):
             if "t0" in acq_data:
                 acq_start_time = operation_start_time + acq_data["t0"]
             else:
@@ -855,9 +887,16 @@ def assign_pulse_and_acq_info_to_devices(
             if port is None:
                 continue
 
+            # Each operation with the same acq_data reference
+            # can have different acq_index, so we need to copy it,
+            # and override the acq_index. No need to deepcopy, only changing top level value.
+            new_acq_data = copy(acq_data)
+            acq_index = schedulable_label_to_acq_index.get((optional_full_schedulable_label, i))
+            new_acq_data["acq_index_legacy"] = acq_data["acq_index"]
+            new_acq_data["acq_index"] = acq_index
             combined_data = OpInfo(
                 name=op_data.data["name"],
-                data=acq_data,
+                data=new_acq_data,
                 timing=acq_start_time,
             )
 

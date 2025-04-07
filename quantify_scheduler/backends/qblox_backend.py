@@ -713,13 +713,14 @@ def hardware_compile(
 
     validate_non_overlapping_stitched_pulse(schedule)
 
-    acq_channels_data, _schedulable_label_to_acq_index = generate_acq_channels_data(schedule)
+    acq_channels_data, schedulable_label_to_acq_index = generate_acq_channels_data(schedule)
 
     container = compiler_container.CompilerContainer.from_hardware_cfg(schedule, hardware_cfg)
 
     assign_pulse_and_acq_info_to_devices(
         schedule=schedule,
         device_compilers=container.clusters,
+        schedulable_label_to_acq_index=schedulable_label_to_acq_index,
     )
 
     container.prepare()

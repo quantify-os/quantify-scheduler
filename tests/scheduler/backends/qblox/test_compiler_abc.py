@@ -96,7 +96,7 @@ def _assert_update_parameters_schedule(
     container = compiler_container.CompilerContainer.from_hardware_cfg(
         schedule, hardware_cfg_cluster
     )
-    assign_pulse_and_acq_info_to_devices(schedule, container.clusters)
+    assign_pulse_and_acq_info_to_devices(schedule, container.clusters, {})
     container.prepare()
 
     cluster0 = container.instrument_compilers["cluster0"]

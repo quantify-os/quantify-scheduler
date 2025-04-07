@@ -211,7 +211,7 @@ def extract_acquisition_metadata_from_acquisition_protocols(
             acq_channels_metadata[numeric_key] = AcquisitionChannelMetadata(
                 acq_channel=acq_channel, acq_indices=[]
             )
-        acq_indices = acq_protocol["acq_index"]
+        acq_indices = acq_protocol.get("acq_index_legacy", acq_protocol["acq_index"])
         acq_channels_metadata[numeric_key].acq_indices.append(acq_indices)
 
     # combine the information in the acq metadata dataclass.
