@@ -386,11 +386,11 @@ class TestWeightedAcquisitionStrategy:
         assert qasm.instructions == [
             ["", "", "", ""],
             ["", "move", "0,R1", "# Store idx of acq I wave in R1"],
-            ["", "move", "1,R10", "# Store idx of acq Q wave in R10."],
+            ["", "move", "1,R2", "# Store idx of acq Q wave in R2."],
             [
                 "",
                 "acquire_weighed",
-                "2,R0,R1,R10,4",
+                "2,R0,R1,R2,4",
                 "# Store acq in acq_channel:2, bin_idx:R0",
             ],
             ["", "add", "R0,1,R0", "# Increment bin_idx for ch2"],
@@ -1032,13 +1032,13 @@ def test_long_time_trace_protocol(
         rf"{start}set_awg_offs 8192,0{end}"
         rf"{start}upd_param 4{end}"
         rf"{start}wait 96{end}"
-        rf"{start}move 11,R10{end}"
+        rf"{start}move 11,R2{end}"
         rf"{start}loop12:{end}"
         rf"{start}reset_ph{end}"
         rf"{start}acquire 0,R0,4{end}"
         rf"{start}add R0,1,R0{end}"
         rf"{start}wait 996{end}"
-        rf"{start}loop R10,@loop12{end}"
+        rf"{start}loop R2,@loop12{end}"
         rf"{start}set_awg_offs 0,0{end}"
         rf"{start}upd_param 4{end}",
         program,

@@ -137,10 +137,7 @@ class Operation(JSONSchemaValMixin, UserDict):
 
         # Iterate over the data and take the longest duration
         self._duration = max(
-            map(
-                _get_operation_end,
-                self.data["pulse_info"] + self.data["acquisition_info"],
-            ),
+            map(_get_operation_end, self.data["pulse_info"] + self.data["acquisition_info"]),
             default=0,
         )
 

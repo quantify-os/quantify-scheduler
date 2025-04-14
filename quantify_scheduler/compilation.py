@@ -7,6 +7,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Literal, overload
 
+from quantify_scheduler.backends.qblox.operations.inline_q1asm import InlineQ1ASM
 from quantify_scheduler.json_utils import load_json_schema, validate_json
 from quantify_scheduler.operations.control_flow_library import (
     ControlFlowOperation,
@@ -127,6 +128,8 @@ def _determine_absolute_timing_schedule(
             time_unit == "physical"
             and not schedule.operations[op_key].valid_pulse  # type: ignore
             and not schedule.operations[op_key].valid_acquisition  # type: ignore
+            # TODO (SE-650): move to qblox backend.
+            and not isinstance(schedule.operations[op_key], InlineQ1ASM)
         ):
             # Gates do not have a defined duration, so only ideal timing is defined
             raise RuntimeError(

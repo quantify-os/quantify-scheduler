@@ -220,10 +220,10 @@ start:
  move 1,R1 # iterator for loop with label start
 start:
  wait 4
- move 0,R10
- acquire_timetags 0,R0,1,R10,4 # Enable timetag acquisition of acq_channel:0, store in bin:R0
+ move 0,R2
+ acquire_timetags 0,R0,1,R2,4 # Enable timetag acquisition of acq_channel:0, store in bin:R0
  wait 992 # auto generated wait (992 ns)
- acquire_timetags 0,R0,0,R10,4 # Disable timetag acquisition of acq_channel:0, store in bin:R0
+ acquire_timetags 0,R0,0,R2,4 # Disable timetag acquisition of acq_channel:0, store in bin:R0
  add R0,1,R0 # Increment bin_idx for ch0 by 1
  wait 388 # auto generated wait (388 ns)
  loop R1,@start

@@ -38,6 +38,9 @@ from quantify_scheduler.backends.qblox.operation_handling.pulses import (
     DigitalOutputStrategy,
     MarkerPulseStrategy,
 )
+from quantify_scheduler.backends.qblox.operation_handling.q1asm_injection_strategy import (
+    Q1ASMInjectionStrategy,
+)
 from quantify_scheduler.backends.qblox.operation_handling.virtual import (
     ConditionalStrategy,
     ControlFlowReturnStrategy,
@@ -381,9 +384,22 @@ class SequencerCompiler(ABC):
 
         """
         wf_dict: dict[str, Any] = {}
+        # Q1ASM needs to be added to the dict first as they have user defined waveform indices
+        priority_strategies = (Q1ASMInjectionStrategy,)
+        strategies = []
+
+        # Can loop over self.op_strategies.sort() first with key the instance check.
+        # But that's O(nlogn) instead of O(n)
+
         for op_strategy in self.op_strategies:
+            if isinstance(op_strategy, priority_strategies):
+                op_strategy.generate_data(wf_dict=wf_dict)
+            else:
+                strategies.append(op_strategy)
+        for op_strategy in strategies:
             if not op_strategy.operation_info.is_acquisition:
                 op_strategy.generate_data(wf_dict=wf_dict)
+
         self._validate_awg_dict(wf_dict=wf_dict)
         return wf_dict
 
@@ -432,8 +448,13 @@ class SequencerCompiler(ABC):
 
     def _validate_awg_dict(self, wf_dict: dict[str, Any]) -> None:
         total_size = 0
+        used_indices = set()
         for waveform in wf_dict.values():
             total_size += len(waveform["data"])
+            if waveform["index"] in used_indices:
+                raise RuntimeError(f"Duplicate index {waveform['index']} in waveform dictionary.")
+            used_indices.add(waveform["index"])
+
         if total_size > constants.MAX_SAMPLE_SIZE_WAVEFORMS:
             raise RuntimeError(
                 f"Total waveform size specified for port-clock {self.port}-"

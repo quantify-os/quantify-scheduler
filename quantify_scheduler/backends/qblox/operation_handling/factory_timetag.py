@@ -10,6 +10,7 @@ from quantify_scheduler.backends.qblox.operation_handling import (
     acquisitions,
     base,
     pulses,
+    q1asm_injection_strategy,
     virtual,
 )
 from quantify_scheduler.backends.qblox.operation_handling.bin_mode_compat import (
@@ -21,6 +22,7 @@ from quantify_scheduler.backends.qblox.operation_handling.factory_analog import 
 from quantify_scheduler.backends.qblox.operation_handling.factory_common import (
     try_get_pulse_strategy_common,
 )
+from quantify_scheduler.backends.qblox.operations.inline_q1asm import Q1ASMOpInfo
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.types.qblox import OpInfo
@@ -31,21 +33,33 @@ def get_operation_strategy(
     channel_name: str,
 ) -> base.IOperationStrategy:
     """
-    Determines and instantiates the correct strategy object.
+    Determine and instantiate the correct operation strategy object.
 
     Parameters
     ----------
     operation_info
-        The operation we are building the strategy for.
+        The operation for which we are building the strategy. This object
+        contains all the necessary information about the operation.
     channel_name
-        Specifies the channel identifier of the hardware config (e.g. `complex_output_0`).
+        Specifies the channel identifier of the hardware config (e.g. 'complex_output_0').
 
     Returns
     -------
     :
-        The instantiated strategy object.
+        The instantiated strategy object that implements the IOperationStrategy interface.
+        This could be a Q1ASMInjectionStrategy, an acquisition strategy, a pulse strategy,
+        or other specialized strategies depending on the operation type.
+
+    Raises
+    ------
+    ValueError
+        If the operation cannot be compiled for the target hardware
+        or if an unsupported operation type is encountered.
 
     """
+    if isinstance(operation_info, Q1ASMOpInfo):
+        return q1asm_injection_strategy.Q1ASMInjectionStrategy(operation_info)
+
     if operation_info.is_acquisition:
         return _get_acquisition_strategy(operation_info)
 

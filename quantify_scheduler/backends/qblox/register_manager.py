@@ -11,9 +11,9 @@ class RegisterManager:
     """Utility class that keeps track of all the registers that are still available."""
 
     def __init__(self) -> None:
-        self._available_registers: set[str] = {
+        self._available_registers: list[str] = [
             f"R{idx}" for idx in range(constants.NUMBER_OF_REGISTERS)
-        }
+        ]
 
     def allocate_register(self) -> str:
         """
@@ -37,10 +37,7 @@ class RegisterManager:
                 "caused, e.g., by attempting to use too many acquisition "
                 "channels."
             )
-        # to ensure deterministic behavior as sets are unsorted
-        first_element = sorted(self._available_registers)[0]
-        self._available_registers.remove(first_element)
-        return first_element
+        return self._available_registers.pop(0)
 
     def free_register(self, register: str) -> None:
         """
@@ -64,20 +61,20 @@ class RegisterManager:
             raise RuntimeError(
                 f"Attempting to free register '{register}', but this register is not inuse."
             )
-        self._available_registers.add(register)
+        self._available_registers.insert(0, register)  # LIFO
 
     @property
-    def available_registers(self) -> set[str]:
+    def available_registers(self) -> list[str]:
         """
         Getter for the available registers.
 
         Returns
         -------
         :
-            A set containing all the available registers.
+            A copy of the list containing all the available registers.
 
         """
-        return self._available_registers
+        return self._available_registers[:]
 
 
 def _verify_valid_register(register_name: str) -> None:
@@ -102,22 +99,23 @@ def _verify_valid_register(register_name: str) -> None:
         Invalid register name passed.
 
     """
+    if not register_name:
+        raise ValueError("Register can not be None or empty string")
 
-    def raise_error() -> None:
+    if register_name[0] != "R":
         raise ValueError(
-            f"Invalid register '{register_name}'! The correct format is 'R' followed by"
-            f" an integer between 0 and {constants.NUMBER_OF_REGISTERS}."
+            f"Invalid register '{register_name}'. The register should start with a capital 'R'"
         )
 
-    prefix = register_name[0]
-    if prefix != "R":
-        raise_error()
+    if not register_name[1:].isdigit():
+        raise ValueError(
+            f"Invalid register '{register_name}'. The correct format is 'R' followed by digits"
+        )
 
-    register_idx: int = 0
-    try:
-        register_idx = int(register_name[1:])
-    except ValueError:
-        raise_error()
+    register_idx: int = int(register_name[1:])
 
     if register_idx < 0 or register_idx > constants.NUMBER_OF_REGISTERS:
-        raise_error()
+        raise ValueError(
+            f"The register index '{register_name}' should be between "
+            f"0 and {constants.NUMBER_OF_REGISTERS}"
+        )

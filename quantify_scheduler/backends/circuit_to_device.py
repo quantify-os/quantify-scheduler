@@ -16,6 +16,7 @@ from quantify_scheduler.backends.graph_compilation import (
     DeviceCompilationConfig,
     OperationCompilationConfig,
 )
+from quantify_scheduler.backends.qblox.operations.inline_q1asm import InlineQ1ASM
 from quantify_scheduler.operations.control_flow_library import ControlFlowOperation
 from quantify_scheduler.operations.pulse_compensation_library import (
     Port,
@@ -107,10 +108,18 @@ def _compile_circuit_to_device(  # noqa: PLR0911
             device_overrides=device_overrides,
         )
         return operation
+
     elif isinstance(operation, PulseCompensation):
         return _compile_circuit_to_device_pulse_compensation(
             operation, device_cfg, device_overrides
         )
+
+    elif isinstance(
+        operation, InlineQ1ASM
+    ):  # TODO (SE-649), don't depend on qblox specific operation
+        # Inline assembly Operations are already compiled, by definition.
+        return operation
+
     elif not (operation.valid_pulse or operation.valid_acquisition):
         # If operation is a valid pulse or acquisition it will not attempt to
         # add pulse/acquisition info in the lines below (if operation.valid_gate
@@ -239,6 +248,15 @@ def _extract_clock_freqs(
         _extract_clock_freqs(operation=operation.body, all_clock_freqs=all_clock_freqs)
 
 
+def _extract_clocks_used(operation: Operation) -> set[str]:
+    if isinstance(operation, InlineQ1ASM):
+        clocks_used = {operation.clock}
+    else:
+        operation_info = operation["pulse_info"] + operation["acquisition_info"]
+        clocks_used = set([info["clock"] for info in operation_info])
+    return clocks_used
+
+
 # It is important that if the operation is a Schedule type, we always return a Schedule.
 # Otherwise, we can return an Operation or a Schedule.
 @overload
@@ -302,9 +320,8 @@ def _set_pulse_and_acquisition_clock(
         )
     else:
         _assert_operation_valid_device_level(operation)
+        clocks_used = _extract_clocks_used(operation)
 
-        operation_info = operation["pulse_info"] + operation["acquisition_info"]
-        clocks_used = set([info["clock"] for info in operation_info])
         for clock in clocks_used:
             if clock in verified_clocks:
                 continue
@@ -437,7 +454,12 @@ def _assert_operation_valid_device_level(operation: Operation) -> None:
         Quantify operation
 
     """
-    if not (operation.valid_pulse or operation.valid_acquisition or operation.has_voltage_offset):
+    if not (
+        operation.valid_pulse
+        or operation.valid_acquisition
+        or operation.has_voltage_offset
+        or isinstance(operation, InlineQ1ASM)
+    ):
         raise RuntimeError(
             f"Operation '{operation}' is a gate-level operation and must be "
             f"compiled from circuit to device; ensure compilation "

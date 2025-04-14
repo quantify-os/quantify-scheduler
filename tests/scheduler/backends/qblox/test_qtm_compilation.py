@@ -335,10 +335,10 @@ def test_trigger_count_acq_qtm_compilation(mock_setup_basic_nv, repetitions, ass
  move {repetitions},R1 # iterator for loop with label start
 start:
  wait 4
- move 0,R10
- acquire_timetags 0,R0,1,R10,4 # Enable TTL acquisition of acq_channel:0, store in bin:R0
+ move 0,R2
+ acquire_timetags 0,R0,1,R2,4 # Enable TTL acquisition of acq_channel:0, store in bin:R0
  wait 92 # auto generated wait (92 ns)
- acquire_timetags 0,R0,0,R10,4 # Disable TTL acquisition of acq_channel:0, store in bin:R0
+ acquire_timetags 0,R0,0,R2,4 # Disable TTL acquisition of acq_channel:0, store in bin:R0
  add R0,1,R0 # Increment bin_idx for ch0 by 1
  loop R1,@start
  stop
@@ -424,8 +424,8 @@ def test_timetag_acq_compilation(mock_setup_basic_nv, assert_equal_q1asm, bin_mo
         append_mode_init_str = "move 0,R0 # Initialize acquisition bin_idx for ch0"
         append_mode_update_str = "add R0,1,R0 # Increment bin_idx for ch0 by 1"
         bin_idx = "R0"
-        fine_delay_init_str = "move 0,R10"
-        fine_delay = "R10"
+        fine_delay_init_str = "move 0,R2"
+        fine_delay = "R2"
         loop_reg = 1
     else:
         append_mode_init_str = ""
@@ -612,10 +612,10 @@ def test_timetagtrace_acq_qtm_compilation(mock_setup_basic_nv, assert_equal_q1as
 start:
  wait 4
  set_scope_en 1
- move 0,R10
- acquire_timetags 0,R0,1,R10,4 # Enable timetag acquisition of acq_channel:0, store in bin:R0
+ move 0,R2
+ acquire_timetags 0,R0,1,R2,4 # Enable timetag acquisition of acq_channel:0, store in bin:R0
  wait 15992 # auto generated wait (15992 ns)
- acquire_timetags 0,R0,0,R10,4 # Disable timetag acquisition of acq_channel:0, store in bin:R0
+ acquire_timetags 0,R0,0,R2,4 # Disable timetag acquisition of acq_channel:0, store in bin:R0
  add R0,1,R0 # Increment bin_idx for ch0 by 1
  set_scope_en 0
  loop R1,@start
@@ -938,18 +938,18 @@ def test_multiple_timetagtrace_acq(mock_setup_basic_nv, assert_equal_q1asm):
 start:
  wait 4
  set_scope_en 1
- move 0,R10
- acquire_timetags 0,R0,1,R10,4 # Enable timetag acquisition of acq_channel:0, store in bin:R0
+ move 0,R2
+ acquire_timetags 0,R0,1,R2,4 # Enable timetag acquisition of acq_channel:0, store in bin:R0
  wait 15992 # auto generated wait (15992 ns)
- acquire_timetags 0,R0,0,R10,4 # Disable timetag acquisition of acq_channel:0, store in bin:R0
+ acquire_timetags 0,R0,0,R2,4 # Disable timetag acquisition of acq_channel:0, store in bin:R0
  add R0,1,R0 # Increment bin_idx for ch0 by 1
  set_scope_en 0
  wait 20 # auto generated wait (20 ns)
  set_scope_en 1
- move 0,R10
- acquire_timetags 0,R0,1,R10,4 # Enable timetag acquisition of acq_channel:0, store in bin:R0
+ move 0,R2
+ acquire_timetags 0,R0,1,R2,4 # Enable timetag acquisition of acq_channel:0, store in bin:R0
  wait 15992 # auto generated wait (15992 ns)
- acquire_timetags 0,R0,0,R10,4 # Disable timetag acquisition of acq_channel:0, store in bin:R0
+ acquire_timetags 0,R0,0,R2,4 # Disable timetag acquisition of acq_channel:0, store in bin:R0
  add R0,1,R0 # Increment bin_idx for ch0 by 1
  set_scope_en 0
  loop R1,@start
@@ -1119,11 +1119,11 @@ def test_trigger_count_fine_delay(mock_setup_basic_nv, assert_equal_q1asm):
  move 1,R1 # iterator for loop with label start
 start:
  wait 4
- move 400,R10
- move 800,R11
- acquire_timetags 0,R0,1,R10,4 # Enable TTL acquisition of acq_channel:0, store in bin:R0
+ move 400,R2
+ move 800,R3
+ acquire_timetags 0,R0,1,R2,4 # Enable TTL acquisition of acq_channel:0, store in bin:R0
  wait 92 # auto generated wait (92 ns)
- acquire_timetags 0,R0,0,R11,4 # Disable TTL acquisition of acq_channel:0, store in bin:R0
+ acquire_timetags 0,R0,0,R3,4 # Disable TTL acquisition of acq_channel:0, store in bin:R0
  add R0,1,R0 # Increment bin_idx for ch0 by 1
  loop R1,@start
  stop

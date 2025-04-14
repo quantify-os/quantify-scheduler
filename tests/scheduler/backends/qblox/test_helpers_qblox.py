@@ -6,17 +6,22 @@ from __future__ import annotations
 
 import math
 from contextlib import nullcontext
+from unittest.mock import Mock
 
 import pytest
 
-from quantify_scheduler.backends.qblox import helpers
+from quantify_scheduler.backends.qblox import constants, helpers
 from quantify_scheduler.backends.qblox.hardware_config_nv_center_old_style import (
     hardware_config as hardware_config_nv_center_old_style,
 )
 from quantify_scheduler.backends.qblox.hardware_config_transmon_old_style import (
     hardware_config as hardware_config_transmon_old_style,
 )
+from quantify_scheduler.backends.qblox.operations.inline_q1asm import InlineQ1ASM
 from quantify_scheduler.backends.qblox_backend import QbloxHardwareCompilationConfig
+from quantify_scheduler.enums import BinMode
+from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
+from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.schemas.examples import utils
 
 QBLOX_HARDWARE_CONFIG_TRANSMON = utils.load_json_example_scheme(
@@ -251,3 +256,63 @@ def test_generate_new_style_hardware_config(new_style_config, old_style_config):
 
     # Write to dict to check equality of full config contents:
     assert converted_new_style_hw_cfg.model_dump() == parsed_new_style_config.model_dump()
+
+
+def test__assign_asm_info_to_devices_raises_portclock_err():
+    block_wf = [1.0 for _ in range(123)]
+    port, clock = "elephant", "pterodactyl"
+    inline_q1asm_operation = InlineQ1ASM(
+        program=f"play 22, 22, {len(block_wf)}",
+        port=port,
+        clock=clock,
+        duration=200 / constants.SAMPLING_RATE,
+        waveforms={
+            "block": {
+                "data": block_wf,
+                "index": 22,
+            },
+        },
+    )
+
+    with pytest.raises(
+        KeyError,
+        match=(
+            "Could not assign Q1ASM program to the device. The combination "
+            f"of port {port} and clock {clock} could not be found "
+        ),
+    ):
+        helpers._assign_asm_info_to_devices({}, {}, inline_q1asm_operation, 0)
+
+
+def test__assign_pulse_info_to_devices_raises_portclock_err():
+    port, clock = "apple", "pear"
+    pulse = SquarePulse(amp=1, duration=2e-6, port=port, clock=clock)
+
+    with pytest.raises(
+        KeyError,
+        match=(
+            f"Could not assign pulse data to device. The combination "
+            f"of port {port} and clock {clock} could not be found "
+        ),
+    ):
+        helpers._assign_pulse_info_to_devices({}, {}, pulse, 0)
+
+
+def test__assign_acq_info_to_devices_raises_portclock_err():
+    port, clock = "flute", "guitar"
+    acq = SSBIntegrationComplex(
+        port=port,
+        clock=clock,
+        duration=constants.MAX_SAMPLE_SIZE_SCOPE_ACQUISITIONS,
+        acq_channel=0,
+        acq_index=0,
+        bin_mode=BinMode.APPEND,
+    )
+    with pytest.raises(
+        KeyError,
+        match=(
+            f"Could not assign acquisition data to device. The combination "
+            f"of port {port} and clock {clock} could not be found "
+        ),
+    ):
+        helpers._assign_acq_info_to_devices({}, {}, acq, 0, Mock(), Mock())

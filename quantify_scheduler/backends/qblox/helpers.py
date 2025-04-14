@@ -14,6 +14,10 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 
 from quantify_scheduler.backends.qblox import constants
+from quantify_scheduler.backends.qblox.operations.inline_q1asm import (
+    InlineQ1ASM,
+    Q1ASMOpInfo,
+)
 from quantify_scheduler.backends.types.qblox import (
     BoundedParameter,
     ComplexChannelDescription,
@@ -768,7 +772,139 @@ def _get_list_of_operations_for_op_info_creation(
         )
 
 
-def assign_pulse_and_acq_info_to_devices(  # noqa: PLR0915
+def _assign_pulse_info_to_devices(
+    device_compilers: dict[str, ClusterCompiler],
+    portclock_mapping: dict[str, str],
+    operation: Operation,
+    operation_start_time: float,
+) -> None:
+    for pulse_data in operation.data["pulse_info"]:
+        if "t0" in pulse_data:
+            pulse_start_time = operation_start_time + pulse_data["t0"]
+        else:
+            pulse_start_time = operation_start_time
+        # Check whether start time aligns with grid time
+        try:
+            _ = to_grid_time(pulse_start_time)
+        except ValueError as exc:
+            raise ValueError(
+                f"An operation start time of {pulse_start_time * 1e9} ns does not "
+                f"align with a grid time of {constants.GRID_TIME} ns. Please make "
+                f"sure the start time of all operations is a multiple of "
+                f"{constants.GRID_TIME} ns.\n\nOffending operation:"
+                f"\n{operation!r}."
+            ) from exc
+
+        if pulse_data.get("reference_magnitude", None) is not None:
+            warnings.warn(
+                "reference_magnitude parameter not implemented. This parameter will be ignored.",
+                RuntimeWarning,
+            )
+
+        port = pulse_data["port"]
+        clock = pulse_data["clock"]
+        portclock = f"{port}-{clock}"
+
+        combined_data = OpInfo(
+            name=operation.data["name"],
+            data=pulse_data,
+            timing=pulse_start_time,
+        )
+
+        if port is None:
+            # Distribute clock operations to all sequencers utilizing that clock
+            for map_portclock, device_name in portclock_mapping.items():
+                map_port, map_clock = map_portclock.split("-")
+                if (combined_data.name == "LatchReset") or map_clock == clock:
+                    device_compilers[device_name].add_op_info(
+                        port=map_port, clock=map_clock, op_info=combined_data
+                    )
+        else:
+            if portclock not in portclock_mapping:
+                raise KeyError(
+                    f"Could not assign pulse data to device. The combination "
+                    f"of port {port} and clock {clock} could not be found "
+                    f"in hardware configuration.\n\nAre both the port and clock "
+                    f"specified in the hardware configuration?\n\n"
+                    f"Relevant operation:\n{combined_data}."
+                )
+            device_name = portclock_mapping[portclock]
+            device_compilers[device_name].add_op_info(port=port, clock=clock, op_info=combined_data)
+
+
+def _assign_acq_info_to_devices(
+    device_compilers: dict[str, ClusterCompiler],
+    portclock_mapping: dict[str, str],
+    operation: Operation,
+    operation_start_time: float,
+    schedulable_label_to_acq_index: SchedulableLabelToAcquisitionIndex,
+    optional_full_schedulable_label: FullSchedulableLabel,
+) -> None:
+    for i, acq_data in enumerate(operation.data["acquisition_info"]):
+        if "t0" in acq_data:
+            acq_start_time = operation_start_time + acq_data["t0"]
+        else:
+            acq_start_time = operation_start_time
+
+        port = acq_data["port"]
+        clock = acq_data["clock"]
+        portclock = f"{port}-{clock}"
+
+        if port is None:
+            continue
+
+        # Each operation with the same acq_data reference
+        # can have different acq_index, so we need to copy it,
+        # and override the acq_index. No need to deepcopy, only changing top level value.
+        new_acq_data = copy(acq_data)
+        acq_index = schedulable_label_to_acq_index.get((optional_full_schedulable_label, i))
+        new_acq_data["acq_index_legacy"] = acq_data["acq_index"]
+        new_acq_data["acq_index"] = acq_index
+        combined_data = OpInfo(
+            name=operation.data["name"],
+            data=new_acq_data,
+            timing=acq_start_time,
+        )
+
+        if portclock not in portclock_mapping:
+            raise KeyError(
+                f"Could not assign acquisition data to device. The combination "
+                f"of port {port} and clock {clock} could not be found "
+                f"in hardware configuration.\n\nAre both the port and clock "
+                f"specified in the hardware configuration?\n\n"
+                f"Relevant operation:\n{combined_data}."
+            )
+        device_name = portclock_mapping[portclock]
+        device_compilers[device_name].add_op_info(port=port, clock=clock, op_info=combined_data)
+
+
+def _assign_asm_info_to_devices(
+    device_compilers: dict[str, ClusterCompiler],
+    portclock_mapping: dict[str, str],
+    operation: InlineQ1ASM,
+    op_start_time: float,
+) -> None:
+    portclock = f"{operation.port}-{operation.clock}"
+
+    operation_info = Q1ASMOpInfo(operation, op_start_time)
+
+    if portclock not in portclock_mapping:
+        raise KeyError(
+            f"Could not assign Q1ASM program to the device. "
+            f"The combination of port {operation.port} and clock {operation.clock} "
+            f"could not be found "
+            f"in hardware configuration."
+            f"\n\nAre both the port and clock specified in the hardware configuration?\n\n"
+            f"Relevant operation:\n{operation}."
+        )
+
+    device_name = portclock_mapping[portclock]
+    device_compilers[device_name].add_op_info(
+        port=operation.port, clock=operation.clock, op_info=operation_info
+    )
+
+
+def assign_pulse_and_acq_info_to_devices(
     schedule: Schedule,
     device_compilers: dict[str, ClusterCompiler],
     schedulable_label_to_acq_index: SchedulableLabelToAcquisitionIndex,
@@ -805,111 +941,46 @@ def assign_pulse_and_acq_info_to_devices(  # noqa: PLR0915
     _get_list_of_operations_for_op_info_creation(schedule, 0, list_of_operations, ())
     list_of_operations.sort(key=lambda abs_time_and_op: abs_time_and_op[0])
 
-    for operation_start_time, op_data, optional_full_schedulable_label in list_of_operations:
-        assert isinstance(op_data, Operation)
+    for operation_start_time, operation, optional_full_schedulable_label in list_of_operations:
+        assert isinstance(operation, Operation)
 
-        if isinstance(op_data, WindowOperation):
+        if isinstance(operation, WindowOperation):
             continue
 
-        if not op_data.valid_pulse and not op_data.valid_acquisition:
+        if (
+            not operation.valid_pulse
+            and not operation.valid_acquisition
+            and not isinstance(operation, InlineQ1ASM)
+        ):
             raise RuntimeError(
-                f"Operation is not a valid pulse or acquisition. Please check"
-                f" whether the device compilation been performed successfully. "
-                f"Operation data: {op_data!r}"
+                f"Operation is not a valid pulse, acquisition or Q1ASM. "
+                f"Please check whether the device compilation has been performed successfully. "
+                f"Operation data: {operation!r}"
             )
 
-        for pulse_data in op_data.data["pulse_info"]:
-            if "t0" in pulse_data:
-                pulse_start_time = operation_start_time + pulse_data["t0"]
-            else:
-                pulse_start_time = operation_start_time
-            # Check whether start time aligns with grid time
-            try:
-                _ = to_grid_time(pulse_start_time)
-            except ValueError as exc:
-                raise ValueError(
-                    f"An operation start time of {pulse_start_time * 1e9} ns does not "
-                    f"align with a grid time of {constants.GRID_TIME} ns. Please make "
-                    f"sure the start time of all operations is a multiple of "
-                    f"{constants.GRID_TIME} ns.\n\nOffending operation:"
-                    f"\n{op_data!r}."
-                ) from exc
-
-            if pulse_data.get("reference_magnitude", None) is not None:
-                warnings.warn(
-                    "reference_magnitude parameter not implemented. "
-                    "This parameter will be ignored.",
-                    RuntimeWarning,
-                )
-
-            port = pulse_data["port"]
-            clock = pulse_data["clock"]
-            portclock = f"{port}-{clock}"
-
-            combined_data = OpInfo(
-                name=op_data.data["name"],
-                data=pulse_data,
-                timing=pulse_start_time,
+        if isinstance(operation, InlineQ1ASM):
+            _assign_asm_info_to_devices(
+                device_compilers=device_compilers,
+                portclock_mapping=portclock_mapping,
+                operation=operation,
+                op_start_time=operation_start_time,
             )
-
-            if port is None:
-                # Distribute clock operations to all sequencers utilizing that clock
-                for map_portclock, device_name in portclock_mapping.items():
-                    map_port, map_clock = map_portclock.split("-")
-                    if (combined_data.name == "LatchReset") or map_clock == clock:
-                        device_compilers[device_name].add_op_info(
-                            port=map_port, clock=map_clock, op_info=combined_data
-                        )
-            else:
-                if portclock not in portclock_mapping:
-                    raise KeyError(
-                        f"Could not assign pulse data to device. The combination "
-                        f"of port {port} and clock {clock} could not be found "
-                        f"in hardware configuration.\n\nAre both the port and clock "
-                        f"specified in the hardware configuration?\n\n"
-                        f"Relevant operation:\n{combined_data}."
-                    )
-                device_name = portclock_mapping[portclock]
-                device_compilers[device_name].add_op_info(
-                    port=port, clock=clock, op_info=combined_data
-                )
-
-        for i, acq_data in enumerate(op_data.data["acquisition_info"]):
-            if "t0" in acq_data:
-                acq_start_time = operation_start_time + acq_data["t0"]
-            else:
-                acq_start_time = operation_start_time
-
-            port = acq_data["port"]
-            clock = acq_data["clock"]
-            portclock = f"{port}-{clock}"
-
-            if port is None:
-                continue
-
-            # Each operation with the same acq_data reference
-            # can have different acq_index, so we need to copy it,
-            # and override the acq_index. No need to deepcopy, only changing top level value.
-            new_acq_data = copy(acq_data)
-            acq_index = schedulable_label_to_acq_index.get((optional_full_schedulable_label, i))
-            new_acq_data["acq_index_legacy"] = acq_data["acq_index"]
-            new_acq_data["acq_index"] = acq_index
-            combined_data = OpInfo(
-                name=op_data.data["name"],
-                data=new_acq_data,
-                timing=acq_start_time,
+        if "pulse_info" in operation.data:
+            _assign_pulse_info_to_devices(
+                device_compilers=device_compilers,
+                portclock_mapping=portclock_mapping,
+                operation=operation,
+                operation_start_time=operation_start_time,
             )
-
-            if portclock not in portclock_mapping:
-                raise KeyError(
-                    f"Could not assign acquisition data to device. The combination "
-                    f"of port {port} and clock {clock} could not be found "
-                    f"in hardware configuration.\n\nAre both the port and clock "
-                    f"specified in the hardware configuration?\n\n"
-                    f"Relevant operation:\n{combined_data}."
-                )
-            device_name = portclock_mapping[portclock]
-            device_compilers[device_name].add_op_info(port=port, clock=clock, op_info=combined_data)
+        if "acquisition_info" in operation.data:
+            _assign_acq_info_to_devices(
+                device_compilers=device_compilers,
+                portclock_mapping=portclock_mapping,
+                operation=operation,
+                operation_start_time=operation_start_time,
+                schedulable_label_to_acq_index=schedulable_label_to_acq_index,
+                optional_full_schedulable_label=optional_full_schedulable_label,
+            )
 
 
 def calc_from_units_volt(

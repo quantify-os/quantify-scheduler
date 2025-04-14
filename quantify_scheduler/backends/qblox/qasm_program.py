@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import re
 from contextlib import contextmanager
 from typing import (
     TYPE_CHECKING,
@@ -18,6 +19,7 @@ from quantify_scheduler.backends.qblox import constants, helpers, q1asm_instruct
 from quantify_scheduler.backends.qblox.conditional import (
     ConditionalManager,
 )
+from quantify_scheduler.backends.qblox.register_manager import RegisterManager
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Hashable, Iterator, Sequence
@@ -28,7 +30,6 @@ if TYPE_CHECKING:
     from quantify_scheduler.backends.qblox.operation_handling.virtual import (
         ConditionalStrategy,
     )
-    from quantify_scheduler.backends.qblox.register_manager import RegisterManager
     from quantify_scheduler.backends.types.qblox import (
         OpInfo,
         StaticHardwareProperties,
@@ -61,14 +62,14 @@ class QASMProgram:
     def __init__(
         self,
         static_hw_properties: StaticHardwareProperties,
-        register_manager: RegisterManager,
-        align_fields: bool,
-        acq_metadata: AcquisitionMetadata | None,
+        register_manager: RegisterManager | None = None,
+        align_fields: bool = True,
+        acq_metadata: AcquisitionMetadata | None = None,
     ) -> None:
         self.static_hw_properties = static_hw_properties
         """Dataclass holding the properties of the hardware that this program is to be
         played on."""
-        self.register_manager = register_manager
+        self.register_manager = register_manager or RegisterManager()
         """The register manager that keeps track of the occupied/available registers."""
         self.align_fields = align_fields
         """If true, all labels, instructions, arguments and comments
@@ -170,6 +171,7 @@ class QASMProgram:
         comment_str = f"# {comment}" if comment is not None else ""
         return [label_str, instruction, instr_args, comment_str]
 
+    # TODO, use proper (keyword) arguments instead of *args and **kwargs
     def emit(self, *args, **kwargs) -> list[str | int]:
         """
         Wrapper around the ``get_instruction_as_list`` which adds it to this program.
@@ -638,3 +640,76 @@ class QASMProgram:
 
         for reg in registers:
             self.register_manager.free_register(reg)
+
+    @staticmethod
+    def parse_program_line(
+        program_line: str,
+    ) -> tuple[str, list[str], str | None, str]:
+        """
+        Parses a single line of a Q1ASM program and extracts its components.
+
+        This function processes a line of Q1ASM code;
+        handling labels, instructions, arguments, and comments.
+
+        Parameters
+        ----------
+        program_line
+            A single line of Q1ASM code to be parsed.
+
+        Returns
+        -------
+        instruction
+            The instruction part of the Q1ASM line, empty string if no instruction present.
+        arguments
+            A list of arguments associated with the instruction, empty list if no arguments present.
+        label
+            The processed label extracted from the line, or None if no label is present.
+        comment
+            The comment extracted from the line; empty string if no comment is present.
+
+        Raises
+        ------
+        ValueError
+            If the program line is not a valid q1asm format
+
+        Examples
+        --------
+        >>> QASMProgram.parse_program_line("example_label: move 10, R1  # Initialize R1")
+        ('move', ['10', 'R1'], 'example_label', 'Initialize R1')
+
+        """
+        # A q1asm line has the following format:
+        # [label:] instruction argument,argument,... [comment]
+        # Everything is optional.
+        # Arguments are only allowed if an instruction is given
+        # Arguments can either be numbers, registers, or label references.
+        # We set up the regex to parse it.
+        alpha_num_regex = "[a-zA-Z0-9_]"
+        white_space = "[ \t]+"  # Space and tabs
+        # label has to start with a letter or underscore
+        label_regex = f"[a-zA-Z_]{alpha_num_regex}*"
+        argument_regex = f"(R?[0-9]+|(@{label_regex}))"
+        argument_list_regex = f"{white_space}({argument_regex}+,({white_space})?)*{argument_regex}"
+        instruction_regex = "[a-z_]+"  # All instructions are snake_case
+        comment_regex = "#(?P<comment>.*)"
+        line_regex = (
+            f"({white_space})?"
+            f"((?P<label>{label_regex}):)?"
+            f"({white_space})?"
+            f"((?P<instruction>{instruction_regex})(?P<arguments>{argument_list_regex})?)?"
+            f"({white_space})?"
+            f"({comment_regex})?"
+        )
+        full_match = re.fullmatch(line_regex, program_line)
+        if full_match is None:
+            raise ValueError(f"'{program_line}' is not valid Q1ASM.")
+        match = full_match.groupdict()
+        label = match["label"]
+        instruction = match["instruction"] or ""
+        arguments = (
+            [arg.strip() for arg in match["arguments"].split(",")] if match["arguments"] else []
+        )
+        # extract comment when it exists
+        comment = match["comment"].strip() if match["comment"] else ""
+
+        return instruction, arguments, label, comment

@@ -1646,6 +1646,7 @@ def test_real_mode_pulses_legacy_hardware_cfg(
         # )
 
 
+# --------- Test some helper functions ---------
 @pytest.mark.parametrize(
     "time, expected_time_ns",
     [(4e-9, 4), (8.001e-9, 8), (4.0008e-9, 4), (1, 1e9), (1 + 1e-12, 1e9)],
@@ -3718,12 +3719,12 @@ start:
         set_awg_gain 3765,221 # setting gain for X q0
         play 0,1,4 # play X q0 (20 ns)
         wait 16 # auto generated wait (16 ns)
-        move 2,R10 # iterator for loop with label loop16
+        move 2,R2 # iterator for loop with label loop16
         loop16:
             set_awg_gain -221,3765 # setting gain for Y q0
             play 1,0,4 # play Y q0 (20 ns)
             wait 16 # auto generated wait (16 ns)
-        loop R10,@loop16
+        loop R2,@loop16
         wait 1100 # auto generated wait (1100 ns)
     loop R1,@loop11
     set_awg_gain 1882,110 # setting gain for X_90 q0

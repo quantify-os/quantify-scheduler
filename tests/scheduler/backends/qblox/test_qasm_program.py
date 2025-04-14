@@ -1,9 +1,13 @@
-# --------- Test QASMProgram class ---------
+# Repository: https://gitlab.com/quantify-os/quantify-scheduler
+# Licensed according to the LICENCE file on the main branch
+"""Tests for the QASM program"""
+
 import pytest
 
 from quantify_scheduler.backends.qblox import constants, q1asm_instructions
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
 from quantify_scheduler.backends.types import qblox as types
+from quantify_scheduler.backends.types.qblox import OpInfo
 
 
 def test_emit(empty_qasm_program_qcm):
@@ -40,7 +44,7 @@ def test_auto_wait(empty_qasm_program_qcm):
 )
 def test_expand_awg_gain_from_normalised_range(val, expected_expanded_val):
     minimal_pulse_data = {"duration": 20e-9}
-    acq = types.OpInfo(name="test_acq", data=minimal_pulse_data, timing=4e-9)
+    acq = OpInfo(name="test_acq", data=minimal_pulse_data, timing=4e-9)
 
     expanded_val = QASMProgram.expand_awg_from_normalised_range(
         val=val,
@@ -49,6 +53,18 @@ def test_expand_awg_gain_from_normalised_range(val, expected_expanded_val):
         operation=acq,
     )
     assert expanded_val == expected_expanded_val
+
+
+def test_out_of_range_expand_awg_gain_from_normalised_range():
+    minimal_pulse_data = {"duration": 20e-9}
+    acq = OpInfo(name="test_acq", data=minimal_pulse_data, timing=4e-9)
+    with pytest.raises(ValueError):
+        QASMProgram.expand_awg_from_normalised_range(
+            val=10,
+            immediate_size=constants.IMMEDIATE_SZ_GAIN,
+            param="test_param",
+            operation=acq,
+        )
 
 
 def test_loop(empty_qasm_program_qcm):
@@ -74,13 +90,43 @@ def test_temp_register(amount, empty_qasm_program_qcm):
         assert reg in qasm.register_manager.available_registers
 
 
-def test_out_of_range_expand_awg_gain_from_normalised_range():
-    minimal_pulse_data = {"duration": 20e-9}
-    acq = types.OpInfo(name="test_acq", data=minimal_pulse_data, timing=4e-9)
-    with pytest.raises(ValueError):
-        QASMProgram.expand_awg_from_normalised_range(
-            val=10,
-            immediate_size=constants.IMMEDIATE_SZ_GAIN,
-            param="test_param",
-            operation=acq,
-        )
+class TestParseProgramLine:
+    def test_docstring_example(self):
+        # test the docstring example
+        assert QASMProgram.parse_program_line(
+            "example_label: move 10, R1  # Initialize R1",
+        ) == ("move", ["10", "R1"], "example_label", "Initialize R1")
+
+    @pytest.mark.parametrize(
+        "label",
+        [
+            ("", None),
+            (" \t ", None),
+            ("_label:", "_label"),
+            ("  \t  l__a0bel: \t\t  ", "l__a0bel"),
+        ],
+    )
+    @pytest.mark.parametrize(
+        "instruction", [("", ""), ("instr", "instr"), (" \t  inst_u  \t", "inst_u")]
+    )
+    @pytest.mark.parametrize(
+        "arguments",
+        [
+            ("", []),
+            (" R0", ["R0"]),
+            ("\t @label \t", ["@label"]),
+            (" R0, @label,1,\tR2000", ["R0", "@label", "1", "R2000"]),
+        ],
+    )
+    @pytest.mark.parametrize("comment", [("", ""), (" \t# com\t@m:e #nt ", "com\t@m:e #nt")])
+    def test_all_line_combos(self, label, instruction, arguments, comment):
+        if not instruction[0]:
+            arguments = ("", [])
+        parsed_line = instruction[1], arguments[1], label[1], comment[1]
+        input_line = f"{label[0]}{instruction[0]}{arguments[0]}{comment[0]}"
+        assert QASMProgram.parse_program_line(input_line) == parsed_line
+
+    @pytest.mark.parametrize("line", ["label :", "0label:", "instruction0", "label: arg1,arg2"])
+    def test_incorrect_format(self, line):
+        with pytest.raises(ValueError):
+            QASMProgram.parse_program_line(line)
