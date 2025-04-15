@@ -38,22 +38,27 @@ class InstrumentCoordinatorComponentBase(Instrument):
     """The InstrumentCoordinator component abstract interface."""
 
     # NB `_instances` also used by `Instrument` class
-    _no_gc_instances: dict[str, InstrumentCoordinatorComponentBase] = dict()
+    _no_gc_instances: dict[str, InstrumentBase] = dict()
 
     def __new__(cls, instrument: InstrumentBase) -> InstrumentCoordinatorComponentBase:
         """
-        Keeps track of the instances of this class.
+        Keeps track of the instances of this class and the instrument.
 
-        NB This is done intentionally to prevent the instances from being garbage
-        collected.
+        NB This is done intentionally to prevent the instances from being garbage collected.
         """
         instance = super().__new__(cls)
-        cls._no_gc_instances[instrument.name] = instance
+        cls._no_gc_instances[f"ic_{instrument.name}"] = instance
+        cls._no_gc_instances[instrument.name] = instrument
         return instance
 
     def close(self) -> None:
-        """Release instance so that garbage collector can claim the object."""
-        _ = self._no_gc_instances.pop(self.instrument_ref())
+        """
+        Release instances so that garbage collector can claim the objects.
+
+        NB We don't close the instrument because it might be referenced elsewhere.
+        """
+        self._no_gc_instances.pop(f"ic_{self.instrument_ref()}", None)
+        self._no_gc_instances.pop(self.instrument_ref(), None)
         super().close()
 
     def __init__(

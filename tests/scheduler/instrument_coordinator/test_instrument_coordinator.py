@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from unittest.mock import MagicMock, call
 
 import pytest
+from qblox_instruments import Cluster
 from qcodes import Instrument
 from xarray import DataArray, Dataset
 
@@ -496,3 +497,46 @@ def test_retrieve_hardware_logs__qblox_hardware(
     hardware_logs = ic.retrieve_hardware_logs()
 
     assert cluster_name in hardware_logs
+
+
+@pytest.mark.regression
+def test_instrument_component_should_prevent_instrument_gc():
+    """
+    Test that a coordinator component keeps a reference of the encapsulated instrument,
+    so that the instrument does not get garbage collected in the case that the caller
+    doesn't hold a hard reference to it.
+    """
+
+    def init():
+        cluster = Cluster("SomeCluster", dummy_cfg={})
+        cluster_component = ClusterComponent(cluster)
+        instrument_coordinator = InstrumentCoordinator("SomeCoordinator")
+        instrument_coordinator.add_component(cluster_component)
+        return instrument_coordinator
+
+    # Create an instrument coordinator without having a reference to the cluster
+    ic = init()
+
+    # Force garbage collection
+    gc.collect()
+
+    # Make sure that the cluster can still be found
+    _ = ic.find_instrument("SomeCluster")
+
+
+@pytest.mark.regression
+def test_instrument_component_should_not_close_component():
+    """
+    Test that a coordinator component should also remove its reference to the instrument
+    on its own ``close()``, without running ``close()`` on the instrument itself.
+    """
+    cluster = Cluster("SomeCluster", dummy_cfg={})
+    cluster_component = ClusterComponent(cluster)
+
+    ic = InstrumentCoordinator("SomeCoordinator")
+    ic.add_component(cluster_component)
+
+    # Close the instrument coordinator (and its associated components)
+    ic.close()  # or cluster_component.close()
+
+    _ = cluster.get_connected_modules()  # Ensure that the cluster hasn't been closed

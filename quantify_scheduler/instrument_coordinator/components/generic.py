@@ -34,7 +34,7 @@ class GenericInstrumentCoordinatorComponent(base.InstrumentCoordinatorComponentB
     """
 
     # NB `_instances` also used by `Instrument` class
-    _no_gc_instances: dict[str, base.InstrumentCoordinatorComponentBase] = dict()
+    _no_gc_instances: dict[str, InstrumentBase] = dict()
 
     def __new__(
         cls, instrument_reference: str | InstrumentBase = DEFAULT_NAME
