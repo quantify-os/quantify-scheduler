@@ -2,6 +2,7 @@
 # Licensed according to the LICENCE file on the main branch
 
 import numpy as np
+import pytest
 
 from quantify_scheduler import Schedule
 from quantify_scheduler.operations.control_flow_library import LoopOperation
@@ -124,6 +125,8 @@ def test_two_tone_trace_schedule() -> None:
     assert acq_info["port"] == "q0:res"
 
 
+@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
+@pytest.mark.deprecated
 def test_long_trace_schedule() -> None:
     # Arrange
     pulse_amp = 0.5 + 0.25 * 1j

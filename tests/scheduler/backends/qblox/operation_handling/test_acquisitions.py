@@ -818,6 +818,8 @@ def test_trace_acquisition_measurement_control(
     instr_coordinator.remove_component(ic_cluster0.name)
 
 
+@pytest.mark.filterwarnings(r"ignore:.*quantify-scheduler.*:FutureWarning")
+@pytest.mark.deprecated
 def test_custom_long_trace_acquisition_measurement_control(
     mock_setup_basic_transmon_with_standard_params, make_cluster_component
 ):
@@ -1000,6 +1002,7 @@ def test_weighted_thresholded_acquisition_wrong_values(
     assert "Attempting to configure" in error.value.args[0]
 
 
+@pytest.mark.deprecated
 def test_long_time_trace_protocol(
     mock_setup_basic_transmon_with_standard_params,
     qblox_hardware_config_transmon,

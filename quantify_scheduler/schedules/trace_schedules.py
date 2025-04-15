@@ -8,6 +8,8 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from quantify_core.utilities import deprecated
+
 if TYPE_CHECKING:
     from quantify_scheduler.device_under_test.device_element import DeviceElement
 
@@ -243,6 +245,9 @@ def two_tone_trace_schedule(
     return schedule
 
 
+@deprecated(
+    "0.25", "Long time trace will be removed; use LongTimeTrace acquisition protocol instead."
+)
 def long_time_trace(
     pulse_amp: complex,
     frequency: float,
@@ -348,6 +353,9 @@ def long_time_trace(
     return schedule
 
 
+@deprecated(
+    "0.25", "Long time trace will be removed; use LongTimeTrace acquisition protocol instead."
+)
 def long_time_trace_with_qubit(
     qubit: DeviceElement,
     num_points: int,
