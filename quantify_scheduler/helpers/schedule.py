@@ -240,8 +240,8 @@ def _is_binned_type_protocol(protocol: str) -> bool:
         "SSBIntegrationComplex",
         "WeightedIntegratedSeparated",
         "NumericalSeparatedWeightedIntegration",
-        "NumericalWeightedIntegrationComplex",
         "NumericalWeightedIntegration",
         "ThresholdedAcquisition",
         "WeightedThresholdedAcquisition",
+        "Timetag",
     )

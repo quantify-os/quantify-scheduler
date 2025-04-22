@@ -52,16 +52,35 @@ def _prod(iterable: Iterable[int]) -> int:
     return reduce(mul, iterable, 1)
 
 
-def _warn_unsupported_bin_mode(protocol: str, bin_mode: BinMode, acq_channel: Hashable) -> None:
-    warnings.warn(
-        f"Unsupported bin mode '{bin_mode}' for "
-        f"acquisition protocol '{protocol}' "
-        f"on acq_channel '{acq_channel}'.",
-        RuntimeWarning,
-    )
+def _generate_acq_channels_data_binned_average(
+    acq_channel_data: AcquisitionChannelData,
+    schedulable_label_to_acq_index: SchedulableLabelToAcquisitionIndex,
+    full_schedulable_label: FullSchedulableLabel,
+    coords: dict,
+    acq_num_in_operation: int,
+    acq_channel: Hashable,
+    acq_index: int | None,
+) -> None:
+    """
+    Generates the acquisition channel data, and updates acq_channel_data,
+    and updates schedulable_label_to_acq_index for average bin mode.
+    """
+    assert isinstance(acq_channel_data.coords, list)
+
+    if acq_index is not None and acq_index != len(acq_channel_data.coords):
+        warnings.warn(
+            f"Found invalid {acq_index=} for {acq_channel=}. "
+            f"Make sure that each explicitly defined acq_index "
+            f"starts at 0, and increments by 1 for each new acquisition "
+            f"within the same acquisition channel, ordered by time.",
+            RuntimeWarning,
+        )
+    new_acq_index = len(acq_channel_data.coords)
+    schedulable_label_to_acq_index[(full_schedulable_label, acq_num_in_operation)] = new_acq_index
+    acq_channel_data.coords.append(coords)
 
 
-def _generate_acq_channels_data_binned(
+def _generate_acq_channels_data_binned_append(
     acq_channel_data: AcquisitionChannelData,
     schedulable_label_to_acq_index: SchedulableLabelToAcquisitionIndex,
     full_schedulable_label: FullSchedulableLabel,
@@ -73,64 +92,40 @@ def _generate_acq_channels_data_binned(
 ) -> None:
     """
     Generates the acquisition channel data, and updates acq_channel_data,
-    and updates schedulable_label_to_acq_index.
+    and updates schedulable_label_to_acq_index for average bin mode.
     """
     assert isinstance(acq_channel_data.coords, list)
-
-    if acq_channel_data.bin_mode == BinMode.AVERAGE:
-        if acq_index is not None and acq_index != len(acq_channel_data.coords):
-            warnings.warn(
-                f"Found invalid {acq_index=} for {acq_channel=}. "
-                f"Make sure that each explicitly defined acq_index "
-                f"starts at 0, and increments by 1 for each new acquisition "
-                f"within the same acquisition channel, ordered by time.",
-                RuntimeWarning,
-            )
-        new_acq_index = len(acq_channel_data.coords)
-        schedulable_label_to_acq_index[(full_schedulable_label, acq_num_in_operation)] = (
-            new_acq_index
-        )
-        acq_channel_data.coords.append(coords)
-    elif acq_channel_data.bin_mode == BinMode.APPEND:
-        multiple_coords: list[dict] = []
-        if len(nested_loop_repetitions) == 0:
-            multiple_coords = [coords]
-        else:
-            if acq_index is not None:
-                warnings.warn(
-                    (
-                        f"Explicitly defined acquisition index for an append mode acquisition "
-                        f"within a loop will not be supported in the future. "
-                        f"Ignoring {acq_index=} for {acq_channel=}."
-                    ),
-                    FutureWarning,
-                )
-            overall_nested_loop_repetitions = _prod(nested_loop_repetitions)
-            multiple_coords = [
-                {"loop_repetition": lr, **coords} for lr in range(overall_nested_loop_repetitions)
-            ]
-        first_acq_index = len(acq_channel_data.coords)
-        number_of_new_acq_indices = len(multiple_coords)
-        schedulable_label_to_acq_index[(full_schedulable_label, acq_num_in_operation)] = list(
-            range(
-                first_acq_index,
-                first_acq_index + number_of_new_acq_indices,
-            )
-        )
-        acq_channel_data.coords.extend(multiple_coords)
+    multiple_coords: list[dict] = []
+    if len(nested_loop_repetitions) == 0:
+        multiple_coords = [coords]
     else:
-        _warn_unsupported_bin_mode(
-            protocol=acq_channel_data.protocol,
-            bin_mode=acq_channel_data.bin_mode,
-            acq_channel=acq_channel,
+        if acq_index is not None:
+            warnings.warn(
+                (
+                    f"Explicitly defined acquisition index for an append mode acquisition "
+                    f"within a loop will not be supported in the future. "
+                    f"Ignoring {acq_index=} for {acq_channel=}."
+                ),
+                FutureWarning,
+            )
+        overall_nested_loop_repetitions = _prod(nested_loop_repetitions)
+        multiple_coords = [
+            {"loop_repetition": lr, **coords} for lr in range(overall_nested_loop_repetitions)
+        ]
+    first_acq_index = len(acq_channel_data.coords)
+    number_of_new_acq_indices = len(multiple_coords)
+    schedulable_label_to_acq_index[(full_schedulable_label, acq_num_in_operation)] = list(
+        range(
+            first_acq_index,
+            first_acq_index + number_of_new_acq_indices,
         )
+    )
+    acq_channel_data.coords.extend(multiple_coords)
 
 
 def _validate_trace_protocol(
     acq_channel: Hashable,
     acq_channels_data: AcquisitionChannelsData,
-    bin_mode: BinMode,
-    protocol: str,
     nested_loop_repetitions: list[int],  # noqa: ARG001
 ) -> None:
     if acq_channel in acq_channels_data:
@@ -139,12 +134,6 @@ def _validate_trace_protocol(
             f"which has a trace acquisition. "
             f"Only one trace acquisition is allowed for each acq_channel.",
             RuntimeWarning,
-        )
-    if bin_mode not in (BinMode.AVERAGE, BinMode.FIRST, BinMode.APPEND):
-        _warn_unsupported_bin_mode(
-            protocol=protocol,
-            bin_mode=bin_mode,
-            acq_channel=acq_channel,
         )
 
 
@@ -194,7 +183,7 @@ def _generate_acq_channels_data_for_protocol(
                     RuntimeWarning,
                 )
 
-        if _is_binned_type_protocol(protocol):
+        if _is_binned_type_protocol(protocol) and bin_mode == BinMode.AVERAGE:
             if acq_channel not in acq_channels_data:
                 acq_channels_data[acq_channel] = AcquisitionChannelData(
                     acq_index_dim_name=("acq_index_" + str(acq_channel)),
@@ -202,7 +191,24 @@ def _generate_acq_channels_data_for_protocol(
                     bin_mode=bin_mode,
                     coords=[],
                 )
-            _generate_acq_channels_data_binned(
+            _generate_acq_channels_data_binned_average(
+                acq_channel_data=acq_channels_data[acq_channel],
+                schedulable_label_to_acq_index=schedulable_label_to_acq_index,
+                full_schedulable_label=full_schedulable_label,
+                coords=coords,
+                acq_num_in_operation=acq_num_in_operation,
+                acq_channel=acq_channel,
+                acq_index=acq_index,
+            )
+        elif _is_binned_type_protocol(protocol) and bin_mode == BinMode.APPEND:
+            if acq_channel not in acq_channels_data:
+                acq_channels_data[acq_channel] = AcquisitionChannelData(
+                    acq_index_dim_name=("acq_index_" + str(acq_channel)),
+                    protocol=protocol,
+                    bin_mode=bin_mode,
+                    coords=[],
+                )
+            _generate_acq_channels_data_binned_append(
                 acq_channel_data=acq_channels_data[acq_channel],
                 schedulable_label_to_acq_index=schedulable_label_to_acq_index,
                 full_schedulable_label=full_schedulable_label,
@@ -212,12 +218,10 @@ def _generate_acq_channels_data_for_protocol(
                 acq_channel=acq_channel,
                 acq_index=acq_index,
             )
-        elif protocol == "Trace":
+        elif protocol == "Trace" and bin_mode in (BinMode.AVERAGE, BinMode.FIRST):
             _validate_trace_protocol(
                 acq_channel=acq_channel,
                 acq_channels_data=acq_channels_data,
-                bin_mode=bin_mode,
-                protocol=protocol,
                 nested_loop_repetitions=nested_loop_repetitions,
             )
             acq_channels_data[acq_channel] = AcquisitionChannelData(
@@ -226,42 +230,22 @@ def _generate_acq_channels_data_for_protocol(
                 bin_mode=bin_mode,
                 coords=coords,
             )
-        elif protocol in (
-            "TriggerCount",
-            "Timetag",
-            "TimetagTrace",
-            "ThresholdedTriggerCount",
-            "DualThresholdedTriggerCount",
+        elif (
+            (
+                protocol == "TriggerCount"
+                and bin_mode
+                in (
+                    BinMode.DISTRIBUTION,
+                    BinMode.APPEND,
+                    BinMode.SUM,
+                )
+            )
+            or (protocol == "TimetagTrace" and bin_mode == BinMode.APPEND)
+            or (
+                protocol in ("ThresholdedTriggerCount", "DualThresholdedTriggerCount")
+                and bin_mode == BinMode.APPEND
+            )
         ):
-            if (
-                (
-                    protocol == "TriggerCount"
-                    and bin_mode
-                    not in (
-                        BinMode.DISTRIBUTION,
-                        BinMode.APPEND,
-                        BinMode.SUM,
-                    )
-                )
-                or (
-                    protocol == "Timetag"
-                    and bin_mode
-                    not in (
-                        BinMode.AVERAGE,
-                        BinMode.APPEND,
-                    )
-                )
-                or (protocol == "TimetagTrace" and bin_mode != BinMode.APPEND)
-                or (
-                    protocol in ("ThresholdedTriggerCount", "DualThresholdedTriggerCount")
-                    and bin_mode != BinMode.APPEND
-                )
-            ):
-                _warn_unsupported_bin_mode(
-                    protocol=protocol,
-                    bin_mode=bin_mode,
-                    acq_channel=acq_channel,
-                )
             acq_channels_data[acq_channel] = AcquisitionChannelData(
                 acq_index_dim_name=("acq_index_" + str(acq_channel)),
                 protocol=protocol,
@@ -269,9 +253,9 @@ def _generate_acq_channels_data_for_protocol(
                 coords=coords,
             )
         else:
-            warnings.warn(
-                f"Unsupported acquisition protocol '{protocol}' on acq_channel '{acq_channel}'.",
-                RuntimeWarning,
+            raise ValueError(
+                f"Unsupported acquisition protocol '{protocol}' with bin mode '{bin_mode}' "
+                f"on acq_channel '{acq_channel}'.",
             )
 
 

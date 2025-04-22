@@ -546,13 +546,10 @@ def test_unsupported_bin_mode_raises(
 
     compiler = SerialCompiler("")
 
-    with (
-        pytest.warns(
-            RuntimeWarning,
-            match=f"Unsupported bin mode '{bin_mode}' for acquisition protocol "
-            f"'{acq_protocol}' on acq_channel '0'.",
-        ),
-        pytest.raises(Exception),
+    with pytest.raises(
+        ValueError,
+        match=f"Unsupported acquisition protocol '{acq_protocol}' with bin mode '{bin_mode}' "
+        f"on acq_channel '0'.",
     ):
         compiler.compile(
             schedule=schedule,
