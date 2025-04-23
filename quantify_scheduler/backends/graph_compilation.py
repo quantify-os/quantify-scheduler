@@ -208,6 +208,10 @@ class DeviceCompilationConfig(DataStructure):
                 "name": "determine_absolute_timing",
                 "compilation_func": "quantify_scheduler.compilation._determine_absolute_timing",
             },
+            {
+                "name": "normalize_absolute_timing",
+                "compilation_func": "quantify_scheduler.compilation._normalize_absolute_timing",
+            },
         ],
         validate_default=True,
     )

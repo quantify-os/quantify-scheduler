@@ -5,7 +5,7 @@ import pytest
 
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.circuit_to_device import ConfigKeyError
-from quantify_scheduler.compilation import _determine_absolute_timing
+from quantify_scheduler.compilation import _determine_absolute_timing, _normalize_absolute_timing
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.operations.acquisition_library import (
     SSBIntegrationComplex,
@@ -642,3 +642,43 @@ def test_multiple_trace_acquisition_raises(
             schedule=sched,
             config=compile_config_basic_transmon_qblox_hardware,
         )
+
+
+def test_negative_absolute_timing_is_normalized():
+    schedule = Schedule("test")
+    schedule.add(SquarePulse(duration=100e-9, amp=0.1, port="q0:mw", clock="q0.mw"))
+    schedule.add(SquarePulse(duration=100e-9, amp=0.1, port="q0:mw", clock="q0.mw"), rel_time=-2)
+
+    schedule = _normalize_absolute_timing(_determine_absolute_timing(schedule))
+    schedulables = schedule.schedulables.values()
+    abs_times = [schedulable["abs_time"] for schedulable in schedulables]
+    np.testing.assert_almost_equal(abs_times, np.array([2 - 100e-9, 0]))
+
+
+@pytest.mark.xfail(
+    reason="Normalization of absolute timing in subschedules is not yet supported.", strict=True
+)
+def test_negative_absolute_timing_is_normalized_with_subschedule():
+    """Test that absolute timing is properly normalized in schedules with subschedules.
+
+    TODO: This test is currently marked as xfail because normalization of absolute timing
+    in subschedules is not yet supported. When implementing this feature, please remove the
+    xfail marker. See https://gitlab.com/quantify-os/quantify-scheduler/-/issues/489
+    """
+    schedule = Schedule("test")
+    subschedule = Schedule("subschedule")
+    subschedule.add(SquarePulse(duration=100e-9, amp=0.1, port="q0:mw", clock="q0.mw"))
+    subschedule.add(SquarePulse(duration=100e-9, amp=0.1, port="q0:mw", clock="q0.mw"), rel_time=-3)
+    schedule.add(subschedule, label="subsched")
+    schedule.add(SquarePulse(duration=100e-9, amp=0.1, port="q0:mw", clock="q0.mw"))
+    schedule.add(SquarePulse(duration=100e-9, amp=0.1, port="q0:mw", clock="q0.mw"), rel_time=-2)
+
+    schedule = _normalize_absolute_timing(_determine_absolute_timing(schedule))
+    schedulables = schedule.schedulables.values()
+    abs_times = [schedulable["abs_time"] for schedulable in schedulables]
+    np.testing.assert_almost_equal(abs_times, np.array([2 - 200e-9, 2 - 100e-9, 0]))
+
+    operation_id = schedule.schedulables["subsched"]["operation_id"]
+    subschedulables = schedule.operations[operation_id].schedulables.values()
+    abs_times = [schedulable["abs_time"] for schedulable in subschedulables]
+    np.testing.assert_almost_equal(abs_times, np.array([3, 0]))

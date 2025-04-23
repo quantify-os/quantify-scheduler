@@ -230,6 +230,20 @@ def _get_start_time(
     return abs_time
 
 
+def _normalize_absolute_timing(
+    schedule: Schedule,
+    config: CompilationConfig | None = None,  # noqa: ARG001
+) -> Schedule:
+    # TODO: Support normalization of absolute timing in subschedules
+    # See test_negative_absolute_timing_is_normalized_with_subschedule in test_compilation.py
+    # and https://gitlab.com/quantify-os/quantify-scheduler/-/issues/489
+    min_time = min(schedulable["abs_time"] for schedulable in schedule.schedulables.values())
+    if min_time < 0:
+        for schedulable in schedule.schedulables.values():
+            schedulable["abs_time"] -= min_time
+    return schedule
+
+
 def validate_config(config: dict, scheme_fn: str) -> bool:
     """
     Validate a configuration using a schema.
