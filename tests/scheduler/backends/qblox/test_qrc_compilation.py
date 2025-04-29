@@ -48,31 +48,13 @@ def test_simple_qrc_schedule_compilation_end_to_end(
     compiled_seq0 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module14"][
         "sequencers"
     ]["seq0"]
-    compiled_seq1 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module14"][
+    compiled_seq3 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module14"][
         "sequencers"
-    ]["seq1"]
-
-    assert_equal_q1asm(
-        compiled_seq0.sequence["program"],
-        """ set_mrk 0
- wait_sync 4
- upd_param 4
- wait 4 # latency correction of 4 + 0 ns
- move 1,R0 # iterator for loop with label start
-start:
- reset_ph
- upd_param 4
- set_awg_gain 3277,0 # setting gain for SquarePulse
- play 0,0,4 # play SquarePulse (40 ns)
- wait 6036 # auto generated wait (6036 ns)
- loop R0,@start
- stop
-""",
-    )
+    ]["seq3"]
 
     assert_equal_q1asm(
         compiled_sched.compiled_instructions["cluster0"]["cluster0_module14"]["sequencers"][
-            "seq1"
+            "seq0"
         ].sequence["program"],
         """ set_mrk 0
  wait_sync 4
@@ -94,15 +76,33 @@ start:
 """,
     )
 
-    assert compiled_seq0.channel_name == "complex_output_5"
-    assert compiled_seq0.connected_output_indices == (10, 11)
-    assert compiled_seq0.connected_input_indices == ()
+    assert_equal_q1asm(
+        compiled_seq3.sequence["program"],
+        """ set_mrk 0
+ wait_sync 4
+ upd_param 4
+ wait 4 # latency correction of 4 + 0 ns
+ move 1,R0 # iterator for loop with label start
+start:
+ reset_ph
+ upd_param 4
+ set_awg_gain 3277,0 # setting gain for SquarePulse
+ play 0,0,4 # play SquarePulse (40 ns)
+ wait 6036 # auto generated wait (6036 ns)
+ loop R0,@start
+ stop
+""",
+    )
+
+    assert compiled_seq0.channel_name == "complex_input_1"
+    assert compiled_seq0.connected_output_indices == ()
+    assert compiled_seq0.connected_input_indices == (2, 3)
     assert compiled_seq0.modulation_freq == 5e7
 
-    assert compiled_seq1.channel_name == "complex_input_1"
-    assert compiled_seq1.connected_output_indices == ()
-    assert compiled_seq1.connected_input_indices == (2, 3)
-    assert compiled_seq1.modulation_freq == 5e7
+    assert compiled_seq3.channel_name == "complex_output_5"
+    assert compiled_seq3.connected_output_indices == (10, 11)
+    assert compiled_seq3.connected_input_indices == ()
+    assert compiled_seq3.modulation_freq == 5e7
 
 
 @pytest.mark.parametrize("element_names", [["q8"]])
@@ -131,30 +131,12 @@ def test_qrc_markers(
     compiled_seq0 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module14"][
         "sequencers"
     ]["seq0"]
-    compiled_seq1 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module14"][
+    compiled_seq3 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module14"][
         "sequencers"
-    ]["seq1"]
+    ]["seq3"]
 
     assert_equal_q1asm(
         compiled_seq0.sequence["program"],
-        """ set_mrk 0
- wait_sync 4
- upd_param 4
- wait 4 # latency correction of 4 + 0 ns
- move 1,R0 # iterator for loop with label start
-start:
- reset_ph
- upd_param 4
- set_awg_gain 3277,0 # setting gain for SquarePulse
- play 0,0,4 # play SquarePulse (40 ns)
- wait 68 # auto generated wait (68 ns)
- loop R0,@start
- stop
-""",
-    )
-
-    assert_equal_q1asm(
-        compiled_seq1.sequence["program"],
         """ set_mrk 0
  wait_sync 4
  upd_param 4
@@ -170,6 +152,24 @@ start:
  set_mrk 0 # set markers to 0
  upd_param 4
  wait 12 # auto generated wait (12 ns)
+ loop R0,@start
+ stop
+""",
+    )
+
+    assert_equal_q1asm(
+        compiled_seq3.sequence["program"],
+        """ set_mrk 0
+ wait_sync 4
+ upd_param 4
+ wait 4 # latency correction of 4 + 0 ns
+ move 1,R0 # iterator for loop with label start
+start:
+ reset_ph
+ upd_param 4
+ set_awg_gain 3277,0 # setting gain for SquarePulse
+ play 0,0,4 # play SquarePulse (40 ns)
+ wait 68 # auto generated wait (68 ns)
  loop R0,@start
  stop
 """,
