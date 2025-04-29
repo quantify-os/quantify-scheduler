@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import base64
 from collections.abc import Callable, Mapping
+from importlib.metadata import version as pkg_version
 from typing import TYPE_CHECKING, Any
 
 import networkx as nx
@@ -24,6 +25,16 @@ from pydantic_core import core_schema
 
 if TYPE_CHECKING:
     from numpy.typing import ArrayLike
+
+# NOTE: NetworkX dropped support for Python 3.9 with version 3.3
+#  (see: https://networkx.org/documentation/stable/release/release_3.3.html#maintenance)
+#  The last version that supported Python 3.9 is 3.2.1, which however has a different function
+#  signature for `node_data_link()`. For this reason, we must pass different parameters to the
+#  serialization function depending on the package version.
+if pkg_version("networkx") < "3.3":  # noqa: SIM108
+    NODE_LINK_DATA_KWARGS = {"link": "links"}
+else:
+    NODE_LINK_DATA_KWARGS = {"edges": "links"}
 
 
 class NDArray(np.ndarray):
@@ -110,7 +121,7 @@ class Graph(nx.Graph):
         return core_schema.no_info_plain_validator_function(
             cls.validate,
             serialization=core_schema.plain_serializer_function_ser_schema(
-                nx.node_link_data, when_used="always"
+                lambda g: nx.node_link_data(g, **NODE_LINK_DATA_KWARGS), when_used="always"
             ),
         )
 
