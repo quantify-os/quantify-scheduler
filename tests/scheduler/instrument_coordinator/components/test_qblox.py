@@ -1954,7 +1954,7 @@ def test_get_configuration_manager(
         ),
         (
             "QRC",
-            0,
+            3,
             "complex_output_5",
             {
                 "connect_out0": "off",
