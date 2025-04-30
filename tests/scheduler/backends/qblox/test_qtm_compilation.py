@@ -66,7 +66,6 @@ def test_generate_qasm_empty_program_qtm(assert_equal_q1asm):
     )
     static_hw_properties = StaticTimetagModuleProperties(
         instrument_type="QTM",
-        max_sequencers=8,
     )
     component = TimetagSequencerCompiler(
         parent=mod,

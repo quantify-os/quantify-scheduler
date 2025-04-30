@@ -115,7 +115,6 @@ def test_multiple_conditional_without_acquisition_raises(
 def test_nested_conditional_control_flow_raises_runtime_warning():
     static_hw_properties = StaticAnalogModuleProperties(
         instrument_type="QRM",
-        max_sequencers=6,
         max_awg_output_voltage=None,
         mixer_dc_offset_range=BoundedParameter(0, 0, ""),
         channel_name_to_digital_marker={},

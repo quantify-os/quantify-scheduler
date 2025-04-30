@@ -66,14 +66,6 @@ as Q/I."""
 MAX_MIXER_AMP_RATIO = 2.0
 """Highest value the amplitude correction can be set to. N.B. This correction is defined
 as Q/I."""
-NUMBER_OF_SEQUENCERS_QCM = 6
-"""Number of sequencers supported by a QCM/QCM-RF in the latest firmware."""
-NUMBER_OF_SEQUENCERS_QRM = 6
-"""Number of sequencers supported by a QRM/QRM-RF in the latest firmware."""
-NUMBER_OF_SEQUENCERS_QRC = 6
-"""Number of sequencers supported by a QRC in the latest firmware."""
-NUMBER_OF_SEQUENCERS_QTM = 8
-"""Number of sequencers supported by a QTM in the latest firmware."""
 NUMBER_OF_REGISTERS: int = 64
 """Number of registers available in the Qblox sequencers."""
 MAX_SAMPLE_SIZE_SCOPE_ACQUISITIONS: int = 16384

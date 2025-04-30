@@ -172,7 +172,7 @@ def test_prepare_acq_settings():
     qtm_seq_compiler = TimetagSequencerCompiler(
         parent=Mock(),
         index=0,
-        static_hw_properties=StaticTimetagModuleProperties(instrument_type="QTM", max_sequencers=8),
+        static_hw_properties=StaticTimetagModuleProperties(instrument_type="QTM"),
         sequencer_cfg=_SequencerCompilationConfig(
             hardware_description=DigitalChannelDescription(),
             sequencer_options=SequencerOptions(),

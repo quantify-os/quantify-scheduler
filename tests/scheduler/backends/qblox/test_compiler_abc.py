@@ -637,7 +637,6 @@ def test_write_repetition_loop_header_equal_time():
         index=0,
         static_hw_properties=StaticAnalogModuleProperties(
             instrument_type="QRM",
-            max_sequencers=6,
             max_awg_output_voltage=None,
             mixer_dc_offset_range=BoundedParameter(0, 0, ""),
             channel_name_to_digital_marker={},
@@ -650,7 +649,6 @@ def test_write_repetition_loop_header_equal_time():
         index=0,
         static_hw_properties=StaticTimetagModuleProperties(
             instrument_type="QTM",
-            max_sequencers=8,
         ),
         sequencer_cfg=sequencer_cfg,
     )
@@ -707,7 +705,6 @@ def mock_sequencer(total_play_time) -> AnalogSequencerCompiler:
         index=0,
         static_hw_properties=StaticAnalogModuleProperties(
             instrument_type="QRM",
-            max_sequencers=6,
             max_awg_output_voltage=None,
             mixer_dc_offset_range=BoundedParameter(0, 0, ""),
             channel_name_to_digital_marker={},
@@ -892,7 +889,6 @@ def mock_timetag_sequencer() -> TimetagSequencerCompiler:
         index=0,
         static_hw_properties=StaticTimetagModuleProperties(
             instrument_type="QTM",
-            max_sequencers=8,
         ),
         sequencer_cfg=sequencer_cfg,
     )

@@ -1504,15 +1504,6 @@ class ClusterModuleCompiler(InstrumentCompiler, Generic[_SequencerT_co], ABC):
                 )
                 sequencers[new_seq.name] = new_seq
 
-        # Check if more portclock_configs than sequencers are active
-        if len(sequencers) > self.static_hw_properties.max_sequencers:
-            raise ValueError(
-                "Number of simultaneously active port-clock combinations exceeds "
-                "number of sequencers. "
-                f"Maximum allowed for {self.name} ({self.__class__.__name__}) is "
-                f"{self.static_hw_properties.max_sequencers}!"
-            )
-
         self.sequencers = sequencers
 
     @abstractmethod

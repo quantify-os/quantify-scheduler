@@ -1782,10 +1782,11 @@ def test_get_configuration_manager(
 
 
 @pytest.mark.parametrize(
-    ("module_type, channel_name, channel_map_parameters"),
+    ("module_type, sequencer_idx, channel_name, channel_map_parameters"),
     [
         (
             "QCM",
+            0,
             "complex_output_0",
             {
                 "connect_out0": "I",
@@ -1796,6 +1797,7 @@ def test_get_configuration_manager(
         ),
         (
             "QCM",
+            0,
             "complex_output_1",
             {
                 "connect_out0": "off",
@@ -1806,6 +1808,7 @@ def test_get_configuration_manager(
         ),
         (
             "QCM",
+            0,
             "real_output_0",
             {
                 "connect_out0": "I",
@@ -1816,6 +1819,7 @@ def test_get_configuration_manager(
         ),
         (
             "QCM",
+            0,
             "real_output_1",
             {
                 "connect_out0": "off",
@@ -1826,6 +1830,7 @@ def test_get_configuration_manager(
         ),
         (
             "QCM",
+            0,
             "real_output_2",
             {
                 "connect_out0": "off",
@@ -1836,6 +1841,7 @@ def test_get_configuration_manager(
         ),
         (
             "QCM",
+            0,
             "real_output_3",
             {
                 "connect_out0": "off",
@@ -1846,6 +1852,7 @@ def test_get_configuration_manager(
         ),
         (
             "QRM",
+            0,
             "complex_output_0",
             {
                 "connect_out0": "I",
@@ -1856,6 +1863,7 @@ def test_get_configuration_manager(
         ),
         (
             "QRM",
+            0,
             "complex_input_0",
             {
                 "connect_out0": "off",
@@ -1866,6 +1874,7 @@ def test_get_configuration_manager(
         ),
         (
             "QRM",
+            0,
             "real_output_0",
             {
                 "connect_out0": "I",
@@ -1876,6 +1885,7 @@ def test_get_configuration_manager(
         ),
         (
             "QRM",
+            0,
             "real_output_1",
             {
                 "connect_out0": "off",
@@ -1886,6 +1896,7 @@ def test_get_configuration_manager(
         ),
         (
             "QRM",
+            0,
             "real_input_0",
             {
                 "connect_out0": "off",
@@ -1896,6 +1907,7 @@ def test_get_configuration_manager(
         ),
         (
             "QRM",
+            0,
             "real_input_1",
             {
                 "connect_out0": "off",
@@ -1906,6 +1918,7 @@ def test_get_configuration_manager(
         ),
         (
             "QCM_RF",
+            0,
             "complex_output_0",
             {
                 "connect_out0": "IQ",
@@ -1914,6 +1927,7 @@ def test_get_configuration_manager(
         ),
         (
             "QCM_RF",
+            0,
             "complex_output_1",
             {
                 "connect_out0": "off",
@@ -1922,6 +1936,7 @@ def test_get_configuration_manager(
         ),
         (
             "QRM_RF",
+            0,
             "complex_output_0",
             {
                 "connect_out0": "IQ",
@@ -1930,6 +1945,7 @@ def test_get_configuration_manager(
         ),
         (
             "QRM_RF",
+            0,
             "complex_input_0",
             {
                 "connect_out0": "off",
@@ -1938,6 +1954,7 @@ def test_get_configuration_manager(
         ),
         (
             "QRC",
+            0,
             "complex_output_5",
             {
                 "connect_out0": "off",
@@ -1951,6 +1968,7 @@ def test_get_configuration_manager(
         ),
         (
             "QRC",
+            0,
             "complex_input_1",
             {
                 "connect_out0": "off",
@@ -1967,12 +1985,14 @@ def test_get_configuration_manager(
 def test_channel_map(
     make_cluster_component,
     module_type,
+    sequencer_idx,
     channel_name,
     channel_map_parameters,
 ):
     # Indices according to `make_cluster_component` instrument setup
     module_idx = {"QCM": 1, "QCM_RF": 2, "QRM": 3, "QRM_RF": 4, "QRC": 14}
     test_module_name = f"cluster0_module{module_idx[module_type]}"
+    test_sequencer_name = f"sequencer{sequencer_idx}"
 
     hardware_config = {
         "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
@@ -2025,7 +2045,7 @@ def test_channel_map(
     module = all_modules[test_module_name]
 
     all_sequencers = {sequencer.name: sequencer for sequencer in module.sequencers}
-    sequencer = all_sequencers[f"{test_module_name}_sequencer0"]
+    sequencer = all_sequencers[f"{test_module_name}_{test_sequencer_name}"]
 
     for key, value in channel_map_parameters.items():
         assert sequencer.parameters[key].get() == value

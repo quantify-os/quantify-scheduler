@@ -528,6 +528,7 @@ nitpick_ignore = [
     ("myst", "schedulegettable-optionally-returns-xarray-dataset"),
     ("py:class", "ipywidgets.Tab"),
     ("py:class", "widgets.Tab"),
+    ("py:class", "SequencerIndex"),
 ]  # Tuple[str, str], ignore certain warnings
 
 

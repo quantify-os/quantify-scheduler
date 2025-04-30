@@ -22,10 +22,6 @@ from quantify_scheduler.backends.qblox.constants import (
     MAX_NUMBER_OF_INSTRUCTIONS_QRC,
     MAX_NUMBER_OF_INSTRUCTIONS_QRM,
     MAX_NUMBER_OF_INSTRUCTIONS_QTM,
-    NUMBER_OF_SEQUENCERS_QCM,
-    NUMBER_OF_SEQUENCERS_QRC,
-    NUMBER_OF_SEQUENCERS_QRM,
-    NUMBER_OF_SEQUENCERS_QTM,
 )
 from quantify_scheduler.backends.qblox.enums import (
     QbloxFilterConfig,
@@ -178,7 +174,6 @@ class QCMCompiler(BasebandModuleCompiler):
     max_number_of_instructions = MAX_NUMBER_OF_INSTRUCTIONS_QCM  # type: ignore
     static_hw_properties: StaticAnalogModuleProperties = StaticAnalogModuleProperties(
         instrument_type="QCM",
-        max_sequencers=NUMBER_OF_SEQUENCERS_QCM,
         max_awg_output_voltage=2.5,
         mixer_dc_offset_range=BoundedParameter(min_val=-2.5, max_val=2.5, units="V"),
         channel_name_to_digital_marker={
@@ -289,7 +284,6 @@ class QRMCompiler(BasebandModuleCompiler):
     max_number_of_instructions = MAX_NUMBER_OF_INSTRUCTIONS_QRM  # type: ignore
     static_hw_properties: StaticAnalogModuleProperties = StaticAnalogModuleProperties(
         instrument_type="QRM",
-        max_sequencers=NUMBER_OF_SEQUENCERS_QRM,
         max_awg_output_voltage=0.5,
         mixer_dc_offset_range=BoundedParameter(min_val=-0.5, max_val=0.5, units="V"),
         channel_name_to_digital_marker={
@@ -309,7 +303,6 @@ class QCMRFCompiler(RFModuleCompiler):
     max_number_of_instructions = MAX_NUMBER_OF_INSTRUCTIONS_QCM  # type: ignore
     static_hw_properties: StaticAnalogModuleProperties = StaticAnalogModuleProperties(
         instrument_type="QCM_RF",
-        max_sequencers=NUMBER_OF_SEQUENCERS_QCM,
         max_awg_output_voltage=None,
         mixer_dc_offset_range=BoundedParameter(min_val=-50, max_val=50, units="mV"),
         channel_name_to_digital_marker={
@@ -337,7 +330,6 @@ class QRMRFCompiler(RFModuleCompiler):
     max_number_of_instructions = MAX_NUMBER_OF_INSTRUCTIONS_QRM  # type: ignore
     static_hw_properties: StaticAnalogModuleProperties = StaticAnalogModuleProperties(
         instrument_type="QRM_RF",
-        max_sequencers=NUMBER_OF_SEQUENCERS_QRM,
         max_awg_output_voltage=None,
         mixer_dc_offset_range=BoundedParameter(min_val=-50, max_val=50, units="mV"),
         channel_name_to_digital_marker={
@@ -363,7 +355,6 @@ class QRCCompiler(RFModuleCompiler):
     max_number_of_instructions = MAX_NUMBER_OF_INSTRUCTIONS_QRC  # type: ignore
     static_hw_properties = StaticAnalogModuleProperties(  # type: ignore
         instrument_type="QRC",
-        max_sequencers=NUMBER_OF_SEQUENCERS_QRC,
         max_awg_output_voltage=None,
         mixer_dc_offset_range=BoundedParameter(min_val=-50, max_val=50, units="mV"),
         channel_name_to_digital_marker={
@@ -393,7 +384,6 @@ class QTMCompiler(compiler_abc.ClusterModuleCompiler):
     static_hw_properties: StaticTimetagModuleProperties = (  # type: ignore
         StaticTimetagModuleProperties(
             instrument_type="QTM",
-            max_sequencers=NUMBER_OF_SEQUENCERS_QTM,
         )
     )
 

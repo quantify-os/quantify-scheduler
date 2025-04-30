@@ -724,13 +724,13 @@ rot = np.arctan(-b)-np.pi/2
 threshold = -a*b/np.sqrt(1+b*b)
 
 dummy_slot_idx = 1
-cluster.delete_dummy_binned_acquisition_data(slot_idx=dummy_slot_idx, sequencer=1)
+cluster.delete_dummy_binned_acquisition_data(slot_idx=dummy_slot_idx, sequencer=0)
 
 dummy_data_0 = [
         DummyBinnedAcquisitionData(data=(1e3*a, 1e3*b), thres=0, avg_cnt=0)
         for a, b in zip(i,q)
 ]
-cluster.set_dummy_binned_acquisition_data(slot_idx=dummy_slot_idx, sequencer=1, acq_index_name="0", data=dummy_data_0)
+cluster.set_dummy_binned_acquisition_data(slot_idx=dummy_slot_idx, sequencer=0, acq_index_name="0", data=dummy_data_0)
 ```
 
 Next, after compiling the schedule and retrieving the acquisitions from the hardware,

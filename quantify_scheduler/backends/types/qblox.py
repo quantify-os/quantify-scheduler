@@ -91,8 +91,6 @@ class StaticHardwareProperties:
 
     instrument_type: str
     """The type of instrument."""
-    max_sequencers: int
-    """The amount of sequencers available."""
 
     def _get_connected_io_indices(self, mode: str, channel_idx: str) -> tuple[int, ...]:
         """Return the connected input/output indices associated to this channel name."""

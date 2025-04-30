@@ -654,8 +654,10 @@ def test_construct_sequencers_exceeds_seq(
         )
 
     assert (
-        "Number of simultaneously active port-clock combinations exceeds number of sequencers"
-        in test_error.exconly()
+        "Cannot reserve a Qblox sequencer for the module QCM_RF, portclock q6:mw-q6.01. "
+        "There are not enough appropriate sequencers for the given portclocks and paths. "
+        "Already reserved sequencer indices: [0, 1, 2, 3, 4, 5]. "
+        "Output channel: complex_output_0, input channel: None." in test_error.exconly()
     )
 
 
