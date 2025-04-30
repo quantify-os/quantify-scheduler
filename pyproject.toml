@@ -47,7 +47,7 @@ dependencies = [
   "pathvalidate",
   "plotly",
   "pydantic>=2.0",
-  "qblox-instruments@git+https://gitlab.com/qblox/packages/software/qblox_instruments.git@main",
+  "qblox-instruments@git+https://gitlab.com/qblox/packages/software/qblox_instruments.git@qrc-beta-shipment",
   #"qblox-instruments>=0.16.0,<0.17.0", # Prevent upgrade upon minor release while allowing for installing patch releases
   "quantify-core>=0.8.1",              # acquisition data refactor in ScheduleGettable.
   "qcodes>=0.32.0",                    # 0.32.0: introduces InstrumentModule

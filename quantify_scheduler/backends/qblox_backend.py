@@ -1565,42 +1565,42 @@ class _QRCCompilationConfig(_ClusterModuleCompilationConfig):
 
     sequencer_allowed_channels: dict[SequencerIndex, AllowedChannels] = {
         0: AllowedChannels(
-            output={"complex_output_0", "complex_output_1", "complex_output_2", "digital_output_0"},
+            output={"complex_output_2", "complex_output_3", "complex_output_0", "digital_output_0"},
             input={"complex_input_0", "complex_input_1"},
         ),
         1: AllowedChannels(
-            output={"complex_output_0", "complex_output_1", "complex_output_3", "digital_output_0"},
+            output={"complex_output_2", "complex_output_3", "complex_output_1", "digital_output_0"},
             input={"complex_input_0", "complex_input_1"},
         ),
         2: AllowedChannels(
-            output={"complex_output_0", "complex_output_1", "complex_output_4", "digital_output_0"},
+            output={"complex_output_2", "complex_output_3", "complex_output_4", "digital_output_0"},
             input={"complex_input_0", "complex_input_1"},
         ),
         3: AllowedChannels(
-            output={"complex_output_0", "complex_output_1", "complex_output_5", "digital_output_0"},
+            output={"complex_output_2", "complex_output_3", "complex_output_5", "digital_output_0"},
             input={"complex_input_0", "complex_input_1"},
         ),
         4: AllowedChannels(
-            output={"complex_output_0", "complex_output_1", "complex_output_2", "digital_output_0"},
+            output={"complex_output_2", "complex_output_3", "complex_output_0", "digital_output_0"},
             input={"complex_input_0", "complex_input_1"},
         ),
         5: AllowedChannels(
-            output={"complex_output_0", "complex_output_1", "complex_output_3", "digital_output_0"},
+            output={"complex_output_2", "complex_output_3", "complex_output_1", "digital_output_0"},
             input={"complex_input_0", "complex_input_1"},
         ),
         6: AllowedChannels(
-            output={"complex_output_0", "complex_output_1", "complex_output_4", "digital_output_0"},
+            output={"complex_output_2", "complex_output_3", "complex_output_4", "digital_output_0"},
             input={"complex_input_0", "complex_input_1"},
         ),
         7: AllowedChannels(
-            output={"complex_output_0", "complex_output_1", "complex_output_5", "digital_output_0"},
+            output={"complex_output_2", "complex_output_3", "complex_output_5", "digital_output_0"},
             input={"complex_input_0", "complex_input_1"},
         ),
     } | {
         sequencer: AllowedChannels(
             output={
-                "complex_output_2",
-                "complex_output_3",
+                "complex_output_0",
+                "complex_output_1",
                 "complex_output_4",
                 "complex_output_5",
                 "digital_output_0",
