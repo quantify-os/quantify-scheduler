@@ -2,64 +2,15 @@
 # Licensed according to the LICENCE file on the main branch
 """Enums for quantify-scheduler."""
 
-from typing import Any
+from enum import Enum, unique
 
-try:
-    from enum import StrEnum, unique  # type: ignore
-except ImportError:
-    from enum import Enum, unique
 
-    class StrEnum(Enum):
-        """Enum that can be directly serialized to string."""
+class StrEnum(str, Enum):
+    """Enum that can be directly serialized to string."""
 
-        def __str__(self) -> str:
-            return str(self.value)
-
-        def __eq__(self, other: Any) -> bool:  # noqa: ANN401
-            if type(self) is type(other):
-                return str(self) == str(other)
-            elif other in [str(val) for val in type(self)]:
-                return str(self) == other
-            else:
-                return NotImplemented
-
-        def __lt__(self, other: Any) -> bool:  # noqa: ANN401
-            if type(self) is type(other):
-                return str(self) < str(other)
-            elif other in [str(val) for val in type(self)]:
-                return str(self) < other
-            else:
-                return NotImplemented
-
-        def __gt__(self, other: Any) -> bool:  # noqa: ANN401
-            if type(self) is type(other):
-                return str(self) > str(other)
-            elif other in [str(val) for val in type(self)]:
-                return str(self) > other
-            else:
-                return NotImplemented
-
-        def __le__(self, other: Any) -> bool:  # noqa: ANN401
-            if type(self) is type(other):
-                return str(self) <= str(other)
-            elif other in [str(val) for val in type(self)]:
-                return str(self) <= other
-            else:
-                return NotImplemented
-
-        def __ge__(self, other: Any) -> bool:  # noqa: ANN401
-            if type(self) is type(other):
-                return str(self) >= str(other)
-            elif other in [str(val) for val in type(self)]:
-                return str(self) >= other
-            else:
-                return NotImplemented
-
-        def __key__(self) -> str:
-            return str(self)
-
-        def __hash__(self) -> int:
-            return hash(self.__key__())
+    def __str__(self) -> str:
+        # Needs to be implemented for compatibility with qcodes cache.
+        return str(self.value)
 
 
 @unique
