@@ -1,4 +1,5 @@
 import datetime
+import gc
 import os
 import re
 from pathlib import Path
@@ -119,6 +120,8 @@ def test_add_and_get_unbound_device_elements(dev):
     for i in range(25):
         dev.add_element(DeviceElement(f"elem{i}"))
 
+    gc.collect()
+
     # Entries in WeakValueDictionary Instrument._all_instruments are automatically
     # discarded when no strong reference to the value exists anymore;
     # Instrument.find_instrument is called by get_element
@@ -134,6 +137,8 @@ def test_add_and_get_unbound_edges(dev):
 
     for i in range(25):
         dev.add_edge(Edge(parent_element_name=f"parent{i}", child_element_name=f"child{i}"))
+
+    gc.collect()
 
     # Entries in WeakValueDictionary Instrument._all_instruments are automatically
     # discarded when no strong reference to the value exists anymore;
