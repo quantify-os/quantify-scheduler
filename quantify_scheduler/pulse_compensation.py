@@ -122,7 +122,9 @@ def _determine_sum_and_end_of_all_pulses(
                 f"This control flow operation type is not allowed "
                 f"in a pulse compensation structure. "
             )
-    elif operation.has_voltage_offset:
+    elif operation.has_voltage_offset and any(
+        port in ports for (port, _) in operation.get_used_port_clocks()
+    ):
         raise ValueError(
             f"Error calculating compensation pulse amplitude for '{operation}'. "
             f"Voltage offset operation type is not allowed "
